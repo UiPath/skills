@@ -129,3 +129,29 @@ def test_entity_named_only_in_the_body_json_counts(tmp_path):
     (tmp_path / "P.bpmn").write_text(shape, encoding="utf-8")
     rc, out = _run(tmp_path)
     assert rc == 0, out
+
+
+def test_entity_name_in_a_non_entity_body_field_does_not_count(tmp_path):
+    """A Create on the real entity whose title merely equals the missing
+    entity's name is not the error-path Create (review nit)."""
+    decoy = (
+        '<bpmn:sendTask id="T_decoy"><bpmn:extensionElements>'
+        '<uipath:activity><uipath:type value="Intsvc.ActivityExecution"/><uipath:context>'
+        '<uipath:input name="connectorKey" value="uipath-uipath-dataservice"/>'
+        '<uipath:input name="objectName" value="CreateEntityRecordCurated"/>'
+        '<uipath:input name="method" value="POST"/>'
+        '<uipath:input name="body" type="json" target="body"><![CDATA['
+        '{"entityName":"FlowCodeEvalEntity","title":"NonExistentEntity"}]]></uipath:input>'
+        "</uipath:context></uipath:activity></bpmn:extensionElements></bpmn:sendTask>"
+    )
+    shape = (
+        f'<bpmn:definitions {NS}><bpmn:process id="p">'
+        + decoy
+        + _node("QueryEntityRecordsCurated", "FlowCodeEvalEntity", "POST", body_entity=True)
+        + _node("QueryEntityRecordsCurated", "FlowCodeEvalEntity", "POST", body_entity=True)
+        + "</bpmn:process></bpmn:definitions>"
+    )
+    (tmp_path / "P.bpmn").write_text(shape, encoding="utf-8")
+    rc, out = _run(tmp_path)
+    assert rc == 1, out
+    assert "no Create Entity Record node targeting 'NonExistentEntity'" in out

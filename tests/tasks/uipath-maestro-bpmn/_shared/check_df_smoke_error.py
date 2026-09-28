@@ -32,8 +32,8 @@ Assertion map (Flow -> BPMN):
   T                             curated|generic entity-CRUD classification -> is_create_node()/is_query_node()
   T                             entity as the generic objectName, an exact -> mentions_entity()
                                  input value on any target, an exact
-                                 context `path` segment, or a string leaf
-                                 of the request body (either body form)
+                                 context `path` segment, or the value of an
+                                 entity-naming body key (either body form)
   DROPPED  topology/parallel-branch parsing    (Flow's own grader does not parse it either -- see its docstring)
   DROPPED  require_no_private_connector_values (not in Flow)
   DROPPED  require_sequence_integrity          (not in Flow; `bpmn validate` criterion covers structure)
@@ -95,16 +95,28 @@ def mentions_entity(task: ET.Element, entity: str) -> bool:
         return True
     # The entity may be a field of the request body rather than a flat input
     # (smoke run 36443527602: body {"entityName": "FlowCodeEvalEntity", ...});
-    # body_object reads both registry body forms.
-    return entity in _string_leaves(body_object(task))
+    # body_object reads both registry body forms. Only entity-naming keys
+    # count: a record whose `title` happens to equal an entity name is not a
+    # node on that entity (review nit on this grader).
+    return entity in _entity_values(body_object(task))
 
 
-def _string_leaves(value: object) -> list[str]:
+_ENTITY_KEYS = {"entityname", "entity"}
+
+
+def _entity_values(value: object) -> list[str]:
+    """String values under an entity-naming key, at any depth of the body."""
+    out: list[str] = []
     if isinstance(value, dict):
-        return [leaf for v in value.values() for leaf in _string_leaves(v)]
-    if isinstance(value, list):
-        return [leaf for v in value for leaf in _string_leaves(v)]
-    return [value.strip()] if isinstance(value, str) else []
+        for key, v in value.items():
+            if str(key).lower() in _ENTITY_KEYS and isinstance(v, str):
+                out.append(v.strip())
+            else:
+                out.extend(_entity_values(v))
+    elif isinstance(value, list):
+        for v in value:
+            out.extend(_entity_values(v))
+    return out
 
 
 def is_generic_entity_object(object_name: str, entity: str) -> bool:
