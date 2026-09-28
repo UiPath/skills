@@ -15,8 +15,9 @@ Prefer higher tiers when connecting to external services:
 | 1 | **IS connector activity** (this node type) | A connector exists and its activities cover the use case |
 | 2 | **Non-catalog activity generation** | A connector exists but lacks the curated activity, **and the connector reports `V4Compatible`** — uses the connector's IS connection for auth. Invoke the `uipath-platform` skill's activity generation (sanctioned exception to [SKILL.md rule #4](../../../../SKILL.md#critical-rules-universal) — no user prompt once the gap and flag are confirmed), then author the node per [impl-inline.md](impl-inline.md). Never skip to Tier 3 on a `V4Compatible` connector |
 | 3 | **Managed HTTP Request** (`core.action.http.v2`) | A connector exists but lacks the curated activity, and does **not** report `V4Compatible` — uses the connector's IS connection for auth |
-| 4 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | No connector exists — you provide the full URL manually |
-| 5 | **RPA workflow** | Target system has no API at all (legacy desktop apps, terminals) |
+| 4 | **Build a custom connector** (`uip is connectors builder`), then return to tier 1 | No connector exists and the target is a REST+JSON API |
+| 5 | **Managed HTTP Request — manual mode** (`core.action.http.v2`) | The API is public/no-auth, the vendor is not REST+JSON, or prototyping — see the caveat below |
+| 6 | **RPA workflow** | Target system has no API at all (legacy desktop apps, terminals) |
 
 **Tiers 2 and 3 answer the same question — the connector is there, the activity is
 not. Establish the gap FIRST, the same way you always have**
@@ -48,6 +49,8 @@ The flag is a **capability hint for choosing a node type, not an authorization
 decision** — it says the connector can host a generated activity, not that the
 caller may call anything. Auth is still the connector's IS connection, enforced
 at runtime.
+
+**Tier 5 carries the auth yourself.** Manual mode means the flow holds the credential (a header built from a variable) instead of the connection holding it: the integration never appears in `uip is connections list`, cannot be pinged, and cannot be re-pointed per environment without editing the flow. When no connector exists and the target is a REST+JSON API, tier 4 — building one once — is the expected answer. Reach tier 5 for an authenticated API only with a stated reason, and confirm it with the user.
 
 ### Prerequisites
 

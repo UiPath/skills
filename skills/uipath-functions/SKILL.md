@@ -48,6 +48,7 @@ Job-startable functions are invoked from Maestro BPMN/Flow (Service Task), coded
 1. **No LLM calls inside a Coded Function.** LLM reasoning breaks the deterministic contract — that project is an agent → `uipath-agents`.
 2. **The `functions` map in `uipath.json` identifies the project as a Coded Function** — it is the marker every tool reads.
 3. **Cloud-backed work needs auth**: `uip login --organization "<ORG>" --tenant "<TENANT>" --output json`.
+4. **Reach a third-party system through an Integration Service connection, not a key the function carries.** Order: (1) query an existing IS connection; (2) **build a custom connector** with `uip is connectors builder` when the catalog has none and the target is a REST+JSON API; (3) only then a direct authenticated call with the key from an Orchestrator asset. "Custom-auth API calls" is a listed use for this skill, so option 3 is legitimate — but it is a decision, not a default. A function that holds its own key is invisible to `uip is connections list`, cannot be pinged, and cannot be re-pointed per environment without a republish; an asset makes the secret safe to store without making the integration managed. State the reason when you pick it.
 
 ### Python
 

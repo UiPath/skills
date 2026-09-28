@@ -180,6 +180,7 @@ On Windows PowerShell, `&` doesn't background — use `Start-Process powershell.
 
     See [trigger-pattern-guide.md](references/trigger-pattern-guide.md) for worked examples, the `SchedulingMode` reference, the catalog of trigger activities, and the procedure for editing existing `ui:TriggerScope` workflows.
 
+13. **Reach a third-party system through an Integration Service connection, not a hand-built API call.** Order: (1) an IS connector activity (this skill already lists calling one as a trigger for itself); (2) **build a custom connector** with `uip is connectors builder` when the catalog has none and the target is a REST+JSON API, then use it as (1); (3) only then an HTTP Request activity with the key from a `Credential` asset. "RPA can call the API directly" is not a default — option 3 makes the integration invisible to `uip is connections list`, impossible to ping, and impossible to re-point per environment without editing and republishing the project. A `Credential` asset keeps the *secret* safe; it does not make the *integration* managed. Pick option 3 only with a stated reason, and say so in the completion summary.
 
 ### Destination Preflight (Both Modes)
 
