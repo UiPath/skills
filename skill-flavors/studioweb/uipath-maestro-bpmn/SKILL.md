@@ -1,3 +1,9 @@
+<!--skill-flavor:named-solution-init:start-->
+   A named solution is the one Studio Web already has open as the workspace
+   root. Never create another; run `init` from that root. A
+   `Data.AutoCreatedSolution` in the response means `init` ran outside it:
+   re-run it from the root and report the stray directory.
+<!--skill-flavor:named-solution-init:end-->
 <!--skill-flavor:delegated-resource-solution-first:start-->
    (1) Studio Web already has one open solution as the workspace root.
    Never create a new one. Create the resource's project inside it the way

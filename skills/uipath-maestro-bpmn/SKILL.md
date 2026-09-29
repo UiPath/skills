@@ -227,9 +227,11 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `--skip-solution-registration` so no `*Solution/` wrapper or `.uipx` is
    created. `init` takes a project name, not a path, and writes under the
    current directory: `./<ProjectName>/` with that flag or inside an existing
-   solution, `./<ProjectName>Solution/<ProjectName>/` otherwise. When the
-   user names a solution ("a solution of the same name" is `<ProjectName>`,
-   not `<ProjectName>Solution`), create it and run `init` from inside it:
+   solution, `./<ProjectName>Solution/<ProjectName>/` otherwise.
+<!--skill-flavor:named-solution-init:start-->
+   When the user names a solution ("a solution of the same name" is
+   `<ProjectName>`, not `<ProjectName>Solution`), create it and run `init`
+   from inside it:
 
    ```bash
    uip solution init <SolutionName> --output json
@@ -237,7 +239,9 @@ For registry-evidence-only tasks, follow the command-first recipe in
    ```
 
    A `Data.AutoCreatedSolution` in the response means `init` ran outside the
-   solution: re-run it from inside and report the stray directory. To land a
+   solution: re-run it from inside and report the stray directory.
+<!--skill-flavor:named-solution-init:end-->
+   To land a
    project at a path the user named, `mkdir -p` its parent and run `init` there
    with the leaf as the name — and either pass `--skip-solution-registration`
    or make that parent a solution first, because default `init` inserts a
