@@ -87,3 +87,8 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
+
+# Keeps the staged tree out of the uploaded run artifacts.
+post_run:
+  - command: python -c "import shutil; shutil.rmtree('troubleshoot-tasks', ignore_errors=True)"
+    timeout: 60
