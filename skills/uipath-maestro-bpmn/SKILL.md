@@ -438,7 +438,10 @@ and honestly surfaced to the user as gaps when asked.
    metadata only from the structural/canvas contract. Never invent either from
    prose.
 2. **Never fabricate an identifier.** Connection IDs, process/queue/connector
-   keys, app IDs, folder ids/paths come from discovery or the user.
+   keys, app IDs, folder ids/paths come from discovery or the user. A connector
+   field whose `describe` entry carries `Reference` takes the `LookupValue` a
+   live lookup returned, never the name the user wrote. See
+   [references/registry-workflow.md](references/registry-workflow.md#a-reference-entry-takes-a-looked-up-value-never-the-display-name).
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
    contract in [references/structural-bpmn.md](references/structural-bpmn.md);
    flag honestly what the registry does not expose.

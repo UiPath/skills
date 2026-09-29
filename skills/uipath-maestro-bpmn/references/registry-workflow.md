@@ -337,6 +337,37 @@ runtime with `400` and `Value for required parameter '<name>' not found`. A
 required entry (Slack's `send_message_to_channel_v2` requires `send_as`), so
 check it per activity rather than assuming.
 
+### A `Reference` entry takes a looked-up value, never the display name
+
+A `Parameters` or `RequestFields` entry that carries `Reference` takes the
+`LookupValue` field of the row whose `LookupNames` match the user's value. Slack
+`ConversationsInfo_GET` parameter `conversationsInfoId` carries
+`{"ObjectName": "curated_channels", "LookupNames": ["name", "id"], "LookupValue": "id"}`:
+the value is the channel id (`C0123ABCDEF`), not `<channel-name>`. A name
+passes `validate` and faults at runtime (`channel_not_found`).
+
+List `Reference.ObjectName` itself, not a sibling object such as
+`conversations`, on the connection the node binds, and follow
+`Data.Pagination` in one Bash call. The page key is `nextPage`; `pageToken=`,
+`page=`, and `name=` are ignored and return page 1 again:
+
+```bash
+q=""; while :; do
+  r=$(uip is resources run list uipath-salesforce-slack curated_channels \
+    --connection-id <id> ${q:+--query "$q"} --output json)
+  id=$(jq -r 'first(.Data.items[] | select(.name == "<channel-name>") | .id)' <<<"$r")
+  [ -n "$id" ] && { echo "$id"; break; }
+  [ "$(jq -r '.Data.Pagination.HasMore' <<<"$r")" = true ] || break
+  q="nextPage=$(jq -r '.Data.Pagination.NextPageToken' <<<"$r")"
+done
+```
+
+No match once `HasMore` is `"false"`: run the same loop on every other
+`Enabled` connection from `uip is connections list <connector-key> --all-folders --output json`
+and bind the one that holds it. The `IsDefault` connection can reach a
+workspace without the value. No connection holds it, or the lookup itself
+fails: stop and report that field. Never write the display name in its place.
+
 ## 4. Bindings — from `bindingInfo`, never invented
 
 A node that targets a cloud resource carries a binding. The `bindingInfo` on the
