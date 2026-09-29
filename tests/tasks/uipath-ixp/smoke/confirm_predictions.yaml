@@ -51,9 +51,9 @@ initial_prompt: |
     to login.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
-# Every criterion declares all value-taking `confirm` flags in `value_flags`,
-# so a flag it does not predicate (--group on the f-001 check) never leaves its
-# value in the positional slots.
+# `value_flags` names the value-taking `confirm` flags a criterion does not
+# check by value, so their values never shift the positional slots. The
+# guards check no positionals and keep the default.
 success_criteria:
   # The version pin rides on each confirm criterion, not a criterion of its
   # own: a standalone pin assertion passes on one pinned call while the
@@ -66,7 +66,7 @@ success_criteria:
     flags:
       fields: {present: true, aliases: ["f"]}
       model-version: {equals: "7", aliases: ["m"]}
-    value_flags: [output, fields, f, corrections, c, group, occurrence, updates, model-version, m]
+    value_flags: [output, fields, f, corrections, c, group, occurrence, updates]
     weight: 4.0
     pass_threshold: 1.0
 
@@ -78,7 +78,7 @@ success_criteria:
     flags:
       fields: {contains: "f-001", aliases: ["f"]}
       model-version: {equals: "7", aliases: ["m"]}
-    value_flags: [output, fields, f, corrections, c, group, occurrence, updates, model-version, m]
+    value_flags: [output, corrections, c, group, occurrence, updates]
     weight: 1.5
     pass_threshold: 1.0
 
@@ -90,7 +90,7 @@ success_criteria:
     flags:
       fields: {contains: "f-002", aliases: ["f"]}
       model-version: {equals: "7", aliases: ["m"]}
-    value_flags: [output, fields, f, corrections, c, group, occurrence, updates, model-version, m]
+    value_flags: [output, corrections, c, group, occurrence, updates]
     weight: 1.5
     pass_threshold: 1.0
 
@@ -100,7 +100,6 @@ success_criteria:
     tool: "uip"
     flags:
       fields: {contains: "f-004", aliases: ["f"]}
-    value_flags: [output, fields, f, corrections, c, group, occurrence, updates, model-version, m]
     min_count: 0
     max_count: 0
     weight: 2.0
@@ -119,35 +118,33 @@ success_criteria:
       fields: {contains: "f-003", aliases: ["f"]}
       corrections: {matches_regex: '(?=.*"field_id"\s*:\s*"f-003")(?=.*\$?12,?000\.00)', aliases: ["c"], flags: 16}
       model-version: {equals: "7", aliases: ["m"]}
-    value_flags: [output, fields, f, corrections, c, group, occurrence, updates, model-version, m]
+    value_flags: [output, updates]
     weight: 2.0
     pass_threshold: 1.0
 
-  # Without --group, a correction is written into every occurrence of the
-  # field on the document.
+  # Without --occurrence, a correction is written into every occurrence of the
+  # field: document-wide without --group, group-wide with it.
   - type: cli_called
-    description: "Agent did NOT pass --corrections without --group (Critical Rule 8)"
+    description: "Agent did NOT pass --corrections without --occurrence (Critical Rule 8)"
     verb: "ixp labellings confirm"
     tool: "uip"
     flags:
       corrections: {present: true, aliases: ["c"]}
-      group: {absent: true}
-    value_flags: [output, fields, f, corrections, c, group, occurrence, updates, model-version, m]
+      occurrence: {absent: true}
     min_count: 0
     max_count: 0
     weight: 1.5
     pass_threshold: 1.0
 
-  # The plain call confirms the predicted value, so listing the corrected
-  # field there would overwrite the correction.
+  # A confirm that lists f-003 without its correction stamps the garbled
+  # prediction over the fix.
   - type: cli_called
-    description: "Agent did NOT list the corrected f-003 in a plain (no --group) --fields call"
+    description: "Agent did NOT confirm f-003 without its correction"
     verb: "ixp labellings confirm"
     tool: "uip"
     flags:
       fields: {contains: "f-003", aliases: ["f"]}
-      group: {absent: true}
-    value_flags: [output, fields, f, corrections, c, group, occurrence, updates, model-version, m]
+      corrections: {absent: true, aliases: ["c"]}
     min_count: 0
     max_count: 0
     weight: 1.5
