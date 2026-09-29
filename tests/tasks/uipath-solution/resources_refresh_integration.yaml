@@ -69,6 +69,13 @@ success_criteria:
       Score 1.0 if the reply states the resources/bindings are refreshed
       or in sync and the solution is ready to pack (English or Romanian).
 
+      A refresh that succeeded but warned "Project '<NAME>' (<TYPE>) was
+      not checked for resource contributions; update the tool that
+      provides it" is NOT an unresolved error: the refresh still synced,
+      and the warning only means the installed project tool does not
+      report contributions. A reply that relays this warning while
+      stating the solution is synced and ready to pack scores 1.0.
+
       Score 0.0 if the reply skips the refresh, claims readiness without
       having synced, reports an unresolved error, or only dumps raw output
       with no interpretation.

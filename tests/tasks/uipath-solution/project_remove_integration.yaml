@@ -10,6 +10,12 @@ description: >
   remove` REFUSES to remove the last remaining project (a valid solution
   must keep >=1), so the test removes one of two and asserts one remains —
   NOT an empty manifest, which the CLI forbids by design.
+
+  The prompt carries a runtime signal ("cross-platform") and a
+  don't-block instruction, same as resources_refresh_integration.yaml:
+  without them uipath-rpa asks for the target framework before
+  scaffolding, which dead-ends a headless eval (run 2026-09-28, codex:
+  agent stopped at "Portable or Windows?" and registered nothing).
 tags: [uipath-solution, integration, mode:build, lifecycle:setup]
 
 run_limits:
@@ -19,9 +25,12 @@ initial_prompt: |
   I over-populated a UiPath solution and want to drop one project.
 
   1. Create a new UiPath solution called "TidyDemo" and register TWO
-     projects into it.
+     projects into it — minimal cross-platform ones are fine.
   2. Then unregister ONE of those two projects from the solution.
   3. Confirm the solution has exactly one project registered afterwards.
+
+  Pick sensible defaults for anything I haven't pinned down — please take
+  it all the way through without stopping to ask me questions.
 
 success_criteria:
   - type: command_executed
