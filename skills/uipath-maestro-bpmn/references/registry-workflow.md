@@ -350,7 +350,7 @@ List `Reference.ObjectName` itself, not a sibling object such as
 `conversations`, on the connection the node binds:
 
 ```bash
-uip is resources run list uipath-salesforce-slack curated_channels --connection-id <id> --output json
+uip is resources run list uipath-salesforce-slack "curated_channels?types=public_channel,private_channel" --connection-id <id> --output json
 ```
 
 - A nonzero exit or a `Result` other than `Success` is a lookup failure, not an
