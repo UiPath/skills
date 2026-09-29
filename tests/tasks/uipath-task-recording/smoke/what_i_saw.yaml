@@ -1,0 +1,80 @@
+task_id: skill-task-recording-what-i-saw
+description: >
+  The panel's Record-a-task prompt must engage uipath-task-recording, which
+  reads the recording's trace, shows "What I saw" and asks the one
+  confirmation question. With no one to answer (headless hosts may offer no
+  question tool, so the question is graded from the reply), nothing may be
+  built and the recording folder must stay untouched.
+tags: [uipath-task-recording, smoke, mode:build, lifecycle:discover]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_fixtures/invoice-recording
+      mount_point: recording
+
+reference:
+  directory: ..
+
+initial_prompt: |
+  Build an RPA workflow from my task recording: ./recording
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-task-recording skill"
+    skill_name: "uipath-task-recording"
+    expected_skill: "uipath-task-recording"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the recording's trace"
+    command_pattern: 'actions\.ndjson'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Nothing was built before the user confirmed"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(init|packages|validate|build|run|debug)\b'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "\"What I saw\" matches what the recording shows"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The agent read a task recording and summarized it for the user as
+      "What I saw". Ground truth of the recording: in Google Chrome, on the
+      Acme Billing portal (billing.acme.test), the user searched invoice
+      INV-20931 and opened it, copied its Amount (1,250.00), switched to Excel
+      (Q3 invoices.xlsx), typed INV-20931 into A6 (the next empty row) and
+      pasted the amount into B6, copied the Due date (15 Oct 2026) from the
+      invoice page, pasted it into C6, and saved the workbook. The user also
+      opened an "Export invoice as PDF?" dialog and cancelled it, and Enter
+      was logged twice for one search.
+
+      Score 1.0 only when all hold:
+      - the steps are plain-language intents grouped by app and screen, not
+        raw clicks, coordinates or key names;
+      - the search, the copy of amount and due date, the paste into the next
+        empty row with INV-20931 in the first column, and the save are all
+        present and in order;
+      - INV-20931 is offered as a candidate argument;
+      - the Export dialog is not a step (listing it as left out is fine);
+      - nothing absent from the ground truth is presented as a step;
+      - it ends by asking "Build this as a workflow?" with the answers
+        "Build the workflow" and "Change the steps first".
+      Score 0.5 when exactly one of these fails, else 0.0.
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The recording folder is unchanged"
+    command: 'diff -r recording "$REFERENCE_DIR/_fixtures/invoice-recording"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
