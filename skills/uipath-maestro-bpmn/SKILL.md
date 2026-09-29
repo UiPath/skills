@@ -237,8 +237,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    ```
 
    A `Data.AutoCreatedSolution` in the response means `init` ran outside the
-   solution: this run created that directory, so remove it
-   (`rm -rf <Data.AutoCreatedSolution.Path>`) and re-run from inside. To land a
+   solution: re-run it from inside and report the stray directory. To land a
    project at a path the user named, `mkdir -p` its parent and run `init` there
    with the leaf as the name — and either pass `--skip-solution-registration`
    or make that parent a solution first, because default `init` inserts a
