@@ -44,19 +44,28 @@ def load_original(task_dir: str, basename: str) -> ET.Element:
     return ET.parse(path).getroot()
 
 
-# The children of ``bpmn:extensionElements`` are compared as a SET, not a sequence.
-# The BPMN schema declares that container ``xsd:any``, unordered; the runtime reads
-# its children by type; and the two authoring routes write them in different orders —
-# these fixtures put ``uipath:scriptVersion`` before the ``uipath:mapping``, while
-# Studio Web and the builder SDK write the mapping first. Compared in document order,
-# a correct edit of a node's script body failed on nothing but that swap. Everything
-# else stays order-sensitive: variable declarations must round-trip untouched, in order.
+# Readers pick ``extensionElements`` children BY TYPE, and Studio Web, the builder SDK
+# and these fixtures disagree on the order they write them in. So its children are
+# grouped by tag before comparing. Everything outside this set stays order-sensitive:
+# variable declarations must round-trip untouched, in order.
 _UNORDERED_CONTAINERS = frozenset({"extensionElements"})
 
 
 def _children_view(element: ET.Element, views: tuple):
-    """Children in document order, or sorted where the schema says order is meaningless."""
-    return tuple(sorted(views)) if local(element.tag) in _UNORDERED_CONTAINERS else views
+    """Children in document order, or grouped by tag where readers select by type.
+
+    Sorted on the TAG alone, and Python's sort is stable, so siblings of different
+    types become order-free while siblings of the SAME type keep document order. That
+    distinction is load-bearing: readers that select by type also disagree about which
+    of several same-type siblings wins — ``ScriptReader`` in PO.BpmnEngine takes the
+    FIRST ``uipath:scriptVersion``, the local engine's parser lets the LAST
+    ``uipath:Mapping`` set the serviceType — so swapping two of a kind changes the
+    runtime contract and must not compare equal. Sorting whole views would have hidden
+    it.
+    """
+    if local(element.tag) not in _UNORDERED_CONTAINERS:
+        return views
+    return tuple(sorted(views, key=lambda view: view[0]))
 
 
 def canonical(element: ET.Element):
