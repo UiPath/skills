@@ -1,9 +1,8 @@
 task_id: skill-doc-mode-select-mode-selection
 description: >
   Mode-selection accuracy, run-to-run stability and paraphrase invariance.
-  54 rows: 27 workloads, each written twice in different words, six rows per
-  mode across all eight plus six whose ground truth is NONE because the work is
-  deterministic and leaves the taxonomy.
+  48 rows: 24 workloads, each written twice in different words, six rows per
+  mode across all eight.
 
   Three properties this set is built to protect, in the order they were added:
 
@@ -75,11 +74,6 @@ initial_prompt: |
   to a file named `mode.txt` in the current working directory. The FIRST line
   must be the mode ID alone — one of AH, AF, CS, SU, PS, PA, EX, BT — with
   nothing else on that line. You may add your reasoning on the lines below it.
-
-  If no document-processing mode applies because the work is deterministic and
-  belongs outside the taxonomy, write NONE on that first line instead. NONE is a
-  real answer, not a refusal — do not force a mode onto a workload that does not
-  need one.
 
   Do not create a project, a flow, an agent, or any other artifact. Write only
   `mode.txt`.

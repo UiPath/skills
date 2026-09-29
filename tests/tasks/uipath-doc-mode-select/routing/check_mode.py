@@ -11,8 +11,11 @@ import pathlib
 import re
 import sys
 
-# NONE is a real answer: the workload is deterministic and belongs in a Data,
-# Transform or Script node, outside the document-mode taxonomy entirely.
+# NONE is no longer an expected label — the deterministic rows were removed from
+# the set and the prompt no longer offers it. It stays recognised so that an agent
+# that reaches for it anyway is reported as "selected NONE, ground truth X", which
+# says the model thought the workload left the taxonomy. Dropping it would collapse
+# that into an indistinguishable "not a valid mode" alongside genuine garbage.
 MODES = ("AH", "AF", "CS", "SU", "PS", "PA", "EX", "BT", "NONE")
 
 
