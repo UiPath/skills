@@ -27,8 +27,6 @@ Prompts live at three levels and are edited by three separate commands:
 
 `groups update-prompts` and `fields update-prompts` match by their supplied identity and update only the named entries, preserving every definition you didn't change. `projects update-prompt` overwrites the entire project prompt, so always submit the full text. To update more than one level in the same iteration, run the commands back-to-back.
 
-**Aligning the three levels.** The model sees the project prompt, the parent label_def `instructions`, and the per-field instructions together. If the project or a group prompt says "Extract only values on the first page", but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `groups update-prompts` and the project prompt with `projects update-prompt` if either contradicts. A project-prompt rule that holds for most fields but not all needs an explicit exception naming the fields it does not apply to.
-
 ## Before Starting
 
 The user may specify a max number of iterations (default: 3). Track:
@@ -114,6 +112,7 @@ uip ixp projects get-taxonomy <project-name> --output json
 Save to `/tmp/ixp/<project-name>/taxonomies/v1.json`. Output is `{ status, dataset: { entity_defs, label_groups } }` (raw snake_case); each `dataset.label_groups[]` holds `label_defs` with their fields and current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each prompt update (v2, v3, …).
 
 The parent `label_def` `name` (e.g. `"Invoice"`) and the field `name` (e.g. `"Invoice Number"`) are what you pass to `fields update-prompts --updates` as `group` and `name`.
+
 ### 1d. Read sample documents (2-3 documents)
 
 ```bash
@@ -139,7 +138,7 @@ Repeat the following for each iteration (up to max iterations):
 
 Use the current metrics (baseline on first iteration, post-relabel metrics on subsequent iterations). The metrics include both `FieldGroups` (per-group scores) and `Fields` (per-field scores).
 
-**Field group diagnosis:** Check `FieldGroups` first. If an entire group has low F1, the group-level instructions may need updating with `--groups` rather than fixing individual fields. If fields in several groups fail the same way (e.g. values truncated at the same delimiter), check the project prompt for a rule that causes it.
+**Field group diagnosis:** Check `FieldGroups` first. If an entire group has low F1, the group-level instructions may need updating with `--groups` rather than fixing individual fields.
 
 **Per-field diagnosis:** Identify individual fields with F1 < 0.7 as targets. Diagnose each:
 
@@ -200,6 +199,8 @@ Focus on **what** to extract and **where** to find it. Do NOT specify format —
 **For fields visible in documents** — include location and a real example from the actual documents.
 **For fields NOT visible** — use a generic instruction with no example: "Extract [what] from this document, as it appears on the page."
 
+**Align with the group and project prompts:** The model sees the project prompt, the parent label_def `instructions`, and the per-field instructions together. If the project or a group prompt says "Extract only values on the first page", but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `groups update-prompts` and the project prompt with `projects update-prompt` if either contradicts. A project-prompt rule that holds for most fields but not all needs an explicit exception naming the fields it does not apply to.
+
 **Additional rules:**
 
 1. NEVER reference specific page numbers — use section headings or labels
@@ -233,11 +234,11 @@ uip ixp groups update-prompts <project-name> \
   --updates "$(cat /tmp/ixp/<project-name>/prompts/group_updates.json)" \
   --output json
 
-# Only when 2a points at the project prompt
+# Only if the project prompt needs changing
 uip ixp projects update-prompt <project-name> --prompt "<FULL_PROMPT_TEXT>" --output json
 ```
 
-The group and project calls are optional — skip each one if that level doesn't need changing. Keep the project prompt text you replace — no command reads it back, and a rollback resubmits it.
+The group and project calls are optional — skip each one if that level doesn't need changing. Store the full project prompt used for each iteration with that iteration's prompt files. A rollback must resubmit the saved prompt from the previous iteration.
 
 **Post-update verification:** After the update, re-fetch the taxonomy, save it as the next version, and verify that field counts per label_def are unchanged:
 
