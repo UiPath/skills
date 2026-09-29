@@ -227,7 +227,18 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `--skip-solution-registration` so no `*Solution/` wrapper or `.uipx` is
    created. `init` takes a project name, not a path, and writes under the
    current directory: `./<ProjectName>/` with that flag or inside an existing
-   solution, `./<ProjectName>Solution/<ProjectName>/` otherwise. To land a
+   solution, `./<ProjectName>Solution/<ProjectName>/` otherwise. When the
+   user names a solution ("a solution of the same name" is `<ProjectName>`,
+   not `<ProjectName>Solution`), create it and run `init` from inside it:
+
+   ```bash
+   uip solution init <SolutionName> --output json
+   cd <SolutionName> && uip maestro bpmn init <ProjectName> --output json
+   ```
+
+   A `Data.AutoCreatedSolution` in the response means `init` ran outside the
+   solution: this run created that directory, so remove it
+   (`rm -rf <Data.AutoCreatedSolution.Path>`) and re-run from inside. To land a
    project at a path the user named, `mkdir -p` its parent and run `init` there
    with the leaf as the name — and either pass `--skip-solution-registration`
    or make that parent a solution first, because default `init` inserts a
@@ -516,7 +527,9 @@ and honestly surfaced to the user as gaps when asked.
    (1) Create or open the solution **first** (`uip solution init`; on
    `unknown command`, the older `uip solution new`), and
    author the resource's project **inside** it, so it registers in the
-   `.uipx`. A project created outside any solution has no path to deployment.
+   `.uipx`: run the resource's `init` and `uip maestro bpmn init` from the
+   directory holding the `.uipx`, as in **Assemble**. A project created
+   outside any solution has no path to deployment.
 <!--skill-flavor:delegated-resource-solution-first:end-->
 <!--skill-flavor:delegated-resource-author-deploy:start-->
    (2) Delegate authoring to the resource's owning skill (e.g.
