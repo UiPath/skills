@@ -107,30 +107,37 @@ success_criteria:
 
   # Measured on 26.10.4 before the fix: 7 cards (3 generated: D, G, H), 5 IsLoose
   # (E, F, I, J, L). A correct fix removes IsLoose from E, F, J only and unwraps H only.
+  # Checked per case on the parsed XAML, so a fix applied to the wrong case fails: every
+  # case exists once; only I and L are loose; D sits in its own generated card and G in a
+  # generated card inside Attach Browser; E, F, H and L sit directly in Attach Browser with
+  # no generated card above H; I in Attach Window; J under the Element Scope.
   - type: run_command
     description: "Only E, F and J lost IsLoose and only H's generated card was unwrapped"
     command: |-
-      python -c "import re, sys; s = open('payment-review-edge_Upgraded/Main.xaml', encoding='utf-8-sig').read(); q = chr(34); tag = lambda k: (re.search(r'<uix:\w+\b[^>]*DisplayName=' + q + 'Case ' + k + q + '[^>]*>', s) or [''])[0]; loose = lambda k: ('IsLoose=' + q + 'True' + q) in tag(k); n = lambda p: len(re.findall(p, s)); ok = tag('H') != '' and not (loose('E') or loose('F') or loose('J')) and loose('L') and loose('I') and n('IsLoose=' + q + 'True' + q) == 2 and n('<uix:NApplicationCard ') == 6 and n('IsDisplayNameAuto=' + q + 'True' + q) == 2; sys.exit(0 if ok else 1)"
+      python -c "import sys, xml.etree.ElementTree as E; r = E.parse('payment-review-edge_Upgraded/Main.xaml').getroot(); P = {c: p for p in r.iter() for c in p}; up = lambda e: [P[e]] + up(P[e]) if e in P else []; L = lambda e: e.tag.split('}')[-1]; cards = lambda e: [a for a in up(e) if L(a) == 'NApplicationCard']; gen = lambda a: a.get('IsDisplayNameAuto') == 'True'; names = [e.get('DisplayName')[5:] for e in r.iter() if (e.get('DisplayName') or '').startswith('Case ')]; c = {e.get('DisplayName')[5:]: e for e in r.iter() if (e.get('DisplayName') or '').startswith('Case ')}; home = lambda k, n: bool(cards(c[k])) and not gen(cards(c[k])[0]) and cards(c[k])[0].get('DisplayName') == n; ok = sorted(names) == list('ABDEFGHIJL') and {k for k, e in c.items() if e.get('IsLoose') == 'True'} == {'I', 'L'} and all(home(k, 'Attach Browser') for k in 'EFHL') and not any(gen(a) for a in cards(c['H'])) and len(cards(c['D'])) == 1 and gen(cards(c['D'])[0]) and len(cards(c['G'])) == 2 and gen(cards(c['G'])[0]) and cards(c['G'])[1].get('DisplayName') == 'Attach Browser' and home('I', 'Attach Window') and any(L(a) == 'NElementScope' for a in up(c['J'])) and sum(L(e) == 'NApplicationCard' for e in r.iter()) == 6 and sum(L(e) == 'NApplicationCard' and gen(e) for e in r.iter()) == 2; sys.exit(0 if ok else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   # E, F, H, J Remediated; G's child and card Verified healthy; only L keeps its
-  # action-required line (cross-window, left loose on purpose).
+  # action-required line (cross-window, left loose on purpose). Each annotation is matched
+  # to the element that carries it, so a line on the wrong activity fails.
   - type: run_command
-    description: "Annotations: 4 Remediated, 2 Verified healthy, only Case L still action-required"
+    description: "Annotations: Remediated on E, F, H, J; Verified healthy on G and its card; only Case L still action-required"
     command: |-
-      python -c "import re, sys; s = open('payment-review-edge_Upgraded/Main.xaml', encoding='utf-8-sig').read(); q = chr(34); tag = re.search(r'<uix:\w+\b[^>]*DisplayName=' + q + 'Case L' + q + '[^>]*>', s); ok = s.count('Remediated by uipath-activity-migrator') == 4 and s.count('Verified healthy by uipath-activity-migrator') == 2 and s.count('PostMigration Action Required') == 1 and tag is not None and 'PostMigration Action Required' in tag.group(0); sys.exit(0 if ok else 1)"
+      python -c "import sys, xml.etree.ElementTree as E; r = E.parse('payment-review-edge_Upgraded/Main.xaml').getroot(); P = {c: p for p in r.iter() for c in p}; up = lambda e: [P[e]] + up(P[e]) if e in P else []; cards = lambda e: [a for a in up(e) if a.tag.split('}')[-1] == 'NApplicationCard']; A = lambda e: next((v for k, v in e.attrib.items() if k.endswith('Annotation.AnnotationText')), ''); c = {e.get('DisplayName')[5:]: e for e in r.iter() if (e.get('DisplayName') or '').startswith('Case ')}; on = lambda t: {e for e in r.iter() if t in A(e)}; ok = on('Remediated by uipath-activity-migrator') == {c[k] for k in 'EFHJ'} and on('Verified healthy by uipath-activity-migrator') == {c['G'], cards(c['G'])[0]} and on('PostMigration Action Required') == {c['L']}; sys.exit(0 if ok else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
+  # The tool itself writes .upgrade/ (reports) and .local/ (restore cache) into the source;
+  # outside those two, the source must hold exactly the fixture's files, byte-identical.
   - type: run_command
-    description: "Source workflow, project files and pages are byte-identical to the fixture"
+    description: "Source holds only the fixture's files, byte-identical, besides the tool's .upgrade and .local folders"
     command: |-
-      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'payment-review-edge'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('payment-review-edge', f), shallow=False) for f in ('Main.xaml', 'project.json', 'entry-points.json', 'web/workplan.html', 'web/ledger.html')) else 1)"
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'payment-review-edge'); s = 'payment-review-edge'; fs = lambda root: sorted(os.path.relpath(os.path.join(d, f), root) for d, _, files in os.walk(root) if os.path.relpath(d, root).split(os.sep)[0] not in ('.upgrade', '.local') for f in files); ref = fs(t); sys.exit(0 if fs(s) == ref and all(filecmp.cmp(os.path.join(t, f), os.path.join(s, f), shallow=False) for f in ref) else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0

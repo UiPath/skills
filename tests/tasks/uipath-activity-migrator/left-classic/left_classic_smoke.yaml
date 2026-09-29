@@ -80,10 +80,12 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # The tool itself writes .upgrade/ (reports) and .local/ (restore cache) into the source;
+  # outside those two, the source must hold exactly the fixture's files, byte-identical.
   - type: run_command
-    description: "Source workflow, project files and page are byte-identical to the fixture"
+    description: "Source holds only the fixture's files, byte-identical, besides the tool's .upgrade and .local folders"
     command: |-
-      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'vendor-portal-sync'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('vendor-portal-sync', f), shallow=False) for f in ('Main.xaml', 'project.json', 'entry-points.json', 'web/vendors.html')) else 1)"
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'vendor-portal-sync'); s = 'vendor-portal-sync'; fs = lambda root: sorted(os.path.relpath(os.path.join(d, f), root) for d, _, files in os.walk(root) if os.path.relpath(d, root).split(os.sep)[0] not in ('.upgrade', '.local') for f in files); ref = fs(t); sys.exit(0 if fs(s) == ref and all(filecmp.cmp(os.path.join(t, f), os.path.join(s, f), shallow=False) for f in ref) else 1)"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
