@@ -347,26 +347,25 @@ the value is the channel id (`C0123ABCDEF`), not `<channel-name>`. A name
 passes `validate` and faults at runtime (`channel_not_found`).
 
 List `Reference.ObjectName` itself, not a sibling object such as
-`conversations`, on the connection the node binds, and follow
-`Data.Pagination` in one Bash call. The page key is `nextPage`; `pageToken=`,
-`page=`, and `name=` are ignored and return page 1 again:
+`conversations`, on the connection the node binds:
 
 ```bash
-q=""; while :; do
-  r=$(uip is resources run list uipath-salesforce-slack curated_channels \
-    --connection-id <id> ${q:+--query "$q"} --output json)
-  id=$(jq -r 'first(.Data.items[] | select(.name == "<channel-name>") | .id)' <<<"$r")
-  [ -n "$id" ] && { echo "$id"; break; }
-  [ "$(jq -r '.Data.Pagination.HasMore' <<<"$r")" = true ] || break
-  q="nextPage=$(jq -r '.Data.Pagination.NextPageToken' <<<"$r")"
-done
+uip is resources run list uipath-salesforce-slack curated_channels --connection-id <id> --output json
 ```
 
-No match once `HasMore` is `"false"`: run the same loop on every other
-`Enabled` connection from `uip is connections list <connector-key> --all-folders --output json`
-and bind the one that holds it. The `IsDefault` connection can reach a
-workspace without the value. No connection holds it, or the lookup itself
-fails: stop and report that field. Never write the display name in its place.
+- A nonzero exit or a `Result` other than `Success` is a lookup failure, not an
+  empty result.
+- Match keys inside `Data` case-insensitively (`items`, `Pagination`,
+  `HasMore`, `NextPageToken`).
+- While `HasMore` is true, re-run with `--query "nextPage=<NextPageToken>"`.
+  `pageToken=`, `page=`, and `name=` are ignored and return page 1 again. Stop
+  at the first match, or when a page adds no rows you have not already seen.
+
+No match on that connection: repeat on every other `Enabled` connection from
+`uip is connections list <connector-key> --all-folders --output json` and bind
+the one that holds it. The `IsDefault` connection can reach a workspace
+without the value. No connection holds it, or a lookup fails: stop and report
+that field. Never write the display name in its place.
 
 ## 4. Bindings — from `bindingInfo`, never invented
 
