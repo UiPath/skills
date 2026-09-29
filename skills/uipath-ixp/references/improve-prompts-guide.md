@@ -10,7 +10,7 @@ Before starting, understand the limits of prompt iteration:
 
 - Fields where the model extracts the wrong value (precision problems) — better instructions clarify what to extract
 - Fields where the model misses the value entirely (recall problems) — location hints help the model find the field
-- Ambiguous fields where the model picks the wrong candidate — negative examples and disambiguation rules help
+- Ambiguous fields where the model picks the wrong candidate — disambiguation rules and closed vocabularies help
 
 **Neither prompts nor reviewing can fix:**
 
@@ -175,9 +175,9 @@ For each REFINE field with **Recall < 0.5**, check whether the problem is a bad 
 
 For each field marked REFINE, rewrite its `instructions`:
 
-- **PRECISION** → Be more specific about WHAT to extract and what NOT to extract
+- **PRECISION** → Be more specific about WHAT to extract
 - **RECALL** → Better describe WHERE to find the field
-- **BOTH** → Full rewrite — what, where, what to avoid
+- **BOTH** → Full rewrite — what and where
 
 **Instruction quality standards:**
 
@@ -187,7 +187,8 @@ Focus on **what** to extract and **where** to find it. Do NOT specify format —
 - **Maximum length**: 4096 characters, at every level (field, field group, overall project prompt). A longer value is rejected and nothing is saved, so trim before you submit.
 - **Location hint**: describe WHERE in the document (section, header area, table, near a label). Keywords: "section", "header", "table", "top of", "labeled", "near".
 - **Real example**: include an actual value from the documents (e.g., "Example: '2106732'", "Example: 'SINV0077023'").
-- **Disambiguation**: if similar fields exist, clarify what NOT to extract (e.g., "Do NOT confuse with PO Number").
+- **Disambiguation**: identify the target by its label, role, and location; avoid naming an incorrect candidate or writing "Do NOT return [value]".
+- **Closed vocabularies**: use one only when the complete allowed set is explicit in the taxonomy, business rules, or an authoritative reference. Never infer or rationalize the set from sample documents.
 - **No format patterns**: do NOT include "Format: MM/DD/YYYY" or similar — the entity_def type (Date, Monetary, Text) already defines the format. Adding format in instructions creates conflicting signals.
 
 **Good instruction** (145 chars):
@@ -199,13 +200,13 @@ Focus on **what** to extract and **where** to find it. Do NOT specify format —
 **For fields visible in documents** — include location and a real example from the actual documents.
 **For fields NOT visible** — use a generic instruction with no example: "Extract [what] from this document, as it appears on the page."
 
-**Align with the group and project prompts:** The model sees the project prompt, the parent label_def `instructions`, and the per-field instructions together. If the project or a group prompt says "Extract only values on the first page", but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `groups update-prompts` and the project prompt with `projects update-prompt` if either contradicts. A project-prompt rule that holds for most fields but not all needs an explicit exception naming the fields it does not apply to.
+**Align with the group and project prompts:** The model sees the project prompt, the parent label_def `instructions`, and the per-field instructions together. If the project or a group prompt says "Extract only values on the first page", but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `groups update-prompts` and the project prompt with `projects update-prompt` if either contradicts. A project rule that does not hold for every field it covers belongs at field or group level.
 
 **Additional rules:**
 
 1. NEVER reference specific page numbers — use section headings or labels
 2. Each instruction targets one specific field (e.g., "Invoice Number", "Invoice Date")
-3. On iteration 2+, do NOT repeat the same instruction that failed last time — try a different approach (different wording, different location hints, add negative examples)
+3. On iteration 2+, do NOT repeat the same instruction that failed last time — try a different approach (different wording, different location hints, a closed vocabulary)
 
 ### 2c. Update instructions
 
