@@ -624,28 +624,28 @@ test("new canonical skills are automatically included in existing flavors", (t) 
   ]);
 });
 
-function addLegacySkill(repo, name, body = "Legacy guidance.\n") {
-  const skill = join(repo, "legacy", "skills", name);
+function addClassicSkill(repo, name, body = "Classic guidance.\n") {
+  const skill = join(repo, "classic", "skills", name);
   mkdirSync(skill, { recursive: true });
   writeFileSync(join(skill, "SKILL.md"), entrypoint(name, body));
   return skill;
 }
 
-function pin(repo, flavor, skill, value = "legacy\n") {
+function pin(repo, flavor, skill, value = "classic\n") {
   const target = join(flavorRoot(repo, flavor), skill, ".canonical");
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, value);
 }
 
-test("a .canonical pin composes that skill from legacy/skills for its flavor only", (t) => {
+test("a .canonical pin composes that skill from classic/skills for its flavor only", (t) => {
   const repo = fixtureRepo(t);
   addSkill(repo, "uipath-flow", "Current generation.\n");
   addSkill(repo, "uipath-other", block("host", "Default host guidance."));
-  const legacy = addLegacySkill(repo, "uipath-flow", block("host", "Legacy default."));
-  mkdirSync(join(legacy, "references"));
-  writeFileSync(join(legacy, "references", "old.md"), "Legacy-only reference.\n");
+  const classic = addClassicSkill(repo, "uipath-flow", block("host", "Classic default."));
+  mkdirSync(join(classic, "references"));
+  writeFileSync(join(classic, "references", "old.md"), "Classic-only reference.\n");
   pin(repo, "studioweb", "uipath-flow");
-  writeOverride(repo, "studioweb", "uipath-flow/SKILL.md", block("host", "Studio Web on legacy."));
+  writeOverride(repo, "studioweb", "uipath-flow/SKILL.md", block("host", "Studio Web on classic."));
   const studio = writeOverride(
     repo,
     "studioweb",
@@ -658,27 +658,27 @@ test("a .canonical pin composes that skill from legacy/skills for its flavor onl
   const output = join(repo, "out");
   materializeComposition(plan, output);
   const flow = readFileSync(join(output, "uipath-flow", "SKILL.md"), "utf8");
-  assert.match(flow, /Studio Web on legacy\./);
+  assert.match(flow, /Studio Web on classic\./);
   assert.doesNotMatch(flow, /Current generation/);
   assert.ok(existsSync(join(output, "uipath-flow", "references", "old.md")));
   assert.match(readFileSync(join(output, "uipath-other", "SKILL.md"), "utf8"), /Studio Web guidance/);
 
   const defaults = createDefaultPlan(repo);
-  assert.ok(defaults.files.every(({ sourcePath }) => !sourcePath.includes(join("legacy", "skills"))));
+  assert.ok(defaults.files.every(({ sourcePath }) => !sourcePath.includes(join("classic", "skills"))));
   assert.doesNotThrow(() => createAllVariants(repo));
 });
 
-test("invalid pins and unpinned legacy trees are rejected", (t) => {
+test("invalid pins and unpinned classic trees are rejected", (t) => {
   const repo = fixtureRepo(t);
   addSkill(repo, "uipath-flow", block("host", "Default."));
   const studio = writeOverride(repo, "studioweb", "uipath-flow/SKILL.md", block("host", "SW."));
 
   pin(repo, "studioweb", "uipath-flow");
-  expectFlavorError(() => createCompositionPlan(repo, studio), /pinned tree does not exist: legacy\/skills\/uipath-flow/);
+  expectFlavorError(() => createCompositionPlan(repo, studio), /pinned tree does not exist: classic\/skills\/uipath-flow/);
 
-  addLegacySkill(repo, "uipath-flow", block("host", "Legacy."));
-  pin(repo, "studioweb", "uipath-flow", "legacy-v2\n");
-  expectFlavorError(() => createCompositionPlan(repo, studio), /must contain exactly "legacy"/);
+  addClassicSkill(repo, "uipath-flow", block("host", "Classic."));
+  pin(repo, "studioweb", "uipath-flow", "classic-v2\n");
+  expectFlavorError(() => createCompositionPlan(repo, studio), /must contain exactly "classic"/);
 
   pin(repo, "studioweb", "uipath-flow");
   pin(repo, "studioweb", "uipath-ghost");

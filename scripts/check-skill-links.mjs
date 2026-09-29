@@ -11,12 +11,12 @@
  * have. This check is what keeps that from drifting back in.
  *
  * Scope: `skills/` (canonical), `skill-flavors/` (sparse overrides) and
- * `legacy/skills/` (retained trees a flavor pins). Flavor and legacy files
+ * `classic/skills/` (retained trees a flavor pins). Flavor and classic files
  * mirror canonical paths, so their links are resolved from their canonical
  * location as well — that is where they will sit once composed.
  *
  * A pinned skill (`skill-flavors/<flavor>/<skill>/.canonical`) is composed
- * from `legacy/skills/<skill>` in that flavor and from `skills/<skill>`
+ * from `classic/skills/<skill>` in that flavor and from `skills/<skill>`
  * everywhere else. So a link into it from another skill must land in BOTH
  * trees: the default package reads one, the pinning flavor the other.
  *
@@ -31,10 +31,10 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = process.argv[2]
     ? path.resolve(process.argv[2])
     : path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const ROOTS = ["skills", "skill-flavors", "legacy/skills"];
-const LEGACY_SKILLS = path.join(REPO_ROOT, "legacy", "skills");
+const ROOTS = ["skills", "skill-flavors", "classic/skills"];
+const CLASSIC_SKILLS = path.join(REPO_ROOT, "classic", "skills");
 
-/** flavor name -> set of skills that flavor composes from `legacy/skills/`. */
+/** flavor name -> set of skills that flavor composes from `classic/skills/`. */
 async function readPins() {
     const pins = new Map();
     const flavorsRoot = path.join(REPO_ROOT, "skill-flavors");
@@ -57,7 +57,7 @@ async function readPins() {
             if (!skill.isDirectory()) continue;
             const pin = path.join(flavorsRoot, flavor.name, skill.name, ".canonical");
             try {
-                if ((await readFile(pin, "utf8")).trim() === "legacy") pinned.add(skill.name);
+                if ((await readFile(pin, "utf8")).trim() === "classic") pinned.add(skill.name);
             } catch {
                 // no pin
             }
@@ -161,7 +161,7 @@ function proseLines(text) {
 }
 
 /**
- * Where a link from `fromFile` should resolve. A flavor or legacy file mirrors
+ * Where a link from `fromFile` should resolve. A flavor or classic file mirrors
  * a canonical path, so it resolves as if it sat in `skills/`.
  */
 function resolveBaseDir(fromFile) {
@@ -170,7 +170,7 @@ function resolveBaseDir(fromFile) {
     if (parts[0] === "skill-flavors" && parts.length > 2) {
         return path.dirname(path.join(REPO_ROOT, "skills", ...parts.slice(2)));
     }
-    if (parts[0] === "legacy" && parts[1] === "skills" && parts.length > 3) {
+    if (parts[0] === "classic" && parts[1] === "skills" && parts.length > 3) {
         return path.dirname(path.join(REPO_ROOT, "skills", ...parts.slice(2)));
     }
     return path.dirname(fromFile);
@@ -181,7 +181,7 @@ function composedSkill(fromFile) {
     const parts = path.relative(REPO_ROOT, fromFile).split(path.sep);
     if (parts[0] === "skills") return parts[1] ?? null;
     if (parts[0] === "skill-flavors") return parts[2] ?? null;
-    if (parts[0] === "legacy" && parts[1] === "skills") return parts[2] ?? null;
+    if (parts[0] === "classic" && parts[1] === "skills") return parts[2] ?? null;
     return null;
 }
 
@@ -197,11 +197,11 @@ function physicalTargets(fromFile, logical) {
         return [[logical, null]];
     }
     const target = parts[1];
-    const legacy = path.join(LEGACY_SKILLS, ...parts.slice(1));
+    const classic = path.join(CLASSIC_SKILLS, ...parts.slice(1));
     const fromParts = path.relative(REPO_ROOT, fromFile).split(path.sep);
-    if (fromParts[0] === "legacy") return [[legacy, null]];
+    if (fromParts[0] === "classic") return [[classic, null]];
     if (fromParts[0] === "skill-flavors") {
-        return PINS.get(fromParts[1])?.has(target) ? [[legacy, null]] : [[logical, null]];
+        return PINS.get(fromParts[1])?.has(target) ? [[classic, null]] : [[logical, null]];
     }
     // Canonical: the skill's own links stay in its own tree; a link from any
     // other skill is composed next to both generations.
@@ -209,7 +209,7 @@ function physicalTargets(fromFile, logical) {
     const flavors = [...PINS].filter(([, set]) => set.has(target)).map(([name]) => name);
     return [
         [logical, "default package"],
-        [legacy, `legacy tree the ${flavors.join(", ")} flavor(s) compose`],
+        [classic, `classic tree the ${flavors.join(", ")} flavor(s) compose`],
     ];
 }
 

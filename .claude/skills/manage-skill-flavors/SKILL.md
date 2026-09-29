@@ -108,9 +108,9 @@ The one case today: the builder-SDK `uipath-maestro-flow` authors through
 `uip maestro flow compile`, which starts the SDK as a separate process, and the
 Studio Web browser bundle cannot start processes.
 
-- Keep the previous tree at `legacy/skills/<skill>/` (same layout as `skills/`, no symlinks). It is not in the root npm package or any plugin catalog.
-- Add `skill-flavors/<flavor>/<skill>/.canonical` containing exactly `legacy`. That flavor then composes `<skill>` from the legacy tree, and its overrides for that skill target legacy paths and markers.
-- A pin may only swap the source of a skill `skills/` already ships. `npm run skills:validate` fails on a pin to an unknown skill, a pin to a missing legacy tree, and a `legacy/skills/<skill>` that no flavor pins. Delete the legacy tree when its last pin goes.
+- Keep the previous tree at `classic/skills/<skill>/` (same layout as `skills/`, no symlinks). It is not in the root npm package or any plugin catalog.
+- Add `skill-flavors/<flavor>/<skill>/.canonical` containing exactly `classic`. That flavor then composes `<skill>` from the classic tree, and its overrides for that skill target classic paths and markers.
+- A pin may only swap the source of a skill `skills/` already ships. `npm run skills:validate` fails on a pin to an unknown skill, a pin to a missing classic tree, and a `classic/skills/<skill>` that no flavor pins. Delete the classic tree when its last pin goes.
 - A link from another skill into a pinned skill must resolve in both trees (`npm run skills:check-links` checks both). When the two generations share no file, name the skill (`/uipath:<skill>`) instead of linking a path.
 
 ## Preserve Generic Discovery and Package Naming
@@ -198,7 +198,7 @@ another not-yet-bootstrapped flavor.
 
 ## What Not to Do
 
-- Do not copy an entire skill into a flavor to change a few paragraphs. A whole-generation difference goes in `legacy/skills/` with a `.canonical` pin, never in `skill-flavors/`.
+- Do not copy an entire skill into a flavor to change a few paragraphs. A whole-generation difference goes in `classic/skills/` with a `.canonical` pin, never in `skill-flavors/`.
 - Do not introduce JSON tags, fragment manifests, or runtime composition.
 - Do not add one npm build command or generic validation-CI branch per flavor; an explicitly published flavor still needs a reviewed caller of the correct publisher.
 - Do not ship default plugin hooks or manifests in a minimal host package.

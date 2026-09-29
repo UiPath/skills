@@ -9,13 +9,13 @@
  * marker blocks; no allowlist or flavor manifest is used.
  *
  * A flavor may also pin one canonical skill to its retained previous
- * generation: `skill-flavors/<flavor>/<skill>/.canonical` containing `legacy`
- * makes that flavor compose `<skill>` from `legacy/skills/<skill>/` instead of
- * `skills/<skill>/`, with the flavor's overrides applied to the legacy tree.
+ * generation: `skill-flavors/<flavor>/<skill>/.canonical` containing `classic`
+ * makes that flavor compose `<skill>` from `classic/skills/<skill>/` instead of
+ * `skills/<skill>/`, with the flavor's overrides applied to the classic tree.
  * It exists for a host that cannot run the current generation yet (Studio
  * Web cannot spawn the builder SDK that the current Flow skill authors with).
  * A pin only swaps the source of a skill `skills/` already ships, and every
- * `legacy/skills/<skill>` must be pinned by some flavor, so a retained tree is
+ * `classic/skills/<skill>` must be pinned by some flavor, so a retained tree is
  * deleted as soon as its last host moves off it.
  *
  * The no-argument `validate`, `build`, and `pack` commands discover every
@@ -53,9 +53,9 @@ export const REPO_ROOT = path.resolve(
 );
 export const FLAVORS_DIRNAME = "skill-flavors";
 export const DEFAULT_VARIANT = "default";
-export const LEGACY_DIRNAME = "legacy";
+export const CLASSIC_DIRNAME = "classic";
 export const CANONICAL_PIN_FILENAME = ".canonical";
-const CANONICAL_PIN_VALUE = "legacy";
+const CANONICAL_PIN_VALUE = "classic";
 export const PACKAGE_NAME_MAX_LENGTH = 214;
 export const ROOT_PACK_TRANSACTION_DIRNAME = ".root-pack-transaction";
 export const CUSTOM_PACKAGE_PUBLISH_CONFIG = Object.freeze({
@@ -308,32 +308,32 @@ function discoverCanonicalSkills(repoRoot, findings) {
 }
 
 /**
- * Skills with a retained previous generation under `legacy/skills/`. Same
+ * Skills with a retained previous generation under `classic/skills/`. Same
  * shape rules as `skills/`: a directory with a regular `SKILL.md`, no symlinks.
  */
-export function discoverLegacySkills(repoRoot, findings) {
-  const legacyRoot = path.join(repoRoot, LEGACY_DIRNAME, "skills");
-  const rootStats = safeLstat(legacyRoot);
+export function discoverClassicSkills(repoRoot, findings) {
+  const classicRoot = path.join(repoRoot, CLASSIC_DIRNAME, "skills");
+  const rootStats = safeLstat(classicRoot);
   if (!rootStats) return [];
   if (rootStats.isSymbolicLink()) {
-    findings.push(`${legacyRoot}: legacy skills root cannot be a symlink`);
+    findings.push(`${classicRoot}: classic skills root cannot be a symlink`);
     return [];
   }
   if (!rootStats.isDirectory()) return [];
 
   const skills = [];
-  for (const entry of sortedEntries(legacyRoot)) {
-    const skillRoot = path.join(legacyRoot, entry.name);
+  for (const entry of sortedEntries(classicRoot)) {
+    const skillRoot = path.join(classicRoot, entry.name);
     const stats = lstatSync(skillRoot);
     if (stats.isSymbolicLink()) {
-      findings.push(`${skillRoot}: legacy skill trees cannot contain symlinks`);
+      findings.push(`${skillRoot}: classic skill trees cannot contain symlinks`);
       continue;
     }
     if (!stats.isDirectory()) continue;
     const entrypoint = path.join(skillRoot, "SKILL.md");
     const entrypointStats = safeLstat(entrypoint);
     if (!entrypointStats?.isFile() || entrypointStats.isSymbolicLink()) {
-      findings.push(`${skillRoot}: legacy skill tree needs a regular SKILL.md`);
+      findings.push(`${skillRoot}: classic skill tree needs a regular SKILL.md`);
       continue;
     }
     skills.push(entry.name);
@@ -342,13 +342,13 @@ export function discoverLegacySkills(repoRoot, findings) {
 }
 
 /**
- * The `<skill>/.canonical` pins in one flavor, as skill -> legacy tree root.
- * A pin names a skill `skills/` ships and a `legacy/skills/<skill>` that
+ * The `<skill>/.canonical` pins in one flavor, as skill -> classic tree root.
+ * A pin names a skill `skills/` ships and a `classic/skills/<skill>` that
  * exists; anything else is a finding, never a silent fallback to canonical.
  */
 function readCanonicalPins(repoRoot, flavorRoot, skills, findings) {
   const pins = new Map();
-  const legacySkills = new Set(discoverLegacySkills(repoRoot, findings));
+  const classicSkills = new Set(discoverClassicSkills(repoRoot, findings));
   for (const entry of sortedEntries(flavorRoot)) {
     // A stray root file is reported by the override walk; pins live in skill dirs.
     if (!entry.isDirectory()) continue;
@@ -371,11 +371,11 @@ function readCanonicalPins(repoRoot, flavorRoot, skills, findings) {
       findings.push(`${pinPath}: pins unknown canonical skill ${quote(entry.name)}; a pin only swaps the source of a skill skills/ ships`);
       continue;
     }
-    if (!legacySkills.has(entry.name)) {
-      findings.push(`${pinPath}: pinned tree does not exist: ${LEGACY_DIRNAME}/skills/${entry.name}/SKILL.md`);
+    if (!classicSkills.has(entry.name)) {
+      findings.push(`${pinPath}: pinned tree does not exist: ${CLASSIC_DIRNAME}/skills/${entry.name}/SKILL.md`);
       continue;
     }
-    pins.set(entry.name, path.join(repoRoot, LEGACY_DIRNAME, "skills", entry.name));
+    pins.set(entry.name, path.join(repoRoot, CLASSIC_DIRNAME, "skills", entry.name));
   }
   return pins;
 }
@@ -626,10 +626,10 @@ export function createAllVariants(repoRoot = REPO_ROOT) {
   }
   if (!findings.length) {
     const pinned = new Set(variants.flatMap(({ plan }) => plan.pinnedSkills));
-    for (const skill of discoverLegacySkills(repoRoot, findings)) {
+    for (const skill of discoverClassicSkills(repoRoot, findings)) {
       if (pinned.has(skill)) continue;
       findings.push(
-        `${path.join(repoRoot, LEGACY_DIRNAME, "skills", skill)}: no flavor pins this retained tree; ` +
+        `${path.join(repoRoot, CLASSIC_DIRNAME, "skills", skill)}: no flavor pins this retained tree; ` +
           `delete it, or pin it with ${FLAVORS_DIRNAME}/<flavor>/${skill}/${CANONICAL_PIN_FILENAME}`,
       );
     }

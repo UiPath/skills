@@ -102,18 +102,18 @@ test("a malformed % escape is reported as a broken link", () => {
   }
 });
 
-// A pinned skill is composed from legacy/skills in the pinning flavor and from
+// A pinned skill is composed from classic/skills in the pinning flavor and from
 // skills/ everywhere else, so a link into it from another skill must land in both.
 const PINNED = {
-  "skill-flavors/sw/uipath-flow/.canonical": "legacy\n",
+  "skill-flavors/sw/uipath-flow/.canonical": "classic\n",
   "skill-flavors/sw/uipath-flow/SKILL.md": "<!--skill-flavor:x:start-->\n[r](references/old.md)\n<!--skill-flavor:x:end-->\n",
   "skills/uipath-flow/SKILL.md": "# Flow\n\n[r](references/new.md)\n",
   "skills/uipath-flow/references/new.md": "# New\n",
-  "legacy/skills/uipath-flow/SKILL.md": "# Flow v1\n\n[r](references/old.md)\n",
-  "legacy/skills/uipath-flow/references/old.md": "# Old\n",
+  "classic/skills/uipath-flow/SKILL.md": "# Flow v1\n\n[r](references/old.md)\n",
+  "classic/skills/uipath-flow/references/old.md": "# Old\n",
 };
 
-test("pinned-skill flavor and legacy links resolve against the legacy tree", () => {
+test("pinned-skill flavor and classic links resolve against the classic tree", () => {
   const { status, out } = run(PINNED);
   assert.equal(status, 0, out);
 });
@@ -121,12 +121,12 @@ test("pinned-skill flavor and legacy links resolve against the legacy tree", () 
 test("a cross-skill link into a pinned skill must resolve in both generations", () => {
   const onlyNew = run({ ...PINNED, "skills/uipath-other/SKILL.md": "[x](../uipath-flow/references/new.md)\n" });
   assert.equal(onlyNew.status, 1);
-  assert.match(onlyNew.out, /no such file in the legacy tree the sw flavor\(s\) compose/);
+  assert.match(onlyNew.out, /no such file in the classic tree the sw flavor\(s\) compose/);
 
   const both = run({
     ...PINNED,
     "skills/uipath-flow/references/shared.md": "# S\n",
-    "legacy/skills/uipath-flow/references/shared.md": "# S\n",
+    "classic/skills/uipath-flow/references/shared.md": "# S\n",
     "skills/uipath-other/SKILL.md": "[x](../uipath-flow/references/shared.md)\n",
   });
   assert.equal(both.status, 0, both.out);
