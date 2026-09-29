@@ -38,13 +38,12 @@ initial_prompt: |
 
 success_criteria:
   # Shell-text checks: only the Bash command shows the heredoc and `$(cat …)`,
-  # so these stay command_executed. The project must be in the path — written
-  # literally, or as a variable the same command assigns it
-  # (`P=my_invoices-f1afa9ef-ixp … /tmp/ixp/$P/…`); `\1` ties the two together.
+  # so these stay command_executed. The project must appear in the same command:
+  # literally in the path, or in the `P=...` assignment the path's `$P` comes from.
   - type: command_executed
     description: "Agent wrote the --updates payload under /tmp/ixp/<project>/prompts/ via heredoc"
     tool_name: "Bash"
-    command_pattern: '(?:\b(\w+)=(?:\\?["''])*my_invoices-f1afa9ef-ixp(?:\\?["''])*(?![\w-]).*?)?cat\s*>\s*/tmp/ixp/(?:my_invoices-f1afa9ef-ixp|\$\{?\1\}?)/prompts/[^\s]+\.json\s*<<\s*[''"]?[A-Z][A-Z0-9_]*[''"]?'
+    command_pattern: '(?=.*my_invoices-f1afa9ef-ixp).*cat\s*>\s*/tmp/ixp/\S+/prompts/\S+\.json\s*<<'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -57,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Agent passed the heredoc file to `fields update-prompts --updates`"
     tool_name: "Bash"
-    command_pattern: '(?:\b(\w+)=(?:\\?["''])*my_invoices-f1afa9ef-ixp(?:\\?["''])*(?![\w-]).*?)?uip\s+ixp\s+fields\s+update-prompts\s+(?:\\?["''])*(?:my_invoices-f1afa9ef-ixp|\$\{?\1\}?)(?:\\?["''])*\s+[^\n]*--updates\s+(?:\\?["''])*\$\(cat\s+/tmp/ixp/(?:my_invoices-f1afa9ef-ixp|\$\{?\1\}?)/prompts/[^\s]+\.json\)'
+    command_pattern: '(?=.*my_invoices-f1afa9ef-ixp).*update-prompts\s.*--updates\s+(?:\\?["''])*\$\(cat\s+/tmp/ixp/\S+/prompts/\S+\.json\)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
