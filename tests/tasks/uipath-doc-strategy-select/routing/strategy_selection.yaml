@@ -57,7 +57,7 @@ description: >
     fails loudly with an explicit message rather than grading against a literal
     template — see its --expected guard.
 
-tags: [uipath-doc-mode-select, integration, mode:build, lifecycle:discover]
+tags: [uipath-doc-strategy-select, integration, mode:build, lifecycle:discover]
 
 dataset:
   paths: ["strategy_selection.jsonl"]
@@ -85,9 +85,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-doc-mode-select skill"
-    expected_skill: "uipath-doc-mode-select"
-    skill_name: "uipath-doc-mode-select"
+    description: "Agent invoked the uipath-doc-strategy-select skill"
+    expected_skill: "uipath-doc-strategy-select"
+    skill_name: "uipath-doc-strategy-select"
     weight: 1.0
     suite_thresholds: {recall.yes: 0.90}
 

@@ -1,5 +1,5 @@
 ---
-name: uipath-doc-mode-select
+name: uipath-doc-strategy-select
 description: "UiPath file handling strategy selection — choose Extract vs Classify & Split vs Summarize vs Analyze files vs batch transform vs persistent-index search (semantic default, or an agentic multi-step search loop), and standard vs advanced autonomous-agent harness, before any node is authored. Matches a workload's output contract, corpus lifetime, evidence scope and review needs to the cheapest strategy that meets them, then hands off. For authoring or wiring the chosen node in a `.flow`→uipath-maestro-flow. For IXP project/taxonomy/model work→uipath-ixp. For building the agent, its context resource, or an agentic-search loop→uipath-agents. For which UiPath product to use at all, or PDD/SDD work→uipath-planner. For the context-grounding index CLI (`uip context-grounding`)→uipath-platform."
 ---
 

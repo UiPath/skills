@@ -4,7 +4,7 @@ description: >
   then actually be built and validated as a Flow. Grades the artifact — the
   .flow must carry the Summarize node type and must NOT carry an extraction
   node — so a correct strategy label with the wrong node still fails.
-tags: [uipath-doc-mode-select, e2e, mode:build, lifecycle:generate]
+tags: [uipath-doc-strategy-select, e2e, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 30
@@ -32,9 +32,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-doc-mode-select skill"
-    expected_skill: "uipath-doc-mode-select"
-    skill_name: "uipath-doc-mode-select"
+    description: "Agent invoked the uipath-doc-strategy-select skill"
+    expected_skill: "uipath-doc-strategy-select"
+    skill_name: "uipath-doc-strategy-select"
     weight: 1.5
     pass_threshold: 1.0
 

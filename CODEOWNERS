@@ -231,5 +231,5 @@
 /tests/tasks/uipath-aops/ @AndreiRR24 @UiPath/xworks
 
 # Document-processing mode selection (Extract / Classify & Split / Summarize / search mode / harness)
-/skills/uipath-doc-mode-select/ @SummerWangUiPath
-/tests/tasks/uipath-doc-mode-select/ @SummerWangUiPath
+/skills/uipath-doc-strategy-select/ @SummerWangUiPath
+/tests/tasks/uipath-doc-strategy-select/ @SummerWangUiPath

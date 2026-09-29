@@ -5,7 +5,7 @@ description: >
   completeness boundary the skill teaches. Verifies the skill fires and that
   its routing contract — strategy, decisive signal, case ID, boundary — is applied,
   rather than a bare strategy label.
-tags: [uipath-doc-mode-select, smoke, mode:build, lifecycle:discover]
+tags: [uipath-doc-strategy-select, smoke, mode:build, lifecycle:discover]
 
 run_limits:
   expected_turns: 5
@@ -26,9 +26,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent invoked the uipath-doc-mode-select skill"
-    expected_skill: "uipath-doc-mode-select"
-    skill_name: "uipath-doc-mode-select"
+    description: "Agent invoked the uipath-doc-strategy-select skill"
+    expected_skill: "uipath-doc-strategy-select"
+    skill_name: "uipath-doc-strategy-select"
     weight: 1.5
     pass_threshold: 1.0
 
