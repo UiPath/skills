@@ -56,6 +56,7 @@ There are no selectors and no URLs. Turn rows into steps by intent:
 - **Group** consecutive rows by app and window into screens. `Application` and `Title` can be empty or stale (on macOS `Title` is often empty, and `Application` can keep the previous app after a Dock switch); the screenshot's menu bar or title bar wins.
 - **Merge** the rows of one intent: click a field, type, press `Return` or `Tab` = "Enter `<value>` in <field>". A click on the Dock, taskbar or Start menu opens or switches to that app.
 - **Copy, cut and paste** (`C`, `X`, `V` with `Cmd`/`Ctrl`) are data flow: find what was copied (the screenshot at the copy row shows the selection) and where it was pasted. A copy of something the task typed earlier carries that same value.
+- **Say how a target was chosen** when its content chose it (the next empty row, the newest mail, the row matching a typed value): give the rule and the recorded instance, e.g. "next empty row (row 6 here)".
 - **`Type` with `Text: null`:** read the value from the next screenshot or a frame. For a password or other secure field, never guess or show the value; mark it secure.
 - **Leave out** noise and detours (a dialog opened then cancelled, a mis-click, a stray scroll, the same key logged twice a few hundred ms apart), and list them under **Left out**.
 
