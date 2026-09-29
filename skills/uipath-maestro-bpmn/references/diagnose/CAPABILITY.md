@@ -22,8 +22,7 @@ deployed BPMN asset correlation, element executions, cursors, generated package 
 - Map runtime failures back to BPMN source and generated package metadata.
 - Identify failures caused by unresolved Integration Service enrichment, bad bindings, missing diagrams, invalid mappings,
   or stale package files.
-- Decide whether the safe next action is retry, cancel, migrate, cursor movement, re-authoring, package regeneration,
-  or cloud configuration repair.
+- Name who owns the repair and the read-only check to run before any Operate follow-up.
 
 ## Critical rules
 

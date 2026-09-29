@@ -15,7 +15,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 - **Inspect an input ONCE.** To learn a file's structure (sheets/columns, pages, form fields, keys), dump it once — ideally to a file you then grep — never re-open the same file field-by-field or retry it with several libraries. A source image is the exception: look at it again whenever it is no longer visible in your context (see [Authoring from an image](#authoring-from-an-image)).
 - **Don't repeat work.** Do not rerun a command when its inputs and relevant state are unchanged, and do not reread an unchanged file, script, or SKILL.md already in context. After a tool or command may modify a file, reread the affected content before relying on it.
 - **Write code once and reuse.** If a step needs code, write it once as a small script (paths/params as CLI args) and call it; don't paste near-duplicate inline python across turns. Keep it terse — no comment banners or narration in inline scripts.
-- **Keep outputs small.** Don't put large tool results and outputs into the context, instead write them into a file and use tools to inspect them. If there is no tool available, you should write your own scripts to inspect the file.
+- **Keep outputs small.** Don't put large tool results and outputs into the context, instead write them into a file and use tools to inspect them. If there is no tool available, you should write your own scripts to inspect the file. To decide whether a row exists, filter CLI JSON by field (`jq select`), never truncate it (`head`, `sed -n`).
 - **Don't do anything unnecessary.** Don't call tools, read files, or put results into context unless they're immediately needed.
 
 # UiPath Maestro BPMN
@@ -103,9 +103,9 @@ building.
 Every guide's shape table marks each node **Entry** (omit when inserting into a
 process that already runs), **Mechanism** (changing it changes the pattern), or
 **Placeholder** (bind it, or skip it if the process already does this). Author
-the element the table names. A **Placeholder** whose target is still undecided
-is that element with its registry payload and the identity slots left as
-public placeholders, never a bare `bpmn:task` standing in for the work.
+the element the table names. A **Placeholder** whose target step 1 did not
+resolve is that element with its registry payload and the identity slots left
+as public placeholders, never a bare `bpmn:task` standing in for the work.
 
 | Pattern | Reach for it when | Guide |
 | --- | --- | --- |
@@ -186,7 +186,16 @@ For registry-evidence-only tasks, follow the command-first recipe in
    session — do not re-pull), then `list` / `search` to map intent to extension
    types; `uip is connections list --all-folders` for live connections (always
    `--all-folders` — a folder-scoped list silently misses connections). Never
-   fabricate an identifier; ask only under Rule 4, otherwise decide.
+   fabricate an identifier; ask only under Rule 4, otherwise decide. Bind each
+   connector node to an `Enabled` connection for its connector: the one in the
+   folder the task names, else `IsDefault` `Yes`, else the first. Confirm it
+   with `uip is connections ping <id> --output json` (`Data.Status` must be
+   `Enabled`; the list's `State` is cached) and fall to the next candidate when
+   it is not. Another owner is no reason to skip it; name each bound
+   connection's Name, Owner, and Folder (never its Id) as a Rule 4 assumption.
+   Use placeholders only when the user asked for a draft, a handoff, or
+   placeholder, synthetic, public-safe, or sanitized values, or when no
+   candidate pings `Enabled`.
    See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
    each chosen registry-owned node only. Fetch every chosen template in **one**
@@ -227,7 +236,21 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `--skip-solution-registration` so no `*Solution/` wrapper or `.uipx` is
    created. `init` takes a project name, not a path, and writes under the
    current directory: `./<ProjectName>/` with that flag or inside an existing
-   solution, `./<ProjectName>Solution/<ProjectName>/` otherwise. To land a
+   solution, `./<ProjectName>Solution/<ProjectName>/` otherwise.
+<!--skill-flavor:named-solution-init:start-->
+   When the user names a solution ("a solution of the same name" is
+   `<ProjectName>`, not `<ProjectName>Solution`), create it and run `init`
+   from inside it:
+
+   ```bash
+   uip solution init <SolutionName> --output json
+   cd <SolutionName> && uip maestro bpmn init <ProjectName> --output json
+   ```
+
+   A `Data.AutoCreatedSolution` in the response means `init` ran outside the
+   solution: re-run it from inside and report the stray directory.
+<!--skill-flavor:named-solution-init:end-->
+   To land a
    project at a path the user named, `mkdir -p` its parent and run `init` there
    with the leaf as the name — and either pass `--skip-solution-registration`
    or make that parent a solution first, because default `init` inserts a
@@ -259,8 +282,8 @@ For registry-evidence-only tasks, follow the command-first recipe in
    by the HITL template's `<uipath:output ... var="...">` (for example
    `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
    variable.
-   For an Integration Service draft or boundary handoff (author locally, hand
-   enrichment to the CLI, no pack/upload/operate asked for), emit **only** the
+   For an Integration Service draft or boundary handoff the user asked for (a
+   request that only says to validate is not one), emit **only** the
    `.bpmn` plus the notes file — do NOT create the four generated package files
    (Rule 16); authoring them fails the boundary the task tests. The node itself
    is still authored: paste the registry's `Intsvc.*` template and keep the
@@ -346,12 +369,16 @@ For registry-evidence-only tasks, follow the command-first recipe in
    pair below. `read but never assigned` is a defect no error covers: nothing
    writes a value the process reads, so a step that should produce it does not.
    `MISSING_RESOURCE` (warning) and `MISSING_BINDING` (error) are one finding
-   about one unresolved node, and the binding half is a live tenant lookup. In a
-   runnable deliverable, bind the node to a deployed resource. When the user
-   asked for a placeholder, draft, or boundary handoff, no invented identifier
-   can clear `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
+   about one unresolved node, and the binding half is a live tenant lookup.
+   Bind the node to a deployed resource. When the user asked for a
+   placeholder, draft, or boundary handoff, or step 1 found no `Enabled`
+   candidate, no invented identifier can clear
+   `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
    expected result. Report the pair once and continue; `refresh` (step 6)
-   succeeds with it unresolved.
+   succeeds with it unresolved. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
+   it names a reference with no declaration. A `VARIABLE_NOT_SET` warning on
+   the node reading a start-event-scoped caller input is expected; see
+   [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
 
    `[warning] [(xml)] unknown attribute <type>` is expected noise from the
    script-task template's `<uipath:inputSchema type="jsonSchema">`. Leave it.
@@ -369,7 +396,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)). See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
-6. **Refresh derived metadata when package-ready output is required.** Once
+6. **Refresh derived metadata.** Once
    step 5 leaves no fixable error, regenerate the four CLI-owned package files:
 
    ```bash
@@ -378,8 +405,9 @@ For registry-evidence-only tasks, follow the command-first recipe in
 
    Treat a nonzero result as a source/precondition failure: fix the BPMN or
    `project.uiproj`, re-run steps 4 and 5, and refresh again — never repair the generated
-   JSON by hand. Refresh is needed only for a package-ready, upload, debug,
-   publish, or deploy deliverable, not for a source-only draft. For the full
+   JSON by hand. Refresh after binding a connection (step 1) and for a
+   package-ready, upload, debug, publish, or deploy deliverable; a source-only
+   draft needs it only for step 3's start-event edits. For the full
    contract (scope, idempotency, binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
@@ -435,7 +463,10 @@ and honestly surfaced to the user as gaps when asked.
    metadata only from the structural/canvas contract. Never invent either from
    prose.
 2. **Never fabricate an identifier.** Connection IDs, process/queue/connector
-   keys, app IDs, folder ids/paths come from discovery or the user.
+   keys, app IDs, folder ids/paths come from discovery or the user. A connector
+   field whose `describe` entry carries `Reference` takes the `LookupValue` a
+   live lookup returned, never the name the user wrote. See
+   [references/registry-workflow.md](references/registry-workflow.md#a-reference-entry-takes-a-looked-up-value-never-the-display-name).
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
    contract in [references/structural-bpmn.md](references/structural-bpmn.md);
    flag honestly what the registry does not expose.
@@ -475,6 +506,10 @@ and honestly surfaced to the user as gaps when asked.
 8. **Use `--output json` for parsed CLI calls.**
 9. **Public-safe always.** No customer XML, tenant URLs, real IDs, or private
    names — see [references/public-safety.md](references/public-safety.md).
+   Exception: in the user's local project (the `.bpmn` and the CLI-generated
+   `bindings_v2.json`), a connection binding and its folder key take the real
+   IDs step 1 bound (step 1 names when placeholders apply). Notes, and examples
+   or fixtures added to this skills repository, stay sanitized.
 10. **Confirm before any cloud change.** Upload, publish, deploy, run, pause,
    resume, cancel, retry, and migrate require explicit user consent; validate
    locally first.
@@ -504,8 +539,55 @@ and honestly surfaced to the user as gaps when asked.
    `bindings_v2.json`, `entry-points.json`, `operate.json`, or
    `package-descriptor.json`. Run `uip maestro bpmn refresh <project-path>` to
    generate them — never the deprecated `update-metadata`. An
-   Integration Service draft or boundary handoff asks for none of those — emit
+   Integration Service draft or boundary handoff the user asked for (step 3)
+   asks for none of those — emit
    only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers.
+17. **Incorporating a resource delegated to a sibling skill (RPA workflow, API
+   workflow, agent) is a five-step sequence, in this order. Stopping after
+   the owning skill hands the resource back is not done.**
+<!--skill-flavor:delegated-resource-solution-first:start-->
+   (1) Create or open the solution **first** (`uip solution init`; on
+   `unknown command`, the older `uip solution new`), and
+   author the resource's project **inside** it, so it registers in the
+   `.uipx`: run the resource's `init` and `uip maestro bpmn init` from the
+   directory holding the `.uipx`, as in **Assemble**. A project created
+   outside any solution has no path to deployment.
+<!--skill-flavor:delegated-resource-solution-first:end-->
+<!--skill-flavor:delegated-resource-author-deploy:start-->
+   (2) Delegate authoring to the resource's owning skill (e.g.
+   `uipath-api-workflow`, `uipath-rpa`) with an explicit argument contract:
+   declared inputs and outputs, not an unauthored scaffold. (3) Deploy the
+   resource (pack, publish, `solution deploy run`) **before** binding it into
+   the BPMN node; its release key and folder key exist only once deployed.
+   To redeploy, follow `uipath-solution`'s upgrade path.
+<!--skill-flavor:delegated-resource-author-deploy:end-->
+   (4) Pick the wrapper by `ProcessType`, read from
+   `uip or processes list --folder-path <path> --all-fields --output json`
+   ([registry-workflow.md](references/registry-workflow.md#agent-wrapper-selection--pick-by-processtype-not-the-label));
+   a low-code agent uses `Orchestrator.StartAgentJob`, whose template (rule
+   6) binds `name` and `folderPath`, not rule 18. For a rule-18 wrapper, read
+   the same response's `Key` and `FolderKey` (PascalCase, like the default
+   list; the default list without `--all-fields` omits `ProcessType`) and
+   bind per rule 18, never a fabricated or placeholder key. Re-read both
+   after every deploy: `deploy run` creates a new folder, so a literal
+   `folderKey` from an earlier deploy points at the old one. (5) Unless the task forbids
+   live runs or asks for a draft or handoff, run the process
+   (`uip maestro bpmn debug`) and read the node's output in
+   `debug-instance variables-all`. Map `=result.<key>` to the key that output
+   used; a scalar can surface under a generic key instead of the schema
+   property name. Without a run, use the schema name and report the mapping
+   as unverified.
+18. **Job-wrapper registry templates (`Orchestrator.StartJob`,
+   `ExecuteApiWorkflowAsync`, `BusinessRules`, `StartAgenticProcess[Async]`,
+   `StartCaseMgmtProcess[Async]`) serve an unresolved `releaseKey` that
+   validates but faults at runtime. This is the one exception to rule 6's
+   paste-literally.** For all of them, bind `releaseKey` via
+   `=bindings.<id>` to the resource's `Key`. For `ExecuteApiWorkflowAsync`
+   only, also add a literal `folderKey` with the folder's `FolderKey` and
+   drop `folderId`, `folderPath`, and `name`. For the others, keep the
+   template's remaining fields and make that swap only after a live run
+   faults with `key:FolderKey`; without a run, report the node unverified. Details:
+   [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
 
 ## References
 

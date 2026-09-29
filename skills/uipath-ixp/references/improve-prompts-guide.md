@@ -19,14 +19,13 @@ Before starting, understand the limits of prompt iteration:
 
 ## How prompt updates work
 
-Prompts live at two levels and are edited by two separate commands:
+Prompts live at three levels and are edited by three separate commands:
 
-- **`uip ixp fields update-prompts <project> --updates <json>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field group name + field name and fails if either combination is not found.
+- **`uip ixp projects update-prompt <project> --prompt "<text>"`** — the project's **Overall extraction instructions**, seen on every extraction for every field.
 - **`uip ixp groups update-prompts <project> --updates <json>`** — field group (label_def) instructions (e.g., "Invoice", "Line Items"). Match by label_def name.
+- **`uip ixp fields update-prompts <project> --updates <json>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field group name + field name and fails if either combination is not found.
 
-Each command matches by its supplied identity and updates only the named entries, preserving every definition you didn't change. Field updates are identified by group name plus field name; group updates are identified by group name. To update both field and group instructions in the same iteration, run the two commands back-to-back.
-
-**Aligning group and field instructions.** Each label_def (e.g., "Invoice") has its OWN `instructions` field that the model sees alongside per-field instructions. If the group instruction says "Extract only fields visible on the first page" but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `groups update-prompts` if it contradicts.
+`groups update-prompts` and `fields update-prompts` match by their supplied identity and update only the named entries, preserving every definition you didn't change. `projects update-prompt` overwrites the entire project prompt, so always submit the full text. To update more than one level in the same iteration, run the commands back-to-back.
 
 ## Before Starting
 
@@ -34,7 +33,7 @@ The user may specify a max number of iterations (default: 3). Track:
 
 - **Baseline metrics** — the `get-metrics` output before any changes, and its `ModelVersion` — a trained version's metrics can be re-read at any time with `--model-version <N>`, so keeping the version number is enough to recover anything. The values that drive the loop are mapped in [What `get-metrics` returns](#what-get-metrics-returns-and-which-values-decide); the rest is reported once or ignored.
 - **Previous iteration metrics** — the same, for the last successful iteration's version
-- **Previous instructions** — the per-field (field) instructions from the last successful iteration (for rollback)
+- **Previous instructions** — from the last successful iteration: the per-field instructions, the group instructions, and the project prompt (for rollback)
 
 Do NOT re-read the taxonomy or sample documents between iterations — use what you already have. Only re-read metrics after each instruction update + retrain cycle. This assumes no one modifies the taxonomy or documents externally during the loop. If the user mentions changes were made in the web UI, re-fetch the taxonomy and document list before continuing.
 
@@ -85,7 +84,7 @@ uip ixp projects get-metrics <project-name> --model-version latest --output json
 
 `--model-version latest` is deliberate: the baseline is the latest trained version — the model your instruction edits retrain — not the `live` tag (Critical Rule 20: the version follows the question).
 
-Note the `ModelVersion` from this baseline read — later iterations check that it advances after each `fields update-prompts` / `groups update-prompts` (see step 2e). If the value here looks identical to a known pre-labelling version, the retrain may still be in flight; re-fetch under the bounded wait in [Waiting for retrain](#waiting-for-retrain), then proceed with whatever it returns.
+Note the `ModelVersion` from this baseline read — later iterations check that it advances after each `fields update-prompts` / `groups update-prompts` / `projects update-prompt` (see step 2e). If the value here looks identical to a known pre-labelling version, the retrain may still be in flight; re-fetch under the bounded wait in [Waiting for retrain](#waiting-for-retrain), then proceed with whatever it returns.
 
 Save the full per-field `Fields` array as `baseline_metrics`. This is the starting point you compare against. (For a validated model, get-metrics Data is flat — `Fields`/`FieldGroups`/`ValidatedDocuments` are top-level. An unvalidated model returns `Data: { Metrics: null }` instead — re-fetch under the bounded wait above.)
 
@@ -200,6 +199,8 @@ Focus on **what** to extract and **where** to find it. Do NOT specify format —
 **For fields visible in documents** — include location and a real example from the actual documents.
 **For fields NOT visible** — use a generic instruction with no example: "Extract [what] from this document, as it appears on the page."
 
+**Align with the group and project prompts:** The model sees the project prompt, the parent label_def `instructions`, and the per-field instructions together. If the project or a group prompt says "Extract only values on the first page", but a per-field instruction says "Found in the summary table on page 2", the model gets contradictory signals. When updating field instructions, also update the parent group instruction with `groups update-prompts` and the project prompt with `projects update-prompt` if either contradicts. A project-prompt rule that holds for most fields but not all needs an explicit exception naming the fields it does not apply to.
+
 **Additional rules:**
 
 1. NEVER reference specific page numbers — use section headings or labels
@@ -232,9 +233,12 @@ GROUPS_EOF
 uip ixp groups update-prompts <project-name> \
   --updates "$(cat /tmp/ixp/<project-name>/prompts/group_updates.json)" \
   --output json
+
+# Only if the project prompt needs changing
+uip ixp projects update-prompt <project-name> --prompt "<FULL_PROMPT_TEXT>" --output json
 ```
 
-The second call is optional — skip it if the group instructions don't need changing.
+The group and project calls are optional — skip each one if that level doesn't need changing. Store the full project prompt used for each iteration with that iteration's prompt files. A rollback must resubmit the saved prompt from the previous iteration.
 
 **Post-update verification:** After the update, re-fetch the taxonomy, save it as the next version, and verify that field counts per label_def are unchanged:
 
@@ -288,12 +292,12 @@ Both tags are **final-report lines, not loop actions**: the loop runs on to its 
 - **Regressed fields** (drop > their threshold): roll back ONLY those fields' instructions to the previous iteration's version. Keep the improved instructions for fields that gained or held steady.
 - **Improved/unchanged fields**: keep their new instructions.
 
-**Collateral check (fields you did NOT touch):** per-field checks only cover the fields you edited, but a `groups update-prompts` edit rewrites the parent `label_def` and so moves every field under it.
+**Collateral check (fields you did NOT touch):** per-field checks only cover the fields you edited, but a `groups update-prompts` edit rewrites the parent `label_def` and so moves every field under it, and a `projects update-prompt` edit moves every field in the project.
 
 Do **not** gate this on `ProjectScore`. It is an average over fields — observed to be the unweighted mean of the per-field `F1` values — so it carries nothing the `Fields[]` array does not, and it divides a single field's move by the field count, burying a real regression below its own noise. Diff **every** field against the previous iteration instead, each against **its own** `regression_threshold`:
 
 - An **edited** field regressed beyond its threshold → roll that field back, as above.
-- An **unedited** field regressed beyond its threshold → collateral damage. Report it by name with its delta. Roll it back only when it shares a field group with a `groups update-prompts` edit you made this iteration — that is the one interaction with a mechanical cause. Otherwise **keep the iteration and re-check next round**: two metric reads cannot establish that your edit caused the move, and discarding edits that individually passed destroys work on a guess.
+- An **unedited** field regressed beyond its threshold → collateral damage. Report it by name with its delta. Roll it back only when it shares a field group with a `groups update-prompts` edit you made this iteration, or when you edited the project prompt this iteration (roll back the project prompt) — those are the interactions with a mechanical cause. Otherwise **keep the iteration and re-check next round**: two metric reads cannot establish that your edit caused the move, and discarding edits that individually passed destroys work on a guess.
 
 If any fields regressed, do a selective rollback:
 
