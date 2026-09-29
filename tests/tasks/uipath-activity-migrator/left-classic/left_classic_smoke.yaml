@@ -1,0 +1,133 @@
+task_id: skill-migrator-left-classic
+description: >
+  Smoke, on demand: the agent migrates vendor-portal-sync (Acme.VendorPortalSync:
+  classic UIA in a Windows-framework project, Edge, local page) pinned to
+  UIAutomation 26.10.4. Measured on that version: 7 activities migrate and 6 are
+  left classic (Start Process, Anchor Base with its Find Element anchor and Get
+  Value action, Set Web Attribute, Wait Attribute), none needs attention, and the
+  output builds and runs. Graded on the six classic activities still in the output
+  with no modern replacement added, their six action-required annotations kept, an
+  untouched source, a build the harness runs itself, and a report judge that the
+  left-classic activities appear as a count, not as lines. Skipped in CI: run with
+  -e experiments/smoke-windows.yaml --include-skipped; the report judge needs the
+  checker credentials.
+tags: [uipath-activity-migrator, smoke, mode:build, lifecycle:generate, windows]
+skip: true  # on demand: new first-wave task, not yet part of the CI set
+
+run_limits:
+  expected_turns: 45
+  max_turns: 90
+  task_timeout: 2400
+  turn_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: fixture
+
+initial_prompt: |
+  Migrate the UiPath project in ./vendor-portal-sync with the Activity
+  Migrator, targeting UIAutomation 26.10.4. Do not run the migrated project.
+
+  The `uip` CLI is available and authenticated in this sandbox.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-activity-migrator skill"
+    skill_name: "uipath-activity-migrator"
+    expected_skill: "uipath-activity-migrator"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran analyze with --output-format sarif"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\|).)*--output-format\s+sarif)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran upgrade into a separate output path"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\|).)*--output-path)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Output project.json is a Windows project pinned to UIAutomation 26.10.4"
+    path: "vendor-portal-sync_Upgraded/project.json"
+    patterns:
+      - pattern: '"targetFramework"\s*:\s*"Windows"'
+        must_match: true
+      - pattern: '"UiPath\.UIAutomation\.Activities"\s*:\s*"\[26\.10\.4\]"'
+        must_match: true
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Anti-pattern: "finishing" activities the tool left classic. The tool's output has
+  # exactly these six classic activities and seven modern ones (opening tags only;
+  # property elements such as <uix:NClick.Target> do not match).
+  - type: run_command
+    description: "The six left-classic activities are still classic and no modern replacement was added"
+    command: |-
+      python -c "import re, sys; s = open('vendor-portal-sync_Upgraded/Main.xaml', encoding='utf-8-sig').read(); classic = all(len(re.findall('<ui:' + a + r'\s', s)) == 1 for a in ('StartProcess', 'AnchorBase', 'WaitUiElementAppear', 'GetValue', 'SetWebAttribute', 'WaitAttribute')); modern = len(re.findall(r'<uix:N\w+[\s/>]', s)) == 7; sys.exit(0 if classic and modern and s.count('PostMigration Action Required') == 6 else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Source workflow, project files and page are byte-identical to the fixture"
+    command: |-
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'vendor-portal-sync'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('vendor-portal-sync', f), shallow=False) for f in ('Main.xaml', 'project.json', 'entry-points.json', 'web/vendors.html')) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rpa build exits 0 against the migrated output"
+    command: |-
+      python -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); sys.exit(subprocess.call([uip, 'rpa', 'build', os.path.abspath('vendor-portal-sync_Upgraded'), '--output', 'json'], env=env))"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run or debug the migrated project"
+    command_pattern: 'uip\s+rpa\s+(run|debug)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Report carries the left-classic activities as a count, not as lines"
+    weight: 1.5
+    pass_threshold: 0.7
+    include_dialog: false
+    include_agent_output: true
+    prompt: |
+      Grade only the agent's last [ASSISTANT] message, the migration report. A
+      [RESULT - ...] block after it repeats that message and is harness output.
+
+      Facts: the tool migrated 7 activities and left 6 classic; none needs
+      attention; the build passed. Classic activities left in place still
+      compile and run.
+      Correct report:
+        - A "Migration result: partial" heading (not "failed", not "success")
+          and one counts line with 7 migrated, 6 left classic, 0 need
+          attention, build passed; a "Full list" pointer may follow.
+        - The six left-classic activities appear only as that count: no list
+          of them, no Needs attention block for them, and no modern
+          replacement named for any of them.
+        - No Fixes applied block: nothing was edited.
+        - A short Next steps block.
+      Score 1.0 when every point holds, 0.7 when the shape holds with minor
+      padding, 0.3 when the left-classic activities are listed one by one,
+      presented as failures, or given replacement activities, 0.0 when the
+      message is free prose with no status line.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
