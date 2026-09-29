@@ -71,7 +71,15 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import context_value, elements, fail, has_type, parse_bpmn  # noqa: E402
+from _shared.bpmn_check import (  # noqa: E402
+    BodyShapeError,
+    body_object,
+    context_value,
+    elements,
+    fail,
+    has_type,
+    parse_bpmn,
+)
 
 # Task-like leaf elements only -- NOT root.iter(), which also yields ancestor
 # containers (bpmn:process, bpmn:definitions). Those ancestors' serialized
@@ -130,11 +138,27 @@ def is_managed_http_node(node: ET.Element) -> bool:
     return False
 
 
+def joined_url(node: ET.Element) -> str:
+    """The generic HTTP connector body splits the request URL across ``url``
+    and ``path`` (``https://tasks.googleapis.com`` + ``/tasks/v1/lists``), so
+    host+path evidence only matches once they are joined."""
+    try:
+        body = body_object(node)
+    except BodyShapeError:
+        return ""
+
+    url, path = body.get("url"), body.get("path")
+    if not isinstance(url, str) or not isinstance(path, str) or not path:
+        return ""
+
+    return f"{url.rstrip('/')}/{path.lstrip('/')}"
+
+
 def node_blob(node: ET.Element) -> str:
-    """Whole serialized node, lowercased -- mirrors Flow's
+    """Whole serialized node plus its joined URL, lowercased -- mirrors Flow's
     ``json.dumps(http_nodes, sort_keys=True).lower()`` whole-node blob
     search."""
-    return ET.tostring(node, encoding="unicode").lower()
+    return f"{ET.tostring(node, encoding='unicode')}\n{joined_url(node)}".lower()
 
 
 def require_all(haystack: str, needles: list[str]) -> list[str]:
