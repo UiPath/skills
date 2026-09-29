@@ -2,7 +2,26 @@
 
 Framework-specific knowledge for extracting a genome from UiPath artifacts — the reference implementation of a source guide; the section contract every source guide follows is `CONTRACT.md` in the framework migration pack ([SKILL.md § Source Frameworks](../SKILL.md)). Pipeline: [extraction-guide.md](extraction-guide.md).
 
-Read § Detection through § Component Detection, § Call Graph Rules, § Platform Resources, and § Framework Pitfalls in full. Read a § Signals section only for artifact types present in the inventory.
+Read § Reading the Project through § Component Detection, § Call Graph Rules, § Platform Resources, § Provenance and § Framework Pitfalls in full. Read a § Signals section only for artifact types present in the inventory.
+
+## Reading the Project
+
+A UiPath project is its own raw form. No inventory script renders it: extraction reads the files, and a suspected source defect is verified in one pass — the cited workflow re-read in full with its disabled activities, both directions of its argument bindings and the workflow it invokes ([extraction-guide.md](extraction-guide.md) Step 4b). Read in this order:
+
+1. **Manifest** — `project.json` (fields: § Signals — XAML; test registrations: § Signals — Test projects), or the solution's `.uipx` (§ Detection) and each project's manifest.
+2. **Inventory** with Glob per § Inventory and Exclusions — files per folder and per artifact type, the counts § Provenance names.
+3. **Project activity defaults** in `.settings/` (§ Signals — Project settings), before any workflow: they decide every property a workflow leaves unset.
+4. **Every workflow in full** — `.xaml`, `.cs` with its `.cs.json`. Designer data fills up to half of an older project's XAML. A large corpus may be read through this filter, which drops view state, namespace and assembly lists and layout sizes only, keeping every activity, property, annotation, `IdRef` and `xmlns`:
+
+   ```bash
+   sed -e '/<TextExpression.NamespacesForImplementation>/,/<\/TextExpression.NamespacesForImplementation>/d' \
+       -e '/<TextExpression.ReferencesForImplementation>/,/<\/TextExpression.ReferencesForImplementation>/d' \
+       -e '/<sap:WorkflowViewStateService.ViewState>/,/<\/sap:WorkflowViewStateService.ViewState>/d' \
+       -e '/<sap2010:WorkflowViewState.ViewStateManager>/,/<\/sap2010:WorkflowViewState.ViewStateManager>/d' \
+       -e 's/ sap:VirtualizedContainerService.HintSize="[^"]*"//g' "<XAML_FILE>"
+   ```
+
+5. **Object Repository** by its node files, never its descriptors: every node folder under `.objects/` holds `.type` (`Library`, `App`, `AppVersion`, `Screen`, `Element`) and `.metadata` (JSON: `Name`, `Id`, `Reference`) — application, screen and element names for Target Applications, counts for the Source Map.
 
 ## Detection
 
@@ -10,7 +29,7 @@ Read § Detection through § Component Detection, § Call Graph Rules, § Platfo
 |---|---|
 | `<Name>.uipx` in the root (JSON with `Projects[]`) | UiPath **solution** — multi-component. Process genome. Component list: `Projects[].Type` and `Projects[].ProjectRelativePath`. |
 | Several sibling folders each with `project.json` / `project.uiproj` and no `.uipx` | Loose multi-project bundle — treat as a solution; flag `*[Inferred]*` in Deployment. |
-| Single `project.json` (RPA) or `project.uiproj` (Flow, BPMN, Case, Api, Agent, AppV2) | One **component**. Component genome. |
+| Single `project.json` (RPA) or `project.uiproj` (Flow, BPMN, Case, Api, Agent, AppV2) | One **component**. Component genome — except a test project holding several test-case groups (§ Component Detection). |
 | Only `.xaml` / `.cs` files, no manifest | RPA project with missing metadata — extract, flag name and settings `*[Inferred]*`. |
 | `pyproject.toml` with `langgraph.json` / `llama_index.json` / `openai_agents.json` | Coded Python agent component. |
 | `uipath.json` with a `functions` map | Coded Function component (Python if `pyproject.toml`, JS/TS if `package.json`). |
@@ -34,10 +53,12 @@ Read § Detection through § Component Detection, § Call Graph Rules, § Platfo
 | `uipath.json` `functions` map + `*.py` or `functions/*.ts` | Coded Function | § Signals — Coded Function |
 | `webAppManifest.json`, `action-schema.json`, `src/**/*.ts(x)` | Coded app | § Signals — Coded App |
 | `bindings_v2.json`, `entry-points.json`, `project.json` `dependencies` | Platform resources and interfaces | § Platform Resources |
-| `.objects/**` (Object Repository) | Application, screen, and element **names** only — never selectors | read for Target Applications and Source Map notes |
+| `.objects/**` (Object Repository) | Application, screen, and element **names** only — never selectors | read for Target Applications and Source Map notes (§ Reading the Project) |
+| `.settings/<profile>/settings-*.json` | Project activity defaults | § Signals — Project settings |
+| `.templates/*.xaml`, `designOptions.fileInfoCollection[]` in `project.json` | Test execution template, test-case registrations | § Signals — Test projects |
 | `AGENTS.md`, `README.md`, `.claude/rules/project-context.md` | Author-written intent, known gotchas, run instructions | evidence for Overview and Error Handling; verify every claim against code before use |
 
-Skip entirely: `.local/`, `.codedworkflows/`, `.settings/`, `.tmh/`, `.screenshots/`, `.project/`, `node_modules/`, `dist/`, `source/dist/`, `.venv/`, `__pycache__/`, `resources/solution_folder/`, `userProfile/`, `.git/`, `.app/` (generated trigger XAML), `*.Generated.xaml`.
+Skip entirely: `.local/`, `.codedworkflows/`, `.storage/` (UI Automation's target-image and ancestry caches), `.tmh/`, `.screenshots/`, `.project/`, `node_modules/`, `dist/`, `source/dist/`, `.venv/`, `__pycache__/`, `resources/solution_folder/`, `userProfile/`, `.git/`, `.app/` (generated trigger XAML), `*.Generated.xaml`.
 
 Generated boilerplate, never a source of logic: `CodedWorkflow.cs`, `ConnectionsManager.cs`, `ConnectionsFactory.cs`, `ObjectRepository.cs`, `WorkflowRunnerService.cs`, `Triggers.Generated.xaml`, `AppsRequestTrigger.xaml`.
 
@@ -56,7 +77,7 @@ Generated boilerplate, never a source of logic: `CodedWorkflow.cs`, `Connections
 | `project.uiproj` `ProjectType: "AppV2"` or standalone coded app markers | Coded app (Web or Action per `webAppManifest.json` `config.isActionApp`) | `uipath-coded-apps` | |
 | `element.json` + `element-metadata.json` | Custom connector | `uipath-connector-builder` | |
 
-Test projects (`.uipx` Type `Test`, `[TestCase]`-only `.cs`, `designOptions.outputType: Tests`) are not components. Record in Source Map as "test coverage present"; use their assertions as acceptance-criteria evidence.
+A test project (`.uipx` Type `Test`, `[TestCase]`-only `.cs`, `designOptions.outputType: Tests`) beside the projects it tests is evidence, not a component: record "test coverage present" in the Source Map and use its assertions as acceptance-criteria evidence. When the source holds only test projects, the suite is what the genome documents: its test-case groups are test components, and its execution template with the helpers the cases share is one shared component of the same project ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1; signals: § Signals — Test projects).
 
 ## Signals — XAML
 
@@ -80,7 +101,7 @@ Test projects (`.uipx` Type `Test`, `[TestCase]`-only `.cs`, `designOptions.outp
 | `DelayBefore` / `DelayAfter`, `WaitForReadyArgument`, `EmptyFieldMode` | UIA activity attributes | Timing and field-clearing behaviour → Error Handling wording ("waits for the dialog to settle", "replaces the pre-filled value") — never attribute names | `EmptyFieldMode="SingleLine"` |
 | `SearchSteps="SemanticSelector"` with `SemanticSelectorArgument` | target | Element located by natural-language description, usually because no stable selector exists → Source Map note | |
 
-Skip `<sap2010:WorkflowViewState.ViewStateManager>` and every `sap:VirtualizedContainerService.HintSize` — designer layout, not logic.
+Designer view state and layout sizes are not logic (§ Reading the Project).
 
 ### REFramework projects
 
@@ -115,6 +136,33 @@ A **dispatcher** is recognised the other way round: a plain project (Sequence or
 | Method signature and `.cs.json` `arguments[]` (`name`, `type`, `direction`) | Interface |
 | `BuildClient("Orchestrator")`, `HttpClient` | Orchestrator API or external REST |
 | `Descriptors.<Screen>.<Element>` | UI targets from Object Repository |
+
+## Signals — Project settings
+
+`.settings/<profile>/settings-<hash>.json`, one file per activity package; each key `<package>.<activity or group>.<property>` holds the project's value for that property. An activity that sets the property itself overrides it; every activity that leaves it unset takes it. Profiles: `Release` is the Run scenario (a published or unattended run), `Debug` applies when debugging from Studio, `Design` holds the values Studio writes into an activity or target when it is added — the workflow already carries them. Read `Release`, and `Debug` only where the source's behaviour is described for Studio runs.
+
+| Setting group | Tells you | Genome |
+|---|---|---|
+| Input method per technology (web, Edge, desktop window, Java, SAP) | How each UI step without its own input method acts | The step, or one cross-cutting rule when most steps rely on it |
+| Timeout, delays before and after, wait-for-ready, delay between keys, check-state timeout, hover and highlight time | Waits and budgets of steps that set none | Where they act ([genome-format-guide.md § Configuration Questions](genome-format-guide.md)) |
+| Click before typing, field emptying, typing through the clipboard, post-action verification | How type and click steps behave | The steps they shape |
+| Application scope open, close, attach and resize modes, runtime browser, browser user data folder | How application scopes start and end | The scope steps |
+| Browser dialog handling (dismiss alerts, confirms, prompts; default answers) | What happens to a dialog no step answers | Error Handling, or the step that opens the page |
+| Model per semantic or agent activity, iteration limit, trace settings | Which model and budget each AI step uses | A Configuration Question, since the tenant decides which models exist |
+| Service endpoints and keys (OCR, AI services) | An external service the project calls | Target Applications; the key is a secret, never copied — a Credential asset per [genome-format-guide.md § Platform Dependencies](genome-format-guide.md) |
+
+## Signals — Test projects
+
+`designOptions.outputType: Tests` in `project.json` (`ProjectType: Tests` in `project.uiproj`), or test cases registered in a process project.
+
+| Signal | Where | Tells you |
+|---|---|---|
+| `designOptions.fileInfoCollection[]` entries with `testCaseType: TestCase` — `fileName`, `testCaseId`, `executionTemplatePath`, `executionTemplateInvokeIsolated`, `dataVariationFilePath` | `project.json` | The test cases a test run starts, one entry point each, identified by `testCaseId` (§ Provenance); a file carrying `[TestCase]` with no entry is never started — dead code |
+| Execution template: a workflow holding a placeholder activity, named by the entries' `executionTemplatePath` | `.templates/*.xaml` | Steps each case whose entry names it runs around its own — preparation, finalization, a timeout, a skip — written once in the shared component, never per case; an entry naming no template runs its case bare |
+| A skip or filter deciding by the case's name, folder, machine or Orchestrator folder | the template or a helper it calls | Where each case runs: replay the rule over every registered case and state the outcome per group of cases; the folder then carries behaviour, and a rebuild that moves a case changes where it runs |
+| Verification activities (Verify Expression, Verify Control Attribute, …), `testing.Verify…` calls, xUnit `Assert` in coded cases, a throw under a condition | case bodies, helpers | Checkpoints: what is asserted, the operator and the expected literal |
+| Attach Document, `testing.AttachDocument`, screenshot activities | case bodies, template | Evidence policy ([extraction-guide.md](extraction-guide.md) Step 3) |
+| Data variations | `.variations/` | § Test Data |
 
 ## Signals — Flow
 
@@ -245,11 +293,12 @@ Skip `bpmndi:` diagram elements.
 ## Call Graph Rules
 
 1. Entry point: `project.json` `main` (RPA), `entryPoints[]` for multi-entry processes; `.flow` trigger node with `isDefaultEntryPoint`; BPMN `startEvent`; Case trigger node; `langgraph.json` graph; `Workflow.json` root `do[]`; `uipath.json` `functions`.
-2. Edges inside a component: `<InvokeWorkflowFile FileName>`, `workflows.<Name>()`, `core.subflow`, BPMN `callActivity`, Case sub-stages. Depth-first from entry point; order siblings top-to-bottom (Sequence), left-to-right (Flowchart), by `edges[]` order (Flow), by `sequenceFlow` order (BPMN).
+2. Edges inside a component: `<InvokeWorkflowFile FileName>`, `workflows.<Name>()` (`<Name>` is the workflow's file name without extension, whatever its class is called), `core.subflow`, BPMN `callActivity`, Case sub-stages. Depth-first from entry point; order siblings top-to-bottom (Sequence), left-to-right (Flowchart), by `edges[]` order (Flow), by `sequenceFlow` order (BPMN).
 3. Edges across components (handoffs): Flow resource nodes, BPMN `uipath:type` values that start a job or agent, Case task types `process` / `rpa` / `agent` / `api-workflow` / `action`, agent tools with `type` `process` / `api` / `agent`, `sdk.processes.invoke`, `StartJob` activities, queue producers and consumers sharing a queue name, Action Center task creation and the coded app that renders it.
 4. Missing entry point: `outputType: Library` → each public workflow is an independent capability, listed as separate steps; `Process` without `main` → `Main.xaml` / `Main.cs` by convention, else alphabetical with `*[Inferred]*`.
 5. Unreachable workflows: list in Source Map as dead code; exclude from Workflow.
-6. REFramework / StateMachine: the Workflow's call graph starts at the per-item process workflow and adds the once-per-run and at-the-end workflows as steps of their own (§ Signals — XAML › REFramework projects); the state machine, its transitions and the framework's retry and status workflows are not steps. The queue is a Platform Dependency; the business/system outcome classification and the counts go to the Transactional Shape ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)).
+6. Test project: the execution template invokes every registered case through its placeholder, so its steps are shared steps of every case (§ Signals — Test projects). A workflow belongs to the component whose folder holds it; a call from another component's case is a cross-component edge, never a copy of the callee.
+7. REFramework / StateMachine: the Workflow's call graph starts at the per-item process workflow and adds the once-per-run and at-the-end workflows as steps of their own (§ Signals — XAML › REFramework projects); the state machine, its transitions and the framework's retry and status workflows are not steps. The queue is a Platform Dependency; the business/system outcome classification and the counts go to the Transactional Shape ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)).
 
 ## Expression Translation
 
@@ -263,6 +312,7 @@ Check `project.json` `expressionLanguage` before reading XAML. VisualBasic: `And
 | `bindings.json` (coded agents) | Same mapping |
 | `.flow` top-level `bindings[]` | Processes, agents, API workflows invoked; folders |
 | XAML queue / asset / credential / bucket / StartJob activities; `.cs` `system.` calls | Queues, assets, credentials, buckets, jobs |
+| `project.json` `dependencies` that are libraries (packages published from another automation project, not activity packages); feeds in the project's `NuGet.config` | One row per library: package, version, feed. Steps describe the library workflows they call by behaviour, from their arguments; a library's bodies are read only when its project is given as a related resource |
 | `Data/Config.xlsx` Assets sheet (REFramework) | One Platform Dependencies row per asset name; Credential when the sheet's description or the consuming activity says so, otherwise Text |
 | BPMN `<uipath:context>` inputs (`folderPath`, `releaseKey`, `appId`, `connection`) | Processes, HITL apps, connections |
 | `entry-points.json` | Interface inputs and outputs per component |
@@ -292,9 +342,22 @@ Selectors never enter genome body (inventory rule above holds); they travel only
 
 Variation row holding a password-looking field (`*password*`, `*pwd*`, `*secret*`, `*token*`) is redacted and reported; field is expected to become a credential asset name.
 
+## Provenance
+
+What the Source Map rows of [genome-format-guide.md § Source Map](genome-format-guide.md) carry for a UiPath source:
+
+| Identity of | Carried as |
+|---|---|
+| The source | Project path, `projectId`, `projectVersion`; a solution's `.uipx` `SolutionId` with each project's `projectId`; the repository commit when the project sits in one |
+| A workflow step | The workflow's project-relative path — unique in a project; a solution prefixes the project folder |
+| A test case | Its path plus `testCaseId`; a checkpoint inside it by its activity `IdRef` |
+| Inventory | Workflows per artifact type, test cases, data files and rows, Object Repository applications, screens and elements, accounts |
+
+No inventory script derives a process inventory or a recordset list, so `scripts/genome-step-map.py` does not apply; the check that replaces it is [extraction-guide.md](extraction-guide.md) Step 6b.
+
 ## Framework Pitfalls
 
-1. `sap2010:WorkflowViewState` and `HintSize` attributes look like content and are layout only.
+1. Designer view state and `HintSize` attributes look like content and are layout only (§ Reading the Project).
 2. `xmlns` declarations are package imports, not steps. Many are declared and unused.
 3. Flow resource-node instances carry no `model`; the resource is in `definitions[]` and `bindings[]`.
 4. BPMN `uipath:type` decides what a task does; the BPMN element name (`serviceTask`) is only a hint.
@@ -303,6 +366,6 @@ Variation row holding a password-looking field (`*password*`, `*pwd*`, `*secret*
 7. `bindings.json` and `bindings_v2.json` are different files with different consumers; a coded agent may have both.
 8. `.app/` and `*.Generated.xaml` are generated trigger plumbing for apps and Action Center — skip.
 9. `resources/solution_folder/**` mirrors the manifest and is regenerated; read `.uipx` instead.
-10. A `[TestCase]` `.cs` file or `Test` project is evidence, not a component.
+10. A `[TestCase]` `.cs` file or `Test` project beside the projects it tests is evidence, not a component (§ Component Detection).
 11. The REFramework template's sample values survive customisation: `ProcessABCQueue` in the settings sheet of a project whose item fetch reads rows, the template's own `Tests/` cases, `Exceptions_Screenshots/`. A queue is evidence only when the item fetch actually reads it (§ Signals — XAML › REFramework projects).
 12. Framework workflows look like logic and are the template: the state machine, the retry counter, the three status updates and the screenshot on exception describe the Transactional Shape, not steps — transcribing them doubles the shape in the genome.

@@ -71,7 +71,7 @@ Each rule names its subject and the one guide that states it in full; the guide'
 
 ### Extract (project or solution → genome)
 
-Detect framework and deployment unit → ask for related resources → inventory → extract signals with the source guide's tables → build call and handoff graphs → verify every suspected source defect in the full rendering and in the framework's source → infer complexity → map signals to sections (process genome first, then components; the Transactional Shape from the source's per-item constructs) → complete the Source Map as the migration contract and check it resolves with `scripts/genome-step-map.py` → write, then offer edits. Full procedure: [extraction-guide.md](references/extraction-guide.md); framework guides and scripts: § Source Frameworks.
+Detect framework and deployment unit → ask for related resources → inventory → extract signals with the source guide's tables → build call and handoff graphs → verify every suspected source defect in the full rendering and in the framework's source → infer complexity → map signals to sections (process genome first, then components; the Transactional Shape from the source's per-item constructs) → complete the Source Map as the migration contract and check it resolves against the source → write, then offer edits. Full procedure: [extraction-guide.md](references/extraction-guide.md); framework guides and scripts: § Source Frameworks.
 
 ### Author (description → genome)
 
