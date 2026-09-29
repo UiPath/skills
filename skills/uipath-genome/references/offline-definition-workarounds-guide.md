@@ -129,7 +129,7 @@ A number attribute bound to a selector variable (`tableRow='{{Row}}'`) cannot be
 - **26.10.3:** `update-definition` rejects `idx` bound to a variable at the first call, on every tag (checked on `java` and `webctrl`).
 - **26.10.4:** it stores the `string.Format` form and passes every command.
 
-**Probe once per run, before the first element is defined:** run one `update-definition` with `idx='{{Row}}'` on a seed copy, against the project, and record the answer in the brief. If it is rejected, every positional selector variable takes the workaround below, including the annotated constants that carry an `idx` above 2 ([selector-translation-guide.md](selector-translation-guide.md) rule 7).
+**Probe once per run, before the first element is defined:** run one `update-definition` with `idx='{{Row}}'` on a seed copy, against the project, and record the answer in the brief. If it is rejected, every positional selector variable takes the workaround below.
 
 | Command | Result |
 |---|---|
@@ -167,7 +167,7 @@ Linked target after step 4 (C# project):
 - `object-repository get-element-definition` takes about ten seconds per element. To check what the store holds, read each element's `.metadata` under `.objects` (JSON: `Name`, `Description`, `Type`, `Reference`) instead of exporting it again; the definition in its `.data` folder declares `utf-16` but is UTF-8.
 - `target-app update-definition` prints nothing on success; confirm the write by reading the definition file back (`--name` / `--description` land in its `.metadata` sibling).
 - `object-repository link-screen` / `link-elements` resolve `--workflow-file-path` against the shell's working directory, not `--project-dir`: pass an absolute path inside the project, or every entry fails with "not inside the project directory".
-- Per-file `validate` accepts a definition whose strict selector carries a literal `idx` above 2; `build` rejects it (`UI-REL-001`, an Error under the default analyzer configuration). Carry positional indexes as selector variables ([selector-translation-guide.md](selector-translation-guide.md) rule 7) and write the change back with `target-anchorable update-definition` → `object-repository replace-elements`.
+- Per-file `validate` accepts a definition whose strict selector carries a literal `idx` above 2; `build` rejects it (`UI-REL-001`, an Error under the default analyzer configuration). What replaces the index, and how an index that stays is decided: [selector-translation-guide.md](selector-translation-guide.md) rule 7; a selector changed that way is written back with `target-anchorable update-definition` → `object-repository replace-elements`.
 - `replace-elements` keeps the `referenceId`, so the links of already-linked workflows survive a selector change. The run uses the replaced selector at once; the activity's copy in the workflow stays as it was until Studio syncs it or the activity is re-linked, and that stale copy is not an error.
 - Element metadata `ActivityType` may stay `None` on elements registered before their acting activity was known: it only tunes selector generation, which offline has already happened; the live pass replaces the definitions anyway.
 
