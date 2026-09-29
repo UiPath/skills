@@ -1,6 +1,6 @@
 # Public Safety
 
-This skill is intended for a public skills repository. Keep all content, examples, fixtures, logs, and commits safe to publish. The one exception is a connection binding in the user's process, which takes real IDs (SKILL.md Rule 9).
+This skill is intended for a public skills repository. Keep all content, examples, fixtures, logs, and commits safe to publish. The one exception is a connection binding (and its folder key) inside the user's local process file, which takes real IDs (SKILL.md Rule 9); the lists below govern everything else, including notes the skill writes.
 
 ## Never include
 

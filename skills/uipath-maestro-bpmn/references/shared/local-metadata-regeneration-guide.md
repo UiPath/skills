@@ -1,6 +1,6 @@
 # Local Metadata Regeneration
 
-Use this guide when BPMN source changed and local package metadata must be refreshed or verified before packaging, upload, debug, publish, or deploy.
+Use this guide when BPMN source changed and local package metadata must be refreshed or verified: after binding a connection, or before packaging, upload, debug, publish, or deploy.
 
 **Do NOT apply it to an Integration Service draft or boundary handoff.** When the user asked for a local BPMN draft that hands connector enrichment to the CLI (a request that only says to validate is not one), `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` stay CLI-owned — do not hand-author or pre-generate them. Author only the `.bpmn` source shape plus a `.md` notes file **inside the project directory** naming the CLI-owned blockers. The regeneration workflow below reaches such a project only once its connectors are enriched.
 

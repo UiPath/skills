@@ -103,10 +103,9 @@ building.
 Every guide's shape table marks each node **Entry** (omit when inserting into a
 process that already runs), **Mechanism** (changing it changes the pattern), or
 **Placeholder** (bind it, or skip it if the process already does this). Author
-the element the table names. A **Placeholder** whose target discovery (step 1)
-leaves undecided is that element with its registry payload and the identity
-slots left as public placeholders, never a bare `bpmn:task` standing in for
-the work.
+the element the table names. A **Placeholder** whose target step 1 did not
+resolve is that element with its registry payload and the identity slots left
+as public placeholders, never a bare `bpmn:task` standing in for the work.
 
 | Pattern | Reach for it when | Guide |
 | --- | --- | --- |
@@ -189,10 +188,12 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `--all-folders` — a folder-scoped list silently misses connections). Never
    fabricate an identifier; ask only under Rule 4, otherwise decide. Bind each
    connector node to an `Enabled` connection for its connector: the one in the
-   folder the task names, else `IsDefault` `Yes`, else the first. Another
-   owner is no reason to skip it. Use placeholders only when the user asked
-   for a draft, a handoff, or placeholder or synthetic values, or when no
-   `Enabled` connection exists.
+   folder the task names, else `IsDefault` `Yes`, else the first. Confirm it
+   with `uip is connections ping <id> --output json` (`Data.Status` must be
+   `Enabled`; the list's `State` is cached) and fall to the next candidate when
+   it is not. Another owner is no reason to skip it. Use placeholders only when
+   the user asked for a draft, a handoff, or placeholder or synthetic values, or
+   when no candidate pings `Enabled`.
    See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
    each chosen registry-owned node only. Fetch every chosen template in **one**
@@ -387,9 +388,9 @@ For registry-evidence-only tasks, follow the command-first recipe in
 
    Treat a nonzero result as a source/precondition failure: fix the BPMN or
    `project.uiproj`, re-run steps 4 and 5, and refresh again — never repair the generated
-   JSON by hand. Refresh is needed for a package-ready, upload, debug,
-   publish, or deploy deliverable and after binding a connection (step 1),
-   not otherwise for a source-only draft. For the full
+   JSON by hand. Refresh after binding a connection (step 1) and for a
+   package-ready, upload, debug, publish, or deploy deliverable; a source-only
+   draft needs none. For the full
    contract (scope, idempotency, binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
@@ -485,8 +486,9 @@ and honestly surfaced to the user as gaps when asked.
 8. **Use `--output json` for parsed CLI calls.**
 9. **Public-safe always.** No customer XML, tenant URLs, real IDs, or private
    names — see [references/public-safety.md](references/public-safety.md).
-   Exception: a connection binding and its folder key take the real IDs from
-   step 1, unless the user asked for placeholders or synthetic values.
+   Exception: in the user's local process, a connection binding and its folder
+   key take the real IDs from step 1, unless the user asked for placeholders or
+   synthetic values. Notes, examples, and anything committed stay sanitized.
 10. **Confirm before any cloud change.** Upload, publish, deploy, run, pause,
    resume, cancel, retry, and migrate require explicit user consent; validate
    locally first.
