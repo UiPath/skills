@@ -88,4 +88,5 @@ Connection IDs, `releaseKey`/process keys, queue keys, connector keys, app IDs,
 folder IDs/paths — every concrete identifier comes from discovery
 (`registry get`, `registry search`, `uip is connections list`) or from the user.
 Never invent one. When a required identifier is unknown, leave the placeholder
-in place, flag it as a draft binding, and ask the user.
+in place and flag it as a draft binding (SKILL.md step 1); ask only under
+Rule 4.

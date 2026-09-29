@@ -191,9 +191,11 @@ For registry-evidence-only tasks, follow the command-first recipe in
    folder the task names, else `IsDefault` `Yes`, else the first. Confirm it
    with `uip is connections ping <id> --output json` (`Data.Status` must be
    `Enabled`; the list's `State` is cached) and fall to the next candidate when
-   it is not. Another owner is no reason to skip it. Use placeholders only when
-   the user asked for a draft, a handoff, or placeholder or synthetic values, or
-   when no candidate pings `Enabled`.
+   it is not. Another owner is no reason to skip it; name each bound
+   connection's Name, Owner, and Folder (never its Id) as a Rule 4 assumption.
+   Use placeholders only when the user asked for a draft, a handoff, or
+   placeholder, synthetic, public-safe, or sanitized values, or when no
+   candidate pings `Enabled`.
    See [references/registry-workflow.md](references/registry-workflow.md).
 2. **Get templates.** `uip maestro bpmn registry get <type> --output json` for
    each chosen registry-owned node only. Fetch every chosen template in **one**
@@ -355,7 +357,8 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `MISSING_RESOURCE` (warning) and `MISSING_BINDING` (error) are one finding
    about one unresolved node, and the binding half is a live tenant lookup.
    Bind the node to a deployed resource. When the user asked for a
-   placeholder, draft, or boundary handoff, no invented identifier can clear
+   placeholder, draft, or boundary handoff, or step 1 found no `Enabled`
+   candidate, no invented identifier can clear
    `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
    expected result. Report the pair once and continue; `refresh` (step 6)
    succeeds with it unresolved. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
@@ -379,7 +382,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)). See
    [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
-6. **Refresh derived metadata when package-ready output is required.** Once
+6. **Refresh derived metadata.** Once
    step 5 leaves no fixable error, regenerate the four CLI-owned package files:
 
    ```bash
@@ -390,7 +393,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `project.uiproj`, re-run steps 4 and 5, and refresh again — never repair the generated
    JSON by hand. Refresh after binding a connection (step 1) and for a
    package-ready, upload, debug, publish, or deploy deliverable; a source-only
-   draft needs none. For the full
+   draft needs it only for step 3's start-event edits. For the full
    contract (scope, idempotency, binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
@@ -486,9 +489,10 @@ and honestly surfaced to the user as gaps when asked.
 8. **Use `--output json` for parsed CLI calls.**
 9. **Public-safe always.** No customer XML, tenant URLs, real IDs, or private
    names — see [references/public-safety.md](references/public-safety.md).
-   Exception: in the user's local process, a connection binding and its folder
-   key take the real IDs from step 1, unless the user asked for placeholders or
-   synthetic values. Notes, examples, and anything committed stay sanitized.
+   Exception: in the user's local project (the `.bpmn` and the CLI-generated
+   `bindings_v2.json`), a connection binding and its folder key take the real
+   IDs step 1 bound (step 1 names when placeholders apply). Notes, and examples
+   or fixtures added to this skills repository, stay sanitized.
 10. **Confirm before any cloud change.** Upload, publish, deploy, run, pause,
    resume, cancel, retry, and migrate require explicit user consent; validate
    locally first.
