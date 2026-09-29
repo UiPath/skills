@@ -67,21 +67,21 @@ success_criteria:
 
   - type: command_executed
     description: "Agent ran analyze with --output-format sarif"
-    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\|).)*--output-format\s+sarif)'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--output-format\s+sarif)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent ran upgrade into a separate output path"
-    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\|).)*--output-path)'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--output-path)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent ran the migrated workflow"
-    command_pattern: 'uip\s+rpa\s+run(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\|).)*--file-path)'
+    command_pattern: 'uip\s+rpa\s+run(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--file-path)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -100,7 +100,7 @@ success_criteria:
 
   - type: command_not_executed
     description: "Agent never ran or validated the source project"
-    command_pattern: 'uip\s+rpa\s+(?:run|validate)\b(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\|).)*--project-dir\s+"?[^"\s]*[\\/]ConsentBannerProbe"?(?:\s|$))'
+    command_pattern: 'uip\s+rpa\s+(?:run|validate)\b(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--project-dir\s+"?[^"\s]*[\\/]ConsentBannerProbe"?(?:\s|$))'
     weight: 1.0
     pass_threshold: 1.0
 
