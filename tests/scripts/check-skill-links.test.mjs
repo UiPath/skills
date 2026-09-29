@@ -131,3 +131,31 @@ test("a cross-skill link into a pinned skill must resolve in both generations", 
   });
   assert.equal(both.status, 0, both.out);
 });
+
+test("an anchor into a pinned skill must land in both generations", () => {
+  const { status, out } = run({
+    ...PINNED,
+    "skills/uipath-flow/references/shared.md": "# S\n\n## Step 6a\n",
+    "classic/skills/uipath-flow/references/shared.md": "# S\n",
+    "skills/uipath-other/SKILL.md": "# Other\n\n[x](../uipath-flow/references/shared.md#step-6a)\n",
+  });
+  assert.equal(status, 0, out); // uipath-other is not an enforced tree, so it is reported, not fatal
+  assert.match(out, /shared\.md#step-6a \(in the classic tree the sw flavor\(s\) compose\)/);
+});
+
+test("a canonical link inside a block every pinning flavor overrides needs only the current tree", () => {
+  const block = (body) => `<!--skill-flavor:flow-pointer:start-->\n${body}\n<!--skill-flavor:flow-pointer:end-->\n`;
+  const files = {
+    ...PINNED,
+    "skills/uipath-other/SKILL.md": `# Other\n\n${block("[x](../uipath-flow/references/new.md)")}`,
+  };
+  const withoutOverride = run(files);
+  assert.equal(withoutOverride.status, 1, "a flavor that composes the block still needs the classic target");
+  assert.match(withoutOverride.out, /no such file in the classic tree/);
+
+  const overridden = run({
+    ...files,
+    "skill-flavors/sw/uipath-other/SKILL.md": block("[x](../uipath-flow/references/old.md)"),
+  });
+  assert.equal(overridden.status, 0, overridden.out);
+});

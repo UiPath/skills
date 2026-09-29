@@ -104,14 +104,12 @@ replace passages that differ for that host.
 
 Use this only when a canonical skill was replaced by a new generation that a
 host cannot run yet, so no set of sparse overrides can make it correct there.
-The one case today: the builder-SDK `uipath-maestro-flow` authors through
-`uip maestro flow compile`, which starts the SDK as a separate process, and the
-Studio Web browser bundle cannot start processes.
 
 - Keep the previous tree at `classic/skills/<skill>/` (same layout as `skills/`, no symlinks). It is not in the root npm package or any plugin catalog.
 - Add `skill-flavors/<flavor>/<skill>/.canonical` containing exactly `classic`. That flavor then composes `<skill>` from the classic tree, and its overrides for that skill target classic paths and markers.
 - A pin may only swap the source of a skill `skills/` already ships. `npm run skills:validate` fails on a pin to an unknown skill, a pin to a missing classic tree, and a `classic/skills/<skill>` that no flavor pins. Delete the classic tree when its last pin goes.
-- A link from another skill into a pinned skill must resolve in both trees (`npm run skills:check-links` checks both). When the two generations share no file, name the skill (`/uipath:<skill>`) instead of linking a path.
+- A link from another skill into a pinned skill must resolve in both trees; `npm run skills:check-links` checks the file and its anchor in each. When the two generations cover the topic in different files, wrap the pointer in a flavor block: the canonical text links the current generation's file, and the pinning flavor's override links the classic file. The checker then asks each tree only for the link it composes.
+- Name the skill (`/uipath:<skill>`) instead of a file only when both generations hold the content the sentence promises. When the current generation has no equivalent, state the rule inline or drop the pointer. A skill name with nothing behind it is a pointer no check can catch.
 
 ## Preserve Generic Discovery and Package Naming
 
