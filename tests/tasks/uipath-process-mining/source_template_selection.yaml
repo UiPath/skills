@@ -12,7 +12,7 @@ description: >
   has to provide. `app-types get` shows the semantic entities and metrics the
   template ships, which is a different question.
 
-  Command-construction only — no live tenant. Commands fail with auth errors;
+  Command-construction only — no live tenant. Commands fail;
   what matters is which template the agent picks and how it learns the
   expected input.
 tags: [uipath-process-mining, integration, mode:build, lifecycle:setup, app-types, source-template]
