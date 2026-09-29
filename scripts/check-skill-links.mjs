@@ -10,9 +10,15 @@
  * to recover from — it moves on without the guidance the skill meant it to
  * have. This check is what keeps that from drifting back in.
  *
- * Scope: `skills/` (canonical) and `skill-flavors/` (sparse overrides).
- * Flavor files mirror canonical paths, so a flavor link is resolved against
- * its canonical location as well — that is where it will sit once composed.
+ * Scope: `skills/` (canonical), `skill-flavors/` (sparse overrides) and
+ * `legacy/skills/` (retained trees a flavor pins). Flavor and legacy files
+ * mirror canonical paths, so their links are resolved from their canonical
+ * location as well — that is where they will sit once composed.
+ *
+ * A pinned skill (`skill-flavors/<flavor>/<skill>/.canonical`) is composed
+ * from `legacy/skills/<skill>` in that flavor and from `skills/<skill>`
+ * everywhere else. So a link into it from another skill must land in BOTH
+ * trees: the default package reads one, the pinning flavor the other.
  *
  * Ignored, because none of them address a file in the tree: absolute URLs,
  * mailto/anchor-only targets, and code-fenced text.
@@ -25,7 +31,44 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = process.argv[2]
     ? path.resolve(process.argv[2])
     : path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const ROOTS = ["skills", "skill-flavors"];
+const ROOTS = ["skills", "skill-flavors", "legacy/skills"];
+const LEGACY_SKILLS = path.join(REPO_ROOT, "legacy", "skills");
+
+/** flavor name -> set of skills that flavor composes from `legacy/skills/`. */
+async function readPins() {
+    const pins = new Map();
+    const flavorsRoot = path.join(REPO_ROOT, "skill-flavors");
+    let flavors = [];
+    try {
+        flavors = await readdir(flavorsRoot, { withFileTypes: true });
+    } catch {
+        return pins;
+    }
+    for (const flavor of flavors) {
+        if (!flavor.isDirectory()) continue;
+        const pinned = new Set();
+        let skills = [];
+        try {
+            skills = await readdir(path.join(flavorsRoot, flavor.name), { withFileTypes: true });
+        } catch {
+            continue;
+        }
+        for (const skill of skills) {
+            if (!skill.isDirectory()) continue;
+            const pin = path.join(flavorsRoot, flavor.name, skill.name, ".canonical");
+            try {
+                if ((await readFile(pin, "utf8")).trim() === "legacy") pinned.add(skill.name);
+            } catch {
+                // no pin
+            }
+        }
+        pins.set(flavor.name, pinned);
+    }
+    return pins;
+}
+
+const PINS = await readPins();
+const ALL_PINNED = new Set([...PINS.values()].flatMap((set) => [...set]));
 
 /**
  * `[text](target)`, skipping images (`![alt](src)`).
@@ -118,8 +161,8 @@ function proseLines(text) {
 }
 
 /**
- * Where a link from `fromFile` should resolve. A flavor file mirrors a
- * canonical path, so it resolves as if it sat in `skills/`.
+ * Where a link from `fromFile` should resolve. A flavor or legacy file mirrors
+ * a canonical path, so it resolves as if it sat in `skills/`.
  */
 function resolveBaseDir(fromFile) {
     const rel = path.relative(REPO_ROOT, fromFile);
@@ -127,7 +170,47 @@ function resolveBaseDir(fromFile) {
     if (parts[0] === "skill-flavors" && parts.length > 2) {
         return path.dirname(path.join(REPO_ROOT, "skills", ...parts.slice(2)));
     }
+    if (parts[0] === "legacy" && parts[1] === "skills" && parts.length > 3) {
+        return path.dirname(path.join(REPO_ROOT, "skills", ...parts.slice(2)));
+    }
     return path.dirname(fromFile);
+}
+
+/** The skill a file belongs to once composed, or null outside a skill. */
+function composedSkill(fromFile) {
+    const parts = path.relative(REPO_ROOT, fromFile).split(path.sep);
+    if (parts[0] === "skills") return parts[1] ?? null;
+    if (parts[0] === "skill-flavors") return parts[2] ?? null;
+    if (parts[0] === "legacy" && parts[1] === "skills") return parts[2] ?? null;
+    return null;
+}
+
+/**
+ * The on-disk files a link resolved at `logical` (a `skills/...` path) must
+ * exist as, seen from `fromFile`. Each entry is `[path, label]`; the label
+ * names the composition that needs it when there is more than one.
+ */
+function physicalTargets(fromFile, logical) {
+    const rel = path.relative(REPO_ROOT, logical);
+    const parts = rel.split(path.sep);
+    if (parts[0] !== "skills" || parts.length < 2 || !ALL_PINNED.has(parts[1])) {
+        return [[logical, null]];
+    }
+    const target = parts[1];
+    const legacy = path.join(LEGACY_SKILLS, ...parts.slice(1));
+    const fromParts = path.relative(REPO_ROOT, fromFile).split(path.sep);
+    if (fromParts[0] === "legacy") return [[legacy, null]];
+    if (fromParts[0] === "skill-flavors") {
+        return PINS.get(fromParts[1])?.has(target) ? [[legacy, null]] : [[logical, null]];
+    }
+    // Canonical: the skill's own links stay in its own tree; a link from any
+    // other skill is composed next to both generations.
+    if (composedSkill(fromFile) === target) return [[logical, null]];
+    const flavors = [...PINS].filter(([, set]) => set.has(target)).map(([name]) => name);
+    return [
+        [logical, "default package"],
+        [legacy, `legacy tree the ${flavors.join(", ")} flavor(s) compose`],
+    ];
 }
 
 function decodeOrNull(uri) {
@@ -206,12 +289,17 @@ for (const root of ROOTS) {
                 const inRepo =
                     resolved === REPO_ROOT ||
                     resolved.startsWith(REPO_ROOT + path.sep);
-                if (!inRepo || !(await exists(resolved))) {
+                if (!inRepo) {
+                    broken.push({ file: rel, line: lineNo, target: raw, why: "escapes the repo root" });
+                    continue;
+                }
+                for (const [physical, label] of physicalTargets(file, resolved)) {
+                    if (await exists(physical)) continue;
                     broken.push({
-                        file: path.relative(REPO_ROOT, file),
+                        file: rel,
                         line: lineNo,
                         target: raw,
-                        why: inRepo ? "no such file" : "escapes the repo root",
+                        why: label ? `no such file in the ${label}` : "no such file",
                     });
                 }
             }

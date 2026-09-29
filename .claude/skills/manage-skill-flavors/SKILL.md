@@ -100,6 +100,19 @@ replace passages that differ for that host.
 - Review every new or materially changed canonical skill against every existing flavor because inclusion is automatic. Update or add the smallest necessary sparse override wherever the canonical guidance is not correct for that flavor.
 - Do not create an empty flavor. If a host has no exceptions, it should consume the default package.
 
+## Pin a Skill to Its Previous Generation (Rare)
+
+Use this only when a canonical skill was replaced by a new generation that a
+host cannot run yet, so no set of sparse overrides can make it correct there.
+The one case today: the builder-SDK `uipath-maestro-flow` authors through
+`uip maestro flow compile`, which starts the SDK as a separate process, and the
+Studio Web browser bundle cannot start processes.
+
+- Keep the previous tree at `legacy/skills/<skill>/` (same layout as `skills/`, no symlinks). It is not in the root npm package or any plugin catalog.
+- Add `skill-flavors/<flavor>/<skill>/.canonical` containing exactly `legacy`. That flavor then composes `<skill>` from the legacy tree, and its overrides for that skill target legacy paths and markers.
+- A pin may only swap the source of a skill `skills/` already ships. `npm run skills:validate` fails on a pin to an unknown skill, a pin to a missing legacy tree, and a `legacy/skills/<skill>` that no flavor pins. Delete the legacy tree when its last pin goes.
+- A link from another skill into a pinned skill must resolve in both trees (`npm run skills:check-links` checks both). When the two generations share no file, name the skill (`/uipath:<skill>`) instead of linking a path.
+
 ## Preserve Generic Discovery and Package Naming
 
 Every direct lowercase kebab-case directory under `skill-flavors/` is a flavor. Never hardcode `studioweb` in the composer, npm build scripts, generic validation loop, or reusable flavor publisher. Publication is intentionally different: each released flavor must opt in through an explicit reviewed caller so its registry policy cannot expand implicitly.
@@ -185,7 +198,7 @@ another not-yet-bootstrapped flavor.
 
 ## What Not to Do
 
-- Do not copy an entire skill into a flavor to change a few paragraphs.
+- Do not copy an entire skill into a flavor to change a few paragraphs. A whole-generation difference goes in `legacy/skills/` with a `.canonical` pin, never in `skill-flavors/`.
 - Do not introduce JSON tags, fragment manifests, or runtime composition.
 - Do not add one npm build command or generic validation-CI branch per flavor; an explicitly published flavor still needs a reviewed caller of the correct publisher.
 - Do not ship default plugin hooks or manifests in a minimal host package.
