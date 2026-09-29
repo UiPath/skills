@@ -48,10 +48,10 @@ Every `uip maestro flow` authoring verb — `check`, `compile`, `decompile` — 
 One install does the whole bootstrap, writing `package.json` itself when the directory has none:
 
 ```bash
-npm install --save-dev @uipath/maestro-builder-sdk
+npm install --save-dev @uipath/maestro-builder-sdk --@uipath:registry=https://registry.npmjs.org
 ```
 
-It resolves the `@uipath` scope through GitHub Packages, so `.npmrc` must route the scope and carry a `read:packages` token before it can succeed.
+The package is public on npmjs.com and needs no token. The registry flag keeps an `.npmrc` that routes `@uipath` to GitHub Packages from turning the install into a 401.
 npm records the dependency in the nearest `package.json` up the directory tree, installing `node_modules/` beside that file rather than in the current directory — so when an unrelated ancestor owns one, claim the intended root first with `[ -f package.json ] || npm init -y`.
 On a `package.json` npm generated itself, `npm pkg set type=module` silences the `MODULE_TYPELESS_PACKAGE_JSON` warning every compile otherwise prints; leave an existing project's `type` alone.
 
