@@ -18,9 +18,10 @@ description: >
   legitimate outcome and passes on an empty saved listing. The assertion is that
   the save matches live truth, not that rules exist.
 
-  Blocker: needs `uip admin audit org exclusions` in the published `@uipath/cli`
-  (UiPath/cli#4379) and `/api/EventConfig/rules` deployed in the test
-  organization. Until both ship the verifier reports that the rules could not be
+  Blocker: UiPath/cli#4379 merged on 2026-09-29, so the surface now exists in
+  the CLI repo but not yet in a published `@uipath/cli` release (npm `latest`
+  is 1.202.1). This needs that release plus `/api/EventConfig/rules` deployed
+  in the test organization. Until both ship the verifier reports that the rules could not be
   read.
 
   Tier note: this is a smoke-shaped check — one scenario, cheap, no build —

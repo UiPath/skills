@@ -12,23 +12,48 @@ A rule carries at most one **selector** per dimension:
 
 | Dimension | Flag | Values |
 |---|---|---|
-| Tenant | `--tenant-id <guid...>` | tenant GUIDs |
-| EventSource | `--source <guid...>` | source GUIDs from `audit org sources` |
-| EventTarget | `--target <guid...>` | target GUIDs from `audit org sources` |
-| EventType | `--type <guid...>` | type GUIDs from `audit org sources` |
-| Status | `--status <status...>` | `Success` or `Failure` |
+| Tenant | `--exclude-tenant <guid...>` | tenant GUIDs. Repeatable. |
+| EventSource | `--source <guid...>` | source GUIDs from `audit org sources`. Repeatable. |
+| EventTarget | `--target <guid...>` | target GUIDs from `audit org sources`. Repeatable. |
+| EventType | `--type <guid...>` | type GUIDs from `audit org sources`. Repeatable. |
+| Status | `--status <status>` | `Success` or `Failure`, case-insensitive; `0` and `1` work too. **Single-valued.** |
+
+> **The tenant selector is `--exclude-tenant`, not `--tenant-id`.** On `audit tenant sources|events|export` — and across `authz` — `--tenant-id` means "run this call against that tenant". Here the tenants are what the rule *matches*, which is a different concept, so it gets a different name. Passing `--tenant-id` to `exclusions create` is an unknown option.
 
 Values inside one selector are OR-ed; selectors are AND-ed across dimensions. `--type <A> --type <B> --status Success` excludes successful events of type A **or** type B. A rule with no selector is refused — it would exclude every event in the organization.
 
-Five facts that change what you do:
+`--status` takes one value, unlike the other four. A selector holding both statuses matches every event, which is exactly what omitting the flag already does.
+
+Six facts that change what you do:
 
 1. **Exclusion is never retroactive.** Events already in the trail stay there. A rule suppresses only events that arrive after it becomes active.
 2. **Suppressed events are unrecoverable.** Deleting the rule resumes recording from that moment; it does not restore what was dropped while the rule was active.
 3. **Widening a rule re-stamps its start time.** Renaming leaves `activatedOn` alone; changing which events it matches resets it, so the widened rule never covers events it did not previously match.
-4. **`--inactive` excludes nothing.** That is how you stage a replacement next to the rule it takes over from, and how an inactive rule may reuse an active rule's name or match set.
+4. **`--inactive` excludes nothing.** That is how you stage a replacement next to the rule it takes over from, and how an inactive rule may reuse an active rule's name or match set. It is also not sticky — see [Replacing a rule](#replacing-a-rule--update-is-a-full-replacement-not-a-patch).
 5. **Two things can never be excluded:** UiPath's own monitoring events, and audit-configuration changes — including changes to the exclusion rules themselves. The service refuses those selector values with `SelectorValueNotPermitted`.
+6. **A rule name may not be a bare GUID.** `get`, `update` and `delete` settle name-vs-id by shape, so a GUID-shaped name could never be addressed by name — and if it matched another rule's id, those verbs would hit that other rule instead. The CLI refuses such a name locally.
 
 `enforcement` is always `Exclude` and is not a flag. The CLI fills it in.
+
+## Addressing a rule: by name or by policy id
+
+`get`, `update` and `delete` take a single `<rule>` positional that accepts **either** the rule's name or its `policyId`. A GUID is used as it stands and costs no lookup; a name is matched against the organization's rules (exactly first, then case-insensitively).
+
+```bash
+uip admin audit org exclusions get "<RULE_NAME>" --output json
+uip admin audit org exclusions get <POLICY_ID> --output json
+```
+
+Prefer the name the admin used — it is what the user says and what your report should echo. Reading by name costs one call, not two: the lookup's listing already carries the rule, so `get` answers from it.
+
+A name is unique only among **active** rules, so an inactive rule may share one. When a name matches more than one rule the CLI refuses to guess:
+
+| Outcome | `Result` | Exit | What to do |
+|---|---|---|---|
+| Name matches one rule | `Success` | 0 | — |
+| Name matches an active **and** an inactive rule | `ValidationError` | 3 | The message lists both policy ids with their active state. Ask the user which one, or pass the id. Never pick the active one yourself — an admin staging a replacement meant the other. |
+| Name matches nothing | `Failure` | 1 | Re-read `exclusions list`; the name may be stale or belong to another organization. |
+| Rule listed without a `policyId` | `Failure` | 1 | Its stored document is unparseable and nothing can address it. Report it as needing a server-side fix. |
 
 ## Scope: organization only
 
@@ -37,12 +62,12 @@ There is no `audit tenant exclusions`. The service takes the owning organization
 ```bash
 uip admin audit org exclusions create \
   --name "<RULE_NAME>" \
-  --tenant-id <TENANT_ID> \
+  --exclude-tenant <TENANT_ID> \
   --type <EVENT_TYPE_ID> \
   --output json
 ```
 
-Reaching for `uip admin audit tenant exclusions` yields `unknown command`. It is not a missing feature to work around — re-issue against `org` with a `--tenant-id` selector.
+Reaching for `uip admin audit tenant exclusions` yields `unknown command`. It is not a missing feature to work around — re-issue against `org` with an `--exclude-tenant` selector.
 
 ## Permissions
 
@@ -101,37 +126,41 @@ uip admin audit org exclusions create \
 
 Add `--inactive` to save the rule without activating it.
 
-The rule name must be unique among the organization's **active** rules (max 256 characters). An inactive rule may hold a name an active rule wants.
+The rule name must be unique among the organization's **active** rules (max 256 characters) and may not be a bare GUID. An inactive rule may hold a name an active rule wants.
 
 ## Step 5 — Verify, then report
 
 Read the rule back and report from the response, not from the command you typed:
 
 ```bash
-uip admin audit org exclusions get <POLICY_ID> --output json
+uip admin audit org exclusions get "<RULE_NAME>" --output json
 ```
 
 Confirm `IsActive`, `Enforcement`, and that `Selectors` carries every dimension you intended. Report `PolicyId` and `ActivatedOn` — the instant exclusion starts. `ActivatedOn` is `null` on an inactive rule.
 
 ## Replacing a rule — `update` is a full replacement, not a patch
 
-`update` is a PUT. Every field is resent, and anything omitted is **dropped**. Renaming a rule with `update <POLICY_ID> --name "<NEW_NAME>"` alone deletes all of its selectors, and a rule cannot exist with no selector — so either the call is refused or you have silently widened the rule.
+`update` is a PUT. Every field is resent, and anything omitted is **dropped**. Renaming a rule with `update "<RULE>" --name "<NEW_NAME>"` alone deletes all of its selectors, and a rule cannot exist with no selector — so either the call is refused or you have silently widened the rule.
+
+**Activation is part of the replacement.** Without `--inactive` the rule comes back **active**, so editing a rule someone deliberately staged inactive starts it excluding events. Pass `--inactive` again to keep it staged — `get` first and check `IsActive` before you decide.
 
 Procedure:
 
-1. `exclusions get <POLICY_ID> --output json`.
-2. Re-derive the full flag set from the response's `Selectors`, including the ones you are not changing.
-3. Send `update` with `<POLICY_ID>` first, then every flag.
+1. `exclusions get "<RULE>" --output json`.
+2. Re-derive the full flag set from the response's `Selectors`, including the ones you are not changing, and add `--inactive` when `IsActive` was `false`.
+3. Send `update` with `<RULE>` first, then every flag.
 
 ```bash
-uip admin audit org exclusions update <POLICY_ID> \
+uip admin audit org exclusions update "<RULE>" \
   --name "<NEW_NAME>" \
   --type <EVENT_TYPE_ID> \
   --status Success \
   --output json
 ```
 
-> Put `<POLICY_ID>` **before** the selector flags. The selector flags are variadic, so an id written after one is read as another of its values.
+> Put `<RULE>` **before** the selector flags. Those flags are variadic, so a value written after one is read as another of its values.
+>
+> When renaming, `<RULE>` is the rule's **current** name (or its id) and `--name` is the new one. Passing only `--name` changes nothing about which rule is addressed.
 
 Changing the match set re-stamps `ActivatedOn`; renaming alone does not.
 
@@ -165,20 +194,25 @@ A body carries exactly four keys, in **camelCase**:
 ```
 
 - `enforcement` may be omitted; the CLI fills in the only legal value.
+- `isActive` may be omitted and defaults to **true** — the same default `create` applies without `--inactive`. To stage a rule from a file, set `"isActive": false` explicitly; on `update`, omitting it re-activates a staged rule.
+- `name` is required, non-empty, trimmed before sending, and may not be a bare GUID.
 - A selector carries only `type` and `values`.
-- `type` is one of `Tenant`, `EventSource`, `EventTarget`, `EventType`, `Status`.
+- `type` is one of `Tenant`, `EventSource`, `EventTarget`, `EventType`, `Status`. Note the dimension is `Tenant` even though its flag is `--exclude-tenant`.
+- `values` must be a non-empty array of strings, and only one selector per dimension is allowed. Ids are checked as GUIDs and a `Status` value is canonicalized (`success`, `0`, `Success` all store as `Success`) — the file gets exactly the checks the flags get, so the two input styles cannot disagree about what a valid rule is.
 - Anything else — `policyId`, `activatedOn`, `createdOn`, `lastModifiedOn`, a typo — is rejected by name before the request is sent. Server-owned fields are refused, not ignored.
-- The file must be one rule, not an export of many, and is capped at 64 KB.
+- The file must be one rule, not an export of many, and is capped at 64 KB (measured in bytes, before the read).
 
 > **The round-trip trap.** `exclusions get` returns PascalCased keys (`PolicyId`, `IsActive`, `Selectors`) plus server-owned fields, because the CLI host PascalCases every key under `Data`. Piping that response straight into `--file` fails on both counts. Rebuild the body in camelCase with only the four write keys, or — simpler — use the inline flags for updates and keep `--file` for bodies you author yourself.
 
 ## Error codes → what to do
 
-The service returns `application/problem+json`; the CLI surfaces its `detail` as `Message` and keys the `Instructions` hint on the machine-readable `code`. **Read `Instructions` and act on it — do not re-send the same body and do not improvise a different verb.**
+The service returns `application/problem+json`; the CLI folds its `detail` into `Message` and lifts the machine-readable `code` into `Context.errorCode`, which is what the `Instructions` hint keys on. The envelope also carries `ErrorCode` and `Retry`. **Read `Instructions` and act on it — do not re-send the same body and do not improvise a different verb.**
+
+Exit codes follow the CLI contract: `0` success, `1` a service `Failure`, `2` a `403`, `3` a `ValidationError` (anything the CLI refused locally, plus a `400`).
 
 | `code` | Meaning | Recovery |
 |---|---|---|
-| `RuleNotFound` | No rule with that id — or it belongs to another organization, which answers identically. | Re-read the id from `exclusions list`. |
+| `RuleNotFound` | No rule with that id — or it belongs to another organization, which answers identically. | Re-read the name or id from `exclusions list`. |
 | `DuplicateRuleName` | Another **active** rule holds that name. | Pick a different `--name`, or update the existing rule. An inactive rule may keep a name in use. |
 | `OverlappingRuleExists` | An active rule already excludes everything this one would; its id is in the message. | Delete or narrow that rule, or save this one with `--inactive`. |
 | `RuleLimitExceeded` | The organization is at its rule cap. | Delete a rule before adding another. Report the cap to the user rather than pruning rules you did not create. |
@@ -190,7 +224,9 @@ The service returns `application/problem+json`; the CLI surfaces its `detail` as
 | `RuleModifiedConcurrently` | Another admin changed the rule mid-call. | `exclusions get` again and retry once with the fresh state. |
 | `InvalidRequest` | Rejected before the rule logic; the message names the field. | Fix the named field. Server-owned fields may not be sent. |
 
-The CLI also rejects bodies locally with `Result: ValidationError` — a missing `--name`, a non-GUID selector value, a `--status` outside `Success`/`Failure`, `--file` combined with inline flags, an unsupported `--file` key. These never reach the network. Fix the command; do not retry it unchanged.
+The CLI also rejects input locally with `Result: ValidationError` and exit `3`, before any HTTP call: a missing or GUID-shaped `--name`, no selector at all, a non-GUID selector value, a `--status` outside `Success`/`Failure`/`0`/`1`, `--file` combined with inline flags, an unsupported `--file` key, a `--file` selector with an unknown dimension / empty `values` / a duplicated dimension, and an ambiguous `<rule>` name. These never reach the network. Fix the command; do not retry it unchanged.
+
+An unreadable `--file` path is different again: a missing file is a `ValidationError`, but a permission or directory error is reported as a local I/O failure with the path in `Context`, not as a bad argument. Fix the file, not the flags.
 
 ## When an investigation comes up empty, check the exclusions
 
@@ -221,7 +257,7 @@ Rules that follow from that:
 
 ## Output etiquette — after an exclusions call
 
-1. **Operation and result** — `Listed 4 exclusion rules (3 active)`, `Created rule '<RULE_NAME>' (<POLICY_ID>)`, `Deleted rule '<RULE_NAME>'`.
+1. **Operation and result** — `Listed 4 exclusion rules (3 active)`, `Created rule '<RULE_NAME>' (<POLICY_ID>)`, `Deleted rule '<RULE_NAME>'`. Lead with the name; carry the id alongside it so the user can disambiguate later.
 2. **Selectors in names, not GUIDs.** Translate every id through `audit org sources`; a GUID tells the user nothing about what stopped being recorded.
 3. **Active state and start instant** — `IsActive` plus `ActivatedOn`, or "staged, excluding nothing" for an inactive rule.
 4. **What this means for the trail** — which events stop being recorded, and from when. On a delete: recording resumes now; the gap stays.
@@ -229,12 +265,17 @@ Rules that follow from that:
 
 ## Anti-patterns
 
-1. **Do NOT reach for `audit tenant exclusions`.** The surface is org-only; scope a rule to tenants with `--tenant-id`.
-2. **Do NOT `update` with only the field you are changing.** It is a full replacement — `get` first and resend every selector.
-3. **Do NOT feed a `get` response back into `--file`.** PascalCased keys and server-owned fields are both rejected.
-4. **Do NOT mix `--file` with inline flags.**
-5. **Do NOT invent selector GUIDs**, and do not assume a tenant GUID from another organization will error — it is accepted and matches nothing.
-6. **Do NOT create a rule without a selector** to mean "everything", and do not interpret a vague "mute the audit noise" as authorization to do so.
-7. **Do NOT retry a `SelectorValueNotPermitted` refusal** with a different spelling of the same target. Audit-configuration and UiPath monitoring events are permanently non-excludable.
-8. **Do NOT treat a 404 on `list` as a bad command.** It means the service has no exclusion surface in this organization; report and stop.
-9. **Do NOT present a created rule as retroactive.** It never removes an event already recorded.
+1. **Do NOT reach for `audit tenant exclusions`.** The surface is org-only; scope a rule to tenants with `--exclude-tenant`.
+2. **Do NOT pass `--tenant-id` to an exclusions command.** It is the read verbs' "run against this tenant" flag and is not an option here; the selector is `--exclude-tenant`.
+3. **Do NOT `update` with only the field you are changing.** It is a full replacement — `get` first and resend every selector.
+4. **Do NOT drop `--inactive` when replacing a staged rule.** `update` re-activates by default, which turns a rule someone parked into one that suppresses events.
+5. **Do NOT feed a `get` response back into `--file`.** PascalCased keys and server-owned fields are both rejected.
+6. **Do NOT mix `--file` with inline flags.**
+7. **Do NOT pass `--status` twice** to exclude both outcomes. It is single-valued, and a rule matching both statuses is the same as one with no Status selector.
+8. **Do NOT invent selector GUIDs**, and do not assume a tenant GUID from another organization will error — it is accepted and matches nothing.
+9. **Do NOT create a rule without a selector** to mean "everything", and do not interpret a vague "mute the audit noise" as authorization to do so.
+10. **Do NOT pick a rule yourself when a name is ambiguous.** An active and an inactive rule may share a name; ask which one, or use the id.
+11. **Do NOT name a rule with a bare GUID.** It is refused, because `get`/`update`/`delete` would read it as a policy id.
+12. **Do NOT retry a `SelectorValueNotPermitted` refusal** with a different spelling of the same target. Audit-configuration and UiPath monitoring events are permanently non-excludable.
+13. **Do NOT treat a 404 on `list` as a bad command.** It means the service has no exclusion surface in this organization; report and stop.
+14. **Do NOT present a created rule as retroactive.** It never removes an event already recorded.

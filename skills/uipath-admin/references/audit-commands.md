@@ -14,10 +14,10 @@ uip admin audit
 │   ├── export
 │   └── exclusions          # org only — no tenant twin
 │       ├── list
-│       ├── get <policy-id>
+│       ├── get <rule>      # <rule> = rule name or policy id
 │       ├── create
-│       ├── update <policy-id>
-│       └── delete <policy-id>
+│       ├── update <rule>
+│       └── delete <rule>
 └── tenant
     ├── sources
     ├── events
@@ -192,23 +192,33 @@ Reads need audit-read permission. `create`, `update`, and `delete` need a user t
 
 ```bash
 uip admin audit org exclusions list --output json
-uip admin audit org exclusions get <POLICY_ID> --output json
+uip admin audit org exclusions get "<RULE>" --output json
 uip admin audit org exclusions create --name "<RULE_NAME>" --type <EVENT_TYPE_ID> --status Success --output json
-uip admin audit org exclusions update <POLICY_ID> --name "<RULE_NAME>" --type <EVENT_TYPE_ID> --status Success --output json
-uip admin audit org exclusions delete <POLICY_ID> --output json
+uip admin audit org exclusions update "<RULE>" --name "<RULE_NAME>" --type <EVENT_TYPE_ID> --status Success --output json
+uip admin audit org exclusions delete "<RULE>" --output json
 ```
+
+### The `<rule>` positional
+
+`get`, `update`, and `delete` take one positional accepting **either** the rule's name or its `policyId`. A GUID is used as it stands and costs no lookup; a name is matched against the organization's rules, exactly first and then case-insensitively. Reading by name costs one call, not two — the lookup's listing already carries the rule, so `get` answers from it.
+
+A name is unique only among **active** rules, so an inactive rule may share one. A name matching several rules fails with `Result: ValidationError` (exit `3`) listing both policy ids and their active state; pass the id of the intended rule. A name matching nothing fails with `Result: Failure` (exit `1`). Neither attempts the operation.
 
 ### Selector model
 
-A rule carries at most one selector per dimension; two selectors on one dimension are rejected server-side. Values inside a selector are OR-ed, selectors are AND-ed.
+A rule carries at most one selector per dimension; two selectors on one dimension are rejected. Values inside a selector are OR-ed, selectors are AND-ed.
 
 | Dimension | Flag | Values |
 |---|---|---|
-| `Tenant` | `--tenant-id <guid...>` | tenant GUIDs. A tenant outside this organization is accepted and matches nothing. |
-| `EventSource` | `--source <guid...>` | source GUIDs from `audit org sources` |
-| `EventTarget` | `--target <guid...>` | target GUIDs from `audit org sources` |
-| `EventType` | `--type <guid...>` | type GUIDs from `audit org sources` |
-| `Status` | `--status <status...>` | `Success` or `Failure`, case-insensitive |
+| `Tenant` | `--exclude-tenant <guid...>` | tenant GUIDs. Repeatable. A tenant outside this organization is accepted and matches nothing. |
+| `EventSource` | `--source <guid...>` | source GUIDs from `audit org sources`. Repeatable. |
+| `EventTarget` | `--target <guid...>` | target GUIDs from `audit org sources`. Repeatable. |
+| `EventType` | `--type <guid...>` | type GUIDs from `audit org sources`. Repeatable. |
+| `Status` | `--status <status>` | `Success` or `Failure`, case-insensitive; `0` and `1` also accepted, as on `events`. Single-valued. |
+
+The tenant selector is `--exclude-tenant`, **not** `--tenant-id`: on the read verbs `--tenant-id` picks the tenant a call runs against, while here the tenants are what the rule matches. `--tenant-id` is not an option on any `exclusions` command.
+
+`--status` takes one value because a selector holding both statuses matches every event, which is what omitting the flag already does.
 
 `enforcement` is not a flag: `Exclude` is the only value the service accepts, and the CLI supplies it.
 
@@ -216,19 +226,19 @@ A rule carries at most one selector per dimension; two selectors on one dimensio
 
 | Flag | Required | Description |
 |---|---|---|
-| `--name <name>` | yes, unless `--file` | Unique among the organization's **active** rules; max 256 characters. |
-| `--tenant-id <guid...>` | no | Tenant selector. Repeatable. |
+| `--name <name>` | yes, unless `--file` | Unique among the organization's **active** rules; max 256 characters; may not be a bare GUID. |
+| `--exclude-tenant <guid...>` | no | Tenant selector. Repeatable. |
 | `--source <guid...>` | no | EventSource selector. Repeatable. |
 | `--target <guid...>` | no | EventTarget selector. Repeatable. |
 | `--type <guid...>` | no | EventType selector. Repeatable. |
-| `--status <status...>` | no | Status selector. Repeatable. |
+| `--status <status>` | no | Status selector. Single-valued. |
 | `--inactive` | no | Save without activating. Excludes nothing; may reuse an active rule's name or match set. |
 | `--file <path>` | no | Whole body as JSON. Mutually exclusive with every flag above; max 64 KB. |
 | `--login-validity <minutes>` | no | Token-refresh hint. |
 
-At least one selector flag is required — the CLI refuses an unconstrained rule locally, before any HTTP call, because it would exclude every event in the organization.
+At least one selector flag is required — the CLI refuses an unconstrained rule locally, before any HTTP call, because it would exclude every event in the organization. A name shaped like a GUID is refused for the same reason `<rule>` accepts both: such a rule could not be addressed by name, and would shadow whichever rule owns that id.
 
-`update` is a PUT: the body is a full replacement and every omitted field is dropped. Run `exclusions get` first and resend every selector the rule should keep. Pass `<POLICY_ID>` before the selector flags, which are variadic and would otherwise absorb it as a value.
+`update` is a PUT: the body is a full replacement and every omitted field is dropped. Run `exclusions get` first and resend every selector the rule should keep. **Activation is part of the replacement** — without `--inactive` the rule comes back active, so replacing a deliberately staged rule starts it excluding events. Pass `<rule>` before the selector flags, which are variadic and would otherwise absorb it as a value.
 
 ### `--file` body
 
@@ -246,7 +256,9 @@ Exactly four camelCase keys; a selector carries only `type` and `values`:
 }
 ```
 
-`enforcement` may be omitted. Any other top-level key — `policyId`, `activatedOn`, `createdOn`, `lastModifiedOn`, or a typo — fails with `Result: ValidationError` naming the field, before the request is sent: server-owned fields are refused rather than silently dropped. A `get` response cannot be reused as a `--file` body, because keys under `Data` come back PascalCased and carry those server-owned fields.
+`enforcement` may be omitted. `isActive` may be omitted and defaults to `true`, so a file-authored `update` re-activates a staged rule unless it sets `"isActive": false`. `name` is required, trimmed, and may not be a bare GUID. Any other top-level key — `policyId`, `activatedOn`, `createdOn`, `lastModifiedOn`, or a typo — fails with `Result: ValidationError` naming the field, before the request is sent: server-owned fields are refused rather than silently dropped. A `get` response cannot be reused as a `--file` body, because keys under `Data` come back PascalCased and carry those server-owned fields.
+
+Selectors in a file get exactly the checks the flags get, so the two input styles cannot disagree about what a valid rule is: `type` must be one of `Tenant`, `EventSource`, `EventTarget`, `EventType`, `Status` (the dimension stays `Tenant` even though its flag is `--exclude-tenant`); `values` must be a non-empty string array; ids must be GUIDs; a `Status` value is canonicalized (`success` / `0` / `Success` all store as `Success`); two selectors on one dimension are refused; and an empty or absent `selectors` fails locally rather than costing a round trip to hear `EmptySelectorsNotAllowed`.
 
 ### Output codes and `Data`
 
@@ -287,16 +299,20 @@ Exactly four camelCase keys; a selector carries only `type` and `values`:
 
 ### Exclusions error envelope
 
-Failures carry the service's own reason in `Message` (from the problem body's `detail`), a machine-readable `code` in `Context.errorCode`, and a per-code hint in `Instructions`:
+Failures carry the service's own reason in `Message` (folded in from the problem body's `detail`), a machine-readable `code` in `Context.errorCode`, a per-code hint in `Instructions`, and the usual `ErrorCode` / `Retry` classification:
 
 ```json
 {
   "Result": "Failure",
+  "ErrorCode": "conflict",
+  "Retry": "RetryWillNotFix",
   "Message": "An active rule already excludes every event this rule would.",
   "Instructions": "An active rule already excludes everything this one would — its id is in the message. Delete or narrow that rule, or save this one with --inactive to stage it alongside.",
-  "Context": { "errorCode": "OverlappingRuleExists" }
+  "Context": { "errorCode": "OverlappingRuleExists", "httpStatus": 409 }
 }
 ```
+
+Exit codes follow the CLI contract: `0` success, `1` a service `Failure`, `2` a `403`, `3` a `ValidationError` — everything the CLI refuses locally, plus a `400`.
 
 | `errorCode` | Cause |
 |---|---|
@@ -311,6 +327,8 @@ Failures carry the service's own reason in `Message` (from the problem body's `d
 | `SelectorLimitExceeded` | Too many selectors, or too many values in one selector. |
 | `RuleModifiedConcurrently` | Another admin changed the rule mid-call. |
 | `InvalidRequest` | Rejected before the rule logic; the message names the field. |
+
+A failed `<rule>` lookup never reaches the service and so carries no `errorCode`: an ambiguous name is `ValidationError` / `invalid_argument` (exit `3`) listing the matching policy ids, and a name matching nothing is `Failure` / `not_found` (exit `1`).
 
 Recovery per code: [audit-exclusions-guide.md → Error codes](./audit-exclusions-guide.md#error-codes--what-to-do).
 

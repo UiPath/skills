@@ -1,0 +1,90 @@
+task_id: skill-admin-audit-exclusions-staged-rule-stays-staged-e2e
+description: >
+  End-to-end test (outcome-graded): `exclusions update` replaces the whole rule,
+  and activation is part of that replacement — without `--inactive` the rule
+  comes back ACTIVE. So editing a rule an admin deliberately staged starts it
+  suppressing audit events, which is the opposite of what "just rename it" asks
+  for. Per Rule 30d the agent must read `IsActive` first and pass `--inactive`
+  again.
+
+  pre_run seeds an INACTIVE rule (`EXCL_INACTIVE=1`) with two selectors and
+  publishes the new name. The check asserts the renamed rule is the same rule,
+  still carries every seeded selector, and is still inactive with a null
+  `activatedOn` — an agent that dropped the flag turns the trail off for those
+  events and fails on the active-state assertion alone.
+
+  This is the sibling of the rename e2e, which seeds an ACTIVE rule and so
+  cannot see this failure: there, omitting `--inactive` is correct. The pair
+  covers both directions of the same replacement semantics.
+
+  A do-nothing agent cannot score — the new name matches nothing until the
+  agent acts.
+
+  Blocker: UiPath/cli#4379 merged on 2026-09-29, so the surface now exists in
+  the CLI repo but not yet in a published `@uipath/cli` release (npm `latest`
+  is 1.202.1). This needs that release plus `/api/EventConfig/rules` deployed
+  in the test organization. Until both ship, pre_run cannot seed the rule and
+  the verifier reports that the rules could not be read.
+tags: [uipath-admin, e2e, mode:build, lifecycle:setup, audit, exclusions, scope-org, path-to-ga]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
+
+pre_run:
+  - command: 'EXCL_CLEANUP_MARKER="ce-audit-excl-staged" python3 _setup/cleanup_exclusion_marker.py'
+    timeout: 120
+  - command: 'EXCL_SEED_KEY="rule" EXCL_RULE_BASE="ce-audit-excl-staged-before" EXCL_RENAME_BASE="ce-audit-excl-staged-after" EXCL_STATUS="Success" EXCL_INACTIVE=1 python3 _setup/setup_exclusion_rule.py'
+    timeout: 120
+
+post_run:
+  - command: 'EXCL_CLEANUP_MARKER="ce-audit-excl-staged" python3 _setup/cleanup_exclusion_marker.py'
+    timeout: 120
+
+run_limits:
+  expected_turns: 9
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  Our UiPath organization has an audit exclusion rule that we prepared but have
+  deliberately NOT switched on yet — we are still reviewing it. `seed.json` in
+  this directory holds its current name in `rule.name` and the name it should
+  have in `rule.rename_to`.
+
+  Rename it. It must stay exactly as it is in every other respect: same events
+  matched, and still not suppressing anything until we decide to switch it on.
+
+  Do NOT prompt the user for approval or confirmation — this is an automated
+  test. Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: run_command
+    description: "The renamed rule is the same rule, still carries every seeded selector, and is STILL INACTIVE with no activatedOn"
+    command: 'EXCL_MODE=present EXCL_SEED_KEY=rule EXCL_NAME_FIELD=rename_to EXCL_EXPECT_SEEDED_ID=1 EXCL_EXPECT_SEEDED_SELECTORS=1 EXCL_EXPECT_ACTIVE=false python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_exclusions.py''))"'
+    timeout: 320
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the rule back before replacing it — its inactive state is only visible there"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+exclusions\s+(?:get|list)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must not delete and re-create the rule instead of replacing it in place"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+admin\s+audit\s+org\s+exclusions\s+delete\b'
+    exclude_pattern: '--help'
+    weight: 1.5
+    pass_threshold: 1.0
