@@ -178,12 +178,12 @@ success_criteria:
         - Needs attention: Case L only, left loose on purpose because its
           selector targets another page; it is not presented as fixed.
         - Case A, B, D, G and I are not listed as problems.
-      Shape: a "Migration result: <status>" heading with one counts line, the
-      blocks above, a short Next steps block; no table of what changed, no
-      description of migration mechanics, no per-activity list beyond the
-      items above.
+      Shape: a "Migration result: partial" heading (not "success": Case L is
+      still open) with one counts line, the blocks above, a short Next steps
+      block; no table of what changed, no description of migration mechanics,
+      no per-activity list beyond the items above.
       Score 1.0 when content and shape hold, 0.7 when the content holds with
       minor padding, 0.3 when a Case is misclassified (for example L reported
-      as fixed, or A, B, D, G or I listed as a problem), 0.0 when the message
-      is free prose with no status line.
+      as fixed, or A, B, D, G or I listed as a problem) or the heading says
+      success, 0.0 when the message is free prose with no status line.
       Return JSON: {"score": <float>, "rationale": "<one sentence>"}
