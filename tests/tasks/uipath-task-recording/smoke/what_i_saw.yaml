@@ -59,6 +59,11 @@ success_criteria:
       Score 1.0 only when all hold:
       - the steps are plain-language intents grouped by app and screen, not
         raw clicks, coordinates or key names;
+      - it renders as Markdown lists, not a paragraph: a blank line before
+        every list and after every group line, one numbered step per line
+        (numbering continuing across groups), and the notes (arguments, data
+        flow, left out, couldn't tell) as one bullet each;
+      - no preamble or closing prose surrounds the "What I saw" block;
       - the search, the copy of amount and due date, the paste into the next
         empty row with INV-20931 in the first column, and the save are all
         present and in order;

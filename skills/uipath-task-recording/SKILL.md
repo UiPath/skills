@@ -86,36 +86,50 @@ If none exists or none decodes the video, continue without frames and say so in 
 
 ### 3. Show "What I saw"
 
-Write it as your message, in this shape (omit empty sections):
+From loading this skill until the block, call tools without writing any text. Your message is then exactly this block, filled in, with no preamble and no closing line. Markdown shape:
 
 ```markdown
-**What I saw** — <DAY_DATE_TIME> · <DURATION> · <N> steps (<M> actions) · <APPS>
+### What I saw
+<DAY_DATE_TIME> · <DURATION> · <N> steps · <APPS>
 
-**Acme portal (Chrome) — Invoices**
+**Chrome** · Acme portal › Invoices
+
 1. Search invoice `INV-NNNNN` and open it
-2. Copy the amount and due date
+2. Copy the amount and the due date
 
-**Q3 invoices.xlsx (Excel)**
-3. Paste them into the next empty row, after `INV-NNNNN` in column A
+**Excel** · Q3 invoices.xlsx
+
+3. Paste both into the next empty row (row 6 here), after `INV-NNNNN`
 4. Save the workbook
 
-**Candidate arguments:** `INV-NNNNN` → InvoiceNumber
-**Left out:** opened the Export dialog and cancelled it
-**Couldn't tell:** <what, and what you checked>
-
-Rules the recording can't show (conditions, loops, what to do on errors)? Add them with "Change the steps first".
+- **Arguments:** `INV-NNNNN` → InvoiceNumber
+- **Data flow:** amount and due date (step 2) are pasted in step 3
+- **Left out:** opened the Export dialog and cancelled it
+- **Couldn't tell:** <what, and what you checked>
 ```
 
-- Time: modified time of `trace/actions.ndjson`, written when the recording was saved. Duration: the last `tMs`.
-- Steps: plain language, one intent each, grouped by app and screen. Say what was done, not how ("Copy the amount", not "Double-click the amount, press Ctrl+C"). Typed values in code format.
-- Candidate arguments: typed or pasted values that likely change per run (IDs, names, amounts, dates, search terms, file names). Fixed text stays fixed. Values read from the screen are data flow, not arguments.
+- Keep a blank line after the header, after every group line and before every list; numbering continues across groups. Without them the steps render as one paragraph.
+- Header: time is the modified time of `trace/actions.ndjson` (written when the recording was saved); duration is the last `tMs`.
+- Steps: one user-level intent per line, merged from its micro-actions. Say what was done, not how ("Copy the amount", not "Double-click the amount, press Ctrl+C"). Typed values in inline code.
+- Notes: one line each, only those with content. **Arguments** are typed or pasted values likely to change per run (IDs, names, amounts, dates, search terms, file names); fixed text stays fixed, and values read from the screen are **Data flow**.
 
 ### 4. Confirm
 
-Ask with the host's question tool: question `Build this as a workflow?`, answers **Build the workflow** and **Change the steps first**, the second taking free text (UiPath Autopilot `AskUser`: `{ "kind": "userinput", "label": "Change the steps first" }`). Without a question tool, ask the same in text and stop. Never assume the answer.
+Right after the block, ask with the host's question tool. UiPath Autopilot `AskUser` (its card renders inline Markdown only, so the steps stay in the message):
+
+```json
+{ "questions": [{ "type": "text", "payload": {
+  "question": "Build this as a workflow?",
+  "options": [
+    { "label": "Build the workflow", "description": "uipath-rpa builds it from these steps" },
+    { "kind": "userinput", "label": "Change the steps first" }
+  ] } }] }
+```
+
+Without a question tool, ask the same in text and stop. Never assume the answer.
 
 - **Build the workflow** → step 5.
-- Changes typed → apply them, show the updated "What I saw", ask again. Record rules verbatim for the handoff.
+- Changes typed (edited steps, arguments, rules the recording can't show) → apply them, show the updated block, ask again. Record rules verbatim for the handoff.
 
 ### 5. Hand off to uipath-rpa
 
@@ -143,6 +157,7 @@ If `uipath-rpa` is unavailable, give the user the handoff instead and say it is 
 ## Anti-patterns
 
 - Narrating events ("Clicked at 1203, 562", "Pressed Cmd+Shift+Left") instead of intents.
+- Narrating progress ("I read the trace…", "The Slack half is clear…") around or before "What I saw".
 - Opening every screenshot, or extracting frames the trace already answers.
 - Asking anything besides the one confirmation; uncertainties go under **Couldn't tell**.
 - Asking again after **Build the workflow**.
