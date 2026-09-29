@@ -108,7 +108,7 @@ export default bpmn('approval')
   .sequenceFlow('start', 'approve')
   .sequenceFlow('approve', 'approved')
   .eventSubProcess('failures', { error: true }, (h) =>
-    h.task('record', { set: { outcome: '=js:"FAILED: " + vars.Error.message' } }).endEvent('recorded', { name: 'Failure recorded' }))
+    h.task('record', { set: { outcome: '=js:"FAILED: " + vars.failures_Error.message' } }).endEvent('recorded', { name: 'Failure recorded' }))
   .build();
 ```
 
@@ -119,7 +119,7 @@ export default bpmn('approval')
 - Inside an arm or a handler, consecutive elements are wired in order; branch there with `choose` / `fork` / `race`, not a bare gateway, and jump elsewhere with `.goto(id)`.
 - An event sub-process guards the whole container it sits in, catching what nothing closer caught; a boundary handler guards one activity.
   To fail one iteration rather than the whole run, put the `eventSubProcess` inside the multi-instance sub-process.
-  An error net captures the caught error into `vars.Error` on its start by default: classify on `vars.Error.code` / `.message` / `.detail` / `.status` (capital `E`) with nothing more written — the key the engine seeds and the spelling the failure-escalation graders look for. `errorVar` renames it; `errorVar: false` omits the capture.
+  An error net captures the caught error on its start by default, into `vars.<net>_Error` — so `.eventSubProcess('failures', …)` gives you `vars.failures_Error`, and you classify on `.code` / `.message` / `.detail` / `.status` with nothing more written. That per-net id is what the designer writes: over the real exports measured, every error capture carries a unique id with the display name `Error`, and the bare `vars.Error` appears in none of them. The `Error` spelling that IS fixed is the capture row's `source="=Error"`, the key the engine seeds the payload under, which the SDK writes for you. `errorVar` names the variable something else; `errorVar: false` omits the capture.
   A boundary handler captures nothing by default; there `errorVar` is what makes the error readable, as `=vars.<errorVar>.code`.
 - `check` warns `NO_DEFAULT_FLOW` on an exclusive gateway whose every flow is conditioned; give it an `otherwise` arm or a default.
 - `.flowMode('sequence')`, called before the first element, wires consecutive elements of that scope in order, so a process written top to bottom needs no `.sequenceFlow()` at all; a `.subProcess()` body inherits it and may set its own.

@@ -16,8 +16,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:bpmn.event.error-context -->
 - The engine surfaces a failed element's error under the capital-`Error` key with lowercase fields (`code`, `message`, `detail`, `category`, `status`, `traceId`, `response`, `element`).
-  `.eventSubProcess({ error: true })` captures it into `vars.Error` on its start event by default, so the net's conditions read `vars.Error.<field>` with nothing more written; `errorVar` renames that variable and `errorVar: false` omits the capture.
-  The platform validator needs the declaration: `vars.Error` with no captured variable is `VARIABLE_DOES_NOT_EXIST`, in a net or anywhere else.
+  `.eventSubProcess({ error: true })` captures it on its start event by default, into `vars.<net>_Error` — a per-net id, which is how the designer names one: every error capture in the measured exports has a unique id with the display name `Error`, and the bare `vars.Error` appears in none. So a net called `failures` reads `vars.failures_Error.<field>` with nothing more written; `errorVar` names it something else and `errorVar: false` omits the capture.
+  The platform validator needs the declaration: a `vars.<id>` read with no captured variable is `VARIABLE_DOES_NOT_EXIST`, in a net or anywhere else. Note the runtime resolves `vars.<id>` in ONE flat scope whatever a declaration's `elementId` says, so two captures cannot share an id — that is why the default is per-net.
   A boundary handler captures nothing by default; there `errorVar` is what makes the error readable.
 
 <!-- RULE:bpmn.event.non-interrupting-path -->
