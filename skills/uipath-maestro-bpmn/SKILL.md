@@ -104,7 +104,10 @@ process that already runs), **Mechanism** (changing it changes the pattern), or
 **Placeholder** (bind it, or skip it if the process already does this). Author
 the element the table names. A **Placeholder** whose target is still undecided
 is that element with its registry payload and the identity slots left as
-public placeholders, never a bare `bpmn:task` standing in for the work.
+public placeholders, never a bare `bpmn:task` standing in for the work. That
+applies to phase 4, where nodes are real. In a phase 2 skeleton every activity
+is deliberately a bare `bpmn:task` — see
+[references/phase-2-skeleton.md](references/phase-2-skeleton.md).
 
 | Pattern | Reach for it when | Guide |
 | --- | --- | --- |
@@ -128,64 +131,66 @@ constrains. A single pattern needs only its own guide.
 
 ## Workflow
 
-Move quickly, but match the path to the mode below — choose one before Discover:
+Authoring runs four phases in order. The **mode** decides how far you go and
+whether you stop to ask; it never changes what a phase does.
 
-- **Greenfield authoring** — a new process built from a description, nothing
-  existing to edit. Scaffold with `init` in step 2b.
-- **Discovery-only** — the request asks to discover before authoring, save raw
-  registry JSON/evidence, or explicitly "do not author yet," even if it
-  describes an eventual BPMN. Do not scaffold a project. Immediately create
-  `registry-evidence/`, run and save `registry pull --output json`, `registry
-  list --output json` or `registry search ... --output json`, and `registry get
-  <type> --output json` for each requested type; do not read deep authoring
-  references. Follow the command-first recipe in
-  [references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks).
-- **Brownfield / bare-`.bpmn` edit** — editing a `.bpmn` file that already
-  exists. Do not run `init`. If the file is bare (no `project.uiproj`),
-  bootstrap it with the two-key `project.uiproj` + `refresh` path documented in
-  step 3 instead.
+| Phase | What happens | Reference |
+| --- | --- | --- |
+| **1 — Preflight** | Check login, confirm a valid working directory, scan for an existing solution. Writes nothing, so it runs in every mode. | Steps 0–1 below |
+| **2 — Skeleton** | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, `refresh`, upload. Makes **no registry calls**. | [references/phase-2-skeleton.md](references/phase-2-skeleton.md) |
+| **3 — Iterate** | Adjust the shape, re-`format`, re-upload, repeat until the user agrees it. | [references/phase-2-skeleton.md](references/phase-2-skeleton.md#iterating) |
+| **4 — Wire it up** | Registry discovery, template fetch, real payloads pasted into the existing boxes, revalidate, refresh. | Steps 1–5 below |
 
-Then pick the **build mode**, a separate axis from the mode above. For a
-greenfield authoring ask, ask the user before scaffolding (AskUserQuestion):
+Phase 2 is not a draft-only step. **Auto mode builds the same skeleton**, then
+continues into phase 4 without stopping — so a template error is never tangled
+up with a structural one.
 
-- **Sketch mode (recommended)** — author a skeleton of blank boxes, arrows and
-  labels, upload it, and agree the shape with the user before wiring anything
-  real. Reaches a link the user can open in about two minutes because it makes
-  no registry calls. Read
-  [references/sketch-mode.md](references/sketch-mode.md) before authoring one.
-- **Auto mode** — build the complete working implementation in one pass, with
-  real registry-owned node payloads and live resources.
-- **Something else** — let the user describe what they want instead, then
-  follow it.
+### Modes
 
-Resolve the mode in this order. First, an explicit instruction from the user
-("just build it", "show me the shape first") decides it — obey it and do not
-ask. Second, ask the user. Third, when nobody is available to answer
-(non-interactive or headless), take **Auto mode** and record that choice
-prominently in the final report: sketch mode's approval gate cannot be
-satisfied with no user to approve it, so sketching would stall.
+Two modes are detected, never asked:
 
-Sketch mode is never the deliverable on its own. The user's approval of the
-shape is what authorizes the real wiring; without it, report the skeleton as an
-unapproved sketch rather than as a finished process.
+| Mode | Detect it when | Phases |
+| --- | --- | --- |
+| **Brownfield** | A `.bpmn` the request targets already exists. Do not run `init`; if the file is bare (no `project.uiproj`), bootstrap it with the two-key `project.uiproj` + `refresh` path in step 3. Pre-empts the question below — the shape is already on disk. | 1, then 3–4 |
+| **Discovery-only** | The request asks to discover before authoring, save raw registry JSON/evidence, or explicitly "do not author yet", even if it describes an eventual BPMN. Create `registry-evidence/`, save `registry pull --output json`, `registry list --output json` or `registry search ... --output json`, and `registry get <type> --output json` for each requested type. Do not scaffold a project and do not read deep authoring references. Recipe: [references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks). | 1, then terminate |
 
-Then set the **deliverable scope**, a separate axis from the mode above:
-*package-ready* when pack, upload, publish, deploy, debug, or run is asked for,
-*source-only* when none of those is. A source-only deliverable skips step 2b's
-`init` entirely — every `init` variant, including
+Otherwise ask the user before scaffolding (AskUserQuestion), offering
+**"Something else"** last so they can describe a different path:
+
+| Mode | Choose it when | Phases |
+| --- | --- | --- |
+| **Draft** (recommend this) | The default for a new process. Also whenever the user wants to see the shape first, requirements are vague, the process branches or runs to roughly five or more steps, or the wording is *design* / *what would it look like* / *show me*. | 1–3, stop at the approval gate |
+| **Auto** | The user gave the exact topology, the process is short and linear, or the wording is *just build it*. | 1–4, no stop |
+
+Resolve it in this order. An explicit instruction from the user ("just build
+it", "show me the shape first") decides it — obey it and never ask. Otherwise
+ask. When nobody is available to answer (non-interactive or headless), take
+**Auto** and record that choice prominently in the final report: draft mode's
+approval gate cannot be satisfied with no user to approve it, so drafting would
+stall.
+
+**Draft mode is never the deliverable on its own.** The user's approval of the
+shape is what authorizes phase 4. Without it, report the skeleton as an
+unapproved draft rather than as a finished process.
+
+### Deliverable scope
+
+An independent dial: *package-ready* when pack, upload, publish, deploy, debug,
+or run is asked for, *source-only* when none of those is. A source-only
+deliverable skips `init` entirely — every `init` variant, including
 `--skip-solution-registration`, writes the four generated package files, and
-Rule 16 requires a source-only draft to emit only the `.bpmn` plus its notes
-file. Scope is independent of whether the process uses an Integration Service
-connector: a plain three-node RPA process can be a source-only draft too.
+Rule 16 requires source-only output to be the `.bpmn` plus its notes file and
+nothing else. Scope is independent of whether the process uses an Integration
+Service connector: a plain three-node RPA process can be source-only too.
+Draft mode needs package-ready scope, because the user sees the shape by
+opening an uploaded solution.
 
-For authoring asks (greenfield or brownfield), author
-early: do not pre-read every reference before writing. Read a reference only
-when you reach the structure it covers, get the needed templates, then write the
-first complete draft before further spelunking. If
+Author early: do not pre-read every reference before writing. Read a reference
+only when you reach the structure it covers, get the needed templates, then
+write the first complete version before further spelunking. If
 [references/structural-bpmn.md](references/structural-bpmn.md) or
 [references/expression-authoring.md](references/expression-authoring.md)
-directly covers the requested construct, write a first complete draft before
-further spelunking.
+directly covers the requested construct, write it before further spelunking.
 
 0. **Check login.** `uip login status --output json`, chained in the same Bash
    call as step 1's `registry pull` — not a turn of its own. Without login,
@@ -321,7 +326,7 @@ before writing any `xsi:type` attribute. See
    literally, including the exact phrase `connection binding`. That rule holds
    regardless of whether the deliverable is source-only, so it does not by
    itself restrict which files may exist.
-   For a source-only draft, emit **only** the `.bpmn` plus the notes file — do
+   For a source-only deliverable, emit **only** the `.bpmn` plus the notes file — do
    NOT create the four generated package files (Rule 16); authoring them fails
    the boundary the task tests. Name every CLI-owned blocker literally in the
    notes file, including the exact phrase `connection binding`, plus dynamic
@@ -398,7 +403,7 @@ before writing any `xsi:type` attribute. See
    Treat a nonzero result as a source/precondition failure: fix the BPMN or
    `project.uiproj`, revalidate, and refresh again — never repair the generated
    JSON by hand. Refresh is needed only for a package-ready, upload, debug,
-   publish, or deploy deliverable, not for a source-only draft. For the full
+   publish, or deploy deliverable, not for a source-only deliverable. For the full
    contract (scope, idempotency, binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
@@ -520,7 +525,7 @@ and honestly surfaced to the user as gaps when asked.
 
 | Topic | Read |
 | --- | --- |
-| Sketch the shape first and agree it with the user (sketch mode) | [references/sketch-mode.md](references/sketch-mode.md) |
+| Phase 2 skeleton — blank boxes, real control flow, no registry calls | [references/phase-2-skeleton.md](references/phase-2-skeleton.md) |
 | Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
 | Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
 | Worked-out topology for a recurring process shape, and how shapes compose | Patterns table above → `references/patterns/*-guide.md` |

@@ -1,18 +1,20 @@
-# Sketch Mode
+# Phase 2 — Skeleton
 
-Author a skeleton of blank boxes, arrows and labels, upload it, and agree the
-shape with the user before wiring anything real. A sketch reaches a link the
-user can open in about two minutes because it makes **no registry calls**.
+Author a skeleton of blank boxes, arrows and labels, upload it, and reach a link
+the user can open in about two minutes — it makes **no registry calls**.
 
-Use it for a greenfield authoring ask when the user picked sketch mode, or asked
-to see the shape first. Do not use it for a brownfield edit, a discovery-only
-task, or when the user asked for a complete working implementation (Auto mode).
+**Both draft and auto mode run this phase.** Draft mode stops afterwards and
+asks the user to agree the shape (phase 3); auto mode continues straight into
+phase 4 and pastes real payloads into these same boxes. Building the structure
+first means a template error is never tangled up with a structural one. Skip
+this phase only for a brownfield edit (the shape already exists) or a
+discovery-only task (nothing is authored).
 
-## What a sketch is
+## What a skeleton is
 
-A sketch exists so the user can scan the process end to end and say "yes, that's
-it" or "drop that step". It is not a working process and must never be reported
-as one.
+A skeleton exists so the shape can be read end to end — so a user can say "yes,
+that's it" or "drop that step", and so phase 4 has a validated structure to fill
+in. It is not a working process and must never be reported as one.
 
 1. **Every activity is a bare `<bpmn:task>`** carrying only an `id` and a
    `name`. No `uipath:activity`, no `uipath:event`, no payloads, no resource
@@ -66,30 +68,29 @@ Boxes are free. A gateway is not, and the three costs always arrive together:
    well-formed XML and fails at parse with
    `XML_NOT_WELL_FORMED: Unbound namespace prefix: "xsi"`.
 
-A sketch can express **reads but not writes**. The gateway reads the variable
+A skeleton can express **reads but not writes**. The gateway reads the variable
 through its conditions, which is plain structural BPMN. What *assigns* the
 variable is a `uipath:output` mapping inside a node's registry payload, which a
-sketch deliberately does not have. So the producer is implied by position — the
+skeleton deliberately does not have. So the producer is implied by position — the
 box upstream of the gateway is understood to be what will assign it. Naming it
 in the label helps: `Classify ticket [Agent] → Classification`.
 
 ## Expected findings — do not chase them
 
-A sketch validates as **Valid** with warnings, and those warnings are correct
-for a sketch. Fix nothing that appears here:
+A skeleton validates as **Valid** with warnings, and those warnings are correct
+for a skeleton. Fix nothing that appears here:
 
 - `Variable "vars.<id>" is read but never assigned; it will be empty at run
   time` — one, at process level.
 - `VARIABLE_NOT_SET: Variable '<name>' is not set at this point in the flow` —
   one per conditioned branch flow. These read like errors and are not.
 
-Treat a sketch as validating cleanly when there are **zero errors**. Act only on
+Treat a skeleton as validating cleanly when there are **zero errors**. Act only on
 error-severity findings, and only when they block import.
 
 ## Steps
 
-Phase 1 (preflight) and step 2b (scaffold) are unchanged — see
-[SKILL.md](../SKILL.md#workflow). From there:
+Phase 1 (preflight) runs first — see [SKILL.md](../SKILL.md#workflow). Then:
 
 1. **Author the skeleton** into the `.bpmn` that `init` generated, editing in
    place. Preserve the generated start event's `id`, its
@@ -104,7 +105,7 @@ Phase 1 (preflight) and step 2b (scaffold) are unchanged — see
    act on errors, ignore the expected warnings above.
 4. **`uip maestro bpmn refresh <project-path> --output json`** — run it from the
    solution directory. `refresh` validates internally and refuses to write
-   anything while validation fails, so step 3 must pass first. On a sketch that
+   anything while validation fails, so step 3 must pass first. On a skeleton that
    preserved the start event it reports `WrittenFiles: []`, which is the
    drift check passing rather than a no-op to skip.
 5. **Ask for consent once, covering the whole iterate loop**, then
@@ -124,7 +125,8 @@ Removing a box is the common edit: delete the task, delete its two sequence
 flows, add one replacement flow, then `format`. Since entry points are
 untouched, `refresh` stays a no-op.
 
-The loop ends at an explicit approval gate. That approval is what authorizes
-real wiring — registry pull, element disambiguation, live connections, and
-payloads pasted into the existing boxes. Until then the skeleton is an
-unapproved sketch, and saying otherwise misreports it.
+In draft mode the loop ends at an explicit approval gate, and that approval is
+what authorizes phase 4 — registry pull, element disambiguation, live
+connections, and payloads pasted into the existing boxes. Until then the
+skeleton is an unapproved draft, and saying otherwise misreports it. In auto
+mode there is no gate and no iteration: phase 2 hands straight to phase 4.
