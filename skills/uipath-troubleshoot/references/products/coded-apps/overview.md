@@ -25,6 +25,7 @@ uip codedapp pull [project-id]        — pull project files from Studio Web
 uip codedapp pack <dist>              — package build output into .nupkg
 uip codedapp publish                  — upload .nupkg + register the app
 uip codedapp deploy                   — deploy or upgrade the app (registers prod redirect URI)
+uip codedapp delete                   — delete a deployed app from one folder
 uip admin external-apps get <client-id>       — registered redirect URIs + scopes of the OAuth client
 uip admin external-apps update <client-id>    — add/replace redirect URIs (--redirect-uri) or scopes (--user-scope)
 ```
