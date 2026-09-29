@@ -44,7 +44,7 @@ def _scheduled_node(**inputs: Any) -> dict[str, Any]:
     return {
         "id": "start",
         "type": "core.trigger.scheduled",
-        "typeVersion": "1.1",
+        "typeVersion": "1.2",
         "display": {"label": "Every Hour"},
         "inputs": base,
         "outputs": {"output": {"type": "object", "source": "=result.response", "var": "output"}},
@@ -58,10 +58,37 @@ def _well_formed() -> dict[str, Any]:
         "nodes": [_scheduled_node()],
         "edges": [],
         "definitions": [
-            {"nodeType": "core.trigger.scheduled", "version": "1.1",
+            {"nodeType": "core.trigger.scheduled", "version": "1.2",
              "model": {"type": "bpmn:StartEvent", "eventDefinition": "bpmn:TimerEventDefinition"}},
         ],
     }
+
+
+# The 1.1 contract's inputDefinition, trimmed to what the checker reads: it
+# declares `timerPreset` (required) beside `timerValue`.
+_V11_INPUT_DEFINITION = {
+    "type": "object",
+    "properties": {"timerType": {"type": "string"}, "timerPreset": {"type": "string"},
+                   "timerValue": {"type": "string"}},
+    "required": ["timerPreset"],
+}
+_V12_INPUT_DEFINITION = {
+    "type": "object",
+    "properties": {"timerType": {"type": "string"}, "timerValue": {"type": "string"}},
+    "required": ["timerValue"],
+}
+
+
+def _v11(**inputs: Any) -> dict[str, Any]:
+    """The SDK's `scheduled({ every })` emission for an ISO interval: 1.1, preset split."""
+    p = _well_formed()
+    node = _scheduled_node(**inputs)
+    node["typeVersion"] = "1.1"
+    node["inputs"].pop("timerValue", None)
+    node["inputs"].update(inputs)
+    p["nodes"][0] = node
+    p["definitions"][0].update(version="1.1", inputDefinition=_V11_INPUT_DEFINITION)
+    return p
 
 
 def test_interval_passes(tmp_path: Path) -> None:
@@ -98,13 +125,14 @@ def test_stray_timer_preset_is_ignored(tmp_path: Path) -> None:
 
 
 def test_cycle_in_timer_preset_only_fails(tmp_path: Path) -> None:
-    """The exact regression this checker missed: the cycle expression written to
-    `timerPreset` with no `timerValue` passed the old checker but failed
-    `uip maestro flow validate` with REQUIRED_FIELD timerValue."""
+    """The exact regression this checker missed (#3148): on the 1.2 contract the
+    cycle expression written to `timerPreset` with no `timerValue` passed the old
+    checker but failed `uip maestro flow validate` with REQUIRED_FIELD timerValue."""
     p = _well_formed()
     node = _scheduled_node(timerPreset="R/PT1H")
     node["inputs"].pop("timerValue")
     p["nodes"][0] = node
+    p["definitions"][0]["inputDefinition"] = _V12_INPUT_DEFINITION
     _write_flow(tmp_path, p)
     r = _run(tmp_path)
     assert r.returncode != 0
@@ -290,3 +318,49 @@ def test_grammar_rejects_multi_unit_out_of_range_and_zero_durations() -> None:
     arbitrary period (every 2.5 hours, every 90 minutes) is expressible."""
     for value in ("R/PT2H30M", "R/PT150M", "R/PT90M", "R/PT24H", "R/PT60M", "R/PT0H", "custom", "hourly"):
         assert not CYCLE_RE.fullmatch(value), value
+
+
+def test_v11_preset_interval_passes(tmp_path: Path) -> None:
+    """The 1.1 contract carries a dropdown preset in `timerPreset` — what the SDK's
+    `scheduled({ every: 'R/PT1H' })` emits (adhoc 2026-09-25, v2). Valid flow,
+    same schedule as 1.2 `timerValue: R/PT1H`."""
+    _write_flow(tmp_path, _v11(timerPreset="R/PT1H"))
+    r = _run(tmp_path)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_v11_custom_interval_reads_timer_value(tmp_path: Path) -> None:
+    _write_flow(tmp_path, _v11(timerPreset="custom", timerValue="R/PT1H"))
+    r = _run(tmp_path)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_v11_custom_with_wrong_cadence_fails(tmp_path: Path) -> None:
+    _write_flow(tmp_path, _v11(timerPreset="custom", timerValue="R/P1D"))
+    r = _run(tmp_path)
+    assert r.returncode != 0
+
+
+def test_v11_missing_preset_fails(tmp_path: Path) -> None:
+    """On 1.1 the cycle is not in `timerValue` unless `timerPreset` says custom."""
+    _write_flow(tmp_path, _v11(timerValue="R/PT1H"))
+    r = _run(tmp_path)
+    assert r.returncode != 0
+    assert "timerpreset" in _out(r)
+
+
+def test_v11_by_version_when_input_definition_is_absent(tmp_path: Path) -> None:
+    p = _v11(timerPreset="R/PT1H")
+    p["definitions"][0].pop("inputDefinition")
+    _write_flow(tmp_path, p)
+    r = _run(tmp_path)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_node_and_definition_versions_must_match(tmp_path: Path) -> None:
+    p = _v11(timerPreset="R/PT1H")
+    p["nodes"][0]["typeVersion"] = "1.2"
+    _write_flow(tmp_path, p)
+    r = _run(tmp_path)
+    assert r.returncode != 0
+    assert "typeversion" in _out(r)

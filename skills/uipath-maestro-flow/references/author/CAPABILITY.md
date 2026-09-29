@@ -45,6 +45,7 @@ Every node in a `.flow` file has exactly one author. The validator enforces this
 | Category | Node types | Why |
 | --- | --- | --- |
 | Connector activities | `uipath.connector.<key>.<op>` | `inputs.detail` is a `=jsonString:essentialConfiguration` envelope. Validate rejects hand-authored shapes. |
+| Non-catalog connector activities | `uipath.connector.custom.<key>.<slug>` | Same envelope, plus the definition and `inputs.inlineActivityConfiguration` are built by `node add --metadata --scripts` from the generated activity. See [connector/impl-inline.md](plugins/connector/impl-inline.md). |
 | Connector triggers | `uipath.connector.trigger.<key>.<trigger>` | Same envelope + product-managed `bindings_v2.json` derivation. |
 | Wait for events (mid-flow) | `uipath.connector.event.<key>.<event>` | Same envelope and event metadata as a trigger, but placed mid-flow (has an `input` port) instead of as the start node. See [connector-trigger/impl.md — Wait for events](plugins/connector-trigger/impl.md#wait-for-events-uipathconnectoreventkeyevent). |
 | Managed HTTP | `core.action.http.v2` | Same envelope. |

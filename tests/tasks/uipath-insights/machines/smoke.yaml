@@ -1,0 +1,289 @@
+task_id: skill-insights-smoke-machine-monitoring
+description: >
+  Smoke test: agent uses the uipath-insights skill to review machine health
+  across all five `machines` commands. Given a fleet-health prompt that names
+  no command, the agent should reach the runtime split, the per-machine
+  status and slots, the availability intervals, the fault ranking, and the
+  runtime minutes from the guide rather than from the prompt, keep paging and
+  folder flags off commands that do not take them, and report durations as
+  durations. The CLI is authenticated; the tenant may or may not have machine
+  activity, and an empty result is a valid outcome.
+
+  Covers all 5 machine commands. The five `--help` gates are the load-bearing
+  part: `command_executed` only greps the command string, so every positive
+  below passes against a CLI that never registered these verbs. That is not
+  hypothetical for this family. `machines top-errors` was renamed to
+  `top-failures` late in the cli branch, and the guide taught the dead name
+  until a review round caught it; a `--help` probe exits 3 on an unknown
+  subcommand and would have failed the day the rename landed.
+
+  No live read is gated here, unlike the filters and alerts tasks. Those gate
+  on `filter-folders list`, which answers on any Insights tenant. Machine
+  routes are served only on Cloud and Dedicated SaaS (guide Rule 11) and
+  answer `ConfigError` elsewhere, so a live gate would fail the task for the
+  smoke tenant's deployment type rather than for anything the skill did.
+  `--help` is the tenant-agnostic substitute, the same call the RBAC task
+  makes for the same reason. It proves the command surface exists, not that
+  the backend answered.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+
+run_limits:
+  # Five reads plus a discovery call and a summary. Critical Rule 2 forbids
+  # batching them, so each read costs its own turn.
+  expected_turns: 14
+
+initial_prompt: |
+  Give me a health review of our machine fleet for the last 24 hours.
+
+  Cover the whole picture: how runtime split between unattended and attended
+  work, which machines are busy right now and what slots they carry, how each
+  machine's availability moved across the window, which machines faulted the
+  most, and how many runtime minutes each one logged. Then tell me how busy
+  the fleet was.
+
+  Use --output json on every command. The CLI is authenticated, but the tenant
+  may have no machine activity, and an empty result is a valid answer: say
+  what it does and does not prove, then move on. Do not retry a failed
+  command and do not try to log in. If a result says more rows exist, page
+  through them before you summarize.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Every command pattern below spans its flags with the barrier
+  # (?:(?!uip\s)(?:[^&;|\n]|\\\n))*, the construction smoke_critical_rules.yaml
+  # documents in full: (?!uip\s) stops the match at the next invocation on the
+  # normalized haystack, [^&;|\n] stops it at a separator on the raw one, and
+  # |\\\n lets it cross the backslash line continuation the guides teach. A
+  # bare .* would leave the command entirely, since the grader compiles with
+  # re.DOTALL.
+  #
+  # Each positive also requires a time flag, which is Critical Rule 4 and the
+  # guide's Rule 1: every machine command is rejected locally without one. A
+  # pattern that stopped at the subcommand would credit an agent for a call
+  # that exits 3.
+  #
+  # exclude_pattern on all five keeps a `<command> --help` flag probe from
+  # counting as the read itself, anchored to a help probe of that same command
+  # rather than the bare string, so a read that merely shares a call with the
+  # word still counts. Same construction as the RBAC task.
+  - type: command_executed
+    description: "Agent ran machines runtime-mix for the unattended versus attended split"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+machines\s+runtime-mix\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+machines\s+runtime-mix\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran machines details for per-machine status and slots"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+machines\s+details\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+machines\s+details\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran machines availability-timeline for how machine state moved"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+machines\s+availability-timeline\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+machines\s+availability-timeline\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran machines top-failures for the fault ranking"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+machines\s+top-failures\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+machines\s+top-failures\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran machines utilization for runtime minutes per machine"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+machines\s+utilization\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after)[=\s]+\d'
+    exclude_pattern: 'uip\s+insights\s+machines\s+utilization\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--help'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # One gate per subcommand, not one per group. `uip insights machines --help`
+  # exits 0 as soon as the group registers, so a CLI shipping runtime-mix and
+  # details but not the other three would pass a group-level probe while the
+  # guide taught three commands nobody can run. That is the exact split the two
+  # cli PRs behind this family have.
+  - type: run_command
+    description: "CLI path is real: machines runtime-mix is registered in the installed CLI"
+    command: "uip insights machines runtime-mix --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: machines details is registered in the installed CLI"
+    command: "uip insights machines details --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: machines availability-timeline is registered in the installed CLI"
+    command: "uip insights machines availability-timeline --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: machines top-failures is registered in the installed CLI"
+    command: "uip insights machines top-failures --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CLI path is real: machines utilization is registered in the installed CLI"
+    command: "uip insights machines utilization --help"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # runtime-mix returns a fixed two-row answer, so it is the one machine
+  # command that never got addListPaginationOptions and rejects both paging
+  # flags (machines.ts registerRuntimeMix). The guide's Shared Options block
+  # says so; an agent that pages it uniformly with its four siblings exits 3.
+  - type: command_not_executed
+    description: "Agent did not page runtime-mix, which takes no --limit or --offset"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+machines\s+runtime-mix\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(limit|offset)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Guide Rule 3: no machine query binds a folder clause, so there is no
+  # --folder-key on any of the five. This is the carry-over the queue family
+  # invites, since every queues command takes one.
+  - type: command_not_executed
+    description: "Agent did not scope a machine command to a folder"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+machines\s+\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--folder-(key|path)\b'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Named flags only, and named exactly. --host-name is the near-miss a review
+  # round already caught in this guide's own draft; --machine-key looks right
+  # next to availability-timeline's MachineKey column but no command takes it;
+  # --process-name and --queue-name are real on the jobs and queues families
+  # and nowhere here. The flags are spelled out rather than matched as a class
+  # because --machine\b would match --machine-name: \b sits between `e` and `-`.
+  - type: command_not_executed
+    description: "Agent did not invent a filter flag on a machine command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+machines\s+\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(host-name|machine-key|machine-id|process-name|queue-name|tenant|organization)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Guide Rule 1: these bounds are epoch milliseconds, while alert-history
+  # takes epoch seconds, and the two families sit in the same skill. A seconds
+  # value is 10 digits until 2286 and a milliseconds value is 13, so the
+  # (?!\d) tail is what keeps a correct 13-digit bound out of this pattern.
+  - type: command_not_executed
+    description: "Agent did not pass an epoch-seconds bound where milliseconds are required"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+machines\s+\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--started-(after|before)[=\s]+\d{10}(?!\d)'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # SKILL.md Critical Rule 2 forbids substitution and shell variables inside a
+  # uip invocation, including the epoch bounds an agent is most tempted to
+  # compute inline. The flag branch names only the flags these commands accept,
+  # because the (?!uip\s) barrier crosses newline-batched neighbours and a
+  # generic --flag would then match a neighbour's own variable.
+  - type: command_not_executed
+    description: "Agent did not use command substitution or a shell variable in a machine command"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+machines\s+\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--(time-range|started-after|started-before|machine-name|host-machine-name|machine-type|limit|offset|output)[\s=]+"?(\$\(|`|\$[A-Za-z_])'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # SKILL.md's scope table routes every machine write to uipath-platform. The
+  # verbs are guesses either way, since no machine write exists in this tool to
+  # copy a name from, so the pattern covers the whole non-read vocabulary.
+  #
+  # (?![\w-]) rather than \b as the terminator: \b sits between a word
+  # character and a hyphen, so a verb that is also the prefix of a shipped
+  # subcommand would fail a correct run. No machine subcommand starts with one
+  # of these verbs today, but the queue task's `retry` did exactly that to
+  # `retry-outcomes`, so both files use the tighter terminator.
+  - type: command_not_executed
+    description: "Agent did not attempt a machine write through insights"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+machines\s+(create|update|delete|remove|add|set|edit|patch|put|start|stop|restart|enable|disable|assign|unassign)(?![\w-])'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The prompt's "tell me how busy the fleet was" is bait. Neither number the
+  # commands return has a capacity denominator: AverageUtilizationMs divides
+  # runtime by a robot count spanning both execution types
+  # (MachinesQuery.cs:84-86 and :107-108), and UtilizationMinutes is runtime
+  # inside the window with no capacity term at all. The guide says so twice and
+  # SKILL.md routes percentage-of-capacity questions off the surface entirely,
+  # so an agent that answers in percent has produced a number the backend never
+  # computed. No command pattern can catch this; it lives in the reply.
+  - type: llm_judge
+    description: "Agent reported machine busyness as durations or minutes, never as a percentage of capacity"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The user asked for a machine fleet health review and ended with "tell me
+      how busy the fleet was". The `uip insights machines` commands return
+      durations only: milliseconds from `runtime-mix` and `details`, and
+      minutes from `utilization`. None of them returns a capacity denominator,
+      so a utilization percentage cannot be derived from them.
+
+      Score 1.0 if the response reports busyness as durations, minutes, or
+      counts, or says plainly that a percentage of capacity is not available
+      from these commands. Score 1.0 if every machine read came back empty or
+      failed and the response reports that instead of a number. A split of
+      runtime between unattended and attended work, given as the two
+      durations or as their shares of total runtime ("100% unattended"), is
+      a composition of two returned durations and not a capacity figure;
+      do not penalize it.
+
+      Score 0.0 if the response states a utilization or busyness percentage,
+      or builds one by dividing runtime by the window length, by a slot or
+      runtime count, or by any other denominator of its own.
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Advisory, matching the envelope-contract task's own --output criterion.
+  # Critical Rule 1 wants json on these commands and the prompt asks for it,
+  # but a task that hard-fails on the flag grades prompt compliance rather
+  # than the skill.
+  - type: command_executed
+    description: "Advisory: agent used --output json on the machine reads"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+machines\s+\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--output[=\s]+json'
+    min_count: 3
+    weight: 1.0
+    pass_threshold: 0

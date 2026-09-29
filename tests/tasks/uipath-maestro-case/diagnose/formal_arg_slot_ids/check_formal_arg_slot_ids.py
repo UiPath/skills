@@ -39,6 +39,6 @@ for kind in ("inputs","outputs"):
         elif sid==name or (var and sid==var):
             bad.append(f"{kind}['{name}'] id={sid!r} still copies its companion name")
 if renamed: fail("variables were renamed or removed instead of re-minting ids:\n  - "+"\n  - ".join(renamed))
-if bad: fail("Rule 22 / Check 10 violations remain (CLI validate does not catch these):\n  - "+"\n  - ".join(bad))
+if bad: fail("Rule 23 / Check 10 violations remain (CLI validate does not catch these):\n  - "+"\n  - ".join(bad))
 n=len((v.get("inputs") or []))+len((v.get("outputs") or []))
 print(f"PASS: all {n} formal-arg slot ids are distinct from their companion names; names/vars unchanged")

@@ -2,6 +2,8 @@
 
 Scaffold a production-ready UiPath Coded Action App — a React form component rendered inside UiPath Action Center as part of a Maestro or Agent automation workflow.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 ## What Is a Coded Action App?
 
 When an automation creates a human task (via `CreateAppTask` RPA activity/Maestro `User Task`/Agent `Escalation`/Flow `HITL node`), the assigned action app is rendered in Action Center for the reviewer. The app:
@@ -412,7 +414,7 @@ Edit `Form.css` only for **structural** Q5 changes the tokens can't express — 
 
 The document source was already settled in **Q3-doc** (direct file input → Attachments, file path (string) input → Buckets, Data Fabric attachment → Entities + Attachments). If it was not — e.g. the user only said "load a PDF from a storage bucket" — go back and ask Q3-doc first; that phrasing does not pick a path. Fetching the bytes for any of those is straightforward — get the file from the service, build a blob URL (`URL.createObjectURL(blob)`), and pass it to the viewer below as `fileUrl`. The part agents get wrong is the **rendering** inside Action Center's sandboxed iframe — that is what the example below exists to get right.
 
-> **Prefer the PDF Viewer widget when installable.** `@uipath/ui-widgets-pdf-viewer` replaces this hand-rolled DocumentTab — packaged pdf.js worker (no CDN fetch to be blocked by CSP), bucket/Data Fabric/URL/blob sources without manual byte-fetching, toolbar, password prompts. Follow [widgets/pdf-viewer.md](widgets/pdf-viewer.md), which starts with the required publish-status check. Use the DocumentTab pattern below only when the widget is not yet published/installable.
+> **Prefer the PDF Viewer widget.** `@uipath/ui-widgets-pdf-viewer` replaces this hand-rolled DocumentTab — packaged pdf.js worker (no CDN fetch to be blocked by CSP), bucket/Data Fabric/URL/blob sources without manual byte-fetching, toolbar, password prompts. Follow [widgets/pdf-viewer.md](widgets/pdf-viewer.md). Use the DocumentTab pattern below only when the app cannot take the dependency.
 
 #### Anti-pattern warning — ALWAYS enforce
 

@@ -41,6 +41,51 @@ full PO.Frontend canvas rule set offline (added in UiPath/cli#3135). If the CLI
 is unavailable, they fall back to parsing the BPMN for well-formedness and
 walking the structural checklist in the skill's `references/structural-bpmn.md`.
 
+## Arm neutrality — two invariants these tasks must keep
+
+Every task here is shared by both comparison arms: the shipped `skills/uipath-maestro-bpmn`
+(registry + raw XML) and `preview/skills/uipath-maestro-bpmn` (the TypeScript builder SDK),
+selected by `agent.plugins` in the experiment, not by the task.
+Two things therefore have to stay out of the task YAMLs, or a run measures the fixture instead of the skill.
+
+**1. Never stage a skill directory via `sandbox.template_sources`.**
+Until 2026-09-23 all 87 of these tasks copied `skills/uipath-maestro-bpmn` (368 KB: `SKILL.md`, `references/`, `validator/bpmn-spec.json`) into the agent's working directory at `mount_point: .`.
+No other skill family does this, nothing reads it — the skill arrives through the plugin catalog — and under the preview arm it put the *other* generation's guidance in the agent's cwd, which agents then read and followed instead of the SDK skill.
+That defeats the stated purpose of `flow-v2-preview.yaml` ("measures the Flow v2 authoring path rather than a mix of both generations").
+`template_sources` is for pre_run/post_run tooling and fixtures only; see tests/README.md.
+`scripts/check-task-driver.py` enforces this now — the README alone did not hold, because `_porting/PORTING-BRIEF.md` went on telling authors to add the line.
+
+**2. Prompts state the outcome, never the mechanism.**
+These two both prescribe the v1 path, and the second asks by hand for work the builder SDK's serializer and `bpmn format` do on their own:
+
+```
+- Discover X via the registry and author it from the registry template.
+- Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
+  for every sequence flow.
+```
+
+Write what the emitted file must contain and let each arm's skill decide how:
+
+```
+- Resolve X's type and payload the way your skill prescribes.
+- The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+  every node and an edge for every sequence flow.
+```
+
+The exception is a task that grades registry usage itself (`smoke/registry_discovery.yaml`,
+`connector/registry_discovery.yaml`, `single_node/timer_start/timer_start.yaml`, and the
+`connector_features/` tasks whose criteria assert `registry pull`/`get`).
+There the registry IS the subject under test, so naming it is correct.
+
+**3. Never name a `references/*.md` file in a prompt.**
+`preview/skills/uipath-maestro-bpmn/references/` holds exactly one file, `bpmn-runtime.md`.
+`structural-bpmn.md`, `public-safety.md`, `expression-authoring.md` and `registry-workflow.md` exist only under `skills/uipath-maestro-bpmn/`, so "per the skill's structural reference" dangles under the SDK arm.
+Read those documents as a task AUTHOR; write what the output must contain, and let each arm's skill decide how.
+
+**What is still open.** `flow-v2-preview.yaml`'s `extra_mounts` binds the repo root read-only, so the v1 skill tree stays *readable* from inside the preview container even though the working-directory copy is gone.
+Invariant 3 is what keeps that from mattering: nothing points an agent at it, so nothing finds it.
+Removing that mount is a separate change — plugin discovery depends on it.
+
 ## Contributor Commands
 
 Run the Maestro BPMN smoke eval:

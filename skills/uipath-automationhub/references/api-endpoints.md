@@ -69,6 +69,14 @@ Body:
 
 **Studio Web link** (optional): the schema's `OVR-OVERVIEW_STUDIO_WEB_LINK` question links the process to a Studio Web solution. Its `value` is a JSON **string** — `{"url": "<{baseUrl}/{org}/studio_/designer/{projectId}?solutionId={id}>", "name": "<solution name>", "hasProcessMap": <bool>}` (`url` required; `hasProcessMap: true` only when the solution's orchestration project has a `.bpmn` — it drives AH's Maestro diagram preview). Settable at create or via the update path; empty string unlinks.
 
+**Applications used** (`<ASSESSMENT>-COUNT_APPS`; optional unless the tenant flags it `required`): `value` is an array of `/appinventory` ids. When the schema shows a **`new_applications`** property beside `value`, the same answer can also create applications the inventory lacks — any submitter, no `MANAGE_APP_INVENTORY`, no `categoryIds`:
+
+```json
+{ "value": [12], "new_applications": [ { "application_name": "…", "application_version": "…", "application_language": "…" } ] }
+```
+
+Each entry: `application_name` required (1–50), optional `application_version` (≤20), `application_language` (≤50), `application_comments` (≤512), `application_is_citrix_client` (boolean); no other keys; ≤20 entries. Matched on name + version (case/space-insensitive) — a match reuses the existing inventory row, otherwise a new row is created and linked. Either key alone is fine. The property is absent on builds that predate it and when the admin disabled adding applications for the section. Rejections are `400` with message `Invalid Application Data. <reason>`: `Unknown application id(s): …`, `Adding new applications is disabled for this assessment…`, `…requires a non-empty application_name`, `…exceeds 50 characters`, `…invalid version, language, comments, or citrix flag`, `At most 20 new applications…`. "Thin applications used" (`…-COUNT_THIN_APPS`) accepts inventory ids only.
+
 When a required field is missing the API may return `errorDetails: {}` (no field named) with `"Please fill in all the required information"` — usually the un-flagged owner/submitter, but **tenant admins can mark additional questions required** (commonly "Applications used"/"Thin applications used"); diff the payload against every `required`-flagged question in the live schema.
 
 **Response 201** — the standard envelope with the created process **nested under `data`**: `{ "message": "Resource Created", "statusCode": 201, "data": { "process_id": …, "process_uuid": …, "process_name": … } }`. Read **`data.process_id`** — it is NOT at the top level. If you received a 201 the process WAS created — never re-POST because a field read came back undefined; re-read the response instead. *(Used by the publish flow.)*
@@ -116,7 +124,7 @@ The Automation Hub users on the tenant (verified live): paged envelope with the 
 **It is not the ground truth for who can own a process, and must never gate a publish.** Two defaults make it under-report: `invite` defaults to **activated users only**, so a user who has only ever used the API or CLI is missing from it while being perfectly able to own a process; and results are paged (default 20) under an ordering that is not deterministic when no search text is given, so a user can be absent from one page and present in another. Pass **`?s=<email>&invite=all`** for a scoped, server-side lookup — both parameters, since search alone still hides a not-invited user. The authority for the signed-in identity is the auth/identity call, and the authority for whether an owner is acceptable is the create response. *(Optional in the publish flow.)*
 
 ### GET `/appinventory?limit=<n>`
-The tenant's application inventory (paged; entries carry the application id, name, version, language). **This is the valid-answer set for tenant-required application questions** ("Applications used", "Thin applications used") in the publish flow. *(Used by the publish flow when the tenant requires application questions.)*
+The tenant's application inventory (paged; entries carry the application id, name, version, language). **These ids are the `value` answers for the application questions** ("Applications used", "Thin applications used"); systems not listed go in `new_applications` (see `POST /idea-from-schema`). *(Used by the publish flow whenever the material names systems.)*
 
 ### GET `/automations?search=<text>&limit=<n>&offset=<n>`
 Search/list processes. Returns a paged list (results under a resource key, e.g. `processes`, or a bare array). Use to resolve a name → `process_id`. *(Used by the get flow.)*

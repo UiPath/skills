@@ -38,6 +38,16 @@ The taxonomy file can be in either format — the CLI auto-detects based on whic
 - `{ "field_types": [...], "label_group": {...} }` — the suggestion format; no CLI command writes it to disk, so expect it only if the user hands you such a file
 - `{ "entity_defs": [...], "label_groups": [...] }` — use when importing a taxonomy file provided by the user, or copying another project's taxonomy into this one. `projects get-taxonomy` returns these under a `dataset` wrapper (`{ status, dataset: { entity_defs, label_groups } }`); `import-taxonomy` reads `entity_defs`/`label_groups` at the **top level**, so pass the inner `dataset` object (e.g. `jq .Data.dataset`), not the whole response
 
+**Option C — Empty project (no documents, no taxonomy):**
+
+Use this when the user asks for a blank or empty project and supplies no documents. Omit `<folder-path>`:
+
+```bash
+uip ixp projects create "<name>" --output json
+```
+
+Stop after Step 1 — there are no documents to label.
+
 Use the `ProjectName` from the create output for all subsequent commands. This is the lowercase slug with UUID and `-ixp` suffix (e.g., `my_invoices-f1afa9ef-ixp`), NOT the Title.
 
 Create the working directory using the returned `ProjectName`:

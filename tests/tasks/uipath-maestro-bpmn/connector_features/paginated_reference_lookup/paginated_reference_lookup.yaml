@@ -1,0 +1,115 @@
+# Same-ground campaign contract (Tao, 2026-08-10): loop-neutral v1-base
+# prompt; v1-weighted intersection criteria plus report-only offline advisories;
+# paired limit envelope. Cross-arm parity is enforced by the sync gate.
+task_id: skill-bpmn-paginated-reference-lookup
+description: >
+  Build a UiPath Maestro BPMN process with a Slack `Send Message to Channel`
+  node targeting the `simple` channel. The channel lives on a later page of
+  the `is-sandboxes` Slack channel resources, so resolving the Slack channel
+  id requires either explicit pagination or the SDK's lookup resolver.
+  Triggered by the `resources.md` read-before-call rule added in #1059
+  (ENGCE-58198) — old behavior was to abandon pagination after page 1 and
+  bail to AskUserQuestion.
+
+  Ported from Flow `connector_features/paginated_reference_lookup.yaml`; the
+  Slack send-message node is modeled as a bpmn:sendTask carrying the registry
+  Intsvc.ActivityExecution wrapper instead of a Flow connector node, and
+  validation runs via `bpmn validate` instead of `flow validate`. This
+  structural port stays validate-only, matching Flow's own e2e task, which
+  also carries no `flow debug`/`bpmn debug` criterion — only the paged
+  discovery transcript and the resolved-id artifact are graded.
+tags:
+  - uipath-maestro-bpmn
+  - integration
+  - "mode:build"
+  - "lifecycle:generate"
+  - "shape:multi-node"
+  - connector
+  - "feature:records"
+
+run_limits:
+  expected_turns: 30
+  task_timeout: 1200
+  max_turns: 80
+  turn_timeout: 900
+
+sandbox:
+  template_sources:
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a new UiPath Maestro BPMN process project called "SlackPaginationTest"
+  with a manual start. It should send a Slack message saying "hello from
+  coder-eval" to the channel named `simple` using Slack's "Send Message to
+  Channel" activity.
+  Do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
+  For Slack, use the connection name `is-sandboxes`. If more than one
+  connection matches that name, use any enabled one.
+  Validate the BPMN process when you're done.
+
+  Do NOT upload, publish, deploy, debug, or run the process. Do not pause for
+  approval, confirmation, or feedback.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+# TWO ROUTES ARE CORRECT: the live-v1 loop pages `uip is resources run list`
+# by hand (the collection may be exposed as `conversations` or
+# `curated_channels`); the SDK route resolves the name inside
+# `npx flow-sdk registry prepare … --resolve channel:`. The first criterion is
+# v1-route telemetry is advisory (the SDK arm never runs it); the second records
+# "went past page 1" for either route and only counts a command that succeeded —
+# typing the flag on a failing command does not page. It is also advisory because
+# a command cut off by a turn timeout has unknown status. The final artifact
+# criterion (resolved id C083AN4E61E) stays the authority.
+  - type: command_executed
+    description: "Advisory (live-v1 route): paged Slack channel-resource loop ran more than once"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+\\?"?uipath-salesforce-slack\\?"?\s+\\?"?(curated_channels|conversations)'
+    min_count: 2
+    weight: 3.0
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent went past page 1 — a channel-resource list call carrying `nextPage=<token>`, or `registry prepare … --resolve channel:` which pages inside `prepare`"
+    tool_name: "Bash"
+    command_pattern: '(uip\s+is\s+resources\s+run\s+list\s+\\?"?uipath-salesforce-slack\\?"?\s+\\?"?(curated_channels|conversations)[^\n]*nextPage=|registry\s+prepare\s+\\?"?uipath-salesforce-slack\\?"?[^\n]*--resolve\s+\\?"?channel:)'
+    min_count: 1
+    require_success: true
+    weight: 3.0
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent ran `uip maestro bpmn validate` on the generated BPMN process"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+validate'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN file exists (path-agnostic discovery)"
+    command: "python3 $REFERENCE_DIR/_shared/check_paginated_reference_lookup.py check_exists"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "BPMN process wires the Slack send-message-to-channel node with the resolved Slack id for channel `simple` (C083AN4E61E)"
+    command: "python3 $REFERENCE_DIR/_shared/check_paginated_reference_lookup.py check_wired"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

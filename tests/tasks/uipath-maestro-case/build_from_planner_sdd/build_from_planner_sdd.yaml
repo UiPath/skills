@@ -6,7 +6,7 @@ description: >
   is told to stop before tenant work. Two regression targets: the Planner
   Handoff header must NOT re-route the request into planner Lane A (which would
   emit `planner-returned-invoice-case-tasks.md`), and the design-only stop must
-  NOT produce a substitute plan file — SKILL.md Rule 1 and the Anti-patterns
+  NOT produce a substitute plan file — SKILL.md Rule 7 and the Anti-patterns
   section forbid `tasks/tasks.md` or any other T-numbered restatement of the
   SDD. The staged SDD must never be rewritten, renamed, or regenerated.
   Its legacy `| Tasks file |` handoff row is deliberate bait for the Lane A
@@ -111,7 +111,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "No substitute plan file — SKILL.md Rule 1 forbids tasks/tasks.md or any other T-numbered restatement of the SDD"
+    description: "No substitute plan file — SKILL.md Rule 7 forbids tasks/tasks.md or any other T-numbered restatement of the SDD"
     command: "! test -f tasks/tasks.md && ! find . -name '*.md' -not -name sdd.md -not -path '*/.venv/*' -not -path '*/node_modules/*' -exec grep -lE '^## T[0-9]+' {} + 2>/dev/null | grep -q ."
     timeout: 10
     expected_exit_code: 0

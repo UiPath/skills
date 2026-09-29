@@ -23,7 +23,7 @@ Record `T<n> → Stage_xxxxxx` in `id-map.json` for downstream cross-reference.
 
 ## Layout fields
 
-Do NOT emit node-level `position`, `style`, `measured`, `width`, `height`, `zIndex` (Rule 18 layout-strip). FE auto-layouts on canvas load.
+Do NOT emit node-level `position`, `style`, `measured`, `width`, `height`, `zIndex` (Rule 19 layout-strip). FE auto-layouts on canvas load.
 
 ## Recipe — Primary Stage
 
@@ -51,7 +51,7 @@ Append (or prepend) this object to `nodes` — both orderings are valid for the 
 
 **Do not initialize `entryConditions` or `exitConditions` on a primary Stage at creation time.** Primary stages acquire those keys later when the condition plugins (stage-entry-conditions / stage-exit-conditions) write them — do not create the keys here.
 
-> **Do NOT author edges (Rule 20) — adding a stage node NEVER adds an edge.** Model an SDD "A → B" arrow as B's `entryConditions` (plus A's `exitConditions` when A diverges), never as an edge. See [stages/planning.md § Wiring constraints](planning.md).
+> **Do NOT author edges (Rule 21) — adding a stage node NEVER adds an edge.** Model an SDD "A → B" arrow as B's `entryConditions` (plus A's `exitConditions` when A diverges), never as an edge. See [stages/planning.md § Wiring constraints](planning.md).
 
 ## Recipe — Secondary Stage
 
@@ -90,11 +90,11 @@ After writing, confirm:
 - `nodes[].type` is always `case-management:Stage`
 - `nodes[].data.label` matches the element's displayName
 - `nodes[].data.isRequired` is present and boolean
-- NO `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 18). Only `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` remain
+- NO `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 19). Only `data.parentElement`, `data.isInvalidDropTarget`, `data.isPendingParent` remain
 - For a secondary stage: `data.stageType == "secondary"`, and `data.entryConditions: []` and `data.exitConditions: []` are present (initialized as empty arrays at creation time)
 - For a primary Stage at creation time: `data.entryConditions` / `data.exitConditions` are absent — the conditions plugins will create and populate them later if the sdd.md calls for it
-- **`schema.edges` is still `[]`** (Rule 20). If non-empty, an edge was authored in error: remove it per [case-editing-operations.md § Delete an edge](../../case-editing-operations.md#delete-an-edge--defensive-only) before proceeding.
+- **`schema.edges` is still `[]`** (Rule 21). If non-empty, an edge was authored in error: remove it per [case-editing-operations.md § Delete an edge](../../case-editing-operations.md#delete-an-edge--defensive-only) before proceeding.
 
-Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added.
+Run `uip maestro case validate <file> --output json` after all stages for this plugin's batch are added. A default-profile `Valid` here is a batch check, not completion: the build ends only on `validate --strict --sdd sdd.md` at [Step 12](../../implementation.md#step-12--end-of-phase-3-validator-pass).
 
 <!-- END: impl-json.md -->

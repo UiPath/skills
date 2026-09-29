@@ -18,13 +18,14 @@ for consistency.
 Re-homing decisions vs the Flow grader:
   - ``node.type`` suffix matching (``.create-entity-record`` etc.) becomes an
     ``Intsvc.ActivityExecution`` sendTask matched on ``objectName`` against
-    the Data Service catalog: both the curated and ``_V3`` spelling are
-    accepted for every operation (``CreateEntityRecordCurated|
-    CreateEntityRecord_V3``, ``QueryEntityRecordsCurated|
-    QueryEntityRecords_V3``, ``UpdateEntityRecordV2|UpdateEntityRecord_V3``,
-    ``GetEntityRecordByIdCurated|GetEntityRecord_V3`` -- from
-    ``dataservice-activities.json`` in _porting/BATCH1-ADDENDUM.md), since Flow's node
-    types did not distinguish them. The connector also exposes a GENERIC
+    the Data Service catalog: every spelling the catalog serves for an
+    operation is accepted -- plain, curated/``V2``, and ``_V3``
+    (``CreateEntityRecord|CreateEntityRecordCurated|CreateEntityRecord_V3``,
+    ``QueryEntityRecords|QueryEntityRecordsCurated|QueryEntityRecords_V3``,
+    ``UpdateEntityRecord|UpdateEntityRecordV2|UpdateEntityRecord_V3``,
+    ``GetEntityRecord|GetEntityRecordById|GetEntityRecordByIdCurated|
+    GetEntityRecord_V3`` -- from ``uip is activities list``), since Flow's
+    node types did not distinguish them. The connector also exposes a GENERIC
     entity-CRUD form (``objectName`` is the entity name itself, e.g.
     "ContractRegistry", on every node; the operation is read off the context
     ``operation``/``method`` fields instead) -- a real CI-graded solution used
@@ -167,10 +168,10 @@ ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 ENTITY = "ContractRegistry"
 FIELDS = {"contractTitle", "status", "priority", "dueDate", "value", "isUrgent"}
 
-CREATE_OBJECTS = {"CreateEntityRecordCurated", "CreateEntityRecord_V3"}
-QUERY_OBJECTS = {"QueryEntityRecordsCurated", "QueryEntityRecords_V3"}
-UPDATE_OBJECTS = {"UpdateEntityRecordV2", "UpdateEntityRecord_V3"}
-GET_OBJECTS = {"GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
+CREATE_OBJECTS = {"CreateEntityRecord", "CreateEntityRecordCurated", "CreateEntityRecord_V3"}
+QUERY_OBJECTS = {"QueryEntityRecords", "QueryEntityRecordsCurated", "QueryEntityRecords_V3"}
+UPDATE_OBJECTS = {"UpdateEntityRecord", "UpdateEntityRecordV2", "UpdateEntityRecord_V3"}
+GET_OBJECTS = {"GetEntityRecord", "GetEntityRecordById", "GetEntityRecordByIdCurated", "GetEntityRecord_V3"}
 
 # The Data Service connector also has a GENERIC entity-CRUD form: objectName
 # is the entity name itself ("ContractRegistry") on every node, and the

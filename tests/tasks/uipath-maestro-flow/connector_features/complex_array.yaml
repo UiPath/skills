@@ -18,6 +18,13 @@ run_limits:
 reference:
   directory: ..
 
+# The recipients live in the Slack workspace behind the connection in the
+# top-level `Shared` folder (2bbc2253…, ~18k users) — the only Slack connection
+# in that folder. The connection in `Shared/uipath-maestro-flow` (849e85d8…)
+# fronts a 48-user sandbox workspace that has neither name; naming that folder
+# (as #3412 did) made the row unpassable without drifting to another connection.
+# The binding check below pins the connection so a drifted build cannot pass.
+#
 # Each recipient must match exactly one Slack user, or the populated check below
 # cannot pass. "Coder Eval" is deliberately NOT used: it is a prefix of "Coder
 # Eval Test", so a substring lookup returns two rows and the agent is then
@@ -25,7 +32,7 @@ reference:
 initial_prompt: |
   Create a new Flow project called "ComplexArrayTest" with a manual trigger that
   creates a Slack group direct message between the users "Coder Eval Test" and
-  "E2E Nightly Summary". Use the connection present in Shared/uipath-maestro-flow.
+  "E2E Nightly Summary". Use the Slack connection in the top-level Shared folder.
   Do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
   Validate the final flow file.
 
@@ -64,6 +71,14 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0
+
+  - type: run_command
+    description: "The Slack node is bound to the Shared-folder Slack connection the prompt names"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ComplexArrayTest --regex '\"connectionId\"\\s*:\\s*\"2bbc2253-29a4-4952-a436-6705d74e5943\"'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
 
   - type: run_command
     description: "The completed flow validates"

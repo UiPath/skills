@@ -50,6 +50,14 @@
       "propertyAttribute": "ConnectionId"
     },
     {
+      "id": "entra",
+      "name": "entra",
+      "resource": "Connection",
+      "resourceKey": "<entra-connection-id from `uip is connections list --output json`>",
+      "default": "00000000-0000-0000-0000-000000000009",
+      "propertyAttribute": "ConnectionId"
+    },
+    {
       "id": "bOneDrive",
       "name": "uipath-microsoft-onedrive connection",
       "resource": "Connection",

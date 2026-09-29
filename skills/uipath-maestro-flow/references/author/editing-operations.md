@@ -33,6 +33,7 @@ Use Edit / Write for all non-carve-out `.flow` edits. Flow CLI is not an opt-in 
 | Delete a node; add/delete an edge; update non-carve-out inputs; add/edit a workflow variable; add a variable update; map End-node outputs | **Edit** | In-place input edits preserve node ID and `$vars`; variable updates are Edit-only. Every edge needs `targetPort` (Rule #6). |
 | Create a subflow | **Edit / Write** | Edit-only, or `Write` for a fresh template. |
 | Replace a non-connector trigger; replace a non-connector mock; insert a node; insert a decision branch; remove a node and reconnect | **Edit** | — |
+| Add a non-catalog connector activity node | **CLI** (carve-out) `node add --metadata --scripts`, then CLI `node configure` | Run `uip maestro flow node add <file>.flow uipath.connector.custom.<key>.<slug> --metadata <Name>.json --scripts <dir>`; the definition and the embedded activity are CLI-written. See [connector/impl-inline.md](plugins/connector/impl-inline.md). |
 | Configure a connector node or connector trigger | **CLI** (carve-out) | Run `uip maestro flow node configure --detail`; it auto-populates `inputs.detail` + `bindings_v2.json`. Hand-authored `inputs.detail` skips `essentialConfiguration` and fails at runtime — no Edit fallback. |
 | Configure a managed HTTP node | **CLI** (carve-out) | Use the documented managed HTTP workflow for `inputs.detail` and connection resources. |
 | Add an inline agent node | **Edit / Write** | Scaffold with `uip agent init --inline-in-flow`, then add the `uipath.agent.autonomous` node and edges directly. |

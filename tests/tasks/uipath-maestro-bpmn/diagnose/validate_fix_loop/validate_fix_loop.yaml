@@ -15,8 +15,6 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
       path: fixture
 
 # Guard: the whole diagnose scenario is only meaningful if the CLI's validate

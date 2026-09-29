@@ -10,11 +10,6 @@ run_limits:
   expected_turns: 20
   max_turns: 55
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -32,12 +27,11 @@ initial_prompt: |
     distinct branch tasks.
   - A bpmn:parallelGateway join (two incoming, one outgoing) synchronizes both
     branches before a single end event. Parallel flows carry no conditions.
-  - Author the structural BPMN per the skill's structural reference (mind the
+  - Author the structural BPMN the way your skill prescribes (mind the
     SUPERFLUOUS_GATEWAY and FAKE_JOIN rules — join with a gateway, not by
-    pointing two flows at one activity); do not hand-author uipath:* XML from
-    prose.
-  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
-    for every sequence flow.
+    pointing two flows at one activity); do not invent uipath:* XML from prose.
+  - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+    every node and an edge for every sequence flow.
   - Validate the file locally before finishing by running
     `uip maestro bpmn validate <file>` (or a well-formed-XML parse if the CLI
     is unavailable).

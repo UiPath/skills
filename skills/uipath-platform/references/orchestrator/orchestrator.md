@@ -35,6 +35,7 @@ Each workflow doc covers a multi-command choreography for a specific goal. Load 
 | Run Jobs | [run-jobs.md](run-jobs.md) | Packages, processes, jobs, logs, traces |
 | Manage Sessions | [manage-sessions.md](manage-sessions.md) | Sessions, runtimes, maintenance mode |
 | Tenant Admin | [tenant-admin.md](tenant-admin.md) | Settings, calendars, audit logs, credential stores, feeds, attachments |
+| Business ROI | [business-roi.md](business-roi.md) | Per-process and per-queue ROI inputs (`process-roi`, `queue-roi`) |
 
 ---
 

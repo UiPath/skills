@@ -14,9 +14,13 @@ These four carry the shape. Change one and you are building something else.
 - **Validation runs before the gate.** Malformed output is not low confidence,
   it is invalid, and it must reach a reviewer carrying the reason. Validating
   first lets one gate handle both "unsure" and "broken" without a second branch.
-- **One action step, reached two ways.** The approve edge routes back into the
-  same action node the auto path uses. The action is implemented, bound, and
-  configured once.
+- **One action step, reached two ways.** Both the auto path and the approve
+  edge converge on `merge_gate`, whose single outgoing flow feeds the action
+  node. The action is implemented, bound, and configured once. Route the two
+  edges straight into the action node instead and you have a "fake join",
+  which the canvas contract forbids for an activity (`FAKE_JOIN`). Nothing
+  local tells you: `uip maestro bpmn validate` does not report that rule. See
+  [structural-bpmn.md](../structural-bpmn.md#gateways).
 - **Every item exits through a named outcome.** Auto-actioned, or rejected by a
   reviewer. That is what makes the decision auditable afterwards.
 
@@ -28,7 +32,8 @@ These four carry the shape. Change one and you are building something else.
 | `analyze` | `bpmn:serviceTask` | Placeholder · insertion point |
 | `validate` | `bpmn:businessRuleTask` | Mechanism |
 | `confidence_gate` | `bpmn:exclusiveGateway` | Mechanism |
-| `perform_action` | `bpmn:serviceTask` | Placeholder · Mechanism — bind the target, but keep it a single node with two inbound edges |
+| `merge_gate` | `bpmn:exclusiveGateway` | Mechanism, joins the auto and approved routes |
+| `perform_action` | `bpmn:serviceTask` | Placeholder · Mechanism — bind the target, but keep it a single node, reached only through `merge_gate` |
 | `human_review` | `bpmn:userTask` | Mechanism |
 | `post_review_gate` | `bpmn:exclusiveGateway` | Mechanism |
 | `end_actioned` | `bpmn:endEvent` | Mechanism |
@@ -39,11 +44,12 @@ These four carry the shape. Change one and you are building something else.
 | `start` → `analyze` | | |
 | `analyze` → `validate` | | |
 | `validate` → `confidence_gate` | | |
-| `confidence_gate` → `perform_action` | High confidence | `=vars.aiConfidenceLevel >= 0.85 && vars.validationPassed` |
+| `confidence_gate` → `merge_gate` | High confidence | `=vars.aiConfidenceLevel >= 0.85 && vars.validationPassed` |
 | `confidence_gate` → `human_review` | Low confidence | `=vars.aiConfidenceLevel < 0.85 \|\| !vars.validationPassed` |
+| `merge_gate` → `perform_action` | | |
 | `perform_action` → `end_actioned` | | |
 | `human_review` → `post_review_gate` | | |
-| `post_review_gate` → `perform_action` | Approved | `=vars.reviewOutcome == "Approve"` |
+| `post_review_gate` → `merge_gate` | Approved | `=vars.reviewOutcome == "Approve"` |
 | `post_review_gate` → `end_rejected` | Rejected | `=vars.reviewOutcome == "Reject"` |
 
 `0.85` is an illustrative threshold. Set it from the cost asymmetry between a
@@ -75,15 +81,18 @@ bind to the existing one.
 
 **Tiered reviewer.** Insert `stakes_gate` (`bpmn:exclusiveGateway`) between
 `validate` and `confidence_gate`, and split `human_review` into `junior_review`
-and `senior_review`.
+and `senior_review`. `senior_review` is reached two ways as well, so it gets
+its own join gateway, `senior_gate`, for the same reason `perform_action`
+has one.
 
 | Sequence flow | Label | Condition |
 | --- | --- | --- |
-| `stakes_gate` → `senior_review` | High stakes | `=vars.stakesValue >= 5000` |
+| `stakes_gate` → `senior_gate` | High stakes | `=vars.stakesValue >= 5000` |
 | `stakes_gate` → `confidence_gate` | Low stakes | default |
 | `confidence_gate` → `junior_review` | Low confidence | as above |
-| `senior_review` → `perform_action` | | no gate |
-| `post_review_gate` → `senior_review` | Escalate | `=vars.reviewOutcome == "Escalate"` |
+| `senior_gate` → `senior_review` | | |
+| `senior_review` → `merge_gate` | | no post-review gate |
+| `post_review_gate` → `senior_gate` | Escalate | `=vars.reviewOutcome == "Escalate"` |
 
 Adds `stakesValue` (double) — a domain signal such as loan amount or claim
 value. `5000` is illustrative. Senior review has no post-review gate on
@@ -121,7 +130,12 @@ Fetch every payload through
 
 The commonest reduction: the process already scores the item. Insert only
 `validate` onward, bind the gate to the existing score variable, and add no
-second analyzer.
+second analyzer. The action step already exists too, so keep it and give it
+`merge_gate`: point the action's existing inbound flow at the first node you
+insert (`validate`, or `confidence_gate` when validation is vacuous), put
+`merge_gate` immediately before the action, and let both the auto and
+approved routes converge there. Retargeting that flow at `merge_gate`
+instead would route every item straight past the review you are adding.
 
 `validate` is the one load-bearing step you can remove, and only when its
 mechanism is vacuous rather than unwanted: if the analyzer's output is

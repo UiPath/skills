@@ -472,7 +472,7 @@ Then construct `--input-details` referencing those names.
 ## Things `--input-details` does NOT touch
 
 - **Connection identity** (`connectionId`, `folderKey`, `connectorKey`, `objectName`, `httpMethod`, `eventType`, `eventMode`) — these come from `--connection-id` + the resolved TypeCache entry. The skill does not pass them in `--input-details`.
-- **Bindings** — `caseShape.context[]` continues to emit `{{CONN_BINDING_ID}}` and `{{FOLDER_BINDING_ID}}` placeholders for the skill to substitute later when minting binding ids.
+- **Bindings** — `caseShape.context[]` continues to emit `{{CONN_BINDING_ID}}` and `{{FOLDER_BINDING_ID}}` (which `uip maestro case splice` resolves for connector tasks) placeholders for the skill to substitute later when minting binding ids.
 - **`caseShape.outputs[]`** — outputs are derived from the connector schema, not user input. `--input-details` only touches `inputs[]` and the filter sinks inside `context[]`.
 
 ---
