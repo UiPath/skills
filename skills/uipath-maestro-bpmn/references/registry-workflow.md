@@ -82,8 +82,9 @@ opaque types such as `custom` and product-specific types such as
 to `string`, `object`, or `jsonSchema`. Leave the opaque type in place; live
 enrichment replaces it with concrete typed rows later, so do not pre-empt it.
 
-For an unresolved portable dynamic node, fill resource identity slots with the
-escaped public placeholders SKILL.md defines (`&lt;TENANT_URL&gt;`,
+For a dynamic node left unresolved (SKILL.md step 1: the user asked for a
+draft or placeholders, or no `Enabled` connection exists), fill resource
+identity slots with the escaped public placeholders SKILL.md defines (`&lt;TENANT_URL&gt;`,
 `&lt;FOLDER_KEY&gt;`, `&lt;CONNECTION_NAME&gt;`), keep the retrieved
 context/output shape, and use only user-supplied values in the body or
 configurable context fields. Report the node as **draft** and name the

@@ -6,7 +6,8 @@ description: >
   Multi-branch Outlook→classify→decision escalation process, but driven by a
   simulated non-technical user who withholds requirements until asked. Tests the
   agent's ability to clarify a complex ambiguous ask before building.
-  Validate-only — the sandbox has no live Outlook/Slack tenant.
+  Validate-only: the tenant has Outlook and Slack connections, but no live
+  mailbox to trigger a run.
   Ported from Flow `interactive/customer_escalation_simulated/customer_escalation_simulated.yaml`;
   swapped the Flow/`.flow` vocabulary for Maestro BPMN process/`.bpmn`, and
   translated the behavioral grader from a JSON nodes[]/edges[] walk to an XML
