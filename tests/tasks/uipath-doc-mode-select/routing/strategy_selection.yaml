@@ -1,8 +1,8 @@
-task_id: skill-doc-mode-select-mode-selection
+task_id: skill-doc-strategy-select-strategy-selection
 description: >
-  Mode-selection accuracy, run-to-run stability and paraphrase invariance.
+  Strategy-selection accuracy, run-to-run stability and paraphrase invariance.
   48 rows: 24 workloads, each written twice in different words, six rows per
-  mode across all eight.
+  strategy across all eight.
 
   Three properties this set is built to protect, in the order they were added:
 
@@ -16,7 +16,7 @@ description: >
      decisive signal inside the prompt — "each ticket stands on its own, we are
      not calling anything out to another system" is BT's routing conclusion,
      not something a user says about their tickets. Those are rewritten to
-     carry only business facts, so the mapping from workload to mode is the
+     carry only business facts, so the mapping from workload to strategy is the
      thing under test. Requirements a business really would state ("every line
      has to point back at a source") are kept; conclusions are not.
 
@@ -31,7 +31,7 @@ description: >
       coder-eval run ... --repeats 5
       python3 analyze_consistency.py <RUN_DIR>
 
-  which reports accuracy by mode, rows whose replicates disagreed, and pairs
+  which reports accuracy by strategy, rows whose replicates disagreed, and pairs
   that flipped when reworded — calling out the flips where one phrasing was
   correct and the other was not, since those point at phrasing-dependent
   routing copy rather than a missing signal.
@@ -52,35 +52,35 @@ description: >
     Split node configuration in Flow (references/classify-split-guide.md says
     so outright), so an agent reasoning about what it can actually build may
     legitimately fall back. Read a CS miss as a product-gap signal.
-  - The grading command interpolates ${row.expected_mode} into a run_command
-    string. If the harness does not substitute row fields there, check_mode.py
+  - The grading command interpolates ${row.expected_strategy} into a run_command
+    string. If the harness does not substitute row fields there, check_strategy.py
     fails loudly with an explicit message rather than grading against a literal
     template — see its --expected guard.
 
 tags: [uipath-doc-mode-select, integration, mode:build, lifecycle:discover]
 
 dataset:
-  paths: ["mode_selection.jsonl"]
+  paths: ["strategy_selection.jsonl"]
 
 reference:
   directory: .
 
 initial_prompt: |
-  Route this document workload to exactly one processing mode.
+  Route this document workload to exactly one processing strategy.
 
   ${row.workload}
 
-  Load the applicable UiPath skill and use its mode taxonomy. Write your answer
-  to a file named `mode.txt` in the current working directory. The FIRST line
-  must be the mode ID alone — one of AH, AF, CS, SU, PS, PA, EX, BT — with
+  Load the applicable UiPath skill and use its strategy taxonomy. Write your answer
+  to a file named `strategy.txt` in the current working directory. The FIRST line
+  must be the strategy ID alone — one of AH, AF, CS, SU, PS, PA, EX, BT — with
   nothing else on that line. You may add your reasoning on the lines below it.
 
   Do not create a project, a flow, an agent, or any other artifact. Write only
-  `mode.txt`.
+  `strategy.txt`.
 
   This run is headless. No user is present and nobody will answer a question, so
-  do not ask and do not pause. Pick the single best mode and commit to it; if two
-  modes are close, choose the one the skill's routing table prefers and say why
+  do not ask and do not pause. Pick the single best strategy and commit to it; if two
+  strategies are close, choose the one the skill's routing table prefers and say why
   underneath.
 
 success_criteria:
@@ -92,8 +92,8 @@ success_criteria:
     suite_thresholds: {recall.yes: 0.90}
 
   - type: run_command
-    description: "Selected mode matches the case library's ground truth for row ${row.id}"
-    command: "python3 $REFERENCE_DIR/check_mode.py --expected '${row.expected_mode}'"
+    description: "Selected strategy matches the case library's ground truth for row ${row.id}"
+    command: "python3 $REFERENCE_DIR/check_strategy.py --expected '${row.expected_strategy}'"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

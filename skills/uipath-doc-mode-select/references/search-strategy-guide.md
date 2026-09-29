@@ -1,6 +1,6 @@
-# Search Mode Guide — Semantic (PS) versus Agentic (PA)
+# Search Strategy Guide — Semantic (PS) versus Agentic (PA)
 
-Both modes read the same persistent Context Grounding index through the agent's context. The difference
+Both strategies read the same persistent Context Grounding index through the agent's context. The difference
 is how many queries answer one question.
 
 This guide selects. `/uipath:uipath-agents — references/agentic-search/planning.md`
@@ -35,7 +35,7 @@ At least one must hold:
 - the question is a single well-defined term or definition;
 - completeness cannot be verified anyway, and the deliverable claims it.
 
-## Both modes: retrieval never proves absence
+## Both strategies: retrieval never proves absence
 
 A search result supports a positive finding. It cannot establish that something does not exist, and it
 cannot establish that everything was found.
@@ -72,7 +72,7 @@ Return unresolved items rather than guessing. Stopping with a named gap is a res
 | Coded: a retriever wrapper that enforces budget and de-duplication | `/uipath:uipath-agents — references/agentic-search/impl-python.md` |
 | Wiring the index context resource itself | [/uipath:uipath-agents — context/index.md](../../uipath-agents/references/lowcode/capabilities/context/index.md) |
 | Creating, ingesting, and inspecting the index | [/uipath:uipath-platform — index-management.md](../../uipath-platform/references/context-grounding/index-management.md) |
-| Choosing among all four context-grounding modes | [/uipath:uipath-agents — context-grounding-patterns.md](../../uipath-agents/references/context-grounding-patterns.md) |
+| Choosing among all four context-grounding strategies | [/uipath:uipath-agents — context-grounding-patterns.md](../../uipath-agents/references/context-grounding-patterns.md) |
 
 Enforcement differs by surface: low-code enforcement is prompt-level and best-effort, coded enforcement
 is in a handler you own. If the budget must hold, that argues for the coded surface.

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Report accuracy, run-to-run stability and paraphrase invariance for a
-mode-selection run.
+strategy-selection run.
 
-Accuracy alone hides two failure modes this eval exists to catch:
+Accuracy alone hides two failure strategies this eval exists to catch:
 
   stability  — the same prompt answered differently on different runs
   invariance — the same workload answered differently when reworded
@@ -12,10 +12,10 @@ because it is stable-but-wrong. Those need different fixes, and only the
 per-replicate breakdown tells them apart.
 
 Usage:
-    python3 analyze_consistency.py <RUN_DIR> [--jsonl mode_selection.jsonl]
+    python3 analyze_consistency.py <RUN_DIR> [--jsonl strategy_selection.jsonl]
 
 <RUN_DIR> is a coder-eval run directory. The script walks it for per-replicate
-mode.txt artifacts; it does not care about the surrounding layout, only that a
+strategy.txt artifacts; it does not care about the surrounding layout, only that a
 replicate directory contains one.
 """
 import argparse
@@ -25,7 +25,7 @@ import pathlib
 import re
 import sys
 
-MODES = ("AH", "AF", "CS", "SU", "PS", "PA", "EX", "BT", "NONE")
+STRATEGIES = ("AH", "AF", "CS", "SU", "PS", "PA", "EX", "BT", "NONE")
 
 
 def read_mode(path):
@@ -34,25 +34,25 @@ def read_mode(path):
     except (OSError, IndexError):
         return None
     token = re.sub(r"[^A-Za-z]", "", first).upper()
-    return token if token in MODES else None
+    return token if token in STRATEGIES else None
 
 
 REPLICATE = re.compile(r"^\d{2}$")
 
 
 def collect(run_dir):
-    """row id -> [mode per replicate]. A replicate that produced no usable
-    mode.txt is recorded as None rather than dropped — a row that fails to
+    """row id -> [strategy per replicate]. A replicate that produced no usable
+    strategy.txt is recorded as None rather than dropped — a row that fails to
     answer is not the same as a row that answers wrongly.
 
     The real layout is
-        <run>/<variant>/<task>/<row>/<NN>/artifacts/<task>/<row>/mode.txt
-    so neither the parent nor the grandparent of mode.txt is the row id. The
+        <run>/<variant>/<task>/<row>/<NN>/artifacts/<task>/<row>/strategy.txt
+    so neither the parent nor the grandparent of strategy.txt is the row id. The
     stable landmark is the two-digit replicate directory: its parent is the
     row. Anchoring on that survives changes to how the sandbox is preserved
     underneath it."""
     out = collections.defaultdict(list)
-    for p in sorted(pathlib.Path(run_dir).rglob("mode.txt")):
+    for p in sorted(pathlib.Path(run_dir).rglob("strategy.txt")):
         rep = next((a for a in p.parents if REPLICATE.match(a.name)), None)
         if rep is None:
             continue
@@ -70,7 +70,7 @@ def modal(values):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("run_dir")
-    ap.add_argument("--jsonl", default=str(pathlib.Path(__file__).with_name("mode_selection.jsonl")))
+    ap.add_argument("--jsonl", default=str(pathlib.Path(__file__).with_name("strategy_selection.jsonl")))
     args = ap.parse_args()
 
     spec = {}
@@ -81,7 +81,7 @@ def main():
 
     observed = collect(args.run_dir)
     if not observed:
-        sys.exit(f"no mode.txt artifacts found under {args.run_dir}")
+        sys.exit(f"no strategy.txt artifacts found under {args.run_dir}")
 
     matched = {k: v for k, v in observed.items() if k in spec}
     if not matched:
@@ -97,7 +97,7 @@ def main():
     unstable, wrong = [], []
     per_mode = collections.defaultdict(lambda: [0, 0])
     for rid, seen in sorted(matched.items()):
-        want = spec[rid]["expected_mode"]
+        want = spec[rid]["expected_strategy"]
         got = modal(seen)
         agree = sum(1 for s in seen if s == got) / len(seen) if seen else 0
         per_mode[want][1] += 1
@@ -108,8 +108,8 @@ def main():
         if agree < 1.0:
             unstable.append((rid, agree, seen))
 
-    print("accuracy by mode (modal answer vs ground truth)")
-    for m in MODES:
+    print("accuracy by strategy (modal answer vs ground truth)")
+    for m in STRATEGIES:
         if per_mode[m][1]:
             ok, n = per_mode[m]
             print(f"  {m:5} {ok}/{n}")
@@ -132,7 +132,7 @@ def main():
     for rid, seen in matched.items():
         s = spec[rid]
         if "pair" in s:
-            pairs[s["pair"]][s["variant"]] = (modal(seen), s["expected_mode"])
+            pairs[s["pair"]][s["variant"]] = (modal(seen), s["expected_strategy"])
 
     complete = {k: v for k, v in pairs.items() if {"a", "b"} <= set(v)}
     flipped = [(k, v["a"][0], v["b"][0], v["a"][1]) for k, v in complete.items() if v["a"][0] != v["b"][0]]
@@ -141,7 +141,7 @@ def main():
     for k, a, b, want in flipped:
         print(f"  {k:34} a={a} b={b}  (expected {want})")
     if complete and not flipped:
-        print("  none — every workload got the same mode under both phrasings")
+        print("  none — every workload got the same strategy under both phrasings")
 
     # A flip where one side is correct is the most actionable signal in the run:
     # the routing copy works for one framing of the workload and not the other.

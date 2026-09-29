@@ -2,7 +2,7 @@
 """Assert the routed Flow was built with the Summarize node, not an extraction node.
 
 The workload is a cited full-document review, which routes to Summarize. The
-failure this guards is a correct mode label attached to the wrong node: an
+failure this guards is a correct strategy label attached to the wrong node: an
 agent that says "Summarize" and then wires an IxP extraction node has not
 routed the workload, it has only named it.
 

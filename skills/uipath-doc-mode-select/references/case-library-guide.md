@@ -13,10 +13,10 @@ Each case is written to be read by a person as well as matched by an agent. The 
 | Section | What it answers |
 |---|---|
 | **Problem description** | What the business is actually dealing with, and what "working" looks like |
-| **Best-fit solution** | Which mode, which configuration, and which skill owns the build |
-| **Decision reasoning** | The decisive signals that select that mode, and the order the work runs in |
+| **Best-fit solution** | Which strategy, which configuration, and which skill owns the build |
+| **Decision reasoning** | The decisive signals that select that strategy, and the order the work runs in |
 | **Negative example** | The route that looks right and fails, with the mechanism — present only where one is real |
-| **Boundary** | When a different mode or a deterministic node wins, and what blocks a conclusion |
+| **Boundary** | When a different strategy or a deterministic node wins, and what blocks a conclusion |
 
 Two labels distinguish how much weight a case carries:
 
@@ -200,7 +200,7 @@ never as a clean result.
 to the model rather than extracted text. Severity weighting and threshold routing are deterministic steps
 outside the model.
 
-**Decision reasoning.** The decisive signal is that the evidence is visual, and every mode that reads
+**Decision reasoning.** The decisive signal is that the evidence is visual, and every strategy that reads
 through digitization destroys it before the model ever sees it — font inconsistency does not survive into
 extracted text. There is no schema, so Extract does not apply; the deliverable is a rating and a note, so
 Summarize does not either. Verify that the active input path really delivers page images; if it digitizes
@@ -402,13 +402,13 @@ after synthesis.
 
 Shared configuration: a persistent corpus in the agent's context, `retrievalMode: "semantic"`. Search
 returns evidence; the agent forms the answer. Retrieval proves neither absence nor exhaustive coverage.
-See [search-mode-guide.md](search-mode-guide.md).
+See [search-strategy-guide.md](search-strategy-guide.md).
 
 ### PS1 Answer support questions from a shared knowledge base
 
 **Problem description.** Staff repeatedly ask policy and system-support questions against a standing
 document collection. A typical question is satisfied by one procedure or a handful of passages, and the
-corpus is genuinely reused rather than assembled per request. The failure mode that matters here is not
+corpus is genuinely reused rather than assembled per request. The failure strategy that matters here is not
 retrieval quality — it is ingestion. Working behaviour: a supported procedure question is answered with
 its source, and for a file that was skipped at ingestion the answer reports unavailable evidence rather
 than claiming the policy does not exist.
@@ -487,7 +487,7 @@ validated accuracy.
 
 Shared configuration: the same persistent index in the agent's context, read through a bounded search
 loop. Define scope, an evidence checklist, a numeric budget, and stop conditions before invoking it —
-[search-mode-guide.md](search-mode-guide.md), and
+[search-strategy-guide.md](search-strategy-guide.md), and
 `/uipath:uipath-agents — references/agentic-search/planning.md`
 for the build.
 

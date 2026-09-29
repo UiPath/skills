@@ -71,7 +71,7 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | **uipath-api-workflow** | API Workflow JSON DSL — author, run, package, publish; HTTP and Integration Service connector activities. |
 | **uipath-human-in-the-loop** | Human task authoring and operations — design approval gates, escalations, and validation forms in Flow, Maestro, or coded agents; list, assign, complete, and reassign the resulting Action Center tasks. |
 | **uipath-ixp** | Document Understanding (IXP) — project setup, labeling, prediction review, prompt improvement, model publishing. |
-| **uipath-doc-mode-select** | Document-processing mode selection — Extract vs Classify & Split vs Summarize vs Analyze files vs persistent-index search (semantic or agentic), and agent harness choice, before authoring begins. |
+| **uipath-doc-mode-select** | File handling strategy selection — Extract vs Classify & Split vs Summarize vs Analyze files vs persistent-index search (semantic or agentic), and agent harness choice, before authoring begins. |
 
 ### Solution & Planning
 

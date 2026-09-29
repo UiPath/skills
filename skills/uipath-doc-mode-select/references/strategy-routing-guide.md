@@ -1,6 +1,6 @@
-# Mode Routing Guide
+# Strategy Routing Guide
 
-Maps a selected mode to the skill that owns building it. This skill selects; the target owns node
+Maps a selected strategy to the skill that owns building it. This skill selects; the target owns node
 schemas, configuration fields, and CLI invocation.
 
 ## Registry before labels
@@ -19,7 +19,7 @@ and have pulled.
 
 ## Handoff map
 
-| Mode selected | Owner | Build guide |
+| Strategy selected | Owner | Build guide |
 |---|---|---|
 | Extract, inside a Flow | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/ixp/planning.md](../../uipath-maestro-flow/references/author/plugins/ixp/planning.md) |
 | Extract — taxonomy, labelling, model training, publishing | `uipath-ixp` | [/uipath:uipath-ixp — SKILL.md](../../uipath-ixp/SKILL.md) |
@@ -43,7 +43,7 @@ For the full node palette with real type IDs and selection heuristics, read
 § Plugin Index and § Node Selection Heuristics. That table is maintained against the registry; this one
 is only a routing index.
 
-If a target skill is not installed, still deliver the mode, the decisive signal, and a concrete
+If a target skill is not installed, still deliver the strategy, the decisive signal, and a concrete
 node-and-binding specification, and name the missing dependency.
 
 ## Flow-owned versus agent-owned placement
@@ -96,7 +96,7 @@ Logical plans, not executable syntax. Resolve IDs, expressions, and bindings wit
 5. **Segment, then extract.** Classification and boundary resolution → per-segment Extract, preserving
    original page ranges → deterministic duplicate rules → End.
 6. **Pure data processing.** Filter → Group by → Map or Transform → script only for unsupported exact
-   operations → persist → End. No document mode and no agent.
+   operations → persist → End. No document strategy and no agent.
 
 Asynchronous work needs an explicit start/status/resume pattern and a durable store. No harness setting
 grants persistence automatically. Give every loop and retry an explicit bound, and handle duplicate

@@ -18,7 +18,7 @@ configuration for the other two — verify each type's own supported settings.
 
 ## Standard versus advanced harness
 
-`settings.mode` accepts `"standard"` or `"advanced"`. The repository's configuration guidance defaults to
+`settings.strategy` accepts `"standard"` or `"advanced"`. The repository's configuration guidance defaults to
 `"standard"`, and no feature matrix distinguishing the two is published here.
 
 Treat that as the decision rule, not as a gap to fill by guessing:
@@ -78,7 +78,7 @@ terminates it (`AGENT_RUNTIME.TERMINATION_MAX_ITERATIONS`; in a Flow, a failed n
 
 State a numeric cap and a fallback per grounding tool. When the workload genuinely needs several
 dependent lookups, that is agentic search — bound it deliberately per
-[search-mode-guide.md](search-mode-guide.md), do not leave it uncapped.
+[search-strategy-guide.md](search-strategy-guide.md), do not leave it uncapped.
 
 ## Handing off
 

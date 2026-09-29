@@ -39,7 +39,7 @@ Work down this list and stop at the first match.
 | Known, fixed page ranges | A deterministic split in a script — no model needed, if the runtime has the required library |
 | Unknown labels or unknown boundaries | A published classifier model, discovered from the registry |
 
-Two failure modes this ordering prevents: classifying when the answer was already known, and extracting
+Two failure strategies this ordering prevents: classifying when the answer was already known, and extracting
 a packet as one document — which merges unrelated headers and produces fields from the wrong form.
 
 ## Boundaries that decide the route

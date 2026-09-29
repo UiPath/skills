@@ -1,9 +1,9 @@
-task_id: skill-doc-mode-select-route-and-build-e2e
+task_id: skill-doc-strategy-select-route-and-build-e2e
 description: >
   End-to-end: a full-document cited-review workload must route to Summarize and
   then actually be built and validated as a Flow. Grades the artifact — the
   .flow must carry the Summarize node type and must NOT carry an extraction
-  node — so a correct mode label with the wrong node still fails.
+  node — so a correct strategy label with the wrong node still fails.
 tags: [uipath-doc-mode-select, e2e, mode:build, lifecycle:generate]
 
 run_limits:
