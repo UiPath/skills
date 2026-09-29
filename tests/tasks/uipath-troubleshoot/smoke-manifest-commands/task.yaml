@@ -21,14 +21,19 @@ run_limits:
   turn_timeout: 60
   max_turns: 1
 
+# The validator globs every scenario's manifest, so the whole troubleshoot tree
+# is staged. Reading it through the plugin mount instead breaks under
+# driver: docker, where coder-eval masks the plugin's non-skill dirs
+# (UiPath/coder_eval#179).
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ..
+      mount_point: troubleshoot-tasks
+
 # Run the verification script BEFORE the agent. fail_on_error: true (the
 # default) aborts the task with FinalStatus.ERROR if any mocked uip command
 # is not reachable in the locally installed CLI — the agent never runs.
-#
-# Portable across cmd.exe (Windows), PowerShell, and /bin/sh: each shell has
-# its own env-var expansion syntax for TASK_DIR ($TASK_DIR / %TASK_DIR% /
-# $env:TASK_DIR), so we resolve TASK_DIR through `python -c` which works the
-# same everywhere.
 pre_run:
   # 1) Install every per-tool plugin the troubleshoot manifests reference.
   # The bare `@uipath/cli` install in CI does NOT auto-list subcommands of
@@ -65,22 +70,9 @@ pre_run:
     timeout: 300
     fail_on_error: false
 
-  # 2) Resolve the validator script through SKILLS_REPO_PATH — a deliberate,
-  # documented exception to this repo's general sandbox.template_sources +
-  # $REFERENCE_DIR convention (see commit d61fa9d52's "tasks needing
-  # genuinely broader host-repo access"). This validator globs
-  # `**/data/m/r/manifest.json` across the WHOLE uipath-troubleshoot tree
-  # (298 tasks, resolved from its own `Path(__file__).resolve().parents[2]`),
-  # not just this one task's directory — staging that much of the family via
-  # template_sources would mean re-staging nearly the entire subtree per run
-  # for no benefit (this script's own logic, not the CLI or tenant, is what's
-  # under test). coder-eval does NOT inject TASK_DIR into pre_run env
-  # (TASK_DIR is criterion-only), so SKILLS_REPO_PATH is what's used instead
-  # (see smoke-skills.yml and tests/experiments/default.yaml).
-  - command: >-
-      python -c "import os,subprocess,sys;
-      script=os.path.join(os.environ['SKILLS_REPO_PATH'], 'tests', 'tasks', 'uipath-troubleshoot', '_shared', 'scripts', 'verify_manifest_commands.py');
-      sys.exit(subprocess.call(['python', script]))"
+  # 2) The validator defaults its root to the tree it sits in, so it checks the
+  # staged copy. A relative path reads the same in sh, cmd.exe and PowerShell.
+  - command: python troubleshoot-tasks/_shared/scripts/verify_manifest_commands.py
     timeout: 300
     fail_on_error: true
 
