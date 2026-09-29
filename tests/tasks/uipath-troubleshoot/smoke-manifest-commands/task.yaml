@@ -21,10 +21,7 @@ run_limits:
   turn_timeout: 60
   max_turns: 1
 
-# The validator globs every scenario's manifest, so the whole troubleshoot tree
-# is staged. Reading it through the plugin mount instead breaks under
-# driver: docker, where coder-eval masks the plugin's non-skill dirs
-# (UiPath/coder_eval#179).
+# The validator scans every troubleshoot manifest; coder-eval masks tests/ in the plugin mount.
 sandbox:
   template_sources:
     - type: template_dir
@@ -70,8 +67,7 @@ pre_run:
     timeout: 300
     fail_on_error: false
 
-  # 2) The validator defaults its root to the tree it sits in, so it checks the
-  # staged copy. A relative path reads the same in sh, cmd.exe and PowerShell.
+  # 2) The validator checks the tree it sits in, i.e. the staged copy.
   - command: python troubleshoot-tasks/_shared/scripts/verify_manifest_commands.py
     timeout: 300
     fail_on_error: true

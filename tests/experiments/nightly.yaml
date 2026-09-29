@@ -30,9 +30,7 @@ defaults:
         - CODEX_BASE_URL
       extra_mounts:
         - ~/.uipath:/.uipath:rw
-        # The MAESTRO_FLOW_SDK_SETUP pre_run below runs a script from tests/,
-        # which coder-eval masks inside a docker-mounted plugin root
-        # (UiPath/coder_eval#179). A deeper bind wins over the mask.
+        # For the pre_run below: coder-eval masks tests/ in the plugin mount; a deeper bind wins.
         - $SKILLS_REPO_PATH/tests/scripts:$SKILLS_REPO_PATH/tests/scripts:ro
 
   agent:
