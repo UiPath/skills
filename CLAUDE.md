@@ -29,8 +29,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide. Key rules:
 6. **No structural cross-skill dependencies** — a skill must work in isolation (never import or read another skill's files); runtime delegation to a same-plugin sibling skill is allowed when it degrades gracefully
 7. **No secrets or personal paths** in committed files
 8. **CLI commands must use `--output json`** when output is parsed programmatically
-9. **Review new skills for every custom flavor.** They are included automatically; add the smallest sparse override wherever canonical guidance is not safe for a target environment
-10. **Never rename a job that produces a required status check, and never narrow its trigger.** A required context is a literal string GitHub waits for. Rename the job and the context stops reporting; add `paths:`, `paths-ignore:`, `branches:`, `branches-ignore:` or a `types:` list without `synchronize` and the workflow won't run on excluded PRs. Either way the check never arrives and **every open PR blocks**, not just yours. Short-circuit *inside* the job instead — a skipped job counts as a pass. The set lives in [`docs/REQUIRED-CHECKS.md`](docs/REQUIRED-CHECKS.md) § Current target set and is not discovered from disk; edit it in the same PR as the workflow:
+9. **`--output-filter` keys must match the unfiltered output, not the API.** The filter is case-sensitive, and most `uip` commands PascalCase their `Data` keys before printing — so `[].Name`, not `[].name`. A wrong-cased or non-existent key matches nothing and returns `Result: "Success"` with `Data: []`, which reads as "there is no such thing" rather than "your expression is wrong". Never copy field names from a service DTO, an OpenAPI schema, a raw API response or a `--help` example; run the command once **without** `--output-filter` and read the keys off the result.
+
+   Two traps, both of which produced wrong expressions in this repo:
+
+   - **Some commands pass their keys through verbatim**, so camelCase is correct *there* and wrong everywhere else — `uip maestro flow registry get` (`Node.inputDefinition.fields`) and `uip is resources run list` (`items[].{id: id}`) are the ones to know. You cannot tell from the outside; check the output.
+   - **`Data` is often not wrapped.** `uip traces spans get` returns the span array *as* `Data`, so an expression starting `spans[...]` reads a field that does not exist. Start with `[`.
+
+   A recent `uip` build names the mistake for you — on an empty result it reports which referenced fields do not exist and lists the ones that do, on stderr and in the envelope's `Warning`. If a filter returns nothing, read that before assuming the tenant is empty.
+10. **Review new skills for every custom flavor.** They are included automatically; add the smallest sparse override wherever canonical guidance is not safe for a target environment
+11. **Never rename a job that produces a required status check, and never narrow its trigger.** A required context is a literal string GitHub waits for. Rename the job and the context stops reporting; add `paths:`, `paths-ignore:`, `branches:`, `branches-ignore:` or a `types:` list without `synchronize` and the workflow won't run on excluded PRs. Either way the check never arrives and **every open PR blocks**, not just yours. Short-circuit *inside* the job instead — a skipped job counts as a pass. The set lives in [`docs/REQUIRED-CHECKS.md`](docs/REQUIRED-CHECKS.md) § Current target set and is not discovered from disk; edit it in the same PR as the workflow:
 
     ```bash
     python3 -m pytest tests/scripts/test_required_checks_contract.py -q   # must pass

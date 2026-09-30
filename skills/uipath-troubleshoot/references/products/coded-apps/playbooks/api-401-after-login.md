@@ -31,7 +31,7 @@ What to look for:
 
    ```bash
    cat uipath.json                                   # scope field — what the app requests
-   uip admin external-apps get <client-id> --output json --output-filter "scopes"
+   uip admin external-apps get <client-id> --output json --output-filter "Scopes"
    ```
 
 ## Resolution

@@ -33,7 +33,7 @@ What to look for:
 
    ```bash
    uip admin external-apps get <client-id> --output json \
-     --output-filter "redirectUris"
+     --output-filter "RedirectUris"
    ```
 
 3. Compare byte-for-byte. The value from step 1 (and the URL the browser is actually served at) must match a registered URI **exactly**, including the trailing slash. For a deployed app, the required redirect URI is the `appUrl` from `.uipath/app.config.json` (web apps) or `https://cloud.uipath.com/<org>/<tenant>/actions_` (action apps).
