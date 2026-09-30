@@ -141,7 +141,7 @@ Stop-check: about to end the turn after the block with no question call → make
 
 ### 5. Hand off to uipath-rpa
 
-Continue with `uipath-rpa` in this conversation, not in a subagent (it is already loaded in Studio Desktop's Autopilot), with this handoff as the task:
+Load `uipath-rpa` in this conversation, not in a subagent (UiPath Autopilot: `LoadSkill` with `name: "uipath-rpa"`; Claude Code: the `Skill` tool), then follow it with this handoff as the task:
 
 ```markdown
 Build an RPA workflow from this confirmed task recording.
