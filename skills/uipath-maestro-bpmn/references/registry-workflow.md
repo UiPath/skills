@@ -255,7 +255,10 @@ variables rather than literals. A JSON string value that is exactly `"=vars.<id>
 is a variable reference; a value that mixes literal text with a variable must be
 one `=js:` expression, for example
 `"messageToSend":"=js:'Severity: ' + vars.Var_Severity"`. Never paste
-`=vars.<id>` into the middle of literal text. In an XML *attribute* a `=js:` expression must
+`=vars.<id>` into the middle of literal text. Do not write `\n` inside a
+`=js:` string literal in a JSON body: the JSON parse turns it into a real
+newline and evaluation faults with `400300` `Invalid or unexpected token`;
+separate the parts with ` | ` instead. In an XML *attribute* a `=js:` expression must
 escape the XML metacharacters — `&amp;&amp;` for `&&`, and `&lt;` for `<` — or
 the file is not well-formed; `>` needs no escaping in an attribute value, and
 inside CDATA nothing does.
