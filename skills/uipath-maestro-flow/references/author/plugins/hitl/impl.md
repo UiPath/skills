@@ -65,6 +65,7 @@ Rules:
 - `priority` is `"Low"` | `"Medium"` | `"High"`, default `Low`. No `Critical` on this node, unlike an Action Center case task. Take the value from the request, not from the literal in either option's example: explicit high-urgency language — "urgent", "high priority", "critical", "ASAP", a named or breached SLA — selects `High`; reserve `Medium` for mild or unquantified urgency, `Low` when none is expressed. The value must land in the node; acknowledging the urgency in conversation is not enough.
 - `typeVersion` — always `"1.0"` for this node. **Do not run `registry get` to derive this value; do not use `"1.1"` or any other version.** The OOTB HITL node version is stable at `1.0`.
 - Do not include a `model` block on node instances; only the definition carries it.
+- Do not include a `shape` key in `display` on node instances either — same rule as the no-instance-`model`-block rule above (per [Author capability, rule 15](../../CAPABILITY.md)); `shape` is fixed per nodeType in the `definitions[]` entry (`square` for this node).
 - `outputs` contains only `output` (with `properties` for output/inOut fields plus `Action`) and `status` (with outcome `enum`/`default`). Do not add per-field `custom: true` entries.
 - Ports: `input` (target) → one `outcome-<outcome.id>` port per outcome (source), derived from `inputs.schema.outcomes[].id` verbatim — never lowercase it, never hardcode a port name. Every outcome needs a non-empty string `id`; one without gets no handle at all and any edge drawn to it is a no-op. `outcome-completed` is the port for a zero-outcome node, or for a real outcome whose `id` is literally `completed` — it is not a reserved string, so it is never a shared exit standing in for several outcomes. Wire every outcome port — an unwired one blocks that branch indefinitely.
 - Outputs are `$vars.{nodeId}.output` (object keyed by field `id`), `$vars.{nodeId}.output.{fieldId}`, `$vars.{nodeId}.status` (selected outcome name), and `$vars.{globalId}` (workflow-global alias from `field.variable` with `vars.` stripped). **Do not use the alias in scripts; use `$vars.{nodeId}.output.{fieldId}`.**
@@ -154,6 +155,7 @@ Rules:
 - `priority` follows Option 1's rule above — derived from the request, not the `"Medium"` literal in the example.
 - Do not add `inputs.schema` to this node — its outcomes come from the deployed app (`inputs.app`), not a schema block. Adding one flips the port from the static `completed` handle this node type actually uses to a schema-derived `outcome-<id>` handle, which does not match what the app produces.
 - Ports: `input` (target) → `completed` (source). Unlike QuickForm, this port stays static regardless of the app's own outcomes.
+- Do not include a `shape` key in `display` on node instances — same rule as Option 1 (per [Author capability, rule 15](../../CAPABILITY.md)).
 
 ### If the app does not exist
 
@@ -178,4 +180,5 @@ Branch directly off each outcome's own handle. Do not insert a Decision node aft
 | Output missing expected fields | App form does not match expected schema | Verify app form fields match what the flow expects |
 | An outcome port unwired (Option 1) | Missing edge on one of the `outcome-<outcome.id>` handles | Wire every outcome's own port; an unwired outcome port blocks the flow indefinitely on that branch |
 | Wired `outcome-completed` as if it were a shared exit for several outcomes (Option 1) | Confused the zero-outcome placeholder for a real port | Check `inputs.schema.outcomes` — if any entry's `id` isn't literally `completed`, rewire to `outcome-<outcome.id>` per outcome instead |
+| Node renders at agent-step size; output ports clip through its center | A `shape` key was hand-written into the node instance's `display` block | Remove `shape` from the instance's `display` object (it belongs only in the nodeType's `definitions[]` entry); re-run `flow format` |
 | Run never finishes; instance stays `Running` until the timeout, ports all wired | A HITL node sits in a flow nothing will attend — no assignee, or an unattended run (schedule, `flow debug`, eval) | Confirm a human will open the task. If the run is unattended, use a mechanism that completes on its own — see [planning.md](planning.md#when-to-select) |

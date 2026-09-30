@@ -179,6 +179,8 @@ The node schema uses `fields[]` entries inside `inputs.schema`. Use these concep
 
 **Required fields:** `id`, `type`, `typeVersion`. Position goes in the top-level `layout.nodes` object (keyed by node id), not on the node itself.
 
+**Never add a `shape` key to this node instance's `display` block** — `shape` is fixed per nodeType in the Definition Entry below (`square`), same rule as the no-instance-`model`-block rule (`uipath-maestro-flow` [CAPABILITY.md rule 15](../../uipath-maestro-flow/references/author/CAPABILITY.md)).
+
 **Node ID rule:** camelCase from the label, strip non-alphanumeric, append `1` (increment to `2`, `3`... until unique among existing node IDs). Example: `"Invoice Review"` → `invoiceReview1`.
 
 ---
