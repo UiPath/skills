@@ -1,0 +1,77 @@
+task_id: skill-case-correction-leaves-warned-rows
+description: >
+  E5 of the SDD-schema evals (MST-15966), E1b's mirror image: a document the
+  CLI accepts is left alone. The staged sdd.md is the ready, planner-written
+  WarrantyClaimTriage design (the sla_from_sdd fixture) with one Tasks row
+  hand-edited without its outer pipes on line 173. `sdd validate` exits 0 and
+  reports only the non-fatal SDD_ROW_WITHOUT_OUTER_PIPES warning, whose
+  message says to start the row with `|`. The user asks for one unrelated
+  correction. Whatever skill takes it must make exactly that edit and leave
+  the warned row as the author wrote it: a warning never calls for an Edit,
+  and a correction touches only the lines it names. Graded on a line diff
+  against the fixture. Needs a CLI with `sdd validate` (UiPath/cli stack A, A6).
+  Measured on cli f64f6696e: a plain "change X in sdd.md" routes to the case
+  skill or to no skill, never to the planner, so the planner's post-terminal
+  correction path (and its re-validation) is not what runs here. The
+  non-churn property is graded on whatever edits the file; re-validation is
+  advisory until an SDD correction routes to the planner.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-node]
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 40
+  turn_timeout: 900
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: .
+
+initial_prompt: |
+  `sdd.md` in this folder is the approved design for our WarrantyClaimTriage
+  case. Change the case-level SLA from 5 days to 4 days. That's the only
+  change — it's the design document only, nothing gets built.
+
+success_criteria:
+  - type: run_command
+    description: "Only the requested line changed (Case-Level SLA 5 d → 4 d; Document History rows allowed); every other line byte-identical"
+    command: "python3 $REFERENCE_DIR/check_only_requested_change.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The row written without outer pipes is exactly as the author left it"
+    command: "grep -qxF '2 | Chase Missing Paperwork | action | event-triggered | Intake SLA breached | No | No | Claims Handler | —' sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The corrected sdd.md still passes `sdd validate` (exit 0)"
+    command: "uip maestro case sdd validate sdd.md --output json > /dev/null"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Advisory: the file was re-validated after the correction (planner Terminal step 3 — not reached while corrections route elsewhere)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)"?\s+maestro\s+case\s+sdd\s+validate'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "No caseplan build"
+    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
