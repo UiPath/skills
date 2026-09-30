@@ -589,6 +589,15 @@ serialize them (`elements/nodes.ts`), so author them from the canvas contract:
   in scope inside a marker subprocess body unless the file already uses it.
 - Inside the body, read the current item with the `iterator` namespace — see
   [expression-authoring.md](expression-authoring.md).
+- A connector **List** operation (Jira `issue_search_get`, Slack `conversations`)
+  writes its response variable as the bare array of rows at runtime
+  (`"Response": [...]`), with no envelope. `inputCollection` is that variable
+  itself, `=vars.<ListVar>`. Never write `=vars.<ListVar>.issues`, `.items`, or
+  `.data`: it is undefined, and a marker over it faults with incident 400008
+  "Failed to evaluate the input collection variable". After the loop, read rows
+  as `=vars.<ListVar>[0].<field>`. Neither design-time CLI shows this shape:
+  `uip is resources run list` wraps rows in `Data.items` plus `Pagination`, and
+  `uip is resources describe` prints the fields of one row.
 - `bpmn:standardLoopCharacteristics` is also recognized (no uipath extension).
 
 ## Do not generate for new authoring (preserve on round-trip only)
