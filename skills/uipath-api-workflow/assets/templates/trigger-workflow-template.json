@@ -38,12 +38,13 @@
                 "connectionId": "<REPLACE_WITH_VENDOR_CONNECTION_UUID>",
                 "connectionResourceId": "<REPLACE_WITH_VENDOR_CONNECTION_UUID>",
                 "eventParameters": {
+                  "user_id": "<USER_ID>",
                   "channel_id": "<CHANNEL_ID>"
                 },
                 "objectName": "button",
                 "eventType": "BUTTON_CLICKED",
                 "eventMode": "webhooks",
-                "filterExpression": "(channel_id == '<CHANNEL_ID>')"
+                "filterExpression": "(user_id == '<USER_ID>') && (channel_id == '<CHANNEL_ID>')"
               },
               "export": {
                 "as": "{ ...$context, outputs: { ...$context?.outputs, \"button_1\": $output } }"
