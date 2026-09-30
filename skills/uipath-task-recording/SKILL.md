@@ -14,7 +14,7 @@ Interprets a UiPath Assistant task recording into an accurate account of what ha
 
 ## Critical Rules
 
-1. **Confirm before anything is built.** Show "What I saw", then ask "Build this as a workflow?". Hand off only after **Build the workflow**.
+1. **Confirm before anything is built.** Show "What I saw", then, in the same turn, ask "Build this as a workflow?" with the question tool (step 4). Hand off only after **Build the workflow**.
 2. **Never build.** Activities, selectors, targets, projects, packages, validation and runs belong to `uipath-rpa`. This skill produces two texts: "What I saw" and the handoff.
 3. **Report what the recording shows, not what probably happened.** Every step traces to trace rows or pixels. What you cannot settle goes under **Couldn't tell**, never into a guessed step.
 4. **The recording is read-only.** Never write, rename, convert or delete anything in its folder. Write frames and downscaled copies to a temporary folder.
@@ -87,7 +87,7 @@ Without one, read the originals and skip frames; if a frame was needed, say so u
 
 ### 3. Show "What I saw"
 
-From loading this skill until the block, call tools without writing any text. Your message is then exactly this block, filled in, with no preamble and no closing line. Markdown shape:
+From loading this skill until the block, call tools without writing any text. Then write exactly this block, filled in, with no preamble and no closing line, and make the step 4 call. Markdown shape:
 
 ```markdown
 ### What I saw
@@ -122,7 +122,7 @@ From loading this skill until the block, call tools without writing any text. Yo
 
 ### 4. Confirm
 
-Right after the block, ask with the host's question tool. UiPath Autopilot `AskUser` (its card renders inline Markdown only, so the steps stay in the message; a lone question's `header` titles the card):
+Right after the block, in the same turn, call the question tool: `AskUser` in UiPath Autopilot, `AskUserQuestion` in Claude Code. Its card is how the user answers; it renders inline Markdown only, so the steps stay in the message, and a lone question's `header` titles the card:
 
 ```json
 { "questions": [{ "type": "text", "payload": {
@@ -134,7 +134,7 @@ Right after the block, ask with the host's question tool. UiPath Autopilot `AskU
   ] } }] }
 ```
 
-Without a question tool, ask the same in text and stop. Never assume the answer.
+Stop-check: about to end the turn after the block with no question call → make the call now. Never assume the answer.
 
 - **Build the workflow** → step 5.
 - **Change the steps first** → ask one question, `multiSelect: true`: `Which steps should I leave out?`, one option per step (`<N>. <step>`), plus `{ "kind": "userinput", "label": "Other change" }` for edits, arguments and rules the recording can't show. Apply the answer, show the updated block, confirm again. Record rules verbatim for the handoff.
