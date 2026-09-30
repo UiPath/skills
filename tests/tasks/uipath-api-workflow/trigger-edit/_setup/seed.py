@@ -11,6 +11,7 @@ import os
 
 PROJECT = "SlackAlert"
 OLD_CHANNEL = "C_OLD_CHANNEL_ID"
+USER = "U_ALERT_USER_ID"
 CONNECTION = "00000000-0000-4000-8000-000000000001"
 
 os.makedirs(PROJECT, exist_ok=True)
@@ -75,11 +76,11 @@ workflow = {
                                 "connector": "uipath-salesforce-slack",
                                 "connectionId": CONNECTION,
                                 "connectionResourceId": CONNECTION,
-                                "eventParameters": {"channel_id": OLD_CHANNEL},
+                                "eventParameters": {"user_id": USER, "channel_id": OLD_CHANNEL},
                                 "objectName": "button",
                                 "eventType": "BUTTON_CLICKED",
                                 "eventMode": "webhooks",
-                                "filterExpression": f"(channel_id == '{OLD_CHANNEL}')",
+                                "filterExpression": f"(user_id == '{USER}') && (channel_id == '{OLD_CHANNEL}')",
                             },
                             "export": {
                                 "as": '{ ...$context, outputs: { ...$context?.outputs, "button_1": $output } }'
@@ -135,7 +136,7 @@ bindings = {
                 "BindingsVersion": "2.2",
                 "ObjectName": "button",
                 "Operation": "BUTTON_CLICKED",
-                "FilterExpression": f"(channel_id == '{OLD_CHANNEL}')",
+                "FilterExpression": f"(user_id == '{USER}') && (channel_id == '{OLD_CHANNEL}')",
                 "SolutionsSupport": "true",
             },
         }
