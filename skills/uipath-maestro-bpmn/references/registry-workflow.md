@@ -603,6 +603,17 @@ null connection (error 102010). Use `refresh`, not the deprecated
   use when the workflow itself owns the URL, method, payload, and response
   parsing (no connection). Author `mode="manual"`, `method`, `url`, `headers`,
   `parameters`, `body` directly from the registry template.
+  With the default output `source="=response"`, the output variable holds the
+  response envelope, not the parsed body: `statusCode`, `reasonPhrase`,
+  `headers`, `isSuccessStatusCode`, and `body`. Read a JSON field as
+  `vars.<Var>.body.<field>` (for example `vars.Var_WeatherResponse.body.current.temperature_2m`)
+  and the status as `vars.<Var>.statusCode`; `vars.<Var>.<field>` is `undefined`
+  and fails with "Cannot read property ... of undefined". `body` is the parsed
+  object when the response is valid JSON and the raw string otherwise, so for a
+  non-JSON response use `JSON.parse(vars.<Var>.body)` only after checking
+  `typeof vars.<Var>.body === "string"`. Shape verified against the engine
+  source (`HttpRequestActivities.cs`, `responseData`); it applies to
+  `Intsvc.HttpExecution` only, not to `Intsvc.UnifiedHttpRequest`.
 
 Status vocabulary for an IS node in a summary: **executable** (activity, inputs,
 output variable, and downstream mappings present, runtime-verified if a run was
