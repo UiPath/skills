@@ -80,12 +80,12 @@ carries, so `update` cannot switch a schedule on or off. Use `enable` /
 
 Pass the ids `schedules list` prints. The endpoint underneath is keyed by
 `BackgroundTaskScheduleId`, a different GUID, and answers `200` with an empty
-list if handed schedule ids — a silent wrong answer. The CLI resolves each id
-through the list on every call so you never have to know that.
+list if handed schedule ids — a silent wrong answer rather than an error. The
+CLI resolves each id through the list so you never have to know that.
 
-Do not cache `BackgroundTaskScheduleId` from a list row either. It is
-reassigned on every `update`, `enable` and `disable`, so a stored value goes
-stale without anything saying so.
+Do not hand-assemble that call from a stored `BackgroundTaskScheduleId`: the
+list is the only thing that pairs the two id spaces, and getting it wrong looks
+like "no runs scheduled" rather than like a mistake.
 
 Each output row carries `ScheduleId`, `BackgroundTaskScheduleId`, `NextRun` and
 `Outcome`:
@@ -104,12 +104,15 @@ so the output is safe to zip against the request. At most 100 ids per call.
 Each takes `--schedule-ids <UUID...>`, or `--all` for every schedule in the
 project. `delete` always needs `--yes`; `--all` needs `--yes` on every verb.
 
-With several ids the request is a single bulk call that the server applies
-**atomically**: if any id is unknown, nothing is changed and the whole call
-fails. So a failure means no partial write to unwind, and success means every
-id was applied. The reply carries one verdict — `ScheduleIds`, `Count`,
-`Action` — not a per-id status, because the server never says which id it could
-not find.
+With several ids the request is a single bulk call. **It answers `204` with no
+body**, so the reply carries one verdict — `ScheduleIds`, `Count`, `Action` —
+and not a per-id status; there is no per-id detail to report.
+
+What an unknown id does to the rest of the batch is **not guaranteed**: the
+server has been observed both refusing the whole call and accepting it. So
+after a bulk `enable`, `disable` or `delete` over ids you are not certain of,
+**re-read with `schedules list`** rather than trusting the verdict to mean
+every id moved.
 
 Repeated ids are dropped before the request. Sending the same id twice would
 otherwise fail the batch even though it exists, because the server counts the
