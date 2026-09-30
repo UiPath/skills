@@ -333,11 +333,13 @@ never filter `RequestFields` by the names you expect. A missing Slack
 Each parameter is its own input, targeted by its `Type` (`query`, `path`, or
 `file`) — never folded into the body. Emit an input for every parameter marked
 `Required: true`, using its `DefaultValue` when the request has no better
-value. **Placement:** parameter inputs are siblings of the body input, written
-after `</uipath:context>`. Inside `<uipath:context>` go only the routing inputs
+value. **Placement:** every parameter input — `query` and `path` alike — is
+written after `</uipath:context>`, beside the body input when the operation has
+one (a GET often has none). Inside `<uipath:context>` go only the routing inputs
 (`connectorKey`, `connection`, `folderKey`, `operation`, `objectName`, `method`,
-`path`, `activityConfigurationVersion`, `metadata`); a `send_as` placed there is
-not sent and the call fails as below. `folderKey` is required in the context and
+`path`, `activityConfigurationVersion`, `metadata`); a parameter placed there is
+not sent and the call fails as below, or with `102009` `Missing value for
+required parameter '<name>'` for a path parameter. `folderKey` is required in the context and
 must reference the folder binding (§4). The body stays ONE `target="body"` input
 (see "Body shape"), and `channel` takes the looked-up channel id (see
 "A `Reference` entry takes a looked-up value"). Complete Slack node:
