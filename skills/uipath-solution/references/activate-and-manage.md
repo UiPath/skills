@@ -71,7 +71,7 @@ uip solution deploy list --output json
 
 ## Upgrade a Deployment In Place
 
-When the package is **already deployed**, `deploy run` stops before installing and points you here (with a user session it checks the Solutions search first; an external app cannot read it and skips that check). Re-running `deploy run` under the same `--name` would not add a second copy — the install is keyed on the name, so it updates that deployment in place with the configuration you pass. To move a deployment to another version while keeping the values already set on it, upgrade it in place (the same as the Orchestrator UI's "Upgrade" button). `deploy upgrade` does that from the CLI, so you don't have to open the UI:
+When the package is **already deployed**, `deploy run` stops before installing and points you here. It checks the deployment search first; an external app (client-credentials) can read it only on a server that serves the Pipelines deployment search — on an older one it skips the check and says so in a warning. Re-running `deploy run` under the same `--name` would not add a second copy — the install is keyed on the name, so it updates that deployment in place with the configuration you pass. To move a deployment to another version while keeping the values already set on it, upgrade it in place (the same as the Orchestrator UI's "Upgrade" button). `deploy upgrade` does that from the CLI, so you don't have to open the UI:
 
 ```bash
 # By key (the Key from `deploy list`): name, package and feed are read from
