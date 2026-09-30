@@ -203,7 +203,7 @@ To accept or return a file, declare the field as `$ref: "#/definitions/job-attac
 
 Output side: declare an output field the same way; the agent emits a `job-attachment` describing a file it produced.
 
-Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web or via Orchestrator job invocation.
+Runtime note: supply a local file for a `job-attachment` input with `uip agent debug <AGENT_PROJECT_DIR> --attachment <FIELD>=<FILE_PATH> --output json` — the CLI uploads the file and binds the reference into the debug job's input. See [debug.md](debug.md) § Attachments. Studio Web and Orchestrator job invocation remain the other test paths.
 
 ### Top-level fields (do not modify)
 
