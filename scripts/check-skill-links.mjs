@@ -392,7 +392,9 @@ for (const root of ROOTS) {
                         file: rel,
                         line: lineNo,
                         target: label ? `${raw} (in the ${label})` : raw,
-                        enforced,
+                        // A cross-generation anchor is new, so it starts clean:
+                        // always enforced, whatever the source tree's status.
+                        enforced: enforced || label !== null,
                     });
                 }
             }

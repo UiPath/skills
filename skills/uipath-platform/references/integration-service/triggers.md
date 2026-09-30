@@ -172,6 +172,10 @@ These steps assume the consuming skill has already loaded the trigger's `filterF
 <!--skill-flavor:flow-sdk-trigger-operators:start-->
 2. Choose an operator based on the user's intent and the field type (see the operator table in the consuming skill — e.g. [uipath-maestro-flow event-trigger.md § Filter operators](../../../uipath-maestro-flow/references/event-trigger.md#filter-operators)).
 <!--skill-flavor:flow-sdk-trigger-operators:end-->
+<!--skill-flavor:flow-sdk-trigger-filter-shape:start-->
+   **Builder-SDK Flow (`.flow.ts`): stop after step 2.** Write `filters: [{ field: '<name>', <operator>: <value> }]` on `onEvent(...)` / `waitForEvent(...)` — see [event-trigger.md](../../../uipath-maestro-flow/references/event-trigger.md#filter-operators); `check` validates each field and operator. Steps 3–6 describe the classic structured tree.
+
+<!--skill-flavor:flow-sdk-trigger-filter-shape:end-->
 3. Build one leaf per condition; place multiple conditions under the same `groupOperator` (`0` for AND, `1` for OR).
 4. If you need mixed AND/OR logic, use nested `groups` (same shape as the root tree).
 5. **Wrap string values in a `value` object** with `value`, `rawString` (verbatim user-entered text including quotes for strings), and `isLiteral` — passing a bare string fails validation. A filter-tree leaf operand may be dynamic (`isLiteral: false`, compiled to a `{var_…}` placeholder plus `filterVariables`), but `eventParameters` must be literals, because a trigger is evaluated before any flow run exists.

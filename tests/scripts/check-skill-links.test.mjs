@@ -139,7 +139,7 @@ test("an anchor into a pinned skill must land in both generations", () => {
     "classic/skills/uipath-flow/references/shared.md": "# S\n",
     "skills/uipath-other/SKILL.md": "# Other\n\n[x](../uipath-flow/references/shared.md#step-6a)\n",
   });
-  assert.equal(status, 0, out); // uipath-other is not an enforced tree, so it is reported, not fatal
+  assert.equal(status, 1, "a cross-generation dead anchor fails even outside an enforced tree");
   assert.match(out, /shared\.md#step-6a \(in the classic tree the sw flavor\(s\) compose\)/);
 });
 

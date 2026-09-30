@@ -172,17 +172,17 @@ uip agent refresh "<FlowProjectDir>/<projectId>" --inline-in-flow \
 
 `--bindings-target` propagates the inline agent's bindings (process, connection, index, memorySpace, app, etc.) into the flow project's `bindings_v2.json`. This is required for `uip solution resources refresh` to discover the bindings and create solution-level resource files. Never hand-edit `bindings_v2.json`.
 
-> **Ordering constraint:** run the final `uip agent refresh --inline-in-flow --bindings-target …` after all flow graph edits are complete. The `uipath-maestro-flow` skill owns direct `.flow` authoring for the inline-agent node, capability-resource nodes, and edges; refresh last so the generated bindings land in the flow project's `bindings_v2.json` before `uip solution resources refresh`. See the [Walkthrough](#walkthrough--end-to-end) for the correct sequence.
+<!--skill-flavor:flow-sdk-inline-agent-ordering:start-->
+> **Builder-SDK Flow projects (`.flow.ts`):** the `inlineAgent({...})` step in `<Name>.flow.ts` IS the flow node, and `compile` emits it, its edges and the `<source>/agent.json` sidecar — see [inline-agent.md](../../../../../uipath-maestro-flow/references/inline-agent.md). Nothing is added to the compiled `.flow` by hand; the ordering rule below applies to a JSON-authored `.flow`.
+<!--skill-flavor:flow-sdk-inline-agent-ordering:end-->
 
 ## Flow Wiring
 
-After creating the inline agent, the flow needs a `uipath.agent.autonomous` node whose `inputs.source` is the inline agent's `projectId` UUID, plus edges connecting it to the rest of the flow.
+<!--skill-flavor:flow-sdk-inline-agent-wiring:start-->
+In a builder-SDK (`.flow.ts`) project, hand the agent's intent to the `uipath-maestro-flow` skill: it authors one `inlineAgent({...})` step and compiles, and that emits the `uipath.agent.autonomous` node and its edges. See [inline-agent.md](../../../../../uipath-maestro-flow/references/inline-agent.md).
 
-**Hand off to the `uipath-maestro-flow` skill for the actual node and edge authoring.** Per Critical Rule 15, this skill does not invoke flow operations directly. Tell the user:
-
-> The inline agent has been scaffolded at `<FlowProjectDir>/<projectId>/`. To wire it into the flow, use the `uipath-maestro-flow` skill — pass it `projectId = <uuid>` so it can add a `uipath.agent.autonomous` node with `inputs.source = <uuid>` and connect the input/success edges via direct `.flow` authoring. **After all flow graph edits are complete**, run `uip agent refresh --inline-in-flow`, then `uip agent validate --inline-in-flow`; for inline agents with external capabilities, include `--bindings-target <FlowProjectDir>/bindings_v2.json` on the refresh call.
-
-The node JSON shape that the flow skill must produce is documented in § Flow Node Structure below — keep it as a reference, not as a CLI walkthrough.
+The node JSON in § Flow Node Structure below is the compiled shape — for reading an emitted `.flow`, never for writing one.
+<!--skill-flavor:flow-sdk-inline-agent-wiring:end-->
 
 ## Inline-in-Flow Resource Paths
 

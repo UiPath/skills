@@ -5,3 +5,6 @@
 <!--skill-flavor:flow-sdk-surface-row:start-->
 | `.flow` file | **Flow** | Write node JSON directly — see reference docs |
 <!--skill-flavor:flow-sdk-surface-row:end-->
+
+<!--skill-flavor:flow-sdk-hitl-stop:start-->
+<!--skill-flavor:flow-sdk-hitl-stop:end-->
