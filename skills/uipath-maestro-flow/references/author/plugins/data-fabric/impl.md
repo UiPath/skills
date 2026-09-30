@@ -332,9 +332,9 @@ A **folder-scoped** entity carries `_folderKey` (the entity's `folderId`). Its p
 
 **Where `_resourceKey` comes from.** It is the key the entity's reference is registered under in the solution, written by the canvas entity picker when it registers the entity (`_entityKey`, the Data Fabric entity id from `uip df entities list`, is the older fallback and is only used when `_resourceKey` is absent). A registered entity reference surfaces under `uip solution resources list --kind Entity --output json`.
 
-**For a locally authored entity — one this solution authors rather than references — `uip maestro flow format` mints it.** Set `entityConfig.entityName` and nothing else; format fills `_resourceKey`, `_folderKey` and both binding rows, and reports `EntitiesBound`. That is the same thing the canvas picker does, so do not hand-author them. See [Local entities](#local-entities--let-format-do-the-binding) below.
+**For a locally authored entity — one this solution authors rather than references — the CLI mints it.** Set `entityConfig.entityName` and nothing else, then run `uip maestro flow node configure`; it fills `_resourceKey`, `_folderKey` and both binding rows. That is the same thing the canvas picker does, so do not hand-author them. See [Local entities](#local-entities--finish-with-node-configure) below.
 
-For an entity the solution only **references** (a live platform entity imported with `uip solution resources add --source remote`), format leaves the node alone — it is not the solution's to rebind. **If you cannot resolve a `_resourceKey` for one of those, do not hand-author the folder-scoped form** — keep the entity tenant-scoped, or add the node and let the picker write `_folderKey`, `_resourceKey` and both binding rows on first open. A half-authored folder scope is worse than none: it serializes, and it breaks on deploy.
+For an entity the solution only **references** (a live platform entity imported with `uip solution resources add --source remote`), `node configure` leaves the identity alone unless you pass `_resourceKey` yourself — a referenced entity is not the solution's to rebind, and `flow validate` says nothing about it. **If you cannot resolve a `_resourceKey` for one of those, do not hand-author the folder-scoped form** — keep the entity tenant-scoped, or add the node and let the picker write `_folderKey`, `_resourceKey` and both binding rows on first open. A half-authored folder scope is worse than none: it serializes, and it breaks on deploy.
 
 Two values are easy to get wrong, and both are things you type by hand:
 
@@ -347,7 +347,7 @@ When `_folderKey` is set but a binding is missing, serialization still succeeds 
 
 The entity picker writes these bindings automatically. When hand-authoring a folder-scoped entity, add them yourself or leave the entity tenant-scoped.
 
-## Local entities — let `format` do the binding
+## Local entities — finish with `node configure`
 
 A **locally authored** entity is one this solution authors rather than
 references: it is created with `uip df entities create <Name> --local` and
@@ -367,12 +367,41 @@ Author the node with the entity name only:
 }
 ```
 
-then run `uip maestro flow format <ProjectName>.flow`. Format writes
-`_resourceKey`, `_folderKey` and the two `bindings[]` rows, reports how many
-nodes it wired as `EntitiesBound`, and drops rows that no longer apply —
-repoint, rename or delete a node and the count comes back as
-`EntityBindingRowsRemoved`. It is idempotent and it only touches entities the
-solution owns.
+then finish it with the CLI:
+
+```bash
+uip maestro flow node configure "<ProjectName>.flow" readProducts \
+  --detail '{"entityName":"Product"}' --output json
+```
+
+`node configure` writes `_resourceKey`, `_folderKey` and the two `bindings[]`
+rows, reports them as `BindingsCreated`, and regenerates `bindings_v2.json`. It
+is idempotent — a second run reports `BindingsCreated: 0` and changes nothing,
+so it is safe to run unconditionally — and it only resolves entities the
+solution owns. Naming an entity the solution does not author succeeds with
+`BindingsCreated: 0` and a `Warnings` entry saying so, rather than silently
+doing nothing.
+
+`bindings[]` is flow-wide, so a second node naming the same entity legitimately
+reports `BindingsCreated: 0` and is still fully bound. Re-pointing a node at a
+different entity is also safe: `node configure` drops the previous entity's keys
+before resolving the new name.
+
+If you add the node with `uip maestro flow node add` instead, pass the same
+`entityConfig` and it resolves the keys on the spot — no follow-up needed:
+
+```bash
+uip maestro flow node add "<ProjectName>.flow" core.datafabric.read \
+  --input '{"entityConfig":{"entityName":"Product","resultMode":"multiple"}}'
+```
+
+The entity name is matched case-insensitively, so `product` finds a `Product`
+resource — names are solution-wide unique that way.
+
+**One limit:** `node configure` resolves its node from the top-level `nodes[]`
+only. An entity node inside a subflow cannot be targeted by it — `flow validate`
+says so explicitly for those, and the routes that work are to hoist the node to
+the top-level graph or re-pick the entity in Studio Web.
 
 **Do not stop at `entityName`.** A node with no binding serializes to a bare
 tenant-scoped `=datafabric.<Name>` literal. A locally authored entity is
@@ -385,10 +414,14 @@ literal resolves to nothing and the run faults with:
 ```
 
 That message names the entity, so it reads as "the entity was never created"
-when the entity exists and the binding is missing. `flow validate` passes either
-way — running `format` is what closes the gap, which is one more reason rule 12
-in [author/CAPABILITY.md](../../CAPABILITY.md#critical-rules) makes it mandatory
-after every structural edit.
+when the entity exists and the binding is missing. You will not get that far:
+`flow validate` reports the node as an error naming the exact `node configure`
+to run, `flow pack` and `uip solution pack` run the same rule, and `flow debug` and `flow eval`
+raise the same message before they package anything.
+
+Entities the solution only references, and tenant entities resolved at runtime,
+are none of this rule's business — they carry no local resource to bind to and
+nothing reports them.
 
 Creating and modelling the entity itself belongs to
 [/uipath:uipath-platform — local-entities.md](../../../../../uipath-platform/references/data-fabric/local-entities.md).

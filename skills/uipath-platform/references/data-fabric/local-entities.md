@@ -197,14 +197,26 @@ A `core.datafabric.*` node needs more than the entity name, and the extra
 attributes are **not** something to hand-write:
 
 1. Author the node with `entityConfig.entityName` set to the entity.
-2. Run `uip maestro flow format <Project>.flow`.
+2. Run `uip maestro flow node configure <Project>.flow <node-id> --detail '{"entityName":"<Name>"}'`.
 
-Format fills in `_resourceKey`, `_folderKey` and the two `bindings[]` rows —
-the same thing the Studio Web / VS Code entity picker writes. It reports
-`EntitiesBound` (nodes wired), `EntityBindingRowsRemoved` (stale rows dropped
-when a node is repointed, renamed or deleted), and regenerates
-`bindings_v2.json`. A `BindingsFileError` in the output means the `.flow` was
-written but that artifact is stale until the command succeeds again.
+`node configure` fills in `_resourceKey`, `_folderKey` and the two `bindings[]`
+rows — the same thing the Studio Web / VS Code entity picker writes — reports
+them as `BindingsCreated`, and regenerates `bindings_v2.json`. It is idempotent,
+so a second run reports `BindingsCreated: 0` and changes nothing.
+
+Two zero counts that are **not** failures: a second node naming the same entity
+adds no rows because `bindings[]` is flow-wide, and re-running the command on an
+already-wired node is a no-op. A genuine miss is never silent — naming an entity
+this solution does not author succeeds with `BindingsCreated: 0` **and** a
+`Warnings` entry saying so.
+
+Adding the node with the CLI instead needs no follow-up — `node add` resolves
+the keys on the spot:
+
+```bash
+uip maestro flow node add <Project>.flow core.datafabric.read \
+  --input '{"entityConfig":{"entityName":"Product","resultMode":"multiple"}}'
+```
 
 **Why this matters, and why a missing binding is hard to diagnose:** a node
 carrying only `entityName` serializes to a bare tenant-scoped
@@ -217,9 +229,13 @@ nothing and the run fails with:
          Data Fabric returned: Entity <Name> does not exist
 ```
 
-That error names the entity, so it reads as "the entity wasn't created" when
-the entity exists and the binding is missing. `flow validate` passes either
-way. If you see it, check the node has `_resourceKey` and run `format`.
+That error names the entity, so it reads as "the entity wasn't created" when the
+entity exists and the binding is missing. You should never reach it: `flow
+validate` reports the node as an error naming the exact `node configure` to run,
+`flow pack` and `uip solution pack` run the same rule, and `flow debug` and `flow eval` raise the
+same message before packaging. Entities this solution only references, and
+tenant entities resolved at runtime, are not reported — they have no local
+resource to bind to.
 
 ---
 
