@@ -1,0 +1,243 @@
+{
+  "cli_head": "367bfdb69",
+  "seed": "tests/tasks/uipath-maestro-case/sla_from_sdd/fixtures/sdd.md",
+  "tally": {
+    "convert": 8,
+    "silent": 18
+  },
+  "rows": [
+    {
+      "item": 1,
+      "violation": "title not `# SDD —`",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model identical"
+    },
+    {
+      "item": 2,
+      "violation": "`### Process App Views` missing",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model identical"
+    },
+    {
+      "item": 3,
+      "violation": "summary-only `## Business Rules`",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model identical"
+    },
+    {
+      "item": 4,
+      "violation": "Case Variables header columns renamed",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model identical"
+    },
+    {
+      "item": 5,
+      "violation": "stage block missing **Design Rationale:**",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model identical"
+    },
+    {
+      "item": 6,
+      "violation": "task block missing **Activation Mode:**",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model identical"
+    },
+    {
+      "item": 7,
+      "violation": "literal \\n in content",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model changes: .stages[0].entryConditions[0].displayName"
+    },
+    {
+      "item": 8,
+      "violation": "task Type not a legal literal",
+      "build_validate": [
+        "CASE_MGMT_ROOT_CASE_CONDITION_RULE_NO_REQUIRED_TASK (error)"
+      ],
+      "verdict": "convert",
+      "detail": [
+        "task-type"
+      ]
+    },
+    {
+      "item": 9,
+      "violation": "stage entry uses a task-entry rule",
+      "build_validate": [
+        "CASE_MGMT_RULE_SLOT_MISMATCH (error)"
+      ],
+      "verdict": "silent",
+      "detail": "model changes: .stages[1].entryConditions[0].when"
+    },
+    {
+      "item": 10,
+      "violation": "return-to-origin in Case Exit Conditions",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model identical"
+    },
+    {
+      "item": 11,
+      "violation": "task name contains `:`",
+      "build_validate": [
+        "CASE_MGMT_STAGE_TASK_NAME_INVALID (error)"
+      ],
+      "verdict": "convert",
+      "detail": [
+        "resource-binding"
+      ]
+    },
+    {
+      "item": 12,
+      "violation": "task display name duplicated across stages",
+      "build_validate": [
+        "CASE_MGMT_STAGE_TASK_NAME_DUPLICATE (error)"
+      ],
+      "verdict": "convert",
+      "detail": [
+        "output-type",
+        "resource-binding",
+        "task-name"
+      ]
+    },
+    {
+      "item": 13,
+      "violation": "sla-status-change names an undeclared SLA title",
+      "build_validate": [
+        "CASE_MGMT_ROOT_CASE_CONDITION_RULE_SLA_NOT_SELECTED (error)"
+      ],
+      "verdict": "convert",
+      "detail": [
+        "selector-target"
+      ]
+    },
+    {
+      "item": 14,
+      "violation": "selector names an undeclared stage",
+      "build_validate": [
+        "CASE_MGMT_ROOT_CASE_CONDITION_RULE_SELECTED_STAGE_ID_MISSING (error)"
+      ],
+      "verdict": "convert",
+      "detail": [
+        "selector-target"
+      ]
+    },
+    {
+      "item": 15,
+      "violation": "stage entry references its own stage",
+      "build_validate": [
+        "CASE_MGMT_STAGE_ENTRY_CONDITION_RULE_SELF_REFERENCE_WARNING (warning)"
+      ],
+      "verdict": "silent",
+      "detail": "model changes: .stages[1].entryConditions[0].when"
+    },
+    {
+      "item": 16,
+      "violation": "=vars.X not in Case Variables",
+      "build_validate": [
+        "VARIABLE_DOES_NOT_EXIST (error)",
+        "CASE_MGMT_REFERENCE_UNBOUND (error)"
+      ],
+      "verdict": "silent",
+      "detail": "model changes: .stages[0].tasks[0].boundInputs[1].binding, .stages[0].tasks[0].expressionInputs[1].expression"
+    },
+    {
+      "item": 20,
+      "violation": "Recipient without a typed prefix",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model changes: .stages[0].tasks[1].recipient.kind"
+    },
+    {
+      "item": 21,
+      "violation": "stage entry table with no body row",
+      "build_validate": [
+        "CASE_MGMT_STAGE_ENTRY_CONDITION_MISSING (warning)"
+      ],
+      "verdict": "silent",
+      "detail": "model changes: .stages[2].entryConditions, .stages[2].intake.entryRows"
+    },
+    {
+      "item": 22,
+      "violation": "no case-entered anywhere",
+      "build_validate": [
+        "CASE_MGMT_CASE_ENTERED_ENTRY_MISSING (error)"
+      ],
+      "verdict": "convert",
+      "detail": [
+        "case-entry"
+      ]
+    },
+    {
+      "item": 23,
+      "violation": "Case Triggers has no rows",
+      "build_validate": [],
+      "verdict": "convert",
+      "detail": [
+        "in-arg-trigger",
+        "trigger-type"
+      ]
+    },
+    {
+      "item": 24,
+      "violation": "no Case Exit row marks the case complete",
+      "build_validate": [
+        "CASE_MGMT_ROOT_CASE_EXIT_CONDITIONS_MISSING (error)"
+      ],
+      "verdict": "convert",
+      "detail": [
+        "case-exit"
+      ]
+    },
+    {
+      "item": 25,
+      "violation": "wait-for-user exit without a user-selected-stage entry",
+      "build_validate": [
+        "CASE_MGMT_STAGE_EXIT_CONDITION_USER_SELECTED_STAGE_MISSING (error)"
+      ],
+      "verdict": "silent",
+      "detail": "model changes: .stages[2].exitConditions[0].exitType"
+    },
+    {
+      "item": 26,
+      "violation": "required-tasks-completed with no Required task",
+      "build_validate": [
+        "CASE_MGMT_ROOT_CASE_CONDITION_RULE_NO_REQUIRED_TASK (error)"
+      ],
+      "verdict": "silent",
+      "detail": "model changes: .stages[3].tasks[0].required"
+    },
+    {
+      "item": 27,
+      "violation": "stage entry equals a Case Exit row",
+      "build_validate": [
+        "CASE_MGMT_STAGE_ENTRY_CONDITION_MATCHES_CASE_EXIT_CONDITION (warning)"
+      ],
+      "verdict": "silent",
+      "detail": "model changes: .stages[2].entryConditions[0].ifExpression, .stages[2].entryConditions[0].ungated, .stages[2].entryConditions[0].when"
+    },
+    {
+      "item": 29,
+      "violation": "case SLA below 15 minutes",
+      "build_validate": [
+        "CASE_MGMT_ROOT_SLA_BELOW_MIN_MINUTES (error)",
+        "CASE_MGMT_ROOT_ROOT_SLA_LESS_THAN_NODES (warning)"
+      ],
+      "verdict": "silent",
+      "detail": "model changes: .caseSlaDuration"
+    },
+    {
+      "item": 34,
+      "violation": "either/or persona",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model identical"
+    }
+  ]
+}
