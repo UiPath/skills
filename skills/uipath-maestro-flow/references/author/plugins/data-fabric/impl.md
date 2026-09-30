@@ -330,7 +330,11 @@ A **folder-scoped** entity carries `_folderKey` (the entity's `folderId`). Its p
 ]
 ```
 
-**Where `_resourceKey` comes from.** It is the key the entity's reference is registered under in the solution, written by the canvas entity picker when it registers the entity (`_entityKey`, the Data Fabric entity id from `uip df entities list`, is the older fallback and is only used when `_resourceKey` is absent). A registered entity reference surfaces under `uip solution resources list --kind Entity --output json`, but there is no CLI that mints one for a flow you are hand-authoring. **If you cannot resolve a `_resourceKey`, do not hand-author the folder-scoped form** — keep the entity tenant-scoped, or add the node and let the picker write `_folderKey`, `_resourceKey` and both binding rows on first open. A half-authored folder scope is worse than none: it serializes, and it breaks on deploy.
+**Where `_resourceKey` comes from.** It is the key the entity's reference is registered under in the solution, written by the canvas entity picker when it registers the entity (`_entityKey`, the Data Fabric entity id from `uip df entities list`, is the older fallback and is only used when `_resourceKey` is absent). A registered entity reference surfaces under `uip solution resources list --kind Entity --output json`.
+
+**For a locally authored entity — one this solution authors rather than references — the CLI mints it.** Set `entityConfig.entityName` and nothing else, then run `uip maestro flow node configure`; it fills `_resourceKey`, `_folderKey` and both binding rows. That is the same thing the canvas picker does, so do not hand-author them. See [Local entities](#local-entities--finish-with-node-configure) below.
+
+For an entity the solution only **references** (a live platform entity imported with `uip solution resources add --source remote`), `node configure` leaves the identity alone unless you pass `_resourceKey` yourself — a referenced entity is not the solution's to rebind, and `flow validate` says nothing about it. **If you cannot resolve a `_resourceKey` for one of those, do not hand-author the folder-scoped form** — keep the entity tenant-scoped, or add the node and let the picker write `_folderKey`, `_resourceKey` and both binding rows on first open. A half-authored folder scope is worse than none: it serializes, and it breaks on deploy.
 
 Two values are easy to get wrong, and both are things you type by hand:
 
@@ -342,6 +346,85 @@ Entity bindings differ from the Orchestrator-resource form in several other ways
 When `_folderKey` is set but a binding is missing, serialization still succeeds — it falls back to a source-org literal and logs a warning. That partial state (name token + literal folder GUID) looks portable and breaks on cross-org deploy, so treat the warning as a defect rather than noise.
 
 The entity picker writes these bindings automatically. When hand-authoring a folder-scoped entity, add them yourself or leave the entity tenant-scoped.
+
+## Local entities — finish with `node configure`
+
+A **locally authored** entity is one this solution authors rather than
+references: it is created with `uip df entities create <Name> --local` and
+lives under `resources/solution_folder/entity/native/`. It carries the
+unassigned-folder sentinel `99999999-9999-9999-9999-999999999999` until a
+deploy decides where it lands, which is exactly what makes it different to
+bind.
+
+Author the node with the entity name only:
+
+```json
+{
+  "id": "readProducts",
+  "type": "core.datafabric.read",
+  "typeVersion": "<from registry get>",
+  "inputs": { "entityConfig": { "entityName": "Product", "resultMode": "multiple" } }
+}
+```
+
+then finish it with the CLI:
+
+```bash
+uip maestro flow node configure "<ProjectName>.flow" readProducts \
+  --detail '{"entityName":"Product"}' --output json
+```
+
+`node configure` writes `_resourceKey`, `_folderKey` and the two `bindings[]`
+rows, reports them as `BindingsCreated`, and regenerates `bindings_v2.json`. It
+is idempotent — a second run reports `BindingsCreated: 0` and changes nothing,
+so it is safe to run unconditionally — and it only resolves entities the
+solution owns. Naming an entity the solution does not author succeeds with
+`BindingsCreated: 0` and a `Warnings` entry saying so, rather than silently
+doing nothing.
+
+`bindings[]` is flow-wide, so a second node naming the same entity legitimately
+reports `BindingsCreated: 0` and is still fully bound. Re-pointing a node at a
+different entity is also safe: `node configure` drops the previous entity's keys
+before resolving the new name.
+
+If you add the node with `uip maestro flow node add` instead, pass the same
+`entityConfig` and it resolves the keys on the spot — no follow-up needed:
+
+```bash
+uip maestro flow node add "<ProjectName>.flow" core.datafabric.read \
+  --input '{"entityConfig":{"entityName":"Product","resultMode":"multiple"}}'
+```
+
+The entity name is matched case-insensitively, so `product` finds a `Product`
+resource — names are solution-wide unique that way.
+
+**One limit:** `node configure` resolves its node from the top-level `nodes[]`
+only. An entity node inside a subflow cannot be targeted by it — `flow validate`
+says so explicitly for those, and the routes that work are to hoist the node to
+the top-level graph or re-pick the entity in Studio Web.
+
+**Do not stop at `entityName`.** A node with no binding serializes to a bare
+tenant-scoped `=datafabric.<Name>` literal. A locally authored entity is
+provisioned into the debug or deployment folder, never at tenant level, so the
+literal resolves to nothing and the run faults with:
+
+```
+[300205] Error executing query expansion in Data Fabric
+         Data Fabric returned: Entity <Name> does not exist
+```
+
+That message names the entity, so it reads as "the entity was never created"
+when the entity exists and the binding is missing. You will not get that far:
+`flow validate` reports the node as an error naming the exact `node configure`
+to run, `flow pack` and `uip solution pack` run the same rule, and `flow debug` and `flow eval`
+raise the same message before they package anything.
+
+Entities the solution only references, and tenant entities resolved at runtime,
+are none of this rule's business — they carry no local resource to bind to and
+nothing reports them.
+
+Creating and modelling the entity itself belongs to
+[/uipath:uipath-platform — local-entities.md](../../../../../uipath-platform/references/data-fabric/local-entities.md).
 
 ## Output wiring
 

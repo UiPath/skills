@@ -9,6 +9,13 @@ Critical Rules, then load only the topic reference the task needs. For Data
 Fabric nodes inside a `.flow`, use `uipath-maestro-flow`; use this reference
 for CLI operations.
 
+**One flag picks the target.** `uip df entities …` operates on live tenant
+entities over the API. The same verbs with `--local` author an entity into a
+solution on disk, where it becomes a real entity only at deploy — no login, no
+tenant, and `get` / `update` / `delete` take the entity **name** instead of an
+id. Everything in this file is the tenant path unless it says otherwise; the
+local path is [`local-entities.md`](local-entities.md).
+
 ---
 
 ## Not Supported
@@ -143,6 +150,7 @@ Entities and choice sets are either tenant-level or folder-scoped. Records and f
 | Explore entities | `entities list` (`--folder-key`, `--include-folders`, or `--native-only` as needed) → `entities get <id>` |
 | Choice sets — full CRUD (sets and values) | [`choice-sets.md`](choice-sets.md) |
 | Create / update / delete entity, add/remove/update fields | [`entity-schema.md`](entity-schema.md) |
+| Author an entity **into a solution** (`entities … --local`) | [`local-entities.md`](local-entities.md) |
 | Read / filter / paginate / sort records | [`records-query.md`](records-query.md) + [`filter-platform-contract.md`](filter-platform-contract.md) |
 | Insert / update / delete records | [`records-query.md`](records-query.md) |
 | Aggregates / group-by | [`records-query.md` → Aggregates](records-query.md#aggregates-server-side) |
@@ -170,4 +178,4 @@ Any error not in this table → Rule 18. Topic-specific error tables live in the
 
 ## Packaging into a Solution
 
-To ship a folder-scoped entity or choice set in a deployable solution, use [`uipath-solution`](/uipath:uipath-solution). Import via `uip solution resources add --source remote` after creating the resource here — **never hand-write `configuration.json` from `uip df entities get`**; the SDK read shape breaks upgrade with per-field `EntityConflict`. Full flow, `--source local` caveats, and drift recovery: [`develop-solution.md` → Data Fabric kinds](../../../uipath-solution/references/develop-solution.md#data-fabric-kinds).
+There are two routes. To ship an entity **authored for this solution**, author it directly with `uip df entities <verb> --local` — see [`local-entities.md`](local-entities.md); it never touches the tenant until deploy. To ship an entity that **already exists** on the tenant, use [`uipath-solution`](/uipath:uipath-solution) and import via `uip solution resources add --source remote` after creating the resource here — **never hand-write `configuration.json` from `uip df entities get`**; the SDK read shape breaks upgrade with per-field `EntityConflict`. Full flow, `--source local` caveats, and drift recovery: [`develop-solution.md` → Data Fabric kinds](../../../uipath-solution/references/develop-solution.md#data-fabric-kinds).
