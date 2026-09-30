@@ -94,7 +94,7 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 | `.bpmn` (Maestro) | **Maestro** | Write the `UserTask` XML directly — see Step 5 Surface: Maestro |
 
 <!--skill-flavor:flow-sdk-hitl-stop:start-->
-**Builder-SDK Flow (`.flow.ts`) — the default: stop here.** Hand the HITL request to the `uipath-maestro-flow` skill, which authors `hitl(...)` in `<Name>.flow.ts` and compiles ([hitl.md](../uipath-maestro-flow/references/hitl.md)). Do not read or edit the compiled `.flow`; the next `compile` overwrites it. Steps 2–6 below cover the Case, Low-Code Agent and Maestro surfaces, and a JSON-authored `.flow`.
+**Flow surface (a `.flow.ts`, a `.flow`, or a new flow) — the default: stop here.** Hand the HITL request to the `uipath-maestro-flow` skill: it authors `hitl(...)` in `<Name>.flow.ts` — decompiling an existing `.flow` first — and compiles ([hitl.md](../uipath-maestro-flow/references/hitl.md)). Never read or hand-edit the compiled `.flow`; the next `compile` overwrites it. Steps 2–6 below cover the Case, Low-Code Agent and Maestro surfaces.
 
 <!--skill-flavor:flow-sdk-hitl-stop:end-->
 **If the user mentioned a specific file path**, use that directly.
