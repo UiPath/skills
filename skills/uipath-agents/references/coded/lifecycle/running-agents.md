@@ -22,7 +22,6 @@ The entrypoint name comes from `entry-points.json` (e.g., `main`, `agent`) — n
 
 | Framework | Source of truth | Key in the file |
 |---|---|---|
-| Coded Function | `uipath.json` | `functions` |
 | LangGraph | `langgraph.json` | `graphs` |
 | LlamaIndex | `llama_index.json` | `workflows` |
 | OpenAI Agents | `openai_agents.json` | `agents` |
