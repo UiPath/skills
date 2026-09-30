@@ -10,11 +10,11 @@ description: >
   the warned row as the author wrote it: a warning never calls for an Edit,
   and a correction touches only the lines it names. Graded on a line diff
   against the fixture. Needs a CLI with `sdd validate` (UiPath/cli stack A, A6).
-  Measured on cli f64f6696e: a plain "change X in sdd.md" routes to the case
-  skill or to no skill, never to the planner, so the planner's post-terminal
-  correction path (and its re-validation) is not what runs here. The
-  non-churn property is graded on whatever edits the file; re-validation is
-  advisory until an SDD correction routes to the planner.
+  Measured on cli f64f6696e before SDD corrections were routed to the planner:
+  the edit went to the case skill or to no skill in 4 of 4 runs, so nothing
+  re-validated it. Both skills now route a change to an existing case sdd.md
+  to the planner's SDD correction path, so the planner running and the
+  re-validation are graded.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-node]
 
 run_limits:
@@ -61,12 +61,19 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Advisory: the file was re-validated after the correction (planner Terminal step 3 — not reached while corrections route elsewhere)"
+    description: "The file was re-validated after the correction (planner §Terminal step 3)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)"?\s+maestro\s+case\s+sdd\s+validate'
     min_count: 1
-    weight: 1.0
-    pass_threshold: 0.0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: skill_triggered
+    description: "The correction ran through the planner, which owns every edit to a case SDD"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.5
+    pass_threshold: 1.0
 
   - type: run_command
     description: "No caseplan build"

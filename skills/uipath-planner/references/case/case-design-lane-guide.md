@@ -229,7 +229,7 @@ Write the SDD to disk in batches, gate it, validate it, flip it. The mode decide
 
 Never write `sdd.md` AND `<case>-sdd.md` for the same design. Report the path in one line.
 
-**Free-text corrections stay first-class after the terminal step:** treat one as a targeted edit to the affected artifact (model + file + downstream), narrate it in one line, continue. Edit only the lines the correction names — never reformat untouched rows, even ones `sdd validate` warns about — then re-run §Terminal step 3 on the file.
+**Free-text corrections stay first-class after the terminal step:** a correction to a case SDD written earlier, or in another session, runs §SDD correction. Within this session, treat one as a targeted edit to the affected artifact (model + file + downstream), narrate it in one line, continue. Edit only the lines the correction names — never reformat untouched rows, even ones `sdd validate` warns about — then re-run §Terminal step 3 on the file.
 
 ## Resolution ledger
 
@@ -287,6 +287,16 @@ If the user explicitly asks to finalize the existing draft, choose `Use the draf
 8. Secondary-stage task headings normalize to `##### Task S{secondaryStageIndex}.{taskIndex}: {Task Name}`; never keep draft letter prefixes (`R.1`, `W.1`, `CC.1`, `ESC.1`).
 9. A draft's per-stage SLA table may carry `At-Risk Action` / `Breach Action` columns; the final SDD does not. Move each response into the § SLA Response Map row for that `(scope, SLA, status)` — never drop it, never keep the column.
 10. Write, gate, validate, flip per §Terminal step — seed, append, validate, flip, never one Write. Finalizing a draft does not collapse them: a settled draft makes the sections faster to compose, not the skeleton optional (the draft on disk is also a recovery point, so a compaction means re-finalizing from it). The gate here is the full checklist, items 1–35: items 30–33 are the draft comparison — inventory parity, verbatim `=js:` preservation, executable threshold encoding, draft still on disk — answered with `sdd.draft.md` open beside the final. The `ready` flip is forbidden until every item reads PASS and §Terminal step 3's CLI validation exits 0; repair each FAIL with Edit and re-answer the failed items, max 3 rounds, then stop and present what remains. Quote the final tally (`35/35 PASS`) as evidence, then stop.
+
+## SDD correction
+
+An existing case SDD plus a request to change the design — "change the case SLA to 4 days", "rename this task" — not to build from it or derive tasks. The request is the change; it needs no Listen, Sketch or Case Review.
+
+1. Read exactly these, once each: the SDD, this section, §Terminal step. Read the template only when the change adds a block whose shape you need. Do not read the layers guide, inspect tenant resources, or spawn subagents.
+2. Make only the Edits the request names. Never reformat, renumber or normalize any other line, including rows `sdd validate` warns about: the author's formatting is theirs.
+3. Append one `## Document History` row naming the change.
+4. Run §Terminal step 3 on the file. Exit 0 → keep `Status: ready` and `Template validation: passed`. An error on a line you changed → repair it and list the repair. An error on a line the request did not touch → do not repair it; set `Template validation: pending`, report the error with its line, and ask whether to fix it.
+5. Tell the user each change in one business-language line, and whether the document still validates. Then stop: a correction never starts a build.
 
 ## What to say while working
 

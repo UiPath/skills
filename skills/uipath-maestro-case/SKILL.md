@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-case
-description: "Always invoke for UiPath Maestro Case Management build work: `caseplan.json`, `sdd.md`, or building/creating a case when no SDD exists yet (the case design is produced first, then confirmed in one review). Resolves tenant resources then authors or edits caseplan.json directly with Write/Edit. For .xaml→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn. For standalone case SDD design, case `sdd.draft.md` finalization, PDD→SDD, or cross-product planning→uipath-planner."
+description: "Always invoke for UiPath Maestro Case Management build work: `caseplan.json`, building from `sdd.md`, or building/creating a case when no SDD exists yet (the case design is produced first, then confirmed in one review). Resolves tenant resources then authors or edits caseplan.json directly with Write/Edit. For .xaml→uipath-rpa, .flow→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn. For standalone case SDD design, changing an existing case `sdd.md`, case `sdd.draft.md` finalization, PDD→SDD, or cross-product planning→uipath-planner."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, TodoWrite, Agent
 ---
 
@@ -77,6 +77,7 @@ without another prompt unless explicitly requested. A design-only request stops 
 |---|---|
 | New case, SDD provided, no caseplan, or rebuild from spec | **Greenfield:** handoff if needed, then Phases 1–7 |
 | Existing caseplan and targeted edit intent | **Brownfield:** skip handoff and Phases 1–7; use [brownfield.md](references/brownfield.md) |
+| Existing `sdd.md` and a request to change the design, not build from it | **SDD correction:** invoke `uipath-planner`'s Case Design Lane in this conversation (Rule 16), which owns every edit to a case SDD and re-validates it. Never edit `sdd.md` here |
 
 Brownfield still requires latest-state pull, debug consent, and Orchestrator-publish consent, and reuses Phase 5–7 contracts.
 
