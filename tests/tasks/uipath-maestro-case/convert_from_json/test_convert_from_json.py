@@ -10,6 +10,8 @@ plan. Cases, on the sla_from_sdd fixture:
 - stale sidecar            → plan has the markdown's stage name, Source
                              "markdown", SourceReason "stale", and a warning
 - explicit --model (stale) → exit 1, no fallback
+- unreadable sidecar       → falls back to the markdown, SourceReason
+                             "unreadable", and a warning
 - no sidecar               → Source "markdown", no SourceReason
 
 The sidecar is written here from today's `sdd parse` Data.Model, so the test
@@ -37,7 +39,8 @@ SEED = HERE.parent / "sla_from_sdd" / "fixtures" / "sdd.md"
 SIDECAR_SUFFIX = ".model.json"
 MODEL_FLAG = "--model"
 SOURCE, SOURCE_REASON = "Source", "SourceReason"
-FROM_SIDECAR, FROM_MODEL_FILE, FROM_MARKDOWN, STALE = "sidecar", "model-file", "markdown", "stale"
+FROM_SIDECAR, FROM_MODEL_FILE, FROM_MARKDOWN = "sidecar", "model-file", "markdown"
+STALE, UNREADABLE = "stale", "unreadable"
 MARKER = "FromJson"
 
 
@@ -130,3 +133,14 @@ def test_no_sidecar_reads_the_markdown(work):
     assert code == 0, out
     assert out["Data"][SOURCE] == FROM_MARKDOWN
     assert SOURCE_REASON not in out["Data"]
+
+
+def test_unreadable_sidecar_falls_back_and_says_so(work):
+    _clear(work)
+    (work["dir"] / (work["doc"].stem + SIDECAR_SUFFIX)).write_text("{not json", encoding="utf-8")
+    code, out = _uip("convert", str(work["doc"]), "--out", str(work["dir"] / "f.json"))
+    assert code == 0, out
+    assert out["Data"][SOURCE] == FROM_MARKDOWN
+    assert out["Data"].get(SOURCE_REASON) == UNREADABLE
+    assert out["Data"].get("Warnings")
+    assert work["original"] in _stage_labels(work["dir"] / "f.json")
