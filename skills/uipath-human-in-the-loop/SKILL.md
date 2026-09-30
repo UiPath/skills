@@ -86,7 +86,9 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 
 | Found | Surface | How HITL is added |
 |---|---|---|
-| `.flow` file | **Flow** | Write node JSON directly — see reference docs |
+<!--skill-flavor:flow-sdk-surface-row:start-->
+| `.flow.ts` or `.flow` file | **Flow** | Author with `hitl(...)` in `<Name>.flow.ts` through the `uipath-maestro-flow` skill ([hitl.md](../uipath-maestro-flow/references/hitl.md)); never write node JSON into the compiled `.flow` — `compile` overwrites it |
+<!--skill-flavor:flow-sdk-surface-row:end-->
 | `caseplan.json` (any `*.json` whose `nodes[]` carry `data.parentElement.type: "case-management:root"` — the marker is per-node; there is no `root` node on disk) | **Case** | Write `action` task into stage — see [hitl-casetask-action.md](references/hitl-casetask-action.md) |
 | `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
 | `.bpmn` (Maestro) | **Maestro** | Write the `UserTask` XML directly — see Step 5 Surface: Maestro |

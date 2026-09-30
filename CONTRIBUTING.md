@@ -45,6 +45,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ├── skill-flavors/             # Sparse build-time exceptions for custom hosts
 │   └── <flavor>/
 │       └── uipath-<name>/     # Sparse overrides mirroring skills/uipath-<name>/
+├── classic/skills/            # Previous skill generations a flavor pins (not shipped by default)
 ├── tests/                     # Skill evaluation tests (coder_eval)
 │   ├── experiments/           # Experiment configs (smoke, integration, e2e)
 │   ├── tasks/                 # Test tasks organized by skill
@@ -78,6 +79,8 @@ Tool wiring lives outside `skills/`:
 | OpenAI Codex CLI | `AGENTS.md` (symlink → `CLAUDE.md`), `.agents/skills/` (symlink → `skills/`) | Codex scans `.agents/skills/` for `SKILL.md` files, reads `AGENTS.md` as project instructions |
 | Cursor IDE | `.cursor/rules/*.mdc` | Scoped MDC rules: `token-optimization` (always-apply), `skill-structure` + `content-quality` (glob-scoped), `skill-review` + `pr-review` (agent-requested) |
 | GitHub Copilot coding agent | `AGENTS.md` (symlink → `CLAUDE.md`) | Copilot reads `AGENTS.md` natively (since Aug 2025) |
+
+The repo relies on symlinks: `AGENTS.md`, `.agents/skills/`, and `preview/skills/uipath-maestro-flow` (→ the promoted `skills/uipath-maestro-flow`). On Windows, enable them before cloning (`git config --global core.symlinks true`, with Developer Mode or an elevated shell); otherwise each link checks out as a small text file.
 
 When adding a skill, put its canonical files under `skills/uipath-<name>/`.
 Every custom flavor includes that canonical skill automatically. Review the
@@ -286,6 +289,7 @@ Create the project with the host capability exposed in this environment.
 - Mirror the canonical relative path, including nested `references/` paths.
 - Every flavor contains every canonical skill. If no override exists for a file, its canonical content is intentionally reused unchanged.
 - A new flavor directory must contain at least one real sparse override. If a host needs no exceptions, consume the default package rather than creating an identical empty flavor.
+- A host that cannot run a skill's current generation at all can pin the previous one: `skill-flavors/<flavor>/<skill>/.canonical` containing `classic` composes that skill from `classic/skills/<skill>/`. See the manage-skill-flavors skill before adding one.
 - Do not check generated flavor trees into source control; build them into the ignored `build/` directory for validation and package staging.
 
 Validate the source contract, then build the final Markdown trees:
@@ -467,7 +471,7 @@ Before submitting your PR, verify:
 - [ ] Anti-patterns / "What NOT to Do" section is included for non-trivial skills
 - [ ] No references to other skills (skills must be self-contained)
 - [ ] All links to reference files use relative paths and point to existing files
-- [ ] The skill router table fits within the first 220 lines of the skill so agents can see the whole table in the first read. Enforced only for `preview/skills/*/SKILL.md`.
+- [ ] The skill router table fits within the first 220 lines of the skill so agents can see the whole table in the first read. Enforced only for the builder-SDK skills: `skills/uipath-maestro-flow/SKILL.md` and `preview/skills/*/SKILL.md`.
 - [ ] Lifecycle status registered in `assets/skill-status.json` and README table regenerated (run `python3 scripts/check-skill-status.py`)
 - [ ] Grouped in `skills.sh.json` (run `python3 scripts/check-skills-sh.py`) — and on a rename or removal, the old name is gone from it too
 

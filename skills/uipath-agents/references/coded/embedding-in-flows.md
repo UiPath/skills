@@ -4,6 +4,10 @@ A coded agent can live as a sibling folder to a flow project inside the same sol
 
 For the published-agent path (deployed standalone via `uip codedagent deploy`), see [coded/flow-integration.md § Pattern 2](flow-integration.md#pattern-2-published-coded-agent).
 
+<!--skill-flavor:flow-sdk-embedding-gate:start-->
+**Builder-SDK Flow projects (`.flow.ts`) — the default:** call the coded agent with an `agent({...})` step in `<Name>.flow.ts` — see [agent.md](../../../uipath-maestro-flow/references/agent.md). `compile` emits the node, definition and bindings; the JSON in this file applies to a JSON-authored `.flow`.
+
+<!--skill-flavor:flow-sdk-embedding-gate:end-->
 ## Sibling Folder Structure
 
 The `<resourceKey>` is the local UUID minted by `uip solution projects add` — stable the moment the agent joins the solution.
@@ -122,4 +126,6 @@ One `inputs.<field>` entry per property in the agent's input schema (`entry-poin
 
 NEVER a plain `"=js:..."` string value — it ships as a literal string to the agent activity and fails at runtime with `Cannot find name '<identifier>'`. Complete worked example (trigger → agent → end): uipath-maestro-flow skill, agent-plugin reference § Wiring Inputs.
 
-Input-only rule. Mapping the agent's output back to a flow-level global on an End node DOES use `=js:` — see [variables-and-expressions.md § Variable Updates](../../../uipath-maestro-flow/references/shared/variables-and-expressions.md#variable-updates-variableupdates).
+<!--skill-flavor:flow-sdk-output-mapping:start-->
+Input-only rule. In a builder-SDK (`.flow.ts`) project you never write that mapping: `.return({ <output>: out('<agentStep>', '<field>') })` makes the builder emit it — see [return.md](../../../uipath-maestro-flow/references/return.md).
+<!--skill-flavor:flow-sdk-output-mapping:end-->

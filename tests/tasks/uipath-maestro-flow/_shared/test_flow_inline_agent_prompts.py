@@ -1,4 +1,4 @@
-"""The preview Flow skill must not teach an inline-agent prompt that asks for JSON text.
+"""The Flow skill must not teach an inline-agent prompt that asks for JSON text.
 
 Why this gate exists (skill-flow-devcon-billing-resolution-writer, 2026-09-23):
 the v2 agent read ``references/inline-agent.md`` (``systemPrompt: 'Return JSON
@@ -11,8 +11,8 @@ packed its whole answer into ``body``: '{"subject":...,"body":"Dear ..."}' in 3 
 3 debug runs.
 
 The SDK now refuses that prompt at ``check`` (INLINE_AGENT_PROMPT_JSON_TEXT,
-UiPath/flow-builder-sdk). This test keeps the preview docs from teaching it: it
-reads every ``inlineAgent(...)`` call in the preview skill's ``.ts`` files and
+UiPath/flow-builder-sdk). This test keeps the skill docs from teaching it: it
+reads every ``inlineAgent(...)`` call in the skill's ``.ts`` files and
 ``ts`` code fences, folds each ``systemPrompt`` / ``userPrompt`` string (``'a ' +
 'b'`` concatenation included), and fails on any phrase the SDK matcher would
 refuse. Prose, ``--output json`` CLI text and checker code are never read.
@@ -33,7 +33,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[4]
-PREVIEW = REPO / "preview" / "skills" / "uipath-maestro-flow"
+FLOW_SKILL = REPO / "skills" / "uipath-maestro-flow"
 
 # ── the SDK matcher, ported ───────────────────────────────────────────────────
 # Three shapes, each skipping a negation earlier in the same clause or inside the gap:
@@ -95,7 +95,7 @@ def json_text_directive(text: str, return_keys: list[str] | None = None) -> str 
     return None
 
 
-# ── reading the inlineAgent calls out of the preview tree ────────────────────
+# ── reading the inlineAgent calls out of the skill tree ────────────────────
 _STRING = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`((?:[^`\\]|\\.)*)`")
 _PROP = re.compile(r"\b(systemPrompt|userPrompt)\s*:\s*")
 
@@ -153,7 +153,7 @@ def _code_regions(path: Path) -> list[tuple[str, int]]:
     return regions
 
 
-def directive_hits(root: Path = PREVIEW) -> list[str]:
+def directive_hits(root: Path = FLOW_SKILL) -> list[str]:
     """``file:line: phrase`` for every JSON-text directive in an inlineAgent prompt."""
     hits = []
     for path in sorted(p for p in root.rglob("*") if p.suffix in {".md", ".ts"} and p.is_file()):
@@ -177,10 +177,10 @@ def directive_hits(root: Path = PREVIEW) -> list[str]:
     return hits
 
 
-def test_preview_skill_has_no_json_text_inline_agent_prompt():
+def test_flow_skill_has_no_json_text_inline_agent_prompt():
     hits = directive_hits()
     assert not hits, (
-        "An inlineAgent prompt in the preview Flow skill asks for JSON text. `returns` is "
+        "An inlineAgent prompt in the Flow skill asks for JSON text. `returns` is "
         "already the answer's shape; describe each field instead: 'Return a result "
         "conforming to the output schema. <field>: <how to fill it>.'\n  " + "\n  ".join(hits)
     )
@@ -189,17 +189,17 @@ def test_preview_skill_has_no_json_text_inline_agent_prompt():
 @pytest.mark.parametrize(
     "rel", ["SKILL.md", "references/inline-agent.md", "examples/PostcardCaption.flow.ts"]
 )
-def test_the_gate_reads_the_preview_inline_agent_snippets(rel):
+def test_the_gate_reads_the_flow_inline_agent_snippets(rel):
     """Guard against a vacuous pass: each page that shows an inline agent is read."""
-    regions = _code_regions(PREVIEW / rel)
+    regions = _code_regions(FLOW_SKILL / rel)
     assert any(re.search(r"\binlineAgent\s*\(", code) for code, _ in regions), rel
 
 
-def test_every_preview_prompt_is_a_literal_the_gate_can_read():
+def test_every_flow_prompt_is_a_literal_the_gate_can_read():
     """Guard against a silent skip: the gate folds only string literals, so a prompt
     written as a variable (``systemPrompt: PROMPT``) would never be checked."""
     unread = []
-    for path in sorted(p for p in PREVIEW.rglob("*") if p.suffix in {".md", ".ts"} and p.is_file()):
+    for path in sorted(p for p in FLOW_SKILL.rglob("*") if p.suffix in {".md", ".ts"} and p.is_file()):
         for code, _ in _code_regions(path):
             for call in re.finditer(r"\binlineAgent\s*\(", code):
                 body = _call_body(code, call.end() - 1)
@@ -237,7 +237,7 @@ def test_brace_form_counts_only_the_steps_own_returns_keys():
     assert json_text_directive('Input record: {"ticketId": "T-1"}', ["category", "priority"]) is None
 
 
-def test_preview_skill_never_restates_the_retired_fil_run_contract():
+def test_flow_skill_never_restates_the_retired_fil_run_contract():
     """The SDK's old TSDoc said "the engine's own live path appends a 'return ONLY a
     JSON object' directive". Only the retired fil-run runner did that; the platform
     fills agent.json ``outputSchema`` through a structured final call. A copied doc
@@ -245,7 +245,7 @@ def test_preview_skill_never_restates_the_retired_fil_run_contract():
     stale = re.compile(r"live path appends|engine'?s own live path", re.I)
     hits = [
         f"{p.relative_to(REPO)}:{n}"
-        for p in sorted(PREVIEW.rglob("*"))
+        for p in sorted(FLOW_SKILL.rglob("*"))
         if p.is_file() and p.suffix in {".md", ".ts"}
         for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1)
         if stale.search(line)

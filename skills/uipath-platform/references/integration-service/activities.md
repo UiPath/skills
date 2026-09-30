@@ -66,7 +66,9 @@ The **Operation** field on trigger activities indicates the trigger type:
 
 Some IS activities — most notably **List All Records** and other list/query operations — accept a server-side filter expressed in **CEQL** (Connector Expression Query Language). As with trigger filters (which compile to JMESPath), CEQL filters are authored as a **structured filter tree** and the CLI compiles them to a CEQL string. Authoring as a tree keeps the CLI and Studio Web in lockstep so the activity round-trips cleanly when re-opened in SW.
 
-**Never hand-write the CEQL string.** The tree is the only authored form; the grammar below describes what the compiler emits, so you can read a compiled query and recognize a malformed one. For a connector node in a Maestro flow, follow the filter-tree step in [uipath-maestro-flow — connector/impl.md Step 6a](../../../uipath-maestro-flow/references/author/plugins/connector/impl.md), which discovers the FilterBuilder parameter name from the node registry.
+<!--skill-flavor:flow-sdk-ceql:start-->
+**Never hand-write the CEQL string** outside a builder-SDK Flow. The tree is the only authored form; the grammar below describes what the compiler emits, so you can read a compiled query and recognize a malformed one. **A builder-SDK (`.flow.ts`) Flow is the exception:** there you write the CEQL string and the SDK derives the tree — see [connector-params.md § Structured filters (CEQL)](../../../uipath-maestro-flow/references/connector-params.md#structured-filters-ceql).
+<!--skill-flavor:flow-sdk-ceql:end-->
 
 ### Contract — three signals from IS metadata
 
@@ -212,7 +214,9 @@ Logical operators between siblings:
 
 Connectors with extensible/custom fields (Jira project+issuetype → custom Jira fields, Mailchimp list_id → audience merge fields, Salesforce custom objects) expose `Api`-type entries under `objectActions[]`. Each entry's `apiConfiguration.url`/`body` carries `{token}` placeholders naming the parent fields. The runtime replays the ObjectAction with cached parent values to fetch the connector-specific custom-field schema.
 
-**For Maestro flows**, this lives on the activity node as `essentialConfiguration.customFieldsRequestDetails`. Authoring contract → [uipath-maestro-flow connector/impl.md Step 6c](../../../uipath-maestro-flow/references/author/plugins/connector/impl.md).
+<!--skill-flavor:flow-sdk-custom-fields:start-->
+**For Maestro flows**, this lives on the activity node as `essentialConfiguration.customFieldsRequestDetails`. In a builder-SDK Flow, the `registry prepare` that `check` names creates it — see [connector-params.md § Schema-dynamic operations](../../../uipath-maestro-flow/references/connector-params.md#schema-dynamic-operations-the-parent-field-loop).
+<!--skill-flavor:flow-sdk-custom-fields:end-->
 
 Shape:
 

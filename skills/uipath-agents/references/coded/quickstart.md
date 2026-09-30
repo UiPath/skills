@@ -315,6 +315,10 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 
    The second command's `Data.Node` object is what gets pasted verbatim into the flow's top-level `definitions[]` array.
 
+<!--skill-flavor:flow-sdk-coded-agent-gate:start-->
+   **Builder-SDK Flow projects (`.flow.ts`) — the default:** replace step 7 with one `agent({ key, name, ... })` step in `<Name>.flow.ts` and a `compile` — see [agent.md](../../../uipath-maestro-flow/references/agent.md). Step 7's JSON edits apply to a JSON-authored `.flow`.
+
+<!--skill-flavor:flow-sdk-coded-agent-gate:end-->
 7. **Wire the agent node into the `.flow` file.** Edit `<FlowName>.flow` directly:
    - Add a `uipath.core.agent.<resourceKey>` node to `nodes[]` with one `inputs.<field>` entry per property in the agent's input schema (see step 6's `Data.Node.inputDefinition`) and `model.section: "In this solution"`.
    - For input field values, see [embedding-in-flows.md § Wiring the Agent's Inputs](embedding-in-flows.md#wiring-the-agents-inputs).
