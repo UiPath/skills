@@ -95,14 +95,14 @@
 /tests/tasks/uipath-agents/_shared/check_recommend_scoped.py @apetraru-uipath @valentinabojan @ctiliescuuipath
 /tests/tasks/uipath-agents/_shared/check_user_prompt_attacks_middleware.py @apetraru-uipath @valentinabojan @ctiliescuuipath
 
-# Functions skill (JS/TS → @lucarachiteanu, Python → @vldcmp-uipath; shared surfaces → both)
-/skills/uipath-functions/ @lucarachiteanu @vldcmp-uipath
+# Functions skill (JS/TS → @lucarachiteanu, Python → @UiPath/team-agents-cli; shared surfaces → both)
+/skills/uipath-functions/ @lucarachiteanu @UiPath/team-agents-cli
 /skills/uipath-functions/references/js/ @lucarachiteanu
-/skills/uipath-functions/references/python/ @vldcmp-uipath
-/tests/tasks/uipath-functions/ @lucarachiteanu @vldcmp-uipath
+/skills/uipath-functions/references/python/ @UiPath/team-agents-cli
+/tests/tasks/uipath-functions/ @lucarachiteanu @UiPath/team-agents-cli
 /tests/tasks/uipath-functions/js_smoke/ @lucarachiteanu
 /tests/tasks/uipath-functions/js_http_author/ @lucarachiteanu
-/tests/tasks/activation/uipath-functions.jsonl @lucarachiteanu @vldcmp-uipath
+/tests/tasks/activation/uipath-functions.jsonl @lucarachiteanu @UiPath/team-agents-cli
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
 /skills/uipath-planner/ @RaduAna-Maria
