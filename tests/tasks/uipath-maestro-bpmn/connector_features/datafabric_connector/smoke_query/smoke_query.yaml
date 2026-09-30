@@ -25,7 +25,6 @@ tags: [uipath-maestro-bpmn, smoke, "mode:build", "lifecycle:generate", connector
 # template has no sort-field parameter, so the sort criterion cannot be met
 # faithfully. Skipped so a known failure does not consume the smoke gate's
 # flake allowance; see the description for the evidence.
-skip: true
 
 run_limits:
   max_turns: 100
