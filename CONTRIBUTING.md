@@ -285,7 +285,7 @@ Create the project with the host capability exposed in this environment.
 - An override must contain complete marked blocks and no unmarked prose.
 - Mirror the canonical relative path, including nested `references/` paths.
 - Every flavor contains every canonical skill. If no override exists for a file, its canonical content is intentionally reused unchanged.
-- A new flavor directory must contain at least one real sparse override. If a host needs no exceptions, consume the default package rather than creating an identical empty flavor.
+- A new flavor directory must contain at least one real sparse override or a `.canonical` pin. If a host needs no exceptions, consume the default package rather than creating an identical empty flavor.
 - Do not check generated flavor trees into source control; build them into the ignored `build/` directory for validation and package staging.
 
 Validate the source contract, then build the final Markdown trees:

@@ -668,6 +668,21 @@ test("a .canonical pin composes that skill from classic/skills for its flavor on
   assert.doesNotThrow(() => createAllVariants(repo));
 });
 
+test("a flavor may consist of a canonical pin alone", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-flow", "Current generation.\n");
+  addClassicSkill(repo, "uipath-flow", "Classic generation.\n");
+  pin(repo, "studioweb", "uipath-flow");
+  const studio = join(repo, "skill-flavors", "studioweb");
+  const plan = createCompositionPlan(repo, studio);
+  assert.deepEqual(plan.pinnedSkills, ["uipath-flow"]);
+  assert.equal(plan.replacementCount, 0);
+  const output = join(repo, "out");
+  materializeComposition(plan, output);
+  assert.match(readFileSync(join(output, "uipath-flow", "SKILL.md"), "utf8"), /Classic generation/);
+  assert.doesNotThrow(() => createAllVariants(repo));
+});
+
 test("invalid pins and unpinned classic trees are rejected", (t) => {
   const repo = fixtureRepo(t);
   addSkill(repo, "uipath-flow", block("host", "Default."));

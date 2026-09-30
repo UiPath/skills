@@ -213,43 +213,67 @@ async function overriddenBlocks(flavor, relative) {
 }
 
 /**
- * The on-disk files a link resolved at `logical` (a `skills/...` path) must
- * exist as, seen from `fromFile`. Each entry is `[path, label]`; the label
- * names the composition that needs it when there is more than one.
+ * Every composition a file's line is shipped in: `null` for the default
+ * package, or a flavor name.
  *
- * `block` is the canonical flavor block the link sits in, if any. A pinning
- * flavor that overrides that block never composes the link, so the classic
- * tree is not asked for it — that is how a canonical passage points at the
- * current generation while the flavor's override keeps the classic pointer.
+ * - A canonical `skills/<a>/` line ships in the default package, and in every
+ *   flavor that does not pin `<a>` and does not override the flavor `block`
+ *   the line sits in.
+ * - A `classic/skills/<a>/` line ships only in the flavors that pin `<a>`.
+ * - A `skill-flavors/<f>/` line ships only in flavor `<f>`.
+ */
+async function compositionsOf(fromFile, block) {
+    const parts = path.relative(REPO_ROOT, fromFile).split(path.sep);
+    const skill = composedSkill(fromFile);
+    if (parts[0] === FLAVORS_DIRNAME) return [parts[1]];
+    if (parts[0] === CLASSIC_DIRNAME) {
+        return [...PINS].filter(([, set]) => set.has(skill)).map(([name]) => name);
+    }
+    const out = [null];
+    const relative = path.relative(path.join(REPO_ROOT, "skills"), fromFile);
+    for (const [name, set] of PINS) {
+        if (set.has(skill)) continue; // that flavor composes the classic copy instead
+        if (block && (await overriddenBlocks(name, relative)).has(block)) continue;
+        out.push(name);
+    }
+    return out;
+}
+
+/**
+ * The on-disk files a link resolved at `logical` (a `skills/...` path) must
+ * exist as, seen from `fromFile`: one per composition that ships the line,
+ * with that composition's own pins deciding current or classic tree. Each
+ * entry is `[path, label]`; the label names the compositions that need a
+ * path when they do not all need the same one.
+ *
+ * `block` is the canonical flavor block the link sits in, if any: a flavor
+ * that overrides it never composes the link, so it asks nothing of it. That is
+ * how a canonical passage points at the current generation while the
+ * flavor's override keeps the classic pointer.
  */
 async function physicalTargets(fromFile, logical, block = null) {
-    const rel = path.relative(REPO_ROOT, logical);
-    const parts = rel.split(path.sep);
-    if (parts[0] !== "skills" || parts.length < 2 || !ALL_PINNED.has(parts[1])) {
-        return [[logical, null]];
+    const parts = path.relative(REPO_ROOT, logical).split(path.sep);
+    const target = parts[0] === "skills" && parts.length >= 2 ? parts[1] : null;
+    const byPath = new Map();
+    for (const flavor of await compositionsOf(fromFile, block)) {
+        const pinned = flavor !== null && target !== null && PINS.get(flavor)?.has(target);
+        const physical = pinned ? path.join(CLASSIC_SKILLS, ...parts.slice(1)) : logical;
+        if (!byPath.has(physical)) byPath.set(physical, []);
+        byPath.get(physical).push(flavor);
     }
-    const target = parts[1];
-    const classic = path.join(CLASSIC_SKILLS, ...parts.slice(1));
-    const fromParts = path.relative(REPO_ROOT, fromFile).split(path.sep);
-    if (fromParts[0] === "classic") return [[classic, null]];
-    if (fromParts[0] === "skill-flavors") {
-        return PINS.get(fromParts[1])?.has(target) ? [[classic, null]] : [[logical, null]];
-    }
-    // Canonical: the skill's own links stay in its own tree; a link from any
-    // other skill is composed next to both generations.
-    if (composedSkill(fromFile) === target) return [[logical, null]];
-    const relative = path.relative(path.join(REPO_ROOT, "skills"), fromFile);
-    const flavors = [];
-    for (const [name, set] of PINS) {
-        if (!set.has(target)) continue;
-        if (block && (await overriddenBlocks(name, relative)).has(block)) continue;
-        flavors.push(name);
-    }
-    if (flavors.length === 0) return [[logical, null]];
-    return [
-        [logical, "default package"],
-        [classic, `classic tree the ${flavors.join(", ")} flavor(s) compose`],
-    ];
+    if (byPath.size <= 1) return [...byPath.keys()].map((p) => [p, null]);
+    const describe = (flavors) => {
+        const names = flavors.filter((f) => f !== null);
+        const parts = flavors.includes(null) ? ["default package"] : [];
+        if (names.length) parts.push(`${names.join(", ")} flavor(s)`);
+        return parts.join(" and ");
+    };
+    return [...byPath].map(([physical, flavors]) => [
+        physical,
+        physical.startsWith(CLASSIC_SKILLS + path.sep)
+            ? `classic tree the ${flavors.filter((f) => f !== null).join(", ")} flavor(s) compose`
+            : describe(flavors),
+    ]);
 }
 
 /** Line number (1-based) -> name of the canonical flavor block around it. */
@@ -321,8 +345,14 @@ for (const root of ROOTS) {
         const text = await readFile(file, "utf8");
         const baseDir = resolveBaseDir(file);
         const rel = path.relative(REPO_ROOT, file);
+        // A classic or flavor file is held to the enforcement of the skill it
+        // composes into, so a retained tree cannot hide dead anchors.
+        const skill = composedSkill(file);
+        const logicalRel = skill
+            ? path.join("skills", skill, ...rel.split(path.sep).slice(root === "skills" ? 2 : 3))
+            : rel;
         const enforced = FRAGMENT_ENFORCED.some(
-            (p) => rel === p || rel.startsWith(p + path.sep),
+            (p) => logicalRel === p || logicalRel.startsWith(p + path.sep),
         );
         const blocks = root === "skills" ? blockLines(file, text) : new Map();
         for (const [lineNo, line] of proseLines(text)) {
@@ -362,7 +392,6 @@ for (const root of ROOTS) {
                     });
                 }
             }
-            if (root !== "skills") continue;
             // Inline code carries format strings like `[Red](#,##0)` that the
             // link pattern matches but no reader can follow.
             for (const match of line.replace(/`[^`]*`/g, "").matchAll(LINK_RE)) {
@@ -379,6 +408,8 @@ for (const root of ROOTS) {
                     continue;
                 }
                 if (!fragment) continue;
+                // A flavor override's own headings exist only after composition.
+                if (targetPart === "" && root === FLAVORS_DIRNAME) continue;
                 const targetFile =
                     targetPart === "" ? file : path.resolve(baseDir, targetPart);
                 // Every tree the link is composed against must carry the
@@ -388,11 +419,23 @@ for (const root of ROOTS) {
                     if (!(await isFile(physical))) continue;
                     fragmentsChecked++;
                     if ((await anchorsOf(physical)).has(fragment.toLowerCase())) continue;
+                    // A flavor's own override of the target adds headings that
+                    // exist only in that flavor's composed file.
+                    if (root === FLAVORS_DIRNAME) {
+                        const flavor = rel.split(path.sep)[1];
+                        const skillRel = path.relative(path.join(REPO_ROOT, "skills"), targetFile);
+                        const override = path.join(REPO_ROOT, FLAVORS_DIRNAME, flavor, skillRel);
+                        if ((await isFile(override)) && (await anchorsOf(override)).has(fragment.toLowerCase())) {
+                            continue;
+                        }
+                    }
                     deadAnchors.push({
                         file: rel,
                         line: lineNo,
                         target: label ? `${raw} (in the ${label})` : raw,
-                        enforced,
+                        // A cross-generation anchor is new, so it starts clean:
+                        // always enforced, whatever the source tree's status.
+                        enforced: enforced || label !== null,
                     });
                 }
             }
@@ -404,7 +447,7 @@ const enforcedDead = deadAnchors.filter((d) => d.enforced);
 const toleratedDead = deadAnchors.filter((d) => !d.enforced);
 
 console.log(`Checked ${checked} relative Markdown links across ${ROOTS.join(", ")}.`);
-console.log(`Checked ${fragmentsChecked} link fragments in skills/.`);
+console.log(`Checked ${fragmentsChecked} link fragments across ${ROOTS.join(", ")}.`);
 
 if (toleratedDead.length > 0) {
     console.warn(

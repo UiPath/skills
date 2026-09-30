@@ -552,8 +552,9 @@ export function createCompositionPlan(repoRoot = REPO_ROOT, flavorRoot) {
     }
   }
 
-  if (overrideFileCount === 0) {
-    findings.push(`${flavorRoot}: flavor must contain at least one Markdown override file`);
+  // A valid pin is an exception in its own right; a flavor needs one or the other.
+  if (overrideFileCount === 0 && pins.size === 0) {
+    findings.push(`${flavorRoot}: flavor must contain at least one Markdown override file or canonical pin`);
   }
   if (findings.length) throw new FlavorCompositionError([...new Set(findings)]);
 
