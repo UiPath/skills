@@ -22,7 +22,7 @@ Maintain one complete canonical skill while building reviewed host-specific exce
 | A host capability changes one instruction | Mark the smallest complete canonical passage and add one sparse replacement block. |
 | An existing skill is safe unchanged for a flavor | Make no flavor edit; it is included automatically. |
 | A new canonical skill is added | Review it against every flavor; add sparse overrides only where canonical guidance is unsafe. |
-| A new flavor is added | Add its first real sparse override under `skill-flavors/<flavor>/`; generic build and CI must discover it without another registry edit. |
+| A new flavor is added | Add its first real sparse override, or a `.canonical` pin, under `skill-flavors/<flavor>/`; generic build and CI must discover it without another registry edit. |
 
 Do not create an exception merely to reword shared guidance.
 
@@ -98,7 +98,7 @@ replace passages that differ for that host.
 - Add no flavor file when canonical guidance is correct for the host.
 - Add the smallest replacement block when canonical guidance is wrong for the host.
 - Review every new or materially changed canonical skill against every existing flavor because inclusion is automatic. Update or add the smallest necessary sparse override wherever the canonical guidance is not correct for that flavor.
-- Do not create an empty flavor. If a host has no exceptions, it should consume the default package.
+- Do not create an empty flavor. A flavor needs at least one sparse override or `.canonical` pin; if a host has no exceptions, it should consume the default package.
 
 ## Pin a Skill to Its Previous Generation (Rare)
 

@@ -32,7 +32,9 @@ import {
     CANONICAL_PIN_VALUE,
     CLASSIC_DIRNAME,
     FLAVORS_DIRNAME,
+    composeText,
     parseMarkerBlocks,
+    stripMarkerBoundaries,
 } from "./compose-skill-flavor.mjs";
 
 /** The repo, or the fixture tree a test names as the first argument. */
@@ -196,6 +198,14 @@ function composedSkill(fromFile) {
     return null;
 }
 
+/** Where a file sits once composed: its `skills/...` path. */
+function logicalPath(file) {
+    const parts = path.relative(REPO_ROOT, file).split(path.sep);
+    if (parts[0] === FLAVORS_DIRNAME) return path.join(REPO_ROOT, "skills", ...parts.slice(2));
+    if (parts[0] === CLASSIC_DIRNAME) return path.join(REPO_ROOT, "skills", ...parts.slice(2));
+    return file;
+}
+
 /** Names of the flavor blocks a flavor's override of `relative` replaces. */
 const overrideCache = new Map();
 async function overriddenBlocks(flavor, relative) {
@@ -227,7 +237,16 @@ async function compositionsOf(fromFile, block) {
     const skill = composedSkill(fromFile);
     if (parts[0] === FLAVORS_DIRNAME) return [parts[1]];
     if (parts[0] === CLASSIC_DIRNAME) {
-        return [...PINS].filter(([, set]) => set.has(skill)).map(([name]) => name);
+        // A pinning flavor's overrides target the classic tree, so a classic
+        // line inside a block that flavor replaces never ships in it.
+        const relative = path.join(...parts.slice(2));
+        const out = [];
+        for (const [name, set] of PINS) {
+            if (!set.has(skill)) continue;
+            if (block && (await overriddenBlocks(name, relative)).has(block)) continue;
+            out.push(name);
+        }
+        return out;
     }
     const out = [null];
     const relative = path.relative(path.join(REPO_ROOT, "skills"), fromFile);
@@ -317,7 +336,43 @@ const anchorCache = new Map();
 
 async function anchorsOf(file) {
     if (anchorCache.has(file)) return anchorCache.get(file);
-    const text = await readFile(file, "utf8");
+    const anchors = anchorsOfText(await readFile(file, "utf8"));
+    anchorCache.set(file, anchors);
+    return anchors;
+}
+
+/**
+ * Anchors of `logical` (a `skills/...` path) as one composition builds it:
+ * the default package reads the file itself; a flavor reads its classic copy
+ * when it pins the skill, then applies its own override blocks. A heading that
+ * exists only in an override, or only in a block the override replaces, is
+ * judged as the built file has it.
+ */
+async function composedAnchors(flavor, logical) {
+    const key = `${flavor}\0${logical}`;
+    if (anchorCache.has(key)) return anchorCache.get(key);
+    const rel = path.relative(path.join(REPO_ROOT, "skills"), logical);
+    const skill = rel.split(path.sep)[0];
+    const pinned = flavor !== null && PINS.get(flavor)?.has(skill);
+    const base = pinned ? path.join(CLASSIC_SKILLS, rel) : logical;
+    let anchors = new Set();
+    if (await isFile(base)) {
+        let text = await readFile(base, "utf8");
+        const override = flavor === null ? null : path.join(REPO_ROOT, FLAVORS_DIRNAME, flavor, rel);
+        if (override && (await isFile(override))) {
+            text = composeText(
+                text,
+                parseMarkerBlocks(base, text),
+                parseMarkerBlocks(override, await readFile(override, "utf8")),
+            );
+        }
+        anchors = anchorsOfText(stripMarkerBoundaries(text));
+    }
+    anchorCache.set(key, anchors);
+    return anchors;
+}
+
+function anchorsOfText(text) {
     const counts = new Map();
     const anchors = new Set();
     for (const [, line] of proseLines(text)) {
@@ -331,7 +386,6 @@ async function anchorsOf(file) {
     for (const m of text.matchAll(/<a\s+(?:name|id)=["']([^"']+)["']/g)) {
         anchors.add(m[1].toLowerCase());
     }
-    anchorCache.set(file, anchors);
     return anchors;
 }
 
@@ -354,7 +408,7 @@ for (const root of ROOTS) {
         const enforced = FRAGMENT_ENFORCED.some(
             (p) => logicalRel === p || logicalRel.startsWith(p + path.sep),
         );
-        const blocks = root === "skills" ? blockLines(file, text) : new Map();
+        const blocks = root === FLAVORS_DIRNAME ? new Map() : blockLines(file, text);
         for (const [lineNo, line] of proseLines(text)) {
             const block = blocks.get(lineNo) ?? null;
             for (const match of line.matchAll(LINK_RE)) {
@@ -408,34 +462,39 @@ for (const root of ROOTS) {
                     continue;
                 }
                 if (!fragment) continue;
-                // A flavor override's own headings exist only after composition.
-                if (targetPart === "" && root === FLAVORS_DIRNAME) continue;
+                // Judge the fragment against the file each composition builds:
+                // a same-file fragment names this file's logical path.
                 const targetFile =
-                    targetPart === "" ? file : path.resolve(baseDir, targetPart);
-                // Every tree the link is composed against must carry the
-                // heading, not just the canonical one.
-                for (const [physical, label] of await physicalTargets(file, targetFile, block)) {
+                    targetPart === "" ? logicalPath(file) : path.resolve(baseDir, targetPart);
+                const labels = new Map(
+                    (await physicalTargets(file, targetFile, block)).map(([p, l]) => [p, l]),
+                );
+                const dead = new Map();
+                for (const flavor of await compositionsOf(file, block)) {
+                    const parts = path.relative(REPO_ROOT, targetFile).split(path.sep);
+                    const pinned = flavor !== null && parts[0] === "skills" && PINS.get(flavor)?.has(parts[1]);
+                    const physical = pinned ? path.join(CLASSIC_SKILLS, ...parts.slice(1)) : targetFile;
                     // A missing target is already reported above as a broken link.
                     if (!(await isFile(physical))) continue;
                     fragmentsChecked++;
-                    if ((await anchorsOf(physical)).has(fragment.toLowerCase())) continue;
-                    // A flavor's own override of the target adds headings that
-                    // exist only in that flavor's composed file.
-                    if (root === FLAVORS_DIRNAME) {
-                        const flavor = rel.split(path.sep)[1];
-                        const skillRel = path.relative(path.join(REPO_ROOT, "skills"), targetFile);
-                        const override = path.join(REPO_ROOT, FLAVORS_DIRNAME, flavor, skillRel);
-                        if ((await isFile(override)) && (await anchorsOf(override)).has(fragment.toLowerCase())) {
-                            continue;
-                        }
-                    }
+                    if ((await composedAnchors(flavor, targetFile)).has(fragment.toLowerCase())) continue;
+                    if (!dead.has(physical)) dead.set(physical, []);
+                    dead.get(physical).push(flavor);
+                }
+                const shipped = await compositionsOf(file, block);
+                for (const [physical, flavors] of dead) {
+                    // Name the compositions that lack the heading unless every
+                    // one that ships the line does.
+                    const partial = flavors.length < shipped.length;
+                    const names = flavors.map((f) => (f === null ? "default package" : `${f} flavor`)).join(", ");
+                    const label = labels.get(physical) ?? (partial ? `composed file of the ${names}` : null);
                     deadAnchors.push({
                         file: rel,
                         line: lineNo,
                         target: label ? `${raw} (in the ${label})` : raw,
                         // A cross-generation anchor is new, so it starts clean:
                         // always enforced, whatever the source tree's status.
-                        enforced: enforced || label !== null,
+                        enforced: enforced || labels.get(physical) != null,
                     });
                 }
             }

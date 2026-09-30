@@ -209,3 +209,32 @@ test("classic and flavor files get their anchors checked too", () => {
   });
   assert.match(out, /classic\/skills\/uipath-flow\/SKILL\.md:3 -> references\/old\.md#gone/);
 });
+
+// Anchors are judged against the file each composition BUILDS (Copilot review, #3646).
+const blockOf = (name, body) => `<!--skill-flavor:${name}:start-->\n${body}\n<!--skill-flavor:${name}:end-->\n`;
+
+test("a classic line inside a block the pinning flavor overrides is not checked", () => {
+  const { status, out } = run({
+    ...PINNED,
+    "classic/skills/uipath-flow/SKILL.md": `# Flow v1\n\n${blockOf("gone", "[r](references/missing.md)")}`,
+    "skill-flavors/sw/uipath-flow/SKILL.md": blockOf("gone", "replaced"),
+  });
+  assert.equal(status, 0, out);
+});
+
+test("a flavor override's same-file fragment is checked against the composed file", () => {
+  const { out } = run({
+    "skill-flavors/sw/uipath-a/SKILL.md": blockOf("x", "[top](#no-such-heading)"),
+    "skills/uipath-a/SKILL.md": `# A\n\n## Real heading\n\n${blockOf("x", "text")}`,
+  });
+  assert.match(out, /skill-flavors\/sw\/uipath-a\/SKILL\.md:\d+ -> #no-such-heading/);
+});
+
+test("a heading the flavor's override removes is dead in that flavor", () => {
+  const { out } = run({
+    "skills/uipath-a/SKILL.md": "# A\n\n[x](references/r.md#step-2)\n",
+    "skills/uipath-a/references/r.md": `# R\n\n${blockOf("steps", "## Step 2")}`,
+    "skill-flavors/sw/uipath-a/references/r.md": blockOf("steps", "## Something else"),
+  });
+  assert.match(out, /r\.md#step-2 \(in the composed file of the sw flavor\)/);
+});
