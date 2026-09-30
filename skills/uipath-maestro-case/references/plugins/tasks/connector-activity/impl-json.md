@@ -47,6 +47,8 @@ Synthetic HTTP request activities (`object-name === "httpRequest"` / `"http-requ
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
 
+**Solution-resource pickers** (such as a Data Fabric entity). Pass the resource **name** as a plain string, like any value. `case spec` resolves it into the solution and returns what to bind (Step 2). If the name exists in more than one folder, the command lists the candidates: add `"<picker>_folderKey": "<folder key or folder path>"` and rerun. A scope selector gating the picker (`entityScope`) is a reference field: write its lookup `value` (`folder`), not its `displayName` (`Folder`).
+
 #### Step 1.a — Rewrite references to canonical sink form
 
 Connector body sinks (`bodyParameters`, `queryParameters`, `pathParameters`) require `=js:(...)` wrap for every reference. Resolve cross-task refs first, then apply the wrap:
@@ -93,8 +95,11 @@ uip maestro case spec --type activity \
   --activity-type-id "<type-id>" \
   --connection-id "<connection-id>" \
   --input-details '<json from Step 1>' \
+  --solution-folder "<SolutionDir>" \
   --output json > tasks/spec-cache.<elementId>.json
 ```
+
+`--solution-folder` is the solution a picker's resource is added to. It defaults to the solution containing the current folder.
 
 **Precondition.** `.Data.CaseShape.context` must resolve. If it is `null`, the CLI is too old to emit `caseShape` in its final shape — upgrade; never adapt the splice to an older response.
 
@@ -114,6 +119,7 @@ The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details` 
 | `spec.caseShape.outputs[]` | `.Data.CaseShape.outputs` — response (JSON Schema body) / curated / Error |
 | `spec.caseShape.context[]` | `.Data.CaseShape.context` — FE-canonical array; its `connection` / `folderKey` values are `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` sentinels that `splice` resolves |
 | `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty. |
+| `spec.resourceBindings[]` | `.Data.ResourceBindings` — only when a picker resolved: `resource`, `resourceKey`, and `rows[]` of `name`, `propertyAttribute`, `default`, `bindingIdPlaceholder` (kept camelCase, like `caseShape`). |
 
 > **Each connector task runs its own `case spec`.** Even when two tasks share the same `connection-id`, `caseShape` is task-shape-specific (different `objectName`, `httpMethod`, `inputs`, `outputs`). Never reuse another task's spec output.
 
@@ -183,6 +189,7 @@ Never hand-write `data.context`, `data.inputs`, `data.outputs`, or the connectio
 
 - **Output binding.** For every output the SDD references — bare name or first segment of a `->` path — apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes) to the entry `splice` wrote, keeping its `id` / `var` / `elementId`. Outputs the SDD does not reference stay as splice minted them.
 - **Output name collisions.** `caseShape.outputs[]` returns `response` / `Error` for every connector task. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule) across all tasks already in `caseplan.json`: on a collision append a counter suffix starting at 2 to `var`, `id`, `value`, and `target` (as `=<new var>`); `name`, `displayName`, and `source` stay unchanged.
+- **Solution-resource pickers.** When `spec.resourceBindings[]` is present, mint one id per `rows[]` item, append a root binding for each (`id` = the minted id, `type` = `"string"`, `resource` and `resourceKey` from the entry, `name`, `propertyAttribute`, `default` from the row), and replace that row's `bindingIdPlaceholder` in `data.inputs` with its id. Copy the values exactly; `splice` does not write these.
 - **Multipart file inputs** — 5.d below.
 
 #### Step 5.d — Multipart file inputs (after splice)
@@ -226,9 +233,13 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 3–8 across every connector node
 11. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
 12. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
-13. **Lossless inputs (HARD GATE).** Every resolved `input-values` field must appear unchanged in the matching `data.inputs[].body`; a top-level `filter:` also requires `spec.filter` and successful compilation. Otherwise halt and repair—never warn and continue.
+13. **Lossless inputs (HARD GATE).** Every resolved `input-values` field must appear unchanged in the matching `data.inputs[].body` (a resolved picker and its `_folderKey` companion hold `=bindings.<id>` instead); a top-level `filter:` also requires `spec.filter` and successful compilation. Otherwise halt and repair—never warn and continue.
 14. **Spliced subtree is byte-identical to the cache (HARD GATE).** Compare the written `data.context` / `data.inputs` / `data.outputs` against `tasks/spec-cache.<elementId>.json` — identical apart from the placeholder substitutions and the minted `var`/`id`/`elementId`. `validate` does NOT catch content-level loss: a missing `multipartParameters` passes validate and fails at runtime with `400 "Unable to parse multipart body"`.
+15. **No placeholder left behind.** No `{{RESOURCE_BINDING_ID:` remains, and every `rows[]` item has a root binding with its id.
+
 ## What NOT to Do
+
+- **Do NOT resolve a picker yourself** (catalog search, `uip solution resources add`, hand-written rows). `case spec` does it.
 
 - **Do NOT add `operation` or `_label` to `data.context[]`.** The FE only adds `operation` for triggers; activity context must not have it.
 - **Do NOT add `designTimeMetadata` to the metadata body.** The FE does not include it for case management tasks.
