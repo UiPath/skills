@@ -251,7 +251,11 @@ This is the same trap as taking `operation` from the catalogue's per-activity
 `describe` is the only place that contract is written down.
 
 `=vars.<id>` and `=js:` resolve inside that CDATA, so build the body from
-variables rather than literals. In an XML *attribute* a `=js:` expression must
+variables rather than literals. A JSON string value that is exactly `"=vars.<id>"`
+is a variable reference; a value that mixes literal text with a variable must be
+one `=js:` expression, for example
+`"messageToSend":"=js:'Severity: ' + vars.Var_Severity"`. Never paste
+`=vars.<id>` into the middle of literal text. In an XML *attribute* a `=js:` expression must
 escape the XML metacharacters — `&amp;&amp;` for `&&`, and `&lt;` for `<` — or
 the file is not well-formed; `>` needs no escaping in an attribute value, and
 inside CDATA nothing does.
@@ -326,10 +330,37 @@ never filter `RequestFields` by the names you expect. A missing Slack
 Each parameter is its own input, targeted by its `Type` (`query`, `path`, or
 `file`) — never folded into the body. Emit an input for every parameter marked
 `Required: true`, using its `DefaultValue` when the request has no better
-value:
+value. **Placement:** parameter inputs are siblings of the body input, written
+after `</uipath:context>`. Inside `<uipath:context>` go only the routing inputs
+(`connectorKey`, `connection`, `folderKey`, `operation`, `objectName`, `method`,
+`path`, `activityConfigurationVersion`, `metadata`); a `send_as` placed there is
+not sent and the call fails as below. `folderKey` is required in the context and
+must reference the folder binding (§4). Complete Slack node:
 
 ```xml
-<uipath:input target="query" name="send_as" type="string" value="bot" />
+<bpmn:sendTask id="Task_Slack" name="Send Slack alert">
+  <bpmn:extensionElements>
+    <uipath:activity version="v1">
+      <uipath:type value="Intsvc.ActivityExecution" version="v1" />
+      <uipath:context>
+        <uipath:input name="connectorKey" type="string" value="uipath-salesforce-slack" />
+        <uipath:input name="connection" type="string" value="=bindings.Binding_SlackConn" />
+        <uipath:input name="folderKey" type="string" value="=bindings.Binding_SlackFolder" />
+        <uipath:input name="operation" type="string" value="Create" />
+        <uipath:input name="objectName" type="string" value="send_message_to_channel_v2" />
+        <uipath:input name="method" type="string" value="POST" />
+        <uipath:input name="path" type="string" value="/send_message_to_channel_v2" />
+        <uipath:input name="activityConfigurationVersion" type="string" value="v1" />
+        <uipath:input name="metadata" type="json"><![CDATA[{}]]></uipath:input>
+      </uipath:context>
+      <uipath:input target="query" name="send_as" type="string" value="bot" />
+      <uipath:input name="body" type="json" target="body"><![CDATA[{"channel":"<CHANNEL_NAME>","messageToSend":"=js:'Severity: ' + vars.Var_Severity"}]]></uipath:input>
+      <uipath:output name="response" type="jsonSchema" source="=response" var="Var_SlackResponse" />
+    </uipath:activity>
+  </bpmn:extensionElements>
+  <bpmn:incoming>Flow_In</bpmn:incoming>
+  <bpmn:outgoing>Flow_Out</bpmn:outgoing>
+</bpmn:sendTask>
 ```
 
 Omitting one is accepted by local validation and by `pack`, then fails only at
@@ -410,7 +441,10 @@ one.
 A folder-scoped connector activity needs TWO bindings that share one
 `resourceKey` (the connection id) and differ in `propertyAttribute`: the
 connection binding's `default` is the connection id, the folder binding's
-`default` is the folder key.
+`default` is the folder key. The activity's `folderKey` context input must
+reference the folder binding (`=bindings.<folderBindingId>`); the complete node
+under "Required `Parameters`" above shows it. Without it: `102010`,
+`Value cannot be null (Parameter 'Folder')`.
 
 ```xml
 <uipath:bindings version="v1">
