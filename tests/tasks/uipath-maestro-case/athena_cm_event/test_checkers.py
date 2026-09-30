@@ -199,7 +199,7 @@ closes on required-stages-completed.
                 {"id": f"{task_id}_folder", "default": "Shared"},
             ])
         plan = {
-            "version": "30.0.0",
+            "version": "32.0.3",
             "name": "AthenaCMEventCase",
             "metadata": {
                 "caseIdentifier": "=vars.instanceExternalId",

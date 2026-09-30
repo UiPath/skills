@@ -7,7 +7,7 @@ Structural reference for the case definition JSON. Shared across all node types.
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "30.0.0",
+  "version": "32.0.3",
   "name": "<case name>",
   "description": "<optional>",
   "metadata": {
@@ -73,7 +73,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "30.0.0",
+  "version": "32.0.3",
   "name": "Loan Approval",
   "description": "case description",
   "metadata": {
@@ -95,7 +95,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
-| `version` | string | Schema version — `"30.0.0"`. Emitted by the `case` plugin at T01. |
+| `version` | string | Schema version — `"32.0.3"`. Emitted by the `case` plugin at T01. |
 | `name` | string | Human-readable name |
 | `description` | string? | Case description |
 | `metadata.caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
@@ -536,7 +536,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "30.0.0",
+  "version": "32.0.3",
   "name": "Simple Case",
   "metadata": {
     "caseIdentifier": "Simple Case",
