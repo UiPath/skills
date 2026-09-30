@@ -611,9 +611,8 @@ null connection (error 102010). Use `refresh`, not the deprecated
   and fails with "Cannot read property ... of undefined". `body` is the parsed
   object when the response is valid JSON and the raw string otherwise, so for a
   non-JSON response use `JSON.parse(vars.<Var>.body)` only after checking
-  `typeof vars.<Var>.body === "string"`. Shape verified against the engine
-  source (`HttpRequestActivities.cs`, `responseData`); it applies to
-  `Intsvc.HttpExecution` only, not to `Intsvc.UnifiedHttpRequest`.
+  `typeof vars.<Var>.body === "string"`. This shape is `Intsvc.HttpExecution`'s
+  only, not `Intsvc.UnifiedHttpRequest`'s.
 
 Status vocabulary for an IS node in a summary: **executable** (activity, inputs,
 output variable, and downstream mappings present, runtime-verified if a run was
