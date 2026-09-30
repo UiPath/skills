@@ -16,8 +16,11 @@ sandbox:
 reference:
   directory: ..
 
+# The panel's turn: skill mention + a link whose label is only a title. The
+# panel sends an absolute file:// URL; a sandbox path is not known up front,
+# so the link target here is relative.
 initial_prompt: |
-  Build an RPA workflow from my task recording: ./recording
+  {{/uipath-task-recording:uipath-task-recording}} Build an RPA workflow from my task recording: [Chrome → Excel · 0:22](recording)
 
 success_criteria:
   - type: skill_triggered
@@ -64,6 +67,8 @@ success_criteria:
         (numbering continuing across groups), and the notes (arguments, data
         flow, left out, couldn't tell) as one bullet each;
       - no preamble or closing prose surrounds the "What I saw" block;
+      - each app group shows one screenshot as a Markdown image whose target
+        is an absolute file:// URL of a trace/img/*.png in the recording;
       - the search, the copy of amount and due date, the paste into the next
         empty row with INV-20931 in the first column, and the save are all
         present and in order;
