@@ -35,6 +35,7 @@ OWNERS = {
     "CURATE": "testset_curation_by_label_build.yaml",
     "SCHEMA": "customfield_schema_multiscope_build.yaml",
     "TRIAGE": "failed_run_triage_diagnose.yaml",
+    "TCLOG": "testcaselog_override_triage_operate.yaml",
 }
 
 

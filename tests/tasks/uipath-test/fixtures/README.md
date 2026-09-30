@@ -28,6 +28,7 @@ and therefore exact for this scheme.
 | `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `testcaselog_override_triage_operate` | CLAIM | `EVFX-TCLOG-SET`, `EVFX-TCLOG-TC{1,2,3}` | 1 settled execution `EVFX-TCLOG-RUN`, results `Passed, Failed, Passed`, **nothing overridden**; the task writes an override onto the failed log, so `pre_run` deletes the execution and records a fresh one |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
@@ -105,6 +106,19 @@ Four test sets and eleven test cases, fixed — `EVFX-RERUN-SET`,
 accretes: `execution_rerun` repairs one execution rather than appending,
 `junit_export` and `release_readiness` seed once, `flaky` appends only to
 restore intermittency, and `organize` sweeps its own scratch.
+
+`testcaselog_override_triage_operate` holds its execution flat at one rather
+than zero. The task writes an override onto a log, so the fixture cannot be
+reused as the last agent left it; `pre_run` deletes the execution and records a
+fresh `Passed, Failed, Passed` run. That is also the override cleanup, because
+an override cannot outlive its log. Only possible because `executions delete`
+exists.
+
+Its guard is on the property, not the count (Rule 4): three logs is not enough,
+so it asserts that **exactly one** reports `Failed` and that **no** log starts
+with `OriginalResult` already differing from `Result`. A log left overridden by
+a previous run would otherwise let the graded outcome pass without the agent
+doing anything.
 
 ## Why
 
