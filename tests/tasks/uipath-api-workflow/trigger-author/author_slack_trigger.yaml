@@ -74,7 +74,7 @@ success_criteria:
 
   - type: run_command
     description: "PRIMARY — bindings_v2.json carries the EventTrigger entry that registers the subscription on deploy"
-    command: 'B=$(find . -name bindings_v2.json -not -path "*/node_modules/*" | head -1); test -n "$B" && python3 -c "import json,sys; d=json.load(open(sys.argv[1])); t=[r for r in d.get(\"resources\",[]) if r.get(\"resource\")==\"EventTrigger\"]; sys.exit(0 if len(t)==1 and t[0][\"metadata\"].get(\"Operation\") and t[0].get(\"key\") else 1)" "$B"'
+    command: 'B=$(find . -name bindings_v2.json -not -path "*/node_modules/*" | head -1); test -n "$B" && python3 -c "import json,re,sys; d=json.load(open(sys.argv[1])); t=[r for r in d.get(\"resources\",[]) if r.get(\"resource\")==\"EventTrigger\"]; sys.exit(0 if len(t)==1 and t[0][\"metadata\"].get(\"Operation\") and re.fullmatch(r\"[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\", t[0].get(\"key\",\"\")) else 1)" "$B"'
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
