@@ -60,7 +60,7 @@ Extension rule families:
 |---|---|---|
 | `UIAUTOMATION-*` | UI Automation | [packages/uia-guide.md § Hook 2](packages/uia-guide.md#hook-2--triage) |
 | `<CLASSIC-ACTIVITY>-ACTIVITY-MIGRATION` (e.g. `SEND-EMAIL-ACTIVITY-MIGRATION`) | Mail, GSuite, Office 365 | [packages/mail-guide.md](packages/mail-guide.md), [packages/gsuite-guide.md](packages/gsuite-guide.md) |
-| Rules listed by `--help` for the Microsoft extension | Microsoft.Activities.Extensions | [packages/microsoft-activities-guide.md](packages/microsoft-activities-guide.md) |
+| `MICROSOFT-*`, `UNSUPPORTED-MICROSOFT-ACTIVITY`, `ADD-OR-UPDATE-UIPATH-SYSTEM` (the summarizer lists them under rules outside the known families) | Microsoft.Activities.Extensions | [packages/microsoft-activities-guide.md](packages/microsoft-activities-guide.md) |
 
 Unknown rule: read its `shortDescription` and `fullDescription` in `tool.driver.rules` and classify by level.
 
