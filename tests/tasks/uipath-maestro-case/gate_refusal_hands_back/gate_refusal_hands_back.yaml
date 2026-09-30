@@ -36,6 +36,17 @@ initial_prompt: |
   WarrantyClaimTriage Maestro case. Build it. The build is done when
   `uip maestro case validate` passes on the case project.
 
+# Grade the reply with a local Claude Code sonnet rather than the experiment's
+# litellm route, which needs CODEX_* credentials. `route: null` clears that
+# override so the agent_judge reuses the agent's own route and cached `claude`
+# login; `route: direct` would demand ANTHROPIC_API_KEY.
+checker_context:
+  api_route:
+    route: null
+    model: claude-sonnet-5
+    params: null
+    env_params: null
+
 success_criteria:
   - type: command_executed
     description: "The run reached the SDD refusal: sdd resolve or sdd convert ran on the document"
@@ -69,10 +80,13 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: llm_judge
+  - type: agent_judge
     description: "Final reply hands the SDD back: names the line-117 heading refusal and routes the fix to the design side, without claiming a build"
     include_agent_output: true
     include_reference: false
+    agent:
+      type: claude-code
+      allowed_tools: []
     prompt: |
       Evaluate ONLY the agent's final reply. The user asked it to build a
       Maestro case from an approved sdd.md. Ground truth: the CLI refused the
