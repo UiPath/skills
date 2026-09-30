@@ -1,0 +1,308 @@
+task_id: skill-test-schedule-freeze-window-operate
+description: >
+  Operate test: a release freeze over one test set, exercising the schedule
+  surface `uip tm schedules` — create, disable, delete and next-runs — which no
+  existing task covers.
+
+  Three of the four graded outcomes are states the fixture does not already
+  hold, so a run that does nothing scores zero on all of them: a new nightly
+  schedule must exist, a seeded enabled schedule must end up switched off
+  without being deleted, and a second seeded schedule must be gone. The pause
+  and the delete are deliberately different asks on identical-looking objects,
+  so an agent that reaches for `delete` twice fails the pause outcome.
+
+  The cadence is the real difficulty. `--cron` takes six or seven fields
+  starting with SECONDS and the server does not reject a five-field Unix
+  expression — it passes both validators and dies in the scheduler as an opaque
+  500 — and `--cron-details` is required for every recurrence type with a JSON
+  object the CLI checks. The prompt says "nightly at 02:00 UTC" and nothing
+  else, so an agent that guesses `0 2 * * *` is refused by the CLI and has to
+  read the skill.
+
+  The prompt names the day, the sets and the schedules, and leaves the cron
+  shape, the recurrence JSON, the wall-clock format and `--output json` to the
+  skill.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:execution]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 48
+  turn_timeout: 1200
+  task_timeout: 1800
+
+# Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the
+# EVFX- contract.
+#
+# The task consumes what it is given: it pauses one schedule and deletes the
+# other, and creates a third. So pre_run resets all three to the starting
+# state every run rather than depending on how the last agent left them —
+# delete every EVFX-SCHED- schedule, then seed PAUSE and STALE enabled. Growth
+# is flat at two rather than zero, which is deliberate and only possible
+# because `schedules delete` exists.
+pre_run:
+  - timeout: 300
+    command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys, datetime
+      P, SET = "CLAIM", "EVFX-SCHED-SET"
+      CASES = ["EVFX-SCHED-TC1", "EVFX-SCHED-TC2"]
+      SEEDED = ["EVFX-SCHED-PAUSE", "EVFX-SCHED-STALE"]
+      DAILY_CRON = "0 0 2 1/1 * ? *"
+      DAILY_DETAILS = ('{"type":4,"daily":{"atHour":2,"atMinute":0,'
+                       '"frequencyIndays":1}}')
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:400]} err={err[:250]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def pick(d, *names):
+          for n in names:
+              if d.get(n):
+                  return d[n]
+          return None
+
+      def by_name(label, kind, name):
+          d = call(label, "tm", kind, "list", "--project-key", P, "--filter", name)
+          for x in (d.get("Data") or []):
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      def has_verb(*words):
+          r = subprocess.run(["uip", *words, "--help"],
+                             capture_output=True, text=True)
+          return r.returncode == 0
+
+      # The schedule verbs ship across two commits in a later CLI than this
+      # fixture can assume. Probe every one the task needs and FAIL rather than
+      # seeding: without them the agent cannot do the task at all, and a silent
+      # seed would score that as an agent regression.
+      for words in (["tm", "schedules", "create"],
+                    ["tm", "schedules", "list"],
+                    ["tm", "schedules", "next-runs"],
+                    ["tm", "schedules", "disable"],
+                    ["tm", "schedules", "delete"]):
+          if not has_verb(*words):
+              fail(f"this CLI has no 'uip {' '.join(words)}' - needs the "
+                   f"release carrying the test set schedule verbs")
+
+      # 1. test set - create if absent, never delete
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P,
+               "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+      set_key = pick(ts, "TestSetKey", "Key", "ObjKey")
+      set_id = ts.get("Id")
+      if not set_key or not set_id:
+          fail(f"{SET} has no key or id")
+
+      # 2. cases - create if absent, then assign (assign is idempotent)
+      keys = []
+      for name in CASES:
+          tc = by_name(f"case.find.{name}", "testcases", name)
+          if not tc:
+              call(f"case.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"case.refind.{name}", "testcases", name)
+          if not tc:
+              fail(f"could not create or find {name}")
+          keys.append(pick(tc, "TestCaseKey", "Key", "ObjKey"))
+      call("cases.assign", "tm", "testcases", "add", "--test-set-key", set_key,
+           "--test-case-keys", ",".join(keys))
+
+      # 3. clear every EVFX-SCHED- schedule the last run left, in whatever
+      #    state it ended in. The filtered list has no test set field, so this
+      #    matches on the name it owns rather than on the set.
+      d = call("sched.list", "tm", "schedules", "list", "--project-key", P,
+               "--limit", "200")
+      stale = [r["Id"] for r in (d.get("Data") or [])
+               if str(r.get("Name", "")).startswith("EVFX-SCHED-") and r.get("Id")]
+      if stale:
+          call("sched.clear", "tm", "schedules", "delete", "--project-key", P,
+               "--schedule-ids", *stale, "--yes")
+
+      # 4. seed the two the task acts on, both ENABLED and both looking alike.
+      #    The start time must be in the future: create refuses a past one.
+      start = (datetime.datetime.now(datetime.timezone.utc)
+               + datetime.timedelta(days=2)).strftime("%Y-%m-%dT%H:%M")
+      for name in SEEDED:
+          call(f"sched.create.{name}", "tm", "schedules", "create",
+               "--project-key", P, "--test-set-id", set_id, "--name", name,
+               "--cron", DAILY_CRON, "--cron-details", DAILY_DETAILS,
+               "--timezone", "UTC", "--start-time", start)
+
+      # Assert the seed landed enabled. This is the condition the task reads:
+      # without it the agent is graded on pausing something that is already
+      # off, which passes for the wrong reason.
+      d = call("sched.verify", "tm", "schedules", "list", "--project-key", P,
+               "--limit", "200")
+      rows = {r.get("Name"): r for r in (d.get("Data") or [])}
+      for name in SEEDED:
+          row = rows.get(name)
+          if not row:
+              fail(f"seeded schedule {name} is not listed")
+          if row.get("IsEnabled") is not True:
+              fail(f"seeded schedule {name} is not enabled")
+      if rows.get("EVFX-SCHED-NIGHTLY"):
+          fail("EVFX-SCHED-NIGHTLY already exists - the sweep did not clear it")
+
+      print(f"FIXTURE: ready set_key={set_key!r} set_id={set_id!r} "
+            f"seeded={SEEDED} start={start!r}", flush=True)
+      EOF
+
+initial_prompt: |
+  We are going into a release freeze on the "EVFX-SCHED-SET" test set in the
+  CLAIM project (Test Manager). Three things, please:
+
+  1. Add a new schedule called "EVFX-SCHED-NIGHTLY" that runs that test set
+     nightly at 02:00 UTC, starting a week from today.
+  2. Pause "EVFX-SCHED-PAUSE". Do not remove it — we want it back after the
+     freeze.
+  3. "EVFX-SCHED-STALE" is obsolete. You have my approval to delete that one
+     schedule.
+
+  Then tell me when EVFX-SCHED-NIGHTLY is due to fire next. No need to check
+  back with me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    # There is no get by id, so the list is the only way to learn the two
+    # seeded schedule ids. Graded because inventing an id is the failure mode.
+    description: "Agent listed schedules through the CLI rather than inventing ids"
+    command_pattern: 'uip\s+tm\s+schedules\s+list\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
+    tool_name: "Bash"
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    # Presence, not shape. An earlier draft counted the cron fields in the
+    # regex and matched the five-field Unix expression it was meant to catch,
+    # because `\S+` runs on into `--cron-details` and the later flags. The
+    # field count is asserted server-side instead, on the stored
+    # CronExpression, where it cannot be gamed. What is graded here is that
+    # both flags were passed at all: `--cron-details` is the one an agent who
+    # skipped the guide leaves off, and omitting it is a 500.
+    description: "Agent passed both --cron and --cron-details to schedules create"
+    command_pattern: 'uip\s+tm\s+schedules\s+create\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--cron\s)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--cron-details\s)'
+    tool_name: "Bash"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent asked the CLI when the new schedule fires next"
+    command_pattern: 'uip\s+tm\s+schedules\s+next-runs\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--schedule-ids\s+\S)'
+    tool_name: "Bash"
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # ── Outcomes. Each of the three below fails on a run that did nothing, and
+  # the pause/delete pair fails an agent that treats both asks the same way.
+  - type: run_command
+    description: "EVFX-SCHED-NIGHTLY exists on the right test set with a runnable cadence"
+    command: |
+      python3 -c "
+      import json, subprocess
+
+      def uip(*a):
+          r = subprocess.run(['uip', *a, '--output', 'json'],
+                             capture_output=True, text=True)
+          t = r.stdout or ''
+          return json.loads(t[t.index('{'):]) if '{' in t else {}
+
+      sets = uip('tm','testsets','list','--project-key','CLAIM','--filter','EVFX-SCHED-SET')
+      sid = next((x['Id'] for x in (sets.get('Data') or [])
+                  if x.get('Name') == 'EVFX-SCHED-SET'), None)
+      assert sid, 'EVFX-SCHED-SET not found'
+
+      rows = uip('tm','schedules','list','--project-key','CLAIM','--limit','200').get('Data') or []
+      new = [r for r in rows if r.get('Name') == 'EVFX-SCHED-NIGHTLY']
+      assert len(new) == 1, f'expected exactly 1 EVFX-SCHED-NIGHTLY, found {len(new)}'
+      s = new[0]
+      assert s.get('TestSetId') == sid, f'schedule points at {s.get(\"TestSetId\")!r}, not the set'
+      fields = len(str(s.get('CronExpression') or '').split())
+      assert fields in (6, 7), f'cron has {fields} fields, the scheduler takes 6 or 7'
+      assert (s.get('CronDetails') or '').startswith('{'), 'CronDetails is not a JSON object'
+      "
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "EVFX-SCHED-PAUSE is switched off and still exists"
+    command: |
+      python3 -c "
+      import json, subprocess
+
+      def uip(*a):
+          r = subprocess.run(['uip', *a, '--output', 'json'],
+                             capture_output=True, text=True)
+          t = r.stdout or ''
+          return json.loads(t[t.index('{'):]) if '{' in t else {}
+
+      rows = uip('tm','schedules','list','--project-key','CLAIM','--limit','200').get('Data') or []
+      s = next((r for r in rows if r.get('Name') == 'EVFX-SCHED-PAUSE'), None)
+      assert s is not None, 'EVFX-SCHED-PAUSE was deleted; it was meant to be paused'
+      assert s.get('IsEnabled') is False, f'EVFX-SCHED-PAUSE is still enabled: {s.get(\"IsEnabled\")!r}'
+      "
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "EVFX-SCHED-STALE is gone"
+    command: |
+      python3 -c "
+      import json, subprocess
+
+      def uip(*a):
+          r = subprocess.run(['uip', *a, '--output', 'json'],
+                             capture_output=True, text=True)
+          t = r.stdout or ''
+          return json.loads(t[t.index('{'):]) if '{' in t else {}
+
+      rows = uip('tm','schedules','list','--project-key','CLAIM','--limit','200').get('Data') or []
+      names = [r.get('Name') for r in rows]
+      assert 'EVFX-SCHED-STALE' not in names, 'EVFX-SCHED-STALE was not deleted'
+      "
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    # Same segment shape as the criteria above, so a backslash continuation and
+    # a `uip` neighbour behave the same. Bounded: the run_command criteria
+    # decide the outcome regardless.
+    description: "Agent did not reach past the CLI to the schedule REST route"
+    command_pattern: '(?i)(curl|wget)(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*testsetschedules?\b'
+    tool_name: "Bash"
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
