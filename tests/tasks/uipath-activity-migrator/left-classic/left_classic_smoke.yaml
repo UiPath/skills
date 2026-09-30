@@ -43,6 +43,16 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # Rule 8: every `uip rpa` command clears the host Studio pin. A bare `uip rpa`
+  # at the start of a command, or after ;, &&, | or a line break, dropped the
+  # `env -u UIPATH_STUDIO_PID` prefix; inside Studio's terminal that opens the
+  # project in the user's Studio.
+  - type: command_not_executed
+    description: "No uip rpa command ran without clearing UIPATH_STUDIO_PID (Rule 8)"
+    command_pattern: '(?:^|[;&|(]\s*|\n\s*)(?:uip|\$UIP)\s+rpa\s+(?:build|validate|run|debug|instances|execution|activities|uia)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent ran analyze with --output-format sarif"
     command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--output-format\s+sarif)'
