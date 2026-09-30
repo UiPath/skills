@@ -203,8 +203,6 @@ To accept or return a file, declare the field as `$ref: "#/definitions/job-attac
 
 Output side: declare an output field the same way; the agent emits a `job-attachment` describing a file it produced.
 
-Runtime note: attachments cannot be supplied via `uip` CLI. Test from Studio Web or via Orchestrator job invocation.
-
 ### Top-level fields (do not modify)
 
 | Field | Value |

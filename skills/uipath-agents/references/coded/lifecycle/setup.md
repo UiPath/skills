@@ -12,11 +12,13 @@ Windows PowerShell fresh-machine setup: `irm https://download.uipath.com/uipath-
 
 ## Framework Selection
 
-Pick the framework before starting. The package installed in the Workflow determines which scaffold `uip codedagent new` produces.
+Pick the framework before starting: the package installed in the active venv selects the agent template. Install `<FRAMEWORK_PACKAGE>` before `new`, not after — with none installed, `new` fails with an error naming what to install.
+
+With several installed, name the one to scaffold with: `uip codedagent new <PROJECT_NAME> --agent-framework <FRAMEWORK_PACKAGE>`. Without it, `new` fails and lists them.
 
 | Agent Type | `<FRAMEWORK_PACKAGE>` | Framework config | Guide |
 |---|---|---|---|
-| LangGraph | `"uipath-langchain"` | `langgraph.json` | [langgraph-integration.md](../frameworks/langgraph-integration.md) |
+| LangGraph | `uipath-langchain` | `langgraph.json` | [langgraph-integration.md](../frameworks/langgraph-integration.md) |
 | LlamaIndex | `uipath-llamaindex` | `llama_index.json` | [llamaindex-integration.md](../frameworks/llamaindex-integration.md) |
 | OpenAI Agents | `uipath-openai-agents` | `openai_agents.json` | [openai-agents-integration.md](../frameworks/openai-agents-integration.md) |
 
@@ -38,6 +40,7 @@ source .venv/bin/activate                    # Windows: .venv\Scripts\activate
 uv pip install <FRAMEWORK_PACKAGE>
 uip codedagent setup --force
 uip codedagent new <PROJECT_NAME>
+# verify: <framework>.json must exist — see § Verify the Scaffold
 uv add uipath-dev --dev                      # required by `uip codedagent dev` (local dev web server)
 uv sync
 uip codedagent init
@@ -47,19 +50,13 @@ uip codedagent init
 
 **What `uip codedagent setup` does:** locates a Python that has `uipath` installed and caches its path, so later commands (`init`/`run`/`eval`/`pack`) can invoke the Python SDK. It searches PATH (`python3.x`, `python3`, `python`) and uses your `.venv` only when activated. So when using uv, always `uv sync` then activate the venv before the `setup` command.
 
-## Coded Function Agents
+## Verify the Scaffold
 
-`uipath.json` carries the entrypoint mapping:
+After `uip codedagent new`, check the directory before running anything else:
 
-```json
-{
-  "functions": {
-    "main": "main.py:main"
-  }
-}
-```
-
-Edit the scaffolded `main.py`'s `Input` / `Output` models and `async def main` to fit the real agent.
+1. `<framework>.json` present (`langgraph.json` / `llama_index.json` / `openai_agents.json`) → continue.
+2. `No agent framework integration is installed` (or `The '<FRAMEWORK_PACKAGE>' package is required to scaffold a '<framework>' agent`) → nothing was generated. Fix: `uv pip install <FRAMEWORK_PACKAGE>`, confirm `uip codedagent setup --force` reports the same venv, then re-run `uip codedagent new <PROJECT_NAME>`.
+3. `Multiple agent frameworks are installed` → re-run with `--agent-framework <FRAMEWORK_PACKAGE>`, or keep exactly one in the venv (`uv pip uninstall` the others).
 
 ## Generated Files
 
@@ -68,7 +65,7 @@ Edit the scaffolded `main.py`'s `Input` / `Output` models and `async def main` t
 | `pyproject.toml` | Project metadata and dependencies |
 | `main.py` | Agent entrypoint |
 | `<framework>.json` | Framework config (LangGraph / LlamaIndex / OpenAI Agents) |
-| `uipath.json` | Runtime options, pack options, `functions` map |
+| `uipath.json` | Runtime options and pack options |
 | `entry-points.json` | Input / output schemas from Pydantic models |
 | `bindings.json` | Runtime bindings |
 | `uv.lock` | Dependency lockfile |
@@ -126,4 +123,6 @@ When the agent project is registered in a solution and uploaded via `uip solutio
 | `Project authors cannot be empty` | Missing `authors` in `pyproject.toml` | Add `authors = [{ name = "Your Name" }]` to `[project]` |
 | `NameError` during `init` | Framework not installed when `init` imports `main.py` | Run `uv sync` before `uip codedagent init` |
 | `No entrypoints found in uipath.json` | Framework config or package missing | Verify `uv pip install` succeeded, then re-run `uip codedagent init` |
+| `No agent framework integration is installed` or `The '<FRAMEWORK_PACKAGE>' package is required to scaffold a '<framework>' agent` from `new` | No framework package in the active venv | `uv pip install <FRAMEWORK_PACKAGE>`, re-run `new` |
+| `Multiple agent frameworks are installed` from `new` | More than one framework package in the venv | Re-run with `--agent-framework <FRAMEWORK_PACKAGE>`, or keep one |
 | `ModuleNotFoundError` for a package you just installed, even after activating `.venv` | A shell `python` alias points at a different interpreter (uv-managed, system, etc.) | Use `.venv/bin/python` directly for sanity checks, or `unalias python` for the session |

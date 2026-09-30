@@ -13,6 +13,7 @@ const ENFORCED = "skills/uipath-maestro-bpmn";
 function tree(files) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-links-"));
   for (const [relative, text] of Object.entries(files)) {
+    if (text === undefined) continue;
     const target = path.join(root, relative);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, text);
@@ -158,4 +159,82 @@ test("a canonical link inside a block every pinning flavor overrides needs only 
     "skill-flavors/sw/uipath-other/SKILL.md": block("[x](../uipath-flow/references/old.md)"),
   });
   assert.equal(overridden.status, 0, overridden.out);
+});
+
+// Each composition resolves a link with its OWN pins (Copilot review, #3625).
+test("a classic source resolves each target with the pins of the flavor that ships it", () => {
+  const files = {
+    // flavor a pins uipath-a only; flavor b pins uipath-b only
+    "skill-flavors/a/uipath-a/.canonical": "classic\n",
+    "skill-flavors/a/uipath-a/SKILL.md": "<!--skill-flavor:x:start-->\ny\n<!--skill-flavor:x:end-->\n",
+    "skill-flavors/b/uipath-b/.canonical": "classic\n",
+    "skill-flavors/b/uipath-b/SKILL.md": "<!--skill-flavor:x:start-->\ny\n<!--skill-flavor:x:end-->\n",
+    "skills/uipath-a/SKILL.md": "# A\n",
+    "classic/skills/uipath-a/SKILL.md": "# A1\n\n[b](../uipath-b/references/current-only.md)\n",
+    "skills/uipath-b/SKILL.md": "# B\n",
+    "skills/uipath-b/references/current-only.md": "# C\n",
+    "classic/skills/uipath-b/SKILL.md": "# B1\n",
+  };
+  // Only flavor a ships classic A, and a composes CURRENT B: the link is valid.
+  const valid = run(files);
+  assert.equal(valid.status, 0, valid.out);
+  // Flip it: now the target exists only in classic B, which flavor a never ships.
+  const broken = run({
+    ...files,
+    "skills/uipath-b/references/current-only.md": undefined,
+    "classic/skills/uipath-b/references/current-only.md": "# C\n",
+  });
+  assert.equal(broken.status, 1);
+  assert.match(broken.out, /current-only\.md  \(no such file\)/);
+});
+
+test("a flavor that pins both source and target never checks the canonical source's links", () => {
+  const { status, out } = run({
+    "skill-flavors/sw/uipath-a/.canonical": "classic\n",
+    "skill-flavors/sw/uipath-b/.canonical": "classic\n",
+    "skill-flavors/sw/uipath-a/SKILL.md": "<!--skill-flavor:x:start-->\ny\n<!--skill-flavor:x:end-->\n",
+    "skills/uipath-a/SKILL.md": "# A\n\n[b](../uipath-b/references/new.md)\n",
+    "classic/skills/uipath-a/SKILL.md": "# A1\n",
+    "skills/uipath-b/SKILL.md": "# B\n",
+    "skills/uipath-b/references/new.md": "# New\n",
+    "classic/skills/uipath-b/SKILL.md": "# B1\n",
+  });
+  assert.equal(status, 0, out);
+});
+
+test("classic and flavor files get their anchors checked too", () => {
+  const { out } = run({
+    ...PINNED,
+    "classic/skills/uipath-flow/SKILL.md": "# Flow v1\n\n[r](references/old.md#gone)\n",
+  });
+  assert.match(out, /classic\/skills\/uipath-flow\/SKILL\.md:3 -> references\/old\.md#gone/);
+});
+
+// Anchors are judged against the file each composition BUILDS (Copilot review, #3646).
+const blockOf = (name, body) => `<!--skill-flavor:${name}:start-->\n${body}\n<!--skill-flavor:${name}:end-->\n`;
+
+test("a classic line inside a block the pinning flavor overrides is not checked", () => {
+  const { status, out } = run({
+    ...PINNED,
+    "classic/skills/uipath-flow/SKILL.md": `# Flow v1\n\n${blockOf("gone", "[r](references/missing.md)")}`,
+    "skill-flavors/sw/uipath-flow/SKILL.md": blockOf("gone", "replaced"),
+  });
+  assert.equal(status, 0, out);
+});
+
+test("a flavor override's same-file fragment is checked against the composed file", () => {
+  const { out } = run({
+    "skill-flavors/sw/uipath-a/SKILL.md": blockOf("x", "[top](#no-such-heading)"),
+    "skills/uipath-a/SKILL.md": `# A\n\n## Real heading\n\n${blockOf("x", "text")}`,
+  });
+  assert.match(out, /skill-flavors\/sw\/uipath-a\/SKILL\.md:\d+ -> #no-such-heading/);
+});
+
+test("a heading the flavor's override removes is dead in that flavor", () => {
+  const { out } = run({
+    "skills/uipath-a/SKILL.md": "# A\n\n[x](references/r.md#step-2)\n",
+    "skills/uipath-a/references/r.md": `# R\n\n${blockOf("steps", "## Step 2")}`,
+    "skill-flavors/sw/uipath-a/references/r.md": blockOf("steps", "## Something else"),
+  });
+  assert.match(out, /r\.md#step-2 \(in the composed file of the sw flavor\)/);
 });

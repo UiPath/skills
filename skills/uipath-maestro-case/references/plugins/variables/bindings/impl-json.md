@@ -21,6 +21,7 @@ The bindings array stores resource metadata for tasks — process names, folder 
 | agent | `"process"` | `"Agent"` | name + folderPath |
 | rpa | `"process"` | — | name + folderPath |
 | api-workflow | `"process"` | `"Api"` | name + folderPath |
+| function | `"process"` | `"Function"` | name + folderPath |
 | case-management | `"process"` | `"CaseManagement"` | name + folderPath |
 | connector (activity/trigger) | `"Connection"` | — | ConnectionId + folderKey |
 
@@ -32,7 +33,7 @@ Create **two** binding entries in top-level `bindings[]` per **resource**, not p
 
 ### Full binding shape — non-connector tasks
 
-For non-connector tasks (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`), `name` and `propertyAttribute` carry the same value (`"name"` / `"folderPath"`):
+For non-connector tasks (`process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `case-management`), `name` and `propertyAttribute` carry the same value (`"name"` / `"folderPath"`):
 
 ```json
 [
