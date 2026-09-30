@@ -1,5 +1,5 @@
 {
-  "cli_head": "f64f6696e",
+  "cli_head": "4e203e449",
   "seed": "tests/tasks/uipath-maestro-case/sla_from_sdd/fixtures/sdd.md",
   "tally": {
     "convert": 8,
