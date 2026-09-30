@@ -2,8 +2,10 @@ name: SDD Corpus
 
 # Every committed case SDD under tests/tasks/uipath-maestro-case parses clean
 # through the published CLI (tests/tasks/uipath-maestro-case/_shared/
-# test_sdd_corpus_parses_clean.py). While @latest has no `sdd` command the test
-# skips and says so under -rs; it starts checking by itself once one ships.
+# test_sdd_corpus_parses_clean.py), and `sdd validate` meets each degraded
+# fixture's expect (degraded_sdd_conformance/test_degraded_gate.py). While
+# @latest lacks those commands the tests skip and say so under -rs; they start
+# checking by themselves once the commands ship.
 #
 # Advisory, not required (docs/REQUIRED-CHECKS.md Rule 4): it depends on
 # installing @uipath/cli@latest from npm, so an npm outage or a bad release
@@ -46,4 +48,4 @@ jobs:
       - name: Run corpus check
         env:
           REQUIRE_UIP: '1'
-        run: pytest tests/tasks/uipath-maestro-case/_shared/test_sdd_corpus_parses_clean.py -v -rs
+        run: pytest tests/tasks/uipath-maestro-case/_shared/test_sdd_corpus_parses_clean.py tests/tasks/uipath-maestro-case/degraded_sdd_conformance/test_degraded_gate.py -v -rs
