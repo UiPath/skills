@@ -36,7 +36,7 @@ Treat that as the decision rule, not as a gap to fill by guessing:
 None of these is a harness requirement:
 
 - a long document, or many documents;
-- a persistent index, or an agentic search loop;
+- a persistent index;
 - many Flow nodes, or a multi-stage pipeline;
 - a regulated industry or a high-stakes decision;
 - coded rather than low-code authoring — that is an independent axis;
@@ -77,8 +77,8 @@ terminates it (`AGENT_RUNTIME.TERMINATION_MAX_ITERATIONS`; in a Flow, a failed n
 `170002`). Raising `settings.maxIterations` moves the failure rather than fixing it.
 
 State a numeric cap and a fallback per grounding tool. When the workload genuinely needs several
-dependent lookups, that is agentic search — bound it deliberately per
-[search-strategy-guide.md](search-strategy-guide.md), do not leave it uncapped.
+dependent lookups, one retrieval cannot answer it — see
+[search-strategy-guide.md](search-strategy-guide.md); no strategy here covers that shape yet.
 
 ## Handing off
 

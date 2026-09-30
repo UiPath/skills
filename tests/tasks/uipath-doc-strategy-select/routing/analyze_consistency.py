@@ -25,7 +25,7 @@ import pathlib
 import re
 import sys
 
-STRATEGIES = ("AH", "AF", "CS", "SU", "PS", "PA", "EX", "BT", "NONE")
+STRATEGIES = ("AH", "AF", "CS", "SU", "PS", "EX", "BT", "NONE")
 
 
 def read_mode(path):

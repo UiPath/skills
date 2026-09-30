@@ -28,7 +28,6 @@ and have pulled.
 | Analyze files | `uipath-agents` | [/uipath:uipath-agents — analyze-attachments.md](../../uipath-agents/references/lowcode/capabilities/built-in-tools/analyze-attachments.md) |
 | Batch transform, per-row LLM work over a CSV | `uipath-agents` · `uipath-maestro-flow` | [/uipath:uipath-agents — batch-transform/planning.md](../../uipath-agents/references/lowcode/capabilities/built-in-tools/batch-transform/planning.md) · [/uipath:uipath-maestro-flow — plugins/batch-transform/planning.md](../../uipath-maestro-flow/references/author/plugins/batch-transform/planning.md) |
 | Persistent index, semantic search (PS) | `uipath-agents` | [/uipath:uipath-agents — context/index.md](../../uipath-agents/references/lowcode/capabilities/context/index.md) |
-| Persistent index, agentic search (PA) | `uipath-agents` | `/uipath:uipath-agents — references/agentic-search/planning.md` |
 | Index lifecycle from the CLI — create, ingest, search, delete | `uipath-platform` | [/uipath:uipath-platform — index-management.md](../../uipath-platform/references/context-grounding/index-management.md) |
 | Agent node referencing a published agent | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/agent/planning.md](../../uipath-maestro-flow/references/author/plugins/agent/planning.md) |
 | Agent defined inside the Flow | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/inline-agent/planning.md](../../uipath-maestro-flow/references/author/plugins/inline-agent/planning.md) |
@@ -90,9 +89,9 @@ Logical plans, not executable syntax. Resolve IDs, expressions, and bindings wit
    exact mappings never enter the agent.
 3. **Grounded question answering.** Agent with a persistent-index context, semantic search → structured
    answer plus unresolved list → Decision → planned human clarification if required → End.
-4. **Investigation with a completeness boundary.** Agentic search for candidate discovery → deterministic
-   corpus enumeration and coverage reconciliation when the deliverable claims "all" → review → End. Search
-   iteration alone never establishes completeness.
+4. **Enumeration with a completeness boundary.** Deterministic corpus enumeration and coverage
+   reconciliation whenever the deliverable claims "all" → review → End. A retrieval result is never
+   a coverage test.
 5. **Segment, then extract.** Classification and boundary resolution → per-segment Extract, preserving
    original page ranges → deterministic duplicate rules → End.
 6. **Pure data processing.** Filter → Group by → Map or Transform → script only for unsupported exact

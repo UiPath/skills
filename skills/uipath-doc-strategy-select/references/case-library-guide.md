@@ -1,6 +1,6 @@
 # Case Library
 
-24 cases · 8 decision categories · 3 per category.
+21 cases · 7 decision categories · 3 per category.
 
 Match on **document shape and failure mechanism**, not on industry. Read the fast-routing table in
 [../SKILL.md](../SKILL.md) first, then the nearest case here, then one boundary case only if the decisive
@@ -145,7 +145,8 @@ structure to deterministic row processing.
 **Decision reasoning.** The decisive signal is that the *structure* is unknown but the *processing* is
 not — one bounded inspection unlocks ordinary code. Supply an input representation the tool supports,
 inspect once, validate the detected columns against the actual file, then process rows deterministically.
-If an individual item later needs multi-source interpretation, that is PA1, separately.
+If an individual item later needs interpreting against several reference sources, that is a grounded
+lookup and a separate step — not this one.
 
 **Negative example — counterexample.** Asking the agent to rediscover the structure and extract every row
 multiplies calls and produces inconsistent row handling. An unfamiliar layout alone does not justify a
@@ -428,7 +429,8 @@ conversion step before re-ingestion, not a change to search. Repeated queries ca
 never entered the index, and rebuilding the corpus per request wastes the ingestion work.
 
 **Boundary.** Verify ingestion and freshness before interpreting an empty result. If a question requires
-dependent searches, that is PA. Live system data is not necessarily current in indexed documents.
+dependent searches, one retrieval cannot answer it — say so rather than returning a partial answer.
+Live system data is not necessarily current in indexed documents.
 
 ### PS2 Look up a provision in plan documents
 
@@ -452,7 +454,8 @@ accurate, but was measured slower while agreeing with the validated regular-inde
 majority of questions. Output agreement is not accuracy. A later report also found semantic-search
 timeouts and tool-call limits — neither route is universally reliable.
 
-**Boundary.** If exclusions and related provisions require dependent searches, use PA2. If the conclusion
+**Boundary.** If exclusions and related provisions require dependent searches, one scoped retrieval is
+not enough — flag it rather than answering from a partial read. If the conclusion
 requires proving no contrary provision exists, use SU1. Do not select a heavier path merely because the
 surrounding business process is complex.
 
@@ -478,105 +481,9 @@ office's terminology or requirement. Starting a multi-step loop for one well-def
 with no demonstrated benefit.
 
 **Boundary.** An unknown domain is a routing ambiguity to resolve first. Enrichment that needs related
-terms and supporting obligations is PA2. Without an evaluation set, do not describe the design as having
+terms and supporting obligations reaches past one scoped retrieval. Without an evaluation set, do not
+describe the design as having
 validated accuracy.
-
----
-
-## PA Persistent index — agentic search
-
-Shared configuration: the same persistent index in the agent's context, read through a bounded search
-loop. Define scope, an evidence checklist, a numeric budget, and stop conditions before invoking it —
-[search-strategy-guide.md](search-strategy-guide.md), and
-`/uipath:uipath-agents — references/agentic-search/planning.md`
-for the build.
-
-### PA1 Resolve codes across several reference sources
-
-**Problem description.** A line item has to be interpreted against an item master and two further
-attribute sources before it means anything. The identifiers are noisy: aliases, placeholder substitution,
-and seasonal variation all change which evidence is needed next, so one lookup identifies only part of
-the answer. Working behaviour: an aliased base code and a placeholder are resolved using all the required
-sources; where a match lacks the seasonal evidence to confirm it, the result comes back unresolved rather
-than as a guessed final code.
-
-**Best-fit solution.** Autonomous agent, Context with a persistent index, bounded search loop. Harness
-chosen independently — the loop is not a harness feature.
-
-**Decision reasoning.** The decisive signal is dependent retrieval: the identifier returned by the first
-lookup is the input to the second. Scope to the relevant source and version. Resolve the base item, then
-use the returned identifiers to search the dependent attribute sources, then validate the seasonal and
-substitution evidence. Keep deterministic substitutions and row iteration in code. Return values with
-source lineage and an explicit list of unresolved components.
-
-**Negative example — observed boundary.** A single likely item match did not validate both dependent
-attributes. Sheet-origin information was missing, so a constant-looking attribute could not be confirmed
-valid for the current season. More searches and majority voting cannot restore provenance that was never
-captured.
-
-**Boundary.** An exact, complete keyed mapping belongs in a deterministic lookup, not a search loop. A
-single-source question stays PS. If the reference data is small enough to travel with each row, that is
-BT2, not a search loop. If the seasonal evidence is absent or contradictory, return needs-review; repair
-the metadata or the source access rather than continuing to loop. Structure detection for the same file
-is AF1, a separate step.
-
-### PA2 Enrich a request with domain-specific evidence
-
-**Problem description.** An incoming request must be normalized before the receiving office can act on
-it. The terminology it should use, the artifacts it should carry, and the obligations that apply are
-scattered across the domain corpus, and the mappings are not all predefined — so what to look up next
-depends on what the last lookup returned. Working behaviour: a request whose canonical name and evidence
-requirement live in different sources is resolved with both cited; an unresolved domain or obligation
-becomes a reviewer question rather than a guess.
-
-**Best-fit solution.** Autonomous agent, Context with a persistent index, bounded search loop after
-domain selection. Human review where required.
-
-**Decision reasoning.** The decisive signal is scattered evidence plus undefined mappings — reformulation
-is doing real work, not padding recall. Select the domain first. Retrieve candidate obligations, inspect
-canonical terms and document context, reformulate for whatever evidence is still missing, and return a
-normalized request with citations and open questions. Preserve the retrieval trail and route the proposed
-wording for review.
-
-**Negative example — counterexample.** One global semantic hit can normalize the terminology while
-missing a separate obligation entirely. Keyword rules alone cannot resolve contextual differences between
-offices. Conversely, a simple definition request does not justify a loop at all.
-
-**Boundary.** Bounded knowledge questions are PS3. If the requirement is *every* applicable obligation,
-search cannot establish completeness — require a defined source manifest and a full review. Stop when each
-required element has evidence or a recorded gap. Do not infer calibrated certainty from an
-agent-generated confidence number.
-
-### PA3 Investigate impacted documents, with an exhaustiveness boundary
-
-**Problem description.** Several thousand controlled documents may be affected by a terminology or policy
-change, and somebody has asked which ones. Iterative discovery genuinely helps — it finds candidates,
-separates current text from revision history, and chases ambiguous references. What it cannot do is
-prove it found them all, which matters because the deliverable is phrased as a complete list. Working
-behaviour: a current-text hit, a history-only hit, an alias, a duplicate and an inaccessible document are
-each handled correctly, and processed IDs are reconciled against the inventory before the list is allowed
-to claim completeness; otherwise it is labelled partial.
-
-**Best-fit solution.** Autonomous agent, Context with a persistent index, bounded search loop for
-candidate discovery — **plus** a separate deterministic enumeration and coverage reconciliation whenever
-the deliverable claims completeness.
-
-**Decision reasoning.** The decisive signal is a collision: dependent discovery argues for the loop,
-while an enumerative deliverable argues that the loop can never finish the job. Expand justified terms,
-inspect current-content matches, deduplicate by stable document ID, and record scope and version
-evidence. If the deliverable says "all impacted documents", add a deterministic corpus enumeration and
-reconcile the processed IDs against the inventory.
-
-**Negative example — observed workaround, unresolved guarantee.** A proof of concept raised the retrieval
-result limit and added a review pass because relevance-only retrieval did not meet the enumeration
-objective. That design is evidence of a completeness problem, not proof that every impacted document was
-found. Reducing the per-run batch size did not help either — the ceiling was being consumed by a single
-unbounded investigation, not by the number of items in a batch.
-
-**Boundary.** A search loop is appropriate for investigation and **insufficient on its own for a
-guaranteed exhaustive list**. A literal, well-defined keyword scan may be entirely deterministic —
-prefer it. Reaching the result cap, lacking an inventory, or hitting unreadable files all prevent an
-exhaustive claim.
 
 ---
 
@@ -702,7 +609,8 @@ was given. Emit a structured multi-charge value in one column and expand it down
 
 **Boundary.** If the note field is absent and the charge is derivable from structured columns alone, this
 is a Transform, not BT. If a single record needs evidence gathered from several reference sources before
-it can be interpreted, that is PA1. If the notes arrive as document images rather than a table column,
+it can be interpreted, that is a grounded lookup outside BT — not a column on the row. If the notes
+arrive as document images rather than a table column,
 classification and extraction come first.
 
 ### BT2 Classify a line item against a condensed reference matrix
@@ -731,7 +639,8 @@ against. Category and reference-data quality gated the outcome harder than model
 amount of prompt work substitutes for a matrix whose ownership and correctness are unsettled.
 
 **Boundary.** If the reference table cannot be condensed to fit a row, this becomes a grounded lookup —
-PA1 when resolution is dependent, PS2 when one scoped retrieval answers it. If the label is a routing
+PS2 when one scoped retrieval answers it; when resolution depends on what an earlier lookup returned,
+no strategy here covers it yet. If the label is a routing
 decision over documents rather than a column on a row, that is CS. If categories must be assigned by
 exact keyed mapping, use a deterministic lookup and skip the model.
 
@@ -776,22 +685,22 @@ Direct jumps when the symptom is already known. Do not scan the library.
 | Symptom | Read first | Counter-boundary |
 |---|---|---|
 | A simple lookup sent through a heavy reasoning path | PS2 | SU1 when the claim is complete review |
-| One semantic hit misses related rules or identifiers | PA1 or PA2 | PS3 for a one-passage question |
-| "All impacted documents" or "nothing contradicts" | PA3 or SU1 | A result limit is not a coverage test |
+| One semantic hit misses related rules or identifiers | PS1 — repair ingestion and metadata first | Dependent retrieval is not covered by a strategy here |
+| "All impacted documents" or "nothing contradicts" | SU1 | A result limit is not a coverage test |
 | A long task times out or cannot resume | AH1 | EX3 when only extraction is needed |
 | The same control produces different computed results | AH3 | Deterministic tools before judgment |
 | A file read has grown into bulk spreadsheet processing | AF1 | EX2 when field review is required |
 | Confidence-based approval misses critical errors | CS3 | EX1 for calibrated field-review design |
 | Header groups or signatures come from the wrong document | CS1 or CS2 | Extract only after boundaries are established |
 | Partial results or missing repeated entities | EX3 | AH1 when precedence is also required |
-| Search misses files or source metadata | PS1 or PA1 | Repair ingestion and metadata; do not loop blindly |
+| Search misses files or source metadata | PS1 | Repair ingestion and metadata; do not loop blindly |
 | A "summary" task also requires research and external actions | SU3 | Separate collection and orchestration from synthesis |
-| Per-row work needs a reference table the row cannot see | BT2 | PA1 when the table cannot be condensed to fit |
+| Per-row work needs a reference table the row cannot see | BT2 | PS2 when one scoped retrieval answers it; a deterministic lookup when the mapping is exact |
 | One input row must produce several output rows | BT1 | The node appends columns; expand downstream in a Script |
 | Per-row scores look strong but the case-level result is unsafe | BT3 | Errors multiply across rows; gate at the decision level |
 | An appended column is a formula, regex, or date reformat | Transform or Script | BT only when the row needs language reasoning |
 
 ## Maintaining the library
 
-Keep exactly three cases per category. Replace a weaker case rather than adding a twenty-fifth — see
+Keep exactly three cases per category. Replace a weaker case rather than adding a twenty-second — see
 [case-template.md](case-template.md).

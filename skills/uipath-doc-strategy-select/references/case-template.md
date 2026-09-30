@@ -4,8 +4,8 @@ How to add, replace, or revise a case in [case-library-guide.md](case-library-gu
 
 ## Rules
 
-- **Keep exactly three cases per category** (AH, AF, CS, SU, PS, PA, EX, BT) unless the user changes
-  the library size. Replace a weaker case rather than adding a twenty-fifth.
+- **Keep exactly three cases per category** (AH, AF, CS, SU, PS, EX, BT) unless the user changes
+  the library size. Replace a weaker case rather than adding a twenty-second.
 - **Preserve stable IDs.** `AH1` stays `AH1`. If a case is replaced, the ID carries to the replacement and
   every inbound link is repaired.
 - **Titles describe the workload shape**, never a customer, vendor, or product name.
@@ -70,14 +70,14 @@ was the one used.
 - Is the negative outcome labelled accurately, and does the boundary name a real mechanism?
 - For BT: does the per-row work genuinely need natural-language reasoning, does it avoid cross-row
   context and external lookups, and does the output fit the column ceiling?
-- For PS and PA: is semantic search the default, with the loop selected only for dependent retrieval and
-  given a numeric budget and a stop rule?
+- For PS: is the question genuinely answerable from one scoped retrieval, and is an empty result
+  reported as unresolved rather than as absence?
 - For AH: is the capability need checked, rather than inferred from workload length or step count?
   For EX: are extraction strategies kept separate from harness selection?
 - Are calculations and known data operations in deterministic components? Are evidence gaps preserved?
 - Does every surviving number change the design rather than report a result?
 - Do the links, the fast-routing table in [../SKILL.md](../SKILL.md), the boundary lookup, and the
-  24-case distribution all still agree?
+  21-case distribution all still agree?
 
 After editing, run `npm run skills:check-links` from the repository root — the library is heavily
 cross-linked and anchors break easily.

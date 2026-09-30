@@ -1,8 +1,8 @@
 task_id: skill-doc-strategy-select-strategy-selection
 description: >
   Strategy-selection accuracy, run-to-run stability and paraphrase invariance.
-  48 rows: 24 workloads, each written twice in different words, six rows per
-  strategy across all eight.
+  42 rows: 21 workloads, each written twice in different words, six rows per
+  strategy across all seven.
 
   Three properties this set is built to protect, in the order they were added:
 
@@ -72,7 +72,7 @@ initial_prompt: |
 
   Load the applicable UiPath skill and use its strategy taxonomy. Write your answer
   to a file named `strategy.txt` in the current working directory. The FIRST line
-  must be the strategy ID alone — one of AH, AF, CS, SU, PS, PA, EX, BT — with
+  must be the strategy ID alone — one of AH, AF, CS, SU, PS, EX, BT — with
   nothing else on that line. You may add your reasoning on the lines below it.
 
   Do not create a project, a flow, an agent, or any other artifact. Write only

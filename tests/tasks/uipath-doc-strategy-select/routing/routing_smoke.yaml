@@ -1,10 +1,16 @@
 task_id: skill-doc-strategy-select-routing-smoke
 description: >
-  Smoke test: a reusable-corpus workload with dependent lookups must route to
-  agentic search rather than one-shot semantic search, and must carry the
-  completeness boundary the skill teaches. Verifies the skill fires and that
-  its routing contract — strategy, decisive signal, case ID, boundary — is applied,
-  rather than a bare strategy label.
+  Smoke test: a reusable-corpus workload whose deliverable is an exhaustive list
+  must NOT be answered by retrieval. The skill has to recognise the enumerative
+  claim, route the written review to SU1, and say that completeness needs
+  deterministic enumeration rather than a bigger result limit. Verifies the skill
+  fires and that its routing contract — strategy, decisive signal, case ID,
+  boundary — is applied, rather than a bare strategy label.
+
+  This replaced an assertion on PA3. Agentic search is not shipped as a strategy
+  yet (see the skill's PA reinstatement notes); when it lands, the enumerative
+  half of this workload becomes its boundary case and this task should assert
+  both.
 tags: [uipath-doc-strategy-select, smoke, mode:build, lifecycle:discover]
 
 run_limits:
@@ -39,10 +45,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_contains
-    description: "Routed to agentic search on the dependent-lookup signal, citing the PA3 case"
+    description: "Recognised the enumerative deliverable and routed the review to SU1"
     path: "route.txt"
     includes:
-      - "PA3"
+      - "SU1"
     weight: 3.0
     pass_threshold: 1.0
 
