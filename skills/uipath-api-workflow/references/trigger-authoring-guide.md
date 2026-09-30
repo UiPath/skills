@@ -4,9 +4,9 @@ Start an API workflow from a connector event (a Slack button clicked, a new Outl
 
 ## Rules
 
-1. **One trigger, in one slot: the root Sequence's `do` array, directly after `WorkflowStart`** (`do[0].Sequence_1.do[1]`, where Studio Web writes it). Never put it inside an If / ForEach / TryCatch, never after another activity, never add a second one. `validate` does not check this.
+1. **One trigger, in one slot: the root Sequence's `do` array, directly after `WorkflowStart`** (`do[0].Sequence_1.do[1]`, where Studio Web writes it). Never put it inside an If / ForEach / TryCatch, never after another activity, never add a second one. `validate` rejects a misplaced or second trigger.
 <!--skill-flavor:trigger-binding-rule:start-->
-2. **Run `uip api-workflow bindings sync` after every trigger add or edit.** It writes the `EventTrigger` entry in `bindings_v2.json` that registers the subscription on deploy. Without it the workflow validates, packs, publishes and deploys clean, and never fires. No gate catches this. Treat every warning `bindings sync` prints as a failure and fix it before continuing.
+2. **Run `uip api-workflow bindings sync` after every trigger add or edit.** It writes the `EventTrigger` entry in `bindings_v2.json` that registers the subscription on deploy. Without it the workflow validates, packs, publishes and deploys clean, and never fires. No gate catches this.
 <!--skill-flavor:trigger-binding-rule:end-->
 3. **Never hand-author a trigger.** `registry resolve --kind trigger`, then `registry stub` (rule 16). Use the stub output verbatim. To change the event or object, re-stub; do not edit `metadata.configuration`.
 <!--skill-flavor:trigger-schedule-scope:start-->
