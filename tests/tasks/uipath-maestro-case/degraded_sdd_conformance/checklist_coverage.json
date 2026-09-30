@@ -1,9 +1,10 @@
 {
-  "cli_head": "367bfdb69",
+  "cli_head": "f64f6696e",
   "seed": "tests/tasks/uipath-maestro-case/sla_from_sdd/fixtures/sdd.md",
   "tally": {
     "convert": 8,
-    "silent": 18
+    "silent": 16,
+    "validate": 2
   },
   "rows": [
     {
@@ -51,9 +52,10 @@
     {
       "item": 7,
       "violation": "literal \\n in content",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model changes: .stages[0].entryConditions[0].displayName"
+      "verdict": "validate",
+      "detail": [
+        "SDD_LITERAL_NEWLINE"
+      ]
     },
     {
       "item": 8,
@@ -150,9 +152,10 @@
     {
       "item": 20,
       "violation": "Recipient without a typed prefix",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model changes: .stages[0].tasks[1].recipient.kind"
+      "verdict": "validate",
+      "detail": [
+        "SDD_RECIPIENT_UNTYPED"
+      ]
     },
     {
       "item": 21,
