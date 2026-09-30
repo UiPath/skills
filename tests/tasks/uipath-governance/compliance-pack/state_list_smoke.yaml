@@ -4,7 +4,6 @@ description: >
   state list only — a read-only operation. No mutations. Tests that an informational
   query stays in the list/get path and never triggers apply or disable flows.
 
-  Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
 
 sandbox:
@@ -28,7 +27,6 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - uip CLI is not connected to a live tenant - auth errors expected.
   - Run each command once, capture output, move on. Do NOT retry.
   - Always pass --output json.
   - Do NOT prompt for confirmation.

@@ -1,12 +1,8 @@
 task_id: skill-governance-compliance-already-configured
 description: >
-  Skill-guided: edge case where all ISO 42001 settings are already Applied on the tenant
-  (coverage returns NewCount == 0). The skill must present "all settings Applied" message
-  and NOT call state enable. Tests the newCount=0 branch of the full-apply flow.
-
-  Platform note: uip commands fail with auth errors - expected. The agent
-  must handle auth-error output from state coverage and still correctly
-  determine (from context) not to proceed with state enable.
+  Skill-guided: edge case where ISO 42001 is already applied on the tenant. The agent
+  must run state coverage to verify posture and NOT call state enable — the user
+  asked only to verify, and the pack is already active.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
 
 sandbox:
@@ -15,6 +11,14 @@ sandbox:
     - type: template_dir
       path: _setup
       mount_point: _setup
+
+# Precondition: the shared tenant is mutable and the compliance-pack cleanup
+# DISABLES the pack, so ISO 42001 is usually inactive when this task runs —
+# making the "already configured" premise false. Enable the pack first.
+# Tolerant of no-auth (always exits 0), so local runs are unaffected.
+pre_run:
+  - command: 'python3 _setup/setup_enable_compliance_pack.py'
+    timeout: 120
 
 # Safety net: smoke sandboxes have live tenant auth in CI, so an agent that
 # fails this test (calls state enable) really mutates the tenant. Clean up after.
@@ -32,7 +36,6 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - uip CLI is not connected to a live tenant — auth errors expected.
   - Run each command once, capture output, and move on. Do NOT retry.
   - Always pass --output json.
   - Do NOT prompt for confirmation.

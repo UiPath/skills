@@ -4,7 +4,6 @@ description: >
   catalog get only - zero state commands, zero mutations. Tests that information-only queries
   stay in the query plugin and never trigger apply flows.
 
-  Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
 
 
@@ -31,7 +30,7 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - uip CLI not connected - auth errors expected. Run the catalog lookup once,
+  - Run the catalog lookup once,
     capture the result, and report it. Use --output json.
 
 success_criteria:

@@ -4,7 +4,6 @@ description: >
   Tests that the skill runs posture analysis before configuring, and uses state enable
   (not manual aops-policy create) for the full standard path.
 
-  Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
 
 
@@ -34,7 +33,6 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - uip CLI is not connected to a live tenant - auth errors expected.
   - Run each command once, capture output, move on. Do NOT retry or login.
   - Always pass --output json.
   - Do NOT prompt for confirmation - this is an automated test.

@@ -4,7 +4,6 @@ description: >
   must use the partial apply path - catalog get + synthesize-formdata.mjs + aops-policy create.
   Must NOT use state enable (that is full compliance standard only).
 
-  Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, mode:build, lifecycle:setup, feature:compliance]
 
 
@@ -35,7 +34,7 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - uip CLI not connected to live tenant — auth errors expected. Run each command once and continue.
+  - Run each command once and continue.
   - Always pass --output json. Do NOT prompt for confirmation.
   - Write any helper scripts to the current working directory using relative paths
     (e.g. ./scripts/, ./compliance-session/), not to AppData or TEMP paths.

@@ -10,7 +10,6 @@ description: >
   Sibling check_routing_smoke.yaml covers the same posture flow WITH the standard
   named; this task covers the ambiguous case that a second pack introduced.
 
-  Platform note: uip commands fail with auth errors in this environment - expected.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
 
 sandbox:
@@ -33,7 +32,6 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - uip CLI is not connected to a live tenant - auth errors expected.
   - Run each command once, capture output, and move on. Do NOT retry.
 
 success_criteria:

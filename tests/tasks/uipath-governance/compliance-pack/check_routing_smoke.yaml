@@ -6,7 +6,6 @@ description: >
   The prompt names ISO 42001 explicitly, so the pack-scoped commands must target
   iso-42001 - several standards are available and picking the wrong one fails.
 
-  Platform note: uip commands fail with auth errors in this environment - expected.
   Run once, capture to output.txt, move on.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
 
@@ -32,7 +31,6 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - uip CLI is not connected to a live tenant - auth errors expected.
   - Run each command once, capture output, and move on. Do NOT retry.
   - Always pass --output json.
   - Do NOT prompt for confirmation - this is an automated test.
