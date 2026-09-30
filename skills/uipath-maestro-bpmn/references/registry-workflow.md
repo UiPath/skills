@@ -338,7 +338,9 @@ after `</uipath:context>`. Inside `<uipath:context>` go only the routing inputs
 (`connectorKey`, `connection`, `folderKey`, `operation`, `objectName`, `method`,
 `path`, `activityConfigurationVersion`, `metadata`); a `send_as` placed there is
 not sent and the call fails as below. `folderKey` is required in the context and
-must reference the folder binding (§4). Complete Slack node:
+must reference the folder binding (§4). The body stays ONE `target="body"` input
+(see "Body shape"), and `channel` takes the looked-up channel id (see
+"A `Reference` entry takes a looked-up value"). Complete Slack node:
 
 ```xml
 <bpmn:sendTask id="Task_Slack" name="Send Slack alert">
@@ -357,7 +359,7 @@ must reference the folder binding (§4). Complete Slack node:
         <uipath:input name="metadata" type="json"><![CDATA[{}]]></uipath:input>
       </uipath:context>
       <uipath:input target="query" name="send_as" type="string" value="bot" />
-      <uipath:input name="body" type="json" target="body"><![CDATA[{"channel":"<CHANNEL_NAME>","messageToSend":"=js:'Severity: ' + vars.Var_Severity"}]]></uipath:input>
+      <uipath:input name="body" type="json" target="body"><![CDATA[{"channel":"<CHANNEL_ID>","messageToSend":"=js:'Severity: ' + vars.Var_Severity"}]]></uipath:input>
       <uipath:output name="response" type="jsonSchema" source="=response" var="Var_SlackResponse" />
     </uipath:activity>
   </bpmn:extensionElements>
