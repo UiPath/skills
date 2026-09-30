@@ -336,5 +336,55 @@
       "curly-quote-cell": "exit 0; cell grammar is CLI A5, not built",
       "pipe-dropped-row": "exit 0, model identical to seed"
     }
+  },
+  "observed_gate": {
+    "build": "UiPath/cli 367bfdb69 (poc/sdd-local-build-2: stack A1-A6 #4664->#4670, #4660, #4662), `uip maestro case sdd validate`, 2026-09-30",
+    "results": {
+      "curly-quote-cell": {
+        "result": "Failure",
+        "issues": [
+          {
+            "Code": "SDD_JS_DOES_NOT_COMPILE",
+            "Severity": "error",
+            "Line": 211
+          }
+        ]
+      },
+      "empty-document": {
+        "result": "Failure",
+        "issues": [
+          {
+            "Code": "SDD_NO_STAGES",
+            "Severity": "error",
+            "Line": null
+          }
+        ]
+      },
+      "parenthetical-collision": {
+        "result": "Failure",
+        "message": "Could not parse parenthetical-collision/sdd.md: the Case Variables table declares variables the parser cannot tell apart: \"invoiceAmount\" on line 69 and \"invoiceAmount (tax)\" on line 70 both read as \""
+      },
+      "pipe-dropped-row": {
+        "result": "Success",
+        "issues": [
+          {
+            "Code": "SDD_ROW_WITHOUT_OUTER_PIPES",
+            "Severity": "warning",
+            "Line": 312
+          }
+        ]
+      },
+      "renamed-heading": {
+        "result": "Failure",
+        "issues": [
+          {
+            "Code": "SDD_SECTION_NOT_READ",
+            "Severity": "error",
+            "Line": 117
+          }
+        ]
+      }
+    },
+    "note": "parenthetical-collision reports through the parse failure Message until SDD_NAME_COLLISION lands with cli#4662; test_degraded_gate.py accepts \"line <N>\" in Message for that reason"
   }
 }
