@@ -11,6 +11,10 @@ prose there; a person editing the file does.
 - every non-table line of the original comes back byte-identical and in order
   (tables themselves may be normalized: outer pipes, separator, padding);
 - formatting twice is byte-identical to formatting once;
+- every table row keeps its cells, trimmed, in order — format may restore
+  outer pipes, the separator and padding, never content, rows or columns.
+  Compared directly because the parsed Model does not reflect every cell
+  (Tasks Starts When, Persona and SLA are not read from that table);
 - the formatted document parses to exactly the original's Model, so what gets
   built never changes.
 
@@ -57,6 +61,24 @@ def non_table_lines(text):
     return keep
 
 
+def table_cells(text):
+    """Each table row as its tuple of trimmed cells; delimiter rows dropped."""
+    lines = text.split("\n")
+    rows, i = [], 0
+    while i < len(lines):
+        if "|" in lines[i] and i + 1 < len(lines) and SEPARATOR.match(lines[i + 1]):
+            while i < len(lines) and lines[i].strip():
+                if not SEPARATOR.match(lines[i]):
+                    row = lines[i].strip()
+                    row = row[1:] if row.startswith("|") else row
+                    row = row[:-1] if row.endswith("|") else row
+                    rows.append(tuple(c.strip() for c in row.split("|")))
+                i += 1
+            continue
+        i += 1
+    return rows
+
+
 def test_fixture_prose_is_outside_tables():
     kept = non_table_lines(FIXTURE.read_text(encoding="utf-8"))
     assert "The webhook payload is trusted as sent: finance owns the schema | not the case." in kept
@@ -84,6 +106,10 @@ def formatted(tmp_path_factory):
 
 def test_non_table_lines_are_byte_identical(formatted):
     assert non_table_lines(formatted["once"]) == non_table_lines(FIXTURE.read_text(encoding="utf-8"))
+
+
+def test_table_cells_are_unchanged(formatted):
+    assert table_cells(formatted["once"]) == table_cells(FIXTURE.read_text(encoding="utf-8"))
 
 
 def test_format_is_idempotent(formatted):
