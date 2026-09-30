@@ -227,40 +227,50 @@
       "extensionTag": "uipath:activity",
       "contextFields": [
         {
-          "name": "releaseKey",
-          "displayName": "Process",
+          "name": "entityKey",
+          "displayName": "Business rule",
           "type": "string",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
+          "binding": true,
           "defaultValue": null,
           "bindingInfo": {
-            "resource": "process",
+            "resource": "BusinessRule",
             "resourceKeyPattern": "${metadata.key}",
             "propertyAttribute": "Key"
           }
         },
         {
-          "name": "folderId",
+          "name": "name",
           "type": "string",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
+          "binding": true,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "BusinessRule",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "name"
+          }
         },
         {
           "name": "folderPath",
           "type": "string",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
+          "binding": true,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "BusinessRule",
+            "resourceKeyPattern": "${metadata.key}",
+            "propertyAttribute": "folderPath"
+          }
         },
         {
-          "name": "name",
+          "name": "_label",
           "type": "string",
           "required": false,
           "hidden": true,
@@ -273,20 +283,22 @@
       "inputName": "JobArguments",
       "inputTarget": "bodyField",
       "outputSource": null,
-      "outputType": "Orchestrator.BusinessRules",
-      "outputName": "Execute business rule [Preview]",
+      "outputType": null,
       "useRelativeSource": true,
       "bindingPattern": "businessRule",
       "bindingInfo": {
-        "resource": "process",
+        "resource": "BusinessRule",
         "resourceKeyPattern": "${metadata.key}",
         "propertyAttribute": "Key",
-        "contextField": "releaseKey"
+        "contextField": "entityKey"
       },
       "requiresDiscovery": true,
       "isDynamic": true,
-      "xmlTemplate": "<bpmn:BusinessRuleTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.BusinessRules\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" type=\"string\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" type=\"string\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" type=\"string\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Execute business rule [Preview]\" type=\"Orchestrator.BusinessRules\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:BusinessRuleTask>",
-      "discoveryNotes": "Uses getOrchestratorBusinessRules() to list available business rules"
+      "xmlTemplate": "<bpmn:BusinessRuleTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.BusinessRules\" version=\"v2\" />\n      <uipath:context>\n        <uipath:input name=\"entityKey\" type=\"string\" value=\"=bindings.{entityKeyBindingId}\" />\n        <uipath:input name=\"name\" type=\"string\" value=\"=bindings.{nameBindingId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"=bindings.{folderPathBindingId}\" />\n        <uipath:input name=\"_label\" type=\"string\" value=\"{_label}\" />\n        <uipath:inputSchema type=\"jsonSchema\"><![CDATA[{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{},\"required\":[]}]]></uipath:inputSchema>\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Error\" type=\"jsonSchema\" source=\"=Error\" var=\"{errorVarId}\" />\n      <uipath:output name=\"{outputName}\" type=\"{outputType}\" source=\"={outputName}\" var=\"{outputVarId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:BusinessRuleTask>",
+      "discoveryNotes": "Uses getOrchestratorBusinessRules() to list available business rules",
+      "inputNotes": "isSplitInputs=true in design schema: the canvas shows one input per rule argument and serialization merges them into the single JobArguments JSON body. The uipath:context inputSchema lists each argument with its type, and its required array names the required ones.",
+      "contextFieldNotes": "entityKey, name and folderPath each point to a root binding with resource=\"BusinessRule\", propertyAttribute Key, name or folderPath, and binding names BusinessRule, name and folderPath. resourceKey and the Key binding default are the rule's entity key, which for a rule in the solution folder is its name; the name and folderPath defaults are the rule name and its folder path. The folderPath binding default is an empty string when the rule lives in the running job's folder. _label holds the rule name as a plain value.",
+      "outputNotes": "One uipath:output per rule output, named after the output with source =<output name>, plus an Error output (type jsonSchema, source =Error). Each var names a process variable declared as uipath:inputOutput on this element."
     },
     "Intsvc.ActivityExecution": {
       "extensionType": "Intsvc.ActivityExecution",

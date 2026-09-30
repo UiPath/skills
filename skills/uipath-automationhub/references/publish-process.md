@@ -59,9 +59,25 @@ The six baseline inputs:
 | **Owner email** | The **signed-in identity is the default owner** — take it from the auth/identity call, not from a list. `GET /users` is optional; if you use it, do a targeted lookup with `?s=<email>&invite=all` (both parameters — the default filter hides users who can still own a process) and treat a miss as no signal. **Never block the publish on it** — submit and let the API decide. |
 | **Submitter email** | Same recipe as owner; usually the same person. |
 
-**Tenant-required application questions** ("Applications used", "Thin applications used", and similar): the valid answers are the tenant's application inventory — `GET /appinventory` (paged; entries carry the app id, name, version, language). Match what the caller's material names. Follow that question's own schema shape for how the selected entries are encoded in `user_inputs`.
+**Application questions** ("Applications used", "Thin applications used"): **answer from the material, one PDD at a time** — record exactly the systems it names. The inventory is `GET /appinventory` (paged; entries carry the app id, name, version, language).
+- **Named and in the inventory** → their ids go in the question's `value` array.
+- **Named but not in the inventory** → add them in the same answer via `new_applications` (below). A missing system is never a reason to stop, to ask, or to pick a look-alike.
+- **Nothing named** → if the schema does **not** flag the question `required`, **omit it** — a process with no applications is valid; never pad it with inventory entries. Only when it is flagged `required` and the material names no system, `AskUserQuestion` (inventory entries plus free text).
 
-**When the material's systems are not in the inventory, create them** — `PUT /appinventory` upserts, and an element whose `application_id` is `null` inserts:
+**Adding systems that are not in the inventory.** If the "Applications used" question (`<ASSESSMENT>-COUNT_APPS`) in the live schema has a **`new_applications`** property next to `value`, the submission itself creates them — no admin permission, no extra call, no `categoryIds`:
+
+```json
+"OVR-COUNT_APPS": {
+  "value": [12],
+  "new_applications": [
+    { "application_name": "Kinaxis RapidResponse", "application_version": "2026.2", "application_language": "English" }
+  ]
+}
+```
+
+`application_name` required (1–50 chars); `application_version` (≤20), `application_language` (≤50), `application_comments` (≤512), `application_is_citrix_client` (boolean) optional; at most 20 per submission. Entries are matched on **name + version, case- and space-insensitive** — a match reuses the existing application, so it never duplicates. New ones land in the tenant inventory and are selectable by id afterwards. "Thin applications used" (`…-COUNT_THIN_APPS`) takes inventory ids only and just flags apps already answered in "Applications used". The field contract and its `400` messages are in [`api-endpoints.md`](api-endpoints.md) → `POST /idea-from-schema`.
+
+**Fallback — no `new_applications` in the schema** (an Automation Hub build that predates it, or the admin disabled adding applications for that section, which also returns `400 "…Adding new applications is disabled for this assessment…"`): create through the inventory API. `PUT /appinventory` upserts, and an element whose `application_id` is `null` inserts:
 
 ```json
 [{ "application_id": null, "application_name": "SUNAT Portal",
@@ -69,7 +85,7 @@ The six baseline inputs:
    "categoryIds": [1] }]
 ```
 
-All five fields are required and `categoryIds` needs ≥1 real id. This needs the **`MANAGE_APP_INVENTORY`** permission; ordinary roles do not have it and get a `403 "This user is not permitted to perform this action based on their role."` **If creating fails for any reason — that 403, a validation error, a bad category id, anything — fall through; never retry it and never stop.** Pick the closest inventory entries to satisfy the required field and name the real systems in the description. **Never abandon a publish because an application is missing or uncreatable, and never pass off a substituted application as the real one without saying so.**
+All five fields are required and `categoryIds` needs ≥1 real id. This needs the **`MANAGE_APP_INVENTORY`** permission; ordinary roles do not have it and get a `403 "This user is not permitted to perform this action based on their role."` **If creating fails for any reason — that 403, a validation error, a bad category id, anything — fall through; never retry it and never stop.** Answer with the systems that *are* in the inventory; only if that leaves a **required** question empty, pick the closest entries to satisfy it (an optional one stays empty). Either way, name the real systems in the description. **Never abandon a publish because an application is missing or uncreatable, and never pass off a substituted application as the real one without saying so.**
 
 Then build `user_inputs` using the template's **structure** but the **collected values**:
 - Place each value in its `AssessmentType > section > question` slot.
@@ -89,7 +105,7 @@ Then build `user_inputs` using the template's **structure** but the **collected 
 
 Include only sections that have at least one populated field. Show the user a concise preview (name + key fields, and "show raw JSON" on request) and get a confirm before writing.
 
-**Preflight before creating:** validate the payload against the schema you fetched — every `required`-flagged question plus owner/submitter answered; every enum answer a code copied **verbatim** from that question's own `enum` (a code with a dropped segment is rejected as an unnamed required-field error); no template placeholders left. Requiredness comes from *this tenant's* schema, never a fixed list — the same flow requires `COUNT_APPS` on one tenant and rejects it on another.
+**Preflight before creating:** validate the payload against the schema you fetched — every `required`-flagged question plus owner/submitter answered; every enum answer a code copied **verbatim** from that question's own `enum` (a code with a dropped segment is rejected as an unnamed required-field error); no template placeholders left; applications exactly the systems the material names (ids in `value`, the rest in `new_applications` when the schema offers it, the question omitted when none are named and it isn't `required`). Requiredness comes from *this tenant's* schema, never a fixed list — the same flow requires `COUNT_APPS` on one tenant and rejects it on another.
 
 ## Step 5: Create the process
 

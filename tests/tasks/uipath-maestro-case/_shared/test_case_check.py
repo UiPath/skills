@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from case_check import (  # noqa: E402
     _get_ci,
     collect_outputs,
+    exit_type,
     find_caseplan,
     find_project_dir,
     find_solution_dir,
@@ -147,6 +148,127 @@ def test_registry_audit_entries_rejects_missing_or_non_object_entries():
         registry_audit_entries({"status": "resolved"})
     with pytest.raises(SystemExit, match="entries must be objects"):
         registry_audit_entries({"resources": ["Post Invoice"]})
+
+
+# `uip maestro case sdd resolve` writes the ledger as `{resolved, unresolved,
+# scope}` with each resource normalized to `{name, identifierField, identifier,
+# folder}`. Captured from a real run on the registry_handoff_action_case fixture.
+SDD_RESOLVE_LEDGER = {
+    "resolved": [
+        {
+            "stage": "Review and Follow-up",
+            "task": "Resolved App Review",
+            "taskType": "action",
+            "cacheFile": "action-apps",
+            "searchQuery": {"name": "purchaseorderapp-1782974854", "folder": "Shared"},
+            "matches": [
+                {
+                    "name": "purchaseorderapp-1782974854",
+                    "identifierField": "id",
+                    "identifier": "b20c471c-adef-4b37-a884-897f56ca53bc",
+                    "folder": "Shared",
+                }
+            ],
+            "selected": {
+                "name": "purchaseorderapp-1782974854",
+                "identifierField": "id",
+                "identifier": "b20c471c-adef-4b37-a884-897f56ca53bc",
+                "folder": "Shared",
+            },
+            "rationale": "exact name in the named folder",
+        },
+        {
+            "stage": "Review and Follow-up",
+            "task": "Launch Follow-up",
+            "taskType": "case-management",
+            "cacheFile": "caseManagement",
+            "searchQuery": {"name": "PortableChildCaseProbeQ91", "folder": "<UNRESOLVED>"},
+            "matches": [],
+            "selected": None,
+            "rationale": "no entry carries this name",
+        },
+    ],
+    "unresolved": [{"name": "PortableChildCaseProbeQ91", "reason": "absent"}],
+    "scope": {"indexes": ["action-apps", "caseManagement"]},
+}
+
+
+def test_registry_audit_entries_reads_the_sdd_resolve_envelope():
+    entries = registry_audit_entries(SDD_RESOLVE_LEDGER)
+    assert [e["task"] for e in entries] == ["Resolved App Review", "Launch Follow-up"]
+
+
+def test_sdd_resolve_entries_are_read_in_the_shape_graders_assert_on():
+    action, child = registry_audit_entries(SDD_RESOLVE_LEDGER)
+    assert action["searchQuery"] == "purchaseorderapp-1782974854"
+    assert action["cacheFile"] == "action-apps-index.json"
+    # action apps are identified by `id`, named by `deploymentTitle`
+    assert action["selected"]["id"] == "b20c471c-adef-4b37-a884-897f56ca53bc"
+    assert action["selected"]["deploymentTitle"] == "purchaseorderapp-1782974854"
+    assert action["selected"]["deploymentFolder"] == {"fullyQualifiedName": "Shared"}
+    assert action["matches"][0]["id"] == action["selected"]["id"]
+    assert child["cacheFile"] == "caseManagement-index.json"
+    assert child["selected"] is None
+
+
+def test_non_action_resources_get_entitykey_and_folders():
+    entry = {
+        "task": "Post Invoice",
+        "selected": {
+            "name": "FinancialPostingFunction",
+            "identifierField": "entityKey",
+            "identifier": "07d45a91",
+            "folder": "Shared/Billing",
+        },
+    }
+    (out,) = registry_audit_entries([entry])
+    assert out["selected"]["entityKey"] == "07d45a91"
+    assert out["selected"]["folders"] == [{"fullyQualifiedName": "Shared/Billing"}]
+    assert "deploymentTitle" not in out["selected"]
+
+
+def test_collapsing_searchquery_removes_the_sdds_unresolved_folder():
+    """The SDD's `folder: "<UNRESOLVED>"` must not satisfy a grader's miss check.
+
+    Left inside `searchQuery`, the substring appears in every entry whose SDD
+    left the folder open, resolved ones included, so a miss the agent never
+    marked would pass. Only an identity-slot marker should."""
+    _, child = registry_audit_entries(SDD_RESOLVE_LEDGER)
+    assert "<UNRESOLVED" not in json.dumps(child)
+    marked = dict(SDD_RESOLVE_LEDGER["resolved"][1], taskTypeId="<UNRESOLVED: absent>")
+    (out,) = registry_audit_entries([marked])
+    assert "<UNRESOLVED" in json.dumps(out)
+
+
+def test_hand_written_entries_come_back_unchanged():
+    legacy = {
+        "task": "Post Invoice",
+        "searchQuery": "FinancialPostingFunction",
+        "cacheFile": "api-index.json",
+        "selected": {"name": "FinancialPostingFunction", "entityKey": "07d45a91"},
+    }
+    assert registry_audit_entries([legacy]) == [legacy]
+    # and an entry that never had `selected` is not given one
+    assert "selected" not in registry_audit_entries([{"task": "Post Invoice"}])[0]
+
+
+def test_normalization_does_not_mutate_the_input():
+    before = json.dumps(SDD_RESOLVE_LEDGER, sort_keys=True)
+    registry_audit_entries(SDD_RESOLVE_LEDGER)
+    assert json.dumps(SDD_RESOLVE_LEDGER, sort_keys=True) == before
+
+
+def test_exit_type_reads_an_absent_type_as_exit_only():
+    # The runtime treats an exit condition without `type` as exit-only, and so does
+    # `validate --strict --sdd`; a grader comparing `.get("type")` would say None.
+    assert exit_type({"marksStageComplete": True}) == "exit-only"
+    assert exit_type({"type": None}) == "exit-only"
+
+
+def test_exit_type_keeps_a_declared_routing_type():
+    assert exit_type({"type": "return-to-origin"}) == "return-to-origin"
+    assert exit_type({"type": "wait-for-user"}) == "wait-for-user"
+    assert exit_type({"type": "exit-only"}) == "exit-only"
 
 
 def test_get_ci_reads_camelcase_and_pascalcase():

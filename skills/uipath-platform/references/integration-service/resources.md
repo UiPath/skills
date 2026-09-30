@@ -139,16 +139,81 @@ When no api-type action's `rules[]` are satisfied by the supplied fields, the CL
 
 > **Update** (PATCH) = change specific fields. **Replace** (PUT) = overwrite entire record. Default to **Update** unless the user says "replace" or "overwrite".
 
-### `run script` — run a published connector script
+### `run script` — run an action script
 
-`uip is resources run script` runs a connector's published script with the connection's credential. Use it to resolve `4.0.0` reference fields (`reference.scriptRef`):
+A v4 activity is an action script, not a CRUD object, so `run <verb>` cannot
+run it. `uip is resources run script` runs the script with the connection's
+credential. Two script sources, exactly one per call:
+
+| flag | runs |
+|---|---|
+| `--script-ref <name>` | a published script; needs `--connector-key` |
+| `--inline-script <source>` | a local script — the source text, or a path ending in `.js` that is read from disk (no `@` prefix, no stdin) |
+
+A **published** script is how `4.0.0` reference fields (`reference.scriptRef`)
+are resolved:
 
 ```bash
 uip is resources run script --connection-id "<CONNECTION_ID>" \
   --connector-key "<CONNECTOR_KEY>" --script-ref "<SCRIPT_REF>" --output json
 ```
 
-Exactly one of `--script-ref` or `--inline-script` is accepted; `--connector-key` is required with `--script-ref`. `Data.Body` is the vendor's response (parsed JSON), and a vendor `4xx`/`5xx` still returns `Result: "Success"` — check `Data.Status`. Parsing rules and the full lookup workflow: [reference-resolution.md — 4.0.0 Activities — Script References](reference-resolution.md#400-activities--script-references-scriptref).
+Parsing rules and the full lookup workflow: [reference-resolution.md — 4.0.0 Activities — Script References](reference-resolution.md#400-activities--script-references-scriptref).
+
+A **local** script is how a generated activity is run before it is published
+(see [activity-generation.md](activity-generation.md)):
+
+```bash
+uip is resources run script --connection-id "<CONNECTION_ID>" \
+  --inline-script <path-to-script>.js \
+  --body '{"field": "value"}' --output json
+```
+
+There is no script-less passthrough: the command never points the connection's
+credential at an arbitrary vendor URL. To probe a vendor endpoint, write the call
+into a script and run that.
+
+`--body` is the script's inbound request (`context.request.body`); `--query` and
+`--header` fill the rest of it. Giving both sources, or neither, is a
+`ValidationError` (exit `3`), as is `--script-ref` without `--connector-key`.
+
+#### Reading the result
+
+```jsonc
+{ "Result": "Success", "Code": "ScriptExecuted",
+  "Data": { "Status": 200,              // the VENDOR's status, verbatim
+            "Headers": { ... },
+            "Body": [ ... ] } }         // the vendor's JSON, parsed
+```
+
+`Data.Body` is the vendor's response, parsed — an array for a `list_*` script.
+Pull a value out with `--output-filter`, or with `jq '.Data.Body'`. A runtime
+refusal (the script did not compile, the connection could not mint a token, the
+budget was exceeded) is relayed the same way, with the runtime's own status and
+its raw body as a string.
+
+**The command exits 0 for any vendor answer, whatever the status.** A vendor 400
+is a normal result, not a command failure — it exits 1 only when the request never
+got an answer (network, login), and 3 on a bad argument. So `set -e` will not stop
+a loop on a vendor rejection; branch on `Data.Status` and `Data.Body` yourself.
+
+#### Reference fields on a generated activity
+
+Same discipline as [reference-resolution.md](reference-resolution.md#400-activities--script-references-scriptref),
+same mechanism. A v4 reference is **`scriptRef`-only** — it carries no `objectName`,
+`path` or `childPath` — so you do not list a referenced object, you run its lookup
+script and filter the output:
+
+```jsonc
+"reference": { "scriptRef": "ListChannels", "lookupValue": "id",
+               "lookupNames": ["name", "id"] }
+```
+
+Reference IDs stay connection-scoped, you match on `lookupNames` and pass
+`lookupValue`, and dependency chains still run in order. There is no
+`filterPattern` equivalent, so a search-style reference against an object too
+large to list has no v4 form — the lookup script must take a filter as an input
+instead.
 
 ### Filtering Results with `--output-filter`
 

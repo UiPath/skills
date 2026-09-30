@@ -30,6 +30,8 @@ defaults:
         - CODEX_BASE_URL
       extra_mounts:
         - ~/.uipath:/.uipath:rw
+        # For the pre_run below: coder-eval masks tests/ in the plugin mount; a deeper bind wins.
+        - $SKILLS_REPO_PATH/tests/scripts:$SKILLS_REPO_PATH/tests/scripts:ro
 
   agent:
     # No agent.type / agent.model here: the runner passes both as CLI flags, which outrank this file.

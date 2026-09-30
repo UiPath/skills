@@ -1,0 +1,23 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GreetingProcess",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "75a5fd8f-9d2b-4b5b-aca3-9cdbf1b398f0",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "GreetingProcess"
+    },
+    "locks": [],
+    "key": "c0e531dc-8e00-4b3e-9d8e-954f20400844",
+    "files": []
+  }
+}

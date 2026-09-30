@@ -1,0 +1,23 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GreetingApi",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "209a04c5-4ec9-4f90-bea4-29e31a08180b",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "GreetingApi"
+    },
+    "locks": [],
+    "key": "eb3bbb50-6581-4f42-ba16-133884c82e97",
+    "files": []
+  }
+}

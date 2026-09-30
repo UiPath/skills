@@ -3,8 +3,13 @@ description: >
   Integration coverage for Data Fabric Record Created and Record Updated
   triggers, including trigger-side date filters, downstream Query/Get/Delete
   wiring, and preservation of entity resources on every activity.
-  Ported from Flow
-  `connector_features/datafabric_connector/trigger_lifecycle.yaml`. Flow
+  Ported from the retired Flow task
+  `connector_features/datafabric_connector/trigger_lifecycle.yaml`, which was
+  replaced by Flow
+  `connector_features/datafabric_connector/scheduled_poll_lifecycle.yaml`
+  because the Maestro Flow registry
+  ships no Data Fabric connector trigger node. BPMN reaches the same IS webhook
+  through `Intsvc.EventTrigger`, so this task stands. Flow
   modeled this as a solution with two Flow projects (one per trigger); BPMN
   has no multi-file solution concept, so both trigger branches are modeled as
   two independent `bpmn:startEvent` entries (each carrying the registry
@@ -22,8 +27,6 @@ run_limits:
 
 sandbox:
   template_sources:
-    - type: template_dir
-      path: ../../../../../../skills/uipath-maestro-bpmn
     - type: template_dir
       path: ../../../_setup
       mount_point: _setup

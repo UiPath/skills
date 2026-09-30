@@ -1,0 +1,18 @@
+{
+  "@type": "kb.workspace/v1",
+  "schemaVersion": 1,
+  "bundleId": "a1b2c3d4-0000-0000-0000-000000000001",
+  "version": 2,
+  "entries": [
+    {
+      "path": "index.md",
+      "sha256": "cb74c97cfdbfd2925e227b2aa566769e6012e07fc6fe6b760b3b739cae27ec44",
+      "size": 62
+    },
+    {
+      "path": "concepts/queues.md",
+      "sha256": "8f75643598babf4f91f42ba02b8c23310cf3a1db841a36d76b74b26be7c4e345",
+      "size": 62
+    }
+  ]
+}

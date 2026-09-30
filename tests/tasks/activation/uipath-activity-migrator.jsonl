@@ -1,0 +1,40 @@
+{"id": "uipath-activity-migrator-001", "prompt": "migrate activities", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-002", "prompt": "Migrate the UiPath activities in this project to the modern ones", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-003", "prompt": "Convert the classic UiPath activities in my workflow to their modern counterparts", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-004", "prompt": "Upgrade this Windows-Legacy project to the Windows framework", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-005", "prompt": "project.json says targetFramework Legacy. Move this project to Windows.", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-006", "prompt": "Run the Activity Migrator on this project", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-007", "prompt": "Use UiPath.Upgrade.exe to migrate this process", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-008", "prompt": "Modernize this workflow, it still uses classic Click and Type Into activities", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-009", "prompt": "Migrate the InvoiceBot process from legacy to Windows", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-010", "prompt": "I need an activity migration report for this project before we decide anything", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-011", "prompt": "Analyze this project with the Activity Migrator but do not change anything yet", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-012", "prompt": "Do a migration dry run and show me which activities would be left classic", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-013", "prompt": "Migrate our classic UI Automation activities to the modern UIA activities", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-014", "prompt": "Convert the classic Outlook mail activities in this project to Microsoft 365", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-015", "prompt": "Migrate the classic GSuite activities in this workflow to the modern GSuite package", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-016", "prompt": "This project depends on Microsoft.Activities.Extensions. Migrate it off that package.", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-017", "prompt": "post migration fix: the checks in my migrated project always return false", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-018", "prompt": "After the migration, Check App State silently reports not found every time. Fix it.", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-019", "prompt": "Since we migrated, Element Exists always returns false even though the element is on screen", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-020", "prompt": "Could not find the UI element after migration, but the same selector worked in the classic project", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-021", "prompt": "Apply the post-migration fix to StaffDirectoryAudit_Upgraded", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-022", "prompt": "Migrate this Legacy library to Windows so the processes that depend on it can follow", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-023", "prompt": "We have thirty Legacy projects in this repository. Migrate them.", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-024", "prompt": "Upgrade the classic activities and pin UIAutomation to the 26.10 line", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-025", "prompt": "Migrate this project to Windows targeting UIAutomation 25.10", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-026", "prompt": "Take this classic UiPath project and produce a Windows version of it next to the original", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-027", "prompt": "Our robots run 24.10. Migrate this Legacy process to Windows without breaking that.", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-028", "prompt": "The migration tool left several activities classic. Rerun it and tell me what needs attention.", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-029", "prompt": "Migrate the activities in this project and verify the result builds", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-030", "prompt": "The framework is already Windows but the activities are classic. Move them to modern.", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-031", "prompt": "Modernize the UI automation in this old process", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-032", "prompt": "Migrate Windows-Legacy RPA project to Windows", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-033", "prompt": "Convert classic to modern activities in every workflow of this project", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-034", "prompt": "Run analyze and then upgrade with the UiPath upgrade tool on ./Payments", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-035", "prompt": "The migrated project has .ToStringWithDelimiter() in its selectors and fails at runtime. Fix that.", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-036", "prompt": "Migrate my classic UiPath process so it opens in Studio 2024.10 without the Legacy framework", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-037", "prompt": "Bring this project from the Legacy target framework to Windows with modern activities", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-038", "prompt": "Migrate this UiPath process; the UIAutomation line should be the one my Studio version supports", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-039", "prompt": "Upgrade legacy UiPath activities to their modern equivalents", "expected_skill": "uipath-activity-migrator"}
+{"id": "uipath-activity-migrator-040", "prompt": "What would the Activity Migrator do to this project? Run the analysis and summarize.", "expected_skill": "uipath-activity-migrator"}

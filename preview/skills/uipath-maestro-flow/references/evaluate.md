@@ -5,7 +5,7 @@ Evaluators, eval sets, data points and simulations are project assets managed by
 them. Use this when the request asks for evaluation assets, or for a flow to be
 evaluated.
 
-Every command takes `--path <project-dir>` — the directory holding
+Every `eval` command takes `--path <project-dir>` — the directory holding
 `project.uiproj`.
 
 **Local `add` / `list` / `remove` edit project files and need no login.**
@@ -52,22 +52,33 @@ uip maestro flow eval add "basic case" \
   --expected '{"reply":"hello"}' \
   --path ./MySolution/MyFlow --output json
 
-uip maestro flow eval list           --path ./MySolution/MyFlow --output json
-uip maestro flow eval remove <id>    --path ./MySolution/MyFlow --output json
-uip maestro flow eval set list       --path ./MySolution/MyFlow --output json
+uip maestro flow eval list            --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+uip maestro flow eval remove <id>     --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+uip maestro flow eval set list        --path ./MySolution/MyFlow --output json
 uip maestro flow eval set remove <id> --path ./MySolution/MyFlow --output json
 ```
+
+Almost everything is addressed **through its set**. `--set` is required on
+`eval list` and `eval remove`, on all three `simulation` commands, and on every
+`run` verb including `status` and `results`; omitting it fails with
+`required option '--set <name>' not specified` before anything runs. Only the
+`set` commands themselves and the evaluator commands do without it.
 
 Use the generated evaluator id or filename when explicitly passing
 `--evaluators`; a display name alone is not a stable reference. Omitting the
 flag on `eval set add` links all evaluators that currently exist.
 
-A data point's input keys must match the flow's declared inputs — `.input({ … })`
-in the source, or:
+A data point's input keys must match the flow's declared inputs. Declare them
+with `.input({ … })` in the source and compile before `eval add`: it reads them
+from the compiled `.flow`, so an input missing there fails with `Input "<name>"
+is not declared as an input variable in the flow`. Do not add inputs with
+`uip maestro flow variable add` — the next `compile -o` rewrites the `.flow`
+from the source, so the CLI edit either disappears or collides with the compiled
+input (`Variable '<name>' already exists`). To confirm what the compiled flow
+declares, pass the `.flow` file itself; `variable` takes no `--path`:
 
 ```bash
-uip maestro flow variable list --path ./MySolution/MyFlow --output json
-uip maestro flow variable add  --path ./MySolution/MyFlow --output json
+uip maestro flow variable list ./MySolution/MyFlow/MyFlow.flow --output json
 ```
 
 Build expected outputs from real records rather than invented ones, for the same
@@ -77,12 +88,24 @@ eval scores a fault instead of an answer.
 ## Simulations — stop an eval from really sending
 
 A simulation stands in for a component during a run, keyed by component id: the
-step id from the source, or the tool name for an inline agent's tool.
+step id from the source, or the tool name for an inline agent's tool. A
+simulation is scoped to one **data point inside one set**, not to the project,
+so all three commands require `--set` and `--data-point`. `add` also requires
+`--strategy`: `Static` returns `--mock-value` verbatim, `Llm` generates a
+response from `--simulation-instructions`. And it requires `--component-type`
+naming what the component is — `connector`, `agent`, `subflow` — unless
+`--parent <agent-id>` adds a child tool simulation, which defaults it to `Node`.
 
 ```bash
-uip maestro flow eval simulation add <component-id>    --path ./MySolution/MyFlow --output json
-uip maestro flow eval simulation list                  --path ./MySolution/MyFlow --output json
-uip maestro flow eval simulation remove <component-id> --path ./MySolution/MyFlow --output json
+uip maestro flow eval simulation add <component-id> \
+  --set "Smoke Tests" --data-point <id> \
+  --strategy Static --component-type connector --mock-value '{"ok":true}' \
+  --path ./MySolution/MyFlow --output json
+
+uip maestro flow eval simulation list \
+  --set "Smoke Tests" --data-point <id> --path ./MySolution/MyFlow --output json
+uip maestro flow eval simulation remove <component-id> \
+  --set "Smoke Tests" --data-point <id> --path ./MySolution/MyFlow --output json
 ```
 
 Simulate every side-effecting component before running a set more than once. An
@@ -91,17 +114,19 @@ unsimulated connector step really sends — once per eval, every run.
 ## Running a set
 
 ```bash
-uip maestro flow eval run start   --set "<name>"  --path ./MySolution/MyFlow --output json
-uip maestro flow eval run status  <evalSetRunId>  --path ./MySolution/MyFlow --output json
-uip maestro flow eval run results <evalSetRunId>  --path ./MySolution/MyFlow --output json
-uip maestro flow eval run list    --set "<name>"  --path ./MySolution/MyFlow --output json
-uip maestro flow eval run compare <evalSetRunId>  --path ./MySolution/MyFlow --output json
+uip maestro flow eval run start   --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+uip maestro flow eval run status  <evalSetRunId> --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+uip maestro flow eval run results <evalSetRunId> --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+uip maestro flow eval run list    --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+uip maestro flow eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
+  --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 ```
 
 `run start` returns an `evalSetRunId` and does not block. Poll `run status`
 until it settles, then read `run results`. `run compare` puts a run against a
-previous one, which is how a prompt or guidance change is shown to have helped
-rather than asserted to have.
+previous one — it takes both ids, the subject and `--compare-to` — which is how
+a prompt or guidance change is shown to have helped rather than asserted to
+have.
 
 ## Never upload as part of an eval workflow
 

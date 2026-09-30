@@ -134,7 +134,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not edit caseplan.json in place with a script (Rule 13: Write/Edit only; validator findings are repaired by hand, not perl -pi)"
+    description: "Agent did not edit caseplan.json in place with a script (Rule 14: Write/Edit only; validator findings are repaired by hand, not perl -pi)"
     tool_name: "Bash"
     command_pattern: '(perl|sed)\s+-\S*i\S*\s[^\n]*caseplan\.json|(python3?|node|ruby)\b[^\n]*(write_text|writeFile|File\.write|open\([^\n]*[''"]w[''"])[^\n]*caseplan\.json'
     weight: 2.0

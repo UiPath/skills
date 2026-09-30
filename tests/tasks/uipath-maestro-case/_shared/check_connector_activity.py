@@ -2,7 +2,7 @@
 """ConnectorActivityCase: a RESOLVED execute-connector-activity task is wired.
 
 Asserts the connector-activity plugin resolved a real Integration Service
-activity and connection into the caseplan (Rule 8 — no fabricated IDs), rather
+activity and connection into the caseplan (Rule 9 — no fabricated IDs), rather
 than leaving a `data: {}` skeleton. Does NOT run debug: executing a connector
 activity has real side effects, so this task verifies the build only.
 """

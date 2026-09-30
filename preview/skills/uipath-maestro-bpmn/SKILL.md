@@ -1,6 +1,6 @@
 ---
 name: uipath-maestro-bpmn
-description: "TRIGGER for authoring structural-core UiPath Maestro BPMN as `<Name>.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and running the `uip maestro bpmn` check/compile/format/validate loop. Covers events, gateways, tasks, sub-processes, sequence flows, bindings, static rules, and semantic `.bpmn` output. Flow builder authoring → uipath-maestro-flow; case plans → uipath-maestro-case. DO NOT TRIGGER for registry-backed typed BPMN nodes beyond the structural core."
+description: "TRIGGER for authoring, operating or diagnosing UiPath Maestro BPMN. Author `<Name>.bpmn.ts` with the TypeScript builder SDK (`@uipath/maestro-builder-sdk/bpmn`) and run the `uip maestro bpmn` check/compile/format/validate loop. Operate: refresh package metadata, pack, upload to Studio Web, publish, debug a real run, run a deployed process, inspect jobs and instances, pause/resume/cancel/retry/migrate. Diagnose a failed or stuck run: job status, incidents, runtime variables, the deployed BPMN asset, element executions, cursors, traces. Covers events, gateways, tasks, sub-processes, sequence flows, bindings, static rules, semantic `.bpmn` output, boundary handlers and branching written by nesting, event sub-processes, Data Fabric (Data Service) record and file operations through `.dataService()`, and any registry-backed extension type through `.activity()` — including one the SDK ships no typed method for. Flow builder authoring → uipath-maestro-flow; case plans → uipath-maestro-case."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 <!-- CANONICAL — edit here, not in UiPath/flow-builder-sdk. Why: docs/SKILLS_PROMOTION_PLAN.md in that repo. -->
@@ -24,14 +24,17 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
 2. Keep `<Name>.bpmn.ts` at the workspace root, beside `package.json`.
 3. Import from `@uipath/maestro-builder-sdk/bpmn` and default-export a chain ending in `.build()`.
 4. Seed the source by decompiling the stub `bpmn init` wrote —
-   `uip maestro bpmn decompile <Name>/<Name>.bpmn -o <Name>.bpmn.ts` — rather than
-   hand-writing the skeleton. It carries the process id and the `entryPointId` UUID the
+   `uip maestro bpmn decompile <Name>/<Name>.bpmn -o <Name>.bpmn.ts --style nested` — rather than
+   hand-writing the skeleton.
+   `--style nested` lifts an existing process's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in order (`flowMode('sequence')`), and leaves whatever it cannot prove flat with a printed reason; the compiled graph is verified identical before it is written. It KEEPS the flow ids the constructs now imply: an import's `edge_…` is pinned back onto the implied edge with a `.flowIds([…])` call at the top of the chain, so the recompile reproduces the ids the artifact arrived with. That matters for brownfield work — `bpmn merge` keys every element by id, flows included, so a renamed flow reads as a new one, the original is deleted with its diagram edge, and a gateway `default` left naming the old id produces a file `validate` rejects. `--keep-flow-ids` now only confines the lift to regions whose ids already match, for source with no pin table, at the cost of lifting far less. Without `--style nested` the whole process is written flat. It carries the process id and the `entryPointId` UUID the
    product assigned, which a hand-written chain cannot invent. An existing project needs
    no `init`: seed from the `.bpmn` already there. For shape, copy the closest staged
    `examples/*.bpmn.ts`.
 5. Run `uip maestro bpmn check <Name>.bpmn.ts --source` after structural changes.
-6. Compile **into the scaffolded project**, format only when layout is needed, and run
-   product validation. Exactly one emitted `<Name>.bpmn` may exist, at
+6. Compile **into the scaffolded project**, then `format` it, then run product
+   validation — in that order, every time. `validate` refuses a file with no diagram
+   (`BPMN_PARSE_ERROR: No diagrams found`), and `compile` writes none; `format` adds it.
+   Exactly one emitted `<Name>.bpmn` may exist, at
    `<Name>/<Name>.bpmn`; do not leave a second copy at the workspace root, and do not
    leave the template `init` wrote in place of your compiled output.
 7. Use the merge pipeline for targeted edits to an existing process.
@@ -51,17 +54,23 @@ spells the paths its rows are relative to.
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
-| Variables, inputs, and outputs | `var`, `input`, `output`, `schema` | [ScopeBuilder](#api-index) | `examples/NotifyChannel.bpmn.ts` |
+| Variables, inputs, and outputs | `var`, `input`, `output`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
 | Start, end, catch, throw, boundary | event methods | [Events](references/bpmn-runtime.md#events-and-timers) | `examples/NotifyChannel.bpmn.ts` |
+| Error, timer, or message ON an activity | the body callback of any activity method: `onError`, `onTimer`, `onMessage` | [ActivityBuilder](#api-index) | `examples/InvoiceEscalation.bpmn.ts` |
 | Exclusive, inclusive, parallel, event-based | gateway methods | [GatewayOpts](#api-index) | `examples/NotifyChannel.bpmn.ts` |
+| Decision, parallel split, or wait-for-first, written in place | `choose`, `fork`, `race`, `goto` | [ChooseArm](#api-index) | `examples/InvoiceEscalation.bpmn.ts` |
+| Safety net for a whole scope | `eventSubProcess` | [Event sub-process scope](references/bpmn-runtime.md#events-and-timers) | `examples/InvoiceEscalation.bpmn.ts` |
 | Script and assignment tasks | `scriptTask`, `task` | [ScopeBuilder](#api-index) | `examples/NotifyChannel.bpmn.ts` |
 | HTTP requests | `http` | [HTTP](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
 | Orchestrator jobs and queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
 | Human work | `humanTask` | [Human tasks](references/bpmn-runtime.md#human-task-outcomes) | `examples/NotifyChannel.bpmn.ts` |
 | Connectors and external work | `connector`, `externalAgent`, `externalWorkflow` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/NotifyChannel.bpmn.ts` |
-| Generic registry activity | `activity` | [ActivityNodeOpts](#api-index) | `examples/NotifyChannel.bpmn.ts` |
+| Data Fabric records and file fields | `dataService` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/ContractRegistry.bpmn.ts` |
+| Any registry type, typed method or not | `activity` | [Registry extension types](references/bpmn-runtime.md#registry-extension-types) | `examples/InvoiceApproval.bpmn.ts` |
 | Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
+| Package, upload, publish, debug, run, manage an instance | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instance …` | [Operate](references/operate.md) | — |
+| A run failed or is stuck | `uip maestro bpmn job status` / `instance incidents` / `instance variables` / `instance asset` | [Diagnose](references/diagnose.md) | — |
 
 ## Minimal shape
 
@@ -70,19 +79,65 @@ import { bpmn } from '@uipath/maestro-builder-sdk/bpmn';
 
 export default bpmn('notify')
   .name('Notify')
+  .flowMode('sequence')
+  .var('status', 'string')
   .startEvent('start')
   .task('record', { set: { status: 'ready' } })
   .endEvent('done')
-  .sequenceFlow('start', 'record')
-  .sequenceFlow('record', 'done')
   .build();
 ```
+
+In sequence mode each element continues to the next, so a process written top to bottom has no `.sequenceFlow()`; branch with `.choose()`, attach handlers in an activity's body, and read `bpmn check --graph` to see the wiring that resulted.
+The explicit form — `.sequenceFlow('start', 'record')` after the elements, in the default mode — is what `bpmn decompile` writes for an import unless `--style nested` lifts it, and both forms mix freely.
+
+## Structure by nesting
+
+Where a relationship can be written by nesting, write it that way instead of by id.
+Each form lowers to the same elements and flows the explicit methods produce, and the explicit `.sequenceFlow()` still works anywhere, mixed freely.
+`examples/InvoiceEscalation.bpmn.ts` is a full process written this way, with no `.sequenceFlow()` at all; `examples/InvoiceApproval.bpmn.ts` is a real 71-element import lifted into this form by `bpmn decompile --style nested` — sixteen decisions as `.choose()`, five error handlers in their activities' bodies, and the seven `.sequenceFlow()` calls that remain are the merges and fan-outs no construct owns.
+
+```ts
+export default bpmn('approval')
+  .var('action', 'string')
+  .var('outcome', 'string', { default: 'RUNNING' })
+  .startEvent('start')
+  .humanTask('approve', { app: 'InvoiceApproval', actions: ['Approve', 'Reject'] }, (t) => {
+    t.onTimer('PT1H', { interrupting: false }, (b) => b.task('remind').endEvent('reminded'));
+    t.onError(true, { errorVar: 'failure' }, (b) => b.endEvent('failed', { name: 'Approval failed' }));
+  })
+  .choose('approved', [
+    { when: '=vars.action == "Approved"', label: 'Yes', body: (b) => b.task('post') },
+    { otherwise: true, label: 'No', body: (b) => b.task('reject') },
+  ])
+  .endEvent('done')
+  .sequenceFlow('start', 'approve')
+  .sequenceFlow('approve', 'approved')
+  .eventSubProcess('failures', { error: true }, (h) =>
+    h.task('record', { set: { outcome: '=js:"FAILED: " + vars.failures_Error.message' } }).endEvent('recorded', { name: 'Failure recorded' }))
+  .build();
+```
+
+- A boundary event is declared on the activity it guards, in that activity's body callback, so `attachedTo` is never written.
+  An interrupting handler's path rejoins at the statement after the activity; a non-interrupting one runs beside the activity and must end its own path with an end event, `.goto()`, or an explicit flow.
+- `choose` arms need `when` or `otherwise: true`; the fallback is the default flow, and no flow id is named.
+  Arms rejoin at the next statement, through a join named `<id>_join` only when more than one arm reaches it.
+- Inside an arm or a handler, consecutive elements are wired in order; branch there with `choose` / `fork` / `race`, not a bare gateway, and jump elsewhere with `.goto(id)`.
+- An event sub-process guards the whole container it sits in, catching what nothing closer caught; a boundary handler guards one activity.
+  To fail one iteration rather than the whole run, put the `eventSubProcess` inside the multi-instance sub-process.
+  An error net captures the caught error on its start by default, into `vars.<net>_Error` — so `.eventSubProcess('failures', …)` gives you `vars.failures_Error`, and you classify on `.code` / `.message` / `.detail` / `.status` with nothing more written. That per-net id is what the designer writes: over the real exports measured, every error capture carries a unique id with the display name `Error`, and the bare `vars.Error` appears in none of them. The `Error` spelling that IS fixed is the capture row's `source="=Error"`, the key the engine seeds the payload under, which the SDK writes for you. `errorVar` names the variable something else; `errorVar: false` omits the capture.
+  A boundary handler captures nothing by default; there `errorVar` is what makes the error readable, as `=vars.<errorVar>.code`.
+- `check` warns `NO_DEFAULT_FLOW` on an exclusive gateway whose every flow is conditioned; give it an `otherwise` arm or a default.
+- `.flowMode('sequence')`, called before the first element, wires consecutive elements of that scope in order, so a process written top to bottom needs no `.sequenceFlow()` at all; a `.subProcess()` body inherits it and may set its own.
+  An element that already has an explicit outgoing flow is not also wired to the next one, a bare gateway is wired into but implies no outgoing flows, and an element nothing leads into or a path that does not end is refused at build.
+- `uip maestro bpmn check <Name>.bpmn.ts --graph` prints the wiring that resulted, `~>` for an implied edge and `->` for an explicit one, with `[NO INCOMING]` / `[NO OUTGOING]` where they apply.
+  Read it after a structural edit in a sequence scope, because inserting a line there rewires the graph.
 
 ## Validation loop
 
 ```bash
 uip maestro bpmn init <Name>                  # once, before authoring
 uip maestro bpmn check <Name>.bpmn.ts --source
+uip maestro bpmn check <Name>.bpmn.ts --graph   # the resolved wiring, implied edges marked ~>
 uip maestro bpmn compile <Name>.bpmn.ts -o <Name>/<Name>.bpmn
 uip maestro bpmn format <Name>/<Name>.bpmn
 uip maestro bpmn validate <Name>/<Name>.bpmn --output json
@@ -90,6 +145,24 @@ uip maestro bpmn validate <Name>/<Name>.bpmn --output json
 
 `check` owns source and graph invariants. Product validation owns the compiled
 BPMN contract. Change the TypeScript source and rebuild; do not patch emitted XML.
+
+## Operating a process
+
+Refresh the package metadata, pack, upload to Studio Web (what "publish" means
+unless the user names Orchestrator), debug a real run, run a deployed process,
+inspect a job, and drive an instance's lifecycle. All of it needs `uip login`;
+`uip maestro bpmn refresh <project-path>` comes before every cloud action, and
+`bpmn debug` is a REAL run, not a validation step. Every mutation needs the
+user's decision for that action. Read
+**[`references/operate.md`](references/operate.md)**.
+
+## Diagnosing a failed run
+
+Triage in order — job status, incidents, runtime variables, the deployed BPMN
+asset, element executions and cursors, the generated package files, traces last
+— with the CLI's exact verbs, every `instance` read carrying `-f <FOLDER_KEY>`.
+Never mutate while diagnosing, and never guess a command shape: the reference
+lists them. Read **[`references/diagnose.md`](references/diagnose.md)**.
 
 ## Evidence boundary
 

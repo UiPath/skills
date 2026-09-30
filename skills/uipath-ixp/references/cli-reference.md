@@ -4,7 +4,7 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 
 > **Destructive commands require `-y, --yes`.** Every irreversible `uip ixp` command (all `delete`s and `fields change-type`) gates on `-y/--yes`; the CLI never prompts. Always pass `-y/--yes`.
 
-> **Length limits.** Every instructions or prompt value — `projects update-prompt --prompt`, each `instructions` in `groups update-prompts` / `fields update-prompts` / `groups add --fields`, and every `--instructions` — is at most **4096 characters**. Group, field and data-type names and field types are at most **64**; a project name at most **116**; a project or deployment title at most **1024**. Check the length before you send: an over-long value fails the whole call with `Result: ValidationError`, `Instructions: "<option> is <n> characters; the maximum is <max>. ..."`, and nothing is written. Shorten the text and retry — do not split one prompt across calls.
+> **Length limits.** Instructions and prompts are at most **4096 characters**, at every level. Names and field types are at most **64**; a project name at most **116**; a project or deployment title at most **1024**. A longer value fails the whole call with `Result: ValidationError` and nothing is written. Shorten it and retry — do not split one prompt across calls.
 
 ## Projects
 
@@ -12,7 +12,7 @@ All commands use `uip ixp` prefix. Always append `--output json` when parsing ou
 |---------|-------------|
 | `uip ixp projects list [-l <limit>] [--offset <n>] --output json` | List IXP projects — returns a paged envelope `Data: { Projects: [{ Id, Name, Title, CreatedAt }], Total, Offset, Limit }` (rows under `Projects`, **not** a bare array). `-l, --limit` defaults 50 (range 1-10000); `--offset` defaults 0 to page. |
 | `uip ixp projects get <project-name> --output json` | Get a project |
-| `uip ixp projects create "<name>" <folder-path> [-d "<description>"] [--skip-taxonomy] --output json` | Create project and upload supported docs in `<folder-path>` (top-level only — sub-folders are not scanned; see [Supported document files](#supported-document-files)). By default suggests+imports taxonomy. `-d` provides context for better taxonomy suggestion. Use `--skip-taxonomy` to create a blank project (import taxonomy separately). Use `ProjectName` from output. |
+| `uip ixp projects create "<name>" [<folder-path>] [-d "<description>"] [--skip-taxonomy] --output json` | Create project and upload supported docs in `<folder-path>` (top-level only — sub-folders are not scanned; see [Supported document files](#supported-document-files)). By default suggests+imports taxonomy. `-d` provides context for better taxonomy suggestion. Use `--skip-taxonomy` to upload the docs without a taxonomy (import taxonomy separately). Omit `<folder-path>` to create an empty project — no documents, no taxonomy; `--skip-taxonomy` has no effect then. Use `ProjectName` from output. |
 | `uip ixp projects import-taxonomy <project-name> <file> --output json` | Import taxonomy from a local JSON file. Accepts `{ field_types, label_group }` or `{ entity_defs, label_groups }` format. **What it is for: giving a second project the same taxonomy as the first** — import a user-supplied file, or another project's `get-taxonomy` dump, into a project that has no taxonomy yet. It **merges, and it matches entries by NAME** — a `field_id` in the file is not identity and is re-minted when it collides with an existing one. So, against a taxonomy that already has content: an entry you omit is **kept** (omission is not deletion); an entry you renamed arrives as a **new** field beside the old name, which stays (a rename is impossible); a field in a second group is added there and left in the first (a move is impossible); and a **same-name** field or group has its instructions and data type **overwritten from the file** — the CLI always sends `overwrite_duplicates: true`. The call returns `{"status":"ok"}` either way. Only ONE label group is accepted and it must be the default one. |
 | `uip ixp projects update-title <project-name> "<new-title>" --output json` | Update the display title of a project |
 | `uip ixp projects update-prompt <project-name> --prompt "<text>" --output json` | Update the project's **Overall extraction instructions** — the taxonomy-wide prompt the model sees on every extraction (the field at the top of the IXP UI's Manage Taxonomy page). Distinct from per-field-group prompts (`groups update-prompts`) and per-field prompts (`fields update-prompts`). Replaces the existing value. |
@@ -66,7 +66,7 @@ Both `projects create` (bulk folder upload) and `documents upload` (single file)
 Validation differs by command:
 
 - `documents upload` rejects an unsupported file with `Unsupported file type "<ext>"` before any network call.
-- `projects create` scans only the top level of `<folder-path>` (sub-folders are ignored), silently skips unsupported files, and fails only when **no** supported files exist (`No supported documents found in <folder>`).
+- `projects create` scans only the top level of `<folder-path>` (sub-folders are ignored), silently skips unsupported files, and fails only when **no** supported files exist in it (`No supported documents found in <folder>`).
 
 Each upload triggers a retrain — wait it out before reading metrics or predictions for new docs, under the bounded wait in [Improve Prompts Guide § Waiting for retrain](improve-prompts-guide.md#waiting-for-retrain).
 
@@ -150,7 +150,7 @@ Structural edits to a field within an existing field group. For instruction-only
 | `uip ixp fields delete <project-name> --group <field-group-name> --field <name> -y --output json` | Remove a field from a field group. `-y, --yes` is **required** (the CLI never prompts). |
 | `uip ixp fields rename <project-name> --group <field-group-name> --field <name> --new-name <name> --output json` | Rename a field. Preserves `field_id` and existing annotations. |
 | `uip ixp fields change-type <project-name> --group <field-group-name> --field <name> --type <type-name> -y --output json` | Change a field's type. **IRREVERSIBLE** — the field is replaced by a new one, so all existing annotations for that field are deleted. `-y, --yes` is **required** (the CLI never prompts). |
-| `uip ixp fields update-prompts <project-name> --updates <json> --output json` | Bulk-update per-field extraction instructions. `--updates` is a JSON array `[{"name":"<field>","instructions":"..."}]` matched by `moon_form` field name (across all field groups). Existing field definitions are preserved. Unmatched names are reported in the response without failing the command. |
+| `uip ixp fields update-prompts <project-name> --updates <json> --output json` | Bulk-update per-field extraction instructions. `--updates` is a JSON array `[{"group":"<field-group>","name":"<field>","instructions":"..."}]` matched by `label_def` group name + `moon_form` field name. Existing field definitions are preserved. The command fails if a supplied group or field cannot be found. |
 
 ### Moving a field to a different field group
 

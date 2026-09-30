@@ -26,11 +26,6 @@ run_limits:
   max_turns: 60
   turn_timeout: 1200
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -62,9 +57,12 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Advisory: live-v1 agent refreshed the node manifest before searching"
+    # Consulting the node manifest, by either arm's path: v1 pulls then searches it; the
+    # builder SDK reads types from its package and reaches for `registry search` / `get`
+    # only for a name it does not know. `pull` alone named the v1 mechanism.
+    description: "Advisory: agent consulted the node manifest before authoring (registry pull, search or get)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+pull'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+(pull|search|get)\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 0.0

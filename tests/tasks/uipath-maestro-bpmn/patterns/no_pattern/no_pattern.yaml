@@ -15,11 +15,6 @@ run_limits:
   # 638s on run 34374073086.
   max_turns: 60
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -34,10 +29,10 @@ initial_prompt: |
   Then the process is done. There are no decisions, no approvals, and no
   variation between runs.
 
-  Author the structural BPMN yourself and get any UiPath extension payloads from
-  the registry. The file must include a bpmndi:BPMNDiagram. Validate locally
-  before finishing. Do not upload, publish, deploy, debug, run, or pack
-  anything, and do not pause for approval.
+  Author the process through your skill's authoring path, resolving any UiPath
+  extension node to its registered type and payload. The emitted `.bpmn` must
+  carry a bpmndi:BPMNDiagram. Validate locally before finishing. Do not upload,
+  publish, deploy, debug, run, or pack anything, and do not pause for approval.
 
 success_criteria:
   - type: file_exists

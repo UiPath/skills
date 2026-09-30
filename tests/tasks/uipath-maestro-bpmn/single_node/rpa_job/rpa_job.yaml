@@ -11,11 +11,6 @@ run_limits:
   expected_turns: 16
   max_turns: 80
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -27,16 +22,16 @@ initial_prompt: |
   manual start -> run an RPA workflow that extracts an invoice title -> end.
 
   Requirements:
-  - Discover the RPA-job extension type via the registry and author its node
-    from the registry template. Do not hand-author uipath:* XML from prose.
+  - Resolve the RPA-job extension type and its payload the way your skill
+    prescribes; do not invent uipath:* XML from prose.
   - Model the RPA invocation as a bpmn:serviceTask using the documented
     Orchestrator.StartJob uipath:activity wrapper.
   - Bind at least one job argument as the task's request input, and capture the
     job response into a declared process variable (BPMN.Variables).
   - Use synthetic placeholder resource keys only. Do not invent or paste real
     tenant URLs, folder keys, connection IDs, release keys, or user names.
-  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
-    for every sequence flow.
+  - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+    every node and an edge for every sequence flow.
   - Do not upload, publish, deploy, debug, run, or pack anything, and do not
     pause for approval or confirmation.
 

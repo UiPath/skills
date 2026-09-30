@@ -38,13 +38,41 @@ the BPMN engine and cannot establish that public input/output bridges or
 business outputs produce the intended runtime values. Do not describe `Valid`
 as a successful business execution.
 
-> **Don't conclude "it doesn't exist" from truncated discovery output.** A row past a cutoff reads exactly like a missing row. Two cutoffs bite here: `registry list` defaults to **30** — pass `--limit -1` for the full set — and piping `registry search`/`is connections list` through `head`/`tail`/`grep -m`/a pager drops everything past the cap. To check existence, narrow the query (keyword to `registry search`, `--all-folders` to connection lists) rather than capping rows; cap only data already known complete.
+> **Don't conclude "it doesn't exist" from truncated discovery output.** A row past a cutoff reads exactly like a missing row. Two cutoffs bite here: `registry list` defaults to **30** — pass `--limit -1` for the full set — and piping `registry search`/`is connections list` through `head`/`tail`/`sed -n`/`grep -m`/a pager drops everything past the cap. To check existence, narrow the query (keyword to `registry search`, `--all-folders` to connection lists) rather than capping rows; cap only data already known complete.
 
 ## Output parsing
 
-Whenever a CLI result is parsed programmatically, pass `--output json`. If a
-command does not support JSON, do not silently scrape human text; keep the step
-manual and tell the user.
+Whenever a CLI result is parsed programmatically, pass `--output json`, and
+redirect stdout only; stderr carries stack traces, so `2>&1` produces a file
+no JSON parser accepts. If a command does not support JSON, do not silently
+scrape human text; keep the step manual and tell the user.
+
+Every command returns one envelope. Envelope keys are fixed; match keys inside
+`Data` case-insensitively.
+
+| Key | Present | Use |
+| --- | --- | --- |
+| `Result` | always | `Success`, or `Failure` / `ConfigError` / `AuthenticationError` / `ValidationError` / `TimeoutError` |
+| `Code` | success; some failures | command tag (`RegistryPullSuccess`, `BpmnRefreshFailed`) |
+| `Data` | success | payload; shapes below |
+| `Message`, `Instructions` | failure | `Instructions` holds the actionable detail, including the validator's issue list |
+| `ErrorCode`, `Retry` | failure | `Retry: RetryWillNotFix` means fix the input; re-running unchanged fails again |
+| `Warning` | `uip is` reads | rows returned that cannot be used, e.g. connections not `Enabled` |
+
+Exit codes: `0` Success, `1` Failure/ConfigError, `2` AuthenticationError,
+`3` ValidationError, `4` TimeoutError.
+
+`Data` by command:
+
+| Command | `Data` |
+| --- | --- |
+| `registry pull` | `ExtensionTypeCount`, `ConnectorCount`, `ProcessCount`, `ProcessCountsByType`, `FromCache`, `CacheWritten`, `Message` |
+| `registry list`, `registry search` | `ExtensionTypes[]`, `Connectors[]`, `Processes[]`, `ProcessesByType` |
+| `registry get` | `ExtensionType` (fields in [registry-workflow.md](registry-workflow.md#2-get-the-template-for-each-chosen-type)); with `--connection-id`/`--object-name`, also a sibling `IsEnrichment` |
+| `is connections list` | array of `Id`, `Name`, `ConnectorKey`, `ConnectorName`, `State`, `Owner`, `IsDefault`, `ByoaConnection`, `ElementInstanceId`, `Folder`, `FolderKey`, `Created`, `Updated` |
+| `is resources list` | array of `Name`, `DisplayName`, `Path`, `Type`, `SubType`, `Custom`, `Operations`, `ElementKey` |
+| `is resources describe` | `Name`, `DisplayName`, `ElementKey`, `Operation`, `Parameters[]`, `RequestFields[]`, `ResponseFields[]`, `Method`. `Method` is a JSON **string**; parse it a second time |
+| `validate` | pass: `File`, `Status`, `ProcessCount`, `StartEventCount`, `UiPathExtensionCount`, `Warnings` (one string). Fail: no `Data`; every issue is in `Instructions` |
 
 ## Login boundary
 
@@ -60,4 +88,5 @@ Connection IDs, `releaseKey`/process keys, queue keys, connector keys, app IDs,
 folder IDs/paths — every concrete identifier comes from discovery
 (`registry get`, `registry search`, `uip is connections list`) or from the user.
 Never invent one. When a required identifier is unknown, leave the placeholder
-in place, flag it as a draft binding, and ask the user.
+in place and flag it as a draft binding (SKILL.md step 1); ask only under
+Rule 4.

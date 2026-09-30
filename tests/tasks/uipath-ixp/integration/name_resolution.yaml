@@ -31,6 +31,12 @@ reference:
   directory: .
 
 pre_run:
+  # Frees tenant quota before the seed creates its project: deletes `codereval-*`
+  # projects older than three hours, which earlier runs leaked. Always exits 0, and
+  # fail_on_error is off so even a timed-out sweep never costs the run.
+  - command: "python3 _setup/sweep_stale_projects.py"
+    timeout: 300
+    fail_on_error: false
   - command: 'IXP_SEED_TITLE_BASE="Codereval Name Resolution" python3 "_setup/seed_project.py"'
     timeout: 300
 

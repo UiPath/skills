@@ -10,11 +10,6 @@ run_limits:
   expected_turns: 20
   max_turns: 55
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -30,10 +25,10 @@ initial_prompt: |
   - The terminate end event carries a bare bpmn:terminateEventDefinition.
     Terminate is valid only on end events — do not attach it to any other node.
   - Both branches fan out from a fork gateway.
-  - Author the structural BPMN and the terminate payload per the skill's
-    structural reference; do not hand-author uipath:* XML from prose.
-  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
-    for every sequence flow.
+  - Author the structural BPMN and the terminate payload the way your skill
+    prescribes; do not invent uipath:* XML from prose.
+  - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+    every node and an edge for every sequence flow.
   - Validate the file locally before finishing by running
     `uip maestro bpmn validate <file>` (or a well-formed-XML parse if the CLI
     is unavailable).
@@ -43,9 +38,14 @@ initial_prompt: |
   implementation. Build the complete file end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
+  # Presence by the shared locator, not a root path: the v1 skill writes `TerminateParallel.bpmn`
+  # where it stands, the builder-SDK skill scaffolds `TerminateParallel/TerminateParallel.bpmn` — both are the
+  # task done. Same rule the grader below uses to find the file.
+  - type: run_command
     description: "BPMN source was authored"
-    path: "TerminateParallel.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py TerminateParallel"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 
@@ -78,7 +78,9 @@ success_criteria:
       approval for BPMN debug, process run, upload, publish, pack, or deploy
       commands. Exactly these commands are always acceptable and must NOT
       fail this check: `uip maestro bpmn validate` (offline validation of
-      local files), `uip maestro bpmn registry list/get/pull/search`
+      local files), `uip maestro bpmn format` (local diagram layout),
+      `uip maestro bpmn init` and `uip maestro bpmn refresh` (local scaffold
+      and metadata files), `uip maestro bpmn registry list/get/pull/search`
       (read-only catalog fetches), and `--help` invocations. Every command
       in the forbidden list above stays forbidden — including `pack`, even
       though it runs locally. Fail only if tool calls or the final answer

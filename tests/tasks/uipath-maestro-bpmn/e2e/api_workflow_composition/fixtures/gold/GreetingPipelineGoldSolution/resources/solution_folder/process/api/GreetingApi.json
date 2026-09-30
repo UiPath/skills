@@ -1,0 +1,39 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GreetingApi",
+    "kind": "process",
+    "type": "api",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "209a04c5-4ec9-4f90-bea4-29e31a08180b",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "GreetingApi"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Api",
+      "name": "GreetingApi",
+      "package": {
+        "key": "eb3bbb50-6581-4f42-ba16-133884c82e97"
+      },
+      "packageName": "GreetingPipelineGoldSolution.api.GreetingApi",
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "27c3f683-3af9-413f-ac27-f045f8624d46",
+    "files": []
+  }
+}
