@@ -36,6 +36,15 @@ def _norm(name):
     return re.sub(r"\s*\([^)]*\)\s*$", "", name).strip().lower()
 
 
+EXPECTS = {"reject-naming-line", "reject-naming-document", "read-as-seed"}
+
+
+def test_every_defect_declares_its_expected_outcome():
+    for d in DEFECTS:
+        assert d.get("expect") in EXPECTS, d["defect_class"]
+        assert (d["expect"] == "reject-naming-document") == (d["line"] is None)
+
+
 def test_manifest_lists_every_fixture():
     on_disk = {p.parent.name for p in (HERE / "fixtures").glob("*/sdd.md")}
     listed = {Path(d["fixture"]).parent.name for d in DEFECTS}
