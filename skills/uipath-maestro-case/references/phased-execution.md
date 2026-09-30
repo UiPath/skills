@@ -55,7 +55,7 @@ Run it **after** the Phase 1 registry gate and [planning.md Step 4](planning.md#
 
 **Version guard.** If the response names `sdd` or `convert` as an unknown command (typically `ErrorCode: "invalid_argument"`, exit 3), author Phase 2 by hand exactly as described below, say so in one line, and continue. Exit 3 *without* that command-specific message is a real failure — report it and do not fall back.
 
-**`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). There are **19 kinds** (the authoritative list is the `UnresolvedItem` union in the CLI's `sdd-convert/types.ts` — read it there, never retype it). The three below are the ones with a *named downstream closer*; every other kind is closed by the Phase 4 repair loop acting on the entry's own `detail`. Each is closed by a later step, not by re-deriving it from the SDD.
+**`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). There are **25 kinds** (the authoritative list is the `UnresolvedItem` union in the CLI's `sdd-convert/types.ts` — read it there, never retype it). The four below are the ones with a *named downstream closer*; every other kind is closed by the Phase 4 repair loop acting on the entry's own `detail`. Each is closed by a later step, not by re-deriving it from the SDD.
 
 > This table is the only place in this skill that names an `Unresolved` kind. That makes it the sole definition **and** the sole opportunity for an error — a kind added here and nowhere else has nothing to contradict it. Check a name against `types.ts` before trusting it.
 
@@ -64,6 +64,7 @@ Run it **after** the Phase 1 registry gate and [planning.md Step 4](planning.md#
 | `resource-binding` | which tenant resource a task runs | Phase 1 bindings — project `selected` into root bindings (Step 12 Check 7) |
 | `output-type` | an output's shape, which comes from the resolved resource's schema | Step 9, via `uip maestro case tasks describe` or `case spec` |
 | `connector-context` | `folderKey` and the connector version `metadata` | Phase 3 connector context (Step 12 Check 12) |
+| `task-grouping` | whether a stage's shared `runs-sequentially` tasks are parallel siblings or a strict chain (the stage declares no Activation Mode or Task set) | Phase 2 — read the stage's intent in the SDD; for a strict chain, move each named task into its own consecutive single-task set, keeping `runs-sequentially` as its only entry rule ([case-schema.md § Positioning](case-schema.md)); for siblings, leave the set as emitted |
 
 **The sidecar is not convert's job.** Convert emits the root `bindings[]` — two entries per resource, `name` and `folderPath` sharing one `resourceKey` — but never `bindings_v2.json`. That sidecar is still derived from those entries by `uip maestro case bindings sync` at the end of Step 9 and again at Step 12 Check 7, after resource resolution can still change them. Do not sync it here.
 
