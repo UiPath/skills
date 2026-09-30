@@ -1,7 +1,7 @@
 {
   "provenance": "agent-authored by a Claude Code session (skills-f0), 2026-09-30. Each document is an existing fixture SDD with exactly one defect injected, chosen from the measured defect inventory of the SDD-schema work (MST-15966), not from a prompt asking for sloppy writing.",
   "known_limit": "These documents prove only that a gate catches the defect classes measured so far. They are not hand-authored and say nothing about defects nobody has measured; real editor documents earn that later.",
-  "assertion": "Each defect carries its own `expect`. `reject-naming-line`: the gate (uip maestro case sdd validate, CLI A6) exits non-zero and names the recorded line; `reject-naming-document` is the same for a document with no line. `read-as-seed`: the parser deliberately tolerates the defect, so the fixture parses to exactly its seed's model; whether the gate also reports it as a format finding is recorded in `open`. The `observed` block records what one build did; it is not the assertion.",
+  "assertion": "Each defect carries its own `expect`. `reject-naming-line`: the gate (uip maestro case sdd validate, CLI A6) exits non-zero and names the recorded line; `reject-naming-document` is the same for a document with no line. `read-as-seed`: the parser deliberately tolerates the defect, so the fixture parses to exactly its seed's model; a `warning` names the non-fatal code and line the gate must also report. The `observed` block records what one build did; it is not the assertion.",
   "observed_build": {
     "uip": "1.204.0 via bun link to ~/src/cli",
     "cli_head": "1ffc137ba",
@@ -18,7 +18,7 @@
       "seed_blob": "33d473b7c478389f22975346a23dda1f9198854a",
       "original": "| 2 | Fraud Anomaly Detection | agent | No | No | system | — |",
       "degraded": "2 | Fraud Anomaly Detection | agent | No | No | system | — |",
-      "description": "Row 2 of Stage 3 (Finance Approval) `#### Tasks` loses its leading pipe. The row is valid GFM and renders, and Cliff chose to read it rather than reject it (CLI stack A, 2026-09-30), so the parser must keep this row and every row below it. Chosen from a sweep of this seed as the maximum task loss under the old table reader.",
+      "description": "Row 2 of Stage 3 (Finance Approval) `#### Tasks` loses its leading pipe. The row is valid GFM and renders, and Cliff chose to read it rather than reject it (CLI stack A, 2026-09-30), so the parser must keep this row and every row below it. Chosen from a sweep of this seed as the maximum task loss under the old table reader. `sdd validate` reports it as a non-fatal format warning at line 312 (Cliff, 2026-09-30); the parse stays tolerant.",
       "measured_in": "cli-f3 sweep of cm_golden_expense: 136/263 single-line pipe drops parse identically, 127 change the model; firstTable ends the table at a pipe-less line",
       "observed": {
         "parse": {
@@ -68,7 +68,10 @@
         "new_unresolved": []
       },
       "expect": "read-as-seed",
-      "open": "Whether `sdd validate` (CLI A6) also reports the missing pipe as a non-fatal format finding. Raised with diatribes-1c by cli-f3; undecided."
+      "warning": {
+        "code": "SDD_ROW_WITHOUT_OUTER_PIPES",
+        "line": 312
+      }
     },
     {
       "fixture": "fixtures/curly-quote-cell/sdd.md",

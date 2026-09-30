@@ -6,8 +6,9 @@
   issue's `Line` or, while a check still reports through the parse failure
   message, as "line <N>" in `Message`.
 - reject-naming-document: exits non-zero; there is no line to name.
-- read-as-seed: exits zero, and the fixture parses to exactly its seed's
-  Model while the seed blob is unchanged.
+- read-as-seed: exits zero, reports the defect's `warning` code at its line
+  when one is recorded, and parses to exactly its seed's Model while the seed
+  blob is unchanged.
 
 Needs `uip` on PATH. Skips without it unless REQUIRE_UIP=1, and skips in
 either case when the installed CLI has no `sdd validate`, so it switches
@@ -66,6 +67,10 @@ def test_gate_meets_expect(gate, d):
         assert d["line"] in lines or f"line {d['line']}" in (out.get("Message") or ""), out
     elif expect == "read-as-seed":
         assert code == 0, out
+        if "warning" in d:
+            w = d["warning"]
+            assert any(i.get("Code") == w["code"] and i.get("Line") == w["line"]
+                       and i.get("Severity") == "warning" for i in issues), out
         seed = REPO_ROOT / d["seed"]
         if _blob(seed) != d["seed_blob"]:
             pytest.skip("seed fixture has since changed; cannot compare models")
