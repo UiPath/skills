@@ -65,9 +65,8 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 
 ## Gotchas
 
-- See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules 17–20 and Anti-patterns 20–21 for the canonical rule list.
+- See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rules 17–20 and Anti-pattern 20 for the canonical rule list.
 - Pairing with file inputs: a `job-attachment` field renders metadata only in `{{input.<field>}}`. The agent reads contents only by calling a file-handling built-in tool. See [../../agent-definition.md](../../agent-definition.md) § File Attachments.
-- Runtime test path: built-in tools cannot be exercised end-to-end through the `uip` CLI. Test from Studio Web or via Orchestrator job invocation.
 
 ## References
 

@@ -105,8 +105,6 @@ Schema is canonical — copy verbatim. Only `id` (fresh UUID) and optionally `de
    uip agent debug <AGENT_PROJECT_DIR> --attachment fileIn=<FILE_PATH> --output json
    ```
 
-   Keep the file's real extension: the CLI infers `MimeType` from it, and Analyze Files rejects `application/octet-stream` — see [../../debug.md](../../debug.md) § Attachments. Studio Web and Orchestrator job invocation remain the other test paths.
-
 ## Gotchas
 
 - `properties.toolType` MUST be exactly `"analyze-attachments"` (kebab-lowercase). Anything else is silently ignored.

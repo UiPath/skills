@@ -72,4 +72,3 @@ uip traces spans get <TraceId> --output json
 - **Never use `uip agent debug` as a validation step.** Use `uip agent validate` for correctness; debug is for end-to-end execution.
 - **Don't skip `uip solution resources refresh` before debug when the agent has solution-level bindings** (external tools, IS, indexes, memory spaces, escalations). Stale declarations cause runtime binding failures even when `agent.json` is correct. Agents with only built-in tools don't need it.
 - **Never attempt `uip agent debug` for low-code conversational agents.** The debug command for conversational agents is not yet supported.
-- **Don't hand-write a `job-attachment` object in `--inputs` for a local file.** Use `--attachment <FIELD>=<FILE_PATH>`; reserve `{"ID":"<ATTACHMENT_ID>"}` in `--inputs` for reusing an attachment the CLI already uploaded. See § Attachments and [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Anti-pattern 20.
