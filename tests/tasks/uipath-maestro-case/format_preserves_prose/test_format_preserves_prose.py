@@ -10,6 +10,8 @@ prose there; a person editing the file does.
 
 - every non-table line of the original comes back byte-identical and in order
   (tables themselves may be normalized: outer pipes, separator, padding);
+- the first format reports Changed: true (the fixture's separator rows are
+  not normalized), so a format that does nothing cannot pass;
 - formatting twice is byte-identical to formatting once;
 - every table row keeps its cells, trimmed, in order — format may restore
   outer pipes, the separator and padding, never content, rows or columns.
@@ -98,6 +100,7 @@ def formatted(tmp_path_factory):
     if "unknown command" in (out.get("Message") or ""):
         pytest.skip("not checking: the installed CLI has no `sdd format`")
     assert code == 0, out
+    assert (out.get("Data") or {}).get("Changed") is True, "the fixture's tables are not normalized, so the first format must change them"
     once = doc.read_text(encoding="utf-8")
     code, out2 = _uip("format", str(doc))
     assert code == 0, out2
