@@ -100,6 +100,7 @@ ENV UIPATH_CLI_DISABLE_VERSION_SYNC=1 \
 # build output and history. The ARG fallback keeps the external nightly caller
 # compatible until that caller can migrate; do not use it for new callers.
 COPY tests/docker/cli-archive/ /opt/cli-archive/
+COPY tests/docker/warm-unbundled-deps.js /opt/cli-archive/warm-unbundled-deps.js
 RUN --mount=type=secret,id=npm_auth_token \
     set -euo pipefail && \
     case "$CLI_SOURCE" in \
@@ -130,9 +131,7 @@ RUN --mount=type=secret,id=npm_auth_token \
       [0-9]*)   public_cli=true ;; \
       *)        public_cli=false ;; \
     esac && \
-    if [ "$CLI_SOURCE" = archive ]; then \
-      node /opt/cli-archive/install.js; \
-    elif [ "$public_cli" = true ]; then \
+    if [ "$CLI_SOURCE" != archive ] && [ "$public_cli" = true ]; then \
       npm install -g --registry=https://registry.npmjs.org "@uipath/cli@${CLI_VERSION}"; \
     fi && \
     npmrc="$(npm config get globalconfig)" && \
@@ -141,7 +140,11 @@ RUN --mount=type=secret,id=npm_auth_token \
       '@uipath:registry=https://npm.pkg.github.com/' \
       "//npm.pkg.github.com/:_authToken=${npm_auth_token}" \
       > "$npmrc" && \
-    if [ "$CLI_SOURCE" != archive ] && [ "$public_cli" = false ]; then \
+    if [ "$CLI_SOURCE" = archive ]; then \
+      node /opt/cli-archive/warm-unbundled-deps.js warm /opt/cli-archive && \
+      NPM_CONFIG_IGNORE_SCRIPTS=true node /opt/cli-archive/install.js && \
+      node /opt/cli-archive/warm-unbundled-deps.js audit /opt/cli-archive; \
+    elif [ "$public_cli" = false ]; then \
       npm install -g "@uipath/cli@${CLI_VERSION}"; \
     fi && \
     mkdir -p "$PREVIEW_FLOW_SDK_ROOT" "$PREVIEW_FLOW_SDK_ASSETS_ROOT" && \
