@@ -22,7 +22,7 @@ from bpmn_assertions import (  # noqa: E402
     fail,
     load_bpmn,
 )
-from graph import ids, reachable, reaches  # noqa: E402
+from graph import edges, ids, reachable, reaches  # noqa: E402
 
 BPMN = "VendorOnboarding/VendorOnboarding.bpmn"
 OUTCOME_RE = re.compile(r"vars\.([A-Za-z_][A-Za-z0-9_]*)")
@@ -36,6 +36,16 @@ def gates_stage(
     if review_id in reachable(root, join_id, blocked={gate_id}):
         return False
     return bool(reachable(root, gate_id, blocked=reviews) & end_ids)
+
+
+def verdict_gates(root, review_id: str, gate_ids: set[str]) -> set[str]:
+    before_gate = {review_id} | reachable(root, review_id, blocked=gate_ids)
+    return {target for source, target in edges(root) if source in before_gate and target in gate_ids}
+
+
+def can_reject(root, gate_id: str, end_ids: set[str]) -> bool:
+    exits = [target for source, target in edges(root) if source == gate_id]
+    return len(exits) >= 2 and bool(reachable(root, gate_id) & end_ids)
 
 
 def main() -> None:
@@ -89,6 +99,12 @@ def main() -> None:
                 f"{review_id} is reachable from {join_id} without an exclusive gateway "
                 "that can exit to an end past every later review, so a parallel rejection still reaches it"
             )
+
+        # And each later review's own verdict is gated before the process can end.
+        if reachable(root, review_id, blocked=gate_ids) & end_ids:
+            fail(f"{review_id} reaches an end without an exclusive gateway, so its rejection cannot stop the chain")
+        if not any(can_reject(root, g, end_ids) for g in verdict_gates(root, review_id, gate_ids)):
+            fail(f"no exclusive gateway after {review_id} offers a second route to an end, so its rejection has no exit")
 
     # Per-approver outcomes: conditions must read more than one distinct
     # variable, or the last approver has overwritten everyone else's verdict.
