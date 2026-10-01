@@ -408,9 +408,9 @@ resourceKey`. `process` and `queue` bindings carry `resourceKey` from
 same `resourceKey`, the rule key:
 
 ```xml
-<uipath:binding id="Binding_RuleKey"    name="BusinessRule" type="string" resource="BusinessRule" propertyAttribute="Key"        resourceKey="&lt;rule-key&gt;" default="&lt;rule-key&gt;" />
-<uipath:binding id="Binding_RuleName"   name="name"         type="string" resource="BusinessRule" propertyAttribute="name"       resourceKey="&lt;rule-key&gt;" default="&lt;rule-name&gt;" />
-<uipath:binding id="Binding_RuleFolder" name="folderPath"   type="string" resource="BusinessRule" propertyAttribute="folderPath" resourceKey="&lt;rule-key&gt;" default="" />
+<uipath:binding id="Binding_RuleKey"    name="BusinessRule" type="string" resource="BusinessRule" propertyAttribute="Key"        resourceKey="<RULE_KEY>" default="<RULE_KEY>" />
+<uipath:binding id="Binding_RuleName"   name="name"         type="string" resource="BusinessRule" propertyAttribute="name"       resourceKey="<RULE_KEY>" default="<RULE_NAME>" />
+<uipath:binding id="Binding_RuleFolder" name="folderPath"   type="string" resource="BusinessRule" propertyAttribute="folderPath" resourceKey="<RULE_KEY>" default="" />
 ```
 
 A folder-scoped connector activity needs TWO bindings that share one
@@ -494,8 +494,8 @@ the template's second bug.** Verified end-to-end for
    `bindingInfo` already documents (see [§4
    Bindings](#4-bindings--from-bindinginfo-never-invented) above): a
    process-kind `<uipath:binding resource="process" propertyAttribute="Key"
-   resourceKey="<resolved-key>" default="<resolved-key>" />`, referenced from the context as
-   `=bindings.<id>`. Resolve `<resolved-key>` from `uip or processes list
+   resourceKey="<RELEASE_KEY>" default="<RELEASE_KEY>" />`, referenced from the context as
+   `=bindings.<id>`. Resolve `<RELEASE_KEY>` from `uip or processes list
    --folder-path <path> --output json` → the deployed resource's
    `Key` — never leave the template's `{releaseKey}` placeholder unresolved.
 2. **The template's `folderId` context field is misnamed — the runtime reads
