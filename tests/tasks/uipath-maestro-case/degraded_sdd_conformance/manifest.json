@@ -269,12 +269,12 @@
         "parse": {
           "result": "Failure",
           "exit": 1,
-          "message": "Could not parse /Users/cliff/src/skills-wt-degraded/tests/tasks/uipath-maestro-case/degraded_sdd_conformance/fixtures/parenthetical-collision/sdd.md: the Case Variables table declares variables the parser cannot tell apart: \"invoiceAmount\" on line 69 and \"invoiceAmount (tax)\" on line 70 both read as \"invoiceamount\". Each pair would merge into one variable with one Category, Type and Default. Rename one of each pair so the names differ by more than case, punctuation or a trailing (annotation)."
+          "message": "Could not parse parenthetical-collision/sdd.md: the Case Variables table declares variables the parser cannot tell apart: \"invoiceAmount\" on line 69 and \"invoiceAmount (tax)\" on line 70 both read as \"invoiceamount\". Each pair would merge into one variable with one Category, Type and Default. Rename one of each pair so the names differ by more than case, punctuation or a trailing (annotation)."
         },
         "convert": {
           "result": "Failure",
           "exit": 1,
-          "message": "Could not parse /Users/cliff/src/skills-wt-degraded/tests/tasks/uipath-maestro-case/degraded_sdd_conformance/fixtures/parenthetical-collision/sdd.md: the Case Variables table declares variables the parser cannot tell apart: \"invoiceAmount\" on line 69 and \"invoiceAmount (tax)\" on line 70 both read as \"invoiceamount\". Each pair would merge into one variable with one Category, Type and Default. Rename one of each pair so the names differ by more than case, punctuation or a trailing (annotation)."
+          "message": "Could not parse parenthetical-collision/sdd.md: the Case Variables table declares variables the parser cannot tell apart: \"invoiceAmount\" on line 69 and \"invoiceAmount (tax)\" on line 70 both read as \"invoiceamount\". Each pair would merge into one variable with one Category, Type and Default. Rename one of each pair so the names differ by more than case, punctuation or a trailing (annotation)."
         },
         "seed_parse": {
           "result": "Success",
