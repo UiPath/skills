@@ -403,9 +403,15 @@ block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, an
 `default` value (the resolved key or id). On a **connection** binding
 `resourceKey` is required too — omitting it fails `validate` with
 `Integration Service activity connection binding "<id>" is missing
-resourceKey`. A `BusinessRule` binding carries the rule key as `resourceKey`.
-Other binding kinds (`process`, `queue`) carry no `resourceKey`; do not invent
-one.
+resourceKey`. `process` and `queue` bindings carry `resourceKey` from
+`bindingInfo.resourceKeyPattern`. All three `BusinessRule` bindings carry the
+same `resourceKey`, the rule key:
+
+```xml
+<uipath:binding id="Binding_RuleKey"    name="BusinessRule" type="string" resource="BusinessRule" propertyAttribute="Key"        resourceKey="&lt;rule-key&gt;" default="&lt;rule-key&gt;" />
+<uipath:binding id="Binding_RuleName"   name="name"         type="string" resource="BusinessRule" propertyAttribute="name"       resourceKey="&lt;rule-key&gt;" default="&lt;rule-name&gt;" />
+<uipath:binding id="Binding_RuleFolder" name="folderPath"   type="string" resource="BusinessRule" propertyAttribute="folderPath" resourceKey="&lt;rule-key&gt;" default="" />
+```
 
 A folder-scoped connector activity needs TWO bindings that share one
 `resourceKey` (the connection id) and differ in `propertyAttribute`: the
