@@ -494,7 +494,7 @@ the template's second bug.** Verified end-to-end for
    `bindingInfo` already documents (see [§4
    Bindings](#4-bindings--from-bindinginfo-never-invented) above): a
    process-kind `<uipath:binding resource="process" propertyAttribute="Key"
-   default="<resolved-key>" />`, referenced from the context as
+   resourceKey="<resolved-key>" default="<resolved-key>" />`, referenced from the context as
    `=bindings.<id>`. Resolve `<resolved-key>` from `uip or processes list
    --folder-path <path> --output json` → the deployed resource's
    `Key` — never leave the template's `{releaseKey}` placeholder unresolved.
