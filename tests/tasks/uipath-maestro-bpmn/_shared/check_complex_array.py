@@ -32,23 +32,16 @@ Usage:
 from __future__ import annotations
 
 import os
-import re
 import sys
-import xml.etree.ElementTree as ET
-from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import NS, context_value, fail, parse_bpmn  # noqa: E402
-from _shared.check_slack_multiselect import slack_tasks  # noqa: E402
+from _shared.bpmn_check import parse_bpmn  # noqa: E402
+from _shared.check_slack_multiselect import require_connection, require_ids  # noqa: E402
 
 PROJECT_HINT = "ComplexArrayTest"
 RECIPIENT_IDS = ("U0B7Y855WGG", "U05Q882RHFZ")
 SHARED_CONNECTION_ID = "2bbc2253-29a4-4952-a436-6705d74e5943"
-CONNECTION_RESOURCE = "Connection"
-CONNECTION_ID_ATTRIBUTE = "ConnectionId"
-
-_BINDING_REF_RE = re.compile(r"=bindings\.(\S+)")
 
 
 def check_parse() -> None:
@@ -57,49 +50,11 @@ def check_parse() -> None:
 
 
 def check_ids() -> None:
-    path, _root = parse_bpmn(PROJECT_HINT)
-    text = Path(path).read_text(encoding="utf-8", errors="replace")
-    missing = [uid for uid in RECIPIENT_IDS if uid not in text]
-    for uid in RECIPIENT_IDS:
-        print(f"{'OK     ' if uid not in missing else 'MISSING'} {uid}")
-    if missing:
-        fail(f"resolved Slack user id(s) not found in {path}: {missing}")
-    print(f"OK: {path} references both resolved Slack user ids")
-
-
-def _bound_connection(root: ET.Element, task: ET.Element) -> str:
-    value = context_value(task, "connection")
-    match = _BINDING_REF_RE.fullmatch(value)
-    if not match:
-        return f"connection {value!r} is not =bindings.<id>"
-
-    binding_id = match.group(1)
-    for binding in root.findall(".//uipath:binding", NS):
-        if binding.attrib.get("id") != binding_id:
-            continue
-        if binding.attrib.get("resource") != CONNECTION_RESOURCE:
-            continue
-        if binding.attrib.get("propertyAttribute") != CONNECTION_ID_ATTRIBUTE:
-            continue
-
-        key = binding.attrib.get("resourceKey", "")
-        default = binding.attrib.get("default", "")
-        if key != default:
-            return f"binding {binding_id} resourceKey {key!r} != default {default!r}"
-        return key
-    return f"no {CONNECTION_RESOURCE}/{CONNECTION_ID_ATTRIBUTE} binding {binding_id!r}"
+    require_ids(PROJECT_HINT, RECIPIENT_IDS)
 
 
 def check_connection() -> None:
-    path, root = parse_bpmn(PROJECT_HINT)
-    tasks = slack_tasks(root)
-    if not tasks:
-        fail(f"no Slack connector task in {path}")
-
-    bound = {_bound_connection(root, task) for task in tasks}
-    if bound != {SHARED_CONNECTION_ID}:
-        fail(f"Slack task bound to {sorted(bound)}, expected {SHARED_CONNECTION_ID}")
-    print(f"OK: {path} Slack task bound to {SHARED_CONNECTION_ID}")
+    require_connection(PROJECT_HINT, SHARED_CONNECTION_ID)
 
 
 def main() -> None:

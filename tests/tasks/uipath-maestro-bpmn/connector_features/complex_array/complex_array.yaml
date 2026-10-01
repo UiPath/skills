@@ -34,7 +34,8 @@ reference:
 
 # The recipients live on the Slack connection in the top-level `Shared` folder
 # (2bbc2253…). The connection in `Shared/uipath-maestro-flow` (849e85d8…) has
-# neither name.
+# neither name. The ids and the connection pin assume the CI tenant (alpha,
+# codereval).
 #
 # Each recipient must match exactly one Slack user, or the populated check below
 # cannot pass. "Coder Eval" is deliberately NOT used: it is a prefix of "Coder

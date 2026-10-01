@@ -48,6 +48,7 @@ reference:
 # name, or after the connection changes (read-only):
 #   uip is resources run list uipath-salesforce-slack curated_users \
 #     --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --output json
+# The ids and the connection pin assume the CI tenant (alpha, codereval).
 initial_prompt: |
   Create a UiPath Maestro BPMN process to create a Slack group direct message
   between Coder Evals, IS-sandboxes@uipath.com and E2E-Testing.
@@ -86,6 +87,22 @@ success_criteria:
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: the three recipients resolved to their Slack user IDs (Coder Evals, IS-sandboxes@uipath.com, E2E-Testing)"
+    command: "python3 $REFERENCE_DIR/_shared/check_multiselect.py --ids"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "The Slack node is bound to the Shared/uipath-maestro-flow Slack connection the prompt names"
+    command: "python3 $REFERENCE_DIR/_shared/check_multiselect.py --connection"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command

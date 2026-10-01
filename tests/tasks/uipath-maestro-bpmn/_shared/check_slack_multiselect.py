@@ -36,6 +36,8 @@ Assertion map (Flow -> BPMN):
       consumes; several inputs fail (they don't merge at runtime)            -> bpmn_check.body_object()
   T   every users entry is a Slack user id (^[UW][A-Z0-9]+$), so a display
       name in the array fails                                                -> is_user_id()
+  T   the count is of distinct ids, so one id repeated does not pass         -> len(set(users))
+  T   shared by both tasks' --ids / --connection criteria                    -> require_ids(), require_connection()
   DROPPED  require_no_private_connector_values, require_sequence_integrity,
            require_di_for_visible_elements (not in Flow; `bpmn validate`
            criterion covers structure)
@@ -52,6 +54,7 @@ import os
 import re
 import sys
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -69,8 +72,12 @@ from _shared.bpmn_check import (  # noqa: E402
 SLACK_KEY = "uipath-salesforce-slack"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 
+CONNECTION_RESOURCE = "Connection"
+CONNECTION_ID_ATTRIBUTE = "ConnectionId"
+
 _USERS_KEY_RE = re.compile(r"users(\[.*\])?")
 _SLACK_USER_ID_RE = re.compile(r"[UW][A-Z0-9]+")
+_BINDING_REF_RE = re.compile(r"=bindings\.(\S+)")
 
 
 def slack_tasks(root: ET.Element) -> list[ET.Element]:
@@ -140,6 +147,53 @@ def find_users(obj):
     return None
 
 
+def bound_connection(root: ET.Element, task: ET.Element) -> str:
+    """The connection id ``task`` is bound to, else why it is not bound."""
+    value = context_value(task, "connection")
+    match = _BINDING_REF_RE.fullmatch(value)
+    if not match:
+        return f"connection {value!r} is not =bindings.<id>"
+
+    binding_id = match.group(1)
+    for binding in root.findall(".//uipath:binding", NS):
+        if binding.attrib.get("id") != binding_id:
+            continue
+        if binding.attrib.get("resource") != CONNECTION_RESOURCE:
+            continue
+        if binding.attrib.get("propertyAttribute") != CONNECTION_ID_ATTRIBUTE:
+            continue
+
+        key = binding.attrib.get("resourceKey", "")
+        default = binding.attrib.get("default", "")
+        if key != default:
+            return f"binding {binding_id} resourceKey {key!r} != default {default!r}"
+        return key
+    return f"no {CONNECTION_RESOURCE}/{CONNECTION_ID_ATTRIBUTE} binding {binding_id!r}"
+
+
+def require_connection(name_hint: str | None, connection_id: str) -> None:
+    path, root = parse_bpmn(name_hint)
+    tasks = slack_tasks(root)
+    if not tasks:
+        fail(f"no Slack connector task in {path}")
+
+    bound = {bound_connection(root, task) for task in tasks}
+    if bound != {connection_id}:
+        fail(f"Slack task bound to {sorted(bound)}, expected {connection_id}")
+    print(f"OK: {path} Slack task bound to {connection_id}")
+
+
+def require_ids(name_hint: str | None, ids: tuple[str, ...]) -> None:
+    path, _root = parse_bpmn(name_hint)
+    text = Path(path).read_text(encoding="utf-8", errors="replace")
+    missing = [uid for uid in ids if uid not in text]
+    for uid in ids:
+        print(f"{'OK     ' if uid not in missing else 'MISSING'} {uid}")
+    if missing:
+        fail(f"resolved Slack user id(s) not found in {path}: {missing}")
+    print(f"OK: {path} references every resolved Slack user id")
+
+
 def main() -> None:
     expected_count = (
         "populated"
@@ -176,11 +230,11 @@ def main() -> None:
                 sys.exit(0)
             reasons.append(f"node '{node_id}': users field is empty")
             continue
-        if len(users) == expected_count:
+        if len(set(users)) == expected_count:
             print(f"OK: {path} — node '{node_id}' users={users}")
             sys.exit(0)
         reasons.append(
-            f"node '{node_id}': users field has {len(users)} entries, "
+            f"node '{node_id}': users field has {len(set(users))} distinct entries, "
             f"expected {expected_count}: {users}"
         )
 
