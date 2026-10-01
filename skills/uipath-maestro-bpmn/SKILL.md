@@ -302,7 +302,8 @@ For registry-evidence-only tasks, follow the command-first recipe in
    artifact the CLI must supply.
    Run `uip maestro bpmn refresh <project-path>` after any edit that changes a
    start event id or adds or removes an entry point — **not only when packaging
-   or operating**. Lay the diagram out first (step 4): `refresh` validates
+   or operating**; a trigger-start draft (below) is the exception. Lay the
+   diagram out first (step 4): `refresh` validates
    before it writes, so a node you just added fails it with `MISSING_DI_SHAPE`. `operate.json` and `entry-points.json` are generated once and
    do not follow source edits, so step 5's validator fails on the mismatch:
    `entry-points.json references start event "Event_start" via filePath, but no
@@ -321,13 +322,15 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements`;
    without one `refresh` fails the whole project `RetryWillNotFix` instead of
    writing an empty entry-point list. When the request names a trigger as the
-   start and does not ask to package or operate, the trigger replaces the
-   manual start: turn the initializer's `Event_start` into the trigger in
-   place, keeping its id and its `uipath:entryPointId` child, add no second
-   start, and skip `refresh` (it fails with no manual start);
-   `entry-points.json` stays valid. A request to package or operate keeps the
-   manual `Event_start`, gives the trigger its own start id, joins the two
-   per [Gateways](references/structural-bpmn.md#gateways), and runs `refresh`.
+   start and asks for no package-ready, upload, debug, publish, or deploy
+   deliverable, it is a trigger-start draft: turn the initializer's
+   `Event_start` into the trigger in place, keeping its id and its
+   `uipath:entryPointId` child, add no second start, and skip `refresh` (it
+   fails with no manual start), even after binding a connection;
+   `entry-points.json` stays valid. Any of those deliverables, including a
+   later one on such a draft, keeps the manual `Event_start`, gives the
+   trigger its own start id, joins the two per
+   [Gateways](references/structural-bpmn.md#gateways), and runs `refresh`.
    A recurring timer is a `timeCycle` with an `R/` repeat (`R/P1D`), not the
    template's `timeDuration`. Clearing a stale-entry error by editing or
    deleting `entry-points.json` instead of running `refresh` passes
@@ -413,8 +416,9 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `project.uiproj`, re-run steps 4 and 5, and refresh again — never repair the generated
    JSON by hand. Refresh after binding a connection (step 1) and for a
    package-ready, upload, debug, publish, or deploy deliverable; a source-only
-   draft needs it only for step 3's start-event edits. For the full
-   contract (scope, idempotency, binding rules) see
+   draft needs it only for step 3's start-event edits, and a trigger-start
+   draft (step 3) skips it. For the full contract (scope, idempotency,
+   binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
 ## Operate and diagnose
