@@ -41,7 +41,7 @@ Examples are **VB** (default expression language; bracket `[expr]` in XAML attri
 **Coded-only — these do NOT compile in any XAML expression:** the C# `out` **parameter** keyword (e.g. `int.TryParse(s, out int n)` — this is the C# `out` keyword, *not* a workflow/XAML `OutArgument`), null-propagation `?.` / `?[]`, the null-coalescing `??`, and collection initializers (`new Dictionary<…>{ … }`). They work only in coded (`.cs`) workflows. They fail in a VB XAML `Assign`, and — despite being "C#" — also fail **inside `CSharpValue`** in a C#-expression XAML project, because XAML binds expressions as expression trees that forbid them (CS8198 `out`, CS8072 `?.`, CS8074 initializer; statement-body lambdas/IIFEs fail CS0834).
 
 **XAML-safe forms instead** (both VB and C# expression projects):
-- Parse: pre-declare `n`, use the composite VB `If(Integer.TryParse(s, n), n, 0)` (C#-expression XAML: there is no `out`-free `TryParse`, so do the parse in a coded workflow or accept the VB form — `out` cannot appear in `CSharpValue`).
+- Parse: pre-declare `n`, use the composite VB `If(Integer.TryParse(s, n), n, 0)` (C#-expression XAML: there is no `out`-free `TryParse`, so do the parse in a coded helper or workflow, or accept the VB form — `out` cannot appear in `CSharpValue`).
 - Null-safe: `If(x Is Nothing, "", x.ToString())` (VB) — not `?.`/`??`.
 - Build a dictionary across `Assign`s / `Invoke Method`, not an inline initializer.
 
@@ -55,7 +55,7 @@ See [csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 | Expression filter, no new columns | `dt.Select("[Amount] > 1000")` | returns `DataRow()`; string match is **case-INSENSITIVE** by default; SQL-ish syntax |
 | Filter/sort/group/join/project | **LINQ** in one `Assign` | most flexible; ~2× faster than Join Data Tables on large sets |
 | Heavy multi-step transforms, unit-tested logic, safe accessors | **coded** (`.cs`) | C# LINQ inline; see § When to move to coded |
-| Multi-step transform inside a **C#-expression XAML** workflow | **Invoke Code** (or coded workflow via Invoke Workflow File) | C# XAML expression trees forbid statements/`out var`/optional-arg overloads (`CS0854`); helper `.cs` types unreachable — see § Exception below |
+| Multi-step transform inside a **C#-expression XAML** workflow | **Helper method in a Coded Source File**, Invoke Code, or a coded workflow via Invoke Workflow File | C# XAML expression trees forbid statements/`out var`/optional-arg overloads (`CS0854`); a helper's body is plain C# — see § Exception below |
 | Key-value config / counters | `Dictionary(Of K,V)` | |
 | Tabular data | `DataTable` | typed columns; LINQ via `.AsEnumerable()` |
 
@@ -65,21 +65,19 @@ See [csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 
 When a transform genuinely outgrows expressions — >2 statement steps, a reusable safe accessor/helper, mutating rows in a loop, real try/catch around a parse, or an unreadable one-liner — move to a **coded (`.cs`) workflow** ([coded/operations-guide.md](coded/operations-guide.md)), still not `Invoke Code`. Coded gives `?.`, `out var`, multi-statement logic, and unit tests.
 
-### Exception: C#-expression XAML workflows — Invoke Code or a coded workflow via Invoke Workflow File; NEVER a helper `.cs` source file
+### Exception: C#-expression XAML workflows — the transform leaves the expression
 
-When the transform must live inside a C#-expression XAML workflow, two hard limits change the advice above:
+When the transform must live inside a C#-expression XAML workflow, one hard limit changes the advice above: C# XAML expressions compile as expression trees — no statements, no `out var` (`TryParse`), no optional-argument overloads (`CS0854`) ([xaml/common-pitfalls.md § C# XAML Expressions Compile as Expression Trees](xaml/common-pitfalls.md)).
 
-1. XAML expressions cannot reference the project's coded source file (`.cs`) types — `CS0103` at validate/build ([xaml/common-pitfalls.md § XAML Expressions Cannot Reference Coded Source File Types](xaml/common-pitfalls.md)). A helper class in a Coded Source File is unreachable from XAML expressions, period.
-2. C# XAML expressions compile as expression trees — no statements, no `out var` (`TryParse`), no optional-argument overloads (`CS0854`) ([xaml/common-pitfalls.md § C# XAML Expressions Compile as Expression Trees](xaml/common-pitfalls.md)).
+Three valid escalations:
 
-Two valid escalations:
-
+- **Helper method in a Coded Source File** — a `public static` method of a plain `.cs` class; the expression calls it (`NameRules.LastWord(name)`) and its body is ordinary C#. The workflow imports the class's namespace ([xaml/common-pitfalls.md § Coded Source File Types in XAML Expressions Need a Namespace Import](xaml/common-pitfalls.md)).
 - **`Invoke Code`** — logic stays inline in the XAML; data in/out via its Arguments collection; author `Code` as an XML attribute ([xaml/common-pitfalls.md § InvokeCode Code Property](xaml/common-pitfalls.md)).
-- **Coded Workflow invoked via `Invoke Workflow File`** — logic moves to a `.cs` file carrying `[Workflow]` + `Execute` (a Coded *Workflow*, not a bare source file); the XAML calls it like any child workflow (see § Source file vs workflow below).
+- **Coded Workflow invoked via `Invoke Workflow File`** — logic moves to a `.cs` file carrying `[Workflow]` + `Execute`; the XAML calls it like any child workflow (see § Source file vs workflow below). Use it when the logic needs the coded services or activities.
 
-**Code vs activity chains for row processing:** unless the user states a preference, complex bulk row processing (per-row parse + validate + branch + accumulate) goes to **code** — one of the two escalations above — not an activity chain. Nested `If`/`Switch` levels inside a `ForEach` become unreadable, trip the analyzer nesting threshold, and every embedded expression re-fights the expression-tree limits. A simple `ForEach` row with ONE `If` or `Switch` is fine as plain XAML activities — more readable than code for that size.
+**Code vs activity chains for row processing:** unless the user states a preference, complex bulk row processing (per-row parse + validate + branch + accumulate) goes to **code** — one of the escalations above — not an activity chain. Nested `If`/`Switch` levels inside a `ForEach` become unreadable, trip the analyzer nesting threshold, and every embedded expression re-fights the expression-tree limits. A simple `ForEach` row with ONE `If` or `Switch` is fine as plain XAML activities — more readable than code for that size.
 
-**Source file vs workflow — and how to call it:** a bare **Coded Source File** (helper class, no entry point) is callable only from other code. To invoke the logic from a XAML process, make it a **Coded Workflow** (`[Workflow]` + `Execute`) and call it via **Invoke Workflow File** (from XAML) or `RunWorkflow` / the typed `workflows` property (from coded) — see [coded/operations-guide.md](coded/operations-guide.md).
+**Source file vs workflow — and how to call it:** a bare **Coded Source File** (helper class, no entry point) is called from expressions — XAML after the namespace import, or coded. A **Coded Workflow** (`[Workflow]` + `Execute`) is invoked as a step: via **Invoke Workflow File** (from XAML) or `RunWorkflow` / the typed `workflows` property (from coded) — see [coded/operations-guide.md](coded/operations-guide.md).
 
 Tabular *source/sink*: modern projects use the **Use Excel File** scope (not classic Excel Application Scope) — route to the Excel activity docs.
 
