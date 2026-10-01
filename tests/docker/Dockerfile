@@ -17,6 +17,14 @@ ARG NPM_AUTH_TOKEN=
 # and ETARGETs. A pin freezes the CLI; the tools ride the train's tag.
 ARG CLI_VERSION=dev
 
+# Where the CLI comes from. `registry` (default) installs CLI_VERSION as below.
+# `archive` installs @uipath/cli, every tool and @uipath/skills offline from a
+# UiPath/cli export-airgapped.yml archive that the workflow downloaded into
+# tests/docker/cli-archive/ (run-coder-eval.yml's cli_archive_run_id). Use it to
+# evaluate an unreleased CLI stack: a registry install would pair registry tools
+# with the stack's host, so the run would not test the stack.
+ARG CLI_SOURCE=registry
+
 # The builder SDK is released independently from the CLI. Follow its rolling
 # release just as CLI_VERSION follows the live CLI train; callers can still
 # override this with an exact version for a reproducible comparison.
@@ -91,8 +99,14 @@ ENV UIPATH_CLI_DISABLE_VERSION_SYNC=1 \
 # campaign builds provide it through the BuildKit secret so it is absent from
 # build output and history. The ARG fallback keeps the external nightly caller
 # compatible until that caller can migrate; do not use it for new callers.
+COPY tests/docker/cli-archive/ /opt/cli-archive/
 RUN --mount=type=secret,id=npm_auth_token \
     set -euo pipefail && \
+    case "$CLI_SOURCE" in \
+      registry) ;; \
+      archive) test -f /opt/cli-archive/install.js || { echo "Error: CLI_SOURCE=archive but tests/docker/cli-archive/ holds no install.js"; exit 1; } ;; \
+      *) echo "Error: CLI_SOURCE must be registry or archive, got '$CLI_SOURCE'"; exit 1 ;; \
+    esac && \
     npm_auth_token="" && \
     if [ -s /run/secrets/npm_auth_token ]; then \
       npm_auth_token="$(cat /run/secrets/npm_auth_token)"; \
@@ -116,7 +130,9 @@ RUN --mount=type=secret,id=npm_auth_token \
       [0-9]*)   public_cli=true ;; \
       *)        public_cli=false ;; \
     esac && \
-    if [ "$public_cli" = true ]; then \
+    if [ "$CLI_SOURCE" = archive ]; then \
+      node /opt/cli-archive/install.js; \
+    elif [ "$public_cli" = true ]; then \
       npm install -g --registry=https://registry.npmjs.org "@uipath/cli@${CLI_VERSION}"; \
     fi && \
     npmrc="$(npm config get globalconfig)" && \
@@ -125,7 +141,7 @@ RUN --mount=type=secret,id=npm_auth_token \
       '@uipath:registry=https://npm.pkg.github.com/' \
       "//npm.pkg.github.com/:_authToken=${npm_auth_token}" \
       > "$npmrc" && \
-    if [ "$public_cli" = false ]; then \
+    if [ "$CLI_SOURCE" != archive ] && [ "$public_cli" = false ]; then \
       npm install -g "@uipath/cli@${CLI_VERSION}"; \
     fi && \
     mkdir -p "$PREVIEW_FLOW_SDK_ROOT" "$PREVIEW_FLOW_SDK_ASSETS_ROOT" && \
@@ -152,14 +168,18 @@ RUN --mount=type=secret,id=npm_auth_token \
     uip tools search --output json > /tmp/uip-tools-search.json && \
     tools="$(grep -oE '@uipath/[a-z0-9-]+-tool' /tmp/uip-tools-search.json | sort -u || true)" && \
     installed=0 && \
-    for tool in $tools; do \
-      echo "Installing ${tool}@${tool_tag}" && \
-      if npm install -g "${tool}@${tool_tag}"; then \
-        installed=$((installed + 1)); \
-      else \
-        echo "WARN: ${tool}@${tool_tag} not installed (no build on this train?) — skipping"; \
-      fi; \
-    done && \
+    if [ "$CLI_SOURCE" = archive ]; then \
+      installed="$(ls -d "$(npm root -g)"/@uipath/*-tool 2>/dev/null | wc -l)"; \
+    else \
+      for tool in $tools; do \
+        echo "Installing ${tool}@${tool_tag}" && \
+        if npm install -g "${tool}@${tool_tag}"; then \
+          installed=$((installed + 1)); \
+        else \
+          echo "WARN: ${tool}@${tool_tag} not installed (no build on this train?) — skipping"; \
+        fi; \
+      done; \
+    fi && \
     echo "Installed ${installed} tool plugins (floor ${MIN_TOOLS})" && \
     if [ "$installed" -lt "$MIN_TOOLS" ]; then \
       echo "Error: only ${installed} tools installed (< ${MIN_TOOLS}) — feed outage or wrong dist-tag?"; \
