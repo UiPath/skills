@@ -110,6 +110,17 @@ def output_names(table: ET.Element) -> list[str]:
     return [o.get("name") or "" for o in table.findall("dmn:output", NS)]
 
 
+def annotations(table: ET.Element) -> list[str]:
+    return [(rule.findtext("dmn:annotationEntry/dmn:text", default="", namespaces=NS) or "").strip()
+            for rule in table.findall("dmn:rule", NS)]
+
+
+def check_annotations_in_order(table: ET.Element, expected: list[str]) -> None:
+    remaining = iter(annotations(table))
+    if not all(text in remaining for text in expected):
+        fail(f"the rows' annotations read {annotations(table)}, expected {expected} among them in that order")
+
+
 def check_input_data(root: ET.Element, inputs: dict[str, str]) -> None:
     declared = {e.get("name"): e.find("dmn:variable", NS) for e in root.findall("dmn:inputData", NS)}
     columns = input_columns(table_of(root))

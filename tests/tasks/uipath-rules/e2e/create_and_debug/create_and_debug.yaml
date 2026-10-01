@@ -57,3 +57,15 @@ success_criteria:
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+# `rules debug` uploads a Studio Web solution per run; delete it so runs do not accumulate on the tenant.
+post_run:
+  - command: |
+      python3 - <<'EOF' || true
+      import glob, json, subprocess
+      for path in glob.glob("**/*.uipx", recursive=True):
+          solution_id = json.load(open(path)).get("SolutionId")
+          if solution_id:
+              subprocess.run(["uip", "solution", "delete", solution_id, "--yes", "--output", "json"], timeout=120)
+      EOF
+    timeout: 180

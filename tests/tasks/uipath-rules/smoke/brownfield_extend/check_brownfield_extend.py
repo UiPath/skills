@@ -14,8 +14,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "_shared"))
 
 from rules_check import (  # noqa: E402
-    NS,
     POLICY,
+    check_annotations_in_order,
     check_cases,
     check_contract,
     check_input_data,
@@ -50,12 +50,7 @@ def check_identity() -> None:
     if decision.get("id") != DECISION_ID or decision.get("name") != DECISION_NAME:
         fail("the decision's id or name changed; consumers bound to it would break")
     check_contract(project, dmn_file, root, INPUTS, {"riskBand": "string"})
-    kept = [text for text in (
-        (rule.findtext("dmn:annotationEntry/dmn:text", default="", namespaces=NS) or "").strip()
-        for rule in table_of(root).findall("dmn:rule", NS)
-    ) if text in ANNOTATIONS]
-    if kept != ANNOTATIONS:
-        fail(f"the original rows' annotations read {kept}, expected {ANNOTATIONS} in that order")
+    check_annotations_in_order(table_of(root), ANNOTATIONS)
     print("OK: decision, filePath, and the original rows' annotations kept; the contract carries existingCustomer")
 
 

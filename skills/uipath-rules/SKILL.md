@@ -18,10 +18,10 @@ A Business Rules project holds one DMN decision table. DMN and FEEL follow the O
 ## Critical Rules
 
 1. **Write DMN 1.5.** Use the MODEL and DMNDI namespaces `https://www.omg.org/spec/DMN/20230324/...` and DC/DI `http://www.omg.org/spec/DMN/20180521/...`. When editing a file on an older DMN version, rewrite it to these namespaces.
-2. **One `.dmn` per project.** The engine evaluates one file per project; any other `.dmn` is silently never evaluated.
+2. **One `.dmn` per project.** `rules debug` evaluates only the project's first `.dmn`.
 3. **One decision per file, and its logic is a decision table.** When the user asks for chained decisions, a decision requirements diagram, business knowledge models, or a literal expression, say authoring them is not supported yet, then offer to flatten the logic into one table or to create one rules project per decision and let the calling process chain them. Never write the unsupported element.
 4. **No DOCTYPE, XML comments, or processing instructions.** Put notes in the annotation column or a `<description>` element.
-5. **Use the designer's types.** `string`, `number`, `boolean`, `Any`, `date`, `time`, `date and time`, `dayTimeDuration`, `yearMonthDuration`, for both columns and input arguments. Callers pass date, time, and duration values as ISO 8601 strings.
+5. **Use the designer's types.** `string`, `number`, `boolean`, `Any`, `date`, `time`, `date and time`, `dayTimeDuration`, `yearMonthDuration`, for both columns and input arguments.
 <!--skill-flavor:lifecycle-rules:start-->
 6. **Scaffold with `init`; after every edit, `refresh` then `validate`.** Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; edit the scaffolded `.dmn` in place, keeping its root element.
 7. **A rule is done when `validate` passes and `debug` returns what the reviewed table expects.** On a wrong output, re-run it with `--explain` and read the trace. Stop after 3 fix rounds and show the user the table and the failing inputs.
@@ -81,7 +81,7 @@ uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --explain --output json
 uip traces spans get <TRACE_ID> --output json
 ```
 
-`<TRACE_ID>` is `Data.traceId`. The trace shows which rules fired. `rules debug` needs the project directly inside its solution folder, as `init` creates it, and a logged-in user (`uip login`).
+`<TRACE_ID>` is `Data.traceId`. The trace shows which rules fired. `rules debug` needs the project directly inside its solution folder, as `init` creates it, and a logged-in user (`uip login`). `debug` uploads the whole solution folder and overwrites its Studio Web solution; pull Studio Web edits first.
 <!--skill-flavor:verify:end-->
 
 ## Editing an Existing Rule
