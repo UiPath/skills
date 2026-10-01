@@ -20,7 +20,7 @@ These four carry the shape. Change one and you are building something else.
   edges straight into the action node instead and you have a "fake join",
   which the canvas contract forbids for an activity (`FAKE_JOIN`). Nothing
   local tells you: `uip maestro bpmn validate` does not report that rule. See
-  [structural-bpmn.md](../structural-bpmn.md#gateways).
+  [structural-bpmn-flow.md](../structural-bpmn-flow.md#gateways).
 - **Every item exits through a named outcome.** Auto-actioned, or rejected by a
   reviewer. That is what makes the decision auditable afterwards.
 

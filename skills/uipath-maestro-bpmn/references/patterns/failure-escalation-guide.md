@@ -75,7 +75,7 @@ and it coexists with a catch-all in the same container.
 - **The error code** on a code-specific net's `err_start`, via `errorRef` to a
   declared `bpmn:error`.
 
-See [structural-bpmn.md](../structural-bpmn.md#subprocess-call-activity-event-subprocess-registry-gap-for-structure)
+See [structural-bpmn-containers.md](../structural-bpmn-containers.md#subprocess-call-activity-event-subprocess-registry-gap-for-structure)
 for event subprocess structure, and
 [registry-workflow.md](../registry-workflow.md) for the payloads.
 
@@ -88,7 +88,7 @@ Keep the named end event.
 Do not extend the net to resume the interrupted work. It cannot: the normal path
 has already stopped. Work that should recover and continue belongs on an error
 boundary event instead — see
-[structural-bpmn.md](../structural-bpmn.md#choosing-an-error-handling-construct).
+[structural-bpmn-flow.md](../structural-bpmn-flow.md#choosing-an-error-handling-construct).
 
 Two limits are worth knowing before relying on it. Only activities enter the
 chain, so a gateway whose condition fails to evaluate raises an incident and

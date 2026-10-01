@@ -47,7 +47,7 @@ Single-channel is the base shape.
 
 Every outgoing sequence flow from `wait` must target an intermediate catch event
 or a receive task — that is a rule of the gateway, not a choice. See
-[structural-bpmn.md](../structural-bpmn.md#gateways).
+[structural-bpmn-flow.md](../structural-bpmn-flow.md#gateways).
 
 | Sequence flow | Label | Condition |
 | --- | --- | --- |
@@ -124,7 +124,7 @@ stops the loop running forever; without it this shape never terminates.
 - **`run_escalation`** — next-level contact, alternate channel, internal owner.
 
 Fetch payloads through [registry-workflow.md](../registry-workflow.md); see
-[structural-bpmn.md](../structural-bpmn.md#events-and-the-event-definition-matrix)
+[structural-bpmn-flow.md](../structural-bpmn-flow.md#events-and-the-event-definition-matrix)
 for event definition structure.
 
 ## Adapting it

@@ -52,7 +52,7 @@ edits and preserve content you did not author: unknown `uipath:*` elements, `uip
 tags, imported Integration Service payloads, and stable element IDs. Do not
 regenerate the whole file or drop extension data the skill does not recognize —
 preserve-only structures (see the blocklist in
-[references/structural-bpmn.md](references/structural-bpmn.md#do-not-generate-for-new-authoring-preserve-on-round-trip-only)) round-trip
+[references/structural-bpmn-round-trip.md](references/structural-bpmn-round-trip.md#do-not-generate-for-new-authoring-preserve-on-round-trip-only)) round-trip
 untouched. Never normalize existing nodes to this skill's canonical templates:
 do not add missing attributes (e.g. `type="json" target="bodyField"` on an
 existing `uipath:input`) to elements the edit does not target — on untouched
@@ -62,7 +62,7 @@ For an existing ScriptTask, preserve its mapping discriminator and
 `uipath:scriptVersion`, and do not normalize a working brownfield node merely
 because the new-node authoring contract differs. Migration requires explicit
 confirmation — see
-[references/structural-bpmn.md](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
+[references/structural-bpmn-script-tasks.md](references/structural-bpmn-script-tasks.md#script-tasks--jint-authoring-contract).
 
 For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
 `uipath-rpa`; for Python agents use `uipath-agents`; for Case plans use
@@ -180,7 +180,7 @@ section index naming every anchor. Get the needed templates, then write the
 first complete draft before further spelunking.
 
 For registry-evidence-only tasks, follow the command-first recipe in
-[references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks).
+[references/registry-workflow-discover.md](references/registry-workflow-discover.md#registry-evidence-only-tasks).
 
 1. **Discover.** `uip maestro bpmn registry pull` **once** (cached for the
    session — do not re-pull), then `list` / `search` to map intent to extension
@@ -204,7 +204,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `for t in TypeA TypeB TypeC; do uip maestro bpmn registry get "$t" --output json; done`.
    Enrich `Intsvc.*` connector nodes with `--connection-id`/`--object-name`; take
    `--object-name` from the table in
-   [references/registry-workflow.md](references/registry-workflow.md#picking-the-object-take-it-from-the-table-do-not-infer-it)
+   [references/registry-workflow-connector-object.md](references/registry-workflow-connector-object.md#picking-the-object-take-it-from-the-table-do-not-infer-it)
    — a connector exposes several objects per operation and `describe` does not
    rank them. Do not call `registry get` for structural
    gaps the registry never owns: sequence flows, gateways, events, boundary
@@ -218,9 +218,9 @@ For registry-evidence-only tasks, follow the command-first recipe in
    key. Local validation accepts the older discriminator, so a clean
    `validate` does not prove that mapping is right. For the compatibility
    fallback and its scope, see
-   [references/structural-bpmn.md#script-tasks--jint-authoring-contract](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
+   [references/structural-bpmn-script-tasks.md#script-tasks--jint-authoring-contract](references/structural-bpmn-script-tasks.md#script-tasks--jint-authoring-contract).
 3. **Assemble.** Author directly from the complete minimal file in
-   [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
+   [references/structural-bpmn-skeleton.md](references/structural-bpmn-skeleton.md#a-complete-minimal-file-author-from-this-not-from-examples)
    plus each node's `xmlTemplate` (fill placeholders only). That skeleton shows
    a stable manual entry point, one structural task, and complete DI. **Do not
    reverse-engineer authoring patterns from task fixtures, generated package
@@ -294,7 +294,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `connectionId`, activities as `connection`. A host element carrying neither
    shell, such as a bare `bpmn:sendTask` with no `uipath:activity`, is a
    missing node, not a draft. Only the resolved values are CLI-owned — see
-   [references/registry-workflow.md](references/registry-workflow.md#2-get-the-template-for-each-chosen-type).
+   [references/registry-workflow-discover.md](references/registry-workflow-discover.md#2-get-the-template-for-each-chosen-type).
    For Integration Service draft notes, name every CLI-owned blocker literally,
    including the exact phrase `connection binding`, plus dynamic schemas,
    generated outputs, `bindings_v2.json`, and package metadata. Avoid softer
@@ -315,7 +315,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    two-key `project.uiproj` first — `{ "Name": "<ProjectName>",
    "ProjectType": "ProcessOrchestration" }` — then refresh, which writes the
    rest. Only fall back to the equivalent hand-authored shape in
-   [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md#source-only-fallback)
+   [references/shared/local-metadata-regeneration-workflow.md](references/shared/local-metadata-regeneration-workflow.md#source-only-fallback)
    when the CLI is unavailable. Do not copy CLI scaffold metadata shapes into a
    synthetic local project. Every root **manual** start event needs a
    `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements`;
@@ -329,7 +329,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    Give public inputs and outputs explicit runtime bridges, and converge routes
    returning one result on a single completion EndEvent — for the two-layer
    contract see
-   [references/structural-bpmn.md](references/structural-bpmn.md#variables).
+   [references/structural-bpmn-variables.md](references/structural-bpmn-variables.md#variables).
 4. **Lay out the diagram.** After the last source edit, and before any
    `validate`, `refresh`, or `pack` — including the `refresh` step 3 calls for:
 
@@ -378,7 +378,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    succeeds with it unresolved. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
    it names a reference with no declaration. A `VARIABLE_NOT_SET` warning on
    the node reading a start-event-scoped caller input is expected; see
-   [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
+   [references/structural-bpmn-validation.md#validation](references/structural-bpmn-validation.md#validation).
 
    `[warning] [(xml)] unknown attribute <type>` is expected noise from the
    script-task template's `<uipath:inputSchema type="jsonSchema">`. Leave it.
@@ -395,7 +395,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    If `validate` reports "unknown command" or clearly skips the
    structural rules, the installed CLI predates them — update it (see
    [references/cli-conventions.md](references/cli-conventions.md)). See
-   [references/structural-bpmn.md#validation](references/structural-bpmn.md#validation).
+   [references/structural-bpmn-validation.md#validation](references/structural-bpmn-validation.md#validation).
 6. **Refresh derived metadata.** Once
    step 5 leaves no fixable error, regenerate the four CLI-owned package files:
 
@@ -466,7 +466,7 @@ and honestly surfaced to the user as gaps when asked.
    keys, app IDs, folder ids/paths come from discovery or the user. A connector
    field whose `describe` entry carries `Reference` takes the `LookupValue` a
    live lookup returned, never the name the user wrote. See
-   [references/registry-workflow.md](references/registry-workflow.md#a-reference-entry-takes-a-looked-up-value-never-the-display-name).
+   [references/registry-workflow-connector-inputs.md](references/registry-workflow-connector-inputs.md#a-reference-entry-takes-a-looked-up-value-never-the-display-name).
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
    contract in [references/structural-bpmn.md](references/structural-bpmn.md);
    flag honestly what the registry does not expose.
@@ -516,7 +516,7 @@ and honestly surfaced to the user as gaps when asked.
 11. **Retry is node configuration, never canvas.** Handle transient failures
    with `uipath:retry` on the activity. Never draw a retry loop from gateways
    and timer events. See
-   [references/structural-bpmn.md](references/structural-bpmn.md#choosing-an-error-handling-construct).
+   [references/structural-bpmn-flow.md](references/structural-bpmn-flow.md#choosing-an-error-handling-construct).
 12. **Task SLA is task configuration, never canvas.** Approval timers,
    reassignment, and escalation-on-breach live on the user task. Do not model
    them as boundary timers around it.
@@ -563,7 +563,7 @@ and honestly surfaced to the user as gaps when asked.
 <!--skill-flavor:delegated-resource-author-deploy:end-->
    (4) Pick the wrapper by `ProcessType`, read from
    `uip or processes list --folder-path <path> --all-fields --output json`
-   ([registry-workflow.md](references/registry-workflow.md#agent-wrapper-selection--pick-by-processtype-not-the-label));
+   ([registry-workflow-process-wrappers.md](references/registry-workflow-process-wrappers.md#agent-wrapper-selection--pick-by-processtype-not-the-label));
    a low-code agent uses `Orchestrator.StartAgentJob`, whose template (rule
    6) binds `name` and `folderPath`, not rule 18. For a rule-18 wrapper, read
    the same response's `Key` and `FolderKey` (PascalCase, like the default
@@ -587,7 +587,7 @@ and honestly surfaced to the user as gaps when asked.
    drop `folderId`, `folderPath`, and `name`. For the others, keep the
    template's remaining fields and make that swap only after a live run
    faults with `key:FolderKey`; without a run, report the node unverified. Details:
-   [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
+   [references/registry-workflow-process-wrappers.md](references/registry-workflow-process-wrappers.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
 
 ## References
 
