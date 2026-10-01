@@ -11,6 +11,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ..
+
 initial_prompt: |
   The UiPath Studio project in `InvoiceIntake/` was inherited from another team.
   Extract a genome from it so we have a ground-truth blueprint of what it does.
@@ -37,7 +40,7 @@ success_criteria:
   - type: run_command
     description: "Genome passes structural, wording, skill-name, and Source Map checks"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-genome/_shared/genome_check.py component
+      python3 $REFERENCE_DIR/_shared/genome_check.py component
       invoice-intake-genome.md
       --expect uipath-rpa ERP_InvoicePosting
       --source-map Main.xaml ValidateInvoice.xaml ExtractInvoiceFields.xaml

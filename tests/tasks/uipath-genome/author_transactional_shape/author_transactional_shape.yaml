@@ -10,6 +10,9 @@ description: >
   the description.
 tags: [uipath-genome, smoke, mode:build, lifecycle:generate]
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Write a genome for an automation called "Customer Address Sync" and save it in the
   current directory.
@@ -46,7 +49,7 @@ success_criteria:
   - type: run_command
     description: "Genome passes the structural, wording and skill-name checks"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-genome/_shared/genome_check.py component
+      python3 $REFERENCE_DIR/_shared/genome_check.py component
       customer-address-sync-genome.md
       --expect uipath-rpa "Dynamics 365"
     timeout: 30
@@ -57,7 +60,7 @@ success_criteria:
   - type: run_command
     description: "Transactional Shape describes one flow of rows with split options per unit, states retry and consecutive-failure stop, and leaves no placeholder"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-genome/_shared/genome_check.py component
+      python3 $REFERENCE_DIR/_shared/genome_check.py component
       customer-address-sync-genome.md
       --shape transactional --flows 1 --unit row
     timeout: 30

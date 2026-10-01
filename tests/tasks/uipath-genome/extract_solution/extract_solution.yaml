@@ -18,6 +18,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ..
+
 initial_prompt: |
   The UiPath solution in `InvoiceOps/` runs our nightly accounts-payable intake.
   We need a ground-truth understanding of it at both the process level and the
@@ -64,7 +67,7 @@ success_criteria:
   - type: run_command
     description: "Process genome and every linked component pass structural and wording checks"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-genome/_shared/genome_check.py process
+      python3 $REFERENCE_DIR/_shared/genome_check.py process
       invoice-ops-genome.md
       --components invoice-ops-genome
       --skills uipath-maestro-flow uipath-rpa uipath-api-workflow
