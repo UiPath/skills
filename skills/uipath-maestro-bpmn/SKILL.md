@@ -321,19 +321,17 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements`;
    without one `refresh` fails the whole project `RetryWillNotFix` instead of
    writing an empty entry-point list. When the request names a trigger as the
-   start, the trigger replaces the manual start: turn the initializer's
-   `Event_start` into the trigger in place, keeping its id and its
-   `uipath:entryPointId` child, and add no second start. A recurring timer is
-   a `timeCycle` with an `R/` repeat (`R/P1D`), not the template's
-   `timeDuration`. Skip `refresh` for that project (it fails with no manual
-   start); `entry-points.json` stays valid and `validate` and `pack` pass.
-   Exception: a project the user asked to package or operate that has a
-   connection binding (connector trigger or activity) keeps the manual
-   `Event_start`, gives the trigger its own start id, and runs `refresh`,
-   which writes those connections to `bindings_v2.json`. Clearing a
-   stale-entry error by editing or deleting `entry-points.json` instead of
-   running `refresh` passes `validate` and `pack` while shipping an empty
-   `bindings_v2.json`.
+   start and does not ask to package or operate, the trigger replaces the
+   manual start: turn the initializer's `Event_start` into the trigger in
+   place, keeping its id and its `uipath:entryPointId` child, add no second
+   start, and skip `refresh` (it fails with no manual start);
+   `entry-points.json` stays valid. A request to package or operate keeps the
+   manual `Event_start`, gives the trigger its own start id, joins the two
+   per [Gateways](references/structural-bpmn.md#gateways), and runs `refresh`.
+   A recurring timer is a `timeCycle` with an `R/` repeat (`R/P1D`), not the
+   template's `timeDuration`. Clearing a stale-entry error by editing or
+   deleting `entry-points.json` instead of running `refresh` passes
+   `validate` and `pack` while shipping an empty `bindings_v2.json`.
    Give public inputs and outputs explicit runtime bridges, and converge routes
    returning one result on a single completion EndEvent — for the two-layer
    contract see

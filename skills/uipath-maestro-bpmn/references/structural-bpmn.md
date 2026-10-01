@@ -433,10 +433,10 @@ Payload shapes the canvas serializes:
 - **Timer**: `<bpmn:timerEventDefinition><bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30M</bpmn:timeDuration></bpmn:timerEventDefinition>`
   (or `timeDate` / `timeCycle`). Static durations must be valid ISO-8601;
   week designators (`PnW`) are unsupported. Expression-mode is allowed and
-  accepts either prefix — `=…` or `@…`. A recurring schedule (nightly,
-  hourly) is a `timeCycle` with an `R/` repeat, not the `timeDuration` the
+  accepts either prefix — `=…` or `@…`. A recurring schedule is a
+  `timeCycle` with an `R/` repeat, not the `timeDuration` the
   `Intsvc.TimerTrigger` template ships: `R/P1D` daily, `R/PT1H` hourly;
-  `validate` accepts either.
+  `validate` accepts either. No time-of-day form is supported.
 - **Message**: `<bpmn:messageEventDefinition messageRef="Message_1" />` with a
   `<bpmn:message id="Message_1" name="…"/>` declared at definitions level. The
   Maestro internal-message events (`Maestro.ReceiveMessageEvent` /
