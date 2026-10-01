@@ -19,8 +19,9 @@ Assertion map (Flow -> BPMN):
                      -> check_ids(): same two literals searched in the located .bpmn's raw text (same weight/threshold)
   F criterion 4  flow_contains.py --flow-name ComplexArrayTest --regex
                  '"connectionId": "2bbc2253-..."' (connection pin)
-                     -> check_connection(): the Slack task's `connection` input,
-                        followed through `=bindings.<id>`, is SHARED_CONNECTION_ID
+                     -> check_connection(): the Slack task's `connection` input is
+                        `=bindings.<id>`, naming a Connection/ConnectionId binding
+                        whose resourceKey and default are SHARED_CONNECTION_ID
 
 Usage:
     python3 check_complex_array.py               # criterion 1: locate + parse
@@ -44,6 +45,8 @@ from _shared.check_slack_multiselect import slack_tasks  # noqa: E402
 PROJECT_HINT = "ComplexArrayTest"
 RECIPIENT_IDS = ("U0B7Y855WGG", "U05Q882RHFZ")
 SHARED_CONNECTION_ID = "2bbc2253-29a4-4952-a436-6705d74e5943"
+CONNECTION_RESOURCE = "Connection"
+CONNECTION_ID_ATTRIBUTE = "ConnectionId"
 
 _BINDING_REF_RE = re.compile(r"=bindings\.(\S+)")
 
@@ -64,17 +67,27 @@ def check_ids() -> None:
     print(f"OK: {path} references both resolved Slack user ids")
 
 
-def _connection_id(root: ET.Element, task: ET.Element) -> str:
+def _bound_connection(root: ET.Element, task: ET.Element) -> str:
     value = context_value(task, "connection")
     match = _BINDING_REF_RE.fullmatch(value)
     if not match:
-        return value
+        return f"connection {value!r} is not =bindings.<id>"
 
+    binding_id = match.group(1)
     for binding in root.findall(".//uipath:binding", NS):
-        if binding.attrib.get("id") != match.group(1):
+        if binding.attrib.get("id") != binding_id:
             continue
-        return binding.attrib.get("default") or binding.attrib.get("resourceKey") or ""
-    return ""
+        if binding.attrib.get("resource") != CONNECTION_RESOURCE:
+            continue
+        if binding.attrib.get("propertyAttribute") != CONNECTION_ID_ATTRIBUTE:
+            continue
+
+        key = binding.attrib.get("resourceKey", "")
+        default = binding.attrib.get("default", "")
+        if key != default:
+            return f"binding {binding_id} resourceKey {key!r} != default {default!r}"
+        return key
+    return f"no {CONNECTION_RESOURCE}/{CONNECTION_ID_ATTRIBUTE} binding {binding_id!r}"
 
 
 def check_connection() -> None:
@@ -83,7 +96,7 @@ def check_connection() -> None:
     if not tasks:
         fail(f"no Slack connector task in {path}")
 
-    bound = {_connection_id(root, task) for task in tasks}
+    bound = {_bound_connection(root, task) for task in tasks}
     if bound != {SHARED_CONNECTION_ID}:
         fail(f"Slack task bound to {sorted(bound)}, expected {SHARED_CONNECTION_ID}")
     print(f"OK: {path} Slack task bound to {SHARED_CONNECTION_ID}")
