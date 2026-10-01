@@ -1,8 +1,8 @@
 # Offline Target Definition Workarounds — TEMPORARY
 
-**Delete this file when the UIA CLI gains a `create-definition` command and an offline `add-anchor`, and registers a number attribute bound to a selector variable.** It records shapes and workarounds the CLI would otherwise own, so a migration need not rediscover them.
+**Delete this file when the UIA CLI gains a `create-definition` command and registers a number attribute bound to a selector variable.** It records shapes and workarounds the CLI would otherwise own, so a migration need not rediscover them.
 
-Scope: a migration whose only input is the target catalog derived from the source export, with **no reachable application**. `target-anchorable resolve-defaults` and `add-anchor` both take live snapshot refs (`e*`/`w*`), and there is no `create-definition`, so neither a first definition nor an anchor can be produced through the CLI there. One section applies whether the application is reachable or not: § Selector variables in number attributes, a defect no CLI path avoids.
+Scope: a migration whose only input is the target catalog derived from the source export, with **no reachable application**. `target-anchorable resolve-defaults` takes live snapshot refs (`e*`/`w*`) and there is no `create-definition`, so no first definition can be produced through the CLI there. An offline definition carries no anchor: a caption the source recorded beside a control becomes a `<nav>` path in the strict selector ([selector-translation-guide.md](selector-translation-guide.md) rules 6 and 12). One section applies whether the application is reachable or not: § Selector variables in number attributes, a defect no CLI path avoids.
 
 **Precedence: whenever the application is reachable, the CLI path wins and the offline sections do not apply.** The UIA package guide's rule stands — definitions are CLI-owned, never hand-edited. What follows is the documented exception for the offline case and for that defect, not general licence.
 
@@ -48,55 +48,11 @@ Field semantics deciding whether an offline file behaves:
 | `Guid` | No author-supplied value needed. `update-definition` or Object Repository registration generates it when absent; registration may preserve a value already present |
 | `ElementType` | cosmetic — logging and design-time hints only; `None` is harmless |
 
-**Seed leakage.** `update-definition` writes only the options passed and leaves everything else untouched, so fields the seed carried can survive into each copy. Pass `--full-selector` on every element (a fuzzy-only element otherwise keeps the seed's strict selector). No `Guid` step is needed: Object Repository uses its `referenceId` for element identity, and `create-elements` accepts definitions with or without a `Guid`.
+**Seed leakage.** `update-definition` writes only the options passed and leaves everything else untouched, so fields the seed carried can survive into each copy. Pass `--full-selector` on every element (a fuzzy-only element otherwise keeps the seed's strict selector). A seed exported from a live target can carry anchors, since the driver's default often has one: run `target-anchorable remove-anchor` on the seed until none is left before copying it. Removing the last anchor turns the seed strict (`SearchSteps="Selector"`, with a strict selector written from the fuzzy one) and leaves the fuzzy selector as residue (§ Kind conversion). No `Guid` step is needed: Object Repository uses its `referenceId` for element identity, and `create-elements` accepts definitions with or without a `Guid`.
 
 **Kind conversion.** `--full-selector` on a definition whose search step is `FuzzySelector` also flips `SearchSteps` to `Selector, SemanticSelector`. The old `FuzzySelectorArgument` stays as inert, disabled residue; no command clears it — re-copy the seed and re-apply to purge it. `fuzzify` is one-way (strict → fuzzy); there is no de-fuzzify.
 
 **Write-back** to an existing Object Repository element is `object-repository replace-elements` (keeps the `referenceId`, so workflow links survive). Never `create-elements` on an element that already exists — that adds a duplicate and orphans the link.
-
-## Anchors without `add-anchor`
-
-Semantics first — they constrain when an anchor is worth authoring at all (package docs, `activities/common/Target.md` § Anchors):
-
-| Supports anchors | Ignores anchors |
-|---|---|
-| `FuzzySelector`, `CV`, `TextNative`, `Image` | `Selector`, `SemanticSelector` |
-
-- An anchor is a plain `uix:Target`, never a `TargetAnchorable` — anchors cannot have anchors. **Up to four**, slots `0..3`; a fifth is rejected.
-- An anchor has no scope of its own: it inherits the main target's `ScopeSelectorArgument`. Never give an anchor one.
-- A **strict** target ignores any anchor present. `add-anchor` on a strict target atomically converts the main target to `FuzzySelector` first; removing its last anchor reverses the conversion. So offline, adding an anchor means also moving the main target to `FuzzySelector`.
-- `idx` is **stripped when a selector is fuzzified** (with `tableRow`, `tableCol` and `css-selector`). A target that needs a positional index must stay strict, and so can never be anchored.
-- **An anchor that matches nothing at run time fails the whole search**, not just that candidate. Anchor only on something reliably present; a caption that appears conditionally is worse than no anchor.
-- Anchor scoring is geometric, relative to `DesignTimeRectangle`: direction (which side the anchor sits on), edge-to-edge distance, angle and overlap. The score peaks at the design-time distance and falls off in **both** directions, so a candidate much closer than at capture is penalised as much as one much further. `fuzzylevel` plays no part in it.
-- Fuzzifying a selector leaves `cls`/`class`, `app`, `role`, `tag`, `type`, `css-selector` and `hasTableAncestor` as exact ("hard") attributes and fuzzifies the rest (`id`, `name`, `aaname`, `automationid`, title and text attributes), each written as the triple `name='value'`, `matching:name='fuzzy'`, `fuzzylevel:name='0.0'`. An attribute whose value already holds a `*`, or that is matched by regex, gets only `fuzzylevel:name='0.0'` and keeps its own matching.
-- Mechanical reason for the targeting-method policy in [selector-translation-guide.md](selector-translation-guide.md) rule 12: fuzzy without an anchor has nothing to disambiguate with, and an anchor on a strict target is dead weight.
-
-Shape of a populated anchor list (one anchor). Working examples in this repo: `tests/tasks/uipath-review/rpa/selector-brittle/fixture/BrittleBot/Main.xaml`, `tests/tasks/uipath-troubleshoot/activity-packages/uia-application-open-failed/process/EditorLink.xaml`.
-
-```xml
-<uix:TargetAnchorable … FuzzySelectorArgument="&lt;…target…&gt;" SearchSteps="FuzzySelector" Version="V6">
-  <uix:TargetAnchorable.Anchors>
-    <scg:List x:TypeArguments="uix:ITarget" Capacity="1">
-      <uix:Target DesignTimeRectangle="0, 0, 0, 0" ElementType="Text"
-                  FullSelectorArgument="&lt;webctrl aaname='First Name' tag='LABEL' /&gt;"
-                  FuzzySelectorArgument="&lt;webctrl aaname='First Name' tag='LABEL' matching:aaname='fuzzy' fuzzylevel:aaname='0.0' /&gt;"
-                  SearchSteps="FuzzySelector" />
-    </scg:List>
-  </uix:TargetAnchorable.Anchors>
-</uix:TargetAnchorable>
-```
-
-Checklist when authoring one offline:
-
-- **`Capacity` is not load-bearing — don't compute it.** The CLI normalizes whatever you write to `Capacity="4"`.
-- **Anchor `Guid` need not be set** — `create-elements` generates it when absent.
-- **Anchor `SearchSteps`: set exactly one step** and fill the argument that matches it (`FuzzySelector` → `FuzzySelectorArgument`). Only one targeting method is used at runtime, so a second step or a second populated argument is never evaluated — files carrying both exist, but the extra one is dead weight, not a fallback.
-- **The main target's `SearchSteps` must include `FuzzySelector`**, or the anchor is ignored. `Selector, FuzzySelector` together is valid — the strict step runs first and the anchor serves the fuzzy step.
-- `DesignTimeRectangle` / `ElementType` are design-time only; zeros are fine offline.
-
-When the source's selectors guide sends a recorded caption to an anchor ([selector-translation-guide.md](selector-translation-guide.md) rule 6), the catalog gives that caption's **text**, never a selector for the caption element. That is enough: put the caption text on the attribute that table names for the criteria that recorded it, under that criteria's own matching, and add nothing else — inventing the caption's tag or class is exactly the fabrication the derivation rule forbids. Where the chosen attribute is an inner-text one, keep the match exact: inner text is inherited by every ancestor, so a wildcarded caption matches the container chain. The target then keeps only its non-caption attributes; where the caption was the *only* thing the source recorded, the target is tag-only and the anchor carries the identification. Parametrised captions need the stored expression form (`[string.Format("…{0}…", arg)]`): `{{var}}` is CLI input sugar a hand-injected anchor never passes through.
-
-Leave `.metadata`'s `Anchor0`–`Anchor3` as `null` — an anchor persists and round-trips without them; they hold only the `--name`/`--description` labels `add-anchor` attaches.
 
 ## Screens — `TargetApp` definitions offline
 
@@ -169,6 +125,7 @@ Linked target after step 4 (C# project):
 - `object-repository link-screen` / `link-elements` resolve `--workflow-file-path` against the shell's working directory, not `--project-dir`: pass an absolute path inside the project, or every entry fails with "not inside the project directory".
 - Per-file `validate` accepts a definition whose strict selector carries a literal `idx` above 2; `build` rejects it (`UI-REL-001`, an Error under the default analyzer configuration). What replaces the index, and how an index that stays is decided: [selector-translation-guide.md](selector-translation-guide.md) rule 7; a selector changed that way is written back with `target-anchorable update-definition` → `object-repository replace-elements`.
 - `replace-elements` keeps the `referenceId`, so the links of already-linked workflows survive a selector change. The run uses the replaced selector at once; the activity's copy in the workflow stays as it was until Studio syncs it or the activity is re-linked, and that stale copy is not an error.
+- A strict selector with a `<nav>` path passes `update-definition`, `create-elements`, `link-elements`, per-file `validate` and `build`, and resolves at run time. `selector-intelligence evaluate` rejects it (one ref and the attributes per tag), so `target-anchorable validate --step Strict` checks it against the live application, and its screenshot shows the node the path landed on. `fuzzify` keeps the `<nav>` tag and writes `matching:` / `fuzzylevel:` on its count.
 - Element metadata `ActivityType` may stay `None` on elements registered before their acting activity was known: it only tunes selector generation, which offline has already happened; the live pass replaces the definitions anyway.
 
 ## What offline authoring cannot know
@@ -185,9 +142,10 @@ Structural validity is the easy half. A catalog cannot tell you these, and each 
 | Which node shows the accepted value of a pick, and whether it shares attributes with the popup entry | verify on a text leaf matched page-wide by the value | verify on the field's value display scoped to the field; the entry is scoped to the popup labelled with the field (rule 16) |
 | Whether `aaname` on the acting input is its label or its current value | drop it on every Type Into, or keep it on every one | keep it only when the catalog recorded a `label` for that control (the value is then the label); omit it otherwise (rule 4) |
 | Whether the grid exposes `tableRow`/`colName`/`rowName` | assume div-based (text-pinned rows) or assume `TABLE` | tag-only cell plus a description naming row rule and column; live, read one cell's attribute list (rule 8) |
+| Where a caption recorded beside a control sits in the tree relative to it | an anchor with zero design-time rectangles, or the caption written onto the control | the caption leaf and the `<nav>` path the source recorded or the framework pack's widget anatomy documents; else, on a desktop technology, the adjacent-sibling step flagged `derived`, and on the web a tag-only target (rule 13); live, target validation shows the node a path lands on (rule 6) |
 
 Shared failure mode: all these wrong answers *look* like finished work and pass every structural check, while a tag-only target with a good semantic description looks unfinished and actually resolves. Prefer the honest shape. Two fields the driver writes on every live definition and the minimal shape omits — `ElementVisibilityArgument="Interactive"` and `WaitForReadyArgument="Interactive"` — are project-setting defaults, not requirements; a live pass restores them when it replaces the definition.
 
 ## Before shipping
 
-An offline-authored definition is structurally valid but functionally unproven: `target-anchorable validate` (`--step Fuzzy` isolates the fuzzy step) probes a live application, so the definition stays owed a live pass and its element description says `offline-unverified`. Before that pass is possible, read the definitions back against this guide's own checks — search steps disagreeing with their arguments, an anchor on a strict target, an anchor carrying a scope, a fuzzy match with no `fuzzylevel` — and [selector-translation-guide.md § Checking a definition](selector-translation-guide.md). Everything a structural check cannot see is what the live pass is for ([source-migration-guide.md § Verifying targets](source-migration-guide.md)).
+An offline-authored definition is structurally valid but functionally unproven: `target-anchorable validate` (`--step Strict` isolates the strict step) probes a live application, so the definition stays owed a live pass and its element description says `offline-unverified`. Before that pass is possible, read the definitions back against this guide's own checks — search steps disagreeing with their arguments, a `FuzzySelector` step or an anchor on an offline definition — and [selector-translation-guide.md § Checking a definition](selector-translation-guide.md). Everything a structural check cannot see is what the live pass is for ([source-migration-guide.md § Verifying targets](source-migration-guide.md)).
