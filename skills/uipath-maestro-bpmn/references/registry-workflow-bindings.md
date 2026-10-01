@@ -74,7 +74,7 @@ the exact `registry get Intsvc.TimerTrigger` template. It does not require a
 live connection or schema enrichment.
 
 `Intsvc.EventTrigger` and connector waits such as `Intsvc.WaitForEvent` enrich
-through `registry get` like a §3 activity, but their object and operation come
+through `registry get` like a [§3](registry-workflow-connector-object.md#3-connector-intsvc-enrichment) activity, but their object and operation come
 from the **trigger** catalogue, not from `uip is resources`. Omit `--operation`
 and the call fails with `Event enrichment requires --operation`.
 
@@ -145,7 +145,7 @@ null connection (error 102010). Use `refresh`, not the deprecated
   resolved before upload or run, and that boundary notes should name explicitly
   — are **connection binding**, **dynamic schemas**, generated **package
   metadata** (`bindings_v2.json`, `entry-points.json`, `operate.json`,
-  `package-descriptor.json`). Do not hand-author any of these (§3).
+  `package-descriptor.json`). Do not hand-author any of these ([§3](registry-workflow-connector-object.md#3-connector-intsvc-enrichment)).
 - **Connectionless / manual HTTP** (`Intsvc.HttpExecution`, or
   `Intsvc.UnifiedHttpRequest` when current tooling exposes the unified shape):
   use when the workflow itself owns the URL, method, payload, and response

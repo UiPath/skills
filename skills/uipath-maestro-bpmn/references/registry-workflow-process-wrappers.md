@@ -52,7 +52,7 @@ the template's second bug.** Verified end-to-end for
 
 1. **Bind `releaseKey`** via the resource-binding mechanism this field's
    `bindingInfo` already documents (see [§4
-   Bindings](registry-workflow-bindings.md#4-bindings--from-bindinginfo-never-invented) above): a
+   Bindings](registry-workflow-bindings.md#4-bindings--from-bindinginfo-never-invented)): a
    process-kind `<uipath:binding resource="process" propertyAttribute="Key"
    default="<resolved-key>" />`, referenced from the context as
    `=bindings.<id>`. Resolve `<resolved-key>` from `uip or processes list

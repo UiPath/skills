@@ -48,8 +48,8 @@ fallback contract further down for the discovery workflow):
   and JSON Schema `integer` to BPMN primitive `type="integer"`. Keep the JSON
   Schema names inside schema bodies; on node-scoped `uipath:variables` and
   mapping attributes use `double` or `integer` respectively, not `number` or
-  `long`. This is the inverse of the public declaration rule elsewhere in this
-  file: a root `uipath:input`/`uipath:output` must use `number`, because only
+  `long`. This is the inverse of the public declaration rule in
+  [Variables](structural-bpmn-variables.md#variables): a root `uipath:input`/`uipath:output` must use `number`, because only
   public declarations reach entry-point schema derivation.
 - **The template ships no `<uipath:scriptVersion>`, and that is the second
   correction.** A missing element parses as `v1`

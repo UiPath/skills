@@ -59,7 +59,7 @@ uip maestro bpmn registry get <extensionType> --output json
 | `bpmnElement` | The host element's PascalCase model type (`bpmn:ServiceTask`). Normalize both this field and the `xmlTemplate` host tag to lower-camel when serializing (`<bpmn:serviceTask>`) — 27 of the 29 bundled templates carry the PascalCase tag. |
 | `extensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |
 | `contextFields[]` | The `uipath:context` inputs; each may carry its own `bindingInfo`. |
-| `bindingInfo` | How the node binds to a resource (see §4). |
+| `bindingInfo` | How the node binds to a resource (see [§4](registry-workflow-bindings.md#4-bindings--from-bindinginfo-never-invented)). |
 | `inputPattern` / `inputName` / `inputTarget` | How the request body input is shaped. |
 | `requiresDiscovery` / `isDynamic` | Whether a concrete resource must be resolved first. |
 

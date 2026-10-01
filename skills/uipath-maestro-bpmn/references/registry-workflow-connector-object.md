@@ -123,4 +123,4 @@ before, and pinning a spelling is what breaks on the next change. Write
 the activity's `body` input (`target="body"`) and `context` (`connectorKey`,
 `objectName`) from that enrichment — do not hand-author connector schemas. The
 connection is referenced through a connection binding, `=bindings.<bindingId>`
-(see §4).
+(see [§4](registry-workflow-bindings.md#4-bindings--from-bindinginfo-never-invented)).

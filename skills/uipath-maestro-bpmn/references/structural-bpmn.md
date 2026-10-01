@@ -2,7 +2,7 @@
 
 The registry's `xmlTemplate`s give you the `uipath:*` payload for each node
 (see [registry-workflow.md](registry-workflow.md)). Author everything holding
-those nodes together from this file. Sections marked **REGISTRY GAP** have no
+those nodes together from the parts below. Sections marked **REGISTRY GAP** have no
 template at all; there the Studio Web canvas serializer is the contract.
 
 Read the one section you need, not the file:
