@@ -277,7 +277,8 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 3. Validation status — `validate` pass / remaining warnings.
 4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + `wiringNotes` from `tasks/registry-resolved.json`. Also list, under **Not covered**, anything `sdd.md` referenced that is outside the scope of `caseplan.json` (e.g. Data Fabric entity schemas). Also list **agents / API workflows built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
-6. Suggested next steps — one short line before the prompt (the publish/skip-to-debug line above). If placeholders or missing connections exist, mention fixing/registering those before publish.
+6. Runnability — the counts from [§ Phase 6 Runnability check](#runnability-check--before-the-debug-prompt), and when any is non-zero, the line naming where a run stops. A case whose every task is a placeholder still validates; this line is the only place the report says it cannot run.
+7. Suggested next steps — one short line before the prompt (the publish/skip-to-debug line above). If placeholders or missing connections exist, mention fixing/registering those before publish.
 
 ### Publish notes
 
@@ -288,6 +289,25 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 - Publish ships a build that has not been exercised — the debug gate follows (Phase 6). If a Phase 6 debug run leads to a fix, ask via **AskUserQuestion** (`Re-publish the fixed build` / `Skip re-publish`). On `Re-publish`, re-run this phase's `resources refresh` + `solution upload` so Studio Web holds the fixed build — the re-upload overwrites whatever is on Studio Web now, which a reviewer may have edited since Phase 5. On `Skip re-publish`, leave Studio Web on the build it already has.
 
 ## Phase 6 — Debug
+
+### Runnability check — before the debug prompt
+
+Read `caseplan.json` and count three things. Do not take them from `validate`: on CLI 1.202.x a default-profile run returns `Valid` with all three present.
+
+| Count | What it is |
+|---|---|
+| Placeholder tasks | tasks whose `data` has zero keys |
+| Stub event rules | `wait-for-connector` rules whose `uipath.context` still holds a `"placeholder"` value |
+| Unresolved conditions | string values still containing `$xref(` (Check 4's best-effort option left them) |
+
+When all three are zero, show the prompt below unchanged. Otherwise a debug run cannot finish. Find the first blocked element on the primary path: walk the stage entered by `case-entered`, then each stage its exit leads to, in task order. In the AskUserQuestion preamble, write two lines:
+
+1. `Debug will stop at "<task or rule>" in "<stage>": <no resource is bound | its event is a placeholder | its condition reads an output that does not exist>.`
+2. `<P> of <T> tasks are placeholders, <S> event rules are stubs, <X> conditions are unresolved.`
+
+If nothing blocks the primary path, line 1 instead names the secondary stage that cannot run. The options are then `Stop and bind resources` (first, recommended: exit with the report's resource list as the next step), `Run debug anyway`, and `Continue to publish`. Never show the unchanged prompt while a placeholder, stub, or `$xref` remains.
+
+### Debug prompt
 
 After Phase 5 (whether published or skipped), prompt via **AskUserQuestion**:
 

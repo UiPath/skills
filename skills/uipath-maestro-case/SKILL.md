@@ -164,7 +164,7 @@ Provide the completion report, then hard-stop AskUserQuestion: `Publish to Studi
 
 ### Phase 6 — Debug
 
-Hard-stop AskUserQuestion (Step 15): `Run debug session` / `Continue to publish`. On Run, refresh resources, run `uip maestro case debug`, and loop after completion until `Continue to publish`. Never run debug automatically.
+First run the [runnability check](references/phased-execution.md#runnability-check--before-the-debug-prompt): it counts placeholder tasks, stub event rules, and surviving `$xref(` itself, because a 1.202.x default-profile `validate` passes all three. While any remain, the prompt names where debug will stop and leads with `Stop and bind resources`. Otherwise, hard-stop AskUserQuestion (Step 15): `Run debug session` / `Continue to publish`. On Run, refresh resources, run `uip maestro case debug`, and loop after completion until `Continue to publish`. Never run debug automatically.
 
 ### Phase 7 — Publish to Orchestrator
 

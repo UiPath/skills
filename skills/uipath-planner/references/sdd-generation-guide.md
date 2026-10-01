@@ -571,10 +571,14 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
 <SME_REVIEW_COUNT> open SME review items (if any — list each with its class and default).
 
+Runs as designed: <yes | no — R of N resources resolved; the first unresolved on the primary path is "<TASK>" in "<STAGE>"> (Case scope only).
+
 **Next — branch on the handoff `Status`:**
 - `ready` — Phase D is complete and the SDD is on disk. Lane A (task derivation) continues on the next turn with this SDD path; open default-carried SME items travel with the derived tasks as assumptions — confirm them before production.
 - `draft` (blocking SME items) — Blocked on: <BLOCKING_ITEMS>. Answer these and the SDD finalizes to `ready`; Lane A refuses drafts.
 ```
+
+**The `Runs as designed` line — Case scope.** Count the resource identities in §2 task detail blocks and the §1/§4 trigger and connector rows: N is all of them, and R is the ones not left `<UNRESOLVED>`. The primary path starts with the first stage, whose entry rule is `case-entered`. When R < N, write `no` and name the first unresolved task or trigger on that path. A resource left unresolved is still `default-carried`, so this line does not block `ready`. It exists because a `ready` SDD with zero resolved resources builds into a case where every task is a placeholder: the build validates, and debug stops at its first task. Name that in the summary so the user creates or binds the resources before anyone runs it.
 
 ### Step 2.5: Word (.docx) Delivery — only when requested
 
