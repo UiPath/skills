@@ -357,9 +357,9 @@ For registry-evidence-only tasks, follow the command-first recipe in
    event-object checks) offline, plus deploy-readiness checks:
 
    ```bash
-   python3 -c "import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])" <file.bpmn>
-   ! grep -nE '</?bpmn:[A-Z]' <file.bpmn>
-   uip maestro bpmn validate <file.bpmn> --output json
+   python3 -c "import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])" <file.bpmn> &&
+     ! grep -nE '</?bpmn:[A-Z]' <file.bpmn> &&
+     uip maestro bpmn validate <file.bpmn> --output json
    ```
 
    `validate` ignores tag case; a line the `grep` prints is a tag to lowercase
