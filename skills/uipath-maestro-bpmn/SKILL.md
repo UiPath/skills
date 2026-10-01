@@ -299,6 +299,10 @@ For registry-evidence-only tasks, follow the command-first recipe in
    - **`operation`** (`Intsvc.ActivityExecution` only) is the described
      `Operation.Name` (`Create`, `List`, `Retrieve`, `Update`, `Delete`,
      `Replace`), never the activity's `Name`.
+   - **Data Service files** use `UploadFileToRecordField`,
+     `DownloadFileFromRecordField`, and `DeleteFileFromRecordField`, never the
+     `V2` objects `uip is resources list` shows. See
+     [Picking the object](references/registry-workflow.md#picking-the-object-take-it-from-the-table-do-not-infer-it).
    - **`folderKey`** (`Intsvc.ActivityExecution` only). Keep the template's
      `folderKey` context input as `=bindings.<folderBindingId>` plus its
      folder binding on every node that binds a connection. Without it the run faults `102010` `Value cannot be
