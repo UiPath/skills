@@ -199,8 +199,8 @@
 /tests/tasks/uipath-governance/ @UiPath/authz @sriramva-uipath @bansal-anushree @jianjunwang2 @t-hsia @ZuerWang99 @litheon @IsabellaCapriottiUIPath
 
 # Test skill (reports, manual test automation, manual test execution)
-/skills/uipath-test/ @vaishalisharma-uipath @amoluipath @ganeshborle
-/tests/tasks/uipath-test/ @vaishalisharma-uipath @amoluipath @ganeshborle
+/skills/uipath-test/ @UiPath/test-manager-cli-owners
+/tests/tasks/uipath-test/ @UiPath/test-manager-cli-owners
 
 
 # Tasks skill (Action Center Operate)
