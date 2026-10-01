@@ -1,6 +1,6 @@
 # Registry workflow: connector inputs
 
-### Body shape: hand-authored files need ONE `target="body"` input
+## Body shape: hand-authored files need ONE `target="body"` input
 
 This holds for every `Intsvc.*` type whose `inputTarget` is `body` —
 `ActivityExecution`, `AsyncExecution`, `SyncAgentExecution`,
@@ -93,7 +93,7 @@ reverse map accepts only those plus raw HTTP verbs, which is also exactly what
 `uip is resources run` exposes as subcommands. `--operation` takes the same
 value, so pass `--operation Create`.
 
-### Set every required `RequestFields` entry
+## Set every required `RequestFields` entry
 
 Put every `RequestFields` entry marked `Required: true` in the body under its
 described name. List them from the describe `--output json` result with
@@ -103,7 +103,7 @@ never filter `RequestFields` by the names you expect. A missing Slack
 `messageToSend` faults with `invalid_blocks`. Describe for Jira
 `curated_create_issue` omits `fields.summary`; set it there anyway.
 
-### Required `Parameters` are separate from the body — emit every one
+## Required `Parameters` are separate from the body — emit every one
 
 `uip is resources describe` reports `Parameters` alongside `RequestFields`.
 Each parameter is its own input, targeted by its `Type` (`query`, `path`, or
@@ -121,7 +121,7 @@ runtime with `400` and `Value for required parameter '<name>' not found`. A
 required entry (Slack's `send_message_to_channel_v2` requires `send_as`), so
 check it per activity rather than assuming.
 
-### A `Reference` entry takes a looked-up value, never the display name
+## A `Reference` entry takes a looked-up value, never the display name
 
 A `Parameters` or `RequestFields` entry that carries `Reference` takes the
 `LookupValue` field of the row whose `LookupNames` match the user's value. Slack
