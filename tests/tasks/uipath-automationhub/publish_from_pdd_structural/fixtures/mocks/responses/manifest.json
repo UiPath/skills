@@ -1,0 +1,79 @@
+{
+  "version": 2,
+  "_doc": "Automation Hub publish against a mocked tenant. The skills plugin's telemetry hook (`uip track --hook`) and `--version` get benign answers; help rules come next so `<verb> --help` never dispatches the verb; then one rule per ah command; anything else fails like an unknown command so the agent cannot quietly invent a verb.",
+  "rules": [
+    {
+      "match": "track --hook",
+      "file": "empty.txt"
+    },
+    {
+      "match": "--version",
+      "file": "version.txt"
+    },
+    {
+      "match": "--help",
+      "file": "ah_help.txt"
+    },
+    {
+      "match": "-h",
+      "file": "ah_help.txt"
+    },
+    {
+      "match": "ah auth-info get",
+      "file": "auth_info_get.json"
+    },
+    {
+      "match": "ah idea-flows list",
+      "file": "idea_flows_list.json"
+    },
+    {
+      "match": "ah automations schema get",
+      "file": "schema_get.json",
+      "write_destination": "ah-schema.json"
+    },
+    {
+      "match": "ah categories get",
+      "file": "categories_get.json"
+    },
+    {
+      "match": "ah applications list",
+      "file": "applications_list.json"
+    },
+    {
+      "match": "ah applications update",
+      "file": "applications_update_forbidden.json",
+      "exit_code": 1,
+      "capture_file_arg": true
+    },
+    {
+      "match": "ah users list",
+      "file": "users_list.json"
+    },
+    {
+      "match": "ah automations create",
+      "file": "automations_create.json",
+      "capture_file_arg": true
+    },
+    {
+      "match": "ah documents create",
+      "file": "documents_create.json",
+      "capture_file_arg": true
+    },
+    {
+      "match": "ah documents list",
+      "file": "documents_list.json"
+    },
+    {
+      "match": "ah automations get",
+      "file": "automations_get.json"
+    },
+    {
+      "match": "ah automations list",
+      "file": "automations_list.json"
+    }
+  ],
+  "unmocked_default": {
+    "response": "{\"Result\": \"Failure\", \"Message\": \"unknown command\"}\n",
+    "exit_code": 1
+  }
+}

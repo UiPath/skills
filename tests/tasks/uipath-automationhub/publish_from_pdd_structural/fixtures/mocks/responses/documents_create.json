@@ -1,0 +1,8 @@
+{
+  "Result": "Success",
+  "Code": "AhDocumentsCreate",
+  "Data": {
+    "Id": 901,
+    "FileId": 77
+  }
+}

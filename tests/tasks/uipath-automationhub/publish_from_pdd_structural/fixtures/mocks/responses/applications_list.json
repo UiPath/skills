@@ -1,0 +1,42 @@
+{
+  "Result": "Success",
+  "Code": "AhApplicationsList",
+  "Data": [
+    {
+      "Id": 21,
+      "Name": "Microsoft Dynamics 365",
+      "Version": "9.2",
+      "Language": "English"
+    },
+    {
+      "Id": 22,
+      "Name": "Signicat",
+      "Version": "2026",
+      "Language": "English"
+    },
+    {
+      "Id": 23,
+      "Name": "Salesforce Sales Cloud",
+      "Version": "2026",
+      "Language": "English"
+    },
+    {
+      "Id": 24,
+      "Name": "SAP S/4HANA",
+      "Version": "2023",
+      "Language": "English"
+    },
+    {
+      "Id": 25,
+      "Name": "Avaloq Core",
+      "Version": "5.8",
+      "Language": "English"
+    },
+    {
+      "Id": 26,
+      "Name": "ServiceNow",
+      "Version": "Xanadu",
+      "Language": "English"
+    }
+  ]
+}

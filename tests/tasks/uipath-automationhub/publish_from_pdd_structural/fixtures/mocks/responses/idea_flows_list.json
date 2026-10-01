@@ -1,0 +1,32 @@
+{
+  "Result": "Success",
+  "Code": "AhIdeaFlowsList",
+  "Data": [
+    {
+      "Id": 3,
+      "Name": "Standard Idea Flow",
+      "Phases": [
+        "Idea",
+        "Assessment",
+        "Decision"
+      ]
+    },
+    {
+      "Id": 7,
+      "Name": "Business Process Flow",
+      "Phases": [
+        "Documented",
+        "Approved"
+      ]
+    },
+    {
+      "Id": 9,
+      "Name": "Citizen Developer Flow",
+      "Phases": [
+        "Idea",
+        "Build",
+        "Live"
+      ]
+    }
+  ]
+}

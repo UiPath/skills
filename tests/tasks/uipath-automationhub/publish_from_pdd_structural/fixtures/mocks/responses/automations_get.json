@@ -1,0 +1,10 @@
+{
+  "Result": "Success",
+  "Code": "AhAutomationsGet",
+  "Data": {
+    "process_id": 4815,
+    "process_name": "Retail Account Onboarding",
+    "process_slug": "retail-account-onboarding-4815",
+    "phase": "Documented"
+  }
+}

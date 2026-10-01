@@ -1,0 +1,20 @@
+{
+  "Result": "Success",
+  "Code": "AhAuthInfoGet",
+  "Data": {
+    "Tenant": {
+      "Name": "DefaultTenant",
+      "Url": "https://cloud.uipath.example/fjordline/DefaultTenant/automationhub_"
+    },
+    "User": {
+      "Email": "dana.reyes@fjordline.example",
+      "FirstName": "Dana",
+      "LastName": "Reyes",
+      "IsActive": 1,
+      "Roles": [
+        "ah-standard-user",
+        "ah-authorized-user"
+      ]
+    }
+  }
+}
