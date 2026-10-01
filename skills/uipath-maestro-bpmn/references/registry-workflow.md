@@ -407,7 +407,7 @@ resourceKey`. A `BusinessRule` binding carries the rule key as `resourceKey`.
 Other binding kinds (`process`, `queue`) carry no `resourceKey`; do not invent
 one.
 
-A folder-scoped connector activity needs TWO bindings that share one
+Every connector activity bound to a connection needs TWO bindings that share one
 `resourceKey` (the connection id) and differ in `propertyAttribute`: the
 connection binding's `default` is the connection id, the folder binding's
 `default` is the folder key.

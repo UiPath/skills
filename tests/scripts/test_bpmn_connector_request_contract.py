@@ -145,3 +145,5 @@ def test_spec_notes_do_not_teach_the_shape_the_runtime_rejects() -> None:
             assert 'target=\"body\"' in notes, entry["extensionType"]
         discovery = entry.get("discoveryNotes") or ""
         assert "Set operation from Name" not in discovery, entry["extensionType"]
+        context = entry.get("contextFieldNotes") or ""
+        assert "Omit folderKey" not in context, entry["extensionType"]
