@@ -14,10 +14,11 @@ An existing Flow JSON can also be decompiled back into TypeScript for editing.
 
 ## Project layout
 
-The workspace installs `@uipath/maestro-builder-sdk` in `node_modules/`; `examples/` contains authored examples, and `references/` contains the details routed from this guide.
-A Flow is authored as a root-level `<Name>.flow.ts` that imports the package directly.
+`@uipath/maestro-builder-sdk` is installed globally (`npm install -g`); `examples/` contains authored examples, and `references/` contains the details routed from this guide.
+A Flow is authored as `.flow-sdk/<Name>.flow.ts` under the workspace root, and it imports the package directly.
 
-**The source lives at the root; the compiled artifact does not.**
+**Authoring files live in `.flow-sdk/`; the compiled artifact does not.**
+`.flow-sdk/` is the SDK's own work directory: the source, `bindings.json`, `connectors/` and `connectors-local/` all go there by default, relative to the directory you run `uip` from (the workspace root). Studio Web never reads them, and `uip solution pack`/`upload` leave the folder out. Run every command below from the workspace root.
 Scaffold the project first, seed the source from it, then emit back into it — `compile -o` is the authority over where the emitted file is written.
 `<Solution>` and `<Name>` are the request's own names, used verbatim: a request that gives one name for both ("inside a solution of the same name") uses it for both, and a request that names only the Flow uses `<Name>` for both.
 **Look for an existing solution before `uip solution init`:** run `find . -maxdepth 2 -name '*.uipx'`. If one exists and a user can answer, ask which to use (one option per solution, then "Create a new solution", then "Something else") and scaffold nothing until they do; never create a second solution silently. Headless, use the solution the request names, else the only one present, else a new one named as above, and record the choice in the final response.
@@ -25,9 +26,9 @@ Scaffold the project first, seed the source from it, then emit back into it — 
 ```bash
 uip solution init <Solution>
 ( cd <Solution> && uip maestro flow init <Name> )
-uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o <Name>.flow.ts --no-pipeline
-# edit <Name>.flow.ts
-uip maestro flow compile <Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
+uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
+# edit .flow-sdk/<Name>.flow.ts
+uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
 ```
 
 Do not hand-write the skeleton.
@@ -42,36 +43,38 @@ An existing project needs no `init`: skip the first two commands and seed from t
 Exactly one emitted `<Name>.flow` may exist, at that path, and never a second copy at the workspace root — validators and evidence collectors cannot choose safely between duplicates.
 Emitting to the root is correct only for the packaged-SDK local gates, which never scaffold a project; pick the loop first ([`references/CLI-LOOP.md`](references/CLI-LOOP.md)) and do not mix the two.
 
-### Installing the package into a bare workspace
+### Installing the package
 
-Skip this when `node_modules/@uipath/maestro-builder-sdk` is already present, as it is in a prepared workspace.
+Skip this when the SDK is already installed: `npm ls -g @uipath/maestro-builder-sdk` lists it, or a prepared workspace has `node_modules/@uipath/maestro-builder-sdk` (a workspace copy is used before a global one).
 Every `uip maestro flow` authoring verb — `check`, `compile`, `decompile` — runs from the installed package, so all of them refuse until it is installed; the package cannot bootstrap itself.
-One install does the whole bootstrap, writing `package.json` itself when the directory has none:
+Install it once per machine, globally, so the workspace needs no `package.json` or `node_modules/`:
 
 ```bash
-npm install --save-dev @uipath/maestro-builder-sdk
+npm install -g @uipath/maestro-builder-sdk
 ```
 
 The package is public on npmjs.com, so this needs no token and follows whatever registry or mirror the machine's npm config names.
-Only if it fails with E401 or E404 **and** `npm config get @uipath:registry` names GitHub Packages, retry once with `--@uipath:registry=https://registry.npmjs.org` appended; any other failure (a timeout, a mirror refusing the package) is the user's network or registry to fix, so report it rather than routing around it.
-npm records the dependency in the nearest `package.json` up the directory tree, installing `node_modules/` beside that file rather than in the current directory — so when an unrelated ancestor owns one, claim the intended root first with `[ -f package.json ] || npm init -y`.
-On a `package.json` npm generated itself, `npm pkg set type=module` silences the `MODULE_TYPELESS_PACKAGE_JSON` warning every compile otherwise prints; leave an existing project's `type` alone.
+Only if it fails with E401 or E404 **and** `npm config get @uipath:registry` names GitHub Packages, retry once with `--@uipath:registry=https://registry.npmjs.org` appended.
+If it fails with EACCES (npm's global folder is not writable), do not use `sudo`; install into the workspace instead with `npm install --save-dev @uipath/maestro-builder-sdk`, which `uip` also finds.
+Any other failure (a timeout, a mirror refusing the package) is the user's network or registry to fix, so report it rather than routing around it.
+When `uip` reports the SDK is below its minimum version, run the command its `Instructions` give: it names `-g` or `--save-dev` depending on which copy it found.
 
 Integrations with non-UiPath systems are handled through connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'` over the local connector library, unless the request names the transport itself ("over HTTP, not a connector" means `http()`): a hit is a connector, `"total": 0` is a miss and means `http()`, and a usage error means the library is not cached, so run `uip maestro registry pull` first. For document extraction or another tenant capability (agent, process), which that library does not hold, run the family's `uip maestro flow registry search` ([`references/ixp.md`](references/ixp.md), [`references/agent.md`](references/agent.md)). A `script()` returning fixed values is never a stand-in for that step, and `mock()` only marks a capability the search proved absent.
-Connectors require a root-level [`bindings.json`](references/bindings.md).
-`uip maestro registry pull` writes a descriptor per referenced connector to `connectors/<key>.ts`, and caches the library itself outside the project.
-Prepared connector modules live at `connectors-local/<key>.ts`; their descriptor data is kept separately below `connectors-local/descriptors/<key>/`.
+Connectors require [`.flow-sdk/bindings.json`](references/bindings.md).
+`uip maestro registry pull` writes a descriptor per referenced connector to `.flow-sdk/connectors/<key>.ts`, and caches the library itself outside the project.
+Prepared connector modules live at `.flow-sdk/connectors-local/<key>.ts`; their descriptor data is kept separately below `.flow-sdk/connectors-local/descriptors/<key>/`.
+Because the source sits in `.flow-sdk/` too, it imports them as `./connectors/<key>.ts` and `./connectors-local/<key>.ts`.
 
 ### The connector loop: author → check → prepare → check → compile
 
 Authoring never waits on `prepare`: once the search above has chosen the node, no further discovery command precedes the source.
-Write the connector step from the task's own words — the fields you intend, `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a generic operation — then run `uip maestro flow check <Name>.flow.ts --source`.
+Write the connector step from the task's own words — the fields you intend, `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a generic operation — then run `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`.
 Check names every prepare you owe, with the exact command:
-`OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED` for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a lookup token with no recorded value, `CONNECTOR_INPUT` for a field the operation does not declare. Run that one `uip maestro registry prepare <connector-key> <action>` — `--object`, `--resolve` and `-f` compose in a single invocation, it finds the connection itself, writes `bindings.json`, and repoints your import at the generated `connectors-local/<key>.ts` descriptor — then re-run `check` and compile.
+`OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED` for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a lookup token with no recorded value, `CONNECTOR_INPUT` for a field the operation does not declare. Run that one `uip maestro registry prepare <connector-key> <action>` — `--object`, `--resolve` and `-f` compose in a single invocation, it finds the connection itself, writes `.flow-sdk/bindings.json`, and repoints your import at the generated `./connectors-local/<key>.ts` descriptor — then re-run `check` and compile.
 Where two flows import the same connector it names them instead of guessing, and asks for `--source`.
 
 The gate this replaces still holds for schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`): the static library descriptor is not sufficient there, and the prepare that check names — with every required `-f NAME=VALUE` — is what creates the design-time schema-replay cache.
-Do not substitute manual `resources run list` lookups plus a static `connectors/<key>.ts` import: the lookups choose values but do not create that cache.
+Do not substitute manual `resources run list` lookups plus a static `./connectors/<key>.ts` import: the lookups choose values but do not create that cache.
 After compiling, inspect the emitted connector configuration.
 `flow validate` can accept a missing cache, so completion requires non-null `customFieldsRequestDetails` whose parent values match the runtime inputs.
 
@@ -91,7 +94,7 @@ A Flow can have outputs, which are returned to the caller when the flow complete
 
 ## Lifecycle
 
-The `uip maestro flow` commands keep source checks, emission, and compiled-artifact checks explicit while the installed `@uipath/maestro-builder-sdk` owns their semantics. A workspace with `{ "flowSdk": { "emitOnly": true } }` in `package.json`, or `FLOW_SDK_EMIT_ONLY=1`, makes `uip maestro flow compile` emit-only and makes both `flow check` modes refuse. Product validate owns final structural verification in that mode; use product debug only when the node family and the requested evidence support it.
+The `uip maestro flow` commands keep source checks, emission, and compiled-artifact checks explicit while the installed `@uipath/maestro-builder-sdk` owns their semantics. A workspace with `{ "flowSdk": { "emitOnly": true } }` in a `package.json`, or `FLOW_SDK_EMIT_ONLY=1`, makes `uip maestro flow compile` emit-only and makes both `flow check` modes refuse. Product validate owns final structural verification in that mode; use product debug only when the node family and the requested evidence support it.
 
 **Run the correct loop for your packaging mode: [`references/CLI-LOOP.md`](references/CLI-LOOP.md)**.
 
@@ -100,14 +103,14 @@ The `uip maestro flow` commands keep source checks, emission, and compiled-artif
 In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. If only emitted `.flow` JSON exists, decompile it, compile the pristine baseline, edit narrowly, and merge the delta back into the original.
 These are before/after judgments; no final-artifact checker can prove them.
 
-For a narrow edit in an external staging directory, `decompile` writes `<Name>.pipeline.mjs`, which runs the loop in two invocations and gets the baseline ordering right:
+For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which runs the loop in two invocations and gets the baseline ordering right. It keeps its baseline, edited and merged `.flow` files in `.flow-sdk/` too:
 
 ```bash
-uip maestro flow decompile <Name>.flow -o <Name>.flow.ts
-node <Name>.pipeline.mjs      # captures the pristine baseline
-# edit <Name>.flow.ts narrowly
-node <Name>.pipeline.mjs      # compiles the edit and merges it back
-uip maestro flow validate <Name>.merged.flow --output json
+uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts
+node .flow-sdk/<Name>.pipeline.mjs      # captures the pristine baseline
+# edit .flow-sdk/<Name>.flow.ts narrowly
+node .flow-sdk/<Name>.pipeline.mjs      # compiles the edit and merges it back
+uip maestro flow validate .flow-sdk/<Name>.merged.flow --output json
 ```
 
 Validate the merged artifact, never the intermediate edited compile.
@@ -327,7 +330,7 @@ Signature: `http({ method?, url, managed, connection?, folder?, targetConnector?
 .step('limit', script({ code: 'return $vars.getPolicy.output.body.limit;' }))
 ```
 
-Match `managed` to the scenario's node; connector auth needs both `connection` and `folder` from `bindings.json`.
+Match `managed` to the scenario's node; connector auth needs both `connection` and `folder` from `.flow-sdk/bindings.json`.
 A `branch-<name>` side exit uses `.stepToList`; omit both bindings for manual/implicit mode.
 
 **Reference: [`references/http.md`](references/http.md)**

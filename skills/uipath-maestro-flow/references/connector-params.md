@@ -33,7 +33,7 @@ source. The loop is:
 2. **Author** the step from the task's own words — the fields you intend,
    `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a
    generic operation.
-3. **Check**: `uip maestro flow check <Name>.flow.ts --source`. It names each
+3. **Check**: `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`. It names each
    gap with the exact command — `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`,
    `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
 4. **Prepare once** — `--object`, `--resolve` and `-f` compose in a single
@@ -79,7 +79,7 @@ uip maestro registry pull
 The library and its Markdown go to a shared cache
 (`~/.uipath/cache/flow-sdk/library/current/`), and `compile`, `check` and
 `registry search` resolve them from there with no flag. The project gets only
-`./connectors/`, holding a descriptor per connector it references.
+`.flow-sdk/connectors/`, holding a descriptor per connector it references.
 
 To read the Markdown directly, ask where it is:
 
@@ -123,7 +123,7 @@ uip maestro registry prepare <connector-key> <action> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
 
-The result lands in `./connectors-local/`, which the compilers union over the
+The result lands in `.flow-sdk/connectors-local/`, which the compilers union over the
 library. Calls accumulate, so preparing a second operation keeps the first.
 
 `prepare` picks the connection itself (see below). Pass `--connection-id <id>`
@@ -136,7 +136,8 @@ reject every input as unknown — the refusal is the only signal that says
 
 Descriptors from either tree are imported with their real `.ts` extension — a
 `.js` specifier does not resolve, because these are sources rather than compiled
-output:
+output. The paths are relative to the source, which sits in `.flow-sdk/` beside
+both trees:
 
 ```ts
 import { CreateInvoiceShare } from './connectors-local/uipath-salesforce-sfdc.ts';
@@ -199,7 +200,7 @@ matches, the command has already retried a refreshed catalog: the object is
 not on this connection, so surface that rather than inventing a name. Do not
 hand-filter the catalog with `uip is resources list` + `--output-filter` — the
 matching, the verb narrowing and the staleness retry are prepare's job now,
-and the match is recorded in `connectors-local/resolutions.json` (the
+and the match is recorded in `.flow-sdk/connectors-local/resolutions.json` (the
 `objects` section) beside the lookup resolutions.
 
 ## Structured filters (CEQL)
@@ -545,7 +546,7 @@ another connection or session:
 
 **Choose the collection from the prepared action definition before the first
 `resources run list` call.** Run `registry prepare` first and find the target
-input's `reference` block in its generated `connectors-local/*.v1def.json`.
+input's `reference` block in its generated `.flow-sdk/connectors-local/*.v1def.json`.
 `reference.path` is the contract — it names the exact collection, and any
 `{placeholder}` in it names a field whose value must be resolved first.
 `reference.objectName` is only a starting point: it is frequently the shared root

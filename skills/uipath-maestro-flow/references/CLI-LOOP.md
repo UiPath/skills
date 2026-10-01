@@ -41,7 +41,7 @@ artifact can establish.
 ## Local authoring hard gates
 
 Use this section only when emit-only mode is disabled. Use the source check as
-the fast no-output inner loop (with a library and a `bindings.json` beside the
+the fast no-output inner loop (with a library and `.flow-sdk/bindings.json` beside the
 source it reports every connector-input and binding refusal `compile` would
 raise), compile to emit, then run the product's static check on the artifact.
 There is no compiled-artifact `check`; `validate` is that rung.
@@ -50,11 +50,11 @@ The full sequence, in order — `registry prepare` appears only where `check`
 names it, never before the source exists:
 
 ```bash
-uip maestro flow check <Name>.flow.ts --source
+uip maestro flow check .flow-sdk/<Name>.flow.ts --source
 # run each prepare the check names, with the exact command it prints:
 uip maestro registry prepare <key> <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
-uip maestro flow check <Name>.flow.ts --source    # re-check until clean
-uip maestro flow compile <Name> -o <Name>.flow
+uip maestro flow check .flow-sdk/<Name>.flow.ts --source    # re-check until clean
+uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow
 uip maestro flow validate <Name>.flow --output json
 ```
 
@@ -72,13 +72,13 @@ These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
 ## Product-CLI scaffold
 
 Product debug needs a solution containing a Flow project. Keep the authored
-source at the workspace root beside `node_modules/`, and create the nested
-scaffold once:
+source in `.flow-sdk/` under the workspace root, outside the solution, and
+create the nested scaffold once:
 
 ```bash
 uip solution init <Solution>
 ( cd <Solution> && uip maestro flow init <Name> )
-uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o <Name>.flow.ts --no-pipeline
+uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
 ```
 
 That third command seeds the authored source from the stub `flow init` just wrote, so the flow's id and name come from the product instead of being invented, and the stub is overwritten in place by the first `compile -o`.
@@ -88,7 +88,7 @@ For a **Maestro Automate** project (the request names that product, not just the
 `<Solution>` and `<Name>` are the request's own names, used verbatim: a request
 that gives one name for both ("inside a solution of the same name") uses it for
 both, and a request that names only the Flow uses `<Name>` for both. The result
-has three related names: `<Name>.flow.ts`, the `<Name>` project directory, and
+has three related names: `.flow-sdk/<Name>.flow.ts`, the `<Name>` project directory, and
 `<Name>.flow` inside that project. Keep them aligned for this scaffold so each
 command addresses the intended project; `compile -o` remains the authority over
 where the emitted file is written.
@@ -109,7 +109,7 @@ refresh and debug only when the stated acceptance bar requires product-runtime
 behavior evidence:
 
 ```bash
-uip maestro flow compile <Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
+uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
 uip maestro flow validate <Solution>/<Name>/<Name>.flow --output json
 # Before anything opens the emitted file — upload, debug, or a designer:
 uip maestro flow format <Solution>/<Name>/<Name>.flow --output json

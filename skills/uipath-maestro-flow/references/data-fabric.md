@@ -210,7 +210,7 @@ as unknown inputs until you resolve the schema once:
 ```bash
 uip maestro registry prepare uipath-uipath-dataservice get-entity-record-by-id \
   -f entityName=ContractRegistry
-# → connectors-local/ + bindings.json, with the entity's own fields as inputs
+# → .flow-sdk/connectors-local/ + .flow-sdk/bindings.json, with the entity's own fields as inputs
 ```
 
 ```ts
