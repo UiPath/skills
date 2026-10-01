@@ -2,7 +2,7 @@
 
 Loop runs a body for every member of a collection.
 
-Signature: `.loop(name, collection, bodyFn)`.
+Signature: `.loop(name, collection, bodyFn, options?)`.
 
 ```ts
 .loop('eachOrder', input('orders'), (body) => body
@@ -29,8 +29,18 @@ advances:
 ```
 
 The loop runs sequentially (`parallel: false`). Inside the body, read
-`$vars.<loop>.currentItem` and `$vars.<loop>.currentIndex` — or `v('eachOrder.currentItem')`
-from the builder.
+`$vars.<loop>.currentItem` and `$vars.<loop>.currentIteration` — or
+`v('eachOrder.currentItem')` from the builder.
+
+`currentIndex` is the field name of the legacy loop 1.0.0. On the default 2.4
+loop it reads `undefined`, so `check` refuses it (`UNKNOWN_LOOP_FIELD`) and
+suggests `currentIteration - 1` for a 0-based index. Do not rely on the exact
+base of `currentIteration` yet: the 2.4 definition documents it as 1-based,
+but the local engine (`flow-debug`) currently reads 0 for the first item, and
+the cloud runtime is not yet verified
+([flow-builder-sdk#874](https://github.com/UiPath/flow-builder-sdk/issues/874)).
+If a flow's result depends on the number, confirm it with a live
+`uip maestro flow debug` run.
 
 The item is named after the LOOP, not after the collection and not by a
 convention: **there is no `$vars.item`, `$vars.currentItem` or `$vars.<collection>`.**
@@ -39,11 +49,13 @@ A branch or step that decides on the item has to name the loop, so a loop called
 `$vars.item.priority`, which resolves to nothing and takes the false arm on every
 iteration without erroring.
 
-## Rich loop options (loop 2.4)
+## Loop options
 
-Any of these — or a `body.break()` in the body — selects the loop's 2.4
-definition (inner `start`/`continue`/`break` handles); a plain `.loop()` keeps
-the long-standing 1.0.0 shape.
+Every `.loop()` emits the loop's 2.4 definition (inner `start`/`continue`/`break`
+handles), the version the registry serves and the designer authors. The legacy
+1.0.0 shape (body from `output`, back-edge into `loopBack`, `currentIndex`) is
+emitted only for an explicit `{ version: '1.0.0' }`, which accepts none of the
+options below.
 
 - `parallel: true` — run iterations concurrently instead of sequentially.
 - `completionCondition` — an expression checked after each iteration; the loop

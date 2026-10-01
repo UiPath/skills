@@ -61,7 +61,7 @@ success-path work.
 
 Two limits `check` enforces on a ref, and one it only warns about. It refuses an
 unknown target, a target inside another port's path, and a target inside a LOOP
-BODY — a loop reads `currentItem` / `currentIndex` per iteration, and an edge
+BODY — a loop reads `currentItem` / `currentIteration` per iteration, and an edge
 arriving from outside carries no iteration. It WARNS when a ref leaves a loop body
 (a break, which Flow has no node for) or crosses a parallel arm boundary (the Merge
 waits for every branch it forked). Those are best effort: verify them with

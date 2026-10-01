@@ -862,9 +862,12 @@ Signature: `.loop(name, collection, bodyFn, options?)`.
 ```
 
 Per-iteration flow-variable writes go through `{ updates }` on a body step.
-Options select the richer loop contract: `parallel: true`, `completionCondition`
-(checked after each iteration, stops early), and `body.break()` exits the whole
-loop from inside an arm. See the reference for the option details and examples.
+Every `.loop()` emits `core.logic.loop` 2.4: the body reads
+`$vars.<loop>.currentItem` and `$vars.<loop>.currentIteration` (not the legacy
+1.0.0 `currentIndex`, which `check` refuses). Options: `parallel: true`,
+`completionCondition` (checked after each iteration, stops early), and
+`body.break()` exits the whole loop from inside an arm. See the reference for
+the option details and examples.
 
 **Reference: [`references/loops.md`](references/loops.md)**
 
