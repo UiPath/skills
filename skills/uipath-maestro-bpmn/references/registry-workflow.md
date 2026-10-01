@@ -659,12 +659,6 @@ exact template for any of them with `registry get <type>`.
 This table is a discovery aid, not a substitute for `registry get` — always pull
 the live template before authoring.
 
-If a registry `xmlTemplate` returns a PascalCase BPMN host tag such as
-`bpmn:SendTask` or `bpmn:ReceiveTask`, normalize only the BPMN host element
-names to the serializer's lower-camel form (`bpmn:sendTask`,
-`bpmn:receiveTask`) when inserting it into a source file. Keep the
-`uipath:*` payload and its `uipath:type` value unchanged.
-
 Event types stay event-wrapped even when you place them on task-like BPMN
 hosts: `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,
 `Maestro.ReceiveMessageEvent`, and `Maestro.SendMessageEvent` use
