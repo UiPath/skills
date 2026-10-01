@@ -24,6 +24,7 @@ OPERATE_SKILLS = {  # allowed in Platform Dependencies / Deployment, never in Bu
     "uipath-platform", "uipath-tasks", "uipath-test", "uipath-admin", "uipath-insights",
     "uipath-troubleshoot", "uipath-governance", "uipath-review", "uipath-planner", "uipath-aops",
     "uipath-automationhub", "uipath-automation-discovery", "uipath-feedback",
+    "uipath-activity-migrator", "uipath-knowledge-bundles",
 }
 RETIRED_SKILLS = {"uipath-rpa-workflows", "uipath-coded-workflows", "uipath-coded-agents"}
 
@@ -219,7 +220,8 @@ def check_shape(text: str, shape: str, flows: int | None, units: list[str]) -> l
     for heading, body in blocks:  # an RPA consumer owes the per-item retry and the consecutive-failure stop
         if "No RPA consumer" in body:
             continue
-        if not re.search(r"retr(y|ie)", body, re.I) or not re.search(r"consecutive", body, re.I):
+        # format guide § Transactional Shape rule 4: "stop after 3 consecutive", or the zero-count form "the run stops after 1"
+        if not re.search(r"retr(y|ie)", body, re.I) or not re.search(r"consecutive|stops? after \d", body, re.I):
             errors.append(f"Transactional Shape {heading.lstrip('# ').split(':')[0]}: outcomes do not state the per-item retry and the consecutive-failure stop")
     if re.search(r"\{[a-z][^}]*\}", ts):
         errors.append("Transactional Shape: unfilled template placeholder left in the section")
