@@ -14,3 +14,6 @@
 {"id": "uipath-genome-014", "prompt": "Extract a genome from this coded agent project and the API workflow it calls", "expected_skill": "uipath-genome"}
 {"id": "uipath-genome-015", "prompt": "This folder is an export from our previous RPA vendor's control room. Extract a genome from it so we can rebuild the bots in UiPath.", "expected_skill": "uipath-genome"}
 {"id": "uipath-genome-016", "prompt": "We are migrating a legacy test automation suite to UiPath. Blueprint what the suite does from its export in ./LegacyExport before anyone builds anything.", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-017", "prompt": "Turn our month-end close SOP in ./docs/close-sop.md into a genome we can build from later", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-018", "prompt": "I'm running a self-paced workshop next week for people new to UiPath agents and Maestro. Propose a couple of scenarios they could build in an afternoon with only public APIs and Excel.", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-019", "prompt": "Blueprint what the Windows-Legacy project in ./OldBot does before we rebuild it from scratch on the Windows framework", "expected_skill": "uipath-genome"}

@@ -22,7 +22,7 @@ Every subject is stated in full in exactly one file; every other mention is a on
 | UiPath source facts: reading order and designer-noise filter (no inventory script), detection, inventory, signals per artifact type (project settings, test projects), platform resources, provenance, pitfalls, which REFramework file feeds which Transactional Shape row | `references/uipath-source-guide.md` |
 | What a framework pack must contain | `CONTRACT.md` in the framework migration pack — ask the user for its location |
 | Framework facts only: detection, inventory, signals, composite-action wording, locator formats, per-field translation tables, framework pitfalls, inventory scripts, worked examples | `<PACK_DIR>/<framework>/source-guide.md`, `selectors-guide.md`, `scripts/`, `examples/` in the framework migration pack — never in this skill |
-| Mode detection, framework pack resolution (ask for location, select row, run then read), one- or two-sentence rules naming subject and home, task navigation | `SKILL.md` § Source Frameworks |
+| Mode detection and the boundaries with sibling skills (planner, activity-migrator), framework pack resolution (ask for location, select row, run then read), one- or two-sentence rules naming subject and home, task navigation | `SKILL.md` § Source Frameworks |
 
 ## Rules
 
