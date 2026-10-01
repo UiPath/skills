@@ -26,6 +26,7 @@ from graph import edges, ids, reachable, reaches  # noqa: E402
 
 BPMN = "VendorOnboarding/VendorOnboarding.bpmn"
 OUTCOME_RE = re.compile(r"vars\.([A-Za-z_][A-Za-z0-9_]*)")
+SIDE_EFFECT_KINDS = ("serviceTask", "sendTask")
 
 
 def gates_stage(
@@ -46,6 +47,10 @@ def verdict_gates(root, review_id: str, gate_ids: set[str]) -> set[str]:
 def can_reject(root, gate_id: str, end_ids: set[str]) -> bool:
     exits = [target for source, target in edges(root) if source == gate_id]
     return len(exits) >= 2 and bool(reachable(root, gate_id) & end_ids)
+
+
+def out_degree(root, node_id: str) -> int:
+    return sum(1 for source, _target in edges(root) if source == node_id)
 
 
 def main() -> None:
@@ -71,14 +76,16 @@ def main() -> None:
     task_ids = ids(user_tasks)
     forks = [
         g for g in parallel
-        if len(reachable(root, g.attrib.get("id", "")) & task_ids) >= 2
+        if out_degree(root, g.attrib.get("id", "")) >= 2
+        and len(reachable(root, g.attrib.get("id", "")) & task_ids) >= 2
     ]
     if not forks:
         fail("no parallel gateway reaches two review tasks — the concurrent pair was not modelled")
 
     joins = [
         g for g in parallel
-        if g not in forks and any(reaches(root, t, g.attrib.get("id", "")) for t in task_ids)
+        if out_degree(root, g.attrib.get("id", "")) < 2
+        and any(reaches(root, t, g.attrib.get("id", "")) for t in task_ids)
     ]
     if not joins:
         fail("the concurrent reviews never merge on a parallel join")
@@ -93,6 +100,7 @@ def main() -> None:
     exclusive = elements(root, "exclusiveGateway")
     gate_ids = ids(exclusive)
     end_ids = ids(elements(root, "endEvent"))
+    side_effect_ids = ids([e for kind in SIDE_EFFECT_KINDS for e in elements(root, kind)])
     for review_id in sorted(sequential):
         if not any(gates_stage(root, join_id, g, review_id, sequential, end_ids) for g in gate_ids):
             fail(
@@ -105,6 +113,13 @@ def main() -> None:
             fail(f"{review_id} reaches an end without an exclusive gateway, so its rejection cannot stop the chain")
         if not any(can_reject(root, g, end_ids) for g in verdict_gates(root, review_id, gate_ids)):
             fail(f"no exclusive gateway after {review_id} offers a second route to an end, so its rejection has no exit")
+        acted_before_verdict = reachable(root, review_id, blocked=gate_ids) & side_effect_ids
+        if acted_before_verdict:
+            fail(f"{sorted(acted_before_verdict)} run after {review_id} before its verdict gateway, so a rejection lands too late")
+
+        only_via_review = reachable(root, review_id) - reachable(root, join_id, blocked={review_id})
+        if not (only_via_review & end_ids):
+            fail(f"every end is reachable from {join_id} without {review_id}, so the process can finish without its approval")
 
     # Per-approver outcomes: conditions must read more than one distinct
     # variable, or the last approver has overwritten everyone else's verdict.
