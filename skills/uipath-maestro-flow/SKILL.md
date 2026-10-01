@@ -290,7 +290,8 @@ Signatures: `.trigger(onEvent(subscription))`; `.step(name, waitForEvent(subscri
 
 ```ts
 const mail = { connector: 'uipath-microsoft-outlook365',
-  event: 'email-received', where: { parentFolderId: inboxId } };
+  event: 'email-received', where: { parentFolderId: inboxId },
+  connection: 'outlook365', folder: 'shared' };   // bindings.json labels, both required
 export default flow('mail').trigger(onEvent(mail))
   .step('reply', script({ code: 'return $vars.start.output.subject;' })).build();
 ```
