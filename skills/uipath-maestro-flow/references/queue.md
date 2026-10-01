@@ -28,9 +28,11 @@ re-derive it, and do not invent a variable for the item:
 ```
 
 `out('enqueue', 'Key')` is the whole read. It serializes to
-`$vars.enqueue.response.Key`, which is the spelling the runtime resolves — so a
-hand-written `$vars.enqueue.output.Key`, or a `script()` step that reads the
-node and republishes the key, is both longer and wrong.
+`$vars.enqueue.output.Key`: the node maps the runtime result onto its `output`
+variable, so that is the spelling the runtime resolves. `$vars.enqueue.response.Key`
+is undefined at run time, and `check` and `uip maestro flow validate` both
+refuse it. A `script()` step that reads the node and republishes the key is
+longer and adds nothing.
 
 ## Tenant settings
 
