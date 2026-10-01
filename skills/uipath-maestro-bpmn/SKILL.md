@@ -365,9 +365,10 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `validate` ignores tag case; a line the `grep` prints is a tag to lowercase
    (step 2).
 
-   Exit 0 = valid; exit 1 = validation failed. Read severity from each issue's
-   `[error]`/`[warning]` tag, not from the `Found N error(s)` header, which
-   counts errors while the list under it prints warnings too. Fix only
+   Exit 0 = valid. Exit 1 = a parse error, a `grep` hit, or a `validate`
+   failure. Read severity from each issue's `[error]`/`[warning]` tag, not
+   from the `Found N error(s)` header, which counts errors while the list under
+   it prints warnings too. Fix only
    error-severity findings, then re-run step 4 and validate again; stop
    re-validating once every remaining finding is a warning or the placeholder
    pair below. `read but never assigned` is a defect no error covers: nothing
