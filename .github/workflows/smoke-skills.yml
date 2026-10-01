@@ -703,6 +703,16 @@ jobs:
           threshold = float(os.environ['PASS_RATE_THRESHOLD'])
           tasks = sorted(pathlib.Path('/tmp/runs').rglob('task.json'))
           results = [json.loads(p.read_text(encoding='utf-8')) for p in tasks]
+          def setup_error(d):
+              return (d.get('final_status') == 'ERROR' and not d.get('iteration_count')
+                      and (d.get('error_details') or {}).get('component') == 'orchestrator.setup')
+          infra = [d for d in results if setup_error(d)]
+          results = [d for d in results if not setup_error(d)]
+          for d in infra:
+              print(f"::warning::{d.get('task_id')}: excluded from pass rate, setup error: {d.get('error_message')}")
+          if infra and not results:
+              print('::error::Every task errored during setup, failing closed')
+              sys.exit(1)
           passed = sum(1 for d in results if d.get('final_status') == 'SUCCESS')
           n = len(results)
           if n == 0:
