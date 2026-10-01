@@ -93,12 +93,11 @@ create the nested scaffold once:
 
 ```bash
 uip solution init <Solution>
-( cd <Solution> && uip maestro flow init <Name> )
-uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
+( cd <Solution> && uip maestro flow init <Name> --sdk-source ../.flow-sdk/<Name>.flow.ts )
 ```
 
-That third command seeds the authored source from the stub `flow init` just wrote, so the flow's id and name come from the product instead of being invented, and the stub is overwritten in place by the first `compile -o`.
-Skip it when the source already exists, and skip the whole block for an existing project.
+`--sdk-source` seeds the authored source from the stub `flow init` just wrote (and creates `.flow-sdk/`), so the flow's id and name come from the product instead of being invented, and the stub is overwritten in place by the first `compile -o`.
+Drop `--sdk-source` when the source already exists (`init` refuses to overwrite it without `--force`), and skip the whole block for an existing project.
 For a **Maestro Automate** project (the request names that product, not just the verb "automate"), add `--automate` to the `flow init` line; nothing else in either loop changes.
 
 `<Solution>` and `<Name>` are the request's own names, used verbatim: a request
