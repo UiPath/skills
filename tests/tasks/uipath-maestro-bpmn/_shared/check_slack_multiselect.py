@@ -34,6 +34,8 @@ Assertion map (Flow -> BPMN):
       BPMN puts the whole request in `uipath:input` elements)                  -> body_object()
   T   the body must be the one `target="body"` JSON object the runtime
       consumes; several inputs fail (they don't merge at runtime)            -> bpmn_check.body_object()
+  T   every users entry is a Slack user id (^[UW][A-Z0-9]+$), so a display
+      name in the array fails                                                -> is_user_id()
   DROPPED  require_no_private_connector_values, require_sequence_integrity,
            require_di_for_visible_elements (not in Flow; `bpmn validate`
            criterion covers structure)
@@ -68,6 +70,7 @@ SLACK_KEY = "uipath-salesforce-slack"
 ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 
 _USERS_KEY_RE = re.compile(r"users(\[.*\])?")
+_SLACK_USER_ID_RE = re.compile(r"[UW][A-Z0-9]+")
 
 
 def slack_tasks(root: ET.Element) -> list[ET.Element]:
@@ -114,6 +117,10 @@ def parse_users(value):
     return None
 
 
+def is_user_id(value) -> bool:
+    return isinstance(value, str) and _SLACK_USER_ID_RE.fullmatch(value) is not None
+
+
 def find_users(obj):
     """Recursively find a 'users' key holding a parseable multiselect value."""
     if isinstance(obj, dict):
@@ -158,6 +165,10 @@ def main() -> None:
             continue
         if users is None:
             reasons.append(f"node '{node_id}': no 'users' multiselect field found")
+            continue
+        not_ids = [user for user in users if not is_user_id(user)]
+        if not_ids:
+            reasons.append(f"node '{node_id}': users entries are not Slack user ids: {not_ids}")
             continue
         if expected_count == "populated":
             if any(str(user).strip() for user in users):
