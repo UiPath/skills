@@ -1,0 +1,121 @@
+task_id: skill-case-freeform-sdd-normalized
+description: >
+  A free-form "SDD" (a two-bullet outline with no template shape and no
+  planner handoff receipt) is pasted and the user asks for a build. Case
+  Rule 2 sends a document that fails the receipt check to the planner's Case
+  Design Lane to normalize (§Normalize a free-form SDD), then the build
+  continues. Graded on the normalization itself, which init_validate (the same
+  outline) does not check: the planner ran, the pasted text survives
+  unchanged as sdd.original.md, the new sdd.md carries the receipt and passes
+  `sdd validate`, the stated design (case, trigger, stage Intake) is kept by
+  name, and the build reaches a validated caseplan.json. Needs a CLI with
+  `sdd validate` and `sdd format` (UiPath/cli SDD stack).
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 80
+  turn_timeout: 1500
+
+initial_prompt: |
+  Create a new UiPath Case Management project called "OnboardingCase" with
+  a manual trigger and a single stage named "Intake", and make sure the
+  case validates successfully.
+
+  Use this sdd.md as the sole input — write it to sdd.md first, then build
+  from it:
+
+  ```
+  # OnboardingCase
+
+  ## Trigger
+  - Manual trigger — user-initiated start of the case.
+
+  ## Stages
+  - Intake (regular stage) — receives the case after the manual trigger.
+  ```
+
+  Important:
+  - The `uip` CLI is already available in the environment.
+  - Treat ALL Phase hard stops (Phase 1 planning approval, Phase 2
+    publish-for-review, Phase 5 publish) as pre-approved. At each hard stop,
+    choose the "continue" / "skip publish" branch and proceed. Do NOT call
+    AskUserQuestion — it is not available in this harness.
+  - If `uip maestro case registry pull` reports unauthenticated or empty
+    cache, record the state and proceed without registry data.
+  - Skip Phase 6 entirely. Do not run `uip maestro case debug` — just
+    validate locally.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: the free-form document went to the planner, which owns turning it into an SDD"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "The pasted outline survives unchanged as sdd.original.md"
+    command: |
+      python3 - <<'PY'
+      import sys
+      want = """# OnboardingCase
+
+      ## Trigger
+      - Manual trigger — user-initiated start of the case.
+
+      ## Stages
+      - Intake (regular stage) — receives the case after the manual trigger."""
+      got = open("sdd.original.md", encoding="utf-8").read()
+      norm = lambda t: "\n".join(l.rstrip() for l in t.strip().splitlines())
+      sys.exit(norm(got) != norm(want))
+      PY
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The normalized sdd.md carries the planner receipt"
+    command: "grep -q 'planner-handoff:v1' sdd.md && grep -Eiq 'Template validation[*| ]+passed' sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The normalized sdd.md passes `sdd validate` (exit 0)"
+    command: "uip maestro case sdd validate sdd.md --output json > /dev/null"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The stated design is kept by name: case OnboardingCase, stage Intake"
+    command: "grep -q 'OnboardingCase' sdd.md && grep -Eq '^### Stage [0-9]+: Intake' sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "The build validated the case project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A caseplan.json was built"
+    command: "find . -type f -name caseplan.json -not -path '*/.venv/*' | head -n 1 | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0

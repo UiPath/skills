@@ -4,7 +4,7 @@
     "Build-review preference": 2,
     "Convert before authoring": 5,
     "Empty lookup gate": 5,
-    "Handoff contract": 3,
+    "Handoff contract": 4,
     "Phase 1 registry gate": 7,
     "Read references to EOF before mutation": 1,
     "Resolution audit": 1,
