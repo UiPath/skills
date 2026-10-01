@@ -38,6 +38,22 @@ JSON, reconstruct source, compile once to compare the emitted baseline, and
 then make the requested edit. Those are before/after judgments no final
 artifact can establish.
 
+## Installing the package
+
+Skip this when the SDK is already installed: `npm ls -g @uipath/maestro-builder-sdk` lists it, or a prepared workspace has `node_modules/@uipath/maestro-builder-sdk` (a workspace copy is used before a global one).
+Every `uip maestro flow` authoring verb — `check`, `compile`, `decompile` — runs from the installed package, so all of them refuse until it is installed; the package cannot bootstrap itself.
+Install it once per machine, globally, so the workspace needs no `package.json` or `node_modules/`:
+
+```bash
+npm install -g @uipath/maestro-builder-sdk
+```
+
+The package is public on npmjs.com, so this needs no token and follows whatever registry or mirror the machine's npm config names.
+Only if it fails with E401 or E404 **and** `npm config get @uipath:registry` names GitHub Packages, retry once with `--@uipath:registry=https://registry.npmjs.org` appended.
+If it fails with EACCES (npm's global folder is not writable), do not use `sudo`; install into the workspace instead with `npm install --save-dev @uipath/maestro-builder-sdk`, which `uip` also finds.
+Any other failure (a timeout, a mirror refusing the package) is the user's network or registry to fix, so report it rather than routing around it.
+When `uip` reports the SDK is below its minimum version, run the command its `Instructions` give: it names `-g` or `--save-dev` depending on which copy it found.
+
 ## Local authoring hard gates
 
 Use this section only when emit-only mode is disabled. Use the source check as

@@ -43,21 +43,7 @@ An existing project needs no `init`: skip the first two commands and seed from t
 Exactly one emitted `<Name>.flow` may exist, at that path, and never a second copy at the workspace root — validators and evidence collectors cannot choose safely between duplicates.
 Emitting to the root is correct only for the packaged-SDK local gates, which never scaffold a project; pick the loop first ([`references/CLI-LOOP.md`](references/CLI-LOOP.md)) and do not mix the two.
 
-### Installing the package
-
-Skip this when the SDK is already installed: `npm ls -g @uipath/maestro-builder-sdk` lists it, or a prepared workspace has `node_modules/@uipath/maestro-builder-sdk` (a workspace copy is used before a global one).
-Every `uip maestro flow` authoring verb — `check`, `compile`, `decompile` — runs from the installed package, so all of them refuse until it is installed; the package cannot bootstrap itself.
-Install it once per machine, globally, so the workspace needs no `package.json` or `node_modules/`:
-
-```bash
-npm install -g @uipath/maestro-builder-sdk
-```
-
-The package is public on npmjs.com, so this needs no token and follows whatever registry or mirror the machine's npm config names.
-Only if it fails with E401 or E404 **and** `npm config get @uipath:registry` names GitHub Packages, retry once with `--@uipath:registry=https://registry.npmjs.org` appended.
-If it fails with EACCES (npm's global folder is not writable), do not use `sudo`; install into the workspace instead with `npm install --save-dev @uipath/maestro-builder-sdk`, which `uip` also finds.
-Any other failure (a timeout, a mirror refusing the package) is the user's network or registry to fix, so report it rather than routing around it.
-When `uip` reports the SDK is below its minimum version, run the command its `Instructions` give: it names `-g` or `--save-dev` depending on which copy it found.
+**Install the SDK first, once per machine:** `npm install -g @uipath/maestro-builder-sdk`; skip it when already installed, and see [`references/CLI-LOOP.md`](references/CLI-LOOP.md#installing-the-package) for the checks and failure handling.
 
 Integrations with non-UiPath systems are handled through connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'` over the local connector library, unless the request names the transport itself ("over HTTP, not a connector" means `http()`): a hit is a connector, `"total": 0` is a miss and means `http()`, and a usage error means the library is not cached, so run `uip maestro registry pull` first. For document extraction or another tenant capability (agent, process), which that library does not hold, run the family's `uip maestro flow registry search` ([`references/ixp.md`](references/ixp.md), [`references/agent.md`](references/agent.md)). A `script()` returning fixed values is never a stand-in for that step, and `mock()` only marks a capability the search proved absent.
 Connectors require [`.flow-sdk/bindings.json`](references/bindings.md).
