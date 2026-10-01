@@ -167,7 +167,7 @@ At execution time, unresolved tasks become **placeholder tasks** in `caseplan.js
 
 ## Step 4 — Complete `registry-resolved.json`
 
-Step 3's `sdd resolve` already wrote `tasks/registry-resolved.json` (creating `tasks/`) with one entry per task under `resolved`, using Rule 10's exact keys: `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`. Do not rewrite it. This step only **adds**, with Edit, what resolve cannot know:
+Step 3's `sdd resolve` already wrote `tasks/registry-resolved.json` (creating `tasks/`) with one entry per task under `resolved`, using Rule 10's exact keys: `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`. Do not rewrite it — not even a value that looks wrong. `sdd convert --resolved` checks `stage`, `task` and `searchQuery` against the SDD and refuses the ledger when they differ, so an entry you "correct" costs a refusal and a revert. The common trap: an `action` task whose SDD names no Action App gets `searchQuery: {"name": ""}`, `matches: []`, `selected: null`, `cacheFile: "action-apps"` — that is resolve reporting an empty lookup, not a malformed entry; leave every field as written. This step only **adds**, with Edit, what resolve cannot know:
 
 - one entry per case trigger and per connector-bound condition, from the connector pipeline;
 - `gateDecision` on an entry the user answered at the Rule 18 gate;
