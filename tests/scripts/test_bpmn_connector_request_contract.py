@@ -14,7 +14,7 @@ import xml.etree.ElementTree as ET
 
 import json
 
-from bpmn_doc_example import NS, REGISTRY_REFERENCE, ROOT, section_blocks
+from bpmn_doc_example import NS, REGISTRY_PARTS, REGISTRY_REFERENCE, ROOT, section_blocks
 
 SPEC = ROOT / "skills" / "uipath-maestro-bpmn" / "validator" / "bpmn-spec.json"
 
@@ -90,7 +90,7 @@ def test_operation_stays_inside_the_closed_lexicon() -> None:
     the authored node, where `operation` is an input value.
     """
 
-    content = REGISTRY_REFERENCE.read_text(encoding="utf-8")
+    content = "\n".join(part.read_text(encoding="utf-8") for part in REGISTRY_PARTS)
     for operation in re.findall(r"--operation\s+([A-Za-z]+)", content):
         assert operation in OPERATION_LEXICON, (
             f"--operation {operation} is outside METHOD_TO_OPERATION's lexicon"

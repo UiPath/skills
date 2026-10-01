@@ -14,13 +14,10 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-REFERENCE = (
-    ROOT
-    / "skills"
-    / "uipath-maestro-bpmn"
-    / "references"
-    / "structural-bpmn.md"
-)
+REFERENCES = ROOT / "skills" / "uipath-maestro-bpmn" / "references"
+REFERENCE = REFERENCES / "structural-bpmn-skeleton.md"
+VARIABLES_REFERENCE = REFERENCES / "structural-bpmn-variables.md"
+SCRIPT_REFERENCE = REFERENCES / "structural-bpmn-script-tasks.md"
 SECTION = "## A complete minimal file"
 NS = {
     "bpmn": "http://www.omg.org/spec/BPMN/20100524/MODEL",
@@ -35,7 +32,7 @@ def minimal_example() -> ET.Element:
 
     content = REFERENCE.read_text(encoding="utf-8")
     _, heading, remainder = content.partition(SECTION)
-    assert heading, f"structural-bpmn.md is missing its {SECTION!r} section"
+    assert heading, f"{REFERENCE.name} is missing its {SECTION!r} section"
     section = remainder.partition("\n## ")[0]
 
     blocks = []
@@ -51,13 +48,8 @@ def minimal_example() -> ET.Element:
     return blocks[0]
 
 
-REGISTRY_REFERENCE = (
-    ROOT
-    / "skills"
-    / "uipath-maestro-bpmn"
-    / "references"
-    / "registry-workflow.md"
-)
+REGISTRY_REFERENCE = REFERENCES / "registry-workflow-connector-inputs.md"
+REGISTRY_PARTS = sorted(REFERENCES.glob("registry-workflow*.md"))
 
 
 def section_blocks(reference: Path, section: str) -> list[ET.Element]:

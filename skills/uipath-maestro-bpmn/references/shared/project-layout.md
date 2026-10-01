@@ -92,7 +92,7 @@ shape (`isExecutable` omitted, or the equivalent `"false"` — never forced to
 `"contentType": "ProcessOrchestration"`, and `package-descriptor.json` maps the
 BPMN file and generated JSON. `uip maestro bpmn refresh <project-path>`
 produces that shape; for the exact JSON, see
-[local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md#source-only-fallback).
+[local-metadata-regeneration-workflow.md](local-metadata-regeneration-workflow.md#source-only-fallback).
 Prefer the files produced by `uip maestro bpmn init`, and do not translate a
 descriptor shape from another UiPath project type.
 

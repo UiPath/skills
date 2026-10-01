@@ -89,7 +89,7 @@ recorded and the batch should continue. Without an inner net, the first failure
 escalates through the process-level net and ends the instance.
 
 See
-[structural-bpmn.md](../structural-bpmn.md#choosing-an-error-handling-construct)
+[structural-bpmn-flow.md](../structural-bpmn-flow.md#choosing-an-error-handling-construct)
 for choosing between a net, a boundary event, and node retry.
 
 ## Variables across a nesting boundary

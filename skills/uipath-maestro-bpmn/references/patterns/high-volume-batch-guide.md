@@ -55,7 +55,7 @@ event — and carries the multi-instance marker. The action node is a
 
 The multi-instance marker and its collection binding are a **registry gap** —
 no template exists for them. Author them from the canvas contract in
-[structural-bpmn.md](../structural-bpmn.md#multi-instance--loop-characteristics-registry-gap--canvas-supports-it),
+[structural-bpmn-containers.md](../structural-bpmn-containers.md#multi-instance--loop-characteristics-registry-gap--canvas-supports-it),
 and read the current item inside the body with `iterator[0].item` per
 [expression-authoring.md](../expression-authoring.md).
 

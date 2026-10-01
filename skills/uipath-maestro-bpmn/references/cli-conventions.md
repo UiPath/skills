@@ -22,7 +22,7 @@ All commands below are discovery/read-only. None mutate cloud state.
 These are the registry/discovery commands the skill verifies against the CLI
 source (`packages/maestro-tool/src/commands/registry.ts`). Do not invent flags.
 Validation uses `uip maestro bpmn validate <file>` — see
-[Validation](structural-bpmn.md#validation).
+[Validation](structural-bpmn-validation.md#validation).
 
 The `validate` command runs the full PO.Frontend canvas rule set offline (it was
 added to the CLI in UiPath/cli#3135). If your CLI reports `validate` as an
@@ -68,7 +68,7 @@ Exit codes: `0` Success, `1` Failure/ConfigError, `2` AuthenticationError,
 | --- | --- |
 | `registry pull` | `ExtensionTypeCount`, `ConnectorCount`, `ProcessCount`, `ProcessCountsByType`, `FromCache`, `CacheWritten`, `Message` |
 | `registry list`, `registry search` | `ExtensionTypes[]`, `Connectors[]`, `Processes[]`, `ProcessesByType` |
-| `registry get` | `ExtensionType` (fields in [registry-workflow.md](registry-workflow.md#2-get-the-template-for-each-chosen-type)); with `--connection-id`/`--object-name`, also a sibling `IsEnrichment` |
+| `registry get` | `ExtensionType` (fields in [registry-workflow-discover.md](registry-workflow-discover.md#2-get-the-template-for-each-chosen-type)); with `--connection-id`/`--object-name`, also a sibling `IsEnrichment` |
 | `is connections list` | array of `Id`, `Name`, `ConnectorKey`, `ConnectorName`, `State`, `Owner`, `IsDefault`, `ByoaConnection`, `ElementInstanceId`, `Folder`, `FolderKey`, `Created`, `Updated` |
 | `is resources list` | array of `Name`, `DisplayName`, `Path`, `Type`, `SubType`, `Custom`, `Operations`, `ElementKey` |
 | `is resources describe` | `Name`, `DisplayName`, `ElementKey`, `Operation`, `Parameters[]`, `RequestFields[]`, `ResponseFields[]`, `Method`. `Method` is a JSON **string**; parse it a second time |
