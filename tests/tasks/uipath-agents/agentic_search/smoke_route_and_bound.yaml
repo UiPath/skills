@@ -1,0 +1,67 @@
+task_id: skill-agents-agentic-search-smoke-route-and-bound
+description: >
+  Smoke test: an enumerative question over a stable pre-built Context Grounding
+  index should route to agentic search rather than one-shot index search, and
+  the design must carry an explicit numeric search budget plus a stop rule.
+  Verifies the agent reaches the agentic-search guidance and applies its two
+  load-bearing rules instead of proposing an uncapped retrieval loop.
+tags: [uipath-agents, smoke, low-code, lifecycle:discover, context-grounding, mode:build]
+
+run_limits:
+  expected_turns: 6
+
+reference:
+  directory: .
+
+initial_prompt: |
+  I have a low-code UiPath agent (`agent.json`) wired to a Context Grounding
+  index called `controlled_docs` in the `Shared` folder. Users ask it questions
+  like "which controlled documents reference the old escalation terminology?" —
+  one search never finds them all, because the wording varies across documents.
+
+  Use the applicable UiPath skill, then write `design.md` containing:
+    1. Which context-grounding mode this needs, and one sentence on why.
+    2. The retrieval settings you would put on the index context resource.
+    3. The maximum number of searches per question, as a number.
+    4. What the agent must do once that maximum is reached.
+
+  Do NOT scaffold or edit any project files. Write only `design.md`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-agents skill"
+    expected_skill: "uipath-agents"
+    skill_name: "uipath-agents"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Agent produced design.md"
+    path: "design.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Routed to agentic search over one-shot index search on the enumerative signal"
+    path: "design.md"
+    includes:
+      - "agentic search"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "Design names the dynamic-query semantic settings the loop depends on"
+    path: "design.md"
+    includes:
+      - "semantic"
+      - "dynamic"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Design states a numeric search budget and a stop rule for when it is exhausted"
+    command: "python3 $REFERENCE_DIR/check_bounded_design.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
