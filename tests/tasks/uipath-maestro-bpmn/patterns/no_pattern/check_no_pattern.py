@@ -19,7 +19,7 @@ from bpmn_assertions import (  # noqa: E402
     fail,
     load_bpmn,
 )
-from graph import ids, reachable  # noqa: E402
+from graph import edges, ids, reachable  # noqa: E402
 
 BPMN = "NightlyExport/NightlyExport.bpmn"
 FLOW_NODE_KINDS = (
@@ -81,7 +81,24 @@ def main() -> None:
     if total > 7:
         fail(f"{total} flow nodes for a three-step process — scaffolding was added")
 
-    start = elements(root, "startEvent")[0].attrib.get("id")
+    starts = elements(root, "startEvent")
+    if len(starts) != 1:
+        names = [e.attrib.get("name") or e.attrib.get("id") for e in starts]
+        fail(f"expected exactly one start event for a process with one trigger, found {len(starts)} {names}")
+
+    # An end event may converge routes (structural-bpmn.md validation checklist item 5).
+    end_ids = ids(elements(root, "endEvent"))
+    targets = [target for _source, target in edges(root) if target not in end_ids]
+    fake_joins = sorted({t for t in targets if targets.count(t) > 1})
+    if fake_joins:
+        fail(f"{fake_joins} take more than one incoming sequence flow: a fake join, not a gateway")
+
+    sources = [source for source, _target in edges(root) if source not in end_ids]
+    fake_splits = sorted({s for s in sources if sources.count(s) > 1})
+    if fake_splits:
+        fail(f"{fake_splits} have more than one outgoing sequence flow: a branch in a linear process")
+
+    start = starts[0].attrib.get("id")
     if not (reachable(root, start) & ids(elements(root, "endEvent"))):
         fail("the end event is not reachable from the start — the steps are not connected")
 
