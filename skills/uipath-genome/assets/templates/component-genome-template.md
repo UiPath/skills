@@ -44,10 +44,10 @@
 
 ## Configuration Questions
 
-{Questions to answer before building. Extracted genomes ask only the values the source leaves open, with the source value as the default — a value bound to the environment (host, mailbox, recipient, path or share, queue, asset or credential name) is always open; every value the source fixes stays in the section where it acts (format guide § Configuration Questions). Authored genome whose Transactional Shape is not the stub: one question asks the item retry count and the consecutive-failure stop (format guide § Transactional Shape rule 4).}
+{Questions to answer before building. Extracted genomes ask only the values the source leaves open, with the source value as the default — a value bound to the environment (host, mailbox, recipient, path or share, queue, asset or credential name) is always open; every value the source fixes stays in the section where it acts (format guide § Configuration Questions). Authored genome whose Transactional Shape is not the stub: one constant asks the item retry count and the consecutive-failure stop (format guide § Transactional Shape rule 4). Each question names its kind — setting or constant (format guide § Configuration Questions).}
 
-1. {Question}? (default: {value})
-2. {Question}? (default: {value})
+1. {Question}? ({setting | constant}; default: {value})
+2. {Question}? ({setting | constant}; default: {value})
 
 *Stub when none: "Description covers the scope — no additional configuration needed."*
 

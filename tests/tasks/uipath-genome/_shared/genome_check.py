@@ -96,7 +96,11 @@ def common_checks(text: str, level: str, sections: list[str]) -> list[str]:
             if name in OPERATE_SKILLS:
                 errors.append(f"operate-only skill '{name}' used in {heading}; it belongs under Platform Dependencies")
     errors.extend(shape_structure(text, level))
-    criteria = re.findall(r"^- \[[ x]\] ", section_body(text, "Acceptance Criteria"), re.M)
+    # format guide § Configuration Questions: N. {Question}? ({setting | constant}; default: {value})
+    for q in re.findall(r"^(\d+)\. (.*)$", section_body(text, "Configuration Questions"), re.M):
+        if not re.search(r"\((setting|constant); default:", q[1]):
+            errors.append(f"configuration question {q[0]} does not name its kind and default as '(setting; default: …)' or '(constant; default: …)'")
+    criteria =re.findall(r"^- \[[ x]\] ", section_body(text, "Acceptance Criteria"), re.M)
     if len(criteria) < MIN_CRITERIA:
         errors.append(f"acceptance criteria: {len(criteria)} found, expected >= {MIN_CRITERIA}")
     for line in criteria_lines(text):
@@ -245,8 +249,6 @@ def check_component(path: Path, expect: list[str], source_map: list[str], part_o
     questions = re.findall(r"^\d+\. ", cq, re.M)
     if len(questions) < MIN_QUESTIONS:
         errors.append(f"configuration questions: {len(questions)} found, expected >= {MIN_QUESTIONS}")
-    if questions and "(default:" not in cq:
-        errors.append("configuration questions carry no '(default: …)' values")
     if source_map:
         sm = section_body(text, "Source Map")
         if not sm.strip():

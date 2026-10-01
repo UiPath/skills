@@ -48,11 +48,11 @@ One RPA project, three entry points. The intake entry point runs every 15 minute
 
 ## Configuration Questions
 
-1. Which mailbox and folder are scanned? (default: ap-invoices@contoso.com, Inbox/Suppliers)
-2. Below which Document Understanding field confidence is a field treated as unreadable? (default: 0.8)
-3. What tolerance applies to line and total mismatches? (default: 1% or €5, whichever is greater)
-4. Which SAP company codes are in scope? (default: 1000, 2000)
-5. Which SAP transaction posts incoming invoices? (default: the standard incoming-invoice transaction)
+1. Which mailbox and folder are scanned? (setting; default: ap-invoices@contoso.com, Inbox/Suppliers)
+2. Below which Document Understanding field confidence is a field treated as unreadable? (constant; default: 0.8)
+3. What tolerance applies to line and total mismatches? (constant; default: 1% or €5, whichever is greater)
+4. Which SAP company codes are in scope? (setting; default: 1000, 2000)
+5. Which SAP transaction posts incoming invoices? (constant; default: the standard incoming-invoice transaction)
 
 ## Workflow
 

@@ -97,7 +97,7 @@ flowchart LR
 
 {Process-wide questions. Component-specific questions live in the component genomes.}
 
-1. {Question}? (default: {value})
+1. {Question}? ({setting | constant}; default: {value})
 
 ## Business Rules
 

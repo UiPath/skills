@@ -44,12 +44,12 @@ When the classification confidence falls below a configurable threshold, the aut
 
 ## Configuration Questions
 
-1. Which document types should the classifier recognise? (default: Receipt, Invoice, W-9, Certificate of Filing, Form 1040)
-2. What minimum confidence must the classifier reach to return a result at all? (default: 50%)
-3. What confidence threshold triggers human validation? (default: 70%)
-4. Which Orchestrator storage bucket holds documents during validation? (default: du_storage_bucket)
-5. Which Orchestrator folder receives the Action Center tasks? (default: the process's own folder)
-6. What task priority for validation tasks? (default: Medium)
+1. Which document types should the classifier recognise? (constant; default: Receipt, Invoice, W-9, Certificate of Filing, Form 1040)
+2. What minimum confidence must the classifier reach to return a result at all? (constant; default: 50%)
+3. What confidence threshold triggers human validation? (constant; default: 70%)
+4. Which Orchestrator storage bucket holds documents during validation? (setting; default: du_storage_bucket)
+5. Which Orchestrator folder receives the Action Center tasks? (setting; default: the process's own folder)
+6. What task priority for validation tasks? (constant; default: Medium)
 
 ## Workflow
 

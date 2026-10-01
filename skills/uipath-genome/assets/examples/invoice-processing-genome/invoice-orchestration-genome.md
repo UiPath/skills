@@ -46,10 +46,10 @@ Each queue item on the intake queue starts one instance of this process. The ins
 
 ## Configuration Questions
 
-1. How long may an instance wait on human review before reassigning to the team lead? (default: 1 business day)
-2. After how long is a stuck instance terminated as stale? (default: 5 business days)
-3. How many ERP rejections before the invoice is rejected outright? (default: 2)
-4. Which app renders the human review task? (default: AP Invoice Review)
+1. How long may an instance wait on human review before reassigning to the team lead? (constant; default: 1 business day)
+2. After how long is a stuck instance terminated as stale? (constant; default: 5 business days)
+3. How many ERP rejections before the invoice is rejected outright? (constant; default: 2)
+4. Which app renders the human review task? (constant; default: AP Invoice Review)
 
 ## Workflow
 

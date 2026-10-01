@@ -52,17 +52,17 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 
 ## Configuration Questions
 
-1. Which workbook holds the requisitions, and where does it live? (default: the purchasing folder on the finance share, workbook `Purchase Requisitions`)
-2. Which sheets hold the open requisitions, the approved suppliers, and the run summary? (default: `Open Requisitions`, `Approved Suppliers`, `Run Summary`)
-3. Which Orchestrator queue carries the requisitions? (default: `PR_Requisitions`)
-4. Which purchasing portal does entry point B sign in to? (default: the production Coupa tenant address, held as a Text asset)
-5. Which mailbox sends the requester notifications and the run summary? (default: purchasing-robot@contoso.com)
-6. Which address receives the run summary and the stop alert? (default: purchasing-operations@contoso.com)
-7. How many times is a requisition retried after a system exception? (default: 2)
-8. After how many consecutive system exceptions does the run stop and alert purchasing operations? (default: 3)
-9. Where is the supplier checked? (default: the approved-supplier sheet; alternative: the portal's supplier search)
-10. How long does entry point B wait for the portal to return a requisition number before the submit counts as a system exception? (default: 60 seconds)
-11. Is a delivery date equal to the run date accepted? (default: yes — only a date earlier than the run date is rejected)
+1. Which workbook holds the requisitions, and where does it live? (setting; default: the purchasing folder on the finance share, workbook `Purchase Requisitions`)
+2. Which sheets hold the open requisitions, the approved suppliers, and the run summary? (setting; default: `Open Requisitions`, `Approved Suppliers`, `Run Summary`)
+3. Which Orchestrator queue carries the requisitions? (setting; default: `PR_Requisitions`)
+4. Which purchasing portal does entry point B sign in to? (setting; default: the production Coupa tenant address, held as a Text asset)
+5. Which mailbox sends the requester notifications and the run summary? (setting; default: purchasing-robot@contoso.com)
+6. Which address receives the run summary and the stop alert? (setting; default: purchasing-operations@contoso.com)
+7. How many times is a requisition retried after a system exception? (constant; default: 2)
+8. After how many consecutive system exceptions does the run stop and alert purchasing operations? (constant; default: 3)
+9. Where is the supplier checked? (setting; default: the approved-supplier sheet; alternative: the portal's supplier search)
+10. How long does entry point B wait for the portal to return a requisition number before the submit counts as a system exception? (constant; default: 60 seconds)
+11. Is a delivery date equal to the run date accepted? (constant; default: yes — only a date earlier than the run date is rejected)
 
 ## Workflow
 

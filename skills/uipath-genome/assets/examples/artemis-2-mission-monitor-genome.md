@@ -45,11 +45,11 @@ The automation maintains a lightweight state file tracking the last known missio
 
 ## Configuration Questions
 
-1. Which email address(es) should receive mission alerts? (default: none — must be provided)
-2. Which mail server sends the alerts? (default: Orchestrator's mail configuration; alternative: custom SMTP host with credential asset)
-3. How far back should the first poll look for events, to avoid flooding the inbox on first run? (default: 1 hour)
-4. Should the state file persist across Orchestrator restarts? (default: yes — avoids duplicate notifications)
-5. Which email format? (default: HTML with mission phase icons; alternative: plain text)
+1. Which email address(es) should receive mission alerts? (setting; default: none — must be provided)
+2. Which mail server sends the alerts? (setting; default: Orchestrator's mail configuration; alternative: custom SMTP host with credential asset)
+3. How far back should the first poll look for events, to avoid flooding the inbox on first run? (constant; default: 1 hour)
+4. Should the state file persist across Orchestrator restarts? (constant; default: yes — avoids duplicate notifications)
+5. Which email format? (constant; default: HTML with mission phase icons; alternative: plain text)
 
 ## Workflow
 

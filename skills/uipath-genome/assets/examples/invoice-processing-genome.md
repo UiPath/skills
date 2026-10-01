@@ -128,12 +128,12 @@ flowchart LR
 
 ## Configuration Questions
 
-1. Which mailbox receives supplier invoices? (default: ap-invoices@contoso.com, folder Inbox/Suppliers)
-2. What is the auto-approval ceiling above which every invoice needs human review even when matched? (default: €25,000)
-3. What tolerance applies to line and total mismatches before an exception is raised? (default: 1% or €5, whichever is greater)
-4. Below which agent confidence does the proposal skip straight to human review as `manual`? (default: 0.4)
-5. Who receives the daily failure digest? (default: ap-lead@contoso.com)
-6. Which SAP company codes are in scope? (default: 1000, 2000)
+1. Which mailbox receives supplier invoices? (setting; default: ap-invoices@contoso.com, folder Inbox/Suppliers)
+2. What is the auto-approval ceiling above which every invoice needs human review even when matched? (constant; default: €25,000)
+3. What tolerance applies to line and total mismatches before an exception is raised? (constant; default: 1% or €5, whichever is greater)
+4. Below which agent confidence does the proposal skip straight to human review as `manual`? (constant; default: 0.4)
+5. Who receives the daily failure digest? (setting; default: ap-lead@contoso.com)
+6. Which SAP company codes are in scope? (setting; default: 1000, 2000)
 
 ## Business Rules
 
