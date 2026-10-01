@@ -92,7 +92,9 @@ case-design-layers-guide.md's; the cells own the shape.)
      exceeds the case-level SLA.
  Draft parity (finalizing a draft only)
  30. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered.
- 31. Every `=js:` expression in the draft appears verbatim in the final, inside the same owning block.
+ 31. Every `=js:` expression in the draft appears verbatim in the final, inside the same owning block — except
+     a character-level repair `uip maestro case sdd validate` required because the draft's expression did not
+     compile, which keeps every field, variable and predicate and is listed to the user.
  32. Every comparator + amount policy in the draft (`>`, `<`, `≥`, `≤`, or the draft language's words for
      over / under / at least / more than / less than, next to an amount) is encoded in an executable cell
      (owner / recipient / WHEN / IF / Inputs) of the owning task or stage, on the same side of the
