@@ -70,9 +70,25 @@ enough; do not repeat paraphrases solely for confidence.
 Tool signatures:
 
 - `{ kind: 'builtin', tool: 'analyzefiles' | 'summarize' | 'batchtransform', ... }`
-- `{ kind: 'connector', connector, operation, version?, object?, name? }`
+- `{ kind: 'connector', connector, operation, connection, folder, version?, object?, name?, description? }`
 - `{ kind: 'process' | 'agent' | 'api' | 'flow' | 'maestro', key, name, folderPath, inputs?, returns? }`
 - `{ kind: 'ixp', projectId, name, description?, versionTag?, attachment? }`
+
+A connector tool needs a connection, the same as a `connector()` step.
+`connection` and `folder` are `bindings.json` labels, resolved exactly like
+`connector()`'s options (see [bindings.md](bindings.md)). `check` reports
+`INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` when either is missing, and
+`BINDING_UNDECLARED` when a label is not in `bindings.json`.
+`uip maestro registry prepare <connector-key> <operation>` finds the
+connection and writes both entries. `description` overrides the text the model
+is told the tool does; it defaults to the library's operation description.
+
+```ts
+tools: [{
+  kind: 'connector', connector: 'uipath-uipath-airdk', operation: 'web-search',
+  connection: 'genai', folder: 'shared',   // bindings.json labels
+}]
+```
 
 A tool is invoked by the model, not by a control-flow edge. Local execution
 skips tool resources, so it proves their wiring but not that the model called
