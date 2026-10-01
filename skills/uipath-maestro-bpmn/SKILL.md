@@ -296,11 +296,12 @@ For registry-evidence-only tasks, follow the command-first recipe in
      is its own `uipath:input` with `target` set to its `Type`, after
      `</uipath:context>`, valued from the request, else its `DefaultValue`. See
      [Parameters](references/registry-workflow.md#required-parameters-are-separate-from-the-body--emit-every-one).
-   - **`operation`** is the described `Operation.Name` (`Create`, `List`,
-     `Retrieve`, `Update`, `Delete`, `Replace`), never the activity's `Name`.
-   - **`folderKey`.** Keep the template's `folderKey` context input as
-     `=bindings.<folderBindingId>` plus its folder binding on every node that
-     binds a connection. Without it the run faults `102010` `Value cannot be
+   - **`operation`** (`Intsvc.ActivityExecution` only) is the described
+     `Operation.Name` (`Create`, `List`, `Retrieve`, `Update`, `Delete`,
+     `Replace`), never the activity's `Name`.
+   - **`folderKey`** (`Intsvc.ActivityExecution` only). Keep the template's
+     `folderKey` context input as `=bindings.<folderBindingId>` plus its
+     folder binding on every node that binds a connection. Without it the run faults `102010` `Value cannot be
      null (Parameter 'Folder')`. See
      [Bindings](references/registry-workflow.md#4-bindings--from-bindinginfo-never-invented).
    - **Values.** A `Reference` field takes the looked-up id (Rule 2). A body
