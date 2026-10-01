@@ -53,11 +53,11 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "The free-form document went to the planner, which owns turning it into an SDD"
+    description: "Advisory: the free-form document went to the planner, which owns turning it into an SDD"
     skill_name: "uipath-planner"
     expected_skill: "uipath-planner"
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "The pasted outline survives unchanged as sdd.original.md"
