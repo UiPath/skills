@@ -108,6 +108,10 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## Connectors and bindings
 
+Choosing the operation, and the author → check → prepare → check → compile loop
+that fills it in, are in **[`connectors.md`](connectors.md)**. What follows is the
+binding half, which is the same for every connector-backed node.
+
 <!-- RULE:bpmn.connector.bindings -->
 - Keep connection and folder values symbolic in TypeScript and resolve them from
   `bindings.json`. Only a live run proves those environment bindings.
@@ -175,6 +179,14 @@ make from syntax alone. Exact signatures remain in the generated API.
   fields. The SDK's typed methods cover only the types in its committed snapshot,
   so a type absent from them is not evidence the platform lacks it — ask the
   registry before concluding a node cannot be authored.
+
+<!-- RULE:bpmn.activity.two-registries -->
+- **This is not the connector library.** `uip maestro bpmn registry` serves the
+  `uipath:*` EXTENSION TYPES; `uip maestro registry` (no family word) serves the
+  Integration Service OPERATIONS. A connector key passed to the first answers
+  `Extension type not found`, which is correct and is not evidence the connector is
+  missing. The caches are separate and pulling one does nothing to the other. See
+  [`connectors.md`](connectors.md).
 
 <!-- RULE:bpmn.activity.registry-freshness -->
 - `registry search` and `registry get` answer from a local cache that does not
