@@ -6,37 +6,86 @@
       "Id": 21,
       "Name": "Microsoft Dynamics 365",
       "Version": "9.2",
-      "Language": "English"
+      "Language": "English",
+      "Code": "microsoft-dynamics-365-9.2",
+      "IsActive": 1,
+      "AddedByEndUser": 1,
+      "CategoryIds": [
+        11
+      ],
+      "CreatedEpoch": 1750000000000
     },
     {
       "Id": 22,
       "Name": "Signicat",
       "Version": "2026",
-      "Language": "English"
+      "Language": "English",
+      "Code": "signicat-2026",
+      "IsActive": 1,
+      "AddedByEndUser": 1,
+      "CategoryIds": [
+        11
+      ],
+      "CreatedEpoch": 1750000000000
     },
     {
       "Id": 23,
       "Name": "Salesforce Sales Cloud",
       "Version": "2026",
-      "Language": "English"
+      "Language": "English",
+      "Code": "salesforce-sales-cloud-2026",
+      "IsActive": 1,
+      "AddedByEndUser": 1,
+      "CategoryIds": [
+        11
+      ],
+      "CreatedEpoch": 1750000000000
     },
     {
       "Id": 24,
       "Name": "SAP S/4HANA",
       "Version": "2023",
-      "Language": "English"
+      "Language": "English",
+      "Code": "sap-s/4hana-2023",
+      "IsActive": 1,
+      "AddedByEndUser": 1,
+      "CategoryIds": [
+        11
+      ],
+      "CreatedEpoch": 1750000000000
     },
     {
       "Id": 25,
       "Name": "Avaloq Core",
       "Version": "5.8",
-      "Language": "English"
+      "Language": "English",
+      "Code": "avaloq-core-5.8",
+      "IsActive": 1,
+      "AddedByEndUser": 1,
+      "CategoryIds": [
+        11
+      ],
+      "CreatedEpoch": 1750000000000
     },
     {
       "Id": 26,
       "Name": "ServiceNow",
       "Version": "Xanadu",
-      "Language": "English"
+      "Language": "English",
+      "Code": "servicenow-xanadu",
+      "IsActive": 1,
+      "AddedByEndUser": 1,
+      "CategoryIds": [
+        11
+      ],
+      "CreatedEpoch": 1750000000000
     }
-  ]
+  ],
+  "Pagination": {
+    "Returned": 6,
+    "Limit": 20,
+    "Offset": 0,
+    "Total": 6,
+    "HasMore": false
+  }
 }

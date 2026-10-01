@@ -2,9 +2,19 @@
   "Result": "Success",
   "Code": "AhAutomationsGet",
   "Data": {
-    "process_id": 4815,
-    "process_name": "Retail Account Onboarding",
-    "process_slug": "retail-account-onboarding-4815",
-    "phase": "Documented"
+    "Id": 4815,
+    "Name": "Retail Account Onboarding",
+    "Slug": "retail-account-onboarding-4815",
+    "PhaseStatus": "Not Started",
+    "SubmissionType": 8,
+    "AutomationScore": null,
+    "Priority": null,
+    "IsPublished": 0,
+    "CreatedEpoch": 1750000000000,
+    "UpdatedEpoch": 1750000000000,
+    "Phase": "Assessment",
+    "PhaseKey": "ASSESSMENT",
+    "PhaseStatusKey": "NOT_STARTED",
+    "Tags": []
   }
 }

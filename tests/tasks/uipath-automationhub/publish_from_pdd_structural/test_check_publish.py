@@ -21,8 +21,8 @@ CHECKER = HERE / "check_publish.py"
 PDD = "pdd-retail-account-onboarding.md"
 MAP = "process-map-retail-account-onboarding.bpmn"
 OWNER = "dana.reyes@fjordline.example"
-DOC_PDD = "ah-question-answer-option-ovrbp-0-0-4-0"
-DOC_MAP = "ah-question-answer-option-ovrbp-0-0-4-2"
+DOC_PDD = "ah-answer_option-ovrbp-0-3-0-1"  # "Standard operating procedure" — closest to a PDD
+DOC_MAP = "ah-answer_option-ovrbp-0-3-0-2"  # "Task/Process maps/flowcharts"
 
 
 @pytest.fixture
@@ -70,14 +70,14 @@ def good_answers() -> dict:
 def publish(sandbox: Path, answers: dict, *, pdd_type: str = "1", creates: int = 1, verify: bool = True) -> None:
     uip(sandbox, "ah", "--help")
     uip(sandbox, "ah", "idea-flows", "list", "--output", "json")
-    schema = uip(sandbox, "ah", "automations", "schema", "get", "--idea-flow-id", "7",
+    schema = uip(sandbox, "ah", "automations", "schema", "get", "--idea-flow-id", "8",
                  "--destination", "./ah-schema.json", "--output", "json")
     assert schema.returncode == 0, schema.stderr
     assert json.loads((sandbox / "ah-schema.json").read_text())["user_inputs"]
     uip(sandbox, "ah", "auth-info", "get", "--output", "json")
     (sandbox / "ah-answers.json").write_text(json.dumps(answers))
     for _ in range(creates):
-        uip(sandbox, "ah", "automations", "create", "--from-schema", "--idea-flow-id", "7",
+        uip(sandbox, "ah", "automations", "create", "--from-schema", "--idea-flow-id", "8",
             "--file", "./ah-answers.json", "--output", "json")
     uip(sandbox, "ah", "documents", "create", "4815", "--title", "PDD", "--description", "PDD",
         "--document-type-id", pdd_type, "--file", PDD, "--output", "json")

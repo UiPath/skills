@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "_doc": "Automation Hub publish against a mocked tenant. The skills plugin's telemetry hook (`uip track --hook`) and `--version` get benign answers; help rules come next so `<verb> --help` never dispatches the verb; then one rule per ah command; anything else fails like an unknown command so the agent cannot quietly invent a verb.",
+  "_doc": "Automation Hub publish against a mocked tenant. The skills plugin's telemetry hook (`uip track --hook`) and `--version` get benign answers; help rules come next so `<verb> --help` never dispatches the verb; then one rule per ah command (`--all-fields` before the plain get); anything else fails like an unknown command so the agent cannot quietly invent a verb.",
   "rules": [
     {
       "match": "track --hook",
@@ -64,6 +64,10 @@
       "file": "documents_list.json"
     },
     {
+      "match": "--all-fields",
+      "file": "automations_get_all_fields.json"
+    },
+    {
       "match": "ah automations get",
       "file": "automations_get.json"
     },
@@ -73,7 +77,7 @@
     }
   ],
   "unmocked_default": {
-    "response": "{\"Result\": \"Failure\", \"Message\": \"unknown command\"}\n",
+    "response": "{\"Result\": \"ValidationError\", \"Message\": \"error: unknown command\", \"Instructions\": \"Check command arguments and options. Run 'uip ah --help' for available subcommands.\"}\n",
     "exit_code": 1
   }
 }

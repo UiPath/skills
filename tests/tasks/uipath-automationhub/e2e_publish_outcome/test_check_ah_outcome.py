@@ -1,0 +1,231 @@
+"""Self-tests for the e2e grader and the _setup scripts, with `uip` mocked on PATH.
+
+The group's mock dispatcher stands in for the tenant: a manifest answers the
+read-back verbs with token-named records and serves the staged fixtures for
+`documents download`. No tenant, no credentials.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+HERE = Path(__file__).resolve().parent
+GROUP = HERE.parent
+MOCK = GROUP / "_shared" / "mock_template" / "mocks" / "uip"
+CHECKER = HERE / "check_ah_outcome.py"
+TOKEN = "AHE2E-TEST0001"
+PDD = "pdd-retail-account-onboarding.md"
+MAP = "process-map-retail-account-onboarding.bpmn"
+
+
+def env_with_mock(sandbox: Path) -> dict:
+    return {**os.environ, "PATH": f"{sandbox / 'mocks'}{os.pathsep}{os.environ['PATH']}"}
+
+
+def run(sandbox: Path, *cmd: str) -> subprocess.CompletedProcess:
+    return subprocess.run(list(cmd), cwd=sandbox, capture_output=True, text=True,
+                          check=False, env=env_with_mock(sandbox))
+
+
+def envelope(code: str, data, **extra) -> dict:
+    return {"Result": "Success", "Code": code, "Data": data, **extra}
+
+
+@pytest.fixture
+def sandbox(tmp_path: Path) -> Path:
+    """A sandbox after pre_run: rendered fixtures, seed.json, and a mocked tenant."""
+    shutil.copytree(HERE / "fixtures", tmp_path, dirs_exist_ok=True)
+    shutil.copytree(GROUP / "_setup", tmp_path / "_setup")
+    mocks = tmp_path / "mocks"
+    mocks.mkdir()
+    shutil.copy(MOCK, mocks / "uip")
+    (mocks / "uip").chmod(0o755)
+    responses = mocks / "responses"
+    responses.mkdir()
+    write_tenant(responses, token=TOKEN)
+    # Render templates the way seed_publish.py does, with a fixed token.
+    for template in list(tmp_path.glob("*-template.*")):
+        body = template.read_text().replace("{{RUN_TOKEN}}", TOKEN)
+        template.with_name(template.name.replace("-template", "")).write_text(body)
+        template.unlink()
+    return tmp_path
+
+
+def write_tenant(responses: Path, *, token: str, name_token: str | None = None, pdd_type: int = 1,
+                 map_bytes: bytes | None = None, num_apps: int = 2, processes: int = 1) -> None:
+    name = f"Retail Account Onboarding {name_token or token}"
+    process = {"Id": 4815, "Name": name, "Slug": "retail-account-onboarding-4815", "Phase": "Assessment",
+               "PhaseStatus": "Not Started", "PhaseKey": "ASSESSMENT", "PhaseStatusKey": "NOT_STARTED"}
+    listing = [dict(process, Id=4815 + i) for i in range(processes)]
+    record = {"ProcessId": 4815, "ProcessName": name, "ProcessSlug": process["Slug"],
+              "ProcessDescription": "<p>Automates retail current-account onboarding from CRM intake to T24 provisioning.</p>",
+              "ProcessL1Id": 11, "ProcessL2Id": 12, "ProcessL3Id": None, "ProcessSubmitterUserId": 42,
+              "ProcessNumApplications": num_apps, "ProcessNumDocuments": 2, "ProcessIsDeleted": 0}
+    docs = [
+        {"Id": 901, "AutomationId": 4815, "Title": "PDD", "TypeId": pdd_type, "FileId": 77, "EmbedLink": None, "IsActive": 1},
+        {"Id": 902, "AutomationId": 4815, "Title": "Map", "TypeId": 6, "FileId": 78, "EmbedLink": None, "IsActive": 1},
+    ]
+    flows = [{"Id": 8, "Name": "Business Process", "Phases": {"Assessment": {
+        "NotStarted": {"PhaseVariable": "ASSESSMENT", "StatusVariable": "NOT_STARTED", "StatusValue": "Not Started"},
+        "Archived": {"PhaseVariable": "ASSESSMENT", "StatusVariable": "ARCHIVED", "StatusValue": "Archived"}}}}]
+    categories = {"Levels": [], "Categories": [
+        {"CategoryId": 11, "CategoryName": "Retail Banking", "CategoryIsActive": 1, "CategoryIsOther": 0, "Subcategories": []}]}
+    inventory = [{"Id": 21, "Name": "Microsoft Dynamics 365", "Version": "9.2"}, {"Id": 22, "Name": "Signicat", "Version": "2026"}]
+    auth = {"Type": "automation-cloud", "Tenant": {"Uuid": "u", "CompanyName": "c", "Url": "https://x/automationhub_"},
+            "User": {"Id": 42, "Email": "dana.reyes@fjordline.example", "IsAdmin": 0, "IsActive": 1,
+                     "Roles": ["ah-standard-user"]}}
+    files = {
+        "auth.json": envelope("AhAuthInfoGet", auth),
+        "flows.json": envelope("AhIdeaFlowsList", flows),
+        "categories.json": envelope("AhCategoriesGet", categories),
+        "inventory.json": envelope("AhApplicationsList", inventory),
+        "list.json": envelope("AhAutomationsList", listing),
+        "get_all.json": envelope("AhAutomationsGet", record),
+        "docs.json": envelope("AhDocumentsList", docs),
+        "download.json": envelope("AhDocumentsDownload", {"Bytes": 1}),
+        "phases.json": envelope("AhPhasesSet", {"AutomationId": 4815, "Phase": "ASSESSMENT", "Status": "ARCHIVED"}),
+    }
+    for filename, payload in files.items():
+        (responses / filename).write_text(json.dumps(payload))
+    # Stored bytes served to `documents download`: the staged fixtures unless overridden.
+    pdd_body = (HERE / "fixtures" / f"{PDD[:-3]}-template.md").read_text().replace("{{RUN_TOKEN}}", token)
+    map_body = (HERE / "fixtures" / f"{MAP[:-5]}-template.bpmn").read_text().replace("{{RUN_TOKEN}}", token)
+    (responses / "stored_pdd.md").write_text(pdd_body)
+    (responses / "stored_map.bpmn").write_bytes(map_bytes if map_bytes is not None else map_body.encode())
+    manifest = {"version": 2, "rules": [
+        {"match": "ah auth-info get", "file": "auth.json"},
+        {"match": "ah idea-flows list", "file": "flows.json"},
+        {"match": "ah categories get", "file": "categories.json"},
+        {"match": "ah applications list", "file": "inventory.json"},
+        {"match": "ah automations list", "file": "list.json"},
+        {"match": "--all-fields", "file": "get_all.json"},
+        {"match": "ah documents list", "file": "docs.json"},
+        {"match": "documents download 77", "file": "download.json", "write_destination": "stored_pdd.md"},
+        {"match": "documents download 78", "file": "download.json", "write_destination": "stored_map.bpmn"},
+        {"match": "ah phases set", "file": "phases.json"},
+    ], "unmocked_default": {"response": "{\"Result\": \"Failure\", \"Message\": \"unmocked\"}\n", "exit_code": 1}}
+    (responses / "manifest.json").write_text(json.dumps(manifest))
+
+
+def seed(sandbox: Path) -> None:
+    assert run(sandbox, sys.executable, "_setup/preflight_ah.py").returncode == 0
+    # seed_publish renders templates; ours are pre-rendered, so write the seed directly
+    # with the same shape (token, digests, merged preflight).
+    import hashlib
+    preflight = json.loads((sandbox / "ah-preflight.json").read_text())
+    digests = {f: hashlib.sha256((sandbox / f).read_bytes()).hexdigest() for f in (PDD, MAP)}
+    (sandbox / "seed.json").write_text(json.dumps({"run_token": TOKEN, "fixtures": digests, **preflight}))
+
+
+def grade(sandbox: Path, check: str) -> subprocess.CompletedProcess:
+    return run(sandbox, sys.executable, str(CHECKER), check)
+
+
+def test_preflight_passes_and_records_flow(sandbox: Path) -> None:
+    result = run(sandbox, sys.executable, "_setup/preflight_ah.py")
+    assert result.returncode == 0, result.stderr
+    preflight = json.loads((sandbox / "ah-preflight.json").read_text())
+    assert preflight["business_process_flow_id"] == 8
+    assert preflight["archive_status"] == "ARCHIVED"
+    assert preflight["owner_email"] == "dana.reyes@fjordline.example"
+
+
+def test_preflight_non_admin_gate(sandbox: Path) -> None:
+    responses = sandbox / "mocks" / "responses"
+    auth = json.loads((responses / "auth.json").read_text())
+    auth["Data"]["User"]["Roles"].append("ah-system-admin")
+    (responses / "auth.json").write_text(json.dumps(auth))
+    assert run(sandbox, sys.executable, "_setup/preflight_ah.py").returncode == 0
+    result = run(sandbox, sys.executable, "_setup/preflight_ah.py", "--require-non-admin")
+    assert result.returncode == 1 and "admin" in result.stderr
+
+
+def test_preflight_fails_without_business_process_flow(sandbox: Path) -> None:
+    responses = sandbox / "mocks" / "responses"
+    (responses / "flows.json").write_text(json.dumps(envelope("AhIdeaFlowsList", [{"Id": 1, "Name": "CoE-driven idea", "Phases": {}}])))
+    result = run(sandbox, sys.executable, "_setup/preflight_ah.py")
+    assert result.returncode == 1 and "Business Process" in result.stderr
+
+
+def test_seed_publish_renders_templates(tmp_path: Path) -> None:
+    shutil.copytree(HERE / "fixtures", tmp_path, dirs_exist_ok=True)
+    shutil.copytree(GROUP / "_setup", tmp_path / "_setup")
+    (tmp_path / "ah-preflight.json").write_text(json.dumps({"business_process_flow_id": 8}))
+    result = subprocess.run([sys.executable, "_setup/seed_publish.py"], cwd=tmp_path, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    seed_data = json.loads((tmp_path / "seed.json").read_text())
+    assert seed_data["run_token"].startswith("AHE2E-") and seed_data["business_process_flow_id"] == 8
+    assert set(seed_data["fixtures"]) == {PDD, MAP}
+    assert not list(tmp_path.glob("*-template.*"))
+    assert seed_data["run_token"] in (tmp_path / PDD).read_text()
+    assert seed_data["run_token"] in (tmp_path / MAP).read_text()
+
+
+@pytest.mark.parametrize("check", ["process", "fields", "applications", "documents", "bpmn-layout"])
+def test_golden_outcome_passes(sandbox: Path, check: str) -> None:
+    seed(sandbox)
+    result = grade(sandbox, check)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_duplicate_process_fails(sandbox: Path) -> None:
+    write_tenant(sandbox / "mocks" / "responses", token=TOKEN, processes=2)
+    seed(sandbox)
+    assert "exactly one" in grade(sandbox, "process").stdout
+
+
+def test_foreign_process_not_counted(sandbox: Path) -> None:
+    write_tenant(sandbox / "mocks" / "responses", token=TOKEN, name_token="AHE2E-OTHER999")
+    seed(sandbox)
+    assert "found 0" in grade(sandbox, "process").stdout
+
+
+def test_dropped_inventory_application_fails(sandbox: Path) -> None:
+    write_tenant(sandbox / "mocks" / "responses", token=TOKEN, num_apps=1)
+    seed(sandbox)
+    assert "dropped applications" in grade(sandbox, "applications").stdout
+
+
+def test_pdd_wrong_type_fails(sandbox: Path) -> None:
+    write_tenant(sandbox / "mocks" / "responses", token=TOKEN, pdd_type=9)
+    seed(sandbox)
+    assert "exactly one PDD" in grade(sandbox, "documents").stdout
+
+
+def test_rewritten_pdd_fails(sandbox: Path) -> None:
+    seed(sandbox)
+    (sandbox / "mocks" / "responses" / "stored_pdd.md").write_text("# a different document\n")
+    assert "differ" in grade(sandbox, "documents").stdout
+
+
+def test_bare_bpmn_without_layout_fails(sandbox: Path) -> None:
+    bare = (b'<?xml version="1.0"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">'
+            b'<bpmn:process id="p"><bpmn:startEvent id="s"/></bpmn:process></bpmn:definitions>')
+    write_tenant(sandbox / "mocks" / "responses", token=TOKEN, map_bytes=bare)
+    seed(sandbox)
+    assert "No diagrams found" in grade(sandbox, "bpmn-layout").stdout
+
+
+def test_cleanup_archives_only_token_named(sandbox: Path) -> None:
+    seed(sandbox)
+    result = run(sandbox, sys.executable, "_setup/cleanup_ah.py")
+    assert result.returncode == 0
+    calls = [json.loads(l) for l in (sandbox / "mocks" / ".calls.jsonl").read_text().splitlines()]
+    archived = [c["args"] for c in calls if c.get("matched_rule") == "ah phases set"]
+    assert archived == ["ah phases set 4815 --phase ASSESSMENT --status ARCHIVED --output json"]
+
+
+def test_cleanup_never_policy(sandbox: Path) -> None:
+    seed(sandbox)
+    result = subprocess.run([sys.executable, "_setup/cleanup_ah.py"], cwd=sandbox, capture_output=True, text=True,
+                            env={**env_with_mock(sandbox), "AH_E2E_CLEANUP": "never"})
+    assert result.returncode == 0
+    calls = [json.loads(l) for l in (sandbox / "mocks" / ".calls.jsonl").read_text().splitlines()]
+    assert not [c for c in calls if c.get("matched_rule") == "ah phases set"]

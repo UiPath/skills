@@ -2,7 +2,8 @@
   "Result": "Success",
   "Code": "AhAutomationsSchemaGet",
   "Data": {
-    "IdeaFlowId": 7,
-    "Written": true
+    "SourceType": "COE",
+    "IdeaFlowId": 8,
+    "Destination": "./ah-schema.json"
   }
 }

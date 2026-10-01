@@ -4,13 +4,46 @@
   "Data": [
     {
       "Id": 901,
+      "AutomationId": 4815,
       "Title": "PDD - Retail Account Onboarding",
-      "FileId": 77
+      "Description": "PDD",
+      "TypeId": 1,
+      "FileId": 77,
+      "FileType": {
+        "FileTypeId": 1,
+        "FileTypeName": "Process Definition Document",
+        "FileTypeKey": "PDD",
+        "AcceptedExtensions": null,
+        "AllowEmbedLink": 1
+      },
+      "EmbedLink": null,
+      "IsActive": 1,
+      "CreatedEpoch": 1750000000000
     },
     {
       "Id": 902,
+      "AutomationId": 4815,
       "Title": "Process map - Retail Account Onboarding",
-      "FileId": 78
+      "Description": "BPMN",
+      "TypeId": 6,
+      "FileId": 78,
+      "FileType": {
+        "FileTypeId": 6,
+        "FileTypeName": "Process Map",
+        "FileTypeKey": "PM",
+        "AcceptedExtensions": null,
+        "AllowEmbedLink": 1
+      },
+      "EmbedLink": null,
+      "IsActive": 1,
+      "CreatedEpoch": 1750000000000
     }
-  ]
+  ],
+  "Pagination": {
+    "Returned": 2,
+    "Limit": 20,
+    "Offset": 0,
+    "Total": 2,
+    "HasMore": false
+  }
 }

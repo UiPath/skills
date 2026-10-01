@@ -3,6 +3,6 @@
   "Code": "AhAutomationsCreate",
   "Data": {
     "Id": 4815,
-    "Name": "Retail Account Onboarding"
+    "SourceType": null
   }
 }

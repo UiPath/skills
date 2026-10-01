@@ -26,13 +26,17 @@ from pathlib import Path
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 CALL_LOG = Path("mocks") / ".calls.jsonl"
 
-IDEA_FLOW_ID = "7"  # "Business Process Flow" in idea_flows_list.json
+IDEA_FLOW_ID = "8"  # "Business Process" in idea_flows_list.json
 PROCESS_ID = "4815"  # Data.Id in automations_create.json
 OWNER = "dana.reyes@fjordline.example"  # Data.User.Email in auth_info_get.json
 ACTIVE_ONBOARDING_CATEGORIES = {11, 12}  # Retail Banking / Account Onboarding
-DOC_CODE_PREFIX = "ah-question-answer-option-ovrbp-0-0-4-"
-PDD_CODE = DOC_CODE_PREFIX + "0"
-NO_DOCUMENTATION_CODE = DOC_CODE_PREFIX + "3"
+# "Documentation available" options on the Business Process flow (captured from a
+# live tenant): 0 work instructions, 1 SOP, 2 process maps/flowcharts, 3 input
+# files, 4 output files, 5 misc, 6 none, 7 don't know. No option says "PDD", so a
+# PDD + BPMN hand-off must at least record the process map and never claim "none".
+DOC_CODE_PREFIX = "ah-answer_option-ovrbp-0-3-0-"
+PROCESS_MAP_CODE = DOC_CODE_PREFIX + "2"
+NO_DOCUMENTATION_CODES = {DOC_CODE_PREFIX + "6", DOC_CODE_PREFIX + "7"}
 PDD_TYPE_ID = "1"
 PROCESS_MAP_TYPE_IDS = {"6", "9"}  # PM, or MISC when unsure (both allowed by the skill)
 
@@ -72,8 +76,13 @@ def is_help(call: dict) -> bool:
     return any(token in ("--help", "-h") for token in call["args"].split())
 
 
-def calls_matching(calls: list[dict], rule: str) -> list[dict]:
-    return [c for c in calls if c.get("matched_rule") == rule and not is_help(c)]
+def calls_matching(calls: list[dict], verb: str) -> list[dict]:
+    """Calls whose argv carries `verb` as a contiguous token run (help lookups excluded).
+
+    Matched on the args rather than the mock's `matched_rule`: a flag rule such as
+    `--all-fields` can win the dispatch for a verb we still want to count.
+    """
+    return [c for c in calls if f" {verb} " in f" {c['args']} " and not is_help(c)]
 
 
 def flag(call: dict, name: str) -> str | None:
@@ -159,11 +168,11 @@ def check_payload(calls: list[dict]) -> str:
     codes = value_of(answers, "OVR-PROCESS_DOCUMENTS")
     if not isinstance(codes, list) or not codes:
         raise CheckFailed(f"documentation answer missing: {codes!r}")
-    unknown = [c for c in codes if not re.fullmatch(re.escape(DOC_CODE_PREFIX) + r"[0-3]", str(c))]
+    unknown = [c for c in codes if not re.fullmatch(re.escape(DOC_CODE_PREFIX) + r"[0-7]", str(c))]
     if unknown:
         raise CheckFailed(f"documentation codes not verbatim from the schema enum: {unknown}")
-    if PDD_CODE not in codes or NO_DOCUMENTATION_CODE in codes:
-        raise CheckFailed(f"documentation answer does not record the PDD: {codes}")
+    if PROCESS_MAP_CODE not in codes or NO_DOCUMENTATION_CODES & set(codes):
+        raise CheckFailed(f"documentation answer does not record the attached process map: {codes}")
     return "required answers resolved from the material and tenant"
 
 

@@ -2,7 +2,9 @@
   "Result": "Success",
   "Code": "AhDocumentsCreate",
   "Data": {
+    "AutomationId": 4815,
     "Id": 901,
-    "FileId": 77
+    "FileId": 77,
+    "File": "uploaded"
   }
 }
