@@ -26,7 +26,7 @@ uip admin audit
 
 Run `uip admin audit org <verb>` or `uip admin audit tenant <verb>`. Never use `--scope`; `audit sources --scope organization` is invalid. Tenant commands additionally support `--tenant-id`.
 
-`sources`, `events`, and `export` are verb-symmetric across both scopes. `exclusions` exists only under `org`; `uip admin audit tenant exclusions` is `unknown command`.
+`sources`, `events`, and `export` are verb-symmetric across both scopes. `exclusions` exists only under `org`; `uip admin audit tenant exclusions` is `unknown command`. <!-- uip-check-skip -->
 
 | Verb | `Data` shape |
 |---|---|

@@ -67,7 +67,7 @@ uip admin audit org exclusions create \
   --output json
 ```
 
-Reaching for `uip admin audit tenant exclusions` yields `unknown command`. It is not a missing feature to work around — re-issue against `org` with an `--exclude-tenant` selector.
+Reaching for `uip admin audit tenant exclusions` yields `unknown command`. <!-- uip-check-skip --> It is not a missing feature to work around — re-issue against `org` with an `--exclude-tenant` selector.
 
 ## Permissions
 
