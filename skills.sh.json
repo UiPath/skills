@@ -22,12 +22,13 @@
     },
     {
       "title": "Solution & Planning",
-      "description": "Turn a process design into an implementation-ready solution, then package, review, and discover automation opportunities.",
+      "description": "Turn a process design into an implementation-ready solution, document existing automations as genome blueprints, then package, review, and discover automation opportunities.",
       "skills": [
         "uipath-planner",
         "uipath-solution",
         "uipath-review",
-        "uipath-automation-discovery"
+        "uipath-automation-discovery",
+        "uipath-genome"
       ]
     },
     {
