@@ -44,7 +44,7 @@ No row matches → say which framework the files appear to come from and that th
 
 Each rule names its subject and the one guide that states it in full; the guide's wording is the rule.
 
-1. **Choose the genome level and the file names before writing** — one project is a component genome, two or more (or a coordinator plus what it invokes) a process genome with one component genome per project, and test components are folders of one test project: [genome-format-guide.md § Two Levels](references/genome-format-guide.md). Every file is named by the slug rule, never by the project or automation name as spelled: § File Naming and Location.
+1. **Choose the genome level before writing** — one project is a component genome, two or more (or a coordinator plus what it invokes) a process genome with one component genome per project, and test components are folders of one test project: [genome-format-guide.md § Two Levels](references/genome-format-guide.md).
 2. **Read the source, do not ask about it.** Extraction reads every non-generated file and never asks what the automation does, only for resources beside it, which it reads and links: [extraction-guide.md](references/extraction-guide.md) Steps 1 and 3.
 3. **Infer complexity, never ask for it**, defaulting lower when ambiguous: [genome-format-guide.md § Complexity](references/genome-format-guide.md).
 4. **Replication-grade detail in behavioural wording**, with activity names, variable names, file paths and code syntax banned from the body: [genome-format-guide.md § Workflow](references/genome-format-guide.md) and § Provenance.
