@@ -1,0 +1,59 @@
+task_id: skill-rules-e2e-create-and-debug
+description: >
+  Agent creates a Business Rules project, authors a credit-risk decision table,
+  refreshes and validates it, and verifies it with `uip rules debug` against a
+  tenant with Business Rules enabled. Grades the scaffold and debug commands and
+  the rules engine's risk band on the policy cases; the DMN's structure is
+  graded by the smoke tasks.
+tags: [uipath-rules, e2e, "mode:build", "lifecycle:generate", "outcome-graded"]
+
+sandbox:
+  python: {}
+
+run_limits:
+  task_timeout: 2400
+  turn_timeout: 1800
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Business Rules project named RiskRules for our credit-risk
+  policy, and verify it returns the right answers before you finish:
+
+  - Inputs: `creditScore` (number) and `income` (number).
+  - Output: `riskBand` (string), one of "High", "Medium", "Low".
+  - A credit score below 580 is High risk.
+  - A credit score from 580 up to 699 is Medium risk when income is at least
+    50000, otherwise High risk.
+  - A credit score of 700 or more is Low risk.
+  - The first matching row wins.
+
+  Do NOT publish or deploy anything. Do NOT ask for approval, confirmation, or
+  feedback. Do NOT pause between planning and implementation.
+  Before starting, load the uipath-rules skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent scaffolded the project with rules init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the rule with rules debug"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+debug'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The rules engine returns the policy's risk band for every case"
+    command: "python3 $REFERENCE_DIR/e2e/create_and_debug/check_debug_outcome.py"
+    timeout: 1500
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

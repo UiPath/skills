@@ -131,6 +131,12 @@
 # Maestro BPMN skill
 /skills/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-bpmn/ @UiPath/maestro-cli-team
+
+
+# Rules skill
+/skills/uipath-rules/ @UiPath/maestro-cli-team
+/tests/tasks/uipath-rules/ @UiPath/maestro-cli-team
+
 # API Workflow skill
 /skills/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
 /tests/tasks/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
