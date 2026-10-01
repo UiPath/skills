@@ -163,7 +163,7 @@ Before writing Configuration Questions, sort every literal and configuration key
 
 ### Step 7 — Write and offer edits
 
-Write all files, then, once every verdict on a suspected source defect is edited in, ask "Want to adjust anything?" ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)). Common follow-ups:
+Write all files, each named by the slug rule ([genome-format-guide.md § File Naming and Location](genome-format-guide.md)), then, once every verdict on a suspected source defect is edited in, ask "Want to adjust anything?" ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)). Common follow-ups:
 
 | Request | Update |
 |---|---|

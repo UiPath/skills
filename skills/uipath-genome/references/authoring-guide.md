@@ -89,7 +89,7 @@ Interface by component type ([genome-format-guide.md § Interface](genome-format
 
 ## Step 8 — Write, then offer edits
 
-Write, then offer edits ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)). Edits are in-place, never a regeneration:
+Write the file named by the slug rule ([genome-format-guide.md § File Naming and Location](genome-format-guide.md)), then offer edits ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)). Edits are in-place, never a regeneration:
 
 | Request | Update |
 |---|---|
