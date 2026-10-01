@@ -303,23 +303,26 @@ def variable_declared(root: ET.Element, var_id: str) -> bool:
     return any(child.attrib.get("id") == var_id for child in variables)
 
 
-def var_sources(root: ET.Element) -> dict[str, str]:
-    sources: dict[str, str] = {}
+def var_sources(root: ET.Element) -> dict[str, list[str]]:
+    sources: dict[str, list[str]] = {}
     for out in root.findall(".//uipath:output", NS):
         var = out.attrib.get("var")
         source = out.attrib.get("source")
-        if var and source and var not in sources:
-            sources[var] = source
+        if var and source:
+            sources.setdefault(var, []).append(source)
     return sources
 
 
-def derives_from(var_id: str, roots: set[str], sources: dict[str, str], hops: int) -> bool:
+def derives_from(var_id: str, roots: set[str], sources: dict[str, list[str]], hops: int) -> bool:
     if var_id in roots:
         return True
     if hops <= 0:
         return False
-    source = sources.get(var_id, "")
-    return any(derives_from(ref, roots, sources, hops - 1) for ref in VAR_REF_RE.findall(source))
+    return any(
+        derives_from(ref, roots, sources, hops - 1)
+        for source in sources.get(var_id, [])
+        for ref in VAR_REF_RE.findall(source)
+    )
 
 
 def main() -> None:
