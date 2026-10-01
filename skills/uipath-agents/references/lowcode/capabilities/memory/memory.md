@@ -116,7 +116,7 @@ Rules the store enforces, surfaced verbatim by the CLI:
 | `episodic` | `0` | `--feedback-id` of feedback on the run's trace |
 | `escalation` | `1` | `--trace-id` and `--span-id` of an escalation span; `--answer` optional |
 
-- The feature gives the memory space name. `--folder-path` **or** `--folder-key` (never both) gives the Orchestrator folder the space lives in at runtime; it defaults to the feature's folder and is **required when that is `solution_folder`**, because that placeholder is replaced at deploy time with the deployment folder (`uip solution deploy list` shows it).
+- The feature gives the memory space name. `--folder-path` **or** `--folder-key` (never both) gives the Orchestrator folder the space lives in at runtime; it defaults to the feature's folder and is **required when that is `solution_folder`**, because that placeholder is replaced at deploy time with the deployment folder (`uip solution deploy list` shows it). Use `--folder-key` for Personal Workspace and `Debug_<solution>` folders; they have no fully qualified name and cannot be resolved by path.
 - `--span-id` takes the span id as a zero-padded GUID, the form `feedback create` prints it in: span `acc0be396bfd0d4b` is `00000000-0000-0000-acc0-be396bfd0d4b`.
 - A run whose agent input is empty is refused ("payload has no non-empty fields under 'input'"): the agent needs an `inputSchema` property with a value. A span that is not an escalation is refused for escalation items.
 - There is no `item remove` yet; remove items in the Agents portal.
@@ -200,6 +200,7 @@ Expected shape, for review only (standalone agent; an inline agent's `fieldSetti
 | `Invalid memory-type value` | Unsupported type | Use `episodic`, `escalation`, `0`, or `1` |
 | `Feature "<name>" points at solution_folder, the placeholder the deploy replaces` | Item command on a solution-scoped feature without a runtime folder | Pass `--folder-path <deployment folder>` or `--folder-key <key>` (`uip solution deploy list`) |
 | `Pass either --folder-path or --folder-key, not both` | Both folder flags given | Keep one |
+| `Folder not found: '<path>' ... pass --folder-key instead` | Personal Workspace and `Debug_<solution>` folders have no fully qualified name in Orchestrator | Pass `--folder-key` (`uip or folders list` shows `Key`; `uip solution deploy list` shows `FolderKey`) |
 | `Memory space "<name>" was not found in that folder` | Space not deployed in that folder, or wrong folder | Check `uip solution deploy list`; a space is created when the declaring solution is deployed |
 | `payload has no non-empty fields under 'input'` | The run's agent input was empty | Give the agent an `inputSchema` property and run it with a value; the user prompt does not count |
 | `Unable to Ingest Memory for ... SpanId[...]` | Escalation `item add` pointed at a span that is not an escalation | Use the span of an escalation the agent raised |
