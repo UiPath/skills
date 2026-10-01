@@ -16,7 +16,7 @@ Two types exist:
 
 Use when adding input/output safeguards (PII detection, harmful content blocking, custom word rules) to a low-code agent. Guardrails are configured at the agent.json root `guardrails` array.
 
-> **Read only what the task needs.** For guardrail work this file (plus [escalation-guide.md](escalation-guide.md) or [custom-rules-guide.md](custom-rules-guide.md) when those types apply) is sufficient — do not read the model-selection, prompting, or evals references for a guardrail task. Run `uip agent guardrails list` directly: the CLI handles authentication, so never preflight with `uip auth`, `uip config`, or `uip login` — react only to an actual auth error from the command itself.
+> **Read only what the task needs.** For guardrail work this file (plus [escalation-guide.md](escalation-guide.md) or [custom-rules-guide.md](custom-rules-guide.md) when those types apply) is sufficient — do not read the model-selection, prompting, or evals references for a guardrail task. Run `uip agent guardrails list` directly: the CLI handles authentication itself, so never run a login/auth/config preflight command first — react only to an actual authentication error from the command itself.
 
 > **MANDATORY: Read this file BEFORE writing any guardrail JSON.** The guardrail schema uses discriminator fields (`$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. PII detection uses `$guardrailType: "builtInValidator"` with `validatorType: "pii_detection"` — NOT `$guardrailType: "pii"`. Parameters use `id` (not `name`) and require `$parameterType`. Actions use `$actionType` (not `type`). PII entities are PascalCase (`"Email"`, not `"email_address"`). There is no `pattern`, `target`, or `message` field.
 >
