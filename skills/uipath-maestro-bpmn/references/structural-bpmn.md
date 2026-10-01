@@ -233,8 +233,9 @@ excludes any start event carrying an `eventDefinition` or a `uipath:event`
 extension, so a timer or connector start is never an entry point — an
 `entryPointId` on one is accepted but inert. With no manual root start
 `refresh` throws `BPMN file must contain a root manual start event with a
-uipath:entryPointId`, and a scaffolded project's `entry-points.json` goes
-stale, failing `validate` and `pack`.
+uipath:entryPointId`. A trigger that replaces the manual start keeps the id
+`Event_start` (SKILL.md step 3), so the scaffolded `entry-points.json` stays
+valid; under any other id it goes stale, failing `validate` and `pack`.
 
 Public entry-point variables have a two-layer runtime contract:
 
@@ -432,7 +433,10 @@ Payload shapes the canvas serializes:
 - **Timer**: `<bpmn:timerEventDefinition><bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30M</bpmn:timeDuration></bpmn:timerEventDefinition>`
   (or `timeDate` / `timeCycle`). Static durations must be valid ISO-8601;
   week designators (`PnW`) are unsupported. Expression-mode is allowed and
-  accepts either prefix — `=…` or `@…`.
+  accepts either prefix — `=…` or `@…`. A recurring schedule (nightly,
+  hourly) is a `timeCycle` with an `R/` repeat, not the `timeDuration` the
+  `Intsvc.TimerTrigger` template ships: `R/P1D` daily, `R/PT1H` hourly;
+  `validate` accepts either.
 - **Message**: `<bpmn:messageEventDefinition messageRef="Message_1" />` with a
   `<bpmn:message id="Message_1" name="…"/>` declared at definitions level. The
   Maestro internal-message events (`Maestro.ReceiveMessageEvent` /
