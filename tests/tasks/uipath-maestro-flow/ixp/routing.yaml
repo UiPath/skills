@@ -105,6 +105,7 @@ success_criteria:
   - type: run_command
     description: "Agent added an IxP or core.logic.mock placeholder node to a .flow file (per references/plugins/ixp/impl.md)"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"(uipath\\.ixp|core\\.logic\\.mock)'"
+    read_only: true
     expected_exit_code: 0
     suite_thresholds: {mean: 0.85}
 

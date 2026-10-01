@@ -80,6 +80,7 @@ success_criteria:
   - type: run_command
     description: "Generated flow contains an IxP extraction node or core.logic.mock fallback (per references/plugins/ixp/impl.md)"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"(uipath\\.ixp|core\\.logic\\.mock)'"
+    read_only: true
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -89,6 +90,7 @@ success_criteria:
   - type: run_command
     description: "Script node consumes the extraction output via $vars expression"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py '$vars.'"
+    read_only: true
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0

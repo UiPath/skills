@@ -64,6 +64,7 @@ success_criteria:
   - type: run_command
     description: "Start node is core.trigger.scheduled, manual trigger removed, valid timeCycle schedule + bpmn:TimerEventDefinition"
     command: "python3 $REFERENCE_DIR/smoke/check_scheduled_trigger_flow.py"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

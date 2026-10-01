@@ -94,6 +94,7 @@ success_criteria:
   - type: run_command
     description: "Flow has IxP extraction + SharePoint + HTTP nodes and a $vars downstream reference"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py '$vars.' --regex '(?i)(uipath\\.ixp|core\\.logic\\.mock)' --regex '(?i)sharepoint' --regex '(?i)\"type\"\\s*:\\s*\"[^\"]*http'"
+    read_only: true
     timeout: 15
     expected_exit_code: 0
     weight: 6.0
@@ -107,6 +108,7 @@ success_criteria:
   - type: run_command
     description: "Project/flow is named InvoiceProcessing (elicited from the user)"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name InvoiceProcessing"
+    read_only: true
     timeout: 15
     expected_exit_code: 0
     weight: 1.0
