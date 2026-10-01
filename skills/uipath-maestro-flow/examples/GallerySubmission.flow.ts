@@ -20,11 +20,12 @@ export default flow('gallery-submission')
   .name('GallerySubmission')
   .version('1.0.0')
   .input({ title: types.string, medium: types.string, widthCm: types.number, heightCm: types.number })
-  // The flow's two outputs. A `.var()` IS a flow output (an `inout` global, mapped
-  // on every End), so they are not repeated in `.output()` — that would be a second
-  // global with the same id, which `check` refuses (VARIABLE_NAME_COLLISION).
-  .var('outcome', types.string)
-  .var('note', types.string)
+  .output({ outcome: types.string, note: types.string })
+  // The arms' shared state. Its names are NOT the outputs' names: inputs, outputs
+  // and vars share one list in the .flow, so `.var('outcome')` beside the `outcome`
+  // output would be two globals with one id (`check`: VARIABLE_NAME_COLLISION).
+  .var('decision', types.string)
+  .var('curatorReply', types.string)
 
   // A derived fact for the curator to judge by, rather than raw dimensions.
   .step('wallSpace', script({
@@ -48,7 +49,7 @@ export default flow('gallery-submission')
       body: (b) => b.step(
         'hang',
         script({ code: 'return "accepted for the spring wall: " + $vars.curate.output.note;' }),
-        { updates: { outcome: lit('Accept'), note: out('hang') } },
+        { updates: { decision: lit('Accept'), curatorReply: out('hang') } },
       ),
     },
     {
@@ -56,11 +57,11 @@ export default flow('gallery-submission')
       body: (b) => b.step(
         'returnPiece',
         script({ code: 'return "returned to artist: " + $vars.curate.output.note;' }),
-        { updates: { outcome: lit('Decline'), note: out('returnPiece') } },
+        { updates: { decision: lit('Decline'), curatorReply: out('returnPiece') } },
       ),
     },
   ])
 
-  .return({ outcome: v('outcome'), note: v('note') })
+  .return({ outcome: v('decision'), note: v('curatorReply') })
 
   .build();
