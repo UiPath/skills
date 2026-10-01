@@ -3,16 +3,24 @@
 Verify that `uip` verb literals referenced in coder-eval task YAMLs actually
 exist in the CLI catalog.
 
-For every `command_executed` criterion in each task YAML, extract literal verb
-tokens that follow the `uip` prefix in `command_pattern`, enumerate the
-alternation paths, and check each path against `assets/uip-catalog-snapshot.json`
-and `.claude/rules/cli-renames.md`.
+For every `command_executed` / `command_not_executed` criterion in each task
+YAML, extract literal verb tokens that follow the `uip` prefix in
+`command_pattern`, enumerate the alternation paths, and check each path against
+`assets/uip-catalog-snapshot.json` and `.claude/rules/cli-renames.md`.
+
+A path is matched leaf-first. Falling back to a shorter prefix is allowed only
+when the leftover token cannot be a subcommand — a trailing flag, argument, or
+partial token. A bare word sitting where a subcommand would go, under a group
+whose children the catalog knows, is reported rather than passed off as the
+parent group.
 
 Findings:
   - High   — pattern does not match any verb in the catalog. The success
              criterion can never fire; the task scores zero on a passing run.
-  - Medium — pattern matches only retired verbs listed in cli-renames.md.
-             Suggest the canonical replacement.
+  - Medium — pattern matches only retired verbs listed in cli-renames.md
+             (suggest the canonical replacement), or a NEGATIVE criterion
+             targets a verb that does not exist, so it can never fire and
+             awards its weight unconditionally.
   - Info   — pattern is too dynamic to analyse (contains `.`, `[`, `\\w`, etc).
              Skipped — no claim made about it.
 
@@ -58,8 +66,20 @@ def load_catalog():
     if not CATALOG_PATH.exists():
         sys.exit(f"Catalog not found at {CATALOG_PATH}. "
                  "Run scripts/build-uip-catalog.py first.")
-    data = json.loads(CATALOG_PATH.read_text())
+    data = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
     return set(data["verbs"]), data.get("cli_version", "unknown")
+
+
+def load_unwalkable():
+    """Groups the catalog builder could not enumerate.
+
+    Their children are unknown, so we must never claim a verb beneath one is
+    missing — absence from the catalog carries no information there.
+    """
+    if not CATALOG_PATH.exists():
+        return set()
+    data = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    return set(data.get("unwalkable_groups") or ())
 
 
 def load_renames():
@@ -71,7 +91,7 @@ def load_renames():
     renames = {}
     if not RENAMES_PATH.exists():
         return renames
-    for line in RENAMES_PATH.read_text().splitlines():
+    for line in RENAMES_PATH.read_text(encoding="utf-8").splitlines():
         if not line.startswith("|"):
             continue
         cells = [c.strip() for c in line.strip("|").split("|")]
@@ -169,9 +189,19 @@ def enumerate_paths(parsed, allow_partial=True):
                 return _trim_to_word_boundary(paths) if allow_partial else None
         elif op == sre_parse.AT:
             # `^` / `$` / `\A` / `\Z` are positional anchors that don't add
-            # text — safe to skip. `\b` / `\B` are context-dependent and can
-            # forbid the surrounding literal from matching; treat as dynamic.
-            if args in (sre_parse.AT_BOUNDARY, sre_parse.AT_NON_BOUNDARY):
+            # text — safe to skip.
+            if args == sre_parse.AT_BOUNDARY:
+                # `\b` directly after a literal word character *confirms* that
+                # token ended — it is the opposite of a partial match. Trimming
+                # here discarded the leaf verb of every `uip <group> <leaf>\b`
+                # pattern (the repo's standard shape), so only the group was
+                # ever verified. Keep the accumulated literal intact.
+                if all(p and p[-1].isalnum() for p in paths):
+                    return paths if allow_partial else None
+                return _trim_to_word_boundary(paths) if allow_partial else None
+            if args == sre_parse.AT_NON_BOUNDARY:
+                # `\B` asserts the token continues into more word characters,
+                # so what we accumulated really is mid-token.
                 return _trim_to_word_boundary(paths) if allow_partial else None
             continue
         elif op == sre_parse.IN:
@@ -218,26 +248,54 @@ def extract_verb_paths(pattern):
     return verb_paths or None
 
 
-def classify(verb_paths, catalog, renames):
+def classify(verb_paths, catalog, renames, unwalkable=None):
     """Return ('reachable'|'retired'|'unknown', details)."""
     if not verb_paths:
         return "unknown", {}
+    unwalkable = unwalkable or set()
+
+    def has_children(prefix, lookup):
+        depth = len(prefix.split()) + 1
+        return any(v.startswith(prefix + " ") and len(v.split()) == depth
+                   for v in lookup)
+
+    def under_unwalkable(verb):
+        parts = verb.split()
+        return any(" ".join(parts[:i]) in unwalkable
+                   for i in range(1, len(parts) + 1))
 
     # Try progressively shorter prefixes — `solution project add --foo` should
     # match the catalog entry `solution project add` even when the regex
     # captured a trailing flag fragment.
-    def best_match(verb, lookup):
+    #
+    # But shortening must not swallow a bogus SUBCOMMAND. If the prefix we
+    # landed on is a group whose children the catalog knows, and the very next
+    # token is not one of them, that token is a verb that does not exist —
+    # report it instead of silently passing on the parent group. (This is how
+    # `pm apps model add-table` — no such verb; it is `pm apps data-model
+    # add-table` — lint-passed as the group `pm apps model`.)
+    def best_match(verb, lookup, strict=False):
         parts = verb.split()
         for i in range(len(parts), 0, -1):
             candidate = " ".join(parts[:i])
-            if candidate in lookup:
-                return candidate
+            if candidate not in lookup:
+                continue
+            if strict and i < len(parts) and not under_unwalkable(candidate):
+                nxt = parts[i]
+                # A trailing `-` means the walker stopped mid-kebab-token
+                # (e.g. `create-` from a pattern matching `create-raw` /
+                # `create-resource`), so we cannot claim the verb is missing.
+                looks_like_subcommand = bool(
+                    re.fullmatch(r"[a-z][a-z0-9]*(-[a-z0-9]+)*", nxt))
+                if looks_like_subcommand and has_children(candidate, lookup):
+                    return None
+            return candidate
         return None
 
     reachable = []
     retired = []
     for v in verb_paths:
-        cat_hit = best_match(v, catalog)
+        cat_hit = best_match(v, catalog, strict=True)
         ren_hit = best_match(v, renames)
         # A more specific renames entry shadows a shallower catalog prefix.
         # Example: `solution new` was removed in 1.2.0; the parent group
@@ -262,22 +320,30 @@ def iter_command_patterns(spec, path):
     for idx, crit in enumerate(spec.get("success_criteria") or []):
         if not isinstance(crit, dict):
             continue
-        if crit.get("type") != "command_executed":
+        # `command_not_executed` needs the same check: a negative criterion
+        # whose verb does not exist can never fire, so it awards its weight
+        # unconditionally — a silent free pass rather than a graded assertion.
+        if crit.get("type") not in ("command_executed", "command_not_executed"):
             continue
         if crit.get("tool_name", "Bash") != "Bash":
             continue
         pattern = crit.get("command_pattern")
         if not isinstance(pattern, str):
             continue
-        yield idx, pattern, crit.get("description", "")
+        # A criterion is a negative either by type, or by being a
+        # `command_executed` bounded to zero matches (`max_count: 0`) — both
+        # idioms appear in this repo and both assert "never ran".
+        is_negative = (crit["type"] == "command_not_executed"
+                       or crit.get("max_count") == 0)
+        yield idx, pattern, crit.get("description", ""), is_negative
 
 
-def lint_file(path, catalog, renames):
+def lint_file(path, catalog, renames, unwalkable=None):
     try:
         import yaml
     except ImportError:
         sys.exit("PyYAML is required. Install with: pip install pyyaml")
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     try:
         spec = yaml.safe_load(text)
     except yaml.YAMLError as exc:
@@ -289,7 +355,7 @@ def lint_file(path, catalog, renames):
     if not isinstance(spec, dict):
         return []
     findings = []
-    for idx, pattern, desc in iter_command_patterns(spec, path):
+    for idx, pattern, desc, is_negative in iter_command_patterns(spec, path):
         verbs = extract_verb_paths(pattern)
         if verbs is None:
             findings.append({
@@ -301,7 +367,7 @@ def lint_file(path, catalog, renames):
                            "class / quantifier). Skipped.",
             })
             continue
-        verdict, details = classify(verbs, catalog, renames)
+        verdict, details = classify(verbs, catalog, renames, unwalkable)
         if verdict == "reachable":
             continue
         if verdict == "retired":
@@ -315,6 +381,23 @@ def lint_file(path, catalog, renames):
                 "message": "Pattern matches only retired verbs: "
                            + ", ".join(f"`{r}` → `{sugg[r]}`"
                                        for r in details["retired"]),
+            })
+        elif is_negative:
+            # A negative whose verb does not exist can never fire, so it awards
+            # its weight on every run — a dead assertion that inflates scores
+            # rather than a criterion that breaks the task. Sometimes that is
+            # deliberate (guarding against a verb an agent might invent), so
+            # this is Medium, not High.
+            findings.append({
+                "path": str(path), "severity": "Medium",
+                "axis": "cli-verb-reachability",
+                "criterion_index": idx,
+                "command_pattern": pattern,
+                "description": desc,
+                "message": "Negative criterion targets a verb absent from the "
+                           f"uip catalog (unmatched: {details['unmatched']}). "
+                           "It can never fire, so its weight is awarded "
+                           "unconditionally — confirm that is intended.",
             })
         else:
             findings.append({
@@ -416,13 +499,14 @@ def main():
 
     catalog, version = load_catalog()
     renames = load_renames()
+    unwalkable = load_unwalkable()
 
     all_findings = []
     for p in args.paths:
         if not p.exists():
             print(f"skip: {p} (not found)", file=sys.stderr)
             continue
-        all_findings.extend(lint_file(p, catalog, renames))
+        all_findings.extend(lint_file(p, catalog, renames, unwalkable))
 
     if args.report:
         write_report(all_findings, len(catalog), version, args.report)
