@@ -67,11 +67,14 @@ uip solution deploy list --output json
 > `deploy status` reads the pipeline run against the **tenant** feed and takes
 > no feed flag, so it cannot see a run in a Personal Workspace or a folder
 > feed. For those, use `uip solution deploy list --personal-workspace` or
-> `--feed <name-or-key>`, which do scope.
+> `--feed <name-or-key>`, which do scope — with a user session: an external
+> app is refused (`ErrorCode: permission_denied`), because the server ignores
+> the feed header on client-credentials requests and would answer with the
+> tenant feed's records.
 
 ## Upgrade a Deployment In Place
 
-When the package is **already deployed**, `deploy run` stops before installing and points you here. It checks the deployment search first; an external app (client-credentials) can read it only on a server that serves the Pipelines deployment search — on an older one it skips the check and says so in a warning. Re-running `deploy run` under the same `--name` would not add a second copy — the install is keyed on the name, so it updates that deployment in place with the configuration you pass. To move a deployment to another version while keeping the values already set on it, upgrade it in place (the same as the Orchestrator UI's "Upgrade" button). `deploy upgrade` does that from the CLI, so you don't have to open the UI:
+When the package is **already deployed**, `deploy run` stops before installing and points you here. Under an external app (client-credentials) login it does not stop: it reports the existing deployment as a warning and deploys anyway, so a CI job that re-runs `deploy run` keeps working (on a server without the Pipelines deployment search the check is skipped, also with a warning). Re-running `deploy run` under the same `--name` would not add a second copy — the install is keyed on the name, so it updates that deployment in place with the configuration you pass. To move a deployment to another version while keeping the values already set on it, upgrade it in place (the same as the Orchestrator UI's "Upgrade" button). `deploy upgrade` does that from the CLI, so you don't have to open the UI:
 
 ```bash
 # By key (the Key from `deploy list`): name, package and feed are read from
