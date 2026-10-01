@@ -175,4 +175,3 @@ uip function runtime-install         # JS/TS — one-time runtime pre-install (o
 10. **Building the invoke URL from the trigger's own Id** — 404 errorCode 1623; the URL takes the folder Key GUID + package id + slug.
 11. **Expecting a caller to recover a result after 25 s** — keep HTTP functions under 20 s, move longer work to a run-as-job function — JS Rule 6.
 12. **Adding `functions/` and the functions SDK to a Coded App's project** — one package id is either a WebApp or a Function, and publish under the app's id is rejected. The backend is a sibling `uip function new` project → [coded-app-wiring-guide.md](references/js/coded-app-wiring-guide.md).
-13. **`fetch` to the deployed trigger URL from a Coded App** — the app calls functions through the SDK `Functions.invoke`, HTTP-semantics functions included; only the local `uip function serve` loop is fetched directly → [coded-app-wiring-guide.md](references/js/coded-app-wiring-guide.md).

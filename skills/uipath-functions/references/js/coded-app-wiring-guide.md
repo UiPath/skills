@@ -66,7 +66,7 @@ npm run dev           # terminal 2 — app dev server (Vite, :5173)
 
 ## Deployed Calls from the App
 
-Deployed, call the function through the SDK's `Functions` service, HTTP-semantics functions included. `invoke` takes the function's name as Orchestrator registers it: the process name, `_`, then the `defineFunction` `name` (`get-quote` in process `pricing-backend` → `pricing-backend_get-quote`). `Functions.getAll({ folderKey })` lists these names. A bare `defineFunction` name throws `404`, and the message lists the names the folder exposes. `invoke` also takes typed input. Use `@uipath/uipath-typescript` 1.7.2 or later. Scope: `OR.Default`; add `OR.Folders.Read` when `invoke` is given `folderId`/`folderPath` rather than `folderKey`.
+Deployed, call the function through the SDK's `Functions` service by default, HTTP-semantics functions included. `invoke` takes the function's name as Orchestrator registers it: the process name, `_`, then the `defineFunction` `name` (`get-quote` in process `pricing-backend` → `pricing-backend_get-quote`). `Functions.getAll({ folderKey })` lists these names. A bare `defineFunction` name throws `404`, and the message lists the names the folder exposes. `invoke` also takes typed input. Use `@uipath/uipath-typescript` 1.7.2 or later. Scope: `OR.Default`; add `OR.Folders.Read` when `invoke` is given `folderId`/`folderPath` rather than `folderKey`.
 
 ```ts
 import type { UiPath } from "@uipath/uipath-typescript/core";
@@ -82,6 +82,7 @@ export async function requestQuote(sdk: UiPath, input: QuoteInput): Promise<Quot
 ```
 
 - Folder context is required: pass one of `folderKey` / `folderId` / `folderPath`, or rely on the folder context the SDK was initialized with.
+- A direct `fetch` to the trigger URL also works ([deployment-guide.md](deployment-guide.md#invoke)). Use it only when `invoke` does not fit: the caller then builds the URL, sends the Bearer token and `Content-Type: application/json`, and turns non-2xx answers into errors itself.
 
 ## Timeout Budget
 

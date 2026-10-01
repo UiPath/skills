@@ -18,9 +18,8 @@ uipath-functions coded-app wiring guide:
   4. `quote-app/uipath.json` `scope` carries the `OR.Default` token.
   5. `quote-app/src/api/quote.ts` calls the deployed function through the SDK
      `Functions` service (`@uipath/uipath-typescript/functions`, `new
-     Functions(`, `.invoke`); executable code never hand-builds a trigger URL
-     (`orchestrator_/t/`) nor names the portal domain `cloud.uipath.com`. A
-     `fetch` to `http://localhost:7070` (the local serve loop) is allowed.
+     Functions(`, `.invoke`); executable code never names the portal domain
+     `cloud.uipath.com`.
   6. `quote-app/vite.config.ts` gained no `proxy`.
   7. The `invoke` call names the function as Orchestrator registers it:
      `quote-backend_quote` (process name + `_` + `defineFunction` name).
@@ -179,10 +178,8 @@ def check_app_wiring() -> None:
     if not uses_sdk:
         sys.exit(
             "FAIL: quote-app/src/api/quote.ts must call the deployed function through the SDK Functions service "
-            "(@uipath/uipath-typescript/functions, new Functions(sdk).invoke(...)) — not a hand-built trigger URL"
+            "(@uipath/uipath-typescript/functions, new Functions(sdk).invoke(...))"
         )
-    if re.search(r"orchestrator_/t/", src):
-        sys.exit("FAIL: hand-built trigger URL found — deployed calls go through Functions.invoke; only http://localhost:7070 (local serve) may be fetched")
     if re.search(r"cloud\.uipath\.com", src):
         sys.exit("FAIL: browser calls must target the api.* host — cloud.uipath.com found in executable code")
     if not re.search(r"export\s+(default\s+)?(async\s+)?(function\s+|const\s+|let\s+)?requestQuote\b|export\s*\{[^}]*\brequestQuote\b", src):
