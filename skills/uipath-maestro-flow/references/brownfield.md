@@ -65,8 +65,11 @@ uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/Deployed.baseli
 # Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/Deployed.edited.flow
 uip maestro flow merge Deployed.flow .flow-sdk/Deployed.edited.flow \
-  -o Deployed.merged.flow --baseline .flow-sdk/Deployed.baseline.flow
+  -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/Deployed.baseline.flow
 ```
+
+Like the pipeline, this keeps every candidate in `.flow-sdk/`; validate
+`.flow-sdk/Deployed.merged.flow`, then replace the original with it.
 
 The baseline must be compiled from the pristine decompiled source, before any
 edit. It lets merge distinguish authored changes from reconstructed content;
