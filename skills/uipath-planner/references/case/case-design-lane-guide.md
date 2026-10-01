@@ -223,6 +223,7 @@ Write the SDD to disk in batches, gate it, validate it, flip it, format it. The 
 <!--skill-flavor:build-handoff-row:start-->
 | Build handoff (`uipath-maestro-case` asked for a build, no `sdd.md`) | `sdd.md` at the working root — NEVER overwrite an existing one; abort and surface it | Do NOT stop. The Build answer already carried consent: the build's phases start immediately in this conversation (`uip solution init` + its Phase 1, verifying the resolved identities instead of re-discovering them) |
 <!--skill-flavor:build-handoff-row:end-->
+| Normalization (`uipath-maestro-case` handed over a free-form `sdd.md` that failed its receipt check) | `sdd.md`, after the original is written to `sdd.original.md` (§Normalize a free-form SDD) | Do NOT stop: hand back to the build in this conversation |
 | Direct design (design/generate a case SDD, greenfield, no PDD) | `<CASE_NAME_KEBAB>-sdd.md` | STOP — the write is a turn boundary; `## Next Steps` points at Lane A or `uipath-maestro-case` for a later, opt-in turn |
 | Draft request (user asked for a reviewable draft and to stop) | `sdd.draft.md`, or `<name>-sdd.draft.md` when the request names the file | STOP. Never promote a draft |
 | Draft finalization (a `sdd.draft.md` exists, user asks to finalize) | the draft's basename minus `.draft` | STOP. §Resumption owns the procedure; the draft stays on disk beside the final |
@@ -289,6 +290,16 @@ If the user explicitly asks to finalize the existing draft, choose `Use the draf
 9. A draft's per-stage SLA table may carry `At-Risk Action` / `Breach Action` columns; the final SDD does not. Move each response into the § SLA Response Map row for that `(scope, SLA, status)` — never drop it, never keep the column.
 10. Write, gate, validate, flip, format per §Terminal step — seed, append, validate, flip, format, never one Write. Finalizing a draft does not collapse them: a settled draft makes the sections faster to compose, not the skeleton optional (the draft on disk is also a recovery point, so a compaction means re-finalizing from it). The gate here is the full checklist, items 1–35: items 30–33 are the draft comparison — inventory parity, verbatim `=js:` preservation, executable threshold encoding, draft still on disk — answered with `sdd.draft.md` open beside the final. The `ready` flip is forbidden until every item reads PASS and §Terminal step 3's CLI validation exits 0; repair each FAIL with Edit and re-answer the failed items, max 3 rounds, then stop and present what remains. Quote the final tally (`35/35 PASS`) as evidence, then stop.
 
+## Normalize a free-form SDD
+
+The build skill hands over an existing `sdd.md` that failed its receipt check — a pasted outline, a summary, a document no planner wrote — and asks for a build. Treat it as a draft: the design it states is settled, the template shape is not.
+
+1. Read exactly these, once each: the document, this section, §Resumption's direct finalize fast path, §Terminal step, and the template. Do not read the layers guide unless the document leaves a required field with no basis.
+2. Preserve the original before anything else: Write its content, byte for byte, to `sdd.original.md` beside it. This is the one case in which the lane replaces an existing `sdd.md`, and only once `sdd.original.md` holds what was there.
+3. Render the design into the template exactly as the direct finalize fast path does (its rules 2–9): keep every stage, task, trigger, variable and rule the document states, by its exact name; fill only what the template requires and the document leaves out, by the design Defaults, each one recorded as a decision.
+4. Write `sdd.md` per §Terminal step — seed, append, gate, validate, flip, format. The build skill reads the result, so `Template validation: passed` must mean what it means for any other SDD.
+5. Tell the user in one short block: the original is kept as `sdd.original.md`, the design was rewritten into the template, and each default filled in. Then hand back to the build in this conversation (Rule 16 build handoff) — no Case Review: the user already stated the design.
+
 ## SDD correction
 
 An existing case SDD plus a request to change the design — "change the case SLA to 4 days", "rename this task" — not to build from it or derive tasks. The request is the change; it needs no Listen, Sketch or Case Review.
@@ -328,7 +339,7 @@ If the user asks how something works, explain in their language (cases, stages, 
 | Required field with no basis even for assumption | `<UNRESOLVED: <question>>` in the model + ⚠ flagged line in the confirmation. The build's phases revisit. |
 | AskUserQuestion unavailable / unresponsive (Delegate needs this) | One-line notice, continue best-assumption: every would-have-asked value gets a decision line; gate items default to `resolve at build` with NO `gateDecision` recorded (the build's gate re-asks them); promotion scoped to the request — draft request → draft file only; design-only → the final SDD on a clean Finalization pass, stop; build handoff → the final SDD on a clean Finalization pass, then the build continues with its default straight-through preference. |
 | Registry pull fails (CLI error, no auth) | One plain-language line immediately. Keep concrete portable names; mark identities/folders `resolve at build` (`<UNRESOLVED>` in the file) with paired review items. The build's planning pass retries discovery. |
-| `sdd.md` already exists at the working root (build handoff) | The handoff should not have happened — surface it; the build skill consumes that file trust-as-written (§Terminal step). |
+| `sdd.md` already exists at the working root (build handoff) | The handoff should not have happened — surface it; the build skill consumes that file trust-as-written (§Terminal step). The exception is a free-form `sdd.md` the build skill handed over for normalization: §Normalize a free-form SDD. |
 | Context compaction mid-render | Re-render from the design source — the on-disk partial (split path), `sdd.draft.md`, or the model summary in the Case Review. Do NOT re-invoke skills, re-read applied references, search the filesystem, or spawn background tasks: the source plus the template are sufficient. |
 
 ## Anti-patterns

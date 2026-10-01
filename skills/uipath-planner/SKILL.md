@@ -70,7 +70,10 @@ Run this guard before anything else.
    - an existing SDD for that product and a request to change the design
      itself (not to build from it or derive tasks) → the lane, SDD
      correction. Checked before step 2, so a ready SDD's handoff marker
-     does not send a correction to Lane A.
+     does not send a correction to Lane A,
+   - a free-form document handed off by that product's build skill because
+     it failed the build's receipt check (no handoff marker, or not
+     `Template validation: passed`) → the lane, normalization.
 
 1. No document path?
    - Explicit design/architect language ("design this", "architect this",
