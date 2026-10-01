@@ -59,7 +59,8 @@ def sandbox(tmp_path: Path) -> Path:
 
 
 def write_tenant(responses: Path, *, token: str, name_token: str | None = None, pdd_type: int = 1,
-                 map_bytes: bytes | None = None, num_apps: int = 2, processes: int = 1) -> None:
+                 map_bytes: bytes | None = None, num_apps: int = 5, processes: int = 1,
+                 offers_new_apps: bool = True) -> None:
     name = f"Retail Account Onboarding {name_token or token}"
     process = {"Id": 4815, "Name": name, "Slug": "retail-account-onboarding-4815", "Phase": "Assessment",
                "PhaseStatus": "Not Started", "PhaseKey": "ASSESSMENT", "PhaseStatusKey": "NOT_STARTED"}
@@ -91,6 +92,13 @@ def write_tenant(responses: Path, *, token: str, name_token: str | None = None, 
         "docs.json": envelope("AhDocumentsList", docs),
         "download.json": envelope("AhDocumentsDownload", {"Bytes": 1}),
         "phases.json": envelope("AhPhasesSet", {"AutomationId": 4815, "Phase": "ASSESSMENT", "Status": "ARCHIVED"}),
+        "schema.json": envelope("AhAutomationsSchemaGet", {"SourceType": "COE", "Destination": "schema"}),
+        # The schema document `schema get` writes to --destination; only the
+        # applications question matters to preflight's new_applications probe.
+        "schema_doc.json": {"properties": {"schema": {"properties": {"OVR": {"properties": {"ah-section-ovrbp-0-1": {
+            "properties": {"OVR-COUNT_APPS": {"properties": {"value": {"type": "array"},
+                                                              **({"new_applications": {"type": "array"}} if offers_new_apps else {})}}}}}}}}},
+                            "user_inputs": {}},
     }
     for filename, payload in files.items():
         (responses / filename).write_text(json.dumps(payload))
@@ -104,6 +112,7 @@ def write_tenant(responses: Path, *, token: str, name_token: str | None = None, 
         {"match": "ah idea-flows list", "file": "flows.json"},
         {"match": "ah categories get", "file": "categories.json"},
         {"match": "ah applications list", "file": "inventory.json"},
+        {"match": "ah automations schema get", "file": "schema.json", "write_destination": "schema_doc.json"},
         {"match": "ah automations list", "file": "list.json"},
         {"match": "--all-fields", "file": "get_all.json"},
         {"match": "ah documents list", "file": "docs.json"},
@@ -187,8 +196,26 @@ def test_foreign_process_not_counted(sandbox: Path) -> None:
     assert "found 0" in grade(sandbox, "process").stdout
 
 
-def test_dropped_inventory_application_fails(sandbox: Path) -> None:
-    write_tenant(sandbox / "mocks" / "responses", token=TOKEN, num_apps=1)
+def test_preflight_records_new_applications_offer(sandbox: Path) -> None:
+    run(sandbox, sys.executable, "_setup/preflight_ah.py")
+    assert json.loads((sandbox / "ah-preflight.json").read_text())["new_applications_offered"] is True
+    write_tenant(sandbox / "mocks" / "responses", token=TOKEN, offers_new_apps=False)
+    run(sandbox, sys.executable, "_setup/preflight_ah.py")
+    assert json.loads((sandbox / "ah-preflight.json").read_text())["new_applications_offered"] is False
+
+
+def test_missing_new_application_fails_when_schema_offers_it(sandbox: Path) -> None:
+    write_tenant(sandbox / "mocks" / "responses", token=TOKEN, num_apps=4)  # one of the five dropped
+    seed(sandbox)
+    assert "dropped applications" in grade(sandbox, "applications").stdout
+
+
+def test_inventory_only_expectation_without_new_applications(sandbox: Path) -> None:
+    responses = sandbox / "mocks" / "responses"
+    write_tenant(responses, token=TOKEN, offers_new_apps=False, num_apps=2)  # the two inventory systems
+    seed(sandbox)
+    assert grade(sandbox, "applications").returncode == 0
+    write_tenant(responses, token=TOKEN, offers_new_apps=False, num_apps=1)
     seed(sandbox)
     assert "dropped applications" in grade(sandbox, "applications").stdout
 

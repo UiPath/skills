@@ -102,11 +102,17 @@ def check_applications(seed: dict) -> str:
     record = all_fields(process["Id"])
     attached = int(record.get("ProcessNumApplications") or 0)
     inventory_names = [str(a.get("Name", "")).lower() for a in seed.get("inventory") or []]
-    expected_min = sum(1 for system in PDD_SYSTEMS if any(system in name for name in inventory_names))
+    in_inventory = sum(1 for system in PDD_SYSTEMS if any(system in name for name in inventory_names))
+    # With new_applications in the schema every named system can be attached (the
+    # submission creates the missing ones); without it only the inventory's can.
+    if seed.get("new_applications_offered"):
+        expected_min, reason = len(PDD_SYSTEMS), "the schema offers new_applications"
+    else:
+        expected_min, reason = in_inventory, f"the inventory already held {in_inventory} of them"
     if attached < expected_min:
-        raise CheckFailed(f"{attached} application(s) attached, but the inventory already held "
-                          f"{expected_min} of the PDD's systems — the publish dropped applications it could use")
-    return f"{attached} application(s) attached (inventory held {expected_min} of the PDD's {len(PDD_SYSTEMS)} systems)"
+        raise CheckFailed(f"{attached} application(s) attached, but {reason} — the publish dropped "
+                          f"applications it could have attached (PDD names {len(PDD_SYSTEMS)})")
+    return f"{attached} application(s) attached; expected at least {expected_min} because {reason}"
 
 
 def documents_of(process_id) -> list[dict]:

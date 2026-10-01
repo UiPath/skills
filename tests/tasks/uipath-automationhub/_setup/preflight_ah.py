@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ah_cli import (  # noqa: E402
@@ -39,8 +40,27 @@ from ah_cli import (  # noqa: E402
 )
 
 OUTPUT = "ah-preflight.json"
-SUBMITTER_ROLES = {"ah-standard-user", "ah-authorized-user"}
-ADMIN_ROLE = "ah-system-admin"
+# Any of these can submit a process; the two admin roles are what a tenant's
+# account owner holds on a fresh tenant (observed on the alpha eval tenant).
+ADMIN_ROLES = {"ah-system-admin", "ah-account-owner"}
+SUBMITTER_ROLES = {"ah-standard-user", "ah-authorized-user"} | ADMIN_ROLES
+
+
+def schema_offers_new_applications(flow_id) -> bool:
+    """Whether the flow's schema lets a submission create applications by name.
+
+    Decides what the applications grader may expect: with `new_applications`
+    every PDD system should end up attached; without it only the ones the
+    inventory already holds. Read-only — the schema is written to a temp file.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        target = os.path.join(tmp, "schema.json")
+        result = uip_json(["ah", "automations", "schema", "get", "--source-type", "COE",
+                           "--idea-flow-id", str(flow_id), "--destination", target])
+        if not succeeded(result) or not os.path.exists(target):
+            return False
+        with open(target, encoding="utf-8") as handle:
+            return '"new_applications"' in handle.read()
 
 
 def main(argv: list[str]) -> int:
@@ -58,7 +78,7 @@ def main(argv: list[str]) -> int:
         problems.append(f"identity is not active in Automation Hub (IsActive={user.get('IsActive')})")
     if not roles & SUBMITTER_ROLES:
         problems.append(f"identity has no submitter role; roles={sorted(roles)}")
-    if require_non_admin and (user.get("IsAdmin") == 1 or ADMIN_ROLE in roles):
+    if require_non_admin and (user.get("IsAdmin") == 1 or roles & ADMIN_ROLES):
         problems.append("identity is an AH admin, but this task needs a non-admin to exercise the 403 fallback")
     if not tenant.get("Url"):
         problems.append("auth-info carries no Tenant.Url")
@@ -89,9 +109,10 @@ def main(argv: list[str]) -> int:
 
     archive = archive_target(flow) if flow else None
     summary = {
+        "new_applications_offered": schema_offers_new_applications(flow["Id"]) if flow else False,
         "tenant_url": tenant.get("Url"),
         "owner_email": user.get("Email"),
-        "is_admin": bool(user.get("IsAdmin") == 1 or ADMIN_ROLE in roles),
+        "is_admin": bool(user.get("IsAdmin") == 1 or roles & ADMIN_ROLES),
         "business_process_flow_id": flow.get("Id") if flow else None,
         "archive_phase": archive[0] if archive else None,
         "archive_status": archive[1] if archive else None,
