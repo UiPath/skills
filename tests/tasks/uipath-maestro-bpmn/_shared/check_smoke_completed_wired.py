@@ -24,6 +24,7 @@ from _shared.bpmn_check import (  # noqa: E402
     require_di_for_visible_elements,
     require_no_private_connector_values,
     require_sequence_integrity,
+    tag_case_hint,
 )
 
 DOWNSTREAM = {
@@ -54,7 +55,7 @@ def main() -> None:
 
     hitl = [t for t in elements(root, "userTask") if has_uipath_extension(t, "Actions.HITL")]
     if not hitl:
-        fail("no bpmn:userTask carrying an Actions.HITL uipath:activity shell")
+        fail("no bpmn:userTask carrying an Actions.HITL uipath:activity shell" + tag_case_hint(root, "userTask"))
     hid = attr(hitl[0], "id")
 
     flows = elements(root, "sequenceFlow")

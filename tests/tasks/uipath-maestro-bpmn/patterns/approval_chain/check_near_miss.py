@@ -28,6 +28,14 @@ BPMN = "VendorOnboarding/VendorOnboarding.bpmn"
 OUTCOME_RE = re.compile(r"vars\.([A-Za-z_][A-Za-z0-9_]*)")
 
 
+def gates_stage(root, join_id: str, gate_id: str, review_id: str, end_ids: set[str]) -> bool:
+    if gate_id not in reachable(root, join_id):
+        return False
+    if review_id in reachable(root, join_id, blocked={gate_id}):
+        return False
+    return bool(reachable(root, gate_id, blocked={review_id}) & end_ids)
+
+
 def main() -> None:
     root = load_bpmn(BPMN)
 
@@ -64,14 +72,21 @@ def main() -> None:
         fail("the concurrent reviews never merge on a parallel join")
 
     join_id = joins[0].attrib.get("id", "")
-    if not (reachable(root, join_id) & task_ids):
+    sequential = reachable(root, join_id) & task_ids
+    if not sequential:
         fail("no review task follows the join — the third approver does not act after the other two")
 
-    # The chain can stop at any step: a decision gateway is what makes that
-    # possible, and there must be more than the parallel merge.
+    # The chain can stop at any step: between the join and each later review,
+    # an exclusive gateway must be able to exit to an end without that review.
     exclusive = elements(root, "exclusiveGateway")
-    if len(exclusive) < 2:
-        fail(f"expected at least 2 exclusive gateways for approve/reject decisions, found {len(exclusive)}")
+    gate_ids = ids(exclusive)
+    end_ids = ids(elements(root, "endEvent"))
+    for review_id in sorted(sequential):
+        if not any(gates_stage(root, join_id, g, review_id, end_ids) for g in gate_ids):
+            fail(
+                f"{review_id} is reachable from {join_id} without an exclusive gateway "
+                "that can exit to an end first, so a parallel rejection still reaches it"
+            )
 
     # Per-approver outcomes: conditions must read more than one distinct
     # variable, or the last approver has overwritten everyone else's verdict.

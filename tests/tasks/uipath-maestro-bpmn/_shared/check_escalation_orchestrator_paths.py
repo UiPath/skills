@@ -76,6 +76,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -94,6 +95,7 @@ from _shared.bpmn_live import (  # noqa: E402
     VARIABLES_ALL_TIMEOUT,
     connector_context,
     element_output_records,
+    fetch_incidents,
     get_ci,
     import_exact,
     index_runtime_connectors,
@@ -124,6 +126,7 @@ NAMED_OUTPUT_FIELDS = CLASSIFICATION_FIELDS + ("caseKey",)
 LIVE_RUN_DIR = Path("escalation-orchestrator-live")
 DEBUG_TIMEOUT_SECONDS = 300  # literal on the run_debug call below -- the budget guard reads this statically
 _SLACK_TS_RE = re.compile(r"^\d{9,11}\.\d{4,6}$")
+INCIDENT_DETAIL_CHARS = 1500
 
 
 @dataclass(frozen=True)
@@ -356,9 +359,25 @@ def is_classifier_output(record, expected: dict) -> bool:
     )
 
 
+def slack_miss_detail(slack_ids: tuple[str, ...], executions: list, instance_id: str) -> str:
+    states = [
+        f"{get_ci(item, 'ElementId')}={get_ci(item, 'Status')}"
+        for item in executions
+        if isinstance(item, dict) and get_ci(item, "ElementId") in slack_ids
+    ]
+    detail = f"Slack sendTask states: {states}" if states else "no Slack sendTask reached"
+
+    try:
+        incidents, _raw = fetch_incidents(instance_id)
+    except (CheckFailure, subprocess.TimeoutExpired) as error:
+        return f"{detail}; incidents unavailable: {error}"
+
+    if incidents:
+        detail += f"; incidents: {json.dumps(incidents)[:INCIDENT_DETAIL_CHARS]}"
+    return detail
+
+
 def assert_slack_posted(variables_data, fired_slack_ids: set, case: dict) -> None:
-    if not fired_slack_ids:
-        raise CheckFailure(f"{case['name']}: no Slack sendTask executed; expected a real Slack post")
     outputs = element_output_records(variables_data, tuple(fired_slack_ids))
     matched = None
     for output in outputs:
@@ -460,6 +479,9 @@ def verify_case(contract: Contract, imported_project: Path, case: dict) -> dict:
             raise CheckFailure(f"{case['name']}: no public output carries {field}={expected_value!r}")
 
     if case.get("expect_slack"):
+        if not fired_slack:
+            detail = slack_miss_detail(contract.slack_ids, executions, _instance_id)
+            raise CheckFailure(f"{case['name']}: no Slack sendTask completed ({detail}); expected a real Slack post")
         assert_slack_posted(variables_data, fired_slack, case)
 
     print(
