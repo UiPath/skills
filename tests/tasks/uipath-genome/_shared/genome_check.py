@@ -3,8 +3,13 @@
 
 Usage:
   genome_check.py component <genome.md> [--expect TOKEN ...] [--source-map TOKEN ...] [--part-of]
-  genome_check.py process   <genome.md> --components <dir> --skills SKILL ... [--expect TOKEN ...]
+  genome_check.py process   <genome.md> [--components <dir>] --skills SKILL ... [--expect TOKEN ...]
+  genome_check.py tokens    <genome.md> --expect TOKEN ... [--min FRACTION] [--files N]
   … [--shape transactional|stub [--flows N] [--unit TOKEN ...]]   asserts what the Transactional Shape describes
+
+<genome.md> may be a quoted glob ("*-genome.md"): the file name is the agent's choice, only the
+-genome.md suffix is a contract (Execute mode detection). component and process need exactly one
+match; tokens searches every match, case-sensitively, like a file_contains criterion.
 
 Exit 0 when every check passes; exit 1 with one diagnostic line per failure.
 """
@@ -302,10 +307,28 @@ def check_process(path: Path, components_dir: Path, skills: list[str], expect: l
     return [f"{path.name}: {e}" for e in errors] + component_errors
 
 
+def resolve(pattern: str) -> list[Path]:
+    path = Path(pattern)
+    if path.exists() or not any(c in pattern for c in "*?["):
+        return [path] if path.exists() else []
+    return sorted(Path(".").glob(pattern))
+
+
+def check_tokens(paths: list[Path], tokens: list[str], minimum: float, files: int | None) -> list[str]:
+    errors: list[str] = []
+    if files is not None and len(paths) != files:
+        errors.append(f"{len(paths)} file(s) match, expected {files}: {', '.join(p.as_posix() for p in paths) or 'none'}")
+    text = "\n".join(p.read_text(encoding="utf-8") for p in paths)
+    missing = [t for t in tokens if t not in text]
+    if tokens and (len(tokens) - len(missing)) / len(tokens) < minimum:
+        errors.append(f"{len(tokens) - len(missing)}/{len(tokens)} tokens found, expected >= {minimum:.0%}; missing: {', '.join(missing)}")
+    return errors
+
+
 def main() -> int:
     global MIN_STEPS, MIN_CRITERIA, MIN_QUESTIONS, SHAPE, FLOWS, UNITS
     ap = argparse.ArgumentParser()
-    ap.add_argument("level", choices=["component", "process"])
+    ap.add_argument("level", choices=["component", "process", "tokens"])
     ap.add_argument("genome")
     ap.add_argument("--expect", nargs="*", default=[])
     ap.add_argument("--source-map", nargs="*", default=[])
@@ -322,16 +345,31 @@ def main() -> int:
                     help="assert the Transactional Shape of the given genome: flow blocks, or the stub (components linked from a process are checked for structure only)")
     ap.add_argument("--flows", type=int, default=None,
                     help="with --shape transactional: the number of '### Flow N' blocks expected")
+    ap.add_argument("--min", type=float, default=1.0,
+                    help="tokens: fraction of --expect tokens that must be found")
+    ap.add_argument("--files", type=int, default=None,
+                    help="tokens: exact number of files the pattern must match")
     ap.add_argument("--unit", nargs="*", default=[],
                     help="with --shape transactional: tokens each expected in some 'Unit of work' line")
     args = ap.parse_args()
     MIN_STEPS, MIN_CRITERIA, MIN_QUESTIONS = args.min_steps, args.min_criteria, args.min_questions
     SHAPE, FLOWS, UNITS = args.shape, args.flows, args.unit
 
-    path = Path(args.genome)
-    if not path.exists():
-        print(f"FAIL: {path} does not exist")
+    paths = resolve(args.genome)
+    if args.level == "tokens":
+        errors = check_tokens(paths, args.expect, args.min, args.files)
+        if not paths:
+            errors.insert(0, f"no file matches {args.genome}")
+        for e in errors:
+            print(f"FAIL: {e}")
+        if not errors:
+            print(f"OK: {len(paths)} file(s) match {args.genome}")
+        return 1 if errors else 0
+    if len(paths) != 1:
+        print(f"FAIL: expected exactly one file matching {args.genome}, found {len(paths)}: "
+              f"{', '.join(p.as_posix() for p in paths) or 'none'}")
         return 1
+    path = paths[0]
     if args.level == "component":
         errors = check_component(path, args.expect, args.source_map, args.part_of)
     else:

@@ -40,17 +40,22 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Component genome written with the slugified automation name"
-    path: "customer-address-sync-genome.md"
+  # The file name is the agent's choice; only the -genome.md suffix is a contract, so every
+  # criterion reaches the genome through the checker's "*-genome.md" pattern.
+  - type: run_command
+    description: "One component genome written (*-genome.md)"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md"
+      --files 1 --expect "UIPATH-AUTOMATION-GENOME: component"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Genome passes the structural, wording and skill-name checks"
     command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py component
-      customer-address-sync-genome.md
+      python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md"
       --expect uipath-rpa "Dynamics 365"
     timeout: 30
     expected_exit_code: 0
@@ -60,40 +65,33 @@ success_criteria:
   - type: run_command
     description: "Transactional Shape describes one flow of rows with split options per unit, states retry and consecutive-failure stop, and leaves no placeholder"
     command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py component
-      customer-address-sync-genome.md
+      python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md"
       --shape transactional --flows 1 --unit row
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Transactional Shape carries the flow, the unit of work, the As-is roles, the three outcome rows and split options"
-    path: "customer-address-sync-genome.md"
-    includes:
-      - "## Transactional Shape"
-      - "### Flow 1"
-      - "Unit of work"
-      - "| Produced by |"
-      - "| Consumed by |"
-      - "| Business exception |"
-      - "| System exception |"
-      - "**Split options**"
-      - "| Requires | Changes against as-is |"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md" --min 0.85
+      --expect "## Transactional Shape" "### Flow 1" "Unit of work" "| Produced by |" "| Consumed by |"
+      "| Business exception |" "| System exception |" "**Split options**" "| Requires | Changes against as-is |"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
-    pass_threshold: 0.85
+    pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Business rules, schedule and notification target come from the description"
-    path: "customer-address-sync-genome.md"
-    includes:
-      - "postcode"
-      - "07:00"
-      - "requester"
-      - "customer number"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md" --min 0.75
+      --expect postcode 07:00 requester "customer number"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
-    pass_threshold: 0.75
+    pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Authoring does not scaffold, build or run a project"

@@ -40,36 +40,33 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Process genome written with the slugified solution name"
-    path: "invoice-ops-genome.md"
+  # File names are the agent's choice; only the -genome.md suffix and the process genome's
+  # links to its components are contracts. The checker resolves "*-genome.md" (the process
+  # genome at the top level), follows its Components links, and fails on a link that does not resolve.
+  - type: run_command
+    description: "One process genome written at the top level (*-genome.md)"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md"
+      --files 1 --expect "UIPATH-AUTOMATION-GENOME: process"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Component genome for the Flow orchestrator"
-    path: "invoice-ops-genome/invoice-orchestrator-genome.md"
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Component genome for the RPA intake project"
-    path: "invoice-ops-genome/invoice-intake-genome.md"
-    weight: 1.5
-    pass_threshold: 1.0
-
-  - type: file_exists
-    description: "Component genome for the API workflow"
-    path: "invoice-ops-genome/post-to-erp-genome.md"
-    weight: 1.5
+  - type: run_command
+    description: "One component genome per project in the process genome's folder"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome/*-genome.md"
+      --files 3 --expect "UIPATH-AUTOMATION-GENOME: component"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "Process genome and every linked component pass structural and wording checks"
     command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py process
-      invoice-ops-genome.md
-      --components invoice-ops-genome
+      python3 $REFERENCE_DIR/_shared/genome_check.py process "*-genome.md"
       --skills uipath-maestro-flow uipath-rpa uipath-api-workflow
       --expect ERP_InvoicePosting Slack
     timeout: 60
@@ -77,26 +74,25 @@ success_criteria:
     weight: 5.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Handoffs and platform dependencies capture the queue, the Slack channel, the schedule, and the folder"
-    path: "invoice-ops-genome.md"
-    includes:
-      - "ERP_InvoicePosting"
-      - "#ap-alerts"
-      - "22:00"
-      - "Finance/AP"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md" --min 0.75
+      --expect ERP_InvoicePosting "#ap-alerts" 22:00 Finance/AP
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
-    pass_threshold: 0.75
+    pass_threshold: 1.0
 
-  - type: file_contains
-    description: "API workflow component records the ERP endpoint, the API-key asset, and the duplicate-invoice failure"
-    path: "invoice-ops-genome/post-to-erp-genome.md"
-    includes:
-      - "erp.contoso.com"
-      - "ErpApiKey"
-      - "duplicate"
+  - type: run_command
+    description: "Component genomes record the ERP endpoint, the API-key asset, and the duplicate-invoice failure"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome/*-genome.md" --min 0.66
+      --expect erp.contoso.com ErpApiKey duplicate
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
-    pass_threshold: 0.66
+    pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Extraction does not build, run, or deploy anything"

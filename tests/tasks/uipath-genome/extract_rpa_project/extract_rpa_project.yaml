@@ -31,17 +31,22 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_exists
-    description: "Component genome written with the slugified project name"
-    path: "invoice-intake-genome.md"
+  # The file name is the agent's choice; only the -genome.md suffix is a contract, so every
+  # criterion reaches the genome through the checker's "*-genome.md" pattern.
+  - type: run_command
+    description: "One component genome written (*-genome.md)"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md"
+      --files 1 --expect "UIPATH-AUTOMATION-GENOME: component"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Genome passes structural, wording, skill-name, and Source Map checks"
     command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py component
-      invoice-intake-genome.md
+      python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md"
       --expect uipath-rpa ERP_InvoicePosting
       --source-map Main.xaml ValidateInvoice.xaml ExtractInvoiceFields.xaml
     timeout: 30
@@ -49,28 +54,25 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Business rules and configuration carry the source thresholds and names as defaults"
-    path: "invoice-intake-genome.md"
-    includes:
-      - "credit limit"
-      - "approved vendor"
-      - "ERP_InvoicePosting"
-      - "ap-lead@contoso.com"
-      - "imap.contoso.com"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md" --min 0.8
+      --expect "credit limit" "approved vendor" ERP_InvoicePosting ap-lead@contoso.com imap.contoso.com
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
-    pass_threshold: 0.8
+    pass_threshold: 1.0
 
-  - type: file_contains
+  - type: run_command
     description: "Target applications resolve to real systems and the failure path is captured"
-    path: "invoice-intake-genome.md"
-    includes:
-      - "Excel"
-      - "IMAP"
-      - "PDF"
-      - "Failed"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md" --min 0.75
+      --expect Excel IMAP PDF Failed
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
-    pass_threshold: 0.75
+    pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Extraction does not build or run the project"
