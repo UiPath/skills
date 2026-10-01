@@ -534,7 +534,7 @@ The connector schema lists fields like `message.toRecipients`, `message.subject`
 //   so the message block disappears the next time the file is saved:
 "bodyParameters": {
   "message": {
-    "toRecipients": "andrei.hodoroaga@uipath.com",
+    "toRecipients": "<RECIPIENT_EMAIL>",
     "subject": "this is a test",
     "body": { "content": "<p>hi</p>", "contentType": "Html" }
   },
@@ -543,7 +543,7 @@ The connector schema lists fields like `message.toRecipients`, `message.subject`
 
 // ✓ CORRECT — flat dotted keys match the connector's field names verbatim:
 "bodyParameters": {
-  "message.toRecipients": "andrei.hodoroaga@uipath.com",
+  "message.toRecipients": "<RECIPIENT_EMAIL>",
   "message.subject": "this is a test",
   "message.body.content": "<p>hi</p>",
   "message.body.contentType": "Html",
@@ -558,16 +558,16 @@ Same rule applies to `queryParameters` and `pathParameters`. The IS proxy unflat
 The Assign / Response literal-wrap rule (SKILL.md rule 5) does NOT apply here. The opposite is true. StudioWeb's connector deserializer treats `${'foo'}` as a non-literal expression and refuses to bind it as a field value — the field becomes empty after save.
 
 ```json
-// ✗ WRONG — designer reads "${'andrei...'}" as an expression, not a literal,
+// ✗ WRONG — designer reads "${'...'}" as an expression, not a literal,
 //   and clears the field on save:
 "bodyParameters": {
-  "message.toRecipients": "${'andrei.hodoroaga@uipath.com'}",
+  "message.toRecipients": "${'<RECIPIENT_EMAIL>'}",
   "message.subject": "${'this is a claude skill test'}"
 }
 
 // ✓ CORRECT — bare literals:
 "bodyParameters": {
-  "message.toRecipients": "andrei.hodoroaga@uipath.com",
+  "message.toRecipients": "<RECIPIENT_EMAIL>",
   "message.subject": "this is a claude skill test"
 }
 ```
@@ -643,7 +643,7 @@ The stub emits both `bodyParameters` (with the flat dotted keys per rule (a)) AN
   ...
   "endpoint": "/hubs/productivity/send-mail-v2",
   "bodyParameters": {
-    "message.toRecipients": "andrei.hodoroaga@uipath.com",
+    "message.toRecipients": "<RECIPIENT_EMAIL>",
     "message.subject": "...",
     "message.body.content": "...",
     "message.body.contentType": "Text",
@@ -789,7 +789,7 @@ uip api-workflow registry resolve "send mail v2" --output json
 uip api-workflow registry stub <send-mail-v2-guid> \
   --connection-id a8e592a5-76bb-4062-b712-3c364e4a1128 \
   --inputs '{
-    "message.toRecipients": "andrei.hodoroaga@uipath.com",
+    "message.toRecipients": "<RECIPIENT_EMAIL>",
     "message.subject": "this is a claude skill test",
     "message.body.content": "${$context.variables.titleLabel}",
     "message.body.contentType": "Text",
@@ -812,7 +812,7 @@ The stub detects multipart from IS Elements (`parameters[].type === "multipart"`
       "method": "POST",
       "endpoint": "/hubs/productivity/send-mail-v2",
       "bodyParameters": {
-        "message.toRecipients": "andrei.hodoroaga@uipath.com",
+        "message.toRecipients": "<RECIPIENT_EMAIL>",
         "message.subject": "this is a claude skill test",
         "message.body.content": "${$context.variables.titleLabel}",
         "message.body.contentType": "Text",
@@ -843,7 +843,7 @@ When the user asks to change a value, add a field, or copy a stubbed activity to
 
 ## Limits of this approach
 
-1. **Trigger activity types cannot be stubbed** (`"CuratedTrigger"`, `"GenericTrigger"`, `"GenericPersistence"`, …) — they are event subscriptions, not callable tasks, and `stub` rejects them with `Activity type 'X' is not supported`. `Curated` and `Generic` activities are both supported; Generic additionally requires `--object-name` (see [Generic activities](#generic-activities----object-name-required-list-all-records-of-what)). For triggers, escalate to manual authoring.
+1. **Triggers are a different flow.** `"CuratedTrigger"` / `"GenericTrigger"` live in a separate catalog (`resolve --kind trigger`) and stub into `call: "UiPath.IntSvcEvent"` plus an `EventTrigger` binding — see [trigger-authoring-guide.md](trigger-authoring-guide.md). Other event-shaped flavors (`"CuratedWaitFor"`, `"GenericWaitFor"`, `"GenericPersistence"`, …) are rejected with `Activity type 'X' is not supported` — escalate to manual authoring.
 
 2. **Stub doesn't validate `--inputs` against the IS schema.** Field names not in `requestFields` / `parameters` are silently dropped on the way through `pickFields`. Check `Data.ResponseFields` and the IS schema if a value goes missing.
 
