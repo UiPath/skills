@@ -6,8 +6,8 @@ The same subscription can start a Flow or pause an already-running path.
 
 Signatures:
 
-- `.trigger(onEvent({ connector, event, where?, filters?, connection?, folder?, version? }))`
-- `.step(name, waitForEvent({ connector, event, where?, filters?, connection?, folder?, version? }))`
+- `.trigger(onEvent({ connector, event, where?, filters?, connection, folder, version? }))`
+- `.step(name, waitForEvent({ connector, event, where?, filters?, connection, folder, version? }))`
 - both also accept a generated trigger descriptor plus options.
 
 ```ts
@@ -15,8 +15,13 @@ Signatures:
   connector: 'uipath-microsoft-outlook365', event: 'email-received',
   where: { parentFolderId: inboxId },
   filters: [{ field: 'subject', contains: 'Approval' }],
+  connection: 'outlook365', folder: 'shared',
 }))
 ```
+
+`connection` and `folder` are bindings.json labels, and both are required: without
+them the node compiles to `connectionId: null`, which `uip maestro flow validate`
+refuses, so `check` reports `BINDING_MISSING` first.
 
 ## Tenant discovery — `check` names it, `prepare` does it
 

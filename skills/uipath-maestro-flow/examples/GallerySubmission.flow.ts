@@ -20,7 +20,9 @@ export default flow('gallery-submission')
   .name('GallerySubmission')
   .version('1.0.0')
   .input({ title: types.string, medium: types.string, widthCm: types.number, heightCm: types.number })
-  .output({ outcome: types.string, note: types.string })
+  // The flow's two outputs. A `.var()` IS a flow output (an `inout` global, mapped
+  // on every End), so they are not repeated in `.output()` — that would be a second
+  // global with the same id, which `check` refuses (VARIABLE_NAME_COLLISION).
   .var('outcome', types.string)
   .var('note', types.string)
 
