@@ -6,10 +6,12 @@ description: >
   hand-edited without its outer pipes on line 173. `sdd validate` exits 0 and
   reports only the non-fatal SDD_ROW_WITHOUT_OUTER_PIPES warning, whose
   message says to start the row with `|`. The user asks for one unrelated
-  correction. Whatever skill takes it must make exactly that edit and leave
-  the warned row as the author wrote it: a warning never calls for an Edit,
-  and a correction touches only the lines it names. Graded on a line diff
-  against the fixture. Needs a CLI with `sdd validate` (UiPath/cli stack A, A6).
+  correction. The planner must make exactly that edit by hand and never
+  hand-edit another line, even the warned one; `sdd format` (run on every
+  handoff, Cliff 2026-09-30) may then normalize table form — outer pipes,
+  separator, padding — but never prose or a cell's content. Graded on the
+  non-table lines, the table cells, and the parsed Model against the fixture
+  with only the SLA changed. Needs a CLI with `sdd validate` (UiPath/cli stack A, A6).
   Measured on cli f64f6696e before SDD corrections were routed to the planner:
   the edit went to the case skill or to no skill in 4 of 4 runs, so nothing
   re-validated it. Both skills now route a change to an existing case sdd.md
@@ -37,20 +39,20 @@ initial_prompt: |
 
 success_criteria:
   - type: run_command
-    description: "Only the requested line changed (Case-Level SLA 5 d → 4 d; Document History rows allowed); every other line byte-identical"
+    description: "Only the requested change: non-table lines byte-identical, table cells identical except the SLA (Document History rows allowed); table form may be normalized"
     command: "python3 $REFERENCE_DIR/check_only_requested_change.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "The row written without outer pipes is exactly as the author left it"
-    command: "grep -qxF '2 | Chase Missing Paperwork | action | event-triggered | Intake SLA breached | No | No | Claims Handler | —' sdd.md"
-    timeout: 10
-    expected_exit_code: 0
-    weight: 2.0
-    pass_threshold: 1.0
+  - type: command_executed
+    description: "Advisory: the planner ran `sdd format` on the handoff (§Terminal step 5; skipped on a CLI without the command)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)"?\s+maestro\s+case\s+sdd\s+format'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0
 
   - type: run_command
     description: "The corrected sdd.md still passes `sdd validate` (exit 0)"
