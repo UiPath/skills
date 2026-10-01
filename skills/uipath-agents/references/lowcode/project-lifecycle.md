@@ -237,11 +237,11 @@ uip solution deploy run \
   --output json
 ```
 
-Creates the folder, provisions resources, and activates the deployment in one call. A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate`. Pass `--skip-activate` to opt out of auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`).
+Creates the folder, provisions resources, and activates the deployment in one call. A successful run returns `Status: DeploymentSucceeded` and `ActivationStatus: SuccessfulActivate` — or `ActivationStatus: NeedsSetupToActivate` when a resource (an Integration Service connection, typically) needs "Setup activation" in Orchestrator first: still a success, the deployment exists, do not redeploy; `PendingResources` names the resource and why. Pass `--skip-activate` to opt out of auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`).
 
 ### Activate Existing Deployment
 
-Run only when `--skip-activate` was passed during deploy, or to retry a failed auto-activation after fixing the underlying cause (e.g. missing config).
+Run when `--skip-activate` was passed during deploy, or when `ActivationStatus` is `ReadyToActivate` or `ActivationFailed` after fixing the cause. Not for `NeedsSetupToActivate`: that needs "Setup activation" in Orchestrator (Tenant > Solutions > Deployments), and `deploy activate` is refused with `4007` until it is done — the refusal's `Instructions` name the resources and why.
 
 ```bash
 uip solution deploy activate "<DEPLOYMENT_NAME>" --output json
@@ -474,5 +474,5 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Activate | `uip solution deploy activate "<NAME>" --output json` | Any directory | `SuccessfulActivate`, `FailedActivate` |
 | Uninstall | `uip solution deploy uninstall "<NAME>" --output json` | Any directory | `SuccessfulUninstall`, `FailedUninstall` |
 | Delete deployment record | `uip solution deploy delete "<NAME>" --yes --output json` | Any directory | `Deleted` |
-| Deploy status | `uip solution deploy status <pipeline-deployment-id> --output json` | Any directory | — |
+| Deploy status | `uip solution deploy status "<NAME>" --output json` (a deployment key or the pipeline deployment id also work) | Any directory | name or key (`Code: SolutionDeployment`): `OperationStatus` + `DeploymentStatus` + `ActivationStatus`, `Superseded`, `PendingResources` (each with a `Reason`), `NextSteps`; pipeline id (`Code: SolutionDeployStatus`): `DeploymentSucceeded`, … |
 | List deployments | `uip solution deploy list --output json` | Any directory | — |
