@@ -30,6 +30,10 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    product assigned, which a hand-written chain cannot invent. An existing project needs
    no `init`: seed from the `.bpmn` already there. For shape, copy the closest staged
    `examples/*.bpmn.ts`.
+   Two things it does to the declaration blocks, both reported: it DROPS bindings nothing
+   references (`--keep-unused-bindings` keeps them) and it writes `.preserve({ … })` for
+   state the document carried that nothing derives. Leave the `.preserve` call alone; see
+   [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract).
 5. Run `uip maestro bpmn check <Name>.bpmn.ts --source` after structural changes.
 6. Compile **into the scaffolded project**, then `format` it, then run product
    validation — in that order, every time. `validate` refuses a file with no diagram
@@ -54,7 +58,9 @@ spells the paths its rows are relative to.
 | Surface | Builder/API | Reference | Example |
 |---|---|---|---|
 | Process and nested scopes | `bpmn`, `subProcess` | [Builders](#api-index) | `examples/NotifyChannel.bpmn.ts` |
-| Variables, inputs, and outputs | `var`, `input`, `output`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
+| Variables, inputs, and outputs | `vars`, `var`, `input`, `output`, `schemas`, `schema` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/NotifyChannel.bpmn.ts` |
+| A node's own output | the node's `outputRows` — **not** a `.var()` beside it | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/InvoiceApproval.bpmn.ts` |
+| Carried-from-import state, not for editing | `preserve` | [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract) | `examples/InvoiceApproval.bpmn.ts` |
 | Start, end, catch, throw, boundary | event methods | [Events](references/bpmn-runtime.md#events-and-timers) | `examples/NotifyChannel.bpmn.ts` |
 | Error, timer, or message ON an activity | the body callback of any activity method: `onError`, `onTimer`, `onMessage` | [ActivityBuilder](#api-index) | `examples/InvoiceEscalation.bpmn.ts` |
 | Exclusive, inclusive, parallel, event-based | gateway methods | [GatewayOpts](#api-index) | `examples/NotifyChannel.bpmn.ts` |
