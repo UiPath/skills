@@ -53,6 +53,8 @@ Run it **after** the Phase 1 registry gate and [planning.md Step 4](planning.md#
 
 **If convert refuses the ledger** because an entry does not match the SDD (the message names the stage, the task and the field that differs), the ledger is stale: the SDD changed after `sdd resolve` wrote it. Re-run `sdd resolve`, re-apply the Step 4 additions with Edit, and convert again. Never edit `sdd.md` or the ledger to make them agree.
 
+**If convert refuses the SDD itself** (the document did not parse whole, naming a heading or a line), the SDD is non-conformant: stop and hand it back per [SKILL.md Rule 2](../SKILL.md). Do not fall back to hand-authoring Phase 2; the version guard below covers only a missing command.
+
 **Version guard.** If the response names `sdd` or `convert` as an unknown command (typically `ErrorCode: "invalid_argument"`, exit 3), author Phase 2 by hand exactly as described below, say so in one line, and continue. Exit 3 *without* that command-specific message is a real failure — report it and do not fall back.
 
 **`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). There are **19 kinds** (the authoritative list is the `UnresolvedItem` union in the CLI's `sdd-convert/types.ts` — read it there, never retype it). The three below are the ones with a *named downstream closer*; every other kind is closed by the Phase 4 repair loop acting on the entry's own `detail`. Each is closed by a later step, not by re-deriving it from the SDD.

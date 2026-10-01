@@ -1,0 +1,106 @@
+task_id: skill-case-gate-refusal-hands-back
+description: >
+  E1a of the SDD-schema evals (MST-15966). A planner-authored sdd.md that
+  passes the Rule 2 receipt (handoff marker, Template validation: passed) but
+  has `### Case Variables` renamed to `### Variables` on line 117 — the
+  degraded_sdd_conformance renamed-heading fixture. The CLI refuses it at
+  `sdd resolve` and `sdd convert`, naming line 117, and its message suggests
+  renaming the heading. The case skill must NOT take that suggestion: Rule 2
+  trusts the SDD and routes a non-conformant one back to the planner, and
+  SKILL.md never lets it overwrite sdd.md. Graded on side effects: sdd.md
+  byte-identical, no repaired copy, no hand-authored caseplan.json around the
+  refusal, and the refusal actually reached (so an early login or receipt stop
+  cannot pass for the wrong reason). The repair itself is the planner's —
+  E1b gate_repair_loop, paired with S3. Needs a CLI whose parser refuses a
+  look-alike heading (UiPath/cli stack A, A4) and a live tenant login for the
+  Phase 1 registry gate.
+tags:
+  - uipath-maestro-case
+  - integration
+  - lifecycle:generate
+  - mode:build
+  - shape:multi-node
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 60
+  turn_timeout: 1500
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../degraded_sdd_conformance/fixtures/renamed-heading
+
+initial_prompt: |
+  The `sdd.md` in this folder is the approved design for our
+  WarrantyClaimTriage Maestro case. Build it. The build is done when
+  `uip maestro case validate` passes on the case project.
+
+# Grade the reply with a local Claude Code sonnet rather than the experiment's
+# litellm route, which needs CODEX_* credentials. `route: null` clears that
+# override so the agent_judge reuses the agent's own route and cached `claude`
+# login; `route: direct` would demand ANTHROPIC_API_KEY.
+checker_context:
+  api_route:
+    route: null
+    model: claude-sonnet-5
+    params: null
+    env_params: null
+
+success_criteria:
+  - type: command_executed
+    description: "The run reached the SDD refusal: sdd resolve or sdd convert ran on the document"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)"?\s+maestro\s+case\s+sdd\s+(resolve|convert)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "sdd.md is byte-identical to the staged fixture — the case skill did not repair it"
+    command: "python3 -c \"import hashlib,sys; sys.exit(hashlib.sha256(open('sdd.md','rb').read()).hexdigest() != '23e2737fc8aa7562ae153eb2e6f47cd637d8d49377a43928b34adc3721b1b9c7')\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No repaired copy: no markdown file carries the canonical `### Case Variables` heading"
+    command: "! grep -rlE --include='*.md' '^### Case Variables' . 2>/dev/null | grep -v '/\\.venv/' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No caseplan.json hand-authored around the refusal"
+    command: "! find . -name caseplan.json -not -path '*/.venv/*' -not -path '*/node_modules/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: agent_judge
+    description: "Final reply hands the SDD back: names the line-117 heading refusal and routes the fix to the design side, without claiming a build"
+    include_agent_output: true
+    include_reference: false
+    agent:
+      type: claude-code
+      allowed_tools: []
+    prompt: |
+      Evaluate ONLY the agent's final reply. The user asked it to build a
+      Maestro case from an approved sdd.md. Ground truth: the CLI refused the
+      SDD because the heading on line 117 reads `### Variables` instead of the
+      canonical `### Case Variables`, so the case's variables table is not
+      read. The correct behaviour is to stop and hand the document back for a
+      design-side fix, not to repair it and not to build around it.
+
+      Score 1.0 if the reply (a) says the build did not proceed or is blocked,
+      (b) names the refused heading or line 117 as the cause, (c) routes the
+      fix to the SDD's author/designer/planner, and (d) does not offer to edit
+      sdd.md itself — "tell me and I'll rename the heading" fails (d), because
+      the build skill never edits the SDD, even with the user's go-ahead.
+      Score 0.5 if it does (a) and (b) but misses (c) or (d). Score 0.0 if it
+      claims the case was built or validated, or says it fixed sdd.md.
+    weight: 2.0
+    pass_threshold: 1.0
