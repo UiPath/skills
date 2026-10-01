@@ -27,12 +27,16 @@ description: >
   active leftover would keep suppressing this organization's audit trail for
   every later run.
 
-  Blocker: UiPath/cli#4379 merged on 2026-09-29, so the surface now exists in
-  the CLI repo but not yet in a published `@uipath/cli` release (npm `latest`
-  is 1.202.1). The create path needs that release plus `/api/EventConfig/rules`
-  deployed. The negative checks are meaningful before that ships — an agent that
-  invents a mute command still fails them — but the llm_judge grades a run whose
-  discovery calls may have failed, so treat a pre-release result as advisory.
+  Blocker: `/api/EventConfig/rules` is not deployed in the test
+  organization. The CLI half is already covered: UiPath/cli#4379 merged on
+  2026-09-29, and both the smoke gate and coder-eval install
+  `@uipath/cli@dev` from GitHub Packages, which tracks `cli/main` — so the
+  commands are present here well before public npm `latest` carries them
+  (1.202.1 on 2026-10-01; the 1.204 line publishes mid-October, and only end
+  users wait on that). The create path needs that deployment. The negative
+  checks are meaningful before it ships — an agent that invents a mute
+  command still fails them — but the llm_judge grades a run whose discovery
+  calls may have failed, so treat a pre-deployment result as advisory.
 
   Tier note: this is a smoke-shaped check — one scenario, cheap, no build —
   carried in the e2e tier because the surface it exercises is not deployed
