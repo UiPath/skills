@@ -368,10 +368,12 @@ def slack_miss_detail(slack_ids: tuple[str, ...], executions: list, instance_id:
     detail = f"Slack sendTask states: {states}" if states else "no Slack sendTask reached"
 
     try:
-        incidents, _raw = fetch_incidents(instance_id)
+        incidents, raw = fetch_incidents(instance_id)
     except (CheckFailure, subprocess.TimeoutExpired) as error:
         return f"{detail}; incidents unavailable: {error}"
 
+    if incidents is None:
+        return f"{detail}; incidents response has an unknown shape: {json.dumps(raw)[:INCIDENT_DETAIL_CHARS]}"
     if incidents:
         detail += f"; incidents: {json.dumps(incidents)[:INCIDENT_DETAIL_CHARS]}"
     return detail
