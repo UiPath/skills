@@ -86,6 +86,14 @@ success_criteria:
       `ProjectType: "AppV2"` plus a `webAppManifest.json`. English or
       Romanian both fine.
 
+      A reply that prescribes registration as the way to ship the app
+      with the solution, and ALSO mentions the standalone
+      `uip codedapp pack` → `publish` → `deploy` path as a separate
+      option for keeping the app OUTSIDE the solution, still scores 1.0.
+      Both lifecycles exist. Deduct only if the reply tells the user to
+      run the standalone commands on an app that is registered in
+      `.uipx`.
+
       Score 0.0 if the reply tells the user coded apps are out-of-band
       and must deploy independently via `uip codedapp pack` →
       `uip codedapp publish` → `uip codedapp deploy` (that is the OLD

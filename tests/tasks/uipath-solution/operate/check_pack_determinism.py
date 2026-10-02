@@ -4,18 +4,24 @@
 Fingerprints the packages the AGENT packed into the working directory (two or
 more — all are compared against the first) and asserts they are the same once
 per-pack volatile values are normalized away.
-Every pack regenerates fresh GUIDs (packageVersionKey, resource keys, the
-files/<guid>/ path segment) and stamps fresh zip timestamps — those are
-expected. Anything else that differs is real build nondeterminism that could
-mask regressions in other tests, so it fails.
+Every pack regenerates `packageVersionKey` in solutionMetadata.json and stamps
+fresh zip timestamps — those are expected. Resource keys, project keys and the
+files/<guid>/ path segment are stable across packs (verified on the
+2026-09-30 nightly's two packages); they are normalized anyway. Anything else
+that differs is real build nondeterminism that could mask regressions in other
+tests, so it fails.
 
 Deliberately does NOT re-run `uip solution pack` here: the grading subprocess
 resolves the CLI's tool packages from its own environment, not the agent's, so
 a grade-time pack can fail for tool-resolution reasons unrelated to determinism
 (nightly 2026-07-10: sandbox had no @uipath/solution-tool next to the CLI; the
-agent self-installed into its npm prefix, invisible to this subprocess). The
-companion `command_executed` criterion in the task YAML guarantees the agent
-really packed twice rather than copying one package.
+agent self-installed into its npm prefix, invisible to this subprocess).
+
+Proof that the agent really packed twice rather than copying one package: a
+copy keeps the original `packageVersionKey`, so every package must carry a
+distinct one. This replaces counting `uip solution pack` tool calls, which
+failed agents that chained both packs in one Bash call (21 of 41 runs from
+2026-09-15 to 2026-09-30 passed determinism but failed that count).
 
 Comparison, after replacing GUIDs -> <GUID> and ISO timestamps -> <TS>:
   - the set of entry paths must match across all packages, and
@@ -81,6 +87,29 @@ if len(packages) < 2:
         f"solutionMetadata.json) under the working directory, found "
         f"{[str(p) for p in packages]} — the agent must pack the fixture twice "
         f"into two separate output folders"
+    )
+
+
+def package_version_key(zip_path: Path) -> str:
+    with zipfile.ZipFile(zip_path) as z:
+        try:
+            doc = json.loads(z.read("solutionMetadata.json"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return ""
+    spec = doc.get("spec") if isinstance(doc, dict) else None
+    return str((spec or {}).get("packageVersionKey") or "").lower()
+
+
+keys = {p: package_version_key(p) for p in packages}
+if not all(keys.values()):
+    sys.exit(
+        f"FAIL: solutionMetadata.json has no spec.packageVersionKey in "
+        f"{[str(p) for p, k in keys.items() if not k]}"
+    )
+if len(set(keys.values())) < len(keys):
+    sys.exit(
+        f"FAIL: packages share a packageVersionKey — a copied package, not a "
+        f"second pack: {[f'{p}={k}' for p, k in keys.items()]}"
     )
 
 base_paths, base_json = fingerprint(packages[0])
