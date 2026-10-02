@@ -1,12 +1,12 @@
 {
-  "cli_head": "36b85f8e4",
+  "cli_head": "1e87bfb57",
   "seed": "tests/tasks/uipath-maestro-case/sla_from_sdd/fixtures/sdd.md",
   "tally": {
-    "convert": 7,
+    "convert": 6,
     "excluded": 1,
     "needs-draft": 4,
     "silent": 3,
-    "validate": 20,
+    "validate": 22,
     "validate-warns": 2
   },
   "rows": [
@@ -128,12 +128,19 @@
     {
       "item": 13,
       "violation": "sla-status-change names an undeclared SLA title",
-      "build_validate": [
-        "CASE_MGMT_ROOT_CASE_CONDITION_RULE_SLA_NOT_SELECTED (error)"
-      ],
-      "verdict": "convert",
+      "verdict": "validate",
       "detail": [
-        "selector-target"
+        "SDD_SLA_REFERENCE_UNRESOLVED",
+        "SDD_SLA_REFERENCE_UNRESOLVED"
+      ]
+    },
+    {
+      "item": 13,
+      "violation": "sla-status-change call never closes",
+      "verdict": "validate",
+      "detail": [
+        "SDD_SLA_REFERENCE_UNRESOLVED",
+        "SDD_SLA_REFERENCE_UNRESOLVED"
       ]
     },
     {

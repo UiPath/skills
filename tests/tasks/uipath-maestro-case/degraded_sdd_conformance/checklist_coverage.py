@@ -83,6 +83,7 @@ MUTATIONS = [
     (11, "task name contains `:`", rep_all("Assess Damage", "Assess: Damage")),
     (12, "task display name duplicated across stages", rep_all("Record Rejection", "Issue Settlement")),
     (13, "sla-status-change names an undeclared SLA title", rep('sla-status-change("Intake","Intake SLA")', 'sla-status-change("Intake","Nope SLA")')),
+    (13, "sla-status-change call never closes", rep('sla-status-change("Assessment","Assessment SLA")', 'sla-status-change("Assess (`assess`)')),
     (14, "selector names an undeclared stage", rep('selected-stage-completed("Intake")', 'selected-stage-completed("Intakes")')),
     (15, "stage entry references its own stage", rep('selected-stage-completed("Intake") | =js:(vars.paperworkComplete', 'selected-stage-completed("Assessment") | =js:(vars.paperworkComplete')),
     (16, "=vars.X not in Case Variables", rep("| productSerial | string | =vars.productSerial |", "| productSerial | string | =vars.productSerialNo |")),
