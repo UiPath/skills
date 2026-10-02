@@ -83,6 +83,7 @@ MUTATIONS = [
     (11, "task name contains `:`", rep_all("Assess Damage", "Assess: Damage")),
     (12, "task display name duplicated across stages", rep_all("Record Rejection", "Issue Settlement")),
     (13, "sla-status-change names an undeclared SLA title", rep('sla-status-change("Intake","Intake SLA")', 'sla-status-change("Intake","Nope SLA")')),
+    (13, "sla-status-change call never closes", rep('sla-status-change("Assessment","Assessment SLA")', 'sla-status-change("Assess (`assess`)')),
     (14, "selector names an undeclared stage", rep('selected-stage-completed("Intake")', 'selected-stage-completed("Intakes")')),
     (15, "stage entry references its own stage", rep('selected-stage-completed("Intake") | =js:(vars.paperworkComplete', 'selected-stage-completed("Assessment") | =js:(vars.paperworkComplete')),
     (16, "=vars.X not in Case Variables", rep("| productSerial | string | =vars.productSerial |", "| productSerial | string | =vars.productSerialNo |")),
@@ -95,7 +96,24 @@ MUTATIONS = [
     (26, "required-tasks-completed with no Required task", rep("| 1 | Lead Escalation Review | action | parallel | stage enters | Yes |", "| 1 | Lead Escalation Review | action | parallel | stage enters | No |")),
     (27, "stage entry equals a Case Exit row", after("### Stage 3: Settlement", '| selected-stage-completed("Assessment") | =js:(vars.assessorDecision === "Settle") | No |', '| selected-stage-completed("Claim Rejected") | — | No |')),
     (29, "case SLA below 15 minutes", rep("| Case-Level SLA | 5 d |", "| Case-Level SLA | 5 min |")),
+    (17, "consumed Variable never produced (its Outputs row removed)", rep("| response.damageCategory | -> damageCategory |\n", "")),
+    (18, "Out variable with no Default and no producer", rep("| claimOutcome | Out | string | | | Pending | Final disposition returned to the caller |", "| claimOutcome | Out | string | | | Pending | Final disposition returned to the caller |\n| reviewSummary | Out | string | | | | Summary returned to the caller |")),
+    (19, "Buttons Maps To an undeclared variable", rep('| Settle | assessorDecision = "Settle" |', '| Settle | assessorVerdict = "Settle" |')),
+    (28, "unguarded exit row shares its WHEN with the guarded completion row", rep('| required-tasks-completed | =js:(vars.assessorDecision !== "Reject") | exit-only | Yes | Assessment complete |', '| required-tasks-completed | =js:(vars.assessorDecision !== "Reject") | exit-only | Yes | Assessment complete |\n| required-tasks-completed | — | exit-only | No | Leave assessment |')),
+    (35, "user-selected-stage entry on a lane a decision routes to", rep('| selected-stage-exited("Assessment") | =js:(vars.assessorDecision === "Reject") | Yes | Rejected by assessor |', '| selected-stage-exited("Assessment") | =js:(vars.assessorDecision === "Reject") | Yes | Rejected by assessor |\n| user-selected-stage | — | No | Pick the rejected lane |')),
     (34, "either/or persona", rep("| Claims Assessor | — |", "| Claims Assessor or Claims Lead | — |")),
+]
+
+
+# Draft-parity items compare the final against the draft it finalized. No CLI
+# command takes the draft, so no mutation of the final alone can reach them:
+# they are measured as "needs-draft", never "silent", and stay with the
+# planner's checklist walk until a draft-aware check exists.
+NEEDS_DRAFT = [
+    (30, "stage/task inventory differs from the draft's"),
+    (31, "a draft `=js:` expression missing or rewritten in the final"),
+    (32, "a draft comparator + amount policy not encoded in an executable cell"),
+    (33, "the draft file deleted or renamed"),
 ]
 
 
@@ -191,6 +209,7 @@ def main():
         base_model = uip("parse", SEED)[1]["Data"]["Model"]
         rows = [measure(i, d, m, seed_text, base_items, base_built, base_model, work) for i, d, m in MUTATIONS]
         rows += [{"item": i, "violation": d, "verdict": "excluded", "detail": why} for i, d, why in EXCLUDED]
+        rows += [{"item": i, "violation": d, "verdict": "needs-draft", "detail": "no CLI command reads the draft"} for i, d in NEEDS_DRAFT]
     for r in rows:
         print(f"{r['item']:>3}  {r['verdict']:<22} {r['violation']:<52} {r['detail']}  build: {r.get('build_validate')}")
     tally = {v: sum(r["verdict"] == v for r in rows) for v in sorted({r["verdict"] for r in rows})}
