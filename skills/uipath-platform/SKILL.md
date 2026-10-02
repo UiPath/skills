@@ -123,9 +123,9 @@ For a custom authority (e.g., alpha.uipath.com):
 uip login --authority "https://alpha.uipath.com/identity_" --it --output json
 ```
 
-For non-interactive (CI/CD) scenarios, use client credentials:
+For non-interactive (CI/CD) scenarios, use client credentials read from environment variables with the CLI's `env.<NAME>` syntax. Never ask the user to paste the secret into chat or put it on the command line:
 ```bash
-uip login --client-id "<ID>" --client-secret "<SECRET>" --tenant "<TENANT>" --output json
+uip login --client-id env.UIPATH_CLIENT_ID --client-secret env.UIPATH_CLIENT_SECRET --tenant "<TENANT>" --output json
 ```
 
 ### Step 2 — Select a Tenant
