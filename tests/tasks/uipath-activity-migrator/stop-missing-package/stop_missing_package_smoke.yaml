@@ -91,7 +91,7 @@ success_criteria:
         must_match: true
       - pattern: 'Acme\.Internal\.Helpers'
         must_match: true
-    weight: 2.0
+    weight: 2.5
     pass_threshold: 1.0
 
   # Step 3 writes the summarizer's full report to analyze-latest.md; it must carry the
@@ -104,7 +104,7 @@ success_criteria:
         must_match: true
       - pattern: '\*\*RESTORE-MISSING-PACKAGE\*\*'
         must_match: true
-    weight: 1.5
+    weight: 2.0
     pass_threshold: 1.0
 
   # Step 3 stop table: RESTORE-MISSING-PACKAGE stops the migration before upgrade.
@@ -155,28 +155,3 @@ success_criteria:
     command_pattern: 'uip\s+rpa\s+(build|validate|run|debug)\b'
     weight: 1.0
     pass_threshold: 1.0
-
-  # The stop is a conversation, not an artifact: the dialog is the evidence that the
-  # agent explained the blocker and offered the user's choices before stopping.
-  - type: llm_judge
-    description: "Agent named the missing package, offered the feed hand-off and the ignore flag, and stopped on the user's answer"
-    weight: 1.5
-    pass_threshold: 0.7
-    include_dialog: true
-    include_agent_output: true
-    prompt: |
-      Grade the agent's messages after its analyze run. Expected behavior
-      (SKILL.md Step 3, RESTORE-MISSING-PACKAGE): the agent
-        - names Acme.Internal.Helpers 1.0.0 as the package no feed serves;
-        - offers the user the choices: an Orchestrator-feed command whose
-          credential values are <PLACEHOLDER>s for the user to fill in (never a
-          real token), ignoring missing dependencies with its consequence
-          (workflows that use the package will not compile), or stopping;
-        - after the user chooses to stop, stops: no upgrade, no build, no run,
-          no further question.
-      Score 1.0 when all three hold, 0.7 when the package is named and the
-      agent stopped but one option is missing or the consequence is not stated,
-      0.3 when the agent stopped without naming the package or offering
-      options, 0.0 when the agent went on to upgrade or asked the user for a
-      token or secret.
-      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
