@@ -302,13 +302,13 @@ Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-
      ```markdown
      - [ ] Create the assets in <folder>
 
-       | Type | Name | Value |
-       |---|---|---|
-       | Text | <name> | <the build's value> (set per environment) |
-       | Credential | <name> | account <account>; secret entered in Orchestrator |
+       | Type | Name | Value | Description |
+       |---|---|---|---|
+       | Text | <name> | <the build's value> (set per environment) | <what the automation uses it for> |
+       | Credential | <name> | account <account>; secret entered in Orchestrator | <the system it signs in to, and as whom> |
      ```
 
-     Type is the Orchestrator asset type (Text, Integer, Bool, Credential). A setting's row gives the value this build used as reference. A Credential row names its account; the secret never appears in an open-items file.
+     Type is the Orchestrator asset type (Text, Integer, Bool, Credential). Description is the text to enter as the asset's description in Orchestrator: what the automation uses the value for, from the Configuration Question or Platform Dependencies row it came from. A setting's row gives the value this build used as reference. A Credential row names its account; the secret never appears in an open-items file.
    - **Processes and triggers:** each process with its entry point; each trigger with its type, schedule or queue, and runner count, from the split and trigger answers.
    - **Machine prerequisites:** the applications the robots need installed and signed in, from Target Applications (Excel, SAP GUI, the browser extension).
 3. **The solution file lists the solution-wide steps first** — packages, folder, the resources several projects share (a queue between projects, a shared connection) — then one line per project linking its file, with that project's step count. A step that spans projects is written once, in the solution file; a project file links to it instead of repeating it.
