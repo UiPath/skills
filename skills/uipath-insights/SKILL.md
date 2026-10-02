@@ -154,7 +154,7 @@ Read only the guides the task needs. A job investigation that must first resolve
 
 | Request | Route |
 |---|---|
-| List or get individual jobs and their current state, e.g. the faulted jobs in a folder right now. Insights holds historical aggregates over a time window, not the live job records | `uipath-platform` (`uip or jobs list --state`) |
+| List or get individual jobs and their current state. Insights holds historical aggregates over a time window, not the live job records | `uipath-platform` (`uip or jobs list --state`) |
 | Start, stop, restart, or inspect logs for an individual Orchestrator job | `uipath-platform` |
 | Diagnose the root cause of a specific job error | `uipath-troubleshoot` |
 | Fix the workflow or agent that caused a failure | `uipath-rpa` or `uipath-agents` |
