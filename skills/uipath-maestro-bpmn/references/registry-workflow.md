@@ -374,18 +374,20 @@ A node that targets a cloud resource carries a binding. The `bindingInfo` on the
 extension type tells you the binding shape; the concrete value comes from
 discovery or the user.
 
-- **Resource bindings** (`bindingInfo.resource` = `process` / `queue` /
-  `BusinessRule`): the context field named by `bindingInfo.contextField`
-  (e.g. `releaseKey`, `queueName`, `entityKey`) holds the resource key
-  (`bindingInfo.propertyAttribute`, usually `Key`). Resolve the real key with
-  `registry search` / discovered `Processes` / `Queues`; never guess a GUID.
-  A business rule binds `entityKey`, `name`, and `folderPath` to `BusinessRule`
-  (`Key`, `name`, `folderPath`) — never a `process` `releaseKey`, even when
-  `registry get` returns one. Its key is the rule's catalog entity key, never a
-  `Key` from `Processes` or a release key; if the user has not given it, ask.
-  A rule defined only in this solution uses its name as the key. The
-  `folderPath` binding always carries a `default`, `""` when the rule lives in
-  the running job's folder. Its unbound `_label` context holds the rule's name.
+- **Resource bindings** (`bindingInfo.resource` = `process` / `queue`): the
+  context field named by `bindingInfo.contextField` (e.g. `releaseKey`,
+  `queueName`) holds the resource key (`bindingInfo.propertyAttribute`,
+  usually `Key`). Resolve the real key with `registry search` / discovered
+  `Processes` / `Queues`; never guess a GUID.
+- **Business rule bindings** (`BusinessRule`): the context `name` and
+  `folderPath` each reference a `BusinessRule` binding (`propertyAttribute`
+  `name` / `folderPath`) — never a `Key` binding or a `process` `releaseKey`,
+  even when `registry get` returns one. Both bindings carry the rule key as
+  `resourceKey`: the rule's catalog entity key, never a `Key` from `Processes`
+  or a release key; if the user has not given it, ask. A rule defined only in
+  this solution uses its name as the key. The `folderPath` binding always carries a `default`, `""` when
+  the rule lives in the running job's folder. The unbound `_label` context
+  input holds the rule's name.
 - **Connection bindings** (`Intsvc.*`): the context references a connection via
   `=bindings.<bindingId>`, and a `<uipath:binding>` of `resource="Connection"`
   with `propertyAttribute="ConnectionId"` in the process-level
@@ -404,11 +406,10 @@ block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, an
 `resourceKey` is required too — omitting it fails `validate` with
 `Integration Service activity connection binding "<id>" is missing
 resourceKey`. `process` and `queue` bindings carry `resourceKey` from
-`bindingInfo.resourceKeyPattern`. All three `BusinessRule` bindings carry the
-same `resourceKey`, the rule key:
+`bindingInfo.resourceKeyPattern`. Both `BusinessRule` bindings carry the same
+`resourceKey`, the rule key:
 
 ```xml
-<uipath:binding id="Binding_RuleKey"    name="BusinessRule" type="string" resource="BusinessRule" propertyAttribute="Key"        resourceKey="<RULE_KEY>" default="<RULE_KEY>" />
 <uipath:binding id="Binding_RuleName"   name="name"         type="string" resource="BusinessRule" propertyAttribute="name"       resourceKey="<RULE_KEY>" default="<RULE_NAME>" />
 <uipath:binding id="Binding_RuleFolder" name="folderPath"   type="string" resource="BusinessRule" propertyAttribute="folderPath" resourceKey="<RULE_KEY>" default="" />
 ```
@@ -474,9 +475,9 @@ next section for the fix.
 
 ## Job-wrapper v1 trap — `releaseKey` templates are unrunnable
 
-`Orchestrator.StartJob`, `Orchestrator.ExecuteApiWorkflowAsync`,
-`Orchestrator.BusinessRules`, and `Orchestrator.StartAgenticProcess[Async]` /
-`StartCaseMgmtProcess[Async]` all serve the same **v1** `xmlTemplate`:
+`Orchestrator.StartJob`, `Orchestrator.ExecuteApiWorkflowAsync`, and
+`Orchestrator.StartAgenticProcess[Async]` / `StartCaseMgmtProcess[Async]` all
+serve the same **v1** `xmlTemplate`:
 `<uipath:activity version="v1">` with a hidden, unbound `releaseKey` /
 `folderId` / `folderPath` / `name` context (`binding: false` on every field
 except `releaseKey`, which carries `bindingInfo` — `resource: "process"`,

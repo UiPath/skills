@@ -609,7 +609,7 @@ and honestly surfaced to the user as gaps when asked.
    property name. Without a run, use the schema name and report the mapping
    as unverified.
 18. **Job-wrapper registry templates (`Orchestrator.StartJob`,
-   `ExecuteApiWorkflowAsync`, `BusinessRules`, `StartAgenticProcess[Async]`,
+   `ExecuteApiWorkflowAsync`, `StartAgenticProcess[Async]`,
    `StartCaseMgmtProcess[Async]`) serve an unresolved `releaseKey` that
    validates but faults at runtime. This is the one exception to rule 6's
    paste-literally.** For all of them, bind `releaseKey` via
