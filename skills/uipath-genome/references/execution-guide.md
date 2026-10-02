@@ -49,7 +49,7 @@ Three groups of questions, asked in this order:
 | Location | Where to create the project? | Folder next to genome (1.2 step 4); reuse existing project found there (only when one exists and matches the primary skill); another path |
 | Target framework (RPA projects) | Which target framework? | The one the host supports and an existing project uses; alternatives the host supports |
 | Expression language (RPA projects) | Which expression language? | C#; VB |
-| Settings store (every project with settings) | Where do the genome's settings live? | One Orchestrator asset per setting, read once per job (Recommended); a configuration workbook in a storage bucket, loaded once, when the business edits many values together; a single JSON asset. Constants are never asked: they are code ([genome-format-guide.md § Configuration Questions](genome-format-guide.md)) |
+| Settings store (every project with settings or constants) | Where do the genome's settings and constants live? | Settings as one Orchestrator asset each, read once per job — every Orchestrator connection is its own environment (dev, UAT, prod), so each environment sets its own value without a new package — and constants in the project's `Data/Config.xlsx` (RPA projects: the REFramework layout, Constants sheet, with the Assets sheet naming the settings' assets; other project types: the owning skill's configuration) (Recommended); every value as an Orchestrator asset; a configuration workbook in a storage bucket, loaded once, when the business edits many values together ([genome-format-guide.md § Configuration Questions](genome-format-guide.md)) |
 | Workflow type (RPA projects) | Author the workflows as XAML, as coded C#, or both? | The owning skill's default for a new project; coded workflows only; hybrid, each step in the type the owning skill's mode rules give it. An option that makes an earlier answer unusable — an activity package or connection whose API one type lacks — names that answer, and the question is asked again |
 | Installed packages | Which activity packages and versions are installed where this automation will run (Studio / Robot / tenant feed)? | Set discovered in 1.2 step 3, listed by name and version; versions declared by the existing project; user provides the list (free text) |
 | Package pinning | Pin the new project to those versions, or take the latest stable from the feed? | Pin to installed versions; latest stable |
@@ -270,14 +270,14 @@ Configuration answers: … (defaults marked)
 Scaffolding: <target framework>, <expression language>, <package@version, …> (pinned | latest) per project
 Gate: validate + build per project (errors / warnings), libraries packed to <feed>, solution pack --dry-run <verdict>; runs performed or "compile only — no reachable application"
 Run: <the owning skill's run command for the entry point>
-Open items: <top open-items file> (<n> open; § 3.4)
+Open items: <top open-items file> (<n> setup steps for the target environment; § 3.4)
 ```
 
 Extracted genomes add the healing-pass note: inferred targets are verified on the first run against the live application, and fixes go into the Object Repository element. Migrated test components add the checkpoint line per test case — `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` — and the path of the generated mapping tables ([source-migration-guide.md § Result parity](source-migration-guide.md)). The report does not claim results match the source; the tables make that comparison possible for whoever holds a source result.
 
 ### 3.4 Open items for the engineer
 
-Execution ends by writing what it left for the engineer who takes the automation over, so nothing the run could not do lives only in the chat. The files are written last, after acceptance validation and the completion report.
+The build is often made on another machine and another Orchestrator connection than the one the automation runs on. Execution ends by writing, for the engineer who deploys it, strictly what the target environment needs before the automation runs there. Build results, acceptance verdicts and review notes stay in the completion report (§ 3.3) and never enter these files. They are written last.
 
 **Files and placement.** Write them beside the genome — never inside a project folder (a file there ships in the project's package) and never inside the solution folder:
 
@@ -290,17 +290,19 @@ Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-
 
 **Content:**
 
-1. **The completion report opens the top file** — the solution file, or the single file of a component genome — exactly as § 3.3 prints it.
-2. **Then the checklist, holding only what this run did not do.** Derive every item from the run, never by copying the genome: a queue or asset declared as a solution resource and deployed by the run is done and not listed; the same resource in a solution that was packed but not deployed is an item. One unchecked box per item:
-   `- [ ] {action} — {where: folder, project, asset, queue, trigger} — value: {configuration answer | source default | decide} — {reason}`
-3. **Every item names its reason**, one of:
-   - **secret** — a credential asset's value. The item names the asset and its account; the value never appears in an open-items file.
-   - **decision** — a choice the run did not take for the user: the target folder or tenant, a schedule or runner count answered "decide", a configuration value the export did not hold.
-   - **blocked** — what an expired login, a missing permission or an unreachable system stopped (publish, deploy, Test Manager attachments), with the command that resumes it.
-   - **live check** — what only a live system confirms: every Met (static) and Not Verifiable criterion with its blocker, the inferred UI targets of the first-run healing pass ([source-migration-guide.md § Verifying targets](source-migration-guide.md)), every placeholder left, every `*[Inferred]*` line the genome carries.
-4. **The solution file lists its items in the order they must happen** — deploy, target folder, solution-wide resources (a queue between projects, a shared connection), credential values, triggers, live checks — and then one line per project linking its file, with that project's open-item count. An item that spans projects is written once, in the solution file; a project file links to it instead of repeating it.
-5. **A project file holds that project's own items:** its credential assets, its triggers and runner counts, its live checks, its placeholders.
-6. **Nothing left is still a file:** one line stating what was done ("Nothing left: deployed to <folder>, triggers enabled, every criterion Met."), never an omitted file.
+1. **One unchecked box per setup step, in the order the steps must happen:**
+   `- [ ] {action} — {name} — {where: folder, feed, machine} — {value: the build's value as reference and "set per environment" | "secret: enter in Orchestrator" | the configuration answer}`
+2. **Every step the target environment needs, whether or not this run did it in its own tenant** — a queue, asset or trigger the run created there does not exist in the target tenant. Derive the steps from the genome's Platform Dependencies, the configuration answers and the projects built:
+   - **Packages:** each library published to the target feed before its consumers; the solution, or each package, published and deployed to the target folder.
+   - **Folder and robots:** the target folder, the robot accounts and machines it needs, unattended or attended.
+   - **Queues:** each queue with its unique-reference rule and retry count, from the Transactional Shape's outcomes and the split answer. Under a solution deployment the deploy creates the declared queue, and the step checks its settings.
+   - **Storage buckets, Integration Service connections, Data Fabric entities:** created in the target tenant; a connection also authorised there.
+   - **Assets:** one per setting, with the value this build used as reference and "set per environment".
+   - **Credentials:** every credential asset with its account. The value never appears in an open-items file.
+   - **Processes and triggers:** each process with its entry point; each trigger with its type, schedule or queue, and runner count, from the split and trigger answers.
+   - **Machine prerequisites:** the applications the robots need installed and signed in, from Target Applications (Excel, SAP GUI, the browser extension).
+3. **The solution file lists the solution-wide steps first** — packages, folder, the resources several projects share (a queue between projects, a shared connection) — then one line per project linking its file, with that project's step count. A step that spans projects is written once, in the solution file; a project file links to it instead of repeating it.
+4. **A project file holds that project's own steps:** its assets and credentials, its process and triggers, its machine prerequisites.
 
 ## Anti-patterns
 
@@ -317,4 +319,4 @@ Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-
 11. **Generating workflows by script.** Every fix goes into the generator and regenerates the project; regeneration after linking drops Object Repository links; template shapes bypass the discovery commands; reviewers must read the generator to judge the build (2.2 step 2).
 12. **Building a large group without a skeleton, a ledger and progress written through.** A compaction then loses the contracts, the decisions and every item the progress file never recorded; a part resumed from the summary instead of its read plan authors without the owning skill's reads, and mandatory reads and source dumps are paid twice (2.2a items 1a, 4).
 13. **A part reading file by file.** Reads in the order files name each other, one per turn; whole reads of catalogs, of the progress file or of an earlier part's workflows; another project's ledger; a read plan that gives every part the reads of all parts. Each read is replayed on every later turn of the part (2.2a items 1a, 1b, 6).
-14. **An open-items file that restates the genome instead of the run, holds a secret, or sits inside a project or solution folder** — the engineer redoes finished work, a credential leaks into a shared file, or the file ships in a package (§ 3.4).
+14. **An open-items file that assumes the build's tenant is the target, mixes in build results, holds a secret, or sits inside a project or solution folder** — the target environment misses a queue or asset the build created only in its own tenant, the engineer wades through review notes, a credential leaks into a shared file, or the file ships in a package (§ 3.4).
