@@ -13,8 +13,18 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
 reference:
   directory: ..
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-automattic-woocommerce'
+    timeout: 120
 
 initial_prompt: |
   Create a new Flow project called "DTLLoadByDefaultFalseTest" with a manual trigger.
