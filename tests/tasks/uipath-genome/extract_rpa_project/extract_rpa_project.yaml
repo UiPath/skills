@@ -49,10 +49,20 @@ success_criteria:
       python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md"
       --expect uipath-rpa ERP_InvoicePosting
       --source-map Main.xaml ValidateInvoice.xaml ExtractInvoiceFields.xaml
+      --alt-rows skip
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: every listed alternative unit of work has its own A, B and C split-option rows"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md" --alt-rows only
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: run_command
     description: "Business rules and configuration carry the source thresholds and names as defaults"

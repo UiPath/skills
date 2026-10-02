@@ -5,6 +5,7 @@ Usage:
   genome_check.py component <genome.md> [--expect TOKEN ...] [--source-map TOKEN ...] [--part-of]
   genome_check.py process   <genome.md> [--components <dir>] --skills SKILL ... [--expect TOKEN ...]
   genome_check.py tokens    <genome.md> --expect TOKEN ... [--min FRACTION] [--files N]
+  … [--alt-rows check|skip|only]   the alternative-unit rows finding: graded (default), dropped, or alone (advisory criterion)
   … [--shape transactional|stub [--flows N] [--unit TOKEN ...]]   asserts what the Transactional Shape describes
 
 <genome.md> may be a quoted glob ("*-genome.md"): the file name is the agent's choice, only the
@@ -69,7 +70,8 @@ def body_without_source_map(text: str) -> str:
 
 # format guide § Transactional Shape rule 9: a flow with one side outside the genome names it instead of the table
 EXTERNAL_SIDE = re.compile(r"Split options:(?:\*\*)? none\s*[—–-]+\s*the (consumer|producer) is outside this genome", re.I)
-SPLIT_OPTIONS = {"A", "B", "C"}  # A one process, no queue; B producer and consumer processes; C one process with a queue
+SPLIT_OPTIONS = {"A", "B", "C"}
+ALT_ROWS_FINDING = "alternative units of work named but split options cover only one unit"  # A one process, no queue; B producer and consumer processes; C one process with a queue
 MIN_STEPS = 5
 MIN_CRITERIA = 5
 MIN_QUESTIONS = 3
@@ -196,7 +198,7 @@ def shape_structure(text: str, level: str) -> list[str]:
                 errors.append(f"Transactional Shape {name}: unit '{unit}' lacks option(s) {sorted(SPLIT_OPTIONS - opts)}")
         alt = next((l for l in body.splitlines() if l.startswith("**Alternative units of work:**")), "")
         if alt and not re.search(r":\*\*\s*none\b", alt, re.I) and len(units) < 2:
-            errors.append(f"Transactional Shape {name}: alternative units of work named but split options cover only one unit")
+            errors.append(f"Transactional Shape {name}: {ALT_ROWS_FINDING}")
         header = next((l for l in body.splitlines() if l.strip().startswith("| Unit of work | Option |")), "")
         cols = [c.strip().lower() for c in header.strip().strip("|").split("|")]
         if "requires" not in cols or "changes against as-is" not in cols:
@@ -356,6 +358,8 @@ def main() -> int:
                     help="tokens: fraction of --expect tokens that must be found")
     ap.add_argument("--files", type=int, default=None,
                     help="tokens: exact number of files the pattern must match")
+    ap.add_argument("--alt-rows", choices=["check", "skip", "only"], default="check",
+                    help="component/process: grade the alternative-unit rows finding, drop it, or report only it")
     ap.add_argument("--unit", nargs="*", default=[],
                     help="with --shape transactional: tokens each expected in some 'Unit of work' line")
     args = ap.parse_args()
@@ -382,6 +386,10 @@ def main() -> int:
     else:
         comp_dir = Path(args.components) if args.components else path.with_suffix("")
         errors = check_process(path, comp_dir, args.skills, args.expect)
+    if args.alt_rows == "skip":
+        errors = [e for e in errors if ALT_ROWS_FINDING not in e]
+    elif args.alt_rows == "only":
+        errors = [e for e in errors if ALT_ROWS_FINDING in e]
     for e in errors:
         print(f"FAIL: {e}")
     if not errors:

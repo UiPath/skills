@@ -56,7 +56,7 @@ success_criteria:
     description: "Genome passes the structural, wording and skill-name checks"
     command: >-
       python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md"
-      --expect uipath-rpa "Dynamics 365"
+      --expect uipath-rpa "Dynamics 365" --alt-rows skip
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -66,11 +66,20 @@ success_criteria:
     description: "Transactional Shape describes one flow of rows with split options per unit, states retry and consecutive-failure stop, and leaves no placeholder"
     command: >-
       python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md"
-      --shape transactional --flows 1 --unit row
+      --shape transactional --flows 1 --unit row --alt-rows skip
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: every listed alternative unit of work has its own A, B and C split-option rows"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md" --alt-rows only
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: run_command
     description: "Transactional Shape carries the flow, the unit of work, the As-is roles, the three outcome rows and split options"

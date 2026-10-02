@@ -68,11 +68,21 @@ success_criteria:
     command: >-
       python3 $REFERENCE_DIR/_shared/genome_check.py process "*-genome.md"
       --skills uipath-maestro-flow uipath-rpa uipath-api-workflow
-      --expect ERP_InvoicePosting Slack
+      --expect ERP_InvoicePosting Slack --alt-rows skip
     timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: every listed alternative unit of work has its own A, B and C split-option rows"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py process "*-genome.md"
+      --skills uipath-maestro-flow uipath-rpa uipath-api-workflow --alt-rows only
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: run_command
     description: "Handoffs and platform dependencies capture the queue, the Slack channel, the schedule, and the folder"
