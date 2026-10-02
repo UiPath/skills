@@ -79,6 +79,10 @@ BASELINES_PCT: dict[str, int] = {
     "uipath-maestro-case": 95,
     "uipath-api-workflow": 100,
     "uipath-functions": 100,
+    # uipath-genome set at 95 when the skill was added (#3460), before a full activation
+    # run measured it; the PR's own gate run is its first measurement. Re-baseline after
+    # the next full activation run like every other entry.
+    "uipath-genome": 95,
 }
 
 DROP_PP = 10
