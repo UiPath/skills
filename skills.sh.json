@@ -16,6 +16,7 @@
         "uipath-api-workflow",
         "uipath-human-in-the-loop",
         "uipath-ixp",
+        "uipath-doc-strategy-select",
         "uipath-connector-builder",
         "uipath-functions"
       ]

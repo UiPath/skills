@@ -89,6 +89,14 @@
       },
       "last_synced": null
     },
+    "uipath-doc-strategy-select": {
+      "status": "preview",
+      "confluence": {
+        "page_id": "91171553571",
+        "url": "https://uipath.atlassian.net/wiki/spaces/AI/pages/91171553571/Mode-selection+skill+-+case+library"
+      },
+      "last_synced": "2026-09-24"
+    },
     "uipath-feedback": {
       "status": "stable",
       "confluence": {

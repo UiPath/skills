@@ -238,3 +238,7 @@
 # StudioAdmin AOps skill (SourceControl + CICD pipelines)
 /skills/uipath-aops/ @AndreiRR24 @UiPath/xworks
 /tests/tasks/uipath-aops/ @AndreiRR24 @UiPath/xworks
+
+# Document-processing mode selection (Extract / Classify & Split / Summarize / search mode / harness)
+/skills/uipath-doc-strategy-select/ @SummerWangUiPath
+/tests/tasks/uipath-doc-strategy-select/ @SummerWangUiPath
