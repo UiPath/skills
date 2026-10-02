@@ -41,8 +41,6 @@ of the return having to work out which arm ran.
 Pause for a person: an inline form, quick form, deployed Action App, or a
 document-validation station.
 
-Signature: `hitl({ variant?, app?, document?, title?, priority?, labels?, recipient?, fields?, outcomes, outcomePorts?, exposeError? })`.
-
 ```ts
 .var('status', types.string)
 .stepSwitch('review', hitl({ title: 'Review invoice',

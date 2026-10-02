@@ -29,7 +29,4 @@ The duration is ISO-8601: `PT30S`, `PT15M`, `PT2H`, `P1D`, `P1W`.
 
 Pause this path for a duration — or until an absolute date-time — then continue.
 
-Signature: `delay({ duration: string })` or `delay({ until: string })`
-(exactly one; `until` is an ISO-8601 date-time, e.g. `'2026-09-01T09:00:00Z'`).
-
 Use a real-time rung when elapsed time itself is the requirement.

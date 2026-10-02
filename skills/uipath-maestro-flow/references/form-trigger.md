@@ -26,9 +26,6 @@ export default flow('expense-request')
 A person starts the flow by submitting a form (`core.trigger.form`); the
 submitted values ARE the flow's inputs.
 
-Signature: `.trigger(formTrigger())` — no arguments; the form's fields are
-derived from `.input()` (one per input, required unless it has a default).
-
 ```ts
 export default flow('expense')
   .input({ amount: types.number, reason: types.string })

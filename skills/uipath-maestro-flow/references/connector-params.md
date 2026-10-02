@@ -28,9 +28,6 @@ Signatures:
 
 Call a curated or generic connector operation using a generated descriptor or key/action pair.
 
-Signatures: `connector(descriptor, inputs, opts?)`;
-`connector(key, action, inputs?, { connection?, folder?, object?, version? })`.
-
 Data Fabric is also connector key `uipath-uipath-dataservice`: use it for file
 record fields, Record Created/Updated events, or a scenario that names the
 connector. Record CRUD is native ([Data Fabric](data-fabric.md)). Discover tenant-specific fields and ids; preserve every scenario-named input.

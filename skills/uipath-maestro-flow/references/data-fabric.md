@@ -4,9 +4,6 @@
 
 ## At a glance
 
-**One product, two surfaces.** "Data Fabric" and "Data Service" are one product (key `uipath-uipath-dataservice` shows as *UiPath Data Fabric*).
-**CRUD is NATIVE** — `dataFabricRead` / `dataFabricCreate` / `dataFabricUpdate` / `dataFabricDelete`, no connection binding, no `registry prepare`.
-
 ```ts
 .step('open', dataFabricRead({ entity: 'Invoices', resultMode: 'multiple',
   filters: [{ field: 'Status', value: 'Open' }], limit: 200, sort: { field: 'CreateTime' } }))
