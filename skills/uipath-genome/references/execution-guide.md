@@ -291,18 +291,28 @@ Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-
 **Content:**
 
 1. **One unchecked box per setup step, in the order the steps must happen:**
-   `- [ ] {action} — {name} — {where: folder, feed, machine} — {value: the build's value as reference and "set per environment" | "secret: enter in Orchestrator" | the configuration answer}`
+   `- [ ] {action} — {name} — {where: folder, feed, machine} — {value: the configuration answer, or the build's value as reference and "set per environment"}`; assets and credentials take the one table below instead
 2. **Every step the target environment needs, whether or not this run did it in its own tenant** — a queue, asset or trigger the run created there does not exist in the target tenant. Derive the steps from the genome's Platform Dependencies, the configuration answers and the projects built:
    - **Packages:** each library published to the target feed before its consumers; the solution, or each package, published and deployed to the target folder.
    - **Folder and robots:** the target folder, the robot accounts and machines it needs, unattended or attended.
    - **Queues:** each queue with its unique-reference rule and retry count, from the Transactional Shape's outcomes and the split answer. Under a solution deployment the deploy creates the declared queue, and the step checks its settings.
    - **Storage buckets, Integration Service connections, Data Fabric entities:** created in the target tenant; a connection also authorised there.
-   - **Assets:** one per setting, with the value this build used as reference and "set per environment".
-   - **Credentials:** every credential asset with its account. The value never appears in an open-items file.
+   - **Assets, credentials included:** one checklist item for the folder, followed by one table with a row per asset:
+
+     ```markdown
+     - [ ] Create the assets in <folder>
+
+       | Type | Name | Value |
+       |---|---|---|
+       | Text | <name> | <the build's value> (set per environment) |
+       | Credential | <name> | account <account>; secret entered in Orchestrator |
+     ```
+
+     Type is the Orchestrator asset type (Text, Integer, Bool, Credential). A setting's row gives the value this build used as reference. A Credential row names its account; the secret never appears in an open-items file.
    - **Processes and triggers:** each process with its entry point; each trigger with its type, schedule or queue, and runner count, from the split and trigger answers.
    - **Machine prerequisites:** the applications the robots need installed and signed in, from Target Applications (Excel, SAP GUI, the browser extension).
 3. **The solution file lists the solution-wide steps first** — packages, folder, the resources several projects share (a queue between projects, a shared connection) — then one line per project linking its file, with that project's step count. A step that spans projects is written once, in the solution file; a project file links to it instead of repeating it.
-4. **A project file holds that project's own steps:** its assets and credentials, its process and triggers, its machine prerequisites.
+4. **A project file holds that project's own steps:** its assets table, its process and triggers, its machine prerequisites.
 
 ## Anti-patterns
 
