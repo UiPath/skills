@@ -1,0 +1,111 @@
+task_id: skill-migrator-refuse-non-windows
+description: >
+  Smoke, Linux: the agent is asked to migrate ConsentBannerProbe with the
+  Activity Migrator on a non-Windows host. Rule 1 of the skill says to check
+  the OS before anything else and, on macOS or Linux, to stop and tell the
+  user to run the migration from a Windows machine that holds the project;
+  the acquisition script enforces the same with its `not-windows` error.
+  Graded on the refusal: no migrator command, no attempt to download or run the
+  tool through another route, no output folder, no `.upgrade` folder, source
+  byte-identical, nothing built or run, and a judge on the message to the user.
+  Runs on the Linux smoke runner. That runner skips this skill as a whole when
+  the skill's own files change (the skill owns Windows-tagged tasks), so this
+  task runs on test-only pull requests and through run-coder-eval.yml; it cannot
+  run on a Windows machine, where the refusal does not apply.
+tags: [uipath-activity-migrator, smoke, mode:build, lifecycle:discover]
+
+run_limits:
+  max_turns: 15
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../migrate-classic/fixture
+
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: ../migrate-classic/fixture
+
+initial_prompt: |
+  Migrate the UiPath project in ./ConsentBannerProbe with the Activity
+  Migrator.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-activity-migrator skill"
+    skill_name: "uipath-activity-migrator"
+    expected_skill: "uipath-activity-migrator"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Step 0's script is the skill's own OS check and answers `not-windows` here.
+  # Advisory: Rule 1 allows the check to be made another way before the script.
+  - type: command_executed
+    description: "Agent ran the acquisition script, which reports not-windows (advisory)"
+    command_pattern: 'ensure-migrator\.mjs'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  # Rule 1: the tool never runs here, through any route.
+  - type: command_not_executed
+    description: "Agent never invoked the migrator, directly or through wine or dotnet"
+    command_pattern: 'UiPath\.Upgrade\.(exe|dll)|\bwine\b'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent never tried to download the tool archive by hand"
+    command_pattern: 'UiPath\.Upgrade\.Cli\.zip|download\.uipath\.com/upgrade'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No output folder and no .upgrade folder were created"
+    command: |-
+      python3 -c "import os, sys; sys.exit(1 if os.path.exists('ConsentBannerProbe_Upgraded') or os.path.exists('ConsentBannerProbe/.upgrade') else 0)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 5, and the anti-pattern of hand-converting classic activities: the source is untouched.
+  - type: run_command
+    description: "Source project.json and Main.xaml are byte-identical to the fixture"
+    command: |-
+      python3 -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'ConsentBannerProbe'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('ConsentBannerProbe', f), shallow=False) for f in ('Main.xaml', 'project.json')) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Nothing to build, validate or run after a refusal.
+  - type: command_not_executed
+    description: "Agent ran no uip rpa command"
+    command_pattern: 'uip\s+rpa\s+\w+'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The refusal is a message to the user; only a judge can grade its content.
+  - type: llm_judge
+    description: "Agent told the user to run the migration from a Windows machine holding the project and proposed no workaround"
+    weight: 2.5
+    pass_threshold: 0.7
+    include_dialog: false
+    include_agent_output: true
+    prompt: |
+      Grade only the agent's last [ASSISTANT] message. A [RESULT - ...] block
+      after it repeats that message and is harness output.
+      The Activity Migrator (UiPath.Upgrade.exe) is a Windows-only .NET 8
+      desktop tool and the agent is running on a non-Windows host. Expected:
+        - the agent says the migration cannot run on this host and must be run
+          from a Windows machine that holds the project;
+        - it proposes no workaround: no WSL, Wine, dotnet invocation of the
+          tool, no converting the classic activities by hand, no partial
+          migration;
+        - it attempted no migration.
+      Score 1.0 when all three hold, 0.7 when the refusal and the Windows
+      pointer are there but the message adds speculative alternatives or long
+      narration, 0.3 when the agent refused without saying where the migration
+      must run, 0.0 when the agent attempted a migration or a hand conversion.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
