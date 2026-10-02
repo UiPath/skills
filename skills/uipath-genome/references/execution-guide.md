@@ -288,7 +288,7 @@ The build is often made on another machine and another Orchestrator connection t
 
 Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-guide.md).
 
-**Content.** Every step the target environment needs, whether or not this run did it in its own tenant — a queue, asset or trigger the run created there does not exist in the target tenant. Derive the steps from the genome's Platform Dependencies and Target Applications, the configuration answers and the projects built. Each file has these sections, in this order, so that nothing a trigger starts runs before its setup exists; a section with nothing to do reads "None.":
+**Content.** Every step the target environment needs, whether or not this run did it in its own tenant — a queue, asset or trigger the run created there does not exist in the target tenant. Derive the steps from the genome's Platform Dependencies and Target Applications, the configuration answers and the projects built. Each file has one section per kind of setup, in this order, so that nothing a trigger starts runs before its setup exists. **Access, Package and deployment, Assets, Robot machines and Triggers are always present** and read "None." when empty. **Every other UiPath service the automation uses gets a section of its own, named after the service**, after Package and deployment and before Robot machines — one per service the Platform Dependencies name, whatever it is (Queues, Storage Buckets, Integration Service, Data Fabric, Action Center, Document Understanding, Test Manager, Context Grounding, …); a service the automation does not use has no section. The template shows the common ones:
 
 ````markdown
 # Open items — <project or solution> in <target environment>
@@ -313,12 +313,21 @@ Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-
   Account: `<account>` — the secret is entered in Orchestrator
   Description: <the system it signs in to, and as whom>
 
+## Storage Buckets
+- [ ] **`<Bucket>`** in `<folder>`
+  Description: <what the automation stores there>
+
+## Integration Service
+- [ ] **`<Connector>`** connection in `<folder>`: create and authorise as `<account>`
+
 ## Data Fabric
 - [ ] Entity **`<Entity>`**: <create | import>, fields as in <Platform Dependencies row>; access for `<accounts>`
 
-## Others
-- [ ] Storage bucket `<bucket>` | Integration Service connection `<connector>`: create and authorise as `<account>`
-- [ ] Robot machines: <application> installed and signed in (from Target Applications)
+## <Service>
+- [ ] <what to create or configure in that service, its name, where, and for whom>
+
+## Robot machines
+- [ ] `<application>` installed and signed in (from Target Applications)
 
 ## Triggers
 - [ ] **`<TriggerName>`** (Time | Queue) for process `<process>`
