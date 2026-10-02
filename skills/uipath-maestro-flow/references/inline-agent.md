@@ -74,14 +74,14 @@ Tool signatures:
 - `{ kind: 'process' | 'agent' | 'api' | 'flow' | 'maestro', key, name, folderPath, inputs?, returns? }`
 - `{ kind: 'ixp', projectId, name, description?, versionTag?, attachment? }`
 
-A connector tool needs a connection, the same as a `connector()` step.
-`connection` and `folder` are `bindings.json` labels, resolved exactly like
-`connector()`'s options (see [bindings.md](bindings.md)). `check` reports
-`INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` when either is missing, and
-`BINDING_UNDECLARED` when a label is not in `bindings.json`.
-`uip maestro registry prepare <connector-key> <operation>` finds the
-connection and writes both entries. `description` overrides the text the model
-is told the tool does; it defaults to the library's operation description.
+A connector tool needs `connection` and `folder`, `bindings.json` labels
+resolved like `connector()`'s (see [bindings.md](bindings.md)). Missing either
+is `INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` from `check`. `prepare` does not
+read a tool's labels from the source, so pass them:
+`uip maestro registry prepare <connector-key> --action <operation> --bind-connection <connection> --bind-folder <folder>`
+finds the connection and writes both entries under the tool's labels.
+`description` overrides the text the model is told the tool does; it defaults
+to the library's operation description.
 
 ```ts
 tools: [{
