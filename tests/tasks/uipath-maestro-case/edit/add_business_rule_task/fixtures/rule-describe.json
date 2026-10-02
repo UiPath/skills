@@ -1,0 +1,13 @@
+{
+  "Result": "Success",
+  "Code": "TaskDescribed",
+  "Data": {
+    "Inputs": [
+      { "name": "creditScore", "type": "number", "id": "creditScore", "required": true }
+    ],
+    "Outputs": [
+      { "name": "riskBand", "type": "string", "id": "riskBand" },
+      { "name": "Error", "type": "jsonSchema", "id": "error" }
+    ]
+  }
+}
