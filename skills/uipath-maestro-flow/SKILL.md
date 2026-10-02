@@ -25,21 +25,19 @@ Scaffold the project first, seed the source from it, then emit back into it — 
 
 ```bash
 uip solution init <Solution>
-( cd <Solution> && uip maestro flow init <Name> )
-mkdir -p .flow-sdk   # decompile writes the file, not its folder
-uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
+( cd <Solution> && uip maestro flow init <Name> --sdk-source ../.flow-sdk/<Name>.flow.ts )
 # edit .flow-sdk/<Name>.flow.ts, then run the Lifecycle loop below
 ```
 
 Do not hand-write the skeleton.
-Decompiling the trigger-only artifact `flow init` writes produces exactly that skeleton, and it carries the flow id and name the product already assigned — a hand-written `flow('<name>')` invents an id instead.
+`--sdk-source` decompiles the trigger-only artifact `flow init` writes into exactly that skeleton (creating `.flow-sdk/` if needed; the path resolves against the cwd, hence `../` from inside `<Solution>`), and it carries the flow id and name the product already assigned — a hand-written `flow('<name>')` invents an id instead.
 So the stub is the seed rather than litter: the first `compile -o` overwrites it in place.
-**Maestro Automate is `--automate` on the same `flow init`:** when the request names **Maestro Automate** as the product, run `( cd <Solution> && uip maestro flow init <Name> --automate )`; the bare verb ("automate invoice intake") asks for a plain Flow.
+**Maestro Automate is `--automate` on the same `flow init`:** when the request names **Maestro Automate** as the product, run `( cd <Solution> && uip maestro flow init <Name> --automate --sdk-source ../.flow-sdk/<Name>.flow.ts )`; the bare verb ("automate invoice intake") asks for a plain Flow.
 Nothing after `init` changes; the flag writes `runtimeOptions.profile` into `operate.json` plus a `.maestro_automate` marker (how Orchestrator and Studio Web tell the two apart), and `compile -o` rewrites only the `.flow`, so both survive.
 
-`--no-pipeline` keeps the greenfield seed to one file; `<Name>.pipeline.mjs` is the brownfield read/modify/write helper ([`references/brownfield.md`](references/brownfield.md)) and is noise here.
+The seed is one file, with no `<Name>.pipeline.mjs` (the brownfield read/modify/write helper `decompile` writes; see [`references/brownfield.md`](references/brownfield.md)).
 
-An existing project needs no `init`: skip the first two commands and seed from the `.flow` that is already there; skip the decompile when the source already exists.
+An existing project needs no `init`: seed from its `.flow` with `uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline` (run `mkdir -p .flow-sdk` first; `decompile` writes the file, not its folder), and skip that too when the source already exists.
 The three names stay aligned: `.flow-sdk/<Name>.flow.ts`, the `<Name>` project directory, and `<Name>.flow` inside it.
 Exactly one emitted `<Name>.flow` may exist, at that path, and never a second copy at the workspace root — validators and evidence collectors cannot choose safely between duplicates.
 Emitting to the root is correct only for the packaged-SDK local gates, which never scaffold a project; pick the loop first ([Lifecycle](#lifecycle)) and do not mix the two.

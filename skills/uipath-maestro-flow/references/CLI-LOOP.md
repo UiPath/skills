@@ -91,7 +91,7 @@ These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
 
 ## Product-CLI scaffold
 
-The scaffold (`uip solution init`, `flow init`, the `decompile` seed, and
+The scaffold (`uip solution init`, `flow init --sdk-source` for the seed, and
 `--automate` for a Maestro Automate project) is in
 [SKILL.md — Project layout](../SKILL.md#project-layout). It is kept in one place
 so the two copies cannot drift.
