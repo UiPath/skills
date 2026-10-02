@@ -26,7 +26,7 @@ Start an API workflow from a connector event (a Slack button clicked, a new Outl
 8. `uip api-workflow validate <WORKFLOW_PATH> --output json`
 <!--skill-flavor:trigger-authoring-steps:end-->
 
-Connection rules (folder-scoped listing, `ping` mandatory) are the same as for any connector activity: [connector-activity-discovery.md](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-kind-only).
+Connection rules (folder-scoped listing, `ping` mandatory) are the same as for any connector activity: [connector-activity-discovery.md](connector-activity-discovery.md#step-2--verify-a-vendor-connection-intsvc-only).
 
 Triggers live in a separate TypeCache catalog; `--kind` takes `activity`, `trigger`, or `all` (default). The keyword also matches `EventOperation`, so `resolve "button_clicked" --kind trigger` works. Each trigger match carries `ActivityType` (`CuratedTrigger` pins its object; `GenericTrigger` needs `--object-name`), `EventOperation` (`CREATED`, `BUTTON_CLICKED`, …) and `EventMode` (`polling` or `webhooks`).
 
