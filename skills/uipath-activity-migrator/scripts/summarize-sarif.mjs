@@ -163,12 +163,11 @@ function recordPackage(message) {
   return false;
 }
 function pkgEntry([pkg, v]) {
-  let s;
-  if (v.unchanged) s = `${pkg} ${v.to} (unchanged)`;
-  else if (v.to) s = `${pkg} ${v.from} → ${v.to}`;
-  else s = `${pkg} requested ${v.requested}`;
-  if (v.requested && v.minimum) s += ` (requested ${v.requested}, raised to the tool minimum ${v.minimum})`;
-  return s;
+  if (v.unchanged) return `${pkg} ${v.to} (unchanged)`;
+  const raised = v.requested && v.minimum ? `requested ${v.requested}, raised to the tool minimum ${v.minimum}` : '';
+  if (v.to) return `${pkg} ${v.from} → ${v.to}${raised ? ` (${raised})` : ''}`;
+  // The raise warning arrived without the "Updated package" note that normally follows it.
+  return `${pkg} ${raised || `requested ${v.requested}`}`;
 }
 const typeIssues = [];
 const stepFailures = [];
@@ -263,7 +262,10 @@ for (const r of results) {
 
 // Status keys off rule IDs as well as levels: the UIA extension reports unmigrated
 // activities at note or warning level, so a level-only reading would call them success.
-const leftovers = uia.notMigrated.length + uia.partial.length + uia.warnings.length + productivity.notMigrated.length + productivity.warnings.length + actionRequired.length + typeIssues.length + stepFailures.length;
+// Workflow-scoped UIA results above note level are about a whole file the extension could not treat as usual;
+// they need a look like any per-file issue.
+const uiaWorkflowIssues = uia.workflow.filter((e) => e.level !== 'note');
+const leftovers = uia.notMigrated.length + uia.partial.length + uia.warnings.length + uiaWorkflowIssues.length + productivity.notMigrated.length + productivity.warnings.length + actionRequired.length + typeIssues.length + stepFailures.length;
 let status;
 let statusReason = '';
 if (hasCriticalError || blockers.length > 0) status = 'failed';
@@ -293,9 +295,11 @@ const activityKey = (e) => `${e.file}::${e.guid || e.activity || e.rule}`;
 // An activity left classic may also carry property-level results that hold its reason; every result about
 // such an activity goes to its left-classic slot, so the activity is counted once and keeps its reason.
 const leftClassicKeys = new Set(uia.notMigrated.map(activityKey));
+// A whole step that threw (stepFailures) is a needs-attention item too: an extension step there migrated nothing,
+// and a report that promoted the run to success on an empty attention list would hide it.
 const flagged = [...new Set([
-  ...uia.notMigrated, ...uia.partial, ...uia.warnings, ...productivity.notMigrated, ...productivity.warnings,
-  ...actionRequired, ...typeIssues,
+  ...uia.notMigrated, ...uia.partial, ...uia.warnings, ...uiaWorkflowIssues, ...productivity.notMigrated, ...productivity.warnings,
+  ...actionRequired, ...typeIssues, ...stepFailures,
 ])];
 const leftClassicResults = flagged.filter((e) => leftClassicKeys.has(activityKey(e)));
 const attentionResults = flagged.filter((e) => !leftClassicKeys.has(activityKey(e)));

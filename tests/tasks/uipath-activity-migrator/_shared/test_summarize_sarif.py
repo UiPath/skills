@@ -99,6 +99,30 @@ def test_project_already_on_the_target_version_is_reported_as_unchanged(tmp_path
     assert re.search(r"Packages: UiPath\.UIAutomation\.Activities 25\.10\.22 \(unchanged\)", summarize(file))
 
 
+def test_whole_step_failure_at_warning_level_is_a_needs_attention_item(tmp_path):
+    # Rule WARNING with no file: the step threw as a whole and the run went on without it. Without an attention item
+    # a report would promote the run to success on an empty list and hide the skipped step.
+    j = summary(sarif(tmp_path, [VALIDATED, result("WARNING", "Step failed: UiAutomationActivitiesStep - Object reference not set to an instance of an object.")]))
+    assert j["status"] == "partial"
+    assert len(j["stepFailures"]) == 1
+    assert j["attention"]["total"] == 1
+    assert j["attention"]["items"][0]["reasons"] == ["step failed"]
+
+
+def test_workflow_scoped_uia_result_above_note_level_is_a_needs_attention_item(tmp_path):
+    j = summary(sarif(tmp_path, [VALIDATED, result("UIAUTOMATION-WORKFLOW-MIGRATION-WARNING-UnsupportedShape", "Main.xaml - the workflow uses a construct the migrator does not handle.", **at("Main.xaml"))]))
+    assert j["status"] == "partial"
+    assert j["attention"]["total"] == 1
+    assert j["attention"]["items"][0]["reasons"] == ["UnsupportedShape"]
+
+
+def test_raise_warning_without_the_updated_note_prints_requested_once(tmp_path):
+    file = sarif(tmp_path, [VALIDATED, result("UIAUTOMATION-PACKAGE-UPGRADE", "Cannot use version '25.10.5' for 'UiPath.UIAutomation.Activities'. Minimum required version is '25.10.21'. Using minimum version.")])
+    line = next(l for l in summarize(file).splitlines() if l.startswith("Packages:"))
+    assert line == "Packages: UiPath.UIAutomation.Activities requested 25.10.5, raised to the tool minimum 25.10.21"
+    assert line.count("requested") == 1
+
+
 def test_package_message_no_shape_parses_stays_on_the_packages_line_verbatim(tmp_path):
     file = sarif(tmp_path, [
         VALIDATED,
