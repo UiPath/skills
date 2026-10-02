@@ -67,7 +67,10 @@ def write_tenant(responses: Path, *, token: str, name_token: str | None = None, 
     listing = [dict(process, Id=4815 + i) for i in range(processes)]
     record = {"ProcessId": 4815, "ProcessName": name, "ProcessSlug": process["Slug"],
               "ProcessDescription": "<p>Automates retail current-account onboarding from CRM intake to T24 provisioning.</p>",
-              "ProcessL1Id": 11, "ProcessL2Id": 12, "ProcessL3Id": None, "ProcessSubmitterUserId": 42,
+              "ProcessL1Id": None, "ProcessL2Id": None, "ProcessL3Id": None,  # null even when categorized
+              "Hierarchy": "11,12", "Categories": [{"CategoryId": 11, "CategoryName": "Retail Banking", "Subcategories": [
+                  {"CategoryId": 12, "CategoryName": "Account Onboarding", "Subcategories": []}]}],
+              "ProcessSubmitterUserId": 42,
               "ProcessNumApplications": num_apps, "ProcessNumDocuments": 2, "ProcessIsDeleted": 0}
     docs = [
         {"Id": 901, "AutomationId": 4815, "Title": "PDD", "TypeId": pdd_type, "FileId": 77, "EmbedLink": None, "IsActive": 1},
@@ -218,6 +221,16 @@ def test_inventory_only_expectation_without_new_applications(sandbox: Path) -> N
     write_tenant(responses, token=TOKEN, offers_new_apps=False, num_apps=1)
     seed(sandbox)
     assert "dropped applications" in grade(sandbox, "applications").stdout
+
+
+def test_missing_category_fails(sandbox: Path) -> None:
+    seed(sandbox)
+    responses = sandbox / "mocks" / "responses"
+    record = json.loads((responses / "get_all.json").read_text())
+    record["Data"]["Hierarchy"] = ""
+    record["Data"]["Categories"] = []
+    (responses / "get_all.json").write_text(json.dumps(record))
+    assert "no category" in grade(sandbox, "fields").stdout
 
 
 def test_pdd_wrong_type_fails(sandbox: Path) -> None:

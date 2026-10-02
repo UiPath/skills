@@ -88,8 +88,11 @@ def check_fields(seed: dict) -> str:
     description = re.sub(r"<[^>]+>", " ", str(record.get("ProcessDescription") or ""))
     if len(description.strip()) < 20 or has_placeholder(description):
         raise CheckFailed(f"ProcessDescription missing, thin, or a template placeholder: {description[:120]!r}")
-    if not any(record.get(k) for k in ("ProcessL1Id", "ProcessL2Id", "ProcessL3Id")):
-        raise CheckFailed("no category recorded on the process (ProcessL1Id/L2Id/L3Id all empty)")
+    # The CLI's --all-fields record carries the category as `Hierarchy` ("1,8,99")
+    # and a nested `Categories` tree; the legacy ProcessL1Id/L2Id/L3Id columns stay
+    # null even on categorized processes (observed on two tenants).
+    if not (str(record.get("Hierarchy") or "").strip() or record.get("Categories")):
+        raise CheckFailed("no category recorded on the process (Hierarchy and Categories both empty)")
     if not record.get("ProcessSubmitterUserId"):
         raise CheckFailed("ProcessSubmitterUserId is empty")
     if record.get("ProcessIsDeleted"):
