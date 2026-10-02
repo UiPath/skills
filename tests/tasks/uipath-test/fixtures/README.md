@@ -28,6 +28,7 @@ and therefore exact for this scheme.
 | `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `schedule_freeze_window_operate` | CLAIM | `EVFX-SCHED-SET`, `EVFX-SCHED-TC{1,2}`, and the `EVFX-SCHED-*` **schedule** namespace | Set, cases, and two **enabled** schedules `EVFX-SCHED-PAUSE` and `EVFX-SCHED-STALE`; the task pauses one, deletes the other and creates `EVFX-SCHED-NIGHTLY` |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
@@ -105,6 +106,19 @@ Four test sets and eleven test cases, fixed — `EVFX-RERUN-SET`,
 accretes: `execution_rerun` repairs one execution rather than appending,
 `junit_export` and `release_readiness` seed once, `flaky` appends only to
 restore intermittency, and `organize` sweeps its own scratch.
+
+`schedule_freeze_window_operate` adds `EVFX-SCHED-SET` and its two cases, plus
+two *schedules* held flat at two rather than zero. The task consumes both of
+the ones it is handed — one gets paused, one gets deleted — and creates a
+third, so `pre_run` deletes every `EVFX-SCHED-` schedule and reseeds the pair.
+That restores the starting state exactly instead of topping up from wherever
+the last agent left it, and it is only possible because `schedules delete`
+exists.
+
+It also asserts the reseeded pair came back **enabled**. An already-paused
+`EVFX-SCHED-PAUSE` would let the pause outcome pass for the wrong reason, which
+is Rule 4's "guard on the property, not a count" applied to state rather than
+to counts.
 
 ## Why
 
