@@ -53,6 +53,8 @@ Run it **after** the Phase 1 registry gate and [planning.md Step 4](planning.md#
 
 **If convert refuses the ledger** because an entry does not match the SDD (the message names the stage, the task and the field that differs), the ledger is stale: the SDD changed after `sdd resolve` wrote it. Re-run `sdd resolve`, re-apply the Step 4 additions with Edit, and convert again. Never edit `sdd.md` or the ledger to make them agree.
 
+**If convert refuses the SDD itself** (the document did not parse whole, naming a heading or a line), the SDD is non-conformant: stop and hand it back per [SKILL.md Rule 2](../SKILL.md). Do not fall back to hand-authoring Phase 2; the version guard below covers only a missing command.
+
 **Version guard.** If the response names `sdd` or `convert` as an unknown command (typically `ErrorCode: "invalid_argument"`, exit 3), author Phase 2 by hand exactly as described below, say so in one line, and continue. Exit 3 *without* that command-specific message is a real failure — report it and do not fall back.
 
 **`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). There are **25 kinds** (the authoritative list is the `UnresolvedItem` union in the CLI's `sdd-convert/types.ts` — read it there, never retype it). The four below are the ones with a *named downstream closer*; every other kind is closed by the Phase 4 repair loop acting on the entry's own `detail`. Each is closed by a later step, not by re-deriving it from the SDD.
@@ -204,7 +206,7 @@ After re-entry:
 
 1. **Connector task detail** — for each connector task in the SDD, run plugin's `impl-json.md` detail steps: `case spec --type {activity,trigger} --input-details`, then mint `data.context[]` / `data.inputs[]` / `data.outputs[]` from the populated `caseShape` (placeholder substitution + var/id minting), with the SDD's `->` / `=` output rows applied over `data.outputs[]` per [`io-binding/impl-json.md` § Output Binding Shapes](plugins/variables/io-binding/impl-json.md#output-binding-shapes).
 2. **Task I/O value binding (all task classes)** — per [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). Applies to both non-connector and connector tasks. For each task's Inputs table rows in SDD order, write literal, expression, or cross-task reference (resolved to `=vars.<outputReferenceId>` through the common `.id`-based resolver) into `task.data.inputs[i].value`. Connector tasks have `data.inputs[]` schema written in step 1; value binding happens here in step 2, same as non-connector tasks.
-3. **Connector-bound condition-rule upgrade** — scan all four scopes for canonical stubs. For each resolved connector, run `case spec --type trigger --input-details` and replace only `rule.uipath`, preserving rule/condition IDs, expressions, scope, and placement. Unresolved connectors keep the stub and are reported.
+3. **Connector-bound condition-rule upgrade** — scan all four scopes for [unfinished connector rules](connector-trigger-impl.md#placeholder-fallback) (the `"placeholder"` stub, `context: []`, or one slot only). For each resolved connector, run `case spec --type trigger --input-details` and replace only `rule.uipath`, preserving rule/condition IDs, expressions, scope, and placement. Unresolved connectors keep the stub and are reported.
 4. **In-expression marker resolution** — per [`plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution`](plugins/variables/io-binding/impl-json.md). After all outputs are minted/deduped, resolve every `vars.$xref('Stage','Task','output')` marker in `caseplan.json` to bare `vars.<outputReferenceId>` in one sink-blind whole-file pass (input payloads, conditions, SLA, connector bodies). Unresolved triple or reference ID → ERROR.
 5. **End-of-Phase-3 validator pass** — per [`implementation.md § Step 12`](implementation.md). Run Checks 1-11 (=vars.X resolution, Out-arg producer presence, type mismatch, surviving `$xref` markers, resolved-resource I/O completeness, entry-point schema parity, bindings sidecar parity, output-ID uniqueness, resolved-resource emission and repair preservation, formal-arg slot ID format, resourceKey self-consistency). AskUserQuestion for unresolved references (incl. `$xref` markers), pure orphan Out-args, and unbound required inputs / phantom output fields; option (c)/(d) "continue with best-effort emit" preserves forward progress. Checks 6-11 are non-interactive: on mismatch auto re-run/regenerate/re-mint once where the check permits it; Check 6 logs if still divergent, while Checks 7, 9, 10, and 11 halt before Phase 4 if still divergent. Never HALT otherwise.
 
@@ -276,7 +278,8 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 3. Validation status — `validate` pass / remaining warnings.
 4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + `wiringNotes` from `tasks/registry-resolved.json`. Also list, under **Not covered**, anything `sdd.md` referenced that is outside the scope of `caseplan.json` (e.g. Data Fabric entity schemas). Also list **agents / API workflows built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
-6. Suggested next steps — one short line before the prompt (the publish/skip-to-debug line above). If placeholders or missing connections exist, mention fixing/registering those before publish.
+6. Runnability — only when a count from [§ Phase 6 Runnability check](#runnability-check--before-the-debug-prompt) is non-zero: the counts and the line naming where a run stops. Omit the field when all three are zero. A case whose every task is a placeholder still validates; this field is the only place the report says it cannot run, and it must stay silent on a case that can.
+7. Suggested next steps — one short line before the prompt (the publish/skip-to-debug line above). If placeholders or missing connections exist, mention fixing/registering those before publish.
 
 ### Publish notes
 
@@ -287,6 +290,25 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 - Publish ships a build that has not been exercised — the debug gate follows (Phase 6). If a Phase 6 debug run leads to a fix, ask via **AskUserQuestion** (`Re-publish the fixed build` / `Skip re-publish`). On `Re-publish`, re-run this phase's `resources refresh` + `solution upload` so Studio Web holds the fixed build — the re-upload overwrites whatever is on Studio Web now, which a reviewer may have edited since Phase 5. On `Skip re-publish`, leave Studio Web on the build it already has.
 
 ## Phase 6 — Debug
+
+### Runnability check — before the debug prompt
+
+Read `caseplan.json` and count three things. Do not take them from `validate`: on CLI 1.202.x a default-profile run returns `Valid` with all three present.
+
+| Count | What it is |
+|---|---|
+| Placeholder tasks | tasks whose `data` has zero keys |
+| Stub event rules | [unfinished connector rules](connector-trigger-impl.md#placeholder-fallback): `wait-for-connector` rules with no non-empty, non-`"placeholder"` `connectorKey` or `operation` in `uipath.context` |
+| Unresolved conditions | string values still containing `$xref(` (Check 4's best-effort option left them) |
+
+When all three are zero, show the prompt below unchanged. Otherwise a debug run cannot finish. Find the first blocked element on the primary path: walk the stage entered by `case-entered`, then each stage its exit leads to, in task order. In the AskUserQuestion preamble, write two lines:
+
+1. `Debug will stop at "<task or rule>" in "<stage>": <no resource is bound | its event is a placeholder | its condition reads an output that does not exist>.`
+2. `<P> of <T> tasks are placeholders, <S> event rules are stubs, <X> conditions are unresolved.`
+
+If nothing blocks the primary path, line 1 instead names the secondary stage that cannot run. The options are then `Stop and bind resources` (first, recommended: exit with the report's resource list as the next step), `Run debug anyway`, and `Continue to publish`. Never show the unchanged prompt while a placeholder, stub, or `$xref` remains.
+
+### Debug prompt
 
 After Phase 5 (whether published or skipped), prompt via **AskUserQuestion**:
 

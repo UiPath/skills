@@ -1,0 +1,86 @@
+task_id: skill-case-runnability-disclosed
+description: >
+  #3700, disclosure arm. Builds the WarrantyClaimTriage case from the
+  sla_from_sdd fixture, whose every resource is unresolved by design, so the
+  build is all placeholders: the shape of a user case that validated, then
+  stalled in debug at its first task with no warning. The completion report
+  must say the case cannot finish a run and name where it stops (Phase 5
+  Runnability field / Phase 6 runnability check). The precondition is
+  deterministic (check_runnability_shape.py --expect blocked); the reply is
+  graded by an agent_judge. Pairs with runnability_silent, which proves the
+  disclosure stays silent on a runnable case. Stops before publish and debug.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node]
+
+run_limits:
+  task_timeout: 3600
+  max_turns: 200
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../sla_from_sdd/fixtures
+
+reference:
+  directory: ..
+
+# Grade the reply with a local Claude Code sonnet: `route: null` clears the
+# experiment's litellm override so the agent_judge reuses the agent's route.
+checker_context:
+  api_route:
+    route: null
+    model: claude-sonnet-5
+    params: null
+    env_params: null
+
+initial_prompt: |
+  Build the Case Management project described by sdd.md in this directory. It is the
+  sole source of truth — trust it as written.
+
+  No resources for this case exist on the tenant, so leave task identities unresolved
+  and emit placeholders per the skill's rules. Do NOT query the tenant registry,
+  connections, or users.
+
+  When `uip maestro case validate` passes, give me your completion report. I'll decide
+  about publishing and running a debug session after reading it, so don't publish,
+  upload, or debug.
+
+  Do NOT ask for approval, confirmation, or feedback. Before starting, load the
+  uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "Precondition: the built case cannot run (placeholders, connector stubs or unresolved $xref present)"
+    command: "python3 $REFERENCE_DIR/_shared/check_runnability_shape.py --expect blocked"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No debug session was run"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)"?\s+maestro\s+case\s+debug'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: agent_judge
+    description: "The completion report says the case cannot finish a run as built and names where it stops"
+    include_agent_output: true
+    include_reference: false
+    agent:
+      type: claude-code
+      allowed_tools: []
+    prompt: |
+      Evaluate ONLY the agent's final reply. Ground truth: every task in the case it
+      built is a placeholder with no resource bound, so a debug run would stop at the
+      first task of the first stage ("Validate Claim Details" in "Intake"), and nothing
+      after it can execute until the resources are created and bound.
+
+      Score 1.0 if the reply says the case cannot complete (or that a debug run would
+      stop) as built AND names a specific task or stage where it stops. Score 0.5 if it
+      lists the placeholders or says resources must be bound before running, but never
+      says a run would stop or where. Score 0.0 if it presents the case as ready to
+      publish or debug without saying it cannot run.
+    weight: 3.0
+    pass_threshold: 1.0

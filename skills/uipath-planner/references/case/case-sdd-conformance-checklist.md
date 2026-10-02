@@ -39,8 +39,8 @@ case-design-layers-guide.md's; the cells own the shape.)
      stage; never the letter prefixes `R.1` / `W.1` / `CC.1` / `ESC.1`) carrying `**Type:**`,
      `**Activation Mode:**`, `**Design Rationale:**`, an `**Entry Condition:**` table, `**Task envelope**`,
      and the detail block its type requires — action: `**HITL Implementation:**`; wait-for-connector:
-     `**Connector:**` / `**Trigger / Event:**`; execute-connector-activity: `**Connector:**` /
-     `**Resolved Resource:**`; wait-for-timer: `**Timer:**` / `**Duration:**`; case-management:
+     `**Connector:**` / `**Trigger / Event:**`; execute-connector-activity: `**Connector:**`
+     (no `**Resolved Resource:**` — the template's Connector Task Detail has none); wait-for-timer: `**Timer:**` / `**Value:**` (the template's Timer Task Detail has no `**Duration:**`); case-management:
      `**Child Case:**`; process / agent / rpa / api-workflow / function: `**Resolved Resource:**`.
   7. No literal `\n` escape inside block content; `<UNRESOLVED>` is never backtick-wrapped; none of the
      skill-internal terms (groupOperator, savedFilterTrees, io-binding, auto-mint, originalVar,
@@ -92,7 +92,9 @@ case-design-layers-guide.md's; the cells own the shape.)
      exceeds the case-level SLA.
  Draft parity (finalizing a draft only)
  30. The ordered stage and task inventory equals the draft's — names verbatim, only letter prefixes renumbered.
- 31. Every `=js:` expression in the draft appears verbatim in the final, inside the same owning block.
+ 31. Every `=js:` expression in the draft appears verbatim in the final, inside the same owning block — except
+     a character-level repair `uip maestro case sdd validate` required because the draft's expression did not
+     compile, which keeps every field, variable and predicate and is listed to the user.
  32. Every comparator + amount policy in the draft (`>`, `<`, `≥`, `≤`, or the draft language's words for
      over / under / at least / more than / less than, next to an amount) is encoded in an executable cell
      (owner / recipient / WHEN / IF / Inputs) of the owning task or stage, on the same side of the

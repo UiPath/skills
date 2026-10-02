@@ -1,0 +1,137 @@
+task_id: skill-case-finalize-validate-gate
+description: >
+  E1b of the SDD-schema evals (MST-15966): the planner's SDD repair loop is
+  gated by `uip maestro case sdd validate` and visible to the user. The staged
+  VendorOnboarding draft (the case_finalize_draft_picker fixture) carries one
+  `=js:` guard written with curly quotes on line 117 —
+  `=js:(vars.vendorName !== “”)` — the way a paste from a word processor leaves
+  it. The finalize fast path keeps `=js:` verbatim, so a faithful render ships
+  an expression that does not compile. The lane's Terminal step 3 must run the
+  CLI, repair only the named characters, re-validate to exit 0 before the
+  ready flip, and tell the user what it changed. Graded on the artifact
+  (the final sdd.md validates, the guard survives with straight quotes, the
+  draft is untouched, the handoff reads ready/passed) and on the reply (the
+  change is disclosed). Needs a CLI with `sdd validate` (UiPath/cli stack A,
+  A6). No simulation: a one-turn finalize.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, shape:multi-node]
+
+run_limits:
+  task_timeout: 1800
+  max_turns: 60
+  turn_timeout: 1500
+
+# Same Agent override as case_finalize_draft_picker: the lane's conformance walk
+# runs in one subagent when Agent is present.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+# Grade the reply with a local Claude Code sonnet: `route: null` clears the
+# experiment's litellm override so the agent_judge reuses the agent's route and
+# cached `claude` login (`route: direct` would demand ANTHROPIC_API_KEY).
+checker_context:
+  api_route:
+    route: null
+    model: claude-sonnet-5
+    params: null
+    env_params: null
+
+initial_prompt: |
+  I have a draft design document for our VendorOnboarding case-management
+  solution — it's saved as `sdd.draft.md` in this folder. Please finalize it
+  into the final design document.
+
+  The Requirements section at the top is authoritative and the design is
+  settled, so don't re-interview me or redesign it. The api-workflow resource
+  identity is unresolved on purpose — leave it that way. I just need the
+  finalized design; nothing built yet.
+
+  This is a Maestro case-management SDD finalization. Keep it inside the Case
+  Management SDD template shape; finalize the draft into `sdd.md` in this
+  folder, and do not run tenant discovery or derive implementation tasks.
+
+success_criteria:
+  - type: file_exists
+    description: "Finalization produced sdd.md"
+    path: "sdd.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "The lane validated the written SDD with the CLI"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)"?\s+maestro\s+case\s+sdd\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The final sdd.md passes `sdd validate` (exit 0; warnings allowed)"
+    command: "uip maestro case sdd validate sdd.md --output json > /dev/null"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The guard survives, repaired to straight quotes — not dropped, not rewritten"
+    command: "grep -Fq 'vars.vendorName !== \"\"' sdd.md && ! grep -E '=js:' sdd.md | grep -q '[“”]'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "sdd.draft.md is untouched and still beside the final (checklist item 33)"
+    command: "python3 -c \"import hashlib,sys; sys.exit(hashlib.sha256(open('sdd.draft.md','rb').read()).hexdigest() != '7512b5a9bb45ac9e055ad50dbd4da6f30026a59b79bf7026d8e4ffe92a15b72d')\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Handoff flipped to ready with Template validation passed"
+    command: "grep -Eiq 'Status[*| ]+ready' sdd.md && grep -Eiq 'Template validation[*| ]+passed' sdd.md"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Stopped at the finalized sdd.md — no caseplan build"
+    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: agent_judge
+    description: "The reply discloses the repair: the Document Collection → Vendor Approval guard's quotes were corrected"
+    include_agent_output: true
+    include_reference: false
+    agent:
+      type: claude-code
+      allowed_tools: []
+    prompt: |
+      Evaluate ONLY the agent's final reply. The user asked it to finalize a
+      settled draft SDD. Ground truth: the draft's Vendor Approval stage entry
+      guard was `=js:(vars.vendorName !== “”)` with curly quotes, which does
+      not compile, so a correct finalization changes only those quote
+      characters to straight quotes (`!== ""`) and must tell the user it did,
+      because the user approved the draft as written.
+
+      Score 1.0 if the reply says the finalized document differs from the draft
+      in that guard (the vendor-name check on entering Vendor Approval) and
+      that only the quote characters changed or that the expression was
+      corrected so it can run. Score 0.5 if it mentions correcting a condition
+      or expression but not which one. Score 0.0 if it says the draft was
+      finalized as-is, or describes no change to that guard.
+    weight: 2.0
+    pass_threshold: 1.0

@@ -1,0 +1,329 @@
+{
+  "cli_head": "1e87bfb57",
+  "seed": "tests/tasks/uipath-maestro-case/sla_from_sdd/fixtures/sdd.md",
+  "tally": {
+    "convert": 6,
+    "excluded": 1,
+    "needs-draft": 4,
+    "silent": 3,
+    "validate": 22,
+    "validate-warns": 2
+  },
+  "rows": [
+    {
+      "item": 1,
+      "violation": "title not `# SDD —`",
+      "verdict": "validate",
+      "detail": [
+        "SDD_TITLE_NOT_TEMPLATE"
+      ]
+    },
+    {
+      "item": 2,
+      "violation": "`### Process App Views` missing",
+      "verdict": "validate-warns",
+      "detail": [
+        "SDD_DOCUMENT_SECTION_MISSING"
+      ]
+    },
+    {
+      "item": 2,
+      "violation": "Planner Handoff marker missing",
+      "verdict": "validate",
+      "detail": [
+        "SDD_SECTION_MISSING"
+      ]
+    },
+    {
+      "item": 3,
+      "violation": "summary-only `## Business Rules`",
+      "verdict": "validate-warns",
+      "detail": [
+        "SDD_SUMMARY_SECTION"
+      ]
+    },
+    {
+      "item": 4,
+      "violation": "Case Variables header columns renamed",
+      "verdict": "validate",
+      "detail": [
+        "SDD_VARIABLES_HEADER_NOT_TEMPLATE"
+      ]
+    },
+    {
+      "item": 5,
+      "violation": "stage block missing **Type:** Stage",
+      "verdict": "validate",
+      "detail": [
+        "SDD_STAGE_BLOCK_INCOMPLETE"
+      ]
+    },
+    {
+      "item": 6,
+      "violation": "no Activation Mode in the Tasks table or the block",
+      "verdict": "validate",
+      "detail": [
+        "SDD_ACTIVATION_MODE_MISSING"
+      ]
+    },
+    {
+      "item": 7,
+      "violation": "literal \\n in content",
+      "verdict": "validate",
+      "detail": [
+        "SDD_LITERAL_NEWLINE"
+      ]
+    },
+    {
+      "item": 8,
+      "violation": "task Type not a legal literal",
+      "build_validate": [
+        "CASE_MGMT_ROOT_CASE_CONDITION_RULE_NO_REQUIRED_TASK (error)"
+      ],
+      "verdict": "convert",
+      "detail": [
+        "task-type"
+      ]
+    },
+    {
+      "item": 9,
+      "violation": "stage entry uses a task-entry rule",
+      "verdict": "validate",
+      "detail": [
+        "SDD_RULE_NOT_FOR_SLOT"
+      ]
+    },
+    {
+      "item": 10,
+      "violation": "return-to-origin in Case Exit Conditions",
+      "verdict": "validate",
+      "detail": [
+        "SDD_CASE_EXIT_RETURN_TO_ORIGIN"
+      ]
+    },
+    {
+      "item": 11,
+      "violation": "task name contains `:`",
+      "build_validate": [
+        "CASE_MGMT_STAGE_TASK_NAME_INVALID (error)"
+      ],
+      "verdict": "convert",
+      "detail": [
+        "resource-binding"
+      ]
+    },
+    {
+      "item": 12,
+      "violation": "task display name duplicated across stages",
+      "build_validate": [
+        "CASE_MGMT_STAGE_TASK_NAME_DUPLICATE (error)"
+      ],
+      "verdict": "convert",
+      "detail": [
+        "output-type",
+        "resource-binding",
+        "task-name"
+      ]
+    },
+    {
+      "item": 13,
+      "violation": "sla-status-change names an undeclared SLA title",
+      "verdict": "validate",
+      "detail": [
+        "SDD_SLA_REFERENCE_UNRESOLVED",
+        "SDD_SLA_REFERENCE_UNRESOLVED"
+      ]
+    },
+    {
+      "item": 13,
+      "violation": "sla-status-change call never closes",
+      "verdict": "validate",
+      "detail": [
+        "SDD_SLA_REFERENCE_UNRESOLVED",
+        "SDD_SLA_REFERENCE_UNRESOLVED"
+      ]
+    },
+    {
+      "item": 14,
+      "violation": "selector names an undeclared stage",
+      "build_validate": [
+        "CASE_MGMT_ROOT_CASE_CONDITION_RULE_SELECTED_STAGE_ID_MISSING (error)"
+      ],
+      "verdict": "convert",
+      "detail": [
+        "selector-target"
+      ]
+    },
+    {
+      "item": 15,
+      "violation": "stage entry references its own stage",
+      "verdict": "validate",
+      "detail": [
+        "SDD_STAGE_ENTERS_ITSELF"
+      ]
+    },
+    {
+      "item": 16,
+      "violation": "=vars.X not in Case Variables",
+      "verdict": "validate",
+      "detail": [
+        "SDD_VARIABLE_UNDECLARED"
+      ]
+    },
+    {
+      "item": 20,
+      "violation": "Recipient without a typed prefix",
+      "verdict": "validate",
+      "detail": [
+        "SDD_RECIPIENT_UNTYPED"
+      ]
+    },
+    {
+      "item": 21,
+      "violation": "stage entry table with no body row",
+      "verdict": "validate",
+      "detail": [
+        "SDD_CONDITION_TABLE_EMPTY"
+      ]
+    },
+    {
+      "item": 22,
+      "violation": "no case-entered anywhere",
+      "build_validate": [
+        "CASE_MGMT_CASE_ENTERED_ENTRY_MISSING (error)"
+      ],
+      "verdict": "convert",
+      "detail": [
+        "case-entry"
+      ]
+    },
+    {
+      "item": 23,
+      "violation": "Case Triggers has no rows",
+      "build_validate": [],
+      "verdict": "convert",
+      "detail": [
+        "in-arg-trigger",
+        "trigger-type"
+      ]
+    },
+    {
+      "item": 24,
+      "violation": "no Case Exit row marks the case complete",
+      "verdict": "validate",
+      "detail": [
+        "SDD_RULE_NOT_FOR_SLOT"
+      ]
+    },
+    {
+      "item": 25,
+      "violation": "wait-for-user exit without a user-selected-stage entry",
+      "verdict": "validate",
+      "detail": [
+        "SDD_WAIT_FOR_USER_UNPAIRED"
+      ]
+    },
+    {
+      "item": 26,
+      "violation": "required-tasks-completed with no Required task",
+      "verdict": "validate",
+      "detail": [
+        "SDD_NO_REQUIRED_TARGET"
+      ]
+    },
+    {
+      "item": 27,
+      "violation": "stage entry equals a Case Exit row",
+      "verdict": "validate",
+      "detail": [
+        "SDD_ENTRY_MATCHES_CASE_EXIT"
+      ]
+    },
+    {
+      "item": 29,
+      "violation": "case SLA below 15 minutes",
+      "verdict": "validate",
+      "detail": [
+        "SDD_SLA_OUT_OF_RANGE",
+        "SDD_SLA_OUT_OF_RANGE",
+        "SDD_SLA_OUT_OF_RANGE",
+        "SDD_SLA_OUT_OF_RANGE"
+      ]
+    },
+    {
+      "item": 17,
+      "violation": "consumed Variable never produced (its Outputs row removed)",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model changes: .stages[1].tasks[0].extractRows, .stages[1].tasks[0].outputRows"
+    },
+    {
+      "item": 18,
+      "violation": "Out variable with no Default and no producer",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model changes: .variableCategories.reviewsummary, .variableTypes.reviewsummary, .variables"
+    },
+    {
+      "item": 19,
+      "violation": "Buttons Maps To an undeclared variable",
+      "build_validate": [],
+      "verdict": "silent",
+      "detail": "model identical"
+    },
+    {
+      "item": 28,
+      "violation": "unguarded exit row shares its WHEN with the guarded completion row",
+      "verdict": "validate",
+      "detail": [
+        "SDD_RULE_NOT_FOR_SLOT"
+      ]
+    },
+    {
+      "item": 35,
+      "violation": "user-selected-stage entry on a lane a decision routes to",
+      "verdict": "validate",
+      "detail": [
+        "SDD_WAIT_FOR_USER_UNPAIRED"
+      ]
+    },
+    {
+      "item": 34,
+      "violation": "either/or persona",
+      "verdict": "validate",
+      "detail": [
+        "SDD_PERSONA_NOT_ONE_ROLE"
+      ]
+    },
+    {
+      "item": 5,
+      "violation": "stage/task block missing **Design Rationale:**",
+      "verdict": "excluded",
+      "detail": "not checked by decision (Cliff, 2026-10-02): a design document does not owe rationale prose. When present, the build copies it into the plan as `rationale:` and convert uses it as a task description that has none; its absence breaks nothing"
+    },
+    {
+      "item": 30,
+      "violation": "stage/task inventory differs from the draft's",
+      "verdict": "needs-draft",
+      "detail": "no CLI command reads the draft"
+    },
+    {
+      "item": 31,
+      "violation": "a draft `=js:` expression missing or rewritten in the final",
+      "verdict": "needs-draft",
+      "detail": "no CLI command reads the draft"
+    },
+    {
+      "item": 32,
+      "violation": "a draft comparator + amount policy not encoded in an executable cell",
+      "verdict": "needs-draft",
+      "detail": "no CLI command reads the draft"
+    },
+    {
+      "item": 33,
+      "violation": "the draft file deleted or renamed",
+      "verdict": "needs-draft",
+      "detail": "no CLI command reads the draft"
+    }
+  ]
+}

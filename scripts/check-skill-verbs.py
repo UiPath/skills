@@ -21,6 +21,13 @@ Outputs:
 Usage:
     python3 scripts/check-skill-verbs.py skills/
     python3 scripts/check-skill-verbs.py --json skills/uipath-rpa/SKILL.md ...
+
+Eval preflight (paired local builds): snapshot the build under test, then
+require the verbs the eval depends on. Exit 1 names each verb the build lacks
+or the skill tree never references; the two otherwise score the same.
+    python3 scripts/build-uip-catalog.py --output <CATALOG_PATH>
+    python3 scripts/check-skill-verbs.py --catalog <CATALOG_PATH> \
+        --require "maestro case sdd convert" skills/uipath-maestro-case
 """
 
 import argparse
@@ -71,11 +78,11 @@ PROSE_NOISE = {
 }
 
 
-def load_catalog():
-    if not CATALOG_PATH.exists():
-        sys.exit(f"Catalog not found at {CATALOG_PATH}. "
+def load_catalog(path=CATALOG_PATH):
+    if not path.exists():
+        sys.exit(f"Catalog not found at {path}. "
                  "Run scripts/build-uip-catalog.py first.")
-    data = json.loads(CATALOG_PATH.read_text())
+    data = json.loads(path.read_text())
     return (
         set(data["verbs"]),
         set(data.get("unwalkable_groups", [])),
@@ -145,8 +152,24 @@ def best_prefix(tokens, catalog):
     return None
 
 
-def scan_file(path, catalog, unwalkable):
-    """Yield findings with severity (Stale|Uncertain)."""
+def required_gaps(required, catalog, refs):
+    """Return (verb, reason) for each required verb the build lacks or the
+    scanned files never reference. A reference counts when its extracted
+    verb path is the required verb or starts with it."""
+    gaps = []
+    for verb in required:
+        if verb not in catalog:
+            gaps.append((verb, "not in the catalog (the build under test lacks it)"))
+        elif not any(r == verb or r.startswith(verb + " ") for r in refs):
+            gaps.append((verb, "never referenced by the scanned files"))
+    return gaps
+
+
+def scan_file(path, catalog, unwalkable, refs=None):
+    """Yield findings with severity (Stale|Uncertain).
+
+    When `refs` is a set, every extracted verb path is added to it.
+    """
     findings = []
     try:
         text = path.read_text()
@@ -162,6 +185,8 @@ def scan_file(path, catalog, unwalkable):
             if not tokens:
                 continue
             verb_path = " ".join(tokens)
+            if refs is not None:
+                refs.add(verb_path)
             match_str = best_prefix(tokens, catalog)
             if match_str == verb_path:
                 continue  # exact catalog hit
@@ -317,15 +342,31 @@ def main():
     parser.add_argument("--report", type=Path, metavar="PATH",
                         help="Write a markdown audit report to PATH "
                              "(suppresses stdout text output)")
+    parser.add_argument("--catalog", type=Path, metavar="PATH",
+                        default=CATALOG_PATH,
+                        help="Catalog to check against (default: the committed "
+                             "snapshot). Point it at a scripts/build-uip-catalog.py "
+                             "--output of the build under test to preflight an eval.")
+    parser.add_argument("--require", action="append", default=[], metavar="VERB",
+                        help="Verb path (e.g. 'maestro case sdd convert') that "
+                             "must exist in the catalog AND be referenced by the "
+                             "scanned files. Repeatable.")
     args = parser.parse_args()
 
-    catalog, unwalkable, version = load_catalog()
+    catalog, unwalkable, version = load_catalog(args.catalog)
 
     all_findings = []
+    refs = set()
     for path in iter_markdown(args.paths):
-        for f in scan_file(path, catalog, unwalkable):
+        for f in scan_file(path, catalog, unwalkable, refs):
             f["path"] = str(path)
             all_findings.append(f)
+
+    missing = required_gaps(args.require, catalog, refs)
+    for verb, why in missing:
+        print(f"REQUIRED {verb!r}: {why}")
+    if missing:
+        return 1
 
     if args.report:
         write_report(all_findings, catalog, unwalkable, version, args.report)
