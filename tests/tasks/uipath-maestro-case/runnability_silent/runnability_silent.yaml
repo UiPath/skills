@@ -1,0 +1,90 @@
+task_id: skill-case-runnability-silent
+description: >
+  #3700, silent arm. Builds the ExpenseReimbursementRunnable case (the
+  e2e_expense_runnable fixture plus a planner-handoff receipt) whose every
+  resource is deployed on the eval tenant, so the build is runnable. The
+  completion report must carry NO runnability warning: a disclosure that fires
+  on a runnable case is noise people learn to skip. The precondition is
+  deterministic (check_runnability_shape.py --expect runnable); if the build
+  itself left placeholders, the task fails there, not on the reply. Pairs with
+  runnability_disclosed. Stops before publish and debug.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:registry]
+
+run_limits:
+  task_timeout: 3600
+  max_turns: 300
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+reference:
+  directory: ..
+
+checker_context:
+  api_route:
+    route: null
+    model: claude-sonnet-5
+    params: null
+    env_params: null
+
+initial_prompt: |
+  I have an approved SDD for our ExpenseReimbursementRunnable case-management
+  solution — it's saved as `sdd.md` in this folder. Build a UiPath Case
+  Management solution named "ExpenseReimbursementRunnable" containing a project
+  also named "ExpenseReimbursementRunnable" from this SDD. The SDD already carries
+  resolved resource identities and folders — bind them as written.
+
+  The SDD resource labels are aliases for deployed resource NAMES: `WeatherAPI` →
+  `WeatherAPI`, `CountLetters` → `CountLetters`, `ProcurementProcess` →
+  `ProcurementProcess`, `HelpDeskLookup` → `HelpDeskLookup`, and `CaseTest` →
+  `Maestro Case`.
+
+  When `uip maestro case validate` passes, give me your completion report. I'll decide
+  about publishing and running a debug session after reading it, so don't publish,
+  upload, or debug. Do NOT call AskUserQuestion. Before starting, load the
+  uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: run_command
+    description: "Precondition: the built case is runnable (no placeholders, connector stubs or unresolved $xref)"
+    command: "python3 $REFERENCE_DIR/_shared/check_runnability_shape.py --expect runnable"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No debug session was run"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)"?\s+maestro\s+case\s+debug'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: agent_judge
+    description: "The completion report carries no runnability warning on a runnable case"
+    include_agent_output: true
+    include_reference: false
+    agent:
+      type: claude-code
+      allowed_tools: []
+    prompt: |
+      Evaluate ONLY the agent's final reply. Ground truth: every task in the case it
+      built is bound to a deployed resource, so nothing blocks a run.
+
+      Score 1.0 if the reply says nothing implying the case cannot run: no "debug will
+      stop at …", no count of placeholder tasks, stub event rules or unresolved
+      conditions, and no "Runnability" warning. Ordinary next steps (publish, run a
+      debug session) are fine. Score 0.0 if it warns that the case cannot run or that a
+      run would stop, or lists placeholder / stub / unresolved counts as blockers.
+    weight: 3.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120
