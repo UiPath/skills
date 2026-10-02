@@ -10,6 +10,9 @@ them with expressions only after the variables and scopes exist.
 - Treat values without `=` as literals.
 - Read BPMN variables through `vars.<variableId>`, for example
   `=vars.Var_RequestId`.
+- An HTTP task's output variable is a response envelope, not the parsed body;
+  see [registry-workflow.md](registry-workflow.md#connectionless-vs-connector-http)
+  for the path to a body field.
 - Do not use bare variable names such as `=requestId` in generated runtime XML.
 - Context bindings use `=bindings.<bindingId>`.
 - Current element outputs use `result` only in output mappings for that
