@@ -40,7 +40,7 @@ case-design-layers-guide.md's; the cells own the shape.)
      `**Activation Mode:**`, `**Design Rationale:**`, an `**Entry Condition:**` table, `**Task envelope**`,
      and the detail block its type requires — action: `**HITL Implementation:**`; wait-for-connector:
      `**Connector:**` / `**Trigger / Event:**`; execute-connector-activity: `**Connector:**`
-     (no `**Resolved Resource:**` — the template's Connector Task Detail has none); wait-for-timer: `**Timer:**` / `**Duration:**`; case-management:
+     (no `**Resolved Resource:**` — the template's Connector Task Detail has none); wait-for-timer: `**Timer:**` / `**Value:**` (the template's Timer Task Detail has no `**Duration:**`); case-management:
      `**Child Case:**`; process / agent / rpa / api-workflow / function: `**Resolved Resource:**`.
   7. No literal `\n` escape inside block content; `<UNRESOLVED>` is never backtick-wrapped; none of the
      skill-internal terms (groupOperator, savedFilterTrees, io-binding, auto-mint, originalVar,
