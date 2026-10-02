@@ -87,7 +87,7 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 | **Create a new Coded Action App** | [references/create-action-app.md](references/create-action-app.md) |
 | **Debug auth or config issues** | [references/debug.md](references/debug.md) |
 | **Push/pull code to Studio Web** | [references/file-sync.md](references/file-sync.md) |
-| **Package and deploy** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
+| **Package, deploy, and delete** | [references/pack-publish-deploy.md](references/pack-publish-deploy.md) |
 | **Full CLI command reference** | [references/commands-reference.md](references/commands-reference.md) |
 | **Embed the DU Validation Station widget** | [references/widgets/validation-station.md](references/widgets/validation-station.md) |
 | **Embed the Conversational Agent chat widget** | [references/widgets/conversational-agent-chat.md](references/widgets/conversational-agent-chat.md) |

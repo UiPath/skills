@@ -279,6 +279,24 @@ UIPATH_FOLDER_KEY=my-folder-key uip codedapp deploy -n my-webapp
 
 ---
 
+## `uip codedapp delete`
+
+Delete a **deployed** coded app from one folder. Published package and deployments in other folders are not affected. Requires codedapp tool `>= 1.202.2`.
+
+```bash
+uip codedapp delete --display-name "<DISPLAY_NAME>" --folder-key <FOLDER_KEY> --yes --output json
+```
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--display-name <name>` | Display name of the deployed app. Exact, case-sensitive match (required) | — |
+| `--folder-key <key>` | Folder holding the deployment | From `UIPATH_FOLDER_KEY` env var |
+| `-y, --yes` | Confirm deletion (required — CLI never prompts) | — |
+
+To delete the **published package**, see [pack-publish-deploy.md](pack-publish-deploy.md#deleting-an-app).
+
+---
+
 ## Common Options
 
 Cloud commands resolve base URL, org, tenant, and access token from your `uip login` session automatically (any login type) — you don't pass them. Pass the corresponding flag only to override a session value.
