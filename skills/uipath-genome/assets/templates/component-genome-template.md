@@ -103,6 +103,8 @@
 | Item kinds | {one kind, or several routed inside the consumer — what differs} |
 | Step groups | once per run: steps {n}; per item: steps {p–q}; at the end: steps {r} |
 
+Outcomes — these rows, whatever the source calls its per-item results (approved, rejected, skipped are Success or a Business exception; format guide § Transactional Shape rule 4):
+
 | Outcome | When | Effect |
 |---|---|---|
 | Success | every per-item step completed | item recorded as done with {result} |
