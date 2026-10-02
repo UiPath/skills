@@ -523,6 +523,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `rpa` | `plugins/tasks/rpa/` |
 | `api-workflow` | `plugins/tasks/api-workflow/` |
 | `function` | `plugins/tasks/function/` |
+| `business-rule` | `plugins/tasks/business-rule/` |
 | `case-management` | `plugins/tasks/case-management/` |
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
