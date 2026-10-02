@@ -3,7 +3,7 @@
 
 Wired in via ``post_run`` in flow e2e task YAMLs. Runs from the sandbox CWD
 after evaluation completes; finds every ``.uipx`` file under it, reads
-``SolutionId``, and best-effort deletes each via ``uip solution delete``.
+``SolutionId``, and best-effort deletes each via ``uip solution delete --yes``.
 ``.uipx`` files without a ``SolutionId`` are skipped. Ids that the INTERIM
 Overwrite rotation in ``flow_check.py`` moved away from are read from the
 ``.rotated-solution-ids`` sidecar beside each ``.uipx`` and deleted too.
@@ -93,7 +93,8 @@ def main() -> int:
     for sid, path in targets:
         if policy == "never":
             logger.info(
-                "FLOW_E2E_CLEANUP=never; preserving %s (delete later with: uip solution delete %s)",
+                "FLOW_E2E_CLEANUP=never; preserving %s "
+                "(delete later with: uip solution delete %s --yes --output json)",
                 sid,
                 sid,
             )

@@ -518,7 +518,7 @@ The CLI probes Studio Web for the bundled `SolutionId` and picks the operation i
 Remove a solution from Studio Web by its UUID (returned by `upload`).
 
 ```bash
-uip solution delete <solution-id> --output json
+uip solution delete <solution-id> --yes --output json
 ```
 
 Deletes the Studio Web copy only -- local files and published packages are not affected.
