@@ -502,7 +502,7 @@ After fixing, rebuild (`npm run build`) and re-deploy (`uip codedapp deploy`). I
 These are **CLI session** scope failures — distinct from the app's own runtime scopes in `uipath.json` (see [`invalid_scope` Error in Auth URL](#invalid_scope-error-in-auth-url) for that). The session scope comes from `--scope` on `uip login`; the fix is always to re-login requesting `OR.Default` (Orchestrator) **and** `Apps.Read Apps.Write` (Apps service) together:
 
 ```bash
-uip login --client-id <id> --client-secret <secret> \
+uip login --client-id env.UIPATH_CLIENT_ID --client-secret env.UIPATH_CLIENT_SECRET \
   --organization <org> --tenant <tenant> \
   --scope "OR.Default Apps.Read Apps.Write"
 ```
