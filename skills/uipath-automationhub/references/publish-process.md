@@ -89,7 +89,7 @@ All five fields are required and `categoryIds` needs ≥1 real id. This needs th
 
 Then build `user_inputs` using the template's **structure** but the **collected values**:
 - Place each value in its `AssessmentType > section > question` slot.
-- Follow the template's wrapping per field: **every** answer is `{ "value": <v> }` except owner/submitter, which take a **direct string** (no `value` wrapper). Never send a bare string anywhere else — it reads as an empty answer, and on `OVR-OVERVIEW_NAME` the API rejects it with `Automation name cannot be empty.`
+- Follow the template's wrapping per field: **every** answer is `{ "value": <v> }` except **user questions**: owner, submitter, and any user picker the tenant adds (the schema marks them `format: email`). Those take the email as a **direct string**; the server also accepts `{ "value": <email> }` for them. Never send a bare string for any other question: it reads as an empty answer, and on `OVR-OVERVIEW_NAME` the API rejects it with `Automation name cannot be empty.`
 - Convert enum labels to their `answer_option` codes taken from that field's own `enum` in the schema — **never** reuse the template's placeholder code. Send integers as numbers.
 
 **Required fields for `idea_flow_id` = Business Process** (verified live — the backend enforces owner + submitter even though the schema's `required` flags do **not** list them):
@@ -105,7 +105,7 @@ Then build `user_inputs` using the template's **structure** but the **collected 
 
 Include only sections that have at least one populated field. Show the user a concise preview (name + key fields, and "show raw JSON" on request) and get a confirm before writing.
 
-**Preflight before creating:** validate the payload against the schema you fetched — every `required`-flagged question plus owner/submitter answered; every answer except owner/submitter wrapped as `{ "value": … }` (a bare string reads as empty); every enum answer a code copied **verbatim** from that question's own `enum` (a code with a dropped segment is rejected as an unnamed required-field error); no template placeholders left; applications exactly the systems the material names (ids in `value`, the rest in `new_applications` when the schema offers it, the question omitted when none are named and it isn't `required`). Requiredness comes from *this tenant's* schema, never a fixed list — the same flow requires `COUNT_APPS` on one tenant and rejects it on another.
+**Preflight before creating:** validate the payload against the schema you fetched — every `required`-flagged question plus owner/submitter answered; every answer except user questions wrapped as `{ "value": … }` (a bare string reads as empty); every enum answer a code copied **verbatim** from that question's own `enum` (a code with a dropped segment is never selected: a `required` question then fails with `Please fill in all the required information`, and an optional one is silently dropped); no template placeholders left; applications exactly the systems the material names (ids in `value`, the rest in `new_applications` when the schema offers it, the question omitted when none are named and it isn't `required`). Requiredness comes from *this tenant's* schema, never a fixed list — the same flow requires `COUNT_APPS` on one tenant and rejects it on another.
 
 ## Step 5: Create the process
 
@@ -120,7 +120,7 @@ where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 
 - **201** → the envelope is `{ "message": "Resource Created", "statusCode": 201, "data": { … } }` — read **`data.process_id`** (it is nested, NOT top-level). Keep it for Step 6. A 201 means the process WAS created: if a field read comes back undefined, re-read the response — **never re-POST** (that creates a duplicate and 409s).
 - **400** → fix and retry. The message shapes seen live:
-  - `errorDetails: { "<question>": ["An answer selection is required…"] }` → that required field is missing/empty; add it.
+  - `errorDetails: { "<question>": ["An answer selection is required…"] }` → that required field is missing or empty, or its enum code isn't copied verbatim from that field's `enum`. Fix it.
   - `errorDetails: {}` with `"Please fill in all the required information"` → a required field the API **won't name** is missing. Check in order: (1) owner (`OVR-PROCESS_OWNER`) / submitter (`OVR-OVERVIEW_PROCESS_SUBMITTER`) — enforced but never flagged; (2) **diff your payload against every `required`-flagged question in the live schema** — tenant admins add required questions (e.g. "Applications used" / "Thin applications used"), and a payload missing any of them gets this same generic 400. Fill the gaps (Step 4 recipes), then retry once.
   - `"Cannot identify owner by email"` (`localizationKey: error_invalid_process_owner`) → **not a typo'd address; do not retry with a different email.** The account is authenticated but has never been activated on this tenant: AH creates a user row just-in-time on first authenticated call, and only an interactive web sign-in promotes it to the state owner/submitter assignment requires. Confirm the identity is real with the auth/identity call (`IsActive: 1` plus a role list), then tell them to open Automation Hub in a browser once and sign in, and retry unchanged:
 
@@ -130,8 +130,9 @@ where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 
     Build that URL from the org/tenant you are already authenticated against — never from the error response. Nothing was created, so the retry is safe. Newer Automation Hub versions accept these users with no sign-in at all, so on an up-to-date tenant this error should not appear.
   - `"Invalid Category Id."` → `OVERVIEW_CATEGORY` isn't a real category on this tenant (see Step 4).
-  - `"Automation name cannot be empty."` → the name answer is a bare string or empty. Send `OVR-OVERVIEW_NAME` as `{"value": "<name>"}`, then retry once.
-  - `Cannot set properties of undefined (setting 'co_question_answer_option_value')` → **a server-side defect, not a problem with your answers.** An invalid `answer_option` code gets a named error on that field instead (`An answer selection is required for submission`), so don't rewrite answers to chase this one, and don't retry the same payload. Stop and report it with the tenant and `idea_flow_id`.
+  - `"Automation name cannot be empty."` → `OVR-OVERVIEW_NAME` is missing from the payload, empty, or a bare string. Send it under its section as `{"value": "<name>"}`, then retry once.
+  - `Cannot set properties of undefined (setting 'co_question_answer_option_value')`, or `Question "<key>" can't be answered on this tenant: it has no answer slot to hold a value…` → **a server-side defect: this tenant has nowhere to store one of your free-text answers** (an answer whose schema `value` is a plain `string` or `number` with no `enum`). Your values aren't wrong, so don't rewrite them. Newer builds return `Question "<key>" can't be answered on this tenant: it has no answer slot to hold a value…` instead, naming the question: drop exactly that key. The older message names nothing: drop every **optional** free-text answer. In both cases keep every `required` answer and owner/submitter, retry **once**, and tell the user which answers were left out. If it still fails, or the named question is `required`, stop and report it with the tenant and `idea_flow_id`.
+- **500** on create, with no `user_inputs` key at the top of the body → the answers weren't wrapped. Send `{ "idea_flow_id": <id>, "user_inputs": { … } }` and retry once.
 - **401** → re-authenticate. **409** → duplicate name; ask the user for a new name or stop.
 
 ## Step 6: Attach documents (PDD/SDD)
