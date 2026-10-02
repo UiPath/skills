@@ -81,7 +81,7 @@ Check the schema first: if the application question (`<ASSESSMENT>-COUNT_APPS`, 
 - `application_name` is required (1–50 chars); `application_version` (≤20), `application_language` (≤50), `application_comments` (≤512), `application_is_citrix_client` (boolean) are optional. At most **20** per submission. No other fields are accepted.
 - Each entry is **matched by name + version, ignoring case and surrounding spaces**: an entry that matches an existing application reuses it, so sending a system that turns out to be in the inventory is harmless — it never creates a duplicate. Keep the version the material gives; a different version is a different application.
 - Created applications land in the tenant's application inventory (the same as a user typing one in the web form), and are selectable by id on every later submission.
-- `new_applications` exists only on "Applications used". "Thin applications used" (`…-COUNT_THIN_APPS`) takes inventory ids only and just flags applications already answered in "Applications used" — an id that is not in "Applications used" has no effect, and an id not in the inventory is rejected. A newly added application has no id until the create returns, so flag it as thin afterwards if the material calls for it.
+- `new_applications` exists only on "Applications used". "Thin applications used" (`…-COUNT_THIN_APPS`) takes inventory ids only and just flags applications already answered in "Applications used" — an id that is not in "Applications used" has no effect, and an id not in the inventory is rejected. A newly added application has no id until the create returns, so flag it as thin **inline** instead: `application_is_citrix_client: true` on its `new_applications` entry. Don't answer the application questions in a later `automations update` unless the caller asked to change applications. Updates replace the whole list and clear thin flags and comments (see [`api-endpoints.md`](api-endpoints.md), `new_applications`).
 
 A `400` whose message starts `Invalid Application Data.` names the problem — fix it locally and retry once:
 
@@ -90,6 +90,7 @@ A `400` whose message starts `Invalid Application Data.` names the problem — f
 | `Unknown application id(s): …` | An id in `value` is not in `applications list` — drop it or move that system to `new_applications`. |
 | `Adding new applications is disabled for this assessment…` | The tenant admin turned off adding applications for this section. Fall back to [the admin upsert](#fallback-no-new_applications-in-the-schema), then to substitution. |
 | `…requires a non-empty application_name` / `…exceeds 50 characters` / `…invalid version, language, comments, or citrix flag` | Fix that entry's field. |
+| `…has unknown field(s): …` | Drop the named key — usually a typo, or an `application_id` (ids go in `value`). |
 | `At most 20 new applications…` | Keep the 20 most material systems; name the rest in the description. |
 
 #### Fallback: no `new_applications` in the schema
