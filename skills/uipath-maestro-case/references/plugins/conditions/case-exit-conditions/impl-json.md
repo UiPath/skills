@@ -92,6 +92,6 @@ In Phase 2, always write the canonical stub from [connector-trigger-impl.md § C
 
 Confirm `metadata.caseExitRules[]` contains the new object with `id`, non-empty `displayName` (SDD value or `Completion rule {N}` / `Exit rule {N}` default keyed to `marksCaseComplete`), `marksCaseComplete` matching the SDD row, and `rules` carrying the expected `rule` value plus any required side field. Verify no `root` key exists at the top level.
 
-For `wait-for-connector`, Phase 2 verification expects the exact two-entry placeholder context plus empty inputs/outputs/bindings. After Phase 3, a resolved rule must have no `"placeholder"` values, inputs/outputs must use `root-<ruleId>`, and ConnectionId + FolderKey root bindings must exist; a remaining stub must map to a reported unresolved connector.
+For `wait-for-connector`, Phase 2 verification expects an [unfinished connector rule](../../../connector-trigger-impl.md#placeholder-fallback) (the two-entry `"placeholder"` context or `context: []`) plus empty inputs/outputs/bindings. After Phase 3, a resolved rule must have a non-empty, non-`"placeholder"` `connectorKey` and `operation`, inputs/outputs must use `root-<ruleId>`, and ConnectionId + FolderKey root bindings must exist; a remaining stub must map to a reported unresolved connector.
 
 <!-- END: impl-json.md -->

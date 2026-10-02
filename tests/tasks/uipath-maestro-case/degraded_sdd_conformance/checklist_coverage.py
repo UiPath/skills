@@ -71,10 +71,11 @@ def after(anchor, old, new):
 MUTATIONS = [
     (1, "title not `# SDD —`", rep("# SDD — WarrantyClaimTriage", "# Design — WarrantyClaimTriage")),
     (2, "`### Process App Views` missing", rep("### Process App Views\n", "")),
+    (2, "Planner Handoff marker missing", rep("<!-- planner-handoff:v1 -->\n", "")),
     (3, "summary-only `## Business Rules`", rep("## Section 1: Case Definition", "## Business Rules\n\nApprovals follow policy.\n\n## Section 1: Case Definition")),
     (4, "Case Variables header columns renamed", rep("| sourceTriggers | sourceFields |", "| Source Triggers | Source Fields |")),
-    (5, "stage block missing **Design Rationale:**", drop_line_after("### Stage 1: Intake", "**Design Rationale:**")),
-    (6, "task block missing **Activation Mode:**", drop_line_after("##### Task 1.1", "**Activation Mode:**")),
+    (5, "stage block missing **Type:** Stage", drop_line_after("### Stage 1: Intake", "**Type:** Stage")),
+    (6, "no Activation Mode in the Tasks table or the block", lambda t: drop_line_after("##### Task 1.1", "**Activation Mode:**")(rep("| 1 | Validate Claim Details | api-workflow | sequential |", "| 1 | Validate Claim Details | api-workflow | — |")(t))),
     (7, "literal \\n in content", rep("| case-entered | — | No | Claim received |", "| case-entered | — | No | Claim\\nreceived |")),
     (8, "task Type not a legal literal", after("### Stage 1: Intake", "| api-workflow |", "| external-workflow |")),
     (9, "stage entry uses a task-entry rule", rep('| selected-stage-completed("Intake") | =js:(vars.paperworkComplete === true) |', "| runs-sequentially | =js:(vars.paperworkComplete === true) |")),
@@ -95,6 +96,12 @@ MUTATIONS = [
     (27, "stage entry equals a Case Exit row", after("### Stage 3: Settlement", '| selected-stage-completed("Assessment") | =js:(vars.assessorDecision === "Settle") | No |', '| selected-stage-completed("Claim Rejected") | — | No |')),
     (29, "case SLA below 15 minutes", rep("| Case-Level SLA | 5 d |", "| Case-Level SLA | 5 min |")),
     (34, "either/or persona", rep("| Claims Assessor | — |", "| Claims Assessor or Claims Lead | — |")),
+]
+
+
+EXCLUDED = [
+    (5, "stage/task block missing **Design Rationale:**",
+     "not checked by decision (Cliff, 2026-10-02): a design document does not owe rationale prose. When present, the build copies it into the plan as `rationale:` and convert uses it as a task description that has none; its absence breaks nothing"),
 ]
 
 
@@ -183,6 +190,7 @@ def main():
         base_items, base_built, _ = unresolved(SEED, work)
         base_model = uip("parse", SEED)[1]["Data"]["Model"]
         rows = [measure(i, d, m, seed_text, base_items, base_built, base_model, work) for i, d, m in MUTATIONS]
+        rows += [{"item": i, "violation": d, "verdict": "excluded", "detail": why} for i, d, why in EXCLUDED]
     for r in rows:
         print(f"{r['item']:>3}  {r['verdict']:<22} {r['violation']:<52} {r['detail']}  build: {r.get('build_validate')}")
     tally = {v: sum(r["verdict"] == v for r in rows) for v in sorted({r["verdict"] for r in rows})}
