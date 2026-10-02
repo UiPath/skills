@@ -21,6 +21,9 @@ export default flow('planetarium-confirmation')
     event: 'email-received',
     where: { parentFolderId: CONFIRMATIONS_FOLDER },
     filters: [{ field: 'subject', contains: 'PLANETARIUM' }],
+    // bindings.json labels; both required (check: BINDING_MISSING).
+    connection: 'outlook',
+    folder: 'shared',
   }))
   .step('recordConfirmation', script({
     code:

@@ -16,7 +16,7 @@ see [`data-fabric.md`](data-fabric.md) for the routing table.
 Signatures:
 
 - `connector(descriptor, inputs, opts?)`
-- `connector(key, action, inputs?, { connection?, folder?, object?, version? })`
+- `connector(key, action, inputs?, { connection, folder, object?, version? })` (`connection` and `folder` are required: `check` reports `BINDING_MISSING` without them)
 
 ```ts
 .step('issue', connector('uipath-atlassian-jira', 'get-issue',
