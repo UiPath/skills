@@ -20,3 +20,9 @@ Flow outputs.
 Inside a parallel arm it aborts sibling arms, whereas `.return(...)` only ends its
 own path. Its mappings are terminal metadata, not a readable action result:
 `out('<terminate>')` remains invalid.
+
+## At a glance
+
+Stop the entire Flow run, including sibling parallel arms.
+
+Use it only for stop-all intent; prove cancellation with an abort-specific witness.

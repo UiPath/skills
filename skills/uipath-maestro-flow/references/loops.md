@@ -49,6 +49,18 @@ A branch or step that decides on the item has to name the loop, so a loop called
 `$vars.item.priority`, which resolves to nothing and takes the false arm on every
 iteration without erroring.
 
+## At a glance
+
+Run a body once for each value in a collection.
+
+Per-iteration flow-variable writes go through `{ updates }` on a body step.
+Every `.loop()` emits `core.logic.loop` 2.4: the body reads
+`$vars.<loop>.currentItem` and `$vars.<loop>.currentIteration` (not the legacy
+1.0.0 `currentIndex`, which `check` refuses). Options: `parallel: true`,
+`completionCondition` (checked after each iteration, stops early), and
+`body.break()` exits the whole loop from inside an arm. The option details and
+examples are below.
+
 ## Loop options
 
 Every `.loop()` emits the loop's 2.4 definition (inner `start`/`continue`/`break`
@@ -75,3 +87,23 @@ options below.
 
 Per-iteration flow-variable writes go through `{ updates }` on a body step —
 `{ updates: { seen: js`$vars.seen + 1` } }` — never through a mutation node.
+
+## Do while
+
+Run a body, then repeat **while a condition is true** — checked AFTER each
+pass, so the body always runs at least once (`core.logic.dowhile`). The
+container publishes no data output: write results to a `.var()` from inside
+the body with `{ updates }`. `limit` caps iterations (1–10,000; blank means
+the platform default of 10,000), and `body.break()` works exactly as in
+`.loop()`.
+
+Signature: `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })`.
+
+```ts
+.var('page', types.number, 1)
+.doWhile('paginate', js`$vars.fetch.output.body.hasNextPage === true`, (body) => body
+  .step('fetch', http({ url: tmpl`https://api.example.test/items?page=${v('page')}`,
+    method: 'GET', managed: false, returns: { hasNextPage: 'boolean' } }),
+    { updates: { page: js`$vars.page + 1` } }),
+  { limit: 50 })
+```

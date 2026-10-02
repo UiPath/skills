@@ -12,6 +12,14 @@ Signature: `rpaWorkflow({ key, name, folderPath, inputs?, returns? })`.
   inputs: { problemId: 123 }, returns: { title: 'string' } }))
 ```
 
+## At a glance
+
+Run a deployed robotic process and wait for its job result.
+
+Confirm identity and argument names against the same deployed tenant resource.
+
+**Finding the key: [`or-processes.md`](or-processes.md)**
+
 ## Tenant contract
 
 The release key, name, and folder must identify the same deployed process.

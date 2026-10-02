@@ -21,6 +21,24 @@ export default flow('expense-request')
   .build();
 ```
 
+## At a glance
+
+A person starts the flow by submitting a form (`core.trigger.form`); the
+submitted values ARE the flow's inputs.
+
+Signature: `.trigger(formTrigger())` — no arguments; the form's fields are
+derived from `.input()` (one per input, required unless it has a default).
+
+```ts
+export default flow('expense')
+  .input({ amount: types.number, reason: types.string })
+  .trigger(formTrigger())
+  .step('log', script({ code: 'return $vars.start.output.amount;' }))
+  .build();
+```
+
+Locally `--input` supplies the values; no rung renders a form.
+
 ## The derived schema
 
 The form's fields are derived from `.input()` at compile time, the same rule

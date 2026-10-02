@@ -18,6 +18,12 @@ Signature: `batchTransform({ attachment, prompt, outputColumns, enableWebSearchG
    }))
 ```
 
+## At a glance
+
+Batch transform enriches a CSV into a new file; Summarize ([summarize.md](summarize.md)) reads a document.
+
+Request web grounding only when the scenario needs it.
+
 ## General
 
 - Error **460005** can be transient; retry it once before classifying the failure

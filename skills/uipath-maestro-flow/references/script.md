@@ -22,6 +22,14 @@ before passing a bare reference to another node.
 Return an object literal for named fields and read them with `out('parse', 'tag')`;
 read a scalar return with `out('parse')`.
 
+## At a glance
+
+Run inline JavaScript for computation that is not a first-class Flow node.
+
+Signature: `script({ code: string })`; read the result with `out(step, path?)`.
+
+Use a first-class action when the scenario names one; use script for computation.
+
 ## What the step publishes
 
 The node's own definition can only say `output: {type: 'object'}` — a node TYPE

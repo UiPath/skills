@@ -19,6 +19,24 @@ Signature:
   code: 'return $vars.policy.output.body.limit;' }))
 ```
 
+## At a glance
+
+Standalone HTTP keeps non-2xx responses on its success output. Managed HTTP routes
+them through its error port. Both expose JSON response bodies as parsed values.
+
+Signature: `http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
+
+```ts
+.step('getPolicy', http({ method: 'GET', url: policyUrl,
+  managed: true, returns: { limit: 'number' },
+  branches: [{ name: 'throttled', condition: js`$vars.getPolicy.output.statusCode === 429` }] }))
+.stepToList('branch-throttled', (b) => b.return({}))
+.step('limit', script({ code: 'return $vars.getPolicy.output.body.limit;' }))
+```
+
+Match `managed` to the scenario's node; connector auth needs both `connection` and `folder` from `.flow-sdk/bindings.json`.
+A `branch-<name>` side exit uses `.stepToList`; omit both bindings for manual/implicit mode.
+
 ## Choosing the node
 
 Match the product node named by the scenario. “Managed HTTP Request,” “HTTP

@@ -1,10 +1,14 @@
 # Authoring and product-CLI loops
 
-Choose one loop before running any build command:
+Choose one loop before running any build command, as
+[SKILL.md — Lifecycle](../SKILL.md#lifecycle) says:
 
 - if the task requests product-CLI validation/debug, or the workspace enables
-  `flowSdk.emitOnly`/`FLOW_SDK_EMIT_ONLY=1`, use only the eval/product-CLI loop;
-- otherwise use the packaged-SDK local gates.
+  `flowSdk.emitOnly`/`FLOW_SDK_EMIT_ONLY=1`, use only the eval/product-CLI loop.
+  Its scaffold and its full command block are in SKILL.md, so a greenfield run
+  needs nothing from this file; the debug flags and projections below are for
+  runs whose acceptance bar needs product-runtime evidence;
+- otherwise use the packaged-SDK local gates (this file).
 
 In eval/product mode, create the solution/project scaffold immediately after
 choosing the loop, before authoring the source. Once the source first
@@ -87,59 +91,17 @@ These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
 
 ## Product-CLI scaffold
 
-Product debug needs a solution containing a Flow project. Keep the authored
-source in `.flow-sdk/` under the workspace root, outside the solution, and
-create the nested scaffold once:
-
-```bash
-uip solution init <Solution>
-( cd <Solution> && uip maestro flow init <Name> )
-uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
-```
-
-That third command seeds the authored source from the stub `flow init` just wrote, so the flow's id and name come from the product instead of being invented, and the stub is overwritten in place by the first `compile -o`.
-Skip it when the source already exists, and skip the whole block for an existing project.
-For a **Maestro Automate** project (the request names that product, not just the verb "automate"), add `--automate` to the `flow init` line; nothing else in either loop changes.
-
-`<Solution>` and `<Name>` are the request's own names, used verbatim: a request
-that gives one name for both ("inside a solution of the same name") uses it for
-both, and a request that names only the Flow uses `<Name>` for both. The result
-has three related names: `.flow-sdk/<Name>.flow.ts`, the `<Name>` project directory, and
-`<Name>.flow` inside that project. Keep them aligned for this scaffold so each
-command addresses the intended project; `compile -o` remains the authority over
-where the emitted file is written.
+The scaffold (`uip solution init`, `flow init`, the `decompile` seed, and
+`--automate` for a Maestro Automate project) is in
+[SKILL.md — Project layout](../SKILL.md#project-layout). It is kept in one place
+so the two copies cannot drift.
 
 ## Eval/product-CLI packaging: emit-only
 
-The product-runtime eval sets `flowSdk.emitOnly` in `package.json` (with
-`FLOW_SDK_EMIT_ONLY=1` retained as an environment override). Emit-only is a
-property of the **project**, not of the directory you run from: the mode is the
-nearest `package.json` up the tree that actually declares `flowSdk.emitOnly`, so
-compiling from a scaffolded solution subdirectory behaves exactly as it does
-from the project root. A nested `package.json` that says nothing about `flowSdk`
-inherits; one that sets `emitOnly: false` opts out. In that mode
-`uip maestro flow compile` only serializes source, and `uip maestro flow check`
-refuses, because product validation owns structural verification. The required
-base pass is emit, any required artifact bindings, then validate. Add resource
-refresh and debug only when the stated acceptance bar requires product-runtime
-behavior evidence:
-
-```bash
-uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
-uip maestro flow validate <Solution>/<Name>/<Name>.flow --output json
-# Before anything opens the emitted file — upload, debug, or a designer:
-uip maestro flow format <Solution>/<Name>/<Name>.flow --output json
-# Only for a stated runtime-behavior claim:
-( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
-( cd <Solution> && uip maestro flow debug <Name> --log-level error \
-  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals}" \
-  --output json )
-```
-
-This loop has exactly one emitted artifact:
-`<Solution>/<Name>/<Name>.flow`. Never emit a second root-level `<Name>.flow`;
-validators and evidence collectors cannot choose safely between duplicates.
-Re-run the whole sequence after the final source or binding edit.
+The emit-only rules (which `package.json` decides the mode, what `compile` and
+`check` do in it) and the compile → validate → format → refresh → debug block
+are in [SKILL.md — Lifecycle](../SKILL.md#lifecycle). The sections below add the
+detail a runtime-evidence bar needs.
 
 ## Product validation and conditional bindings
 

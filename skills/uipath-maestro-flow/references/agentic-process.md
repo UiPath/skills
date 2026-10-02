@@ -19,6 +19,24 @@ Signature: `agenticProcess({ key, name, folderPath, inputs?, returns? })`
 
 See [Orchestrator Processes](or-processes.md) and use the `ProcessOrchestration`, `CaseManagement`, and/or `Flow` process types to locate an agentic process and determine its contract.
 
+## At a glance
+
+Run a deployed Maestro agentic process synchronously.
+
+Signature: `agenticProcess({ key, name, folderPath, inputs?, returns?, form?, completion? })`.
+
+```ts
+.step('intake', agenticProcess({ key: processKey,
+  name: 'ProcurementProcess', folderPath: 'Shared',
+  inputs: { productId: 1 }, returns: { status: 'boolean' } }))
+```
+
+Confirm identity and argument names live; declared outputs may still be null;
+`.onError(...)` is supported. `form: 'bpmn' | 'flow' | 'case'` picks the published
+form; `completion: 'fire-and-forget'` waits for nothing — details below.
+
+**Finding the key: [`or-processes.md`](or-processes.md)**
+
 ## General
 
 - Declared outputs can be returned as `null`

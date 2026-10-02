@@ -36,6 +36,28 @@ That is what makes the single `.return()` above correct, and what a flow VARIABL
 is for: each arm assigns it with `{ updates }` and the one return reads it, instead
 of the return having to work out which arm ran.
 
+## At a glance
+
+Pause for a person: an inline form, quick form, deployed Action App, or a
+document-validation station.
+
+Signature: `hitl({ variant?, app?, document?, title?, priority?, labels?, recipient?, fields?, outcomes, outcomePorts?, exposeError? })`.
+
+```ts
+.var('status', types.string)
+.stepSwitch('review', hitl({ title: 'Review invoice',
+  recipient: { assignee: { type: 'user', value: 'reviewer@acme.test' } },
+  fields: [{ id: 'amount', type: 'number', direction: 'inOut', value: input('amount') }],
+  outcomes: ['Approve', 'Reject'] }), [
+  { value: 'Approve', body: (b) => b.step('proceed', script({ code: 'return "approved";' }),
+      { updates: { status: lit('approved') } }) },
+  { value: 'Reject', body: (b) => b.step('notify', script({ code: 'return "rejected";' }),
+      { updates: { status: lit('rejected') } }) }])
+.return({ status: v('status') })
+```
+
+Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed` on a task that has outcomes, and every outcome must be wired. `.stepSwitch` gives each one an arm — no tacit exit, arms converge like `.switch`'s, a missing arm warns — on the default node, on quick-form, or on a pinned task. After a default-node task with more than one outcome, `.step` + `.stepToList` is the older shape where the FIRST outcome continues the main path. After quick-form, `outcomePorts: false` or `{ version: '1.0' }`, a plain `.step()` continues EVERY outcome to the next step, each on its own edge, where you route on `out('review', 'Action')`.
+
 ## Delivery, fields, and routing
 
 - `recipient` is `{ channels?, assignee: { type, value? }, connections? }` —
