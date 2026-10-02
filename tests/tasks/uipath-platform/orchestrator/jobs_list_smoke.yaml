@@ -14,9 +14,7 @@ run_limits:
 initial_prompt: |
   List the jobs that are currently in Faulted state in the Orchestrator
   folder with key `11111111-2222-3333-4444-555566667777` in the current
-  UiPath tenant. I need the live job records from Orchestrator, not
-  historical metrics. If the folder doesn't exist or I can't access it,
-  just tell me; don't look in other folders.
+  UiPath tenant.
 
 success_criteria:
   - type: command_executed
