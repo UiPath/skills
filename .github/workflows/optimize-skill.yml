@@ -56,8 +56,8 @@ env:
   # thorough runs and the other knobs stay on the ADO run form for the maintainers.
   EFFORT: standard
   OPEN_PR: 'true'
-  AZURE_TENANT_ID: TODO-tenant-id    # Entra tenant of the app registration
-  AZURE_CLIENT_ID: TODO-client-id    # app registration skill-trimming-optimizer-github
+  AZURE_TENANT_ID: d8353d2a-b153-4d17-8827-902c51f72357   # Entra tenant of the app registration
+  AZURE_CLIENT_ID: ca18c791-e99c-4ccd-9c40-760e849b78a3   # app registration skill-trimming-optimizer-github
   # may run it for any skill (the optimizer's maintainers); space-separated handles
   OPTIMIZER_MAINTAINERS: CarlesUIPath
 
