@@ -288,7 +288,7 @@ The build is often made on another machine and another Orchestrator connection t
 
 Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-guide.md).
 
-**Content.** Every step the target environment needs, whether or not this run did it in its own tenant — a queue, asset or trigger the run created there does not exist in the target tenant. Derive the steps from the genome's Platform Dependencies and Target Applications, the configuration answers and the projects built. Each file has one section per kind of setup, in this order, so that nothing a trigger starts runs before its setup exists. **Access, Package and deployment, Assets, Robot machines and Triggers are always present** and read "None." when empty. **Every other UiPath service the automation uses gets a section of its own, named after the service**, after Package and deployment and before Robot machines — one per service the Platform Dependencies name, whatever it is (Queues, Storage Buckets, Integration Service, Data Fabric, Action Center, Document Understanding, Test Manager, Context Grounding, …); a service the automation does not use has no section. The template shows the common ones:
+**Content.** Every step the target environment needs, whether or not this run did it in its own tenant — a queue, asset or trigger the run created there does not exist in the target tenant. Derive the steps from the genome's Platform Dependencies and Target Applications, the configuration answers and the projects built. Each file has one section per kind of setup, in this order, so that nothing a trigger starts runs before its setup exists. **Access, Package and deployment, Assets, Others and Triggers are always present** and read "None." when empty. **Every other UiPath service the automation uses gets a section of its own, named after the service**, after Package and deployment and before Others — one per service the Platform Dependencies name, whatever it is (Queues, Storage Buckets, Integration Service, Data Fabric, Action Center, Document Understanding, Test Manager, Context Grounding, …); a service the automation does not use has no section. The template shows the common ones:
 
 ````markdown
 # Open items — <project or solution> in <target environment>
@@ -326,8 +326,10 @@ Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-
 ## <Service>
 - [ ] <what to create or configure in that service, its name, where, and for whom>
 
-## Robot machines
-- [ ] `<application>` installed and signed in (from Target Applications)
+## Others
+- [ ] Allow outbound access from the robot to <every host the automation reaches, with its port when not 443: the systems' hosts, their identity endpoints, the mail relay> — robot machine / network — value: the build's endpoints, set per environment
+- [ ] `<application>` installed and signed in on the robot machines (from Target Applications)
+- [ ] Install the UiPath browser extension in `<browser>` and allow it in incognito mode — robot machine — when the automation drives that browser in incognito
 
 ## Triggers
 - [ ] **`<TriggerName>`** (Time | Queue) for process `<process>`
@@ -340,7 +342,8 @@ Rules:
 2. **Queues carry the settings the genome implies:** the unique-reference rule and retry count from the Transactional Shape's outcomes and the split answer. Under a solution deployment the deploy creates the declared queue, and the step checks its settings.
 3. **Triggers come from the split and trigger answers:** type, schedule or queue, and runner count per process.
 4. **The solution file holds the steps several projects share** — the folder, packages and deployment, a queue between projects, a shared connection or asset — in the same sections, and ends with one line per project linking its file, with that project's step count. A step that spans projects is written once, in the solution file; a project file links to it instead of repeating it.
-5. **A project file holds that project's own steps** in the same sections: its assets, its process and triggers, its machine prerequisites.
+5. **A project file holds that project's own steps** in the same sections: its assets, its process and triggers, its Others items.
+6. **Others holds every setup step outside UiPath's services.** Network access is one item listing every host the robot must reach — each target system's hosts (an org's `my.salesforce.com` and `lightning.force.com`), the identity and API endpoints behind it (`login.microsoftonline.com`, `graph.microsoft.com`), the mail relay with its port (`smtp-us.ser.proofpoint.com:587`) — taken from the build's configuration answers and Target Applications, as values to set per environment. Robot machine setup is Others too: the applications installed and signed in (from Target Applications), the UiPath browser extension and its settings (allowed in incognito mode when the automation runs the browser incognito), accounts and permissions inside a target system, certificates.
 
 ## Anti-patterns
 
