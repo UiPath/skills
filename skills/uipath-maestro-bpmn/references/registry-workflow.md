@@ -107,6 +107,10 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <object> --output json
 ```
 
+The node's `response` output variable holds the connector response as-is. For a
+List operation that is a bare array of rows, not an object with `.items` or
+`.issues`; see [Multi-instance](structural-bpmn.md#multi-instance--loop-characteristics-registry-gap--canvas-supports-it).
+
 ### Picking the object: take it from the table, do not infer it
 
 A connector exposes several objects that perform the same operation, and
@@ -367,6 +371,12 @@ No match on that connection: repeat on every other `Enabled` connection from
 the one that holds it. The `IsDefault` connection can reach a workspace
 without the value. No connection holds it, or a lookup fails: stop and report
 that field. Never write the display name in its place.
+
+Resolve the reference at authoring time with this CLI loop and write the id as a
+literal in the node. Never move the lookup into the process as a List node plus
+a script: that adds a runtime dependency on the List node's response shape and
+page size, and a wrong read faults the downstream node with a null or empty
+parameter.
 
 ## 4. Bindings — from `bindingInfo`, never invented
 

@@ -28,7 +28,7 @@ Budget: the guard enforces criterion `timeout` ≥ `debug_budget(...)` + 60. Siz
 
 ## Skill findings to report upstream
 
-Slack channel-id resolution and pagination (three tasks); Slack `folderKey` binding omitted; connector trigger parameters (Data Fabric entity, Outlook `parentFolderId`) omitted and `uip is triggers` discovery not taught; managed-HTTP response shape unclear to downstream scripts; Data Service where-clause grammar from variables; multi-instance over connector output; fixed literal values parametrised into unbound variables; no "existing solutions → ask" greenfield rule; WooCommerce connector node not produced.
+Slack channel-id resolution and pagination (three tasks); Slack `folderKey` binding omitted; connector trigger parameters (Data Fabric entity, Outlook `parentFolderId`) omitted and `uip is triggers` discovery not taught; managed-HTTP response shape unclear to downstream scripts; Data Service where-clause grammar from variables; multi-instance subprocess body reads the item as `iterator.item` instead of `iterator[0].item`; fixed literal values parametrised into unbound variables; no "existing solutions → ask" greenfield rule; WooCommerce connector node not produced.
 
 ## Not yet ported
 
