@@ -10,14 +10,12 @@ run-name: Optimize skill · ${{ inputs.skill }} · ${{ inputs.effort }} · @${{ 
 # Vault secrets); this workflow only checks who is asking and queues it.
 #
 # Who can run it: a CODEOWNER of skills/<skill>/ (a listed user, or an active member of a
-# listed team when the token can read it), or a handle in the repo variable
-# SKILL_OPTIMIZER_MAINTAINERS.
+# listed team when the token can read it), or one of OPTIMIZER_MAINTAINERS below.
 #
 # Credential: no stored secret. The job's GitHub OIDC token is exchanged for an Entra token
 # of an app registration whose federated credential trusts ONLY this repo's main branch
 # (subject repo:UiPath/skills:ref:refs/heads/main), and whose service principal may only
-# queue that one ADO pipeline. Repo variables: SKILL_OPTIMIZER_AZURE_TENANT_ID,
-# SKILL_OPTIMIZER_AZURE_CLIENT_ID.
+# queue that one ADO pipeline. The tenant and client ids below are identifiers, not secrets.
 
 on:
   workflow_dispatch:
@@ -63,6 +61,10 @@ env:
   ADO_ORG: uipath
   ADO_PROJECT: coder_eval
   ADO_PIPELINE_ID: '18884'           # skill-trimming-optimizer / optimize-bundle.yml
+  AZURE_TENANT_ID: TODO-tenant-id    # Entra tenant of the app registration
+  AZURE_CLIENT_ID: TODO-client-id    # app registration skill-trimming-optimizer-github
+  # may run it for any skill (the optimizer's maintainers); space-separated handles
+  OPTIMIZER_MAINTAINERS: CarlesUIPath
 
 jobs:
   queue:
@@ -113,14 +115,14 @@ jobs:
           SKILL: ${{ inputs.skill }}
           ACTOR: ${{ github.actor }}
           GH_TOKEN: ${{ github.token }}
-          ALSO_ALLOWED: ${{ vars.SKILL_OPTIMIZER_MAINTAINERS }}
+          ALSO_ALLOWED: ${{ env.OPTIMIZER_MAINTAINERS }}
         run: node .github/workflows/scripts/codeowners-check.mjs CODEOWNERS "$SKILL" "$ACTOR"
 
       - name: Queue the ADO pipeline
         id: queue
         env:
-          TENANT_ID: ${{ vars.SKILL_OPTIMIZER_AZURE_TENANT_ID }}
-          CLIENT_ID: ${{ vars.SKILL_OPTIMIZER_AZURE_CLIENT_ID }}
+          TENANT_ID: ${{ env.AZURE_TENANT_ID }}
+          CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
           SKILL: ${{ inputs.skill }}
           EFFORT: ${{ inputs.effort }}
           DESC: ${{ inputs.optimize_description }}
@@ -132,8 +134,8 @@ jobs:
           ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
-          [ -n "$TENANT_ID" ] && [ -n "$CLIENT_ID" ] || {
-            echo "::error::repo variables SKILL_OPTIMIZER_AZURE_TENANT_ID / SKILL_OPTIMIZER_AZURE_CLIENT_ID are not set"; exit 1; }
+          case "$TENANT_ID$CLIENT_ID" in *TODO*|'')
+            echo "::error::AZURE_TENANT_ID / AZURE_CLIENT_ID are not filled in at the top of this workflow"; exit 1 ;; esac
           # 1. GitHub OIDC token for the Entra token exchange
           oidc=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
                    "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange" | jq -r .value)

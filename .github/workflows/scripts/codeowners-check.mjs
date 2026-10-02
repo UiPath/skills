@@ -4,7 +4,7 @@
 // usage: node codeowners-check.mjs <CODEOWNERS> <skill> <actor>
 // env:   GH_TOKEN (optional) — used to check membership of team owners (@org/team)
 //        ALSO_ALLOWED (optional) — comma/space-separated handles allowed for every skill
-//        (the optimizer's maintainers; the repo variable SKILL_OPTIMIZER_MAINTAINERS)
+//        (the optimizer's maintainers; OPTIMIZER_MAINTAINERS in optimize-skill.yml)
 // exit:  0 owner · 1 not an owner (or unverifiable) · 2 bad input
 //
 // CODEOWNERS semantics (gitignore-style patterns, the LAST matching rule wins) are applied to
@@ -50,7 +50,7 @@ if (!owners || owners.length === 0) {
 const lc = (s) => s.toLowerCase();
 const maintainers = (process.env.ALSO_ALLOWED ?? "").split(/[\s,]+/).filter(Boolean).map((h) => h.replace(/^@/, ""));
 if (maintainers.some((m) => lc(m) === lc(actor))) {
-  console.log(`@${actor} is an optimizer maintainer (SKILL_OPTIMIZER_MAINTAINERS).`);
+  console.log(`@${actor} is an optimizer maintainer (OPTIMIZER_MAINTAINERS).`);
   process.exit(0);
 }
 const users = owners.filter((o) => o.startsWith("@") && !o.includes("/")).map((o) => o.slice(1));
