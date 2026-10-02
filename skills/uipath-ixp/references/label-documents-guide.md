@@ -17,7 +17,7 @@ uip ixp projects get-taxonomy <project-name> --output json
 
 Save the taxonomy to `/tmp/ixp/<project-name>/taxonomies/v1.json` (increment the version on each re-fetch).
 
-From the taxonomy (raw snake_case: field groups/fields under `Data.dataset.label_groups`, types under `Data.dataset.entity_defs`), review the field groups and field types so you understand what each predicted field represents.
+From the taxonomy (raw snake_case: field groups are `Data.dataset.label_groups[].label_defs[]`, their fields are each group's `moon_form[]`, types under `Data.dataset.entity_defs` — see [CLI Reference § `get-taxonomy`](cli-reference.md#projects)), review the field groups and field types so you understand what each predicted field represents.
 
 ## Step 2 — Process Each Document
 
