@@ -4,17 +4,17 @@ End-to-end Playwright pipeline from repository to UiPath Test Manager results us
 
 ## Pipeline rules
 
-1. Pack with `uip tm pack --type playwright`; it creates a `.nupkg` containing test metadata.
+1. Run `uip tm pack --type playwright`; it creates a `.nupkg` with test metadata.
 2. Upload with `uip or packages upload`.
-3. Ingestion is automatic: one Test Manager case per discovered Playwright **test**, bound to the package, with `PW_Tag_<tag>`, `PW_Project_<name>`, `PW_Suite_<name>`, `PW_Path_<chain>`, and `PW_File_<path>` labels as applicable.
+3. Ingestion automatically creates one Test Manager case per discovered Playwright **test**, bound to the package, with applicable `PW_Tag_<tag>`, `PW_Project_<name>`, `PW_Suite_<name>`, `PW_Path_<chain>`, and `PW_File_<path>` labels.
 4. Create an empty test set and fill it with `uip tm testcases add --labels`.
 5. Run `uip tm testsets playwright-context` when available.
-6. Run with `uip tm testsets run`, optionally `--playwright-project <name>`.
+6. Run `uip tm testsets run`, optionally with `--playwright-project <name>`.
 7. Wait, report, and retrieve results.
 
 There is **no link step**. Do **NOT** run `uip tm testcases link-automation` on Playwright cases: ingestion links them; manual linking is the RPA pipeline and corrupts the association.
 
-For `--output json`, parse the JSON envelope from the first `{` through its matching final `}` (or read the last balanced JSON object). Auto-updater chatter, `Update completed with failures.`, `Resolved project …` lines, and telemetry warnings may occur on either side. Judge the command only by the envelope's `Result` field.
+For `--output json`, parse the envelope from the first `{` through its matching final `}` (or read the last balanced JSON object). Auto-updater chatter, `Update completed with failures.`, `Resolved project …` lines, and telemetry warnings can appear on either side; judge commands only by the envelope's `Result` field.
 
 `testsets playwright-context` and `run --playwright-project` are hidden from `--help`. Older CLIs may return `unknown command` / `unknown option`: if the probe is missing, skip Step 5 and continue; if `--playwright-project` is rejected, run without it so every project in the package config runs, and do not retry the flag. Project scoping still works without the probe.
 
@@ -26,7 +26,7 @@ uip tm project list --filter <name> --output json
 uip tm project create --name <NAME> --project-key <PROJECT_KEY> --output json
 ```
 
-Playwright support must be enabled for the tenant. If Step 3 never creates cases, stop and ask the user; suspect this feature flag first. The project directory must contain `package.json` with `@playwright/test` installed, one of `package-lock.json` / `yarn.lock` / `pnpm-lock.yaml` / `bun.lock`, and a `playwright.config` file. Discovery shells out to the project's own `playwright test --list`, needs no browsers, and serverless performs a deterministic install.
+Playwright support must be enabled for the tenant. If Step 3 creates no cases, stop and ask the user; suspect this feature flag first. The project directory must contain `package.json` with `@playwright/test` installed, one of `package-lock.json` / `yarn.lock` / `pnpm-lock.yaml` / `bun.lock`, and a `playwright.config` file. Discovery shells out to the project's own `playwright test --list`, needs no browsers, and serverless performs a deterministic install.
 
 ## Step 1 — Pack
 
@@ -37,7 +37,7 @@ uip tm pack --project-path <dir> --type playwright \
     --package-version 1.0.0 -o <out-dir> --output json
 ```
 
-`--project-key` is required by default because auto-creation is enabled; pass `--no-create-test-cases` to omit it, while label metadata remains embedded. Preview with `--dry-run` (writes nothing). Read `Data.Output` for the `.nupkg` path and `Data.TestCount`; retain `TestCount` for Step 3. It is the number of cases ingestion creates, one per Playwright test rather than per test-project combination. Missing `package.json`, lockfile, or `@playwright/test` fails loudly; fix the project.
+`--project-key` is required by default because auto-creation is enabled; pass `--no-create-test-cases` to omit it, while label metadata remains embedded. Preview with `--dry-run` (writes nothing). Read `Data.Output` for the `.nupkg` path and `Data.TestCount`; retain `TestCount` for Step 3. It is the number of cases ingestion creates: one per Playwright test, not per test-project combination. Missing `package.json`, lockfile, or `@playwright/test` fails loudly; fix the project.
 
 ## Step 2 — Upload
 
@@ -50,7 +50,7 @@ uip or packages upload "<out-dir>/<PackageName>.1.0.0.nupkg" --output json
 ```bash
 uip or packages list --search <PackageName> --output json
 ```
-The result is the feed's **latest** version only (`IsLatestVersion: true`, one row), not version history; choose a higher version.
+The result is only the feed's **latest** version (`IsLatestVersion: true`, one row), not version history; choose a higher version.
 
 ## Step 3 — Wait for ingestion
 
@@ -59,7 +59,7 @@ Ingestion is asynchronous and automatic. Poll unfiltered:
 uip tm testcases list --project-key <PROJECT_KEY> --output json
 ```
 
-Do NOT pass `--filter <PackageName>`: `--filter` matches a test case name or key by prefix (SKILL.md Rule 8), while ingested names are `"<suite> > <test title>"`; the package name therefore produces a permanent false empty result. Count `TestCaseKey` (for example `SHIP:1`), not UUID `Id`, and inspect `Name`. Ingestion is complete when the Step 1 `TestCount` new cases appear, each named `"<suite> > <test title>"`. Plain `pack` prints only `Package`, `Output`, and `TestCount`; use `--dry-run` or inspect `testCases.json` in the `.nupkg` for exact expected names. `TestCount` is not multiplied by projects. `IsAutomated: false` is normal.
+Do NOT pass `--filter <PackageName>`: `--filter` matches a test case name or key by prefix (SKILL.md Rule 8), but ingested names are `"<suite> > <test title>"`; the package name causes a permanent false empty result. Count `TestCaseKey` (for example `SHIP:1`), not UUID `Id`, and inspect `Name`. Ingestion completes when the Step 1 `TestCount` new cases appear, each named `"<suite> > <test title>"`. Plain `pack` prints only `Package`, `Output`, and `TestCount`; use `--dry-run` or inspect `testCases.json` in the `.nupkg` for exact expected names. `TestCount` is not multiplied by projects. `IsAutomated: false` is normal.
 
 Poll every ~10 seconds for up to ~3 minutes. If expected names do not appear, STOP and report; likely causes are the tenant feature flag or wrong `--project-key`, neither fixed by retrying. Spot-check labels:
 ```bash
@@ -69,7 +69,7 @@ This returns distinct label *names* only.
 
 ## Step 4 — Configure the folder and fill a test set
 
-Set the project's default Orchestrator folder FIRST; both the Step 5 probe and Step 6 run resolve packages through it (Critical Rule #9):
+Set the project's default Orchestrator folder FIRST; Step 5's probe and Step 6's run resolve packages through it (Critical Rule #9):
 ```bash
 uip or folders list --output json
 uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY> --output json
@@ -84,7 +84,7 @@ uip or machines assign <MACHINE_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 Capture `Data.Key`; `assign` takes machine KEYS (GUIDs), not names. Without the machine, job creation returns 500 and execution is instantly `Cancelled`.
 
-The run chooses a robot user from the folder, and `uip tm testsets run` has no user-selection flag (only `uip tm testcases run` does); membership is the only lever:
+The run chooses a robot user from the folder; `uip tm testsets run` has no user-selection flag (`uip tm testcases run` does). Membership is the only lever:
 ```bash
 uip or users list-in-folder --folder-key <FOLDER_KEY> --output json
 uip or users get <USER_KEY> --all-fields --output json
@@ -111,7 +111,7 @@ When available, run:
 uip tm testsets playwright-context --test-set-key <TEST_SET_KEY> --output json
 ```
 
-Read response fields rather than assuming the shape. `Data.IsPlaywright: true` means the set resolves to one Playwright package; `AvailablePlaywrightProjects` contains valid flag values and `SelectedPlaywrightProjects` contains the stored selection. Both are comma-joined strings such as `"chromium, firefox"`, not arrays; split on `", "` when scripting, and no stored selection is `""`.
+Read response fields; do not assume the shape. `Data.IsPlaywright: true` means the set resolves to one Playwright package; `AvailablePlaywrightProjects` contains valid flag values and `SelectedPlaywrightProjects` the stored selection. Both are comma-joined strings such as `"chromium, firefox"`, not arrays; split on `", "` when scripting, and no stored selection is `""`.
 
 `Data.IsPlaywright: false` means the set does not resolve to exactly one synced Playwright package (RPA, multiple packages, or no package); run without `--playwright-project`. `true` does not mean the set contains only Playwright tests: manual cases plus one Playwright package still return `true`. Treat it as “project selection is available.” The server does not error on type, so probe first and branch on `IsPlaywright`. Without a default folder, a genuine Playwright set falsely reports `IsPlaywright: false`; set the folder in Step 4 before trusting false.
 
@@ -123,7 +123,7 @@ uip tm testsets run --test-set-key <TEST_SET_KEY> \
     --playwright-project chromium --output json
 ```
 
-`--playwright-project` is functional but absent from `uip tm testsets run --help`. It takes exactly one case-sensitive name from `playwright.config` — at most one project per execution. Results are one log per test case, not per browser, so run the set once per project if you need each browser attributed. An unknown name fails fast before persistence and lists available projects. The flag requires every case to come from one Playwright package and fails for Studio/RPA sets; omit it there. Selection persists on the test set until changed; omitting it reuses the stored selection, or config defaults if none was stored. Without tenant Playwright support, the command fails with instructions rather than running incorrectly. Omit the flag for a plain run using all config-default projects.
+`--playwright-project` is functional but absent from `uip tm testsets run --help`. It takes exactly one case-sensitive name from `playwright.config`—at most one project per execution. Results are one log per test case, not per browser, so run the set once per project if you need each browser attributed. An unknown name fails fast before persistence and lists available projects. The flag requires every case to come from one Playwright package and fails for Studio/RPA sets; omit it there. Selection persists on the test set until changed; omitting the flag reuses the stored selection, or config defaults if none was stored. Without tenant Playwright support, the command fails with instructions rather than running incorrectly. Omit the flag for a plain run using all config-default projects.
 
 Start without `--wait` for automation: the immediate complete JSON envelope carries `ExecutionId` and `Status: Pending`. With `--wait`, take the id from `Execution started: <id> (Pending)`, not `Starting execution for test set …`, whose UUID is the test-set id.
 
@@ -162,9 +162,9 @@ To prove project scope:
 ```bash
 uip tm executions get-stats --execution-id <EXECUTION_ID> --project-key <PROJECT_KEY> --output json
 ```
-Read `PlaywrightExecutionSnapshot.Projects` (for example `["chromium"]`) only. `Version` is two-component (`1.0`), as in `list-automations` and `playwright-context`, so it cannot distinguish `1.0.1` from `1.0.0`; `TestCaseVersion` in logs can. Log count proves nothing: there is one log per Playwright test, not per test × project.
+Read only `PlaywrightExecutionSnapshot.Projects` (for example `["chromium"]`). `Version` is two-component (`1.0`), as in `list-automations` and `playwright-context`, so it cannot distinguish `1.0.1` from `1.0.0`; `TestCaseVersion` in logs can. Log count proves nothing: there is one log per Playwright test, not per test × project.
 
-Execution runs on UiPath serverless cloud runtimes; no robot or package deployment into the folder is needed beyond Step 2 upload, but the folder must have its serverless machine assignment from Step 4.
+Execution runs on UiPath serverless cloud runtimes; no robot or package deployment into the folder is needed beyond Step 2 upload, but the folder needs its Step 4 serverless machine assignment.
 
 ## When a run produces no results
 
@@ -179,7 +179,7 @@ uip or jobs list --folder-key <FOLDER_KEY> --output json
 - Stuck `Pending`: dispatch worked but nothing executes. A faulted job may never sync; check after ~5 minutes rather than waiting 30 minutes. Fixing the folder does not rescue the existing execution; fix it and start a new run.
 - `Serverless.Runtime.CannotIssueUserTokenDueToUserNotPartOfOrg` in `Info`: the selected folder account remains assigned but is no longer valid in the org. Point the project to a folder whose members satisfy Step 4, or create one, then rerun.
 
-Everything beyond the Test Manager boundary—job states, machines, and folder membership—belongs to [/uipath:uipath-platform § orchestrator/run-jobs.md](../../uipath-platform/references/orchestrator/run-jobs.md) and [§ orchestrator/setup-environment.md](../../uipath-platform/references/orchestrator/setup-environment.md). A `Duration` of `00:00:00` and empty `StartTime` on a finished execution are normal. `JobKey` in logs proves dispatch; jobs `Faulted` with no host machine mean the tenant cannot run them. Report this to the platform team rather than rerunning; there is no CLI verb to cancel a Test Manager execution.
+Everything beyond the Test Manager boundary—job states, machines, and folder membership—belongs to [/uipath:uipath-platform § orchestrator/run-jobs.md](../../uipath-platform/references/orchestrator/run-jobs.md) and [§ orchestrator/setup-environment.md](../../uipath-platform/references/orchestrator/setup-environment.md). `Duration` of `00:00:00` and empty `StartTime` on a finished execution are normal. `JobKey` in logs proves dispatch; jobs `Faulted` with no host machine mean the tenant cannot run them. Report this to the platform team rather than rerunning; there is no CLI verb to cancel a Test Manager execution.
 
 ## Iterating on the suite
 
