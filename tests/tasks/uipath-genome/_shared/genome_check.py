@@ -67,6 +67,8 @@ def body_without_source_map(text: str) -> str:
     return re.split(r"^## Source Map\s*$", text, maxsplit=1, flags=re.M)[0]
 
 
+# format guide § Transactional Shape rule 9: a flow with one side outside the genome names it instead of the table
+EXTERNAL_SIDE = re.compile(r"Split options:(?:\*\*)? none\s*[—–-]+\s*the (consumer|producer) is outside this genome", re.I)
 SPLIT_OPTIONS = {"A", "B", "C"}  # A one process, no queue; B producer and consumer processes; C one process with a queue
 MIN_STEPS = 5
 MIN_CRITERIA = 5
@@ -169,11 +171,16 @@ def shape_structure(text: str, level: str) -> list[str]:
             if "per the process genome" not in body:
                 errors.append(f"Transactional Shape {name}: component inside a process does not point to the process genome's split options")
             continue
-        for token, what in (("**Unit of work:**", "Unit of work line"), ("| Aspect | As-is |", "As-is table"),
-                            ("| Success |", "Success outcome"), ("| Business exception |", "Business exception outcome"),
-                            ("| System exception |", "System exception outcome")):
+        external = EXTERNAL_SIDE.search(body)
+        required = [("**Unit of work:**", "Unit of work line"), ("| Aspect | As-is |", "As-is table")]
+        if not (external and external.group(1).lower() == "consumer"):
+            required += [("| Success |", "Success outcome"), ("| Business exception |", "Business exception outcome"),
+                         ("| System exception |", "System exception outcome")]
+        for token, what in required:
             if token not in body:
                 errors.append(f"Transactional Shape {name}: missing {what}")
+        if external:
+            continue
         split = table_rows(body, "| Unit of work | Option |")
         if not split:
             errors.append(f"Transactional Shape {name}: no Split options table keyed by unit of work")
@@ -227,7 +234,7 @@ def check_shape(text: str, shape: str, flows: int | None, units: list[str]) -> l
         if tok.lower() not in unit_lines:
             errors.append(f"Transactional Shape: no Unit of work line names '{tok}'")
     for heading, body in blocks:  # an RPA consumer owes the per-item retry and the consecutive-failure stop
-        if "No RPA consumer" in body:
+        if "No RPA consumer" in body or re.search(r"the consumer is outside this genome", body, re.I):
             continue
         # format guide § Transactional Shape rule 4: "stop after 3 consecutive", or the zero-count form "the run stops after 1"
         if not re.search(r"retr(y|ie)", body, re.I) or not re.search(r"consecutive|stops? after \d", body, re.I):

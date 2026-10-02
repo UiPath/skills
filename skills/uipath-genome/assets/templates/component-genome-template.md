@@ -109,7 +109,7 @@
 | Business exception | Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
 | System exception | every other failure — Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
 
-**Split options** — three rows (A, B, C) for the unit of work and three for each unit the Alternative units line lists; runner counts are deployment settings, never options; none asserted:
+**Split options** — three rows (A, B, C) for the unit of work and three for each unit the Alternative units line lists; runner counts are deployment settings, never options; none asserted. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (format guide § Transactional Shape rule 9):
 
 | Unit of work | Option | Processes | Item store | Requires | Changes against as-is |
 |---|---|---|---|---|---|
