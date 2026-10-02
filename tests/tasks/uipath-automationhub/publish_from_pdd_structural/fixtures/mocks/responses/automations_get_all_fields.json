@@ -1,0 +1,19 @@
+{
+  "Result": "Success",
+  "Code": "AhAutomationsGet",
+  "Data": {
+    "ProcessId": 4815,
+    "ProcessSlug": "retail-account-onboarding-4815",
+    "ProcessSubmitterUserId": 42,
+    "ProcessName": "Retail Account Onboarding",
+    "ProcessDescription": "\u2026",
+    "ProcessL1Id": 11,
+    "ProcessL2Id": 12,
+    "ProcessL3Id": null,
+    "ProcessNumDocuments": 2,
+    "ProcessNumApplications": 5,
+    "ProcessPhaseId": 1,
+    "ProcessPhaseStatusId": 1,
+    "ProcessIsDeleted": 0
+  }
+}

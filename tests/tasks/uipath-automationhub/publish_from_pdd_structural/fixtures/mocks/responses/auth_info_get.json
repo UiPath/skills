@@ -1,0 +1,27 @@
+{
+  "Result": "Success",
+  "Code": "AhAuthInfoGet",
+  "Data": {
+    "Type": "automation-cloud",
+    "Tenant": {
+      "Uuid": "0b4b2c6e-1d4f-4c0a-9f3e-6b1d2a7c9e10",
+      "CompanyName": "fjordline - DefaultTenant",
+      "Url": "https://cloud.uipath.example/fjordline/DefaultTenant/automationhub_"
+    },
+    "User": {
+      "Id": 42,
+      "Email": "dana.reyes@fjordline.example",
+      "FirstName": "Dana",
+      "LastName": "Reyes",
+      "JobTitle": null,
+      "Department": null,
+      "BusinessUnit": "Not Specified",
+      "IsAdmin": 0,
+      "IsActive": 1,
+      "Roles": [
+        "ah-standard-user",
+        "ah-authorized-user"
+      ]
+    }
+  }
+}
