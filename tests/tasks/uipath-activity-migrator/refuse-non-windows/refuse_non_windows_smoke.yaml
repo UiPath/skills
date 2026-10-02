@@ -8,10 +8,10 @@ description: >
   Graded on the refusal: no migrator command, no attempt to download or run the
   tool through another route, no output folder, no `.upgrade` folder, source
   byte-identical, nothing built or run, and a judge on the message to the user.
-  Runs on the Linux smoke runner. That runner skips this skill as a whole when
-  the skill's own files change (the skill owns Windows-tagged tasks), so this
-  task runs on test-only pull requests and through run-coder-eval.yml; it cannot
-  run on a Windows machine, where the refusal does not apply.
+  On demand only: the Linux smoke runner excludes every task under a skill that
+  owns Windows-tagged tasks, so no pull request runs this; dispatch
+  run-coder-eval.yml with this task's path and it runs on that workflow's Linux
+  job. It cannot run on a Windows machine, where the refusal does not apply.
 tags: [uipath-activity-migrator, smoke, mode:build, lifecycle:discover]
 
 run_limits:
