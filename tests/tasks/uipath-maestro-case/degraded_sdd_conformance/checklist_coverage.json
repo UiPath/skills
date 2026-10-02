@@ -1,53 +1,68 @@
 {
-  "cli_head": "4e203e449",
+  "cli_head": "665a7cdf5",
   "seed": "tests/tasks/uipath-maestro-case/sla_from_sdd/fixtures/sdd.md",
   "tally": {
-    "convert": 8,
-    "silent": 16,
-    "validate": 2
+    "convert": 7,
+    "excluded": 1,
+    "validate": 18,
+    "validate-warns": 2
   },
   "rows": [
     {
       "item": 1,
       "violation": "title not `# SDD —`",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model identical"
+      "verdict": "validate",
+      "detail": [
+        "SDD_TITLE_NOT_TEMPLATE"
+      ]
     },
     {
       "item": 2,
       "violation": "`### Process App Views` missing",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model identical"
+      "verdict": "validate-warns",
+      "detail": [
+        "SDD_DOCUMENT_SECTION_MISSING"
+      ]
+    },
+    {
+      "item": 2,
+      "violation": "Planner Handoff marker missing",
+      "verdict": "validate",
+      "detail": [
+        "SDD_SECTION_MISSING"
+      ]
     },
     {
       "item": 3,
       "violation": "summary-only `## Business Rules`",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model identical"
+      "verdict": "validate-warns",
+      "detail": [
+        "SDD_SUMMARY_SECTION"
+      ]
     },
     {
       "item": 4,
       "violation": "Case Variables header columns renamed",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model identical"
+      "verdict": "validate",
+      "detail": [
+        "SDD_VARIABLES_HEADER_NOT_TEMPLATE"
+      ]
     },
     {
       "item": 5,
-      "violation": "stage block missing **Design Rationale:**",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model identical"
+      "violation": "stage block missing **Type:** Stage",
+      "verdict": "validate",
+      "detail": [
+        "SDD_STAGE_BLOCK_INCOMPLETE"
+      ]
     },
     {
       "item": 6,
-      "violation": "task block missing **Activation Mode:**",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model identical"
+      "violation": "no Activation Mode in the Tasks table or the block",
+      "verdict": "validate",
+      "detail": [
+        "SDD_ACTIVATION_MODE_MISSING"
+      ]
     },
     {
       "item": 7,
@@ -71,18 +86,18 @@
     {
       "item": 9,
       "violation": "stage entry uses a task-entry rule",
-      "build_validate": [
-        "CASE_MGMT_RULE_SLOT_MISMATCH (error)"
-      ],
-      "verdict": "silent",
-      "detail": "model changes: .stages[1].entryConditions[0].when"
+      "verdict": "validate",
+      "detail": [
+        "SDD_RULE_NOT_FOR_SLOT"
+      ]
     },
     {
       "item": 10,
       "violation": "return-to-origin in Case Exit Conditions",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model identical"
+      "verdict": "validate",
+      "detail": [
+        "SDD_CASE_EXIT_RETURN_TO_ORIGIN"
+      ]
     },
     {
       "item": 11,
@@ -133,21 +148,18 @@
     {
       "item": 15,
       "violation": "stage entry references its own stage",
-      "build_validate": [
-        "CASE_MGMT_STAGE_ENTRY_CONDITION_RULE_SELF_REFERENCE_WARNING (warning)"
-      ],
-      "verdict": "silent",
-      "detail": "model changes: .stages[1].entryConditions[0].when"
+      "verdict": "validate",
+      "detail": [
+        "SDD_STAGE_ENTERS_ITSELF"
+      ]
     },
     {
       "item": 16,
       "violation": "=vars.X not in Case Variables",
-      "build_validate": [
-        "VARIABLE_DOES_NOT_EXIST (error)",
-        "CASE_MGMT_REFERENCE_UNBOUND (error)"
-      ],
-      "verdict": "silent",
-      "detail": "model changes: .stages[0].tasks[0].boundInputs[1].binding, .stages[0].tasks[0].expressionInputs[1].expression"
+      "verdict": "validate",
+      "detail": [
+        "SDD_VARIABLE_UNDECLARED"
+      ]
     },
     {
       "item": 20,
@@ -160,11 +172,10 @@
     {
       "item": 21,
       "violation": "stage entry table with no body row",
-      "build_validate": [
-        "CASE_MGMT_STAGE_ENTRY_CONDITION_MISSING (warning)"
-      ],
-      "verdict": "silent",
-      "detail": "model changes: .stages[2].entryConditions, .stages[2].intake.entryRows"
+      "verdict": "validate",
+      "detail": [
+        "SDD_CONDITION_TABLE_EMPTY"
+      ]
     },
     {
       "item": 22,
@@ -190,57 +201,59 @@
     {
       "item": 24,
       "violation": "no Case Exit row marks the case complete",
-      "build_validate": [
-        "CASE_MGMT_ROOT_CASE_EXIT_CONDITIONS_MISSING (error)"
-      ],
-      "verdict": "convert",
+      "verdict": "validate",
       "detail": [
-        "case-exit"
+        "SDD_RULE_NOT_FOR_SLOT"
       ]
     },
     {
       "item": 25,
       "violation": "wait-for-user exit without a user-selected-stage entry",
-      "build_validate": [
-        "CASE_MGMT_STAGE_EXIT_CONDITION_USER_SELECTED_STAGE_MISSING (error)"
-      ],
-      "verdict": "silent",
-      "detail": "model changes: .stages[2].exitConditions[0].exitType"
+      "verdict": "validate",
+      "detail": [
+        "SDD_WAIT_FOR_USER_UNPAIRED"
+      ]
     },
     {
       "item": 26,
       "violation": "required-tasks-completed with no Required task",
-      "build_validate": [
-        "CASE_MGMT_ROOT_CASE_CONDITION_RULE_NO_REQUIRED_TASK (error)"
-      ],
-      "verdict": "silent",
-      "detail": "model changes: .stages[3].tasks[0].required"
+      "verdict": "validate",
+      "detail": [
+        "SDD_NO_REQUIRED_TARGET"
+      ]
     },
     {
       "item": 27,
       "violation": "stage entry equals a Case Exit row",
-      "build_validate": [
-        "CASE_MGMT_STAGE_ENTRY_CONDITION_MATCHES_CASE_EXIT_CONDITION (warning)"
-      ],
-      "verdict": "silent",
-      "detail": "model changes: .stages[2].entryConditions[0].ifExpression, .stages[2].entryConditions[0].ungated, .stages[2].entryConditions[0].when"
+      "verdict": "validate",
+      "detail": [
+        "SDD_ENTRY_MATCHES_CASE_EXIT"
+      ]
     },
     {
       "item": 29,
       "violation": "case SLA below 15 minutes",
-      "build_validate": [
-        "CASE_MGMT_ROOT_SLA_BELOW_MIN_MINUTES (error)",
-        "CASE_MGMT_ROOT_ROOT_SLA_LESS_THAN_NODES (warning)"
-      ],
-      "verdict": "silent",
-      "detail": "model changes: .caseSlaDuration"
+      "verdict": "validate",
+      "detail": [
+        "SDD_SLA_OUT_OF_RANGE",
+        "SDD_SLA_OUT_OF_RANGE",
+        "SDD_SLA_OUT_OF_RANGE",
+        "SDD_SLA_OUT_OF_RANGE"
+      ]
     },
     {
       "item": 34,
       "violation": "either/or persona",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model identical"
+      "verdict": "validate",
+      "detail": [
+        "SDD_PERSONA_NOT_ONE_ROLE"
+      ]
+    },
+    {
+      "item": 5,
+      "violation": "stage/task block missing **Design Rationale:**",
+      "verdict": "excluded",
+      "detail": "not checked by decision (Cliff, 2026-10-02): a design document does not owe rationale prose. When present, the build copies it into the plan as `rationale:` and convert uses it as a task description that has none; its absence breaks nothing"
     }
   ]
 }
