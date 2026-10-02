@@ -20,6 +20,7 @@ from bpmn_check import (  # noqa: E402
     has_type,
     has_typed_uipath_extension,
     has_uipath_extension,
+    tag_case_hint,
 )
 
 
@@ -612,3 +613,21 @@ def test_body_object_fails_a_malformed_body_blob() -> None:
     )
     with pytest.raises(bpmn_check.BodyShapeError, match="must be an object"):
         bpmn_check.body_object(not_object)
+
+
+def _process(nodes: str) -> ET.Element:
+    return ET.fromstring(f'<bpmn:definitions xmlns:bpmn="{NS["bpmn"]}"><bpmn:process id="P">{nodes}</bpmn:process></bpmn:definitions>')
+
+
+def test_tag_case_hint_names_the_pascal_case_tag() -> None:
+    hint = tag_case_hint(_process('<bpmn:UserTask id="T" />'), "userTask")
+    assert hint == " (found bpmn:UserTask; tags are case-sensitive, expected bpmn:userTask)"
+
+
+@pytest.mark.parametrize(
+    "nodes",
+    ['<bpmn:userTask id="T" />', '<bpmn:userTask id="T" /><bpmn:UserTask id="U" />', '<bpmn:serviceTask id="S" />'],
+    ids=["exact-case", "both-cases", "absent"],
+)
+def test_tag_case_hint_silent(nodes) -> None:
+    assert tag_case_hint(_process(nodes), "userTask") == ""
