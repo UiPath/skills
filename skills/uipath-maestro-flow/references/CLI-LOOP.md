@@ -88,15 +88,15 @@ These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
 ## Product-CLI scaffold
 
 Product debug needs a solution containing a Flow project. Keep the authored
-source in `.flow-sdk/` under the workspace root, outside the solution, and
-create the nested scaffold once:
+source in the project's own `.flow-sdk/` (`<Solution>/<Name>/.flow-sdk/`), run the
+SDK verbs from the project folder, and create the nested scaffold once:
 
 ```bash
 uip solution init <Solution>
-( cd <Solution> && uip maestro flow init <Name> --sdk-source ../.flow-sdk/<Name>.flow.ts )
+( cd <Solution> && uip maestro flow init <Name> --sdk-source )
 ```
 
-`--sdk-source` seeds the authored source from the stub `flow init` just wrote (and creates `.flow-sdk/`), so the flow's id and name come from the product instead of being invented, and the stub is overwritten in place by the first `compile -o`.
+`--sdk-source` seeds `<Solution>/<Name>/.flow-sdk/<Name>.flow.ts` from the stub `flow init` just wrote (and creates the folder), so the flow's id and name come from the product instead of being invented, and the stub is overwritten in place by the first `compile -o`.
 Drop `--sdk-source` when the source already exists (`init` refuses to overwrite it without `--force`), and skip the whole block for an existing project.
 For a **Maestro Automate** project (the request names that product, not just the verb "automate"), add `--automate` to the `flow init` line; nothing else in either loop changes.
 
@@ -124,7 +124,7 @@ refresh and debug only when the stated acceptance bar requires product-runtime
 behavior evidence:
 
 ```bash
-uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
+( cd <Solution>/<Name> && uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow )
 uip maestro flow validate <Solution>/<Name>/<Name>.flow --output json
 # Before anything opens the emitted file — upload, debug, or a designer:
 uip maestro flow format <Solution>/<Name>/<Name>.flow --output json
