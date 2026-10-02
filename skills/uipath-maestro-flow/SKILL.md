@@ -17,6 +17,12 @@ An existing Flow JSON can also be decompiled back into TypeScript for editing.
 `@uipath/maestro-builder-sdk` is installed globally (`npm install -g`); `examples/` contains authored examples, and `references/` contains the details routed from this guide.
 A Flow is authored as `.flow-sdk/<Name>.flow.ts` under the workspace root, and it imports the package directly.
 
+## Critical rules
+
+1. **Model first — and show the model first.** When a user can see your reply, your first message is the model, before any tool call: a Mermaid `flowchart` of the trigger, steps, decisions and outputs, plus the choices the request leaves open (connector vs `http()`, which connection, which account), in a few seconds; proceed once the user nods or when the request leaves nothing open. Headless, put that diagram at the top of `NEEDS_INPUT.md` or your final message. Then write `.flow-sdk/<Name>.flow.ts` from the request before any field, connection or id lookup, and run `uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <path> --validate` (or `check --source` where the source check is available): it names every unresolved value with the command that resolves it.
+2. **Configure only what the request settles.** Run a printed `uip maestro registry prepare` only when the request supplied the value it needs — an email or name for a lookup, a connection name (`--connection '<name>'`). Anything else — which connection among several, a lookup key, an open required input such as `send_as` — is a question for the user: ask when someone can answer; otherwise write `NEEDS_INPUT.md` at the workspace root (step, field, what is needed, the command that finishes it) and stop. Source plus that list is the deliverable, and a compile that still refuses is the expected end state. Never run `uip is connections list` or `uip is resources run`, read library JSON, or probe an external API (`curl`) to guess an answer: a guessed id looks right and is wrong. `registry prepare` without a `--connection '<name>'` the request gave is itself a tenant lookup — it goes and picks a connection — so it waits for the user's answer like any other.
+3. **One command in, one command out.** `uip maestro flow init <Name> --source` scaffolds and seeds; `compile --validate` emits and validates. Chain dependent CLI calls with `&&`; validate once, after the source is complete.
+
 **Authoring files live in `.flow-sdk/`; the compiled artifact does not.**
 `.flow-sdk/` is the SDK's own work directory: the source, `bindings.json`, `connectors/` and `connectors-local/` all go there by default, relative to the directory you run `uip` from (the workspace root). Studio Web never reads them, and `uip solution pack`/`upload` leave the folder out. Run every command below from the workspace root.
 Scaffold the project first, seed the source from it, then emit back into it — `compile -o` is the authority over where the emitted file is written.
@@ -24,26 +30,28 @@ Scaffold the project first, seed the source from it, then emit back into it — 
 **Look for an existing solution before `uip solution init`:** run `find . -maxdepth 2 -name '*.uipx'`. If one exists and a user can answer, ask which to use (one option per solution, then "Create a new solution", then "Something else") and scaffold nothing until they do; never create a second solution silently. Headless, use the solution the request names, else the only one present, else a new one named as above, and record the choice in the final response.
 
 ```bash
-uip solution init <Solution>
-( cd <Solution> && uip maestro flow init <Name> )
-uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
+uip maestro flow init <Name> --source     # scaffolds <Name>Solution/<Name>/<Name>.flow and seeds .flow-sdk/<Name>.flow.ts from it
 # edit .flow-sdk/<Name>.flow.ts
-uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
+uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>Solution/<Name>/<Name>.flow --validate
 ```
 
-Do not hand-write the skeleton.
-Decompiling the trigger-only artifact `flow init` writes produces exactly that skeleton, and it carries the flow id and name the product already assigned — a hand-written `flow('<name>')` invents an id instead.
-So the stub is the seed rather than litter: the first `compile -o` overwrites it in place.
+`flow init` run outside a solution creates the parent `<Name>Solution` itself; `--source` decompiles the trigger-only stub into `.flow-sdk/<Name>.flow.ts`, so the flow id and name come from the product rather than a hand-written `flow('<name>')`, and the first `compile -o` overwrites the stub in place. When the request names a solution other than `<Name>Solution`, run `uip solution init <Solution>` first and `flow init <Name> --source ../.flow-sdk/<Name>.flow.ts` from inside it.
 **Maestro Automate is `--automate` on the same `flow init`:** when the request names **Maestro Automate** as the product, run `( cd <Solution> && uip maestro flow init <Name> --automate )`; the bare verb ("automate invoice intake") asks for a plain Flow.
 Nothing after `init` changes; the flag writes `runtimeOptions.profile` into `operate.json` plus a `.maestro_automate` marker (how Orchestrator and Studio Web tell the two apart), and `compile -o` rewrites only the `.flow`, so both survive.
 
-`--no-pipeline` keeps the greenfield seed to one file; `<Name>.pipeline.mjs` is the brownfield read/modify/write helper ([`references/brownfield.md`](references/brownfield.md)) and is noise here.
-
-An existing project needs no `init`: skip the first two commands and seed from the `.flow` that is already there.
+An existing project needs no `init`: seed from the `.flow` that is already there.
 Exactly one emitted `<Name>.flow` may exist, at that path, and never a second copy at the workspace root — validators and evidence collectors cannot choose safely between duplicates.
 Emitting to the root is correct only for the packaged-SDK local gates, which never scaffold a project; pick the loop first ([`references/CLI-LOOP.md`](references/CLI-LOOP.md)) and do not mix the two.
 
 **Install the SDK first, once per machine:** `npm install -g @uipath/maestro-builder-sdk`; skip it when already installed, and see [`references/CLI-LOOP.md`](references/CLI-LOOP.md#installing-the-package) for the checks and failure handling.
+
+### Turn discipline
+
+A greenfield flow is three turns; every extra tool call is a round trip.
+1. **Scaffold and read.** In one turn: `uip maestro flow init <Name> --source`, plus — only if the flow reaches an external service — one `uip maestro registry search` beside it, chained with `&&`. Read the one reference the node table below routes you to; do not grep `references/` or `example/` speculatively.
+2. **Author first.** Write `.flow-sdk/<Name>.flow.ts` from the request's own words — the operation the search hit named, the inputs the request states, `lookup()` tokens for ids given as names or emails, the symbolic connection and folder names — before any field, connection or id lookup.
+3. **Emit, and let the compiler drive configuration.** `compile --validate` is one command and one envelope; an unresolved lookup fails it with the exact `registry prepare` to run. Run the ones the request's words can satisfy, in one shell line, then compile again. Validate once, after the source is complete.
+4. **Stop at the first tenant question** ([Critical rules](#critical-rules), rule 2): anything the compiler names that the request did not give goes to the user, or into `NEEDS_INPUT.md` when nobody can answer.
 
 Integrations with non-UiPath systems are handled through connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'` over the local connector library, unless the request names the transport itself ("over HTTP, not a connector" means `http()`): a hit is a connector, `"total": 0` is a miss and means `http()`, and a usage error means the library is not cached, so run `uip maestro registry pull` first. For document extraction or another tenant capability (agent, process), which that library does not hold, run the family's `uip maestro flow registry search` ([`references/ixp.md`](references/ixp.md), [`references/agent.md`](references/agent.md)). A `script()` returning fixed values is never a stand-in for that step, and `mock()` only marks a capability the search proved absent.
 Connectors require [`.flow-sdk/bindings.json`](references/bindings.md).
@@ -51,11 +59,11 @@ Connectors require [`.flow-sdk/bindings.json`](references/bindings.md).
 Prepared connector modules live at `.flow-sdk/connectors-local/<key>.ts`; their descriptor data is kept separately below `.flow-sdk/connectors-local/descriptors/<key>/`.
 Because the source sits in `.flow-sdk/` too, it imports them as `./connectors/<key>.ts` and `./connectors-local/<key>.ts`.
 
-### The connector loop: author → check → prepare → check → compile
+### The connector loop: author → check (or compile) → prepare → compile
 
 Authoring never waits on `prepare`: once the search above has chosen the node, no further discovery command precedes the source.
-Write the connector step from the task's own words — the fields you intend, `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a generic operation — then run `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`.
-Check names every prepare you owe, with the exact command:
+Write the connector step from the task's own words — the fields you intend, `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a generic operation — then run `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`, or, in an emit-only workspace where `check` refuses, `uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <path> --validate`: both refuse the unresolved step and print the prepare to run.
+Check names every prepare you owe, with the exact command — run the ones the request's words can satisfy and leave the rest to the user ([Critical rules](#critical-rules), rule 2):
 `OBJECT_UNPREPARED` for an unmaterialized object, `CUSTOM_FIELDS_UNPREPARED` for an input outside the tenant-agnostic snapshot, `LOOKUP_UNRESOLVED` for a lookup token with no recorded value, `CONNECTOR_INPUT` for a field the operation does not declare. Run that one `uip maestro registry prepare <connector-key> <action>` — `--object`, `--resolve` and `-f` compose in a single invocation, it finds the connection itself, writes `.flow-sdk/bindings.json`, and repoints your import at the generated `./connectors-local/<key>.ts` descriptor — then re-run `check` and compile.
 Where two flows import the same connector it names them instead of guessing, and asks for `--source`.
 

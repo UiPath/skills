@@ -67,12 +67,18 @@ names it, never before the source exists:
 
 ```bash
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source
-# run each prepare the check names, with the exact command it prints:
-uip maestro registry prepare <key> <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
-uip maestro flow check .flow-sdk/<Name>.flow.ts --source    # re-check until clean
-uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow
-uip maestro flow validate <Name>.flow --output json
+# run EVERY prepare the check named, in one shell line, then re-check — one loop per flow, not one per connector:
+uip maestro registry prepare <key> <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>] \
+  && uip maestro registry prepare <key2> <action2> ... \
+  && uip maestro flow check .flow-sdk/<Name>.flow.ts --source
+uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow --validate    # emit + product validate, one envelope
 ```
+
+`compile --validate` reports the emit under `Data` and the product's static
+check under `Data.Validation` (`Status: "Valid"` plus any `Warnings`); a failed
+check is a failure envelope carrying both. It is the same check as a separate
+`uip maestro flow validate <Name>.flow`, which remains available for a file
+you did not just compile.
 
 Warnings require deliberate review; whether one blocks a release comes from the
 surrounding task or release policy.
@@ -92,13 +98,12 @@ source in `.flow-sdk/` under the workspace root, outside the solution, and
 create the nested scaffold once:
 
 ```bash
-uip solution init <Solution>
-( cd <Solution> && uip maestro flow init <Name> )
-uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
+uip maestro flow init <Name> --source
 ```
 
-That third command seeds the authored source from the stub `flow init` just wrote, so the flow's id and name come from the product instead of being invented, and the stub is overwritten in place by the first `compile -o`.
-Skip it when the source already exists, and skip the whole block for an existing project.
+One command: run outside a solution, `flow init` scaffolds `<Name>Solution/<Name>/<Name>.flow` itself, and `--source` seeds `.flow-sdk/<Name>.flow.ts` from that stub, so the flow's id and name come from the product instead of being invented; the stub is overwritten in place by the first `compile -o`.
+When the request names a solution other than `<Name>Solution`, run `uip solution init <Solution> && ( cd <Solution> && uip maestro flow init <Name> --source ../.flow-sdk/<Name>.flow.ts )` instead.
+Skip `--source` when the source already exists, and skip the whole block for an existing project.
 For a **Maestro Automate** project (the request names that product, not just the verb "automate"), add `--automate` to the `flow init` line; nothing else in either loop changes.
 
 `<Solution>` and `<Name>` are the request's own names, used verbatim: a request
@@ -125,16 +130,26 @@ refresh and debug only when the stated acceptance bar requires product-runtime
 behavior evidence:
 
 ```bash
-uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
-uip maestro flow validate <Solution>/<Name>/<Name>.flow --output json
-# Before anything opens the emitted file — upload, debug, or a designer:
-uip maestro flow format <Solution>/<Name>/<Name>.flow --output json
+# Emit and product-validate in one envelope (Data.Validation.Status must be "Valid"),
+# then lay out the emitted file before anything opens it — upload, debug, or a designer:
+uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Solution>/<Name>/<Name>.flow --validate --output json \
+  && uip maestro flow format <Solution>/<Name>/<Name>.flow --output json
 # Only for a stated runtime-behavior claim:
 ( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
 ( cd <Solution> && uip maestro flow debug <Name> --log-level error \
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals}" \
   --output json )
 ```
+
+Connector steps in this mode: author them first, from the task's words, with
+`lookup()` tokens and symbolic binding names; `compile` refuses an unresolved
+lookup or an unprepared object and its message is the exact
+`uip maestro registry prepare … --resolve …` to run — run every prepare it
+named in one shell line, then compile again. Do not run `check` here (it
+refuses in emit-only mode) and do not read the library or list connections
+before the source exists. Run only the prepares the request's words can
+satisfy; the rest is the user's to answer — `NEEDS_INPUT.md` when nobody can
+([SKILL.md, Critical rules](../SKILL.md#critical-rules)).
 
 This loop has exactly one emitted artifact:
 `<Solution>/<Name>/<Name>.flow`. Never emit a second root-level `<Name>.flow`;
@@ -146,7 +161,8 @@ Re-run the whole sequence after the final source or binding edit.
 ### Reading product validation
 
 The JSON envelope has top-level `Result`; a successful validation also reports
-`Data.Status: "Valid"` and may carry `Data.Warnings`. Treat warnings as failures
+`Data.Status: "Valid"` and may carry `Data.Warnings` (under `compile --validate`
+the same fields sit at `Data.Validation.Status` and `Data.Validation.Warnings`). Treat warnings as failures
 except for the reviewed shared-connection advisory. Preserve any exception's
 exact code/text and rationale instead of broadening an allowlist.
 
