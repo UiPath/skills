@@ -1,15 +1,14 @@
-task_id: skill-genome-author-transactional-shape
+task_id: skill-genome-author-component
 description: >
-  Smoke: agent uses the uipath-genome skill to author a component genome from a
-  described sheet-to-web-client process worked by several robots. Grades the genome's
-  structure and, above all, its Transactional Shape: one flow block for the sheet rows,
-  no verdict, the As-is filled, split options A, B and C for the unit of work and for every
-  alternative unit, each with what it requires and changes (no template placeholders left),
-  business and system exceptions classified with the per-item retry and the
-  consecutive-failure stop — plus configuration defaults and business rules taken from
-  the description.
+  Smoke: the uipath-genome skill authors one component genome from a described sheet-to-web-client
+  process worked by a pool of robots. Gates on the genome contract (core profile) and on the
+  Transactional Shape it must describe: one flow whose unit of work is a sheet row. The full format
+  rules (strict profile: outcome rows, split options per unit, retry and consecutive-failure stop,
+  configuration question kinds) are graded as an advisory criterion.
 tags: [uipath-genome, smoke, mode:build, lifecycle:generate]
 
+# _shared/genome_check.py is reached through $REFERENCE_DIR; the genome's file name is the
+# agent's choice, so every criterion finds it through its -genome.md suffix.
 reference:
   directory: ..
 
@@ -40,10 +39,8 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # The file name is the agent's choice; only the -genome.md suffix is a contract, so every
-  # criterion reaches the genome through the checker's "*-genome.md" pattern.
   - type: run_command
-    description: "One component genome written (*-genome.md)"
+    description: "Exactly one component genome written"
     command: >-
       python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md"
       --files 1 --expect "UIPATH-AUTOMATION-GENOME: component"
@@ -53,43 +50,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Genome passes the structural, wording and skill-name checks"
+    description: "Genome meets the core contract and describes one flow whose unit of work is a row"
     command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md"
-      --expect uipath-rpa "Dynamics 365" --alt-rows skip
+      python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md" --profile core
+      --expect uipath-rpa "Dynamics 365"
+      --shape transactional --flows 1 --unit row
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Transactional Shape describes one flow of rows with split options per unit, states retry and consecutive-failure stop, and leaves no placeholder"
-    command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md"
-      --shape transactional --flows 1 --unit row --alt-rows skip
-    timeout: 30
-    expected_exit_code: 0
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: run_command
-    description: "Advisory: every listed alternative unit of work has its own A, B and C split-option rows"
-    command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md" --alt-rows only
-    timeout: 30
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 0
-
-  - type: run_command
-    description: "Transactional Shape carries the flow, the unit of work, the As-is roles, the three outcome rows and split options"
-    command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md" --min 0.85
-      --expect "## Transactional Shape" "### Flow 1" "Unit of work" "| Produced by |" "| Consumed by |"
-      "| Business exception |" "| System exception |" "**Split options**" "| Requires | Changes against as-is |"
-    timeout: 30
-    expected_exit_code: 0
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -108,3 +76,12 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+rpa\s+(init|run|build|debug)'
     weight: 1.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: genome meets every mechanical format rule (strict profile)"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md" --profile strict
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

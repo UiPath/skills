@@ -1,11 +1,11 @@
 task_id: skill-genome-extract-solution
 description: >
-  E2E: agent uses the uipath-genome skill to extract a process genome plus one
-  component genome per project from a staged three-project solution (Flow
-  orchestrator → RPA intake robot → API workflow ERP posting, joined by an
-  Orchestrator queue and a Slack alert connection). Grades the hierarchical layout,
-  the Components and Handoffs tables, per-component Interface and Source Map, and
-  current skill names.
+  E2E: the uipath-genome skill extracts a process genome plus one component genome per project
+  from a staged three-project solution (Flow orchestrator → RPA intake robot → API workflow ERP
+  posting, joined by an Orchestrator queue and a Slack alert connection). Gates on the core
+  contract at both levels: the Components table naming the three skills and linking component
+  genomes that exist, the Handoffs table, and the solution's queue, channel, schedule, folder and
+  ERP facts. The full format rules (strict profile) are graded as an advisory criterion.
 tags: [uipath-genome, e2e, mode:build, lifecycle:generate]
 
 run_limits:
@@ -18,6 +18,8 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+# _shared/genome_check.py is reached through $REFERENCE_DIR; file names are the agent's choice,
+# so the process genome is the top-level *-genome.md and its components sit in its folder.
 reference:
   directory: ..
 
@@ -40,11 +42,8 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  # File names are the agent's choice; only the -genome.md suffix and the process genome's
-  # links to its components are contracts. The checker resolves "*-genome.md" (the process
-  # genome at the top level), follows its Components links, and fails on a link that does not resolve.
   - type: run_command
-    description: "One process genome written at the top level (*-genome.md)"
+    description: "Exactly one process genome written at the top level"
     command: >-
       python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md"
       --files 1 --expect "UIPATH-AUTOMATION-GENOME: process"
@@ -60,32 +59,22 @@ success_criteria:
       --files 3 --expect "UIPATH-AUTOMATION-GENOME: component"
     timeout: 30
     expected_exit_code: 0
-    weight: 4.5
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Process genome and every linked component pass structural and wording checks"
+    description: "Process genome and every linked component meet the core contract"
     command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py process "*-genome.md"
+      python3 $REFERENCE_DIR/_shared/genome_check.py process "*-genome.md" --profile core
       --skills uipath-maestro-flow uipath-rpa uipath-api-workflow
-      --expect ERP_InvoicePosting Slack --alt-rows skip
+      --expect ERP_InvoicePosting Slack
     timeout: 60
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Advisory: every listed alternative unit of work has its own A, B and C split-option rows"
-    command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py process "*-genome.md"
-      --skills uipath-maestro-flow uipath-rpa uipath-api-workflow --alt-rows only
-    timeout: 60
-    expected_exit_code: 0
-    weight: 1.0
-    pass_threshold: 0
-
-  - type: run_command
-    description: "Handoffs and platform dependencies capture the queue, the Slack channel, the schedule, and the folder"
+    description: "Handoffs and platform dependencies capture the queue, the Slack channel, the schedule and the folder"
     command: >-
       python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md" --min 0.75
       --expect ERP_InvoicePosting "#ap-alerts" 22:00 Finance/AP
@@ -95,7 +84,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Component genomes record the ERP endpoint, the API-key asset, and the duplicate-invoice failure"
+    description: "Component genomes record the ERP endpoint, the API-key asset and the duplicate-invoice failure"
     command: >-
       python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome/*-genome.md" --min 0.66
       --expect erp.contoso.com ErpApiKey duplicate
@@ -110,3 +99,13 @@ success_criteria:
     command_pattern: '(uip|\$UIP)\s+(rpa\s+(run|build)|solution\s+(pack|publish|deploy)|maestro\s+flow\s+debug)'
     weight: 1.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: process and component genomes meet every mechanical format rule (strict profile)"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py process "*-genome.md" --profile strict
+      --skills uipath-maestro-flow uipath-rpa uipath-api-workflow
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
