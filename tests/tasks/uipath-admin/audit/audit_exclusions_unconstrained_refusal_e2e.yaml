@@ -46,7 +46,7 @@ description: >
   that gate on every PR touching uipath-admin. Re-tag it `smoke` (tag,
   task_id and filename) in the same change that removes the Blocker note.
 
-tags: [uipath-admin, e2e, mode:build, lifecycle:setup, audit, exclusions, refusal, feature:compliance, path-to-ga]
+tags: [uipath-admin, e2e, mode:build, lifecycle:setup, audit, exclusions, refusal, feature:compliance]
 sandbox:
   template_sources:
     - type: template_dir

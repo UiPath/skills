@@ -35,9 +35,20 @@ description: >
   that gate on every PR touching uipath-admin. Re-tag it `smoke` (tag,
   task_id and filename) in the same change that removes the Blocker note.
 
-tags: [uipath-admin, e2e, mode:diagnose, lifecycle:discover, audit, exclusions, scope-org, path-to-ga]
+tags: [uipath-admin, e2e, mode:diagnose, lifecycle:discover, audit, exclusions, scope-org]
 reference:
   directory: ..
+
+pre_run:
+  # Read-only scenario, but nothing stops an agent from creating a rule to
+  # "see what one looks like" — and a rule left enabled suppresses events
+  # organization-wide for every later run. Snapshot first, sweep after.
+  - command: 'EXCL_SNAPSHOT=1 python3 _setup/setup_exclusion_rule.py'
+    timeout: 120
+
+post_run:
+  - command: 'EXCL_CLEANUP_UNSNAPSHOTTED=1 python3 _setup/cleanup_exclusion_marker.py'
+    timeout: 120
 
 run_limits:
   expected_turns: 6

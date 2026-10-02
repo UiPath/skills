@@ -33,8 +33,9 @@ Env:
 
 Selector discovery: event-type ids are read from `uip admin audit org sources`,
 never hardcoded, because the catalog differs per organization. Candidates are
-tried in a deterministic order and the first one the service accepts is the one
-recorded — a protected type answers `SelectorValueNotPermitted` and an already
+ranked (a successful robot login first, then read and decision events, then
+anything whose name reads as destructive) and tried in that deterministic
+order; the first one the service accepts is the one recorded — a protected type answers `SelectorValueNotPermitted` and an already
 covered one answers `OverlappingRuleExists`, and neither is a seed failure.
 
 Sources, targets, and types whose names look like audit configuration or
@@ -59,6 +60,32 @@ logger = logging.getLogger(__name__)
 
 # Substrings that mark a catalog entry the service will not let a rule exclude.
 PROTECTED_HINTS = ("audit", "monitor", "health", "telemetry", "diagnostic")
+# Reached for first. A successful robot login is the canonical real-world
+# exclusion — robots sign in constantly and the records are pure volume — and
+# with the Status selector pinned to Success every FAILED login still records,
+# which is the half that matters for spotting a stolen robot credential.
+PREFERRED_NAMES = ("robot login",)
+# Second choice: a decision or read event. Excluding one hides that something
+# was evaluated, not that anything changed.
+READ_HINTS = ("evaluated", "viewed", "listed", "accessed")
+# Ranked last. Not filtered — an organization whose catalog holds nothing
+# milder still seeds — but never picked while anything else is available.
+SENSITIVE_HINTS = (
+    "delete",
+    "remove",
+    "purge",
+    "revoke",
+    "role",
+    "permission",
+    "policy",
+    "token",
+    "secret",
+    "key",
+    "encryption",
+    "license",
+    "tenant",
+    "user",
+)
 # How many candidate event types to try before giving up.
 MAX_CANDIDATES = 6
 
@@ -72,6 +99,27 @@ def field(record, *names):
         if name.lower() in normalized:
             return normalized[name.lower()]
     return None
+
+
+def rank(type_name):
+    """Order candidates by how little harm excluding one would model.
+
+    Plain alphabetical order decided this before, so the pick was down to which
+    name sorted first: an organization whose catalog opened with "Delete
+    Organization" would have seeded a rule muting exactly that. Preference, not
+    a filter — every candidate stays reachable, so an organization holding only
+    sensitive-looking types still seeds.
+    """
+    low = type_name.lower()
+    for index, preferred in enumerate(PREFERRED_NAMES):
+        if preferred in low:
+            return index
+    base = len(PREFERRED_NAMES)
+    if any(hint in low for hint in READ_HINTS):
+        return base
+    if any(hint in low for hint in SENSITIVE_HINTS):
+        return base + 2
+    return base + 1
 
 
 def looks_protected(*labels):
@@ -102,8 +150,8 @@ def candidate_types():
                 if not type_id or not type_name or looks_protected(type_name):
                     continue
                 out.append((str(type_id), str(type_name), str(source_name or ""), str(target_name or "")))
-    # Sorted by name so two runs of the same task pick the same type.
-    return sorted(out, key=lambda row: (row[1], row[0]))
+    # Preference, then name so two runs of the same task pick the same type.
+    return sorted(out, key=lambda row: (rank(row[1]), row[1], row[0]))
 
 
 def snapshot_existing():

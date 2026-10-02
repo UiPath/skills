@@ -27,7 +27,7 @@ description: >
   (1.202.1 on 2026-10-01; the 1.204 line publishes mid-October, and only end
   users wait on that). Until it ships, pre_run records the planned name only
   and the verifier reports that the rules could not be read.
-tags: [uipath-admin, e2e, mode:build, lifecycle:setup, audit, exclusions, scope-org, path-to-ga]
+tags: [uipath-admin, e2e, mode:build, lifecycle:setup, audit, exclusions, scope-org]
 sandbox:
   template_sources:
     - type: template_dir
