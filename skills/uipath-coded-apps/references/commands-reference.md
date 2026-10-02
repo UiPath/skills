@@ -238,6 +238,7 @@ uip codedapp deploy [options]
 | `--org-id <id>` | Organization ID | From `uip login` session |
 | `--org-name <name>` | Organization name (used for app URL) | From `uip login` session |
 | `--tenant-id <id>` | Tenant ID | From `uip login` session |
+| `--folder-path <path>` | Folder path (`Shared`, `Finance/Invoicing`) or a unique folder display name, resolved to the folder key by the CLI. Mutually exclusive with `--folder-key` | none |
 | `--folder-key <key>` | UiPath folder key | From `UIPATH_FOLDER_KEY` env var |
 | `--access-token <token>` | Access token | From `uip login` session |
 
@@ -249,6 +250,9 @@ uip codedapp deploy
 
 # Deploy with explicit app name
 uip codedapp deploy -n my-webapp
+
+# Deploy into a folder named by path (no key lookup needed)
+uip codedapp deploy -n my-webapp --folder-path "Finance/Invoicing"
 
 # Deploy with folder key
 uip codedapp deploy -n my-webapp --folder-key my-folder-key
