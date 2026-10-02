@@ -268,7 +268,7 @@ uip solution resources refresh [solutionPath] --output json
 
 Re-scans all projects in the solution and syncs resource declarations from their `bindings_v2.json` files. For each external binding, refresh uses the **joint key `(name, kind, folderPath)`** read from the binding to look up the matching resource in the appropriate catalog — Resource Catalog Service for `Process`, `App`, and `MemorySpace` bindings, ECS for `Index` bindings, the local IS connection cache for `Connection` bindings. The folder dimension disambiguates resources that share a name across folders. If no match is found, refresh creates a virtual placeholder in the solution and warns.
 
-Solution-internal bindings (`folderPath: "solution_folder"`) skip the RCS lookup — they are resolved at deploy time against the solution folder.
+Solution-internal bindings (`folderPath: "solution_folder"`) skip the RCS lookup — they are resolved at deploy time against the solution folder. Memory spaces attached with `uip agent memory add` inside a solution are already declared by that command (`Data.SolutionResource.Status: "Created"` or `"Linked"`), so refresh finds them in place.
 
 **Run this after `uip agent refresh`** whenever external tools, memory spaces, index contexts, app escalations, or connections have been added or changed.
 
