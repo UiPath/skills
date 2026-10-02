@@ -270,9 +270,37 @@ Configuration answers: … (defaults marked)
 Scaffolding: <target framework>, <expression language>, <package@version, …> (pinned | latest) per project
 Gate: validate + build per project (errors / warnings), libraries packed to <feed>, solution pack --dry-run <verdict>; runs performed or "compile only — no reachable application"
 Run: <the owning skill's run command for the entry point>
+Open items: <top open-items file> (<n> open; § 3.4)
 ```
 
 Extracted genomes add the healing-pass note: inferred targets are verified on the first run against the live application, and fixes go into the Object Repository element. Migrated test components add the checkpoint line per test case — `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` — and the path of the generated mapping tables ([source-migration-guide.md § Result parity](source-migration-guide.md)). The report does not claim results match the source; the tables make that comparison possible for whoever holds a source result.
+
+### 3.4 Open items for the engineer
+
+Execution ends by writing what it left for the engineer who takes the automation over, so nothing the run could not do lives only in the chat. The files are written last, after acceptance validation and the completion report.
+
+**Files and placement.** Write them beside the genome — never inside a project folder (a file there ships in the project's package) and never inside the solution folder:
+
+| Executed genome | Files |
+|---|---|
+| Component genome (one project) | `<project-slug>-open-items.md` |
+| Process genome (a solution) | `<solution-slug>-open-items.md`, plus `<solution-slug>-open-items/<project-slug>-open-items.md` for every project built — per project, not per component: a split that materialises one component as several projects gives each project its own file |
+
+Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-guide.md).
+
+**Content:**
+
+1. **The completion report opens the top file** — the solution file, or the single file of a component genome — exactly as § 3.3 prints it.
+2. **Then the checklist, holding only what this run did not do.** Derive every item from the run, never by copying the genome: a queue or asset declared as a solution resource and deployed by the run is done and not listed; the same resource in a solution that was packed but not deployed is an item. One unchecked box per item:
+   `- [ ] {action} — {where: folder, project, asset, queue, trigger} — value: {configuration answer | source default | decide} — {reason}`
+3. **Every item names its reason**, one of:
+   - **secret** — a credential asset's value. The item names the asset and its account; the value never appears in an open-items file.
+   - **decision** — a choice the run did not take for the user: the target folder or tenant, a schedule or runner count answered "decide", a configuration value the export did not hold.
+   - **blocked** — what an expired login, a missing permission or an unreachable system stopped (publish, deploy, Test Manager attachments), with the command that resumes it.
+   - **live check** — what only a live system confirms: every Met (static) and Not Verifiable criterion with its blocker, the inferred UI targets of the first-run healing pass ([source-migration-guide.md § Verifying targets](source-migration-guide.md)), every placeholder left, every `*[Inferred]*` line the genome carries.
+4. **The solution file lists its items in the order they must happen** — deploy, target folder, solution-wide resources (a queue between projects, a shared connection), credential values, triggers, live checks — and then one line per project linking its file, with that project's open-item count. An item that spans projects is written once, in the solution file; a project file links to it instead of repeating it.
+5. **A project file holds that project's own items:** its credential assets, its triggers and runner counts, its live checks, its placeholders.
+6. **Nothing left is still a file:** one line stating what was done ("Nothing left: deployed to <folder>, triggers enabled, every criterion Met."), never an omitted file.
 
 ## Anti-patterns
 
@@ -289,3 +317,4 @@ Extracted genomes add the healing-pass note: inferred targets are verified on th
 11. **Generating workflows by script.** Every fix goes into the generator and regenerates the project; regeneration after linking drops Object Repository links; template shapes bypass the discovery commands; reviewers must read the generator to judge the build (2.2 step 2).
 12. **Building a large group without a skeleton, a ledger and progress written through.** A compaction then loses the contracts, the decisions and every item the progress file never recorded; a part resumed from the summary instead of its read plan authors without the owning skill's reads, and mandatory reads and source dumps are paid twice (2.2a items 1a, 4).
 13. **A part reading file by file.** Reads in the order files name each other, one per turn; whole reads of catalogs, of the progress file or of an earlier part's workflows; another project's ledger; a read plan that gives every part the reads of all parts. Each read is replayed on every later turn of the part (2.2a items 1a, 1b, 6).
+14. **An open-items file that restates the genome instead of the run, holds a secret, or sits inside a project or solution folder** — the engineer redoes finished work, a credential leaks into a shared file, or the file ships in a package (§ 3.4).
