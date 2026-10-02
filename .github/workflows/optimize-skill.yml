@@ -1,6 +1,6 @@
 name: Optimize skill
 
-run-name: Optimize skill · ${{ inputs.skill }} · ${{ inputs.effort }} · @${{ github.actor }}
+run-name: Optimize skill · ${{ inputs.skill }} · @${{ github.actor }}
 
 # Self-serve token optimization for skill owners. Queues the skill-trimming optimizer's
 # ADO pipeline (UiPath/skill-trimming-optimizer, .azure-pipelines/optimize-bundle.yml),
@@ -24,11 +24,6 @@ on:
         description: 'Skill to optimize: the folder name under skills/ (e.g. uipath-api-workflow).'
         type: string
         required: true
-      effort:
-        description: 'smoke = pipeline check only (never a PR) · standard · thorough (more loop iterations, seeds and fix rounds).'
-        type: choice
-        options: [standard, thorough, smoke]
-        default: standard
       optimize_description:
         description: 'Shorten the description (activation-gated).'
         type: boolean
@@ -50,10 +45,6 @@ on:
         description: 'Stop once model spend reaches this many USD (0 = no cap).'
         type: string
         default: '100'
-      open_pr:
-        description: 'Open a draft PR here when every gate passes (you are requested as reviewer).'
-        type: boolean
-        default: true
 
 permissions: {}
 
@@ -61,6 +52,10 @@ env:
   ADO_ORG: uipath
   ADO_PROJECT: coder_eval
   ADO_PIPELINE_ID: '18884'           # skill-trimming-optimizer / optimize-bundle.yml
+  # Fixed for self-serve runs: the point is a draft PR, at the standard effort. Smoke /
+  # thorough runs and the other knobs stay on the ADO run form for the maintainers.
+  EFFORT: standard
+  OPEN_PR: 'true'
   AZURE_TENANT_ID: TODO-tenant-id    # Entra tenant of the app registration
   AZURE_CLIENT_ID: TODO-client-id    # app registration skill-trimming-optimizer-github
   # may run it for any skill (the optimizer's maintainers); space-separated handles
@@ -124,13 +119,11 @@ jobs:
           TENANT_ID: ${{ env.AZURE_TENANT_ID }}
           CLIENT_ID: ${{ env.AZURE_CLIENT_ID }}
           SKILL: ${{ inputs.skill }}
-          EFFORT: ${{ inputs.effort }}
           DESC: ${{ inputs.optimize_description }}
           BODY: ${{ inputs.optimize_body }}
           REFS: ${{ inputs.optimize_references }}
           FINAL_GATE: ${{ inputs.final_gate }}
           BUDGET: ${{ inputs.budget_usd }}
-          OPEN_PR: ${{ inputs.open_pr }}
           ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
@@ -170,20 +163,13 @@ jobs:
         env:
           URL: ${{ steps.queue.outputs.url }}
           SKILL: ${{ inputs.skill }}
-          EFFORT: ${{ inputs.effort }}
-          OPEN_PR: ${{ inputs.open_pr }}
         run: |
           {
-            echo "## Optimizer queued for \`$SKILL\` ($EFFORT)"
+            echo "## Optimizer queued for \`$SKILL\`"
             echo
             echo "ADO run: $URL"
             echo
-            echo "It runs for several hours (a smoke run: about one to two)."
-            if [ "$OPEN_PR" = true ] && [ "$EFFORT" != smoke ]; then
-              echo "When every gate passes, a **draft PR** opens on this repo with the report, and you are requested as its reviewer."
-              echo "No PR opens if the docker verdict finds a regression, the budget cap is hit, or a HIGH faithfulness finding remains; the ADO run's summary says why."
-            else
-              echo "No PR will open (smoke run, or open_pr off): the result is the report on the ADO run."
-            fi
+            echo "It runs for several hours. When every gate passes, a **draft PR** opens on this repo with the report, and you are requested as its reviewer."
+            echo "No PR opens if the docker verdict finds a regression, the budget cap is hit, or a HIGH faithfulness finding remains; the ADO run's summary says why."
           } >> "$GITHUB_STEP_SUMMARY"
           echo "Queued: $URL"
