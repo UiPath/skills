@@ -43,7 +43,7 @@ All idea flows (workflow types) on the tenant. Each element has `Idea flow name`
 ### GET `/idea-schema?idea_flow_id={id}`
 Full JSON schema for an idea flow + a ready-made `user_inputs` template. Response wrapped as `{ status: "success", data: {...} }`:
 - `data.properties.schema.properties` — field definitions, 3-level nested (Assessment Type > Section > Question); enums carry `answer_option` codes + labels in `custom_properties`.
-- `data.user_inputs` — the exact POST body template ("fill in the blanks"). Every field wraps as `{ "value": <v> }` except owner/submitter questions, which take a direct string (no wrapper) — a bare string anywhere else reads as empty; questions with no example are omitted.
+- `data.user_inputs` — the exact POST body template ("fill in the blanks"). Every field wraps as `{ "value": <v> }` except **user questions**: owner, submitter, and any user picker the tenant adds (the schema marks them `format: email`). Those take the email as a **direct string**; the server also accepts `{ "value": <email> }` for them. A bare string on any other question reads as empty; questions with no example are omitted.
 
 *(Used by the publish flow.)*
 
@@ -54,7 +54,7 @@ Body:
 ```json
 { "idea_flow_id": <id>, "user_inputs": { "<AssessmentType>": { "<section-ahid>": { "<question-key>": { "value": "<v>" } } } } }
 ```
-**Do not POST `data.user_inputs` verbatim** — its example values are placeholders that the API rejects. Replace each with a real value; in particular resolve a **valid** `OVERVIEW_CATEGORY` id (the template's `1` → `Invalid Category Id`) and real `answer_option` codes (a code not in that field's `enum` is rejected as a missing answer on that field).
+**Do not POST `data.user_inputs` verbatim** — its example values are placeholders that the API rejects. Replace each with a real value; in particular resolve a **valid** `OVERVIEW_CATEGORY` id (the template's `1` → `Invalid Category Id`) and real `answer_option` codes. A code not in that field's `enum` is never selected: on a `required` question the create fails with `Please fill in all the required information`, and `errorDetails` names the field (`An answer selection is required for submission`). On an optional question the create **succeeds and the answer is silently dropped**, so the preflight is the only guard.
 
 **Required fields (Business Process, `idea_flow_id`=7), verified live** — note the backend enforces owner + submitter even though the schema's `required` flags omit them:
 
