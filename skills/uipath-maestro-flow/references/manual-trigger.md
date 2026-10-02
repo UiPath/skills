@@ -17,10 +17,11 @@ external caller or deployment integration exists.
 
 A flow's declared inputs are published as the trigger node's OUTPUT, so
 `input('name')` reads `$vars.start.output.name` — `out('start', 'name')` is the
-same reference spelled the long way. Both spellings run: the bare `$vars.name`
-resolves identically on the real runtime. Prefer the trigger form anyway — it is
-what the designer TYPES the expression scope as, so a bare read is the one the
-canvas reports as "Property 'name' does not exist".
+same reference spelled the long way. Do not read an input as a bare `$vars.name`.
+It resolves only by accident — a manual trigger also emits a process-level copy of
+each input — and is null under any other trigger. The designer reports it as
+"Property 'name' does not exist", and `check`, `compile` and `uip maestro flow
+validate` all refuse it. `$vars.name` is the spelling for a `.var()` or an output.
 
 This holds for EVERY trigger kind, not just the manual one. A declared input is
 bound to whichever node starts the flow (that binding is the `triggerNodeId` on

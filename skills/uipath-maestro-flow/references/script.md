@@ -6,9 +6,12 @@ Script runs inline JavaScript for a computation that has no first-class Flow
 node. Upstream data is available through `$vars`; the result is read with
 `out(step, path?)`.
 
+A flow input is read off the trigger, `$vars.start.output.<name>` (what
+`input('<name>')` lowers to); a `.var()` is read as `$vars.<name>`.
+
 ```ts
 .step('normalize', script({ code: `
-  const amount = Number($vars.amount);
+  const amount = Number($vars.start.output.amount);
   return { amount, valid: Number.isFinite(amount) };
 ` }))
 ```
