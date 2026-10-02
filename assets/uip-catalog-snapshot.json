@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-01T04:07:47Z",
-  "cli_version": "1.204.0-dev.8941",
+  "generated_at": "2026-10-02T04:07:53Z",
+  "cli_version": "1.204.0-dev.8942",
   "verbs": [
     "admin",
     "admin audit",
