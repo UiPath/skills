@@ -120,16 +120,17 @@ Then re-read `uip ah applications list` and use the new ids in the answer.
 
 **If creating fails for any reason — 403, a validation error, a bad category id, anything — fall through; never retry it and never stop.** Answer with the systems that *are* in the inventory; if that leaves a **required** question empty, pick the closest entries from `applications list` to satisfy it (an optional one stays empty). Either way, name the real systems in `OVERVIEW_DESCRIPTION` (e.g. "Systems per PDD: Salesforce, CREDILEX, SUNAT Portal — not in tenant inventory"). The process record is what matters; applications are editable afterwards. **Never abandon a publish because an application is missing or uncreatable, and never silently pass off an unrelated application as the real one — say what you substituted.**
 
-Write the answers to `./ah-answers.json` as the filled `user_inputs` structure (the CLI accepts the whole schema-get document or just the answers map). Wrapping rules unchanged: most fields `{ "value": <v> }`; owner/submitter are **direct strings**; enum codes from that field's own `enum`; integers as numbers. Show the user a concise preview and get a confirm before writing.
+Write the answers to `./ah-answers.json` as the filled `user_inputs` structure (the CLI accepts the whole schema-get document or just the answers map). Wrapping rules unchanged: every field is `{ "value": <v> }` except owner/submitter, which are **direct strings** (a bare string anywhere else reads as empty); enum codes from that field's own `enum`; integers as numbers. Show the user a concise preview and get a confirm before writing.
 
 ### Preflight: check the answers against the schema
 
 `ah-schema.json` is the same document the service validates against, so check `ah-answers.json` against it locally **before** creating:
 
 1. **Required answers present** — every question the schema flags `required`, plus owner and submitter (enforced but never flagged), has a non-empty value. Take requiredness from *this tenant's* schema, never from a fixed list: the same Business Process flow requires `COUNT_APPS` on one tenant and rejects it on another.
-2. **Enum codes verbatim** — every enum answer (Documentation, application questions, any select) is a code that appears exactly in that question's own `enum`. Copy it; never retype it. A code with a dropped segment (`…-ovrbp-0-3-5` instead of `…-ovrbp-0-3-0-5`) is rejected as an unnamed required-field error, not as a bad code.
-3. **No placeholders left** — no `Sample input`, no `First.last@example.com`, no template category `1` unless the tenant's tree really has it.
-4. **Applications match the material** — every system the PDD names is either an id in `value` or an entry in `new_applications` (only if the schema has that property); nothing the PDD doesn't name; no application question at all when the PDD names none and it isn't `required`.
+2. **Every answer wrapped** — each answer except owner and submitter is an object with a `value` key. A bare string is read as empty: on `OVR-OVERVIEW_NAME` that fails as `Automation name cannot be empty.`, elsewhere as a missing answer.
+3. **Enum codes verbatim** — every enum answer (Documentation, application questions, any select) is a code that appears exactly in that question's own `enum`. Copy it; never retype it. A code with a dropped segment (`…-ovrbp-0-3-5` instead of `…-ovrbp-0-3-0-5`) is rejected as an unnamed required-field error, not as a bad code.
+4. **No placeholders left** — no `Sample input`, no `First.last@example.com`, no template category `1` unless the tenant's tree really has it.
+5. **Applications match the material** — every system the PDD names is either an id in `value` or an entry in `new_applications` (only if the schema has that property); nothing the PDD doesn't name; no application question at all when the PDD names none and it isn't `required`.
 
 Fix anything found locally, then create. This costs nothing on a correct payload and turns the two unnamed `400`s below into a named local fix.
 
@@ -140,7 +141,8 @@ uip ah automations create --from-schema --idea-flow-id $IDEA_FLOW_ID --file ./ah
 ```
 
 - `Result: Success` → **`Data.Id`** is the new process id. A success means it WAS created — never re-run on a confusing field read (that duplicates).
-- `ValidationError`/`Failure` → the `Message`/`Instructions` carry the service's validation text; the same causes as the API flow apply (unnamed `Please fill in all the required information` → re-run the preflight: a missing required answer or an enum code that is not verbatim from the schema; `Invalid Category Id`; `Cannot set properties of undefined (setting 'co_question_answer_option_value')` → the payload shape is off: an answer code the schema does not know, or the answers not wrapped as `user_inputs`). Fix and retry **once**.
+- `ValidationError`/`Failure` → the `Message`/`Instructions` carry the service's validation text; the same causes as the API flow apply (unnamed `Please fill in all the required information` → re-run the preflight: a missing required answer or an enum code that is not verbatim from the schema; `Invalid Category Id`; `Automation name cannot be empty.` → `OVR-OVERVIEW_NAME` sent as a bare string instead of `{ "value": … }`). Fix and retry **once**.
+- `Cannot set properties of undefined (setting 'co_question_answer_option_value')` → **a server-side defect, not a problem with your answers** — an unknown answer code gets a named error on that field instead. Don't rewrite answers to chase it and don't retry the same payload; stop and report it with the tenant and `--idea-flow-id`.
 - `Cannot identify owner by email` → **not a typo'd address; do not retry with a different email.** The account is authenticated but has never been activated on this tenant. Confirm with `uip ah auth-info get` — `IsActive: 1` plus a role list proves the identity is real — then tell them to open Automation Hub in a browser once and sign in, and retry unchanged:
 
   ```

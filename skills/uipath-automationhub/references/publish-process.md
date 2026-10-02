@@ -40,7 +40,7 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
 
 Parse `data.properties.schema.properties` for the field catalog (Assessment Type > Section > Question; note types, required flags, enum `answer_option` codes/labels) and keep `data.user_inputs` as the payload template. The process-name question (key contains `OVERVIEW_NAME`) is **required**.
 
-> ⚠️ **Do NOT POST `data.user_inputs` verbatim.** The template ships **example/placeholder values that the API rejects** — e.g. `OVERVIEW_CATEGORY: 1` (→ `Invalid Category Id`), a placeholder `PROCESS_DOCUMENTS` answer-option that triggers a backend `co_question_answer_option_value` crash, and `First.last@example.com` owner/submitter emails. Treat the template as **shape only** and replace every value with a real one (below).
+> ⚠️ **Do NOT POST `data.user_inputs` verbatim.** The template ships **example/placeholder values that the API rejects** — e.g. `OVERVIEW_CATEGORY: 1` (→ `Invalid Category Id`), an example `PROCESS_DOCUMENTS` answer that has nothing to do with the real documents, and `First.last@example.com` owner/submitter emails. Treat the template as **shape only** and replace every value with a real one (below).
 
 ## Step 4: Collect the inputs, then assemble the payload
 
@@ -89,7 +89,7 @@ All five fields are required and `categoryIds` needs ≥1 real id. This needs th
 
 Then build `user_inputs` using the template's **structure** but the **collected values**:
 - Place each value in its `AssessmentType > section > question` slot.
-- Follow the template's wrapping per field: most are `{ "value": <v> }`; owner/submitter questions take a **direct string** (no `value` wrapper).
+- Follow the template's wrapping per field: **every** answer is `{ "value": <v> }` except owner/submitter, which take a **direct string** (no `value` wrapper). Never send a bare string anywhere else — it reads as an empty answer, and on `OVR-OVERVIEW_NAME` the API rejects it with `Automation name cannot be empty.`
 - Convert enum labels to their `answer_option` codes taken from that field's own `enum` in the schema — **never** reuse the template's placeholder code. Send integers as numbers.
 
 **Required fields for `idea_flow_id` = Business Process** (verified live — the backend enforces owner + submitter even though the schema's `required` flags do **not** list them):
@@ -105,7 +105,7 @@ Then build `user_inputs` using the template's **structure** but the **collected 
 
 Include only sections that have at least one populated field. Show the user a concise preview (name + key fields, and "show raw JSON" on request) and get a confirm before writing.
 
-**Preflight before creating:** validate the payload against the schema you fetched — every `required`-flagged question plus owner/submitter answered; every enum answer a code copied **verbatim** from that question's own `enum` (a code with a dropped segment is rejected as an unnamed required-field error); no template placeholders left; applications exactly the systems the material names (ids in `value`, the rest in `new_applications` when the schema offers it, the question omitted when none are named and it isn't `required`). Requiredness comes from *this tenant's* schema, never a fixed list — the same flow requires `COUNT_APPS` on one tenant and rejects it on another.
+**Preflight before creating:** validate the payload against the schema you fetched — every `required`-flagged question plus owner/submitter answered; every answer except owner/submitter wrapped as `{ "value": … }` (a bare string reads as empty); every enum answer a code copied **verbatim** from that question's own `enum` (a code with a dropped segment is rejected as an unnamed required-field error); no template placeholders left; applications exactly the systems the material names (ids in `value`, the rest in `new_applications` when the schema offers it, the question omitted when none are named and it isn't `required`). Requiredness comes from *this tenant's* schema, never a fixed list — the same flow requires `COUNT_APPS` on one tenant and rejects it on another.
 
 ## Step 5: Create the process
 
@@ -130,7 +130,8 @@ where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 
     Build that URL from the org/tenant you are already authenticated against — never from the error response. Nothing was created, so the retry is safe. Newer Automation Hub versions accept these users with no sign-in at all, so on an up-to-date tenant this error should not appear.
   - `"Invalid Category Id."` → `OVERVIEW_CATEGORY` isn't a real category on this tenant (see Step 4).
-  - `Cannot set properties of undefined (setting 'co_question_answer_option_value')` → an enum field carries an invalid `answer_option` code (you left a template placeholder in). Use a code from that field's `enum`.
+  - `"Automation name cannot be empty."` → the name answer is a bare string or empty. Send `OVR-OVERVIEW_NAME` as `{"value": "<name>"}`, then retry once.
+  - `Cannot set properties of undefined (setting 'co_question_answer_option_value')` → **a server-side defect, not a problem with your answers.** An invalid `answer_option` code gets a named error on that field instead (`An answer selection is required for submission`), so don't rewrite answers to chase this one, and don't retry the same payload. Stop and report it with the tenant and `idea_flow_id`.
 - **401** → re-authenticate. **409** → duplicate name; ask the user for a new name or stop.
 
 ## Step 6: Attach documents (PDD/SDD)
