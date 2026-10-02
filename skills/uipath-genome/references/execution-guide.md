@@ -296,6 +296,10 @@ Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-
 ## Access
 - [ ] Folder `<folder>` — robot accounts `<accounts>` (unattended | attended), machines `<machine or template>`, roles `<roles>`
 
+## Package and deployment
+- [ ] Publish library `<Library>` <version> to `<feed>` — before its consumers
+- [ ] Deploy `<package or solution>` <version> to `<folder>` — a solution deployment also creates the queues and assets it declares
+
 ## Queues
 - [ ] **`<QueueName>`** in `<folder>`
   Unique reference: <on | off> — Auto retry: <n>
@@ -313,8 +317,6 @@ Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-
 - [ ] Entity **`<Entity>`**: <create | import>, fields as in <Platform Dependencies row>; access for `<accounts>`
 
 ## Others
-- [ ] Publish library `<Library>` <version> to `<feed>` — before its consumers
-- [ ] Deploy `<package or solution>` <version> to `<folder>`
 - [ ] Storage bucket `<bucket>` | Integration Service connection `<connector>`: create and authorise as `<account>`
 - [ ] Robot machines: <application> installed and signed in (from Target Applications)
 
@@ -328,7 +330,7 @@ Rules:
 1. **Assets are one block per asset, credentials included.** The block's type is the Orchestrator asset type. A setting gives the value this build used, as a reference to set per environment. A credential names its account; the secret never appears in an open-items file. Description is the text to enter as the asset's description in Orchestrator, taken from the Configuration Question or Platform Dependencies row the asset came from.
 2. **Queues carry the settings the genome implies:** the unique-reference rule and retry count from the Transactional Shape's outcomes and the split answer. Under a solution deployment the deploy creates the declared queue, and the step checks its settings.
 3. **Triggers come from the split and trigger answers:** type, schedule or queue, and runner count per process.
-4. **The solution file holds the steps several projects share** — packages and deployment, the folder, a queue between projects, a shared connection or asset — in the same sections, and ends with one line per project linking its file, with that project's step count. A step that spans projects is written once, in the solution file; a project file links to it instead of repeating it.
+4. **The solution file holds the steps several projects share** — the folder, packages and deployment, a queue between projects, a shared connection or asset — in the same sections, and ends with one line per project linking its file, with that project's step count. A step that spans projects is written once, in the solution file; a project file links to it instead of repeating it.
 5. **A project file holds that project's own steps** in the same sections: its assets, its process and triggers, its machine prerequisites.
 
 ## Anti-patterns
