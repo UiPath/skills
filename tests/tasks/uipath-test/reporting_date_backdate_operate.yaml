@@ -1,0 +1,244 @@
+task_id: skill-test-reporting-date-backdate-operate
+description: >
+  Operate test: a run finished after the reporting cut-off and has to be booked
+  to the previous day, exercising `executions set-reporting-date`, which no
+  existing task covers.
+
+  The whole task is one precondition the CLI surface does not advertise. The
+  reporting date attaches to the run's *result*, which only exists once the run
+  is closed, so `set-reporting-date` answers 404 "ExecutionResult does not
+  exist" on an open run — and the discriminator is an `ExecutionFinished`
+  timestamp, not `Status`, which stays `Running` after an early close. The
+  fixture deliberately leaves the run open. An agent that books the date has
+  had to work out that it must close the run first, either by finishing the
+  logs or with `executions finish`.
+
+  The prompt names the day and the test set and nothing else; the precondition,
+  the closing route and `--output json` are all left to the skill.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:execution]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 45
+  turn_timeout: 1200
+  task_timeout: 1500
+
+# Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the
+# EVFX- contract.
+#
+# The premise IS an open execution, and the task consumes it by closing it. So
+# pre_run deletes whatever the last run left and opens exactly one fresh run
+# with no log started. Growth stays flat at one, and the starting state is the
+# same every time rather than depending on how the previous agent finished.
+pre_run:
+  - timeout: 280
+    command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys
+      P, SET = "CLAIM", "EVFX-REPORT-SET"
+      CASES = ["EVFX-REPORT-TC1", "EVFX-REPORT-TC2"]
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED — {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:400]} err={err[:250]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def pick(d, *names):
+          for n in names:
+              if d.get(n):
+                  return d[n]
+          return None
+
+      def by_name(label, kind, name):
+          d = call(label, "tm", kind, "list", "--project-key", P, "--filter", name)
+          for x in (d.get("Data") or []):
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      # The six executions verbs ship in a later CLI than this task's fixture can
+      # assume. Probe first and FAIL rather than seeding: without them the agent
+      # cannot do the task, and a silent seed reports that as an agent regression.
+      r = subprocess.run(["uip", "tm", "executions", "create", "--help"],
+                         capture_output=True, text=True)
+      if r.returncode != 0:
+          fail("this CLI has no 'uip tm executions create' - needs the release "
+               "carrying the executions lifecycle verbs")
+      r = subprocess.run(["uip", "tm", "executions", "delete", "--help"],
+                         capture_output=True, text=True)
+      if r.returncode != 0:
+          fail("this CLI has no 'uip tm executions delete'")
+      r = subprocess.run(["uip", "tm", "executions", "set-reporting-date", "--help"],
+                         capture_output=True, text=True)
+      if r.returncode != 0:
+          fail("this CLI has no 'uip tm executions set-reporting-date' - it ships "
+               "in a different commit from create/finish and delete/cancel")
+
+      # 1. test set — create if absent, never delete
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P,
+               "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+      set_key = pick(ts, "TestSetKey", "Key", "ObjKey")
+      set_id = ts.get("Id")
+      if not set_key:
+          fail(f"{SET} has no key")
+
+      # 2. cases — create if absent, then assign (assign is idempotent)
+      keys = []
+      for name in CASES:
+          tc = by_name(f"case.find.{name}", "testcases", name)
+          if not tc:
+              call(f"case.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"case.refind.{name}", "testcases", name)
+          if not tc:
+              fail(f"could not create or find {name}")
+          keys.append(pick(tc, "TestCaseKey", "Key", "ObjKey"))
+      call("cases.assign", "tm", "testcases", "add", "--test-set-key", set_key,
+           "--test-case-keys", ",".join(keys))
+
+      # Assert the assignment landed. It is the condition the task reads, and
+      # call() swallows a failure - without this the run opens an execution
+      # over an empty set and the agent is scored for having no log to start.
+      d = call("cases.verify", "tm", "testsets", "list-testcases",
+               "--project-key", P, "--test-set-key", set_key)
+      assigned = {x.get("Name") for x in (d.get("Data") or [])}
+      missing = [c for c in CASES if c not in assigned]
+      if missing:
+          fail(f"cases not assigned to {SET}: {missing}")
+
+      # 3. clear what the last run left, whatever state it ended in
+      if set_id:
+          d = call("execs.list", "tm", "executions", "list", "--project-key", P,
+                   "--test-set-id", set_id, "--limit", "100")
+          for row in (d.get("Data") or []):
+              eid = row.get("Id")
+              if eid:
+                  call(f"exec.delete.{eid[:8]}", "tm", "executions", "delete",
+                       "--execution-id", eid, "--project-key", P, "--yes")
+
+      # 4. open exactly one run and leave it open — that is the premise
+      d = call("exec.create", "tm", "executions", "create",
+               "--test-set-key", set_key, "--name", "EVFX-REPORT-RUN")
+      eid = (d.get("Data") or {}).get("Id")
+      if not eid:
+          fail("could not open the fixture execution")
+
+      print(f"FIXTURE: ready set_key={set_key!r} execution={eid!r} (open)",
+            flush=True)
+      EOF
+
+initial_prompt: |
+  The run on our "EVFX-REPORT-SET" test set in the CLAIM project (Test Manager)
+  counted against today. Finance needs it booked to 2026-09-21 instead.
+
+  Please get that run booked to 2026-09-21 and confirm the date Test Manager
+  ended up storing. No need to check back with me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    # Deliberately does not require --test-set-id: filtering by name, by set id
+    # or listing the project are all legitimate ways to find the one run. What
+    # is graded is that the id came from the CLI and not from thin air.
+    description: "Agent listed executions through the CLI rather than inventing an id"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions?\s+list(-filtered)?\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The precondition. The date attaches to the run's result, which does not
+  # exist until the run closes, so the run has to be closed one way or another
+  # before the booking can succeed.
+  - type: command_executed
+    description: "Agent closed the run first, by finishing its logs or forcing the close"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+(testcaselog\s+finish|executions?\s+finish)\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started a log, which is what makes the open run closable at all"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+start\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent booked the run to the requested day (`executions set-reporting-date --reporting-date 2026-09-21`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+executions?\s+set-reporting-date\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--reporting-date\s+2026-09-21)'
+    min_count: 1
+    weight: 3.5
+    pass_threshold: 1.0
+
+  # The command returns the re-read record, so the stored date is already in
+  # hand. Re-reading is fine; inventing the confirmation is not.
+  # The booking criterion above matches the command, not the outcome: on this
+  # fixture 'executions finish' is refused (no log started, so ExecutionStart is
+  # null) and set-reporting-date then 404s, yet both patterns still match. This
+  # is the only criterion that fails when nothing was actually booked.
+  - type: run_command
+    description: "Test Manager really stored 2026-09-21 as the run's reporting date"
+    command: |
+      python3 -c "
+      import json, subprocess
+
+      def uip(*a):
+          r = subprocess.run(['uip', *a, '--output', 'json'],
+                             capture_output=True, text=True)
+          t = r.stdout or ''
+          return json.loads(t[t.index('{'):]) if '{' in t else {}
+
+      sets = uip('tm','testsets','list','--project-key','CLAIM','--filter','EVFX-REPORT-SET')
+      sid = next((x['Id'] for x in (sets.get('Data') or [])
+                  if x.get('Name') == 'EVFX-REPORT-SET'), None)
+      assert sid, 'EVFX-REPORT-SET not found'
+      runs = (uip('tm','executions','list','--project-key','CLAIM',
+                  '--test-set-id',sid,'--limit','100').get('Data') or [])
+      assert runs, 'no execution on EVFX-REPORT-SET'
+      latest = max(runs, key=lambda r: r.get('Created') or '')
+      rd = (latest.get('ReportingDate') or '')
+      assert rd.startswith('2026-09-21'), f'expected 2026-09-21, stored {rd!r}'
+      "
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Same segment shape as the criteria above, so a backslash continuation and a
+  # `uip` neighbour behave the same here. The residual gap is the grader's
+  # normalised haystack, where newlines become spaces: a curl to some unrelated
+  # host plus a later non-`uip` line mentioning testexecutions still reads as
+  # one command. Bounded - the run_command criterion below decides the outcome.
+  - type: command_not_executed
+    description: "Agent did not reach past the CLI to confirm the stored date"
+    tool_name: "Bash"
+    command_pattern: '(?i)(curl|wget)(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*testexecutions?\b'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
