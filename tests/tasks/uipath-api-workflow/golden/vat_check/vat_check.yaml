@@ -1,0 +1,87 @@
+task_id: skill-api-workflow-golden-vat-check
+description: >
+  Autopilot GA golden scenario API #2 ("Autopilot for Solution end-to-end Release
+  Quality Checklist", SW-32866): build an API workflow that validates a company VAT
+  number through the EU VIES REST API and returns the boolean `isValid`. Graded on
+  the live outcome against VIES: the checklist's Romanian number 34737997 must come
+  back valid, and RO12345674 (passes the Romanian check-digit rule but is not
+  registered) must come back invalid, so neither a hardcoded answer nor a local
+  checksum passes. The prompt keeps the checklist wording (including its URLs) and
+  adds the template's headless lines plus the run consent a Studio Web user gives
+  when Autopilot asks before running.
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, outcome-graded, connector, feature:http]
+
+reference:
+  directory: ../..   # check_vat.py imports evals/_setup/eval_scoring.py
+
+pre_run:
+  # VIES down or no longer confirming the fixture: end as ERROR before spending an agent turn.
+  - command: |
+      python3 -c '
+      import json, sys, time, urllib.request
+      body = json.dumps({"countryCode": "RO", "vatNumber": "34737997"}).encode()
+      url = "https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number"
+      for attempt in range(3):
+          try:
+              request = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+              with urllib.request.urlopen(request, timeout=10) as response:
+                  if json.load(response).get("valid") is True:
+                      sys.exit(0)
+          except Exception as exc:
+              print(f"VIES probe: {exc}", file=sys.stderr)
+          if attempt < 2:
+              time.sleep(10)
+      sys.exit("VIES does not confirm RO34737997 as valid; not starting the agent")
+      '
+    timeout: 90
+
+initial_prompt: |
+  Build an API workflow that validate the company VAT number using the Rest API
+  endpoint described here: https://ec.europa.eu/assets/taxud/vow-information/swagger_publicVAT.yaml.
+  The endpoint URL for the specific service are:
+  https://ec.europa.eu/taxation_customs/vies/rest-api//check-vat-number
+  https://ec.europa.eu/taxation_customs/vies/rest-api//check-vat-test-service
+  https://ec.europa.eu/taxation_customs/vies/rest-api//check-status
+  The input should be company VAT number and the output should be called isValid and
+  take the values true or false (boolean) depending on the API response.
+
+  You have my consent to run the workflow locally to test it.
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: run_command
+    description: "Checklist assertion: Romanian VAT 34737997 returns isValid true (live VIES)"
+    command: "python3 $REFERENCE_DIR/golden/vat_check/check_vat.py --vat RO34737997 --expect true"
+    timeout: 130
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Unregistered RO12345674 (valid check digit) returns isValid false: no hardcoded answer or local checksum"
+    command: "python3 $REFERENCE_DIR/golden/vat_check/check_vat.py --vat RO12345674 --expect false"
+    timeout: 130
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Informational: the project passes static validation (the checklist tracks this for every run)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | LC_ALL=C sort | head -1); test -n "$WF" && uip api-workflow validate "$WF" --output json | grep -q ''"Status": "Valid"'''
+    timeout: 30
+    expected_exit_code: 0
+    weight: 0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Informational: uses the unified HTTP Request activity Studio Web renders (call UiPath.Http, not the deprecated call http)"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | LC_ALL=C sort | head -1); test -n "$WF" && grep -q "UiPath.Http" "$WF" && ! grep -q ''"call": *"http"'' "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 16
+  max_turns: 60

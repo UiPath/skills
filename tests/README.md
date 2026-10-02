@@ -193,6 +193,7 @@ criteria that passed.
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
 | `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow promoted; Case, BPMN preview) | 200 | 1200s | 900s |
+| `autopilot-golden.yaml` | tempdir | Autopilot GA golden scenarios (Delegate SDK, Luna xhigh, 8 replicates) | task's own | 2400s | 1800s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
 campaign runner first builds the pinned `skills-image:sg1`, prepares isolated
@@ -230,6 +231,26 @@ every tenant call fails as a capability problem rather than a config one:
 ```bash
 docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
   --entrypoint bash skills-codex:latest -c 'uip login status'
+```
+
+`autopilot-golden.yaml` measures the Autopilot GA golden scenarios: Autopilot
+through the Delegate SDK agent on GPT-5.6 Luna at `xhigh` effort, 8 replicates per
+task. The `delegate-sdk` agent comes from the private `coder_eval_uipath` plugin, not
+from `make install`; its `docs/DELEGATE_AGENT_GUIDE.md` covers the
+`@uipath/delegate-stdio` host (`DELEGATE_STDIO_PATH` when it is not found
+automatically) and Delegate sign-in (`delegate-sdk login --env alpha`, or
+`AUTH_TOKEN`/`TENANT_ID`/`ORG_ID`). It runs on tempdir, so also sign the host CLI in
+with `uip login` (HTTP and connector activities resolve through the registry) and
+export `SKILLS_REPO_PATH`, without which coder_eval only warns and loads no skills.
+Keep `-j` at 6 or below: 8 concurrent Delegate SDK tasks starve the SDK's 60s
+startup handshake. On tempdir the agent can also read this repository, graders
+included, so treat the numbers as a measurement rather than a hardened gate. A run
+that ends as ERROR in `pre_run`, or a criterion that fails with an `INFRA:` line
+(grader exit 3), means VIES was unavailable: re-run it instead of counting it
+against the pass rate.
+
+```bash
+coder-eval run 'tasks/uipath-api-workflow/golden/**/*.yaml' -e experiments/autopilot-golden.yaml -j 6
 ```
 
 `activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`); arming is per-criterion — each `skill_triggered` criterion carries a `stop_early: {on_pass: stop}` block that ends a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.5: 0.9.5 removed `stop_when` and the run-level `run_limits.stop_early: true` master arm — both are hard errors now. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
