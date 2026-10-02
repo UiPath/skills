@@ -1,9 +1,10 @@
 task_id: skill-ixp-confirm-predictions-smoke
 description: >
   Smoke: agent reviews predictions and picks the right verdict per
-  field — correct → `confirm --fields`; OCR-mangled → `confirm
-  --corrections` (Rule 8); wrong-field prediction → left
-  unannotated (Rule 10 — agent reviews, doesn't extract).
+  field — correct → `confirm --fields`; OCR-mangled → row-scoped
+  `confirm --group --occurrence --fields --corrections` (Rule 8);
+  wrong-field prediction → left unannotated (Rule 10 — agent
+  reviews, doesn't extract).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -13,9 +14,11 @@ run_limits:
   expected_turns: 6
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   Review the IXP model's predictions for document `doc-abc-123` on
@@ -36,7 +39,8 @@ initial_prompt: |
     (the model located the Total line but the OCR mis-read the digits)
   - Vendor Name (field id `f-004`): `Acme Corp`
 
-  `get-predictions` reports these predictions are from ModelVersion 7.
+  `get-predictions` reports these predictions are from ModelVersion 7;
+  all four fields sit in field group `Invoice Header`, at `Occurrence` 0.
 
   Compare each prediction to the document and record your verdict.
 
@@ -47,47 +51,101 @@ initial_prompt: |
     to login.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
+# `value_flags` names the value-taking `confirm` flags a criterion does not
+# check by value, so their values never shift the positional slots. The
+# guards check no positionals and keep the default.
 success_criteria:
-  # The version lookahead rides on the confirm criteria themselves, not a
-  # criterion of its own: a standalone pin assertion passes on one pinned
-  # call while the others go out bare (Rule 18).
-  - type: file_matches_regex
+  # The version pin rides on each confirm criterion, not a criterion of its
+  # own: a standalone pin assertion passes on one pinned call while the
+  # others go out bare (Rule 18).
+  - type: cli_called
     description: "Agent invoked `uip ixp labellings confirm <project> <document>` with --fields and the reviewed -m/--model-version (Critical Rule 18)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))\s+.*--fields)[^\r\n]*$
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
+    flags:
+      fields: {present: true, aliases: ["f"]}
+      model-version: {equals: "7", aliases: ["m"]}
+    value_flags: [output, fields, f, corrections, c, group, occurrence, updates]
     weight: 4.0
     pass_threshold: 1.0
 
-  - type: file_matches_regex
+  - type: cli_called
     description: "f-001 (cleanly-correct Invoice Number) confirmed on a version-pinned call"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--fields\s+[^|;&\r\n]*f-001).*)[^\r\n]*$
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
+    flags:
+      fields: {contains: "f-001", aliases: ["f"]}
+      model-version: {equals: "7", aliases: ["m"]}
+    value_flags: [output, corrections, c, group, occurrence, updates]
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_matches_regex
+  - type: cli_called
     description: "f-002 (cleanly-correct Invoice Date) confirmed on a version-pinned call"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--fields\s+[^|;&\r\n]*f-002).*)[^\r\n]*$
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
+    flags:
+      fields: {contains: "f-002", aliases: ["f"]}
+      model-version: {equals: "7", aliases: ["m"]}
+    value_flags: [output, corrections, c, group, occurrence, updates]
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: file_matches_regex
+  - type: cli_called
     description: "Agent did NOT confirm f-004 (wrong-field prediction must be skipped)"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?\s+.*--fields\s+\S*f-004(?:,|\s|$))[^\r\n]*$
-    must_match: false
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    flags:
+      fields: {contains: "f-004", aliases: ["f"]}
+    min_count: 0
+    max_count: 0
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: file_matches_regex
-    description: "--corrections carries the OCR-mangled field's corrected value, on a version-pinned call"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--corrections\s+[^\r\n]*f-003[^\r\n]*\$?12,?000\.00).*)[^\r\n]*$
+  # One row takes --occurrence (Rule 8); the corrections payload is JSON, so
+  # its predicate is one regex scoped to that value, key order free.
+  - type: cli_called
+    description: "The correction names its row (--group \"Invoice Header\" --occurrence 0), lists f-003 in --fields, and carries the corrected Total, on a version-pinned call"
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp", "doc-abc-123"]
+    flags:
+      group: "Invoice Header"
+      occurrence: "0"
+      fields: {contains: "f-003", aliases: ["f"]}
+      corrections: {matches_regex: '(?=.*"field_id"\s*:\s*"f-003")(?=.*\$?12,?000\.00)', aliases: ["c"], flags: 16}
+      model-version: {equals: "7", aliases: ["m"]}
+    value_flags: [output, updates]
     weight: 2.0
+    pass_threshold: 1.0
+
+  # Without --occurrence, a correction is written into every occurrence of the
+  # field: document-wide without --group, group-wide with it.
+  - type: cli_called
+    description: "Agent did NOT pass --corrections without --occurrence (Critical Rule 8)"
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    flags:
+      corrections: {present: true, aliases: ["c"]}
+      occurrence: {absent: true}
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # A confirm that lists f-003 without its correction stamps the garbled
+  # prediction over the fix.
+  - type: cli_called
+    description: "Agent did NOT confirm f-003 without its correction"
+    verb: "ixp labellings confirm"
+    tool: "uip"
+    flags:
+      fields: {contains: "f-003", aliases: ["f"]}
+      corrections: {absent: true, aliases: ["c"]}
+    min_count: 0
+    max_count: 0
+    weight: 1.5
     pass_threshold: 1.0
