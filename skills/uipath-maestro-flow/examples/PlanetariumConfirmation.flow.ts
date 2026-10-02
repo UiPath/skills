@@ -21,9 +21,7 @@ export default flow('planetarium-confirmation')
     event: 'email-received',
     where: { parentFolderId: CONFIRMATIONS_FOLDER },
     filters: [{ field: 'subject', contains: 'PLANETARIUM' }],
-    // Both labels name bindings.json entries. A connector wait calls Integration
-    // Service on a tenant connection, so `check` refuses it without them
-    // (BINDING_MISSING) — the node would carry `connectionId: null`.
+    // bindings.json labels; both required (check: BINDING_MISSING).
     connection: 'outlook',
     folder: 'shared',
   }))

@@ -15,7 +15,7 @@ Signatures:
   connector: 'uipath-microsoft-outlook365', event: 'email-received',
   where: { parentFolderId: inboxId },
   filters: [{ field: 'subject', contains: 'Approval' }],
-  connection: 'outlook365', folder: 'shared',
+  connection: 'outlook', folder: 'shared',
 }))
 ```
 
@@ -37,7 +37,7 @@ pasted id — and one `prepare` discharges everything `check` names:
       'parentFolderId').by('displayName', 'Inbox'),
   },
   filters: [{ field: 'subject', contains: 'Approval' }],
-  connection: 'outlook365', folder: 'shared',
+  connection: 'outlook', folder: 'shared',
 }))
 ```
 

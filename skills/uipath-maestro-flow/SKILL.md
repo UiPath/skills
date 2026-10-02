@@ -291,7 +291,7 @@ Signatures: `.trigger(onEvent(subscription))`; `.step(name, waitForEvent(subscri
 ```ts
 const mail = { connector: 'uipath-microsoft-outlook365',
   event: 'email-received', where: { parentFolderId: inboxId },
-  connection: 'outlook365', folder: 'shared' };   // bindings.json labels, both required
+  connection: 'outlook', folder: 'shared' };   // bindings.json labels, both required
 export default flow('mail').trigger(onEvent(mail))
   .step('reply', script({ code: 'return $vars.start.output.subject;' })).build();
 ```
@@ -823,7 +823,7 @@ Prefer a named variant for one operation and generic Transform for a chain; veri
 Call a curated or generic connector operation using a generated descriptor or key/action pair.
 
 Signatures: `connector(descriptor, inputs, opts?)`;
-`connector(key, action, inputs?, { connection?, folder?, object?, version? })`.
+`connector(key, action, inputs?, { connection, folder, object?, version? })` (`connection` and `folder` are required: `BINDING_MISSING`).
 
 ```ts
 .step('issue', connector('uipath-atlassian-jira', 'get-issue',
