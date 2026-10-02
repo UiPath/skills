@@ -120,6 +120,10 @@
     "Empty lookup gate": 4,
     "Resolution audit": 1
   },
+  "references/plugins/tasks/business-rule/planning.md": {
+    "Empty lookup gate": 2,
+    "Resolution audit": 1
+  },
   "references/plugins/tasks/case-management/planning.md": {
     "Resolution audit": 1
   },
