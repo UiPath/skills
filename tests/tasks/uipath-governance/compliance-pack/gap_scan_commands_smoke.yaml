@@ -4,7 +4,6 @@ description: >
   state coverage, NOT deployed-policy commands or pack-walker.mjs. Tests the correct
   two-command sequence in the plugin architecture.
 
-  Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
 
 
@@ -29,7 +28,7 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - uip CLI not connected - auth errors expected. Run once, capture, move on.
+  - Run once, capture, move on.
   - Always pass --output json.
   - Do NOT prompt for confirmation.
 
