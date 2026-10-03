@@ -4,11 +4,14 @@ description: >
   process worked by a pool of robots. Gates on the genome contract (core profile) and on the
   Transactional Shape it must describe: one flow whose unit of work is a sheet row. The full format
   rules (strict profile: outcome rows, split options per unit, retry and consecutive-failure stop,
-  configuration question kinds) are graded as an advisory criterion.
-tags: [uipath-genome, smoke, mode:build, lifecycle:generate]
+  configuration question kinds) are graded as an advisory criterion. Tagged windows only so the
+  Windows smoke workflow runs it: the Linux smoke workflow skips every skill that owns a
+  windows-tagged task (execute_component), so without the tag no PR would run it.
+tags: [uipath-genome, windows, smoke, mode:build, lifecycle:generate]
 
-# _shared/genome_check.py is reached through $REFERENCE_DIR; the genome's file name is the
-# agent's choice, so every criterion finds it through its -genome.md suffix.
+# run_command goes through cmd.exe on Windows, so every check calls _shared/genome_check.py
+# through `python -c` and reads REFERENCE_DIR from the environment. The genome's file name is the
+# agent's choice: the checker resolves the "*-genome.md" pattern itself.
 reference:
   directory: ..
 
@@ -42,9 +45,10 @@ success_criteria:
   - type: run_command
     description: "Exactly one component genome written"
     command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md"
-      --files 1 --expect "UIPATH-AUTOMATION-GENOME: component"
-    timeout: 30
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'tokens', '*-genome.md',
+      '--files', '1', '--expect', 'UIPATH-AUTOMATION-GENOME: component']))"
+    timeout: 60
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -52,10 +56,11 @@ success_criteria:
   - type: run_command
     description: "Genome meets the core contract and describes one flow whose unit of work is a row"
     command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md" --profile core
-      --expect uipath-rpa "Dynamics 365"
-      --shape transactional --flows 1 --unit row
-    timeout: 30
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'component', '*-genome.md',
+      '--profile', 'core', '--expect', 'uipath-rpa', 'Dynamics 365',
+      '--shape', 'transactional', '--flows', '1', '--unit', 'row']))"
+    timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
@@ -63,9 +68,10 @@ success_criteria:
   - type: run_command
     description: "Business rules, schedule and notification target come from the description"
     command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md" --min 0.75
-      --expect postcode 07:00 requester "customer number"
-    timeout: 30
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'tokens', '*-genome.md',
+      '--min', '0.75', '--expect', 'postcode', '07:00', 'requester', 'customer number']))"
+    timeout: 60
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
@@ -80,8 +86,10 @@ success_criteria:
   - type: run_command
     description: "Advisory: genome meets every mechanical format rule (strict profile)"
     command: >-
-      python3 $REFERENCE_DIR/_shared/genome_check.py component "*-genome.md" --profile strict
-    timeout: 30
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'component', '*-genome.md',
+      '--profile', 'strict']))"
+    timeout: 60
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0

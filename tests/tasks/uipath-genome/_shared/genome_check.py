@@ -131,9 +131,12 @@ def check_common(text: str, level: str, sections: list[str], r: Report, min_crit
     for name in RETIRED_SKILLS:
         if name in text:
             r.core(f"retired skill name '{name}' present")
-    for name in sorted(set(re.findall(r"`(uipath-[a-z-]+)`", text))):
-        if name not in VALID_SKILLS | OPERATE_SKILLS | {"uipath-genome"}:
-            r.core(f"unknown skill name '{name}' referenced")
+    # skill names are read where a genome names skills; elsewhere `uipath-…` is also an Integration
+    # Service connector key (`uipath-slack`, `uipath-salesforce-sfdc`), not a skill
+    for heading in ("Build With", "Components"):
+        for name in sorted(set(re.findall(r"`(uipath-[a-z-]+)`", section_body(text, heading)))):
+            if name not in VALID_SKILLS | OPERATE_SKILLS | {"uipath-genome"}:
+                r.core(f"unknown skill name '{name}' in {heading}")
     for heading in ("Build With", "Components"):
         for name in sorted(set(re.findall(r"`(uipath-[a-z-]+)`", section_body(text, heading)))):
             if name in OPERATE_SKILLS:
