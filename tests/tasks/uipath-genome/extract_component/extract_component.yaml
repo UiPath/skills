@@ -1,0 +1,103 @@
+task_id: skill-genome-extract-component
+description: >
+  Smoke: the uipath-genome skill extracts one component genome from a staged three-workflow
+  XAML project (mailbox intake, PDF field extraction, vendor validation, ERP queue handoff).
+  Gates on the genome contract (core profile): one component genome, every section, valid skill
+  names, steps and criteria, a Transactional Shape with a unit of work and split options, a
+  Source Map naming the three workflows, and the source's business facts. The full format rules
+  (strict profile) are graded as an advisory criterion. Tagged windows only so the Windows smoke
+  workflow runs it: the Linux smoke workflow skips every skill that owns a windows-tagged task
+  (execute_component), so without the tag no PR would run it.
+tags: [uipath-genome, windows, smoke, mode:build, lifecycle:generate]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# run_command goes through cmd.exe on Windows, so every check calls _shared/genome_check.py
+# through `python -c` and reads REFERENCE_DIR from the environment. The genome's file name is the
+# agent's choice: the checker resolves the "*-genome.md" pattern itself.
+reference:
+  directory: ..
+
+initial_prompt: |
+  The UiPath Studio project in `InvoiceIntake/` was inherited from another team.
+  Extract a genome from it so we have a ground-truth blueprint of what it does.
+  Write the genome into the current directory. There are no other resources
+  for this process beyond the project itself.
+
+  Before starting, load the uipath-genome skill and follow its extraction workflow.
+  Do not ask me what the project does — read the files. Do not run any `uip` commands.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exactly one component genome written"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'tokens', '*-genome.md',
+      '--files', '1', '--expect', 'UIPATH-AUTOMATION-GENOME: component']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Genome meets the core contract, with a Source Map naming the three workflows"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'component', '*-genome.md',
+      '--profile', 'core', '--expect', 'uipath-rpa', 'ERP_InvoicePosting',
+      '--source-map', 'Main.xaml', 'ValidateInvoice.xaml', 'ExtractInvoiceFields.xaml']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Business rules and configuration carry the source's thresholds and names"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'tokens', '*-genome.md',
+      '--min', '0.8', '--expect', 'credit limit', 'approved vendor', 'ERP_InvoicePosting',
+      'ap-lead@contoso.com', 'imap.contoso.com']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Target applications and the failure path come from the source"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'tokens', '*-genome.md',
+      '--min', '0.75', '--expect', 'Excel', 'IMAP', 'PDF', 'Failed']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Extraction does not build or run the project"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(run|build|debug)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: genome meets every mechanical format rule (strict profile)"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'component', '*-genome.md',
+      '--profile', 'strict']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

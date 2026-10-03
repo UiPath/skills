@@ -1,0 +1,114 @@
+task_id: skill-genome-execute-component
+description: >
+  E2E: the uipath-genome skill executes a small component genome (Daily Sales Summary — CSV exports
+  totalled into an Excel summary, no user interface, not transactional) into an RPA project on an
+  unattended run that takes every default. Grades the outcome: the one project the genome describes
+  compiles (uip rpa build), it reads the three environment-dependent folders as Orchestrator assets,
+  open items for the engineer, under any name outside the project, name the three folder assets,
+  the genome is left unchanged, and nothing is published or deployed.
+tags: [uipath-genome, windows, e2e, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 60
+  max_turns: 150
+  task_timeout: 5400
+  turn_timeout: 5400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# run_command goes through cmd.exe on Windows, so every check calls _shared/execute_check.py
+# through `python -c` and reads REFERENCE_DIR from the environment. REFERENCE_DIR (..) also holds
+# the untouched copy of the genome under execute_component/fixtures/.
+reference:
+  directory: ..
+
+initial_prompt: |
+  Build the automation described in `daily-sales-summary-genome.md` in this folder.
+  This is an unattended run: take the default for every question. The three folders
+  differ per environment and must be set in each customer's Orchestrator. Do not publish
+  or deploy anything — the automation will be deployed to the customer's Orchestrator later.
+
+  Before starting, load the uipath-genome skill and follow its execution workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The one RPA project built from the genome compiles (uip rpa build exits 0)"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'build']))"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The project reads the three folder settings as Orchestrator assets"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'settings', '--expect',
+      'DailySales_InputFolder', 'DailySales_OutputFolder', 'DailySales_ArchiveFolder']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The open items' file name is the agent's choice: the check finds them by content, in any
+  # Markdown file outside the project (inside it, they would ship in the package).
+  - type: run_command
+    description: "Open items for the engineer, outside the project, name the three folder assets"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'open-items', '--expect',
+      'DailySales_InputFolder', 'DailySales_OutputFolder', 'DailySales_ArchiveFolder']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: the open items use the always-present sections (Access, Package and deployment, Assets, Others, Triggers)"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'open-items', '--sections', '--expect',
+      'DailySales_InputFolder', 'DailySales_OutputFolder', 'DailySales_ArchiveFolder']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: run_command
+    description: "Execution leaves the genome unchanged"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'genome-unchanged',
+      'daily-sales-summary-genome.md',
+      os.path.join(os.environ['REFERENCE_DIR'], 'execute_component', 'fixtures', 'daily-sales-summary-genome.md')]))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran the owning skill's validation gate"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+rpa\s+(validate|build)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Nothing is published or deployed"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+(publish|deploy|upload)'
+    weight: 1.0
+    pass_threshold: 1.0

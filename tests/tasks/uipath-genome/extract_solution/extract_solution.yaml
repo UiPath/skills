@@ -1,0 +1,112 @@
+task_id: skill-genome-extract-solution
+description: >
+  E2E: the uipath-genome skill extracts a process genome plus one component genome per project
+  from a staged three-project solution (Flow orchestrator → RPA intake robot → API workflow ERP
+  posting, joined by an Orchestrator queue and a Slack alert connection). Tests the two-level
+  layout, so it gates on the core contract at both levels without the Transactional Shape (which
+  author_component gates; here it is graded by the advisory strict criterion): the Components table naming the three skills and linking component
+  genomes that exist, the Handoffs table, and the solution's queue, channel, schedule, folder and
+  ERP facts. The full format rules (strict profile) are graded as an advisory criterion.
+tags: [uipath-genome, e2e, mode:build, lifecycle:generate]
+
+run_limits:
+  expected_turns: 30
+  task_timeout: 2400
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# _shared/genome_check.py is reached through $REFERENCE_DIR; file names are the agent's choice,
+# so the process genome is the top-level *-genome.md and its components sit in its folder.
+reference:
+  directory: ..
+
+initial_prompt: |
+  The UiPath solution in `InvoiceOps/` runs our nightly accounts-payable intake.
+  We need a ground-truth understanding of it at both the process level and the
+  individual project level before we redesign it. Extract a genome for the whole
+  solution and write it into the current directory. There are no other
+  resources for this process beyond the solution itself.
+
+  Before starting, load the uipath-genome skill and follow its extraction workflow.
+  Read every project in the solution — do not ask me what any of them does, and do
+  not run any `uip` commands. Work autonomously; do not pause for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-genome skill"
+    skill_name: "uipath-genome"
+    expected_skill: "uipath-genome"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exactly one process genome written at the top level"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md"
+      --files 1 --expect "UIPATH-AUTOMATION-GENOME: process"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "One component genome per project in the process genome's folder"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome/*-genome.md"
+      --files 3 --expect "UIPATH-AUTOMATION-GENOME: component"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Process genome and every linked component meet the core contract"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py process "*-genome.md" --profile core
+      --skills uipath-maestro-flow uipath-rpa uipath-api-workflow
+      --expect ERP_InvoicePosting Slack --shape-checks advisory
+    timeout: 60
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Handoffs and platform dependencies capture the queue, the Slack channel, the schedule and the folder"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome.md" --min 0.75
+      --expect ERP_InvoicePosting "#ap-alerts" 22:00 Finance/AP
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Component genomes record the ERP endpoint, the API-key asset and the duplicate-invoice failure"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py tokens "*-genome/*-genome.md" --min 0.66
+      --expect erp.contoso.com ErpApiKey duplicate
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Extraction does not build, run, or deploy anything"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(rpa\s+(run|build)|solution\s+(pack|publish|deploy)|maestro\s+flow\s+debug)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: process and component genomes meet every mechanical format rule (strict profile)"
+    command: >-
+      python3 $REFERENCE_DIR/_shared/genome_check.py process "*-genome.md" --profile strict
+      --skills uipath-maestro-flow uipath-rpa uipath-api-workflow
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0

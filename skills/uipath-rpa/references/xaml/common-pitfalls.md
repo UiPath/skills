@@ -222,6 +222,7 @@ This pattern applies to: `UploadFilesConnections`, `DownloadFileConnections`, `S
 - **Auto-appends .xaml**: If the `WorkflowFileName` has no file extension, `.xaml` is appended automatically. Passing `"workflow.txt"` becomes `"workflow.txt.xaml"`.
 - **TargetSession validation**: `TargetSession.Secondary` (or any non-Current value) requires `UnSafe=True`. Without it, validation fails.
 - **Persistence with isolation**: Using `ResumeInstanceId` with Safe mode (`UnSafe=false`) without persistence support throws `NotSupportedException`.
+- **Callee argument named like an activity property**: a callee argument that shares its name with one of Invoke Workflow File's own properties (seen with `Level`) fails validation when bound, `... already exists with the name 'Level'`. Rename the argument in the callee (`MessageLevel`).
 
 ### WorkflowFileName Must Be a Plain String Path
 
@@ -297,6 +298,13 @@ Studio silently clears any Dictionary-wrapped argument entries on load — the a
 ```
 
 If the caller does not consume an output but the callee declares it as required, declare a `discard*` variable per unused output and reference it. Omitting the binding fails validation when the callee has required out-arguments.
+
+### Out and InOut Arguments Are Not Copied Back When the Callee Faults
+
+Callee throws → caller keeps pre-invoke values of every `out_*`/`io_*` binding, even ones already assigned. Mutations to an object passed `in_*` (dictionary add, field set) survive. Same for coded workflow return values.
+
+- Never read `out_*`/`io_*` in the caller's catch.
+- Anything the caller must release on failure (connection, client, temp file): callee records it on a caller-created object passed `in_*`, not via `out_*`. REFramework: [../reframework-guide.md § Init and Close Run More Than Once](../reframework-guide.md#init-and-close-run-more-than-once-all-modes).
 
 ## Empty Argument Values
 
@@ -393,17 +401,46 @@ Each C# expression in a XAML workflow compiles as a lambda expression tree, whic
 
 When a transform hits these limits, use `Invoke Code` — see [data-manipulation-guide.md](../data-manipulation-guide.md) for the escalation path.
 
-## XAML Expressions Cannot Reference Coded Source File Types
+## Coded Source File Types in XAML Expressions Need a Namespace Import
 
-XAML expressions (C# or VB) cannot call types defined in the project's coded source files (`.cs`) — the expression compiler does not reference the coded-workflows assembly. `validate` and `build` fail with `CS0103` / `BC30451` on the type name.
+XAML expressions (C# or VB) use the types a project's coded source files (`.cs`) define — a DTO as a variable or argument type, a static helper called inside an expression — once the workflow imports the namespace the `.cs` file declares. The coded files compile into the `<ProjectName>.Core` assembly.
 
-**Fix:** inline the logic in `InvokeCode`, or invoke a coded workflow via `InvokeWorkflowFile`. Helpers shared across projects belong in a library ([../library-authoring-guide.md](../library-authoring-guide.md)).
+- **Import:** add `<x:String><Namespace></x:String>` to `TextExpression.NamespacesForImplementation`.
+- **Type argument:** a variable or argument of the type also needs a root prefix `xmlns:local="clr-namespace:<Namespace>;assembly=<ProjectName>.Core"`, then `x:TypeArguments="local:<Type>"`.
+- **Static `void` method:** an expression must return a value, so a `void` helper is called with Invoke Method — `TargetType` names the class through the same prefix, and one positional `InArgument` child per parameter follows in declaration order:
+
+  ```xml
+  <InvokeMethod DisplayName="Append the backup" MethodName="AppendEntry" TargetType="{x:Type local:StateFiles}">
+    <InArgument x:TypeArguments="x:String">
+      <CSharpValue x:TypeArguments="x:String">backupPath</CSharpValue>
+    </InArgument>
+    <InArgument x:TypeArguments="x:String">
+      <CSharpValue x:TypeArguments="x:String">entry</CSharpValue>
+    </InArgument>
+  </InvokeMethod>
+  ```
+
+Without the import, `validate` and `build` fail with `CS0103` / `BC30451` on a helper's name and `CS0246` / `BC30002` on a type name. Types shared across projects belong in a library ([../library-authoring-guide.md](../library-authoring-guide.md)).
+
+The project's Studio host compiles the coded files when it loads the project, so a `.cs` file added later — or a signature changed in an existing one — stays invisible to XAML: `validate` keeps reporting the same `CS0103` / `CS0246` with the import in place. Stop that project's `UiPath.Studio.Helm` process — `uip rpa instances list` gives its id; confirm the id still belongs to `UiPath.Studio.Helm` before stopping it — and validate again; the host relaunches on the next command.
 
 ## WriteTextFile Emits a UTF-8 BOM When Encoding Is Set
 
 `WriteTextFile` with `Encoding="utf-8"` maps to .NET `Encoding.UTF8` **with preamble** — output starts with a BOM, which strict JSON parsers reject. Omitting the `Encoding` property writes BOM-less UTF-8.
 
 **Rule:** for machine-consumed output (JSON, or CSV for downstream parsers), omit `Encoding`. If explicit encoding control is required, write via `InvokeCode`: `File.WriteAllText(path, content, new UTF8Encoding(false))`.
+
+## AppendLine Writes the Line Break Before the Text, Never After
+
+`AppendLine` writes a line break before its text whenever the file already has content, and never after it. Two appends to a new file produce `a`, a line break, `b`, with no trailing line break. An append to a file that already ends with a line break therefore leaves an empty line: `x`, break, (empty), `a`. A file counts as empty at 0 bytes, or at exactly 3 bytes when read as UTF-8 (a lone BOM), so a 3-byte file such as `x` plus a line break gets no leading break. Creating the file, or appending to an empty one, writes a UTF-8 BOM first, also with `Encoding` unset; to write UTF-8 without it, leave `Encoding` empty and set `UseDefaultEncoding` (a set `Encoding` always wins over it). A reader of the file splits it on line breaks and skips empty lines rather than counting breaks, and strips the BOM (`﻿`) before comparing the first line.
+
+## CopyFolderX Copies Into `To`, Not As `To`
+
+`CopyFolderX` places the source folder inside `To`: copying folder `case1` with `To` set to folder `done` produces a `case1` folder inside `done`. `To` must already exist; otherwise the activity fails with `Source or destination folder missing.` The package doc's example reads like a copy to a new path. Pass the parent folder as `To`.
+
+## DeleteFileX Raises on a Missing File
+
+`DeleteFileX` raises `The file was not found at the provided path.` when the file is absent, although its package doc says it does not. Where the file may be missing, check it with Path Exists first.
 
 ## `Chr()` / `Asc()` Break at Runtime in Modern Projects — Use `ChrW()` / `AscW()`
 
@@ -559,6 +596,17 @@ Activity-level mechanics below. For the expression/code layer (LINQ filter/sort/
 
   Note the `s:Type` argument — `x:Type` resolves to `TypeExtension` and fails (see § Invalid Use of `x:` Prefix). `assembly=System.Data` works in both targets via .NET type forwarding; `System.Data.Common` is the canonical home in modern .NET but the bundled UiPath docs standardize on `System.Data`.
 - **GetRowItem**: Must specify at least one of `Column`, `ColumnIndex`, or `ColumnName` — all three empty causes validation error.
+
+## Database Activity Gotchas (Connect to Database, Run Query, Run Command)
+
+Probed on SQL Server, `Microsoft.Data.SqlClient`.
+
+- `ExistingDbConnection` is `InArgument<DatabaseConnection>` (docs say `Property`): `<InArgument x:TypeArguments="udb:DatabaseConnection">`, `xmlns:udb="clr-namespace:UiPath.Database;assembly=UiPath.Database"`. Omitted `CommandType` = `Text`.
+- `Parameters`: direct `InArgument`/`OutArgument`/`InOutArgument` children (element = direction), `x:Key` = SQL name without `@` (`@` prefix also binds). `scg:Dictionary` wrapper also binds at runtime.
+- `null` value → SQL NULL; no `DBNull.Value` needed. SQL name without key → `SqlException: Must declare the scalar variable "@N".` Unused key ignored.
+- Type Out/InOut parameters explicitly: `OutArgument<Object>` returns a `String`. `OutArgument<String>` needs no size.
+- Generated key in one Run Command: `INSERT ...; SET @Id = SCOPE_IDENTITY();` + `<OutArgument x:TypeArguments="x:Int64" x:Key="Id">`. (`SELECT SCOPE_IDENTITY()` in Run Query returns `decimal`.)
+- Never concatenate values into `Sql`; only trusted identifiers.
 
 ## Testing Activity Gotchas
 
@@ -817,6 +865,18 @@ The boxed array reaches `ArrayRow` (whose property type is `Object[]`) correctly
 - Expression-wrapped values (`Search="[&quot;{FullName}&quot;]"`) are not affected — the expression engine handles those, not the XAML parser
 
 **Fix:** Prefix with the XAML escape sequence `{}` to indicate a literal string: `Search="{}{FullName}"`
+
+## Runs of Whitespace in Element Text Collapse — Use `xml:space="preserve"`
+
+XAML normalises an element's text content: each run of spaces, tabs and line breaks becomes one space, and leading and trailing whitespace is dropped. Expressions and literals written as element text — `<CSharpValue>`, a VB `<InArgument>[…]</InArgument>`, a literal `<InArgument>…</InArgument>` — reach the compiler normalised: `"Net  Amount"` (two spaces) runs as `"Net Amount"`, and a line break inside a C# verbatim string becomes a space. `validate`, `build` and the run pass, and a comparison against the application's text never matches.
+
+Add `xml:space="preserve"` to each element whose text holds two consecutive spaces, a tab or a line break; Studio serialises such text with the same attribute:
+
+```xml
+<CSharpValue x:TypeArguments="x:String" xml:space="preserve">"Net  Amount"</CSharpValue>
+```
+
+Attribute values keep their spaces, so a VB `[…]` attribute and a literal attribute need no marker.
 
 ## ViewState Section Corruption
 
