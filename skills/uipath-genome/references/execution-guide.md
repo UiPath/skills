@@ -2,6 +2,14 @@
 
 Genome says *what* to build; build skills know *how*. Execution reads genome, collects configuration answers, builds skill group by skill group through owning skills, wires pieces, checks result against acceptance criteria. Genome is read-only throughout: spec fixes are a separate authoring or extraction edit, then re-execution. Companion guides open only when their condition holds, and the build's only once the configuration answers exist ([SKILL.md § Read Plans](../SKILL.md)).
 
+**Done when** — execution is finished only when all of these hold; a passing build alone is not the end:
+
+1. Every configuration question is answered — by the user, or by its default in an unattended run — and applied: each setting lives where the Settings store answer puts it (§ 1.3).
+2. Every project validates and builds through its owning skill (§ 2.2).
+3. Every acceptance criterion carries a verdict (§ 3.1).
+4. The completion report is given (§ 3.3).
+5. When the target environment needs any setup — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite — [open-items-guide.md](open-items-guide.md) is read and the open-items files are written beside the genome (§ 3.4).
+
 ## Phase 1 — Parse and configure
 
 ### 1.1 Read the genome
