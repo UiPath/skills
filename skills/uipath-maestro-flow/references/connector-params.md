@@ -263,6 +263,11 @@ deliberately.
 
 ## Schema-dynamic operations: the parent-field loop
 
+The discovery-first gate the author-first loop replaced still holds for schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`): the static library descriptor is not sufficient there, and the prepare that check names — with every required `-f NAME=VALUE` — is what creates the design-time schema-replay cache.
+Do not substitute manual `resources run list` lookups plus a static `./connectors/<key>.ts` import: the lookups choose values but do not create that cache.
+After compiling, inspect the emitted connector configuration.
+`flow validate` can accept a missing cache, so completion requires non-null `customFieldsRequestDetails` whose parent values match the runtime inputs.
+
 A connection alone does not resolve these operations. Their real field set is a
 function of the **values** of a few *parent* fields, so the same operation on the
 same connection has many different shapes. Measured on one live Jira tenant,
