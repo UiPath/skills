@@ -137,3 +137,11 @@ def test_format_variants_pass_core_fail_strict(tmp_path):
     text = text[:cq_start] + table + text[cq_end:]                          # questions as a table
     assert run(tmp_path, text, profile="core", extra=["--shape", "transactional", "--unit", "requisition"]) == 0
     assert run(tmp_path, text, profile="strict") == 1
+
+
+def test_operate_skill_in_build_with_is_strict_only(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    row = "| Queues and assets for the run | `uipath-platform` | Tenant resources the run reads |\n"
+    text = text.replace("## Platform Dependencies", row + "\n## Platform Dependencies", 1)
+    assert run(tmp_path, text, profile="core") == 0
+    assert run(tmp_path, text, profile="strict") == 1

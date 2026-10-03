@@ -157,7 +157,9 @@ def check_common(text: str, level: str, sections: list[str], r: Report, min_crit
     for heading in ("Build With", "Components"):
         for name in sorted(set(re.findall(r"`(uipath-[a-z-]+)`", section_body(text, heading)))):
             if name in OPERATE_SKILLS:
-                r.core(f"operate-only skill '{name}' in {heading}; it belongs under Platform Dependencies")
+                # skill-mapping guide rule 2; advisory: a platform row in Build With does no harm — the
+                # resources still reach the target through the solution and the open-items files
+                r.strict(f"operate-only skill '{name}' in {heading}; it belongs under Platform Dependencies")
     # a criterion is a bullet, checkbox or plain
     criteria = [l for l in section_body(text, "Acceptance Criteria").splitlines() if re.match(r"- \S", l)]
     if len(criteria) < CORE_FLOOR:
