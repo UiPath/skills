@@ -1,0 +1,83 @@
+task_id: skill-agent-client-side-tool
+description: >
+  Client-side tools. End-to-end test: scaffold a standalone low-code
+  agent whose goal requires reading data that only exists on the client
+  surface, so the correct answer is a client-side tool rather than a
+  process or Integration Service tool. Verifies the resource.json uses
+  the documented shape — type "clientSide" (lowercase, the casing the
+  zod schema accepts), referenceKey null, location "solution",
+  properties.folderPath "solution_folder", and both schemas present.
+tags: [uipath-agents, e2e, mode:build, low-code, lifecycle:generate]
+
+run_limits:
+  expected_turns: 17
+  turn_timeout: 1200
+
+initial_prompt: |
+  Create a UiPath low-code agent "BoardAssistantAgent" that helps users triage
+  their work. To do that it must read the tasks currently shown on the user's
+  task board inside the host application — that board state lives only in the
+  user's browser session and is never sent to our servers, so the agent has to
+  get it from the client rather than from any backend. The solution should be
+  named "BoardSol".
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+
+  - type: command_executed
+    description: "Agent scaffolded the agent project with uip agent init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "BoardSol/BoardSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "BoardAssistantAgent/agent.json was created"
+    path: "BoardSol/BoardAssistantAgent/agent.json"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Client-side tool resource shape (type=clientSide lowercase, referenceKey null, location, folderPath, both schemas)"
+    command: "python3 $TASK_DIR/check_client_side_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
