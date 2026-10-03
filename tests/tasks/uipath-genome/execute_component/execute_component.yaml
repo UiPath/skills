@@ -27,8 +27,9 @@ reference:
 
 initial_prompt: |
   Build the automation described in `daily-sales-summary-genome.md` in this folder.
-  This is an unattended run: take the default for every question. Do not publish or
-  deploy anything — the automation will be deployed to the customer's Orchestrator later.
+  This is an unattended run: take the default for every question. The three folders
+  differ per environment and must be set in each customer's Orchestrator. Do not publish
+  or deploy anything — the automation will be deployed to the customer's Orchestrator later.
 
   Before starting, load the uipath-genome skill and follow its execution workflow.
 
