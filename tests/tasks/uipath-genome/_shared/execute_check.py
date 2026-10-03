@@ -3,7 +3,8 @@
 
 Usage:
   execute_check.py build                       the one RPA project built from the genome compiles (uip rpa build)
-  execute_check.py config                      that project keeps its constants in Data/Config.xlsx
+  execute_check.py settings --expect NAME …    that project reads every named setting as an Orchestrator asset:
+                                               each name appears in its workflows, code or configuration file
   execute_check.py open-items --expect TOKEN … one top-level *-open-items.md, outside every project, with the
                                                always-present sections and every expected token
   execute_check.py genome-unchanged <genome> <reference>   execution left the genome byte-identical
@@ -16,9 +17,11 @@ import argparse
 import filecmp
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 SKIP_DIRS = {".local", ".git", "node_modules", ".venv", ".upgrade", "fixtures"}
@@ -54,12 +57,44 @@ def cmd_build(_: argparse.Namespace) -> int:
     return 0 if code == 0 else 1
 
 
-def cmd_config(_: argparse.Namespace) -> int:
-    config = one_project() / "Data" / "Config.xlsx"
-    if not config.is_file():
-        print(f"FAIL: {config} does not exist")
+ASSET_READ = re.compile(r"AssetName|GetAsset|GetRobotAsset|GetCredential", re.I)
+
+
+def setting_reads(project: Path) -> tuple[str, str]:
+    """(code, workbooks): the text of every workflow and code file, and of every configuration workbook."""
+    code, books = [], []
+    for dirpath, dirnames, filenames in os.walk(project):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        for name in filenames:
+            path = Path(dirpath) / name
+            suffix = path.suffix.lower()
+            try:
+                if suffix in {".xaml", ".cs", ".vb"}:
+                    code.append(path.read_text(encoding="utf-8", errors="ignore"))
+                elif suffix == ".xlsx":
+                    with zipfile.ZipFile(path) as z:
+                        books += [z.read(n).decode("utf-8", "ignore") for n in z.namelist() if n.endswith(".xml")]
+            except (OSError, zipfile.BadZipFile):
+                continue
+    return "\n".join(code), "\n".join(books)
+
+
+def cmd_settings(a: argparse.Namespace) -> int:
+    """Each setting is read as an Orchestrator asset: its name sits within an asset read in a workflow or
+    code file, or in a configuration workbook (the REFramework's Assets sheet names the assets it reads).
+    A name read some other way — an environment variable, a literal default — does not count."""
+    project = one_project()
+    code, books = setting_reads(project)
+    missing = []
+    for n in a.expect:
+        near_asset_read = any(abs(m.start() - h.start()) <= 300 for h in re.finditer(re.escape(n), code)
+                              for m in ASSET_READ.finditer(code))
+        if not near_asset_read and n not in books:
+            missing.append(n)
+    if missing:
+        print(f"FAIL: {project.name} does not read these settings as Orchestrator assets: {', '.join(missing)}")
         return 1
-    print(f"OK: {config}")
+    print(f"OK: {project.name} reads {', '.join(a.expect)} as Orchestrator assets")
     return 0
 
 
@@ -92,7 +127,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("build").set_defaults(func=cmd_build)
-    sub.add_parser("config").set_defaults(func=cmd_config)
+    p = sub.add_parser("settings")
+    p.add_argument("--expect", nargs="*", default=[])
+    p.set_defaults(func=cmd_settings)
     p = sub.add_parser("open-items")
     p.add_argument("--expect", nargs="*", default=[])
     p.set_defaults(func=cmd_open_items)

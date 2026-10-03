@@ -3,8 +3,8 @@ description: >
   E2E: the uipath-genome skill executes a small component genome (Daily Sales Summary — CSV exports
   totalled into an Excel summary, no user interface, not transactional) into an RPA project on an
   unattended run that takes every default. Grades the outcome: the one project the genome describes
-  compiles (uip rpa build), its constants sit in Data/Config.xlsx, the open-items file for the
-  engineer lists the target environment's setup with the genome's three folder assets, the genome is
+  compiles (uip rpa build), it reads the three environment-dependent folders as Orchestrator assets,
+  the open-items file for the engineer lists the target environment's setup with the genome's three folder assets, the genome is
   left unchanged, and nothing is published or deployed.
 tags: [uipath-genome, windows, e2e, mode:build, lifecycle:generate]
 
@@ -51,10 +51,11 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The project keeps its constants in Data/Config.xlsx"
+    description: "The project reads the three folder settings as Orchestrator assets"
     command: >-
       python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
-      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'config']))"
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'settings', '--expect',
+      'DailySales_InputFolder', 'DailySales_OutputFolder', 'DailySales_ArchiveFolder']))"
     timeout: 60
     expected_exit_code: 0
     weight: 1.5
