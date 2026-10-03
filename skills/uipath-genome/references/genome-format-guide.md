@@ -111,7 +111,7 @@ Plain language, no code syntax, specific fields and thresholds kept. Group under
 `Amount > 10000 AndAlso Category = "Premium"` → "If amount exceeds $10,000 and category is Premium".
 
 ### Error Handling
-Same step-associated layout as Business Rules, plus `### Global`. Behavioural wording: "Retries 3× on timeout, then routes the item to the exception queue" — never "RetryScope with NumberOfRetries=3".
+Same step-associated layout as Business Rules, plus `### Global`. Behavioural wording: "Retries 3× on timeout, then routes the item to the exception queue" — never "RetryScope with NumberOfRetries=3". An entry states the failure, the outcome and the level that handles it; a failure that every UI step shares ("expected element not found: screenshot, stop naming the step") is written once under `### Global`, not repeated per step, and a step entry exists only where that step's handling differs. A Workflow substep's "confirm …" is a post-condition of the action before it, not a separate check (execution builds it as that action's verification).
 
 ### Transactional Shape
 

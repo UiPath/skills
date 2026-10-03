@@ -75,7 +75,7 @@ Advanced review criteria for UiPath RPA projects. Use alongside the core [rpa-re
 | Variables used for dynamic portions of selectors (not string concatenation) | Info | Check selector construction patterns |
 | Frame/iFrame handling correct for web applications | Warning | Check for frame tags in web selectors |
 | Virtual environment handling configured (Citrix/RDP extension, Computer Vision) | Warning | Check for Citrix/RDP-specific patterns if applicable |
-| Element Exists / Check App State used before interactions with dynamic elements | Info | Check for pre-validation activities |
+| Element Exists / Check App State used only to branch (absence leads to different work), not as a guard before acting on the same element, a page-load wait, or a check whose not-found branch only throws | Warning | Compare each check's target with the next activity's target and read its not-found branch ([rpa-common-issues.md § Unnecessary Check App State / Element Exists](rpa-common-issues.md)) |
 
 ### Object Repository Organization
 

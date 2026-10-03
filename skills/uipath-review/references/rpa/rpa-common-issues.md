@@ -76,7 +76,17 @@ find . -name "*.xaml" -size +500k -exec ls -lh {} \;
 
 **Detection:** Run Workflow Analyzer rules ST-DBP-026 and ST-PRR-004; also grep XAML for `Delay` activities.
 
-**Fix:** Use `Element Exists`, `Check App State`, `On Element Appear`, or `Retry Scope` with element-based conditions.
+**Fix:** Remove the `Delay` and rely on the next UI activity: it waits for its target up to its `Timeout` (default 30s). Tune that activity's `Timeout`, or use `DelayBefore` for a button disabled during an async load. Use `Check App State` only where the element's absence leads to different work; a Check App State placed before an action on the same element, or whose not-found branch only throws, is the same defect in another form.
+
+### Unnecessary Check App State / Element Exists
+
+**Symptom:** A `Check App State` (or `Element Exists`) precedes an action on the same element, waits for a page before the first activity that targets it, or has a "does not appear" branch that only throws or logs. Often the check count approaches the number of acting activities.
+
+**Impact:** Every element is resolved twice, extra Object Repository targets must be maintained and healed, and a 5s default check timeout reports "absent" on a page that is still loading, which then needs another guard.
+
+**Detection:** Grep XAML for `NCheckState` / `ElementExists`; for each, compare its target with the next UI activity's target, and read its `IfNotExists` branch.
+
+**Fix:** Delete the check and let the UI activity's timeout and "element not found" do the work; add the business message in the catch at the level that handles the failure. Keep a check only when the element's presence or absence leads to different work — including the common optional popup (dismissed in the "appears" branch, other branch empty, `Timeout` set to how long the popup can take to show) — and pass its `OutUiElement` to the action's `InUiElement` when the found branch acts on the same element. Outcome checks after an action belong in that action's `VerifyOptions`.
 
 ### Progressive Slowdown in Long-Running Processes
 
