@@ -284,7 +284,7 @@ Extracted genomes add the healing-pass note: inferred targets are verified on th
 
 ### 3.4 Open items for the engineer
 
-The build is often made on another machine and another Orchestrator connection than the one the automation runs on. Execution ends by writing, for the engineer who deploys it, strictly what the target environment needs before the automation runs there. Build results, acceptance verdicts and review notes stay in the completion report (§ 3.3) and never enter these files. They are written last.
+The build is often made on another machine and another Orchestrator connection than the one the automation runs on. Execution ends by writing, for the engineer who deploys it, strictly what the target environment needs before the automation runs there. The files are written when the target environment needs at least one setup step — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite; an automation that needs none of them gets no open-items file. Build results, acceptance verdicts and review notes stay in the completion report (§ 3.3) and never enter these files. They are written last.
 
 **Files and placement.** Write them beside the genome — never inside a project folder (a file there ships in the project's package) and never inside the solution folder:
 
@@ -347,20 +347,12 @@ Create each asset in the folder `<folder>` unless the asset says otherwise. The 
 - [ ] Create the **`<Connector>`** connection in the folder `<folder>` and sign it in with the account `<account>`.
 
 ## Data Fabric
-Create each entity from its definition below, then give the robot accounts access to it. The definition can be entered in Data Fabric field by field, or passed as it is to `uip df entities create "<Entity>" --body`.
+Create each entity from its JSON definition below: save it as a file and run `uip df entities create "<Entity>" --file <file>`, or enter the same definition in Data Fabric by hand. Then give the robot accounts access to the entity.
 
 - [ ] Create the entity **`<Entity>`** in <the folder `<folder>` | the tenant> and give `<accounts>` access to it.
 
   ```json
-  {
-    "displayName": "<Display name>",
-    "description": "<what one record is>",
-    "fields": [
-      {"name": "<Field>", "type": "STRING", "isRequired": true},
-      {"name": "<Field>", "type": "DECIMAL", "decimalPrecision": 2},
-      {"name": "<Field>", "type": "DATE"}
-    ]
-  }
+  <the entity's definition, in the JSON file format that `uip df entities create --file` accepts>
   ```
 
 ## <Service>
@@ -390,7 +382,7 @@ Rules:
 1. **Write for the person who sets up the environment.** Full sentences, one step per checkbox, each detail on its own line, names in backticks, the section's opening line saying what to do. No shorthand, no symbols standing in for words, no internal vocabulary (genome section names, split options, step numbers); where the template offers alternatives in angle brackets, write only the one that applies. An agent with the proper tooling follows the same file.
 2. **Assets are one block per asset, credentials included.** The block's type is the Orchestrator asset type. A setting gives the value this build used, as a reference to set per environment. A credential gives its username; the password never appears in an open-items file. Description is the text to enter as the asset's description in Orchestrator, taken from the Configuration Question or Platform Dependencies row the asset came from.
 3. **Queues carry the settings the genome implies:** the unique-reference rule and retry count from the Transactional Shape's outcomes and the split answer. Under a solution deployment the deploy creates the declared queue, and the step checks its settings.
-4. **A Data Fabric entity is one JSON definition**, in the shape the Data Fabric entity-create command accepts. Build it from the entity's fields in Platform Dependencies.
+4. **A Data Fabric entity is one JSON definition, in the file format `uip df entities create --file` accepts.** Take that format from the CLI (`uip df entities create --help`), never from memory, and build the definition from the entity's fields in Platform Dependencies. The engineer can then create the entity from the file as it is.
 5. **Triggers come from the split and trigger answers:** type, schedule or queue, and runner count per process.
 6. **The solution file holds the steps several projects share** — the folder, packages and deployment, a queue between projects, a shared connection or asset — in the same sections, and ends with one line per project linking its file, with that project's step count. A step that spans projects is written once, in the solution file; a project file links to it instead of repeating it.
 7. **A project file holds that project's own steps** in the same sections: its assets, its process and triggers, its Others items.
