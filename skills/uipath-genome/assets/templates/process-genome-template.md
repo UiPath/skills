@@ -1,12 +1,14 @@
 <!-- UIPATH-AUTOMATION-GENOME: process | This file is the high-level build specification for a multi-component
      UiPath automation. Each component has its own genome in the sibling folder named in Components.
-     Do NOT execute these steps directly. Use the UiPath skills referenced in Components to build. -->
+     To build it, invoke the uipath-genome skill (Execute mode): it asks the configuration questions,
+     then invokes the skills referenced in Components. Do NOT execute these steps directly, and do NOT
+     start from a Components skill. -->
 
 # Genome: {Process Name}
 
 > {One-line description of the end-to-end process}
 
-> **This is a UiPath automation blueprint.** Do not execute these steps directly. Build each component with the skill named in **Components**, then wire them per **Handoffs** and **Deployment**.
+> **This is a UiPath automation blueprint.** Do not execute these steps directly. Build it with the **uipath-genome** skill, which builds each component with the skill named in **Components**, then wires them per **Handoffs** and **Deployment**.
 
 ## Overview
 

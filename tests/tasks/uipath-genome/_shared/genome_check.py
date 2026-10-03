@@ -151,6 +151,13 @@ def check_common(text: str, level: str, sections: list[str], r: Report, min_crit
         r.core("missing blueprint blockquote")
     elif "This is a UiPath automation blueprint" not in text:
         r.strict("blueprint blockquote not written as the template words it")
+    # format guide rule 5: the preamble routes the agent to uipath-genome, not to the Build With skills
+    comment = re.search(r"<!--\s*UIPATH-AUTOMATION-GENOME.*?-->", text, re.S | re.I)
+    if comment and "uipath-genome" not in comment.group(0):
+        r.strict("preamble comment does not name uipath-genome as the skill that builds the genome")
+    blockquote = re.search(r"^>.*UiPath automation blueprint.*$", text, re.M | re.I)
+    if blockquote and "uipath-genome" not in blockquote.group(0):
+        r.strict("blueprint blockquote does not name uipath-genome as the skill that builds the genome")
     pos = h2_positions(text)
     for s in sections:
         if section_pos(pos, s) is None:

@@ -52,6 +52,12 @@ def test_domain_outcome_row_fails_strict_only(tmp_path):
     assert run(tmp_path, text, profile="strict") == 1
 
 
+def test_preamble_without_uipath_genome_fails_strict_only(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("uipath-genome", "the build skills")
+    assert run(tmp_path, text, profile="core") == 0
+    assert run(tmp_path, text, profile="strict") == 1
+
+
 def test_missing_section_fails_core(tmp_path):
     text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("## Acceptance Criteria", "## Checks", 1)
     assert run(tmp_path, text, profile="core") == 1
