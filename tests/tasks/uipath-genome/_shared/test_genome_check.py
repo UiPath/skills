@@ -57,9 +57,10 @@ def test_missing_section_fails_core(tmp_path):
     assert run(tmp_path, text, profile="core") == 1
 
 
-def test_flow_without_split_options_fails_core(tmp_path):
+def test_split_options_layout_is_strict_only(tmp_path):
     text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("| Unit of work | Option |", "| Item | Choice |")
-    assert run(tmp_path, text, profile="core") == 1
+    assert run(tmp_path, text, profile="core") == 0
+    assert run(tmp_path, text, profile="strict") == 1
 
 
 def test_external_consumer_line_replaces_split_options(tmp_path):
@@ -83,7 +84,13 @@ def test_glob_needs_exactly_one_match(tmp_path, monkeypatch):
 
 
 def test_shape_checks_advisory_moves_flow_findings_to_strict(tmp_path):
-    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("| Unit of work | Option |", "| Item | Choice |")
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("**Unit of work:**", "**Item:**")
     assert run(tmp_path, text, profile="core") == 1
     assert run(tmp_path, text, profile="core", extra=["--shape-checks", "advisory"]) == 0
     assert run(tmp_path, text, profile="strict", extra=["--shape-checks", "advisory"]) == 1
+
+
+def test_plain_bullet_criteria_count(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("- [ ] ", "- ")
+    assert run(tmp_path, text, profile="core") == 0
+    assert run(tmp_path, text, profile="strict") == 0

@@ -12,7 +12,8 @@ Usage:
 Profiles:
   core    the genome contract a smoke test gates on: level and preamble, every section, valid
           skill names, steps and criteria present, a Transactional Shape that is the stub or has
-          flows with a unit of work and split options, Source Map tokens, expected facts.
+          flows that each name their unit of work, Source Map tokens, expected facts. How the
+          split options are laid out is a format rule, graded by strict only.
   strict  core plus every mechanical format rule of genome-format-guide.md: behavioural wording
           (no code-level tokens), configuration question kind and default, bold step names,
           the As-is table, exactly the outcome rows rule 4 allows, complete split options for
@@ -147,7 +148,8 @@ def check_common(text: str, level: str, sections: list[str], r: Report, min_crit
         for name in sorted(set(re.findall(r"`(uipath-[a-z-]+)`", section_body(text, heading)))):
             if name in OPERATE_SKILLS:
                 r.core(f"operate-only skill '{name}' in {heading}; it belongs under Platform Dependencies")
-    criteria = [l for l in section_body(text, "Acceptance Criteria").splitlines() if re.match(r"- \[[ x]\] ", l)]
+    # a criterion is a bullet, checkbox or plain
+    criteria = [l for l in section_body(text, "Acceptance Criteria").splitlines() if re.match(r"- \S", l)]
     if len(criteria) < min_criteria:
         r.core(f"acceptance criteria: {len(criteria)} found, expected >= {min_criteria}")
     for line in criteria:
@@ -191,7 +193,7 @@ def check_transactional(text: str, level: str, r: Report) -> None:
         external = EXTERNAL_SIDE.search(body)
         split = table_rows(body, "| Unit of work | Option |")
         if not external and not split:
-            r.shape(f"Transactional Shape {name}: no Split options table and no 'outside this genome' line")
+            r.strict(f"Transactional Shape {name}: no Split options table and no 'outside this genome' line")
         if "| Aspect | As-is |" not in body:
             r.strict(f"Transactional Shape {name}: no As-is table")
         consumer_outside = bool(external and external.group(1).lower() == "consumer")
