@@ -6,9 +6,12 @@ Script runs inline JavaScript for a computation that has no first-class Flow
 node. Upstream data is available through `$vars`; the result is read with
 `out(step, path?)`.
 
+A flow input is read off the trigger, `$vars.start.output.<name>` (what
+`input('<name>')` lowers to); a `.var()` is read as `$vars.<name>`.
+
 ```ts
 .step('normalize', script({ code: `
-  const amount = Number($vars.amount);
+  const amount = Number($vars.start.output.amount);
   return { amount, valid: Number.isFinite(amount) };
 ` }))
 ```
@@ -21,6 +24,14 @@ before passing a bare reference to another node.
 
 Return an object literal for named fields and read them with `out('parse', 'tag')`;
 read a scalar return with `out('parse')`.
+
+## At a glance
+
+Run inline JavaScript for computation that is not a first-class Flow node.
+
+Signature: `script({ code: string })`; read the result with `out(step, path?)`.
+
+Use a first-class action when the scenario names one; use script for computation.
 
 ## What the step publishes
 

@@ -19,3 +19,9 @@ arms in authored order.
 
 Work after `.parallel(...)` continues from its `output` port and can read the
 outputs of each arm.
+
+## At a glance
+
+Fan out independent arms and join them at a Merge.
+
+Use it only for independent arms; do not assume the local executor runs them concurrently.

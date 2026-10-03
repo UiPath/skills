@@ -15,6 +15,21 @@ Signature:
   returns: { category: 'string' } }))
 ```
 
+## At a glance
+
+Define an autonomous agent inside this Flow project, with optional resources.
+
+```ts
+.step('triage', inlineAgent({ model: 'gpt-5.4', systemPrompt: 'Return a result conforming to the output schema. category: billing | technical | account.',
+  userPrompt: 'Classify {{input.body}}', inputs: { body: input('body') },
+  returns: { category: 'string' },
+  guardrails: [{ id: 'no-pii', $guardrailType: 'custom', name: 'Block PII', selector: { scopes: ['Agent'] },
+    enabledForEvals: true, action: { $actionType: 'block', reason: 'PII detected' },
+    rules: [{ $ruleType: 'always', applyTo: 'inputAndOutput' }] }] }))
+```
+
+`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds; `memory: { name, id }` attaches an episodic memory; `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
+
 ## Model and answer judgment
 
 Select a model currently available to the tenant (`uip agent model list`) and

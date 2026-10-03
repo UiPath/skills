@@ -27,13 +27,19 @@ When `check` reports `MOCK_HAS_NO_OUTPUT` because a later step reads the mock,
 keep the mock and feed that step from a separate step, as in the example above;
 never replace the mock with a script that fakes its output.
 
+## At a glance
+
+Mark where a real capability will be inserted later.
+
+Use a script for local fixed data, never in place of a capability the request needs; use a placeholder only to expose a capability gap the search proved.
+
 ## Unknown node types
 
 `mock()` is a deliberate placeholder — a node that stands in for work not yet
 decided. It is NOT the way to carry a node the SDK has no factory for: it
 compiles to `core.logic.mock`, so the original type is gone.
 
-For that, use `rawNode({ nodeType, version, manifest, inputs? })`. It carries
+For that, use `rawNode({ nodeType, version, manifest, inputs?, outputs? })`. It carries
 the definition the platform serves for that `nodeType@version`, so the node
 keeps its identity and its inputs:
 
@@ -66,5 +72,6 @@ because the static library does not carry it — is what
 [parent-field loop](connector-params.md#schema-dynamic-operations-the-parent-field-loop).
 
 `decompile` emits `rawNode(...)` for any node type it cannot name, hoisting the
-manifest to a `const` beside the flow. So `mock()` in decompiled source means
+manifest to a `const` beside the flow, so an unknown node keeps its type and
+version through a round trip. So `mock()` in decompiled source means
 the flow really contains a placeholder.
