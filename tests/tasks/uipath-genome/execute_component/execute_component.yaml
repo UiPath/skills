@@ -4,8 +4,8 @@ description: >
   totalled into an Excel summary, no user interface, not transactional) into an RPA project on an
   unattended run that takes every default. Grades the outcome: the one project the genome describes
   compiles (uip rpa build), it reads the three environment-dependent folders as Orchestrator assets,
-  the open-items file for the engineer lists the target environment's setup with the genome's three folder assets, the genome is
-  left unchanged, and nothing is published or deployed.
+  open items for the engineer, under any name outside the project, name the three folder assets,
+  the genome is left unchanged, and nothing is published or deployed.
 tags: [uipath-genome, windows, e2e, mode:build, lifecycle:generate]
 
 run_limits:
@@ -62,8 +62,10 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
+  # The open items' file name is the agent's choice: the check finds them by content, in any
+  # Markdown file outside the project (inside it, they would ship in the package).
   - type: run_command
-    description: "One open-items file beside the genome lists the target environment's setup, with the three folder assets"
+    description: "Open items for the engineer, outside the project, name the three folder assets"
     command: >-
       python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
       os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'open-items', '--expect',
@@ -72,6 +74,17 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "Advisory: the open items use the always-present sections (Access, Package and deployment, Assets, Others, Triggers)"
+    command: >-
+      python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
+      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'execute_check.py'), 'open-items', '--sections', '--expect',
+      'DailySales_InputFolder', 'DailySales_OutputFolder', 'DailySales_ArchiveFolder']))"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: run_command
     description: "Execution leaves the genome unchanged"

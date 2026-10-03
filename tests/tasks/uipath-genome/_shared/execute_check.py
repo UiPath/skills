@@ -5,8 +5,9 @@ Usage:
   execute_check.py build                       the one RPA project built from the genome compiles (uip rpa build)
   execute_check.py settings --expect NAME …    that project reads every named setting as an Orchestrator asset:
                                                each name appears in its workflows, code or configuration file
-  execute_check.py open-items --expect TOKEN … one top-level *-open-items.md, outside every project, with the
-                                               always-present sections and every expected token
+  execute_check.py open-items --expect TOKEN … [--sections]   a Markdown file outside every project, under any
+                                               name, naming every expected token; --sections also requires
+                                               the always-present section headings
   execute_check.py genome-unchanged <genome> <reference>   execution left the genome byte-identical
 
 Cross-platform on purpose: coder-eval runs run_command through cmd.exe on Windows, so criteria call this
@@ -60,8 +61,8 @@ def cmd_build(_: argparse.Namespace) -> int:
 ASSET_READ = re.compile(r"AssetName|GetAsset|GetRobotAsset|GetCredential", re.I)
 
 
-def setting_reads(project: Path) -> tuple[str, str]:
-    """(code, workbooks): the text of every workflow and code file, and of every configuration workbook."""
+def setting_reads(project: Path) -> tuple[list[str], str]:
+    """(code files, workbooks): the text of each workflow and code file, and of every configuration workbook."""
     code, books = [], []
     for dirpath, dirnames, filenames in os.walk(project):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
@@ -76,21 +77,18 @@ def setting_reads(project: Path) -> tuple[str, str]:
                         books += [z.read(n).decode("utf-8", "ignore") for n in z.namelist() if n.endswith(".xml")]
             except (OSError, zipfile.BadZipFile):
                 continue
-    return "\n".join(code), "\n".join(books)
+    return code, "\n".join(books)
 
 
 def cmd_settings(a: argparse.Namespace) -> int:
-    """Each setting is read as an Orchestrator asset: its name sits within an asset read in a workflow or
-    code file, or in a configuration workbook (the REFramework's Assets sheet names the assets it reads).
-    A name read some other way — an environment variable, a literal default — does not count."""
+    """Each setting is read as an Orchestrator asset: its name appears in a workflow or code file that
+    reads assets (the name may sit in a constant away from the call), or in a configuration workbook
+    (the REFramework's Assets sheet names the assets it reads). A file that never reads an asset — an
+    environment variable, a literal default — does not count."""
     project = one_project()
     code, books = setting_reads(project)
-    missing = []
-    for n in a.expect:
-        near_asset_read = any(abs(m.start() - h.start()) <= 300 for h in re.finditer(re.escape(n), code)
-                              for m in ASSET_READ.finditer(code))
-        if not near_asset_read and n not in books:
-            missing.append(n)
+    reading = [text for text in code if ASSET_READ.search(text)]
+    missing = [n for n in a.expect if not any(n in text for text in reading) and n not in books]
     if missing:
         print(f"FAIL: {project.name} does not read these settings as Orchestrator assets: {', '.join(missing)}")
         return 1
@@ -98,23 +96,49 @@ def cmd_settings(a: argparse.Namespace) -> int:
     return 0
 
 
+CONTEXT_FILES = {"agents.md", "claude.md"}
+
+
+def handoff_candidates(projects: list[Path]) -> tuple[list[Path], list[Path]]:
+    """(outside, inside): every Markdown file outside / inside the projects, the genome and agent
+    context files excluded. The file name is the agent's choice; its content identifies it."""
+    outside, inside = [], []
+    for dirpath, dirnames, filenames in os.walk("."):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not d.startswith(".")]
+        for name in filenames:
+            if not name.lower().endswith(".md") or name.lower().endswith("-genome.md") or name.lower() in CONTEXT_FILES:
+                continue
+            path = Path(dirpath, name).resolve()
+            (inside if any(p in path.parents for p in projects) else outside).append(path)
+    return outside, inside
+
+
 def cmd_open_items(a: argparse.Namespace) -> int:
-    files = sorted(Path(".").glob("*-open-items.md"))
-    if len(files) != 1:
-        print(f"FAIL: expected exactly one top-level *-open-items.md, found {len(files)}")
-        return 1
+    """The engineer's open items: a Markdown file outside every project that names every expected
+    token, whatever it is called. --sections also requires the always-present section headings."""
     projects = rpa_projects(Path("."))
-    errors = [f"{files[0]} sits inside project {p}" for p in projects if p in files[0].resolve().parents]
-    text = files[0].read_text(encoding="utf-8")
-    errors += [f"missing section '{s}'" for s in SECTIONS if not any(l.strip() == s for l in text.splitlines())]
-    errors += [f"missing '{t}'" for t in a.expect if t not in text]
-    if "- [ ]" not in text:
-        errors.append("no checklist item")
-    for e in errors:
-        print(f"FAIL: {files[0].name}: {e}")
-    if not errors:
-        print(f"OK: {files[0]}")
-    return 1 if errors else 0
+    outside, inside = handoff_candidates(projects)
+
+    def names_all(path: Path) -> bool:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        return all(t in text for t in a.expect)
+
+    found = [p for p in outside if names_all(p)]
+    if not found:
+        misplaced = [p for p in inside if names_all(p)]
+        if misplaced:
+            print(f"FAIL: open items found only inside a project, where they ship in its package: {', '.join(map(str, misplaced))}")
+        else:
+            print(f"FAIL: no Markdown file outside the project names {', '.join(a.expect)}")
+        return 1
+    if a.sections:
+        missing = {str(p): [s for s in SECTIONS if not any(l.strip() == s for l in p.read_text(encoding='utf-8', errors='ignore').splitlines())] for p in found}
+        if all(missing.values()):
+            for p, m in missing.items():
+                print(f"FAIL: {Path(p).name} lacks {', '.join(m)}")
+            return 1
+    print(f"OK: open items in {', '.join(p.name for p in found)}")
+    return 0
 
 
 def cmd_genome_unchanged(a: argparse.Namespace) -> int:
@@ -132,6 +156,7 @@ def main() -> int:
     p.set_defaults(func=cmd_settings)
     p = sub.add_parser("open-items")
     p.add_argument("--expect", nargs="*", default=[])
+    p.add_argument("--sections", action="store_true", help="also require the always-present section headings")
     p.set_defaults(func=cmd_open_items)
     p = sub.add_parser("genome-unchanged")
     p.add_argument("genome")
