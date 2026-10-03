@@ -8,7 +8,7 @@ when_to_use: "User wants to create, edit, debug, or run a UiPath automation — 
 
 Full assistant for creating, editing, managing, and running UiPath automation projects — both coded workflows (C#) and low-code RPA workflows (XAML). One UIA activity set covers every UI target: Windows and macOS, desktop and web, in a single automation — targets configured with strict or fuzzy selectors (reinforced by anchors), Computer Vision, or semantic matching; `uia-configure-target` picks the route and falls back automatically.
 
-> **Reading the referenced files is imperative — read each required file in full.** This SKILL.md is a router: it tells you *which* reference to open, not *what* it says. When a rule, the Task Navigation table, or a section points you to a reference for the task at hand, open it and read the **whole** file before acting — do not grep it for a keyword, skim the first screen, fall back to `--help`, or substitute prior knowledge. Exception: files whose rule prescribes a **targeted lookup** (Grep `^##` for the table of contents, flags via `<command> --help`) — these are catalogs: read the matching sections, never the whole file. Most errors that slip past `validate` and surface at `build` or runtime trace back to a reference that was skipped or only partially read.
+> **Reading the referenced files is imperative — read each required file in full.** This SKILL.md is a router: it tells you *which* reference to open, not *what* it says. When a rule, the Task Navigation table, or a section points you to a reference for the task at hand, open it and read the **whole** file before acting — do not grep it for a keyword, skim the first screen, fall back to `--help`, or substitute prior knowledge. Exception: files whose rule prescribes a **targeted lookup** (Grep `^##` for the table of contents, flags via `<command> --help`) — these are catalogs: read the matching sections, never the whole file. A pointer that names a section (`file.md § Section`) is a targeted lookup too: read that section in full, through to the next heading of its level, not the rest of the file. Most errors that slip past `validate` and surface at `build` or runtime trace back to a reference that was skipped or only partially read.
 
 <!--skill-flavor:host-scope:start-->
 <!--skill-flavor:host-scope:end-->
@@ -41,7 +41,7 @@ Before doing any work, check `.claude/rules/project-context.md` in the project d
 
 ## Step 0: Resolve PROJECT_DIR
 
-Before creating or modifying anything, determine which project to work with. See [references/environment-setup.md](references/environment-setup.md) for the full procedure.
+Before creating or modifying anything, determine which project to work with: [environment-setup.md § Step 0.1](references/environment-setup.md#step-01-establish-project-root).
 
 **Quick check:** Find `project.json` to establish `{projectRoot}`. That's it — no Studio Desktop check needed for the standard loop. `uip rpa` auto-launches a headless Studio (UiPath.Studio.Helm NuGet) on first call. Studio Desktop is required only for `files diff` and `focus-activity`. Coded UI automation's `ObjectRepository.cs` (the `Descriptors.*` class) regenerates on per-file `validate` once a `[Workflow]`/`[TestCase]` `.cs` is on disk (§ Capture-First Fast Path step 2; [coded/operations-guide.md § Configure UI Targets](references/coded/operations-guide.md#configure-ui-targets-object-repository)).
 
@@ -226,7 +226,7 @@ On Windows PowerShell, `&` doesn't background — use `Start-Process powershell.
 | **Work in a Legacy (.NET 4.6.1) project** | Legacy | [legacy/legacy-mode-guide.md](references/legacy/legacy-mode-guide.md) — entry point. Modern-mode rules below do not apply. |
 | **Plan the build's turn structure** | Both | [execution-maps-guide.md](references/execution-maps-guide.md) — read first for any build/edit journey |
 | **Choose coded vs XAML / work in a hybrid project** | Both | [coded-vs-xaml-guide.md](references/coded-vs-xaml-guide.md) → [environment-setup.md § Designing Project Structure](references/environment-setup.md#designing-project-structure) |
-| **Create a new project** | Both | [environment-setup.md](references/environment-setup.md) |
+| **Create a new project** | Both | [environment-setup.md § Step 0.3](references/environment-setup.md#step-03-creating-a-new-project) |
 | **Any XAML authoring/editing task** (workflows, test cases, Flowchart/StateMachine/LRW, common activities, Data Fabric, IS connectors, triggers, XAML troubleshooting) | XAML | [xaml/xaml-basics-and-rules.md](references/xaml/xaml-basics-and-rules.md) — Rule 22 read; § Critical Rules — XAML + § Task Navigation — XAML route the rest |
 | **Any coded authoring/editing task** (workflows, test cases, source files, IS connectors, NuGet, API discovery, coded troubleshooting) | Coded | [coded/codedworkflow-reference.md](references/coded/codedworkflow-reference.md) — § Critical Rules — Coded + § Task Navigation — Coded route the rest |
 | **Set up data-driven testing** | Both | [testing-guide.md § Data-Driven Testing](references/testing-guide.md) — remember: register in `fileInfoCollection` (Common Rule 10) |
