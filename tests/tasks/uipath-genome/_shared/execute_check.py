@@ -61,8 +61,8 @@ def cmd_build(_: argparse.Namespace) -> int:
 ASSET_READ = re.compile(r"AssetName|GetAsset|GetRobotAsset|GetCredential", re.I)
 
 
-def setting_reads(project: Path) -> tuple[str, str]:
-    """(code, workbooks): the text of every workflow and code file, and of every configuration workbook."""
+def setting_reads(project: Path) -> tuple[list[str], str]:
+    """(code files, workbooks): the text of each workflow and code file, and of every configuration workbook."""
     code, books = [], []
     for dirpath, dirnames, filenames in os.walk(project):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
@@ -77,21 +77,18 @@ def setting_reads(project: Path) -> tuple[str, str]:
                         books += [z.read(n).decode("utf-8", "ignore") for n in z.namelist() if n.endswith(".xml")]
             except (OSError, zipfile.BadZipFile):
                 continue
-    return "\n".join(code), "\n".join(books)
+    return code, "\n".join(books)
 
 
 def cmd_settings(a: argparse.Namespace) -> int:
-    """Each setting is read as an Orchestrator asset: its name sits within an asset read in a workflow or
-    code file, or in a configuration workbook (the REFramework's Assets sheet names the assets it reads).
-    A name read some other way — an environment variable, a literal default — does not count."""
+    """Each setting is read as an Orchestrator asset: its name appears in a workflow or code file that
+    reads assets (the name may sit in a constant away from the call), or in a configuration workbook
+    (the REFramework's Assets sheet names the assets it reads). A file that never reads an asset — an
+    environment variable, a literal default — does not count."""
     project = one_project()
     code, books = setting_reads(project)
-    missing = []
-    for n in a.expect:
-        near_asset_read = any(abs(m.start() - h.start()) <= 300 for h in re.finditer(re.escape(n), code)
-                              for m in ASSET_READ.finditer(code))
-        if not near_asset_read and n not in books:
-            missing.append(n)
+    reading = [text for text in code if ASSET_READ.search(text)]
+    missing = [n for n in a.expect if not any(n in text for text in reading) and n not in books]
     if missing:
         print(f"FAIL: {project.name} does not read these settings as Orchestrator assets: {', '.join(missing)}")
         return 1

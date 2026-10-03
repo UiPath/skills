@@ -64,6 +64,11 @@ BANNED_BODY_TOKENS = [
     "uipath.core.", "activityType", "JsInvoke",
 ]
 OUTCOME_ROWS = {"Success", "Business exception", "System exception", "Postponed"}
+# format guide § Population Matrix: minimum Workflow steps and Acceptance Criteria per complexity.
+# core gates only on the floor every genome meets (the simple minimum); the per-complexity minimum is strict.
+CORE_FLOOR = 3
+MIN_STEPS_BY_COMPLEXITY = {"simple": 3, "medium": 5, "complex": 8}
+MIN_CRITERIA_BY_COMPLEXITY = {"simple": 3, "medium": 5, "complex": 7}
 SPLIT_OPTIONS = {"A", "B", "C"}
 STUB = "Not transactional"
 # format guide § Transactional Shape rule 9: a flow with one side outside the genome names it instead of the table
@@ -98,6 +103,11 @@ def h2_positions(text: str) -> dict[str, int]:
 def section_body(text: str, heading: str) -> str:
     m = re.search(rf"^## {re.escape(heading)}\s*$(.*?)(?=^## |\Z)", text, re.M | re.S)
     return m.group(1) if m else ""
+
+
+def complexity_of(text: str) -> str | None:
+    m = re.search(r"\b(simple|medium|complex)\b", section_body(text, "Complexity"), re.I)
+    return m.group(1).lower() if m else None
 
 
 def body_without_source_map(text: str) -> str:
@@ -150,8 +160,10 @@ def check_common(text: str, level: str, sections: list[str], r: Report, min_crit
                 r.core(f"operate-only skill '{name}' in {heading}; it belongs under Platform Dependencies")
     # a criterion is a bullet, checkbox or plain
     criteria = [l for l in section_body(text, "Acceptance Criteria").splitlines() if re.match(r"- \S", l)]
-    if len(criteria) < min_criteria:
-        r.core(f"acceptance criteria: {len(criteria)} found, expected >= {min_criteria}")
+    if len(criteria) < CORE_FLOOR:
+        r.core(f"acceptance criteria: {len(criteria)} found, expected >= {CORE_FLOOR}")
+    elif len(criteria) < min_criteria:
+        r.strict(f"acceptance criteria: {len(criteria)} found, expected >= {min_criteria} for the stated complexity")
     for line in criteria:
         if re.search(r"completes successfully|handles errors properly", line, re.I):
             r.core(f"generic acceptance criterion: {line.strip()}")
@@ -165,7 +177,7 @@ def check_common(text: str, level: str, sections: list[str], r: Report, min_crit
             r.strict(f"configuration question {num} does not name its kind and default as '(setting; default: …)' or '(constant; default: …)'")
 
 
-def check_transactional(text: str, level: str, r: Report) -> None:
+def check_transactional(text: str, level: str, r: Report, part_of: bool = False) -> None:
     """Transactional Shape: the stub, or flow blocks the format guide describes."""
     ts = section_body(text, "Transactional Shape")
     if not ts.strip() or ts.strip().startswith(STUB):
@@ -176,7 +188,8 @@ def check_transactional(text: str, level: str, r: Report) -> None:
     if not flows:
         r.shape("Transactional Shape is neither the stub nor '### Flow N' blocks")
         return
-    in_process = level == "component" and "Part of:" in text
+    # a component reached through a process genome's links is inside it, with or without its 'Part of:' line
+    in_process = level == "component" and (part_of or "Part of:" in text)
     if not in_process and "**Flows:**" not in ts:
         r.strict("Transactional Shape has no 'Flows:' line")
     if re.search(r"\{[a-z][^}]*\}", ts):
@@ -261,17 +274,22 @@ def check_shape_assertion(text: str, shape: str, flows: int | None, units: list[
 def check_component(path: Path, a: argparse.Namespace, part_of: bool, shape: bool = True) -> list[str]:
     text = path.read_text(encoding="utf-8")
     r = Report(a.profile, a.shape_checks == "gate")
-    check_common(text, "component", COMPONENT_SECTIONS, r, a.min_criteria)
+    level = complexity_of(text)
+    min_steps = MIN_STEPS_BY_COMPLEXITY.get(level, a.min_steps)
+    check_common(text, "component", COMPONENT_SECTIONS, r, MIN_CRITERIA_BY_COMPLEXITY.get(level, a.min_criteria))
     pos = h2_positions(text)
     if "Build With" in pos and "Workflow" in pos and pos["Build With"] > pos["Workflow"]:
         r.core("Build With must precede Workflow")
     if not re.search(r"`uipath-[a-z-]+`", section_body(text, "Build With")):
         r.core("Build With names no skill")
     workflow = section_body(text, "Workflow")
-    if len(re.findall(r"^\d+\. ", workflow, re.M)) < a.min_steps:
-        r.core(f"workflow: fewer than {a.min_steps} numbered steps")
-    elif len(re.findall(r"^\d+\. \*\*", workflow, re.M)) < a.min_steps:
-        r.strict(f"workflow: fewer than {a.min_steps} steps in the '1. **Step name**' form the step map keys on")
+    steps = len(re.findall(r"^\d+\. ", workflow, re.M))
+    if steps < CORE_FLOOR:
+        r.core(f"workflow: {steps} numbered steps, expected >= {CORE_FLOOR}")
+    elif steps < min_steps:
+        r.strict(f"workflow: {steps} numbered steps, expected >= {min_steps} for complexity {level or 'not stated'}")
+    if len(re.findall(r"^\d+\. \*\*", workflow, re.M)) < min(steps, min_steps):
+        r.strict("workflow: steps not all in the '1. **Step name**' form the step map keys on")
     cq = section_body(text, "Configuration Questions")
     questions = re.findall(r"^\d+\. ", cq, re.M)
     if not questions and "no additional configuration needed" not in cq:
@@ -286,8 +304,8 @@ def check_component(path: Path, a: argparse.Namespace, part_of: bool, shape: boo
             if tok not in sm:
                 r.core(f"Source Map does not mention '{tok}'")
     if part_of and "Part of:" not in text:
-        r.core("component inside a process genome lacks the 'Part of:' line")
-    check_transactional(text, "component", r)
+        r.strict("component inside a process genome lacks the 'Part of:' line")
+    check_transactional(text, "component", r, part_of)
     if a.shape and shape:
         check_shape_assertion(text, a.shape, a.flows, a.unit, r)
     for tok in a.expect:
@@ -299,7 +317,7 @@ def check_component(path: Path, a: argparse.Namespace, part_of: bool, shape: boo
 def check_process(path: Path, a: argparse.Namespace) -> list[str]:
     text = path.read_text(encoding="utf-8")
     r = Report(a.profile, a.shape_checks == "gate")
-    check_common(text, "process", PROCESS_SECTIONS, r, a.min_criteria)
+    check_common(text, "process", PROCESS_SECTIONS, r, MIN_CRITERIA_BY_COMPLEXITY.get(complexity_of(text), a.min_criteria))
     pos = h2_positions(text)
     if "Components" in pos and "Process Map" in pos and pos["Components"] > pos["Process Map"]:
         r.core("Components must precede Process Map")
