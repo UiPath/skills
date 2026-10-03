@@ -100,8 +100,14 @@ def h2_positions(text: str) -> dict[str, int]:
     return {m.group(1).strip(): m.start() for m in re.finditer(r"^## (.+)$", text, re.M)}
 
 
+def section_pos(pos: dict[str, int], name: str) -> int | None:
+    """Position of the first heading that starts with name, any case ('Error Handling and Recovery'
+    counts as 'Error Handling'). The exact heading is a format rule, graded by strict."""
+    return next((p for h, p in pos.items() if h.lower().startswith(name.lower())), None)
+
+
 def section_body(text: str, heading: str) -> str:
-    m = re.search(rf"^## {re.escape(heading)}\s*$(.*?)(?=^## |\Z)", text, re.M | re.S)
+    m = re.search(rf"^## {re.escape(heading)}\b[^\n]*$(.*?)(?=^## |\Z)", text, re.M | re.S | re.I)
     return m.group(1) if m else ""
 
 
@@ -137,14 +143,20 @@ def flow_blocks(ts: str) -> list[tuple[str, str]]:
 # --- checks shared by both levels ---------------------------------------------------------------
 
 def check_common(text: str, level: str, sections: list[str], r: Report, min_criteria: int) -> None:
-    if f"UIPATH-AUTOMATION-GENOME: {level}" not in text:
+    if not re.search(rf"UIPATH-AUTOMATION-GENOME:\s*{level}", text, re.I):
         r.core(f"missing preamble comment 'UIPATH-AUTOMATION-GENOME: {level}'")
-    if "This is a UiPath automation blueprint" not in text:
+    elif f"UIPATH-AUTOMATION-GENOME: {level}" not in text:
+        r.strict(f"preamble comment not written exactly 'UIPATH-AUTOMATION-GENOME: {level}'")
+    if not re.search(r"UiPath automation blueprint", text, re.I):
         r.core("missing blueprint blockquote")
+    elif "This is a UiPath automation blueprint" not in text:
+        r.strict("blueprint blockquote not written as the template words it")
     pos = h2_positions(text)
     for s in sections:
-        if s not in pos:
+        if section_pos(pos, s) is None:
             r.core(f"missing section '## {s}'")
+        elif s not in pos:
+            r.strict(f"section '## {s}' present under a longer or differently cased heading")
     for name in RETIRED_SKILLS:
         if name in text:
             r.core(f"retired skill name '{name}' present")
@@ -160,8 +172,8 @@ def check_common(text: str, level: str, sections: list[str], r: Report, min_crit
                 # skill-mapping guide rule 2; advisory: a platform row in Build With does no harm — the
                 # resources still reach the target through the solution and the open-items files
                 r.strict(f"operate-only skill '{name}' in {heading}; it belongs under Platform Dependencies")
-    # a criterion is a bullet, checkbox or plain
-    criteria = [l for l in section_body(text, "Acceptance Criteria").splitlines() if re.match(r"- \S", l)]
+    # a criterion is a list item in any form: '- ', '- [ ] ', '* ' or '1. '
+    criteria = [l for l in section_body(text, "Acceptance Criteria").splitlines() if re.match(r"([-*]|\d+\.) \S", l)]
     if len(criteria) < CORE_FLOOR:
         r.core(f"acceptance criteria: {len(criteria)} found, expected >= {CORE_FLOOR}")
     elif len(criteria) < min_criteria:
@@ -295,12 +307,13 @@ def check_component(path: Path, a: argparse.Namespace, part_of: bool, shape: boo
     min_steps = MIN_STEPS_BY_COMPLEXITY.get(level, a.min_steps)
     check_common(text, "component", COMPONENT_SECTIONS, r, MIN_CRITERIA_BY_COMPLEXITY.get(level, a.min_criteria))
     pos = h2_positions(text)
-    if "Build With" in pos and "Workflow" in pos and pos["Build With"] > pos["Workflow"]:
+    bw, wf = section_pos(pos, "Build With"), section_pos(pos, "Workflow")
+    if bw is not None and wf is not None and bw > wf:
         r.core("Build With must precede Workflow")
-    if not re.search(r"`uipath-[a-z-]+`", section_body(text, "Build With")):
+    if not re.search(r"uipath-[a-z-]+", section_body(text, "Build With")):
         r.core("Build With names no skill")
     workflow = section_body(text, "Workflow")
-    steps = len(re.findall(r"^\d+\. ", workflow, re.M))
+    steps = len(re.findall(r"^(?:\d+\.|[-*]) \S", workflow, re.M))  # top-level numbered or bulleted steps
     if steps < CORE_FLOOR:
         r.core(f"workflow: {steps} numbered steps, expected >= {CORE_FLOOR}")
     elif steps < min_steps:
@@ -338,13 +351,14 @@ def check_process(path: Path, a: argparse.Namespace) -> list[str]:
     r = Report(a.profile, a.shape_checks == "gate")
     check_common(text, "process", PROCESS_SECTIONS, r, MIN_CRITERIA_BY_COMPLEXITY.get(complexity_of(text), a.min_criteria))
     pos = h2_positions(text)
-    if "Components" in pos and "Process Map" in pos and pos["Components"] > pos["Process Map"]:
+    cp, pm = section_pos(pos, "Components"), section_pos(pos, "Process Map")
+    if cp is not None and pm is not None and cp > pm:
         r.core("Components must precede Process Map")
     comp = section_body(text, "Components")
-    if len([l for l in comp.splitlines() if l.startswith("|") and "`uipath-" in l]) < 2:
+    if len([l for l in comp.splitlines() if l.startswith("|") and "uipath-" in l]) < 2:
         r.core("Components table: fewer than 2 rows naming a skill")
     for s in a.skills:
-        if f"`{s}`" not in comp:
+        if not re.search(rf"\b{re.escape(s)}\b", comp):
             r.core(f"Components table lacks skill '{s}'")
     for row in table_rows(comp, "| #"):
         if len(row) > 2 and re.search(r"\b(dispatcher|performer)\b", row[2], re.I):

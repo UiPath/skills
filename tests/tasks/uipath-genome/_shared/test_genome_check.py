@@ -145,3 +145,20 @@ def test_operate_skill_in_build_with_is_strict_only(tmp_path):
     text = text.replace("## Platform Dependencies", row + "\n## Platform Dependencies", 1)
     assert run(tmp_path, text, profile="core") == 0
     assert run(tmp_path, text, profile="strict") == 1
+
+
+def test_numbered_criteria_count(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    start, end = text.index("## Acceptance Criteria"), text.index("## Complexity")
+    numbered = "## Acceptance Criteria\n\n" + "".join(f"{i}. Given input {i}, the automation records outcome {i}.\n" for i in range(1, 6)) + "\n"
+    assert run(tmp_path, text[:start] + numbered + text[end:], profile="core") == 0
+
+
+def test_heading_case_and_wording_variants_pass_core(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    text = text.replace("## Target Applications", "## Target Applications and Systems", 1)
+    text = text.replace("## Error Handling", "## error handling", 1)
+    text = text.replace("This is a UiPath automation blueprint", "this is a UiPath Automation Blueprint", 1)
+    text = re.sub(r"`(uipath-rpa)`", r"\1", text)
+    assert run(tmp_path, text, profile="core") == 0
+    assert run(tmp_path, text, profile="strict") == 1
