@@ -177,6 +177,17 @@ def check_common(text: str, level: str, sections: list[str], r: Report, min_crit
             r.strict(f"configuration question {num} does not name its kind and default as '(setting; default: …)' or '(constant; default: …)'")
 
 
+def effective_flows(ts: str) -> tuple[list[tuple[str, str]], bool]:
+    """(flows, headed): the '### Flow N' blocks, or — when there is no such heading but the section names a
+    unit of work — the whole section as one flow. The heading is a format rule; the unit of work is the contract."""
+    blocks = flow_blocks(ts)
+    if blocks:
+        return blocks, True
+    if re.search(r"unit of work", ts, re.I):
+        return [("Flow 1", ts)], False
+    return [], False
+
+
 def check_transactional(text: str, level: str, r: Report, part_of: bool = False) -> None:
     """Transactional Shape: the stub, or flow blocks the format guide describes."""
     ts = section_body(text, "Transactional Shape")
@@ -184,10 +195,12 @@ def check_transactional(text: str, level: str, r: Report, part_of: bool = False)
         return
     if "**Recommendation:**" in ts or re.search(r"^\|\s*(Producer|Consumer)\s*\|", ts, re.M):
         r.strict("Transactional Shape carries a verdict (Recommendation line or Producer/Consumer mode table)")
-    flows = flow_blocks(ts)
+    flows, headed = effective_flows(ts)
     if not flows:
-        r.shape("Transactional Shape is neither the stub nor '### Flow N' blocks")
+        r.shape("Transactional Shape is neither the stub nor flows naming their unit of work")
         return
+    if not headed:
+        r.strict("Transactional Shape describes its flow without '### Flow N' headings")
     # a component reached through a process genome's links is inside it, with or without its 'Part of:' line
     in_process = level == "component" and (part_of or "Part of:" in text)
     if not in_process and "**Flows:**" not in ts:
@@ -201,8 +214,10 @@ def check_transactional(text: str, level: str, r: Report, part_of: bool = False)
             if "per the process genome" not in body:
                 r.strict(f"Transactional Shape {name}: does not point to the process genome's split options")
             continue
-        if "**Unit of work:**" not in body:
-            r.shape(f"Transactional Shape {name}: no 'Unit of work' line")
+        if not re.search(r"unit of work", body, re.I):
+            r.shape(f"Transactional Shape {name}: names no unit of work")
+        elif "**Unit of work:**" not in body:
+            r.strict(f"Transactional Shape {name}: no '**Unit of work:**' line")
         external = EXTERNAL_SIDE.search(body)
         split = table_rows(body, "| Unit of work | Option |")
         if not external and not split:
@@ -260,10 +275,10 @@ def check_shape_assertion(text: str, shape: str, flows: int | None, units: list[
     if stub:
         r.core("Transactional Shape: expected flow blocks, found the stub")
         return
-    blocks = flow_blocks(ts)
+    blocks, _ = effective_flows(ts)
     if flows is not None and len(blocks) != flows:
-        r.core(f"Transactional Shape: {len(blocks)} flow block(s), expected {flows}")
-    unit_lines = " ".join(l for l in ts.splitlines() if l.startswith("**Unit of work:**")).lower()
+        r.core(f"Transactional Shape: {len(blocks)} flow(s), expected {flows}")
+    unit_lines = " ".join(l for l in ts.splitlines() if re.search(r"unit of work", l, re.I)).lower()
     for tok in units:
         if tok.lower() not in unit_lines:
             r.core(f"Transactional Shape: no 'Unit of work' line names '{tok}'")
@@ -292,8 +307,10 @@ def check_component(path: Path, a: argparse.Namespace, part_of: bool, shape: boo
         r.strict("workflow: steps not all in the '1. **Step name**' form the step map keys on")
     cq = section_body(text, "Configuration Questions")
     questions = re.findall(r"^\d+\. ", cq, re.M)
-    if not questions and "no additional configuration needed" not in cq:
-        r.core("Configuration Questions: neither questions nor the stub line")
+    if not cq.strip():
+        r.core("Configuration Questions section is empty")
+    elif not questions and "no additional configuration needed" not in cq:
+        r.strict("Configuration Questions: neither a numbered list of questions nor the stub line")
     if questions and len(questions) < a.min_questions:
         r.strict(f"configuration questions: {len(questions)} found, expected >= {a.min_questions}")
     if a.source_map:

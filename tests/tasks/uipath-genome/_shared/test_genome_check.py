@@ -84,7 +84,7 @@ def test_glob_needs_exactly_one_match(tmp_path, monkeypatch):
 
 
 def test_shape_checks_advisory_moves_flow_findings_to_strict(tmp_path):
-    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("**Unit of work:**", "**Item:**")
+    text = re.sub(r"units? of work", "item", COMPONENT_EXAMPLE.read_text(encoding="utf-8"), flags=re.I)
     assert run(tmp_path, text, profile="core") == 1
     assert run(tmp_path, text, profile="core", extra=["--shape-checks", "advisory"]) == 0
     assert run(tmp_path, text, profile="strict", extra=["--shape-checks", "advisory"]) == 1
@@ -126,3 +126,14 @@ def test_part_of_line_is_strict_only(tmp_path):
     process.write_text(text, encoding="utf-8")
     assert genome_check.main(["process", str(process), "--skills", "uipath-rpa"]) == 0
     assert genome_check.main(["process", str(process), "--profile", "strict", "--skills", "uipath-rpa"]) == 1
+
+
+def test_format_variants_pass_core_fail_strict(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8")
+    text = re.sub(r"^### Flow \d+.*$", "", text, flags=re.M)               # flow without its heading
+    cq_start = text.index("## Configuration Questions")
+    cq_end = text.index("## Workflow")
+    table = "## Configuration Questions\n\n| # | Question | Default |\n|---|---|---|\n| 1 | Which queue? | PR_Requisitions |\n\n"
+    text = text[:cq_start] + table + text[cq_end:]                          # questions as a table
+    assert run(tmp_path, text, profile="core", extra=["--shape", "transactional", "--unit", "requisition"]) == 0
+    assert run(tmp_path, text, profile="strict") == 1
