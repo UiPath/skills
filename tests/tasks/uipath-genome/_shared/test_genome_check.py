@@ -80,3 +80,10 @@ def test_glob_needs_exactly_one_match(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     assert genome_check.main(["component", "*-genome.md"]) == 1
     assert genome_check.main(["tokens", "*-genome.md", "--files", "2", "--expect", "x"]) == 0
+
+
+def test_shape_checks_advisory_moves_flow_findings_to_strict(tmp_path):
+    text = COMPONENT_EXAMPLE.read_text(encoding="utf-8").replace("| Unit of work | Option |", "| Item | Choice |")
+    assert run(tmp_path, text, profile="core") == 1
+    assert run(tmp_path, text, profile="core", extra=["--shape-checks", "advisory"]) == 0
+    assert run(tmp_path, text, profile="strict", extra=["--shape-checks", "advisory"]) == 1

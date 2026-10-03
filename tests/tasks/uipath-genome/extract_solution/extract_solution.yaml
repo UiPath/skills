@@ -2,8 +2,9 @@ task_id: skill-genome-extract-solution
 description: >
   E2E: the uipath-genome skill extracts a process genome plus one component genome per project
   from a staged three-project solution (Flow orchestrator → RPA intake robot → API workflow ERP
-  posting, joined by an Orchestrator queue and a Slack alert connection). Gates on the core
-  contract at both levels: the Components table naming the three skills and linking component
+  posting, joined by an Orchestrator queue and a Slack alert connection). Tests the two-level
+  layout, so it gates on the core contract at both levels without the Transactional Shape (which
+  author_component gates; here it is graded by the advisory strict criterion): the Components table naming the three skills and linking component
   genomes that exist, the Handoffs table, and the solution's queue, channel, schedule, folder and
   ERP facts. The full format rules (strict profile) are graded as an advisory criterion.
 tags: [uipath-genome, e2e, mode:build, lifecycle:generate]
@@ -67,7 +68,7 @@ success_criteria:
     command: >-
       python3 $REFERENCE_DIR/_shared/genome_check.py process "*-genome.md" --profile core
       --skills uipath-maestro-flow uipath-rpa uipath-api-workflow
-      --expect ERP_InvoicePosting Slack
+      --expect ERP_InvoicePosting Slack --shape-checks advisory
     timeout: 60
     expected_exit_code: 0
     weight: 5.0

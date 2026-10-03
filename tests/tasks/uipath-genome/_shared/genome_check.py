@@ -6,6 +6,8 @@ Usage:
   genome_check.py process   <genome.md> [--profile core|strict] --skills SKILL ... [--expect TOKEN ...]
   genome_check.py tokens    <pattern>   --expect TOKEN ... [--min FRACTION] [--files N]
   component and process also take: [--shape transactional|stub [--flows N] [--unit TOKEN ...]]
+                                   [--shape-checks gate|advisory]  advisory: Transactional Shape findings
+                                   are graded by the strict profile only (a task that tests something else)
 
 Profiles:
   core    the genome contract a smoke test gates on: level and preamble, every section, valid
@@ -70,9 +72,13 @@ EXTERNAL_SIDE = re.compile(r"Split options:(?:\*\*)? none\s*[—–-]+\s*the (co
 class Report:
     """Collects findings; a strict finding is dropped under the core profile."""
 
-    def __init__(self, profile: str):
+    def __init__(self, profile: str, shape_gates: bool = True):
         self.profile = profile
+        self.shape_gates = shape_gates  # --shape-checks advisory: Transactional Shape findings count as strict
         self.errors: list[str] = []
+
+    def shape(self, message: str) -> None:
+        (self.core if self.shape_gates else self.strict)(message)
 
     def core(self, message: str) -> None:
         self.errors.append(message)
@@ -166,7 +172,7 @@ def check_transactional(text: str, level: str, r: Report) -> None:
         r.strict("Transactional Shape carries a verdict (Recommendation line or Producer/Consumer mode table)")
     flows = flow_blocks(ts)
     if not flows:
-        r.core("Transactional Shape is neither the stub nor '### Flow N' blocks")
+        r.shape("Transactional Shape is neither the stub nor '### Flow N' blocks")
         return
     in_process = level == "component" and "Part of:" in text
     if not in_process and "**Flows:**" not in ts:
@@ -176,16 +182,16 @@ def check_transactional(text: str, level: str, r: Report) -> None:
     for name, body in flows:
         if in_process:
             if "**Role:**" not in body:
-                r.core(f"Transactional Shape {name}: a component inside a process has no 'Role:' line")
+                r.shape(f"Transactional Shape {name}: a component inside a process has no 'Role:' line")
             if "per the process genome" not in body:
                 r.strict(f"Transactional Shape {name}: does not point to the process genome's split options")
             continue
         if "**Unit of work:**" not in body:
-            r.core(f"Transactional Shape {name}: no 'Unit of work' line")
+            r.shape(f"Transactional Shape {name}: no 'Unit of work' line")
         external = EXTERNAL_SIDE.search(body)
         split = table_rows(body, "| Unit of work | Option |")
         if not external and not split:
-            r.core(f"Transactional Shape {name}: no Split options table and no 'outside this genome' line")
+            r.shape(f"Transactional Shape {name}: no Split options table and no 'outside this genome' line")
         if "| Aspect | As-is |" not in body:
             r.strict(f"Transactional Shape {name}: no As-is table")
         consumer_outside = bool(external and external.group(1).lower() == "consumer")
@@ -252,7 +258,7 @@ def check_shape_assertion(text: str, shape: str, flows: int | None, units: list[
 
 def check_component(path: Path, a: argparse.Namespace, part_of: bool, shape: bool = True) -> list[str]:
     text = path.read_text(encoding="utf-8")
-    r = Report(a.profile)
+    r = Report(a.profile, a.shape_checks == "gate")
     check_common(text, "component", COMPONENT_SECTIONS, r, a.min_criteria)
     pos = h2_positions(text)
     if "Build With" in pos and "Workflow" in pos and pos["Build With"] > pos["Workflow"]:
@@ -290,7 +296,7 @@ def check_component(path: Path, a: argparse.Namespace, part_of: bool, shape: boo
 
 def check_process(path: Path, a: argparse.Namespace) -> list[str]:
     text = path.read_text(encoding="utf-8")
-    r = Report(a.profile)
+    r = Report(a.profile, a.shape_checks == "gate")
     check_common(text, "process", PROCESS_SECTIONS, r, a.min_criteria)
     pos = h2_positions(text)
     if "Components" in pos and "Process Map" in pos and pos["Components"] > pos["Process Map"]:
@@ -353,6 +359,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--source-map", nargs="*", default=[])
     ap.add_argument("--skills", nargs="*", default=[])
     ap.add_argument("--shape", choices=["transactional", "stub"], default=None)
+    ap.add_argument("--shape-checks", choices=["gate", "advisory"], default="gate")
     ap.add_argument("--flows", type=int, default=None)
     ap.add_argument("--unit", nargs="*", default=[])
     ap.add_argument("--min-steps", type=int, default=5, help="format guide: 3 simple, 5 medium, 8 complex")
