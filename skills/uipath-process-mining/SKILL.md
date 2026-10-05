@@ -1,7 +1,7 @@
 ---
 name: uipath-process-mining
 description: "UiPath Process Mining via `uip pm` — build and operate a process app end-to-end from a CSV / event log: templates, data mapping, upload, ingest, the dbt (Snowflake) transformation layer, publish, and query it (metrics, percentiles, RCA). Covers `uipath.custom`, the `Cases.sql` optional-column gotcha, Case-linked data-model tables (add-table + re-ingest), the apply-not-reingest fix loop, fixing a wrong mapping in place via `apps data-mapping get|update` (no app rebuild), and editing the app model via `apps model fields` — a field's data kind / calculated fields, including the numeric→duration mismatch that locks dashboards open. For Orchestrator/Data Fabric/Integration Service→uipath-platform. For `.flow`/Maestro→uipath-maestro-flow. For IXP→uipath-ixp."
-when_to_use: "User mentions process mining, a process app, an event log, `uip pm`, mining a CSV/log, ingesting data into one, dbt/SQL transformations, steps-to-resolution / throughput / variant / rework analysis, or querying one. Also 'build a process app from this data', 'ingest this log', 'fix my Cases.sql', 'why can't I query my custom table', 'add a table to the data model', 'group by X average Y', 'fix/change/read my data mapping', 'wrong date format in the mapping', 'change a field's data kind', 'set a field to duration', 'add a calculated field/metric', 'my dashboards won't open', 'Must be duration not numeric'. For Orchestrator/Data Fabric→uipath-platform; `.flow`→uipath-maestro-flow; IXP→uipath-ixp."
+when_to_use: "User mentions process mining, a process app, an event log, `uip pm`, mining a CSV/log, ingesting data into one, dbt/SQL transformations, steps-to-resolution / throughput / variant / rework analysis, or querying one. Also 'build a process app from this data', 'create an app with sample data', 'ingest this log', 'fix my Cases.sql', 'why can't I query my custom table', 'add a table to the data model', 'group by X average Y', 'fix/change/read my data mapping', 'wrong date format in the mapping', 'change a field's data kind', 'set a field to duration', 'add a calculated field/metric', 'my dashboards won't open', 'Must be duration not numeric'. For Orchestrator/Data Fabric→uipath-platform; `.flow`→uipath-maestro-flow; IXP→uipath-ixp."
 allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
@@ -21,6 +21,7 @@ references for the full detail.
 ## When to Use This Skill
 
 - **Build a process app from data** — you have a CSV / event log and want a mined process (throughput, variants, rework, steps-to-resolution).
+- **Build a demo app on sample data** — no data of your own; load the template's built-in sample data (Rule 11).
 - **Author the transformation layer** — edit the dbt (Snowflake) SQL models that produce the process model, then re-run.
 - **Query a process app** — pull numbers out: aggregate group-by + metrics, raw detail rows, percentiles, root-cause analysis, process insights.
 - **Expose custom analysis** — surface your own analytical table (a weekly aggregate, an impact study) as a queryable entity.
@@ -29,7 +30,7 @@ references for the full detail.
 
 ## App lifecycle
 
-An app moves through: **create** (from a template + data mapping) → **load** (upload + ingest) → **transform** on the **dev** stage (the ELT/dbt layer) → **publish** to the **published** stage → **query** / build dashboards. Develop against a small subset on `dev`, then publish the full dataset for real analysis ([`references/lifecycle-and-rbac.md`](references/lifecycle-and-rbac.md)). The **ELT editor** is the `transformations` command group over the dbt (Snowflake) model tree that turns loaded source tables into the process model — its command surface and the apply-vs-run distinction are in [`references/transformations.md`](references/transformations.md).
+An app moves through: **create** (from a template + data mapping) → **load** (upload + ingest, or ingest the template's sample data) → **transform** on the **dev** stage (the ELT/dbt layer) → **publish** to the **published** stage → **query** / build dashboards. Develop against a small subset on `dev`, then publish the full dataset for real analysis ([`references/lifecycle-and-rbac.md`](references/lifecycle-and-rbac.md)). The **ELT editor** is the `transformations` command group over the dbt (Snowflake) model tree that turns loaded source tables into the process model — its command surface and the apply-vs-run distinction are in [`references/transformations.md`](references/transformations.md).
 
 ## Critical Rules
 
@@ -53,6 +54,8 @@ An app moves through: **create** (from a template + data mapping) → **load** (
 
 10. **Edit a field's data kind / calculated fields with `apps model fields` — and a data-kind mismatch can lock the app open.** Change a field's kind (e.g. numeric→duration), rename it, or add a calculated field with `uip pm apps model fields set <app> <field> [--kind|--display-name|--expression]` (the **semantic** model; dev-only, and **no `--etag`** — it merges into the version it just read, so a lost race is fixed by re-running it; a whole-document `apps model update` does require `--etag`). Relational/arithmetic operators require both operands to share a data kind, so flipping a field to `duration` while a metric / calculated field / dashboard filter still compares it to a `numeric` constant persists an invalid model that throws at dashboard open — the *"Must be duration, not numeric, for the 'lt' input"* lockout, which leaves only the data-upload module reachable. `fields set`/`update` validate and refuse such an edit with a hint; fix an already-broken app by making the comparison consistent (re-type the field or the constant). Full surface + the data-kind rule in [`references/model-editing.md`](references/model-editing.md).
 
+11. **To build an app on sample data, ingest the template's own sample data with `ingestions create --sample-data` — never upload or fabricate a CSV.** This is the UI's "Use sample data" option. First check that the template ships sample data: `uip pm app-types list --output-filter "[].{Key:AppTypeKey,Name:DefaultName,SampleData:SampleDataAvailable}"` — only templates with `SampleDataAvailable: true` have it. Create the app **without `--data-mapping`** (the sample files fit the template's default mapping), then run `uip pm ingestions create <app> --sample-data --wait` with no `files upload` before it. `--sample-data` cannot be combined with `--file-format`, `--field-delimiter`, `--quote-character` or `--encoding`. If the command fails with "has no sample data", tell the user and offer a template that has `SampleDataAvailable: true`, or their own data. If `uip` rejects `--sample-data` as an unknown option, the CLI is older than the flag: update it (`npm install -g @uipath/cli@latest`) instead of calling the REST API by hand. Details in [`references/app-types.md`](references/app-types.md#sample-data--a-demo-app-without-your-own-data).
+
 ## Quick Start
 
 The end-to-end CSV → queryable-app command sequence (discover template → create →
@@ -72,7 +75,7 @@ reference for the decision; drop into the CLI reference for the mechanics it use
 | File | Read when |
 |------|-----------|
 | [`references/uip-pm-cli.md`](references/uip-pm-cli.md) | **CLI mechanics (low-level)** — the command-group map, the `Result`/`Code`/`Data` envelope + exit codes, the ETag get-modify-put pattern, `--wait`, `--stage`, `IngestionNeeded`, field-id discovery, and the CSV→queryable-app Quick Start |
-| [`references/app-types.md`](references/app-types.md) | choosing/targeting a template — custom vs source-system, why the pipeline is the same for all, what the mapping/extract must contain per family |
+| [`references/app-types.md`](references/app-types.md) | choosing/targeting a template — custom vs source-system, why the pipeline is the same for all, what the mapping/extract must contain per family, and loading a template's **sample data** |
 | [`references/pre-flight.md`](references/pre-flight.md) | before any upload — encoding/delimiter/date-format/empty-row checks and the minimal `mapping.json` recipe; **also** the post-create mapping fix loop (`apps data-mapping get`/`update`) and its failure modes |
 | [`references/transformations.md`](references/transformations.md) | authoring/fixing dbt models — the `Cases.sql` patch, apply-vs-run, pm_utils macros, Snowflake identifier quoting |
 | [`references/data-model.md`](references/data-model.md) | exposing a custom table to `query`/dashboards — the case-centric add-table pattern (DataModelDto + re-ingest) and the Tags/Due_dates decision table |
@@ -93,5 +96,6 @@ reference for the decision; drop into the CLI reference for the mechanics it use
 - **Passing column names in a raw `query run` body**, or hand-writing the aggregate AST. Bodies take hashed field ids from `query info`; use the `--group-by/--metric` sugar (Rule 7).
 - **Patching `Cases.sql` on a source-system template.** That gotcha is `uipath.custom`-only; source templates ship correct transformations — feed the expected extract and extend, don't rewrite (Rule 3).
 - **Using a source template for a single flat log** (or `uipath.custom` for a full multi-table extract). Match the template to the data shape (Rule 2).
+- **Writing a synthetic CSV (or hand-rolling the ingest REST call) when the user asked for sample data.** Templates with `SampleDataAvailable: true` ship real sample data; load it with `ingestions create --sample-data` (Rule 11).
 - **Iterating on the full dataset.** Develop on `dev` with a small subset; publish the full data (Rule 8).
 - **Changing a field's data kind while a comparison still uses the old kind.** Flipping a field to `duration` (or any kind) while a metric / calculated field / dashboard filter compares it to a constant of the old kind persists an invalid model that locks the app open (Rule 10). Reconcile the comparison first — re-type the field or the constant.

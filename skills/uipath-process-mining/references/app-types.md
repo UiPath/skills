@@ -55,6 +55,50 @@ add-table is not custom-only.
    extend with custom models + add-table, develop on `dev` (subset) and publish
    the full dataset, and `query` with the `--group-by/--metric` sugar.
 
+## Sample data — a demo app without your own data
+
+Some templates ship sample data — the UI's "Use sample data" option when creating
+an app. Use it when the user wants a demo / sandbox app or asks for sample data;
+do not write a synthetic CSV instead.
+
+1. **Find a template that ships sample data.** `SampleDataAvailable` is per
+   template version:
+
+   ```bash
+   uip pm app-types list --output-filter "[?SampleDataAvailable].{Key:AppTypeKey,Version:Version,Name:DefaultName}"
+   ```
+
+   Empty result ⇒ no template on this tenant ships sample data. Tell the user and
+   fall back to their own data (mapping → upload → ingest).
+2. **Create the app without `--data-mapping`.** The sample files fit the
+   template's default mapping; a custom mapping can make them fail to parse.
+
+   ```bash
+   uip pm apps create "<APP_NAME>" --type <APP_TYPE_KEY> --output json
+   ```
+
+3. **Ingest the sample data.** No `files upload` first — the backend copies the
+   template's sample files into the app.
+
+   ```bash
+   uip pm ingestions create <APP_ID> --sample-data --wait --output json
+   ```
+
+   The ingestion runs the template's transformations like any other run, so the
+   app is queryable when `--wait` returns `Success`.
+
+| Outcome | Meaning | Do |
+|---------|---------|-----|
+| `Failure`, *"has no sample data"* | Template ships none (`SampleDataAvailable: false`), or the app was imported | Pick a template from step 1, or use the user's own data |
+| non-zero exit, *"cannot be used with"* | `--sample-data` combined with `--file-format` / `--field-delimiter` / `--quote-character` / `--encoding` | Drop the file-format flags — sample data needs none |
+| *"unknown option '--sample-data'"* | Installed `uip` predates the flag | `npm install -g @uipath/cli@latest`, then retry; do not call the REST API by hand |
+| `--wait` ends `FAILED` | Loader/transform error, printed by `--wait` | Treat as any failed ingestion — read the printed error; `ingestions logs` for more |
+
+After loading, everything else is unchanged: transform, extend with add-table,
+publish, query. To swap in real data later, set the mapping with `apps
+data-mapping update`, `files upload`, and `ingestions create` without
+`--sample-data`.
+
 ## What is template-specific
 
 - **The `Cases.sql` optional-column gotcha** ([`transformations.md`](transformations.md))
