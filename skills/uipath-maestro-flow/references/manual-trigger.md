@@ -87,10 +87,11 @@ default root still omits `.trigger(...)`.
   `.output({ refundAmount })` already exists. Declare the `.var()` yourself to give
   it a default.
 - **The copy is one row per root on its TRIGGER node**, in
-  `variables.variableUpdates[<triggerId>]` (the construct `{ updates }` writes for
-  a step): `start` gets `refundAmount ← $vars.start.output.amount`, `review` gets
-  `refundAmount ← $vars.review.output.reviewedAmount`. It runs before that root's
-  prefix, so a prefix can read `$vars.refundAmount` too.
+  `variables.variableUpdates[<triggerId>]`. This is the same construct `{ updates }`
+  writes for a step. Here `start` gets `refundAmount ← $vars.start.output.amount`
+  and `review` gets `refundAmount ← $vars.review.output.reviewedAmount`.
+- **The copy runs before that root's prefix**, so a prefix can read
+  `$vars.refundAmount` too.
 - **Read it as a var:** `v('refundAmount')` in an Expr slot, `$vars.refundAmount`
   in script code. Do not write a copy step or a `.var()` + `entryInput(...)`
   `{ updates }` by hand; the default root has no prefix to hold one.
