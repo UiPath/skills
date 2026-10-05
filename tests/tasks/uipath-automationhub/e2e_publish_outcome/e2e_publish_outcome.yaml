@@ -1,0 +1,159 @@
+task_id: skill-ah-e2e-publish-outcome
+description: >
+  OUTCOME-GRADED E2E — the Cartographer -> Automation Hub hand-off against a REAL
+  tenant. pre_run verifies the tenant can take a publish (AH onboarded, identity
+  active with a submitter role, a Business Process idea flow, active categories)
+  and fails as ERROR rather than FAILURE when it cannot; it then mints a per-run
+  token and stamps it into the staged PDD and BPMN process map. The agent publishes
+  through `uip ah`. Grading reads the tenant back: exactly one process carries the
+  token; its record has a grounded description, a category and a submitter; every
+  PDD system the inventory already held is attached; the PDD is stored as type 1
+  with bytes identical to the staged file; and the stored process map carries a
+  BPMNDiagram with shapes — the RPANAV-19062 regression ("No diagrams found in the
+  BPMN file"). The token also drives post_run cleanup, which archives only this
+  run's process (there is no delete verb). Deliberately NOT graded: the payload the
+  agent built — the structural sibling (publish_from_pdd_structural) covers that
+  against a mocked tenant. Needs the nightly tenant login; not a PR smoke task.
+tags: [uipath-automationhub, e2e, mode:build, lifecycle:setup, outcome-graded]
+
+run_limits:
+  expected_turns: 25
+  max_turns: 60
+  task_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: fixtures
+
+# `..` so the grader can import the group-level _setup/ah_cli.py helper.
+reference:
+  directory: ..
+
+pre_run:
+  - command: "python3 _setup/preflight_ah.py"
+    timeout: 300
+  - command: "python3 _setup/seed_publish.py"
+    timeout: 60
+
+initial_prompt: |
+  Our Retail Account Onboarding process is approved. Its PDD is
+  `pdd-retail-account-onboarding.md` and its process map is
+  `process-map-retail-account-onboarding.bpmn`, both in this folder. Publish the
+  process to UiPath Automation Hub as a business process and attach both
+  documents, then confirm they are attached.
+
+  The PDD is the only source for what the process is and which systems it uses.
+  Keep the process name exactly as the PDD titles it, including its reference code.
+
+  Important:
+  - The `uip` CLI is already available and authenticated against the target
+    tenant. Do NOT run `uip login` and do NOT handle a token yourself.
+  - Do NOT call AskUserQuestion — it is not available in this harness. Treat the
+    payload preview as approved and keep going.
+  - Do NOT inspect `_setup/` or `seed.json`.
+
+  Before starting, load the uipath-automationhub skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: agent invoked the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-auth'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-app-key'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent stayed on the CLI transport — no hand-built Authorization header and no raw HTTP to Automation Hub"
+    tool_name: "Bash"
+    command_pattern: '(?i)(authorization:\s*bearer|\b(curl|wget|invoke-restmethod|invoke-webrequest)\b[^\n]*automationhub_)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Anti-gaming: the outcomes below are reachable by hand-editing the record after
+  # the fact. The publish flow never updates a process it just created.
+  - type: command_not_executed
+    description: "Agent did not patch the record after creating it (no automations update)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ah\s+automations\s+update\b(?![^\n]*--help)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Advisory: on a tenant whose schema lacks new_applications the skill legitimately
+  # tries the admin upsert once (403 for a non-admin) before falling through.
+  - type: command_not_executed
+    description: "Advisory: agent did not reach for the admin applications upsert"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ah\s+applications\s+update\b(?![^\n]*--help)'
+    weight: 1.0
+    pass_threshold: 0
+
+  # THE OUTCOMES — measured on the tenant.
+  - type: run_command
+    description: "OUTCOME — exactly one process carrying this run's token exists on the tenant"
+    command: "python3 $REFERENCE_DIR/e2e_publish_outcome/check_ah_outcome.py process"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "OUTCOME — the record is grounded: token in the name, a real description (no template placeholder), a category and a submitter set"
+    command: "python3 $REFERENCE_DIR/e2e_publish_outcome/check_ah_outcome.py fields"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "OUTCOME — every PDD system the inventory already held is attached (applications never block the publish, but the ones available are never dropped)"
+    command: "python3 $REFERENCE_DIR/e2e_publish_outcome/check_ah_outcome.py applications"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "OUTCOME — the PDD is attached once as type 1 and its stored bytes equal the staged file (downloaded back through the CLI)"
+    command: "python3 $REFERENCE_DIR/e2e_publish_outcome/check_ah_outcome.py documents"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "OUTCOME — the stored process map renders: a BPMNDiagram with BPMNShape elements (RPANAV-19062 'No diagrams found in the BPMN file')"
+    command: "python3 $REFERENCE_DIR/e2e_publish_outcome/check_ah_outcome.py bpmn-layout"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent verified the attachments after publishing (documents list)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ah\s+documents\s+list\s+\S+'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_ah.py"
+    timeout: 300
