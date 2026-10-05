@@ -89,6 +89,14 @@ jobs:
         with:
           node-version: "22.x"
 
+      - name: Stage the notifier from the workflow's own commit
+        # The tree is main (what gets cut), and the bump step later checks out
+        # origin/main again — so a rehearsal dispatched with --ref <branch>
+        # would otherwise run main's notifier, not the one under test.
+        run: |
+          mkdir -p "$RUNNER_TEMP/cut-tooling"
+          git archive "$GITHUB_SHA" .github/workflows/scripts | tar -x -C "$RUNNER_TEMP/cut-tooling"
+
       - name: Cadence gate and resolve lines
         id: target
         env:
@@ -473,4 +481,4 @@ jobs:
           PREVIEW_VERSION: ${{ steps.publish.outputs.preview_version }}
           BUMP_OUTCOME: ${{ steps.mainbump.outcome }}
           BUMP_URL: ${{ steps.mainbump.outputs.url }}
-        run: node .github/workflows/scripts/slack-sprint-cut-notify.mjs
+        run: node "$RUNNER_TEMP/cut-tooling/.github/workflows/scripts/slack-sprint-cut-notify.mjs"
