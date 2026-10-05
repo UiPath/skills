@@ -35,6 +35,7 @@ dataset:
     - uipath-tasks.jsonl
     - uipath-test.jsonl
     - uipath-connector-builder.jsonl
+    - uipath-doc-strategy-select.jsonl
     - negative.jsonl
 
 initial_prompt: "${row.prompt}"
@@ -221,6 +222,13 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-connector-builder activation"
     skill_name: uipath-connector-builder
+    expected_skill: "${row.expected_skill}"
+    suite_thresholds: {recall.yes: 0.70}
+    stop_early:
+      on_pass: stop
+  - type: skill_triggered
+    description: "uipath-doc-strategy-select activation"
+    skill_name: uipath-doc-strategy-select
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:
