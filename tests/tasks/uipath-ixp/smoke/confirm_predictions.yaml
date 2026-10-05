@@ -79,18 +79,27 @@ success_criteria:
     description: "Agent did NOT confirm f-004 (wrong-field prediction must be skipped)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?\s+.*--fields\s+\S*f-004(?:,|\s|$))[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?\s+(?:.*\s)?(?:--fields|-f)(?:\s+|=)["']?[^\s"']*f-004\b)[^\r\n]*$
     must_match: false
     weight: 2.0
     pass_threshold: 1.0
 
-  # Any mention of f-003 on a confirm line, not just in --fields: writing the
-  # page's value for it is manual extraction too.
+  # The prompt flags f-003 as an OCR misread; writing the page's value over it
+  # is manual extraction, whichever field it targets. `-c` is the short alias.
   - type: file_matches_regex
-    description: "Agent did NOT confirm or write a value for f-003 (misread Total must be left unannotated)"
+    description: "Agent did NOT use --corrections (Critical Rules 8, 9)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b[^\r\n]*f-003)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b[^\r\n]*\s(?:--corrections|-c)(?:\s|=|$))[^\r\n]*$
+    must_match: false
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_matches_regex
+    description: "Agent did NOT confirm f-003 (misread Total must be left unannotated)"
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b[^\r\n]*\s(?:--fields|-f)(?:\s+|=)["']?[^\s"']*f-003\b)[^\r\n]*$
     must_match: false
     weight: 2.0
     pass_threshold: 1.0
