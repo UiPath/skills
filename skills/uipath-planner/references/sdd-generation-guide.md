@@ -407,7 +407,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 **Phase 2 produces:** See Phase 2 Step 2 above (template-specific architectural core)
 
 **Phase 3 produces:** All remaining sections — typically:
-- Business Rules (RPA, Case)
+- Business Rules (RPA, Case). RPA §4 and BPMN §5 also carry decision tables for deterministic rules and the list of rules that need reasoning: [Business Rules Guide](business-rules-guide.md)
 - Value Mappings (RPA)
 - Exception / Error Handling (all)
 - Credentials & Assets (RPA)
