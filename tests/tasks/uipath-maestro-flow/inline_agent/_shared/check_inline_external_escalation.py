@@ -17,8 +17,8 @@ Validates:
        - isEnabled is truthy
        - channels contains at least one entry with
          type == "actionCenter" (lowercase) bound to the deployed
-         "FraudEscalation" app: properties.appName == "FraudEscalation",
-         properties.folderName == "Shared/uipath-agents/FraudEscalation"
+         "ExpenseReviewApp" app: properties.appName == "ExpenseReviewApp",
+         properties.folderName == "Shared/uipath-agents/ExpenseReviewSol"
          (the deployed Orchestrator folder of the app), and
          properties.resourceKey is a UUID-shaped non-empty string
          (copied from `uip solution resources list`'s `Key`)
@@ -27,6 +27,13 @@ Validates:
   `location` field — the solution-vs-external distinction is captured
   by where the ActionCenter app actually lives (external in Shared for
   F18) and by the test prompt wording.
+
+  The app is a Workflow Action app on purpose. The task used the
+  "FraudEscalation" JS Action app until 2026-10-05; a JS Action app cannot
+  back an agent escalation (`uip solution resources refresh` reports it "not
+  found in Orchestrator"), so the task could only ever grade files.
+  ExpenseReviewApp backed a live escalation in UiPath/flow-builder-sdk#925
+  (`flow debug` suspended and created an Action Center AppTask).
 """
 
 import os
@@ -45,7 +52,7 @@ from _shared.inline_wiring import (  # noqa: E402
     resolve_resource_source,
 )
 
-FLOW_PATH = Path(os.getcwd()) / "FraudFlowSol" / "FraudFlow" / "FraudFlow.flow"
+FLOW_PATH = Path(os.getcwd()) / "ExpenseFlowSol" / "ExpenseFlow" / "ExpenseFlow.flow"
 # Escalation nodes are registered as concrete variants (e.g.
 # `uipath.agent.resource.escalation.coded-action-app`,
 # `...escalation.quick-form`); there is no bare `...escalation` node. Match by
@@ -53,8 +60,8 @@ FLOW_PATH = Path(os.getcwd()) / "FraudFlowSol" / "FraudFlow" / "FraudFlow.flow"
 ESCALATION_NODE_TYPE_PREFIX = "uipath.agent.resource.escalation."
 UUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
-EXPECTED_APP_NAME = "FraudEscalation"
-EXPECTED_FOLDER_NAME = "Shared/uipath-agents/FraudEscalation"
+EXPECTED_APP_NAME = "ExpenseReviewApp"
+EXPECTED_FOLDER_NAME = "Shared/uipath-agents/ExpenseReviewSol"
 
 
 def main() -> None:

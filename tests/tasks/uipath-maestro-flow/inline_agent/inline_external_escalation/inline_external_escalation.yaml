@@ -6,7 +6,8 @@ description: >
   already deployed to Orchestrator (not inside this solution).
   Verifies the escalation resource.json under the inline agent's UUID
   subdirectory has an actionCenter channel bound to the deployed
-  "FraudEscalation" app (appName, folderName, UUID resourceKey), and that a
+  "ExpenseReviewApp" Workflow Action app (appName, folderName, UUID
+  resourceKey), and that a
   `uipath.agent.resource.escalation` flow node is wired to the
   autonomous agent node's `escalation` handle.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, low-code, inline-flow, resource]
@@ -22,12 +23,13 @@ reference:
   directory: ../..
 
 initial_prompt: |
-  Create a UiPath Flow project "FraudFlow" that runs an inline low-code agent
-  which triages transactions and, when it isn't confident, escalates the case to
-  a human reviewer through our existing "FraudEscalation" Action Center app —
-  it's already running in Orchestrator, not part of this solution. Set this up
-  using the agent's Escalation capability, wired into the flow — not a standalone human-in-the-loop node. The
-  solution should be named "FraudFlowSol".
+  Create a UiPath Flow project "ExpenseFlow" that runs an inline low-code agent
+  which triages employee expense claims and, when it isn't confident a claim
+  follows policy, escalates the claim to a human reviewer through our existing
+  "ExpenseReviewApp" Action Center app — it's already running in Orchestrator,
+  not part of this solution. Set this up using the agent's Escalation
+  capability, wired into the flow — not a standalone human-in-the-loop node. The
+  solution should be named "ExpenseFlowSol".
 
   Do NOT publish, upload, or deploy.
 
@@ -53,7 +55,7 @@ success_criteria:
     pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
 
   - type: command_executed
-    description: "Agent discovered the FraudEscalation app identity with uip solution resources list --kind App"
+    description: "Agent discovered the ExpenseReviewApp app identity with uip solution resources list --kind App"
     tool_name: "Bash"
     command_pattern: 'uip\s+solution\s+resources\s+list\b.*--kind\s+App'
     min_count: 1
@@ -73,7 +75,7 @@ success_criteria:
   # `uip solution project add` both populate Projects[] in the .uipx).
   - type: json_check
     description: "Project is registered in the parent solution .uipx"
-    path: "FraudFlowSol/FraudFlowSol.uipx"
+    path: "ExpenseFlowSol/ExpenseFlowSol.uipx"
     assertions:
       - expression: "length(Projects)"
         operator: "gte"
@@ -83,7 +85,7 @@ success_criteria:
 
   - type: file_exists
     description: "Flow file was created"
-    path: "FraudFlowSol/FraudFlow/FraudFlow.flow"
+    path: "ExpenseFlowSol/ExpenseFlow/ExpenseFlow.flow"
     weight: 1.5
     pass_threshold: 1.0
 
@@ -93,7 +95,7 @@ success_criteria:
   # `uip maestro flow registry` trajectory gates the v1 recipe required.
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py FraudFlowSol/FraudFlow/FraudFlow.flow"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py ExpenseFlowSol/ExpenseFlow/ExpenseFlow.flow"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
