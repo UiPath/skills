@@ -71,11 +71,14 @@ for (const t of teams) {
     console.log(`@${actor} is a member of @${t}, a CODEOWNER of skills/${skill}/.`);
     process.exit(0);
   }
-  if (res.status !== 404) unverifiable.push(`@${t}`);   // 403/401: the token cannot read the team
+  // A token without org read access gets 404 (not 403) here, the same answer as "not a
+  // member", so anything short of an active membership leaves the team unverified.
+  unverifiable.push(`@${t}`);
 }
 
 console.log(`@${actor} is not a CODEOWNER of skills/${skill}/. Owners: ${owners.join(" ")}`);
 if (unverifiable.length) {
-  console.log(`(Could not read membership of ${unverifiable.join(", ")}; if you are in one, ask a listed owner to run it.)`);
+  const who = [...users.map((u) => `@${u}`), ...maintainers.map((m) => `@${m}`)].join(" ") || "an optimizer maintainer";
+  console.log(`(Could not read membership of ${unverifiable.join(", ")}; if you are in one, ask ${who} to run it.)`);
 }
 process.exit(1);
