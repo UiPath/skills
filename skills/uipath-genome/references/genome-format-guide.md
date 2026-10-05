@@ -98,7 +98,7 @@ Test: if a builder cannot rebuild the step from the text alone, add detail. Neve
 **A source's workaround for its own platform is not behaviour.** A clipboard copy between two ranges, a temporary file written beside the input, a rename around a path the source's script cannot open, a user setting switched to steer a file format: the step states the result the workaround produced, and the Source Map names the workaround — unless a later step reads what it leaves behind, which makes it data.
 
 ### Business Rules
-Plain language, no code syntax, specific fields and thresholds kept. Group under `### Step N: {name}` headings for the step where the rule fires; cross-step rules under `### General`.
+Plain language, no code syntax, specific fields and thresholds kept. Group under `### Step N: {name}` headings for the step where the rule fires; a rule or handler several steps share goes once under a heading naming them (`### Steps 4, 10 and 15: …`); cross-step rules under `### General`.
 
 | Code construct | Genome wording |
 |---|---|
@@ -290,13 +290,14 @@ An extracted genome carries a source's defect only once [extraction-guide.md](ex
 `**Source defect:** {what the source does, stated as fact} … Evident intent: {what it was meant to do} {*[Inferred]* when only the step's purpose shows it}`
 
 - The defect itself is a fact read in the source and never carries `*[Inferred]*`.
-- The evident intent carries the marker only when the step's purpose is all that shows it. An intent the source states (a comment or log text at the defect, a sibling copy that does it) is quoted and unmarked, and so is one a user ruling confirms. Any consequence that depends on data, configuration, platform or package behaviour the export does not hold carries the marker.
+- The evident intent carries the marker only when the step's purpose is all that shows it. An intent the source states (a comment or log text at the defect, a sibling copy that does it — a disabled or unreached copy the author superseded included) is quoted and unmarked, and so is one a user ruling confirms. A step's or workflow's name shows only its purpose. Any consequence that depends on data, configuration, platform or package behaviour the export does not hold carries the marker.
 - The genome says which behaviour the rebuild follows. It follows the evident intent when the source states that intent. When only the step's purpose shows it, the choice is the user's: the rebuild carries the source's behaviour unless the user rules otherwise, because a migration keeps the source's rules and an intent nobody wrote down is a guess. A ruling is written at the step after the source fact it departs from, as `User ruling ({date}): …`, and the index row's Rebuild follows cell cites it.
-- A defect whose result only the source runtime's internals reproduce cannot be carried: an order left by a comparison that contradicts itself is whatever that runtime's sort makes of it. The rebuild follows the evident intent.
+- A defect whose result only the source runtime's internals reproduce cannot be carried: an order left by a comparison that contradicts itself is whatever that runtime's sort makes of it, and a run the source platform refuses to start (a required setting left empty) has no behaviour to rebuild. The rebuild follows the evident intent.
 - What an evident intent leaves open is put to the user as a ruling, its options listed at the step: where the rows a self-contradicting comparison cannot place go, a signal the step needs that the source never produced (an answer saying the input could not be read), a criterion the author's note names but never states (which records count as new). Until the user rules, the genome names the option the rebuild builds and marks it `*[Inferred]*`.
 - A process genome indexes every component's defects under Error Handling and Recovery in one table, `Defect | Component step | Rebuild follows`: one row each, the defect named in a few words, stated in full only at its step.
 - A defect's own Source Map row names the objects and lines that prove it.
 - A behaviour the source's comments or design show as intended is a rule, not a defect.
+- An AI step's instructions are source like any other step's: a rule that uses data the step is never given, or rules that contradict each other, is a source defect. Following its intent gives the step the data its instructions name, or rewords the rule, and the step's Business Rules state the instructions the rebuild uses.
 - A behaviour that turns on semantics nobody documents is **unresolved**: state both readings and mark the chosen one `*[Inferred]*`.
 - The word "suspected" never appears in a written genome: a finding is verified or not written as a defect.
 
