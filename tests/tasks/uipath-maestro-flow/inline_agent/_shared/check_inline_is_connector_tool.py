@@ -16,12 +16,19 @@ the F2 (inline agent) flow-wiring assertions. Specifically:
      under `resources/` declares an IS tool (`$resourceType=tool`,
      `type=integration`). Other `properties` fields are intentionally
      under-asserted until the canonical shape locks in.
-  5. At least one `bindings_v2.json` was authored somewhere under the
-     flow project (outside `.agent-builder/`). The agent creates this
-     manually as the source for `uip solution resources refresh`. Shape
-     under-asserted for now — we just verify presence and valid JSON.
-  6. After refresh, at least one connection resource file exists under
-     `ResearchFlowSol/resources/solution_folder/connection/`.
+  5. A `bindings_v2.json` under the flow project (outside
+     `.agent-builder/`) carries a `connection` binding for the connector
+     the tool node uses, with a non-empty `ConnectionId`. That binding is
+     what `uip solution pack` and `uip maestro flow debug` read the
+     connection from.
+
+The solution-level `resources/solution_folder/connection/*.json` file is
+NOT required. Pack and debug each run a resource refresh themselves and
+write that file (byte-identical to a manual `uip solution resources
+refresh`), so it is an upload-side artifact. The task forbids upload, so
+an author who skips the manual refresh is correct. Measured 2026-10-05 on
+alpha: debug of a copy without the folder completed and the web-search
+tool ran; pack emitted the connection file.
 """
 
 import json
@@ -41,7 +48,6 @@ CONNECTOR_TOOL_NODE_TYPE_PREFIX = "uipath.agent.resource.tool.connector."
 SOLUTION = Path(os.getcwd()) / "ResearchFlowSol"
 FLOW_PROJECT = SOLUTION / "ResearchFlow"
 FLOW_PATH = FLOW_PROJECT / "ResearchFlow.flow"
-CONNECTION_DIR = SOLUTION / "resources" / "solution_folder" / "connection"
 
 
 def load(path: Path) -> dict:
@@ -140,41 +146,36 @@ def assert_integration_tool_resource(agent_dir: Path) -> None:
     )
 
 
-def assert_bindings_v2_authored() -> None:
+def assert_connection_binding(connector_node: dict) -> None:
     candidates = sorted(FLOW_PROJECT.rglob("bindings_v2.json"))
     authored = [p for p in candidates if ".agent-builder" not in p.parts]
     if not authored:
         sys.exit(
-            f"FAIL: no bindings_v2.json authored under {FLOW_PROJECT} (outside "
-            ".agent-builder/). Agent must create it manually as the source "
-            "for `uip solution resources refresh`."
+            f"FAIL: no bindings_v2.json under {FLOW_PROJECT} (outside "
+            ".agent-builder/) — the connector tool's connection is bound nowhere."
         )
-    path = authored[0]
-    try:
-        data = json.loads(path.read_text())
-    except json.JSONDecodeError as e:
-        sys.exit(f"FAIL: {path} is not valid JSON: {e}")
-    if not isinstance(data, (dict, list)):
-        sys.exit(f"FAIL: {path} root is neither object nor array: {type(data).__name__}")
-    print(f"OK: bindings_v2.json authored at {path.relative_to(SOLUTION.parent)}")
-
-
-def assert_connection_provisioned() -> None:
-    if not CONNECTION_DIR.is_dir():
-        sys.exit(
-            f"FAIL: {CONNECTION_DIR} does not exist — `uip solution resource "
-            "refresh` did not provision a connection resource under "
-            "resources/solution_folder/connection/"
-        )
-    connection_files = [p for p in CONNECTION_DIR.rglob("*.json") if p.is_file()]
-    if not connection_files:
-        sys.exit(
-            f"FAIL: {CONNECTION_DIR} is empty — refresh did not drop any "
-            "connection resource JSON files"
-        )
-    print(
-        f"OK: found {len(connection_files)} connection resource file(s) under "
-        f"resources/solution_folder/connection/"
+    node_type = connector_node.get("type", "")
+    for path in authored:
+        try:
+            data = json.loads(path.read_text())
+        except json.JSONDecodeError as e:
+            sys.exit(f"FAIL: {path} is not valid JSON: {e}")
+        resources = data.get("resources") if isinstance(data, dict) else None
+        for r in resources or []:
+            if not isinstance(r, dict) or r.get("resource") != "connection":
+                continue
+            connector = (r.get("metadata") or {}).get("Connector") or ""
+            conn_id = ((r.get("value") or {}).get("ConnectionId") or {}).get("defaultValue")
+            if connector and f".{connector}." in f"{node_type}." and isinstance(conn_id, str) and conn_id.strip():
+                print(
+                    f"OK: {path.relative_to(SOLUTION.parent)} binds connector "
+                    f"{connector!r} to connection {conn_id!r}"
+                )
+                return
+    sys.exit(
+        f"FAIL: no bindings_v2.json connection binding matches the tool node "
+        f"{node_type!r} (need resource=connection, metadata.Connector = the "
+        "node's connector key, non-empty value.ConnectionId.defaultValue)"
     )
 
 
@@ -187,8 +188,7 @@ def main() -> None:
     agent_dir = assert_agent_source_dir(agent_node)
     assert_tool_edge(flow, agent_node["id"], connector_node["id"])
     assert_integration_tool_resource(agent_dir)
-    assert_bindings_v2_authored()
-    assert_connection_provisioned()
+    assert_connection_binding(connector_node)
 
 
 if __name__ == "__main__":

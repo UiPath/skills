@@ -5,8 +5,7 @@ description: >
   that exposes an IS connector activity as a tool. The agent under
   test must discover the connector via `uip is`, author a
   `type: "integration"` resource.json inside the inline agent's UUID
-  subdirectory, create a `bindings_v2.json`, run
-  `uip solution resources refresh`, and wire a
+  subdirectory, bind the connection in `bindings_v2.json`, and wire a
   `uipath.agent.resource.tool.connector` flow node to the
   `uipath.agent.autonomous` node's `tool` handle. Verifies design-time
   artifacts only (no runtime connector invocation). Cloud auth
@@ -97,7 +96,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Inline agent IS tool resource, bindings_v2.json, connection resource, and flow wiring (tool.connector node + edge to agent's tool handle)"
+    description: "Inline agent IS tool resource, bindings_v2.json connection binding, and flow wiring (tool.connector node + edge to agent's tool handle)"
     command: "python3 $REFERENCE_DIR/inline_agent/_shared/check_inline_is_connector_tool.py"
     timeout: 30
     expected_exit_code: 0
