@@ -66,7 +66,7 @@ case-design-layers-guide.md's; the cells own the shape.)
  Data closure
  16. Every `=vars.X` is a row in Case Variables.
  17. Every consumed variable whose Category is not `In` is produced somewhere: an Outputs row `-> X`, an
-     assignment `X = ...`, a Default, or a sourceTriggers entry.
+     assignment `X = ...`, a Buttons `Maps To` assignment, a Default, or a sourceTriggers entry.
  18. Every `Out` variable has a Default or a producing Outputs row.
  19. Every Buttons `Maps To` target is a declared variable, `taskOutcome`, or an identifier read somewhere
      outside the Buttons tables.

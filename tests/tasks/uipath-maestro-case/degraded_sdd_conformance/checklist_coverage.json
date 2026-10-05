@@ -1,12 +1,11 @@
 {
-  "cli_head": "1e87bfb57",
+  "cli_head": "6f3b4ba96",
   "seed": "tests/tasks/uipath-maestro-case/sla_from_sdd/fixtures/sdd.md",
   "tally": {
     "convert": 6,
     "excluded": 1,
     "needs-draft": 4,
-    "silent": 3,
-    "validate": 22,
+    "validate": 25,
     "validate-warns": 2
   },
   "rows": [
@@ -253,23 +252,26 @@
     {
       "item": 17,
       "violation": "consumed Variable never produced (its Outputs row removed)",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model changes: .stages[1].tasks[0].extractRows, .stages[1].tasks[0].outputRows"
+      "verdict": "validate",
+      "detail": [
+        "SDD_VARIABLE_NEVER_PRODUCED"
+      ]
     },
     {
       "item": 18,
       "violation": "Out variable with no Default and no producer",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model changes: .variableCategories.reviewsummary, .variableTypes.reviewsummary, .variables"
+      "verdict": "validate",
+      "detail": [
+        "SDD_OUT_VARIABLE_UNSET"
+      ]
     },
     {
       "item": 19,
       "violation": "Buttons Maps To an undeclared variable",
-      "build_validate": [],
-      "verdict": "silent",
-      "detail": "model identical"
+      "verdict": "validate",
+      "detail": [
+        "SDD_BUTTON_TARGET_UNKNOWN"
+      ]
     },
     {
       "item": 28,

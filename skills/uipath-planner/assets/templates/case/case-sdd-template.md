@@ -649,8 +649,8 @@ reasoning for the task (one concrete sentence, never boilerplate), and `**Task e
 Inputs/Outputs the draft already lists.
 
 Gate — `uip maestro case sdd validate` against the on-disk file BEFORE the Status: ready flip, in every
-mode (the lane's §Terminal step 3), plus the seven items no CLI command sees (17–19; 30–33 when
-finalizing a draft), stated in the lane's §Template conformance gate. Only when the CLI has no `sdd`
+mode (the lane's §Terminal step 3), plus, when finalizing a draft, the four draft-parity items (30–33)
+no CLI command sees, stated in the lane's §Template conformance gate. Only when the CLI has no `sdd`
 command, fall back to the full CONFORMANCE CHECKLIST below. No script and no interpreter: Read the written file once (the one structural Read the lane
 allows), then answer every item PASS or FAIL in the transcript, each with one verbatim quote from the
 file — the line that violates (FAIL) or the line that satisfies (PASS) — so the check is inspectable,
