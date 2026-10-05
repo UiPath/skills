@@ -1,5 +1,5 @@
 <!--skill-flavor:single-skill-exit-no-plan:start-->
-1. Do NOT write a plan file. Do NOT call `EnterPlanMode`. Do NOT ask the Step 3 batch.
+1. Do NOT write a plan file or call `EnterPlanMode` — a single-project request is planned by its specialist, not the planner. Do NOT ask the Step 3 batch.
 <!--skill-flavor:single-skill-exit-no-plan:end-->
 
 <!--skill-flavor:approach-behavior:start-->
