@@ -14,8 +14,9 @@ run_limits:
   task_timeout: 2400
   turn_timeout: 2000
 
+# the reference directory is copied into a temp dir, so a sibling checker must sit under it: reference = the planner tests dir
 reference:
-  directory: .
+  directory: ..
 
 initial_prompt: |
   I want to build a UiPath Maestro Flow from scratch — I have NO design document and no process
@@ -29,7 +30,8 @@ initial_prompt: |
   - Expense: expense_id, expense_description, expense_date, cost, approved, link_to_member
     (→ Member.member_id), link_to_budget (→ Budget.budget_id)
   Amounts are decimals; everything else is text; approved is a yes/no. Solution name
-  ExpenseApproval, folder Shared.
+  ExpenseApproval, folder Shared. The entities and the flow are separate deliverables: the
+  entities have to exist before the flow can bind to them.
 
   Load the appropriate UiPath skill. Work autonomously — don't ask me questions — and do not
   create, scaffold or build anything yet. Produce the implementation plan only, routed to the
@@ -51,7 +53,7 @@ success_criteria:
 
   - type: run_command
     description: "Plan scored against the golden: entity tasks, fields, types, relationships, bindings, order"
-    command: python3 "$REFERENCE_DIR/../sdd_to_tasks_entities/check_tasks_entities.py" --golden "$REFERENCE_DIR/golden.json" --tasks expense-approval-plan.md
+    command: python3 "$REFERENCE_DIR/sdd_to_tasks_entities/check_tasks_entities.py" --golden "$REFERENCE_DIR/lane_b_entities/golden.json" --tasks expense-approval-plan.md
     score_from_stdout: true
     timeout: 60
     weight: 4.0
