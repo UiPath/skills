@@ -1,5 +1,5 @@
 {
-  "cli_head": "6f3b4ba96",
+  "cli_head": "90b5247e6",
   "seed": "tests/tasks/uipath-maestro-case/sla_from_sdd/fixtures/sdd.md",
   "tally": {
     "convert": 6,
@@ -286,7 +286,8 @@
       "violation": "user-selected-stage entry on a lane a decision routes to",
       "verdict": "validate",
       "detail": [
-        "SDD_WAIT_FOR_USER_UNPAIRED"
+        "SDD_WAIT_FOR_USER_UNPAIRED",
+        "SDD_STAGE_BLOCK_INCOMPLETE"
       ]
     },
     {
