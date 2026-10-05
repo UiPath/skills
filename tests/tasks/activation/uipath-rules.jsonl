@@ -1,0 +1,30 @@
+{"id": "uipath-rules-001", "prompt": "Create a UiPath business rule that assigns a risk band from credit score and income", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-002", "prompt": "Turn this loan approval policy into a DMN decision table in a BusinessRules project", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-003", "prompt": "Scaffold a new Business Rules project called ShippingFees", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-004", "prompt": "Add a row to my decision table so orders over 500 get free shipping", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-005", "prompt": "My .dmn fails uip rules validate, can you fix it?", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-006", "prompt": "Regenerate entry-points.json for my business rule after I added an input column", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-007", "prompt": "Debug my business rule with creditScore 640 and income 52000 and tell me which row fired", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-008", "prompt": "Why does my decision table return Medium for a 720 credit score? It should be Low", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-009", "prompt": "Change the hit policy on my rule from FIRST to UNIQUE and fix the overlapping rows", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-010", "prompt": "Convert this spreadsheet of discount tiers into a UiPath decision table", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-011", "prompt": "List the business rules deployed in the Finance folder", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-012", "prompt": "What inputs and outputs does the deployed InvoiceRouting rule expect?", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-013", "prompt": "Show me all versions of the ClaimTriage business rule in Shared", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-014", "prompt": "Review my DMN decision table for gaps and overlapping conditions", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-015", "prompt": "Add a boolean input isPremiumCustomer to my pricing rule", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-016", "prompt": "Write a FEEL decision table that maps country and order weight to a carrier", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-017", "prompt": "Rename the output column of my business rule to approvalStatus and keep the contract in sync", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-018", "prompt": "Build a rule that decides the approval level from invoice amount and department", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-019", "prompt": "My business rule project has a .dmn with two decisions and validate rejects it, what do I do?", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-020", "prompt": "Add a catch-all row at the bottom of my decision table that returns Manual Review", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-021", "prompt": "Explain why my business rule evaluation picked row 3 instead of row 2", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-022", "prompt": "Create a decision table for insurance premium tiers by age band and smoker status", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-023", "prompt": "Get the details of the PaymentTerms business rule in the Procurement folder", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-024", "prompt": "Fix the FEEL range syntax in my decision table, [100..500[ is not accepted", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-025", "prompt": "Make a UiPath Business Rules project from this eligibility policy document", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-026", "prompt": "Add a string input region to my rule and route EU orders to the Dublin warehouse", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-027", "prompt": "My DMN output cell is empty and the debug result comes back null, help", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-028", "prompt": "Edit the thresholds in my fraud score decision table: high starts at 0.85 now", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-029", "prompt": "Describe the argument contract of the deployed EscalationMatrix rule so I can bind it", "expected_skill": "uipath-rules"}
+{"id": "uipath-rules-030", "prompt": "Validate my business rule and run it against these three test cases", "expected_skill": "uipath-rules"}
