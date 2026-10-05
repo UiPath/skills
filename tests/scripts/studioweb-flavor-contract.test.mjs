@@ -239,3 +239,45 @@ test("the studioweb functions and coded-app flavors do not deny the QuickJS node
     assert.ok(skill.includes("QuickJS sandbox"), `${skillName} must say the shell's node is a QuickJS sandbox`);
   }
 });
+
+// The Studio Web panel has no Claude Code plan or task tools. Its plan mode is
+// `EnterPlan` (called before research) and `ExitPlan` (the review card), and the
+// host derives the task list from the approved plan. A planner that names the
+// Claude Code tools there writes a markdown plan and starts building with no
+// approval. Frontmatter is excluded: marker blocks cannot sit inside YAML, so
+// `description` and `allowed-tools` still carry the canonical names.
+const CLAUDE_CODE_PLAN_TOOLS = /\b(EnterPlanMode|ExitPlanMode|TaskCreate|TaskUpdate|TaskList|addBlockedBy)\b/;
+
+function plannerBodyLinesNaming(root, pattern) {
+  const plannerRoot = join(root, "uipath-planner");
+  const hits = [];
+  for (const file of markdownFiles(plannerRoot)) {
+    let text = readFileSync(file, "utf8");
+    if (file.endsWith("SKILL.md")) text = text.replace(/^---\n[\s\S]*?\n---\n/, "");
+    text.split("\n").forEach((line, index) => {
+      if (pattern.test(line)) hits.push(`${relative(plannerRoot, file)}:${index + 1}`);
+    });
+  }
+  return hits;
+}
+
+test("the built studioweb uipath-planner names only the Studio Web plan tools", (t) => {
+  const output = buildStudioweb(t);
+
+  assert.deepEqual(plannerBodyLinesNaming(output, CLAUDE_CODE_PLAN_TOOLS), []);
+  const laneB = readFileSync(join(output, "uipath-planner", "references", "non-pdd-lane-guide.md"), "utf8");
+  assert.ok(
+    laneB.includes("Call `EnterPlan` as soon as the user picks this option"),
+    "explore-first must enter plan mode before discovery",
+  );
+  assert.ok(laneB.includes("call `ExitPlan` with outcome `complete`"), "explore-first must present the plan with ExitPlan");
+  const laneA = readFileSync(join(output, "uipath-planner", "references", "pdd-driven-lane-guide.md"), "utf8");
+  assert.ok(laneA.includes("1. Call `EnterPlan`."), "Lane A interactive review must enter plan mode");
+});
+
+test("the default uipath-planner keeps the Claude Code plan tools (the guard is not vacuous)", (t) => {
+  const output = buildDefault(t);
+
+  assert.ok(plannerBodyLinesNaming(output, CLAUDE_CODE_PLAN_TOOLS).length > 0);
+  assert.deepEqual(plannerBodyLinesNaming(output, /\b(EnterPlan|ExitPlan)\b/), []);
+});
