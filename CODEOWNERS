@@ -228,9 +228,6 @@
 /tests/tasks/uipath-insights/ @UiPath/insights
 /tests/tasks/activation/uipath-insights.jsonl @UiPath/insights
 
-# Automation Discovery skill
-/skills/uipath-automation-discovery/ @uisherif
-
 # Process Mining skill (process apps, data ingestion, dbt transformations)
 /skills/uipath-process-mining/ @UiPath/team-backendhoven
 /tests/tasks/uipath-process-mining/ @UiPath/team-backendhoven

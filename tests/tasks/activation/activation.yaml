@@ -13,7 +13,6 @@ dataset:
     - uipath-admin.jsonl
     - uipath-agents.jsonl
     - uipath-api-workflow.jsonl
-    - uipath-automation-discovery.jsonl
     - uipath-coded-apps.jsonl
     - uipath-functions.jsonl
     - uipath-troubleshoot.jsonl
@@ -67,13 +66,6 @@ success_criteria:
   - type: skill_triggered
     description: "uipath-api-workflow activation"
     skill_name: uipath-api-workflow
-    expected_skill: "${row.expected_skill}"
-    suite_thresholds: {recall.yes: 0.70}
-    stop_early:
-      on_pass: stop
-  - type: skill_triggered
-    description: "uipath-automation-discovery activation"
-    skill_name: uipath-automation-discovery
     expected_skill: "${row.expected_skill}"
     suite_thresholds: {recall.yes: 0.70}
     stop_early:
