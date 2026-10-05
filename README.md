@@ -46,6 +46,7 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | Skill | Description |
 |-------|-------------|
 | **uipath-rpa** | RPA workflows (`.xaml` and `.cs` coded) — create, edit, build, run, debug, test; UI automation, Object Repository, Integration Service activities. |
+| **uipath-task-recording** | Task recordings (Studio Desktop "Record a task") — read the recorded steps, confirm them with the user, hand the build to `uipath-rpa`. |
 | **uipath-maestro-flow** | Maestro Flow (`.flow`) — author, connect nodes, validate, run, publish; triggers, schedules, evals, incidents. |
 | **uipath-agents** | UiPath agents end-to-end — coded (Python: LangGraph, LlamaIndex, OpenAI Agents) and low-code (`agent.json`); scaffold, run, evaluate, deploy. |
 | **uipath-maestro-bpmn** | Maestro BPMN process orchestration (`.bpmn`) — author XML, validate, package, operate, diagnose. |
@@ -112,6 +113,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-rpa` | Stable |
 | `uipath-rules` | In-development |
 | `uipath-solution` | Stable |
+| `uipath-task-recording` | Preview |
 | `uipath-tasks` | Stable |
 | `uipath-test` | Preview |
 | `uipath-troubleshoot` | Preview |
