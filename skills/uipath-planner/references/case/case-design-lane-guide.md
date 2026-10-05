@@ -232,7 +232,7 @@ Write the SDD to disk in batches, gate it, validate it, flip it, format it. The 
 <!--skill-flavor:build-handoff-row:start-->
 | Build handoff (`uipath-maestro-case` asked for a build, no `sdd.md`) | `sdd.md` at the working root — NEVER overwrite an existing one; abort and surface it | Do NOT stop. The Build answer already carried consent: the build's phases start immediately in this conversation (`uip solution init` + its Phase 1, verifying the resolved identities instead of re-discovering them) |
 <!--skill-flavor:build-handoff-row:end-->
-| Normalization (`uipath-maestro-case` handed over a free-form `sdd.md` that failed its receipt check) | `sdd.md`, after the original is written to `sdd.original.md` (§Normalize a free-form SDD) | Do NOT stop: hand back to the build in this conversation |
+| Normalization (`uipath-maestro-case` handed over a free-form `sdd.md` that `sdd parse` could not read) | `sdd.md`, after the original is written to `sdd.original.md` (§Normalize a free-form SDD) | Do NOT stop: hand back to the build in this conversation |
 | Direct design (design/generate a case SDD, greenfield, no PDD) | `<CASE_NAME_KEBAB>-sdd.md` | STOP — the write is a turn boundary; `## Next Steps` points at Lane A or `uipath-maestro-case` for a later, opt-in turn |
 | Draft request (user asked for a reviewable draft and to stop) | `sdd.draft.md`, or `<name>-sdd.draft.md` when the request names the file | STOP. Never promote a draft |
 | Draft finalization (a `sdd.draft.md` exists, user asks to finalize) | the draft's basename minus `.draft` | STOP. §Resumption owns the procedure; the draft stays on disk beside the final |
@@ -301,7 +301,7 @@ If the user explicitly asks to finalize the existing draft, choose `Use the draf
 
 ## Normalize a free-form SDD
 
-The build skill hands over an existing `sdd.md` that failed its receipt check — a pasted outline, a summary, a document no planner wrote — and asks for a build. Treat it as a draft: the design it states is settled, the template shape is not.
+The build skill hands over an existing `sdd.md` that has no planner receipt and that `uip maestro case sdd parse` cannot read whole — a pasted outline or a summary — and asks for a build. (An SDD that parses whole builds directly, receipt or not.) Treat it as a draft: the design it states is settled, the template shape is not.
 
 1. Read exactly these, once each: the document, this section, §Resumption's direct finalize fast path, §Terminal step, and the template. Do not read the layers guide unless the document leaves a required field with no basis.
 2. Preserve the original before anything else: Write its content, byte for byte, to `sdd.original.md` beside it. This is the one case in which the lane replaces an existing `sdd.md`, and only once `sdd.original.md` holds what was there.

@@ -72,8 +72,9 @@ Run this guard before anything else.
      correction. Checked before step 2, so a ready SDD's handoff marker
      does not send a correction to Lane A,
    - a free-form document handed off by that product's build skill because
-     it failed the build's receipt check (no handoff marker, or not
-     `Template validation: passed`) → the lane, normalization.
+     it has no planner receipt AND `sdd parse` could not read it whole →
+     the lane, normalization. (An SDD that parses whole is built directly
+     by the build skill, receipt or not.)
 
 1. No document path?
    - Explicit design/architect language ("design this", "architect this",
