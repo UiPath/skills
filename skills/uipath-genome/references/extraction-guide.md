@@ -173,6 +173,7 @@ Write all files, each named by the slug rule ([genome-format-guide.md § File Na
 | "Complexity should be higher/lower" | Complexity, then depth per population matrix |
 | "Remove the inferred flags" | Delete every `*[Inferred]*` — user confirmed the content |
 | "Drop the Source Map" | Remove section from every file — genome is being shared as a blueprint; say target and data migration will no longer be possible from it |
+| "Also translate the entry points nothing invokes" | § Partial Re-extraction with the objects of the Source Map's `Not covered` row: new steps numbered after the last one, in the component the user names, their findings under a fresh id prefix |
 | "The source changed" / "finish the unread parts" | § Partial Re-extraction with the changed or unread objects. Rerun from Step 1 only when the components themselves changed (projects or root processes added, removed or regrouped); preserve user edits the source does not contradict and say which were kept |
 | "Merge these two components" / "split this one" | Adjust Components, Handoffs, component files; re-check Interface agreement |
 | "Split the dispatcher" / "use one queue" / "apply the REFramework" / "drop the ledger" | Not a genome edit: the split, the store, the template and the fate of the source's coordination stores are execution's configuration answers ([transactional-execution-guide.md § Split questions](transactional-execution-guide.md)). Edit the Transactional Shape only when its As-is or Evidence is wrong or incomplete |
@@ -192,7 +193,8 @@ Runs when Step 2b plans parts. Extraction's own agent is the **parent**: it fixe
    - each shared component's step numbers and public workflows with their arguments, so callers name them before that component is written;
    - the names of lanes, environments and every platform resource, one credential asset per login account ([genome-format-guide.md § Platform Dependencies](genome-format-guide.md));
    - the questions that are process-wide, asked only in the process genome;
-   - the owner of each helper that several components call.
+   - the owner of each helper that several components call;
+   - each part's finding-id prefix, so ids stay unique within a component's Source Map.
 
    Parts never rerun an export-wide command. They read the renderings Step 2b wrote (a UiPath part reads its files), and run the direct read only for Step 4b.
 3a. **A part may run as a fork of the parent** instead of a fresh subagent, under the rule on when a fork pays ([execution-parts-guide.md](execution-parts-guide.md) item 1c). At extraction the shared reads are the brief, this guide, the format guide, the template, the source guide and the export-wide renderings of rule 3; the fork reads its own objects' renderings. A fork writes only its genome or notes file and its ledger; the brief, the process genome, Step 6b's check and the Reconciliation stay the parent's, and its return is checked as rule 9 says.
@@ -221,7 +223,7 @@ Before Step 6b's Source Map check and before edits are offered, the parent works
 2. **Names.** Every platform resource, lane and environment carries the brief's name in every file; each drift is renamed.
 3. **Defect index.** The process genome's defect table is built from the returned verdicts ([genome-format-guide.md § Source Defects](genome-format-guide.md)).
 4. **Rebuild follows.** Each defect is re-checked against that section's rule on which behaviour the rebuild follows, from the intent evidence its verdict returned. A wrong mark is corrected at the step and in the index.
-5. **Code in bodies.** Search every genome file for selector tags (`<webctrl`, `<wnd`, `<html`, `<ctrl`), activity and command names, file extensions, drive and repository paths, and the source's variable syntax (source guide § Value syntax). A hit inside the Source Map is provenance and stays; so do a selector a test asserts as a value (Step 3) and a text the source writes that [genome-format-guide.md § Provenance](genome-format-guide.md) keeps verbatim. Every other hit is translated or moved to the Source Map.
+5. **Code in bodies.** Search every genome file for selector tags (`<webctrl`, `<wnd`, `<html`, `<ctrl`), activity and command names, file extensions, drive and repository paths, and the source's variable syntax (source guide § Value syntax). A hit inside the Source Map is provenance and stays; so do a selector a test asserts as a value (Step 3) and a text the source writes that [genome-format-guide.md § Provenance](genome-format-guide.md) keeps verbatim. Every other hit is translated or moved to the Source Map. Interface descriptions included ([genome-format-guide.md § Interface](genome-format-guide.md)).
 6. **Cross-component calls.** Every returned call is a Handoffs row, and the Interfaces of both components agree with it. A helper several components call is described once, in its owner, and each caller names that owner's step.
 
 Then Step 6b's check runs over every file, and Step 7 offers edits.
