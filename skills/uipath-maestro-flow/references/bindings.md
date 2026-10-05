@@ -1,27 +1,31 @@
 # Symbolic connector bindings
 
 `bindings.json` maps the short connection and folder names in authored
-TypeScript to tenant resource keys. Keep it at the project root beside the
-`<Name>.flow.ts` file.
+TypeScript to tenant resource keys. It lives in `.flow-sdk/` beside the
+`<Name>.flow.ts` file; a legacy `bindings.json` at the root is still read when
+`.flow-sdk/bindings.json` is absent.
 
 ## Project layout
 
 ```text
 <Name>.flow.ts
-bindings.json
-connectors-local/
-  <connector-key>.ts
-  descriptors/
-    <connector-key>/
-      index.json
-      ...generated descriptor data...
+.flow-sdk/
+  bindings.json
+  connectors/
+    <connector-key>.ts
+  connectors-local/
+    <connector-key>.ts
+    descriptors/
+      <connector-key>/
+        index.json
+        ...generated descriptor data...
 ```
 
 `uip maestro registry prepare` prints the import for
-`connectors-local/<connector-key>.ts`.
-The generated descriptor data lives below `connectors-local/descriptors/`; do
-not import it directly. `bindings.json` stays at the root and is independent of
-that descriptor overlay.
+`.flow-sdk/connectors-local/<connector-key>.ts`.
+The generated descriptor data lives below `.flow-sdk/connectors-local/descriptors/`;
+do not import it directly. `bindings.json` is independent of that descriptor
+overlay.
 
 ## Schema
 
@@ -140,9 +144,9 @@ Use unique `id` and `name` values. The resolver takes the first entry whose
 ## Resolution and precedence
 
 The compile commands load `--bindings <file>` when supplied. Otherwise they
-load `./bindings.json` from the current directory when it exists. `emitFlow()`
-uses the same current-directory default unless `bindingsFile` or a `Bindings`
-instance is supplied.
+load `.flow-sdk/bindings.json` from the current directory, or a legacy
+`./bindings.json`, when it exists. `emitFlow()` uses the same default unless
+`bindingsFile` or a `Bindings` instance is supplied.
 
 ```ts
 .step('notify', connector(SendMessage, {
@@ -158,14 +162,14 @@ do not treat a successful compile as proof that an invented id exists.
 
 Only compile/emission reads the authored file. `uip maestro flow validate`,
 solution resource refresh, and product debug read the emitted `.flow`, not the
-root `bindings.json`. A compile regenerates the artifact from the authored
+authored `bindings.json`. A compile regenerates the artifact from the authored
 mapping. A later direct edit to the artifact remains in effect only until the
 next compile.
 
 ## Emitted-artifact bindings
 
 `uip maestro flow binding add` edits bindings inside an already emitted `.flow`;
-it does not create or update the symbolic root file. SDK-authored Integration
+it does not create or update the authored symbolic file. SDK-authored Integration
 Service actions and managed HTTP nodes should instead keep symbolic names in
 source plus `bindings.json`, so recompilation deterministically restores the
 same node detail and product bindings. Use direct artifact edits only for a

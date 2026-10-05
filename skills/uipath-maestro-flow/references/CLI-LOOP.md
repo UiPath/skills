@@ -41,9 +41,9 @@ artifact can establish.
 ## Local authoring hard gates
 
 Use this section only when emit-only mode is disabled. Use the source check as
-the fast no-output inner loop (with a library and a `bindings.json` beside the
-source it reports every connector-input and binding refusal `compile` would
-raise), compile to emit, then run the product's static check on the artifact.
+the fast no-output inner loop (with a library and a `.flow-sdk/bindings.json`
+beside the source, it reports every connector-input and binding refusal `compile`
+would raise), compile to emit, then run the product's static check on the artifact.
 There is no compiled-artifact `check`; `validate` is that rung.
 
 The full sequence, in order — `registry prepare` appears only where `check`

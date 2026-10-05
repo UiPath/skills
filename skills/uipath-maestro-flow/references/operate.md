@@ -130,7 +130,11 @@ the input's own name:
 ```
 
 At run time that variable is an OBJECT, not a path — a script reads the uploaded
-name as `$vars.<triggerNodeId>.output.<inputName>.FullName`.
+name as `$vars.<triggerNodeId>.output.<inputName>.FullName`. A script sees only
+that reference (`ID`, `FullName`, `MimeType`, `Metadata`), never the file's
+content: a flow that parses an uploaded file hands the reference to a step that
+reads files, such as an RPA process taking it as its file argument
+([rpa-workflow.md](rpa-workflow.md#where-the-job-runs)).
 
 **A conversational flow cannot be debugged headlessly.** On a flow whose trigger
 is `conversationTrigger()`, debug uploads, returns

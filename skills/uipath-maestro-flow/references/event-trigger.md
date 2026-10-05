@@ -46,7 +46,7 @@ connection and writes both `bindings.json` entries (connection id AND folder
 key — the same stage a connector-action prepare runs), fetches the event's
 connection-scoped definition, records the object decision for a generic event
 (`--object <name>`, the same matching ladder actions use), stores the
-where/filter vocabulary in `connectors-local/` so `check` works offline, and
+where/filter vocabulary in `.flow-sdk/connectors-local/` so `check` works offline, and
 records each `--resolve` in `resolutions.json` for `compile` to substitute.
 `check` then validates every `where` key and every `filters[].field` against
 the prepared vocabulary — an unknown filter leaf is an ERROR
@@ -82,7 +82,7 @@ take none, so `where` stays empty and `check` refuses a subscription that
 omits `object` (`EVENT_GENERIC_NO_OBJECT`) or puts the object in `where`.
 
 ```ts
-import { RecordCreated, RecordUpdated } from './connectors/uipath-uipath-dataservice.ts';
+import { RecordCreated, RecordUpdated } from './.flow-sdk/connectors/uipath-uipath-dataservice.ts';
 
 // Start when a ContractRegistry record is created with dueDate before 2026-08-04.
 .trigger(onEvent(RecordCreated, {
