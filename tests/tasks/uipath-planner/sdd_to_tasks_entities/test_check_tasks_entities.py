@@ -77,3 +77,20 @@ def test_dropped_entity_task_lowers_entities(tmp_path, golden):
     text = tasks_from_golden(golden).replace("`platform:StudentClubInsights:entity:Member`", "`platform:StudentClubInsights:entity:Sponsor`")
     p = tmp_path / "x-tasks.md"; p.write_text(text); s, d = run(p)
     assert s < 1.0 and "unmatched entity tasks 1" in d, d
+
+
+def test_blockquoted_body_and_transitive_order_score_full(tmp_path, golden):
+    """The planner writes the create body inside the Skill prompt blockquote and blocks the consumer on the
+    resource tasks (which are blocked by the entity tasks) — both must read as the contract."""
+    import re
+    text = tasks_from_golden(golden)
+    # quote every fenced json body
+    text = re.sub(r"```json\n(.*?)\n```", lambda m: "> ```json\n" + "\n".join("> " + l for l in m.group(1).splitlines()) + "\n> ```", text, flags=re.S)
+    # consumer blocked by the resource tasks instead of the entity tasks
+    ids = {m.group(2): m.group(1) for m in re.finditer(r"## Task (T\d+) — uipath-solution — Declare entity (\w+)", text)}
+    ents = {m.group(2): m.group(1) for m in re.finditer(r"## Task (T\d+) — uipath-platform — Create Native entity (\w+)", text)}
+    for c in golden["consumers"]:
+        old = ", ".join(ents[k] for k in c["entities"]); new = ", ".join(ids[k] for k in c["entities"])
+        text = text.replace(f"**Blocked by:** {old}\n**Entities:**", f"**Blocked by:** {new}\n**Entities:**")
+    p = tmp_path / "x-tasks.md"; p.write_text(text); s, d = run(p)
+    assert s == pytest.approx(1.0, abs=1e-6), d

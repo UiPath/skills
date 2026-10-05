@@ -17,7 +17,7 @@ Components (weights) — reported one per line, never only the aggregate:
   bindings       0.30  per golden consumer: a task for that skill/project carries an `Entities:` row;
                        each golden entity present (0.6) with the right direction (0.4); extra bound
                        entities lower precision
-  order          0.10  consumer tasks are `Blocked by` the tasks of every entity they bind; one
+  order          0.10  consumer tasks are `Blocked by` (directly or transitively) the tasks of every entity they bind; one
                        `solution:*:resources:Entity:<Entity>` task per entity, blocked by its entity task
 
 The tasks file is parsed on `## Task T<N>` headings; `Identity`, `Status`, `Blocked by`, `Entities`
@@ -67,7 +67,9 @@ def parse_tasks(text: str) -> list[dict]:
                 m = re.match(r"\s*`?([A-Za-z][A-Za-z0-9_]*)`?\s*\(\s*([a-zA-Z\- ]+?)\s*\)", item)
                 if m:
                     bindings[norm(m.group(1))] = DIRS.get(norm(m.group(2)), norm(m.group(2)))
-        jm = re.search(r"```json\s*(\{.*?\})\s*```", body, re.S)
+        # the Skill prompt is a blockquote, so the fenced body usually arrives with "> " prefixes
+        unquoted = re.sub(r"^>\s?", "", body, flags=re.M)
+        jm = re.search(r"```json\s*(\{.*?\})\s*```", unquoted, re.S)
         bodyjson = None
         if jm:
             try: bodyjson = json.loads(jm.group(1))
@@ -152,13 +154,21 @@ def score(golden: dict, tasks: list[dict], details: list[str]) -> float:
         details.append(f"[bindings] {c['project']} ({c['skill']}): {sum(1 for e in want if e in got)}/{len(want)} entities bound, directions right {sum(1 for e in want if got.get(e) == want[e])}/{len(want)}, extra {len(set(got) - set(want))}; tasks with Entities row: {len(cands)}")
     s_bind = (sum(b_scores) / len(b_scores)) if b_scores else 1.0
     if b_prec_d: s_bind = 0.85 * s_bind + 0.15 * (b_prec_n / b_prec_d)
-    # --- order
+    # --- order (Blocked-by is followed transitively: consumer → resource task → entity task counts)
+    by_id = {t["id"]: t for t in tasks}
+    def upstream(t: dict) -> set[str]:
+        seen: set[str] = set(); stack = list(t["blocked"])
+        while stack:
+            x = stack.pop()
+            if x in seen or x not in by_id: continue
+            seen.add(x); stack.extend(by_id[x]["blocked"])
+        return seen
     edge_hit = edge_tot = 0
     for t, e in bound_pairs:
         et = etasks.get(e)
         if et is None: continue
         edge_tot += 1
-        if et["id"] in t["blocked"]: edge_hit += 1
+        if et["id"] in upstream(t): edge_hit += 1
     res_hit = 0
     for k, t in etasks.items():
         rt = next((x for x in tasks if resource_entity_from_identity(x["identity"]) and norm(resource_entity_from_identity(x["identity"])) == k), None)
