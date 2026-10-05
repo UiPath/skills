@@ -1,0 +1,13 @@
+Usage: uip ah [options] [command]
+
+Automation Hub — automation ideas, pipeline, taxonomy and users.
+
+Commands:
+  applications   Manage the application inventory
+  auth-info      Show the Automation Hub tenant and your identity in it
+  automations    Work with automation ideas
+  categories     Read the category tree
+  documents      Manage the documents attached to an automation
+  idea-flows     Discover the configured idea flows
+  phases         Move an automation through the pipeline
+  users          List tenant users

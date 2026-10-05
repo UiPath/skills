@@ -1,0 +1,102 @@
+{
+  "Result": "Success",
+  "Code": "AhCategoriesGet",
+  "Data": {
+    "Levels": [
+      {
+        "CategoryLevelId": 1,
+        "CategoryLevelName": "Business Area",
+        "CategoryLevelSlug": "business-area"
+      },
+      {
+        "CategoryLevelId": 2,
+        "CategoryLevelName": "Category",
+        "CategoryLevelSlug": "category"
+      }
+    ],
+    "Categories": [
+      {
+        "CategoryId": 4,
+        "CategoryName": "Retail Onboarding (legacy)",
+        "CategoryLevelId": 1,
+        "CategoryOrderNumber": 1,
+        "CategoryIsOther": 0,
+        "CategoryIsActive": 0,
+        "CategoryScope": 3,
+        "Subcategories": []
+      },
+      {
+        "CategoryId": 11,
+        "CategoryName": "Retail Banking",
+        "CategoryLevelId": 1,
+        "CategoryOrderNumber": 1,
+        "CategoryIsOther": 0,
+        "CategoryIsActive": 1,
+        "CategoryScope": 3,
+        "Subcategories": [
+          {
+            "CategoryId": 12,
+            "CategoryName": "Account Onboarding",
+            "CategoryLevelId": 2,
+            "CategoryOrderNumber": 1,
+            "CategoryIsOther": 0,
+            "CategoryIsActive": 1,
+            "CategoryScope": 3,
+            "Subcategories": []
+          },
+          {
+            "CategoryId": 13,
+            "CategoryName": "Cards",
+            "CategoryLevelId": 2,
+            "CategoryOrderNumber": 1,
+            "CategoryIsOther": 0,
+            "CategoryIsActive": 1,
+            "CategoryScope": 3,
+            "Subcategories": []
+          }
+        ]
+      },
+      {
+        "CategoryId": 15,
+        "CategoryName": "Corporate Banking",
+        "CategoryLevelId": 1,
+        "CategoryOrderNumber": 1,
+        "CategoryIsOther": 0,
+        "CategoryIsActive": 1,
+        "CategoryScope": 3,
+        "Subcategories": []
+      },
+      {
+        "CategoryId": 18,
+        "CategoryName": "Wealth Management",
+        "CategoryLevelId": 1,
+        "CategoryOrderNumber": 1,
+        "CategoryIsOther": 0,
+        "CategoryIsActive": 1,
+        "CategoryScope": 3,
+        "Subcategories": []
+      },
+      {
+        "CategoryId": 6,
+        "CategoryName": "Other",
+        "CategoryLevelId": 1,
+        "CategoryOrderNumber": 1,
+        "CategoryIsOther": 1,
+        "CategoryIsActive": 1,
+        "CategoryScope": 3,
+        "Subcategories": [
+          {
+            "CategoryId": 32,
+            "CategoryName": "Other",
+            "CategoryLevelId": 2,
+            "CategoryOrderNumber": 1,
+            "CategoryIsOther": 1,
+            "CategoryIsActive": 1,
+            "CategoryScope": 3,
+            "Subcategories": []
+          }
+        ]
+      }
+    ]
+  }
+}
