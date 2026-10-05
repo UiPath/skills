@@ -5,7 +5,7 @@ written `sdd.md` BEFORE the `Status: ready` flip, in every mode — normally ins
 § Template conformance gate allows ([case-design-lane-guide.md](case-design-lane-guide.md)).
 
 This file is NOT part of the design reading set. Authoring reads the template for the render contract;
-only the gate reads the item list. Keeping the two apart keeps 35 items of checker detail out of the
+only the gate reads the item list. Keeping the two apart keeps 36 items of checker detail out of the
 turn that is writing the document.
 
 Answer every item PASS or FAIL with one verbatim quote from the file — the line that violates (FAIL) or
@@ -14,7 +14,7 @@ which table, which column), not by prose wording. The enforcement detail behind 
 template's cell rules, which are COMPLETE for the render contract; design semantics stay
 [case-design-layers-guide.md](case-design-layers-guide.md)'s.
 
-CONFORMANCE CHECKLIST — 35 items in 10 families. Items 30–33 apply only when finalizing a draft. Each item
+CONFORMANCE CHECKLIST — 36 items in 10 families. Items 30–33 apply only when finalizing a draft. Each item
 names only what to LOOK AT; the enforcement detail behind it is the cell rules above, and for the render
 contract those cells are COMPLETE — there is no third location, and nothing outside this template states a
 shape rule they do not. (Design semantics — which response, which gate, which default — stay
@@ -111,3 +111,6 @@ case-design-layers-guide.md's; the cells own the shape.)
      deterministic routing, so when the source says entry is automatic the picker row IS the defect:
      repair it per § Section 2 Authoring rules, stage-picker bullet, decision-routed branch (all four
      edits). Source silent on who launches the lane ⟹ keep what is authored.
+  36. A secondary stage's entry row on `selected-stage-exited(X)` carries an IF, unless every completing
+     exit of X (Marks Stage Complete: Yes) routes to that lane. Without one, the lane takes over every
+     time X finishes normally — an exception lane wired to any exit.

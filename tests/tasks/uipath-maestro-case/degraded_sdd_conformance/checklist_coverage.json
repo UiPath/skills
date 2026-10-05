@@ -1,11 +1,11 @@
 {
-  "cli_head": "90b5247e6",
+  "cli_head": "fe4c3e3e2",
   "seed": "tests/tasks/uipath-maestro-case/sla_from_sdd/fixtures/sdd.md",
   "tally": {
     "convert": 6,
     "excluded": 1,
     "needs-draft": 4,
-    "validate": 25,
+    "validate": 26,
     "validate-warns": 2
   },
   "rows": [
@@ -288,6 +288,14 @@
       "detail": [
         "SDD_WAIT_FOR_USER_UNPAIRED",
         "SDD_STAGE_BLOCK_INCOMPLETE"
+      ]
+    },
+    {
+      "item": 36,
+      "violation": "secondary lane entered on any exit of a stage that also completes normally",
+      "verdict": "validate",
+      "detail": [
+        "SDD_SECONDARY_ENTERS_ON_COMPLETION"
       ]
     },
     {

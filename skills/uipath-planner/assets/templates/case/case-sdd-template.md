@@ -662,7 +662,7 @@ ship a summary SDD (top-level headings like ## Source / ## Case Objective / ## S
 build-mode/path narration) even if a later caseplan.json would validate — rewrite from the model and
 this template.
 
-CONFORMANCE CHECKLIST — 35 items in 10 families, held in
+CONFORMANCE CHECKLIST — 36 items in 10 families, held in
 references/case/case-sdd-conformance-checklist.md. Items 30–33 apply only when finalizing a draft.
 Only the no-`sdd` fallback reads that file; authoring does not — the cell rules above are the render contract and are
 COMPLETE, and nothing outside this template states a shape rule they do not. (Design semantics — which

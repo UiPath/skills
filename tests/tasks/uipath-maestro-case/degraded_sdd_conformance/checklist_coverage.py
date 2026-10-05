@@ -101,6 +101,7 @@ MUTATIONS = [
     (19, "Buttons Maps To an undeclared variable", rep('| Settle | assessorDecision = "Settle" |', '| Settle | assessorVerdict = "Settle" |')),
     (28, "unguarded exit row shares its WHEN with the guarded completion row", rep('| required-tasks-completed | =js:(vars.assessorDecision !== "Reject") | exit-only | Yes | Assessment complete |', '| required-tasks-completed | =js:(vars.assessorDecision !== "Reject") | exit-only | Yes | Assessment complete |\n| required-tasks-completed | — | exit-only | No | Leave assessment |')),
     (35, "user-selected-stage entry on a lane a decision routes to", rep('| selected-stage-exited("Assessment") | =js:(vars.assessorDecision === "Reject") | Yes | Rejected by assessor |', '| selected-stage-exited("Assessment") | =js:(vars.assessorDecision === "Reject") | Yes | Rejected by assessor |\n| user-selected-stage | — | No | Pick the rejected lane |')),
+    (36, "secondary lane entered on any exit of a stage that also completes normally", rep('| selected-stage-exited("Assessment") | =js:(vars.assessorDecision === "Reject") | Yes | Rejected by assessor |', '| selected-stage-exited("Assessment") | — | Yes | Rejected by assessor |')),
     (34, "either/or persona", rep("| Claims Assessor | — |", "| Claims Assessor or Claims Lead | — |")),
 ]
 
