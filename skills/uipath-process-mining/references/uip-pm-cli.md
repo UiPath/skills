@@ -17,7 +17,7 @@ CLI — do not hand-roll the REST API.**
 | `apps model` | `get`, `update`, `fields list\|set\|remove` | The **semantic** model — fields with their data kinds, calculated fields, metrics, dashboards ([`model-editing.md`](model-editing.md)). |
 | `apps data-model` | `get`, `add-table` | The **structural** model — the table graph (PK/FK, roles) that `add-table` edits ([`data-model.md`](data-model.md)). |
 | `files` | `upload` | Load a data file to an input table. |
-| `ingestions` | `create`, `logs` | Parse + load the raw data (the LT of ELT). |
+| `ingestions` | `create`, `logs` | Parse + load the raw data (the LT of ELT). `create --sample-data` loads the template's sample data instead of uploaded files ([`app-types.md`](app-types.md#sample-data--a-demo-app-without-your-own-data)). |
 | `transformations` | `list`, `get`, `create`, `update`, `apply`, `run`, `status`, `logs` | The dbt dev loop ([`transformations.md`](transformations.md)). |
 | `query` | `run`, `details`, `percentile`, `rca`, `insights`, `info`, `layout` | Pull numbers out ([`querying.md`](querying.md)). |
 
@@ -126,6 +126,10 @@ uip pm apps create "My Process" --type uipath.custom --data-mapping ./mapping.js
 # 3. Upload + ingest (block until done; prints the loader error on failure)
 uip pm files upload <appId> ./data.csv --input-table Event_log
 uip pm ingestions create <appId> --file-format csv --field-delimiter ";" --encoding utf-8 --wait
+
+# 3-alt. No data of your own? Create WITHOUT --data-mapping from a template whose
+#        app-types entry has SampleDataAvailable: true, skip the upload, and run:
+uip pm ingestions create <appId> --sample-data --wait
 
 # 4. If the transform failed on Cases.sql: pull → patch → apply (transformations.md)
 uip pm transformations get <appId> models/Cases.sql --destination Cases.sql   # note Data.ETag
