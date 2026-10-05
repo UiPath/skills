@@ -1,0 +1,101 @@
+task_id: skill-agent-inline-external-rpa-tool
+description: >
+  Add RPA tool (inline agent, external resource). End-to-end test:
+  scaffold a flow project with an inline low-code agent that calls an
+  EXTERNAL RPA process deployed to Orchestrator (not inside this
+  solution). Verifies the tool resource.json under the inline agent's
+  UUID subdirectory uses `type: "process"`, with
+  the tool's tenant folder in the flow's top-level `bindings[]`
+  (`location` "solution" or "external", `folderPath` "" or the literal
+  folder; both run live, flow-builder-sdk#922), and that a `uipath.agent.resource.tool.process.<uuid>`
+  flow node is wired to the autonomous agent node's `tool` handle.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, low-code, inline-flow, resource]
+
+run_limits:
+  expected_turns: 65
+  turn_timeout: 1200
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Flow project "FibonacciFlow" that runs an inline low-code
+  agent which takes a required `index` (number) and returns a number `value`.
+  The agent shouldn't compute the value itself — it should come from our
+  existing "FibonacciRPA" process, which is already deployed in our tenant.
+  Wire it into the flow. The solution should be named "FibonacciFlowSol".
+
+  Do NOT publish, upload, or deploy.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+
+  - type: command_executed
+    description: "Agent discovered the process identity with uip solution resources list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0.0  # advisory: discovery route is not graded; the contract checker grades the resource it produced  - type: command_executed
+    description: "Agent fetched the process configuration with uip solution resources get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+get\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "FibonacciFlowSol/FibonacciFlowSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "FibonacciFlowSol/FibonacciFlow/FibonacciFlow.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome gate for the authored flow. Path-neutral: it holds whether the
+  # agent compiled a builder-SDK `.flow.ts` or edited the `.flow` JSON, so it
+  # replaces the `uip agent init/refresh/validate --inline-in-flow` and
+  # `uip maestro flow registry` trajectory gates the v1 recipe required.
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py FibonacciFlowSol/FibonacciFlow/FibonacciFlow.flow"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline external RPA tool: resource.json shape + folder binding + flow node + tool-handle edge"
+    command: "python3 $REFERENCE_DIR/inline_agent/_shared/check_inline_external_rpa_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
