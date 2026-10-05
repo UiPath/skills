@@ -331,6 +331,8 @@ Every UiPath XAML workflow file has this structure:
 </Activity>
 ```
 
+Fill `ReferencesForImplementation` per [common-pitfalls.md § Assembly References Studio Requires and the CLI Does Not Check](common-pitfalls.md#assembly-references-studio-requires-and-the-cli-does-not-check).
+
 ## Workflow Types
 
 ### Sequence

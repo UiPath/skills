@@ -147,6 +147,10 @@ Alternatives:
 
 Every UIA `N*` activity carries a `Version` attribute in its `uip rpa activities get-default-xaml` starter (e.g. `NGetText Version="V5"`, `NApplicationCard Version="V2"`). Dropping it survives BOTH `validate` and `build` and fails only at runtime with `System.InvalidOperationException ... ThrowIfNotInTree` on the activity's argument bindings. Carry over **every** attribute the starter emits. See [csharp-activity-binding-guide.md § `ThrowIfNotInTree` at runtime](csharp-activity-binding-guide.md#throwifnotintree-at-runtime--two-causes).
 
+## OCR Engines in XAML Fail `build` With "please install the UiPath.CoreIPC package"
+
+Every OCR engine activity (Tesseract `GoogleOCR`, UiPath Document OCR, …) fails `build` and `run` in the headless Studio host with `In order to use this activity in this Studio version, please install the UiPath.CoreIPC package, version 2.0.1 or higher.`, even when `validate` passes. The check reads the host process, not the project, so no project edit clears it. Read the PDF from a coded workflow instead — it calls the PDF package's coded `ReadPdfWithOcr` — and invoke that workflow from the XAML; the robot process passes the check. Screen OCR has no such route: report the blocker to the user.
+
 ## ActivityAction/ActivityFunc Initialization
 
 Scope activities (like `ExcelApplicationCard`, `Use Application/Browser`) use `ActivityAction` to wrap their child content. The XAML pattern is:
@@ -401,11 +405,11 @@ Each C# expression in a XAML workflow compiles as a lambda expression tree, whic
 
 When a transform hits these limits, use `Invoke Code` — see [data-manipulation-guide.md](../data-manipulation-guide.md) for the escalation path.
 
-## Coded Source File Types in XAML Expressions Need a Namespace Import
+## Coded Source File Types in XAML Expressions Need a Namespace Import and Assembly Reference
 
-XAML expressions (C# or VB) use the types a project's coded source files (`.cs`) define — a DTO as a variable or argument type, a static helper called inside an expression — once the workflow imports the namespace the `.cs` file declares. The coded files compile into the `<ProjectName>.Core` assembly.
+XAML expressions (C# or VB) use the types a project's coded source files (`.cs`) define — a DTO as a variable or argument type, a static helper called inside an expression — once the workflow imports the namespace the `.cs` file declares and references the assembly the coded files compile into, `<ProjectName>.Core` (`name` in `project.json`).
 
-- **Import:** add `<x:String><Namespace></x:String>` to `TextExpression.NamespacesForImplementation`.
+- **Import and reference:** add `<x:String><Namespace></x:String>` to `TextExpression.NamespacesForImplementation` and `<AssemblyReference><ProjectName>.Core</AssemblyReference>` to `TextExpression.ReferencesForImplementation`, plus `System.Collections` ([§ Assembly References Studio Requires and the CLI Does Not Check](#assembly-references-studio-requires-and-the-cli-does-not-check)).
 - **Type argument:** a variable or argument of the type also needs a root prefix `xmlns:local="clr-namespace:<Namespace>;assembly=<ProjectName>.Core"`, then `x:TypeArguments="local:<Type>"`.
 - **Static `void` method:** an expression must return a value, so a `void` helper is called with Invoke Method — `TargetType` names the class through the same prefix, and one positional `InArgument` child per parameter follows in declaration order:
 
@@ -422,7 +426,7 @@ XAML expressions (C# or VB) use the types a project's coded source files (`.cs`)
 
 Without the import, `validate` and `build` fail with `CS0103` / `BC30451` on a helper's name and `CS0246` / `BC30002` on a type name. Types shared across projects belong in a library ([../library-authoring-guide.md](../library-authoring-guide.md)).
 
-The project's Studio host compiles the coded files when it loads the project, so a `.cs` file added later — or a signature changed in an existing one — stays invisible to XAML: `validate` keeps reporting the same `CS0103` / `CS0246` with the import in place. Stop that project's `UiPath.Studio.Helm` process — `uip rpa instances list` gives its id; confirm the id still belongs to `UiPath.Studio.Helm` before stopping it — and validate again; the host relaunches on the next command.
+The project's Studio host compiles the coded files when it loads the project, so a `.cs` file added later — or a member added or changed in an existing one — stays invisible to XAML: `validate`, `build` and `run` keep reporting the type or member as missing (`CS0103`, `CS0246`, VB `BC30451`, `BC30456`) with the import in place. Run `uip rpa project close --project-dir "<PROJECT_DIR>"` and validate again; the next command reloads the project.
 
 ## WriteTextFile Emits a UTF-8 BOM When Encoding Is Set
 
@@ -662,24 +666,18 @@ Every XAML file must use the same expression language as the project (`expressio
 
 **Prevention:** Always check `project.json` `expressionLanguage` before writing any expression. Never mix languages.
 
-## Missing Assembly References
+## Assembly References Studio Requires and the CLI Does Not Check
 
-Common validation error: `"The type 'Dictionary<,>' is defined in an assembly that is not referenced"`.
+Studio compiles expressions against `TextExpression.ReferencesForImplementation`; `validate`, `build` and `run` resolve against all project dependencies. A missing entry therefore passes every CLI gate and fails only in Studio (`BC30451 '<Name>' is not declared`, `BC30652 Reference required to assembly '<Assembly>'`, C# `The type '<Type>' is defined in an assembly that is not referenced`). Add these in the same edit as the expression that needs them:
 
-**Commonly missing assemblies:**
-- `System.Collections` (for `Dictionary<,>`, `List<>`)
-- `System.Data` (for `DataTable`, `DataRow`)
-- `System.Data.Common` (for `DbConnection`)
-- `System.ComponentModel.TypeConverter`
-- `System.Net.Mail` (for `MailMessage`)
-- `netstandard` (general fallback for type resolution)
+- **`<ProjectName>.Core`** — expressions use a type from the project's coded files ([§ Coded Source File Types in XAML Expressions Need a Namespace Import and Assembly Reference](#coded-source-file-types-in-xaml-expressions-need-a-namespace-import-and-assembly-reference)).
+- **`System.Collections`** — every XAML file of a project with coded files. Studio then compiles expressions against `<ProjectName>.Core`, built on the .NET reference assemblies that place `List<T>`, `Dictionary<TKey,TValue>` and `HashSet<T>` in `System.Collections`. Scaffolded files omit it, so the first coded file turns existing workflows red.
 
-**Fix:** Add the missing assembly to `TextExpression.ReferencesForImplementation`:
 ```xml
 <AssemblyReference>System.Collections</AssemblyReference>
 ```
 
-**Note:** If you're adding activities manually or the references are missing from an existing file, you may need to add them through `uip rpa packages install`.
+Other assemblies Studio reports missing: `System.Data`, `System.Data.Common`, `System.ComponentModel.TypeConverter`, `System.Net.Mail`, `netstandard` (fallback). A type from a package the project lacks needs `uip rpa packages install` first.
 
 ## Workflow Argument Declarations Use `<x:Members>`, Not `<Activity.Properties>`
 

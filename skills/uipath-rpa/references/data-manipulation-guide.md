@@ -71,13 +71,13 @@ When the transform must live inside a C#-expression XAML workflow, one hard limi
 
 Three valid escalations:
 
-- **Helper method in a Coded Source File** — a `public static` method of a plain `.cs` class; the expression calls it (`NameRules.LastWord(name)`) and its body is ordinary C#. The workflow imports the class's namespace ([xaml/common-pitfalls.md § Coded Source File Types in XAML Expressions Need a Namespace Import](xaml/common-pitfalls.md)).
+- **Helper method in a Coded Source File** — a `public static` method of a plain `.cs` class; the expression calls it (`NameRules.LastWord(name)`) and its body is ordinary C#. The workflow imports the class's namespace and references the project's coded assembly ([xaml/common-pitfalls.md § Coded Source File Types in XAML Expressions Need a Namespace Import and Assembly Reference](xaml/common-pitfalls.md#coded-source-file-types-in-xaml-expressions-need-a-namespace-import-and-assembly-reference)).
 - **`Invoke Code`** — logic stays inline in the XAML; data in/out via its Arguments collection; author `Code` as an XML attribute ([xaml/common-pitfalls.md § InvokeCode Code Property](xaml/common-pitfalls.md)).
 - **Coded Workflow invoked via `Invoke Workflow File`** — logic moves to a `.cs` file carrying `[Workflow]` + `Execute`; the XAML calls it like any child workflow (see § Source file vs workflow below). Use it when the logic needs the coded services or activities.
 
 **Code vs activity chains for row processing:** unless the user states a preference, complex bulk row processing (per-row parse + validate + branch + accumulate) goes to **code** — one of the escalations above — not an activity chain. Nested `If`/`Switch` levels inside a `ForEach` become unreadable, trip the analyzer nesting threshold, and every embedded expression re-fights the expression-tree limits. A simple `ForEach` row with ONE `If` or `Switch` is fine as plain XAML activities — more readable than code for that size.
 
-**Source file vs workflow — and how to call it:** a bare **Coded Source File** (helper class, no entry point) is called from expressions — XAML after the namespace import, or coded. A **Coded Workflow** (`[Workflow]` + `Execute`) is invoked as a step: via **Invoke Workflow File** (from XAML) or `RunWorkflow` / the typed `workflows` property (from coded) — see [coded/operations-guide.md](coded/operations-guide.md).
+**Source file vs workflow — and how to call it:** a bare **Coded Source File** (helper class, no entry point) is called from expressions, XAML or coded. A **Coded Workflow** (`[Workflow]` + `Execute`) is invoked as a step: via **Invoke Workflow File** (from XAML) or `RunWorkflow` / the typed `workflows` property (from coded) — see [coded/operations-guide.md](coded/operations-guide.md).
 
 Tabular *source/sink*: modern projects use the **Use Excel File** scope (not classic Excel Application Scope) — route to the Excel activity docs.
 
