@@ -199,7 +199,7 @@ Studio Web renders this on the task's General tab, so a shortened one is where t
 
 ### Step 9.1 — Placeholder tasks for unresolved resources
 
-When a task entry's `taskTypeId` (or `typeId` / `connectionId` for connector tasks) is `<UNRESOLVED: …>`, create a **placeholder task** instead of halting. See [placeholder-tasks.md](placeholder-tasks.md) for the canonical reference.
+When a task entry has `selected: null` (how `sdd resolve` records an empty or unresolved lookup), or its `taskTypeId` (or `typeId` / `connectionId` for connector tasks) is `<UNRESOLVED: …>`, create a **placeholder task** instead of halting. See [placeholder-tasks.md](placeholder-tasks.md) for the canonical reference.
 
 For every task class (process / agent / rpa / action / api-workflow / function / case-management / connector-activity / connector-trigger): follow the Unresolved Fallback section of the matching `plugins/tasks/<type>/planning.md` and write a task with `type` + `displayName` + `id` + `elementId` + `isRequired`, `data: {}`, and no `taskTypeId` / `connectionId` keys directly to `caseplan.json` per `plugins/tasks/<type>/impl-json.md`.
 
