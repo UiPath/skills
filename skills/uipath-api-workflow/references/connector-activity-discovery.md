@@ -94,7 +94,7 @@ Only fall back to a hand-built HTTP call (a big design fork — escalate to the 
 
 ### Step 2 — Verify a vendor connection (IntSvc kind only)
 
-Skip this step if `connectorKey === "uipath-uipath-http"` — the HTTP connector uses `connectionId: "ImplicitConnection"` and needs no real connection.
+Skip this step if `connectorKey === "uipath-uipath-http"` — the HTTP connector uses `connectionId: "ImplicitConnection"` and needs no real connection. Every other connector needs one, UiPath's own included: a Data Fabric (`uipath-uipath-dataservice`) activity sent with `ImplicitConnection` answers 404.
 
 `<connector-key>` is the full vendor identifier — **NEVER guess it from the vendor name**. `github` is not a key (`uip is connections list github` → 404 `InvalidConnectorKey`); the key is `uipath-microsoft-github`. Take it verbatim from Step 1's `ConnectorKey` field — which also means Step 2 cannot be parallelized with Step 1.
 
@@ -130,7 +130,12 @@ uip is connections list --all-folders --output json
 Returns connections from all folders (each row carries a `Folder` / `FolderKey`). Pick an `Enabled` row whose `ConnectorKey` matches and ping its `Id`. `--all-folders` cannot be combined with `--folder`/`--folder-key`. This is the single most common reason a working connection appears "missing" — always run it before aborting.
 
 <!--skill-flavor:connection-remediation:start-->
-Only after the filtered, unfiltered, AND `--all-folders` listings have been exhausted (no UUID for that `ConnectorKey` pings cleanly) should you abort and tell the user to either re-authenticate (`uip is connections edit <connection-uuid>` opens a browser for OAuth) or create a fresh connection in the StudioWeb UI. **Do NOT author a workflow against a connection that hasn't pinged successfully** — it will 401 in cloud regardless of how correct the workflow JSON is.
+Only after the filtered, unfiltered, AND `--all-folders` listings have been exhausted (no UUID for that `ConnectorKey` pings cleanly) should you stop and have the user repair or create the connection. Both need the user's sign-in in a browser:
+
+- Re-authenticate a broken one: `uip is connections edit <connection-uuid>` opens a browser for OAuth.
+- Create one: `uip is connections create <connector-key>` opens a browser, waits for the consent, then prints the connection with its `Folder`. Without a browser, `--no-wait` returns `Code: ConnectionAuthorizationPending` with `Data.AuthUrl`, which expires within minutes — give the user the interactive command to run rather than a link that may lapse first. The command takes no folder: check the `Folder` it reports before using the connection.
+
+Ping the new or repaired connection before stubbing. **Do NOT author a workflow against a connection that hasn't pinged successfully** — it will 401 in cloud regardless of how correct the workflow JSON is.
 <!--skill-flavor:connection-remediation:end-->
 
 ### Step 3 — Stub the activity
@@ -416,6 +421,8 @@ The IntSvc kind speaks directly to the vendor connector's curated operation:
 | `multipartParameters` | Declared automatically when IS schema's `parameters` shows `"type": "multipart"` |
 
 The IS proxy URL for a IntSvc kind call to Outlook GetNewestEmail becomes `/elements_/v3/element/instances/{outlookConnId}/getNewestEmail?parentFolderId=Inbox` — a real curated endpoint on the Outlook connector. The connector itself adds the Microsoft Graph OAuth at the proxy layer. **You don't supply a Graph URL; the connector knows where the Outlook API lives.**
+
+**Data Fabric's Query Entity Records** (`uipath-uipath-dataservice`) takes `entityScope` — `tenant` for a tenant-level entity — and `tenantEntityName`. `stub` returns no `ResponseFields` for it: the answer's `content` is a bare array of rows, the entity's own columns under their names and the system fields in PascalCase (`Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`, `RecordOwner`). One call returns at most 1000 rows, so a full read pages.
 
 ### Generic activities — `--object-name` required ("List Records" of *what?*)
 
