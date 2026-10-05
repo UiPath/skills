@@ -234,8 +234,8 @@ Template-local rules:
 - Every stage and task carries a concrete `Design Rationale` and prose `Description`.
 - Secondary stages use `### Secondary Stage: {Name}`, `Stage Kind: secondary`, `Required for Case
   Completion: No`, and every secondary-stage ENTRY ROW carries `Interrupting: Yes` — including
-  decision-keyed rows (`selected-stage-completed`/`-exited` + `IF`). The only `Interrupting: No` entry row
-  on a secondary stage is a parallel-oversight `sla-status-change` row.
+  decision-keyed rows (`selected-stage-completed`/`-exited` + `IF`) and `sla-status-change` rows. There is
+  no `Interrupting: No` row on a secondary stage: every secondary entry interrupts at runtime.
 - Stage-picker repair is a replacement, never a duplicate. Which repair depends on what launches the
   lane, and the two are opposites — read the source before choosing.
   - **A person launches it** (pulled aside by hand, chosen from the stage picker, nothing triggers it

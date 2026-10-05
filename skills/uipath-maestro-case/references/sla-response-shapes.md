@@ -16,7 +16,7 @@ An SLA **clock** ([plugins/sla/impl-json.md](plugins/sla/impl-json.md)) and its 
 
 **Default:** absent a stated response, at-risk and breached are both `notify-only`. Never invent a stage, task, or routing change for a requirement that only asks to notify someone.
 
-**`start-task` vs `enter-stage` turns on WHERE the work lives — not on whether it interrupts.** `enter-stage` can itself be non-interrupting, so "the team keeps working" does not choose between them. A named **task** ("raise a Senior Assessor Check approval") never justifies a new stage: if the target you are about to write is a task name rather than a lane the source describes in its own right, the response is `start-task`, and the task goes in the breached stage.
+**`start-task` vs `enter-stage` turns on WHERE the work lives — not on whether it interrupts.** `enter-stage` into a secondary lane always interrupts (§4), so "the team keeps working" rules `enter-stage` out: that is `start-task` or `notify-only`. A named **task** ("raise a Senior Assessor Check approval") never justifies a new stage: if the target you are about to write is a task name rather than a lane the source describes in its own right, the response is `start-task`, and the task goes in the breached stage.
 
 ## 2. Status rides on the escalation reference
 
@@ -42,19 +42,19 @@ Rule JSON, per-scope emit details, and post-write checks: [plugins/conditions/st
 
 `isInterrupting` follows what the response does to **active work**, never the SLA's scope:
 
-- `true` — the response stops, pauses, takes over, or reroutes work in flight.
-- `false` — the response runs alongside work that continues (parallel oversight).
+- Every entry into a **secondary** stage interrupts. The case compiler sets `cancelStagesAndTasks` for any secondary-stage entry, whatever `isInterrupting` says (measured: an `isInterrupting: false` secondary entry compiles to `cancelStagesAndTasks: true`, and a debug run showed the lane taking over while the primary stage never started). Write `true`.
+- Parallel oversight — work that keeps running — is not a lane: author `start-task` or `notify-only`.
 
 `isInterrupting` is a property of a **stage-entry** condition, so it applies to `enter-stage` only. A `start-task` response is a task-entry rule and has no interrupting cell at all — render `—`.
 
-**A non-interrupting SLA lane is still a secondary stage.** Keep `stageType: "secondary"` and `isRequired: false`; do NOT convert it to a regular stage to satisfy "every secondary-stage entry is interrupting" — a regular stage joins the main flow and, when required, gates case completion. In `sdd.md`, the stage-level `Interrupting` field and that entry row must agree; `Yes` on the stage with `No` on its only entry row is a blocking render error.
+**There is no non-interrupting SLA lane.** Do not write `Interrupting: No` on a secondary stage or its entries (the CLI gate refuses it), and do not convert the lane to a regular stage to get parallel behavior — a regular stage joins the main flow and, when required, gates case completion. In `sdd.md`, the stage-level `Interrupting` field and every entry row read `Yes`.
 
 ## 5. Four defects `validate` cannot see
 
 It passes on all four, so they are on the author:
 
 1. **A task with no entry condition never starts.** `validate` accepts `entryConditions: []` and even a missing key. Every task added for a `start-task` response carries its own entry condition (§3).
-2. **A non-interrupting lane emitted as a regular stage** (§4) — silently changes the completion contract.
+2. **Parallel oversight modeled as a lane** (§4) — a secondary lane takes over the case on entry, and the same response emitted as a regular stage silently changes the completion contract. Author `start-task` or `notify-only`.
 3. **`escalationId: "any"` repaired by repointing.** Removing the key is the fix; substituting a concrete escalation also turns `validate` green but converts a Breached rule into an at-risk rule — a behavior change the user never asked for. The same conversion happens when a correct breach rule is "completed" by adding an escalation because a checklist looked like it required one: a breach rule carrying only `slaId` is finished, not missing a field.
 4. **`start-task` authored as stage re-entry** (§3) — re-runs every `shouldRunOnlyOnce: false` task in the breached stage, not just the follow-up.
 

@@ -55,7 +55,7 @@ Append (or prepend) this object to `nodes` — both orderings are valid for the 
 
 ## Recipe — Secondary Stage
 
-> **A non-interrupting SLA lane is still a secondary stage.** When the lane's only entry is an `sla-status-change` response the requirement describes as parallel oversight (`is-interrupting: false`), keep `stageType: "secondary"` with `isRequired: false`. Do NOT emit it as a regular stage instead: a regular stage joins the main flow and, when required, gates case completion. `validate` accepts either shape, so this one is on you.
+> **Every secondary-stage entry interrupts.** The case compiler cancels active stages and tasks on any entry into a secondary stage, whatever `isInterrupting` says, so write `isInterrupting: true` on every entry and on the stage. A requirement for parallel oversight is not a lane: it is a `start-task` follow-up task in the breached stage, or `notify-only` ([sla-response-shapes.md § 4](../../sla-response-shapes.md#4-interrupting)). Do not emit it as a regular stage to get parallel behavior either: a regular stage joins the main flow and, when required, gates case completion.
 
 Same as a primary Stage, with `data.stageType: "secondary"` and two additional `data` fields initialized empty:
 
