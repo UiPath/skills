@@ -348,7 +348,9 @@ This SDD captures architecture and decisions. To generate the implementation tas
 
 > Load `uipath-planner`. SDD path: `<this-file>`.
 
+<!--skill-flavor:planner-next-step:start-->
 The planner detects the `## Planner Handoff` header, parses §10 Project Structure and §9 Integrated Components, derives the per-skill task list (routing each task to `uipath-coded-apps`, `uipath-platform`, etc.), writes `<APP_NAME_KEBAB>-tasks.md` alongside this SDD, and emits live `TaskCreate` calls. If `Execution autonomy: interactive`, it enters plan mode for task review before execution.
+<!--skill-flavor:planner-next-step:end-->
 
 Implementation tasks **do not live in this SDD** — they live in the planner's output.
 

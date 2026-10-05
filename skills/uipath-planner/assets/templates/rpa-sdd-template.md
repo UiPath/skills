@@ -855,7 +855,9 @@ The planner will:
 1. Detect the `## Planner Handoff` header and read the 6 fields above.
 2. Parse the project list section (per the `Project list section` field) and derive a per-skill task list.
 3. Write `<PROCESS_NAME_KEBAB>-tasks.md` alongside this SDD with the task list and dependencies.
+<!--skill-flavor:planner-live-tasks:start-->
 4. Emit live `TaskCreate` calls that route each task to the correct specialist (`uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, etc.).
+<!--skill-flavor:planner-live-tasks:end-->
 5. If `Execution autonomy: interactive`, enter plan mode for task review before execution.
 
 Implementation tasks **do not live in this SDD** — they live in the planner's output. The planner is the single source of truth for skill routing and task ordering.

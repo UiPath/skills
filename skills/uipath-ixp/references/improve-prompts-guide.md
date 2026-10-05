@@ -78,7 +78,7 @@ A read that fails counts against the budget like any other attempt, and never re
 If documents were just labelled (or uploaded, or the taxonomy was edited), wait out the resulting retrain before reading metrics — apply the bounded wait in [Waiting for retrain](#waiting-for-retrain).
 
 ```bash
-mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
+mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,prompts}
 uip ixp projects get-metrics <project-name> --model-version latest --output json
 ```
 
@@ -119,10 +119,10 @@ The parent `label_def` `name` (e.g. `"Invoice"`) and the field `name` (e.g. `"In
 uip ixp documents list <project-name> --output json
 
 # For each sample document:
-uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample --output json
+uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id> --output json
 ```
 
-The `download` command auto-detects format and appends the correct extension — read the resolved `Path` from the response. View the document with the **Read tool** — one full Read per document, **no `pages` parameter** (returns text + image natively for PDF/PNG/JPG). Files persist across sessions — check for existing files before downloading.
+The `download` command appends the extension that matches the server's content type — read the resolved `Path` from the response. View the document with the **Read tool** — one full Read per document, **no `pages` parameter** (returns text + image natively for PDF/PNG/JPG). Files persist across sessions — check for existing files before downloading.
 
 ### 1e. Check for unlabelled documents
 
@@ -138,13 +138,12 @@ Repeat the following for each iteration (up to max iterations):
 
 Use the current metrics (baseline on first iteration, post-relabel metrics on subsequent iterations). The metrics include both `FieldGroups` (per-group scores) and `Fields` (per-field scores).
 
-**Field group diagnosis:** Check `FieldGroups` first. If an entire group has low F1, the group-level instructions may need updating with `--groups` rather than fixing individual fields.
+**Field group diagnosis:** Check `FieldGroups` first. If an entire group has low F1, the group-level instructions may need updating with `groups update-prompts` rather than fixing individual fields.
 
 **Per-field diagnosis:** Identify individual fields with F1 < 0.7 as targets. Diagnose each:
 
 1. **Classify the action:**
-   - `Documents = 0` AND `F1 = 0` → **SKIP**
-   - `Documents < 1` → **SKIP**
+   - `Documents = 0` → **SKIP**
    - Otherwise → **REFINE**
 
 2. **Diagnose the problem type** from the `Precision`/`Recall` split — `F1` says *how bad*, the split says *what to write*:
@@ -167,7 +166,7 @@ For each REFINE field with **Recall < 0.5**, check whether the problem is a bad 
    - If yes, the model may have predicted it correctly but it wasn't confirmed in a previous round → re-fetch predictions and review those fields again
    - If the field is genuinely not visible in the document → it's a prompt/recall issue, handle with instruction changes
 
-**If you find previously skipped predictions that are actually correct**, confirm them now using `labelling confirm --fields` for those specific documents and fields, then re-fetch metrics under the bounded wait in [Waiting for retrain](#waiting-for-retrain) before continuing.
+**If you find previously skipped predictions that are actually correct**, confirm them now using `labellings confirm --fields` for those specific documents and fields, then re-fetch metrics under the bounded wait in [Waiting for retrain](#waiting-for-retrain) before continuing.
 
 **If no labelling gaps are found**, proceed directly to writing instructions.
 
@@ -216,7 +215,7 @@ Use the parent **field group name** and exact **field name** in each field-updat
 cat > /tmp/ixp/<project-name>/prompts/field_updates.json << 'FIELDS_EOF'
 [
   {"group": "Invoice", "name": "Invoice Number", "instructions": "The unique document identifier, found in the header area top-right. Example: 2106732, QC006."},
-  {"group": "Invoice", "name": "Invoice Date", "instructions": "The date the invoice was issued. Use the exact format as written in the document. Found near the invoice number."}
+  {"group": "Invoice", "name": "Invoice Date", "instructions": "The date the invoice was issued. Found near the invoice number."}
 ]
 FIELDS_EOF
 
@@ -258,7 +257,7 @@ Wait out the retrain triggered by the updated instructions ([Waiting for retrain
 Wait out the retrain triggered by the new labellings ([Waiting for retrain](#waiting-for-retrain)), then:
 
 ```bash
-uip ixp projects get-metrics <project-name> --output json
+uip ixp projects get-metrics <project-name> --model-version latest --output json
 ```
 
 If `ModelVersion` hasn't advanced since the last check, keep re-reading under that same bounded budget. When the budget runs out, record the metrics you have and move on to step 2f — do NOT stall the iteration waiting for a version bump.

@@ -10,7 +10,7 @@ You act as a **reviewer** — IXP generates predictions, you validate them field
 ## Step 1 — Get Documents and Taxonomy
 
 ```bash
-mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
+mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,prompts}
 uip ixp documents list <project-name> --output json
 uip ixp projects get-taxonomy <project-name> --output json
 ```
@@ -21,7 +21,7 @@ From the taxonomy (raw snake_case: field groups/fields under `Data.dataset.label
 
 ## Step 2 — Process Each Document
 
-For each document from the list, process one at a time: get predictions, download image/text, review, confirm.
+For each document from the list, process one at a time: get predictions, download the file, review, confirm.
 
 ### 2a. Get predictions for this document
 
@@ -42,7 +42,7 @@ The response also carries `ModelVersion` — the model version that produced the
 uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id> --output json
 ```
 
-Use the document ID as the filename. Pass `-o` **without an extension** — the CLI detects the actual format (PDF, PNG, JPG, …) from the file content and appends the correct extension. Read the resolved `Path` from the response and use that for the next step. Files persist across sessions — check for existing files before downloading.
+Use the document ID as the filename. Pass `-o` **without an extension** — the CLI appends the extension that matches the server's content type (PDF, PNG, JPG, …). Read the resolved `Path` from the response and use that for the next step; a `Path` with no extension means the content type was unknown (see [CLI Reference § Documents](cli-reference.md#documents)). Files persist across sessions — check for existing files before downloading.
 
 ### 2c. Review predictions field-by-field
 
@@ -61,7 +61,7 @@ Document: <document-id>
 Field                    | Verdict       | Reason
 -------------------------|---------------|-----------------------------------------------
 Invoice Number           | NOT CONFIRMED | Predicted "MSIÓÓÓ601020/" but actual is "MSI0601020" (garbled characters), top-right of page 1
-Invoice Date             | CONFIRMED     | Predicted "2018-02-28" matches document
+Invoice Date             | CONFIRMED     | Predicted "2018-02-28T00:00:00Z" matches "28-Feb-2018" (normalized Date)
 Vendor Address           | NOT CONFIRMED | Predicted "123 Main St" but actual is "456 Oak Ave", top-left of page 1
 Has Signature            | NOT CONFIRMED | Predicted "false" but signature visible bottom-right (boolean came back wrong)
 Total After Tax          | NOT CONFIRMED | Predicted "$1100.00" but Subtotal+Tax = "$1210.00" (inferred value wrong)
@@ -177,7 +177,7 @@ uip ixp documents delete <project-name> <document-id> -y --output json
 
 | You have | How to get the DocumentId |
 |----------|---------------------------|
-| Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --output json --output-filter "Documents[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` (rows are under `Documents` — the list is a paged envelope) |
+| Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --limit 10000 --output-filter "Documents[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` (rows are under `Documents` — the list is a paged envelope; `--output-filter` needs an explicit `--limit`) |
 | A distinctive predicted field value (e.g., Invoice Number `MSI0601020`) | `uip ixp documents list <project-name> --output json` for the ids, then `uip ixp labellings get-predictions <project-name> <document-id> --output json` per id until a `Labels[].Fields[].FormattedValue` matches. One call per document, so stop at the first match. |
 | Nothing — need to find by content | `uip ixp documents list <project-name> --output json`, then `documents download` candidates and read with the Read tool |
 
@@ -190,8 +190,8 @@ Deletion is irreversible and triggers a model retrain. Do NOT use deletion to sk
 After processing all documents, track progress and errors:
 
 - Do NOT stop on the first error — continue with remaining documents
-- If a download or text fetch fails, skip the document and note the failure
-- If confirmation fails, log the error and UID, then continue
+- If a download fails, skip the document and note the failure
+- If confirmation fails, log the error and the document ID, then continue
 
 At the end, report a full summary:
 
