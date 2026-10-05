@@ -251,7 +251,14 @@ This is the same trap as taking `operation` from the catalogue's per-activity
 `describe` is the only place that contract is written down.
 
 `=vars.<id>` and `=js:` resolve inside that CDATA, so build the body from
-variables rather than literals. In an XML *attribute* a `=js:` expression must
+variables rather than literals. A JSON string value that is exactly `"=vars.<id>"`
+is a variable reference; a value that mixes literal text with a variable must be
+one `=js:` expression, for example
+`"messageToSend":"=js:'Severity: ' + vars.Var_Severity"`. Never paste
+`=vars.<id>` into the middle of literal text. Do not write `\n` inside a
+`=js:` string literal in a JSON body: the JSON parse turns it into a real
+newline and evaluation faults with `400300` `Invalid or unexpected token`;
+separate the parts with ` | ` instead. In an XML *attribute* a `=js:` expression must
 escape the XML metacharacters — `&amp;&amp;` for `&&`, and `&lt;` for `<` — or
 the file is not well-formed; `>` needs no escaping in an attribute value, and
 inside CDATA nothing does.
@@ -326,10 +333,41 @@ never filter `RequestFields` by the names you expect. A missing Slack
 Each parameter is its own input, targeted by its `Type` (`query`, `path`, or
 `file`) — never folded into the body. Emit an input for every parameter marked
 `Required: true`, using its `DefaultValue` when the request has no better
-value:
+value. **Placement:** every parameter input — `query` and `path` alike — is
+written after `</uipath:context>`, beside the body input when the operation has
+one (a GET often has none). Inside `<uipath:context>` go only the routing inputs
+(`connectorKey`, `connection`, `folderKey`, `operation`, `objectName`, `method`,
+`path`, `activityConfigurationVersion`, `metadata`); a parameter placed there is
+not sent and the call fails as below, or with `102009` `Missing value for
+required parameter '<name>'` for a path parameter. `folderKey` is required in the context and
+must reference the folder binding (§4). The body stays ONE `target="body"` input
+(see "Body shape"), and `channel` takes the looked-up channel id (see
+"A `Reference` entry takes a looked-up value"). Complete Slack node:
 
 ```xml
-<uipath:input target="query" name="send_as" type="string" value="bot" />
+<bpmn:sendTask id="Task_Slack" name="Send Slack alert">
+  <bpmn:extensionElements>
+    <uipath:activity version="v1">
+      <uipath:type value="Intsvc.ActivityExecution" version="v1" />
+      <uipath:context>
+        <uipath:input name="connectorKey" type="string" value="uipath-salesforce-slack" />
+        <uipath:input name="connection" type="string" value="=bindings.Binding_SlackConn" />
+        <uipath:input name="folderKey" type="string" value="=bindings.Binding_SlackFolder" />
+        <uipath:input name="operation" type="string" value="Create" />
+        <uipath:input name="objectName" type="string" value="send_message_to_channel_v2" />
+        <uipath:input name="method" type="string" value="POST" />
+        <uipath:input name="path" type="string" value="/send_message_to_channel_v2" />
+        <uipath:input name="activityConfigurationVersion" type="string" value="v1" />
+        <uipath:input name="metadata" type="json"><![CDATA[{}]]></uipath:input>
+      </uipath:context>
+      <uipath:input target="query" name="send_as" type="string" value="bot" />
+      <uipath:input name="body" type="json" target="body"><![CDATA[{"channel":"<CHANNEL_ID>","messageToSend":"=js:'Severity: ' + vars.Var_Severity"}]]></uipath:input>
+      <uipath:output name="response" type="jsonSchema" source="=response" var="Var_SlackResponse" />
+    </uipath:activity>
+  </bpmn:extensionElements>
+  <bpmn:incoming>Flow_In</bpmn:incoming>
+  <bpmn:outgoing>Flow_Out</bpmn:outgoing>
+</bpmn:sendTask>
 ```
 
 Omitting one is accepted by local validation and by `pack`, then fails only at
@@ -417,7 +455,10 @@ resourceKey`. `process` and `queue` bindings carry `resourceKey` from
 Every `Intsvc.ActivityExecution` bound to a connection needs TWO bindings that share one
 `resourceKey` (the connection id) and differ in `propertyAttribute`: the
 connection binding's `default` is the connection id, the folder binding's
-`default` is the folder key.
+`default` is the folder key. The activity's `folderKey` context input must
+reference the folder binding (`=bindings.<folderBindingId>`); the complete node
+under "Required `Parameters`" above shows it. Without it: `102010`,
+`Value cannot be null (Parameter 'Folder')`.
 
 ```xml
 <uipath:bindings version="v1">
