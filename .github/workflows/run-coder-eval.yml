@@ -75,6 +75,16 @@ on:
         description: '@uipath/cli version.'
         type: string
         default: dev
+      # Evaluate an unreleased CLI stack: the numeric id of a successful
+      # UiPath/cli export-airgapped.yml run. The Linux job then installs
+      # @uipath/cli, every tool and @uipath/skills from that run's Linux archive
+      # instead of cli_version (tests/docker/Dockerfile CLI_SOURCE=archive). The
+      # skills under test still load from this checkout ($SKILLS_REPO_PATH);
+      # the archive's @uipath/skills is only installed as an npm package.
+      cli_archive_run_id:
+        description: 'UiPath/cli export-airgapped.yml run id (blank = install cli_version). Linux only.'
+        type: string
+        default: ''
       # delegate-sdk = UiPath Autopilot via @uipath/delegate-stdio, from the
       # coder_eval_uipath plugin. Linux runs it through the docker overlay image;
       # Windows runs it in-process on the host (tempdir driver) with its own
@@ -320,12 +330,52 @@ jobs:
           echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull "ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}"
 
+      # cli_archive_run_id: check the input is a run id, that the run is a
+      # UiPath/cli export-airgapped.yml run whose archive build job succeeded
+      # (the archive is executed at image build, so only that workflow's output
+      # is accepted), then download its Linux archive into the build context.
+      - name: Resolve CLI archive
+        id: cliarchive
+        if: inputs.cli_archive_run_id != ''
+        env:
+          RUN_ID:   ${{ inputs.cli_archive_run_id }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]] || { echo "::error::cli_archive_run_id must be a numeric run id"; exit 1; }
+          meta="$(gh api "repos/UiPath/cli/actions/runs/$RUN_ID" --jq '[.path, .head_sha, .head_branch] | @tsv')" \
+            || { echo "::error::cannot read UiPath/cli run $RUN_ID — GH_PAT needs actions:read on UiPath/cli"; exit 1; }
+          IFS=$'\t' read -r wf_path head_sha head_branch <<<"$meta"
+          [ "$wf_path" = ".github/workflows/export-airgapped.yml" ] || { echo "::error::run $RUN_ID is $wf_path, not export-airgapped.yml"; exit 1; }
+          # Gate on the job that builds and uploads the archive, not the run's
+          # overall conclusion: a later per-OS verify job can fail (the Windows
+          # verify did on v1.202.1) after a good Linux artifact was uploaded.
+          build="$(gh api "repos/UiPath/cli/actions/runs/$RUN_ID/jobs" --paginate \
+            --jq '.jobs[] | select(.name == "Build air-gapped archive") | .conclusion')"
+          [ "$build" = "success" ] || { echo "::error::run $RUN_ID's 'Build air-gapped archive' job is '${build:-missing}', not success"; exit 1; }
+          name="$(gh api "repos/UiPath/cli/actions/runs/$RUN_ID/artifacts" \
+            --jq '[.artifacts[] | select(.name | test("^uipath-cli-airgap-.+-linux$")) | select(.expired | not) | .name] | first // empty')"
+          [ -n "$name" ] || { echo "::error::run $RUN_ID has no unexpired uipath-cli-airgap-*-linux artifact (they are kept 14 days)"; exit 1; }
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "CLI archive: $name from UiPath/cli run $RUN_ID ($head_branch @ $head_sha)" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Download CLI archive
+        if: inputs.cli_archive_run_id != ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: ${{ steps.cliarchive.outputs.name }}
+          repository: UiPath/cli
+          run-id: ${{ inputs.cli_archive_run_id }}
+          github-token: ${{ secrets.GH_PAT }}
+          path: tests/docker/cli-archive
+
       # Build the skills extension image (`@uipath/cli`, its tool plugins, and
       # `@uipath/maestro-builder-sdk` on top of coder-eval-agent). Matches
       # smoke-skills.yml + daily.sh.
       - name: Build skills Docker image
         env:
           DOCKER_BUILDKIT: "1"
+          CLI_SOURCE: ${{ inputs.cli_archive_run_id != '' && 'archive' || 'registry' }}
           NPM_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}
           CE_IMAGE_TAG: ${{ needs.partition.outputs.image_tag }}
           FLOW_SDK_PKG_NAME: ${{ vars.FLOW_SDK_PKG_NAME }}
@@ -342,6 +392,7 @@ jobs:
             --build-arg CODER_EVAL_IMAGE="ghcr.io/uipath/coder-eval-agent:${CE_IMAGE_TAG}" \
             --secret id=npm_auth_token,env=NPM_AUTH_TOKEN \
             --build-arg CLI_VERSION="${{ inputs.cli_version }}" \
+            --build-arg CLI_SOURCE="$CLI_SOURCE" \
             --build-arg FLOW_SDK_VERSION="${{ vars.FLOW_SDK_VERSION || 'latest' }}" \
             --build-arg CONNECTORS_LIBRARY_VERSION="${{ vars.CONNECTORS_LIBRARY_VERSION || 'latest' }}" \
             ${pkg_name_arg[@]+"${pkg_name_arg[@]}"} \
