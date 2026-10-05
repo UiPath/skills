@@ -12,7 +12,12 @@ Validates:
        - type == "agent"
        - location == "solution"
        - properties.processName == "ToolAgent"
-       - properties.folderPath == "solution_folder"
+       - properties.folderPath in ("", "solution_folder")
+
+`folderPath` accepts the builder-SDK's "" (what `uip agent validate
+--inline-in-flow` accepts) as well as "solution_folder"; both derive
+byte-identical solution files for this agent tool:
+https://github.com/UiPath/flow-builder-sdk/issues/922#issuecomment-6001964622
 """
 
 import os
@@ -21,6 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
+    INLINE_SOLUTION_FOLDER_PATHS,
     assert_edge,
     find_autonomous_agent_node,
     find_inline_resource,
@@ -65,9 +71,9 @@ def main() -> None:
     )
 
     props = resource.get("properties") or {}
-    if props.get("folderPath") != "solution_folder":
-        sys.exit(f'FAIL: properties.folderPath should be "solution_folder", got {props.get("folderPath")!r}')
-    print('OK: properties.processName="ToolAgent", folderPath="solution_folder"')
+    if props.get("folderPath") not in INLINE_SOLUTION_FOLDER_PATHS:
+        sys.exit(f'FAIL: properties.folderPath should be "" or "solution_folder", got {props.get("folderPath")!r}')
+    print('OK: properties.processName="ToolAgent", folderPath=' + repr(props.get("folderPath")))
 
 
 if __name__ == "__main__":
