@@ -48,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Insert Record (create)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -56,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Get Record"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -64,7 +64,7 @@ success_criteria:
   - type: command_executed
     description: "Update Record"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -72,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Delete Record"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -80,7 +80,7 @@ success_criteria:
   - type: command_executed
     description: "List Records"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
