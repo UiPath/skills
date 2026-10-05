@@ -211,7 +211,7 @@ Reading a ruleset needs admin on the repository, which the default `GITHUB_TOKEN
 
 ## Open items
 
-- **`release/*` has no required checks.** The ruleset condition is `["~DEFAULT_BRANCH"]`, so ~92 release-branch PRs per quarter (mostly cherry-picks — where a stale conflict resolution most easily breaks a checker) merge on review alone. Fix by extending the condition to `["~DEFAULT_BRANCH", "refs/heads/release/*"]`; `apply-required-checks.sh --with-release-branches` emits that payload.
+- **`release/*` is gated, with `do_not_enforce_on_create: true`.** The `main` ruleset's condition is `["~DEFAULT_BRANCH", "refs/heads/release/*"]` (`--with-release-branches`). Creation must stay exempt: the bot cuts release branches by push, and a new branch has no check results. With the exemption off, `sprint-release-cut.yml` fails with GH013. Its preflight step checks for this before every cut. PRs into a release branch still need every check.
 - **`strict_required_status_checks_policy` is `false`.** Branches may merge green against a stale base. Leave it off while `Run skill smoke tests` (p95 22 min) is required — forcing re-runs on base drift would serialize the merge queue.
 - **`Validate task schema (advisory)` is not requirable yet.** It is `continue-on-error` by design and validates the whole task tree, so pre-existing drift shows red on unrelated PRs. Clean the tree, then drop `continue-on-error` and the `(advisory)` suffix.
 - **`--check` is not scheduled.** See § Checking for drift — it needs an admin-scoped token to read the ruleset from CI.

@@ -154,12 +154,18 @@ PAYLOAD=$(
          [ .rules[] | select(.type != "required_status_checks") ]
          + [ ( ( .rules[] | select(.type == "required_status_checks") )
                // { type: "required_status_checks",
-                    parameters: { do_not_enforce_on_create: false,
+                    parameters: { do_not_enforce_on_create: true,
                                   # Off on purpose: forcing a re-run on base drift would
                                   # serialize the merge queue behind `Run skill smoke
                                   # tests` (p95 22 min).
                                   strict_required_status_checks_policy: false } } )
-             | .parameters.required_status_checks = $checks ]
+             | .parameters.required_status_checks = $checks
+             # Always on: a newly created branch has no check results, so
+             # enforcing on create rejects every bot-cut release/v* branch
+             # (GH013 "N of N required status checks are expected") — this is
+             # what broke the 1.203 and 1.204 sprint cuts. PRs into the branch
+             # still need every check.
+             | .parameters.do_not_enforce_on_create = true ]
        )'
 )
 

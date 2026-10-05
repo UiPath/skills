@@ -24,6 +24,15 @@ name: Sprint Release Cut
 #
 # No cross-repo secret is required, gated to the CLI's 14-day cadence (anchor
 # below). The cli-repo side cuts itself, in lockstep, from the same anchor.
+#
+# Rehearsal: on the OFF-cadence Sunday (7 days before each cut), or on demand
+# via `rehearsal: true`, the same steps run against throwaway branches
+# (`rehearsal/release/v<M.N>`, `rehearsal/sprint-bump-<M.N+1>`): dev-only
+# publish, a draft bump PR that is closed at once, everything deleted, and the
+# report goes to the rehearsal Slack channel (repo variable
+# SPRINT_CUT_REHEARSAL_SLACK_CHANNEL_ID), never #team-coding-agents. Both modes
+# first preflight the rules GitHub applies to the REAL `release/v<M.N>` name,
+# which the rehearsal branch deliberately does not match.
 
 on:
   schedule:
@@ -39,6 +48,15 @@ on:
         type: boolean
         required: false
         default: false
+      rehearsal:
+        description: 'Run the full cut against throwaway rehearsal/* branches (dev publish only, PR closed, branches deleted); skips the cadence gate'
+        type: boolean
+        required: false
+        default: false
+      slack_channel_id:
+        description: 'Slack channel ID for the report (default: #team-coding-agents, or SPRINT_CUT_REHEARSAL_SLACK_CHANNEL_ID when rehearsing)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -75,11 +93,28 @@ jobs:
         id: target
         env:
           MINOR_OVERRIDE: ${{ github.event.inputs.minor_override }}
+          REHEARSAL_INPUT: ${{ github.event.inputs.rehearsal }}
+          SLACK_CHANNEL_INPUT: ${{ github.event.inputs.slack_channel_id }}
+          REHEARSAL_CHANNEL: ${{ vars.SPRINT_CUT_REHEARSAL_SLACK_CHANNEL_ID }}
         run: |
           # The line to cut is the version ALREADY in main (see header). main is
           # advanced to the next line by the bump PR in the last step.
           CURRENT_LINE=$(jq -r '.version | split(".") | "\(.[0]).\(.[1])"' package.json)
           echo "current_line=$CURRENT_LINE" >> "$GITHUB_OUTPUT"
+
+          anchor_epoch=$(date -u -d "$RELEASE_CADENCE_ANCHOR" +%s)
+          today_epoch=$(date -u -d "$(date -u +%Y-%m-%d)" +%s)
+          days_since=$(( (today_epoch - anchor_epoch) / 86400 ))
+
+          # Rehearse on demand, or automatically on the scheduled off-cadence
+          # Sunday so a broken cut surfaces a week before the real one.
+          REHEARSAL=false
+          if [ "$REHEARSAL_INPUT" = "true" ]; then
+            REHEARSAL=true
+          elif [ "${{ github.event_name }}" = "schedule" ] && [ "$days_since" -ge 0 ] && [ $(( days_since % 14 )) -eq 7 ]; then
+            REHEARSAL=true
+            echo "Off-cadence Sunday (+$days_since days) -> automatic rehearsal."
+          fi
 
           if [ -n "$MINOR_OVERRIDE" ]; then
             if ! echo "$MINOR_OVERRIDE" | grep -Eq '^[0-9]+\.[0-9]+$'; then
@@ -88,13 +123,13 @@ jobs:
             fi
             CUT_LINE="$MINOR_OVERRIDE"
             echo "Manual override -> cut $CUT_LINE (cadence gate skipped)."
+          elif [ "$REHEARSAL" = "true" ]; then
+            # A rehearsal touches only throwaway branches, so it needs no gate.
+            CUT_LINE="$CURRENT_LINE"
           else
             # Biweekly cadence gate: act only on release Sundays (every 14 days
             # from the anchor). A manual run without an override also honors the
             # gate so a stray dispatch can't cut off-cadence.
-            anchor_epoch=$(date -u -d "$RELEASE_CADENCE_ANCHOR" +%s)
-            today_epoch=$(date -u -d "$(date -u +%Y-%m-%d)" +%s)
-            days_since=$(( (today_epoch - anchor_epoch) / 86400 ))
             if [ "$days_since" -lt 0 ] || [ $(( days_since % 14 )) -ne 0 ]; then
               echo "proceed=false" >> "$GITHUB_OUTPUT"
               {
@@ -113,13 +148,59 @@ jobs:
           CUT_MINOR=$(echo "$CUT_LINE" | cut -d. -f2)
           NEXT_LINE="$CUT_MAJOR.$((CUT_MINOR + 1))"
 
+          if [ "$REHEARSAL" = "true" ]; then
+            BRANCH="rehearsal/release/v$CUT_LINE"
+            BUMP_BRANCH="rehearsal/sprint-bump-$NEXT_LINE"
+            # Never fall back to #team-coding-agents for a rehearsal; an empty
+            # channel skips the Slack step instead.
+            CHANNEL="${SLACK_CHANNEL_INPUT:-$REHEARSAL_CHANNEL}"
+            [ -n "$CHANNEL" ] || echo "::warning::No rehearsal Slack channel (set repo variable SPRINT_CUT_REHEARSAL_SLACK_CHANNEL_ID) — the report will not be posted."
+          else
+            BRANCH="release/v$CUT_LINE"
+            BUMP_BRANCH="auto/sprint-bump-$NEXT_LINE"
+            CHANNEL="${SLACK_CHANNEL_INPUT:-C0A2T23NJ59}"   # #team-coding-agents
+          fi
+
           echo "cut_line=$CUT_LINE" >> "$GITHUB_OUTPUT"
           echo "next_line=$NEXT_LINE" >> "$GITHUB_OUTPUT"
+          echo "rehearsal=$REHEARSAL" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "bump_branch=$BUMP_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "slack_channel=$CHANNEL" >> "$GITHUB_OUTPUT"
           echo "proceed=true" >> "$GITHUB_OUTPUT"
           # No CLI-drift warning here: the cut publishes a PREVIEW and stable is
           # promoted manually, so the preview line legitimately runs 1-2 minors
           # ahead of the CLI's published stable during the RC window. Line
           # alignment is a manual decision made at stable-promotion time.
+
+      - name: Preflight — rules on the real release branch
+        id: preflight
+        # Read-only, so it runs in dry_run and rehearsal too. A rehearsal branch
+        # matches no ruleset, so this is the only step that tells a rehearsal
+        # whether the REAL push will be accepted. The 1.203 and 1.204 cuts died
+        # on exactly this: the `main` ruleset gained refs/heads/release/* with
+        # required status checks enforced on creation, and a freshly cut branch
+        # can never carry check results (GH013 "7 of 7 required status checks
+        # are expected").
+        if: steps.target.outputs.proceed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LINE: ${{ steps.target.outputs.cut_line }}
+        run: |
+          set -euo pipefail
+          RULES=$(gh api "repos/${{ github.repository }}/rules/branches/release/v$LINE")
+          BLOCKERS=$(printf '%s' "$RULES" | jq -r '
+            .[]
+            | select((.type == "required_status_checks" and (.parameters.do_not_enforce_on_create != true))
+                     or .type == "creation")
+            | "\(.type) (ruleset \(.ruleset_id))"')
+          if [ -n "$BLOCKERS" ]; then
+            echo "::error::release/v$LINE cannot be created by the bot — rules that block branch creation:"
+            printf '  %s\n' "$BLOCKERS"
+            echo "Fix: enable 'Do not require status checks on creation' on the ruleset (scripts/apply-required-checks.sh sets it), or drop the creation restriction for refs/heads/release/*."
+            exit 1
+          fi
+          echo "Branch creation for release/v$LINE is not blocked by any ruleset."
 
       - name: Dry run — print plan
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run == 'true'
@@ -127,8 +208,9 @@ jobs:
           {
             echo "## Dry run — planned sprint cut"
             echo ""
+            echo "- rehearsal: \`${{ steps.target.outputs.rehearsal }}\`; Slack channel: \`${{ steps.target.outputs.slack_channel }}\`"
             echo "- current line (main): \`${{ steps.target.outputs.current_line }}\`"
-            echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` — branch \`release/v${{ steps.target.outputs.cut_line }}\` @ \`$(git rev-parse --short HEAD)\` at version \`${{ steps.target.outputs.cut_line }}.0\`"
+            echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` — branch \`${{ steps.target.outputs.branch }}\` @ \`$(git rev-parse --short HEAD)\` at version \`${{ steps.target.outputs.cut_line }}.0\`"
             echo "- would publish (and wait): DEV default to GitHub Packages; PREVIEW default to npmjs; Studio Web DEV/PREVIEW to GitHub Packages when custom publishing is enabled (dispatch publish.yml channel=dev + channel=preview) — stable stays MANUAL"
             echo "- would open a bump PR: \`main\` -> \`${{ steps.target.outputs.next_line }}.0\` after the branch cut; a failed publish is carried as a warning for maintainer review"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -138,10 +220,16 @@ jobs:
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
         run: |
           LINE="${{ steps.target.outputs.cut_line }}"
-          BRANCH="release/v$LINE"
+          BRANCH="${{ steps.target.outputs.branch }}"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # A rehearsal always starts clean; a leftover from a cancelled run
+          # would otherwise take the resume path below.
+          if [ "${{ steps.target.outputs.rehearsal }}" = "true" ]; then
+            git push origin --delete "$BRANCH" 2>/dev/null || true
+          fi
 
           if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
             # Branch already exists — a prior run cut it, or main's bump didn't
@@ -195,7 +283,7 @@ jobs:
         run: |
           set -euo pipefail
           LINE="${{ steps.target.outputs.cut_line }}"
-          BRANCH="release/v$LINE"
+          BRANCH="${{ steps.target.outputs.branch }}"
 
           # The bot pushed $BRANCH with GITHUB_TOKEN, which GitHub's recursion
           # guard stops from triggering publish.yml automatically — so dispatch
@@ -236,6 +324,12 @@ jobs:
           }
 
           dispatch_and_wait dev
+          if [ "${{ steps.target.outputs.rehearsal }}" = "true" ]; then
+            # dev goes to GitHub Packages only (same content as main's own dev
+            # builds). preview is public on npmjs, so a rehearsal stops here.
+            echo "Rehearsal: dev publish succeeded; preview skipped (public npmjs)."
+            exit 0
+          fi
           dispatch_and_wait preview
           # publish.yml stamps the preview as $LINE.0-preview.<run_number>; the
           # notification links the exact npmjs version, so surface it here.
@@ -260,7 +354,8 @@ jobs:
           set -euo pipefail
           CUT_LINE="${{ steps.target.outputs.cut_line }}"
           NEXT_LINE="${{ steps.target.outputs.next_line }}"
-          PR_BRANCH="auto/sprint-bump-$NEXT_LINE"
+          PR_BRANCH="${{ steps.target.outputs.bump_branch }}"
+          REHEARSAL="${{ steps.target.outputs.rehearsal }}"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -308,6 +403,18 @@ jobs:
           fi
 
           git commit -m "chore(release): bump main to $NEXT_LINE.0 after cutting $CUT_LINE"
+          if [ "$REHEARSAL" = "true" ]; then
+            # Exercise push + PR creation, then close at once: a draft that
+            # nobody can mistake for the real bump, and no open PR left behind.
+            git push --force origin "HEAD:$PR_BRANCH"
+            URL=$(gh pr create --draft --head "$PR_BRANCH" --base main \
+              --title "[rehearsal] chore(release): bump main to $NEXT_LINE.0 — do not merge" \
+              --body "Sprint-cut rehearsal (run ${{ github.run_id }}). Closed automatically; do not reopen."$'\n\n'"$BODY")
+            gh pr close "$URL" --delete-branch --comment "Rehearsal complete — closing."
+            echo "url=$URL" >> "$GITHUB_OUTPUT"
+            echo "Rehearsal bump PR opened and closed: $URL"
+            exit 0
+          fi
           git push origin "HEAD:$PR_BRANCH"
           URL=$(gh pr create --head "$PR_BRANCH" --base main \
             --title "chore(release): bump main to $NEXT_LINE.0 (sprint cut)" \
@@ -319,30 +426,48 @@ jobs:
         if: steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
         run: |
           {
-            echo "## Sprint cut complete"
+            if [ "${{ steps.target.outputs.rehearsal }}" = "true" ]; then
+              echo "## Sprint cut REHEARSAL complete (throwaway branches deleted, dev publish only)"
+            else
+              echo "## Sprint cut complete"
+            fi
             echo ""
             echo "- cut line: \`${{ steps.target.outputs.cut_line }}\` (main was on this line)"
-            echo "- \`release/v${{ steps.target.outputs.cut_line }}\` @ \`${{ steps.cutbranch.outputs.short_sha }}\`"
+            echo "- \`${{ steps.target.outputs.branch }}\` @ \`${{ steps.cutbranch.outputs.short_sha }}\`"
             echo "- published (waited for success): default DEV (GitHub Packages) + PREVIEW (npmjs), plus Studio Web DEV + PREVIEW (GitHub Packages) when custom publishing was enabled, for line \`${{ steps.target.outputs.cut_line }}.0\` (stable stays manual)"
             echo "- bump PR opened (-> \`${{ steps.target.outputs.next_line }}.0\`): ${{ steps.mainbump.outputs.url }} — approve + merge to advance main"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Announce the cut on Slack (#team-coding-agents)
+      - name: Delete rehearsal branches
+        # always(): a rehearsal must not leave branches behind, even when a
+        # step failed half-way. The bump PR step already closed its PR.
+        if: always() && steps.target.outputs.rehearsal == 'true' && github.event.inputs.dry_run != 'true'
+        run: |
+          for b in "${{ steps.target.outputs.branch }}" "${{ steps.target.outputs.bump_branch }}"; do
+            git push origin --delete "$b" 2>/dev/null && echo "Deleted $b" || echo "$b already gone"
+          done
+
+      - name: Announce the cut on Slack
         # Post the announcement regardless of earlier failures (always()), but
-        # only for a real cut (proceed, not dry_run). continue-on-error so a
-        # Slack hiccup never turns a good cut into a failed job. The message
-        # reports the real outcome of each step (branch / preview / bump PR)
-        # with Studio-style emojis; SLACK_BOT_TOKEN must belong to a bot that
-        # is a member of the channel.
-        if: always() && steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true'
+        # only for a real cut or rehearsal (proceed, not dry_run), and only when
+        # a channel resolved (a rehearsal never falls back to
+        # #team-coding-agents). continue-on-error so a Slack hiccup never turns
+        # a good cut into a failed job. The message reports the real outcome of
+        # each step (preflight / branch / preview / bump PR) with Studio-style
+        # emojis; SLACK_BOT_TOKEN must belong to a bot that is a member of the
+        # channel — invite Skills Buddy to the rehearsal channel too.
+        if: always() && steps.target.outputs.proceed == 'true' && github.event.inputs.dry_run != 'true' && steps.target.outputs.slack_channel != ''
         continue-on-error: true
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          CHANNEL_ID: 'C0A2T23NJ59'   # #team-coding-agents
+          CHANNEL_ID: ${{ steps.target.outputs.slack_channel }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
+          REHEARSAL: ${{ steps.target.outputs.rehearsal }}
+          BRANCH: ${{ steps.target.outputs.branch }}
           CUT_LINE: ${{ steps.target.outputs.cut_line }}
           NEXT_LINE: ${{ steps.target.outputs.next_line }}
+          PREFLIGHT_OUTCOME: ${{ steps.preflight.outcome }}
           CUT_OUTCOME: ${{ steps.cutbranch.outcome }}
           PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
           PREVIEW_VERSION: ${{ steps.publish.outputs.preview_version }}
