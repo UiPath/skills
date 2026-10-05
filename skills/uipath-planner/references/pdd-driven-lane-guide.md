@@ -175,6 +175,40 @@ Walk the project list. For each project, emit task rows per the matched pattern.
      so the task is `Blocked by` the target entity's task. Name the folder (`--folder-key` from the
      solution's folder) and keep the platform skill's preview-then-confirm rule. Field names follow
      the SDD vocabulary and Data Fabric name rules; never invent a field the SDD does not carry.
+     **Canonical body — every entity task carries this shape, filled from the SDD, nothing else:**
+
+     ```json
+     {
+       "displayName": "<Entity display name — unique on the tenant, like the name>",
+       "description": "<one line from the SDD>",
+       "fields": [
+         {"name": "<FieldName>", "type": "STRING", "lengthLimit": <n>, "isRequired": <bool>, "isUnique": <bool>},
+         {"name": "<Amount>", "type": "DECIMAL", "decimalPrecision": <0|2>},
+         {"name": "<Flag>", "type": "BOOLEAN"}, {"name": "<When>", "type": "DATE" | "DATETIME_WITH_TZ"},
+         {"name": "<Choice>", "type": "CHOICE_SET_SINGLE", "choiceSet": "<ChoiceSetName — resolved to choiceSetId at run time>"},
+         {"name": "<Link>", "type": "RELATIONSHIP", "referenceEntity": "<Entity>", "referenceField": "<display field>"}
+       ],
+       "folder": "<folder path — resolved to --folder-key at run time>"
+     }
+     ```
+
+     Rules the forward pass against the alpha tenant's native entities established (28 entities, 2026-10-05):
+     field names are the SDD's names verbatim (no re-casing: `member_id` stays `member_id`), checked against
+     the platform skill's Name Validation list **before** the task is written (a single word like `long`, `ref`,
+     `order` is a reserved keyword — use the domain term); every STRING carries an explicit `lengthLimit` (the
+     SDD's value, else `200 [DEFAULT]` written as such — the CLI default silently differs from most tenants'
+     conventions); an identifier with no arithmetic on it is STRING, a quantity is DECIMAL; a column the SDD
+     calls a link to another entity is a RELATIONSHIP only when that entity is in the same ontology, otherwise
+     it stays the SDD's type; `displayName` is unique on the tenant exactly as `name` is, so an entity that
+     coexists with a similarly named one needs a distinct display name too.
+     **Carry the approval.** The platform skill creates only on an explicit confirmation that names the
+     operation and the resource; a generic "do not ask" is not one. When the plan was approved by the
+     user (plan-mode review, or `Execution autonomy: autonomous` chosen for this run), end the entity
+     task's Skill prompt with the sentence the platform skill accepts, filled in from the body —
+     `Approved by the user's plan review on <date>: create entity <Entity> with fields <f1>, <f2>, … as
+     specified above; this is the explicit confirmation for that create.` — so an autonomous execution
+     does not stall at the preview. Without an approved plan, leave the sentence out: the preview then
+     waits for the user, as it should.
    - **Resource task.** Then `solution:<Solution>:resources:Entity:<Entity>` (skill `uipath-solution`,
      runs `uip solution resources add --source remote --kind Entity --name <Entity> --folder-path
      <folder>`), blocked by the entity task.
