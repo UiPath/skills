@@ -20,7 +20,7 @@ uip df entities create "MyEntity" \
 ```
 
 - `fields` array is **required**. Each entry must include `name`.
-- `displayName`, `description`, and `isRbacEnabled` are optional top-level keys.
+- `displayName`, `description`, and `isRbacEnabled` are optional top-level keys. `displayName` is unique on the tenant like `name` — a body whose display name matches an existing entity's is rejected with HTTP 409 (data-fabric.md Rule 13b).
 - Response: `{ Code: "EntityCreated", Data: { Id: "<entity-id>" } }` — save `Data.Id` for subsequent operations.
 - Alternatively use `--file <path>` pointing to a JSON file with the same structure.
 
