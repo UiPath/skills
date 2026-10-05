@@ -293,6 +293,10 @@ flow('order-intake')
   .step('normalize', script({ code: 'return 1;' }))     // shared body
 ```
 
+A form trigger works only as the default root: given to `.entryPoint()`,
+`formTrigger()` emits a manual trigger with no diagnostic. `flow debug` runs only
+the default root ([`references/operate.md`](references/operate.md#debug--a-real-end-to-end-run)).
+
 ## Connector events
 
 Start on, or pause for, an Integration Service event subscription.

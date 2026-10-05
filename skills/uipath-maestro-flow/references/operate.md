@@ -97,6 +97,12 @@ Operational constraints, each of which has its own failure:
 - **`Debug polling timed out after <N>s` is not a failure.** The run continues
   server-side. Take `instanceId` from stderr and poll
   `uip maestro flow debug-instance status <INSTANCE_ID> --output json`.
+- **Only the default root runs.** Debug starts the root `.trigger()` / `.input()`
+  define and has no option to choose another. To run an `.entryPoint(...)` root,
+  debug a scratch copy of the project whose default root is that entry point's
+  trigger, inputs and prefix, delete the copy afterwards, and report the run as
+  the copy's.
+- **An RPA step does not run under a headless debug** ([rpa-workflow.md](rpa-workflow.md#evidence-boundary)).
 - **Do not pass `--folder-path` or `--folder-key`.** Debug provisions into your
   personal workspace; a shared folder fails `HTTP 500` at
   `Stage: prepare-custom-debug` with no instance started. Shared resources reach
