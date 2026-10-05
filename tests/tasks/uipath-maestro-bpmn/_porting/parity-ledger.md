@@ -57,6 +57,8 @@ Final is the latest run after the review fixes; each row's earlier result is kep
 | `connector_features/complex_array.yaml` | `connector_features/complex_array/` | PASS 0.875 (run 36056004092) | earlier PASS 0.875 (run 35789221753); only the advisory resolved-user-id check missed; Flow fully passes 3/12 |
 | `connector_features/path_params.yaml` | `connector_features/path_params/` | PASS (run 36056004092) | earlier PASS it.2 (run 35790934047); it.1 agent left the issue key as an unbound variable |
 | `connector_features/paginated_reference_lookup.yaml` | `connector_features/paginated_reference_lookup/` | FAIL (runs 36053143338, 36056004092) | after the review fixes the agent never resolved the channel id in either run; earlier PASS it.3 (run 35791969905); it.1 channel by name, no pagination; it.2 channel id with its last character dropped |
+| `e2e/jira_lifecycle.yaml` | `e2e/jira_lifecycle/` | PASS 0.82 (run 36672741054) | earlier: three different runtime failures (runs 35503094182, 35524004307, 35525387843); only the advisory `bpmn debug` command check missed; Flow flaky (0.82 typical) |
+| `interactive/slack_channel_description_simulated.yaml` | `interactive/slack_channel_description_simulated/` | PASS 0.89 (run 36674145351) | flaky: FAIL 0.44 in run 36672741054 (agent built a List node plus script, page 1 only, `conversationsInfoId` null); the passing run wrote the channel id as a literal; earlier FAIL run 35789221753; Flow fully passes 4/12 |
 
 ### Parked (branch `test/bpmn-port-parked`, all `skip: true`)
 
@@ -64,10 +66,8 @@ Final is the latest run after the review fixes; each row's earlier result is kep
 |---|---|---|
 | `multi_node/bellevue_weather/…` | same | runs 35523787101, 35525387843: script reads `temperature_2m` off an undefined `Intsvc.HttpExecution` response; response shape not taught |
 | `interactive/bellevue_weather_simulated/…` | same | run 35785806030: same fault; run 35783045540 was a harness stop on turn 1 |
-| `e2e/jira_search_triage/…` | same | run 35525387843: 400008, multi-instance over a connector response does not evaluate |
-| `e2e/jira_lifecycle/…` | same | three different runtime failures (runs 35503094182, 35524004307, 35525387843); Flow flaky (0.82 typical) |
+| `e2e/jira_search_triage/…` | same | run 35525387843: 400008 (`.issues` collection). After the List-output skill fix the collection is `=vars.Var_SearchResponse` and evaluates, but runs 36672741054 (debug timeout, instance Running 384s) and 36674145351 (400300 `=iterator.item.key`; a subprocess body must use `=iterator[0].item`) still fail |
 | `multi_node/billing_discrepancy_detector/…` | same | runs 35538279757, 35783045540: two different malformed Data Service where clauses built from a process variable |
-| `interactive/slack_channel_description_simulated/…` | same | run 35789221753: page 1 of conversations only, target channel never appears; it.2 (run 35785806030) was a grader defect since fixed; Flow fully passes 4/12 |
 | `connector_features/ceql_where.yaml` | `connector_features/ceql_where/` | runs 35783045540, 35785806030: agent writes the connector's CEQL `where` string, never Flow's numeric-groupOperator tree; no BPMN carrier |
 | `connector_features/enhanced_enum.yaml` | `connector_features/enhanced_enum/` | runs 35789221753, 35790934047: no WooCommerce connector node produced |
 
