@@ -7,7 +7,8 @@ description: >
   agent delegates to the pre-existing `ToolAgent` as a tool — reusing it,
   NOT re-creating it and NOT re-initializing the solution. Verifies the
   tool resource.json under the inline agent's UUID subdirectory uses
-  `type: "agent"`, `location: "solution"`, `folderPath: "solution_folder"`,
+  `type: "agent"`, `location: "solution"`, `folderPath` "" or
+  "solution_folder" (flow-builder-sdk#922),
   and that a `uipath.agent.resource.tool.agent.<process-key>` flow node is
   wired to the autonomous agent node's `tool` handle.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, low-code, inline-flow, resource]

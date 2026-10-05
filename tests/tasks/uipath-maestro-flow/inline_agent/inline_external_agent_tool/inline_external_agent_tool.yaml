@@ -4,8 +4,10 @@ description: >
   scaffold a flow project with an inline low-code agent that calls
   another agent already deployed to Orchestrator (not inside this
   solution). Verifies the tool resource.json under the inline agent's
-  UUID subdirectory uses `type: "agent"`, `location: "external"`, real
-  `folderPath`, and that a
+  UUID subdirectory uses `type: "agent"`, with the tool's tenant folder
+  in the flow's top-level `bindings[]` (`location` "solution" or
+  "external", `folderPath` "" or the literal folder; both run live,
+  flow-builder-sdk#922), and that a
   `uipath.agent.resource.tool.agent.<process-key>` flow node is wired
   to the autonomous agent node's `tool` handle.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, low-code, inline-flow, resource]
@@ -94,7 +96,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Inline external agent tool: resource.json shape (location=external) + flow node (tool.agent.*) + tool-handle edge"
+    description: "Inline external agent tool: resource.json shape + folder binding + flow node (tool.agent.*) + tool-handle edge"
     command: "python3 $REFERENCE_DIR/inline_agent/_shared/check_inline_external_agent_tool.py"
     timeout: 30
     expected_exit_code: 0
