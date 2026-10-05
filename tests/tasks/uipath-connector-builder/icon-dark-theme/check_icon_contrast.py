@@ -2,7 +2,7 @@
 """Grade a connector icon (app/element/image.svg) for visibility on a surface.
 
 Mirrors the dark-surface rules documented in the uipath-connector-builder
-skill (references/overview.md §Icon), which mirror the periodic build check:
+skill (references/icon.md), which mirror the periodic build check:
 
   --surface dark  (default) pipeline rules against Studio Web's #1F1F1F.
                   Instant pass on a prefers-color-scheme:dark rule,
