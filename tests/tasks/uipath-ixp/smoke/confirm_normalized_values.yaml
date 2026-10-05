@@ -2,8 +2,8 @@ task_id: skill-ixp-confirm-normalized-values-smoke
 description: >
   Smoke: predictions for `Date` and `Monetary Quantity` fields come back in
   the type's normalized form, not the page's literal text. The agent must
-  confirm them as-is (Rule 8) — not reformat via `--corrections`, and not
-  improvise a conversion script to reconcile the two.
+  confirm them as-is (Rule 8) — not write the page's formatting back over
+  them, and not improvise a conversion script to reconcile the two.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.

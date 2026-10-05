@@ -1,9 +1,9 @@
 task_id: skill-ixp-confirm-predictions-smoke
 description: >
   Smoke: agent reviews predictions and picks the right verdict per
-  field — correct → `confirm --fields`; OCR-mangled → `confirm
-  --corrections` (Rule 8); wrong-field prediction → left
-  unannotated (Rule 10 — agent reviews, doesn't extract).
+  field — correct → `confirm --fields`; misread digits or wrong-field
+  prediction → left unannotated (Rules 8, 10 — agent reviews, doesn't
+  extract).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -84,10 +84,13 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # Any mention of f-003 on a confirm line, not just in --fields: writing the
+  # page's value for it is manual extraction too.
   - type: file_matches_regex
-    description: "--corrections carries the OCR-mangled field's corrected value, on a version-pinned call"
+    description: "Agent did NOT confirm or write a value for f-003 (misread Total must be left unannotated)"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))(?=[^\r\n]*--corrections\s+[^\r\n]*f-003[^\r\n]*\$?12,?000\.00).*)[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b[^\r\n]*f-003)[^\r\n]*$
+    must_match: false
     weight: 2.0
     pass_threshold: 1.0
