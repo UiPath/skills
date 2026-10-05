@@ -15,7 +15,7 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 | Component / step type | Skill | Authoring signals (user says) | Extraction signals (source artifact) |
 |---|---|---|---|
 | RPA workflow: desktop or browser UI automation, Excel, mail, PDF, file system, Object Repository selectors, Document Understanding activities, Integration Service connector activities, C# coded business logic, test cases | `uipath-rpa` | "click", "type into", "read the spreadsheet", "download attachments", "scrape", "fill the form", "validate with C#", "call Salesforce connector" | `project.json` with `.xaml` files and/or `.cs` files carrying `[Workflow]` / `[TestCase]` |
-| Maestro Flow: lightweight orchestration of deployed processes, agents, connectors; script and HTTP nodes; approval nodes; connector triggers | `uipath-maestro-flow` | "when X happens in Slack/Jira, run Y", "chain these automations", "a flow that calls the agent then the process" | `.flow` file, `entry-points.json`, `bindings_v2.json` |
+| Maestro Flow: lightweight orchestration of deployed processes, agents, connectors; script and HTTP nodes; inline agent steps; approval nodes; connector triggers | `uipath-maestro-flow` | "when X happens in Slack/Jira, run Y", "chain these automations", "a flow that calls the agent then the process" | `.flow` file, `entry-points.json`, `bindings_v2.json` |
 | BPMN process orchestration: long-running multi-lane process, gateways, events, human tasks, compensation | `uipath-maestro-bpmn` | "end-to-end process", "swim lanes", "wait for approval for days", "process with stages and gateways" | `.bpmn` file |
 | Case management: case plan with stages, tasks, SLAs, ad-hoc human work | `uipath-maestro-case` | "case", "claims handling", "each case has stages and SLAs" | `caseplan.json` |
 | Agent: LLM reasoning, tool selection, natural-language decisions, conversational | `uipath-agents` | "decide", "classify with AI", "summarize", "chatbot", "agent that reads the email and picks an action" | `agent.json` with `"type": "lowCode"`; or Python project with `pyproject.toml` plus `langgraph.json` / `main.py` and `uipath.json` without a `functions` map |
@@ -46,7 +46,7 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 
 1. Step interacts with a screen (desktop or browser) → `uipath-rpa`.
 2. Step reads or writes Excel, mail, PDF, files, or calls an Integration Service connector activity from a workflow → `uipath-rpa`.
-3. Step needs an LLM to decide, classify, summarize, or converse → `uipath-agents`.
+3. Step needs an LLM to decide, classify, summarize, or converse → `uipath-agents` when the agent is a component of its own: a conversation, an agent several components call, an agent with its own evaluations. One reasoning step among a Flow's other steps, with its model, tools and answer contract, is the Flow's inline agent → `uipath-maestro-flow`.
 4. Step is deterministic code with no UI and no LLM, invoked as a unit by other components → `uipath-functions`. If the same logic lives inside an RPA project as C#, keep `uipath-rpa`.
 5. Step is a sequence of HTTP calls with no UI → `uipath-api-workflow` when standalone; `uipath-rpa` when it lives inside an RPA project.
 6. Step coordinates other components: lightweight, event-driven, minutes-long → `uipath-maestro-flow`; long-running with human lanes and gateways → `uipath-maestro-bpmn`; case-centric with stages and SLAs → `uipath-maestro-case`.
