@@ -279,7 +279,14 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
 6. Suggested next steps — one short line before the prompt (the publish/skip-to-debug line above). If placeholders or missing connections exist, mention fixing/registering those before publish.
 
-**Blocked case — an extra line, not a field.** Run the [§ Phase 6 Runnability check](#runnability-check--before-the-debug-prompt) counts before the report. When any count is non-zero, add its two lines (where a run stops; the counts) right after the field list. When all three are zero, write nothing about runnability at all: no heading, no zero counts, no "fully runnable" line. A validated case can still be all placeholders, so these two lines are the only place the report says it cannot run, and they must be absent on a case that can.
+**Blocked case — an extra line, not a field.** Run the [§ Phase 6 Runnability check](#runnability-check--before-the-debug-prompt) counts before the report. When any count is non-zero, add these two lines right after the field list, filled in:
+
+```text
+Debug will stop at "<first blocked task or rule>" in "<its stage>": <no resource is bound | its event is a placeholder | its condition reads an output that does not exist>.
+<P> of <T> tasks are placeholders, <S> event rules are stubs, <X> conditions are unresolved.
+```
+
+The first line is the point of the disclosure: a placeholder list alone does not tell the user that a run stops, or where. When all three are zero, write nothing about runnability at all: no heading, no zero counts, no "fully runnable" line. A validated case can still be all placeholders, so these two lines are the only place the report says it cannot run, and they must be absent on a case that can.
 
 ### Publish notes
 
