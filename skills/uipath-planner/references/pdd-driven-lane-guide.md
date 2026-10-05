@@ -158,6 +158,40 @@ Walk the project list. For each project, emit task rows per the matched pattern.
 6. **Mandatory testing task per generation skill.** Inserted between generation tasks and any deploy task.
 7. **Propagate the delivery model.** When `Delivery model` is `automation-suite` or `standalone`, append one constraint line to every Skill prompt: "Deployment target: <value> — do not introduce products or features unavailable there." Skip the line for `cloud` / `unspecified`.
 
+8. **Data Fabric entities are shared resources — one platform task per entity, and a binding on
+   every consumer.** Entities join queues, assets and connections in rule 5's "leaf resources before
+   consumers". Sources, in order: the SDD's `### Data Fabric entities` table when present; otherwise
+   the data model the template already carries — RPA §5 Data Definitions (Option A records / Option B
+   variables), Flow §4 Variables and §3 nodes that read or write records, Case §1 Case Variables and
+   §4 Integrations, BPMN data objects. A business object the solution **owns** is a `Native` entity;
+   one it only **reads from an external system of record** is `Federated`.
+   - **Entity task.** For each entity emit `platform:<Solution>:entity:<Entity>` (skill
+     `uipath-platform`). The Skill prompt carries the **complete create body** as a fenced `json` block
+     — `displayName`, `description`, `fields[]` with `name`, `type` from the CLI type table in
+     `references/data-fabric/entity-schema.md` (`STRING`, `DECIMAL` + `decimalPrecision`, `BOOLEAN`,
+     `DATE`, `DATETIME_WITH_TZ`, `MULTILINE_TEXT`, `FILE`, `CHOICE_SET_SINGLE`), `isRequired` where the
+     SDD says so; a relationship to another entity is a `RELATIONSHIP` field whose `referenceEntityId`
+     / `referenceFieldId` the platform task resolves from `uip df entities list` / `get` at run time,
+     so the task is `Blocked by` the target entity's task. Name the folder (`--folder-key` from the
+     solution's folder) and keep the platform skill's preview-then-confirm rule. Field names follow
+     the SDD vocabulary and Data Fabric name rules; never invent a field the SDD does not carry.
+   - **Resource task.** Then `solution:<Solution>:resources:Entity:<Entity>` (skill `uipath-solution`,
+     runs `uip solution resources add --source remote --kind Entity --name <Entity> --folder-path
+     <folder>`), blocked by the entity task.
+   - **Binding on every consumer.** Every task whose project reads or writes an entity carries an
+     `**Entities:**` row (schema in [plan-and-tasks-format.md](plan-and-tasks-format.md)) — one item per
+     entity: `<Entity> (read | write | read-write) — <where: flow node key / case stage · task / workflow
+     file / agent context>` — and lists the entity tasks in `Blocked by`. The Skill prompt names the
+     same entities by their exact names so the specialist binds by name (`dataFabricRead({ entity })`,
+     a `record-created` trigger's `object`, a case entity-typed activity, an RPA Data Fabric activity).
+     Build skills take the binding from the task; they do not infer it.
+   - **Federated rows** name `references/data-fabric/federated-entity-creation.md` and its body shape.
+     While the installed CLI has no federated create, emit them as `[!] blocked`, `Blocked by: none`,
+     `**Blocked reason:** federated entity create not yet in the CLI`; their consumers stay pending on
+     them. A row that writes to an externally owned object never becomes a Data Fabric write — the
+     write is the Integration Service step the SDD already lists.
+   - **Order**: entity tasks → resource tasks → consumer build tasks → testing → deploy.
+
 ## Step 7 — Write tasks.md
 
 Compose the file using the schema in [plan-and-tasks-format.md](plan-and-tasks-format.md). Header lists Source SDD, SDD scope, Execution autonomy, Generation date. Body is the task list. If regenerating, append the Archive footer for removed tasks.

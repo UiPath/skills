@@ -76,6 +76,7 @@ Every task — in both file types — uses this exact structure. The fields belo
 **Status:** [ ] pending  *(or [~] in_progress / [x] completed / [!] blocked)*
 **Completed:** <YYYY-MM-DD by agent|human>  *(only present when Status = [x])*
 **Blocked by:** <T1, T2 / none>
+**Entities:** <Entity (read|write|read-write) — where; … / none>  *(every task that reads or writes a Data Fabric entity; omit otherwise)*
 **Skill prompt:**
 
 > <Imperative prompt that activates the specialist skill. Include exact SDD section
@@ -93,11 +94,12 @@ Every task — in both file types — uses this exact structure. The fields belo
 | `Task T<N>` | yes | Sequential within the file. Renumber on regeneration. |
 <!--skill-flavor:task-row-tool-fields:start-->
 | `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`. The planner emits this skill in the live `TaskCreate` call. |
-| `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
+| `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `platform:VendorInvoice:entity:SupplierInvoice` (typed-resource subject = `entity:SupplierInvoice`, one per row of the SDD's `### Data Fabric entities` table), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
 | `Status` | yes | One of `[ ]` pending, `[~]` in_progress, `[x]` completed, `[!]` blocked. |
 | `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. The planner sets `agent` when its TaskUpdate flips the checkbox; `human` only when the user manually edits the file. |
-| `Blocked by` | yes | Comma-separated task IDs, or `none`. Drives the live `addBlockedBy` calls. |
-| `Skill prompt` | yes | Imperative prompt the planner pastes into the TaskCreate `description`. Must end with the anti-hallucination rule (below). |
+| `Blocked by` | yes | Comma-separated task IDs, or `none`. Drives the live `addBlockedBy` calls. A task blocked on something **outside the plan** (a platform capability not yet shipped, a tenant prerequisite) keeps `Blocked by: none`, sets `Status: [!] blocked`, and adds a `**Blocked reason:** <one line>` field directly under it — e.g. `**Blocked reason:** federated entity create not yet in the CLI`. Regeneration re-evaluates the reason and unblocks. |
+| `Entities` | when the task touches an entity | The **binding**: one item per Data Fabric entity the task's project reads or writes — `<Entity> (read \| write \| read-write) — <where>` where *where* is the flow node key, case `stage · task`, workflow file or agent context that uses it; items separated by `;`. Entity names are exact (they are what the specialist binds by). The entity's own `platform:…:entity:` task is listed in `Blocked by`. Build skills consume the binding from here, never by inference. |
+| `Skill prompt` | yes | Imperative prompt the planner pastes into the TaskCreate `description`. Must end with the anti-hallucination rule (below). An entity task's prompt carries the complete create body as a fenced `json` block. |
 <!--skill-flavor:task-row-tool-fields:end-->
 | Sub-steps | yes | Concrete, checkable actions. One clear action per checkbox. No "TBD", no "as needed". |
 | `Validate:` sub-step | yes | Every generation task ends with a build/lint/compile check. |
