@@ -1,17 +1,17 @@
 <!--skill-flavor:single-skill-exit-no-plan:start-->
-1. Do NOT write a plan file. Do NOT call `EnterPlan`. Do NOT ask the Step 3 batch.
+1. Do NOT write a plan file. Do NOT call `EnterPlanMode`. Do NOT ask the Step 3 batch.
 <!--skill-flavor:single-skill-exit-no-plan:end-->
 
 <!--skill-flavor:approach-behavior:start-->
 **If "explore first, then plan":**
-- Call `EnterPlan` as soon as the user picks this option — before any further discovery, the Step 4 UI batch, or any plan writing. The host then names the plan file paths and attaches its plan-authoring contract.
+- Call `EnterPlanMode` as soon as the user picks this option — before any further discovery, the Step 4 UI batch, or any plan writing. The host then names the plan file paths and attaches its plan-authoring contract.
 - Inside plan mode, run only non-mutating discovery: reading `project.json` and other project files, `uip` commands that only list or read.
 - Do NOT run commands that mutate the project (create files, register targets, install packages) — those belong to execution. While plan mode is active, the only files you may write are the host's two plan files.
-- Run Step 4 inside plan mode, author the plan per Step 5, then present it per Step 6 (`ExitPlan`).
+- Run Step 4 inside plan mode, author the plan per Step 5, then present it per Step 6 (`ExitPlanMode`).
 
 **If "explore, plan, and execute simultaneously":**
 - Emit the plan as text in Step 5. The main agent loads the first specialist skill immediately and follows that skill's own workflow.
-- Do NOT call `EnterPlan`.
+- Do NOT call `EnterPlanMode`.
 <!--skill-flavor:approach-behavior:end-->
 
 <!--skill-flavor:write-plan-target:start-->
@@ -35,6 +35,6 @@ Option 2: parse the request fresh, run identity-matching against the old file (p
 <!--skill-flavor:resume-choices:end-->
 
 <!--skill-flavor:present-plan:start-->
-- **Explore first, then plan:** plan mode is already active (entered when the user picked this option). Once the host plan and its HTML presentation are written, call `ExitPlan` with outcome `complete`. Approval exits plan mode, the host derives the task list from the approved plan, and execution starts. A rejection keeps plan mode active: revise the plan and call `ExitPlan` again. If the user asks to stop planning, call `ExitPlan` with outcome `abandon`. Create no tasks yourself — Studio Web has no task-creation tool.
+- **Explore first, then plan:** plan mode is already active (entered when the user picked this option). Once the host plan and its HTML presentation are written, call `ExitPlanMode` with outcome `complete`. Approval exits plan mode, the host derives the task list from the approved plan, and execution starts. A rejection keeps plan mode active: revise the plan and call `ExitPlanMode` again. If the user asks to stop planning, call `ExitPlanMode` with outcome `abandon`. Create no tasks yourself — Studio Web has no task-creation tool.
 - **Explore, plan, and execute simultaneously:** emit the plan as text. The main agent starts executing the first task right away.
 <!--skill-flavor:present-plan:end-->

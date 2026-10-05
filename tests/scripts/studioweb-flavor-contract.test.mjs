@@ -240,13 +240,15 @@ test("the studioweb functions and coded-app flavors do not deny the QuickJS node
   }
 });
 
-// The Studio Web panel has no Claude Code plan or task tools. Its plan mode is
-// `EnterPlan` (called before research) and `ExitPlan` (the review card), and the
-// host derives the task list from the approved plan. A planner that names the
-// Claude Code tools there writes a markdown plan and starts building with no
-// approval. Frontmatter is excluded: marker blocks cannot sit inside YAML, so
-// `description` and `allowed-tools` still carry the canonical names.
-const CLAUDE_CODE_PLAN_TOOLS = /\b(EnterPlanMode|ExitPlanMode|TaskCreate|TaskUpdate|TaskList|addBlockedBy)\b/;
+// The Studio Web panel has plan mode but no task tools. `EnterPlanMode` is
+// called before research (the host names the plan files and attaches its
+// authoring contract), `ExitPlanMode` puts the plan on the review card, and the
+// host derives the task list from the approved plan. A planner that tells the
+// agent to create tasks there, or to write a markdown plan, starts building with
+// no approval. Frontmatter is excluded: marker blocks cannot sit inside YAML, so
+// `description` and `allowed-tools` still carry the canonical text.
+const TASK_TOOLS = /\b(TaskCreate|TaskUpdate|TaskList|addBlockedBy)\b/;
+const RETIRED_PLAN_TOOLS = /\b(EnterPlan|ExitPlan)\b/;
 
 function plannerBodyLinesNaming(root, pattern) {
   const plannerRoot = join(root, "uipath-planner");
@@ -261,23 +263,26 @@ function plannerBodyLinesNaming(root, pattern) {
   return hits;
 }
 
-test("the built studioweb uipath-planner names only the Studio Web plan tools", (t) => {
+test("the built studioweb uipath-planner uses plan mode and no task tools", (t) => {
   const output = buildStudioweb(t);
 
-  assert.deepEqual(plannerBodyLinesNaming(output, CLAUDE_CODE_PLAN_TOOLS), []);
+  assert.deepEqual(plannerBodyLinesNaming(output, TASK_TOOLS), []);
+  assert.deepEqual(plannerBodyLinesNaming(output, RETIRED_PLAN_TOOLS), []);
   const laneB = readFileSync(join(output, "uipath-planner", "references", "non-pdd-lane-guide.md"), "utf8");
   assert.ok(
-    laneB.includes("Call `EnterPlan` as soon as the user picks this option"),
+    laneB.includes("Call `EnterPlanMode` as soon as the user picks this option"),
     "explore-first must enter plan mode before discovery",
   );
-  assert.ok(laneB.includes("call `ExitPlan` with outcome `complete`"), "explore-first must present the plan with ExitPlan");
+  assert.ok(
+    laneB.includes("call `ExitPlanMode` with outcome `complete`"),
+    "explore-first must present the plan with ExitPlanMode",
+  );
   const laneA = readFileSync(join(output, "uipath-planner", "references", "pdd-driven-lane-guide.md"), "utf8");
-  assert.ok(laneA.includes("1. Call `EnterPlan`."), "Lane A interactive review must enter plan mode");
+  assert.ok(laneA.includes("1. Call `EnterPlanMode`."), "Lane A interactive review must enter plan mode");
 });
 
-test("the default uipath-planner keeps the Claude Code plan tools (the guard is not vacuous)", (t) => {
+test("the default uipath-planner keeps its task tools (the guard is not vacuous)", (t) => {
   const output = buildDefault(t);
 
-  assert.ok(plannerBodyLinesNaming(output, CLAUDE_CODE_PLAN_TOOLS).length > 0);
-  assert.deepEqual(plannerBodyLinesNaming(output, /\b(EnterPlan|ExitPlan)\b/), []);
+  assert.ok(plannerBodyLinesNaming(output, TASK_TOOLS).length > 0);
 });

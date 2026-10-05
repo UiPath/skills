@@ -209,9 +209,7 @@ The planner's job is done. The main agent reads the live tasks (via TaskList) an
 
 | Scenario | `AskUserQuestion` calls |
 |---|---|
-<!--skill-flavor:budget-first-run:start-->
 | First run, no UI apps in §9 | **0** (plan-mode review uses EnterPlanMode, not AskUserQuestion) |
-<!--skill-flavor:budget-first-run:end-->
 | First run, UI apps in §9 | **1** (Step 5 UI batch, only when at least one of Q1/Q2/Q3 is unresolved) |
 | Resume run (existing tasks.md) | **1** (continue / regenerate) — plus 0-1 for UI batch if unresolved |
 | Maximum | **2** under any realistic scenario |

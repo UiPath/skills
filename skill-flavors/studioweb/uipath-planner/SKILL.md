@@ -1,5 +1,5 @@
 <!--skill-flavor:plan-job:start-->
-2. **Plan** — derive the per-skill task list from an SDD (or a non-PDD request) and route to specialists. A plan the user reviews goes through Studio Web's plan mode (`EnterPlan` → `ExitPlan`); the host derives the live task list from the approved plan.
+2. **Plan** — derive the per-skill task list from an SDD (or a non-PDD request) and route to specialists. A plan the user reviews goes through Studio Web's plan mode (`EnterPlanMode` → `ExitPlanMode`); the host derives the live task list from the approved plan.
 <!--skill-flavor:plan-job:end-->
 
 <!--skill-flavor:plan-design-only-outputs:start-->
@@ -15,12 +15,12 @@
 <!--skill-flavor:solution-terminal-artifact:end-->
 
 <!--skill-flavor:lane-a-review-handoff:start-->
-6. If `Execution autonomy: interactive` → review in plan mode: `EnterPlan`, author the host plan from `<process>-tasks.md`, then `ExitPlan` for approval; the host derives the task list from the approved plan. If `autonomous` → no review; the tasks file is the task list.
+6. If `Execution autonomy: interactive` → review in plan mode: `EnterPlanMode`, author the host plan from `<process>-tasks.md`, then `ExitPlanMode` for approval; the host derives the task list from the approved plan. If `autonomous` → no review; the tasks file is the task list.
 7. Hand off. Studio Web has no task-creation tool — create no tasks yourself.
 <!--skill-flavor:lane-a-review-handoff:end-->
 
 <!--skill-flavor:lane-b-write-and-present:start-->
-5. Explore-first → call `EnterPlan` as soon as the user picks it, before any further discovery or the Step 4 UI batch. Discover read-only inside plan mode, author the plan where and how the plan-mode context says (not `docs/plans/`), then call `ExitPlan` for approval. Nothing changes in the project before approval; the host derives the task list from the approved plan.
+5. Explore-first → call `EnterPlanMode` as soon as the user picks it, before any further discovery or the Step 4 UI batch. Discover read-only inside plan mode, author the plan where and how the plan-mode context says (not `docs/plans/`), then call `ExitPlanMode` for approval. Nothing changes in the project before approval; the host derives the task list from the approved plan.
 6. Simultaneous → write `YYYY-MM-DD-<feature>.md` to `docs/plans/` (project) or `./plans/` (no project), every task prompt embedding the plan path; emit the plan as text and start the first task.
 <!--skill-flavor:lane-b-write-and-present:end-->
 
