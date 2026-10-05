@@ -2,7 +2,7 @@
 
 The build is often made on another machine and another Orchestrator connection than the one the automation runs on. Execution ends by writing, for the engineer who deploys it, strictly what the target environment needs before the automation runs there. The files are written when the target environment needs at least one setup step — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite; an automation that needs none of them gets no open-items file. Build results, acceptance verdicts and review notes stay in the completion report ([execution-guide.md § 3.3](execution-guide.md)) and never enter these files. They are written last.
 
-**Files and placement.** Write them beside the genome — never inside a project folder (a file there ships in the project's package) and never inside the solution folder:
+**Files and placement.** Write them in the folder that holds the solution or project folder (the location the scaffolding answer gave) — never inside a project folder (a file there ships in the project's package) and never inside the solution folder:
 
 | Executed genome | Files |
 |---|---|

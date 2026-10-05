@@ -8,7 +8,7 @@ Genome says *what* to build; build skills know *how*. Execution reads genome, co
 2. Every project validates and builds through its owning skill (§ 2.2).
 3. Every acceptance criterion carries a verdict (§ 3.1).
 4. The completion report is given (§ 3.3).
-5. When the target environment needs any setup — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite — [open-items-guide.md](open-items-guide.md) is read and the open-items files are written beside the genome (§ 3.4).
+5. When the target environment needs any setup — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite — [open-items-guide.md](open-items-guide.md) is read and the open-items files are written beside the solution or project folder (§ 3.4).
 
 ## Phase 1 — Parse and configure
 
@@ -219,7 +219,7 @@ Extracted genomes add the healing-pass note: inferred targets are verified on th
 
 ### 3.4 Open items for the engineer
 
-Execution ends by writing, beside the genome, what the target environment needs before the automation runs there — one file per project plus the solution's — whenever it needs at least one setup step: [open-items-guide.md](open-items-guide.md).
+Execution ends by writing, beside the solution or project folder, what the target environment needs before the automation runs there — one file per project plus the solution's — whenever it needs at least one setup step: [open-items-guide.md](open-items-guide.md).
 
 ## Anti-patterns
 

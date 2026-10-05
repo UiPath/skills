@@ -127,7 +127,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 **Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every Credential and Text row of Platform Dependencies.
 **Traceability:** {per-item record and where it lands; screenshot on system exception; run summary}.
 
-*Stub when none: "Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's}."*
+*Stub when none: "Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's; a {Flow, API workflow, agent} that works its items itself}."*
 
 ## Acceptance Criteria
 

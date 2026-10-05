@@ -87,7 +87,7 @@ flowchart LR
 
 | From | To | Mechanism | Data passed | Failure behaviour |
 |------|----|-----------|-------------|-------------------|
-| {Component 1} | {Component 2} | {Queue item / Start job / Flow invoke / Event / File / Action Center task} | {fields, schema, file type} | {retry, dead-letter, escalation} |
+| {Component 1} | {Component 2} | {Queue item / Start job / Flow invoke / Event / File / Action Center task / Shared store} | {fields, schema, file type} | {retry, dead-letter, escalation} |
 
 ## Platform Dependencies
 
@@ -117,7 +117,7 @@ flowchart LR
 
 | Defect | Component step | Rebuild follows |
 |---|---|---|
-| {the defect in a few words} | {component #} Step {N} | {evident intent / source behaviour} |
+| {the defect in a few words} | {component #} Step {N} | {evident intent / source behaviour / user ruling ({date}): what the rebuild does} |
 
 ## Transactional Shape
 
@@ -168,7 +168,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 
 {same block}
 
-*Stub when none: "Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's}."*
+*Stub when none: "Not transactional: {reason — the run is one unit of work; one item's work started per item by {caller}; a library; a test-case group; a coordinator whose per-item lifecycle is the orchestration's; a {Flow, API workflow, agent} that works its items itself}."*
 
 ## Acceptance Criteria
 

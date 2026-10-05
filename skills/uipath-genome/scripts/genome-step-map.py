@@ -19,7 +19,8 @@ the framework's own inventory script derives from the export - this script knows
 
 Source Map rows: a row keyed by a workflow step number (`1`, `2b`, `3-5`) or a step name is a step and must resolve to at least
 one source process; every other row (Source framework, Source export, Checkpoints, Inventory, Excluded, Inferred, Data files,
-Row schema, …) is contract and is skipped, whatever it is called.
+Row schema, …) is contract and is skipped, whatever it is called. A key that joins a number and a name (`1 Start a run`)
+is neither and is warned about, as is a component with workflow steps and no step row.
 
 The framework pack's inventory script writes them with its `data` command; its source guide names the two files.
 A reference is a process only when the id resolves to a process of that name - root processes and their recordsets
@@ -159,19 +160,25 @@ def main():
             m = STEP_NAME.match(line.strip())
             if m:
                 names[m.group(1)] = m.group(2).strip()
+        step_rows = 0
         for cells in table_rows(section(ctext, 'Source Map')):
             key, cell = cells[0], cells[1] if len(cells) > 1 else ''
             # a step row is keyed by the step number (or the step name); every other row (framework, export, checkpoints,
             # inventory, excluded, inferred, data files, …) is contract, not a step, whatever it is called
             is_step = bool(re.match(r'^(?:step\s+)?\d+[a-z]?(?:\s*[-–,]\s*\d+[a-z]?)*$', key, re.I)) or key.lower() in {n.lower() for n in names.values()}
+            if not is_step and re.match(r'^(?:step\s+)?\d+[a-z]?\s+[A-Za-z]', key, re.I):
+                warn.append(f"{comp}: row `{key}` is read as contract, not as a step: key a step row by its number or by its bold name, not both")
             if not is_step or key.lower() in NON_STEP_KEYS:
                 continue
+            step_rows += 1
             procs, named = refs(cell, f"{comp} step {key}")
             if not procs:
                 warn.append(f"{comp} step {key}: no source process resolved")
                 continue
             rows.append((num, comp, os.path.basename(cpath), project, key,
                          names.get(key) or (f"step {key}" if key[:1].isdigit() else key), procs, named, is_library))
+        if names and not step_rows:
+            warn.append(f"{comp}: {len(names)} workflow steps, but no Source Map row is read as a step")
 
     # In scope = reachable from the processes the non-library components were built from (a library's own steps are
     # reached through its consumers). Recordsets passed in by a caller outside that set drive another scenario (the

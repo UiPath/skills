@@ -12,7 +12,7 @@ A UiPath source is read with [uipath-source-guide.md](uipath-source-guide.md). A
 
 Run source guide's Detection table against the given path. Decide:
 - **Framework** (which source guide).
-- **Deployment unit:** solution or multi-project bundle → process genome; single project → component genome ([genome-format-guide.md § Two Levels](genome-format-guide.md)).
+- **Level:** the projects the rebuild needs decide it ([genome-format-guide.md § Two Levels](genome-format-guide.md)). A solution or multi-project bundle → process genome; a single project or workflow → component genome, unless the source guide's § Component Detection maps its parts to two or more projects.
 - **Missing manifest:** proceed from artifact files; every value that would have come from the manifest is `*[Inferred]*`.
 
 **Ask for related resources** once, with the pack question when that is asked: "Besides the automation, do you have other resources for this process (PDD, SOP, runbooks, test evidence, recordings, tickets)? Paths or links, or none." Skip it when the request names them or says none; when the request says to proceed without questions, ask it in Step 7 instead. Never search for resources the user did not give.
@@ -94,11 +94,13 @@ Classify each finding by what the two passes show, and write it accordingly:
 | **Rendering artefact** | the source differs from the rendering | write the behaviour from the source; no defect | report the renderer defect for the pack, with the object and the field |
 | **Source defect** | rendering and source agree, and the behaviour contradicts the evident intent — the source's own comment or log text, a sibling copy, the step's purpose | marked **Source defect** per [genome-format-guide.md § Source Defects](genome-format-guide.md); evidence in the Source Map | the consequence traced through the source; the parts that depend on data, configuration, platform or package behaviour flagged `*[Inferred]*` |
 | **Source rule** | rendering and source agree, and the source's comment or design shows the behaviour is intended | the rule, unmarked | nothing |
-| **Unresolved** | the structure is certain, but the behaviour turns on a setting or platform or package semantics that neither the export nor the pack documents | both readings stated, the one the rebuild follows marked `*[Inferred]*` | report the undocumented semantics for the pack |
+| **Unresolved** | the structure is certain, but the behaviour turns on a setting or platform or package semantics that neither the export, the pack, the vendor's documentation nor the platform's own code settles | both readings stated, the one the rebuild follows marked `*[Inferred]*` | report the undocumented semantics for the pack |
+
+Semantics the vendor's documentation or the platform's own code settles — a default both the rendering and the export leave out, what a node does with an empty input — are facts, not unresolved: write them at the step, name the page, or the file and line, in the finding's Source Map row, and report them for the pack when its source guide lacks them.
 
 Each finding gets its own Source Map row, with the object ids, the line numbers and the classification. Each component also gets one Verification row saying that both passes were made and whether the rendering matched the source. A finding nobody verified is not written as a defect. When time does not allow both passes, or a verdict does not come back, it is written as the behaviour the rendering shows, flagged `*[Inferred]*`, with its Source Map row saying which pass is missing.
 
-**With subagents.** Where the host offers subagents, the two passes run in them, in parallel, and extraction keeps only their verdicts: the direct reads and the traced bindings are most of this step's reading, and a verdict is a few lines. One subagent takes the findings of one object, or of the objects one finding spans, so it reads each source guide section once. Its brief names the findings (the behaviour suspected, with object ids and lines), the export path, `<PACK_DIR>` and its reads: this step whole; the source guide's command block with the paragraphs after it, its value syntax, and the signal rows of the commands the findings involve. The subagent writes nothing and returns, per finding, a verdict, never a retelling:
+**With subagents.** Where the host offers subagents and the passes would read more than a subagent's own fixed reads (this step and the source guide sections below), the two passes run in them, in parallel, and extraction keeps only their verdicts: the direct reads and the traced bindings are then most of this step's reading, and a verdict is a few lines. A few findings on small renderings cost less verified by extraction itself than the fixed reads a subagent repeats. One subagent takes the findings of one object, or of the objects one finding spans, so it reads each source guide section once. Its brief names the findings (the behaviour suspected, with object ids and lines), the export path, `<PACK_DIR>` and its reads: this step whole; the source guide's command block with the paragraphs after it, its value syntax, and the signal rows of the commands the findings involve. The subagent writes nothing and returns, per finding, a verdict, never a retelling:
 
 1. The class, from the table above.
 2. The behaviour as fact, each fact with its object id, line, and the source key and value it rests on.
@@ -122,12 +124,12 @@ In a run in parts, each part runs both passes itself (§ Extraction in Parts). A
 | Error-handling constructs | 0-1 | 2-3 | 4+ |
 | Composite UI interactions carrying a contract (type-ahead pick, custom option list, segmented or picker date, menu path, row-by-content, dialog answer) | 0-1 | 2-4 | 5+ |
 | Test cases of a test component, or checkpoints they assert (take the higher) | 1-3 cases / ≤6 checkpoints | 4-8 / 7-20 | 9+ / 21+ |
-
-A **test component**'s Workflow has one numbered step per test case (`N. **Test case: <title>**` with lettered substeps), so the population matrix's step minimums do not apply to it — its depth is the cases and their checkpoints; a **library** component's rows 1 and 3 count its public workflows and one entry point.
 | Platform resources (queues, assets, buckets, connections) | 0 | 1-2 | 3+ |
 | Human-in-the-loop waits | 0 | 0 | 1+ |
 
-Take the level the majority of rows land on; ties go lower. Process genomes: [genome-format-guide.md § Complexity](genome-format-guide.md).
+A **test component**'s Workflow has one numbered step per test case (`N. **Test case: <title>**` with lettered substeps), so the population matrix's step minimums do not apply to it — its depth is the cases and their checkpoints; a **library** component's rows 1 and 3 count its public workflows and one entry point.
+
+Count only the rows that apply to the component: the composite UI row is left out for a component that drives no UI, the test row for one that is not a test component. Take the level most counted rows land on; ties go lower. Process genomes: [genome-format-guide.md § Complexity](genome-format-guide.md).
 
 ### Step 6 — Map signals to sections
 
@@ -163,7 +165,7 @@ Before writing Configuration Questions, sort every literal and configuration key
 
 ### Step 7 — Write and offer edits
 
-Write all files, each named by the slug rule ([genome-format-guide.md § File Naming and Location](genome-format-guide.md)), then, once every verdict on a suspected source defect is edited in, ask "Want to adjust anything?" ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)). Common follow-ups:
+Write all files, each named by the slug rule ([genome-format-guide.md § File Naming and Location](genome-format-guide.md)), then, once every verdict on a suspected source defect is edited in, ask "Want to adjust anything?" ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)). With it, name every source defect whose rebuild behaviour is the user's to rule on, and every detail left open by an intent the rebuild must follow ([genome-format-guide.md § Source Defects](genome-format-guide.md)); a ruling given is written in as that section says. Common follow-ups:
 
 | Request | Update |
 |---|---|
@@ -177,6 +179,7 @@ Write all files, each named by the slug rule ([genome-format-guide.md § File Na
 | "Rename / reorder / remove steps" | Workflow and Source Map together, so every step still names its source objects |
 | "Here is the PDD too" | Step 3, **Related resources** |
 | "Is this really a defect?" / "check it against the source" | Rerun Step 4b for that finding, both passes, and re-mark it in the body and its Source Map row by what the passes show |
+| "Fix this defect in the rebuild" / "keep the source's behaviour" | A ruling: written at the step after the source fact, cited in the defect index's Rebuild follows cell, and carried into the step's Workflow lines, criteria and Source Map row ([genome-format-guide.md § Source Defects](genome-format-guide.md)) |
 
 ## Extraction in Parts
 
