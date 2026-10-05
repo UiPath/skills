@@ -128,7 +128,7 @@ uip agent refresh [path] --output json
 
 ### `uip agent memory`
 
-Manage low-code agent memory space features and seed items. These commands write `features/{FeatureName}/feature.json`; run refresh and validate afterwards to regenerate bindings.
+Manage low-code agent memory space features, and promote runs of the deployed agent into the memory space as items. `add/list/remove` write `features/{FeatureName}/feature.json` (inside a solution, `add` also declares the space as a solution resource and links it); run refresh and validate afterwards. `item add/list` talk to the runtime memory store and need `uip login` plus a deployed space.
 
 ```bash
 uip agent memory add SupportRecall \
@@ -140,17 +140,18 @@ uip agent memory add SupportRecall \
 uip agent memory list --path "<AGENT_PROJECT_DIR>" --output json
 uip agent memory remove SupportRecall --path "<AGENT_PROJECT_DIR>" --output json
 
-uip agent memory item add SupportRecall customer-tier gold \
+# after deploy: promote feedback on a run into the space (folder = deployment folder)
+uip agent memory item add SupportRecall \
   --memory-type episodic \
   --feedback-id "<FEEDBACK_ID>" \
+  --folder-path "<DEPLOY_FOLDER>" \
   --path "<AGENT_PROJECT_DIR>" \
   --output json
 
-uip agent memory item list SupportRecall --path "<AGENT_PROJECT_DIR>" --output json
-uip agent memory item remove SupportRecall customer-tier --path "<AGENT_PROJECT_DIR>" --output json
+uip agent memory item list SupportRecall --folder-path "<DEPLOY_FOLDER>" --path "<AGENT_PROJECT_DIR>" --output json
 ```
 
-For discovery, retrieval settings, memory item types, and troubleshooting, see [capabilities/memory/memory.md](capabilities/memory/memory.md).
+For solution linking, retrieval settings, the episodic/escalation item flows, and troubleshooting, see [capabilities/memory/memory.md](capabilities/memory/memory.md).
 
 ### `uip agent debug`
 
@@ -458,8 +459,8 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Refresh + regenerate derived files | `uip agent refresh [path] --output json` | Agent dir or any with path | — |
 | Validate (strict read-only) | `uip agent validate [path] --output json` | Agent dir or any with path | — |
 | Debug / run end-to-end on Studio Web | `uip agent debug <AgentDir> --inputs '{...}' [--attachment <FIELD>=<FILE_PATH>] --output json` | Agent dir | `Successful`, `Faulted`, `Stopped`; `--attachment` binds a local file to a `job-attachment` input |
-| Add memory space feature | `uip agent memory add <FeatureName> --memory-space <Name> --folder-path <Folder> --path <AgentDir> --output json` | Any directory | Writes `features/<FeatureName>/feature.json`; run refresh/validate after |
-| Seed memory item | `uip agent memory item add <FeatureName> <key> <value> --memory-type episodic --feedback-id <FEEDBACK_ID> --path <AgentDir> --output json` | Any directory | Updates existing item with same key |
+| Add memory space feature | `uip agent memory add <FeatureName> --memory-space <Name> [--folder-path <Folder>] --path <AgentDir> --output json` | Any directory | Writes `features/<FeatureName>/feature.json`; inside a solution declares/links the resource (`Data.SolutionResource.Status`); run refresh/validate after |
+| Promote a run into memory | `uip agent memory item add <FeatureName> --memory-type episodic --feedback-id <FEEDBACK_ID> --folder-path <DeployFolder> --path <AgentDir> --output json` | Any directory | Needs login and a deployed space; escalation items take `--trace-id --span-id [--answer]` |
 | List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |
 | Discover resources | `uip solution resources list --kind <Kind> --source remote [--search <term>] --output json` | Solution directory | — |
 | Refresh resources | `uip solution resources refresh --output json` | Solution directory | — |
