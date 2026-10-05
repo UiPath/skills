@@ -277,8 +277,9 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 3. Validation status — `validate` pass / remaining warnings.
 4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + `wiringNotes` from `tasks/registry-resolved.json`. Also list, under **Not covered**, anything `sdd.md` referenced that is outside the scope of `caseplan.json` (e.g. Data Fabric entity schemas). Also list **agents / API workflows built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
-6. Runnability — only when a count from [§ Phase 6 Runnability check](#runnability-check--before-the-debug-prompt) is non-zero: the counts and the line naming where a run stops. Omit the field when all three are zero. A case whose every task is a placeholder still validates; this field is the only place the report says it cannot run, and it must stay silent on a case that can.
-7. Suggested next steps — one short line before the prompt (the publish/skip-to-debug line above). If placeholders or missing connections exist, mention fixing/registering those before publish.
+6. Suggested next steps — one short line before the prompt (the publish/skip-to-debug line above). If placeholders or missing connections exist, mention fixing/registering those before publish.
+
+**Blocked case — an extra line, not a field.** Run the [§ Phase 6 Runnability check](#runnability-check--before-the-debug-prompt) counts before the report. When any count is non-zero, add its two lines (where a run stops; the counts) right after the field list. When all three are zero, write nothing about runnability at all: no heading, no zero counts, no "fully runnable" line. A validated case can still be all placeholders, so these two lines are the only place the report says it cannot run, and they must be absent on a case that can.
 
 ### Publish notes
 
