@@ -8,6 +8,7 @@ The owning skill's contract reads the installed package's per-activity doc for e
 
 | Activity | Installed doc says | The activity does |
 |---|---|---|
+| Add Data Row | the example types `ArrayRow` as `<InArgument x:TypeArguments="x:Object[]">` | `x:Object[]` fails to load (`Cannot create unknown type …InArgument(…Object[])`); the type argument is `s:Object[]`, with `xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"` |
 | Append Line | a newline is added after the existing content; `UseDefaultEncoding` `true` ignores `Encoding` | Writes a line break (`Environment.NewLine`) **before** the text whenever the file is not empty, never after it: two appends to a new file give `a`, a line break, `b`, with no trailing break. A file counts as empty at 0 bytes, or when its size equals the resolved encoding's byte-order mark (3 bytes UTF-8, 2 UTF-16). Creating the file, or appending to an empty one, writes the byte-order mark. A set `Encoding` always wins; `UseDefaultEncoding` applies only when `Encoding` is empty, and then writes UTF-8 without a byte-order mark |
 | Copy Folder (`CopyFolderX`) | `To` is the destination path of the copy (`To="C:\archive\reports"`) | `To` is an existing folder the source folder is copied **into**: the copy is `<To>\<source folder name>`. Both folders must exist (`Source or destination folder missing.`), and `To` may be neither the parent of `From` nor a folder inside it |
 | Delete File (`DeleteFileX`) | a missing file raises nothing | A missing file fails (`The file was not found at the provided path.`): check with Path Exists first when the file may be absent. `FileResource` (`IResource`) is the overload used when `Path` is empty |
@@ -21,6 +22,14 @@ The owning skill's contract reads the installed package's per-activity doc for e
 | Activity | Installed doc says | The activity does |
 |---|---|---|
 | Read Range Workbook (cross-platform) | nothing on empty cells | An empty cell of a text column comes back as empty text, not as no value. A source that leaves empty cells out of a row (a workflow tool's spreadsheet read) is matched only when the build treats empty text as absent |
+
+## `UiPath.MicrosoftOffice365.Activities` — docs shipped with 3.12.10 and earlier
+
+| Activity | Installed doc says | The activity does |
+|---|---|---|
+| Get Email List | no `OrderByDate` row | `OrderByDate` (`EOrderByDate`: `NewestFirst` default, `OldestFirst`; flat attribute) orders the emails by date, and with `MaxResults` decides which ones are returned |
+| Get File List, Upload Files | declare the `Result` / `AllResults` variable as `scg:List(umo365fm:O365DriveRemoteItem)` | Both are `OutArgument<O365DriveRemoteItem[]>`: bind a `umo365fm:O365DriveRemoteItem[]` variable. A `List` variable fails to load (`Set property '…Result' threw an exception`) |
+| Set Email Categories | `CategoriesToAssign` / `SpecificCategoriesToRemove` only as a VB flat attribute, since an `InArgument` cannot be typed `String[]` | `<InArgument x:TypeArguments="s:String[]">` works in VB and C# projects; only `x:String[]` fails to load |
 
 ## Tools — defects seen in builds, until fixed
 

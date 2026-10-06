@@ -476,7 +476,7 @@ The HTTP Request activity (`NetHttpRequest`) has extensive configuration:
 
 - `ConnectionId` is marked `[Browsable(false)]` — it won't appear in the Properties panel, but it is **required** when `UseConnectionService=True`
 - `ConnectionId` must be a **literal string** (not a variable expression) for design-time validation to work. Dynamic ConnectionIds bypass validation and may fail at runtime.
-- Missing `ConnectionId` when `UseConnectionService=True` → validation error about missing account/connection name
+- Missing `ConnectionId` when `UseConnectionService=True` → `You must provide a value for Connection`. `{x:Null}`, which package docs leave when no connection resolves, gives this error; use the placeholder-GUID fallback below instead
 - Child activities expect their parent scope to have initialized OAuth extensions (`IGraphServiceClient`, `OAuthDataOptions`, etc.) — using them without a parent scope causes `NullReferenceException` at runtime
 
 - Connection lifecycle CLI (list / ping / create / edit) and the placeholder-GUID fallback when no connection exists: [../is-connector-xaml-guide.md](../is-connector-xaml-guide.md)
@@ -708,6 +708,7 @@ Cannot create unknown type '...Variable(...DateTime)'
 Cannot create unknown type '...Variable(...DateTimeOffset)'
 Cannot create unknown type '...Variable(...Guid)'
 Cannot create unknown type '...InArgument(...DateTime)'
+Cannot create unknown type '...Variable({http://schemas.microsoft.com/winfx/2006/xaml}String[])'
 ```
 
 **Root cause:** `x:` and `s:` are not two different type systems — they are XML namespace aliases. `x:String` and `s:String` both refer to the same underlying `System.String`. The difference is purely which XML namespace schema registers the mapping:
@@ -769,54 +770,16 @@ xmlns:ss="clr-namespace:System.Security;assembly=System.Private.CoreLib"
 
 The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Variable`, `InArgument`, `OutArgument`, `CSharpValue`, `CSharpReference`, `ActivityAction`, `DelegateInArgument`, etc.
 
----
-
-## Array Types in `Variable` Declarations
-
-The XAML parser rejects CLR array syntax in `<Variable x:TypeArguments="...">`. `<Variable x:TypeArguments="x:String[]">` fails to load with `Cannot create unknown type ... Variable(String[])`. The error message does not hint at the fix.
-
-**Use `scg:List(<T>)` instead of `<T>[]`** for variable declarations. Required `xmlns:scg` declaration depends on `targetFramework`:
-
-- **Modern (Windows/Portable):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"`
-- **Legacy (.NET Framework 4.6.1):** `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"`
-
-Wrong:
-```xml
-<Variable x:TypeArguments="x:String[]" Name="paths" />
-```
-
-Correct — **VB XAML** (`expressionLanguage: VisualBasic`, bracket shorthand for the default expression):
-```xml
-<Variable x:TypeArguments="scg:List(x:String)" Name="paths" Default="[New List(Of String)()]" />
-```
-
-Correct — **C# XAML** (`expressionLanguage: CSharp`): drop the `Default` attribute and use `<Variable.Default>` with `<CSharpValue>` instead; see [csharp-activity-binding-guide.md](csharp-activity-binding-guide.md).
-
-**`InArgument` with array `x:TypeArguments` — context-dependent.** The canonical XAML for `AddDataRow.ArrayRow` (see [`../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md`](../activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md)) uses `<InArgument x:TypeArguments="x:Object[]">[New Object() { ... }]</InArgument>` and Studio accepts it. Some agent-authored variants of the same form have been reported to fail at parse time — root cause unverified. **If `InArgument x:TypeArguments="x:Object[]"` fails in your project, fall back to calling the underlying params overload via `InvokeMethod`** (only safe when the target method has a `ParamArray Object()` / `params object[]` overload — `DataRowCollection.Add` does):
+**Arrays:** an `x:` type takes no `[]` either. `x:String[]`, `x:Object[]` and `x:Int32[]` fail to load in every type argument, nested inside a generic too (`scg:List(x:Object[])`). Write the element type with a `clr-namespace` alias — `s:String[]`, `s:Object[]`, `scg:List(s:Object[])`; a package type takes `[]` on its own alias (`umo365fm:O365DriveRemoteItem[]`). Bind an array-typed property to an array of the same type: a `scg:List(…)` variable on an `OutArgument<T[]>` fails to load with `Set property '<Activity>.<Property>' threw an exception`, and a `List<T>` is not assignable to an `InArgument<T[]>`.
 
 ```xml
-<InvokeMethod TargetObject="[dt.Rows]" MethodName="Add">
-  <InArgument x:TypeArguments="x:String">Alice</InArgument>
-  <InArgument x:TypeArguments="x:Int32">42</InArgument>
-</InvokeMethod>
+<Variable x:TypeArguments="s:String[]" Name="paths" />
+<ui:AddDataRow.ArrayRow>
+  <InArgument x:TypeArguments="s:Object[]">[New Object() {"Alice", 30}]</InArgument>
+</ui:AddDataRow.ArrayRow>
 ```
-
-This pattern is NOT a general substitute for fixed-arity array parameters — only for `ParamArray`/`params` overloads where the runtime builds the array from N positional arguments. For non-params arrays (e.g. `Method(int[] arr)`), `InvokeMethod` with N separate `<InArgument>` children does not work; the array must be constructed in a preceding `Assign`.
 
 ---
-
-## Generic Type Arguments Cannot Wrap Array Types
-
-`<Variable x:TypeArguments="scg:List(x:Object[])">` fails with *"Cannot create unknown type … List(Object[])"*. The XAML type system refuses to construct `List<Object[]>` — an array element type nested inside a generic. Same for `<InArgument x:TypeArguments="scg:IEnumerable(x:Object[])">` on `ForEach.Values`. This blocks the natural shape for projecting LINQ rows into `AddDataRow.ArrayRow` (which is `InArgument<Object[]>`).
-
-**Fix — box each row as `Object` so the collection's element type is non-array:**
-
-- Variable: `<Variable x:TypeArguments="scg:List(x:Object)" Name="rows" />`
-- Producing LINQ: `… .Select(Function(g) DirectCast(New Object(){g.Key, mean}, Object)).ToList()`
-- `ForEach`: `<ForEach x:TypeArguments="x:Object">` over `scg:IEnumerable(x:Object)`
-- Consumer cast: `<ui:AddDataRow ArrayRow="[CType(row, Object())]" …>`
-
-The boxed array reaches `ArrayRow` (whose property type is `Object[]`) correctly because `CType(row, Object())` unboxes it.
 
 ## Variable Scope and "Not Declared" Errors
 

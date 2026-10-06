@@ -143,7 +143,7 @@ Each entry lists which of these it needs. VB expression form (`[expr]` attribute
 </Sequence>
 ```
 
-**Notes (build-verified traps):** `BuildDataTable` does NOT load on cross-platform projects (`TypeLoadException`) — generate from CSV text instead. `ParsingMethod`/`CSV` from the docs is designer-only; the runtime member is `CSVParsing="True"`. `ArrayRow` type argument must be `s:Object[]` — `x:Object[]` fails at `build` (not `validate`). `Filters` `Operator` takes enum identifiers (`GT`, `EQ`, `CONTAINS`, …); omit `Operand` for `EMPTY`/`NOTEMPTY`. `AddDataRow.DataTable` is `InOutArgument` — bind a variable, never an expression.
+**Notes (build-verified traps):** `BuildDataTable` does NOT load on cross-platform projects (`TypeLoadException`) — generate from CSV text instead. `ParsingMethod`/`CSV` from the docs is designer-only; the runtime member is `CSVParsing="True"`. `ArrayRow` type argument is `s:Object[]`, never `x:Object[]` ([common-pitfalls.md § `x:` prefix](xaml/common-pitfalls.md#invalid-use-of-x-prefix-for-non-builtin-clr-types)). `Filters` `Operator` takes enum identifiers (`GT`, `EQ`, `CONTAINS`, …); omit `Operand` for `EMPTY`/`NOTEMPTY`. `AddDataRow.DataTable` is `InOutArgument` — bind a variable, never an expression.
 **Long-form:** [`GenerateDataTable.md`](activity-docs/UiPath.System.Activities/26.4/activities/GenerateDataTable.md) · [`AddDataRow.md`](activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md) · [`FilterDataTable.md`](activity-docs/UiPath.System.Activities/26.4/activities/FilterDataTable.md) · [`OutputDataTable.md`](activity-docs/UiPath.System.Activities/26.4/activities/OutputDataTable.md)
 
 ---
