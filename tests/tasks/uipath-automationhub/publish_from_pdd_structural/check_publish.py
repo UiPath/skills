@@ -12,6 +12,7 @@ run. Each subcommand is one success criterion:
     documents      PDD and process map uploaded once each, as the staged bytes, with the right type ids
     verify         attachments and the record read back after the create
     users          every owner lookup (if any) is server-side and carries --invite-status all
+    fallback       (publish_from_pdd_403_fallback) admin upsert attempted once, 403 taken, published anyway
 
 Exit 0 = pass; non-zero prints the first failing reason.
 """
@@ -280,6 +281,47 @@ def check_users(calls: list[dict]) -> str:
     return f"{len(lookups)} owner lookup(s), each server-side with --invite-status all"
 
 
+def check_fallback(calls: list[dict]) -> str:
+    """RPANAV-19120: applications never block the publish.
+
+    Used by publish_from_pdd_403_fallback, whose schema lacks `new_applications`:
+    the skill's only route to the three missing systems is the admin inventory
+    upsert, which the mock 403s. The expected shape is attempt -> 403 -> publish
+    anyway, with the gap stated in the description.
+    """
+    create = the_create(calls)
+    attempts = calls_matching(calls, "ah applications update")
+    if not attempts:
+        raise CheckFailed("the admin applications upsert was never attempted, so the 403 fallback was not exercised")
+    create_index = calls.index(create)
+    late = [a for a in attempts if calls.index(a) > create_index]
+    if late:
+        raise CheckFailed(f"applications update retried after the create ({len(late)} call(s)); a 403 is final")
+    if len(attempts) > 1:
+        raise CheckFailed(f"applications update attempted {len(attempts)} times; one attempt, then fall through")
+
+    answers = submitted_answers(create)
+    apps = answers.get("OVR-COUNT_APPS")
+    if not isinstance(apps, dict):
+        raise CheckFailed("Applications used (required on this tenant) was not answered")
+    if "new_applications" in apps:
+        raise CheckFailed("new_applications sent although this tenant's schema does not offer it")
+    ids = set(apps.get("value") or [])
+    if ids != EXPECTED_APP_IDS:
+        raise CheckFailed(f"inventory ids {sorted(ids)} != the PDD systems the inventory holds {sorted(EXPECTED_APP_IDS)} "
+                          "(no decoy or out-of-scope substitute: the required question is already satisfied)")
+    thin = value_of(answers, "OVR-COUNT_THIN_APPS")
+    if thin:
+        raise CheckFailed(f"thin applications answered although the PDD names none: {thin}")
+
+    description = value_of(answers, "OVR-OVERVIEW_DESCRIPTION")
+    text = description.lower() if isinstance(description, str) else ""
+    unnamed = [system for system in sorted(REQUIRED_NEW_APPS) if system not in text]
+    if unnamed:
+        raise CheckFailed(f"description does not name the systems that could not be attached: {unnamed}")
+    return "upsert attempted once, 403 taken, published with the inventory systems and the gap named"
+
+
 CHECKS = {
     "create-once": check_create_once,
     "payload": check_payload,
@@ -287,6 +329,7 @@ CHECKS = {
     "documents": check_documents,
     "verify": check_verify,
     "users": check_users,
+    "fallback": check_fallback,
 }
 
 

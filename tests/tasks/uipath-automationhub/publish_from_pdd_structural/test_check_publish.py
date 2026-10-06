@@ -18,6 +18,7 @@ import pytest
 HERE = Path(__file__).resolve().parent
 MOCK_TEMPLATE = HERE.parent / "_shared" / "mock_template"
 CHECKER = HERE / "check_publish.py"
+FALLBACK_TASK = HERE.parent / "publish_from_pdd_403_fallback"
 PDD = "pdd-retail-account-onboarding.md"
 MAP = "process-map-retail-account-onboarding.bpmn"
 OWNER = "dana.reyes@fjordline.example"
@@ -31,6 +32,14 @@ def sandbox(tmp_path: Path) -> Path:
     shutil.copytree(MOCK_TEMPLATE, tmp_path, dirs_exist_ok=True)
     shutil.copytree(HERE / "fixtures", tmp_path, dirs_exist_ok=True)
     return tmp_path
+
+
+@pytest.fixture
+def fallback_sandbox(sandbox: Path) -> Path:
+    # publish_from_pdd_403_fallback: the structural fixtures with ah-schema.json overlaid
+    # by a schema that lacks new_applications (the same layering coder_eval applies).
+    shutil.copytree(FALLBACK_TASK / "fixtures", sandbox, dirs_exist_ok=True)
+    return sandbox
 
 
 def uip(sandbox: Path, *args: str) -> subprocess.CompletedProcess:
@@ -211,3 +220,72 @@ def test_owner_lookup_without_search_fails(sandbox: Path) -> None:
     uip(sandbox, "ah", "users", "list", "--invite-status", "all", "--limit", "500", "--output", "json")
     publish(sandbox, good_answers())
     assert "--search" in grade(sandbox, "users").stdout
+
+
+# ---- publish_from_pdd_403_fallback -------------------------------------------------
+
+def fallback_answers() -> dict:
+    answers = good_answers()
+    apps = answers["OVR"]["ah-section-ovrbp-0-0"]["OVR-COUNT_APPS"]
+    del apps["new_applications"]
+    answers["OVR"]["ah-section-ovrbp-0-0"]["OVR-OVERVIEW_DESCRIPTION"] = {"value": (
+        "Automates retail current-account onboarding from CRM intake to T24 provisioning. "
+        "Systems per PDD: Microsoft Dynamics 365, Signicat, Trapets, Scrive, Temenos T24 — "
+        "Trapets, Scrive and Temenos T24 are not in the tenant inventory (creation not permitted).")}
+    return answers
+
+
+def attempt_upsert(sandbox: Path) -> subprocess.CompletedProcess:
+    (sandbox / "new-apps.json").write_text(json.dumps([
+        {"application_id": None, "application_name": "Trapets", "application_version": "4.1",
+         "application_language": "English", "categoryIds": [12]}]))
+    return uip(sandbox, "ah", "applications", "update", "--file", "./new-apps.json", "--output", "json")
+
+
+def test_fallback_schema_lacks_new_applications(fallback_sandbox: Path) -> None:
+    uip(fallback_sandbox, "ah", "automations", "schema", "get", "--idea-flow-id", "8",
+        "--destination", "./ah-schema.json", "--output", "json")
+    assert "new_applications" not in (fallback_sandbox / "ah-schema.json").read_text()
+
+
+@pytest.mark.parametrize("check", ["create-once", "payload", "fallback", "documents", "verify", "users"])
+def test_fallback_golden_passes(fallback_sandbox: Path, check: str) -> None:
+    result = attempt_upsert(fallback_sandbox)
+    assert result.returncode != 0 and "403" in result.stdout + result.stderr
+    publish(fallback_sandbox, fallback_answers())
+    graded = grade(fallback_sandbox, check)
+    assert graded.returncode == 0, graded.stdout
+
+
+def test_fallback_without_an_attempt_fails(fallback_sandbox: Path) -> None:
+    publish(fallback_sandbox, fallback_answers())
+    assert "never attempted" in grade(fallback_sandbox, "fallback").stdout
+
+
+def test_fallback_retry_after_create_fails(fallback_sandbox: Path) -> None:
+    attempt_upsert(fallback_sandbox)
+    publish(fallback_sandbox, fallback_answers())
+    attempt_upsert(fallback_sandbox)
+    assert "retried after the create" in grade(fallback_sandbox, "fallback").stdout
+
+
+def test_fallback_new_applications_key_fails(fallback_sandbox: Path) -> None:
+    attempt_upsert(fallback_sandbox)
+    publish(fallback_sandbox, good_answers())  # still carries new_applications
+    assert "does not offer it" in grade(fallback_sandbox, "fallback").stdout
+
+
+def test_fallback_decoy_substitute_fails(fallback_sandbox: Path) -> None:
+    attempt_upsert(fallback_sandbox)
+    answers = fallback_answers()
+    answers["OVR"]["ah-section-ovrbp-0-0"]["OVR-COUNT_APPS"]["value"] = [21, 22, 25]  # Avaloq Core
+    publish(fallback_sandbox, answers)
+    assert "substitute" in grade(fallback_sandbox, "fallback").stdout
+
+
+def test_fallback_unnamed_gap_fails(fallback_sandbox: Path) -> None:
+    attempt_upsert(fallback_sandbox)
+    answers = fallback_answers()
+    answers["OVR"]["ah-section-ovrbp-0-0"]["OVR-OVERVIEW_DESCRIPTION"] = {"value": "Automates retail current-account onboarding end to end."}
+    publish(fallback_sandbox, answers)
+    assert "does not name" in grade(fallback_sandbox, "fallback").stdout
