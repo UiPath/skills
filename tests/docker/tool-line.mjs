@@ -12,18 +12,32 @@
 // Usage:
 //   node tool-line.mjs line <cli-version>
 //       Print the `major.minor.` prefix, e.g. `1.204.`.
-//   node tool-line.mjs pick <package> <line-prefix> <tag> [<registry>]
+//   node tool-line.mjs train <cli-version>
+//       Print the train of an installed CLI version: its first prerelease
+//       identifier (`1.205.0-dev.9071` -> `dev`), or `latest` for a stable
+//       version. The tag name in CLI_VERSION is not the train: GitHub Packages
+//       `cli@latest` is a dev build.
+//   node tool-line.mjs pick <package> <line-prefix> <train> [<registry>]
 //       Print the highest published version of <package> on <line-prefix>
-//       from the same train as <tag>: for `latest`, stable versions only; for
-//       any other tag (dev, preview, ...), prereleases whose first identifier
-//       is <tag>. <registry> overrides the `@uipath` scope registry for the
-//       lookup. Exit 3 when the package has no such version.
-//   node tool-line.mjs check <line-prefix>  < uip-tools-list.json
-//       Read `uip tools list --output json` on stdin. Exit 1 and name every
-//       installed tool that is off <line-prefix>.
+//       from <train>: for `latest`, stable versions only; for any other train
+//       (dev, preview, ...), prereleases whose first identifier is <train>.
+//       <registry> overrides the `@uipath` scope registry for the lookup.
+//       Exit codes:
+//         0  printed the version.
+//         3  nothing to install: the package is not on the registry, or the
+//            train has no build on this line or an older one (the tool is
+//            newer than the CLI). Safe to skip.
+//         4  the train has builds on an older line but none on this one: the
+//            tool lags the CLI (a line bump in progress). Fail the build.
+//         5  the registry lookup failed (network, auth). Fail the build.
+//   node tool-line.mjs check <line-prefix> <expected-count>  < tools-list.json
+//       Read `uip tools list --output json` on stdin. Exit 1 when the list is
+//       unreadable or empty, when it does not hold <expected-count> tools, or
+//       when any tool is off <line-prefix>.
 
-import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { readFileSync, realpathSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 export function linePrefix(version) {
     const [major, minor] = String(version).trim().split(".");
@@ -31,6 +45,12 @@ export function linePrefix(version) {
         throw new Error(`not a version: '${version}'`);
     }
     return `${major}.${minor}.`;
+}
+
+export function trainOf(version) {
+    const parsed = parse(String(version).trim());
+    if (!parsed) throw new Error(`not a version: '${version}'`);
+    return parsed.pre.length ? parsed.pre[0] : "latest";
 }
 
 function parse(version) {
@@ -68,27 +88,60 @@ function compare(a, b) {
     return 0;
 }
 
-export function pickVersion(versions, prefix, tag) {
+// Returns { version } for the highest build of `train` on `prefix`, or
+// { version: null, lagging } where `lagging` is the highest build of `train`
+// on an older line (null when there is none).
+export function pickVersion(versions, prefix, train) {
+    const line = parse(`${prefix}0`).core;
     let best = null;
+    let lagging = null;
     for (const version of versions) {
-        if (!version.startsWith(prefix)) continue;
         const parsed = parse(version);
         if (!parsed) continue;
         const onTrain =
-            tag === "latest" ? parsed.pre.length === 0 : parsed.pre[0] === tag;
+            train === "latest"
+                ? parsed.pre.length === 0
+                : parsed.pre[0] === train;
         if (!onTrain) continue;
-        if (!best || compare(parsed, best.parsed) > 0) {
-            best = { version, parsed };
+        if (version.startsWith(prefix)) {
+            if (!best || compare(parsed, best.parsed) > 0) {
+                best = { version, parsed };
+            }
+        } else if (
+            parsed.core[0] < line[0] ||
+            (parsed.core[0] === line[0] && parsed.core[1] < line[1])
+        ) {
+            if (!lagging || compare(parsed, lagging.parsed) > 0) {
+                lagging = { version, parsed };
+            }
         }
     }
-    return best?.version ?? null;
+    return {
+        version: best?.version ?? null,
+        lagging: best ? null : (lagging?.version ?? null),
+    };
 }
 
-export function offLineTools(toolList, prefix) {
-    const tools = Array.isArray(toolList?.Data) ? toolList.Data : [];
+// Throws when the list cannot prove anything: a missing, non-array or empty
+// `Data`, or a tool count other than `expected`.
+export function offLineTools(toolList, prefix, expected) {
+    const tools = toolList?.Data;
+    if (!Array.isArray(tools) || tools.length === 0) {
+        throw new Error("`uip tools list` returned no tools in `Data`");
+    }
+    if (expected !== undefined && tools.length !== expected) {
+        throw new Error(
+            `\`uip tools list\` shows ${tools.length} tools, but ${expected} were installed`,
+        );
+    }
     return tools
         .filter((tool) => !String(tool.Version ?? "").startsWith(prefix))
         .map((tool) => `${tool.Name}@${tool.Version}`);
+}
+
+// `npm view` exit status and stderr -> "missing" (E404) or "error".
+export function lookupFailure(stderr) {
+    return /\bE404\b/.test(String(stderr)) ? "missing" : "error";
 }
 
 function main(argv) {
@@ -97,26 +150,55 @@ function main(argv) {
         console.log(linePrefix(args[0]));
         return 0;
     }
-    if (mode === "pick" && (args.length === 3 || args.length === 4)) {
-        const [pkg, prefix, tag, registry] = args;
-        const npmArgs = ["view", pkg, "versions", "--json"];
-        if (registry) npmArgs.push(`--@uipath:registry=${registry}`);
-        const raw = execFileSync("npm", npmArgs, {
-            encoding: "utf8",
-            stdio: ["ignore", "pipe", "inherit"],
-        });
-        const parsed = JSON.parse(raw);
-        const versions = Array.isArray(parsed) ? parsed : [parsed];
-        const version = pickVersion(versions, prefix, tag);
-        if (!version) {
-            console.error(`${pkg}: no ${tag} build on the ${prefix}x line`);
-            return 3;
-        }
-        console.log(version);
+    if (mode === "train" && args.length === 1) {
+        console.log(trainOf(args[0]));
         return 0;
     }
-    if (mode === "check" && args.length === 1) {
-        const off = offLineTools(JSON.parse(readFileSync(0, "utf8")), args[0]);
+    if (mode === "pick" && (args.length === 3 || args.length === 4)) {
+        const [pkg, prefix, train, registry] = args;
+        const npmArgs = ["view", pkg, "versions", "--json"];
+        if (registry) npmArgs.push(`--@uipath:registry=${registry}`);
+        const result = spawnSync("npm", npmArgs, {
+            encoding: "utf8",
+            stdio: ["ignore", "pipe", "pipe"],
+        });
+        if (result.status !== 0) {
+            if (lookupFailure(result.stderr) === "missing") {
+                console.error(`${pkg}: not published on this registry`);
+                return 3;
+            }
+            process.stderr.write(result.stderr ?? "");
+            console.error(
+                `${pkg}: registry lookup failed (${result.error?.message ?? `npm exit ${result.status}`})`,
+            );
+            return 5;
+        }
+        const parsed = JSON.parse(result.stdout);
+        const versions = Array.isArray(parsed) ? parsed : [parsed];
+        const { version, lagging } = pickVersion(versions, prefix, train);
+        if (version) {
+            console.log(version);
+            return 0;
+        }
+        if (lagging) {
+            console.error(
+                `${pkg}: newest ${train} build is ${lagging}, none on the CLI's ${prefix}x line yet`,
+            );
+            return 4;
+        }
+        console.error(`${pkg}: no ${train} build on the ${prefix}x line or older`);
+        return 3;
+    }
+    if (mode === "check" && args.length === 2) {
+        const expected = Number(args[1]);
+        if (!Number.isInteger(expected) || expected < 1) {
+            throw new Error(`not a tool count: '${args[1]}'`);
+        }
+        const off = offLineTools(
+            JSON.parse(readFileSync(0, "utf8")),
+            args[0],
+            expected,
+        );
         if (off.length) {
             console.error(
                 `Error: ${off.length} tool(s) off the CLI's ${args[0]}x line: ${off.join(", ")}`,
@@ -127,11 +209,17 @@ function main(argv) {
         return 0;
     }
     console.error(
-        "usage: tool-line.mjs line <version> | pick <pkg> <prefix> <tag> [<registry>] | check <prefix>",
+        "usage: tool-line.mjs line <version> | train <version> | pick <pkg> <prefix> <train> [<registry>] | check <prefix> <count>",
     );
     return 2;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Node resolves the entry script's symlinks before setting import.meta.url, so
+// compare against the real path's file URL (also right for spaces and Windows
+// drive paths).
+if (
+    process.argv[1] &&
+    import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href
+) {
     process.exit(main(process.argv.slice(2)));
 }

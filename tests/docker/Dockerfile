@@ -11,8 +11,8 @@ ARG NPM_AUTH_TOKEN=
 # NOT be used here.
 #
 # Pinning CLI_VERSION to an exact `-dev.<run>` freezes the CLI shell. Tool plugins
-# follow the train DERIVED from CLI_VERSION (dev/preview/latest), never the
-# literal version: rpa-tool and friends publish on their own date-stamped
+# follow the train of the INSTALLED CLI (dev/preview/latest), never the literal
+# version: rpa-tool and friends publish on their own date-stamped
 # pipelines, so an exact `-dev.<run>` spec has no matching tool build and
 # ETARGETs. Within that train, each tool is pinned to the highest build on the
 # INSTALLED CLI's `major.minor` line (tests/docker/tool-line.mjs), not to the
@@ -79,8 +79,12 @@ ENV UIPATH_CLI_DISABLE_VERSION_SYNC=1 \
 # The tool set is DISCOVERED at build time via `uip tools search` — NOT a
 # hand-copied list — so it can't drift behind the CLI's TOOLS_WHITELIST (a tool
 # the image misses silently scores 0 on every task that needs its verbs).
-# Unpublished tools drop out on their own (install fails → skipped); MIN_TOOLS is
-# the tripwire against a wholesale collapse.
+# A tool with nothing to install (not on the registry, or no build on the
+# train at or below the CLI's line) is skipped; MIN_TOOLS is the tripwire
+# against a wholesale collapse. Every other miss fails the build: a tool whose
+# train has builds on an older line but not on the CLI's (a line bump still
+# publishing), a failed registry lookup, or a failed install. Any of those
+# would leave a tool out and fail its tasks at eval time.
 #
 # Why raw `npm install -g @uipath/<tool>@<version>` and NOT `uip tools install <tool>`:
 # cli PR #2650 made `dev` a publish dist-tag but NOT a release channel (the only
@@ -108,15 +112,6 @@ RUN --mount=type=secret,id=npm_auth_token \
     else \
       echo "Error: npm_auth_token secret or NPM_AUTH_TOKEN build arg is required"; exit 1; \
     fi && \
-    # Derive the tool dist-tag from CLI_VERSION: an exact prerelease pin
-    # (1.199.0-dev.7923) → its train tag (dev); a bare stable semver → latest;
-    # a plain dist-tag (dev/preview) → itself.
-    case "$CLI_VERSION" in \
-      *-*)    tool_tag="${CLI_VERSION#*-}"; tool_tag="${tool_tag%%.*}" ;; \
-      [0-9]*) tool_tag="latest" ;; \
-      *)      tool_tag="$CLI_VERSION" ;; \
-    esac && \
-    echo "CLI_VERSION=$CLI_VERSION -> tool dist-tag @$tool_tag" && \
     case "$CLI_VERSION" in \
       [0-9]*-*) public_cli=false ;; \
       [0-9]*)   public_cli=true ;; \
@@ -157,6 +152,10 @@ RUN --mount=type=secret,id=npm_auth_token \
     cli_version="$(uip --version | tail -n 1)" && \
     tool_line_js=/opt/uip-tool-line/tool-line.mjs && \
     cli_line="$(node "$tool_line_js" line "$cli_version")" && \
+    # The tool train comes from the INSTALLED CLI, not the CLI_VERSION string:
+    # GitHub Packages `cli@latest` is a dev build, so `latest` there means the
+    # dev train.
+    tool_tag="$(node "$tool_line_js" train "$cli_version")" && \
     # A public-npm CLI pairs with public-npm tools: stable tool builds are not
     # on GitHub Packages, whose `latest` follows the dev train.
     tool_registry="" && \
@@ -166,16 +165,17 @@ RUN --mount=type=secret,id=npm_auth_token \
     tools="$(grep -oE '@uipath/[a-z0-9-]+-tool' /tmp/uip-tools-search.json | sort -u || true)" && \
     installed=0 && \
     for tool in $tools; do \
-      if tool_version="$(node "$tool_line_js" pick "$tool" "$cli_line" "$tool_tag" $tool_registry)"; then \
-        echo "Installing ${tool}@${tool_version}" && \
-        if npm install -g ${tool_registry:+"--@uipath:registry=$tool_registry"} "${tool}@${tool_version}"; then \
-          installed=$((installed + 1)); \
-        else \
-          echo "WARN: ${tool}@${tool_version} failed to install — skipping"; \
-        fi; \
-      else \
-        echo "WARN: ${tool} has no @${tool_tag} build on the ${cli_line}x line — skipping"; \
-      fi; \
+      pick_rc=0 && \
+      tool_version="$(node "$tool_line_js" pick "$tool" "$cli_line" "$tool_tag" $tool_registry)" || pick_rc=$?; \
+      case "$pick_rc" in \
+        0) echo "Installing ${tool}@${tool_version}" && \
+           npm install -g ${tool_registry:+"--@uipath:registry=$tool_registry"} "${tool}@${tool_version}" || \
+             { echo "Error: ${tool}@${tool_version} failed to install"; exit 1; }; \
+           installed=$((installed + 1)) ;; \
+        3) echo "WARN: ${tool} has nothing to install on the @${tool_tag} train at or below ${cli_line}x — skipping" ;; \
+        4) echo "Error: ${tool} has @${tool_tag} builds, but none on the CLI's ${cli_line}x line yet. Rebuild once it publishes."; exit 1 ;; \
+        *) echo "Error: could not look up ${tool} (tool-line.mjs pick exit ${pick_rc})"; exit 1 ;; \
+      esac; \
     done && \
     echo "Installed ${installed} tool plugins (floor ${MIN_TOOLS})" && \
     if [ "$installed" -lt "$MIN_TOOLS" ]; then \
@@ -186,7 +186,7 @@ RUN --mount=type=secret,id=npm_auth_token \
     uip tools list && \
     # Gate: every installed tool must be on the CLI's line, or the CLI refuses
     # to run it and every task that needs it fails at eval time.
-    uip tools list --output json | node "$tool_line_js" check "$cli_line"
+    uip tools list --output json | node "$tool_line_js" check "$cli_line" "$installed"
 
 # .NET 8 SDK — `uip rpa build` shells out to dotnet for the workflow compiler.
 # Without it, RPA tasks running under driver: docker fail their build criterion
