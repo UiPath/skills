@@ -2,6 +2,9 @@
   "_shared/case_check.py": {
     "Resolution audit": 1
   },
+  "_shared/check_case_breach_oversight.py": {
+    "No authored edges": 1
+  },
   "_shared/check_connector_activity.py": {
     "Unresolved resources": 1
   },
