@@ -199,8 +199,9 @@ Walk the project list. For each project, emit task rows per the matched pattern.
      SDD's value, else `200 [DEFAULT]` written as such — the CLI default silently differs from most tenants'
      conventions); an identifier with no arithmetic on it is STRING, a quantity is DECIMAL; a column the SDD
      calls a link to another entity is a RELATIONSHIP only when that entity is in the same ontology, otherwise
-     it stays the SDD's type; `displayName` is unique on the tenant exactly as `name` is, so an entity that
-     coexists with a similarly named one needs a distinct display name too.
+     it stays the SDD's type; `displayName` is unique within the entity's scope exactly as `name` is (the folder for a folder-scoped
+     entity, the tenant level otherwise), so an entity that coexists with a similarly named one in the same
+     scope needs a distinct display name too.
      **Carry the approval.** The platform skill creates only on an explicit confirmation that names the
      operation and the resource; a generic "do not ask" is not one. When the plan was approved by the
      user (plan-mode review, or `Execution autonomy: autonomous` chosen for this run), end the entity
