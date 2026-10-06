@@ -17,6 +17,7 @@
   "data": {
     "name": "=bindings.bG0SraLpg",
     "folderPath": "=bindings.bH1iJK2lm",
+    "version": "v3",
     "inputs": [],
     "outputs": []
   }
@@ -43,8 +44,8 @@ uip maestro case tasks describe --type business-rule --id "<entityKey>" --output
 
 **Step 2 — Write task:**
 
-2. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
-3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
+2. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`, `data.version` = `"v3"`
+3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`. The rule's whole result is one output, `output` with `source: "=result"`, plus `Error`; read a decision's column downstream as `vars.<output var>.<decision>.<column>`.
 
 4. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share `tasks[laneIndex][]`; if `lane` conflicts with mode, mode wins.
 
@@ -52,7 +53,8 @@ uip maestro case tasks describe --type business-rule --id "<entityKey>" --output
 
 ## Post-Write Verification
 
-- `type: "business-rule"`
+- `type: "business-rule"`, `data.version: "v3"`
+- `data.outputs` is `output` (`source: "=result"`) plus `Error`
 - the bindings array has 2 entries: `resource: "BusinessRule"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
 - `id` captured in `id-map.json`
 
