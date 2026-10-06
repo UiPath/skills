@@ -71,6 +71,24 @@
       "warning": {
         "code": "SDD_ROW_WITHOUT_OUTER_PIPES",
         "line": 312
+      },
+      "observed_cli_1_205": {
+        "parse": {
+          "result": "Success",
+          "stages": 7,
+          "tasks": 15,
+          "notes": []
+        },
+        "convert": {
+          "result": "Success",
+          "derived": {
+            "stages": 7,
+            "tasks": 15
+          }
+        },
+        "model_diff_count": 0,
+        "validate": "the seed's 32 issues (pre-template seed: no Planner Handoff, no task envelopes, no activation modes) plus SDD_ROW_WITHOUT_OUTER_PIPES warning at line 312",
+        "note": "`observed` above is the old table reader, which ended the table at the pipe-less line and lost 2 tasks; 1.205 reads the row and every row below it"
       }
     },
     {
