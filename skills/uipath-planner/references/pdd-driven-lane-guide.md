@@ -160,7 +160,8 @@ Walk the project list. For each project, emit task rows per the matched pattern.
 
 8. **Data Fabric entities are shared resources — one platform task per entity, and a binding on
    every consumer.** Entities join queues, assets and connections in rule 5's "leaf resources before
-   consumers". Sources, in order: the SDD's `### Data Fabric entities` table when present; otherwise
+   consumers". Sources, in order: the SDD's `### Data model` section (its `#### Data Fabric entities`
+   table, `#### Relationships`, `#### Lifecycle` — the PDD §6 transcription) when present; otherwise
    the data model the template already carries — RPA §5 Data Definitions (Option A records / Option B
    variables), Flow §4 Variables and §3 nodes that read or write records, Case §1 Case Variables and
    §4 Integrations, BPMN data objects. A business object the solution **owns** is a `Native` entity;

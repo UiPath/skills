@@ -330,6 +330,49 @@ The architectural core sections differ per template. For each product, generate 
 - §5 Connectors & External Calls
 - §10 Project Structure
 
+**Data model (every product, generated here in Step 2):** fill the template's `### Data model`
+section — `#### Data Fabric entities`, `#### Relationships`, `#### Lifecycle`. Its source is the PDD's
+**§6 Data Model** (6.1 entities with system of record and lifecycle, 6.3 field dictionary with types,
+6.5 integrations) and, when the wiki is present, the signed-off `to-be/data-model.md` — reproduce
+them, never re-infer them (pdd-analysis-guide.md → *Data Model*). The wiki's `## Systems` / `entities/`
+pages name the systems of record. One row per business object the solution reads or owns: Entity · Class (`Native` = the solution owns the data; `Federated` = read-only
+view over an external system of record, a VDO; `Case`; `Composite` = one connector object split
+into root + nested members) · System of record → connector key · External object · primary key ·
+Fields (source field → type) · Joins · Solution / folder. Copy the template's header row verbatim —
+all seven columns, in this order, even when a column is `none` for every row:
+
+```
+| Entity | Class | System of record → connector key | External object · primary key | Fields (source field → type) | Joins | Solution / folder |
+```
+
+Rules:
+
+- The connector key comes from the **tenant's federated allow-list** (`uip df connectors list
+  --output json`; when the installed CLI lacks the verb, the same list is
+  `GET …/supportedConnectors`), never from the full `uip is connectors list` catalogue. A product
+  whose connector is not on that list is `[SME REVIEW]`, not a guess.
+- Object, primary key and fields come from `uip is resources list <key> --connection-id <id>` and
+  `uip is resources describe <key> <object> --operation List --connection-id <id>` (the Step 2.5
+  estate sweep resolves the connection). No live connection → keep the business names, mark the
+  technical columns `[SME REVIEW]`. **Never invent a connector, object or field name.**
+- Field types follow the platform skill's federated type table (`string` → `STRING`, `integer` →
+  `DECIMAL` precision 0, `number` → `DECIMAL`, `boolean` → `BOOLEAN`, `date` → `DATE`, `datetime` →
+  `DATETIME_WITH_TZ`); internal names obey Data Fabric name rules (reserved words, 3–100 chars).
+- Joins: one `field → Entity.field` (LeftJoin) per relationship the PDD data model draws between two
+  federated rows, **in the Joins column of the row** — a federated entity can carry these as
+  `sourceJoinConditionDetails`, so they belong to the entity definition, not to the consumer's
+  code. Write `none` explicitly when a row has no relationship. Prose about how a consumer joins
+  at run time does not replace the column. Composite roots list their members beneath them.
+- Keep the template's columns. A reused, already-deployed entity is still one row with every
+  column filled (Class from its live definition, connector key of its connection, its external
+  object and primary key, the fields the solution reads, its joins) — reuse changes the Lane A
+  task (import the resource, do not create it), not the table.
+- A process step that **writes** to an externally owned object is an Integration Service step in the
+  template's integrated-components section — federated entities are read-only, never a target.
+- Native entities keep their full definitions in the template's data section as today; the table
+  lists them with `Class = Native` so Lane A emits their solution-resource task too.
+- Ontology artifacts are not an input here; the sources are the PDD, the wiki and the tenant.
+
 ### Step 3: Decompose Steps Into Implementation Units
 
 Each template has a primary inventory table. Map PDD steps to units:

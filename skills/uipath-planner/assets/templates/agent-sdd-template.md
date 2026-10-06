@@ -247,6 +247,24 @@ flowchart LR
 
 ---
 
+### Data model
+
+> Source: PDD §6 Data Model (6.1 Entities · 6.3 Field-Level Data Dictionary · 6.5 Integrations · 6.6/6.7 when an ontology exists) and, on the Delegate hand-off, the wiki's signed-off `to-be/data-model.md`. Generated in Phase 2 · Step 2 for every product (see sdd-generation-guide.md → Step 2 → *Data model*). **Reproduce what the PDD states; never re-infer it.** Add only what the platform needs — class, platform type and length, folder, consumers. Gaps are `[SME REVIEW]` (needs the SME) or `[DEFAULT]` (a stated default). Entities already on the tenant are marked *reuse*. Lane A derives one `platform:<Solution>:entity:<Entity>` task per row that is not reused, the `uipath-solution` `Entity` resource task, and the `Entities:` binding on each consumer named here.
+
+#### Data Fabric entities
+
+| Entity | Class | System of record → connector key | External object · primary key | Fields (source field → type) | Joins / relationships | Consumers (project · read/write) | Solution / folder |
+|---|---|---|---|---|---|---|---|
+| <ENTITY_PASCAL_CASE> | Native / Federated / CaseCompositeV1 / VirtualComposite · *reuse* | <PRODUCT or "owned by this solution"> → `<connector-key or n/a>` | `<object or n/a>` · `<pk>` | `<field> → STRING(500)`, `<field> → DECIMAL(2)`, `<field> → DATE`, … | `<field> → <Entity>.<field>` (RELATIONSHIP / LeftJoin) / none | `<Project> · read`, `<Project> · read-write` | `<solution>` / `<folder>` |
+
+#### Relationships
+
+- `<Entity>.<field> → <Entity>.<field>` — <cardinality from §6.1's class diagram>; <RELATIONSHIP field on the owning entity / join criterion for a federated view>
+
+#### Lifecycle
+
+- `<Entity>`: <states in order, from PDD §6.1> — or *not modelled*
+
 ## 7. Error Handling & Escalation
 
 ### Agent-level errors
