@@ -89,3 +89,87 @@ For each member the team records: unique id of member; member's first name; memb
 The student club records live in the operational database (SQL Server). A copy is refreshed into the analytics warehouse copy (Snowflake) for reporting.
 The team wants the automation to read from these systems directly, not to copy the data again.
 
+## Section 6: Data Model
+
+**6.1 Entities**
+
+| Entity | Description | System of record | Lifecycle states |
+|---|---|---|---|
+| Event | One row per event record of the club | SQL Server (`birdadmin_sqlserver`, table `bird_student_club_event`); Snowflake holds a reporting copy | not modelled |
+| Major | One row per major record of the club | SQL Server (`birdadmin_sqlserver`, table `bird_student_club_major`); Snowflake holds a reporting copy | not modelled |
+| ZipCode | One row per zip code record of the club | SQL Server (`birdadmin_sqlserver`, table `bird_student_club_zip_code`); Snowflake holds a reporting copy | not modelled |
+| Attendance | One row per attendance record of the club | SQL Server (`birdadmin_sqlserver`, table `bird_student_club_attendance`); Snowflake holds a reporting copy | not modelled |
+| Budget | One row per budget record of the club | SQL Server (`birdadmin_sqlserver`, table `bird_student_club_budget`); Snowflake holds a reporting copy | not modelled |
+| Expense | One row per expense record of the club | SQL Server (`birdadmin_sqlserver`, table `bird_student_club_expense`); Snowflake holds a reporting copy | not modelled |
+| Income | One row per income record of the club | SQL Server (`birdadmin_sqlserver`, table `bird_student_club_income`); Snowflake holds a reporting copy | not modelled |
+| Member | One row per member record of the club | SQL Server (`birdadmin_sqlserver`, table `bird_student_club_member`); Snowflake holds a reporting copy | not modelled |
+
+Relationships (class diagram, in words):
+- Attendance.link_to_member → Member.member_id (many-to-one)
+- Attendance.link_to_event → Event.event_id (many-to-one)
+- Budget.link_to_event → Event.event_id (many-to-one)
+- Expense.link_to_member → Member.member_id (many-to-one)
+- Expense.link_to_budget → Budget.budget_id (many-to-one)
+- Income.link_to_member → Member.member_id (many-to-one)
+- Member.zip → ZipCode.zip_code (many-to-one)
+- Member.link_to_major → Major.major_id (many-to-one)
+
+**6.3 Field-Level Data Dictionary**
+
+| Field | Type | Role | Required |
+|---|---|---|---|
+| Event.event_id | text | identifier | required |
+| Event.event_name | text | attribute | optional |
+| Event.event_date | text | attribute | optional |
+| Event.type | text | attribute | optional |
+| Event.notes | text | attribute | optional |
+| Event.location | text | attribute | optional |
+| Event.status | text | attribute | optional |
+| Major.major_id | text | identifier | required |
+| Major.major_name | text | attribute | optional |
+| Major.department | text | attribute | optional |
+| Major.college | text | attribute | optional |
+| ZipCode.zip_code | number | identifier | required |
+| ZipCode.type | text | attribute | optional |
+| ZipCode.city | text | attribute | optional |
+| ZipCode.county | text | attribute | optional |
+| ZipCode.state | text | attribute | optional |
+| ZipCode.short_state | text | attribute | optional |
+| Attendance.link_to_event | text | identifier | required |
+| Attendance.link_to_member | text | identifier | required |
+| Budget.budget_id | text | identifier | required |
+| Budget.category | text | attribute | optional |
+| Budget.spent | number | attribute | optional |
+| Budget.remaining | number | attribute | optional |
+| Budget.amount | number | attribute | optional |
+| Budget.event_status | text | attribute | optional |
+| Budget.link_to_event | text | reference | optional |
+| Expense.expense_id | text | identifier | required |
+| Expense.expense_description | text | attribute | optional |
+| Expense.expense_date | text | attribute | optional |
+| Expense.cost | number | attribute | optional |
+| Expense.approved | text | attribute | optional |
+| Expense.link_to_member | text | reference | optional |
+| Expense.link_to_budget | text | reference | optional |
+| Income.income_id | text | identifier | required |
+| Income.date_received | text | attribute | optional |
+| Income.amount | number | attribute | optional |
+| Income.source | text | attribute | optional |
+| Income.notes | text | attribute | optional |
+| Income.link_to_member | text | reference | optional |
+| Member.member_id | text | identifier | required |
+| Member.first_name | text | attribute | optional |
+| Member.last_name | text | attribute | optional |
+| Member.email | text | attribute | optional |
+| Member.position | text | attribute | optional |
+| Member.t_shirt_size | text | attribute | optional |
+| Member.phone | text | attribute | optional |
+| Member.zip | number | reference | optional |
+| Member.link_to_major | text | reference | optional |
+
+**6.5 Integrations**
+
+| Integration (System → System) | Fields passed | Connector / type |
+|---|---|---|
+| SQL Server → UiPath Data Fabric | all fields above, read-only | Database connector (JDBC), federated read |
+| SQL Server → Snowflake | nightly copy of all tables | warehouse replication (out of scope) |
