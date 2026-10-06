@@ -134,7 +134,8 @@ def score(golden: dict, rows: list[dict], details: list[str]) -> float:
     gjoins = {(norm(g["name"]), norm(j["relatedEntity"]), norm(j["joinField"]), norm(j["relatedJoinField"])) for g in gold for j in g["joins"]}
     for gn, r in matched.items():
         g = gmap[gn]
-        if norm(r["class"]) == norm(g["class"]):
+        cls_cell = norm(re.split(r"[·(/,\-]|\breuse\b", r["class"], maxsplit=1)[0]) if r["class"] else ""
+        if cls_cell == norm(g["class"]) or norm(r["class"]).startswith(norm(g["class"])):
             cls += 1
         keys = re.findall(r"(uipath-[a-z0-9-]+|data-service)", r["connector"])
         key = keys[0] if keys else None
@@ -172,7 +173,8 @@ def score(golden: dict, rows: list[dict], details: list[str]) -> float:
         for m in re.finditer(r"`?([A-Za-z0-9_]+)`?\s*(?:→|->)\s*`?([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)`?", r["joins"]):
             agent_j += 1
             jf, rel, rjf = m.groups()
-            k = (gn, norm(rel), norm(jf), norm(rjf)); rk = (norm(rel), gn, norm(rjf), norm(jf))
+            rel_n = next((x for x in gmap if norm(rel) == x or norm(rel).endswith(x) or x.endswith(norm(rel))), norm(rel))
+            k = (gn, rel_n, norm(jf), norm(rjf)); rk = (rel_n, gn, norm(rjf), norm(jf))
             if k in gjoins or rk in gjoins:
                 hit_j += 1
     j_rec = hit_j / len(gjoins) if gjoins else 1.0

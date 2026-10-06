@@ -80,3 +80,13 @@ def test_numbered_heading_is_found(tmp_path, golden):
     sdd = tmp_path / "x-sdd.md"; sdd.write_text(text)
     s, d = run(sdd)
     assert s == pytest.approx(1.0, abs=1e-6), d
+
+
+def test_reuse_marker_and_prefixed_join_targets_score_full(tmp_path, golden):
+    """A deployed-fixture reuse row: class "Federated · reuse", entity and join targets named mssql_<table>."""
+    import re
+    text = table_from_golden(golden).replace("| Federated |", "| Federated · reuse |")
+    text = re.sub(r"→ ([A-Za-z]+)\.", lambda m: f"→ mssql_{m.group(1).lower()}.", text)
+    sdd = tmp_path / "x-sdd.md"; sdd.write_text(text)
+    s, d = run(sdd)
+    assert s == pytest.approx(1.0, abs=1e-6), d
