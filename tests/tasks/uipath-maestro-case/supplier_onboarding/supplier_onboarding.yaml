@@ -240,14 +240,14 @@ success_criteria:
       Agent did not run case debug : this task stops at validate, and the case suspends on
       fourteen human tasks and seven SLA clocks it has no harness driving it through
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+debug\b'
+    command_pattern: '(^|[;&|]\s*)(uip|\$UIP)\s+maestro\s+case\s+debug\b(?![^;&|\n]*--help)'
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Agent did not publish : the task stops at validate"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+(publish|upload)\b'
+    command_pattern: '(^|[;&|]\s*)(uip|\$UIP)\s+solution\s+(publish|upload)\b(?![^;&|\n]*--help)'
     weight: 1.0
     pass_threshold: 1.0
 
