@@ -604,7 +604,7 @@ Check tenant uniqueness/schema settings; wait only when a consumer exists and it
 **Wrong here fails SILENTLY** — a bad column is dropped, not rejected, so `validate` passing is not evidence. Resolve columns with `uip df entities get` first.
 Delete publishes nothing; system columns (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) are never writable; `fromRead` needs a single-record read; a folder-scoped entity needs `folderKey` AND `resourceKey`.
 
-**Still connector-only**: file record fields and Record Created/Updated events — `connector('uipath-uipath-dataservice', …)` + `registry prepare -f entityName=<Entity>`.
+**Still connector-only**: file record fields and Record Created/Updated events — `connector('uipath-uipath-dataservice', …)` + `registry prepare -f entityName=<Entity>` — and the whole value of a long-text field, which every native read cuts at 10,000 characters (`get-entity-record-by-id`).
 **Reference: [`references/data-fabric.md`](references/data-fabric.md)**
 
 ## Error handling

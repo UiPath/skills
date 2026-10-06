@@ -21,10 +21,11 @@ Reach for the connector when the flow needs something the family does not have.
 | Update a record | `dataFabricUpdate({ entity, record, set })` |
 | Delete a record | `dataFabricDelete({ entity, record })` |
 | Get a record by id | `dataFabricRead({ entity, filters: [{ field: 'Id', value: … }] })` |
+| Read the whole value of a long-text (`MULTILINE_MAX`) field | `connector('uipath-uipath-dataservice', 'get-entity-record-by-id', …)` ([§ A long-text field reads back cut](#a-long-text-field-reads-back-cut)) |
 | Upload / download / delete a file record field | `connector('uipath-uipath-dataservice', '…-file-…-record-field', …)` |
 | Record Created / Record Updated events | `onEvent(…)` on the same connector |
 
-Only the bottom two are connector work. A flow that needs one of them straddles
+Only the bottom three are connector work. A flow that needs one of them straddles
 both surfaces — a connection binding, a second payload shape, two things to
 debug — so when that is the shape of the work, route the whole entity through
 the connector instead of mixing.
@@ -200,6 +201,27 @@ no outputs — the record is gone, so there is nothing to hand downstream.
 (`DATAFABRIC_DELETE_HAS_NO_OUTPUT`).
 Take what the flow needs off the `dataFabricRead` step that FOUND the record,
 before the delete runs.
+
+## A long-text field reads back cut
+
+`dataFabricCreate` stores a long-text (`MULTILINE_MAX`) field whole, but every
+native read returns its first 10,000 characters with `...[Truncated]` appended:
+the query-many read, the read-one with an `Id` filter (it compiles to a query),
+and the create step's own output. Nothing else marks the cut — `check`,
+`validate` and the run all pass, and the next step works on the cut text.
+
+When the flow needs the whole value, read the record with the connector's Get
+Entity Record by ID, which publishes the record itself as its output:
+
+```ts
+.step('full', connector('uipath-uipath-dataservice', 'get-entity-record-by-id',
+  { entityName: 'Documents', recordId: input('recordId') },
+  { connection: 'dataservice', folder: 'shared' }))
+// $vars.full.output.document holds the whole text
+```
+
+`entityName` sends the entity's name, a fixed value, so `check` accepts it as
+a literal with a `LOOKUP_LITERAL_ID` warning.
 
 ## The connector path, end to end
 

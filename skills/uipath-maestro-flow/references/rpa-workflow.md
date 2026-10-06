@@ -26,7 +26,10 @@ project type: serverless cloud robots run only background, cross-platform
 projects (vendor documentation), and jobs a Flow starts have run on them even
 where the folder also had an unattended Windows robot. So a process a Flow
 starts targets the cross-platform framework unless the folder's robots are
-known to be Windows. A `types.file` input passed to it arrives as a job
+known to be Windows. A process meant to be edited in Studio Web beside the Flow
+is also XAML with VB expressions: Studio Web opens no project holding coded
+workflows or C# expressions, and lists such a process with errors `20042` and
+`20021` instead. A `types.file` input passed to it arrives as a job
 attachment reference (`ID`, `FullName`, `MimeType`, `Metadata`), the shape the
 process's file argument takes.
 
