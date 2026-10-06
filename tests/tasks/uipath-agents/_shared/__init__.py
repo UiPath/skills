@@ -20,8 +20,4 @@ Coded-agent helpers are minimal: they mirror the on-disk shape that
 `uip codedagent init` would produce, the bindings.json schema documented
 in `references/coded/lifecycle/bindings-reference.md`, and the lazy-LLM
 init invariant called out in `references/coded/quickstart.md`.
-The inline-in-flow helpers (`inline_wiring.py`) and the inline-agent
-contract checkers moved with their tasks to
-`tests/tasks/uipath-maestro-flow/inline_agent/_shared/`; CODEOWNERS keeps
-the agents team as co-owner of that folder.
 """

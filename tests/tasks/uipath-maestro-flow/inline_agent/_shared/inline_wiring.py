@@ -33,10 +33,27 @@ Import pattern in a check script:
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
 AUTONOMOUS_NODE_TYPE = "uipath.agent.autonomous"
+
+UUID_RE = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
+# The builder SDK compiles an unresolved connection to this stub id (it
+# reaches dispatch as a 401), so a UUID check alone would accept it.
+STUB_CONNECTION_ID_RE = re.compile(r"^0{8}-0{4}-0{4}-0{4}-0{8}[0-9a-fA-F]{4}$")
+
+
+def is_real_uuid(value: object) -> bool:
+    """True for a UUID string that is not the all-zero stub family."""
+    return (
+        isinstance(value, str)
+        and UUID_RE.match(value) is not None
+        and STUB_CONNECTION_ID_RE.match(value) is None
+    )
 
 
 def load_json(path: Path) -> dict:
@@ -115,7 +132,44 @@ def resolve_inline_agent_dir(flow_path: Path, agent_node: dict) -> Path:
             f"FAIL: inputs.source {source!r} does not point to an existing "
             f"directory ({agent_dir})"
         )
+    assert_inline_agent_definition(agent_dir)
     return agent_dir
+
+
+def assert_inline_agent_definition(agent_dir: Path) -> dict:
+    """Fail unless `agent_dir/agent.json` is a usable inline agent definition.
+
+    The node is a shell: the prompts and model live only in `agent.json`, so
+    an empty or prompt-less file gives a flow that validates but runs an
+    agent with no instructions. Checks: valid JSON, `type == "lowCode"`,
+    `id` equal to the directory name, a non-empty `settings.model`, and a
+    non-empty `system` and `user` message.
+
+    Interim: `uip agent validate --inline-in-flow` is the real contract, but
+    it rejects every SDK-compiled agent today (UiPath/flow-builder-sdk#962).
+    Replace this with that command as a gate once #962 is fixed.
+    """
+    path = agent_dir / "agent.json"
+    data = load_json(path)
+    if data.get("type") != "lowCode":
+        sys.exit(f"FAIL: {path} type should be 'lowCode', got {data.get('type')!r}")
+    if data.get("id") != agent_dir.name:
+        sys.exit(
+            f"FAIL: {path} id {data.get('id')!r} does not match its directory "
+            f"name {agent_dir.name!r}"
+        )
+    model = (data.get("settings") or {}).get("model")
+    if not isinstance(model, str) or not model.strip():
+        sys.exit(f"FAIL: {path} has no settings.model")
+    for role in ("system", "user"):
+        contents = [
+            m.get("content") for m in data.get("messages") or []
+            if isinstance(m, dict) and m.get("role") == role
+        ]
+        if not any(isinstance(c, str) and c.strip() for c in contents):
+            sys.exit(f"FAIL: {path} has no non-empty {role!r} message")
+    print(f"OK: {path.name} defines the inline agent (model {model!r}, system + user prompts)")
+    return data
 
 
 def resolve_resource_source(node: dict) -> str:
@@ -195,15 +249,35 @@ def assert_edge(
         )
 
 
-# Live `uip maestro flow debug` A/B on alpha, 2026-10-05: an inline agent's
-# tenant-folder process tool resolved and ran Successful with the builder-SDK
-# shape (`location: "solution"`, `properties.folderPath: ""`) exactly as with
-# the v1 shape (`location: "external"` + the literal folder); a control with
-# no `resources/` dir faulted. For inline-in-flow agents the folder is carried
-# by the flow's top-level `bindings[]`, not by resource.json. Evidence:
-# https://github.com/UiPath/flow-builder-sdk/issues/922#issuecomment-6000881513
-INLINE_TOOL_LOCATIONS = ("solution", "external")
+# Accepted resource.json shapes for an inline agent's deployed-resource tool.
+# For an inline-in-flow agent the tool's tenant folder is carried by the
+# flow's top-level `bindings[]` (`b<Name>FolderPath`), not by resource.json.
+# Each external pair below ran its tenant tool Successful in a live
+# `uip maestro flow debug`; a control with no `resources/` faulted.
+#   - process (RPA):        https://github.com/UiPath/flow-builder-sdk/issues/922#issuecomment-6000881513
+#   - agent:                https://github.com/UiPath/flow-builder-sdk/issues/922#issuecomment-6001964622
+#   - api, maestro:         https://github.com/UiPath/flow-builder-sdk/issues/922#issuecomment-6026668870
+# The deployed path (pack + deploy + run) is not witnessed for either shape.
+# Solution-local tools: "" and "solution_folder" derive byte-identical solution
+# files and both pass `uip agent validate --inline-in-flow`.
 INLINE_SOLUTION_FOLDER_PATHS = ("", "solution_folder")
+
+
+def external_tool_shapes(expected_folder: str) -> set[tuple[str, str]]:
+    """The (location, properties.folderPath) pairs witnessed live (see above)."""
+    return {("solution", ""), ("external", expected_folder)}
+
+
+def assert_external_tool_shape(resource: dict, expected_folder: str) -> tuple[str, str]:
+    """Fail unless the tool's (location, folderPath) is a witnessed pair."""
+    pair = (resource.get("location"), (resource.get("properties") or {}).get("folderPath"))
+    allowed = external_tool_shapes(expected_folder)
+    if pair not in allowed:
+        sys.exit(
+            f"FAIL: external tool (location, properties.folderPath) = {pair!r}; "
+            f"expected one of {sorted(allowed)}"
+        )
+    return pair
 
 
 def assert_tool_folder_binding(flow: dict, resource_name: str, expected_folder: str) -> dict:

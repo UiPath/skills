@@ -14,17 +14,14 @@ Validates:
      "FibonacciRPA" external RPA tool with:
        - $resourceType == "tool"
        - type == "process"
-       - location in ("solution", "external"): both run live (#922 A/B below)
        - properties.processName == "FibonacciRPA"
-       - properties.folderPath in ("", "Shared/uipath-agents/FibonacciRPA")
+       - (location, properties.folderPath) is ("solution", "") or
+         ("external", "Shared/uipath-agents/FibonacciRPA"): the pairs witnessed live
+         (`inline_wiring.external_tool_shapes`)
        - the flow's top-level bindings[] carries folder "Shared/uipath-agents/FibonacciRPA"
          for the tool (b<Name>FolderPath)
        - referenceKey is a UUID-shaped non-empty string (copied from
          `uip solution resources list`'s `Key`)
-
-The location/folderPath rules accept the builder-SDK shape, which a live
-`flow debug` A/B showed runs the tool exactly like the v1 shape:
-https://github.com/UiPath/flow-builder-sdk/issues/922#issuecomment-6000881513
 """
 
 import os
@@ -34,8 +31,8 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.inline_wiring import (  # noqa: E402
-    INLINE_TOOL_LOCATIONS,
     assert_edge,
+    assert_external_tool_shape,
     assert_tool_folder_binding,
     find_autonomous_agent_node,
     find_inline_resource,
@@ -94,7 +91,6 @@ def main() -> None:
         lambda d: (
             d.get("$resourceType") == "tool"
             and d.get("type") == "process"
-            and d.get("location") in INLINE_TOOL_LOCATIONS
             and (d.get("properties") or {}).get("processName") == EXPECTED_PROCESS_NAME
         ),
         description=f'external RPA tool "{EXPECTED_PROCESS_NAME}"',
@@ -112,17 +108,12 @@ def main() -> None:
         f'OK: {resource_path.relative_to(Path(os.getcwd()))} is '
         f'$resourceType="tool", type="process", location={resource.get("location")!r}'
     )
+    location, fpath = assert_external_tool_shape(resource, EXPECTED_FOLDER_PATH)
 
-    props = resource.get("properties") or {}
-    fpath = props.get("folderPath")
-    if fpath not in ("", EXPECTED_FOLDER_PATH):
-        sys.exit(
-            f"FAIL: properties.folderPath should be '' (folder carried by the flow's "
-            f"bindings[]) or {EXPECTED_FOLDER_PATH!r}, got {fpath!r}"
-        )
     binding = assert_tool_folder_binding(flow, EXPECTED_PROCESS_NAME, EXPECTED_FOLDER_PATH)
     print(
-        f'OK: properties.processName={EXPECTED_PROCESS_NAME!r}, folderPath={fpath!r}; '
+        f'OK: properties.processName={EXPECTED_PROCESS_NAME!r}, '
+        f'(location, folderPath)={(location, fpath)!r}; '
         f'flow binding {binding.get("id")!r} carries folder {EXPECTED_FOLDER_PATH!r}'
     )
 

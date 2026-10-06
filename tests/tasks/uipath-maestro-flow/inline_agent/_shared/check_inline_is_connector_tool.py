@@ -7,7 +7,8 @@ Combines the F8 (standalone IS tool) resource-shape assertions with
 the F2 (inline agent) flow-wiring assertions. Specifically:
 
   1. The flow file contains a `uipath.agent.autonomous` node whose
-     `inputs.source` points at the inline agent's UUID subdirectory.
+     `inputs.source` points at the inline agent's UUID subdirectory,
+     whose `agent.json` defines the agent.
   2. The flow file contains a `uipath.agent.resource.tool.connector`
      node.
   3. An edge wires the agent's `tool` handle (source) to the connector
@@ -18,7 +19,8 @@ the F2 (inline agent) flow-wiring assertions. Specifically:
      under-asserted until the canonical shape locks in.
   5. A `bindings_v2.json` under the flow project (outside
      `.agent-builder/`) carries a `connection` binding for the connector
-     the tool node uses, with a non-empty `ConnectionId`. That binding is
+     the tool node uses, whose `ConnectionId` is a real connection UUID
+     (not a placeholder string or the SDK's all-zero stub). That binding is
      what `uip solution pack` and `uip maestro flow debug` read the
      connection from.
 
@@ -37,7 +39,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.inline_wiring import find_inline_resource  # noqa: E402
+from _shared.inline_wiring import (  # noqa: E402
+    assert_inline_agent_definition,
+    find_inline_resource,
+    is_real_uuid,
+)
 
 INLINE_AGENT_NODE_TYPE = "uipath.agent.autonomous"
 # Connector tool nodes carry the connector-key + activity in the type suffix
@@ -107,6 +113,7 @@ def assert_agent_source_dir(agent_node: dict) -> Path:
             f"directory ({agent_dir})"
         )
     print(f"OK: inline agent directory resolves to {agent_dir.name}")
+    assert_inline_agent_definition(agent_dir)
     return agent_dir
 
 
@@ -166,7 +173,7 @@ def assert_connection_binding(connector_node: dict) -> None:
                 continue
             connector = (r.get("metadata") or {}).get("Connector") or ""
             conn_id = ((r.get("value") or {}).get("ConnectionId") or {}).get("defaultValue")
-            if connector and f".{connector}." in f"{node_type}." and isinstance(conn_id, str) and conn_id.strip():
+            if connector and f".{connector}." in f"{node_type}." and is_real_uuid(conn_id):
                 print(
                     f"OK: {path.relative_to(SOLUTION.parent)} binds connector "
                     f"{connector!r} to connection {conn_id!r}"
@@ -175,7 +182,8 @@ def assert_connection_binding(connector_node: dict) -> None:
     sys.exit(
         f"FAIL: no bindings_v2.json connection binding matches the tool node "
         f"{node_type!r} (need resource=connection, metadata.Connector = the "
-        "node's connector key, non-empty value.ConnectionId.defaultValue)"
+        "node's connector key, value.ConnectionId.defaultValue = a real connection "
+        "UUID, not a placeholder or the 00000000-...-0000000000xx stub)"
     )
 
 

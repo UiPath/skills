@@ -61,9 +61,6 @@ success_criteria:
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0  # advisory: discovery route is not graded; the contract checker grades the escalation resource
-  # Enforced: the app is EXTERNAL, so fetching its action schema with `resources
-  # get` (after discovering it via `resources list --kind App` above) is mandatory
-  # to author the channel — there is no alternative lookup path.
   - type: command_executed
     description: "Agent fetched the app action schema with uip solution resources get"
     tool_name: "Bash"
@@ -89,10 +86,7 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Outcome gate for the authored flow. Path-neutral: it holds whether the
-  # agent compiled a builder-SDK `.flow.ts` or edited the `.flow` JSON, so it
-  # replaces the `uip agent init/refresh/validate --inline-in-flow` and
-  # `uip maestro flow registry` trajectory gates the v1 recipe required.
+  # Outcome gate: the authored flow validates, whichever route wrote it.
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
     command: "python3 $REFERENCE_DIR/_shared/validate_flow.py ExpenseFlowSol/ExpenseFlow/ExpenseFlow.flow"

@@ -28,12 +28,9 @@ Validates:
   by where the ActionCenter app actually lives (external in Shared for
   F18) and by the test prompt wording.
 
-  The app is a Workflow Action app on purpose. The task used the
-  "FraudEscalation" JS Action app until 2026-10-05; a JS Action app cannot
-  back an agent escalation (`uip solution resources refresh` reports it "not
-  found in Orchestrator"), so the task could only ever grade files.
-  ExpenseReviewApp backed a live escalation in UiPath/flow-builder-sdk#925
-  (`flow debug` suspended and created an Action Center AppTask).
+  The app must be a Workflow Action app: a JS Action app cannot back an
+  agent escalation (`uip solution resources refresh` reports it "not found
+  in Orchestrator").
 """
 
 import os

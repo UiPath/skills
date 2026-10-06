@@ -3,8 +3,9 @@
 
 Reads GreetingSol/GreetingFlow/GreetingFlow.flow (existence asserted
 by a file_exists criterion in the task YAML) and verifies the
-inline-in-flow structural pattern only — not the agent's prompt or
-input/output schema:
+inline-in-flow structural pattern, plus that the inline agent's
+`agent.json` is a usable definition (not the prompt's wording or the
+input/output schema):
 
   1. The flow contains a `uipath.agent.autonomous` node.
   2. The node's `inputs.source` points to an existing directory (the
@@ -12,7 +13,9 @@ input/output schema:
      Critical Rule 15, the registry definition declares
      `model.source: true` but flow-core hoists the source identity
      onto `inputs.source` on each node instance — the legacy
-     `model.source` location on the instance is not accepted.
+     `model.source` location on the instance is not accepted. The
+     directory's `agent.json` must define the agent
+     (`inline_wiring.assert_inline_agent_definition`).
   3. If `model.serviceType` is present, it must be
      `Orchestrator.StartInlineAgentJob` (not the solution-agent
      variant `StartAgentJob`). The field is optional on the instance —
@@ -27,6 +30,9 @@ import json
 import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _shared.inline_wiring import assert_inline_agent_definition  # noqa: E402
 
 INLINE_AGENT_NODE_TYPE = "uipath.agent.autonomous"
 INLINE_AGENT_SERVICE_TYPE = "Orchestrator.StartInlineAgentJob"
@@ -71,6 +77,7 @@ def main() -> None:
         f"OK: {INLINE_AGENT_NODE_TYPE} node's inputs.source points to "
         f"inline agent directory {source}"
     )
+    assert_inline_agent_definition(agent_dir)
 
     service_type = model.get("serviceType")
     if service_type is not None and service_type != INLINE_AGENT_SERVICE_TYPE:

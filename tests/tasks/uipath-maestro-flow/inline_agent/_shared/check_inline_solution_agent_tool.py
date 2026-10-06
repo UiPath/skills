@@ -14,10 +14,7 @@ Validates:
        - properties.processName == "ToolAgent"
        - properties.folderPath in ("", "solution_folder")
 
-`folderPath` accepts the builder-SDK's "" (what `uip agent validate
---inline-in-flow` accepts) as well as "solution_folder"; both derive
-byte-identical solution files for this agent tool:
-https://github.com/UiPath/flow-builder-sdk/issues/922#issuecomment-6001964622
+The accepted `folderPath` values and their evidence: `inline_wiring.INLINE_SOLUTION_FOLDER_PATHS`.
 """
 
 import os

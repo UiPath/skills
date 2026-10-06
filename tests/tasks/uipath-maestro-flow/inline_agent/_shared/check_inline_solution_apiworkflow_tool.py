@@ -16,10 +16,7 @@ Validates:
        - location == "solution"
        - properties.folderPath in ("", "solution_folder")
 
-`folderPath` accepts the builder-SDK's "" (what `uip agent validate
---inline-in-flow` accepts) as well as "solution_folder"; both derive identical
-solution files and the "" shape ran its tool live:
-https://github.com/UiPath/flow-builder-sdk/issues/922#issuecomment-6000881513
+The accepted `folderPath` values and their evidence: `inline_wiring.INLINE_SOLUTION_FOLDER_PATHS`.
 """
 
 import os

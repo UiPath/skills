@@ -69,10 +69,7 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Outcome gate for the authored flow. Path-neutral: it holds whether the
-  # agent compiled a builder-SDK `.flow.ts` or edited the `.flow` JSON, so it
-  # replaces the `uip agent init/refresh/validate --inline-in-flow` and
-  # `uip maestro flow registry` trajectory gates the v1 recipe required.
+  # Outcome gate: the authored flow validates, whichever route wrote it.
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
     command: "python3 $REFERENCE_DIR/_shared/validate_flow.py GreetingSol/GreetingFlow/GreetingFlow.flow"
