@@ -92,9 +92,27 @@ initial_prompt: |
     passing on the resulting caseplan.json.
 
 success_criteria:
+  - type: command_executed
+    description: "Agent ran uip maestro case validate on the built case (advisory — outcome graded below)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*SupplierOnboarding/SupplierOnboarding/caseplan\.json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
   - type: run_command
     description: "uip maestro case validate passes on the generated SupplierOnboarding caseplan.json"
     command: "uip maestro case validate SupplierOnboarding/SupplierOnboarding/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — a plain-profile Valid does not close the build (SKILL.md Rule 7)"
+    command: >-
+      uip maestro case validate SupplierOnboarding/SupplierOnboarding/caseplan.json
+      --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -208,6 +226,13 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b'
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not edit caseplan.json in place with a script (SKILL.md Rule 14: Write/Edit only; validator findings are repaired by hand, not perl -pi)"
+    tool_name: "Bash"
+    command_pattern: '(perl|sed)\s+-\S*i\S*\s[^\n]*caseplan\.json|(python3?|node|ruby)\b[^\n]*(write_text|writeFile|File\.write|open\([^\n]*[''"]w[''"])[^\n]*caseplan\.json'
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed
