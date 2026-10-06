@@ -30,6 +30,8 @@ pre_run:
 reference:
   directory: _tm_shared
 
+# The prompt says "a record" on purpose (generic record ops); the agent may pick
+# any TM record object, so criteria accept TestCase, Requirement or TestSet.
 initial_prompt: |
   Using the UiPath Test Manager Integration Service connector, work with a record end to end and confirm the data round-trips.
 
@@ -48,7 +50,7 @@ success_criteria:
   - type: command_executed
     description: "Insert Record (create)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?(?:TestCase|Requirement|TestSet)\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -56,7 +58,7 @@ success_criteria:
   - type: command_executed
     description: "Get Record"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?(?:TestCase|Requirement|TestSet)\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -64,7 +66,7 @@ success_criteria:
   - type: command_executed
     description: "Update Record"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?(?:TestCase|Requirement|TestSet)\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -72,7 +74,7 @@ success_criteria:
   - type: command_executed
     description: "Delete Record"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?(?:TestCase|Requirement|TestSet)\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -80,7 +82,7 @@ success_criteria:
   - type: command_executed
     description: "List Records"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+list\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?(?:TestCase|Requirement|TestSet)\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
