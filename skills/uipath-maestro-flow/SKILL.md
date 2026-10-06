@@ -95,7 +95,7 @@ uip maestro flow format <Solution>/<Name>/<Name>.flow --output json
   --output json )
 ```
 
-Name one `<Out>:variables.globals.<Out>` pair per output the flow declares (`direction: out`), e.g. `weatherVerdict:variables.globals.weatherVerdict`. Do not project all of `variables.globals`: it also holds every step's raw output, HTTP bodies included, and a trimmed (`tail`/`head`) read-back loses `status` and `failed` and costs a second debug run. Re-run it from `compile` after the last source or binding edit. Valid is top-level `Result` plus `Data.Status: "Valid"`; treat `Data.Warnings` as failures except the reviewed shared-connection advisory. `Completed` with the expected globals and an empty `failed` is runtime evidence; a bare exit code is not. Debug inputs, attachments, other projections and incidents: [`references/CLI-LOOP.md`](references/CLI-LOOP.md#refresh-debug-and-preserve-evidence).
+`<Out>`: each declared `out` variable, never all of `variables.globals`. Re-run it from `compile` after the last source or binding edit. Valid is top-level `Result` plus `Data.Status: "Valid"`; treat `Data.Warnings` as failures except the reviewed shared-connection advisory. `Completed` with the expected globals and an empty `failed` is runtime evidence; a bare exit code is not. Debug inputs, attachments, other projections and incidents: [`references/CLI-LOOP.md`](references/CLI-LOOP.md#refresh-debug-and-preserve-evidence).
 
 ## Editing an existing flow
 
