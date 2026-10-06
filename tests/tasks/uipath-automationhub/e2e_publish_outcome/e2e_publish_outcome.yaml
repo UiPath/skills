@@ -7,7 +7,8 @@ description: >
   token and stamps it into the staged PDD and BPMN process map. The agent publishes
   through `uip ah`. Grading reads the tenant back: exactly one process carries the
   token; its record has a grounded description, a category and a submitter; every
-  PDD system the inventory already held is attached; the PDD is stored as type 1
+  PDD system is attached when the schema offers new_applications (each verified by
+  name in the inventory), else every one the inventory already held; the PDD is stored as type 1
   with bytes identical to the staged file; and the stored process map carries a
   BPMNDiagram with shapes — the RPANAV-19062 regression ("No diagrams found in the
   BPMN file"). The token also drives post_run cleanup, which archives only this
@@ -59,12 +60,14 @@ initial_prompt: |
   Before starting, load the uipath-automationhub skill and follow its workflow.
 
 success_criteria:
+  # Gating, as in the structural task: the prompt names the skill, and the outcomes
+  # below are only meaningful as a measure of the skill's publish flow.
   - type: skill_triggered
-    description: "Advisory: agent invoked the uipath-automationhub skill"
+    description: "Agent activated the uipath-automationhub skill"
     skill_name: "uipath-automationhub"
     expected_skill: "uipath-automationhub"
-    weight: 1.0
-    pass_threshold: 0
+    weight: 1.5
+    pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Agent NEVER sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
@@ -74,17 +77,27 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key"
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key (401s a cloud token exactly like x-ah-openapi-auth)"
     tool_name: "Bash"
     command_pattern: '(?i)x-ah-openapi-app-key'
-    weight: 2.0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Agent stayed on the CLI transport — no hand-built Authorization header and no raw HTTP to Automation Hub"
     tool_name: "Bash"
-    command_pattern: '(?i)(authorization:\s*bearer|\b(curl|wget|invoke-restmethod|invoke-webrequest)\b[^\n]*automationhub_)'
+    command_pattern: '(?i)(authorization["'']?\s*[:=]|\b(curl|wget|invoke-restmethod|invoke-webrequest)\b[^\n]*automationhub_)'
     weight: 2.0
+    pass_threshold: 1.0
+
+  # RPANAV-19110: `GET /users` defaults to active users only. An owner lookup is
+  # optional, but one that happens must carry --invite-status all (and stay
+  # server-side with --search) rather than re-introduce a client-side pre-check.
+  - type: command_not_executed
+    description: "Any users list call carries --search and --invite-status all (never assumes the active-only default)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ah\s+users\s+list\b(?![^\n]*--help)(?!(?=[^\n]*--invite-status\s+all\b)(?=[^\n]*--search\b))'
+    weight: 1.5
     pass_threshold: 1.0
 
   # Anti-gaming: the outcomes below are reachable by hand-editing the record after
@@ -105,13 +118,14 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0
 
-  # THE OUTCOMES — measured on the tenant.
+  # THE OUTCOMES — measured on the tenant. Weighted in the table's 5.0-6.0 e2e band
+  # (process + documents are the publish itself; the rest qualify it at 4.0).
   - type: run_command
     description: "OUTCOME — exactly one process carrying this run's token exists on the tenant"
     command: "python3 $REFERENCE_DIR/e2e_publish_outcome/check_ah_outcome.py process"
     timeout: 300
     expected_exit_code: 0
-    weight: 4.0
+    weight: 5.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -119,15 +133,15 @@ success_criteria:
     command: "python3 $REFERENCE_DIR/e2e_publish_outcome/check_ah_outcome.py fields"
     timeout: 300
     expected_exit_code: 0
-    weight: 3.0
+    weight: 4.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "OUTCOME — every PDD system the inventory already held is attached (applications never block the publish, but the ones available are never dropped)"
+    description: "OUTCOME — applications never block the publish, and none available is dropped: with new_applications offered every PDD system is attached and exists in the inventory by name; otherwise every one the inventory already held"
     command: "python3 $REFERENCE_DIR/e2e_publish_outcome/check_ah_outcome.py applications"
     timeout: 300
     expected_exit_code: 0
-    weight: 3.0
+    weight: 4.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -135,7 +149,7 @@ success_criteria:
     command: "python3 $REFERENCE_DIR/e2e_publish_outcome/check_ah_outcome.py documents"
     timeout: 300
     expected_exit_code: 0
-    weight: 4.0
+    weight: 5.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -143,7 +157,7 @@ success_criteria:
     command: "python3 $REFERENCE_DIR/e2e_publish_outcome/check_ah_outcome.py bpmn-layout"
     timeout: 300
     expected_exit_code: 0
-    weight: 3.0
+    weight: 4.0
     pass_threshold: 1.0
 
   - type: command_executed

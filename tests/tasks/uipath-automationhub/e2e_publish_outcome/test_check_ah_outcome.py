@@ -60,7 +60,7 @@ def sandbox(tmp_path: Path) -> Path:
 
 def write_tenant(responses: Path, *, token: str, name_token: str | None = None, pdd_type: int = 1,
                  map_bytes: bytes | None = None, num_apps: int = 5, processes: int = 1,
-                 offers_new_apps: bool = True) -> None:
+                 offers_new_apps: bool = True, created_apps: bool = True) -> None:
     name = f"Retail Account Onboarding {name_token or token}"
     process = {"Id": 4815, "Name": name, "Slug": "retail-account-onboarding-4815", "Phase": "Assessment",
                "PhaseStatus": "Not Started", "PhaseKey": "ASSESSMENT", "PhaseStatusKey": "NOT_STARTED"}
@@ -82,6 +82,10 @@ def write_tenant(responses: Path, *, token: str, name_token: str | None = None, 
     categories = {"Levels": [], "Categories": [
         {"CategoryId": 11, "CategoryName": "Retail Banking", "CategoryIsActive": 1, "CategoryIsOther": 0, "Subcategories": []}]}
     inventory = [{"Id": 21, "Name": "Microsoft Dynamics 365", "Version": "9.2"}, {"Id": 22, "Name": "Signicat", "Version": "2026"}]
+    if offers_new_apps and created_apps:
+        # Post-publish view: a new_applications submission created the missing systems.
+        inventory += [{"Id": 31, "Name": "Trapets", "Version": ""}, {"Id": 32, "Name": "Scrive", "Version": ""},
+                      {"Id": 33, "Name": "Temenos T24", "Version": "R24"}]
     auth = {"Type": "automation-cloud", "Tenant": {"Uuid": "u", "CompanyName": "c", "Url": "https://x/automationhub_"},
             "User": {"Id": 42, "Email": "dana.reyes@fjordline.example", "IsAdmin": 0, "IsActive": 1,
                      "Roles": ["ah-standard-user"]}}
@@ -211,6 +215,13 @@ def test_missing_new_application_fails_when_schema_offers_it(sandbox: Path) -> N
     write_tenant(sandbox / "mocks" / "responses", token=TOKEN, num_apps=4)  # one of the five dropped
     seed(sandbox)
     assert "dropped applications" in grade(sandbox, "applications").stdout
+
+
+def test_pdd_systems_absent_from_inventory_fail_when_offered(sandbox: Path) -> None:
+    # Five attached, but none of the missing PDD systems were created: decoys were attached instead.
+    write_tenant(sandbox / "mocks" / "responses", token=TOKEN, num_apps=5, created_apps=False)
+    seed(sandbox)
+    assert "not in the inventory after the publish" in grade(sandbox, "applications").stdout
 
 
 def test_inventory_only_expectation_without_new_applications(sandbox: Path) -> None:
