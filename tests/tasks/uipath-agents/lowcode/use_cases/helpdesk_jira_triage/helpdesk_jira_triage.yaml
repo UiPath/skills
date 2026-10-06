@@ -1,0 +1,115 @@
+task_id: skill-agent-usecase-helpdesk-jira-triage
+description: >
+  Use-case pattern "IT/ops agent calling external systems" with episodic
+  memory. The agent triages an IT helpdesk request, files it as a Jira issue
+  through an Integration Service connector tool bound to the existing
+  "jira-coded-eval" connection, and recalls how similar past requests were
+  triaged via the existing "UiPathAgentsSupportMemory" memory space. Graded
+  on the final project only: IS tool wiring (connector, activity,
+  connection, Studio Web silent-drop rules), solution-level connection
+  resource, memory feature, output contract, read-only `uip agent validate`,
+  and an LLM judge on the system prompt. Cloud auth required — the staging
+  tenant must have the Jira connection and the memory space in
+  Shared/uipath-agents.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, connector, feature:connections]
+
+run_limits:
+  expected_turns: 45
+  turn_timeout: 1200
+  task_timeout: 1500
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  IT helpdesk requests come in through a web form and someone retypes each
+  one into Jira. Build a UiPath low-code agent, "HelpdeskTriageAgent", in a
+  solution called "HelpdeskSol", that takes over that step. The form gives
+  it `requesterEmail`, `title` and `description`.
+
+  The agent should work out a `category` (access, hardware, software,
+  network or other) and a `priority` (P1 to P4 — P1 means a whole team or a
+  production system is down, P4 is a nice-to-have), then file the request as
+  a Jira issue in our PRODEV project through our Jira Integration Service
+  connection "jira-coded-eval" (it's in the Shared/uipath-agents folder). The
+  issue needs a clean one-line summary, and a description that includes the
+  requester and why the agent picked that category and priority.
+
+  We want it to get more consistent over time, so give it memory backed by
+  our existing "UiPathAgentsSupportMemory" memory space (also in
+  Shared/uipath-agents) so it recalls how requests with a similar
+  description were triaged before.
+
+  It returns `category`, `priority`, `jiraIssueKey` (the key of the issue it
+  created) and `summary`.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "HelpdeskTriageAgent/agent.json exists"
+    path: "HelpdeskSol/HelpdeskTriageAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent project is registered in the HelpdeskSol solution"
+    path: "HelpdeskSol/HelpdeskSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final project passes read-only uip agent validate (derived files current)"
+    command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate HelpdeskSol/HelpdeskTriageAgent"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Jira create-issue IS tool on jira-coded-eval, PRODEV targeted, connection provisioned, memory space attached, output contract"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/helpdesk_jira_triage/check_helpdesk_jira_triage.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt encodes triage rules, a single well-formed Jira call, and honest issue-key reporting"
+    files: ["HelpdeskSol/HelpdeskTriageAgent/agent.json"]
+    weight: 2.0
+    pass_threshold: 0.75
+    include_reference: false
+    prompt: |
+      You are grading the system prompt of a UiPath low-code agent that
+      triages IT helpdesk requests and files them in Jira. Read
+      `HelpdeskSol/HelpdeskTriageAgent/agent.json` and grade ONLY the
+      `content` of the `messages[]` entry whose `role == "system"`. Ignore
+      schemas, settings, resources and the user message.
+
+      Score four rubric items, each worth 1/4:
+
+        R1. Triage rules — defines the five categories with concrete signals
+            and the P1–P4 scale (P1 = team-wide or production outage, P4 =
+            nice-to-have), with criteria for the levels in between.
+        R2. Jira call — tells the agent to create exactly one issue per
+            request in the PRODEV project, with a one-line summary and a
+            description that includes the requester plus the triage
+            reasoning.
+        R3. Honest result — `jiraIssueKey` must come from the Jira tool's
+            response; never invent a key, and says what to do if the tool
+            call fails (e.g. report the failure instead of a fake key).
+        R4. Memory — tells the agent to use recalled past triage examples to
+            stay consistent, while still judging the current request on its
+            own merits.
+
+      Award 1.0 for clear, specific coverage, 0.5 for partial or vague
+      coverage, 0.0 for missing. The final `score` is the average of R1–R4,
+      rounded to two decimals. If the file or the system message is missing,
+      score 0.0.

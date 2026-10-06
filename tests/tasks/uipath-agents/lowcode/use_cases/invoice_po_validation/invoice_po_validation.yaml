@@ -1,0 +1,121 @@
+task_id: skill-agent-usecase-invoice-po-validation
+description: >
+  Use-case pattern "document extraction and validation" — the largest and
+  fastest-growing agent pattern. An RPA bot hands the agent a vendor invoice
+  file plus the matching purchase order; the agent must read the file
+  (job-attachment input + a file-reading built-in tool), extract header and
+  line items, validate them against the PO and return a structured verdict.
+  Graded on the final project only: structure check, read-only
+  `uip agent validate`, and an LLM judge on the system prompt.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code]
+
+run_limits:
+  expected_turns: 30
+  turn_timeout: 1200
+  task_timeout: 1500
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  I need a UiPath low-code agent, "InvoiceValidationAgent", in a solution
+  called "InvoiceValidationSol", for three-way-match pre-checks in accounts
+  payable. An RPA bot downloads each vendor invoice from the AP mailbox — a
+  PDF, sometimes a scanned image — and calls the agent with two inputs:
+
+    - `invoiceFile`: the invoice file itself
+    - `purchaseOrder`: the matching PO from SAP as an object (poNumber,
+      vendorName, currency, and lines with sku, description, quantity,
+      unitPrice, taxRate)
+
+  The agent has to read the invoice, pull out the header (invoice number,
+  invoice date, vendor, currency, subtotal, tax, total) and the line items,
+  and check them against the PO:
+
+    - every invoice line maps to a PO line
+    - invoiced quantity is not above the ordered quantity
+    - unit price is within 2% of the PO price
+    - tax is charged at the PO tax rate
+    - lines add up to the subtotal, and subtotal plus tax equals the total
+    - invoice currency matches the PO currency
+
+  It returns `extractedInvoice` (the extracted header and lines),
+  `validationIssues` (a list — for each problem a code, a severity and a
+  short message), `status` (approved, needs_review or rejected) and a
+  `confidence` between 0 and 1. If the file can't be read or isn't actually
+  an invoice, the status is needs_review with the reason — it must never
+  guess values it couldn't read.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "InvoiceValidationAgent/agent.json exists"
+    path: "InvoiceValidationSol/InvoiceValidationAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent project is registered in the InvoiceValidationSol solution"
+    path: "InvoiceValidationSol/InvoiceValidationSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final project passes read-only uip agent validate (derived files current)"
+    command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate InvoiceValidationSol/InvoiceValidationAgent"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "File input is a job-attachment, a file-reading built-in tool is enabled, PO + file reach the prompt, output contract present"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/invoice_po_validation/check_invoice_po_validation.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt drives tool-based extraction, all PO checks, status mapping and no-guessing"
+    files: ["InvoiceValidationSol/InvoiceValidationAgent/agent.json"]
+    weight: 2.0
+    pass_threshold: 0.75
+    include_reference: false
+    prompt: |
+      You are grading the system prompt of a UiPath low-code agent that
+      validates vendor invoices against purchase orders. Read
+      `InvoiceValidationSol/InvoiceValidationAgent/agent.json` and grade ONLY
+      the `content` of the `messages[]` entry whose `role == "system"`.
+      Ignore schemas, settings, resources and the user message.
+
+      Score four rubric items, each worth 1/4:
+
+        R1. Reading the file — tells the agent it only receives the file's
+            metadata and must call its file-analysis tool (e.g. Analyze
+            Files / DeepRAG) on the invoice to read the contents, and says
+            what to ask the tool for (header fields and line items).
+        R2. Validation rules — covers all six checks: line-to-PO mapping,
+            quantity not above ordered, unit price within 2%, tax at the PO
+            rate, arithmetic (lines → subtotal, subtotal + tax → total), and
+            currency match.
+        R3. Status mapping — explains when the result is approved vs
+            needs_review vs rejected (e.g. which issue severities lead to
+            rejection, and that uncertainty leads to review), and how
+            confidence relates to that decision.
+        R4. No guessing — unreadable files, non-invoice documents or fields
+            that cannot be read lead to needs_review with a reason; the
+            agent must not fabricate values, and still returns every output
+            field.
+
+      Award 1.0 for clear, specific coverage, 0.5 for partial or vague
+      coverage, 0.0 for missing. The final `score` is the average of R1–R4,
+      rounded to two decimals. If the file or the system message is missing,
+      score 0.0.
