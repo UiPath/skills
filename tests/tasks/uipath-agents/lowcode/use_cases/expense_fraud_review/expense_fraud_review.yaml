@@ -3,12 +3,13 @@ description: >
   Use-case pattern "document validation with human-in-the-loop escalation".
   The agent reads an expense receipt (job-attachment + file-reading built-in
   tool), checks the claim against a written policy, and hands suspicious or
-  uncertain claims to a human through the EXTERNAL "FraudEscalation" Action
-  Center app, using the reviewer's outcome as the final decision. Graded on
+  uncertain claims to a human through the EXTERNAL "ExpenseFraudReview"
+  Workflow Action app, using the reviewer's outcome as the final decision. Graded on
   the final project only: structure check (attachment, tool, escalation
   wiring, output contract), read-only `uip agent validate`, and an LLM judge
-  on the system prompt. Cloud auth required — the staging tenant must have
-  the deployed FraudEscalation app.
+  on the system prompt. The channel must mirror the app's real action
+  schema, so invented form fields fail. Cloud auth required — the tenant
+  must have ExpenseFraudReview in Shared/uipath-agents/ExpenseFraudReviewSol.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, feature:escalation]
 
 run_limits:
@@ -39,8 +40,8 @@ initial_prompt: |
   rejected with the reason. Anything that looks like possible fraud — an
   altered or duplicate-looking receipt, a merchant or amount that doesn't
   match the claim — or any claim the agent isn't confident about must go to
-  the fraud team for a decision through our existing "FraudEscalation" Action
-  Center app (it's already deployed in Orchestrator, not part of this
+  the fraud team for a decision through our existing "ExpenseFraudReview"
+  Action Center app (it's already deployed in Orchestrator, not part of this
   solution). The reviewer's decision is final. Assign those review tasks to
   me for now.
 
@@ -78,7 +79,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Receipt attachment + file-reading tool, escalation bound to FraudEscalation with recipient and outcome mapping, output contract"
+    description: "Receipt attachment + file-reading tool, escalation bound to ExpenseFraudReview mirroring its action schema (form fields, outcomes) with a recipient, solution app declaration, output contract"
     command: "python3 $REFERENCE_DIR/lowcode/use_cases/expense_fraud_review/check_expense_fraud_review.py"
     timeout: 30
     expected_exit_code: 0
