@@ -364,22 +364,21 @@ Or omit `Default` entirely if the variable is assigned before its first read.
 
 ## InvokeCode Code Property — Attribute Form Only
 
-Author `Code` as an XML **attribute** (XML-escaped; `&#xA;` for newlines). A bare text or CDATA child element (`<ui:InvokeCode.Code>…</ui:InvokeCode.Code>`) passes `validate` AND `build` but deserializes as empty code — the activity runs as a silent no-op (`hasErrors: false`, none of the code's effects happen).
+Author `Code` as an XML **attribute** (XML-escaped; `&#xA;` for line breaks). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). A C# body still runs; a VB body passes `validate` and `build` and fails at run time with `No compiled code to run` and `BC30205: End of statement expected. At line 0`. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
 
 **Correct:**
 ```xml
-<ui:InvokeCode Language="CSharp" DisplayName="Process rows"
-               Code="var total = 0m;&#xA;ProcessRows(total);" />
+<ui:InvokeCode Language="VBNet" DisplayName="Process rows"
+               Code="Dim total As Decimal = 0&#xA;result = total.ToString()" />
 ```
 
-**Silent no-op (passes validate + build):**
+**Fails at run time (passes validate + build):**
 ```xml
-<ui:InvokeCode Language="CSharp" DisplayName="Process rows">
-  <ui:InvokeCode.Code><![CDATA[var total = 0m; ProcessRows(total);]]></ui:InvokeCode.Code>
+<ui:InvokeCode Language="VBNet" DisplayName="Process rows">
+  <ui:InvokeCode.Code><![CDATA[Dim total As Decimal = 0
+result = total.ToString()]]></ui:InvokeCode.Code>
 </ui:InvokeCode>
 ```
-
-**Detection:** run reports success but the code's outputs are absent (0 rows processed, no files written). No validate/build diagnostic catches it — verify effects after the first run.
 
 ## InvokeCode Language Property
 
@@ -393,7 +392,14 @@ Failed to create a 'Language' from the text 'VisualBasic'.
 System.FormatException: VisualBasic is not a valid value for NetLanguage.
 ```
 
-**Prevention:** Omit the `Language` attribute entirely — InvokeCode infers it from the project's expression language. If you must set it explicitly, use `"VBNet"` or `"CSharp"`.
+Without `Language`, the code compiles as VB.NET whatever the project's expression language: the default is `VBNet`. A C# body without `Language="CSharp"` passes `validate` and `build` and fails at run time:
+```
+No compiled code to run
+error BC30800: Method arguments must be enclosed in parentheses.
+error BC30037: Character is not valid.
+```
+
+**Prevention:** Set `Language` on every Invoke Code: `CSharp` in a C# project, `VBNet` in a VB project.
 
 ## C# XAML Expressions Compile as Expression Trees
 
