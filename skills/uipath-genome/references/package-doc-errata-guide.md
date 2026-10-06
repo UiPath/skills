@@ -33,7 +33,7 @@ The owning skill's contract reads the installed package's per-activity doc for e
 
 ## Tools — defects seen in builds, until fixed
 
-Each row was met in a build that validated and packed; the third column is what that build did instead. Versions: Flow builder SDK `@uipath/maestro-builder-sdk` 6.15.3, `uip` 1.204.
+Each row was met in a build that validated and packed, or in a live search against the application; the third column is what that build did instead. Versions: Flow builder SDK `@uipath/maestro-builder-sdk` 6.15.3, `uip` 1.204.
 
 | Tool | Defect | What the build does |
 |---|---|---|
@@ -47,3 +47,4 @@ Each row was met in a build that validated and packed; the third column is what 
 | `uip maestro flow check` | Warns `RPA_FOLDER_NOT_PATH` on a personal-workspace folder, a valid single-segment path | Reviews and accepts the warning |
 | `uip api-workflow init` | The scaffold writes `variables: []`, while a `WorkflowStart` expression reads `variables.schema…` | Gives the workflow the `variables` shape the API-workflow skill's template has |
 | `uip api-workflow run` | Prints `fast-json-patch MODULE_NOT_FOUND` stack traces when the working directory has no `node_modules`; the result is correct | Judges the run by its envelope |
+| UI Automation driver, `UiPath.UIAutomation.Activities` 26.10.4 and earlier | `colName` on a SAP GUI table control's column or cell matches nothing: the search rejects it | Takes the column from `colTooltip`, checked against a live listing, or from `tableCol` |
