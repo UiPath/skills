@@ -106,14 +106,15 @@ def task_entry_conditions(task: dict) -> list[dict]:
 def task_skip_condition(task: dict) -> str:
     """The task's skip guard.
 
-    It lives at the task's top level, NOT under `data` — reading only `data` misses it
-    and reports a threshold the plan does carry as missing.
+    `skipCondition` is a sibling of `data`, not a key inside it (case-schema.md §
+    Envelope fields). A copy left under `data` is NOT a second legal spelling: the
+    platform reads the task envelope for this field and never looks inside `data` for
+    it, so a `data.skipCondition` is dead config `validate` does not reject — reading it
+    here would make this function report the guard as present and enforced when at
+    runtime it never fires at all.
     """
-    for source in (task, task_data(task)):
-        value = source.get("skipCondition")
-        if isinstance(value, str) and value:
-            return value
-    return ""
+    value = task.get("skipCondition")
+    return value if isinstance(value, str) else ""
 
 
 def all_tasks(plan: dict):

@@ -1142,6 +1142,20 @@ class GuardTests(CheckerBase):
                     item.pop("skipCondition")
         self.rejects(plan, "appears in no guard")
 
+    def test_rejects_signoff_threshold_misplaced_under_data(self):
+        # skipCondition is a sibling of data, never a key inside it (case-schema.md).
+        # A copy left under data validates clean and is dead config the platform never
+        # reads — the same runtime failure as the dropped-threshold mutation above, just
+        # reached by misplacement instead of deletion.
+        plan = baseline_plan()
+        for node in plan["nodes"]:
+            for item in tasks_of(node):
+                skip = item.get("skipCondition")
+                if skip and "500000" in str(skip):
+                    item.pop("skipCondition")
+                    item.setdefault("data", {})["skipCondition"] = skip
+        self.rejects(plan, "appears in no guard")
+
     def test_rejects_overlapping_buyer_exits(self):
         plan = baseline_plan()
         conds = stage(plan, E.BUYER)["data"]["exitConditions"]
