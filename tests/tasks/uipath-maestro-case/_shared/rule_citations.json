@@ -3,7 +3,7 @@
     "Build gate": 1,
     "Build-review preference": 2,
     "Convert before authoring": 5,
-    "Empty lookup gate": 5,
+    "Empty lookup gate": 6,
     "Handoff contract": 4,
     "Phase 1 registry gate": 7,
     "Read references to EOF before mutation": 1,
@@ -80,7 +80,7 @@
   },
   "references/planning.md": {
     "Closed task types": 1,
-    "Empty lookup gate": 6,
+    "Empty lookup gate": 8,
     "Handoff contract": 2,
     "No authored edges": 1,
     "Phase 1 registry gate": 4,
