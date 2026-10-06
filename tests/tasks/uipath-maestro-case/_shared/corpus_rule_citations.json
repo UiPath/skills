@@ -26,6 +26,9 @@
   "_shared/test_check_issue_journal.py": {
     "Resolution audit": 1
   },
+  "_shared/test_sdd_corpus_parses_clean.py": {
+    "SDD is the sole post-design input, across sessions": 1
+  },
   "athena_cm_event/athena_cm_event.yaml": {
     "Resolution audit": 2
   },
