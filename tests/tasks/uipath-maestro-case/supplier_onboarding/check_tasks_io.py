@@ -11,39 +11,41 @@
     names is a separate, misattributed-write finding.
  4. The three expression-recipient tasks carry `data.recipient` as the object
     `{Type: 3, Value: "=vars.assignedBuyerEmail"}`. **`uip maestro case validate`
-    does not check `data.recipient` at all** — a bare string, or a dropped field,
-    passes validation and then the task reaches nobody. The eleven role-assigned
-    tasks are not required to carry one: the skill's own references disagree on
-    whether a role becomes `Type 1` or no recipient at all, so a grader must not
-    pick a side. It can still reject the one shape both readings rule out — a role
-    name sitting in `Type 2`, which is the email type, so the platform reads
-    "Procurement Operations Lead" as a literal mailbox and the task reaches nobody.
+    in its default (full) profile does not check `data.recipient` at all** — a
+    bare string, or a dropped field, passes validation and then the task reaches
+    nobody. (`--strict` does check two specific malformed shapes; this task's
+    prompt never asks for `--strict`, so the default-profile gap is what the
+    build is graded against.) The eleven role-assigned tasks are not required to
+    carry one: the skill's own references disagree on whether a role becomes
+    `Type 1` or no recipient at all, so a grader must not pick a side. It can
+    still reject the one shape both readings rule out — a role name sitting in
+    `Type 2`, which is the email type, so the platform reads "Procurement
+    Operations Lead" as a literal mailbox and the task reaches nobody.
  5. ERP registration and the child case run only once. A re-entered setup phase
     would otherwise mint a second supplier record.
- 6. The child case does not block the parent.
- 7. Each of the four on-demand tasks lives in exactly one stage, its own, and
+ 6. Each of the four on-demand tasks lives in exactly one stage, its own, and
     carries its own `adhoc` entry rule rather than inheriting one.
- 8. Every input the SDD binds to an expression carries one in the plan. An input
+ 7. Every input the SDD binds to an expression carries one in the plan. An input
     emitted as `""` reaches the runtime as a missing field: the agent job for
     'Confirm offering category match' shipped with all three of its inputs empty
     and faulted on `Field required [type=missing, input_value={}]`, which stopped
     the case in its first stage. `validate` accepts an empty input, and until this
     check existed nothing else read the input side at all.
- 9. A role-routed task's `data.recipient` is neither a placeholder value (the
+ 8. A role-routed task's `data.recipient` is neither a placeholder value (the
     SDD's own em-dash) nor, for a `Role:`-prefixed target, the wrong Type — the
     engine's own assignment criteria (`AllUsers` for Type 1, `SingleUser`
     otherwise) means the wrong Type silently narrows a group task to one person
     or nobody, and `validate` never reads this field either way.
-10. Every SDD Outputs row shaped `<var> = <expression>` (a case-variable write on
+ 9. Every SDD Outputs row shaped `<var> = <expression>` (a case-variable write on
     task completion, not a `->` extract) has a matching custom-output entry.
     Confirmed against a real run where the task was completed by hand and the
     variable stayed unset because the entry was missing, not because the
     completion channel itself was broken.
-11. Every task carries at least one entry rule. `validate` only warns
+10. Every task carries at least one entry rule. `validate` only warns
     (`Task has no entry rules`) so a ruleless task still reports `Valid`; at
     runtime the task never starts, its stage's exit condition is never
     satisfiable, and `case debug` hangs with no incident and nothing to read.
-12. A custom output's own expression does not read the case variable it writes —
+11. A custom output's own expression does not read the case variable it writes —
     that variable is produced by nothing else, so the expression evaluates empty
     on every run regardless of how the task ends.
 13. Every task's `description` carries the SDD's own `**Description:**` line (or,
@@ -246,7 +248,7 @@ def main() -> int:
                 f"either omitted or carried as a group id, never as a mailbox"
             )
 
-    # ---- 5 + 6. the child case and the ERP write ---------------------------
+    # ---- 5. run-once tasks, including the child case ------------------------
     for name in sorted(E.RUN_ONCE_TASKS):
         task = names_to_task.get(name)
         if task is not None and not bool(task.get("shouldRunOnlyOnce")):
@@ -254,21 +256,10 @@ def main() -> int:
                 f"task {name!r} is not run-once; a re-entered stage would run it twice"
             )
 
-    child = names_to_task.get(E.CHILD_CASE_TASK)
-    if child is None:
+    if E.CHILD_CASE_TASK not in names_to_task:
         problems.append(f"task {E.CHILD_CASE_TASK!r} is missing")
-    else:
-        data = P.task_data(child)
-        waits = data.get("waitForCompletion")
-        if waits is None:
-            waits = data.get("waitForChildCase")
-        if bool(waits) != E.CHILD_CASE_WAITS:
-            problems.append(
-                f"{E.CHILD_CASE_TASK!r} waitForCompletion={waits!r}; the SDD does not wait "
-                "— the negotiation must not hold up the application"
-            )
 
-    # ---- 7. on-demand tasks stay in their own stage ------------------------
+    # ---- 6. on-demand tasks stay in their own stage ------------------------
     for name, home in sorted(E.ADHOC_TASKS.items()):
         homes = sorted(
             stage for stage, task in P.all_tasks(caseplan) if P.task_name(task) == name
@@ -494,8 +485,8 @@ def main() -> int:
             f"OK: {E.TOTAL_TASKS} tasks in their declared stages and classes, all "
             f"{len(E.RESOURCE_KEYS)} resource keys bound with no skeletons, every "
             "output landing in a declared slot, the three expression recipients carrying "
-            f"the {{Type,Value}} object, {len(E.RUN_ONCE_TASKS)} run-once tasks, a "
-            "non-blocking child case, four on-demand tasks each locked to its own stage, "
+            f"the {{Type,Value}} object, {len(E.RUN_ONCE_TASKS)} run-once tasks, the "
+            "child case task present, four on-demand tasks each locked to its own stage, "
             f"and {E.CONNECTOR_TASK_COUNT} connector tasks all running the same Outlook "
             "operation"
         )

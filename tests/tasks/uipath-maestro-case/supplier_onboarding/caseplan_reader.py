@@ -55,7 +55,15 @@ def stage_ids(plan: dict) -> dict[str, str]:
 
 
 def is_secondary(node: dict) -> bool:
-    return (node.get("data") or {}).get("stageType") == "secondary"
+    # `data.stageType == "secondary"` is the current spelling; `type ==
+    # "case-management:ExceptionStage"` is the pre-V22 spelling the schema still
+    # accepts and migrates (validatePrimaryStages treats both as secondary), and
+    # `uip maestro case stages add --type exception` still emits it with no
+    # `data.stageType` at all. Missing either branch reads a legitimate
+    # ExceptionStage node as primary.
+    return (node.get("data") or {}).get(
+        "stageType"
+    ) == "secondary" or node.get("type") == "case-management:ExceptionStage"
 
 
 def entry_conditions(node: dict) -> list[dict]:

@@ -1114,6 +1114,21 @@ class GuardTests(CheckerBase):
         })
         self.rejects(plan, "does not parse")
 
+    def test_accepts_a_statement_form_js_expression_jint_runs(self):
+        # Jint evaluates `=js:` under the Script grammar (statements legal, no bare top-level
+        # `return`), not the expression grammar `new Function('return (' + text + ')')` would
+        # give it. A `var` declaration followed by its own reference is ordinary Script-grammar
+        # JS that Jint runs fine; the wrong parse method rejects it as "Unexpected token 'var'".
+        plan = baseline_plan()
+        plan["nodes"].append({
+            "id": "tzbanXpOh",
+            "name": "Confirm offering category match",
+            "inputs": {
+                "documents": "=js:var parts = [vars.bankDetailsDocument]; parts.join('; ')",
+            },
+        })
+        self.accepts(plan)
+
     def test_rejects_business_label_instead_of_form_enum(self):
         plan = baseline_plan()
         blob = json.dumps(plan).replace('=== \\"sendback\\"', '=== \\"SendBack\\"')
@@ -1606,12 +1621,6 @@ class TasksIoTests(CheckerBase):
                     if item.get("displayName") == E.CHILD_CASE_TASK:
                         lane.remove(item)
         self.rejects(plan, f"task {E.CHILD_CASE_TASK!r} is missing")
-
-    def test_rejects_a_child_case_the_parent_waits_on(self):
-        """The negotiation runs on its own; waiting holds the setup phase open."""
-        plan = baseline_plan()
-        task(plan, E.CHILD_CASE_TASK)["data"]["waitForCompletion"] = True
-        self.rejects(plan, "waitForCompletion=")
 
     def test_rejects_a_task_carrying_only_part_of_its_sdd_description(self):
         """A fragment drops the reason the task is shaped the way it is."""

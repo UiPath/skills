@@ -74,18 +74,23 @@ def _guard_expressions(caseplan) -> list[tuple[str, str]]:
 def _js_syntax_findings(caseplan) -> list[str]:
     """Reject any `=js:` expression that does not parse.
 
-    `node` is what runs the CLI, so it is always present; parsing through it is the same engine
-    the runtime uses rather than an approximation of it. A missing check here is worse than a
-    wrong one, so an unusable node is reported as a finding rather than passed over.
+    The runtime (Jint, via `engine.Evaluate`) reads an expression body under the Script
+    grammar, not the expression grammar a function body would give it: a statement like
+    `var x = 1; x` is legal Script and a bare `return 1` is not. `node:vm`'s `vm.Script`
+    compiles under the same Script grammar as the CLI's own `--strict` JS-syntax check
+    (`strict-js-source.ts`), so this reports the same findings that check would. Wrapping
+    the text in `new Function('return (' + text + ')')` instead would accept `return 1`
+    and reject the multi-statement form Jint runs — the reverse of what `--strict` says.
     """
     expressions = P.js_expressions(caseplan)
     if not expressions:
         return []
     probe = (
+        "const vm = require('vm');"
         "const src = JSON.parse(require('fs').readFileSync(0, 'utf8'));"
         "const bad = [];"
         "for (const [path, text] of src) {"
-        "  try { new Function('return (' + text + ')'); }"
+        "  try { new vm.Script(text); }"
         "  catch (e) { bad.push([path, text.slice(0, 120), e.message]); }"
         "}"
         "process.stdout.write(JSON.stringify(bad));"

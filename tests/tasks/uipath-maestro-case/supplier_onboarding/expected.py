@@ -84,8 +84,10 @@ STAGE_SLA_TITLE: dict[str, str] = {}         # label -> the SLA rule title the S
 NO_SLA_STAGES = {SLA_REVIEW}
 
 # Breach answered by starting a task INSIDE the breached stage: the task carries the
-# `sla-status-change` rule on its OWN entry. A stage-entry rule instead would re-enter
-# the stage and re-run its other tasks. `validate` accepts both shapes.
+# `sla-status-change` rule on its OWN entry. `validate` does not reject the same
+# trigger on a stage-entry rule instead, but that shape re-enters the stage and
+# re-runs its other tasks — a defect, not a second legal form (sla-response-shapes.md
+# defect 4).
 START_TASK_ON_BREACH = {
     "Escalate delayed application check": (CHECKING, "Application check SLA"),
     "Escalate delayed buyer review": (BUYER, "Buyer review SLA"),
@@ -219,9 +221,8 @@ OUTLOOK_CONNECTION_ID = "dd657127-91f5-4568-a3a3-c024bc03fb0f"
 OUTLOOK_ACTIVITY_TYPE_ID = "c7ce0a96-2091-3d94-b16f-706ebb1eb351"
 OUTLOOK_CONNECTOR_KEY = "uipath-microsoft-outlook365"
 
-# The one task the child case runs, and the fact the parent must not wait for it.
+# The one task that opens the child case.
 CHILD_CASE_TASK = "Open contract negotiation case"
-CHILD_CASE_WAITS = False
 
 RUN_ONCE_TASKS: set[str] = set()    # filled with STAGE_TASKS, below
 

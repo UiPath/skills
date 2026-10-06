@@ -9,8 +9,10 @@ Seven assertions. `uip maestro case validate` accepts every failure below.
  2. Seven stages carry an SLA, each at its own duration. The oversight lane carries
     none.
  3. Four phase breaches start a task INSIDE the breached stage: the task holds the
-    `sla-status-change` rule on its OWN entry. A stage-entry rule instead re-enters
-    the stage and re-runs its other tasks. Both shapes validate.
+    `sla-status-change` rule on its OWN entry. `uip maestro case validate` does not
+    reject a stage-entry rule carrying the same trigger instead — but that shape
+    re-enters the stage and re-runs its other tasks, a real defect the skill's own
+    references name (`sla-response-shapes.md` defect 4), not a second legal form.
  4. The case breach enters the oversight lane, exactly once, non-interruptively.
  5. The three wrap-up phases notify on breach and start nothing. Apologising for a
     delay and promising a new date on an application already closed is wrong.
