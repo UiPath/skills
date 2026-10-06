@@ -6,7 +6,8 @@ description: >
   (placeholder-tasks.md); graded from caseplan.json, never from a
   self-written report: the action task sits in Review under its SDD name,
   carries the SDD's isRequired / runOnlyOnce and an entry rule, and the
-  task-less Closed stage is kept.
+  Closed stage is kept, empty or with one trivial required task (an empty
+  stage with a required-tasks-completed exit never completes).
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl]
 initial_prompt: |
   Create a UiPath Case Management project named "VendorPOReviewCase" with
@@ -208,7 +209,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: json_check
-    description: "The Review action task is placed and enveloped as the SDD states, and the task-less Closed stage is kept"
+    description: "The Review action task is placed and enveloped as the SDD states, and the Closed stage is kept (empty, or one trivial required task)"
     path: "VendorPOReviewCase/VendorPOReviewCase/caseplan.json"
     # Graded from the plan, not a self-written report. The "Review PO" app is
     # absent from the tenant, so the task is a placeholder with empty `data`:
@@ -229,7 +230,13 @@ success_criteria:
       - expression: "length(nodes[?data.label=='Closed'])"
         operator: equals
         expected: 1
+      # The skill may give Closed one trivial required task: a required-tasks-completed
+      # exit on an empty stage never fires (runtime instance cc7223dc), so an empty
+      # Closed stage hangs the case. More than one task is invention.
       - expression: "length(nodes[?data.label=='Closed'].data.tasks[][])"
+        operator: lte
+        expected: 1
+      - expression: "length(nodes[?data.label=='Closed'].data.tasks[][] | [?isRequired==`false`])"
         operator: equals
         expected: 0
     weight: 7.5

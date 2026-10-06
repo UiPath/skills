@@ -93,7 +93,7 @@ The sections below define what Phase 2 must contain either way. With convert, re
 |---|---|---|
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields (e.g. `action`'s `taskTitle`/`priority`/`recipient`/`labels`) populated per plugin — these are final at Step 2; only input `value`s defer to Phase 3. |
 | Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call in Phase 2** — schema discovery is deferred to Phase 3. |
-| Any task | Unresolved (`<UNRESOLVED: …>` in `tasks/registry-resolved.json`) | Placeholder task per Rule 9 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
+| Any task | Unresolved (`selected: null` from `sdd resolve`, or `<UNRESOLVED: …>` in an entry you wrote) | Placeholder task per Rule 9 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
 | `agent` / `api-workflow` built inline | Built + bound in Phase 1 at the Rule 18 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
 
 ### Rules, SLA, and connector-rule stubs
@@ -277,8 +277,16 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 3. Validation status — `validate` pass / remaining warnings.
 4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + `wiringNotes` from `tasks/registry-resolved.json`. Also list, under **Not covered**, anything `sdd.md` referenced that is outside the scope of `caseplan.json` (e.g. Data Fabric entity schemas). Also list **agents / API workflows built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
-6. Runnability — only when a count from [§ Phase 6 Runnability check](#runnability-check--before-the-debug-prompt) is non-zero: the counts and the line naming where a run stops. Omit the field when all three are zero. A case whose every task is a placeholder still validates; this field is the only place the report says it cannot run, and it must stay silent on a case that can.
-7. Suggested next steps — one short line before the prompt (the publish/skip-to-debug line above). If placeholders or missing connections exist, mention fixing/registering those before publish.
+6. Suggested next steps — one short line before the prompt (the publish/skip-to-debug line above). If placeholders or missing connections exist, mention fixing/registering those before publish.
+
+**Blocked case — an extra line, not a field.** Run the [§ Phase 6 Runnability check](#runnability-check--before-the-debug-prompt) counts before the report. When any count is non-zero, add these two lines right after the field list, filled in:
+
+```text
+Debug will stop at "<first blocked task or rule>" in "<its stage>": <no resource is bound | its event is a placeholder | its condition reads an output that does not exist>.
+<P> of <T> tasks are placeholders, <S> event rules are stubs, <X> conditions are unresolved.
+```
+
+The first line is the point of the disclosure: a placeholder list alone does not tell the user that a run stops, or where. When all three are zero, write nothing about runnability at all: no heading, no zero counts, no "fully runnable" line. A validated case can still be all placeholders, so these two lines are the only place the report says it cannot run, and they must be absent on a case that can.
 
 ### Publish notes
 

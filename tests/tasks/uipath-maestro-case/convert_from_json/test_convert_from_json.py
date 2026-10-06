@@ -64,6 +64,12 @@ def work(tmp_path_factory):
     d = tmp_path_factory.mktemp("e3")
     doc = d / "sdd.md"
     shutil.copy(SEED, doc)
+    # The sidecar envelope comes from a real `sdd format` run, so a CLI that bumps
+    # the sidecar schema is tracked here instead of refusing a hand-built 1.0.0 file.
+    _uip("format", str(doc))
+    real = doc.with_name(doc.stem + SIDECAR_SUFFIX)
+    envelope = json.loads(real.read_text(encoding="utf-8")) if real.exists() else {}
+    real.unlink(missing_ok=True)
     code, out = _uip("convert", str(doc), "--out", str(d / "probe.json"))
     assert code == 0, out
     if SOURCE not in (out.get("Data") or {}):
@@ -75,12 +81,15 @@ def work(tmp_path_factory):
     tampered = json.loads(json.dumps(model))
     tampered["stages"][0]["name"] = MARKER
     digest = hashlib.sha256(doc.read_bytes()).hexdigest()
-    return {"dir": d, "doc": doc, "original": original, "tampered": tampered, "digest": digest}
+    schema = {k: v for k, v in envelope.items() if k == "schemaVersion"}
+    return {"dir": d, "doc": doc, "original": original, "tampered": tampered, "digest": digest,
+            "schema": schema}
 
 
 def _sidecar(w, digest=None, name=None):
     path = w["dir"] / (name or w["doc"].stem + SIDECAR_SUFFIX)
-    path.write_text(json.dumps({"source": {"file": w["doc"].name, "sha256": digest or w["digest"]},
+    path.write_text(json.dumps({**w["schema"],
+                                "source": {"file": w["doc"].name, "sha256": digest or w["digest"]},
                                 "model": w["tampered"]}), encoding="utf-8")
     return path
 

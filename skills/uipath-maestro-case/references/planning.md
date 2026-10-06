@@ -159,7 +159,7 @@ When a resource cannot be resolved (registry gap and no cache match, or missing 
 
 Otherwise:
 
-1. Record `<UNRESOLVED: <reason>>` in that entry's `taskTypeId` / `typeId` / `connectionId` slot in `registry-resolved.json`, and set its `selected` to `null`.
+1. For an entry `sdd resolve` wrote, its `selected: null` already records the unresolved resource: add no marker and change no lookup field (Step 4). An ambiguous entry (`matches` holds several, `selected: null`) is not a placeholder yet — it goes to Rule 18's gate first, and a user pick sets `selected`. Only an entry you write yourself (a connector rule, a resource resolve does not cover) records `<UNRESOLVED: <reason>>` in its `taskTypeId` / `typeId` / `connectionId` slot with `selected: null`.
 2. Carry the input mapping the sdd.md described into the entry's `wiringNotes` string array — Phase 2 has no schema to wire against, and the completion report reads this back to the user. See [placeholder-tasks.md](placeholder-tasks.md).
 3. **Continue resolving — do not halt.** The SDD still carries every structural field (display name, required, run-only-once), and Phase 2 still writes the task node and its entry conditions.
 
@@ -167,7 +167,7 @@ At execution time, unresolved tasks become **placeholder tasks** in `caseplan.js
 
 ## Step 4 — Complete `registry-resolved.json`
 
-Step 3's `sdd resolve` already wrote `tasks/registry-resolved.json` (creating `tasks/`) with one entry per task under `resolved`, using Rule 10's exact keys: `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`. Do not rewrite it — not even a value that looks wrong. `sdd convert --resolved` checks `stage`, `task` and `searchQuery` against the SDD and refuses the ledger when they differ, so an entry you "correct" costs a refusal and a revert. The common trap: an `action` task whose SDD names no Action App gets `searchQuery: {"name": ""}`, `matches: []`, `selected: null`, `cacheFile: "action-apps"` — that is resolve reporting an empty lookup, not a malformed entry; leave every field as written. This step only **adds**, with Edit, what resolve cannot know:
+Step 3's `sdd resolve` already wrote `tasks/registry-resolved.json` (creating `tasks/`) with one entry per task under `resolved`, using Rule 10's exact keys: `stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`. Do not rewrite it — not even a value that looks wrong. `sdd convert --resolved` checks `stage`, `task` and `searchQuery` against the SDD and refuses the ledger when they differ, so an entry you "correct" costs a refusal and a revert. The one exception is `selected` after a user's answer: when the user picks a candidate at the ambiguous or empty-lookup gate (Rule 18), set `selected` to that exact entry from `matches` and add `gateDecision: "pick:<name>"`. A recorded pick with `selected` still `null` binds nothing. The common trap: an `action` task whose SDD names no Action App gets `searchQuery: {"name": ""}`, `matches: []`, `selected: null`, `cacheFile: "action-apps"` — that is resolve reporting an empty lookup, not a malformed entry; leave every field as written, and do not search the index again under the task name — the SDD names no resource, so there is nothing to find. This step only **adds**, with Edit, what resolve cannot know:
 
 - one entry per case trigger and per connector-bound condition, from the connector pipeline;
 - `gateDecision` on an entry the user answered at the Rule 18 gate;

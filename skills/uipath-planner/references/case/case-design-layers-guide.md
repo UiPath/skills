@@ -81,7 +81,7 @@ Apply in order:
 
 A secondary stage is an **interrupting exception lane**: `Stage Kind: secondary`, `Required: No`, excluded from `required-stages-completed`, with `Interrupting: Yes` on the stage AND on every entry row. Model errors, escalations, rejections, rework, and cancellations here — never as inline primary stages. Optional one-off work inside the current stage stays an `adhoc` task, not a lane.
 
-**One carve-out:** an `sla-status-change` entry whose response is parallel oversight — the breached work keeps running; nothing is paused, taken over, or rerouted — reads `Interrupting: No` on the stage and on that entry row. The lane stays secondary and `Required: No`, and it completes `exit-only` (never `return-to-origin`).
+**No carve-out.** Every entry into a secondary stage interrupts at runtime — the case compiler cancels active stages and tasks on any secondary-stage entry, whatever the row says — so there is no non-interrupting lane, and the CLI gate refuses `Interrupting: No` on one. An SLA response that must leave the breached work running is `start-task` or `notify-only` (§ Choosing the response), never a lane.
 
 **Exits by intent:**
 
@@ -118,11 +118,13 @@ The case, each stage, and each task move through gates driven by **rules** in di
 | Gate | Marks complete | Legal WHEN rules |
 |---|---|---|
 | Stage entry | — | `case-entered` (first stage only), `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`, `user-selected-stage`, `sla-status-change` |
-| Stage completion | Yes | `required-tasks-completed`, `wait-for-connector` |
+| Stage completion | Yes | `required-tasks-completed`, `selected-tasks-completed`, `wait-for-connector` |
 | Stage exit | No | `selected-tasks-completed`, `wait-for-connector` |
 | Task entry | — | `current-stage-entered`, `selected-tasks-completed`, `wait-for-connector`, `sla-status-change`, `adhoc`, `runs-sequentially` |
 | Case completion | Yes | `required-stages-completed`, `wait-for-connector` |
 | Case exit | No | `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector` |
+
+`selected-tasks-completed("T")` on a completing row completes the stage when THOSE tasks finish; `required-tasks-completed` waits for every `Required: Yes` task. They are not interchangeable — keep the one the source or a supplied SDD states (the case compiler emits a `TasksCompleted` completion condition for either; verified against @uipath/case-schema 2026-10-06).
 
 1. Tasks have NO exit or completion conditions — a task completes when its own work finishes; downstream gates key off `required-tasks-completed` / `selected-tasks-completed`.
 2. `Marks Complete: Yes` pairs only with `required-*` rules (or `wait-for-connector`). A `Yes` + `selected-*` pair is a schema error.
@@ -385,19 +387,19 @@ Never the designer's `any` escalation sentinel. Borrowed and dangling references
 
 ### Choosing the response
 
-Pick from the source's words — WHERE the work lives, never whether it interrupts. A named task never justifies a new stage.
+Pick from the source's words — WHERE the work lives, and what happens to the active work: whether the response pauses, takes over, or reroutes it, never the SLA's scope. A separate lane always interrupts, so work that must keep running rules out `enter-stage`. A named task never justifies a new stage.
 
 | Response | Source says | What you author | Interrupting cell |
 |---|---|---|---|
 | `notify-only` | notify / alert / page someone, nothing more | An escalation on the target's SLA rules — no stage, task, or condition | `n/a` |
 | `start-task` | Follow-up work inside the SAME breached stage ("as part of the review", a named task for a manager or peer) | One task in the breached stage carrying `sla-status-change` as its OWN task-entry row, against that stage's (or the case's) SLA | `—` — a task entry interrupts nothing; never `Yes`/`No` |
-| `enter-stage` | A separate lane owns it ("hand it to", "escalate into <Lane>") | A separate stage carrying the `sla-status-change` entry row | `Yes` when the source says **interrupt**, **global interrupt**, **take over**, **stop** or **pause** the work, or when the lane must be cleared **before the case or stage can close**; `No` ONLY for parallel oversight that leaves the work running |
+| `enter-stage` | A separate lane owns it ("hand it to", "escalate into <Lane>") | A separate stage carrying the `sla-status-change` entry row | `Yes`, always — every secondary-stage entry interrupts. A source that wants the work to keep running is not `enter-stage`: use `start-task` or `notify-only` |
 | `exit-stage` | The breached stage should end or route away | A stage-exit row | Per exit semantics |
 | `exit-case` | The case should close, cancel, or reach an alternate terminal | A case-exit row | Per exit semantics |
 
 Never author `start-task` as a stage-entry row on the breached stage: it validates, but stage re-entry re-runs every task whose `Run Only Once` is `No` — a breach meant to add one manager check silently re-runs the whole stage.
 
-Read the Interrupting cell off the SOURCE's words, exactly like the Response cell — it is not a judgement call you make after choosing the lane. A source that says "globally interrupt into <Lane>" has already said `Yes`; treating it as parallel oversight contradicts the sentence you are modelling. A case-scope breach that must be resolved before the case can close is a takeover, never oversight.
+Read the Response off the SOURCE's words. If the source sends the work to a separate lane, the Interrupting cell is `Yes` — the lane takes over. If the source says the work keeps running, it has chosen `start-task` or `notify-only`, not a lane.
 
 ### Defaults when the source is silent
 
@@ -413,7 +415,7 @@ Read the Interrupting cell off the SOURCE's words, exactly like the Response cel
 
 | Shape | Result |
 |---|---|
-| Breach entry on a separate stage, either interrupting value | valid |
+| Breach entry on a separate stage, `Interrupting: Yes` | valid |
 | Breach / at-risk on a task's entry conditions (stage or case SLA) | valid |
 | At-risk with a same-SLA escalation | valid |
 | At-risk borrowing another SLA's escalation | invalid |

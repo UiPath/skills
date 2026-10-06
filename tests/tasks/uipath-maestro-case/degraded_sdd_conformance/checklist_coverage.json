@@ -1,10 +1,11 @@
 {
-  "cli_head": "665a7cdf5",
+  "cli_head": "fe4c3e3e2",
   "seed": "tests/tasks/uipath-maestro-case/sla_from_sdd/fixtures/sdd.md",
   "tally": {
-    "convert": 7,
+    "convert": 6,
     "excluded": 1,
-    "validate": 18,
+    "needs-draft": 4,
+    "validate": 26,
     "validate-warns": 2
   },
   "rows": [
@@ -126,12 +127,19 @@
     {
       "item": 13,
       "violation": "sla-status-change names an undeclared SLA title",
-      "build_validate": [
-        "CASE_MGMT_ROOT_CASE_CONDITION_RULE_SLA_NOT_SELECTED (error)"
-      ],
-      "verdict": "convert",
+      "verdict": "validate",
       "detail": [
-        "selector-target"
+        "SDD_SLA_REFERENCE_UNRESOLVED",
+        "SDD_SLA_REFERENCE_UNRESOLVED"
+      ]
+    },
+    {
+      "item": 13,
+      "violation": "sla-status-change call never closes",
+      "verdict": "validate",
+      "detail": [
+        "SDD_SLA_REFERENCE_UNRESOLVED",
+        "SDD_SLA_REFERENCE_UNRESOLVED"
       ]
     },
     {
@@ -242,6 +250,55 @@
       ]
     },
     {
+      "item": 17,
+      "violation": "consumed Variable never produced (its Outputs row removed)",
+      "verdict": "validate",
+      "detail": [
+        "SDD_VARIABLE_NEVER_PRODUCED"
+      ]
+    },
+    {
+      "item": 18,
+      "violation": "Out variable with no Default and no producer",
+      "verdict": "validate",
+      "detail": [
+        "SDD_OUT_VARIABLE_UNSET"
+      ]
+    },
+    {
+      "item": 19,
+      "violation": "Buttons Maps To an undeclared variable",
+      "verdict": "validate",
+      "detail": [
+        "SDD_BUTTON_TARGET_UNKNOWN"
+      ]
+    },
+    {
+      "item": 28,
+      "violation": "unguarded exit row shares its WHEN with the guarded completion row",
+      "verdict": "validate",
+      "detail": [
+        "SDD_RULE_NOT_FOR_SLOT"
+      ]
+    },
+    {
+      "item": 35,
+      "violation": "user-selected-stage entry on a lane a decision routes to",
+      "verdict": "validate",
+      "detail": [
+        "SDD_WAIT_FOR_USER_UNPAIRED",
+        "SDD_STAGE_BLOCK_INCOMPLETE"
+      ]
+    },
+    {
+      "item": 36,
+      "violation": "secondary lane entered on any exit of a stage that also completes normally",
+      "verdict": "validate",
+      "detail": [
+        "SDD_SECONDARY_ENTERS_ON_COMPLETION"
+      ]
+    },
+    {
       "item": 34,
       "violation": "either/or persona",
       "verdict": "validate",
@@ -254,6 +311,30 @@
       "violation": "stage/task block missing **Design Rationale:**",
       "verdict": "excluded",
       "detail": "not checked by decision (Cliff, 2026-10-02): a design document does not owe rationale prose. When present, the build copies it into the plan as `rationale:` and convert uses it as a task description that has none; its absence breaks nothing"
+    },
+    {
+      "item": 30,
+      "violation": "stage/task inventory differs from the draft's",
+      "verdict": "needs-draft",
+      "detail": "no CLI command reads the draft"
+    },
+    {
+      "item": 31,
+      "violation": "a draft `=js:` expression missing or rewritten in the final",
+      "verdict": "needs-draft",
+      "detail": "no CLI command reads the draft"
+    },
+    {
+      "item": 32,
+      "violation": "a draft comparator + amount policy not encoded in an executable cell",
+      "verdict": "needs-draft",
+      "detail": "no CLI command reads the draft"
+    },
+    {
+      "item": 33,
+      "violation": "the draft file deleted or renamed",
+      "verdict": "needs-draft",
+      "detail": "no CLI command reads the draft"
     }
   ]
 }

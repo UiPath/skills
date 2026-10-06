@@ -6,9 +6,12 @@
   issue's `Line` or, while a check still reports through the parse failure
   message, as "line <N>" in `Message`.
 - reject-naming-document: exits non-zero; there is no line to name.
-- read-as-seed: exits zero, reports the defect's `warning` code at its line
-  when one is recorded, and parses to exactly its seed's Model while the seed
-  blob is unchanged.
+- read-as-seed: validate gives the seed's verdict (same exit code, same issues)
+  plus, when one is recorded, exactly the defect's `warning` code at its line,
+  and parse gives exactly the seed's Model, while the seed blob is unchanged.
+  Seed-relative, not "exits zero": the seeds are hand-written, pre-template
+  SDDs that the strict validate rejects on their own (no Planner Handoff, no
+  task envelopes), and a defect read as its seed inherits that verdict.
 
 Needs `uip` on PATH. Skips without it unless REQUIRE_UIP=1, and skips in
 either case when the installed CLI has no `sdd validate`, so it switches
@@ -66,14 +69,24 @@ def test_gate_meets_expect(gate, d):
         lines = {i.get("Line") for i in issues if i.get("Severity") == "error"}
         assert d["line"] in lines or f"line {d['line']}" in (out.get("Message") or ""), out
     elif expect == "read-as-seed":
-        assert code == 0, out
-        if "warning" in d:
-            w = d["warning"]
-            assert any(i.get("Code") == w["code"] and i.get("Line") == w["line"]
-                       and i.get("Severity") == "warning" for i in issues), out
         seed = REPO_ROOT / d["seed"]
         if _blob(seed) != d["seed_blob"]:
-            pytest.skip("seed fixture has since changed; cannot compare models")
+            pytest.skip("seed fixture has since changed; cannot compare")
+        seed_code, seed_out = _uip("validate", str(seed))
+        assert code == seed_code, (code, seed_code, out)
+        seed_issues = (seed_out.get("Data") or {}).get("Issues") or []
+
+        def key(i):
+            return (i.get("Code"), i.get("Severity"), i.get("Message"))
+
+        extra = [i for i in issues if key(i) not in {key(j) for j in seed_issues}]
+        missing = [j for j in seed_issues if key(j) not in {key(i) for i in issues}]
+        assert not missing, f"fixture lost seed issues: {missing}"
+        want_extra = []
+        if "warning" in d:
+            w = d["warning"]
+            want_extra = [(w["code"], "warning", w["line"])]
+        assert [(i.get("Code"), i.get("Severity"), i.get("Line")) for i in extra] == want_extra, extra
         _, got = _uip("parse", str(HERE / d["fixture"]))
         _, want = _uip("parse", str(seed))
         assert got["Data"]["Model"] == want["Data"]["Model"]

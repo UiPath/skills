@@ -19,6 +19,12 @@ catch. Give it exactly one verdict and record it in EXCLUDED:
 3. not-an-input: only when a grep, recorded in the entry, shows no task yaml
    references the file and nothing reads it. Then delete the file instead of
    listing it.
+4. routing-input: the document is refused on purpose because its eval grades
+   the route a refused SDD takes (case skill Rule 2 case (c): no receipt, parse
+   fails, planner normalization). It goes in EXPECTED_REFUSALS, never EXCLUDED:
+   the test then pins the exact refusal, so a new defect in the file, or a CLI
+   that starts accepting it (and silently stops the eval exercising
+   normalization), both fail here.
 
 The degraded corpus is excluded wholesale: those documents are wrong on
 purpose, and its own manifest says what each must do.
@@ -45,10 +51,24 @@ REPO_ROOT = CASE_TASKS.parents[2]
 EXCLUDED_DIRS = {"degraded_sdd_conformance": "wrong on purpose; see its manifest.json"}
 EXCLUDED = {}  # repo-relative path -> "<verdict>: <evidence>"
 
+# repo-relative path -> the complete set of refusal messages parse must return.
+EXPECTED_REFUSALS = {
+    # routing-input: io_binding.yaml grades a hand-written SDD that writes the
+    # non-template type `number`. Run 37494190705 (2026-10-06): parse refused these
+    # three cells, the planner rewrote exactly them to `integer`, and the build
+    # scored 1.00 — the normalization route the eval is kept to exercise.
+    "tests/tasks/uipath-maestro-case/io_binding/fixtures/sdd.md": {
+        f'Case Variables row "{name}" Type is "number". `number` is not a template type. '
+        "Use integer for whole numbers, or float or double for decimals."
+        for name in ("estimatedAge", "collisionCopy", "customReferenceCopy")
+    },
+}
+
 CORPUS = sorted(
     p for p in CASE_TASKS.rglob("sdd.md")
     if not EXCLUDED_DIRS.keys() & set(p.relative_to(CASE_TASKS).parts)
     and str(p.relative_to(REPO_ROOT)) not in EXCLUDED
+    and str(p.relative_to(REPO_ROOT)) not in EXPECTED_REFUSALS
 )
 
 
@@ -75,8 +95,8 @@ def test_corpus_is_the_expected_scope():
     assert CORPUS, "no case SDDs collected"
     for name in EXCLUDED_DIRS:
         assert (CASE_TASKS / name).is_dir(), f"excluded dir {name} no longer exists"
-    for rel in EXCLUDED:
-        assert (REPO_ROOT / rel).is_file(), f"excluded file {rel} no longer exists"
+    for rel in [*EXCLUDED, *EXPECTED_REFUSALS]:
+        assert (REPO_ROOT / rel).is_file(), f"listed file {rel} no longer exists"
 
 
 @pytest.mark.parametrize("path", CORPUS, ids=lambda p: str(p.relative_to(CASE_TASKS)))
@@ -86,3 +106,14 @@ def test_sdd_parses_clean(uip_with_sdd, path):
     model = d["Data"]["Model"]
     assert model["stages"], "parsed no stages"
     assert model["intake"]["parseNotes"] == []
+
+
+@pytest.mark.parametrize("rel", sorted(EXPECTED_REFUSALS))
+def test_routing_input_is_refused_exactly(uip_with_sdd, rel):
+    d = _parse(REPO_ROOT / rel)
+    assert d["Result"] == "Failure", (
+        f"{rel} now parses whole: its eval no longer exercises planner normalization"
+    )
+    message = (d.get("Message") or "").split(" did not parse whole: ", 1)[-1]
+    got = {m.strip() for m in message.split("; ") if m.strip()}
+    assert got == EXPECTED_REFUSALS[rel], f"refusal changed: {got ^ EXPECTED_REFUSALS[rel]}"

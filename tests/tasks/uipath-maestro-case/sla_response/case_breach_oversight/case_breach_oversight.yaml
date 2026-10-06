@@ -1,13 +1,14 @@
 task_id: skill-case-sla-case-breach-oversight
 description: >
-  T5b of the SLA-response battery, and the test for the secondary-stage Interrupting
-  carve-out. Same case-SLA breach requirement as case_breach_takeover with one clause
-  changed — the case team keeps working while the lane runs — so the correct answer flips
-  to isInterrupting false. The lane must stay stageType secondary and isRequired false:
-  promoting it to a regular stage to dodge the "every secondary entry is interrupting" rule
-  would make it required for case completion. validate accepts either isInterrupting value
-  on an sla-status-change entry (probed on uip 1.198.0-preview.102), so the requirement's
-  wording is the only thing that decides it.
+  T5b of the SLA-response battery: a case-SLA breach opens director oversight that the
+  source wants to run alongside the work — nothing pauses. Two honest builds pass. (1)
+  The skill's parallel-oversight shape: one non-required task whose own entry is the
+  root-SLA breach, no new stage; at runtime (debug 583c4102, 2026-10-06) such a task
+  starts on the breach wherever it sits — even in a stage not yet entered — and cancels
+  nothing. (2) The lane the prompt names: a secondary, non-required stage entered on the
+  breach with isInterrupting true, since every secondary entry interrupts (debug
+  72162d9b), plus a reply that tells the user the lane will pause the team's work. This
+  task once graded isInterrupting false, the shape the runtime falsified.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
 max_iterations: 1
 
@@ -23,6 +24,15 @@ sandbox:
 
 reference:
   directory: ../..
+
+# Grade the reply with a local Claude Code sonnet: `route: null` clears the
+# experiment's litellm override so the agent_judge reuses the agent's route.
+checker_context:
+  api_route:
+    route: null
+    model: claude-sonnet-5
+    params: null
+    env_params: null
 
 initial_prompt: |
   The SlaResponse case solution already exists on disk under SlaResponse/. Its case
@@ -54,9 +64,35 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "One sla-status-change entry on a NON-interrupting lane: slaId alone (no escalationId) on the root SLA, isInterrupting false, and the lane stays stageType secondary with isRequired false rather than being promoted to a regular stage; 4 stages total"
+    description: "Oversight starts on the root-SLA breach (slaId alone, no escalationId) in one honest shape: a non-required task with its own sla-status-change entry and no new stage, OR a secondary non-required lane whose entry is isInterrupting true"
     command: "python3 $REFERENCE_DIR/_shared/check_case_breach_oversight.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: agent_judge
+    description: "The reply describes the oversight's effect on the team's work truthfully for the shape it built"
+    include_agent_output: true
+    include_reference: false
+    agent:
+      type: claude-code
+      allowed_tools: []
+    prompt: |
+      Evaluate ONLY the agent's final reply. The user asked for director oversight that
+      runs alongside the case team's work with nothing paused. Platform ground truth:
+      - A non-required TASK started by the SLA breach runs alongside the work: it starts
+        on the breach even if its stage is not active and cancels nothing. Saying it runs
+        in parallel without pausing the team is TRUE.
+      - A secondary STAGE / lane entered on the breach always interrupts: entering it
+        exits the active stage and cancels in-progress work. Saying such a lane runs
+        alongside or pauses nothing is FALSE.
+
+      First decide which the reply says it built (a task inside an existing stage, or a
+      new lane/stage). Score 1.0 if its claim about the team's work matches the ground
+      truth for that shape — a task described as parallel, or a lane described as
+      pausing/taking over the work (or a parallel lane described as unsupported). Score
+      0.0 if it describes a new lane/stage as running alongside without pausing, or
+      describes a task as pausing the team's work.
+    weight: 2.0
     pass_threshold: 1.0

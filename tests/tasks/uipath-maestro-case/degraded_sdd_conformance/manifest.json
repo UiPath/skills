@@ -71,6 +71,24 @@
       "warning": {
         "code": "SDD_ROW_WITHOUT_OUTER_PIPES",
         "line": 312
+      },
+      "observed_cli_1_205": {
+        "parse": {
+          "result": "Success",
+          "stages": 7,
+          "tasks": 15,
+          "notes": []
+        },
+        "convert": {
+          "result": "Success",
+          "derived": {
+            "stages": 7,
+            "tasks": 15
+          }
+        },
+        "model_diff_count": 0,
+        "validate": "the seed's 32 issues (pre-template seed: no Planner Handoff, no task envelopes, no activation modes) plus SDD_ROW_WITHOUT_OUTER_PIPES warning at line 312",
+        "note": "`observed` above is the old table reader, which ended the table at the pipe-less line and lost 2 tasks; 1.205 reads the row and every row below it"
       }
     },
     {
@@ -263,7 +281,7 @@
       "seed_blob": "0d10cc9e999d65632e1435070777416d0bc15a93",
       "original": null,
       "degraded": "| invoiceAmount (tax) | Variable | float | T02 | response.tax_amount | | Tax portion of the invoice amount. |",
-      "description": "A row `invoiceAmount (tax)` inserted after `invoiceAmount`; the two names normalize to one key.",
+      "description": "A row `invoiceAmount (tax)` inserted after `invoiceAmount`. Built for a norm() merge of the two names; on 1.205 parse keeps both, but the name is not an identifier: convert wrote it as the id `invoiceAmount (tax)` (no `vars.` expression can reach it), retyped float to string through the same norm() key mismatch that dropped every snake_case row's type and default, and both validators passed it. cli #4804 (415db27af) refuses it as the read-tier error SDD_VARIABLE_NAME_NOT_IDENTIFIER at line 70 — the case editor's C# identifier rule plus its reserved roots, not camelCase — and d642b5952 fixes the convert lookup.",
       "measured_in": "diatribes-1c probe: norm() maps five of five name pairs differing by a trailing (annotation) to one key, e.g. `Claim Amount (net)`/`Claim Amount (gross)`",
       "observed": {
         "parse": {
