@@ -3,13 +3,14 @@ description: >
   Use-case pattern "conversational assistant that answers from knowledge and
   takes actions". A chat assistant answers sales-engineer questions from the
   existing "UiPathAgentsProductKnowledge" index and, on request, hands off
-  to the existing deployed "EmailDrafter" agent to draft a customer email.
+  to the existing deployed "CustomerFollowUpDrafter" agent to draft a
+  customer follow-up email.
   Graded on the final project only: conversational variant constraints
   (engine, empty outputSchema, no reserved inputs, blank user message, no
   built-in validators), index context + binding, external agent tool,
   read-only `uip agent validate`, and an LLM judge on the system prompt.
   Cloud auth required — the staging tenant must have the index and the
-  EmailDrafter agent in Shared/uipath-agents.
+  CustomerFollowUpDrafter agent in Shared/uipath-agents.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, context-grounding, feature:conversational]
 
 run_limits:
@@ -33,7 +34,7 @@ initial_prompt: |
 
   When a sales engineer asks for help writing a follow-up email to a
   customer, the assistant should get the draft from our existing
-  "EmailDrafter" agent (already deployed in our tenant) and show it in the
+  "CustomerFollowUpDrafter" agent (already deployed in our tenant) and show it in the
   chat so they can tweak it.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
@@ -72,7 +73,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Conversational constraints, index context + binding, EmailDrafter wired as an external agent tool"
+    description: "Conversational constraints, index context + binding, CustomerFollowUpDrafter wired as an external agent tool mirroring its schemas"
     command: "python3 $REFERENCE_DIR/lowcode/use_cases/enablement_chat_assistant/check_enablement_chat_assistant.py"
     timeout: 30
     expected_exit_code: 0
@@ -80,7 +81,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: llm_judge
-    description: "LLM judge: system prompt grounds answers, admits gaps, and knows when and how to use EmailDrafter"
+    description: "LLM judge: system prompt grounds answers, admits gaps, and knows when and how to use CustomerFollowUpDrafter"
     files: ["EnablementSol/AgentsEnablementAssistant/agent.json"]
     weight: 2.0
     pass_threshold: 0.75
@@ -88,7 +89,7 @@ success_criteria:
     prompt: |
       You are grading the system prompt of a UiPath low-code conversational
       assistant for sales engineers. It has a product-knowledge index and an
-      "EmailDrafter" agent as a tool. Read
+      "CustomerFollowUpDrafter" agent as a tool. Read
       `EnablementSol/AgentsEnablementAssistant/agent.json` and grade ONLY the
       `content` of the `messages[]` entry whose `role == "system"`. Ignore
       schemas, settings, resources and the user message.
@@ -99,11 +100,12 @@ success_criteria:
             mentions the docs used, and plainly says when the docs don't
             cover a question instead of guessing; bounds how often it
             searches per turn.
-        R2. Email hand-off — calls EmailDrafter only when the user asks for
-            help with a customer email, says what to pass to it (e.g. a
-            subject/brief built from the conversation, asking a clarifying
-            question first if key details are missing), and shows the
-            returned draft for the user to edit rather than sending anything.
+        R2. Email hand-off — calls CustomerFollowUpDrafter only when the
+            user asks for help with a customer email; fills its inputs from
+            the conversation (customer name, context, key points, tone),
+            asking a clarifying question first if the customer or key points
+            are missing; and shows the returned subject and body for the user
+            to edit rather than sending anything.
         R3. Conversational behaviour — short answers suited to chat, asks
             clarifying questions when a request is ambiguous, stays on the
             UiPath Agents topic.
