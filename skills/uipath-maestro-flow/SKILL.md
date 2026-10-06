@@ -91,11 +91,11 @@ uip maestro flow format <Solution>/<Name>/<Name>.flow --output json
 # Only for a stated runtime-behavior claim:
 ( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
 ( cd <Solution> && uip maestro flow debug <Name> --log-level error \
-  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals}" \
+  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>}" \
   --output json )
 ```
 
-Re-run it from `compile` after the last source or binding edit. Valid is top-level `Result` plus `Data.Status: "Valid"`; treat `Data.Warnings` as failures except the reviewed shared-connection advisory. `Completed` with the expected globals and an empty `failed` is runtime evidence; a bare exit code is not. Debug inputs, attachments, other projections and incidents: [`references/CLI-LOOP.md`](references/CLI-LOOP.md#refresh-debug-and-preserve-evidence).
+Name one `<Out>:variables.globals.<Out>` pair per output the flow declares (`direction: out`), e.g. `weatherVerdict:variables.globals.weatherVerdict`. Do not project all of `variables.globals`: it also holds every step's raw output, HTTP bodies included, and a trimmed (`tail`/`head`) read-back loses `status` and `failed` and costs a second debug run. Re-run it from `compile` after the last source or binding edit. Valid is top-level `Result` plus `Data.Status: "Valid"`; treat `Data.Warnings` as failures except the reviewed shared-connection advisory. `Completed` with the expected globals and an empty `failed` is runtime evidence; a bare exit code is not. Debug inputs, attachments, other projections and incidents: [`references/CLI-LOOP.md`](references/CLI-LOOP.md#refresh-debug-and-preserve-evidence).
 
 ## Editing an existing flow
 
