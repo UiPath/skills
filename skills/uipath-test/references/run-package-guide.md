@@ -32,7 +32,7 @@ The command creates a hidden, one-off test set. It does not need, and should not
 | 0 | `Success` / `RunPackage` | Every test passed. `Data` has `ExecutionId`, `ExecutionUrl`, `PackageVersion` (the exact version that ran), counts and `OutputPath`. |
 | 1 | `Failure` / `RunPackageTestsFailed`, `ErrorCode: execution_failed` | The run finished but a test failed or was cancelled, or no tests ran. `Data` still carries the full summary, and the report was written. This is a test result, not a CLI error: report it, do not retry. |
 | 1 | `Failure`, other `ErrorCode` | The run could not start or finish (bad version, folder, input file, permissions). `Message` says what, `Instructions` what to do. |
-| 2 | `Failure`, `ErrorCode: timeout` | `--timeout` ran out, or Test Manager did not index the package within 5 minutes. The execution may still be running. |
+| 2 | `Failure`, `ErrorCode: timeout` | `--timeout` ran out, or Test Manager did not index the package within 5 minutes. The execution may still be running. If the tests had started, `Data.OutputPath` holds a report of what finished, with unfinished tests marked skipped. Report the timeout; do not treat skipped tests as passed. |
 
 A failed test's JUnit `<testcase>` has `<failure type="AssertionError">` when an assertion failed, or `<error type="Fault">` when the job or robot faulted (for example a package that cannot be installed).
 
