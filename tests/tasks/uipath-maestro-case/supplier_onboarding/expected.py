@@ -146,8 +146,18 @@ STAGE_NAME_LITERAL = {
 STAGE_NAME_INPUT = "stageName"
 
 # --- Guard literals -----------------------------------------------------------
-# Taken from the deployed Action Apps' own output enums, not invented. Verified with
-# `uip maestro case tasks describe --type action --id <app> --output json`.
+# BUYER_DECISION_VALUES / COMPLIANCE_DECISION_VALUES: taken from the deployed Action
+# Apps' own output enums, not invented. Verified on the coder-eval tenant with
+# `uip maestro case tasks describe --type action --id <app> --output json` against
+# the Action App IDs this fixture's tasks carry (ec16bdfe-... for "Record buyer
+# review decision", 1229c1ed-... for "Record compliance review decision").
+#
+# BANK_VERIFIED_VALUE: the SDD's own account of SupplierErpRegistration's behavior
+# (an api-workflow, not an Action App — `tasks describe --type api-workflow --id
+# d5c07b08-...` confirms it, but its `bankVerificationStatus` output is a free
+# string with no enum to check against). The source states plainly that this
+# workflow answers "verified" unconditionally today, so this value documents a
+# recorded behavior, not a resource contract.
 
 BUYER_DECISION_VALUES = {"approve", "reject", "sendback"}
 COMPLIANCE_DECISION_VALUES = {"approve", "reject"}
