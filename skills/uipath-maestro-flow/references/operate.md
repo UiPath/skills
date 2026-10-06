@@ -103,6 +103,11 @@ Operational constraints, each of which has its own failure:
   trigger, inputs and prefix, delete the copy afterwards, and report the run as
   the copy's.
 - **An RPA step does not run under a headless debug** ([rpa-workflow.md](rpa-workflow.md#evidence-boundary)).
+- **Every process and connection node must resolve.** A node bound to a
+  resource the tenant lacks (a placeholder key awaiting the real process, a stub
+  connection) fails provisioning with `validationFailed` 2106 `Sequence contains
+  no matching element` and starts no instance, while `check` and `validate`
+  pass. Debug a scratch copy without those nodes, as for a non-default root.
 - **Do not pass `--folder-path` or `--folder-key`.** Debug provisions into your
   personal workspace; a shared folder fails `HTTP 500` at
   `Stage: prepare-custom-debug` with no instance started. Shared resources reach
