@@ -221,6 +221,11 @@ def assert_reassigned_output(
     return output
 
 
+# An SDD `number` cell is not a case type; planner normalization (Rule 2 case (c))
+# rewrites it to `double` or `integer`, so either is the canonical form of `number`.
+NUMBER_TYPES = ("number", "double", "integer")
+
+
 def assert_custom_output(
     task: dict, name: str, value: str, output_type: str = "string"
 ) -> dict:
@@ -232,7 +237,6 @@ def assert_custom_output(
         "source": value,
         "target": "",
         "body": "",
-        "type": output_type,
         "elementId": "root",
     }
     mismatches = {
@@ -240,6 +244,9 @@ def assert_custom_output(
         for key, expected_value in expected.items()
         if output.get(key) != expected_value
     }
+    allowed_types = NUMBER_TYPES if output_type == "number" else (output_type,)
+    if output.get("type") not in allowed_types:
+        mismatches["type"] = {"expected": " or ".join(allowed_types), "actual": output.get("type")}
     for forbidden in ("id", "originalVar"):
         if forbidden in output:
             mismatches[forbidden] = {"expected": "absent", "actual": output.get(forbidden)}

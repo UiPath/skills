@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""T5b — case breach opens a NON-interrupting oversight lane (the carve-out).
+"""T5b — a case-breach oversight lane that the source wants to run alongside the work.
 
 Same requirement family as T5a, one clause different: the case team keeps working while
-the lane runs. The lane must stay secondary and non-required — promoting it to a regular
-stage would make it required for case completion.
+the lane runs. The product cannot do that. Every entry into a secondary stage interrupts:
+the compiler emits cancelStagesAndTasks for an sla-status-change secondary entry written
+isInterrupting:false, and at runtime (debug instance 72162d9b, 2026-10-06) the breach
+exited the active stage and cancelled its in-flight task. So the built lane must carry
+isInterrupting True — the honest shape — and stay secondary and non-required; promoting
+it to a regular stage to dodge the interrupt would make it required for case completion.
+Whether the reply tells the user the work will pause is graded separately.
 """
 
 import os
@@ -44,8 +49,8 @@ def main() -> None:
     if not is_secondary(lane):
         fail(
             f"lane {label_of(lane)!r} has stageType={(lane['data'].get('stageType'))!r}; a "
-            "non-interrupting SLA oversight lane still stays `secondary` — promoting it to a "
-            "regular stage would make it required for case completion"
+            "SLA oversight lane stays `secondary` — promoting it to a regular stage to avoid the "
+            "interrupt would make it required for case completion"
         )
     if not is_non_required(lane["data"]):
         fail(
@@ -56,11 +61,16 @@ def main() -> None:
     where = f"{label_of(lane)} entry condition {cond.get('displayName')!r}"
     assert_sla_resolves(plan, rule, where, owner="root")
     assert_breach_shape(rule, where)
-    assert_interrupting(cond, False, where)
+    if cond.get("isInterrupting") is not True:
+        fail(
+            f"{where} has isInterrupting={cond.get('isInterrupting')!r}; a secondary-stage entry "
+            "always interrupts at runtime (the breach exits the active stage and cancels its "
+            "tasks whatever the flag says), so the only honest value is True"
+        )
 
     print(
-        f"PASS: non-interrupting oversight lane {label_of(lane)!r} on root SLA {rule['slaId']} "
-        "(no escalationId); stays secondary + isRequired False"
+        f"PASS: oversight lane {label_of(lane)!r} on root SLA {rule['slaId']} (no escalationId), "
+        "isInterrupting True; stays secondary + isRequired False"
     )
 
 

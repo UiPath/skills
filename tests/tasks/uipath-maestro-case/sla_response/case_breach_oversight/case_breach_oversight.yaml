@@ -1,13 +1,14 @@
 task_id: skill-case-sla-case-breach-oversight
 description: >
-  T5b of the SLA-response battery, and the test for the secondary-stage Interrupting
-  carve-out. Same case-SLA breach requirement as case_breach_takeover with one clause
-  changed — the case team keeps working while the lane runs — so the correct answer flips
-  to isInterrupting false. The lane must stay stageType secondary and isRequired false:
-  promoting it to a regular stage to dodge the "every secondary entry is interrupting" rule
-  would make it required for case completion. validate accepts either isInterrupting value
-  on an sla-status-change entry (probed on uip 1.198.0-preview.102), so the requirement's
-  wording is the only thing that decides it.
+  T5b of the SLA-response battery: a case-SLA breach opens a "Case SLA Oversight" lane
+  that the source wants to run alongside the work — nothing pauses. The product cannot
+  run a secondary lane alongside: every secondary-stage entry interrupts, including an
+  sla-status-change entry written isInterrupting false (compiled to cancelStagesAndTasks,
+  and observed at runtime 2026-10-06, debug instance 72162d9b: the breach exited the
+  active stage and cancelled its in-flight task). So the correct build is the lane with
+  isInterrupting true, kept secondary and isRequired false, AND a reply that tells the
+  user the lane will pause the team's work, which their requirement did not want. This
+  task previously graded isInterrupting false, the shape the runtime falsified.
 tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, feature:sla, feature:escalation]
 max_iterations: 1
 
@@ -23,6 +24,15 @@ sandbox:
 
 reference:
   directory: ../..
+
+# Grade the reply with a local Claude Code sonnet: `route: null` clears the
+# experiment's litellm override so the agent_judge reuses the agent's route.
+checker_context:
+  api_route:
+    route: null
+    model: claude-sonnet-5
+    params: null
+    env_params: null
 
 initial_prompt: |
   The SlaResponse case solution already exists on disk under SlaResponse/. Its case
@@ -54,9 +64,29 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "One sla-status-change entry on a NON-interrupting lane: slaId alone (no escalationId) on the root SLA, isInterrupting false, and the lane stays stageType secondary with isRequired false rather than being promoted to a regular stage; 4 stages total"
+    description: "One sla-status-change entry on the oversight lane: slaId alone (no escalationId) on the root SLA, isInterrupting true (a secondary entry always interrupts), and the lane stays stageType secondary with isRequired false rather than being promoted to a regular stage; 4 stages total"
     command: "python3 $REFERENCE_DIR/_shared/check_case_breach_oversight.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: agent_judge
+    description: "The reply tells the user the oversight lane will pause the team's work, which they asked to avoid"
+    include_agent_output: true
+    include_reference: false
+    agent:
+      type: claude-code
+      allowed_tools: []
+    prompt: |
+      Evaluate ONLY the agent's final reply. Ground truth: the user asked for an oversight
+      lane that runs alongside the case team's work with nothing paused. On this platform a
+      secondary lane cannot do that — entering it interrupts the active work — so a correct
+      reply builds the lane and tells the user it will pause or take over the in-progress
+      work when it opens (or that a parallel, non-interrupting lane is not possible).
+
+      Score 1.0 if the reply says the lane will interrupt, pause, or take over the active
+      work, or that a non-interrupting / parallel lane is not supported. Score 0.0 if it
+      says or implies the lane runs alongside the work without pausing it.
+    weight: 2.0
     pass_threshold: 1.0
