@@ -11,6 +11,7 @@ run. Each subcommand is one success criterion:
     applications   applications match the systems the PDD names: no more, no fewer
     documents      PDD and process map uploaded once each, as the staged bytes, with the right type ids
     verify         attachments and the record read back after the create
+    users          every owner lookup (if any) is server-side and carries --invite-status all
 
 Exit 0 = pass; non-zero prints the first failing reason.
 """
@@ -261,12 +262,31 @@ def check_verify(calls: list[dict]) -> str:
     return "attachments and record read back after the create"
 
 
+def check_users(calls: list[dict]) -> str:
+    """The owner lookup is optional, but when it happens it must not hide eligible users.
+
+    RPANAV-19110 changed `GET /users` to default to active users only; the skill
+    must pass `--invite-status all` (and keep the lookup server-side with
+    `--search`) rather than re-introduce a client-side eligibility pre-check.
+    """
+    lookups = calls_matching(calls, "users list")
+    if not lookups:
+        return "no owner lookup — the auth-info email was used directly"
+    for call in lookups:
+        if flag(call, "--invite-status") != "all":
+            raise CheckFailed(f"users list without --invite-status all hides eligible owners: {call['args']}")
+        if flag(call, "--search") is None:
+            raise CheckFailed(f"users list without --search pages the whole directory client-side: {call['args']}")
+    return f"{len(lookups)} owner lookup(s), each server-side with --invite-status all"
+
+
 CHECKS = {
     "create-once": check_create_once,
     "payload": check_payload,
     "applications": check_applications,
     "documents": check_documents,
     "verify": check_verify,
+    "users": check_users,
 }
 
 

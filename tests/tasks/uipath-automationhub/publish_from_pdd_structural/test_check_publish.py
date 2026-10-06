@@ -89,7 +89,7 @@ def publish(sandbox: Path, answers: dict, *, pdd_type: str = "1", creates: int =
         uip(sandbox, "ah", "automations", "get", "4815", "--all-fields", "--output", "json")
 
 
-@pytest.mark.parametrize("check", ["create-once", "payload", "applications", "documents", "verify"])
+@pytest.mark.parametrize("check", ["create-once", "payload", "applications", "documents", "verify", "users"])
 def test_golden_publish_passes(sandbox: Path, check: str) -> None:
     publish(sandbox, good_answers())
     result = grade(sandbox, check)
@@ -193,3 +193,21 @@ def test_no_read_back_fails(sandbox: Path) -> None:
 
 def test_no_calls_fails(sandbox: Path) -> None:
     assert "never invoked" in grade(sandbox, "payload").stdout
+
+
+def test_owner_lookup_with_both_flags_passes(sandbox: Path) -> None:
+    uip(sandbox, "ah", "users", "list", "--search", OWNER, "--invite-status", "all", "--output", "json")
+    publish(sandbox, good_answers())
+    assert grade(sandbox, "users").returncode == 0
+
+
+def test_owner_lookup_without_invite_status_all_fails(sandbox: Path) -> None:
+    uip(sandbox, "ah", "users", "list", "--search", OWNER, "--output", "json")
+    publish(sandbox, good_answers())
+    assert "--invite-status all" in grade(sandbox, "users").stdout
+
+
+def test_owner_lookup_without_search_fails(sandbox: Path) -> None:
+    uip(sandbox, "ah", "users", "list", "--invite-status", "all", "--limit", "500", "--output", "json")
+    publish(sandbox, good_answers())
+    assert "--search" in grade(sandbox, "users").stdout

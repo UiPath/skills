@@ -11,9 +11,12 @@ description: >
   answers: one create, the auth-info identity as owner/submitter, an active
   category, verbatim enum codes, applications matching the PDD's systems exactly,
   both documents uploaded byte-identical with the right type ids, and a
-  post-create read-back. It sits between the command-shape smoke tests and a live
-  e2e publish — no tenant, deterministic, judge-free.
-tags: [uipath-automationhub, integration, mode:build, lifecycle:setup]
+  post-create read-back. It extends the command-shape smoke tests to the submitted
+  content, and the live e2e publish (e2e_publish_outcome) sits above it — no
+  tenant, deterministic, judge-free.
+# smoke: deterministic (mocked tenant, no login, judge-free) and inside the smoke budget
+# (~2.5 min, ~30 calls), so it gates every PR that touches the skill. RPANAV-19150 AC 1-3.
+tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 20
@@ -65,16 +68,16 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key"
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key (401s a cloud token exactly like x-ah-openapi-auth)"
     tool_name: "Bash"
     command_pattern: '(?i)x-ah-openapi-app-key'
-    weight: 2.0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Agent stayed on the CLI transport — no hand-built Authorization header and no raw HTTP to Automation Hub"
     tool_name: "Bash"
-    command_pattern: '(?i)(authorization:\s*bearer|\b(curl|wget|invoke-restmethod|invoke-webrequest)\b[^\n]*automationhub_)'
+    command_pattern: '(?i)(authorization["'']?\s*[:=]|\b(curl|wget|invoke-restmethod|invoke-webrequest)\b[^\n]*automationhub_)'
     weight: 2.0
     pass_threshold: 1.0
 
@@ -109,7 +112,9 @@ success_criteria:
     command: "python3 $REFERENCE_DIR/check_publish.py applications"
     timeout: 30
     expected_exit_code: 0
-    weight: 5.0
+    # Primary signal of this task (the bug class behind RPANAV-19120), kept at the
+    # table's ceiling for mock-graded artifact content rather than the e2e 5.0-6.0 band.
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
@@ -118,6 +123,14 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Owner lookup, if any, is server-side and does not assume the active-only filter: every users list carries --search and --invite-status all (RPANAV-19110)"
+    command: "python3 $REFERENCE_DIR/check_publish.py users"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
