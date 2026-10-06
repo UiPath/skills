@@ -12,8 +12,11 @@ Final-state only. Validates:
   3. The AB project is targeted — as a static tool parameter or in the
      system prompt.
   4. The solution provisions a Jira connection resource.
-  5. A memorySpace feature attaches "UiPathAgentsSupportMemory" from
-     "Shared/uipath-agents" with dynamic few-shot recall over `description`.
+  5. A memorySpace feature attaches "HelpdeskTriageMemory" from
+     "Shared/uipath-agents" with dynamic few-shot recall over `description`,
+     and the solution imported the real tenant space. When the space can't be
+     found, `uip solution resources refresh` writes a local stub instead
+     (`spec` holds only `name`, no `isOverridable`); a stub fails here.
   6. Output contract: category enum (5), priority enum P1–P4, jiraIssueKey,
      summary.
 """
@@ -45,7 +48,7 @@ SOLUTION_DIR = Path(os.getcwd()) / "HelpdeskSol"
 AGENT_DIR = SOLUTION_DIR / "HelpdeskTriageAgent"
 CONNECTOR = "uipath-atlassian-jira"
 PROJECT_KEY = "AB"
-MEMORY_SPACE = "UiPathAgentsSupportMemory"
+MEMORY_SPACE = "HelpdeskTriageMemory"
 FOLDER_PATH = "Shared/uipath-agents"
 INPUTS = ["requesterEmail", "title", "description"]
 
@@ -94,6 +97,16 @@ def check_memory() -> None:
     if "description" not in fields:
         fail(f"memory recall should match on the `description` input, got fieldSettings {fields}")
     print(f"OK: memory feature {path.parent.name!r} recalls {MEMORY_SPACE!r} by description")
+
+    manifest = SOLUTION_DIR / "resources" / "solution_folder" / "memorySpace" / f"{MEMORY_SPACE}.json"
+    resource = load(manifest).get("resource") or {}
+    spec = resource.get("spec") or {}
+    if "isOverridable" not in resource or set(spec) <= {"name"}:
+        fail(
+            f"{manifest.relative_to(SOLUTION_DIR)} is a local stub, not the imported tenant memory space "
+            f"(spec={spec!r}) — the space was not found during discovery/refresh"
+        )
+    print(f"OK: solution imported the tenant memory space {MEMORY_SPACE!r}")
 
 
 def check_outputs(out_schema: dict) -> None:
