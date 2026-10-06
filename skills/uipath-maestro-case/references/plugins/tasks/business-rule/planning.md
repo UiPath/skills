@@ -24,9 +24,10 @@ Pick this plugin when the sdd.md labels a task `business-rule` — a deployed ru
 1. **Cache file:** `businessRule-index.json` (`uip maestro case registry pull` fills it from the Resource Catalog). Search with `uip maestro case registry search "<name>" --type businessRule --output json`.
 2. **Identifier field:** `entityKey`.
 3. **No cross-type fallback.** Only a `businessRule-index.json` entry is a rule. A same-named process, function, or agent is a different resource kind — never bind it to a `business-rule` task.
-4. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > **no match**, as in [registry-discovery.md § 2](../../../registry-discovery.md#2-search-by-name-and-folder-path).
-5. **`folder-path` = the SELECTED entry's `folders[0].fullyQualifiedName`** (not the sdd.md "Folder"). Fall back to the sdd.md folder only when there is no registry match (Unresolved path).
-6. Discover inputs/outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
+4. **No in-solution fallback.** Never resolve a rule with `registry search --local`; a rule defined only in this solution is deployed first (uipath-solution), then pulled and resolved here.
+5. **Match priority:** exact name + exact folder > exact name, multiple folders (pick matching) > exact name only > **no match**, as in [registry-discovery.md § 2](../../../registry-discovery.md#2-search-by-name-and-folder-path).
+6. **`folder-path` = the SELECTED entry's `folders[0].fullyQualifiedName`** (not the sdd.md "Folder"). Fall back to the sdd.md folder only when there is no registry match (Unresolved path).
+7. Discover inputs/outputs via `tasks describe` — see [bindings-and-expressions.md § Discovering output names](../../../bindings-and-expressions.md).
 
 ## Unresolved Fallback
 
