@@ -65,12 +65,6 @@ def main():
         sys.exit(f"FAIL: no wait-for-timer task in caseplan. Types seen: {types_seen}")
 
     review_lanes = (review.get("data") or {}).get("tasks") or []
-    timer_lane_indices = {
-        lane_idx
-        for lane_idx, lane in enumerate(review_lanes)
-        for t in (lane or [])
-        if t.get("type") == "wait-for-timer"
-    }
     review_task_ids = {t.get("id") for lane in review_lanes for t in (lane or [])}
     review_timers = [t for t in timer_tasks if t.get("id") in review_task_ids]
     if len(review_timers) < 2:
@@ -79,11 +73,11 @@ def main():
             f"FAIL: Review should have ≥2 parallel wait-for-timer tasks "
             f"('Hold For 1 Hour' + 'Notify Reviewer'); got {len(review_timers)} ({labels})"
         )
-    if len(timer_lane_indices) != 1:
-        sys.exit(
-            f"FAIL: Review's explicit parallel timer tasks must share one "
-            f"data.tasks inner task set; got set indices {sorted(timer_lane_indices)}"
-        )
+    # Concurrency comes from each timer's own current-stage-entered entry (asserted
+    # below), not from sharing an inner data.tasks set: two timers in separate sets,
+    # each entered on stage entry, start and finish together at runtime (debug
+    # instance 2df59883, 2026-10-06). The SDD declares no task set, so convert's
+    # one-set-per-entry-rule layout is accepted alongside the FE's shared set.
 
     def _by_label(label: str) -> dict | None:
         for t in review_timers:
@@ -265,7 +259,7 @@ def main():
         "OK: 3 stages (Intake → Review → Decision) chained via condition-driven "
         "transitions (Review←Intake, Decision←Review via selected-stage-completed); "
         "case-entered on Intake; "
-        "TWO parallel wait-for-timer tasks on Review in one shared task set — "
+        "TWO concurrent wait-for-timer tasks on Review — "
         "'Hold For 1 Hour' (shouldRunOnlyOnce + skipCondition =vars.skipReview) "
         "and 'Notify Reviewer' (isRequired=false) — both carrying "
         "current-stage-entered task-entry; root has all 7 variables "
