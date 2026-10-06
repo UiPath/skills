@@ -4,7 +4,7 @@ description: >
   memory. The agent triages an IT helpdesk request, files it as a Jira issue
   through an Integration Service connector tool bound to the tenant's
   existing Jira connection, and recalls how similar past requests were
-  triaged via the existing "UiPathAgentsSupportMemory" memory space. Graded
+  triaged via the existing "HelpdeskTriageMemory" memory space. Graded
   on the final project only: IS tool wiring (connector, activity,
   connection, Studio Web silent-drop rules), solution-level connection
   resource, memory feature, output contract, read-only `uip agent validate`,
@@ -35,7 +35,7 @@ initial_prompt: |
   requester and why the agent picked that category and priority.
 
   We want it to get more consistent over time, so give it memory backed by
-  our existing "UiPathAgentsSupportMemory" memory space (also in
+  our existing "HelpdeskTriageMemory" memory space (also in
   Shared/uipath-agents) so it recalls how requests with a similar
   description were triaged before.
 
@@ -72,7 +72,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Jira create-issue IS tool on a real Jira connection, project AB targeted, connection provisioned, memory space attached, output contract"
+    description: "Jira create-issue IS tool on a real Jira connection, project AB targeted, connection provisioned, HelpdeskTriageMemory attached and imported into the solution, output contract"
     command: "python3 $REFERENCE_DIR/lowcode/use_cases/helpdesk_jira_triage/check_helpdesk_jira_triage.py"
     timeout: 30
     expected_exit_code: 0
