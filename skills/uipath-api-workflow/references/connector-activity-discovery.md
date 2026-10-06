@@ -422,7 +422,7 @@ The IntSvc kind speaks directly to the vendor connector's curated operation:
 
 The IS proxy URL for a IntSvc kind call to Outlook GetNewestEmail becomes `/elements_/v3/element/instances/{outlookConnId}/getNewestEmail?parentFolderId=Inbox` — a real curated endpoint on the Outlook connector. The connector itself adds the Microsoft Graph OAuth at the proxy layer. **You don't supply a Graph URL; the connector knows where the Outlook API lives.**
 
-**Data Fabric's Query Entity Records** (`uipath-uipath-dataservice`) takes `entityScope` — `tenant` for a tenant-level entity — and `tenantEntityName`. `stub` returns no `ResponseFields` for it: the answer's `content` is a bare array of rows, the entity's own columns under their names and the system fields in PascalCase (`Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`, `RecordOwner`). One call returns at most 1000 rows, so a full read pages.
+**Data Fabric's Query Entity Records** (`uipath-uipath-dataservice`) takes `entityScope` — `tenant` for a tenant-level entity — and `tenantEntityName`. `stub` returns no `ResponseFields` for it: the answer's `content` is a bare array of rows, the entity's own columns under their names and the system fields in PascalCase (`Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`, `RecordOwner`). One call returns at most 1000 rows, so a full read pages. A long-text (`MULTILINE_MAX`) column comes back cut at 10,000 characters with `...[Truncated]` appended; read a row whose cell ends so again with Get Entity Record by ID (`GetEntityRecord_V3`, `recordId` the row's `Id`), which returns the whole text.
 
 ### Generic activities — `--object-name` required ("List Records" of *what?*)
 

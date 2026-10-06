@@ -261,7 +261,7 @@ Snippets use the property-element form with `<VisualBasicValue>` / `<VisualBasic
 </Assign>
 ```
 
-**Notes:** Type safety comes from the arguments — the typed `OutArgument`/`InArgument` above surface mismatch errors at `validate` time. `To` must be a writable expression (variable, argument, indexer) — Studio's emitter uses `VisualBasicReference` (or `CSharpReference` in C# projects) for the writable side and `VisualBasicValue` (or `CSharpValue`) for the readable side. One target per `Assign`; two or more consecutive assignments go into one Multiple Assign (next entry), which reads as one block instead of a stack of `Assign`s.
+**Notes:** Type safety comes from the arguments — the typed `OutArgument`/`InArgument` above surface mismatch errors at `validate` time. `To` must be a writable expression (variable, argument, indexer) — Studio's emitter uses `VisualBasicReference` (or `CSharpReference` in C# projects) for the writable side and `VisualBasicValue` (or `CSharpValue`) for the readable side. One target per `Assign`; in a Windows project two or more consecutive assignments go into one Multiple Assign (next entry), which reads as one block instead of a stack of `Assign`s.
 
 **Long-form:** [`activity-docs/UiPath.System.Activities/26.4/activities/Assign.md`](activity-docs/UiPath.System.Activities/26.4/activities/Assign.md)
 
@@ -269,6 +269,7 @@ Snippets use the property-element form with `<VisualBasicValue>` / `<VisualBasic
 
 ### Multiple Assign
 **Class:** `UiPath.Core.Activities.MultipleAssign`
+**Platform:** Windows projects only. A cross-platform (`Portable`) project does not load the type: `validate` fails the file with `Cannot create unknown type '{http://schemas.uipath.com/workflow/activities}MultipleAssign'`, although the installed docs include `MultipleAssign.md`. Use one `Assign` per target there.
 **XAML prefix:** `xmlns:ui="http://schemas.uipath.com/workflow/activities"`; declare `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib"` for the operations list (Legacy/.NET 4.6.1 projects use `assembly=mscorlib`).
 
 **Snippet** (two `String` targets — each operation is typed on its own arguments):
@@ -310,7 +311,7 @@ Snippets use the property-element form with `<VisualBasicValue>` / `<VisualBasic
 
 **Notes:** Operations run in list order, so a later `Value` reads a target an earlier operation set (`upperName` reads `trimmedName`). A failed operation raises with its value and target expressions in the message. C# projects bind `To` and `Value` in this property-element form with `CSharpReference` / `CSharpValue` per [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md); the package doc's attribute form (`To="[firstName]"`) is bracket syntax, which is VB only.
 
-**Long-form:** the installed package's `{PROJECT_DIR}/.local/docs/packages/UiPath.System.Activities/activities/MultipleAssign.md` (no bundled copy); snippet shape verified against 26.8.2.
+**Long-form:** the installed package's `{PROJECT_DIR}/.local/docs/packages/UiPath.System.Activities/activities/MultipleAssign.md` (no bundled copy); snippet shape verified against 26.8.2 on a Windows project.
 
 ---
 
