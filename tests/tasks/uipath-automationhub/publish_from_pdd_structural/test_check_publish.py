@@ -211,3 +211,12 @@ def test_owner_lookup_without_search_fails(sandbox: Path) -> None:
     uip(sandbox, "ah", "users", "list", "--invite-status", "all", "--limit", "500", "--output", "json")
     publish(sandbox, good_answers())
     assert "--search" in grade(sandbox, "users").stdout
+
+
+def test_numeric_strings_are_the_same_ids(sandbox: Path) -> None:
+    answers = good_answers()
+    answers["OVR"]["ah-section-ovrbp-0-0"]["OVR-OVERVIEW_CATEGORY"] = {"value": "12"}
+    answers["OVR"]["ah-section-ovrbp-0-0"]["OVR-COUNT_APPS"]["value"] = ["21", "22"]
+    publish(sandbox, answers)
+    assert grade(sandbox, "payload").returncode == 0
+    assert grade(sandbox, "applications").returncode == 0
