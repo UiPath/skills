@@ -1,0 +1,117 @@
+task_id: skill-agent-usecase-support-case-triage
+description: >
+  Use-case pattern "knowledge-grounded decision agent". The agent triages a
+  product support case by grounding its decision in the existing
+  "UiPathAgentsProductKnowledge" Context Grounding index instead of general
+  knowledge, and returns a structured resolution decision with doc
+  references and an engineering-escalation flag. Graded on the final
+  project only: index context + binding + solution-level index manifest,
+  output contract, read-only `uip agent validate`, and an LLM judge on the
+  system prompt. Cloud auth required — the staging tenant must have the
+  index in Shared/uipath-agents.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, context-grounding]
+
+run_limits:
+  expected_turns: 30
+  turn_timeout: 1200
+  task_timeout: 1500
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  Our UiPath Agents support engineers lose hours on cases the product docs
+  already answer. Build a UiPath low-code autonomous agent,
+  "AgentsCaseTriageAgent", in a solution called "CaseTriageSol", that does a
+  first pass on every new case. It gets `caseSubject`, `caseDescription` and
+  `customerTier` (enterprise or standard).
+
+  The decision has to be based on our existing "UiPathAgentsProductKnowledge"
+  knowledge index (already set up in our tenant) — not on what the model
+  happens to know about UiPath. It returns:
+
+    - `resolutionType`: how_to, known_limitation, configuration_issue,
+      probable_defect or needs_more_info
+    - `suggestedReply`: a reply the engineer can send the customer
+    - `docReferences`: the documentation sources it relied on
+    - `escalateToEngineering`: true or false
+    - `confidence`: 0 to 1
+
+  If the docs don't cover the case, it should only call it a probable defect
+  when the customer reports an error or a regression; otherwise it asks for
+  more information. Probable defects always go to engineering, and so do
+  enterprise cases it's less than 70% sure about.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "AgentsCaseTriageAgent/agent.json exists"
+    path: "CaseTriageSol/AgentsCaseTriageAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent project is registered in the CaseTriageSol solution"
+    path: "CaseTriageSol/CaseTriageSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final project passes read-only uip agent validate (derived files current)"
+    command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate CaseTriageSol/AgentsCaseTriageAgent"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Index context on UiPathAgentsProductKnowledge, index binding + solution index manifest, inputs templated, decision contract"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/support_case_triage/check_support_case_triage.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt grounds decisions in retrieval, caps it, and encodes the decision and escalation rules"
+    files: ["CaseTriageSol/AgentsCaseTriageAgent/agent.json"]
+    weight: 2.0
+    pass_threshold: 0.75
+    include_reference: false
+    prompt: |
+      You are grading the system prompt of a UiPath low-code agent that
+      triages product support cases using a documentation index. Read
+      `CaseTriageSol/AgentsCaseTriageAgent/agent.json` and grade ONLY the
+      `content` of the `messages[]` entry whose `role == "system"`. Ignore
+      schemas, settings, resources and the user message.
+
+      Score four rubric items, each worth 1/4:
+
+        R1. Grounding — instructs the agent to search the product knowledge
+            index before deciding, to base the decision and reply only on
+            retrieved content (not general model knowledge), and to list the
+            sources it used in `docReferences`.
+        R2. Bounded retrieval — caps how many times the agent queries the
+            index (or otherwise bounds re-querying) and says what to do when
+            the retrieved content doesn't cover the case (decide with what it
+            has, lower confidence, still return every field).
+        R3. Decision criteria — explains how to choose between how_to,
+            known_limitation, configuration_issue, probable_defect and
+            needs_more_info, including the rule that an uncovered case is a
+            probable defect only when an error or regression is reported,
+            otherwise needs_more_info.
+        R4. Escalation rule — probable defects always escalate to
+            engineering; enterprise cases with confidence below 0.7 also
+            escalate; otherwise no escalation.
+
+      Award 1.0 for clear, specific coverage, 0.5 for partial or vague
+      coverage, 0.0 for missing. The final `score` is the average of R1–R4,
+      rounded to two decimals. If the file or the system message is missing,
+      score 0.0.

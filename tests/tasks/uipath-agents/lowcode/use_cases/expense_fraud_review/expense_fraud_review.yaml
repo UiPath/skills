@@ -1,0 +1,123 @@
+task_id: skill-agent-usecase-expense-fraud-review
+description: >
+  Use-case pattern "document validation with human-in-the-loop escalation".
+  The agent reads an expense receipt (job-attachment + file-reading built-in
+  tool), checks the claim against a written policy, and hands suspicious or
+  uncertain claims to a human through the EXTERNAL "FraudEscalation" Action
+  Center app, using the reviewer's outcome as the final decision. Graded on
+  the final project only: structure check (attachment, tool, escalation
+  wiring, output contract), read-only `uip agent validate`, and an LLM judge
+  on the system prompt. Cloud auth required — the staging tenant must have
+  the deployed FraudEscalation app.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, feature:escalation]
+
+run_limits:
+  expected_turns: 40
+  turn_timeout: 1200
+  task_timeout: 1500
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  Finance wants to stop rubber-stamping expense claims. Build a UiPath
+  low-code agent, "ExpenseAuditAgent", in a solution called
+  "ExpenseAuditSol". For each claim it gets the `receipt` (a photo or PDF of
+  the receipt) and the `claim` itself as an object (employeeId, amount,
+  currency, expenseDate, category, merchant, businessPurpose).
+
+  It should read the receipt, compare it with what the employee claimed and
+  apply our expense policy:
+
+    - meals are capped at 75 USD per person per day
+    - alcohol is never reimbursable
+    - receipts older than 60 days are rejected
+    - weekend expenses need a business purpose
+    - the receipt amount must match the claimed amount within 5%
+
+  Clearly compliant claims are approved and clear policy violations are
+  rejected with the reason. Anything that looks like possible fraud — an
+  altered or duplicate-looking receipt, a merchant or amount that doesn't
+  match the claim — or any claim the agent isn't confident about must go to
+  the fraud team for a decision through our existing "FraudEscalation" Action
+  Center app (it's already deployed in Orchestrator, not part of this
+  solution). The reviewer's decision is final. Assign those review tasks to
+  me for now.
+
+  The result needs `decision` (approve or reject), `policyViolations` (a
+  list), `fraudSignals` (a list), `reviewedByHuman` (true when the fraud team
+  decided) and a short `explanation` for the employee.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "ExpenseAuditAgent/agent.json exists"
+    path: "ExpenseAuditSol/ExpenseAuditAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent project is registered in the ExpenseAuditSol solution"
+    path: "ExpenseAuditSol/ExpenseAuditSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final project passes read-only uip agent validate (derived files current)"
+    command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate ExpenseAuditSol/ExpenseAuditAgent"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Receipt attachment + file-reading tool, escalation bound to FraudEscalation with recipient and outcome mapping, output contract"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/expense_fraud_review/check_expense_fraud_review.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt encodes the policy, escalation triggers and use of the reviewer's outcome"
+    files: ["ExpenseAuditSol/ExpenseAuditAgent/agent.json"]
+    weight: 2.0
+    pass_threshold: 0.75
+    include_reference: false
+    prompt: |
+      You are grading the system prompt of a UiPath low-code agent that audits
+      employee expense claims and escalates suspicious ones to a human. Read
+      `ExpenseAuditSol/ExpenseAuditAgent/agent.json` and grade ONLY the
+      `content` of the `messages[]` entry whose `role == "system"`. Ignore
+      schemas, settings, resources and the user message.
+
+      Score four rubric items, each worth 1/4:
+
+        R1. Policy — states all five rules: 75 USD meal cap per person per
+            day, no alcohol, receipts older than 60 days rejected, weekend
+            expenses need a business purpose, receipt vs claimed amount
+            within 5%.
+        R2. Reading the receipt — tells the agent to read the receipt's
+            contents with its file-analysis tool (not from metadata alone)
+            and what to extract (merchant, date, amount, line items such as
+            alcohol).
+        R3. Escalation triggers — explicitly lists when to escalate to the
+            fraud team: altered / duplicate-looking receipts, merchant or
+            amount mismatches, and low confidence; and distinguishes these
+            from clear violations that are simply rejected.
+        R4. Human outcome — tells the agent that after escalating it must
+            use the reviewer's decision as the final `decision`, set
+            `reviewedByHuman = true`, and explain the outcome; when no
+            escalation happens, `reviewedByHuman = false`.
+
+      Award 1.0 for clear, specific coverage, 0.5 for partial or vague
+      coverage, 0.0 for missing. The final `score` is the average of R1–R4,
+      rounded to two decimals. If the file or the system message is missing,
+      score 0.0.
