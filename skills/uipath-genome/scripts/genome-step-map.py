@@ -20,7 +20,11 @@ the framework's own inventory script derives from the export - this script knows
 Source Map rows: a row keyed by a workflow step number (`1`, `2b`, `3-5`) or a step name is a step and must resolve to at least
 one source process; every other row (Source framework, Source export, Checkpoints, Inventory, Excluded, Inferred, Data files,
 Row schema, …) is contract and is skipped, whatever it is called. A key that joins a number and a name (`1 Start a run`)
-is neither and is warned about, as is a component with workflow steps and no step row.
+is neither and is warned about, as is a component with workflow steps and no step row. In a step row, an object cited with
+its kind (`Name` (window 123)) and a capture count (`captures: 4`) name no process or recordset.
+
+A library step whose process no built component reaches is a NOTE, not a warning: a public workflow nothing in the genome
+calls. It stays a warning when a copy named alike is reachable, since the row then names the wrong copy.
 
 The framework pack's inventory script writes them with its `data` command; its source guide names the two files.
 A reference is a process only when the id resolves to a process of that name - root processes and their recordsets
@@ -41,6 +45,7 @@ NON_STEP_KEYS = {'workflow step', 'step', 'component', 'row schema', 'excluded',
                  'checkpoints', 'source framework', 'source export', 'inventory'}
 STEP_NAME = re.compile(r'^(\d+)\.\s+\*\*(?:Test case:\s*)?(.+?)\*\*')
 NAME_ID = re.compile(r'`([^`]+)`\s*\((?:id\s*)?(\d{3,6})')
+NOT_A_SOURCE = re.compile(r'`[^`]+`\s*\((?!id\s|recordsets?\s)[A-Za-z][A-Za-z -]*?\s+\d+\)|\bcaptures:\s*\d+', re.I)  # kind-tagged object, capture count
 BACKTICK = re.compile(r'`([^`]+)`')
 BARE_ID = re.compile(r'(recordsets?\s+)?\b(\d{3,6})\b')
 DATA_WORD = re.compile(r'(layout|recordset)s?\s*$', re.I)
@@ -120,6 +125,7 @@ def main():
 
     def refs(cell, where):
         procs, rsets, seen = [], [], set()
+        cell = NOT_A_SOURCE.sub(' ', cell)
         for name, num in NAME_ID.findall(cell):
             num = int(num)
             p = by_id.get(num)
@@ -198,12 +204,17 @@ def main():
                 if c.get('recordset'):
                     passed.setdefault(c['calleeId'], set()).add(c['recordset'])
 
-    steps = []
+    steps, notes = [], []
     for num, comp, cfile, project, key, name, procs, named, _ in rows:
         rs = []  # what drives the step: each process's own recordset, the ones it passes on, the ones passed to it
         for p in procs:
-            if p['id'] not in scope:
-                warn.append(f"{comp} step {key}: `{p['name']}` ({p['id']}) is not reachable from the built roots")
+            if p['id'] not in scope:  # only a library step can land here: the other components' processes seed the scope
+                twins = [q['id'] for q in by_name.get(p['name'], []) if q['id'] in scope]
+                if twins:
+                    warn.append(f"{comp} step {key}: `{p['name']}` ({p['id']}) is not reachable from the built roots; "
+                                f"the copy they run is {', '.join(map(str, twins))}")
+                else:
+                    notes.append(f"{comp} step {key}: `{p['name']}` ({p['id']}) is a library workflow no built component calls")
             for r in ([p['recordset']] if p.get('recordset') else []) \
                     + [c['recordset'] for c in p['calls'] if c.get('recordset')] + sorted(passed.get(p['id'], ())):
                 if r not in rs:
@@ -225,6 +236,8 @@ def main():
     open(path, 'w', encoding='utf-8').write(json.dumps(doc, indent=1, ensure_ascii=False))
     print(f"written {path}: {len(steps)} steps, {sum(len(s['sourceProcesses']) for s in steps)} process refs, "
           f"{len({r for s in steps for r in s['recordsets']})} recordsets")
+    for n in notes:
+        print('  NOTE', n)
     for w in warn:
         print('  WARN', w)
     return 0
