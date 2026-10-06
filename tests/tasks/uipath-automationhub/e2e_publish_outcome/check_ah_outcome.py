@@ -6,7 +6,8 @@ token (seed.json). Each subcommand is one success criterion:
 
     process        exactly one process on the tenant carries the token
     fields         its record is grounded: token name, real description, category and submitter set
-    applications   at least every PDD system the inventory already had is attached
+    applications   every PDD system is attached when the schema offers new_applications (and each now
+                   exists in the inventory by name), else every one the inventory already held
     documents      the PDD is attached as type 1 and its stored bytes equal the staged file
     bpmn-layout    the stored process map renders: a BPMNDiagram with shapes (RPANAV-19062)
 
@@ -115,6 +116,19 @@ def check_applications(seed: dict) -> str:
     if attached < expected_min:
         raise CheckFailed(f"{attached} application(s) attached, but {reason} — the publish dropped "
                           f"applications it could have attached (PDD names {len(PDD_SYSTEMS)})")
+    # The record exposes only a count (no `uip ah` verb lists a process's applications),
+    # so identify by name through the inventory: a `new_applications` publish creates
+    # the missing systems there, and a decoy attached in place of a PDD system leaves
+    # that system absent.
+    if seed.get("new_applications_offered"):
+        after = uip_json(["ah", "applications", "list", "--limit", "200"])
+        if not succeeded(after):
+            raise CheckFailed(f"uip ah applications list failed after the publish: {describe_failure(after)}")
+        names_after = [str(a.get("Name", "")).lower() for a in items(after)]
+        absent = [system for system in PDD_SYSTEMS if not any(system in name for name in names_after)]
+        if absent:
+            raise CheckFailed(f"PDD systems not in the inventory after the publish (not created, so not "
+                              f"the ones attached): {absent}")
     return f"{attached} application(s) attached; expected at least {expected_min} because {reason}"
 
 
