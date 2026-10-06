@@ -364,7 +364,7 @@ Or omit `Default` entirely if the variable is assigned before its first read.
 
 ## InvokeCode Code Property — Attribute Form Only
 
-Author `Code` as an XML **attribute** (XML-escaped; `&#xA;` for line breaks). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). A C# body still runs; a VB body passes `validate` and `build` and fails at run time with `No compiled code to run` and `BC30205: End of statement expected. At line 0`. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
+Author `Code` as an XML **attribute** (XML-escaped; `&#xA;` for line breaks). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). A C# body still runs; a VB body fails `validate` with `BC30205: End of statement expected. At line 0`. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
 
 **Correct:**
 ```xml
@@ -372,7 +372,7 @@ Author `Code` as an XML **attribute** (XML-escaped; `&#xA;` for line breaks). In
                Code="Dim total As Decimal = 0&#xA;result = total.ToString()" />
 ```
 
-**Fails at run time (passes validate + build):**
+**Fails (VB body as element text):**
 ```xml
 <ui:InvokeCode Language="VBNet" DisplayName="Process rows">
   <ui:InvokeCode.Code><![CDATA[Dim total As Decimal = 0
@@ -392,9 +392,8 @@ Failed to create a 'Language' from the text 'VisualBasic'.
 System.FormatException: VisualBasic is not a valid value for NetLanguage.
 ```
 
-Without `Language`, the code compiles as VB.NET whatever the project's expression language: the default is `VBNet`. A C# body without `Language="CSharp"` passes `validate` and `build` and fails at run time:
+Without `Language`, the code compiles as VB.NET whatever the project's expression language: the default is `VBNet`. A C# body without `Language="CSharp"` fails `validate` with VB errors:
 ```
-No compiled code to run
 error BC30800: Method arguments must be enclosed in parentheses.
 error BC30037: Character is not valid.
 ```

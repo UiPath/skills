@@ -6,7 +6,7 @@ InvokeCode is best suited as a quick escape hatch for simple, self-contained cod
 
 ## Language Attribute
 
-`Language` defaults to `VBNet` whatever the project's `expressionLanguage` is: without it, a C# body passes validation and build and fails at run time with `No compiled code to run` and VB `BC3xxxx` errors. Set it on every InvokeCode. The enum values differ from `project.json`:
+`Language` defaults to `VBNet` whatever the project's `expressionLanguage` is: without it, a C# body is compiled as VB.NET and fails with VB `BC3xxxx` errors. Set it on every InvokeCode. The enum values differ from `project.json`:
 
 | project.json `expressionLanguage` | InvokeCode `Language` value |
 |-----------------------------------|-----------------------------|

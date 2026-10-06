@@ -22,8 +22,7 @@ What can cause it:
   defined on the activity
 - A language selected that the current runtime/project does not support
 - No `Language` on the activity: it defaults to `VBNet` whatever the project's language, so a C# snippet
-  is compiled as VB and fails with "No compiled code to run" and VB errors (`BC30800`, `BC30037`, …),
-  although validate and build passed
+  is compiled as VB and fails with "No compiled code to run" and VB errors (`BC30800`, `BC30037`, …)
 - A VB snippet written as element text inside `<ui:InvokeCode.Code>` (bare or CDATA): its line breaks
   collapse into spaces, giving `BC30205: End of statement expected. At line 0`
 - Missing assembly/namespace imports for the APIs the snippet uses
