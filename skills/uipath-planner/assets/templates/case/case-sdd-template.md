@@ -234,8 +234,8 @@ Template-local rules:
 - Every stage and task carries a concrete `Design Rationale` and prose `Description`.
 - Secondary stages use `### Secondary Stage: {Name}`, `Stage Kind: secondary`, `Required for Case
   Completion: No`, and every secondary-stage ENTRY ROW carries `Interrupting: Yes` — including
-  decision-keyed rows (`selected-stage-completed`/`-exited` + `IF`). The only `Interrupting: No` entry row
-  on a secondary stage is a parallel-oversight `sla-status-change` row.
+  decision-keyed rows (`selected-stage-completed`/`-exited` + `IF`) and `sla-status-change` rows. There is
+  no `Interrupting: No` row on a secondary stage: every secondary entry interrupts at runtime.
 - Stage-picker repair is a replacement, never a duplicate. Which repair depends on what launches the
   lane, and the two are opposites — read the source before choosing.
   - **A person launches it** (pulled aside by hand, chosen from the stage picker, nothing triggers it
@@ -650,8 +650,10 @@ sequencing column (`sequential` when it says nothing), `**Design Rationale:**` f
 reasoning for the task (one concrete sentence, never boilerplate), and `**Task envelope**` from the
 Inputs/Outputs the draft already lists.
 
-Gate — the CONFORMANCE CHECKLIST below, run against the on-disk file BEFORE the Status: ready flip, in
-every mode. No script and no interpreter: Read the written file once (the one structural Read the lane
+Gate — `uip maestro case sdd validate` against the on-disk file BEFORE the Status: ready flip, in every
+mode (the lane's §Terminal step 3), plus, when finalizing a draft, the four draft-parity items (30–33)
+no CLI command sees, stated in the lane's §Template conformance gate. Only when the CLI has no `sdd`
+command, fall back to the full CONFORMANCE CHECKLIST below. No script and no interpreter: Read the written file once (the one structural Read the lane
 allows), then answer every item PASS or FAIL in the transcript, each with one verbatim quote from the
 file — the line that violates (FAIL) or the line that satisfies (PASS) — so the check is inspectable,
 never asserted. Judge structure by the ROLE and POSITION of a block (which heading level, which table,
@@ -662,9 +664,9 @@ ship a summary SDD (top-level headings like ## Source / ## Case Objective / ## S
 build-mode/path narration) even if a later caseplan.json would validate — rewrite from the model and
 this template.
 
-CONFORMANCE CHECKLIST — 35 items in 10 families, held in
+CONFORMANCE CHECKLIST — 36 items in 10 families, held in
 references/case/case-sdd-conformance-checklist.md. Items 30–33 apply only when finalizing a draft.
-The gate reads that file; authoring does not — the cell rules above are the render contract and are
+Only the no-`sdd` fallback reads that file; authoring does not — the cell rules above are the render contract and are
 COMPLETE, and nothing outside this template states a shape rule they do not. (Design semantics — which
 response, which gate, which default — stay case-design-layers-guide.md's; the cells own the shape.)
 ===================================================================================== -->

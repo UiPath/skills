@@ -2,6 +2,9 @@
   "_shared/case_check.py": {
     "Resolution audit": 1
   },
+  "_shared/check_case_breach_oversight.py": {
+    "No authored edges": 1
+  },
   "_shared/check_connector_activity.py": {
     "Unresolved resources": 1
   },
@@ -14,11 +17,17 @@
   "_shared/check_fix_broken_caseplan.py": {
     "Closed task types": 3
   },
+  "_shared/check_io_binding_case.py": {
+    "SDD is the sole post-design input, across sessions": 1
+  },
   "_shared/check_registry_handoff.py": {
     "Resolution audit": 2
   },
   "_shared/test_check_issue_journal.py": {
     "Resolution audit": 1
+  },
+  "_shared/test_sdd_corpus_parses_clean.py": {
+    "SDD is the sole post-design input, across sessions": 1
   },
   "athena_cm_event/athena_cm_event.yaml": {
     "Resolution audit": 2
@@ -40,6 +49,12 @@
   },
   "diagnose/missing_task_entry_rule/missing_task_entry_rule.yaml": {
     "The build is lossless against the SDD": 1
+  },
+  "freeform_sdd_normalized/freeform_sdd_normalized.yaml": {
+    "SDD is the sole post-design input, across sessions": 1
+  },
+  "gate_refusal_hands_back/gate_refusal_hands_back.yaml": {
+    "SDD is the sole post-design input, across sessions": 2
   },
   "golden_rebuild/cm_golden_expense/cm_golden_expense.yaml": {
     "Artifact I/O": 1

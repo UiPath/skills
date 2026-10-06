@@ -1,0 +1,411 @@
+{
+  "provenance": "agent-authored by a Claude Code session (skills-f0), 2026-09-30. Each document is an existing fixture SDD with exactly one defect injected, chosen from the measured defect inventory of the SDD-schema work (MST-15966), not from a prompt asking for sloppy writing.",
+  "known_limit": "These documents prove only that a gate catches the defect classes measured so far. They are not hand-authored and say nothing about defects nobody has measured; real editor documents earn that later.",
+  "assertion": "Each defect carries its own `expect`. `reject-naming-line`: the gate (uip maestro case sdd validate, CLI A6) exits non-zero and names the recorded line; `reject-naming-document` is the same for a document with no line. `read-as-seed`: the parser deliberately tolerates the defect, so the fixture parses to exactly its seed's model; a `warning` names the non-fatal code and line the gate must also report. The `observed` block records what one build did; it is not the assertion.",
+  "observed_build": {
+    "uip": "1.204.0 via bun link to ~/src/cli",
+    "cli_head": "1ffc137ba",
+    "cli_branch": "fix/case-sdd-silent-loss",
+    "cli_dirty": true,
+    "note": "cli-f3 working tree with CLI task 1 (norm collisions) in progress; that is why parenthetical-collision already fails"
+  },
+  "defects": [
+    {
+      "fixture": "fixtures/pipe-dropped-row/sdd.md",
+      "defect_class": "table-row-missing-leading-pipe",
+      "line": 312,
+      "seed": "tests/tasks/uipath-maestro-case/e2e_expense_runnable/fixtures/sdd.md",
+      "seed_blob": "33d473b7c478389f22975346a23dda1f9198854a",
+      "original": "| 2 | Fraud Anomaly Detection | agent | No | No | system | — |",
+      "degraded": "2 | Fraud Anomaly Detection | agent | No | No | system | — |",
+      "description": "Row 2 of Stage 3 (Finance Approval) `#### Tasks` loses its leading pipe. The row is valid GFM and renders, and Cliff chose to read it rather than reject it (CLI stack A, 2026-09-30), so the parser must keep this row and every row below it. Chosen from a sweep of this seed as the maximum task loss under the old table reader. `sdd validate` reports it as a non-fatal format warning at line 312 (Cliff, 2026-09-30); the parse stays tolerant.",
+      "measured_in": "cli-f3 sweep of cm_golden_expense: 136/263 single-line pipe drops parse identically, 127 change the model; firstTable ends the table at a pipe-less line",
+      "observed": {
+        "parse": {
+          "result": "Success",
+          "exit": 0,
+          "stages": 7,
+          "tasks": 13,
+          "notes": []
+        },
+        "convert": {
+          "result": "Success",
+          "exit": 0,
+          "unresolved": 23,
+          "derived": {
+            "stages": 7,
+            "tasks": 13,
+            "conditions": 35,
+            "variables": 10
+          }
+        },
+        "seed_parse": {
+          "result": "Success",
+          "exit": 0,
+          "stages": 7,
+          "tasks": 15,
+          "notes": []
+        },
+        "seed_convert": {
+          "result": "Success",
+          "exit": 0,
+          "unresolved": 24,
+          "derived": {
+            "stages": 7,
+            "tasks": 15,
+            "conditions": 37,
+            "variables": 10
+          }
+        },
+        "model_diff": [
+          [
+            ".stages[2].tasks",
+            "list[3]",
+            "list[1]"
+          ]
+        ],
+        "model_diff_count": 1,
+        "new_unresolved": []
+      },
+      "expect": "read-as-seed",
+      "warning": {
+        "code": "SDD_ROW_WITHOUT_OUTER_PIPES",
+        "line": 312
+      },
+      "observed_cli_1_205": {
+        "parse": {
+          "result": "Success",
+          "stages": 7,
+          "tasks": 15,
+          "notes": []
+        },
+        "convert": {
+          "result": "Success",
+          "derived": {
+            "stages": 7,
+            "tasks": 15
+          }
+        },
+        "model_diff_count": 0,
+        "validate": "the seed's 32 issues (pre-template seed: no Planner Handoff, no task envelopes, no activation modes) plus SDD_ROW_WITHOUT_OUTER_PIPES warning at line 312",
+        "note": "`observed` above is the old table reader, which ended the table at the pipe-less line and lost 2 tasks; 1.205 reads the row and every row below it"
+      }
+    },
+    {
+      "fixture": "fixtures/curly-quote-cell/sdd.md",
+      "defect_class": "curly-quotes-in-expression-cell",
+      "line": 211,
+      "seed": "tests/tasks/uipath-maestro-case/golden_rebuild/cm_golden_expense/fixtures/sdd.md",
+      "seed_blob": "5a5d6a3590a07b361148b3b67eb4b3de94ecd5e2",
+      "original": "| `selected-tasks-completed(\"Manager Approval\")` | `=js:vars.$xref('Stage 2','Manager Approval','Action') === \"reject\"` | exit-only | No | Reject Exit1 |",
+      "degraded": "| `selected-tasks-completed(\"Manager Approval\")` | `=js:vars.$xref('Stage 2','Manager Approval','Action') === “reject”` | exit-only | No | Reject Exit1 |",
+      "description": "Only the IF cell of Stage 2 exit rule `Reject Exit1`: `=== \"reject\"` becomes `=== “reject”`. The selector cell is left straight so the defect is the silent kind (invalid JS body), not the loud selector-target kind.",
+      "measured_in": "skills-f0 probe of cm_golden_expense with curly quotes on 27 lines: convert Success, Unresolved 8->18, four silent breakages including =js: bodies",
+      "observed": {
+        "parse": {
+          "result": "Success",
+          "exit": 0,
+          "stages": 8,
+          "tasks": 15,
+          "notes": []
+        },
+        "convert": {
+          "result": "Success",
+          "exit": 0,
+          "unresolved": 8,
+          "derived": {
+            "stages": 8,
+            "tasks": 15,
+            "conditions": 35,
+            "variables": 0
+          }
+        },
+        "seed_parse": {
+          "result": "Success",
+          "exit": 0,
+          "stages": 8,
+          "tasks": 15,
+          "notes": []
+        },
+        "seed_convert": {
+          "result": "Success",
+          "exit": 0,
+          "unresolved": 8,
+          "derived": {
+            "stages": 8,
+            "tasks": 15,
+            "conditions": 35,
+            "variables": 0
+          }
+        },
+        "model_diff": [
+          [
+            ".stages[1].exitConditions[1].ifExpression",
+            "=js:vars.$xref('Stage 2','Manager Approval','Action') === \"reject\"",
+            "=js:vars.$xref('Stage 2','Manager Approval','Action') === “reject”"
+          ]
+        ],
+        "model_diff_count": 1,
+        "new_unresolved": []
+      },
+      "expect": "reject-naming-line"
+    },
+    {
+      "fixture": "fixtures/renamed-heading/sdd.md",
+      "defect_class": "section-heading-renamed",
+      "line": 117,
+      "seed": "tests/tasks/uipath-maestro-case/sla_from_sdd/fixtures/sdd.md",
+      "seed_blob": "c9cd2f2a15a5daa1d7df7895e2e0f81b1f9fca07",
+      "original": "### Case Variables",
+      "degraded": "### Variables",
+      "description": "`### Case Variables` renamed to `### Variables`; the whole variables table stops being read.",
+      "measured_in": "diatribes-1c probe: `### Case Variables` renamed to `### Variables` gives 1 note, exit 0",
+      "observed": {
+        "parse": {
+          "result": "Success",
+          "exit": 0,
+          "stages": 5,
+          "tasks": 8,
+          "notes": [
+            "heading \"Variables\" (level 3) reads like an audited section but matches no accepted spelling — rename it to one of the canonical headings, or the checks it feeds are skipped"
+          ]
+        },
+        "convert": {
+          "result": "Success",
+          "exit": 0,
+          "unresolved": 28,
+          "derived": {
+            "stages": 5,
+            "tasks": 8,
+            "conditions": 21,
+            "variables": 0
+          }
+        },
+        "seed_parse": {
+          "result": "Success",
+          "exit": 0,
+          "stages": 5,
+          "tasks": 8,
+          "notes": []
+        },
+        "seed_convert": {
+          "result": "Success",
+          "exit": 0,
+          "unresolved": 24,
+          "derived": {
+            "stages": 5,
+            "tasks": 8,
+            "conditions": 21,
+            "variables": 8
+          }
+        },
+        "model_diff": [
+          [
+            ".intake.parseNotes",
+            "list[0]",
+            "list[1]"
+          ],
+          [
+            ".intake.sawVariableSection",
+            "True",
+            "False"
+          ],
+          [
+            ".variableCategories.assessordecision",
+            "variable",
+            "None"
+          ],
+          [
+            ".variableCategories.claimoutcome",
+            "out",
+            "None"
+          ],
+          [
+            ".variableCategories.claimreference",
+            "in",
+            "None"
+          ],
+          [
+            ".variableCategories.claimvalue",
+            "in",
+            "None"
+          ],
+          [
+            ".variableCategories.damagecategory",
+            "variable",
+            "None"
+          ],
+          [
+            ".variableCategories.paperworkcomplete",
+            "variable",
+            "None"
+          ],
+          [
+            ".variableCategories.productserial",
+            "in",
+            "None"
+          ],
+          [
+            ".variableCategories.settlementreference",
+            "variable",
+            "None"
+          ]
+        ],
+        "model_diff_count": 22,
+        "new_unresolved": [
+          [
+            "output-type",
+            "nodes[Intake].data.tasks[Validate Claim Details].outputs[response.paperworkComplete]"
+          ],
+          [
+            "output-type",
+            "nodes[Assessment].data.tasks[Assess Damage].outputs[response.damageCategory]"
+          ],
+          [
+            "output-type",
+            "nodes[Assessment].data.tasks[Assessor Decision].outputs[Action]"
+          ],
+          [
+            "output-type",
+            "nodes[Settlement].data.tasks[Issue Settlement].outputs[response.settlementReference]"
+          ]
+        ]
+      },
+      "expect": "reject-naming-line"
+    },
+    {
+      "fixture": "fixtures/parenthetical-collision/sdd.md",
+      "defect_class": "norm-parenthetical-collision",
+      "line": 70,
+      "seed": "tests/tasks/uipath-maestro-case/aged_invoice_structural/fixtures/sdd.md",
+      "seed_blob": "0d10cc9e999d65632e1435070777416d0bc15a93",
+      "original": null,
+      "degraded": "| invoiceAmount (tax) | Variable | float | T02 | response.tax_amount | | Tax portion of the invoice amount. |",
+      "description": "A row `invoiceAmount (tax)` inserted after `invoiceAmount`. Built for a norm() merge of the two names; on 1.205 parse keeps both, but the name is not an identifier: convert wrote it as the id `invoiceAmount (tax)` (no `vars.` expression can reach it), retyped float to string through the same norm() key mismatch that dropped every snake_case row's type and default, and both validators passed it. cli #4804 (415db27af) refuses it as the read-tier error SDD_VARIABLE_NAME_NOT_IDENTIFIER at line 70 — the case editor's C# identifier rule plus its reserved roots, not camelCase — and d642b5952 fixes the convert lookup.",
+      "measured_in": "diatribes-1c probe: norm() maps five of five name pairs differing by a trailing (annotation) to one key, e.g. `Claim Amount (net)`/`Claim Amount (gross)`",
+      "observed": {
+        "parse": {
+          "result": "Failure",
+          "exit": 1,
+          "message": "Could not parse parenthetical-collision/sdd.md: the Case Variables table declares variables the parser cannot tell apart: \"invoiceAmount\" on line 69 and \"invoiceAmount (tax)\" on line 70 both read as \"invoiceamount\". Each pair would merge into one variable with one Category, Type and Default. Rename one of each pair so the names differ by more than case, punctuation or a trailing (annotation)."
+        },
+        "convert": {
+          "result": "Failure",
+          "exit": 1,
+          "message": "Could not parse parenthetical-collision/sdd.md: the Case Variables table declares variables the parser cannot tell apart: \"invoiceAmount\" on line 69 and \"invoiceAmount (tax)\" on line 70 both read as \"invoiceamount\". Each pair would merge into one variable with one Category, Type and Default. Rename one of each pair so the names differ by more than case, punctuation or a trailing (annotation)."
+        },
+        "seed_parse": {
+          "result": "Success",
+          "exit": 0,
+          "stages": 5,
+          "tasks": 8,
+          "notes": []
+        },
+        "seed_convert": {
+          "result": "Success",
+          "exit": 0,
+          "unresolved": 18,
+          "derived": {
+            "stages": 5,
+            "tasks": 8,
+            "conditions": 20,
+            "variables": 7
+          }
+        }
+      },
+      "expect": "reject-naming-line"
+    },
+    {
+      "fixture": "fixtures/empty-document/sdd.md",
+      "defect_class": "empty-document",
+      "line": null,
+      "seed": null,
+      "seed_blob": null,
+      "original": null,
+      "degraded": null,
+      "description": "Zero bytes.",
+      "measured_in": "skills-f0 probe: a 0-byte sdd.md parses Success with 0 stages, 0 tasks, 0 notes; convert Success",
+      "observed": {
+        "parse": {
+          "result": "Success",
+          "exit": 0,
+          "stages": 0,
+          "tasks": 0,
+          "notes": []
+        },
+        "convert": {
+          "result": "Success",
+          "exit": 0,
+          "unresolved": 2,
+          "derived": {
+            "stages": 0,
+            "tasks": 0,
+            "conditions": 0,
+            "variables": 0
+          }
+        }
+      },
+      "expect": "reject-naming-document"
+    }
+  ],
+  "observed_later": {
+    "build": "cli stack A tip, #4664 -> #4667, local build by cli-f3, 2026-09-30",
+    "results": {
+      "empty-document": "exit 1, \"no stages parsed\"",
+      "renamed-heading": "exit 1, names heading \"Variables\" (level 3, line 117)",
+      "parenthetical-collision": "exit 0 on stack A; fails naming lines 69 and 70 on #4662 (separate PR off main)",
+      "curly-quote-cell": "exit 0; cell grammar is CLI A5, not built",
+      "pipe-dropped-row": "exit 0, model identical to seed"
+    }
+  },
+  "observed_gate": {
+    "build": "UiPath/cli 367bfdb69 (poc/sdd-local-build-2: stack A1-A6 #4664->#4670, #4660, #4662), `uip maestro case sdd validate`, 2026-09-30",
+    "results": {
+      "curly-quote-cell": {
+        "result": "Failure",
+        "issues": [
+          {
+            "Code": "SDD_JS_DOES_NOT_COMPILE",
+            "Severity": "error",
+            "Line": 211
+          }
+        ]
+      },
+      "empty-document": {
+        "result": "Failure",
+        "issues": [
+          {
+            "Code": "SDD_NO_STAGES",
+            "Severity": "error",
+            "Line": null
+          }
+        ]
+      },
+      "parenthetical-collision": {
+        "result": "Failure",
+        "message": "Could not parse parenthetical-collision/sdd.md: the Case Variables table declares variables the parser cannot tell apart: \"invoiceAmount\" on line 69 and \"invoiceAmount (tax)\" on line 70 both read as \""
+      },
+      "pipe-dropped-row": {
+        "result": "Success",
+        "issues": [
+          {
+            "Code": "SDD_ROW_WITHOUT_OUTER_PIPES",
+            "Severity": "warning",
+            "Line": 312
+          }
+        ]
+      },
+      "renamed-heading": {
+        "result": "Failure",
+        "issues": [
+          {
+            "Code": "SDD_SECTION_NOT_READ",
+            "Severity": "error",
+            "Line": 117
+          }
+        ]
+      }
+    },
+    "note": "parenthetical-collision reports through the parse failure Message until SDD_NAME_COLLISION lands with cli#4662; test_degraded_gate.py accepts \"line <N>\" in Message for that reason"
+  }
+}

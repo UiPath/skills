@@ -281,3 +281,40 @@ def test_dot_separated_argument_value_not_treated_as_verb(tmp_path):
         f"Expected no findings — `core.action.script` is an argument, "
         f"got {findings!r}."
     )
+
+
+# --- Eval preflight: --catalog / --require -----------------------------------
+# A skill that never calls a command and a build that lacks it score the same
+# in an eval; --require tells the two apart before the run.
+
+def test_required_gaps_names_each_side():
+    catalog = {"maestro case sdd convert", "maestro case sdd parse"}
+    refs = {"maestro case sdd parse", "maestro case sdd convert <SDD_PATH>"}
+    assert skill.required_gaps(["maestro case sdd convert"], catalog, refs) == []
+    [(verb, why)] = skill.required_gaps(["maestro case sdd validate"], catalog, refs)
+    assert "lacks it" in why
+    [(verb, why)] = skill.required_gaps(["maestro case sdd parse extra"], catalog | {"maestro case sdd parse extra"}, refs)
+    assert "never referenced" in why
+
+
+def test_required_gaps_does_not_count_a_longer_sibling_as_a_reference():
+    catalog = {"maestro case sdd"}
+    assert skill.required_gaps(["maestro case sdd"], catalog, {"maestro case sddx"})
+
+
+def _run_main(monkeypatch, argv):
+    monkeypatch.setattr(sys, "argv", ["check-skill-verbs.py", *argv])
+    return skill.main()
+
+
+def test_main_require_against_a_given_catalog(tmp_path, monkeypatch, capsys):
+    cat = tmp_path / "catalog.json"
+    cat.write_text(json.dumps({"verbs": ["maestro case sdd convert"], "cli_version": "t"}))
+    md = tmp_path / "SKILL.md"
+    md.write_text("Run `uip maestro case sdd convert <SDD_PATH> --output json`.\n")
+    assert _run_main(monkeypatch, ["--catalog", str(cat), "--require", "maestro case sdd convert", str(md)]) == 0
+    assert _run_main(monkeypatch, ["--catalog", str(cat), "--require", "maestro case sdd validate", str(md)]) == 1
+    assert "lacks it" in capsys.readouterr().out
+    md.write_text("No commands here.\n")
+    assert _run_main(monkeypatch, ["--catalog", str(cat), "--require", "maestro case sdd convert", str(md)]) == 1
+    assert "never referenced" in capsys.readouterr().out

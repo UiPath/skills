@@ -4,8 +4,9 @@ description: >
   linearly behind a manual trigger. Adds an explicit case-entered
   stage-entry condition on Intake, TWO parallel built-in wait-for-timer
   tasks in Review that share the SAME current-stage-entered task-entry
-  condition (so both activate concurrently when Review is entered) and
-  occupy one shared inner data.tasks set, one of which carries skipCondition
+  condition (so both activate concurrently when Review is entered — in
+  one shared data.tasks set or one set each; both run together at runtime,
+  debug instance 2df59883), one of which carries skipCondition
   + shouldRunOnlyOnce flags, and three root-level case variables
   exercising all three categories: a Variable (skipReview) referenced
   by skipCondition, an In argument (caseRef) bridged through the trigger
@@ -14,7 +15,7 @@ description: >
   (selected-stage-completed chaining, edges retired), case-entered rule
   type, wait-for-timer task type,
   task-entry conditions, parallel-task pattern (multiple tasks in one
-  stage with the same entry condition + one shared task set), BaseTask
+  stage with the same entry condition), BaseTask
   flags (skipCondition + shouldRunOnlyOnce), and the full Variable /
   In / Out argument trio. Validates and asserts on the structural shape
   of caseplan.json.
@@ -251,7 +252,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "3 stages chained via condition-driven transitions (Review←Intake, Decision←Review via selected-stage-completed, edges retired) + case-entered on Intake; TWO wait-for-timer tasks on Review — Hold For 1 Hour (isRequired:true default + skipCondition + shouldRunOnlyOnce) and Notify Reviewer (isRequired:false) — both carrying current-stage-entered task-entry in one shared parallel task set; root carries 7 variables exercising a spread of Variable types/shapes (boolean skipReview, string caseRef In + finalDecision Out, date dueDate, jsonSchema caseMetadata with body.type=object, jsonSchema attachments with body.type=array, jsonSchema caseSchema with body.type=object) including the trigger output mapping for caseRef In argument"
+    description: "3 stages chained via condition-driven transitions (Review←Intake, Decision←Review via selected-stage-completed, edges retired) + case-entered on Intake; TWO wait-for-timer tasks on Review — Hold For 1 Hour (isRequired:true default + skipCondition + shouldRunOnlyOnce) and Notify Reviewer (isRequired:false) — both carrying current-stage-entered task-entry (shared or separate task sets); root carries 7 variables exercising a spread of Variable types/shapes (boolean skipReview, string caseRef In + finalDecision Out, date dueDate, jsonSchema caseMetadata with body.type=object, jsonSchema attachments with body.type=array, jsonSchema caseSchema with body.type=object) including the trigger output mapping for caseRef In argument"
     command: "python3 $REFERENCE_DIR/_shared/check_linear_three_stages.py"
     timeout: 720
     expected_exit_code: 0

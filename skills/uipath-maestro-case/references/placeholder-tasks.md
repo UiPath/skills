@@ -32,7 +32,7 @@ The user reviews structure first, then attaches real resources once they exist.
 
 ## When a Placeholder Is Created
 
-During **execution** (Phase 2, Step 9), for any `registry-resolved.json` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`:
+During **execution** (Phase 2, Step 9), for any `registry-resolved.json` entry with `selected: null` (as `sdd resolve` writes an empty or unresolved lookup) or whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`:
 
 1. Skip the schema fetch (`uip maestro case spec` / `uip maestro case tasks describe`).
 2. Write the task JSON node with structural fields only — no `taskTypeId` / `connectionId` / `inputs` / `outputs` keys (see JSON Shape below).
@@ -77,7 +77,7 @@ Case-level event triggers (`type: "uipath.case.trigger"` with `data.inputs.servi
 
 ### Connector condition rules
 
-When a `wait-for-connector` rule's connector hasn't resolved at write-time, emit the rule with a **stub `uipath`** (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`) — a deliberate mock that validates clean but fails at Studio Web / debug / run until replaced. Full recipe + skip behavior + upgrade path: [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
+When a `wait-for-connector` rule's connector hasn't resolved at write-time, the rule stays an **unfinished connector rule**: either the `"placeholder"` stub (`serviceType` + 2 `"placeholder"` context fields: `connectorKey` + `operation`) or the `context: []` form that `sdd convert` writes on a CLI carrying cli#4589. Either form is a deliberate mock that fails at Studio Web / debug / run until replaced. Detect it by a missing or empty `connectorKey` / `operation`, never by the `"placeholder"` string. Full recipe + skip behavior + upgrade path: [connector-trigger-impl.md § Placeholder fallback](connector-trigger-impl.md#placeholder-fallback).
 
 ## `registry-resolved.json` Entry Shape
 

@@ -306,7 +306,7 @@ The architectural core sections differ per template. For each product, generate 
 - §3 Personas & App Views
 - §4 Integrations (resource roll-up for connectors, API workflows, agents, processes/RPA, child cases, external agents, IXP models, coded functions)
 - Case section headings render in the template's long form (`## Section 1: Case Definition`, …) — the heading TEXT is load-bearing downstream (`uipath-maestro-case` parses it verbatim); `§N` is the reference notation in planner docs only. Do not emit the legacy planner-only `§3 Stages` / `§4 Tasks Grid` / `§13 Task Type Registry` format.
-- Case body content obeys [case-design-layers-guide.md](case/case-design-layers-guide.md) (model, authoring method, closure checklist) and the case SDD template's inline render contract (gate: [case-sdd-conformance-checklist.md](case/case-sdd-conformance-checklist.md)); tenant grounding runs per the lane's §Tenant grounding. For conversational (non-PDD) case requests, delegated case design, and case draft finalization, the whole flow is the Case Design Lane — [case-design-lane-guide.md](case/case-design-lane-guide.md) — not the generic 3-phase model in this guide.
+- Case body content obeys [case-design-layers-guide.md](case/case-design-layers-guide.md) (model, authoring method, closure checklist) and the case SDD template's inline render contract (gate: `uip maestro case sdd validate` exiting 0 before the `ready` flip, with [case-sdd-conformance-checklist.md](case/case-sdd-conformance-checklist.md) as the fallback when the CLI has no `sdd` command and `uip maestro case sdd format` after it — the lane's §Terminal steps 3 and 5); tenant grounding runs per the lane's §Tenant grounding. For conversational (non-PDD) case requests, delegated case design, and case draft finalization, the whole flow is the Case Design Lane — [case-design-lane-guide.md](case/case-design-lane-guide.md) — not the generic 3-phase model in this guide.
 
 **Agents:**
 - §2 Agent Framework (LangGraph / LlamaIndex / OpenAI Agents / Simple Function)
@@ -575,10 +575,14 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
 <SME_REVIEW_COUNT> open SME review items (if any — list each with its class and default).
 
+Runs as designed: no — <R> of <N> resources resolved; the first unresolved on the primary path is "<TASK>" in "<STAGE>". (Case scope, and only when R < N.)
+
 **Next — branch on the handoff `Status`:**
 - `ready` — Phase D is complete and the SDD is on disk. Lane A (task derivation) continues on the next turn with this SDD path; open default-carried SME items travel with the derived tasks as assumptions — confirm them before production.
 - `draft` (blocking SME items) — Blocked on: <BLOCKING_ITEMS>. Answer these and the SDD finalizes to `ready`; Lane A refuses drafts.
 ```
+
+**The `Runs as designed` line — Case scope.** Count the resource identities in §2 task detail blocks and the §1/§4 trigger and connector rows: N is all of them, and R is the ones not left `<UNRESOLVED>`. The primary path starts with the first stage, whose entry rule is `case-entered`. When R < N, emit the line and name the first unresolved task or trigger on that path. When R = N, omit the line entirely: no `yes` variant exists, because a line that always appears is a line people learn to skip. A resource left unresolved is still `default-carried`, so this line does not block `ready`. It exists because a `ready` SDD with zero resolved resources builds into a case where every task is a placeholder: the build validates, and debug stops at its first task. Name that in the summary so the user creates or binds the resources before anyone runs it.
 
 ### Step 2.5: Word (.docx) Delivery — only when requested
 

@@ -1,0 +1,51 @@
+name: SDD Corpus
+
+# Every committed case SDD under tests/tasks/uipath-maestro-case parses clean
+# through the published CLI (tests/tasks/uipath-maestro-case/_shared/
+# test_sdd_corpus_parses_clean.py), and `sdd validate` meets each degraded
+# fixture's expect (degraded_sdd_conformance/test_degraded_gate.py). While
+# @latest lacks those commands the tests skip and say so under -rs; they start
+# checking by themselves once the commands ship.
+#
+# Advisory, not required (docs/REQUIRED-CHECKS.md Rule 4): it depends on
+# installing @uipath/cli@latest from npm, so an npm outage or a bad release
+# would otherwise block every PR. Promote it once it has checked for real.
+#
+# No `paths:` filter: a CLI release can break a document no PR touched.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: sdd-corpus-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event.action == 'synchronize' }}
+
+permissions:
+  contents: read
+
+jobs:
+  corpus:
+    runs-on: uipath-ubuntu-latest
+    name: maestro-case SDD corpus parses clean (advisory)
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: '20'
+
+      - name: Install uip and pytest
+        run: |
+          npm install -g @uipath/cli@latest
+          pip install pytest
+
+      - name: Run corpus check
+        env:
+          REQUIRE_UIP: '1'
+        run: pytest tests/tasks/uipath-maestro-case/_shared/test_sdd_corpus_parses_clean.py tests/tasks/uipath-maestro-case/degraded_sdd_conformance/test_degraded_gate.py -v -rs
