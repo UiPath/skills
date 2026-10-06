@@ -384,8 +384,9 @@ discovery or the user.
   `name` / `folderPath`) — never a `Key` binding or a `process` `releaseKey`,
   even when `registry get` returns one. Both bindings carry the rule key as
   `resourceKey`: the rule's catalog entity key, never a `Key` from `Processes`
-  or a release key; if the user has not given it, ask. A rule defined only in
-  this solution uses its name as the key. The `folderPath` binding always carries a `default`, `""` when
+  or a release key; if the user has not given it, ask. Bind only a deployed
+  rule; one defined only in this solution is deployed first (SKILL.md rule 17).
+  The `folderPath` binding always carries a `default`, `""` when
   the rule lives in the running job's folder. The unbound `_label` context
   input holds the rule's name.
 - **Connection bindings** (`Intsvc.*`): the context references a connection via

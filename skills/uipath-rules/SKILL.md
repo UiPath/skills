@@ -99,7 +99,7 @@ uip rules versions <RULE_NAME> --folder-path <FOLDER_PATH> --output json
 uip rules describe <RULE_NAME> --folder-path <FOLDER_PATH> --output json
 ```
 
-Each command takes `--folder-path` or `--folder-key`, never both. `describe` returns the active version's entry points, with `InputArguments` and `OutputArguments` as JSON Schema strings. `OutputArguments` carrying `"x-uipath-decision-keyed": true` nests each output under its decision's name. Binding a rule into a process, workflow, or case belongs to that artifact's skill.
+Each command takes `--folder-path` or `--folder-key`, never both. `describe` returns the active version's entry points, with `InputArguments` and `OutputArguments` as JSON Schema strings. `OutputArguments` carrying `"x-uipath-decision-keyed": true` nests each output under its decision's name. Binding a rule into a process, workflow, or case belongs to that artifact's skill; consumers bind only a deployed rule.
 <!--skill-flavor:deployed-rules:end-->
 
 ## Reference Navigation

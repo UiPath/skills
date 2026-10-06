@@ -574,8 +574,10 @@ and honestly surfaced to the user as gaps when asked.
    asks for none of those — emit
    only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers.
 17. **Incorporating a resource delegated to a sibling skill (RPA workflow, API
-   workflow, agent) is a five-step sequence, in this order. Stopping after
-   the owning skill hands the resource back is not done.**
+   workflow, agent, business rule) is a five-step sequence, in this order.
+   Stopping after the owning skill hands the resource back is not done.**
+   (A business rule skips step 4 and binds per
+   [registry-workflow.md](references/registry-workflow.md) § Business rule bindings.)
 <!--skill-flavor:delegated-resource-solution-first:start-->
    (1) Create or open the solution **first** (`uip solution init`; on
    `unknown command`, the older `uip solution new`), and
