@@ -118,11 +118,13 @@ The case, each stage, and each task move through gates driven by **rules** in di
 | Gate | Marks complete | Legal WHEN rules |
 |---|---|---|
 | Stage entry | — | `case-entered` (first stage only), `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector`, `user-selected-stage`, `sla-status-change` |
-| Stage completion | Yes | `required-tasks-completed`, `wait-for-connector` |
+| Stage completion | Yes | `required-tasks-completed`, `selected-tasks-completed`, `wait-for-connector` |
 | Stage exit | No | `selected-tasks-completed`, `wait-for-connector` |
 | Task entry | — | `current-stage-entered`, `selected-tasks-completed`, `wait-for-connector`, `sla-status-change`, `adhoc`, `runs-sequentially` |
 | Case completion | Yes | `required-stages-completed`, `wait-for-connector` |
 | Case exit | No | `selected-stage-completed`, `selected-stage-exited`, `wait-for-connector` |
+
+`selected-tasks-completed("T")` on a completing row completes the stage when THOSE tasks finish; `required-tasks-completed` waits for every `Required: Yes` task. They are not interchangeable — keep the one the source or a supplied SDD states (the case compiler emits a `TasksCompleted` completion condition for either; verified against @uipath/case-schema 2026-10-06).
 
 1. Tasks have NO exit or completion conditions — a task completes when its own work finishes; downstream gates key off `required-tasks-completed` / `selected-tasks-completed`.
 2. `Marks Complete: Yes` pairs only with `required-*` rules (or `wait-for-connector`). A `Yes` + `selected-*` pair is a schema error.
