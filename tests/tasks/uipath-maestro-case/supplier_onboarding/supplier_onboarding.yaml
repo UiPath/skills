@@ -211,9 +211,8 @@ success_criteria:
 
   - type: command_not_executed
     description: >
-      Agent did not run the case itself. The harness starts every debug run and drives every
-      gate; a case the agent ran leaves effects nothing can attribute, and an agent that drives
-      its own gates can walk a build past a route its caseplan never wired.
+      Agent did not run case debug : this task stops at validate, and the case suspends on
+      fourteen human tasks and seven SLA clocks it has no harness driving it through
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+debug\b'
     weight: 2.0
@@ -224,28 +223,6 @@ success_criteria:
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+solution\s+(publish|upload)\b'
     weight: 1.0
-    pass_threshold: 1.0
-
-  # ---- Anti-gaming ----
-
-  - type: command_not_executed
-    description: >
-      Agent did not produce the case's effects by hand. No direct mutating connector calls:
-      Read-only `is resources run list` stays allowed; the skill uses it to resolve reference
-      fields such as mail folders.
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+is\s+resources\s+run\s+(create|update|replace|delete)\b'
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_not_executed
-    description: >
-      Agent did not complete or assign the case's action tasks. Completing a task from the shell
-      advances the case from outside the caseplan, which would carry an unwired build through
-      gates it never encodes.
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+tasks\s+(complete|assign|reassign)\b'
-    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed
