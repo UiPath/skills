@@ -9,9 +9,11 @@ Final-state only. Validates:
   2. An index context on "UiPathAgentsProductKnowledge" in
      "Shared/uipath-agents" with a valid lowercase retrievalMode, plus its
      bindings_v2.json index binding.
-  3. "EmailDrafter" is wired as an external agent tool (type=agent,
-     location=external, processName=EmailDrafter, folderPath of the deployed
-     agent, release key as referenceKey).
+  3. "CustomerFollowUpDrafter" is wired as an external agent tool
+     (type=agent, location=external, processName, folderPath of the deployed
+     agent, release key as referenceKey) whose input/output schemas mirror
+     the agent's InputArgumentsSchemaV2 / OutputArgumentsSchemaV2
+     (descriptions ignored).
 """
 
 import os
@@ -34,8 +36,28 @@ from _shared.use_case_assertions import (  # noqa: E402
 AGENT_DIR = Path(os.getcwd()) / "EnablementSol" / "AgentsEnablementAssistant"
 INDEX_NAME = "UiPathAgentsProductKnowledge"
 INDEX_FOLDER = "Shared/uipath-agents"
-DRAFTER = "EmailDrafter"
-DRAFTER_FOLDER = "Shared/uipath-agents/EmailDrafter"
+DRAFTER = "CustomerFollowUpDrafter"
+DRAFTER_FOLDER = "Shared/uipath-agents/CustomerFollowUpDrafterSol"
+# V2 argument schemas of the deployed agent, from `uip solution resources get`.
+DRAFTER_INPUT = {
+    "type": "object",
+    "properties": {k: {"type": "string"} for k in ("customerName", "context", "keyPoints", "tone")},
+}
+DRAFTER_OUTPUT = {
+    "type": "object",
+    "properties": {"subject": {"type": "string"}, "body": {"type": "string"}},
+}
+
+
+def strip(node):
+    if isinstance(node, dict):
+        return {
+            k: strip(v) for k, v in node.items()
+            if k not in ("description", "title") and not (k == "required" and v == [])
+        }
+    if isinstance(node, list):
+        return [strip(i) for i in node]
+    return node
 
 
 def check_conversational(agent: dict) -> None:
@@ -90,8 +112,12 @@ def check_drafter_tool() -> None:
     rkey = tool.get("referenceKey")
     if not isinstance(rkey, str) or not UUID_RE.match(rkey):
         fail(f"{DRAFTER} tool referenceKey must be the deployed release Key GUID, got {rkey!r}")
-    if not ((tool.get("inputSchema") or {}).get("properties")):
-        fail(f"{DRAFTER} tool inputSchema is empty — it must mirror the deployed agent's inputs")
+    for label, mine, truth in (
+        ("inputSchema", tool.get("inputSchema"), DRAFTER_INPUT),
+        ("outputSchema", tool.get("outputSchema"), DRAFTER_OUTPUT),
+    ):
+        if strip(mine) != truth:
+            fail(f"{DRAFTER} tool {label} does not mirror the deployed agent's V2 schema (descriptions ignored): {mine!r}")
     print(f"OK: {DRAFTER} wired as an external agent tool ({folder})")
 
 
