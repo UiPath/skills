@@ -44,7 +44,7 @@ Two families. Classify correctly — misclassification either wastes retries on 
 | Need | Use | Notes |
 |------|-----|-------|
 | Handle / classify a failure, run compensating logic | **Try/Catch** | Wrap each unit of external interaction (UI, file, network, DB) whose failure is handled differently — at the step, transaction or process level, not per activity; not assignments or control flow |
-| Branch on whether a UI element is there | **Check App State** | Only when absence changes what happens next — typically a popup that may appear within some time (dismiss it if it shows, carry on if not). Not as a guard before acting on the same element, a page-load wait, or a check that only throws — the UI activity's own timeout and "element not found" do that (UIA package guide, *Unnecessary Check App State*) |
+| Branch on whether a UI element is there | **Check App State** | Only when absence changes what happens next — typically a popup that may appear within some time (dismiss it if it shows, carry on if not). Not as a guard before acting on the same element, a page-load wait, or a check that only throws on an element a later activity acts on — that activity's own timeout and "element not found" do that (UIA package guide, *Unnecessary Check App State*) |
 | Auto-retry a flaky action with a success check | **Retry Scope** | Add a Condition to verify the action landed; keep the body idempotent |
 | Reject bad input before any work | **Fail-fast** + `Throw New BusinessRuleException` | Validate all inputs up front (§7) |
 | Tolerate an expected, non-critical failure | **`ContinueOnError=True`** | Narrow set only (§6). Never on data/critical writes |
