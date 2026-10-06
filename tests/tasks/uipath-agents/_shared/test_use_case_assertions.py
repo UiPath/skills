@@ -11,6 +11,7 @@ from _shared.use_case_assertions import (  # noqa: E402
     assert_enum,
     assert_has_fields,
     assert_inputs_referenced,
+    assert_integration_wiring,
     attachment_fields,
     find_property,
     is_file_reading_tool,
@@ -116,3 +117,27 @@ def test_require_resource_locates_by_content(tmp_path):
     assert path.parent.name == "Read Invoice"
     with pytest.raises(SystemExit):
         require_resource(tmp_path, lambda d: d.get("$resourceType") == "escalation", "escalation")
+
+
+def _is_tool(conn_id):
+    return {
+        "iconUrl": "https://example.com/icon",
+        "properties": {
+            "toolPath": "/curated_create_issue",
+            "method": "POST",
+            "parameters": [],
+            "connection": {
+                "id": conn_id,
+                "name": "jira",
+                "isDefault": False,
+                "folder": {"key": "f", "path": "f"},
+                "solutionProperties": {"resourceKey": conn_id},
+            },
+        },
+    }
+
+
+def test_integration_wiring_rejects_placeholder_connection_id():
+    assert_integration_wiring(_is_tool("f5273a4d-d492-4bcd-a106-5a20bf89a3ef"))
+    with pytest.raises(SystemExit):
+        assert_integration_wiring(_is_tool("00000000-0000-0000-0000-000000000000"))

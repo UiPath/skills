@@ -4,10 +4,12 @@
 Final-state only. Validates:
   1. Autonomous agent; schemas in sync; inputs templated.
   2. An Integration Service tool on connector `uipath-atlassian-jira` whose
-     activity creates an issue, bound to the "jira-coded-eval" connection and
-     passing the Studio Web silent-drop rules (connection id/resourceKey,
-     folder key/path, isDefault=false, iconUrl, enumValues shape).
-  3. The PRODEV project is targeted — as a static tool parameter or in the
+     activity creates an issue, bound to a real (non-placeholder) connection
+     and passing the Studio Web silent-drop rules (connection id/resourceKey,
+     folder key/path, isDefault=false, iconUrl, enumValues shape). The
+     connection is not pinned by name: the prompt says "the Jira connection
+     we already have", so any discovered Jira connection is correct.
+  3. The AB project is targeted — as a static tool parameter or in the
      system prompt.
   4. The solution provisions a Jira connection resource.
   5. A memorySpace feature attaches "UiPathAgentsSupportMemory" from
@@ -18,6 +20,7 @@ Final-state only. Validates:
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -41,7 +44,7 @@ from _shared.use_case_assertions import (  # noqa: E402
 SOLUTION_DIR = Path(os.getcwd()) / "HelpdeskSol"
 AGENT_DIR = SOLUTION_DIR / "HelpdeskTriageAgent"
 CONNECTOR = "uipath-atlassian-jira"
-CONNECTION_NAME = "jira-coded-eval"
+PROJECT_KEY = "AB"
 MEMORY_SPACE = "UiPathAgentsSupportMemory"
 FOLDER_PATH = "Shared/uipath-agents"
 INPUTS = ["requesterEmail", "title", "description"]
@@ -57,12 +60,13 @@ def check_jira_tool(agent: dict) -> None:
         AGENT_DIR, is_integration_tool(CONNECTOR, is_create_issue), "Jira create-issue IS tool"
     )
     conn = assert_integration_wiring(tool)
-    if conn.get("name") != CONNECTION_NAME:
-        fail(f"Jira tool must use the {CONNECTION_NAME!r} connection, got {conn.get('name')!r}")
+    if not conn.get("name"):
+        fail("Jira tool connection.name is empty")
     params = json.dumps((tool.get("properties") or {}).get("parameters") or [])
-    if "PRODEV" not in params and "PRODEV" not in system_prompt(agent):
-        fail("PRODEV project is neither a tool parameter value nor named in the system prompt")
-    print(f"OK: Jira tool targets PRODEV via connection {CONNECTION_NAME!r}")
+    key = re.compile(rf"\b{PROJECT_KEY}\b")
+    if not key.search(params) and not key.search(system_prompt(agent)):
+        fail(f"project {PROJECT_KEY} is neither a tool parameter value nor named in the system prompt")
+    print(f"OK: Jira tool targets project {PROJECT_KEY} via connection {conn.get('name')!r}")
 
 
 def check_memory() -> None:
