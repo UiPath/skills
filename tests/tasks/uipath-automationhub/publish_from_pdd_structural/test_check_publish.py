@@ -289,3 +289,11 @@ def test_fallback_unnamed_gap_fails(fallback_sandbox: Path) -> None:
     answers["OVR"]["ah-section-ovrbp-0-0"]["OVR-OVERVIEW_DESCRIPTION"] = {"value": "Automates retail current-account onboarding end to end."}
     publish(fallback_sandbox, answers)
     assert "does not name" in grade(fallback_sandbox, "fallback").stdout
+
+def test_numeric_strings_are_the_same_ids(sandbox: Path) -> None:
+    answers = good_answers()
+    answers["OVR"]["ah-section-ovrbp-0-0"]["OVR-OVERVIEW_CATEGORY"] = {"value": "12"}
+    answers["OVR"]["ah-section-ovrbp-0-0"]["OVR-COUNT_APPS"]["value"] = ["21", "22"]
+    publish(sandbox, answers)
+    assert grade(sandbox, "payload").returncode == 0
+    assert grade(sandbox, "applications").returncode == 0

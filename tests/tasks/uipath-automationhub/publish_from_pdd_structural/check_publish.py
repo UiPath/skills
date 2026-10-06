@@ -138,6 +138,17 @@ def value_of(answers: dict, key: str):
     return answer.get("value") if isinstance(answer, dict) else None
 
 
+def as_int(value):
+    """Ids are `number` in the schema, but a `"12"` the agent copied from CLI text is the same id."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.strip().lstrip("-").isdigit():
+        return int(value.strip())
+    return value
+
+
 def check_create_once(calls: list[dict]) -> str:
     create = the_create(calls)
     if "--from-schema" not in create["args"].split():
@@ -160,7 +171,7 @@ def check_payload(calls: list[dict]) -> str:
     description = value_of(answers, "OVR-OVERVIEW_DESCRIPTION")
     if not isinstance(description, str) or len(description.strip()) < 20:
         raise CheckFailed(f"description missing or too thin: {description!r}")
-    category = value_of(answers, "OVR-OVERVIEW_CATEGORY")
+    category = as_int(value_of(answers, "OVR-OVERVIEW_CATEGORY"))
     if category not in ACTIVE_ONBOARDING_CATEGORIES:
         raise CheckFailed(f"category {category!r} is not an active onboarding category {sorted(ACTIVE_ONBOARDING_CATEGORIES)}")
 
@@ -191,9 +202,9 @@ def check_applications(calls: list[dict]) -> str:
     if not isinstance(apps, dict):
         raise CheckFailed("Applications used (required on this tenant) was not answered")
 
-    ids = set(apps.get("value") or [])
+    ids = {as_int(i) for i in apps.get("value") or []}
     if ids != EXPECTED_APP_IDS:
-        raise CheckFailed(f"inventory ids {sorted(ids)} != PDD systems in the inventory {sorted(EXPECTED_APP_IDS)}")
+        raise CheckFailed(f"inventory ids {sorted(map(str, ids))} != PDD systems in the inventory {sorted(EXPECTED_APP_IDS)}")
 
     entries = apps.get("new_applications") or []
     if not isinstance(entries, list) or len(entries) > 20:
@@ -306,9 +317,9 @@ def check_fallback(calls: list[dict]) -> str:
         raise CheckFailed("Applications used (required on this tenant) was not answered")
     if "new_applications" in apps:
         raise CheckFailed("new_applications sent although this tenant's schema does not offer it")
-    ids = set(apps.get("value") or [])
+    ids = {as_int(i) for i in apps.get("value") or []}
     if ids != EXPECTED_APP_IDS:
-        raise CheckFailed(f"inventory ids {sorted(ids)} != the PDD systems the inventory holds {sorted(EXPECTED_APP_IDS)} "
+        raise CheckFailed(f"inventory ids {sorted(map(str, ids))} != the PDD systems the inventory holds {sorted(EXPECTED_APP_IDS)} "
                           "(no decoy or out-of-scope substitute: the required question is already satisfied)")
     thin = value_of(answers, "OVR-COUNT_THIN_APPS")
     if thin:

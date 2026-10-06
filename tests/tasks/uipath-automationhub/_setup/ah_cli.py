@@ -19,9 +19,28 @@ BUSINESS_PROCESS_FLOW = "business process"
 ARCHIVED_STATUS = "ARCHIVED"
 PLACEHOLDERS = ("sample input", "first.last@example.com", "example.com")
 
-# uip prints update-check chatter before the envelope on some builds; take the
-# last JSON object on stdout.
-_ENVELOPE = re.compile(r"\{.*\}\s*$", re.S)
+_DECODER = json.JSONDecoder()
+
+
+def parse_envelope(stdout: str) -> dict | None:
+    """The CLI's JSON envelope, ignoring update-check chatter printed before or after it.
+
+    Tries every `{` from the first one forwards and returns the first that decodes to an
+    object: a brace inside leading chatter fails to decode and is skipped, and text after
+    the envelope is ignored by `raw_decode`. (Scanning backwards would return the
+    innermost nested object instead of the envelope.)
+    """
+    text = stdout or ""
+    start = text.find("{")
+    while start != -1:
+        try:
+            value, _ = _DECODER.raw_decode(text, start)
+        except json.JSONDecodeError:
+            value = None
+        if isinstance(value, dict):
+            return value
+        start = text.find("{", start + 1)
+    return None
 
 
 def precondition_failed(message: str) -> None:
@@ -40,14 +59,11 @@ def uip_json(args: list[str], timeout: int = 180) -> dict:
     env = {**os.environ, "UIPATH_CLI_DISABLE_VERSION_SYNC": "1"}
     proc = subprocess.run(["uip", *args, "--output", "json"],
                           capture_output=True, text=True, timeout=timeout, env=env)
-    match = _ENVELOPE.search(proc.stdout or "")
-    if not match:
+    envelope = parse_envelope(proc.stdout)
+    if envelope is None:
         return {"Result": "ParseError", "exit_code": proc.returncode,
                 "raw": (proc.stdout or "")[-1500:], "err": (proc.stderr or "")[-800:]}
-    try:
-        return json.loads(match.group(0))
-    except json.JSONDecodeError as exc:
-        return {"Result": "ParseError", "exit_code": proc.returncode, "error": str(exc)}
+    return envelope
 
 
 def items(payload: dict) -> list:
@@ -73,10 +89,16 @@ def business_process_flow(flows: list[dict]) -> dict | None:
 
 
 def archive_target(flow: dict) -> tuple[str, str] | None:
-    """(phase variable, status variable) of the flow's first Archived status."""
+    """(phase variable, status variable) of the flow's first Archived status.
+
+    Tenants name the variable differently (`ARCHIVED`, `QUALIFICATION_ARCHIVED`, ...),
+    so match the suffix or the display value; an exact miss would make cleanup a silent no-op.
+    """
     for statuses in (flow.get("Phases") or {}).values():
         for status in (statuses or {}).values():
-            if str(status.get("StatusVariable", "")).upper() == ARCHIVED_STATUS:
+            variable = str(status.get("StatusVariable", "")).upper()
+            value = str(status.get("StatusValue", "")).strip().lower()
+            if variable.endswith(ARCHIVED_STATUS) or value == "archived":
                 return status["PhaseVariable"], status["StatusVariable"]
     return None
 

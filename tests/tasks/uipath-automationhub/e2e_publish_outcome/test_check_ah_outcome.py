@@ -16,6 +16,9 @@ from pathlib import Path
 
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_setup"))
+import ah_cli  # noqa: E402
+
 HERE = Path(__file__).resolve().parent
 GROUP = HERE.parent
 MOCK = GROUP / "_shared" / "mock_template" / "mocks" / "uip"
@@ -280,3 +283,17 @@ def test_cleanup_never_policy(sandbox: Path) -> None:
     assert result.returncode == 0
     calls = [json.loads(l) for l in (sandbox / "mocks" / ".calls.jsonl").read_text().splitlines()]
     assert not [c for c in calls if c.get("matched_rule") == "ah phases set"]
+
+
+def test_parse_envelope_ignores_chatter_around_the_json() -> None:
+    chatter = 'A new version {1.205} is available\n{"Result": "Success", "Data": {"Id": 1}}\nRun uip update {now}\n'
+    assert ah_cli.parse_envelope(chatter) == {"Result": "Success", "Data": {"Id": 1}}
+    assert ah_cli.parse_envelope("no json here {") is None
+
+
+def test_archive_target_matches_tenant_specific_variable_names() -> None:
+    flow = {"Phases": {"Qualification": {"Archived": {"PhaseVariable": "QUALIFICATION",
+                                                       "StatusVariable": "QUALIFICATION_ARCHIVED",
+                                                       "StatusValue": "Archived"}}}}
+    assert ah_cli.archive_target(flow) == ("QUALIFICATION", "QUALIFICATION_ARCHIVED")
+    assert ah_cli.archive_target({"Phases": {"A": {"S": {"PhaseVariable": "A", "StatusVariable": "DONE", "StatusValue": "Done"}}}}) is None
