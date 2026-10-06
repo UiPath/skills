@@ -18,7 +18,7 @@ If the harness rejects a batch for permissions, treat it as an approval gate, no
 
 ## Gate ≠ runtime proof
 
-A clean `validate` + `build` does NOT prove runtime behavior. Known silent failures pass BOTH: `InvokeCode` `Code` in child/CDATA form no-ops, `WriteTextFile` with explicit `Encoding` emits a BOM, a stripped UIA `N*` `Version` fails only at runtime ([xaml/common-pitfalls.md](xaml/common-pitfalls.md)). When the deliverable has observable outputs (files written, entry-point out-arguments) and runs without external systems or UI, the gate chain ends with ONE `uip rpa run --skip-build` followed by a `cat` of every output file, and the report turn judges what that chain printed — see the T4/T5 rows below. Neither the run nor the output check is its own turn.
+A clean `validate` + `build` does NOT prove runtime behavior. Known silent failures pass BOTH: a C# `//` comment in child/CDATA `InvokeCode` `Code` swallows the code after it, `WriteTextFile` with explicit `Encoding` emits a BOM, a stripped UIA `N*` `Version` fails only at runtime ([xaml/common-pitfalls.md](xaml/common-pitfalls.md)). When the deliverable has observable outputs (files written, entry-point out-arguments) and runs without external systems or UI, the gate chain ends with ONE `uip rpa run --skip-build` followed by a `cat` of every output file, and the report turn judges what that chain printed — see the T4/T5 rows below. Neither the run nor the output check is its own turn.
 
 ## Sequential gates — never batch across these
 

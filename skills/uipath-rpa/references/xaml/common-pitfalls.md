@@ -364,7 +364,7 @@ Or omit `Default` entirely if the variable is assigned before its first read.
 
 ## InvokeCode Code Property — Attribute Form Only
 
-Author `Code` as an XML **attribute** (XML-escaped; `&#xA;` for line breaks). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). A C# body still runs; a VB body fails `validate` with `BC30205: End of statement expected. At line 0`. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
+Author `Code` as an XML **attribute** (XML-escaped; each line break written as `&#xA;` — a literal line break inside an attribute value becomes a space too). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). Code that depends on line breaks changes meaning: a C# `//` comment swallows every statement after it, which then never runs while `validate` passes, and a VB body fails `validate` with `BC30205: End of statement expected. At line 0`. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
 
 **Correct:**
 ```xml
@@ -842,7 +842,7 @@ Add `xml:space="preserve"` to each element whose text holds two consecutive spac
 <CSharpValue x:TypeArguments="x:String" xml:space="preserve">"Net  Amount"</CSharpValue>
 ```
 
-Attribute values keep their spaces, so a VB `[…]` attribute and a literal attribute need no marker.
+Attribute values keep their spaces, so a VB `[…]` attribute and a literal attribute need no marker. A literal line break or tab inside an attribute value still becomes a space: write it as `&#xA;` or `&#x9;`.
 
 ## ViewState Section Corruption
 

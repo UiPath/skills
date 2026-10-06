@@ -28,7 +28,7 @@ The owning skill's contract reads the installed package's per-activity doc for e
 
 | Activity | Installed doc says | The activity does |
 |---|---|---|
-| Get Email List | no `OrderByDate` row | `OrderByDate` (`EOrderByDate`: `NewestFirst` default, `OldestFirst`; flat attribute) orders the emails by date, and with `MaxResults` decides which ones are returned |
+| Get Email List; coded `GetEmails` | nothing on `OrderByDate`, which the default XAML carries (`OrderByDate="NewestFirst"`); the coded doc says `OrderBy.OldestFirst` returns the oldest emails first | Neither applies the order: no value changes the order of the returned emails or which ones `MaxResults` / `maxResults` keeps. To process the oldest email first, retrieve the list and sort it by `ReceivedDateTime` (`Item.ReceivedDateTime` on a coded `IMail`) |
 | Get File List, Upload Files | declare the `Result` / `AllResults` variable as `scg:List(umo365fm:O365DriveRemoteItem)` | Both are `OutArgument<O365DriveRemoteItem[]>`: bind a `umo365fm:O365DriveRemoteItem[]` variable. A `List` variable fails to load (`Set property '…Result' threw an exception`) |
 | Set Email Categories | `CategoriesToAssign` / `SpecificCategoriesToRemove` only as a VB flat attribute, since an `InArgument` cannot be typed `String[]` | `<InArgument x:TypeArguments="s:String[]">` works in VB and C# projects; only `x:String[]` fails to load |
 
