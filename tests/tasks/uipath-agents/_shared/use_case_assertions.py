@@ -343,8 +343,11 @@ def assert_integration_wiring(resource: dict) -> dict:
     props = resource.get("properties") or {}
     conn = props.get("connection") or {}
     cid = conn.get("id")
-    if not isinstance(cid, str) or not cid:
-        fail("IS tool properties.connection.id is empty")
+    if not isinstance(cid, str) or not UUID_RE.match(cid) or set(cid.replace("-", "")) == {"0"}:
+        fail(
+            f"IS tool properties.connection.id must be the real IS connection id from discovery, got {cid!r} "
+            "(placeholder ids make Studio Web report 'Connection is required')"
+        )
     if (conn.get("solutionProperties") or {}).get("resourceKey") != cid:
         fail("IS tool connection.solutionProperties.resourceKey must equal connection.id")
     folder = conn.get("folder") or {}
