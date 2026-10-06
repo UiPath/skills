@@ -97,7 +97,7 @@ def main(argv: list[str]) -> int:
     elif not active_categories((categories.get("Data") or {}).get("Categories") or []):
         problems.append("category tree has no active non-'Other' category")
 
-    inventory = uip_json(["ah", "applications", "list", "--limit", "50"])
+    inventory = uip_json(["ah", "applications", "list", "--limit", "200"])
     if not succeeded(inventory):
         problems.append(f"uip ah applications list failed: {describe_failure(inventory)}")
 
