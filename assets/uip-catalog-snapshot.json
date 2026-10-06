@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-05T04:11:32Z",
-  "cli_version": "1.204.0-dev.9000",
+  "generated_at": "2026-10-06T04:09:24Z",
+  "cli_version": "1.205.0-dev.9029",
   "verbs": [
     "admin",
     "admin audit",
@@ -352,6 +352,7 @@
     "codedagent run",
     "codedagent setup",
     "codedapp",
+    "codedapp convert",
     "codedapp delete",
     "codedapp deploy",
     "codedapp init",

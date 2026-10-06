@@ -135,6 +135,7 @@
 # Rules skill
 /skills/uipath-rules/ @UiPath/maestro-cli-team
 /tests/tasks/uipath-rules/ @UiPath/maestro-cli-team
+/tests/tasks/activation/uipath-rules.jsonl @UiPath/maestro-cli-team
 
 # API Workflow skill
 /skills/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
