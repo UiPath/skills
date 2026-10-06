@@ -124,7 +124,7 @@ System Exception in `Process.xaml` → `SetTransactionStatus.xaml` runs `CloseAl
 
 1. `InitAllApplications.xaml` must be safe to rerun: open only what is not open, never a second instance.
 2. `CloseAllApplications.xaml` must be safe on unopened resources: null-check each, close each in its own Try/Catch, null the handle after closing.
-3. Hold non-UI resources (database connections, API/mail/storage clients) in a context object `Main.xaml` creates (`Variable.Default`) and passes **In**; Init sets its fields. Never return them as `out_*` of Init — they leak when Init faults ([xaml/common-pitfalls.md § Out and InOut Arguments Are Not Copied Back When the Callee Faults](xaml/common-pitfalls.md#out-and-inout-arguments-are-not-copied-back-when-the-callee-faults)). `KillAllProcesses.xaml` does not release in-process handles.
+3. Hold non-UI resources (database connections, API/mail/storage clients) in a context object `Main.xaml` creates (`Variable.Default`) and passes **In**; Init sets its fields. Never return them as `out_*` of Init — they leak when Init faults ([xaml/common-pitfalls.md § Out and InOut Arguments When the Callee Faults](xaml/common-pitfalls.md#out-and-inout-arguments-when-the-callee-faults)). `KillAllProcesses.xaml` does not release in-process handles.
 
 ### Retried Transactions (Queue-Driven)
 

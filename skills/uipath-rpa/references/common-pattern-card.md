@@ -205,16 +205,14 @@ Each entry lists which of these it needs. VB expression form (`[expr]` attribute
 
 ### Invoke workflow with arguments
 **Activities:** `UiPath.Core.Activities.InvokeWorkflowFile`
-**Prefixes:** `ui:`, `scg:`
+**Prefixes:** `ui:`
 **Variables:** `childResult : String`.
 
 ```xml
 <ui:InvokeWorkflowFile DisplayName="Invoke Workflow File" WorkflowFileName="Pattern_Child.xaml">
   <ui:InvokeWorkflowFile.Arguments>
-    <scg:Dictionary x:TypeArguments="x:String, Argument">
-      <InArgument x:TypeArguments="x:String" x:Key="in_Message">["hello"]</InArgument>
-      <OutArgument x:TypeArguments="x:String" x:Key="out_Result">[childResult]</OutArgument>
-    </scg:Dictionary>
+    <InArgument x:TypeArguments="x:String" x:Key="in_Message">["hello"]</InArgument>
+    <OutArgument x:TypeArguments="x:String" x:Key="out_Result">[childResult]</OutArgument>
   </ui:InvokeWorkflowFile.Arguments>
 </ui:InvokeWorkflowFile>
 ```

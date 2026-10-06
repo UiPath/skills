@@ -230,7 +230,7 @@ This pattern applies to: `UploadFilesConnections`, `DownloadFileConnections`, `S
 
 ### WorkflowFileName Must Be a Plain String Path
 
-`WorkflowFileName` accepts a **plain string literal**, not a VB/C# expression. Use the relative path directly — do NOT wrap it in expression brackets or string-literal quotes.
+Write `WorkflowFileName` as the plain relative path, never as an expression (`[&quot;…&quot;]`). An expression path runs, but Studio's designer then cannot read the invoked workflow: the Open workflow and Refresh arguments actions disappear from the activity, and no warning names an argument the call is missing.
 
 **Correct:**
 ```xml
@@ -240,38 +240,21 @@ This pattern applies to: `UploadFilesConnections`, `DownloadFileConnections`, `S
 
 **Wrong — VB expression string literal (common agent mistake):**
 ```xml
-<!-- Studio silently accepts this but the path resolution may break -->
 <ui:InvokeWorkflowFile WorkflowFileName="[&quot;Workflows\ProcessData.xaml&quot;]" />
 ```
 
 The path is relative to the project root directory. Use backslashes for subfolder paths (e.g., `Workflows\SendEmail.xaml`). If the file is at the project root, use just the filename (e.g., `ResetSpotify.xaml`).
 
-### Arguments Must NOT Use a Dictionary Wrapper
+### Arguments — Direct Children, the Form Studio Saves
 
-`uip rpa activities get-default-xaml` returns an empty `scg:Dictionary` as the default container for `InvokeWorkflowFile.Arguments`. This is correct for the **empty state only**. When you populate arguments, drop the Dictionary wrapper and use direct `InArgument`/`OutArgument`/`InOutArgument` child elements instead.
+`InvokeWorkflowFile.Arguments` takes its entries as direct `InArgument`/`OutArgument`/`InOutArgument` children, or inside the `scg:Dictionary` that `uip rpa activities get-default-xaml` returns; both load and bind the same values. Studio saves a populated list as direct children, rewriting a wrapper with every entry kept, and an empty one as `<scg:Dictionary x:TypeArguments="x:String, Argument" />`. Write populated arguments as direct children, so a later Studio save leaves the block unchanged:
 
-Studio silently clears any Dictionary-wrapped argument entries on load — the arguments appear mapped in the designer but are empty at runtime, with no validation error.
-
-**Correct — direct child elements (what Studio actually serializes):**
 ```xml
 <ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
     DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)" UnSafe="False">
   <ui:InvokeWorkflowFile.Arguments>
     <InArgument x:TypeArguments="x:String" x:Key="argument1">someValue</InArgument>
     <InArgument x:TypeArguments="x:String" x:Key="argument2">anotherValue</InArgument>
-  </ui:InvokeWorkflowFile.Arguments>
-</ui:InvokeWorkflowFile>
-```
-
-**Wrong — Dictionary wrapper (from `activities get-default-xaml` empty state):**
-```xml
-<ui:InvokeWorkflowFile WorkflowFileName="ResetSpotify.xaml"
-    DisplayName="ResetSpotify - Invoke Workflow File (ResetSpotify.xaml)">
-  <ui:InvokeWorkflowFile.Arguments>
-    <scg:Dictionary x:TypeArguments="x:String, Argument">
-      <InArgument x:TypeArguments="x:String" x:Key="argument1">someValue</InArgument>
-      <InArgument x:TypeArguments="x:String" x:Key="argument2">anotherValue</InArgument>
-    </scg:Dictionary>
   </ui:InvokeWorkflowFile.Arguments>
 </ui:InvokeWorkflowFile>
 ```
@@ -303,9 +286,9 @@ Studio silently clears any Dictionary-wrapped argument entries on load — the a
 
 If the caller does not consume an output but the callee declares it as required, declare a `discard*` variable per unused output and reference it. Omitting the binding fails validation when the callee has required out-arguments.
 
-### Out and InOut Arguments Are Not Copied Back When the Callee Faults
+### Out and InOut Arguments When the Callee Faults
 
-Callee throws → caller keeps pre-invoke values of every `out_*`/`io_*` binding, even ones already assigned. Mutations to an object passed `in_*` (dictionary add, field set) survive. Same for coded workflow return values.
+Callee throws and the exception reaches the caller → caller keeps pre-invoke values of every `out_*`/`io_*` binding, even ones already assigned. Mutations to an object passed `in_*` (dictionary add, field set) survive. Same for coded workflow return values. With `ContinueOnError="True"` on the Invoke Workflow File the caller continues instead, and every `out_*`/`io_*` value the callee assigned before it faulted is copied back — a partial result that reads like a completed call. `Isolated` changes neither case.
 
 - Never read `out_*`/`io_*` in the caller's catch.
 - Anything the caller must release on failure (connection, client, temp file): callee records it on a caller-created object passed `in_*`, not via `out_*`. REFramework: [../reframework-guide.md § Init and Close Run More Than Once](../reframework-guide.md#init-and-close-run-more-than-once-all-modes).
@@ -808,6 +791,10 @@ The same rule applies anywhere a type argument appears: `x:TypeArguments` on `Va
 - Deleting an activity left behind orphaned argument references
 
 **Fix:** Find the activity with the empty expression in the XAML and either set a valid expression or remove the empty argument element.
+
+## A Folder Named Like a Workflow Beside It Fails `build` With CS0101
+
+`build` compiles a workflow file into a class named after the file and a folder that holds workflow files into a namespace named after the folder. `Invoice.xaml` beside a folder `Invoice\` that holds workflows therefore declares a class and a namespace both called `<Project>.Invoice`: `error CS0101: The namespace '<Project>' already contains a definition for 'Invoice'` — in any subfolder too (`'<Project>.Workflows'`), in VB and C# projects alike. Per-file `validate` passes on every file; only `build` reports it. Name a folder of helper workflows differently from every workflow file beside it (`Invoice.xaml` + `InvoiceSteps\`). A folder with no workflow file in it does not clash.
 
 ## XAML File Size and Performance
 

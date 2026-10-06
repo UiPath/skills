@@ -284,13 +284,13 @@ grep -ri "apikey\|api_key\|secret\|token" --include="*.xaml" --include="*.cs" --
 
 ### Missing Finally Blocks for Resource Cleanup
 
-**Symptom:** Resource-wrapping Try-Catch lacks Finally cleanup.
+**Symptom:** Resource-wrapping Try-Catch lacks Finally cleanup, or a workflow whose exceptions leave it does its cleanup only in Finally.
 
 **Impact:** Files, database connections, and applications leak across retries and Init cycles.
 
-**Detection:** Inspect Try-Catch around file I/O, database, and application scopes for a cleanup-containing Finally.
+**Detection:** Inspect Try-Catch around file I/O, database, and application scopes for a cleanup-containing Finally; in a file whose Catches rethrow or that has no Catch, inspect the Try and the Catches instead.
 
-**Fix:** Close/dispose resources in Finally: `Close Application`, `Kill Process`, or `Close Workbook`. This is critical in REFramework `Process.xaml` and `SetTransactionStatus`.
+**Fix:** Close/dispose resources (`Close Application`, `Kill Process`, `Close Workbook`) on every path. A Finally runs only when a Catch in the same workflow file handles the exception: an exception that leaves the file (rethrown, thrown from a Catch, or never caught) skips its Finally, even when the invoking workflow catches it, the Invoke Workflow File sets `ContinueOnError`, or it runs `Isolated`, because Invoke Workflow File runs each file as its own workflow instance. In a file that handles its exceptions, cleanup goes in Finally; in a file that lets them out to its caller (REFramework `Process.xaml`, a Catch that rethrows), it goes at the end of the Try and in each Catch before its Rethrow, or in the caller.
 
 ### Generic Exception Catching
 

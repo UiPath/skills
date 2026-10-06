@@ -239,7 +239,7 @@ Application (InvoicePortal)
 Precondition: the source project has captured descriptors (`.objects/` content). If it has none, capture targets first (the package guide's § Configuring Targets) — there is nothing to promote, and hand-writing descriptors is forbidden.
 
 1. Develop the first process against its **local** Object Repository, configuring targets as usual (§ Configuring Targets in the package guide).
-2. Promote the reusable descriptors into a dedicated UI Library project — a library project ([library-authoring-guide.md](library-authoring-guide.md)) holding the shared Object Repository; pack and upload per [library-authoring-guide.md § Pack & Publish](library-authoring-guide.md). Concrete Object Repository manipulation steps: the package's Object Repository reference (routed from the package guide § Documentation).
+2. Promote the reusable descriptors into a dedicated UI Library project — a library project ([library-authoring-guide.md](library-authoring-guide.md)) holding the shared Object Repository; pack and publish per [library-authoring-guide.md § Pack & Publish](library-authoring-guide.md). Concrete Object Repository manipulation steps: the package's Object Repository reference (routed from the package guide § Documentation).
 3. **One UI Library per corporate application** (SAP, Salesforce, Workday) — an update to one app's selectors must not force re-deployment of another's.
 4. New automations against that application consume the UI Library from the start. Process-specific one-off descriptors stay in the local Object Repository.
 

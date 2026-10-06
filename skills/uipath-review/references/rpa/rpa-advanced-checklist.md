@@ -134,7 +134,7 @@ If the project consumes or is a UI Library:
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Try-Catch blocks include Finally for resource cleanup | Warning | Check Try-Catch activities for Finally sections |
+| Resource cleanup runs on every path: in Finally where a Catch in the same file handles the exception, at the end of Try and in each Catch before Rethrow where the exception leaves the file (a Finally there is skipped, whatever the Invoke's `ContinueOnError` or `Isolated` setting) | Warning | Check Try-Catch activities for Finally sections; in a file whose Catches rethrow or that has no Catch, check the Try and the Catches ([rpa-common-issues.md § Missing Finally Blocks for Resource Cleanup](rpa-common-issues.md)) |
 | File handles closed in Finally blocks (not just in Try) | Warning | Check file I/O patterns — Excel, text files, CSV |
 | Application scopes closed in Finally blocks when not using `Use Application/Browser` | Warning | Check application lifecycle management |
 | Database connections disposed in Finally blocks | Warning | Check database activity patterns |

@@ -170,7 +170,7 @@ Find which activity implements a user-described action:
 uip rpa activities find --query "send mail" --limit 10 --output json
 ```
 
-Results are **global** — not limited to installed packages. If a useful activity is in an uninstalled package, install it immediately. Tags can narrow results.
+Results are **global** — not limited to installed packages. If a useful activity is in an uninstalled package, install it immediately. Tags can narrow results. The first result is not necessarily the activity to use, and nothing in a result marks the difference: `send mail` returns the classic Office 365 `SendMail`, which runs only inside an `Office365ApplicationScope`, before `SendMailConnections`, which needs no scope. When the results hold several activities for the same action, read the package's `overview.md` and take the one it says to use (Office 365: the `*Connections` activities).
 
 #### Step 1.5: Disambiguate Approach and Provider
 

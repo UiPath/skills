@@ -35,7 +35,7 @@ Two families. Classify correctly — misclassification either wastes retries on 
 2. Business classification is **never automatic** — you must `Throw New BusinessRuleException(...)` explicitly. Any unhandled error that isn't an explicit business throw surfaces as a system exception.
 3. Qualify as `UiPath.Core.BusinessRuleException` when ambiguous — the name also exists in other namespaces. `UiPath.Core` is imported by default in new projects, so the short name resolves; use the full name in coded files or on a compiler-ambiguity error.
 4. `Check True` / `Check False` throw `CheckpointException`, **not** `BusinessRuleException`. For business validation use `If` + `Throw New BusinessRuleException(...)`.
-5. **Isolated invoke loses the type:** a `BusinessRuleException` from a workflow invoked with **Isolated** checked arrives at the caller as `System.Exception` (separate process), breaking type-based `Catch` routing. If the caller routes on type, don't use Isolated. If you must, catch inside the isolated workflow and return a structured status / error-code **output argument**, or throw with a stable code prefix the caller matches — never route on the human-readable `Message` (it changes, localizes, and carries variable data).
+5. **Isolated invoke keeps the type.** A workflow invoked with **Isolated** checked runs in its own executor process, and the caller still catches the exception it throws with its type and properties: a `BusinessRuleException` stays one, a `FileNotFoundException` keeps its `FileName`. Type-based `Catch` routing works across it. Never route on the human-readable `Message` (it changes, localizes, and carries variable data).
 
 ---
 
@@ -63,7 +63,7 @@ Raw XAML shape and the mandatory `Sequence` wrap: [common-activity-card.md § Tr
 2. **Never leave a Catch empty** — violates Workflow Analyzer `ST-DBP-003`. At minimum `Log Message` the exception. Applies to XAML and coded alike.
 3. **Catch only what you'll act on.** Wrap external interactions; don't wrap a whole `Process.xaml` in a catch-all that hides where the failure was.
 4. **`Finally` is cleanup only** — close/kill apps, dispose connections, delete temp files. No business logic. Use `ContinueOnError=True` on best-effort cleanup so a missing resource doesn't mask the original error.
-5. **`Finally` DOES run when the Catch rethrows** (modern, verified) — cleanup is safe to place there even on a rethrow path. (Older legacy-era guidance claiming Finally is skipped on Rethrow does **not** apply to modern Windows / Cross-platform projects.)
+5. **A `TryCatch` `Finally` runs only when the exception is caught inside the same workflow file.** An exception that leaves the file — rethrown, thrown from a Catch, or never caught — skips that file's Finally blocks, whatever the invoke does with it: the invoking workflow's Catch, `ContinueOnError` on the Invoke Workflow File, `Isolated`. Invoke Workflow File runs the file as its own workflow instance, the exception is unhandled there, and the instance ends without running them. A rethrow that an outer Try/Catch in the same file catches still runs the inner Finally. In a workflow that lets exceptions out to its caller, put what must run on every path (cleanup, a phase's end log) at the end of the Try and in each Catch before its Rethrow, with a `System.Exception` Catch so nothing leaves without it — or in the caller.
 6. **Don't design business recovery around runtime/process termination.** Out-of-memory, a killed host process, and UiPath fatal faults can tear the job down without your Catch/Finally running — treat them as unrecoverable, not as something to handle.
 7. **`exception.Source` returns the activity TYPE, not its DisplayName**, when the Try/Catch and the failing activity are in the same workflow. To capture the failing step's name, move the risky step into its own workflow and wrap the `Invoke Workflow File`.
 
@@ -145,6 +145,7 @@ Property surface (`NumberOfRetries`, `RetryInterval`, `ContinueOnError`, `LogRet
 | Best-effort cleanup in `Finally` (close a maybe-open dialog) | Fine |
 | Data-scrape "next page" selector that vanishes on the last page | OK, paired with an existence check |
 | HTTP / DB write / file write / any output used downstream | **Never** — silent failure → corrupt/empty data |
+| `Invoke Workflow File` | **Never** for a callee whose work or outputs matter — the caller continues as if it completed, with the output values the callee set before it failed ([xaml/common-pitfalls.md § Out and InOut Arguments When the Callee Faults](xaml/common-pitfalls.md#out-and-inout-arguments-when-the-callee-faults)), and the callee's Finally blocks did not run (§3 rule 5) |
 
 ---
 
@@ -373,7 +374,7 @@ catch (Exception ex)         { Log(ex.ToString(), LogLevel.Error); throw; }
 | "Retry ran fewer times than expected" / "ran N, not N+1" | `NumberOfRetries` is TOTAL executions, not extra retries; `0` = no-op | Set N = total runs wanted; `1` = one run (§5) |
 | "RetryInterval waited days" | `3` parsed as 3 days | Use `00:00:05` (§5) |
 | "Duplicate rows / queue items after retry" | non-idempotent Action in Retry Scope | Existence check / idempotency key (§5) |
-| "BusinessRuleException caught as system error" | not thrown explicitly, Isolated invoke, or namespace ambiguity | Explicit `Throw New BusinessRuleException`, qualify `UiPath.Core`, avoid Isolated (§1) |
+| "BusinessRuleException caught as system error" | not thrown explicitly, or namespace ambiguity | Explicit `Throw New BusinessRuleException`, qualify `UiPath.Core` (§1) |
 | Empty `Catch` | silent failure, `ST-DBP-003` | Log at minimum (§3) |
 | `Throw New Exception(ex.Message)` to re-surface | resets stack, drops type | `Rethrow` (§4) |
 | Screenshot works attended, nothing unattended | no interactive session | Orchestrator recording + absolute path (§9) |
