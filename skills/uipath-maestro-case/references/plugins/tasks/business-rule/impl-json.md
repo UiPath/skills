@@ -40,6 +40,7 @@ uip maestro case tasks describe --type business-rule --id "<entityKey>" --output
 - `resource`: `"BusinessRule"`
 - `resourceSubType`: omit
 - `name` / `folderPath` defaults: from `registry-resolved.json` `name` / `folder-path` fields. `folder-path` is the resolved registry `folders[0].fullyQualifiedName` (per [planning.md § Registry Resolution](planning.md#registry-resolution)).
+- `resourceKey`: `<folderPath>.<name>`, or `<name>` alone when `folderPath` is empty — never `.<name>`, which the general [resourceKey construction](../../variables/bindings/impl-json.md) would give. Studio Web writes the bare name for a rule with no folder.
 
 
 **Step 2 — Write task:**
@@ -47,7 +48,7 @@ uip maestro case tasks describe --type business-rule --id "<entityKey>" --output
 2. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`, `data.version` = `"v3"`
 3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`. The rule's whole result is one output, `output` with `source: "=result"`, plus `Error`; read a decision's column downstream as `vars.<output var>.<decision>.<column>`.
 
-   To store one decision column in a case variable, write an extract row `result.<decision>.<column> -> <case variable>` per the [nested extract example](../../variables/io-binding/impl-json.md). The first segment `result` matches the `output` row's source; the leaf name and type come from that row's `_jsonSchema`:
+   To store one decision column in a case variable, write an extract row `result.<decision>.<column> -> <case variable>` per the [nested extract example](../../variables/io-binding/impl-json.md). The first segment `result` matches the `output` row's source; the leaf name and type come from that row's `_jsonSchema`. Keep the `output` and `Error` rows next to the extract: Studio Web writes both on every business rule task, so rule 5's parent suppression does not apply here. Write the extract row's `type` by hand from the leaf: `splice --described` types only the rows describe returns (`output`, `Error`), and the parser drops a row without `type`:
 
    ```json
    { "name": "riskBand", "type": "string", "id": "riskBand", "var": "riskBand", "originalVar": "riskBand",

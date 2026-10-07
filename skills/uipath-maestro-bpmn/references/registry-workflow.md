@@ -410,11 +410,11 @@ block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, an
 `Integration Service activity connection binding "<id>" is missing
 resourceKey`. `process` and `queue` bindings carry `resourceKey` from
 `bindingInfo.resourceKeyPattern`. Both `BusinessRule` bindings carry the same
-`resourceKey`, the rule key:
+`resourceKey`, `<folderPath>.<name>` (`<name>` alone when the folder path is empty):
 
 ```xml
-<uipath:binding id="Binding_RuleName"   name="name"         type="string" resource="BusinessRule" propertyAttribute="name"       resourceKey="<RULE_KEY>" default="<RULE_NAME>" />
-<uipath:binding id="Binding_RuleFolder" name="folderPath"   type="string" resource="BusinessRule" propertyAttribute="folderPath" resourceKey="<RULE_KEY>" default="" />
+<uipath:binding id="Binding_RuleName"   name="name"         type="string" resource="BusinessRule" propertyAttribute="name"       resourceKey="<FOLDER_PATH>.<RULE_NAME>" default="<RULE_NAME>" />
+<uipath:binding id="Binding_RuleFolder" name="folderPath"   type="string" resource="BusinessRule" propertyAttribute="folderPath" resourceKey="<FOLDER_PATH>.<RULE_NAME>" default="<FOLDER_PATH>" />
 ```
 
 Every `Intsvc.ActivityExecution` bound to a connection needs TWO bindings that share one

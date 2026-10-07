@@ -59,8 +59,11 @@ def main():
     check(sources.get("output") == "=result", f"no output row 'output' with source =result, outputs are {sources}")
     check("Error" in sources, f"output Error missing, outputs are {sorted(sources)}")
     check(
-        any(o.get("var") == "riskBand" and o.get("source") == "=result.RiskDecision.riskBand" for o in outputs),
-        f"no output writes =result.RiskDecision.riskBand into riskBand, outputs are {sources}",
+        any(
+            o.get("var") == "riskBand" and o.get("source") == "=result.RiskDecision.riskBand" and o.get("type") == "string"
+            for o in outputs
+        ),
+        f"no string output writes =result.RiskDecision.riskBand into riskBand, outputs are {sources}",
     )
 
     sidecar = json.loads((PROJECT / "bindings_v2.json").read_text())
