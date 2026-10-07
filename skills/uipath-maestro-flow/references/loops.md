@@ -10,9 +10,10 @@ Signature: `.loop(name, collection, bodyFn, options?)`.
     'return { id: $vars.eachOrder.currentItem.id };' })))
 ```
 
-Keep per-item dispatch and decisions in the body. A value the steps after the
-loop need is written to a `.var()` from a body step with `{ updates }`, as
-the last example below shows.
+The SDK does not expose mutation of a Flow variable on each iteration. Keep
+per-item dispatch and decisions in the body. If work after the loop needs a
+summary, compute it from data already available outside the loop or use a
+dedicated step whose contract supplies that aggregate.
 
 Use a one-armed branch to skip the rest of one iteration without terminating
 the run. When the condition is false, that iteration completes and the loop

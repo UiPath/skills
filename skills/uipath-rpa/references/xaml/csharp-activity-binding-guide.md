@@ -21,7 +21,7 @@ Which properties exist on a given activity, the `<Activity>.md` lookup order, an
 | Property type | Attribute form (literal only) | Child-element form (expression) |
 |---|---|---|
 | `InArgument<String>` | Literal: `Foo="hello"` | `<InArgument x:TypeArguments="x:String"><CSharpValue x:TypeArguments="x:String">expr</CSharpValue></InArgument>` |
-| `InArgument<Object>` | Not safe — a literal (`Message="text"`) is compiled as a VB expression, which a C# library does not compile: every consumer then fails at run time with ``…'VisualBasicValue`1 ("text")' requires compilation in order to run`` | `<InArgument x:TypeArguments="x:Object"><CSharpValue x:TypeArguments="x:Object">expr</CSharpValue></InArgument>` |
+| `InArgument<Object>` | Not safe — `Object` has no direct type converter | `<InArgument x:TypeArguments="x:Object"><CSharpValue x:TypeArguments="x:Object">expr</CSharpValue></InArgument>` |
 | `InArgument<Boolean>` | Literal: `Foo="True"` | `<InArgument x:TypeArguments="x:Boolean"><CSharpValue x:TypeArguments="x:Boolean">a &gt; b</CSharpValue></InArgument>` |
 | `InArgument<Int32>` / numeric | Literal: `Timeout="30"` | `<InArgument x:TypeArguments="x:Int32"><CSharpValue x:TypeArguments="x:Int32">expr</CSharpValue></InArgument>` |
 | `InArgument<TimeSpan>` | Literal: `Duration="00:00:02"` — never bracket form | Rare |

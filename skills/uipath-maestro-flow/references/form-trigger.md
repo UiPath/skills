@@ -49,10 +49,6 @@ shape the form by shaping the inputs.
 `check` warns (`FORM_TRIGGER_NO_INPUTS`) when the flow declares no inputs: the
 person would get an empty form with only a submit button.
 
-A `types.file` input becomes an upload field whose value is a reference to the
-file, not its content ([operate.md](operate.md#debug--a-real-end-to-end-run)).
-The form takes no title, description or accepted file types.
-
 ## Evidence boundary
 
 No local rung renders a form — `--input` supplies the values locally, so a

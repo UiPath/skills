@@ -160,7 +160,7 @@ Selectors are ranked by attribute stability. When reviewing, assess which tier t
 | No environment-specific data in selectors (qa/uat/prod URLs, ports) | Warning | Grep for environment-specific strings |
 | Wildcards used for dynamic attributes | Info | Check selector patterns |
 | Object Repository used instead of hardcoded selectors | Warning | Check for `.objects/` usage |
-| Element Exists / Check App State used only to branch, not as a guard before an action on the same element or a check whose not-found branch only throws on an element a later activity acts on | Warning | Compare each check's target with the next activity's target and read its not-found branch ([rpa-common-issues.md § Unnecessary Check App State / Element Exists](rpa-common-issues.md)) |
+| Element Exists / Check App State used before interactions | Info | Check for pre-validation patterns |
 | Modern UI Descriptors used (Strict + Fuzzy + Image + Anchor) | Info | Grep `.xaml` for `NUnifiedTargetDefinition` |
 | Selector depth minimal (2-3 levels preferred, not deep chains) | Info | Check selector nesting depth in `.xaml` |
 

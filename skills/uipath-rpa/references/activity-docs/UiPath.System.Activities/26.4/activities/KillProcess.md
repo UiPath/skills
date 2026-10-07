@@ -15,7 +15,7 @@ Terminates a specified process.
 |------|-------------|------|------|----------|---------|-------------|
 | Process | Process | InArgument | `Process` | No | — | A `System.Diagnostics.Process` object identifying the process to kill. Use this or `ProcessName`, not both. |
 | ProcessName | Process Name | InArgument | `string` | No | — | The name of the process to kill (without the `.exe` extension). Kills all matching processes. Use this or `Process`, not both. |
-| AppliesTo | Applies To | InArgument | `KillProcessApplyOn` | No | `KillProcessApplyOn.All` | Filters which instances of a named process to kill: `All`, `OnlyCurrentUser`, `OnlyCurrentSession` or `OnlyCurrentDesktop`. Windows projects support all modes. |
+| AppliesTo | Applies To | InArgument | `KillProcessApplyOn` | No | `KillProcessApplyOn.All` | Filters which instances of a named process to kill (All, current user, current session, or current desktop). Windows projects support all modes. |
 | ContinueOnError | Continue On Error | InArgument | `bool` | No | — | When `True`, execution continues to the next activity even if this activity throws an error. |
 
 ### Configuration
@@ -42,20 +42,15 @@ Exactly one of `Process` or `ProcessName` must be provided (they belong to separ
 | Value | Description |
 |-------|-------------|
 | `All` | Kill all processes matching the name, regardless of owner |
-| `OnlyCurrentUser` | Kill only processes owned by the current user (Windows only) |
-| `OnlyCurrentSession` | Kill only processes in the current Windows session |
-| `OnlyCurrentDesktop` | Kill only processes on the current Windows desktop |
-
-An `AppliesTo` value that is not one of these members (e.g. `Session`) fails to load the workflow.
+| `User` | Kill only processes owned by the current user (Windows only) |
+| `Session` | Kill only processes in the current Windows session |
+| `Desktop` | Kill only processes on the current Windows desktop |
 
 ## XAML Example
 
 ```xml
 <!-- Kill by name -->
 <ui:KillProcess ProcessName="notepad" AppliesTo="All" />
-
-<!-- Kill by name, only in the robot's own session -->
-<ui:KillProcess ProcessName="excel" AppliesTo="OnlyCurrentSession" />
 
 <!-- Kill a specific process object -->
 <ui:KillProcess>

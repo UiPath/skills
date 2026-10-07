@@ -46,62 +46,6 @@ default and its field description). Fixing everything defeats the point of
 giving an agent a tool; fixing nothing gives the model no constraints. Fix what
 the scenario pins and leave the rest.
 
-**The HTTP tool needs a resource file you write.** `compile` writes no
-`resource.json` for it, and `uip agent refresh --inline-in-flow` writes none
-either while it reduces the node to its `source`. Without the file the tool is
-on the canvas but the deployed agent is never offered it: the run completes and
-its trace has no tool span. After each `compile`, and before any refresh,
-upload or debug, write the file from the emitted
-`uipath.agent.resource.tool.builtin.httprequest` node:
-
-1. Write it to `<project>/<agent source>/resources/<tool source>/resource.json`.
-   The agent source is the `inputs.source` of the inline agent node whose
-   `tool` edge leads to the tool node; the tool source is the tool node's own
-   `inputs.source`.
-2. Fill the template below: `id` is the tool source, `name` the node's
-   `display.label`, `description` its `inputs.description`, `canvasNodeId` its
-   node id, and each schema property's `description` that field's `promptValue`.
-3. Give `argumentProperties` one entry per field the scenario fixed (mode other
-   than `prompt`), valued with its `textValue`. The template fixes `method`.
-4. Rewrite the file when the tool's fields change. A renamed or removed tool
-   leaves its old folder behind, because the source id derives from the step
-   and tool names: delete that folder.
-
-```json
-{
-  "$resourceType": "tool",
-  "id": "<TOOL_SOURCE>",
-  "name": "<TOOL_LABEL>",
-  "description": "<TOOL_DESCRIPTION>",
-  "type": "internal",
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "url": { "type": "string", "description": "<PROMPT_VALUE>" },
-      "method": { "type": "string", "description": "<PROMPT_VALUE>" },
-      "headers": { "type": "array", "description": "<PROMPT_VALUE>", "items": { "type": "object", "required": ["name", "value"],
-        "properties": { "name": { "type": "string", "description": "Header name." }, "value": { "type": "string", "description": "Header value." } } } },
-      "params": { "type": "array", "description": "<PROMPT_VALUE>", "items": { "type": "object", "required": ["name", "value"],
-        "properties": { "name": { "type": "string", "description": "Parameter name." }, "value": { "type": "string", "description": "Parameter value." } } } },
-      "body": { "type": "string", "description": "<PROMPT_VALUE>" },
-      "timeout": { "type": "number", "description": "<PROMPT_VALUE>" }
-    },
-    "required": ["url"]
-  },
-  "settings": {},
-  "properties": { "toolType": "http-request" },
-  "guardrail": { "policies": [] },
-  "isEnabled": true,
-  "argumentProperties": {
-    "$['method']": { "variant": "static", "value": "<TEXT_VALUE>", "isSensitive": false }
-  },
-  "outputSchema": { "type": "object", "properties": {} },
-  "canvasNodeId": "<TOOL_NODE_ID>"
-}
-```
-
-Compile keeps the file, since it prunes only the resources it owns.
-
 **A client-side tool declares only a CONTRACT.** The flow says what the tool is
 called and what it takes and returns; the calling application owns the
 implementation and dispatches on the name. Nothing local runs it.

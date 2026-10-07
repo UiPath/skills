@@ -109,8 +109,7 @@ detail a runtime-evidence bar needs.
 
 The JSON envelope has top-level `Result`; a successful validation also reports
 `Data.Status: "Valid"` and may carry `Data.Warnings`. Treat warnings as failures
-except for the reviewed shared-connection advisory and the expected error-envelope
-diagnostics ([`error-handling.md`](error-handling.md#reading-the-failure)). Preserve any exception's
+except for the reviewed shared-connection advisory. Preserve any exception's
 exact code/text and rationale instead of broadening an allowlist.
 
 ### Bounded completion
@@ -225,13 +224,11 @@ double quotes instead of single ones:
 --output-filter '{status:finalStatus,raw:variables.globals."multiply.output"}'
 ```
 
-**`incidents` is filled only for a faulted run.** `Data` carries `finalStatus`,
-`instanceId`, `studioWebUrl`, `jobKey`, `runId`, `solutionId`, `variables` and
-`elementExecutions`; when the run faulted, the CLI also fetches its incidents
-into `Data.incidents` and names the first in the error `Message`. When the
-outputs could not be read, `Data.variablesError` replaces `variables`: treat the
-outputs as unknown, not empty, and read them with
-`uip maestro flow debug-instance variables <instanceId>`.
+**There is no `incidents` in this envelope.** `Data` carries exactly
+`finalStatus`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`, `folderKey`,
+`solutionId`, `variables` and `elementExecutions` — an `incidents:incidents`
+projection silently yields `null`. Incidents come from the separate
+`debug-instance incidents` call below, keyed by the `instanceId` you just read.
 
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
@@ -251,8 +248,10 @@ from `Data`. Read and retain `Result`, the projected status/instance/URL, the
 product-runtime path; a bare process exit code is not. Omit the filter only when
 diagnosing a field the projection did not retain.
 
-For the full backend incident payload of a fault, or for a run the CLI did not
-wait on, query it by the returned instance id:
+Incidents are **not** in this envelope — fetch them by the `instance` you just
+read, and only when something actually failed.
+
+For a fault, query the backend incident payload with the returned instance id:
 
 ```bash
 uip maestro flow debug-instance incidents <instanceId> \

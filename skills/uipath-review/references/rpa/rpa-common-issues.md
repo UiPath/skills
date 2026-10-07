@@ -76,17 +76,7 @@ find . -name "*.xaml" -size +500k -exec ls -lh {} \;
 
 **Detection:** Run Workflow Analyzer rules ST-DBP-026 and ST-PRR-004; also grep XAML for `Delay` activities.
 
-**Fix:** Remove the `Delay` and rely on the next UI activity: it waits for its target up to its `Timeout` (default 30s). Tune that activity's `Timeout`, or use `DelayBefore` for a button disabled during an async load. Use `Check App State` only where the element's absence leads to different work; a Check App State placed before an action on the same element, or whose not-found branch only throws on an element a later activity acts on, is the same defect in another form.
-
-### Unnecessary Check App State / Element Exists
-
-**Symptom:** A `Check App State` (or `Element Exists`) precedes an action on the same element, waits for a page before the first activity that targets it, or has a "does not appear" branch that only throws or logs on an element a later activity acts on. Often the check count approaches the number of acting activities.
-
-**Impact:** Every element is resolved twice, extra Object Repository targets must be maintained and healed, and a 5s default check timeout reports "absent" on a page that is still loading, which then needs another guard.
-
-**Detection:** Grep XAML for `NCheckState` / `ElementExists`; for each, compare its target with the next UI activity's target, and read its `IfNotExists` branch.
-
-**Fix:** Delete the check and let the UI activity's timeout and "element not found" do the work; add the business message in the catch at the level that handles the failure. Keep a check only when the element's presence or absence leads to different work — including the common optional popup (dismissed in the "appears" branch, other branch empty, `Timeout` set to how long the popup can take to show) — and pass its `OutUiElement` to the action's `InUiElement` when the found branch acts on the same element. An outcome check after Click, Hover, Keyboard Shortcuts or Type Into belongs in that action's `VerifyOptions`; after any other activity (Select Item, Check/Uncheck, Go To URL), a check that throws when the outcome is absent is the assertion when no later activity targets that element — keep it (UIA package guide, *Execution Verification Policy*).
+**Fix:** Use `Element Exists`, `Check App State`, `On Element Appear`, or `Retry Scope` with element-based conditions.
 
 ### Progressive Slowdown in Long-Running Processes
 
@@ -284,13 +274,13 @@ grep -ri "apikey\|api_key\|secret\|token" --include="*.xaml" --include="*.cs" --
 
 ### Missing Finally Blocks for Resource Cleanup
 
-**Symptom:** Resource-wrapping Try-Catch lacks Finally cleanup, or a workflow whose exceptions leave it does its cleanup only in Finally.
+**Symptom:** Resource-wrapping Try-Catch lacks Finally cleanup.
 
 **Impact:** Files, database connections, and applications leak across retries and Init cycles.
 
-**Detection:** Inspect Try-Catch around file I/O, database, and application scopes for a cleanup-containing Finally; in a file whose Catches rethrow or that has no Catch, inspect the Try and the Catches instead.
+**Detection:** Inspect Try-Catch around file I/O, database, and application scopes for a cleanup-containing Finally.
 
-**Fix:** Close/dispose resources (`Close Application`, `Kill Process`, `Close Workbook`) on every path. A Finally runs only when a Catch in the same workflow file handles the exception: an exception that leaves the file (rethrown, thrown from a Catch, or never caught) skips its Finally, even when the invoking workflow catches it, the Invoke Workflow File sets `ContinueOnError`, or it runs `Isolated`, because Invoke Workflow File runs each file as its own workflow instance. In a file that handles its exceptions, cleanup goes in Finally; in a file that lets them out to its caller (REFramework `Process.xaml`, a Catch that rethrows), it goes at the end of the Try and in each Catch before its Rethrow, or in the caller.
+**Fix:** Close/dispose resources in Finally: `Close Application`, `Kill Process`, or `Close Workbook`. This is critical in REFramework `Process.xaml` and `SetTransactionStatus`.
 
 ### Generic Exception Catching
 

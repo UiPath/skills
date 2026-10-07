@@ -636,7 +636,7 @@ var filter = list.CreateFilter()
 
 | Enum | Values |
 |------|--------|
-| `OrderBy` | `NewestFirst`, `OldestFirst` — not applied by `GetEmails`: either value returns the same emails in the same order; sort the result by `Item.ReceivedDateTime` for oldest first |
+| `OrderBy` | `NewestFirst`, `OldestFirst` |
 | `MailImportance` | `Low`, `Normal`, `High` |
 | `MailType` | `Email`, `Im`, `Meeting`, `Voicemail`, `RssFeed`, `Task` |
 | `FilterMailTypeOperator` | `Equals` |

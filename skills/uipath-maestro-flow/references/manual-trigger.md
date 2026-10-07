@@ -128,7 +128,3 @@ flow('order-intake')
 
 The two combine: `shared` copies what is the same on every root, and a prefix
 reshapes the rest.
-
-A form trigger works only as the default root: given to `.entryPoint()`,
-`formTrigger()` emits a manual trigger with no diagnostic. `flow debug` runs only
-the default root ([operate.md](operate.md#debug--a-real-end-to-end-run)).

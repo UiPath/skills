@@ -75,7 +75,7 @@ Advanced review criteria for UiPath RPA projects. Use alongside the core [rpa-re
 | Variables used for dynamic portions of selectors (not string concatenation) | Info | Check selector construction patterns |
 | Frame/iFrame handling correct for web applications | Warning | Check for frame tags in web selectors |
 | Virtual environment handling configured (Citrix/RDP extension, Computer Vision) | Warning | Check for Citrix/RDP-specific patterns if applicable |
-| Element Exists / Check App State used only to branch (absence leads to different work), not as a guard before acting on the same element, a page-load wait, or a check whose not-found branch only throws on an element a later activity acts on | Warning | Compare each check's target with the next activity's target and read its not-found branch ([rpa-common-issues.md § Unnecessary Check App State / Element Exists](rpa-common-issues.md)) |
+| Element Exists / Check App State used before interactions with dynamic elements | Info | Check for pre-validation activities |
 
 ### Object Repository Organization
 
@@ -134,7 +134,7 @@ If the project consumes or is a UI Library:
 
 | Check | Severity | How to Verify |
 |---|---|---|
-| Resource cleanup runs on every path: in Finally where a Catch in the same file handles the exception, at the end of Try and in each Catch before Rethrow where the exception leaves the file (a Finally there is skipped, whatever the Invoke's `ContinueOnError` or `Isolated` setting) | Warning | Check Try-Catch activities for Finally sections; in a file whose Catches rethrow or that has no Catch, check the Try and the Catches ([rpa-common-issues.md § Missing Finally Blocks for Resource Cleanup](rpa-common-issues.md)) |
+| Try-Catch blocks include Finally for resource cleanup | Warning | Check Try-Catch activities for Finally sections |
 | File handles closed in Finally blocks (not just in Try) | Warning | Check file I/O patterns — Excel, text files, CSV |
 | Application scopes closed in Finally blocks when not using `Use Application/Browser` | Warning | Check application lifecycle management |
 | Database connections disposed in Finally blocks | Warning | Check database activity patterns |

@@ -143,7 +143,7 @@ Each entry lists which of these it needs. VB expression form (`[expr]` attribute
 </Sequence>
 ```
 
-**Notes (build-verified traps):** `BuildDataTable` does NOT load on cross-platform projects (`TypeLoadException`) — generate from CSV text instead. `ParsingMethod`/`CSV` from the docs is designer-only; the runtime member is `CSVParsing="True"`. `ArrayRow` type argument is `s:Object[]`, never `x:Object[]` ([common-pitfalls.md § `x:` prefix](xaml/common-pitfalls.md#invalid-use-of-x-prefix-for-non-builtin-clr-types)). `Filters` `Operator` takes enum identifiers (`GT`, `EQ`, `CONTAINS`, …); omit `Operand` for `EMPTY`/`NOTEMPTY`. `AddDataRow.DataTable` is `InOutArgument` — bind a variable, never an expression.
+**Notes (build-verified traps):** `BuildDataTable` does NOT load on cross-platform projects (`TypeLoadException`) — generate from CSV text instead. `ParsingMethod`/`CSV` from the docs is designer-only; the runtime member is `CSVParsing="True"`. `ArrayRow` type argument must be `s:Object[]` — `x:Object[]` fails at `build` (not `validate`). `Filters` `Operator` takes enum identifiers (`GT`, `EQ`, `CONTAINS`, …); omit `Operand` for `EMPTY`/`NOTEMPTY`. `AddDataRow.DataTable` is `InOutArgument` — bind a variable, never an expression.
 **Long-form:** [`GenerateDataTable.md`](activity-docs/UiPath.System.Activities/26.4/activities/GenerateDataTable.md) · [`AddDataRow.md`](activity-docs/UiPath.System.Activities/26.4/activities/AddDataRow.md) · [`FilterDataTable.md`](activity-docs/UiPath.System.Activities/26.4/activities/FilterDataTable.md) · [`OutputDataTable.md`](activity-docs/UiPath.System.Activities/26.4/activities/OutputDataTable.md)
 
 ---
@@ -205,14 +205,16 @@ Each entry lists which of these it needs. VB expression form (`[expr]` attribute
 
 ### Invoke workflow with arguments
 **Activities:** `UiPath.Core.Activities.InvokeWorkflowFile`
-**Prefixes:** `ui:`
+**Prefixes:** `ui:`, `scg:`
 **Variables:** `childResult : String`.
 
 ```xml
 <ui:InvokeWorkflowFile DisplayName="Invoke Workflow File" WorkflowFileName="Pattern_Child.xaml">
   <ui:InvokeWorkflowFile.Arguments>
-    <InArgument x:TypeArguments="x:String" x:Key="in_Message">["hello"]</InArgument>
-    <OutArgument x:TypeArguments="x:String" x:Key="out_Result">[childResult]</OutArgument>
+    <scg:Dictionary x:TypeArguments="x:String, Argument">
+      <InArgument x:TypeArguments="x:String" x:Key="in_Message">["hello"]</InArgument>
+      <OutArgument x:TypeArguments="x:String" x:Key="out_Result">[childResult]</OutArgument>
+    </scg:Dictionary>
   </ui:InvokeWorkflowFile.Arguments>
 </ui:InvokeWorkflowFile>
 ```
@@ -238,7 +240,7 @@ Child workflow declares its contract via root `x:Members`:
 **Variables:** `dt : System.Data.DataTable`; `validCount : Int32`; `totalAmount : Double`.
 
 ```xml
-<ui:InvokeCode DisplayName="Process Rows" Language="VBNet" Code="For Each row As System.Data.DataRow In rows.Rows&#xA;  Dim amount As Double&#xA;  If Double.TryParse(row(&quot;Amount&quot;).ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, amount) AndAlso amount &gt; 0 Then&#xA;    validCount += 1&#xA;    totalAmount += amount&#xA;  End If&#xA;Next">
+<ui:InvokeCode DisplayName="Process Rows" Code="For Each row As System.Data.DataRow In rows.Rows&#xA;  Dim amount As Double&#xA;  If Double.TryParse(row(&quot;Amount&quot;).ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, amount) AndAlso amount &gt; 0 Then&#xA;    validCount += 1&#xA;    totalAmount += amount&#xA;  End If&#xA;Next">
   <ui:InvokeCode.Arguments>
     <scg:Dictionary x:TypeArguments="x:String, Argument">
       <InArgument x:TypeArguments="sd:DataTable" x:Key="rows">[dt]</InArgument>
@@ -250,7 +252,7 @@ Child workflow declares its contract via root `x:Members`:
 ```
 
 **When:** the default escalation for complex bulk row processing — per-row parse + validate + branch + accumulate ([data-manipulation-guide.md § Code vs activity chains](data-manipulation-guide.md)). A `ForEach` with ONE `If`/`Switch` stays plain XAML.
-**Notes (run-verified traps):** `Code` MUST be an XML **attribute** (`&#xA;` newlines, `&quot;` quotes) — a child/CDATA `<ui:InvokeCode.Code>` element loses its line breaks: a C# `//` comment then swallows the code after it, and a VB body fails to compile ([xaml/common-pitfalls.md § InvokeCode Code Property](xaml/common-pitfalls.md#invokecode-code-property--attribute-form-only)). Set `Language` — `CSharp` in a C# project, `VBNet` in a VB project; without it the code compiles as VB.NET ([§ InvokeCode Language Property](xaml/common-pitfalls.md#invokecode-language-property)). Argument keys must match the identifiers the code uses; bind variables, not expressions, to `OutArgument`s. Parse with `InvariantCulture` — bare `Double.TryParse` under a comma-decimal locale silently rejects `10.5`-style input. C#-expression projects hit expression-tree limits in surrounding XAML expressions, not inside `Code` — the code body is a normal method body.
+**Notes (run-verified traps):** `Code` MUST be an XML **attribute** (`&#xA;` newlines, `&quot;` quotes) — a child/CDATA `<ui:InvokeCode.Code>` element passes `validate`+`build` but runs as a silent no-op ([xaml/common-pitfalls.md § InvokeCode Code Property](xaml/common-pitfalls.md#invokecode-code-property--attribute-form-only)). Omit `Language` — it is inferred from the project; explicit values are `VBNet`/`CSharp` only (`"VisualBasic"` passes validation, fails at runtime). Argument keys must match the identifiers the code uses; bind variables, not expressions, to `OutArgument`s. Parse with `InvariantCulture` — bare `Double.TryParse` under a comma-decimal locale silently rejects `10.5`-style input. C#-expression projects hit expression-tree limits in surrounding XAML expressions, not inside `Code` — the code body is a normal method body.
 **Long-form:** `{PROJECT_DIR}/.local/docs/packages/UiPath.System.Activities/activities/InvokeCode.md`
 
 ---

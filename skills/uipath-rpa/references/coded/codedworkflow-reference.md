@@ -282,7 +282,7 @@ using UiPath.CodedWorkflows;
 
 namespace MyProject
 {
-    public partial class CodedWorkflow : CodedWorkflowBase, IBeforeAfterRun
+    public partial class CodedWorkflow : IBeforeAfterRun
     {
         public void Before(BeforeRunContext context) { Log("Starting " + context.RelativeFilePath); }
         public void After(AfterRunContext context) { Log("Finished " + context.RelativeFilePath); }
@@ -292,9 +292,7 @@ namespace MyProject
 
 ## Extending CodedWorkflow with Partial Classes
 
-The auto-generated `CodedWorkflow` is a `partial class`. You can extend it to add shared methods, properties, or constants available to all workflows and test cases — with or without hooks.
-
-Every part you write names `CodedWorkflowBase` as its base (`: CodedWorkflowBase`, `: CodedWorkflowBase, IBeforeAfterRun` for hooks). `build` compiles the class from a part it generates plus the project's parts, and a project part without the base leaves the class with none: `CS0103: The name 'Log' does not exist`, `CS0103` on `serviceContainer` in `.generated/CodedWorkflow.g.cs`, and `CS1503: cannot convert from '<Workflow>' to 'UiPath.CodedWorkflows.CodedWorkflowBase'` — in process and library projects alike, while `validate` passes.
+The auto-generated `CodedWorkflow` is a `partial class`. You can extend it to add shared methods, properties, or constants available to all workflows and test cases — with or without hooks:
 
 ```csharp
 // CodedWorkflowExtensions.cs — Coded Source File (no entry point)
@@ -302,7 +300,7 @@ using UiPath.CodedWorkflows;
 
 namespace MyProject
 {
-    public partial class CodedWorkflow : CodedWorkflowBase
+    public partial class CodedWorkflow
     {
         protected string GetEnvironmentUrl()
         {
@@ -317,7 +315,7 @@ namespace MyProject
 
 - **`IBeforeAfterRun`** is an interface — any `CodedWorkflow`-derived class can implement it
 - **`partial class CodedWorkflow`** is a C# feature — extends the auto-generated class for all files in the project
-- **They combine:** use `partial class CodedWorkflow : CodedWorkflowBase, IBeforeAfterRun` when you want hooks on every file
+- **They combine:** use `partial class CodedWorkflow : IBeforeAfterRun` when you want hooks on every file
 - **Use `IBeforeAfterRun` on individual files** when only specific workflows/test cases need setup/teardown
 - **Use `partial class CodedWorkflow`** (without hooks) to add shared methods, properties, or constants
 - **Context objects** (`BeforeRunContext`, `AfterRunContext`) provide `RelativeFilePath`, `WorkflowFilePath`, etc.
@@ -328,8 +326,8 @@ namespace MyProject
 | Scenario | Pattern |
 |----------|---------|
 | One test case needs its own setup/teardown | `IBeforeAfterRun` on the class |
-| All test cases share the same setup/teardown | `partial class CodedWorkflow : CodedWorkflowBase, IBeforeAfterRun` |
-| Shared helper methods for all workflows | `partial class CodedWorkflow : CodedWorkflowBase` (no hooks) |
+| All test cases share the same setup/teardown | `partial class CodedWorkflow : IBeforeAfterRun` |
+| Shared helper methods for all workflows | `partial class CodedWorkflow` (no hooks) |
 | All of the above | Combine patterns in one or more partial files |
 
 Code templates: [assets/codedworkflow-template.md § Before/After Hooks Templates](../../assets/codedworkflow-template.md#beforeafter-hooks-templates)
