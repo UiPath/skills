@@ -108,10 +108,13 @@ Phase 1 (preflight) runs first — see [SKILL.md](../SKILL.md#workflow). Then:
    anything while validation fails, so step 3 must pass first. On a skeleton that
    preserved the start event it reports `WrittenFiles: []`, which is the
    drift check passing rather than a no-op to skip.
-5. **Ask for consent once, covering the whole iterate loop**, then
-   `uip solution upload <SolutionDir> --output json`. Every upload is a cloud
-   action (Rule 10), and a gate per iteration would defeat the mode. Report the
-   returned `Data.DesignerUrl`.
+5. **`uip solution upload <SolutionDir> --output json`** — do not ask first.
+   A request to build the process authorizes the upload that shows it, and a
+   consent gate per iteration would defeat the mode. Report the returned
+   `Data.DesignerUrl`. The one case that still needs confirmation is adopting a
+   solution the agent did not create: `upload` overwrites the cloud solution
+   matching the local `.uipx` SolutionId, so confirm the choice when phase 1
+   picks an existing solution, not here.
 
 ## Iterating
 

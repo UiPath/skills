@@ -235,7 +235,9 @@ find . -maxdepth 2 -type f -name '*.uipx' -print
 
 If one is found, stop and ask the user which to use (AskUserQuestion: one
 option per solution found, plus "Create a new solution"). Never silently
-adopt, initialize, or repair an existing solution. Otherwise initialize the
+adopt, initialize, or repair an existing solution. Say in that question that
+adopting one means a later `upload` overwrites its cloud copy, because this is
+the only point where that is still the user's choice to make. Otherwise initialize the
 project with `uip maestro bpmn init <ProjectName> --output json` and author at
 the returned `Data.Path`. `init` is idempotent — re-running reports
 `AlreadyRegistered` — and outside a solution it auto-scaffolds
@@ -423,9 +425,9 @@ projects through the UiPath CLI.
   Never substitute the files backing that CLI for the CLI itself — see rule 3
   in that reference.
 
-Any cloud-side change (upload, publish, deploy, run, pause, resume, cancel,
-retry, migrate) requires explicit user consent, and local validation should pass
-first.
+Any cloud-side change (publish, deploy, run, pause, resume, cancel, retry,
+migrate) requires explicit user consent, and local validation should pass
+first. `solution upload` is the exception — see Rule 10.
 
 ## Structural coverage
 
@@ -489,9 +491,14 @@ and honestly surfaced to the user as gaps when asked.
 8. **Use `--output json` for parsed CLI calls.**
 9. **Public-safe always.** No customer XML, tenant URLs, real IDs, or private
    names — see [references/public-safety.md](references/public-safety.md).
-10. **Confirm before any cloud change.** Upload, publish, deploy, run, pause,
-   resume, cancel, retry, and migrate require explicit user consent; validate
-   locally first.
+10. **Confirm before any cloud change.** Publish, deploy, run, pause, resume,
+   cancel, retry, and migrate require explicit user consent; validate locally
+   first. `solution upload` is the exception: a request to build the process
+   authorizes the upload that shows it, so upload without asking. Confirm only
+   when the project was adopted from a solution the agent did not create,
+   because upload overwrites the cloud solution matching the local `.uipx`
+   SolutionId — and confirm it where that solution is chosen, not at upload
+   time.
 11. **Retry is node configuration, never canvas.** Handle transient failures
    with `uipath:retry` on the activity. Never draw a retry loop from gateways
    and timer events. See
