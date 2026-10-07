@@ -6,7 +6,7 @@ when_to_use: "User mentions .uipx / 'uip solution' / 'pack the solution' / 'publ
 
 # UiPath Solution — `uip solution` lifecycle
 
-Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via the `uip solution` CLI surface. A Solution bundles multiple automation projects (processes, libraries, tests, agent projects, API workflows) into a single deployable unit.
+Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via the `uip solution` CLI surface. A Solution bundles multiple automation projects (processes, tests, agent projects, API workflows) into a single deployable unit. A library is not one of them — it is published on its own and at most declared as a `Library` resource ([Develop a Solution § Step 2](references/develop-solution.md#step-2-add-existing-projects)).
 
 > **Use the CLI. Don't roll your own REST for solution ops.** Hand-rolling HTTP calls misses the `X-UIPATH-OrganizationUnitId` folder header, OData filter shape, pagination envelope, `pipelinesInstall` deploy semantics, retry behavior, and the `Result/Code/Data` output contract. The CLI is the source of truth.
 
