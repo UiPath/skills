@@ -24,6 +24,15 @@ tags:
     lifecycle:setup,
   ]
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+reference:
+  directory: .
+
 run_limits:
   expected_turns: 36
   max_turns: 50
@@ -88,7 +97,7 @@ success_criteria:
   - type: run_command
     description: "End state: UserDirectory is a Federated entity with 3 sources (ServiceNow sys_user + 2 native), >=2 join criteria, AND is queryable (reading it returns live rows)"
     command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_federated_entity.py
+      python3 $REFERENCE_DIR/_shared/verify_federated_entity.py
       --entity-name UserDirectory --expected-sources 3 --min-joins 2 --external-object sys_user
       --assert-queryable --min-records 1
     timeout: 180
@@ -134,10 +143,10 @@ success_criteria:
     pass_threshold: 0.5
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix UserDirectory --federated-only --include-folders"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix UserDirectory --federated-only --include-folders"
     timeout: 150
     fail_on_error: false
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix UserDirectory --federated-only --include-folders"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix UserDirectory --federated-only --include-folders"
     timeout: 150
