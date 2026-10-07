@@ -136,7 +136,7 @@ whether you stop to ask; it never changes what a phase does.
 
 | Phase | What happens | Reference |
 | --- | --- | --- |
-| **1 — Preflight** | Check login, confirm a valid working directory, scan for an existing solution. Writes nothing, so it runs in every mode. | Steps 0–1 below |
+| **1 — Preflight** | Check login, scan the open directory for an existing solution and project, resolve the mode. Writes nothing, so it runs in every mode. | Steps 0–1 below |
 | **2 — Skeleton** | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, `refresh`, upload. Makes **no registry calls**. | [references/phase-2-skeleton.md](references/phase-2-skeleton.md) |
 | **3 — Iterate** | Adjust the shape, re-`format`, re-upload, repeat until the user agrees it. | [references/phase-2-skeleton.md](references/phase-2-skeleton.md#iterating) |
 | **4 — Wire it up** | Registry discovery, template fetch, real payloads pasted into the existing boxes, revalidate, refresh. | Steps 1–5 below |
@@ -224,10 +224,11 @@ directly covers the requested construct, write it before further spelunking.
    fallback and its scope, see
    [references/structural-bpmn.md#script-tasks--jint-authoring-contract](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
 
-**2b. Scaffold the project (greenfield, package-ready only).** Skip this step
-for discovery-only, for brownfield/bare-`.bpmn` edits, and for any source-only
-deliverable. Otherwise chain it after Discover in the same turn. First check
-for an existing solution:
+**2b. Create or adopt the project (greenfield, package-ready only).** Skip this
+step for discovery-only, for brownfield/bare-`.bpmn` edits, and for any
+source-only deliverable. Otherwise chain it after Discover in the same turn.
+Phase 1's scan already answered whether a solution exists; adopt what it found
+rather than scanning again. If it found nothing:
 
 ```bash
 find . -maxdepth 2 -type f -name '*.uipx' -print

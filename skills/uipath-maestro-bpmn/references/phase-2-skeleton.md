@@ -108,18 +108,22 @@ Phase 1 (preflight) runs first — see [SKILL.md](../SKILL.md#workflow). Then:
    anything while validation fails, so step 3 must pass first. On a skeleton that
    preserved the start event it reports `WrittenFiles: []`, which is the
    drift check passing rather than a no-op to skip.
-5. **`uip solution upload <SolutionDir> --output json`** — do not ask first.
-   A request to build the process authorizes the upload that shows it, and a
-   consent gate per iteration would defeat the mode. Report the returned
-   `Data.DesignerUrl`. The one case that still needs confirmation is adopting a
-   solution the agent did not create: `upload` overwrites the cloud solution
-   matching the local `.uipx` SolutionId, so confirm the choice when phase 1
+5. **Make the shape visible.** Every surface except a bare terminal edits a
+   local workspace behind a live canvas, so `format` in step 2 already put the
+   change on screen and there is nothing to do here. In a bare terminal, run
+   `uip solution upload <SolutionDir> --output json` and report the returned
+   `Data.DesignerUrl`. Do not ask first: a request to build the process
+   authorizes the upload that shows it, and a consent gate per iteration would
+   defeat the mode. The one case that still needs confirmation is adopting a
+   solution the agent did not create, because `upload` overwrites the cloud
+   solution matching the local `.uipx` SolutionId. Confirm that when phase 1
    picks an existing solution, not here.
 
 ## Iterating
 
-Adjust the skeleton, re-`format`, re-`upload`, repeat. Each upload after the
-first reports `Data.Action: "Overwritten"` and reuses the same `SolutionId` and
+Adjust the skeleton, re-`format`, show the change, repeat. On a live canvas the
+refresh is automatic. In a bare terminal, each upload after the first reports
+`Data.Action: "Overwritten"` and reuses the same `SolutionId` and
 `DesignerUrl`, because `upload` writes the cloud solution id back into the local
 `.uipx`. `"Imported"` on a later upload means that id was lost and a second
 cloud solution was just created — stop and fix that before continuing.
