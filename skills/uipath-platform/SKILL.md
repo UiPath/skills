@@ -1,7 +1,7 @@
 ---
 name: uipath-platform
 description: "UiPath platform ops via the uip CLI — use for ANY task hitting UiPath Cloud / Orchestrator / Studio Web / Integration Service / Data Fabric / LLM Gateway. Load BEFORE writing code that calls a UiPath API. Covers auth, folders, assets, queues, storage buckets, libraries, webhooks, triggers, processes, jobs, machines, users, roles, sessions, calendars, IS connectors/connections/activities, Data Fabric entities/records/files/choice-sets (`uip df`), BYO LLM product configurations, BYO guardrail (BYOG) configurations, context grounding, traces (execution traces and spans + trace feedback / annotation), licensing. For 'why did X fail' / root-cause→uipath-troubleshoot. For org/tenant audit trail / audit logs / login history→uipath-admin. For `uip solution` lifecycle→uipath-solution. For PDD/SDD design→uipath-planner. For workflow code (.xaml/.cs)→uipath-rpa, .flow (incl. Data Fabric connector nodes)→uipath-maestro-flow, .bpmn→uipath-maestro-bpmn, agents (.py/agent.json)→uipath-agents, Test Manager→uipath-test."
-when_to_use: "User mentions UiPath / Orchestrator / Studio Web / Integration Service / Data Fabric / LLM Gateway / 'uip' CLI / asset / queue / bucket / library / webhook / trigger / connector / connection / tenant / folder / robot / package / entity / record / choice set / trace / span / trace feedback / BYO LLM / BYO guardrail / BYOG. Also 'upload to UiPath', 'create asset', 'start job', 'list queues', 'set ROI for a process', 'business ROI of a queue', 'deploy a single package to Orchestrator', 'OAuth2 token', 'list trace spans / add trace feedback', 'create entity', 'add field', 'delete field', 'list entities', 'insert record', 'update record', 'delete record', 'query Data Fabric', 'search records', 'show every <thing> tagged/where', 'filter records by tag/choice/field', 'count by group', 'unique tag combinations', 'group by field', 'aggregate COUNT/SUM/AVG', 'create choice-set', 'create choiceset', 'add choice set values', 'delete choice set', 'attach file to record', 'upload/download/delete file on entity record', 'swap record attachment', 'import CSV', 'load CSV into entity/list', 'load spreadsheet into entity', 'bulk load records from CSV', 'bulk import from CSV', 'register my own LLM key', 'configure a model substitution', 'my BYO LLM key stopped working / returns errors', 're-probe / audit a BYO configuration', 'list bring-your-own guardrail configurations', 'register/enable/disable/delete a BYOG guardrail configuration', 'who registered this BYOG guardrail', 'uipath.com REST'. For `uip solution` ops or `.uipx` deploys→uipath-solution. For Data Fabric connector nodes inside a `.flow`→uipath-maestro-flow. CLI bootstrap: 'install UiPath CLI', 'prepare workstation for UiPath', 'install UiPath skills', `uip` missing / not found, Node or npm missing, Python or .NET SDK missing."
+when_to_use: "User mentions UiPath / Orchestrator / Studio Web / Integration Service / Data Fabric / LLM Gateway / 'uip' CLI / asset / queue / bucket / library / webhook / trigger / connector / connection / tenant / folder / robot / package / entity(incl. federated / virtual data object / zero-copy) / record / record / choice set(incl. federated / virtual choice set / zero-copy, entity using connector) / trace / span / trace feedback / BYO LLM / BYO guardrail / BYOG. Also 'upload to UiPath', 'create asset', 'start job', 'list queues', 'set ROI for a process', 'business ROI of a queue', 'deploy a single package to Orchestrator', 'OAuth2 token', 'list trace spans / add trace feedback', 'create entity', 'add field', 'delete field', 'list entities', 'insert record', 'update record', 'delete record', 'query Data Fabric', 'search records', 'show every <thing> tagged/where', 'filter records by tag/choice/field', 'count by group', 'unique tag combinations', 'group by field', 'aggregate COUNT/SUM/AVG', 'create choice-set', 'create choiceset', 'add choice set values', 'delete choice set', 'attach file to record', 'upload/download/delete file on entity record', 'swap record attachment', 'import CSV', 'load CSV into entity/list', 'load spreadsheet into entity', 'bulk load records from CSV', 'bulk import from CSV', 'register my own LLM key', 'configure a model substitution', 'my BYO LLM key stopped working / returns errors', 're-probe / audit a BYO configuration', 'list bring-your-own guardrail configurations', 'register/enable/disable/delete a BYOG guardrail configuration', 'who registered this BYOG guardrail', 'uipath.com REST'. For `uip solution` ops or `.uipx` deploys→uipath-solution. For Data Fabric connector nodes inside a `.flow`→uipath-maestro-flow. CLI bootstrap: 'install UiPath CLI', 'prepare workstation for UiPath', 'install UiPath skills', `uip` missing / not found, Node or npm missing, Python or .NET SDK missing."
 allowed-tools: Bash, Read, Write, Glob, Grep, Skill
 ---
 
@@ -37,16 +37,19 @@ If you find yourself about to `curl` `https://cloud.uipath.com/...` — stop. Se
 When `uip --version` fails, Node/npm is missing, or a coding agent needs a workstation prepared for UiPath work, use the official onboarding installers instead of reconstructing package-manager logic. They are idempotent and safe to rerun.
 
 macOS/Linux:
+
 ```bash
 curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
 ```
 
 Windows PowerShell:
+
 ```powershell
 irm https://download.uipath.com/uipath-cli/install.ps1 | iex
 ```
 
 The installers:
+
 - Ensure Node.js >= 20 and npm.
 - Install `@uipath/cli` from public npm.
 - Run `uip skills install --no-interactive` so installed AI coding agents (Claude Code, Codex, Gemini CLI, Cursor, etc.) can use the UiPath skills.
@@ -74,7 +77,7 @@ Load this skill BEFORE writing any code that talks to UiPath. Specific triggers:
 - **Orchestrator core**: folders (`list/get/create/edit/move/delete/runtimes`), processes/releases, jobs (`start/stop/logs/traces/healing-data`), packages (`upload/download/versions`), machines, users / roles / sessions (incl. DirectoryUser/DirectoryGroup/DirectoryRobot/DirectoryExternalApplication), licenses, calendars, settings, audit logs, credential stores, feeds, attachments
 - **Resources (Orchestrator-scoped)**: assets (text/integer/bool/credential), queues + queue items, storage buckets + bucket files (`upload/download/get-download-url/get-upload-url`), libraries (`.nupkg`), webhooks (HMAC signing), triggers (time/queue/api)
 - **Integration Service**: connectors, connections (OAuth flow), activities, IS triggers, agent-workflow reference resolution
-- **Data Fabric **: UiPath's structured, typed data store. **⛔ STOP — before ANY `uip df` command, Read [`references/data-fabric/data-fabric.md`](references/data-fabric/data-fabric.md).The reference carries Critical Rules (folder-scope prompt flow, irreversible-op gates, complex-field config), request-body schema, per-type operator matrix, and routes to topic files: [`entity-schema.md`](references/data-fabric/entity-schema.md), [`records-query.md`](references/data-fabric/records-query.md), [`filter-platform-contract.md`](references/data-fabric/filter-platform-contract.md), [`choice-sets.md`](references/data-fabric/choice-sets.md), [`file-attachments.md`](references/data-fabric/file-attachments.md), [`bulk-import.md`](references/data-fabric/bulk-import.md). Surfaces:
+- **Data Fabric **: UiPath's structured, typed data store. \*\*⛔ STOP — before ANY `uip df` command, Read [`references/data-fabric/data-fabric.md`](references/data-fabric/data-fabric.md).The reference carries Critical Rules (folder-scope prompt flow, irreversible-op gates, complex-field config), request-body schema, per-type operator matrix, and routes to topic files: [`entity-schema.md`](references/data-fabric/entity-schema.md), [`federated-entity-creation.md`](references/data-fabric/federated-entity-creation.md) (federated / virtual data object / zero-copy entities — backed by a connector or another entity), [`records-query.md`](references/data-fabric/records-query.md), [`filter-platform-contract.md`](references/data-fabric/filter-platform-contract.md), [`choice-sets.md`](references/data-fabric/choice-sets.md), [`file-attachments.md`](references/data-fabric/file-attachments.md), [`bulk-import.md`](references/data-fabric/bulk-import.md). Surfaces:
   - **Entities** — schemas with typed columns, per-type constraints (`lengthLimit`, `minValue` / `maxValue`, `decimalPrecision`), choice-set / relationship / file fields, `addFields` / `updateFields` / `removeFields` evolution.
   - **Records** — insert / update / delete / list / get / `query` with server-side filters, sorting, pagination, group-by, and aggregates (`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`).
     - DF filter body uses `filterGroup.queryFilters[]` — full shape in [`records-query.md`](references/data-fabric/records-query.md).
@@ -84,6 +87,7 @@ Load this skill BEFORE writing any code that talks to UiPath. Specific triggers:
   - **CSV bulk import** — `uip df records import <entity-id> --file <path.csv> --output json`. Basic field types only; complex fields (CHOICE_SET, RELATIONSHIP, FILE, AUTO_NUMBER) require `records insert --file <json>`.
 
   For Query / Create / Update / Delete / GetById connector nodes **inside a `.flow`**, hand off to `uipath-maestro-flow` — that skill owns the in-flow node JSON, `bindings_v2.json`, and connection-resource layout.
+
 - **LLM Gateway — BYO product configurations**: `uip llm-configuration byo-connections` (`list / get / create / update / delete / list-product-configs`). Register tenant-owned OpenAI / Azure OpenAI / AWS Bedrock / Google Vertex / Anthropic / OpenAI-compatible keys against UiPath product features (agents, agenthub, jarvis, IXP, agent builder, ECS). Two input shapes: single-mapping (for `AnyModelWithOwnAdditions` features) and repeated `--mapping` (required for `AllModels` / `AnyModel`). Server-side validation is mandatory.
 - **LLM Gateway — diagnose a failing BYO config**: re-probe the underlying IS connection with `byo-connections get <id> --force-refresh`, force a fresh server-side probe with an idempotent `update`, audit the tenant with `list --include-connection-details` filtered on `connectionState != Enabled`, check catalog drift with `list-product-configs`, and cross-reference trace evidence with `uip traces spans get <trace-id>`. The gateway does **not** expose per-request invocation logs via CLI — diagnosis is current-state + trace evidence only. See [`references/llmgateway/byo-connections.md` § Diagnostics](references/llmgateway/byo-connections.md#diagnostics). For tenant-wide AI Trust Layer policy that may be overriding routing, see [uipath-governance](/uipath:uipath-governance).
 - **AI Trust Layer — BYO guardrail (BYOG) configurations**: `uip guardrails byo-configurations` (`list / list-validators / probe / create / update / delete`) — manage tenant-registered external guardrail validator providers (e.g. Azure AI Content Safety, Databricks AI Guardrails), each backed by an Integration Service connection. `ValidatorName` is tenant-unique and is the only value agents reference (`ByoValidator(<ValidatorName>)` — the connection resolves server-side). Before creating, `list` (the name must be free) and `uip is connections list` (for `--connection-id`); `create` always probes the connection/validator pair server-side and aborts if the probe fails, with no skip flag, and `update` re-probes whenever `--connection-id` changes. `probe` and `list-validators` test a pairing without saving anything; `update` merges supplied fields and can flip `--enabled`/`--disabled`; `delete` requires `--force`; no `get` verb. See [`references/guardrails/byo-configurations.md`](references/guardrails/byo-configurations.md). For authoring a guardrail against one of these configurations (low-code or coded), see [uipath-agents](/uipath:uipath-agents).
@@ -97,6 +101,7 @@ For `uip solution` lifecycle (init / pack / publish / deploy / activate / upload
 ## Auth token location
 
 The default login stores credentials at **`~/.uipath/.auth`**:
+
 ```
 UIPATH_URL=https://cloud.uipath.com
 UIPATH_ORGANIZATION_NAME=my_org
@@ -115,6 +120,7 @@ uip login which --profile dev --output json
 ```
 
 Rules:
+
 - `--profile <name>` is a global option. Pass it on every `uip` command that should use that login, for example `uip --profile dev or folders list --output json`.
 - `default` means the built-in unprofiled login and maps back to `~/.uipath/.auth`.
 - Profile names may contain only letters, numbers, `.`, `_`, and `-`. Never use paths like `../prod`.
@@ -140,6 +146,7 @@ If the command is missing, use the official installer from [CLI Bootstrap for Fr
 Before interacting with Orchestrator, solutions, or Integration Service, the user must be logged in.
 
 **Always check first** — most sessions are already authenticated:
+
 ```bash
 uip login status --output json
 ```
@@ -147,27 +154,33 @@ uip login status --output json
 If it reports `Logged in`, skip the rest of this step. There is no `--check` flag — `status` is the verification subcommand.
 
 If the user names a profile, check that profile explicitly:
+
 ```bash
 uip login status --profile dev --output json
 ```
 
-**Interactive login (browser OAuth2):** `uip login` opens a browser window on the user's machine and blocks until they complete it. **Never run an interactive login through your own shell tool — with or without `--no-browser`.** Run by an agent, the person who must sign in sees only a spinner: the printed URL and the blocking wait live in your tool output, not in front of them. `--no-browser` does not make the command agent-runnable — it exists for automation that opens the URL *itself*; it still blocks until the sign-in callback arrives, and relaying the printed URL by copy/paste is fragile (a line-wrapped or truncated copy is rejected by the identity server with an opaque browser-side error). Instead, ask the user to run the command directly in their own terminal — in Claude Code, prefixing it with `!` runs it inside the session:
+**Interactive login (browser OAuth2):** `uip login` opens a browser window on the user's machine and blocks until they complete it. **Never run an interactive login through your own shell tool — with or without `--no-browser`.** Run by an agent, the person who must sign in sees only a spinner: the printed URL and the blocking wait live in your tool output, not in front of them. `--no-browser` does not make the command agent-runnable — it exists for automation that opens the URL _itself_; it still blocks until the sign-in callback arrives, and relaying the printed URL by copy/paste is fragile (a line-wrapped or truncated copy is rejected by the identity server with an opaque browser-side error). Instead, ask the user to run the command directly in their own terminal — in Claude Code, prefixing it with `!` runs it inside the session:
+
 ```text
 ! uip login
 ```
+
 Then confirm with `uip login status --output json` once they say it's done. If a retry fails with `EADDRINUSE` / "Port 8104 is already in use", an abandoned earlier attempt is still holding the callback port — it releases itself within 5 minutes, or the user can end the stale `uip login` process.
 
 For a named interactive login:
+
 ```bash
 uip login --profile dev --output json
 ```
 
 For a custom authority (Automation Suite, dedicated, or other non-default host):
+
 ```bash
 uip login --authority "<AUTHORITY_URL>" --it --output json
 ```
 
 For non-interactive (CI/CD) scenarios, use client credentials read from environment variables with the CLI's `env.<NAME>` syntax. Never ask the user to paste the secret into chat or put it on the command line:
+
 ```bash
 uip login --client-id env.UIPATH_CLIENT_ID --client-secret env.UIPATH_CLIENT_SECRET --tenant "<TENANT>" --output json
 ```
@@ -184,6 +197,7 @@ uip login tenant set "<TENANT_NAME>" --output json
 ### Step 3 — Explore Orchestrator
 
 List folders to orient yourself:
+
 ```bash
 uip or folders list --output json
 ```
@@ -194,54 +208,57 @@ Choose the appropriate operation from the Task Navigation table below. For `uip 
 
 ## Task Navigation
 
-| I need to... | Read these |
-|---|---|
-| **Authenticate / manage tenants** | [references/uip-commands.md](references/uip-commands.md) |
-| **Set up folders, users, machines** | [references/orchestrator/setup-environment.md](references/orchestrator/setup-environment.md) |
-| **Run and monitor jobs** | [references/orchestrator/run-jobs.md](references/orchestrator/run-jobs.md) |
-| **Manage sessions and runtimes** | [references/orchestrator/manage-sessions.md](references/orchestrator/manage-sessions.md) |
-| **Tenant settings, calendars, audit logs** | [references/orchestrator/tenant-admin.md](references/orchestrator/tenant-admin.md) |
-| **Understand Orchestrator concepts** | [references/orchestrator/orchestrator.md](references/orchestrator/orchestrator.md) |
-| **Manage assets** | [references/orchestrator/manage-assets.md](references/orchestrator/manage-assets.md) |
-| **Work with queues and queue items** | [references/orchestrator/process-queues.md](references/orchestrator/process-queues.md) |
-| **Set or read Business ROI for a process or queue** | [references/orchestrator/business-roi.md](references/orchestrator/business-roi.md) |
-| **Work with storage buckets and files** | [references/orchestrator/work-with-storage.md](references/orchestrator/work-with-storage.md) |
-| **Set up triggers and webhooks** | [references/orchestrator/triggers-and-webhooks.md](references/orchestrator/triggers-and-webhooks.md) |
-| **Develop / pack / publish / deploy / activate solutions; set up CI/CD** | [/uipath:uipath-solution](/uipath:uipath-solution) |
-| **Debug LLM/agent traces (spans)** | [references/traces/traces.md](references/traces/traces.md) |
-| **Annotate traces with feedback** | [references/traces/feedback.md](references/traces/feedback.md) |
-| **Use Integration Service** | [references/integration-service/integration-service.md](references/integration-service/integration-service.md) |
-| **Use Data Fabric — entities, records, files, choice sets** | [references/data-fabric/data-fabric.md](references/data-fabric/data-fabric.md) |
-| **Build an entity schema / add fields / complex field types** | [references/data-fabric/entity-schema.md](references/data-fabric/entity-schema.md) |
-| **Query records — filters, pagination, aggregates, choice/relationship semantics** | [references/data-fabric/records-query.md](references/data-fabric/records-query.md) |
-| **Filter operator support matrix per field type** | [references/data-fabric/filter-platform-contract.md](references/data-fabric/filter-platform-contract.md) |
-| **Manage choice sets and choice-set values** | [references/data-fabric/choice-sets.md](references/data-fabric/choice-sets.md) |
-| **Upload / download / delete file attachments on records** | [references/data-fabric/file-attachments.md](references/data-fabric/file-attachments.md) |
-| **Bulk import records from CSV** | [references/data-fabric/bulk-import.md](references/data-fabric/bulk-import.md) |
-| **Configure BYO LLM keys (OpenAI / Azure OpenAI / Bedrock / Vertex / Anthropic)** | [references/llmgateway/byo-connections.md](references/llmgateway/byo-connections.md) |
-| **Diagnose / audit / re-probe a BYO LLM configuration** | [references/llmgateway/byo-connections.md#diagnostics](references/llmgateway/byo-connections.md#diagnostics) |
-| **Manage BYO guardrail (BYOG) configurations (list/create/update/delete)** | [references/guardrails/byo-configurations.md](references/guardrails/byo-configurations.md) |
-| **Test whether a connection can serve a BYOG validator (probe / list-validators)** | [references/guardrails/byo-configurations.md#validation-mandatory-before-save](references/guardrails/byo-configurations.md#validation-mandatory-before-save) |
-| **Diagnose a BYO guardrail (dead connection, disabled config)** | [references/guardrails/byo-configurations.md#diagnostics](references/guardrails/byo-configurations.md#diagnostics) |
-| **Allocate licenses to tenants** | [references/licensing/tenant-allocations.md](references/licensing/tenant-allocations.md) |
-| **Assign user/group license bundles** | [references/licensing/user-licenses-allocations.md](references/licensing/user-licenses-allocations.md) |
-| **Report on license consumption** | [references/licensing/consumables-report.md](references/licensing/consumables-report.md) |
-| **Understand licensing concepts** | [references/licensing/licensing.md](references/licensing/licensing.md) |
-| **Diagnose a licensing symptom** | [references/licensing/diagnose/CAPABILITY.md](references/licensing/diagnose/CAPABILITY.md) |
-| **Full CLI command reference** | [references/uip-commands.md](references/uip-commands.md) |
-| **Bootstrap `uip`, Node, Python, .NET, and agent skills** | [CLI Bootstrap for Fresh Machines](#cli-bootstrap-for-fresh-machines) |
-| **Build/run/validate coded workflows** | [/uipath:uipath-rpa](/uipath:uipath-rpa) |
+| I need to...                                                                                                             | Read these                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Authenticate / manage tenants**                                                                                        | [references/uip-commands.md](references/uip-commands.md)                                                                                                     |
+| **Set up folders, users, machines**                                                                                      | [references/orchestrator/setup-environment.md](references/orchestrator/setup-environment.md)                                                                 |
+| **Run and monitor jobs**                                                                                                 | [references/orchestrator/run-jobs.md](references/orchestrator/run-jobs.md)                                                                                   |
+| **Manage sessions and runtimes**                                                                                         | [references/orchestrator/manage-sessions.md](references/orchestrator/manage-sessions.md)                                                                     |
+| **Tenant settings, calendars, audit logs**                                                                               | [references/orchestrator/tenant-admin.md](references/orchestrator/tenant-admin.md)                                                                           |
+| **Understand Orchestrator concepts**                                                                                     | [references/orchestrator/orchestrator.md](references/orchestrator/orchestrator.md)                                                                           |
+| **Manage assets**                                                                                                        | [references/orchestrator/manage-assets.md](references/orchestrator/manage-assets.md)                                                                         |
+| **Work with queues and queue items**                                                                                     | [references/orchestrator/process-queues.md](references/orchestrator/process-queues.md)                                                                       |
+| **Set or read Business ROI for a process or queue**                                                                      | [references/orchestrator/business-roi.md](references/orchestrator/business-roi.md)                                                                           |
+| **Work with storage buckets and files**                                                                                  | [references/orchestrator/work-with-storage.md](references/orchestrator/work-with-storage.md)                                                                 |
+| **Set up triggers and webhooks**                                                                                         | [references/orchestrator/triggers-and-webhooks.md](references/orchestrator/triggers-and-webhooks.md)                                                         |
+| **Develop / pack / publish / deploy / activate solutions; set up CI/CD**                                                 | [/uipath:uipath-solution](/uipath:uipath-solution)                                                                                                           |
+| **Debug LLM/agent traces (spans)**                                                                                       | [references/traces/traces.md](references/traces/traces.md)                                                                                                   |
+| **Annotate traces with feedback**                                                                                        | [references/traces/feedback.md](references/traces/feedback.md)                                                                                               |
+| **Use Integration Service**                                                                                              | [references/integration-service/integration-service.md](references/integration-service/integration-service.md)                                               |
+| **Use Data Fabric — entities, records, files, choice sets**                                                              | [references/data-fabric/data-fabric.md](references/data-fabric/data-fabric.md)                                                                               |
+| **Build an entity schema / add fields / complex field types**                                                            | [references/data-fabric/entity-schema.md](references/data-fabric/entity-schema.md)                                                                           |
+| **Create / update a federated entity (a.k.a. virtual data object / zero-copy) from a connector or another entity** | [references/data-fabric/federated-entity-creation.md](references/data-fabric/federated-entity-creation.md)                                                   |
+| **Query records — filters, pagination, aggregates, choice/relationship semantics**                                       | [references/data-fabric/records-query.md](references/data-fabric/records-query.md)                                                                           |
+| **Filter operator support matrix per field type**                                                                        | [references/data-fabric/filter-platform-contract.md](references/data-fabric/filter-platform-contract.md)                                                     |
+| **Manage choice sets and choice-set values**                                                                             | [references/data-fabric/choice-sets.md](references/data-fabric/choice-sets.md)                                                                               |
+| **Upload / download / delete file attachments on records**                                                               | [references/data-fabric/file-attachments.md](references/data-fabric/file-attachments.md)                                                                     |
+| **Bulk import records from CSV**                                                                                         | [references/data-fabric/bulk-import.md](references/data-fabric/bulk-import.md)                                                                               |
+| **Configure BYO LLM keys (OpenAI / Azure OpenAI / Bedrock / Vertex / Anthropic)**                                        | [references/llmgateway/byo-connections.md](references/llmgateway/byo-connections.md)                                                                         |
+| **Diagnose / audit / re-probe a BYO LLM configuration**                                                                  | [references/llmgateway/byo-connections.md#diagnostics](references/llmgateway/byo-connections.md#diagnostics)                                                 |
+| **Manage BYO guardrail (BYOG) configurations (list/create/update/delete)**                                               | [references/guardrails/byo-configurations.md](references/guardrails/byo-configurations.md)                                                                   |
+| **Test whether a connection can serve a BYOG validator (probe / list-validators)**                                       | [references/guardrails/byo-configurations.md#validation-mandatory-before-save](references/guardrails/byo-configurations.md#validation-mandatory-before-save) |
+| **Diagnose a BYO guardrail (dead connection, disabled config)**                                                          | [references/guardrails/byo-configurations.md#diagnostics](references/guardrails/byo-configurations.md#diagnostics)                                           |
+| **Allocate licenses to tenants**                                                                                         | [references/licensing/tenant-allocations.md](references/licensing/tenant-allocations.md)                                                                     |
+| **Assign user/group license bundles**                                                                                    | [references/licensing/user-licenses-allocations.md](references/licensing/user-licenses-allocations.md)                                                       |
+| **Report on license consumption**                                                                                        | [references/licensing/consumables-report.md](references/licensing/consumables-report.md)                                                                     |
+| **Understand licensing concepts**                                                                                        | [references/licensing/licensing.md](references/licensing/licensing.md)                                                                                       |
+| **Diagnose a licensing symptom**                                                                                         | [references/licensing/diagnose/CAPABILITY.md](references/licensing/diagnose/CAPABILITY.md)                                                                   |
+| **Full CLI command reference**                                                                                           | [references/uip-commands.md](references/uip-commands.md)                                                                                                     |
+| **Bootstrap `uip`, Node, Python, .NET, and agent skills**                                                                | [CLI Bootstrap for Fresh Machines](#cli-bootstrap-for-fresh-machines)                                                                                        |
+| **Build/run/validate coded workflows**                                                                                   | [/uipath:uipath-rpa](/uipath:uipath-rpa)                                                                                                                     |
 
 ## Resolving UiPath Studio
 
 Some operations (creating projects, validating, running workflows, packing) require UiPath Studio. When Studio is needed:
 
 1. **Check for a running instance first:**
+
    ```bash
    uip rpa instances list --output json
    ```
 
 2. **If no instance is running, try the standard install location:**
+
    ```bash
    uip rpa studio start --output json
    ```
@@ -279,62 +296,62 @@ Organization
 
 ### Robot Types
 
-| Type | Description | Use Case |
-|------|-------------|----------|
-| **Attended** | Runs alongside a human user, triggered via UiPath Assistant | Front-office tasks, user-assisted automation |
+| Type           | Description                                                        | Use Case                                                 |
+| -------------- | ------------------------------------------------------------------ | -------------------------------------------------------- |
+| **Attended**   | Runs alongside a human user, triggered via UiPath Assistant        | Front-office tasks, user-assisted automation             |
 | **Unattended** | Runs autonomously in virtual environments, managed by Orchestrator | Back-office tasks, scheduled processing, 24/7 operations |
 
 ### Folder Types
 
-| Type | Description |
-|------|-------------|
-| **Standard** | Default folder for organizing automations |
-| **Personal** | User-specific workspace |
-| **Virtual** | Logical grouping without physical separation |
-| **Solution** | Folder created by solution deployment |
-| **DebugSolution** | Debug variant of a solution folder |
+| Type              | Description                                  |
+| ----------------- | -------------------------------------------- |
+| **Standard**      | Default folder for organizing automations    |
+| **Personal**      | User-specific workspace                      |
+| **Virtual**       | Logical grouping without physical separation |
+| **Solution**      | Folder created by solution deployment        |
+| **DebugSolution** | Debug variant of a solution folder           |
 
 ### Asset Types
 
-| Type | Description |
-|------|-------------|
-| **Text** | Plain text value |
-| **Bool** | Boolean (true/false) |
-| **Integer** | Numeric integer value |
-| **Credential** | Username + password pair |
-| **Secret** | Encrypted secret value |
-| **DBConnectionString** | Database connection string |
-| **HttpConnectionString** | HTTP connection string |
-| **WindowsCredential** | Windows credential pair |
+| Type                     | Description                |
+| ------------------------ | -------------------------- |
+| **Text**                 | Plain text value           |
+| **Bool**                 | Boolean (true/false)       |
+| **Integer**              | Numeric integer value      |
+| **Credential**           | Username + password pair   |
+| **Secret**               | Encrypted secret value     |
+| **DBConnectionString**   | Database connection string |
+| **HttpConnectionString** | HTTP connection string     |
+| **WindowsCredential**    | Windows credential pair    |
 
 ## CLI Overview
 
 The UiPath CLI (`uip`) is a unified command-line tool for interacting with the UiPath platform:
 
-| Command Group | Prefix | Description | Status |
-|---|---|---|---|
-| **Authentication** | `login`, `logout` | OAuth2, client credentials, PAT, tenant management | Available |
-| **Orchestrator** | `or` | Folders, jobs, processes, releases | Available |
-| **Resource** | `resource` | Assets, queues, queue items, storage buckets, bucket files | Available |
-| **Integration Service** | `is` | Connectors, connections, activities, resources | Available |
-| **Data Fabric** | `df` | Entities, records, files, choice sets (`@uipath/data-fabric-tool`) | Available |
-| **Tools** | `tools` | CLI tool extension management | Available |
-| **MCP** | `mcp` | Model Context Protocol server | Available |
-| **Coded Agents** | `codedagent` | Python agent lifecycle (setup, exec) | Available |
-| **RPA** | `rpa` | RPA workflow management (create, compile, validate, execute) | Available |
+| Command Group           | Prefix            | Description                                                        | Status    |
+| ----------------------- | ----------------- | ------------------------------------------------------------------ | --------- |
+| **Authentication**      | `login`, `logout` | OAuth2, client credentials, PAT, tenant management                 | Available |
+| **Orchestrator**        | `or`              | Folders, jobs, processes, releases                                 | Available |
+| **Resource**            | `resource`        | Assets, queues, queue items, storage buckets, bucket files         | Available |
+| **Integration Service** | `is`              | Connectors, connections, activities, resources                     | Available |
+| **Data Fabric**         | `df`              | Entities, records, files, choice sets (`@uipath/data-fabric-tool`) | Available |
+| **Tools**               | `tools`           | CLI tool extension management                                      | Available |
+| **MCP**                 | `mcp`             | Model Context Protocol server                                      | Available |
+| **Coded Agents**        | `codedagent`      | Python agent lifecycle (setup, exec)                               | Available |
+| **RPA**                 | `rpa`             | RPA workflow management (create, compile, validate, execute)       | Available |
 
 ### Global Options
 
 Every `uip` command accepts:
 
-| Option | Description | Default |
-|---|---|---|
-| `--output <format>` | Output format: `table`, `json`, `yaml`, `plain` | `table` (interactive), `json` (non-interactive) |
-| `--output-filter <expression>` | JMESPath expression to filter JSON output | -- |
-| `--profile <name>` | Use a named auth profile from `~/.uipath/profiles/<name>/.auth` | built-in default login |
-| `--verbose` | Enable verbose/debug logging | Off |
-| `--help` / `-h` | Display help for the command | -- |
-| `--version` / `-v` | Display CLI version | -- |
+| Option                         | Description                                                     | Default                                         |
+| ------------------------------ | --------------------------------------------------------------- | ----------------------------------------------- |
+| `--output <format>`            | Output format: `table`, `json`, `yaml`, `plain`                 | `table` (interactive), `json` (non-interactive) |
+| `--output-filter <expression>` | JMESPath expression to filter JSON output                       | --                                              |
+| `--profile <name>`             | Use a named auth profile from `~/.uipath/profiles/<name>/.auth` | built-in default login                          |
+| `--verbose`                    | Enable verbose/debug logging                                    | Off                                             |
+| `--help` / `-h`                | Display help for the command                                    | --                                              |
+| `--version` / `-v`             | Display CLI version                                             | --                                              |
 
 > **Always use `--output json`** when calling `uip` commands programmatically. JSON is compact and machine-readable.
 >

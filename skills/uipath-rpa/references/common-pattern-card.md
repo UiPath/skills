@@ -27,6 +27,8 @@ xmlns:web="clr-namespace:UiPath.Web.Activities;assembly=UiPath.Web.Activities"
 xmlns:jn="clr-namespace:Newtonsoft.Json.Linq;assembly=Newtonsoft.Json"
 ```
 
+Snippets omit `sap2010:WorkflowViewState.IdRef` — add one to every activity element when inserting, per [xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md) Rule 25 (`<TypeName>_<next free N>`; never change existing IdRefs).
+
 Each entry lists which of these it needs. VB expression form (`[expr]` attributes); C# projects: [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 
 > **Why two UiPath prefixes:** some activities (`BuildDataTable` — Windows-only, and by extension the DataTable group) are not registered under the `http://schemas.uipath.com/workflow/activities` URI on cross-platform assemblies. The `uic:` clr-namespace form resolves whenever the type is loadable. File/queue/retry/invoke activities verified fine under `ui:`.

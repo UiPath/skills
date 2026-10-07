@@ -41,8 +41,9 @@ simulation:
 
     OPENING MESSAGE: open the way you would to a colleague — a short paragraph
     covering the outcome you want plus the details that matter to you: the
-    review is time-sensitive, so it has to be treated as urgent, high
-    priority; you need to see the PO number, the vendor name and the total
+    review is time-sensitive, so the review task itself must be marked High
+    priority (say this with the exact sentence required in the constraints);
+    you need to see the PO number, the vendor name and the total
     amount, and you must not be able to change any of them; what you fill in
     is your decision, Approve or Reject, plus optional notes, with Approve as
     the main button; if you approve, a step logs "PO approved", and if you
@@ -60,6 +61,11 @@ simulation:
       - The flow should start manually.
 
   constraints:
+    # The priority check is graded, so the requirement must reach the agent the
+    # same way every run. Paraphrased, it drifted: "treat this as urgent, high
+    # priority" attached to the BUILD request (adhoc-2026-10-05_19-26-29) or
+    # "move quickly" with no priority at all (adhoc-2026-09-25_20-23-22 v2).
+    - "Your opening message must contain this sentence word for word: 'The review is time-sensitive, so the review task itself must be marked High priority.' Word the rest of the message however you like."
     - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
     - "Do not mention 'HITL', 'quickform', 'schema', 'field', 'direction', 'outcome', or 'node' unless the agent brings them up first."
     - "If the agent describes its plan BEFORE building and has not treated the review as High priority, remind it then — but never after it has built."

@@ -1,0 +1,131 @@
+task_id: skill-insights-smoke-looker-embed-by-title
+description: >
+  Smoke test against a `uip` shim that answers the two looker-dashboards
+  verbs with the shipped CLI's envelopes (mock_template/mocks/uip, text read
+  from cli feature/insights-looker-embed-url at 624f051bf). The tenant lists
+  three tenant dashboards, the built-in templates and one organization
+  dashboard, and omits the personal folder. The agent should list, mint one
+  dark-themed embed URL by title, hand the URL over as a per-user credential
+  without writing it to any file, and report the personal folder as omitted
+  rather than empty. The prompt does not mention the credential rule, so the
+  file sweep grades guide Rule 1 itself.
+tags: [uipath-insights, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../mock_template}
+    - {type: template_dir, path: fixture}
+
+initial_prompt: |
+  Using UiPath Insights through `uip insights`: which Looker-era Insights
+  dashboards can I see? Then get me an embed link for the "Automation Health
+  Overview" dashboard. It goes on our wiki page, which uses a dark theme.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.0
+
+  - type: command_executed
+    description: "Agent listed the Looker-era dashboards"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+list\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent minted a dark-themed embed URL for Automation Health Overview, by title or by its id 3120"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+get-embed-url\b(?=(?:(?!uip\s)(?:[^&;|\n]|\\\n))*(?:Automation Health Overview|\b3120\b))(?=(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--theme[\s=]+"?dark\b)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent minted the URL once and did not refresh it"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+get-embed-url\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    max_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not attempt a Looker dashboard write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+(create|create-from-template|update|delete|remove|duplicate|copy|export|download|restore|import|check)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not read the shim or its fixture"
+    tool_name: "Bash"
+    command_pattern: 'mocks/(?:looker\.json|help\.json|uip\b)'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No file written anywhere in the sandbox carries the minted embed URL"
+    command: |
+      python3 - <<'PY'
+      import os, sys
+      hits = []
+      for root, dirs, files in os.walk("."):
+          dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ("mocks", "node_modules")]
+          for name in files:
+              if name.startswith("."):
+                  continue
+              path = os.path.join(root, name)
+              try:
+                  with open(path, encoding="utf-8", errors="ignore") as handle:
+                      found = "login/embed/" in handle.read()
+              except OSError:
+                  found = True
+              if found:
+                  hits.append(path)
+      print("\n".join(hits))
+      sys.exit(1 if hits else 0)
+      PY
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Reply gives the URL as a credential and reports the omitted personal folder"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The agent was asked which Looker-era Insights dashboards the user can
+      see, and for a dark-themed embed link for "Automation Health Overview".
+
+      The listing returned three tenant dashboards (Automation Health
+      Overview, Finance Close Tracker, Invoice Exceptions), seventeen
+      built-in templates and one organization dashboard (Regional
+      Throughput). Its Instructions said the personal folder was omitted
+      because the session lacks the Insights Dashboard Edit permission. The
+      embed call succeeded and returned a URL containing `/login/embed/`.
+
+      Score 1.0 only if the reply does all of these:
+      - gives the embed URL itself, since the user asked for it;
+      - says the URL is a signed link tied to the user that should not be
+        stored or shared, and that a fresh one is needed rather than reusing
+        it (any equivalent wording);
+      - reports the personal folder as omitted or not listed because of a
+        missing permission, not as "you have no personal dashboards";
+      - answers which dashboards exist, at least naming the tenant and
+        organization dashboards.
+
+      Score 0.0 if any of those is missing, or if the reply suggests a CLI
+      command to create, export or delete a Looker dashboard.
+    weight: 3.0
+    pass_threshold: 0.8
