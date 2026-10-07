@@ -58,8 +58,18 @@ add-table is not custom-only.
 ## Sample data — a demo app without your own data
 
 Some templates ship sample data — the UI's "Use sample data" option when creating
-an app. Use it when the user wants a demo / sandbox app or asks for sample data;
-do not write a synthetic CSV instead.
+an app. Do not write a synthetic CSV instead.
+
+> **Sample data is NOT customer data.** It is generic demo data that UiPath ships
+> with the template. It does not describe the customer's process, and numbers mined
+> from it mean nothing for their business.
+
+| Situation | Use |
+|-----------|-----|
+| User asks for sample / demo data, or wants to try Process Mining with no data of their own | `--sample-data` |
+| User has or mentions their own data: a CSV, an extract, a source system, "our process" | Their data: mapping → `files upload` → `ingestions create`. **Never `--sample-data`.** |
+| Loading the customer's data fails | Fix the load, or report the failure. **Never fall back to sample data.** |
+| Unclear whether the user means their own data or a demo | Ask before ingesting anything |
 
 1. **Find a template that ships sample data.** `SampleDataAvailable` is per
    template version:
@@ -95,9 +105,14 @@ do not write a synthetic CSV instead.
 | `--wait` ends `FAILED` | Loader/transform error, printed by `--wait` | Treat as any failed ingestion — read the printed error; `ingestions logs` for more |
 
 After loading, everything else is unchanged: transform, extend with add-table,
-publish, query. To swap in real data later, set the mapping with `apps
-data-mapping update`, `files upload`, and `ingestions create` without
-`--sample-data`.
+publish, query.
+
+Keep demo apps and customer apps separate. When the user later wants to analyze
+their own data, create a **new** app for it (mapping → `files upload` →
+`ingestions create`). Do not load customer data into the sample-data app, and do
+not ingest sample data into an app that holds customer data: dashboards, metrics
+and transformations tuned on demo data would then be passed off as analysis of
+the customer's process.
 
 ## What is template-specific
 
