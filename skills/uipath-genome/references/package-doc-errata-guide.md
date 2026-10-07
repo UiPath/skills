@@ -46,6 +46,5 @@ Each row was met in a build that validated and packed, or in a live search again
 | Flow runtime, Data Fabric read | An `in` filter with a list value fails (`valueList[0] … System.String`) | Reads without that filter and narrows the rows in a script step |
 | `uip maestro registry prepare` on Windows | Fails with `spawn uip ENOENT`: the SDK starts `uip` without a shell, and `uip` is a `.cmd` shim | Writes the bindings file by hand from `uip is connections list --all-folders --output json` |
 | `uip maestro flow check` | Warns `RPA_FOLDER_NOT_PATH` on a personal-workspace folder, a valid single-segment path | Reviews and accepts the warning |
-| `uip api-workflow init` | The scaffold writes `variables: []`, while a `WorkflowStart` expression reads `variables.schema…` | Gives the workflow the `variables` shape the API-workflow skill's template has |
 | `uip api-workflow run` | Prints `fast-json-patch MODULE_NOT_FOUND` stack traces when the working directory has no `node_modules`; the result is correct | Judges the run by its envelope |
 | UI Automation driver, `UiPath.UIAutomation.Activities` 26.10.4 and earlier | `colName` on a SAP GUI table control's column or cell matches nothing: the search rejects it | Takes the column from `colTooltip`, checked against a live listing, or from `tableCol` |
