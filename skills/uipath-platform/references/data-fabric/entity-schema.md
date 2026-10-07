@@ -20,7 +20,7 @@ uip df entities create "MyEntity" \
 ```
 
 - `fields` array is **required**. Each entry must include `name`.
-- `displayName`, `description`, `isRbacEnabled`, and `isAnalyticsEnabled` are optional top-level keys. `isAnalyticsEnabled` is **immutable after creation** — set it here; it cannot be changed on `entities update`.
+- `displayName`, `description`, and `isRbacEnabled` are optional top-level keys.
 - Response: `{ Code: "EntityCreated", Data: { Id: "<entity-id>" } }` — save `Data.Id` for subsequent operations.
 - Alternatively use `--file <path>` pointing to a JSON file with the same structure.
 
@@ -307,7 +307,7 @@ uip df entities update <entity-id> \
   --output json
 ```
 
-> A metadata update (`description`, `isRbacEnabled`) must also include the current `displayName` — the backend requires it, so the CLI rejects a metadata body without it. Read it from `entities get` and pass it even when only the description changes (as the metadata-only example above does). Field-only updates (`addFields` / `updateFields` / `removeFields`) don't need it. `isAnalyticsEnabled` is immutable after creation — the CLI rejects it in an update body; set it on `entities create`.
+> A metadata update (`description`, `isRbacEnabled`) must also include the current `displayName` — the backend requires it, so the CLI rejects a metadata body without it. Read it from `entities get` and pass it even when only the description changes (as the metadata-only example above does). Field-only updates (`addFields` / `updateFields` / `removeFields`) don't need it.
 
 ### Updating Existing Field Metadata (`updateFields`)
 
@@ -401,4 +401,4 @@ Each `entities list`/`get` row carries `EntityType` (object kind) and `EntityCla
 
 **Only native entities support record creation, update, delete, and import.** Federated entities are read-only for records — read via `records list` or `records query` (query supports filter/sort/projection, but not aggregates or multi-entity joins; see federated-entity-creation.md Rule 9).
 
-> **Creating** a federated entity from an Integration Service connector (Salesforce, HubSpot, Data hub, …) or from another DF entity **is supported** — see [`federated-entity-creation.md`](federated-entity-creation.md) for the create payload, field mapping, `EntityClass: "Federated"`, and `--federated-only` listing. Only **record writes** to a federated entity are unsupported (data lives in the source, so writes happen there).
+> **Creating** a federated entity from an Integration Service connector on the tenant's federated allow-list (`uip df connectors list`) or from another DF entity **is supported** — see [`federated-entity-creation.md`](federated-entity-creation.md) for the create payload, field mapping, `EntityClass: "Federated"`, and `--federated-only` listing. Only **record writes** to a federated entity are unsupported (data lives in the source, so writes happen there).
