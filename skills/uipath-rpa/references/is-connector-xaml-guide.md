@@ -70,8 +70,7 @@ Same principle throughout: **pass the selector the activity needs, get back its 
 
 ```bash
 uip login                                                       # production (cloud.uipath.com)
-uip login --authority https://alpha.uipath.com/identity_        # alpha
-uip login --authority https://staging.uipath.com/identity_      # staging
+uip login --authority "<AUTHORITY_URL>"                         # non-default host (Automation Suite, dedicated)
 ```
 
 The command is **interactive** (opens a browser). If you need the user to run it themselves, ask them to type `! uip login` so the token lands in the current session.

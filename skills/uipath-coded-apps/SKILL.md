@@ -149,7 +149,7 @@ Authenticate before any cloud command:
 ```bash
 uip login status --output json         # check if logged in
 uip login                              # interactive OAuth (opens browser)
-uip login --authority https://alpha.uipath.com   # non-production environments
+uip login --authority "<AUTHORITY_URL>"   # non-default host (Automation Suite, dedicated)
 
 # Client-credentials (headless/CI) — scope MUST name one Orchestrator scope AND
 # the two Apps-service scopes. Neither set covers the other:
@@ -164,7 +164,7 @@ uip login \
   --organization <org> \
   --tenant <tenant> \
   --scope "OR.Default Apps.Read Apps.Write" \
-  --authority https://alpha.uipath.com   # omit --authority for production
+  --authority "<AUTHORITY_URL>"   # omit --authority for cloud.uipath.com
 ```
 
 > **Never handle the client secret in the conversation.** Do not ask the user to paste it into chat, do not write it into a command line or file, and do not echo it. If `UIPATH_CLIENT_ID` / `UIPATH_CLIENT_SECRET` are not set, ask the user to export them in their own shell, then run the command above.
@@ -183,13 +183,13 @@ To change any of these values, edit `uipath.json`.
 |----------|---------|-------------|
 | `UIPATH_PROJECT_ID` | `uip codedapp push` / `uip codedapp pull` | Studio Web project ID |
 
-**Base URL by environment:**
+**Base URL by environment** — derive from the portal host the user signed in to (`uip login status --output json` → `Data.BaseUrl`):
 
-| Environment | Correct Base URL |
+| Portal host | Correct Base URL |
 |---|---|
-| Production (cloud) | `https://api.uipath.com` |
-| Staging | `https://staging.api.uipath.com` |
-| Alpha | `https://alpha.api.uipath.com` |
+| `https://cloud.uipath.com` (default) | `https://api.uipath.com` |
+| `https://<PREFIX>.uipath.com` (any other UiPath-hosted portal) | `https://<PREFIX>.api.uipath.com` |
+| Any other host (Automation Suite, custom) | The API URL the user supplies — use it verbatim |
 
 ## Quick Deploy (Full Pipeline)
 
