@@ -1,0 +1,7509 @@
+{
+ "schemaVersion": 1,
+ "dataset": "BIRD mini-dev",
+ "database": "student_club",
+ "tiering": "core = table with an outgoing foreign key (or the only table when none exist); reference = only a foreign-key target",
+ "entities": [
+  {
+   "name": "event",
+   "class": "Federated",
+   "tier": "reference",
+   "primaryKey": [
+    "event_id"
+   ],
+   "fields": [
+    {
+     "column": "event_id",
+     "sourceField": "event_id",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "key",
+     "description": "A unique identifier for the event",
+     "valueDescription": null
+    },
+    {
+     "column": "event_name",
+     "sourceField": "event_name",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "event name",
+     "valueDescription": null
+    },
+    {
+     "column": "event_date",
+     "sourceField": "event_date",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The date the event took place or is scheduled to take place",
+     "valueDescription": "e.g. 2020-03-10T12:00:00"
+    },
+    {
+     "column": "type",
+     "sourceField": "type",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The kind of event, such as game, social, election",
+     "valueDescription": null
+    },
+    {
+     "column": "notes",
+     "sourceField": "notes",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "A free text field for any notes about the event",
+     "valueDescription": null
+    },
+    {
+     "column": "location",
+     "sourceField": "location",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "Address where the event was held or is to be held or the name of such a location",
+     "valueDescription": null
+    },
+    {
+     "column": "status",
+     "sourceField": "status",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "One of three values indicating if the event is in planning, is opened, or is closed",
+     "valueDescription": "Open/ Closed/ Planning"
+    }
+   ],
+   "joins": [],
+   "live": {
+    "uipath-uipath-jdbc|birdadmin_sqlserver": {
+     "entityName": "mssql_event",
+     "entityId": "eddc4719-58ab-f111-9b33-0022482a9873",
+     "folderId": "b383e0ce-8689-4ea8-bc42-f1dd7f8a928a",
+     "connectionName": "birdadmin_sqlserver",
+     "externalObjectName": "bird_student_club_event",
+     "primaryKey": "event_id",
+     "fieldMap": {
+      "eventdate": {
+       "externalFieldName": "event_date",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "eventid": {
+       "externalFieldName": "event_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "eventname": {
+       "externalFieldName": "event_name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "location": {
+       "externalFieldName": "location",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "notes": {
+       "externalFieldName": "notes",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "status": {
+       "externalFieldName": "status",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "type": {
+       "externalFieldName": "type",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-uipath-jdbc|admin_redshift": {
+     "entityName": "redshift_event",
+     "entityId": "6f004da6-58ab-f111-9b33-0022482a9873",
+     "folderId": "b383e0ce-8689-4ea8-bc42-f1dd7f8a928a",
+     "connectionName": "admin_redshift",
+     "externalObjectName": "bird_student_club_event",
+     "primaryKey": "event_id",
+     "fieldMap": {
+      "eventdate": {
+       "externalFieldName": "event_date",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "eventid": {
+       "externalFieldName": "event_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "eventname": {
+       "externalFieldName": "event_name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "location": {
+       "externalFieldName": "location",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "notes": {
+       "externalFieldName": "notes",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "status": {
+       "externalFieldName": "status",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "type": {
+       "externalFieldName": "type",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-snowflake-snowflake|sureshc": {
+     "entityName": "snowflake_event",
+     "entityId": "fa6e42dd-58ab-f111-9b33-0022482a9873",
+     "folderId": "b383e0ce-8689-4ea8-bc42-f1dd7f8a928a",
+     "connectionName": "sureshc",
+     "externalObjectName": "BIRD_STUDENT_CLUB_EVENT",
+     "primaryKey": "EVENT_ID",
+     "fieldMap": {
+      "EVENTDATE": {
+       "externalFieldName": "EVENT_DATE",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "EVENTID": {
+       "externalFieldName": "EVENT_ID",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "EVENTNAME": {
+       "externalFieldName": "EVENT_NAME",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LOCATION": {
+       "externalFieldName": "LOCATION",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "NOTES": {
+       "externalFieldName": "NOTES",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "STATUS": {
+       "externalFieldName": "STATUS",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "TYPE": {
+       "externalFieldName": "TYPE",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-servicenow-servicenow|ven03565": {
+     "entityName": "servicenow_event",
+     "entityId": "999bdeb2-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "ven03565",
+     "externalObjectName": "u_bird_event",
+     "primaryKey": "sys_id",
+     "fieldMap": {
+      "syscreatedby": {
+       "externalFieldName": "sys_created_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "syscreatedon": {
+       "externalFieldName": "sys_created_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysid": {
+       "externalFieldName": "sys_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysmodcount": {
+       "externalFieldName": "sys_mod_count",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedby": {
+       "externalFieldName": "sys_updated_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedon": {
+       "externalFieldName": "sys_updated_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ueventdate": {
+       "externalFieldName": "u_event_date",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ueventid": {
+       "externalFieldName": "u_event_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ueventname": {
+       "externalFieldName": "u_event_name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ulocation": {
+       "externalFieldName": "u_location",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "unotes": {
+       "externalFieldName": "u_notes",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ustatus": {
+       "externalFieldName": "u_status",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "utype": {
+       "externalFieldName": "u_type",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-salesforce-sfdc|uipathlabs@gmail.com": {
+     "entityName": "sfdc_event",
+     "entityId": "0b2e5f14-59ab-f111-9b33-0022482a9873",
+     "folderId": "b383e0ce-8689-4ea8-bc42-f1dd7f8a928a",
+     "connectionName": "uipathlabs@gmail.com",
+     "externalObjectName": "FQS_event__c",
+     "primaryKey": "Id",
+     "fieldMap": {
+      "CreatedById": {
+       "externalFieldName": "CreatedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "CreatedDate": {
+       "externalFieldName": "CreatedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ExternalId": {
+       "externalFieldName": "Id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSeventdatec": {
+       "externalFieldName": "FQS_event_date__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSeventidc": {
+       "externalFieldName": "FQS_event_id__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSeventnamec": {
+       "externalFieldName": "FQS_event_name__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSlocationc": {
+       "externalFieldName": "FQS_location__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSnotesc": {
+       "externalFieldName": "FQS_notes__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSstatusc": {
+       "externalFieldName": "FQS_status__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQStypec": {
+       "externalFieldName": "FQS_type__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "IsDeleted": {
+       "externalFieldName": "IsDeleted",
+       "externalFieldType": "boolean",
+       "sqlType": {
+        "Name": "BIT"
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedById": {
+       "externalFieldName": "LastModifiedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedDate": {
+       "externalFieldName": "LastModifiedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "Name": {
+       "externalFieldName": "Name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "OwnerId": {
+       "externalFieldName": "OwnerId",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "SystemModstamp": {
+       "externalFieldName": "SystemModstamp",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "major",
+   "class": "Federated",
+   "tier": "reference",
+   "primaryKey": [
+    "major_id"
+   ],
+   "fields": [
+    {
+     "column": "major_id",
+     "sourceField": "major_id",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "key",
+     "description": "A unique identifier for each major",
+     "valueDescription": null
+    },
+    {
+     "column": "major_name",
+     "sourceField": "major_name",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "major name",
+     "valueDescription": null
+    },
+    {
+     "column": "department",
+     "sourceField": "department",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The name of the department that offers the major",
+     "valueDescription": null
+    },
+    {
+     "column": "college",
+     "sourceField": "college",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The name college that houses the department that offers the major",
+     "valueDescription": null
+    }
+   ],
+   "joins": [],
+   "live": {
+    "uipath-uipath-jdbc|birdadmin_sqlserver": {
+     "entityName": "mssql_major",
+     "entityId": "68ad7b2e-2784-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "birdadmin_sqlserver",
+     "externalObjectName": "bird_student_club_major",
+     "primaryKey": "major_id",
+     "fieldMap": {
+      "college": {
+       "externalFieldName": "college",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "department": {
+       "externalFieldName": "department",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "majorid": {
+       "externalFieldName": "major_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "majorname": {
+       "externalFieldName": "major_name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-uipath-jdbc|admin_redshift": {
+     "entityName": "redshift_major",
+     "entityId": "11d81334-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "admin_redshift",
+     "externalObjectName": "bird_student_club_major",
+     "primaryKey": "major_id",
+     "fieldMap": {
+      "college": {
+       "externalFieldName": "college",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "department": {
+       "externalFieldName": "department",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "majorid": {
+       "externalFieldName": "major_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "majorname": {
+       "externalFieldName": "major_name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-snowflake-snowflake|sureshc": {
+     "entityName": "snowflake_major",
+     "entityId": "2cd23e8d-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "sureshc",
+     "externalObjectName": "BIRD_STUDENT_CLUB_MAJOR",
+     "primaryKey": "MAJOR_ID",
+     "fieldMap": {
+      "COLLEGE": {
+       "externalFieldName": "COLLEGE",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "DEPARTMENT": {
+       "externalFieldName": "DEPARTMENT",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "MAJORID": {
+       "externalFieldName": "MAJOR_ID",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "MAJORNAME": {
+       "externalFieldName": "MAJOR_NAME",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-servicenow-servicenow|ven03565": {
+     "entityName": "servicenow_major",
+     "entityId": "eb2037c6-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "ven03565",
+     "externalObjectName": "u_bird_major",
+     "primaryKey": "sys_id",
+     "fieldMap": {
+      "syscreatedby": {
+       "externalFieldName": "sys_created_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "syscreatedon": {
+       "externalFieldName": "sys_created_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysid": {
+       "externalFieldName": "sys_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysmodcount": {
+       "externalFieldName": "sys_mod_count",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedby": {
+       "externalFieldName": "sys_updated_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedon": {
+       "externalFieldName": "sys_updated_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ucollege": {
+       "externalFieldName": "u_college",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "udepartment": {
+       "externalFieldName": "u_department",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "umajorid": {
+       "externalFieldName": "u_major_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "umajorname": {
+       "externalFieldName": "u_major_name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-salesforce-sfdc|uipathlabs@gmail.com": {
+     "entityName": "sfdc_major",
+     "entityId": "52cef320-59ab-f111-9b33-0022482a9873",
+     "folderId": "b383e0ce-8689-4ea8-bc42-f1dd7f8a928a",
+     "connectionName": "uipathlabs@gmail.com",
+     "externalObjectName": "FQS_major__c",
+     "primaryKey": "Id",
+     "fieldMap": {
+      "CreatedById": {
+       "externalFieldName": "CreatedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "CreatedDate": {
+       "externalFieldName": "CreatedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ExternalId": {
+       "externalFieldName": "Id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQScollegec": {
+       "externalFieldName": "FQS_college__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSdepartmentc": {
+       "externalFieldName": "FQS_department__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSmajoridc": {
+       "externalFieldName": "FQS_major_id__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSmajornamec": {
+       "externalFieldName": "FQS_major_name__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "IsDeleted": {
+       "externalFieldName": "IsDeleted",
+       "externalFieldType": "boolean",
+       "sqlType": {
+        "Name": "BIT"
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedById": {
+       "externalFieldName": "LastModifiedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedDate": {
+       "externalFieldName": "LastModifiedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "Name": {
+       "externalFieldName": "Name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "OwnerId": {
+       "externalFieldName": "OwnerId",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "SystemModstamp": {
+       "externalFieldName": "SystemModstamp",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "zip_code",
+   "class": "Federated",
+   "tier": "reference",
+   "primaryKey": [
+    "zip_code"
+   ],
+   "fields": [
+    {
+     "column": "zip_code",
+     "sourceField": "zip_code",
+     "sourceType": "integer",
+     "type": "DECIMAL",
+     "role": "key",
+     "description": "The ZIP code itself. A five-digit number identifying a US post office.",
+     "valueDescription": null
+    },
+    {
+     "column": "type",
+     "sourceField": "type",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The kind of ZIP code",
+     "valueDescription": "commonsense evidence: \r\n� Standard: the normal codes with which most people are familiar \r\n� PO Box: zip codes have post office boxes \r\n� Unique: zip codes that are assigned to individual organizations."
+    },
+    {
+     "column": "city",
+     "sourceField": "city",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The city to which the ZIP pertains",
+     "valueDescription": null
+    },
+    {
+     "column": "county",
+     "sourceField": "county",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The county to which the ZIP pertains",
+     "valueDescription": null
+    },
+    {
+     "column": "state",
+     "sourceField": "state",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The name of the state to which the ZIP pertains",
+     "valueDescription": null
+    },
+    {
+     "column": "short_state",
+     "sourceField": "short_state",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The abbreviation of the state to which the ZIP pertains",
+     "valueDescription": null
+    }
+   ],
+   "joins": [],
+   "live": {
+    "uipath-uipath-jdbc|birdadmin_sqlserver": {
+     "entityName": "mssql_zip_code",
+     "entityId": "56f497db-2784-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "birdadmin_sqlserver",
+     "externalObjectName": "bird_student_club_zip_code",
+     "primaryKey": "zip_code",
+     "fieldMap": {
+      "city": {
+       "externalFieldName": "city",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "county": {
+       "externalFieldName": "county",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "shortstate": {
+       "externalFieldName": "short_state",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "state": {
+       "externalFieldName": "state",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "type": {
+       "externalFieldName": "type",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "zipcode": {
+       "externalFieldName": "zip_code",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-uipath-jdbc|admin_redshift": {
+     "entityName": "redshift_zip_code",
+     "entityId": "9e3d3162-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "admin_redshift",
+     "externalObjectName": "bird_student_club_zip_code",
+     "primaryKey": "zip_code",
+     "fieldMap": {
+      "city": {
+       "externalFieldName": "city",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "county": {
+       "externalFieldName": "county",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "shortstate": {
+       "externalFieldName": "short_state",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "state": {
+       "externalFieldName": "state",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "type": {
+       "externalFieldName": "type",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "zipcode": {
+       "externalFieldName": "zip_code",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-snowflake-snowflake|sureshc": {
+     "entityName": "snowflake_zip_code",
+     "entityId": "4ce13e9f-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "sureshc",
+     "externalObjectName": "BIRD_STUDENT_CLUB_ZIP_CODE",
+     "primaryKey": "ZIP_CODE",
+     "fieldMap": {
+      "CITY": {
+       "externalFieldName": "CITY",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "COUNTY": {
+       "externalFieldName": "COUNTY",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "SHORTSTATE": {
+       "externalFieldName": "SHORT_STATE",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "STATE": {
+       "externalFieldName": "STATE",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "TYPE": {
+       "externalFieldName": "TYPE",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ZIPCODE": {
+       "externalFieldName": "ZIP_CODE",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-servicenow-servicenow|ven03565": {
+     "entityName": "servicenow_zip_code",
+     "entityId": "1b6d0ae0-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "ven03565",
+     "externalObjectName": "u_bird_zip_code",
+     "primaryKey": "sys_id",
+     "fieldMap": {
+      "syscreatedby": {
+       "externalFieldName": "sys_created_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "syscreatedon": {
+       "externalFieldName": "sys_created_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysid": {
+       "externalFieldName": "sys_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysmodcount": {
+       "externalFieldName": "sys_mod_count",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedby": {
+       "externalFieldName": "sys_updated_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedon": {
+       "externalFieldName": "sys_updated_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ucity": {
+       "externalFieldName": "u_city",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ucounty": {
+       "externalFieldName": "u_county",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ushortstate": {
+       "externalFieldName": "u_short_state",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ustate": {
+       "externalFieldName": "u_state",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "utype": {
+       "externalFieldName": "u_type",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uzipcode": {
+       "externalFieldName": "u_zip_code",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "attendance",
+   "class": "Federated",
+   "tier": "core",
+   "primaryKey": [
+    "link_to_event",
+    "link_to_member"
+   ],
+   "fields": [
+    {
+     "column": "link_to_event",
+     "sourceField": "link_to_event",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "key",
+     "description": "The unique identifier of the event which was attended",
+     "valueDescription": "References the Event table"
+    },
+    {
+     "column": "link_to_member",
+     "sourceField": "link_to_member",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "key",
+     "description": "The unique identifier of the member who attended the event",
+     "valueDescription": "References the Member table"
+    }
+   ],
+   "joins": [
+    {
+     "relatedEntity": "member",
+     "joinField": "link_to_member",
+     "relatedJoinField": "member_id",
+     "joinType": "LeftJoin"
+    },
+    {
+     "relatedEntity": "event",
+     "joinField": "link_to_event",
+     "relatedJoinField": "event_id",
+     "joinType": "LeftJoin"
+    }
+   ],
+   "live": {
+    "uipath-uipath-jdbc|birdadmin_sqlserver": {
+     "entityName": "mssql_attendance",
+     "entityId": "d69ab8d4-2584-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "birdadmin_sqlserver",
+     "externalObjectName": "bird_student_club_attendance",
+     "primaryKey": "link_to_event,link_to_member",
+     "fieldMap": {
+      "linktoevent": {
+       "externalFieldName": "link_to_event",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "linktomember": {
+       "externalFieldName": "link_to_member",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-uipath-jdbc|admin_redshift": {
+     "entityName": "redshift_attendance",
+     "entityId": "d4ba8eeb-2784-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "admin_redshift",
+     "externalObjectName": "bird_student_club_attendance",
+     "primaryKey": "link_to_event,link_to_member",
+     "fieldMap": {
+      "linktoevent": {
+       "externalFieldName": "link_to_event",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "linktomember": {
+       "externalFieldName": "link_to_member",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-snowflake-snowflake|sureshc": {
+     "entityName": "snowflake_attendance",
+     "entityId": "3dbe3e68-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "sureshc",
+     "externalObjectName": "BIRD_STUDENT_CLUB_ATTENDANCE",
+     "primaryKey": "LINK_TO_EVENT,LINK_TO_MEMBER",
+     "fieldMap": {
+      "LINKTOEVENT": {
+       "externalFieldName": "LINK_TO_EVENT",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LINKTOMEMBER": {
+       "externalFieldName": "LINK_TO_MEMBER",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-servicenow-servicenow|ven03565": {
+     "entityName": "servicenow_attendance",
+     "entityId": "0dcc44a5-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "ven03565",
+     "externalObjectName": "u_bird_attendance",
+     "primaryKey": "sys_id",
+     "fieldMap": {
+      "syscreatedby": {
+       "externalFieldName": "sys_created_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "syscreatedon": {
+       "externalFieldName": "sys_created_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysid": {
+       "externalFieldName": "sys_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysmodcount": {
+       "externalFieldName": "sys_mod_count",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedby": {
+       "externalFieldName": "sys_updated_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedon": {
+       "externalFieldName": "sys_updated_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ulinktoevent": {
+       "externalFieldName": "u_link_to_event",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ulinktomember": {
+       "externalFieldName": "u_link_to_member",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-salesforce-sfdc|uipathlabs@gmail.com": {
+     "entityName": "sfdc_attendance",
+     "entityId": "3f6d0ae0-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "uipathlabs@gmail.com",
+     "externalObjectName": "FQS_attendance__c",
+     "primaryKey": "Id",
+     "fieldMap": {
+      "CreatedById": {
+       "externalFieldName": "CreatedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "CreatedDate": {
+       "externalFieldName": "CreatedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ExternalId": {
+       "externalFieldName": "Id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSlinktoeventc": {
+       "externalFieldName": "FQS_link_to_event__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSlinktomemberc": {
+       "externalFieldName": "FQS_link_to_member__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "IsDeleted": {
+       "externalFieldName": "IsDeleted",
+       "externalFieldType": "boolean",
+       "sqlType": {
+        "Name": "BIT"
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedById": {
+       "externalFieldName": "LastModifiedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedDate": {
+       "externalFieldName": "LastModifiedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "Name": {
+       "externalFieldName": "Name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "OwnerId": {
+       "externalFieldName": "OwnerId",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "SystemModstamp": {
+       "externalFieldName": "SystemModstamp",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "budget",
+   "class": "Federated",
+   "tier": "core",
+   "primaryKey": [
+    "budget_id"
+   ],
+   "fields": [
+    {
+     "column": "budget_id",
+     "sourceField": "budget_id",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "key",
+     "description": "A unique identifier for the budget entry",
+     "valueDescription": null
+    },
+    {
+     "column": "category",
+     "sourceField": "category",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The area for which the amount is budgeted, such as, advertisement, food, parking",
+     "valueDescription": null
+    },
+    {
+     "column": "spent",
+     "sourceField": "spent",
+     "sourceType": "real",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "description": "The total amount spent in the budgeted category for an event.",
+     "valueDescription": "the unit is dollar. This is summarized from the Expense table"
+    },
+    {
+     "column": "remaining",
+     "sourceField": "remaining",
+     "sourceType": "real",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "description": "A value calculated as the amount budgeted minus the amount spent",
+     "valueDescription": "the unit is dollar \ncommonsense evidence: If the remaining < 0, it means that the cost has exceeded the budget."
+    },
+    {
+     "column": "amount",
+     "sourceField": "amount",
+     "sourceType": "integer",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "description": "The amount budgeted for the specified category and event",
+     "valueDescription": "the unit is dollar \ncommonsense evidence:\nsome computation like: amount = spent + remaining"
+    },
+    {
+     "column": "event_status",
+     "sourceField": "event_status",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "the status of the event",
+     "valueDescription": "Closed / Open/ Planning \ncommonsense evidence: \n• Closed: It means that the event is closed. The spent and the remaining won't change anymore.\n• Open: It means that the event is already opened. The spent and the remaining will change with new expenses.\n• Planning: The event is not started yet but is planning. The spent and the remaining won't change at this stage."
+    },
+    {
+     "column": "link_to_event",
+     "sourceField": "link_to_event",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "link",
+     "description": "The unique identifier of the event to which the budget line applies.",
+     "valueDescription": "References the Event table"
+    }
+   ],
+   "joins": [
+    {
+     "relatedEntity": "event",
+     "joinField": "link_to_event",
+     "relatedJoinField": "event_id",
+     "joinType": "LeftJoin"
+    }
+   ],
+   "live": {
+    "uipath-uipath-jdbc|birdadmin_sqlserver": {
+     "entityName": "mssql_budget",
+     "entityId": "afeb760a-2684-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "birdadmin_sqlserver",
+     "externalObjectName": "bird_student_club_budget",
+     "primaryKey": "budget_id",
+     "fieldMap": {
+      "amount": {
+       "externalFieldName": "amount",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "budgetid": {
+       "externalFieldName": "budget_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "category": {
+       "externalFieldName": "category",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "eventstatus": {
+       "externalFieldName": "event_status",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "linktoevent": {
+       "externalFieldName": "link_to_event",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "remaining": {
+       "externalFieldName": "remaining",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "spent": {
+       "externalFieldName": "spent",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-uipath-jdbc|admin_redshift": {
+     "entityName": "redshift_budget",
+     "entityId": "b0db66f5-2784-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "admin_redshift",
+     "externalObjectName": "bird_student_club_budget",
+     "primaryKey": "budget_id",
+     "fieldMap": {
+      "amount": {
+       "externalFieldName": "amount",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "budgetid": {
+       "externalFieldName": "budget_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "category": {
+       "externalFieldName": "category",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "eventstatus": {
+       "externalFieldName": "event_status",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "linktoevent": {
+       "externalFieldName": "link_to_event",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "remaining": {
+       "externalFieldName": "remaining",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "spent": {
+       "externalFieldName": "spent",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-snowflake-snowflake|sureshc": {
+     "entityName": "snowflake_budget",
+     "entityId": "27fd486e-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "sureshc",
+     "externalObjectName": "BIRD_STUDENT_CLUB_BUDGET",
+     "primaryKey": "BUDGET_ID",
+     "fieldMap": {
+      "AMOUNT": {
+       "externalFieldName": "AMOUNT",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "BUDGETID": {
+       "externalFieldName": "BUDGET_ID",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "CATEGORY": {
+       "externalFieldName": "CATEGORY",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "EVENTSTATUS": {
+       "externalFieldName": "EVENT_STATUS",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LINKTOEVENT": {
+       "externalFieldName": "LINK_TO_EVENT",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "REMAINING": {
+       "externalFieldName": "REMAINING",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "SPENT": {
+       "externalFieldName": "SPENT",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-servicenow-servicenow|ven03565": {
+     "entityName": "servicenow_budget",
+     "entityId": "bdbe44ab-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "ven03565",
+     "externalObjectName": "u_bird_budget",
+     "primaryKey": "sys_id",
+     "fieldMap": {
+      "syscreatedby": {
+       "externalFieldName": "sys_created_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "syscreatedon": {
+       "externalFieldName": "sys_created_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysid": {
+       "externalFieldName": "sys_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysmodcount": {
+       "externalFieldName": "sys_mod_count",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedby": {
+       "externalFieldName": "sys_updated_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedon": {
+       "externalFieldName": "sys_updated_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uamount": {
+       "externalFieldName": "u_amount",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ubudgetid": {
+       "externalFieldName": "u_budget_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ucategory": {
+       "externalFieldName": "u_category",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ueventstatus": {
+       "externalFieldName": "u_event_status",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ulinktoevent": {
+       "externalFieldName": "u_link_to_event",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uremaining": {
+       "externalFieldName": "u_remaining",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uspent": {
+       "externalFieldName": "u_spent",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-salesforce-sfdc|uipathlabs@gmail.com": {
+     "entityName": "sfdc_budget",
+     "entityId": "777365e7-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "uipathlabs@gmail.com",
+     "externalObjectName": "FQS_budget__c",
+     "primaryKey": "Id",
+     "fieldMap": {
+      "CreatedById": {
+       "externalFieldName": "CreatedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "CreatedDate": {
+       "externalFieldName": "CreatedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ExternalId": {
+       "externalFieldName": "Id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSamountc": {
+       "externalFieldName": "FQS_amount__c",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSbudgetidc": {
+       "externalFieldName": "FQS_budget_id__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQScategoryc": {
+       "externalFieldName": "FQS_category__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSeventstatusc": {
+       "externalFieldName": "FQS_event_status__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSlinktoeventc": {
+       "externalFieldName": "FQS_link_to_event__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSremainingc": {
+       "externalFieldName": "FQS_remaining__c",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSspentc": {
+       "externalFieldName": "FQS_spent__c",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "IsDeleted": {
+       "externalFieldName": "IsDeleted",
+       "externalFieldType": "boolean",
+       "sqlType": {
+        "Name": "BIT"
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedById": {
+       "externalFieldName": "LastModifiedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedDate": {
+       "externalFieldName": "LastModifiedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "Name": {
+       "externalFieldName": "Name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "OwnerId": {
+       "externalFieldName": "OwnerId",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "SystemModstamp": {
+       "externalFieldName": "SystemModstamp",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "expense",
+   "class": "Federated",
+   "tier": "core",
+   "primaryKey": [
+    "expense_id"
+   ],
+   "fields": [
+    {
+     "column": "expense_id",
+     "sourceField": "expense_id",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "key",
+     "description": "unique id of income",
+     "valueDescription": null
+    },
+    {
+     "column": "expense_description",
+     "sourceField": "expense_description",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "A textual description of what the money was spend for",
+     "valueDescription": null
+    },
+    {
+     "column": "expense_date",
+     "sourceField": "expense_date",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The date the expense was incurred",
+     "valueDescription": "e.g. YYYY-MM-DD"
+    },
+    {
+     "column": "cost",
+     "sourceField": "cost",
+     "sourceType": "real",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "description": "The dollar amount of the expense",
+     "valueDescription": "the unit is dollar"
+    },
+    {
+     "column": "approved",
+     "sourceField": "approved",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "A true or false value indicating if the expense was approved",
+     "valueDescription": "true/ false"
+    },
+    {
+     "column": "link_to_member",
+     "sourceField": "link_to_member",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "link",
+     "description": "The member who incurred the expense",
+     "valueDescription": null
+    },
+    {
+     "column": "link_to_budget",
+     "sourceField": "link_to_budget",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "link",
+     "description": "The unique identifier of the record in the Budget table that indicates the expected total expenditure for a given category and event.",
+     "valueDescription": "References the Budget table"
+    }
+   ],
+   "joins": [
+    {
+     "relatedEntity": "member",
+     "joinField": "link_to_member",
+     "relatedJoinField": "member_id",
+     "joinType": "LeftJoin"
+    },
+    {
+     "relatedEntity": "budget",
+     "joinField": "link_to_budget",
+     "relatedJoinField": "budget_id",
+     "joinType": "LeftJoin"
+    }
+   ],
+   "live": {
+    "uipath-uipath-jdbc|birdadmin_sqlserver": {
+     "entityName": "mssql_expense",
+     "entityId": "4c61dec7-2684-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "birdadmin_sqlserver",
+     "externalObjectName": "bird_student_club_expense",
+     "primaryKey": "expense_id",
+     "fieldMap": {
+      "approved": {
+       "externalFieldName": "approved",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "cost": {
+       "externalFieldName": "cost",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "expensedate": {
+       "externalFieldName": "expense_date",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "expensedescription": {
+       "externalFieldName": "expense_description",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "expenseid": {
+       "externalFieldName": "expense_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "linktobudget": {
+       "externalFieldName": "link_to_budget",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "linktomember": {
+       "externalFieldName": "link_to_member",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-uipath-jdbc|admin_redshift": {
+     "entityName": "redshift_expense",
+     "entityId": "78fbc61f-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "admin_redshift",
+     "externalObjectName": "bird_student_club_expense",
+     "primaryKey": "expense_id",
+     "fieldMap": {
+      "approved": {
+       "externalFieldName": "approved",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "cost": {
+       "externalFieldName": "cost",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "expensedate": {
+       "externalFieldName": "expense_date",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "expensedescription": {
+       "externalFieldName": "expense_description",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "expenseid": {
+       "externalFieldName": "expense_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "linktobudget": {
+       "externalFieldName": "link_to_budget",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "linktomember": {
+       "externalFieldName": "link_to_member",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-snowflake-snowflake|sureshc": {
+     "entityName": "snowflake_expense",
+     "entityId": "61573381-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "sureshc",
+     "externalObjectName": "BIRD_STUDENT_CLUB_EXPENSE",
+     "primaryKey": "EXPENSE_ID",
+     "fieldMap": {
+      "APPROVED": {
+       "externalFieldName": "APPROVED",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "COST": {
+       "externalFieldName": "COST",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "EXPENSEDATE": {
+       "externalFieldName": "EXPENSE_DATE",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "EXPENSEDESCRIPTION": {
+       "externalFieldName": "EXPENSE_DESCRIPTION",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "EXPENSEID": {
+       "externalFieldName": "EXPENSE_ID",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LINKTOBUDGET": {
+       "externalFieldName": "LINK_TO_BUDGET",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LINKTOMEMBER": {
+       "externalFieldName": "LINK_TO_MEMBER",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-servicenow-servicenow|ven03565": {
+     "entityName": "servicenow_expense",
+     "entityId": "e9d8abfb-58ab-f111-9b33-0022482a9873",
+     "folderId": "b383e0ce-8689-4ea8-bc42-f1dd7f8a928a",
+     "connectionName": "ven03565",
+     "externalObjectName": "u_bird_expense",
+     "primaryKey": "sys_id",
+     "fieldMap": {
+      "syscreatedby": {
+       "externalFieldName": "sys_created_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "syscreatedon": {
+       "externalFieldName": "sys_created_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysid": {
+       "externalFieldName": "sys_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysmodcount": {
+       "externalFieldName": "sys_mod_count",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedby": {
+       "externalFieldName": "sys_updated_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedon": {
+       "externalFieldName": "sys_updated_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uapproved": {
+       "externalFieldName": "u_approved",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ucost": {
+       "externalFieldName": "u_cost",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uexpensedate": {
+       "externalFieldName": "u_expense_date",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uexpensedescription": {
+       "externalFieldName": "u_expense_description",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uexpenseid": {
+       "externalFieldName": "u_expense_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ulinktobudget": {
+       "externalFieldName": "u_link_to_budget",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ulinktomember": {
+       "externalFieldName": "u_link_to_member",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-salesforce-sfdc|uipathlabs@gmail.com": {
+     "entityName": "sfdc_expense",
+     "entityId": "7a5a581a-59ab-f111-9b33-0022482a9873",
+     "folderId": "b383e0ce-8689-4ea8-bc42-f1dd7f8a928a",
+     "connectionName": "uipathlabs@gmail.com",
+     "externalObjectName": "FQS_expense__c",
+     "primaryKey": "Id",
+     "fieldMap": {
+      "CreatedById": {
+       "externalFieldName": "CreatedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "CreatedDate": {
+       "externalFieldName": "CreatedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ExternalId": {
+       "externalFieldName": "Id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSapprovedc": {
+       "externalFieldName": "FQS_approved__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQScostc": {
+       "externalFieldName": "FQS_cost__c",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSexpensedatec": {
+       "externalFieldName": "FQS_expense_date__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSexpensedescriptionc": {
+       "externalFieldName": "FQS_expense_description__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSexpenseidc": {
+       "externalFieldName": "FQS_expense_id__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSlinktobudgetc": {
+       "externalFieldName": "FQS_link_to_budget__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSlinktomemberc": {
+       "externalFieldName": "FQS_link_to_member__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "IsDeleted": {
+       "externalFieldName": "IsDeleted",
+       "externalFieldType": "boolean",
+       "sqlType": {
+        "Name": "BIT"
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedById": {
+       "externalFieldName": "LastModifiedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedDate": {
+       "externalFieldName": "LastModifiedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "Name": {
+       "externalFieldName": "Name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "OwnerId": {
+       "externalFieldName": "OwnerId",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "SystemModstamp": {
+       "externalFieldName": "SystemModstamp",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "income",
+   "class": "Federated",
+   "tier": "core",
+   "primaryKey": [
+    "income_id"
+   ],
+   "fields": [
+    {
+     "column": "income_id",
+     "sourceField": "income_id",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "key",
+     "description": "A unique identifier for each record of income",
+     "valueDescription": null
+    },
+    {
+     "column": "date_received",
+     "sourceField": "date_received",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "the date that the fund received",
+     "valueDescription": null
+    },
+    {
+     "column": "amount",
+     "sourceField": "amount",
+     "sourceType": "integer",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "description": "amount of funds",
+     "valueDescription": "the unit is dollar"
+    },
+    {
+     "column": "source",
+     "sourceField": "source",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "A value indicating where the funds come from such as dues, or the annual university allocation",
+     "valueDescription": null
+    },
+    {
+     "column": "notes",
+     "sourceField": "notes",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "A free-text value giving any needed details about the receipt of funds",
+     "valueDescription": null
+    },
+    {
+     "column": "link_to_member",
+     "sourceField": "link_to_member",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "link",
+     "description": "link to member",
+     "valueDescription": null
+    }
+   ],
+   "joins": [
+    {
+     "relatedEntity": "member",
+     "joinField": "link_to_member",
+     "relatedJoinField": "member_id",
+     "joinType": "LeftJoin"
+    }
+   ],
+   "live": {
+    "uipath-uipath-jdbc|birdadmin_sqlserver": {
+     "entityName": "mssql_income",
+     "entityId": "e8c8dcfc-2684-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "birdadmin_sqlserver",
+     "externalObjectName": "bird_student_club_income",
+     "primaryKey": "income_id",
+     "fieldMap": {
+      "amount": {
+       "externalFieldName": "amount",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "datereceived": {
+       "externalFieldName": "date_received",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "incomeid": {
+       "externalFieldName": "income_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "linktomember": {
+       "externalFieldName": "link_to_member",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "notes": {
+       "externalFieldName": "notes",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "source": {
+       "externalFieldName": "source",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-uipath-jdbc|admin_redshift": {
+     "entityName": "redshift_income",
+     "entityId": "08f7fa2d-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "admin_redshift",
+     "externalObjectName": "bird_student_club_income",
+     "primaryKey": "income_id",
+     "fieldMap": {
+      "amount": {
+       "externalFieldName": "amount",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "datereceived": {
+       "externalFieldName": "date_received",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "incomeid": {
+       "externalFieldName": "income_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "linktomember": {
+       "externalFieldName": "link_to_member",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "notes": {
+       "externalFieldName": "notes",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "source": {
+       "externalFieldName": "source",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-snowflake-snowflake|sureshc": {
+     "entityName": "snowflake_income",
+     "entityId": "9e003787-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "sureshc",
+     "externalObjectName": "BIRD_STUDENT_CLUB_INCOME",
+     "primaryKey": "INCOME_ID",
+     "fieldMap": {
+      "AMOUNT": {
+       "externalFieldName": "AMOUNT",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "DATERECEIVED": {
+       "externalFieldName": "DATE_RECEIVED",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "INCOMEID": {
+       "externalFieldName": "INCOME_ID",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LINKTOMEMBER": {
+       "externalFieldName": "LINK_TO_MEMBER",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "NOTES": {
+       "externalFieldName": "NOTES",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "SOURCE": {
+       "externalFieldName": "SOURCE",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-servicenow-servicenow|ven03565": {
+     "entityName": "servicenow_income",
+     "entityId": "c02037c6-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "ven03565",
+     "externalObjectName": "u_bird_income",
+     "primaryKey": "sys_id",
+     "fieldMap": {
+      "syscreatedby": {
+       "externalFieldName": "sys_created_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "syscreatedon": {
+       "externalFieldName": "sys_created_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysid": {
+       "externalFieldName": "sys_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysmodcount": {
+       "externalFieldName": "sys_mod_count",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedby": {
+       "externalFieldName": "sys_updated_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedon": {
+       "externalFieldName": "sys_updated_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uamount": {
+       "externalFieldName": "u_amount",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "udatereceived": {
+       "externalFieldName": "u_date_received",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uincomeid": {
+       "externalFieldName": "u_income_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ulinktomember": {
+       "externalFieldName": "u_link_to_member",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "unotes": {
+       "externalFieldName": "u_notes",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "usource": {
+       "externalFieldName": "u_source",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-salesforce-sfdc|uipathlabs@gmail.com": {
+     "entityName": "sfdc_income",
+     "entityId": "96dc68f3-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "uipathlabs@gmail.com",
+     "externalObjectName": "FQS_income__c",
+     "primaryKey": "Id",
+     "fieldMap": {
+      "CreatedById": {
+       "externalFieldName": "CreatedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "CreatedDate": {
+       "externalFieldName": "CreatedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ExternalId": {
+       "externalFieldName": "Id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSamountc": {
+       "externalFieldName": "FQS_amount__c",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSdatereceivedc": {
+       "externalFieldName": "FQS_date_received__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSincomeidc": {
+       "externalFieldName": "FQS_income_id__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSlinktomemberc": {
+       "externalFieldName": "FQS_link_to_member__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSnotesc": {
+       "externalFieldName": "FQS_notes__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSsourcec": {
+       "externalFieldName": "FQS_source__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "IsDeleted": {
+       "externalFieldName": "IsDeleted",
+       "externalFieldType": "boolean",
+       "sqlType": {
+        "Name": "BIT"
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedById": {
+       "externalFieldName": "LastModifiedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedDate": {
+       "externalFieldName": "LastModifiedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "Name": {
+       "externalFieldName": "Name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "OwnerId": {
+       "externalFieldName": "OwnerId",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "SystemModstamp": {
+       "externalFieldName": "SystemModstamp",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "member",
+   "class": "Federated",
+   "tier": "core",
+   "primaryKey": [
+    "member_id"
+   ],
+   "fields": [
+    {
+     "column": "member_id",
+     "sourceField": "member_id",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "key",
+     "description": "unique id of member",
+     "valueDescription": null
+    },
+    {
+     "column": "first_name",
+     "sourceField": "first_name",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "member's first name",
+     "valueDescription": null
+    },
+    {
+     "column": "last_name",
+     "sourceField": "last_name",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "member's last name",
+     "valueDescription": "commonsense evidence: \nfull name is first_name + last_name. e.g. A member's first name is Angela and last name is Sanders. Thus, his/her full name is Angela Sanders."
+    },
+    {
+     "column": "email",
+     "sourceField": "email",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "member's email",
+     "valueDescription": null
+    },
+    {
+     "column": "position",
+     "sourceField": "position",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The position the member holds in the club",
+     "valueDescription": null
+    },
+    {
+     "column": "t_shirt_size",
+     "sourceField": "t_shirt_size",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The size of tee shirt that member wants when shirts are ordered",
+     "valueDescription": "commonsense evidence: usually the student ordered t-shirt with lager size has bigger body shape"
+    },
+    {
+     "column": "phone",
+     "sourceField": "phone",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "attribute",
+     "description": "The best telephone at which to contact the member",
+     "valueDescription": null
+    },
+    {
+     "column": "zip",
+     "sourceField": "zip",
+     "sourceType": "integer",
+     "type": "DECIMAL",
+     "role": "link",
+     "description": "the zip code of the member's hometown",
+     "valueDescription": null
+    },
+    {
+     "column": "link_to_major",
+     "sourceField": "link_to_major",
+     "sourceType": "text",
+     "type": "STRING",
+     "role": "link",
+     "description": "The unique identifier of the major of the member. References the Major table",
+     "valueDescription": null
+    }
+   ],
+   "joins": [
+    {
+     "relatedEntity": "zip_code",
+     "joinField": "zip",
+     "relatedJoinField": "zip_code",
+     "joinType": "LeftJoin"
+    },
+    {
+     "relatedEntity": "major",
+     "joinField": "link_to_major",
+     "relatedJoinField": "major_id",
+     "joinType": "LeftJoin"
+    }
+   ],
+   "live": {
+    "uipath-uipath-jdbc|birdadmin_sqlserver": {
+     "entityName": "mssql_member",
+     "entityId": "2f0ca74b-2784-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "birdadmin_sqlserver",
+     "externalObjectName": "bird_student_club_member",
+     "primaryKey": "member_id",
+     "fieldMap": {
+      "email": {
+       "externalFieldName": "email",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "firstname": {
+       "externalFieldName": "first_name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "lastname": {
+       "externalFieldName": "last_name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "linktomajor": {
+       "externalFieldName": "link_to_major",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "memberid": {
+       "externalFieldName": "member_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "phone": {
+       "externalFieldName": "phone",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "position": {
+       "externalFieldName": "position",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "tshirtsize": {
+       "externalFieldName": "t_shirt_size",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "zip": {
+       "externalFieldName": "zip",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-uipath-jdbc|admin_redshift": {
+     "entityName": "redshift_member",
+     "entityId": "a550153a-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "admin_redshift",
+     "externalObjectName": "bird_student_club_member",
+     "primaryKey": "member_id",
+     "fieldMap": {
+      "email": {
+       "externalFieldName": "email",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "firstname": {
+       "externalFieldName": "first_name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "lastname": {
+       "externalFieldName": "last_name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "linktomajor": {
+       "externalFieldName": "link_to_major",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "memberid": {
+       "externalFieldName": "member_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "phone": {
+       "externalFieldName": "phone",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "position": {
+       "externalFieldName": "position",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "tshirtsize": {
+       "externalFieldName": "t_shirt_size",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "zip": {
+       "externalFieldName": "zip",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-snowflake-snowflake|sureshc": {
+     "entityName": "snowflake_member",
+     "entityId": "45d23e8d-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "sureshc",
+     "externalObjectName": "BIRD_STUDENT_CLUB_MEMBER",
+     "primaryKey": "MEMBER_ID",
+     "fieldMap": {
+      "EMAIL": {
+       "externalFieldName": "EMAIL",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FIRSTNAME": {
+       "externalFieldName": "FIRST_NAME",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LASTNAME": {
+       "externalFieldName": "LAST_NAME",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LINKTOMAJOR": {
+       "externalFieldName": "LINK_TO_MAJOR",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "MEMBERID": {
+       "externalFieldName": "MEMBER_ID",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "PHONE": {
+       "externalFieldName": "PHONE",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "POSITION": {
+       "externalFieldName": "POSITION",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "TSHIRTSIZE": {
+       "externalFieldName": "T_SHIRT_SIZE",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ZIP": {
+       "externalFieldName": "ZIP",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-servicenow-servicenow|ven03565": {
+     "entityName": "servicenow_member",
+     "entityId": "9ee95dcc-2884-f111-b337-0022482a908b",
+     "folderId": "00000000-0000-0000-0000-000000000000",
+     "connectionName": "ven03565",
+     "externalObjectName": "u_bird_member",
+     "primaryKey": "sys_id",
+     "fieldMap": {
+      "syscreatedby": {
+       "externalFieldName": "sys_created_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "syscreatedon": {
+       "externalFieldName": "sys_created_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysid": {
+       "externalFieldName": "sys_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysmodcount": {
+       "externalFieldName": "sys_mod_count",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedby": {
+       "externalFieldName": "sys_updated_by",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "sysupdatedon": {
+       "externalFieldName": "sys_updated_on",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uemail": {
+       "externalFieldName": "u_email",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ufirstname": {
+       "externalFieldName": "u_first_name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ulastname": {
+       "externalFieldName": "u_last_name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ulinktomajor": {
+       "externalFieldName": "u_link_to_major",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "umemberid": {
+       "externalFieldName": "u_member_id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uphone": {
+       "externalFieldName": "u_phone",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uposition": {
+       "externalFieldName": "u_position",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "utshirtsize": {
+       "externalFieldName": "u_t_shirt_size",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "uzip": {
+       "externalFieldName": "u_zip",
+       "externalFieldType": "integer",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    },
+    "uipath-salesforce-sfdc|uipathlabs@gmail.com": {
+     "entityName": "sfdc_member",
+     "entityId": "83cef320-59ab-f111-9b33-0022482a9873",
+     "folderId": "b383e0ce-8689-4ea8-bc42-f1dd7f8a928a",
+     "connectionName": "uipathlabs@gmail.com",
+     "externalObjectName": "FQS_member__c",
+     "primaryKey": "Id",
+     "fieldMap": {
+      "CreatedById": {
+       "externalFieldName": "CreatedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "CreatedDate": {
+       "externalFieldName": "CreatedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "ExternalId": {
+       "externalFieldName": "Id",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSemailc": {
+       "externalFieldName": "FQS_email__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSfirstnamec": {
+       "externalFieldName": "FQS_first_name__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSlastnamec": {
+       "externalFieldName": "FQS_last_name__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSlinktomajorc": {
+       "externalFieldName": "FQS_link_to_major__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSmemberidc": {
+       "externalFieldName": "FQS_member_id__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSphonec": {
+       "externalFieldName": "FQS_phone__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSpositionc": {
+       "externalFieldName": "FQS_position__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQStshirtsizec": {
+       "externalFieldName": "FQS_t_shirt_size__c",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "FQSzipc": {
+       "externalFieldName": "FQS_zip__c",
+       "externalFieldType": "number",
+       "sqlType": {
+        "Name": "DECIMAL",
+        "MaxValue": 1000000000000,
+        "MinValue": -1000000000000,
+        "DecimalPrecision": 2
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "IsDeleted": {
+       "externalFieldName": "IsDeleted",
+       "externalFieldType": "boolean",
+       "sqlType": {
+        "Name": "BIT"
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedById": {
+       "externalFieldName": "LastModifiedById",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "LastModifiedDate": {
+       "externalFieldName": "LastModifiedDate",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "Name": {
+       "externalFieldName": "Name",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "OwnerId": {
+       "externalFieldName": "OwnerId",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      },
+      "SystemModstamp": {
+       "externalFieldName": "SystemModstamp",
+       "externalFieldType": "string",
+       "sqlType": {
+        "Name": "NVARCHAR",
+        "LengthLimit": 512
+       },
+       "searchable": true,
+       "operators": [
+        "=",
+        "!=",
+        "LIKE",
+        "IN",
+        "NOT IN",
+        "IS NULL",
+        "IS NOT NULL"
+       ]
+      }
+     }
+    }
+   }
+  }
+ ],
+ "liveMultiSource": [
+  {
+   "entityName": "vdo_mssql_member_major",
+   "entityId": "ee33da76-2984-f111-b337-0022482a908b",
+   "folderId": "00000000-0000-0000-0000-000000000000",
+   "sources": [
+    {
+     "externalObjectName": "bird_student_club_major",
+     "primaryKey": "major_id",
+     "isPrimarySource": false,
+     "connectorKey": "uipath-uipath-jdbc",
+     "fields": [
+      "college",
+      "department",
+      "majorid",
+      "majorname"
+     ]
+    },
+    {
+     "externalObjectName": "bird_student_club_member",
+     "primaryKey": "member_id",
+     "isPrimarySource": true,
+     "connectorKey": "uipath-uipath-jdbc",
+     "fields": [
+      "email",
+      "firstname",
+      "lastname",
+      "linktomajor",
+      "memberid",
+      "phone",
+      "position",
+      "tshirtsize",
+      "zip"
+     ]
+    }
+   ],
+   "joins": [
+    {
+     "Id": "1534da76-2984-f111-b337-0022482a908b",
+     "EntityId": "ee33da76-2984-f111-b337-0022482a908b",
+     "SourceObjectId": "f933da76-2984-f111-b337-0022482a908b",
+     "JoinFieldName": "link_to_major",
+     "JoinType": "LeftJoin",
+     "RelatedSourceObjectId": "0c34da76-2984-f111-b337-0022482a908b",
+     "RelatedSourceFieldName": "major_id"
+    }
+   ]
+  },
+  {
+   "entityName": "vdo_snowflake_attendance_event_member",
+   "entityId": "b4da8ad5-2984-f111-b337-0022482a908b",
+   "folderId": "00000000-0000-0000-0000-000000000000",
+   "sources": [
+    {
+     "externalObjectName": "BIRD_STUDENT_CLUB_MEMBER",
+     "primaryKey": "MEMBER_ID",
+     "isPrimarySource": false,
+     "connectorKey": "uipath-snowflake-snowflake",
+     "fields": [
+      "EMAIL",
+      "FIRSTNAME",
+      "LASTNAME",
+      "LINKTOMAJOR",
+      "MEMBERID",
+      "PHONE",
+      "POSITION",
+      "TSHIRTSIZE",
+      "ZIP"
+     ]
+    },
+    {
+     "externalObjectName": "BIRD_STUDENT_CLUB_EVENT",
+     "primaryKey": "EVENT_ID",
+     "isPrimarySource": false,
+     "connectorKey": "uipath-snowflake-snowflake",
+     "fields": [
+      "EVENTDATE",
+      "EVENTID",
+      "EVENTNAME",
+      "LOCATION",
+      "NOTES",
+      "STATUS",
+      "TYPE"
+     ]
+    },
+    {
+     "externalObjectName": "BIRD_STUDENT_CLUB_ATTENDANCE",
+     "primaryKey": "LINK_TO_EVENT,LINK_TO_MEMBER",
+     "isPrimarySource": true,
+     "connectorKey": "uipath-snowflake-snowflake",
+     "fields": [
+      "LINKTOEVENT",
+      "LINKTOMEMBER"
+     ]
+    }
+   ],
+   "joins": [
+    {
+     "Id": "e8da8ad5-2984-f111-b337-0022482a908b",
+     "EntityId": "b4da8ad5-2984-f111-b337-0022482a908b",
+     "SourceObjectId": "bfda8ad5-2984-f111-b337-0022482a908b",
+     "JoinFieldName": "LINK_TO_EVENT",
+     "JoinType": "LeftJoin",
+     "RelatedSourceObjectId": "c4da8ad5-2984-f111-b337-0022482a908b",
+     "RelatedSourceFieldName": "EVENT_ID"
+    },
+    {
+     "Id": "e9da8ad5-2984-f111-b337-0022482a908b",
+     "EntityId": "b4da8ad5-2984-f111-b337-0022482a908b",
+     "SourceObjectId": "bfda8ad5-2984-f111-b337-0022482a908b",
+     "JoinFieldName": "LINK_TO_MEMBER",
+     "JoinType": "LeftJoin",
+     "RelatedSourceObjectId": "d4da8ad5-2984-f111-b337-0022482a908b",
+     "RelatedSourceFieldName": "MEMBER_ID"
+    }
+   ]
+  },
+  {
+   "entityName": "vdo_mssql_member_major",
+   "entityId": "2d6692b5-55ab-f111-9b33-0022482a9873",
+   "folderId": "b383e0ce-8689-4ea8-bc42-f1dd7f8a928a",
+   "sources": [
+    {
+     "externalObjectName": "bird_student_club_major",
+     "primaryKey": "major_id",
+     "isPrimarySource": false,
+     "connectorKey": "uipath-uipath-jdbc",
+     "fields": [
+      "college",
+      "department",
+      "majorid",
+      "majorname"
+     ]
+    },
+    {
+     "externalObjectName": "bird_student_club_member",
+     "primaryKey": "member_id",
+     "isPrimarySource": true,
+     "connectorKey": "uipath-uipath-jdbc",
+     "fields": [
+      "email",
+      "firstname",
+      "lastname",
+      "linktomajor",
+      "memberid",
+      "phone",
+      "position",
+      "tshirtsize",
+      "zip"
+     ]
+    }
+   ],
+   "joins": [
+    {
+     "Id": "5e6692b5-55ab-f111-9b33-0022482a9873",
+     "EntityId": "2d6692b5-55ab-f111-9b33-0022482a9873",
+     "SourceObjectId": "3f6692b5-55ab-f111-9b33-0022482a9873",
+     "JoinFieldName": "link_to_major",
+     "JoinType": "LeftJoin",
+     "RelatedSourceObjectId": "546692b5-55ab-f111-9b33-0022482a9873",
+     "RelatedSourceFieldName": "major_id"
+    }
+   ]
+  },
+  {
+   "entityName": "vdo_snowflake_attendance_event_member",
+   "entityId": "decdf915-56ab-f111-9b33-0022482a9873",
+   "folderId": "b383e0ce-8689-4ea8-bc42-f1dd7f8a928a",
+   "sources": [
+    {
+     "externalObjectName": "BIRD_STUDENT_CLUB_MEMBER",
+     "primaryKey": "MEMBER_ID",
+     "isPrimarySource": false,
+     "connectorKey": "uipath-snowflake-snowflake",
+     "fields": [
+      "EMAIL",
+      "FIRSTNAME",
+      "LASTNAME",
+      "LINKTOMAJOR",
+      "MEMBERID",
+      "PHONE",
+      "POSITION",
+      "TSHIRTSIZE",
+      "ZIP"
+     ]
+    },
+    {
+     "externalObjectName": "BIRD_STUDENT_CLUB_EVENT",
+     "primaryKey": "EVENT_ID",
+     "isPrimarySource": false,
+     "connectorKey": "uipath-snowflake-snowflake",
+     "fields": [
+      "EVENTDATE",
+      "EVENTID",
+      "EVENTNAME",
+      "LOCATION",
+      "NOTES",
+      "STATUS",
+      "TYPE"
+     ]
+    },
+    {
+     "externalObjectName": "BIRD_STUDENT_CLUB_ATTENDANCE",
+     "primaryKey": "LINK_TO_EVENT,LINK_TO_MEMBER",
+     "isPrimarySource": true,
+     "connectorKey": "uipath-snowflake-snowflake",
+     "fields": [
+      "LINKTOEVENT",
+      "LINKTOMEMBER"
+     ]
+    }
+   ],
+   "joins": [
+    {
+     "Id": "18cef915-56ab-f111-9b33-0022482a9873",
+     "EntityId": "decdf915-56ab-f111-9b33-0022482a9873",
+     "SourceObjectId": "f1cdf915-56ab-f111-9b33-0022482a9873",
+     "JoinFieldName": "LINK_TO_EVENT",
+     "JoinType": "LeftJoin",
+     "RelatedSourceObjectId": "f6cdf915-56ab-f111-9b33-0022482a9873",
+     "RelatedSourceFieldName": "EVENT_ID"
+    },
+    {
+     "Id": "19cef915-56ab-f111-9b33-0022482a9873",
+     "EntityId": "decdf915-56ab-f111-9b33-0022482a9873",
+     "SourceObjectId": "f1cdf915-56ab-f111-9b33-0022482a9873",
+     "JoinFieldName": "LINK_TO_MEMBER",
+     "JoinType": "LeftJoin",
+     "RelatedSourceObjectId": "05cef915-56ab-f111-9b33-0022482a9873",
+     "RelatedSourceFieldName": "MEMBER_ID"
+    }
+   ]
+  }
+ ]
+}

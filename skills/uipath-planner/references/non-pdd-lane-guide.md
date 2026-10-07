@@ -49,6 +49,15 @@ All sub-steps are non-interactive. Run them first; their outputs drive the Step 
 
 5. **Delivery-model resolution** — explicit signals ("Automation Suite", "on-prem", "self-hosted", "air-gapped") → record `Delivery model: <value>`. Otherwise run the best-effort `uip login status` preflight and map the host per [sdd-generation-guide.md → Step 0](sdd-generation-guide.md#step-0-determine-execution-mode--delivery-model). Still unresolved AND any candidate product is delivery-gated (anything beyond core RPA + Orchestrator: Maestro, Agents, Coded Apps, API Workflows, Solutions `.uipx`) → add the delivery-model question to the Step 3 batch. If the user answers "not sure" (or cannot be asked), record `Delivery model: unspecified — assumed cloud [ASSUMPTION]` in the plan header plus which products the assumption gates — never omit the field when a gated product is in play. Apply the [Constraint Gate](product-selection-guide.md#constraint-gate) against [platform-availability-guide.md](platform-availability-guide.md) before recommending any product.
 
+6. **Business records detection.** Note every business object the request or context document says the
+   solution must **keep, look up, or update as records** (customers, expenses, approvals, "store in Data
+   Fabric", "entity", "table", "records"). For each, record where it lives when the text says so: a **new
+   Native entity** this solution owns, an **existing entity** on the tenant (confirm by name with the
+   non-mutating `uip df entities list --output json` when a login exists — never create), an **external
+   system of record** (a read-only federated view — blocked until the CLI ships federated create), or no
+   persistence. Unresolved storage goes to the Step 3 batch (Q4). Fields come only from the text; a field
+   the text does not name is `[SME REVIEW]`, never invented.
+
 ## Step 2 — Single-skill exit (stop Lane B)
 
 If Step 1 resolves the request to **one project owned end-to-end by one specialist** — even when it bundles inline HITL / script / connector nodes or its own solution wrapper (author sub-steps, per the Skip paragraph in SKILL.md) — **stop Lane B**:
@@ -77,6 +86,7 @@ All inputs below are known by the end of Step 1/2 — no skip rule depends on a 
 | Q2 Execution autonomy | The user already stated it ("autonomous", "check with me"). Never inferred from Q1 — planning approach and execution autonomy are separate decisions. | `autonomous` |
 | Q3 Project type fallback | Step 1 resolved the type (explicit naming, need-driven inference, or filesystem). | `RPA workflow (XAML)` |
 | Delivery model | Resolved at Step 1.5 (explicit, preflight); or no delivery-gated product is a candidate. | `unspecified — assumed cloud [ASSUMPTION]` + affected products note |
+| Q4 Record storage | Step 1.6 found no business records; or the text already says where each lives (new entity / existing entity / external system / none). | new `Native` Data Fabric entities owned by this solution `[ASSUMPTION]` |
 
 ### Question 1 — Generation approach
 
@@ -118,6 +128,17 @@ Record the answer in the plan header as `Execution autonomy: autonomous | intera
 
 (The question UI always offers free-text "Other" — a specific answer there overrides the options.) If the user picks **RPA workflow**, record `Project type: XAML` and move on. **Never follow up with "XAML or C#?"** — that authoring-mode decision belongs to `uipath-rpa`, not the planner. Coded mode is set only when the user independently says "coded workflow" or ".cs file"; never as a follow-up, and never surface C# coded as a top-level recommendation for routine UI automation.
 
+### Question 4 — Record storage (only when Step 1.6 left it unresolved)
+
+> Where should the records this solution works with live?
+>
+> 1. **New records owned by this solution** — created as Data Fabric entities in the solution's folder *(recommended when nothing exists yet)*
+> 2. **Records that already exist on the tenant** — reuse them by name (tell me which)
+> 3. **A system you already run** — read live from it, nothing copied *(a read-only view; creation of these views is not yet available from the CLI, so those tasks will be marked blocked)*
+> 4. **No records to keep** — the solution passes data through without storing it
+
+One question for all the objects found; name no domain or app in the question text. The answer sets each entity's class for Step 5 (`Native`, reuse, `Federated` blocked, none).
+
 ### Authoring surface — never a planner concern
 
 Studio, Studio Web, VS Code — presentation layers over the same artifacts. The planner never asks about, derives, records, or conditions on them; each specialist owns its own surface. User words mentioning a surface travel as ordinary requirement prose in the task prompt, like any other stated preference. Invariant: in explore-first mode, nothing syncs to the tenant before plan approval. The only environment input the planner models is the **delivery model** (Automation Cloud / cloud variant / Automation Suite / standalone).
@@ -146,6 +167,8 @@ Compose `<feature>.md` per the schema in [plan-and-tasks-format.md → Non-PDD l
 **Every task's Skill prompt embeds the plan path** — the exact relative or absolute path of the file written below (mirroring Lane A's embedded SDD path). `TaskCreate` copies prompts verbatim; a bare "this plan" leaves a resumed task with no way to find its values.
 <!--skill-flavor:write-plan-target:end-->
 
+**Data Fabric entities and bindings.** Apply [pdd-driven-lane-guide.md → Step 6 rule 8](pdd-driven-lane-guide.md#step-6--derive-tasks) with the plan file as the reference document: for every record object from Step 1.6 / Q4 that is a new `Native` entity, one `platform:<Solution>:entity:<Entity>` task whose Skill prompt carries the complete create body as a fenced `json` block (fields exactly as the request or context names them, CLI types per `entity-schema.md`, relationships as `RELATIONSHIP` fields blocked by the target entity's task, folder key resolved at run time from the solution's folder; unnamed fields `[SME REVIEW]`), one `solution:<Solution>:resources:Entity:<Entity>` task after it, and an `**Entities:**` row on every task whose project reads or writes the entity, with `Blocked by` edges from the entity tasks. A reused entity gets no create task — only the resource task and the bindings. A `Federated` object gets the blocked task per rule 8. The anti-hallucination line names the plan path.
+
 ### Self-review before saving
 
 1. **Coverage** — every requirement appears in at least one task.
@@ -158,6 +181,7 @@ Compose `<feature>.md` per the schema in [plan-and-tasks-format.md → Non-PDD l
 <!--skill-flavor:self-review-plan-path:end-->
 7. **No internal-flow leakage** — the plan does not duplicate steps from any specialist's own references.
 8. **Anti-hallucination rule** appended to every Skill prompt.
+9. **Entities and bindings** — every record object from Step 1.6 / Q4 has its entity task (or is marked reused / blocked), every task that reads or writes an entity carries an `Entities:` row and is blocked by those entity tasks, and no create body names a field the request or context did not.
 
 Fix issues before saving.
 

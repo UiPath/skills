@@ -227,6 +227,28 @@ Watch for:
 - **Email protocol** — when email is an application, extract the protocol signal: IMAP, Exchange/EWS, O365 Graph API, POP3, SMTP. Look for keywords like "IMAP", "Exchange", "O365", "Graph API", "dedicated mailbox". If not specified, mark as `[SME REVIEW]` — do not default to O365.
 - **FTP/SFTP** — note whether the PDD specifies FTP, SFTP, or cloud storage (S3, Azure Blob). Capture host/path if mentioned.
 
+### Data Model
+
+**Where to look:** PDD **Section 6 Data Model** — 6.1 Entities (entity, description, system of record,
+lifecycle states, and the class diagram's relationships), 6.3 Field-Level Data Dictionary (field, type,
+format, valid values), 6.5 Integrations (system → system, fields passed, connector type), 6.6 Thresholds
+and 6.7 Actions Catalog when a customer ontology exists. When the wiki is available (Delegate hand-off),
+`to-be/data-model.md` is the signed-off transcription the PDD was built from and wins over the PDD text.
+Other process sources rarely carry this section: an SOP or transcript names objects and fields in prose —
+collect them per the data-field rule above and expect `[SME REVIEW]` cells.
+
+**What to extract:** every in-scope entity with its system of record and lifecycle states; every field
+with its type, format and valid values exactly as written (the PDD's vocabulary is the entity's
+vocabulary); every relationship the class diagram draws, with its direction; every integration's
+connector type; thresholds and actions as named.
+
+**Where to write:** the SDD's `### Data model` section (every template): the `#### Data Fabric
+entities` table (one row per entity — class, system of record and connector, object and key, fields
+with platform types, joins or relationships, consumers, solution and folder), `#### Relationships` and
+`#### Lifecycle`. **Reproduce — never re-infer — what §6 states.** A type, length or relationship the PDD
+gives is copied, not guessed; what §6 does not give is `[SME REVIEW]` or `[DEFAULT]`, never invented.
+Entities that exist on the tenant already (estate sweep) are marked for reuse, not re-created.
+
 ### Environment & Constraint Signals
 
 **Mandatory scan on every PDD.** These constraints gate product selection (see [Product Selection Guide → Constraint Gate](product-selection-guide.md#constraint-gate)). Missing them produces architectures the customer cannot run — the most expensive SDD defect.
