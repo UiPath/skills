@@ -1,0 +1,1238 @@
+{
+ "Result": "Success",
+ "Code": "CompliancePacksStateCoverage",
+ "Data": {
+  "PackId": "iso-42001-2023",
+  "ScopeLevel": "tenant",
+  "ScopeTargetId": "b3e81f06-2c4d-4a97-8e15-6d9a0c7f2b43",
+  "Summary": {
+   "DeploymentPolicyCount": 5,
+   "InPlaceCount": 1,
+   "NeedsManualConfigCount": 4,
+   "UnverifiableCount": 0,
+   "NewCount": 0,
+   "DriftedControlCount": 5,
+   "ClauseSummary": {
+    "FullyDeployedCount": 5,
+    "PartiallyDeployedCount": 10,
+    "NotDeployedCount": 0
+   }
+  },
+  "DeploymentPolicies": [
+   {
+    "ProductIdentifier": "AITrustLayer",
+    "Status": "needs-manual-config",
+    "DriftedControlCount": 0,
+    "DriftedControls": [],
+    "PolicyId": "e97a2cbc-8963-4c53-a94a-cd5675bcf281"
+   },
+   {
+    "ProductIdentifier": "Assistant",
+    "Status": "in-place",
+    "DriftedControlCount": 0,
+    "DriftedControls": [],
+    "PolicyId": "73334717-0720-46f7-9a74-2c1352da00ce"
+   },
+   {
+    "ProductIdentifier": "Development",
+    "Status": "needs-manual-config",
+    "DriftedControlCount": 0,
+    "DriftedControls": [],
+    "PolicyId": "879337c1-650d-4850-acc2-38c395a8c636"
+   },
+   {
+    "ProductIdentifier": "Robot",
+    "Status": "needs-manual-config",
+    "DriftedControlCount": 5,
+    "DriftedControls": [
+     {
+      "ControlId": "healing-agent-allow-screenshot-saving",
+      "ControlDisplayName": "Healing Agent — Allow Screenshot Saving",
+      "PackValueDisplay": "Enabled with retention policy",
+      "ImpactedClauseId": "A.6.2.8",
+      "UnmetSettings": [
+       {
+        "Key": "healing-agent-allow-screenshot-collection",
+        "Expected": {
+         "Eq": true
+        },
+        "Actual": false
+       }
+      ]
+     },
+     {
+      "ControlId": "uiautomation-trace-retention",
+      "ControlDisplayName": "UIAutomation — Trace Retention",
+      "PackValueDisplay": "30 days minimum",
+      "ImpactedClauseId": "A.6.2.8",
+      "UnmetSettings": [
+       {
+        "Key": "uiautomationTraceRetention",
+        "Expected": {
+         "Eq": 30
+        }
+       }
+      ]
+     },
+     {
+      "ControlId": "screenplay-trace-retention",
+      "ControlDisplayName": "ScreenPlay — Trace Retention",
+      "PackValueDisplay": "30 days minimum",
+      "ImpactedClauseId": "A.6.2.8",
+      "UnmetSettings": [
+       {
+        "Key": "screenPlayRetentionTrace",
+        "Expected": {
+         "Eq": 30
+        }
+       }
+      ]
+     },
+     {
+      "ControlId": "healing-agent-allow-fix-recommendations",
+      "ControlDisplayName": "Healing Agent — Allow Fix Recommendations",
+      "PackValueDisplay": "Enabled",
+      "ImpactedClauseId": "A.9.3",
+      "UnmetSettings": [
+       {
+        "Key": "healing-agent-allow-recommendation",
+        "Expected": {
+         "Eq": true
+        },
+        "Actual": false
+       }
+      ]
+     },
+     {
+      "ControlId": "healing-agent-allow-self-healing",
+      "ControlDisplayName": "Healing Agent — Allow Self-Healing",
+      "PackValueDisplay": "Non-production first",
+      "ImpactedClauseId": "A.9.3",
+      "UnmetSettings": [
+       {
+        "Key": "healing-agent-allow-self-heal",
+        "Expected": {
+         "Eq": true
+        },
+        "Actual": false
+       }
+      ]
+     }
+    ],
+    "PolicyId": "21bc52aa-333d-451f-b06c-7ba2ce010579"
+   },
+   {
+    "ProductIdentifier": "StudioWeb",
+    "Status": "needs-manual-config",
+    "DriftedControlCount": 0,
+    "DriftedControls": [],
+    "PolicyId": "08dcb56b-078f-4bba-85ed-5e82b1097082"
+   }
+  ],
+  "Clauses": [
+   {
+    "ClauseId": "6.1.4",
+    "Status": "fully-deployed",
+    "DeployedControlCount": 2,
+    "CheckableControlCount": 2,
+    "ManualConfigChecks": [],
+    "Controls": [
+     {
+      "ControlDisplayName": "Agent Guardrail — Sensitive Data Exposure Protection",
+      "ControlId": "agent-guardrail-sensitive-data-exposure",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "High",
+      "RecommendedSetting": "Enabled",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Agent Guardrail — Prompt Injection Prevention",
+      "ControlId": "agent-guardrail-prompt-injection",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "High",
+      "RecommendedSetting": "Enabled",
+      "Status": "deployed"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.4.5",
+    "Status": "fully-deployed",
+    "DeployedControlCount": 1,
+    "CheckableControlCount": 1,
+    "ManualConfigChecks": [],
+    "Controls": [
+     {
+      "ControlDisplayName": "Assistant — Display EDR Status",
+      "ControlId": "assistant-display-edr-status",
+      "ProductIdentifier": "Assistant",
+      "Impact": "Low",
+      "RecommendedSetting": "Enabled",
+      "Status": "deployed"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.1.3",
+    "Status": "partially-deployed",
+    "DeployedControlCount": 1,
+    "CheckableControlCount": 2,
+    "ManualConfigChecks": [
+     {
+      "ControlDisplayName": "Workflow Analyzer — Required Packages (ST-USG-027)",
+      "ControlId": "workflow-analyzer-required-packages-st-usg-027",
+      "ProductIdentifier": "Development",
+      "Key": "embedded-rules-config-rules",
+      "Expected": {
+       "Contains": [
+        {
+         "CodeEmbeddedRulesConfigRules": "ST-USG-027",
+         "IsEnabledEmbeddedRulesConfigRules": true,
+         "DefaultAction": "Error"
+        }
+       ]
+      },
+      "Actual": [
+       {
+        "Identifier": "ST-SEC-007",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "ST-SEC-007",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": []
+       },
+       {
+        "Identifier": "ST-SEC-008",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "ST-SEC-008",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": [
+         {
+          "KeyEmbeddedRulesConfigRules": "VariableDepthUsage",
+          "ValueUseDefaultValueRules": true,
+          "Identifier1": "ST-SEC-008VariableDepthUsage"
+         }
+        ]
+       },
+       {
+        "Identifier": "ST-SEC-009",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "ST-SEC-009",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": [
+         {
+          "KeyEmbeddedRulesConfigRules": "Excluded",
+          "ValueUseDefaultValueRules": true,
+          "Identifier1": "ST-SEC-009Excluded"
+         }
+        ]
+       },
+       {
+        "Identifier": "UX-DBP-029",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "UX-DBP-029",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": []
+       },
+       {
+        "Identifier": "UI-DBP-030",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "UI-DBP-030",
+        "DefaultAction": "Warning",
+        "ParametersEmbeddedRulesConfigRules": []
+       }
+      ]
+     }
+    ],
+    "Controls": [
+     {
+      "ControlDisplayName": "Studio — Object Repository Enforcement",
+      "ControlId": "studio-object-repository-enforcement",
+      "ProductIdentifier": "Development",
+      "Impact": "High",
+      "RecommendedSetting": "Recommended",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Workflow Analyzer — Required Packages (ST-USG-027)",
+      "ControlId": "workflow-analyzer-required-packages-st-usg-027",
+      "ProductIdentifier": "Development",
+      "Impact": "High",
+      "RecommendedSetting": "Mandate security packages",
+      "Status": "manual"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.2.2",
+    "Status": "partially-deployed",
+    "DeployedControlCount": 0,
+    "CheckableControlCount": 3,
+    "ManualConfigChecks": [
+     {
+      "ControlDisplayName": "Studio — Allowed Compatibility Frameworks",
+      "ControlId": "studio-allowed-compatibility-frameworks",
+      "ProductIdentifier": "Development",
+      "Key": "allowed-project-frameworks-toggle",
+      "Expected": {
+       "Eq": true
+      }
+     },
+     {
+      "ControlDisplayName": "ScreenPlay — App Custom Prompts",
+      "ControlId": "screenplay-app-custom-prompts",
+      "ProductIdentifier": "Robot",
+      "Key": "screen-play-rules[Applications custom prompts]",
+      "Expected": {
+       "Contains": [
+        {
+         "ScreenPlayRuleId": "Applications custom prompts",
+         "ScreenPlayRuleIsEnabled": true
+        }
+       ]
+      }
+     },
+     {
+      "ControlDisplayName": "ScreenPlay — URL Custom Prompts",
+      "ControlId": "screenplay-url-custom-prompts",
+      "ProductIdentifier": "Robot",
+      "Key": "screen-play-rules[URLs custom prompts]",
+      "Expected": {
+       "Contains": [
+        {
+         "ScreenPlayRuleId": "URLs custom prompts",
+         "ScreenPlayRuleIsEnabled": true
+        }
+       ]
+      }
+     }
+    ],
+    "Controls": [
+     {
+      "ControlDisplayName": "Studio — Allowed Compatibility Frameworks",
+      "ControlId": "studio-allowed-compatibility-frameworks",
+      "ProductIdentifier": "Development",
+      "Impact": "Low",
+      "RecommendedSetting": "Standardize per org",
+      "Status": "manual"
+     },
+     {
+      "ControlDisplayName": "ScreenPlay — App Custom Prompts",
+      "ControlId": "screenplay-app-custom-prompts",
+      "ProductIdentifier": "Robot",
+      "Impact": "Medium",
+      "RecommendedSetting": "Security-reviewed prompts only",
+      "Status": "manual"
+     },
+     {
+      "ControlDisplayName": "ScreenPlay — URL Custom Prompts",
+      "ControlId": "screenplay-url-custom-prompts",
+      "ProductIdentifier": "Robot",
+      "Impact": "Medium",
+      "RecommendedSetting": "Security-reviewed prompts only",
+      "Status": "manual"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.2.4",
+    "Status": "partially-deployed",
+    "DeployedControlCount": 9,
+    "CheckableControlCount": 10,
+    "ManualConfigChecks": [
+     {
+      "ControlDisplayName": "Workflow Analyzer — App/URL Restrictions (UI-SEC-010)",
+      "ControlId": "workflow-analyzer-app-url-restrictions-ui-sec-010",
+      "ProductIdentifier": "Development",
+      "Key": "embedded-rules-config-rules[UI-SEC-010]",
+      "Expected": {
+       "Contains": [
+        {
+         "CodeEmbeddedRulesConfigRules": "UI-SEC-010",
+         "IsEnabledEmbeddedRulesConfigRules": true,
+         "DefaultAction": "Warning"
+        }
+       ]
+      },
+      "Actual": [
+       {
+        "Identifier": "ST-SEC-007",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "ST-SEC-007",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": []
+       },
+       {
+        "Identifier": "ST-SEC-008",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "ST-SEC-008",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": [
+         {
+          "KeyEmbeddedRulesConfigRules": "VariableDepthUsage",
+          "ValueUseDefaultValueRules": true,
+          "Identifier1": "ST-SEC-008VariableDepthUsage"
+         }
+        ]
+       },
+       {
+        "Identifier": "ST-SEC-009",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "ST-SEC-009",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": [
+         {
+          "KeyEmbeddedRulesConfigRules": "Excluded",
+          "ValueUseDefaultValueRules": true,
+          "Identifier1": "ST-SEC-009Excluded"
+         }
+        ]
+       },
+       {
+        "Identifier": "UX-DBP-029",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "UX-DBP-029",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": []
+       },
+       {
+        "Identifier": "UI-DBP-030",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "UI-DBP-030",
+        "DefaultAction": "Warning",
+        "ParametersEmbeddedRulesConfigRules": []
+       }
+      ]
+     }
+    ],
+    "Controls": [
+     {
+      "ControlDisplayName": "Test Manager — Enable Test Manager AI",
+      "ControlId": "test-manager-enable-ai",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enabled",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Studio — Enforce Analyzer before Publish",
+      "ControlId": "studio-enforce-analyzer-before-publish",
+      "ProductIdentifier": "Development",
+      "Impact": "High",
+      "RecommendedSetting": "Enforced",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Studio — Enforce Analyzer before Run",
+      "ControlId": "studio-enforce-analyzer-before-run",
+      "ProductIdentifier": "Development",
+      "Impact": "High",
+      "RecommendedSetting": "Enforced",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Studio — Enforce Analyzer before Push",
+      "ControlId": "studio-enforce-analyzer-before-push",
+      "ProductIdentifier": "Development",
+      "Impact": "High",
+      "RecommendedSetting": "Enforced",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Studio — Allow Preview Packages",
+      "ControlId": "studio-allow-preview-packages",
+      "ProductIdentifier": "Development",
+      "Impact": "Low",
+      "RecommendedSetting": "Disabled in production",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Workflow Analyzer — Security Rules (ST-SEC-*)",
+      "ControlId": "workflow-analyzer-security-rules-st-sec",
+      "ProductIdentifier": "Development",
+      "Impact": "High",
+      "RecommendedSetting": "Enabled (Error level)",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Workflow Analyzer — App/URL Restrictions (UI-SEC-010)",
+      "ControlId": "workflow-analyzer-app-url-restrictions-ui-sec-010",
+      "ProductIdentifier": "Development",
+      "Impact": "High",
+      "RecommendedSetting": "Enabled",
+      "Status": "manual"
+     },
+     {
+      "ControlDisplayName": "Workflow Analyzer — Insecure Password Detection (UX-DBP-029)",
+      "ControlId": "workflow-analyzer-insecure-password-ux-dbp-029",
+      "ProductIdentifier": "Development",
+      "Impact": "High",
+      "RecommendedSetting": "Enabled (Error level)",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Workflow Analyzer — Variables in Selectors (UI-DBP-030)",
+      "ControlId": "workflow-analyzer-variables-in-selectors-ui-dbp-030",
+      "ProductIdentifier": "Development",
+      "Impact": "High",
+      "RecommendedSetting": "Warning or Error",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "StudioWeb — Allow Preview Packages",
+      "ControlId": "studio-web-allow-preview-packages",
+      "ProductIdentifier": "StudioWeb",
+      "Impact": "Low",
+      "RecommendedSetting": "Disabled in production",
+      "Status": "deployed"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.2.5",
+    "Status": "partially-deployed",
+    "DeployedControlCount": 1,
+    "CheckableControlCount": 3,
+    "ManualConfigChecks": [
+     {
+      "ControlDisplayName": "StudioWeb — Allow Project Import",
+      "ControlId": "studio-web-allow-project-import",
+      "ProductIdentifier": "StudioWeb",
+      "Key": "import-project-enabled",
+      "Expected": {
+       "Eq": true
+      }
+     },
+     {
+      "ControlDisplayName": "StudioWeb — Publish Outside Personal Workspace",
+      "ControlId": "studio-web-publish-outside-personal-workspace",
+      "ProductIdentifier": "StudioWeb",
+      "Key": "publish-outside-personal-workspace-enabled",
+      "Expected": {
+       "Eq": true
+      }
+     }
+    ],
+    "Controls": [
+     {
+      "ControlDisplayName": "Studio — Enforce Check-In before Publish",
+      "ControlId": "studio-enforce-checkin-before-publish",
+      "ProductIdentifier": "Development",
+      "Impact": "High",
+      "RecommendedSetting": "Enforced",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "StudioWeb — Allow Project Import",
+      "ControlId": "studio-web-allow-project-import",
+      "ProductIdentifier": "StudioWeb",
+      "Impact": "Low",
+      "RecommendedSetting": "Controlled",
+      "Status": "manual"
+     },
+     {
+      "ControlDisplayName": "StudioWeb — Publish Outside Personal Workspace",
+      "ControlId": "studio-web-publish-outside-personal-workspace",
+      "ProductIdentifier": "StudioWeb",
+      "Impact": "Medium",
+      "RecommendedSetting": "Development only",
+      "Status": "manual"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.2.6",
+    "Status": "partially-deployed",
+    "DeployedControlCount": 0,
+    "CheckableControlCount": 1,
+    "ManualConfigChecks": [
+     {
+      "ControlDisplayName": "StudioWeb — Enforce Dependencies Auto-Update",
+      "ControlId": "studio-web-enforce-dependencies-auto-update",
+      "ProductIdentifier": "StudioWeb",
+      "Key": "autoupdate-project",
+      "Expected": {
+       "Eq": true
+      }
+     }
+    ],
+    "Controls": [
+     {
+      "ControlDisplayName": "StudioWeb — Enforce Dependencies Auto-Update",
+      "ControlId": "studio-web-enforce-dependencies-auto-update",
+      "ProductIdentifier": "StudioWeb",
+      "Impact": "Low",
+      "RecommendedSetting": "Review mode",
+      "Status": "manual"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.2.7",
+    "Status": "fully-deployed",
+    "DeployedControlCount": 1,
+    "CheckableControlCount": 1,
+    "ManualConfigChecks": [],
+    "Controls": [
+     {
+      "ControlDisplayName": "Studio — Enforce Release Notes",
+      "ControlId": "studio-enforce-release-notes",
+      "ProductIdentifier": "Development",
+      "Impact": "Low",
+      "RecommendedSetting": "Enforced",
+      "Status": "deployed"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.2.8",
+    "Status": "partially-deployed",
+    "DeployedControlCount": 3,
+    "CheckableControlCount": 6,
+    "ManualConfigChecks": [],
+    "Controls": [
+     {
+      "ControlDisplayName": "Trace Management — Trace Data TTL",
+      "ControlId": "trace-management-trace-data-ttl",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "High",
+      "RecommendedSetting": "30 days minimum",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Trace Management — Input/Output Logging",
+      "ControlId": "trace-management-input-output-logging",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "High",
+      "RecommendedSetting": "Enabled",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Healing Agent — Allow Screenshot Saving",
+      "ControlId": "healing-agent-allow-screenshot-saving",
+      "ProductIdentifier": "Robot",
+      "Impact": "Low",
+      "RecommendedSetting": "Enabled with retention policy",
+      "Status": "not-deployed"
+     },
+     {
+      "ControlDisplayName": "UIAutomation — Trace Retention",
+      "ControlId": "uiautomation-trace-retention",
+      "ProductIdentifier": "Robot",
+      "Impact": "High",
+      "RecommendedSetting": "30 days minimum",
+      "Status": "not-deployed"
+     },
+     {
+      "ControlDisplayName": "ScreenPlay — Trace Retention",
+      "ControlId": "screenplay-trace-retention",
+      "ProductIdentifier": "Robot",
+      "Impact": "High",
+      "RecommendedSetting": "30 days minimum",
+      "Status": "not-deployed"
+     },
+     {
+      "ControlDisplayName": "Assistant — Allow Logging Level Changes",
+      "ControlId": "assistant-allow-logging-level-changes",
+      "ProductIdentifier": "Assistant",
+      "Impact": "High",
+      "RecommendedSetting": "Restricted",
+      "Status": "deployed"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.7.2",
+    "Status": "partially-deployed",
+    "DeployedControlCount": 0,
+    "CheckableControlCount": 1,
+    "ManualConfigChecks": [
+     {
+      "ControlDisplayName": "Trace Management — Restrict Insights Trace Data",
+      "ControlId": "trace-management-restrict-insights-trace-data",
+      "ProductIdentifier": "AITrustLayer",
+      "Key": "traces-disable-insights",
+      "Expected": {
+       "Eq": true
+      },
+      "Actual": false
+     }
+    ],
+    "Controls": [
+     {
+      "ControlDisplayName": "Trace Management — Restrict Insights Trace Data",
+      "ControlId": "trace-management-restrict-insights-trace-data",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enabled. Configure per sensitivity",
+      "Status": "manual"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.8.3",
+    "Status": "fully-deployed",
+    "DeployedControlCount": 1,
+    "CheckableControlCount": 1,
+    "ManualConfigChecks": [],
+    "Controls": [
+     {
+      "ControlDisplayName": "StudioWeb — Allow User Feedback",
+      "ControlId": "studio-web-allow-user-feedback",
+      "ProductIdentifier": "StudioWeb",
+      "Impact": "Low",
+      "RecommendedSetting": "Optional",
+      "Status": "deployed"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.9.2",
+    "Status": "fully-deployed",
+    "DeployedControlCount": 17,
+    "CheckableControlCount": 17,
+    "ManualConfigChecks": [],
+    "Controls": [
+     {
+      "ControlDisplayName": "Product Toggles — Enable Agents",
+      "ControlId": "product-toggle-agents",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enable per business need",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Product Toggles — Enable Coded Agents",
+      "ControlId": "product-toggle-coded-agents",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Restricted to developers",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Product Toggles — Enable Autopilot for Everyone",
+      "ControlId": "product-toggle-autopilot-for-everyone",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enable per user need",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Product Toggles — Enable Studio/Studio Web Autopilot",
+      "ControlId": "product-toggle-studio-autopilot",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enabled for developers",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Product Toggles — Enable Apps AI Features",
+      "ControlId": "product-toggle-apps-ai",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enable per business need",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Product Toggles — Enable Document Understanding AI",
+      "ControlId": "product-toggle-document-understanding-ai",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enable for DU projects",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Product Toggles — Enable UIAutomation AI",
+      "ControlId": "product-toggle-uiautomation-ai",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enable with guardrails",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Product Toggles — Enable GenAI Activities",
+      "ControlId": "product-toggle-genai-activities",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enable per business need",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Product Toggles — Enable Communications Mining AI",
+      "ControlId": "product-toggle-communications-mining-ai",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enable per business need",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Global Controls — Master AI Toggle",
+      "ControlId": "global-master-ai-toggle",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Low",
+      "RecommendedSetting": "Enabled with product controls",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Document Understanding — Generative Classification",
+      "ControlId": "document-understanding-generative-classification",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enable for DU projects",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Document Understanding — Generative Extraction",
+      "ControlId": "document-understanding-generative-extraction",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enable for DU projects",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Product Toggles — Enable GenAI Recovery Methods",
+      "ControlId": "product-toggle-genai-recovery-methods",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enable with monitoring",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Product Toggles — Enable Healing Agent GenAI",
+      "ControlId": "product-toggle-healing-agent-genai",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enable with restrictions",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Assistant — Run Outside Personal Workspace",
+      "ControlId": "assistant-run-outside-personal-workspace",
+      "ProductIdentifier": "Assistant",
+      "Impact": "High",
+      "RecommendedSetting": "Development only",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Assistant — Share Automation URLs",
+      "ControlId": "assistant-share-automation-urls",
+      "ProductIdentifier": "Assistant",
+      "Impact": "Low",
+      "RecommendedSetting": "Controlled",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "StudioWeb — Allow Autopilot",
+      "ControlId": "studio-web-allow-autopilot",
+      "ProductIdentifier": "StudioWeb",
+      "Impact": "Low",
+      "RecommendedSetting": "Enabled for developers",
+      "Status": "deployed"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.9.3",
+    "Status": "partially-deployed",
+    "DeployedControlCount": 1,
+    "CheckableControlCount": 3,
+    "ManualConfigChecks": [],
+    "Controls": [
+     {
+      "ControlDisplayName": "Agent Guardrail — Output Content Filtering",
+      "ControlId": "agent-guardrail-output-content-filtering",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "High",
+      "RecommendedSetting": "Enabled",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Healing Agent — Allow Fix Recommendations",
+      "ControlId": "healing-agent-allow-fix-recommendations",
+      "ProductIdentifier": "Robot",
+      "Impact": "High",
+      "RecommendedSetting": "Enabled",
+      "Status": "not-deployed"
+     },
+     {
+      "ControlDisplayName": "Healing Agent — Allow Self-Healing",
+      "ControlId": "healing-agent-allow-self-healing",
+      "ProductIdentifier": "Robot",
+      "Impact": "Medium",
+      "RecommendedSetting": "Non-production first",
+      "Status": "not-deployed"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.9.4",
+    "Status": "partially-deployed",
+    "DeployedControlCount": 1,
+    "CheckableControlCount": 8,
+    "ManualConfigChecks": [
+     {
+      "ControlDisplayName": "Workflow Analyzer — Activity Restrictions (ST-USG-026)",
+      "ControlId": "workflow-analyzer-activity-restrictions-st-usg-026",
+      "ProductIdentifier": "Development",
+      "Key": "embedded-rules-config-rules",
+      "Expected": {
+       "Contains": [
+        {
+         "CodeEmbeddedRulesConfigRules": "ST-USG-026",
+         "IsEnabledEmbeddedRulesConfigRules": true,
+         "DefaultAction": "Error"
+        }
+       ]
+      },
+      "Actual": [
+       {
+        "Identifier": "ST-SEC-007",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "ST-SEC-007",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": []
+       },
+       {
+        "Identifier": "ST-SEC-008",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "ST-SEC-008",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": [
+         {
+          "KeyEmbeddedRulesConfigRules": "VariableDepthUsage",
+          "ValueUseDefaultValueRules": true,
+          "Identifier1": "ST-SEC-008VariableDepthUsage"
+         }
+        ]
+       },
+       {
+        "Identifier": "ST-SEC-009",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "ST-SEC-009",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": [
+         {
+          "KeyEmbeddedRulesConfigRules": "Excluded",
+          "ValueUseDefaultValueRules": true,
+          "Identifier1": "ST-SEC-009Excluded"
+         }
+        ]
+       },
+       {
+        "Identifier": "UX-DBP-029",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "UX-DBP-029",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": []
+       },
+       {
+        "Identifier": "UI-DBP-030",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "UI-DBP-030",
+        "DefaultAction": "Warning",
+        "ParametersEmbeddedRulesConfigRules": []
+       }
+      ]
+     },
+     {
+      "ControlDisplayName": "Runtime Analyzer — Application Allowlist",
+      "ControlId": "runtime-analyzer-application-allowlist",
+      "ProductIdentifier": "Robot",
+      "Key": "embedded-rules-config-rules",
+      "Expected": {
+       "Contains": [
+        {
+         "CodeEmbeddedRulesConfigRules": "RT-UIA-001",
+         "IsEnabledEmbeddedRulesConfigRules": true,
+         "DefaultAction": "Error"
+        }
+       ]
+      },
+      "Actual": [
+       {
+        "CodeEmbeddedRulesConfigRules": "RT-UIA-001",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "DefaultAction": "Error"
+       }
+      ]
+     },
+     {
+      "ControlDisplayName": "Runtime Analyzer — Application Blocklist",
+      "ControlId": "runtime-analyzer-application-blocklist",
+      "ProductIdentifier": "Robot",
+      "Key": "embedded-rules-config-rules",
+      "Expected": {
+       "Contains": [
+        {
+         "CodeEmbeddedRulesConfigRules": "RT-UIA-001",
+         "IsEnabledEmbeddedRulesConfigRules": true,
+         "DefaultAction": "Error"
+        }
+       ]
+      },
+      "Actual": [
+       {
+        "CodeEmbeddedRulesConfigRules": "RT-UIA-001",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "DefaultAction": "Error"
+       }
+      ]
+     },
+     {
+      "ControlDisplayName": "Runtime Analyzer — URL Allowlist",
+      "ControlId": "runtime-analyzer-url-allowlist",
+      "ProductIdentifier": "Robot",
+      "Key": "embedded-rules-config-rules",
+      "Expected": {
+       "Contains": [
+        {
+         "CodeEmbeddedRulesConfigRules": "RT-UIA-001",
+         "IsEnabledEmbeddedRulesConfigRules": true,
+         "DefaultAction": "Error"
+        }
+       ]
+      },
+      "Actual": [
+       {
+        "CodeEmbeddedRulesConfigRules": "RT-UIA-001",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "DefaultAction": "Error"
+       }
+      ]
+     },
+     {
+      "ControlDisplayName": "Runtime Analyzer — URL Blocklist",
+      "ControlId": "runtime-analyzer-url-blocklist",
+      "ProductIdentifier": "Robot",
+      "Key": "embedded-rules-config-rules",
+      "Expected": {
+       "Contains": [
+        {
+         "CodeEmbeddedRulesConfigRules": "RT-UIA-001",
+         "IsEnabledEmbeddedRulesConfigRules": true,
+         "DefaultAction": "Error"
+        }
+       ]
+      },
+      "Actual": [
+       {
+        "CodeEmbeddedRulesConfigRules": "RT-UIA-001",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "DefaultAction": "Error"
+       }
+      ]
+     },
+     {
+      "ControlDisplayName": "Healing Agent — Allowed/Restricted App-URLs",
+      "ControlId": "healing-agent-app-url-restrictions-ha-uia-001",
+      "ProductIdentifier": "Robot",
+      "Key": "healing-agent-rules[HA-UIA-001]",
+      "Expected": {
+       "Contains": [
+        {
+         "HealingAgentRuleId": "HA-UIA-001",
+         "HealingAgentRuleIsEnabled": true,
+         "HealingAgentRuleDefaultAction": "Error"
+        }
+       ]
+      }
+     },
+     {
+      "ControlDisplayName": "Healing Agent — Close Popup Restrictions",
+      "ControlId": "healing-agent-close-popup-restrictions-ha-uia-002",
+      "ProductIdentifier": "Robot",
+      "Key": "healing-agent-rules[HA-UIA-002]",
+      "Expected": {
+       "Contains": [
+        {
+         "HealingAgentRuleId": "HA-UIA-002",
+         "HealingAgentRuleIsEnabled": true,
+         "HealingAgentRuleDefaultAction": "Error"
+        }
+       ]
+      }
+     }
+    ],
+    "Controls": [
+     {
+      "ControlDisplayName": "Assistant — Enable Picture in Picture",
+      "ControlId": "assistant-enable-picture-in-picture",
+      "ProductIdentifier": "Assistant",
+      "Impact": "Low",
+      "RecommendedSetting": "Enable per need",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Workflow Analyzer — Activity Restrictions (ST-USG-026)",
+      "ControlId": "workflow-analyzer-activity-restrictions-st-usg-026",
+      "ProductIdentifier": "Development",
+      "Impact": "Medium",
+      "RecommendedSetting": "Block high-risk activities",
+      "Status": "manual"
+     },
+     {
+      "ControlDisplayName": "Runtime Analyzer — Application Allowlist",
+      "ControlId": "runtime-analyzer-application-allowlist",
+      "ProductIdentifier": "Robot",
+      "Impact": "Medium",
+      "RecommendedSetting": "Configured per process",
+      "Status": "manual"
+     },
+     {
+      "ControlDisplayName": "Runtime Analyzer — Application Blocklist",
+      "ControlId": "runtime-analyzer-application-blocklist",
+      "ProductIdentifier": "Robot",
+      "Impact": "Low",
+      "RecommendedSetting": "Block sensitive apps",
+      "Status": "manual"
+     },
+     {
+      "ControlDisplayName": "Runtime Analyzer — URL Allowlist",
+      "ControlId": "runtime-analyzer-url-allowlist",
+      "ProductIdentifier": "Robot",
+      "Impact": "Low",
+      "RecommendedSetting": "Configured per process",
+      "Status": "manual"
+     },
+     {
+      "ControlDisplayName": "Runtime Analyzer — URL Blocklist",
+      "ControlId": "runtime-analyzer-url-blocklist",
+      "ProductIdentifier": "Robot",
+      "Impact": "Low",
+      "RecommendedSetting": "Block risky sites",
+      "Status": "manual"
+     },
+     {
+      "ControlDisplayName": "Healing Agent — Allowed/Restricted App-URLs",
+      "ControlId": "healing-agent-app-url-restrictions-ha-uia-001",
+      "ProductIdentifier": "Robot",
+      "Impact": "Medium",
+      "RecommendedSetting": "Allowlist approved apps/URLs only",
+      "Status": "manual"
+     },
+     {
+      "ControlDisplayName": "Healing Agent — Close Popup Restrictions",
+      "ControlId": "healing-agent-close-popup-restrictions-ha-uia-002",
+      "ProductIdentifier": "Robot",
+      "Impact": "Medium",
+      "RecommendedSetting": "Configured per application context",
+      "Status": "manual"
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.10.3",
+    "Status": "partially-deployed",
+    "DeployedControlCount": 4,
+    "CheckableControlCount": 5,
+    "ManualConfigChecks": [
+     {
+      "ControlDisplayName": "Workflow Analyzer — Package Restrictions (ST-USG-014)",
+      "ControlId": "workflow-analyzer-package-restrictions-st-usg-014",
+      "ProductIdentifier": "Development",
+      "Key": "embedded-rules-config-rules",
+      "Expected": {
+       "Contains": [
+        {
+         "CodeEmbeddedRulesConfigRules": "ST-USG-014",
+         "IsEnabledEmbeddedRulesConfigRules": true,
+         "DefaultAction": "Error"
+        }
+       ]
+      },
+      "Actual": [
+       {
+        "Identifier": "ST-SEC-007",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "ST-SEC-007",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": []
+       },
+       {
+        "Identifier": "ST-SEC-008",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "ST-SEC-008",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": [
+         {
+          "KeyEmbeddedRulesConfigRules": "VariableDepthUsage",
+          "ValueUseDefaultValueRules": true,
+          "Identifier1": "ST-SEC-008VariableDepthUsage"
+         }
+        ]
+       },
+       {
+        "Identifier": "ST-SEC-009",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "ST-SEC-009",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": [
+         {
+          "KeyEmbeddedRulesConfigRules": "Excluded",
+          "ValueUseDefaultValueRules": true,
+          "Identifier1": "ST-SEC-009Excluded"
+         }
+        ]
+       },
+       {
+        "Identifier": "UX-DBP-029",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "UX-DBP-029",
+        "DefaultAction": "Error",
+        "ParametersEmbeddedRulesConfigRules": []
+       },
+       {
+        "Identifier": "UI-DBP-030",
+        "IsEnabledEmbeddedRulesConfigRules": true,
+        "CodeEmbeddedRulesConfigRules": "UI-DBP-030",
+        "DefaultAction": "Warning",
+        "ParametersEmbeddedRulesConfigRules": []
+       }
+      ]
+     }
+    ],
+    "Controls": [
+     {
+      "ControlDisplayName": "Model Governance — Third-Party AI Providers Allowlist",
+      "ControlId": "model-governance-third-party-ai-providers",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Approved providers only",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Communications Mining — External LLM Access",
+      "ControlId": "communications-mining-external-llm-access",
+      "ProductIdentifier": "AITrustLayer",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enable per business need",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Workflow Analyzer — Package Restrictions (ST-USG-014)",
+      "ControlId": "workflow-analyzer-package-restrictions-st-usg-014",
+      "ProductIdentifier": "Development",
+      "Impact": "High",
+      "RecommendedSetting": "Configured per policy",
+      "Status": "manual"
+     },
+     {
+      "ControlDisplayName": "Assistant — Allow Custom Widgets",
+      "ControlId": "assistant-allow-custom-widgets",
+      "ProductIdentifier": "Assistant",
+      "Impact": "Low",
+      "RecommendedSetting": "Disabled (official only)",
+      "Status": "deployed"
+     },
+     {
+      "ControlDisplayName": "Assistant — Use Official Widget Feeds",
+      "ControlId": "assistant-use-official-widget-feeds",
+      "ProductIdentifier": "Assistant",
+      "Impact": "Medium",
+      "RecommendedSetting": "Enabled",
+      "Status": "deployed"
+     }
+    ]
+   }
+  ]
+ }
+}

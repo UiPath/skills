@@ -1,0 +1,32 @@
+{
+ "PackStateId": "90B959D5-1800-451E-9A74-0C5DDF56569C",
+ "ScopeLevel": "tenant",
+ "ScopeTargetId": "5f0c2a8e-3b1d-4e7a-9c64-2d8b7e1f4a90",
+ "PackId": "iso-42001-2023",
+ "PackVersion": "3.0.0",
+ "Active": true,
+ "LastToggledAt": "2026-09-30T05:53:12.129Z",
+ "LastToggledBy": "2c7e9f14-8b05-4d3a-a6e1-90f3b5d27c48",
+ "Policies": [
+  {
+   "PolicyType": "Aops",
+   "ExternalPolicyId": "e97a2cbc-8963-4c53-a94a-cd5675bcf281"
+  },
+  {
+   "PolicyType": "Aops",
+   "ExternalPolicyId": "73334717-0720-46f7-9a74-2c1352da00ce"
+  },
+  {
+   "PolicyType": "Aops",
+   "ExternalPolicyId": "879337c1-650d-4850-acc2-38c395a8c636"
+  },
+  {
+   "PolicyType": "Aops",
+   "ExternalPolicyId": "21bc52aa-333d-451f-b06c-7ba2ce010579"
+  },
+  {
+   "PolicyType": "Aops",
+   "ExternalPolicyId": "08dcb56b-078f-4bba-85ed-5e82b1097082"
+  }
+ ]
+}
