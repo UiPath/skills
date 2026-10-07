@@ -18,7 +18,7 @@ uip login status --output json
 
 | `Data.BaseUrl` host | Resolves to | Question 2 |
 |---|---|---|
-| `cloud.uipath.com` (or `alpha.uipath.com` / `staging.uipath.com`) | **Automation Cloud** — full catalog, entitlement-gated per tenant | skip (confidently resolved) |
+| `cloud.uipath.com` | **Automation Cloud** — full catalog, entitlement-gated per tenant | skip (confidently resolved) |
 | any other `*.uipath.com` host | **Automation Cloud variant** (Public Sector / Dedicated / Test Cloud / region-specific) — catalog is variant-, region-, and entitlement-gated | skip the platform question, but verify each gated product (Maestro, Agents, Coded Apps, API Workflows, Solutions) against the tenant's actual entitlements; unverifiable → `[SME REVIEW]` per product |
 | any other (customer / on-prem) host | **self-hosted — Automation Suite OR standalone Orchestrator (ambiguous)** | **do not skip** — ask the custom-host follow-up below |
 | `Status` ≠ `Logged in`, call errors, or no `BaseUrl` | unknown | ask Question 2 in full; tell the user that running `uip login` first lets the next run auto-detect |
