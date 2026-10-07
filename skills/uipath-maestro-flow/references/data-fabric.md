@@ -33,11 +33,11 @@ Reach for the connector when the flow needs something the family does not have.
 | Create a record | `dataFabricCreate({ entity, values })` |
 | Update a record | `dataFabricUpdate({ entity, record, set })` |
 | Delete a record | `dataFabricDelete({ entity, record })` |
-| Get a record by id | `dataFabricRead({ entity, filters: [{ field: 'Id', value: … }] })` |
+| Get a record by id, whole field values | `connector('uipath-uipath-dataservice', 'get-entity-record-by-id', …)` (see [Long text](#long-text-queries-return-a-10000-character-preview)) |
 | Upload / download / delete a file record field | `connector('uipath-uipath-dataservice', '…-file-…-record-field', …)` |
 | Record Created / Record Updated events | `onEvent(…)` on the same connector |
 
-Only the bottom two are connector work. A flow that needs one of them straddles
+Only the bottom three are connector work. A flow that needs one of them straddles
 both surfaces — a connection binding, a second payload shape, two things to
 debug — so when that is the shape of the work, route the whole entity through
 the connector instead of mixing.
@@ -47,6 +47,30 @@ Integration Service connector events on `uipath-uipath-dataservice`, not this
 node family: `onEvent(RecordCreated, { object: '<Entity>', … })`, with the
 entity named through `object`. See
 [`event-trigger.md`](event-trigger.md#generic-events-name-the-object).
+
+## Long text: queries return a 10,000-character preview
+
+`dataFabricRead` is a **query**, including a read-one with an `Id` filter. A
+Data Service query returns a *preview* of a long-text (`MULTILINE_MAX`) field:
+the first 10,000 characters with `...[Truncated]` appended. Nothing flags it.
+`check`, `validate` and the run all pass, and the next step works on the cut
+text. `dataFabricCreate`'s `output` is the same preview, not the value you gave
+it.
+
+For example, a 15,551-character value written by `dataFabricCreate` reads back
+as 10,014 characters from all three native paths:
+
+| Read path | Characters |
+| --- | --- |
+| `$vars.<create step>.output.<field>` | 10,014 (preview) |
+| `dataFabricRead({ resultMode: 'multiple' })` → `output.results[i].<field>` | 10,014 (preview) |
+| `dataFabricRead({ filters: [{ field: 'Id', value: … }] })` → `output.<field>` | 10,014 (preview) |
+| `connector('uipath-uipath-dataservice', 'get-entity-record-by-id', …)` → `output.<field>` | 15,551 (whole) |
+
+So when a field may hold more than 10,000 characters, read it with the
+connector's `get-entity-record-by-id` (see
+[The connector path](#the-connector-path-end-to-end)). Short fields are
+returned whole by every path, so ordinary CRUD stays native.
 
 ## The four verbs
 
