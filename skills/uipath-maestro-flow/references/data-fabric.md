@@ -2,6 +2,19 @@
 
 *Exact signatures, fields, and defaults: `dataFabricRead()`, `dataFabricCreate()`, `dataFabricUpdate()` and `dataFabricDelete()` for native CRUD, and `connector()` for the operations the native family still does not cover.*
 
+## At a glance
+
+```ts
+.step('open', dataFabricRead({ entity: 'Invoices', resultMode: 'multiple',
+  filters: [{ field: 'Status', value: 'Open' }], limit: 200, sort: { field: 'CreateTime' } }))
+```
+
+`resultMode: 'multiple'` publishes matches under `output.results` and selects the read node's 1.4 definition; plain `dataFabricRead()` stays on 1.0 and reads one record.
+**Wrong here fails SILENTLY** — a bad column is dropped, not rejected, so `validate` passing is not evidence. Resolve columns with `uip df entities get` first.
+Delete publishes nothing; system columns (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) are never writable; `fromRead` needs a single-record read; a folder-scoped entity needs `folderKey` AND `resourceKey`.
+
+**Still connector-only**: file record fields and Record Created/Updated events — `connector('uipath-uipath-dataservice', …)` + `registry prepare -f entityName=<Entity>`.
+
 ## One product, two surfaces
 
 "Data Fabric" and "Data Service" are **the same product under two names**: the

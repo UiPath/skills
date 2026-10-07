@@ -186,8 +186,11 @@ def test_flow_skill_has_no_json_text_inline_agent_prompt():
     )
 
 
+# SKILL.md no longer carries an inlineAgent snippet: #3718 moved the per-node
+# examples into their references (this one into references/inline-agent.md).
+# directive_hits() still scans SKILL.md along with every other page.
 @pytest.mark.parametrize(
-    "rel", ["SKILL.md", "references/inline-agent.md", "examples/PostcardCaption.flow.ts"]
+    "rel", ["references/inline-agent.md", "examples/PostcardCaption.flow.ts"]
 )
 def test_the_gate_reads_the_flow_inline_agent_snippets(rel):
     """Guard against a vacuous pass: each page that shows an inline agent is read."""

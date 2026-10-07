@@ -21,8 +21,15 @@ export default flow('gallery-submission')
   .version('1.0.0')
   .input({ title: types.string, medium: types.string, widthCm: types.number, heightCm: types.number })
   .output({ outcome: types.string, note: types.string })
-  .var('outcome', types.string)
-  .var('note', types.string)
+  // The arms' shared state, under its own names, so what an arm records stays
+  // apart from what the flow returns; the single return maps it onto the
+  // outputs. A same-named `.var('outcome', types.string)` would also work: the
+  // SDK merges an output and a var with the same name and type into one output
+  // variable that keeps the var's default. A different type or default is a
+  // `check` error (OUTPUT_VAR_MISMATCH); reusing an input's name is still
+  // VARIABLE_NAME_COLLISION.
+  .var('decision', types.string)
+  .var('curatorReply', types.string)
 
   // A derived fact for the curator to judge by, rather than raw dimensions.
   .step('wallSpace', script({
@@ -46,7 +53,7 @@ export default flow('gallery-submission')
       body: (b) => b.step(
         'hang',
         script({ code: 'return "accepted for the spring wall: " + $vars.curate.output.note;' }),
-        { updates: { outcome: lit('Accept'), note: out('hang') } },
+        { updates: { decision: lit('Accept'), curatorReply: out('hang') } },
       ),
     },
     {
@@ -54,11 +61,11 @@ export default flow('gallery-submission')
       body: (b) => b.step(
         'returnPiece',
         script({ code: 'return "returned to artist: " + $vars.curate.output.note;' }),
-        { updates: { outcome: lit('Decline'), note: out('returnPiece') } },
+        { updates: { decision: lit('Decline'), curatorReply: out('returnPiece') } },
       ),
     },
   ])
 
-  .return({ outcome: v('outcome'), note: v('note') })
+  .return({ outcome: v('decision'), note: v('curatorReply') })
 
   .build();

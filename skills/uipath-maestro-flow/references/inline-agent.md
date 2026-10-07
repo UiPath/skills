@@ -15,6 +15,21 @@ Signature:
   returns: { category: 'string' } }))
 ```
 
+## At a glance
+
+Define an autonomous agent inside this Flow project, with optional resources.
+
+```ts
+.step('triage', inlineAgent({ model: 'gpt-5.4', systemPrompt: 'Return a result conforming to the output schema. category: billing | technical | account.',
+  userPrompt: 'Classify {{input.body}}', inputs: { body: input('body') },
+  returns: { category: 'string' },
+  guardrails: [{ id: 'no-pii', $guardrailType: 'custom', name: 'Block PII', selector: { scopes: ['Agent'] },
+    enabledForEvals: true, action: { $actionType: 'block', reason: 'PII detected' },
+    rules: [{ $ruleType: 'always', applyTo: 'inputAndOutput' }] }] }))
+```
+
+`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds; `memory: { name, id }` attaches an episodic memory; `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
+
 ## Model and answer judgment
 
 Select a model currently available to the tenant (`uip agent model list`) and
@@ -70,9 +85,25 @@ enough; do not repeat paraphrases solely for confidence.
 Tool signatures:
 
 - `{ kind: 'builtin', tool: 'analyzefiles' | 'summarize' | 'batchtransform', ... }`
-- `{ kind: 'connector', connector, operation, version?, object?, name? }`
+- `{ kind: 'connector', connector, operation, connection, folder, version?, object?, name?, description? }`
 - `{ kind: 'process' | 'agent' | 'api' | 'flow' | 'maestro', key, name, folderPath, inputs?, returns? }`
 - `{ kind: 'ixp', projectId, name, description?, versionTag?, attachment? }`
+
+A connector tool needs `connection` and `folder`, `bindings.json` labels
+resolved like `connector()`'s (see [bindings.md](bindings.md)). Missing either
+is `INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` from `check`. `prepare` does not
+read a tool's labels from the source, so pass them:
+`uip maestro registry prepare <connector-key> --action <operation> --bind-connection <connection> --bind-folder <folder>`
+finds the connection and writes both entries under the tool's labels.
+`description` overrides the text the model is told the tool does; it defaults
+to the library's operation description.
+
+```ts
+tools: [{
+  kind: 'connector', connector: 'uipath-uipath-airdk', operation: 'web-search',
+  connection: 'genai', folder: 'shared',   // bindings.json labels
+}]
+```
 
 A tool is invoked by the model, not by a control-flow edge. Local execution
 skips tool resources, so it proves their wiring but not that the model called

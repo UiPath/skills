@@ -16,13 +16,23 @@ see [`data-fabric.md`](data-fabric.md) for the routing table.
 Signatures:
 
 - `connector(descriptor, inputs, opts?)`
-- `connector(key, action, inputs?, { connection?, folder?, object?, version? })`
+- `connector(key, action, inputs?, { connection, folder, object?, version? })` (`connection` and `folder` are required: `check` reports `BINDING_MISSING` without them)
 
 ```ts
 .step('issue', connector('uipath-atlassian-jira', 'get-issue',
   { issueId: input('issueId'), project: 'IN', issuetype: 'Task' },
   { connection: 'jira', folder: 'shared' }))
 ```
+
+## At a glance
+
+Call a curated or generic connector operation using a generated descriptor or key/action pair.
+
+Data Fabric is also connector key `uipath-uipath-dataservice`: use it for file
+record fields, Record Created/Updated events, or a scenario that names the
+connector. Record CRUD is native ([Data Fabric](data-fabric.md)). Discover tenant-specific fields and ids; preserve every scenario-named input.
+
+**Bindings: [`bindings.md`](bindings.md)**
 
 ## Author first — `check` names every prepare you owe
 
@@ -252,6 +262,11 @@ what is constant and narrow the rest downstream, or accept the design-time gap
 deliberately.
 
 ## Schema-dynamic operations: the parent-field loop
+
+The discovery-first gate the author-first loop replaced still holds for schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`): the static library descriptor is not sufficient there, and the prepare that check names — with every required `-f NAME=VALUE` — is what creates the design-time schema-replay cache.
+Do not substitute manual `resources run list` lookups plus a static `./connectors/<key>.ts` import: the lookups choose values but do not create that cache.
+After compiling, inspect the emitted connector configuration.
+`flow validate` can accept a missing cache, so completion requires non-null `customFieldsRequestDetails` whose parent values match the runtime inputs.
 
 A connection alone does not resolve these operations. Their real field set is a
 function of the **values** of a few *parent* fields, so the same operation on the

@@ -27,7 +27,7 @@ Context index: [inline-agent.md](inline-agent.md#context-grounding).
 | Kind | What it is | Identity you must supply |
 | --- | --- | --- |
 | `builtin` | A platform tool (`summarize`, `analyzefiles`, `batchtransform`) | the tool name |
-| `connector` | An Integration Service operation | `connector` + `operation` (needs a library) |
+| `connector` | An Integration Service operation | `connector` + `operation` (needs a library), plus `connection` + `folder` (`bindings.json` labels) — see [inline-agent.md](inline-agent.md#tools) |
 | `process` / `api` / `flow` / `maestro` / `agent` / `function` | A deployed resource | `key` (GUID) + `name` + `folderPath` |
 | `ixp` | A published IxP project | `projectId` + `name` |
 | `mcp` | An MCP server's tools | `name` + `key`; `slug` is what the runtime resolves |

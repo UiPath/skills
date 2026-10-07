@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" id="definitions_712cd97d-7d03-4669-81fc-8a98fbafd1d9" name="Decision" namespace="http://uipath.com/dmn/ns_51d24770-63bb-4b19-bdfa-8afee9f2e90c" exporter="UiPath Maestro" xmlns:tns="http://uipath.com/dmn/ns_51d24770-63bb-4b19-bdfa-8afee9f2e90c" xmlns:uipath="http://uipath.com/schema/1.0/dmn/authoring">
+  <extensionElements>
+    <uipath:authoring surface="decision-table" />
+  </extensionElements>
+  <decision id="decision_25a2c471-1c6f-46cb-a22a-f4b2dfdb7ee7" name="decision1" label="Decision">
+    <extensionElements>
+      <uipath:authoring editor="decision-table" />
+    </extensionElements>
+    <variable id="variable_5bd8c697-dc17-4712-bd9a-cf90981f9d68" name="decision1" typeRef="string" />
+    <informationRequirement id="informationRequirement_285a3d02-80fc-497b-a8f9-ec5ee2b9ac39">
+      <requiredInput href="#inputData_creditScore" />
+    </informationRequirement>
+    <informationRequirement id="informationRequirement_income">
+      <requiredInput href="#inputData_income" />
+    </informationRequirement>
+    <decisionTable id="decisionTable_riskrules" hitPolicy="FIRST">
+      <input id="input_creditScore" label="Credit score">
+        <inputExpression id="inputExpression_creditScore" typeRef="number">
+          <text>creditScore</text>
+        </inputExpression>
+      </input>
+      <input id="input_income" label="Income">
+        <inputExpression id="inputExpression_income" typeRef="number">
+          <text>income</text>
+        </inputExpression>
+      </input>
+      <output id="output_riskBand" label="Risk band" name="riskBand" typeRef="string" />
+      <annotation name="Annotation" />
+      <rule id="rule_1">
+        <inputEntry id="inputEntry_1a">
+          <text>&lt; 580</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_1b">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_1">
+          <text>"High"</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Subprime</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_2">
+        <inputEntry id="inputEntry_2a">
+          <text>&gt;= 580</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_2b">
+          <text>&gt;= 50000</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_2">
+          <text>"Medium"</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Near-prime, sufficient income</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_3">
+        <inputEntry id="inputEntry_3a">
+          <text>[580..700)</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_3b">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_3">
+          <text>"High"</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Near-prime, low income</text>
+        </annotationEntry>
+      </rule>
+      <rule id="rule_4">
+        <inputEntry id="inputEntry_4a">
+          <text>&gt;= 700</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_4b">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_4">
+          <text>"Low"</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Prime</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <inputData name="creditScore" id="inputData_creditScore">
+    <variable id="variable_creditScore" name="creditScore" typeRef="number" />
+  </inputData>
+  <inputData name="income" id="inputData_income">
+    <variable id="variable_income" name="income" typeRef="number" />
+  </inputData>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_1">
+      <dmndi:DMNShape id="DMNShape_1" dmnElementRef="tns:decision_25a2c471-1c6f-46cb-a22a-f4b2dfdb7ee7">
+        <dc:Bounds height="80" width="180" x="0" y="0" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_b84da8c2-aa02-4fd7-ae64-75295f9419f8" dmnElementRef="inputData_creditScore">
+        <dc:Bounds x="32" y="176" width="216" height="96" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_income" dmnElementRef="inputData_income">
+        <dc:Bounds x="280" y="176" width="216" height="96" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

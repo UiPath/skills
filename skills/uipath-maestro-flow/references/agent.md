@@ -21,6 +21,21 @@ Signature: `agent({ key, name, folderPath?, location?, projectId?, inputs, retur
 
 See [Orchestrator Processes](or-processes.md) and use the `Agent` process type to locate an agent process and determine its contract.
 
+## At a glance
+
+Start a published coded/low-code agent, or a sibling agent registered in this
+solution, and wait for its answer.
+
+```ts
+.step('count', agent({ key: releaseKey, name: 'CountLetters',
+  folderPath: 'Shared', inputs: { word: input('word') },
+  returns: { count: 'integer' }, flavour: 'coded' }))
+```
+
+This references rather than creates an agent; scaffold and register a task-created
+sibling before calling it. Verify resource identity and answer quality live.
+`.onError(...)` is supported.
+
 ## General
 
 - *flavour* can be either "coded" or "lowcode". It does not affect the runtime contract, only presentation. There is no equivalent field returned from `uip or processes get`.

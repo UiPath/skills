@@ -15,6 +15,12 @@ Operations are the SDK's `filter`, `map`, and `groupBy` discriminated shapes.
   ] }] }))
 ```
 
+## At a glance
+
+Filter, map, group, or chain operations over an array without custom JavaScript.
+
+Prefer a named variant for one operation and generic Transform for a chain; verify chain order against real fields.
+
 ## Choosing the shape
 
 Prefer a named variant for one standard operation so the canvas communicates

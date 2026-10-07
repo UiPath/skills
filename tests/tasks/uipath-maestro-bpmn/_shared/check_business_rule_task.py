@@ -27,7 +27,6 @@ BPMN_NAME = "BusinessRuleDecision.bpmn"
 RULE_KEY = "loan-eligibility-rule"
 # Context field -> (propertyAttribute, expected default); None requires a default of any value.
 RULE_CONTEXT_BINDINGS = {
-    "entityKey": ("Key", RULE_KEY),
     "name": ("name", "LoanEligibility"),
     "folderPath": ("folderPath", None),
 }
@@ -41,6 +40,11 @@ def assert_rule_bindings(root, task) -> None:
     if "releaseKey" in context:
         fail("business rule must bind the BusinessRule resource, not a process releaseKey")
     bindings = {b.attrib.get("id"): b for b in root.iter(f"{{{UIPATH_NS}}}binding")}
+    if any(
+        b.attrib.get("resource") == "BusinessRule" and b.attrib.get("propertyAttribute") == "Key"
+        for b in bindings.values()
+    ):
+        fail("business rule must not declare a BusinessRule Key binding")
     for field, (attr, default) in RULE_CONTEXT_BINDINGS.items():
         value = context.get(field, "")
         if not value.startswith("=bindings."):

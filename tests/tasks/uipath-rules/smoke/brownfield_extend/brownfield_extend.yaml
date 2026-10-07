@@ -1,0 +1,70 @@
+task_id: skill-rules-smoke-brownfield-extend
+description: >
+  Agent extends the credit-risk decision table of an existing Business Rules
+  project, offline: a new boolean input `existingCustomer` and an 800-or-more
+  "Very Low" row. The new input changes the rule's contract, so `uip rules
+  refresh` must regenerate it while keeping the published entry point. Grades
+  the decision, filePath, and original row annotations keeping their values,
+  the regenerated contract, the new and unchanged bands, and `uip rules validate` run by the
+  grader.
+tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  The `RiskRules/` folder is our UiPath Business Rules project for credit
+  risk. Update the policy:
+
+  - Add an input `existingCustomer` (boolean). An existing customer with a
+    credit score from 580 up to 699 is Medium risk regardless of income.
+  - A credit score of 800 or more is now "Very Low" risk.
+
+  Everything else stays as it is. There is no tenant to evaluate against, so
+  do not run `uip rules debug`. Do not ask for confirmation.
+
+success_criteria:
+  - type: run_command
+    description: "The decision, filePath, and original row annotations are kept and the contract carries existingCustomer"
+    command: "python3 $REFERENCE_DIR/smoke/brownfield_extend/check_brownfield_extend.py identity"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The new and unchanged cases return the expected band"
+    command: "python3 $REFERENCE_DIR/smoke/brownfield_extend/check_brownfield_extend.py behavior"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent regenerated the contract with rules refresh"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+refresh'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not re-scaffold the existing project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+init'
+    weight: 1.0
+    pass_threshold: 1.0
