@@ -388,6 +388,10 @@ discovery or the user.
   release key. The engine runs the rule by `name` + `folderPath` and uses
   `resourceKey` only to match deploy-time binding overwrites. Bind only a deployed
   rule; one defined only in this solution is deployed first (SKILL.md rule 17).
+  Bind only a decision-keyed rule: the `OutputArguments` from
+  `uip rules describe` must carry `"x-uipath-decision-keyed": true`. A rule
+  without it reads back empty columns from the task's `output`; do not bind it —
+  run `uip rules refresh <project-path>` on its project and redeploy it first.
   The `folderPath` binding always carries a `default`, `""` when
   the rule lives in the running job's folder. The unbound `_label` context
   input holds the rule's name.
