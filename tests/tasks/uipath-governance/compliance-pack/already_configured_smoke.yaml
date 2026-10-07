@@ -1,30 +1,23 @@
 task_id: skill-governance-compliance-already-configured
 description: >
-  Skill-guided: edge case where ISO 42001 is already applied on the tenant. The agent
-  must run state coverage to verify posture and NOT call state enable — the user
-  asked only to verify, and the pack is already active.
+  Skill-guided: edge case where ISO 42001 is already applied on the tenant and every
+  clause is fully deployed. The agent must run state coverage to verify posture and
+  NOT call state enable — the user asked only to verify, and the pack is already active.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
 
+# Pack state is tenant-global, so live enable/disable from concurrent runs
+# undid this task's premise mid-run (CI run 36674826204). The `uip` shim serves
+# compliance-pack calls from recorded fixtures and keeps pack state in the
+# sandbox — see mock_template/mocks/uip.
 sandbox:
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
-    - type: template_dir
-      path: _setup
-      mount_point: _setup
+    - {type: template_dir, path: mock_template}
 
-# Precondition: the shared tenant is mutable and the compliance-pack cleanup
-# DISABLES the pack, so ISO 42001 is usually inactive when this task runs —
-# making the "already configured" premise false. Enable the pack first.
-# Tolerant of no-auth (always exits 0), so local runs are unaffected.
 pre_run:
-  - command: 'python3 _setup/setup_enable_compliance_pack.py'
-    timeout: 120
-
-# Safety net: smoke sandboxes have live tenant auth in CI, so an agent that
-# fails this test (calls state enable) really mutates the tenant. Clean up after.
-post_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
+  - command: 'printf already-configured > .compliance-mock-scenario'
+    timeout: 10
 
 initial_prompt: |
   Check the ISO 42001 posture for my tenant. My tenant has already had all
@@ -36,7 +29,6 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - Run each command once, capture output, and move on. Do NOT retry.
   - Always pass --output json.
   - Do NOT prompt for confirmation.
 
@@ -46,6 +38,29 @@ success_criteria:
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+coverage\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+)'
     min_count: 1
     weight: 3.0
+    pass_threshold: 1.0
+
+  # "All settings applied" needs Active == true, and only state get says that
+  # (coverage runs pack-on or pack-off) — see coverage/impl.md § All settings applied.
+  - type: command_executed
+    description: "Agent read applied state via state get — coverage alone cannot tell whether the pack is applied"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+get\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The coverage pattern above also matches a coverage call whose tenant id expanded to
+  # empty (404). Require one that actually returned posture data.
+  - type: run_command
+    description: "A state coverage call returned posture data (resolved tenant id)"
+    command: >-
+      python3 -c "import json, os, sys;
+      p = '.compliance-mock-log.jsonl';
+      calls = [json.loads(l) for l in open(p)] if os.path.exists(p) else [];
+      sys.exit(0 if any(c['Code'] == 'CompliancePacksStateCoverage' for c in calls) else 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed

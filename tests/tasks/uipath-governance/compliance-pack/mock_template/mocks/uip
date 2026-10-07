@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+"""Selective `uip` shim for the compliance-pack smoke tasks.
+
+Serves `login status`, `login tenant list`, and every
+`gov compliance-packs catalog|state ...` call from fixtures recorded on the
+live test tenant. `gov aops-policy` writes are refused; every other
+invocation (including `--help`) exec's the REAL `uip` found later on PATH.
+
+Why mock: a compliance pack is tenant-global. Enable / disable / restore on
+the shared test tenant collide with the same tasks running concurrently —
+in this suite (`-j 4`) and in the claude / codex / delegate runs that start
+at the same time — so a task's premise ("the pack is active") could be
+undone mid-run by another task's cleanup. The graded behavior is which
+commands the skill drives and in what order; the shim keeps that real and
+moves the pack state into the sandbox.
+
+Fixtures (`fixtures/*.json`) are live `--output json` responses with the
+bot's tenant / org / user identifiers replaced. One is derived, not
+recorded: `coverage-all-applied.json` is `coverage-active.json` with every
+manual control set — the live tenant never reaches every-clause-deployed
+because manual settings need admin-supplied values.
+
+Scenario: the task's pre_run writes one of SCENARIOS' keys to
+`.compliance-mock-scenario`; absent → `inactive`. Mutations persist to
+`.compliance-mock-state.json`, so a `state get` / `coverage` after an
+enable / disable / restore reflects it. Every handled call is appended to
+`.compliance-mock-log.jsonl` for run_command graders.
+
+A target id that is not a GUID (typically empty — `~/.uipath/.auth` is not
+present in the CI sandbox) gets the same HTTP 404 the live API returned for
+it, so an agent has to recover the tenant id the way it would for real.
+
+`mock_path_dirs: [mocks]` PATH-prepends this script's directory inside the
+sandbox. Linux smoke only (no `windows` tag), hence no `uip.cmd` twin.
+"""
+
+import json
+import os
+import re
+import shutil
+import sys
+
+MOCK_DIR = os.path.dirname(os.path.abspath(__file__))
+SANDBOX = os.path.dirname(MOCK_DIR)
+FIXTURES = os.path.join(MOCK_DIR, "fixtures")
+SCENARIO_PATH = os.path.join(SANDBOX, ".compliance-mock-scenario")
+STATE_PATH = os.path.join(SANDBOX, ".compliance-mock-state.json")
+LOG_PATH = os.path.join(SANDBOX, ".compliance-mock-log.jsonl")
+
+PACK_ID = "iso-42001-2023"
+
+# Starting tenant state per scenario. `coverage` names a fixtures/coverage-*.json.
+SCENARIOS = {
+    "inactive": {"active": False, "coverage": "inactive"},
+    "already-configured": {"active": True, "coverage": "all-applied"},
+    "drifted": {"active": True, "coverage": "drifted"},
+}
+
+GUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
+# Per-command failure Instructions, copied from gov-tool's state.ts.
+STATE_INSTRUCTIONS = {
+    "list": "Ensure you are logged in with 'uip login' and have access to the compliance packs service.",
+    "get": "Check that a state row exists for this scope and pack. Use 'state list' to see recorded states.",
+    "enable": "Check the pack identifier with 'uip gov compliance-packs catalog list'. A 404 means the packId is not in the loaded catalog.",
+    "disable": "Check that a state row exists for this scope and pack. Use 'state list' to see recorded states.",
+    "restore": "Check the pack identifier with 'uip gov compliance-packs catalog list'. A 404 means the packId is not in the loaded catalog.",
+    "coverage": "Check the pack identifier with 'uip gov compliance-packs catalog list'. A 502 means the Aops state could not be fetched.",
+}
+RESTORE_CONFLICT_INSTRUCTIONS = (
+    "The pack is either not active for this scope (run 'state enable' first) or "
+    "another operation on it is in progress (wait a few seconds and retry)."
+)
+STATE_CODES = {
+    "list": "CompliancePacksStateList",
+    "get": "CompliancePacksStateGet",
+    "enable": "CompliancePacksStateEnable",
+    "disable": "CompliancePacksStateDisable",
+    "restore": "CompliancePacksStateRestore",
+    "coverage": "CompliancePacksStateCoverage",
+}
+
+# Verbs under `gov aops-policy` that change the tenant. Refused: the pack
+# state is mocked, so a real write would both mutate the shared tenant and
+# contradict what the shim reports.
+AOPS_WRITE_VERBS = {"create", "update", "delete", "configure", "remove", "assign", "unassign"}
+
+VALUE_FLAGS = {"--output", "--output-filter", "--login-validity", "--input", "--name"}
+
+
+def fixture(name):
+    with open(os.path.join(FIXTURES, name + ".json")) as fh:
+        return json.load(fh)
+
+
+def load_state():
+    if os.path.exists(STATE_PATH):
+        try:
+            with open(STATE_PATH) as fh:
+                return json.load(fh)
+        except (OSError, ValueError):
+            pass
+    scenario = "inactive"
+    if os.path.exists(SCENARIO_PATH):
+        with open(SCENARIO_PATH) as fh:
+            scenario = fh.read().strip() or "inactive"
+    if scenario not in SCENARIOS:
+        sys.stderr.write(f"uip (shim): unknown scenario '{scenario}'\n")
+        sys.exit(2)
+    return dict(SCENARIOS[scenario], scenario=scenario, enabled=0, disabled=0, restored=0)
+
+
+def save_state(state):
+    try:
+        with open(STATE_PATH, "w") as fh:
+            json.dump(state, fh)
+    except OSError:
+        pass
+
+
+def log_call(args, payload):
+    try:
+        with open(LOG_PATH, "a") as fh:
+            fh.write(json.dumps({
+                "argv": args,
+                "Result": payload.get("Result"),
+                "Code": payload.get("Code"),
+            }) + "\n")
+    except OSError:
+        pass
+
+
+def emit(args, payload):
+    log_call(args, payload)
+    print(json.dumps(payload, indent=2, ensure_ascii=False))
+    return 0 if payload.get("Result") == "Success" else 1
+
+
+def success(code, data):
+    return {"Result": "Success", "Code": code, "Data": data}
+
+
+def not_found(verb):
+    payload = fixture("error-404")
+    payload["Instructions"] = STATE_INSTRUCTIONS.get(verb, payload["Instructions"])
+    return payload
+
+
+def positionals(args):
+    out, skip = [], False
+    for arg in args:
+        if skip:
+            skip = False
+            continue
+        if arg.startswith("-"):
+            skip = arg in VALUE_FLAGS
+            continue
+        out.append(arg)
+    return out
+
+
+def state_detail(state, target_id):
+    data = fixture("state-detail")
+    data["ScopeTargetId"] = target_id
+    data["Active"] = state["active"]
+    return data
+
+
+def handle_catalog(verb, rest):
+    if verb == "list":
+        return fixture("catalog-list")
+    if verb == "get":
+        if rest[:1] == [PACK_ID]:
+            return fixture("catalog-get-" + PACK_ID)
+        return {
+            "Result": "Failure",
+            "Message": "HTTP 404: Not Found",
+            "Instructions": "Check the pack identifier. Use 'uip gov compliance-packs catalog list' to see available pack IDs.",
+            "Context": {"HttpStatus": 404},
+        }
+    return None
+
+
+def handle_state(verb, rest):
+    if verb not in STATE_CODES:
+        return None
+    if len(rest) < 2 or rest[0] not in ("tenant", "organization"):
+        return None  # let the real CLI print its own usage error
+    scope, target_id = rest[0], rest[1]
+    if not GUID.match(target_id):
+        return not_found(verb)
+
+    state = load_state()
+    if verb == "list":
+        row = state_detail(state, target_id)
+        row.pop("Policies", None)
+        row["ScopeLevel"] = scope
+        return success(STATE_CODES[verb], [row])
+
+    if len(rest) < 3:
+        return None
+    if rest[2] != PACK_ID:
+        return not_found(verb)
+
+    if verb == "get":
+        data = state_detail(state, target_id)
+    elif verb == "coverage":
+        cov = fixture("coverage-" + state["coverage"])
+        cov["Data"]["ScopeTargetId"] = target_id
+        return cov
+    elif verb == "enable":
+        if not state["active"]:
+            state.update(active=True, coverage="active")
+        state["enabled"] += 1
+        data = state_detail(state, target_id)
+    elif verb == "disable":
+        state.update(active=False, coverage="inactive")
+        state["disabled"] += 1
+        data = {"Status": "Disabled"}
+    else:  # restore
+        if not state["active"]:
+            return {
+                "Result": "Failure",
+                "Message": "HTTP 409: Conflict",
+                "Instructions": RESTORE_CONFLICT_INSTRUCTIONS,
+                "Context": {"HttpStatus": 409},
+                "Retry": "RetryAfter10Seconds",
+            }
+        # Restore resets every pack policy to the bundle values: drift is gone
+        # and the manual settings are back to unset — the post-enable capture.
+        state.update(coverage="active")
+        state["restored"] += 1
+        data = state_detail(state, target_id)
+    save_state(state)
+    return success(STATE_CODES[verb], data)
+
+
+def real_uip():
+    parts = [
+        p for p in os.environ.get("PATH", "").split(os.pathsep)
+        if p and os.path.abspath(p) != MOCK_DIR
+    ]
+    return shutil.which("uip", path=os.pathsep.join(parts))
+
+
+def main():
+    args = sys.argv[1:]
+    literal = positionals(args)
+
+    payload = None
+    if "--help" in args or "-h" in args:
+        pass
+    elif literal == ["login", "status"]:
+        payload = fixture("login-status")
+    elif literal[:3] == ["login", "tenant", "list"]:
+        payload = fixture("tenant-list")
+    elif literal[:3] == ["gov", "compliance-packs", "catalog"] and len(literal) > 3:
+        payload = handle_catalog(literal[3], literal[4:])
+    elif literal[:3] == ["gov", "compliance-packs", "state"] and len(literal) > 3:
+        payload = handle_state(literal[3], literal[4:])
+    elif literal[:2] == ["gov", "aops-policy"] and AOPS_WRITE_VERBS & set(literal[2:]):
+        payload = {
+            "Result": "Failure",
+            "Message": "uip (test shim): aops-policy writes are disabled in this sandbox.",
+        }
+    if payload is not None:
+        return emit(args, payload)
+
+    real = real_uip()
+    if not real:
+        sys.stderr.write("uip (shim): real uip CLI not found on PATH\n")
+        return 127
+    os.execv(real, [real] + args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

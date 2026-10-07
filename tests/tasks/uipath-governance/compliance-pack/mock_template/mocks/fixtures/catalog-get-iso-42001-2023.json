@@ -1,0 +1,2109 @@
+{
+ "Result": "Success",
+ "Code": "CompliancePacksCatalogGet",
+ "Data": {
+  "PackId": "iso-42001-2023",
+  "PackName": "ISO 42001",
+  "PackLongName": "ISO/IEC 42001:2023 — AI Management System",
+  "PackVersion": "4.0.0",
+  "Description": "ISO/IEC 42001:2023 AI Management System pack. Sample bundle built from PM-curated Excel of UiPath platform controls mapped to ISO 42001 clauses.",
+  "PublishedAt": "2026-06-26T00:00:00.000Z",
+  "Summary": {
+   "ClauseCount": 15,
+   "ControlCount": 64,
+   "DeploymentPolicyCount": 5
+  },
+  "DeploymentPolicies": [
+   {
+    "ProductIdentifier": "AITrustLayer",
+    "ProductDisplayName": "AI Trust Layer",
+    "PolicyName": "AI Capabilities And Safety Governance",
+    "PolicyFile": "policies/ai-trust-layer.json"
+   },
+   {
+    "ProductIdentifier": "Assistant",
+    "ProductDisplayName": "Assistant",
+    "PolicyName": "Assistant Governance and Experience",
+    "PolicyFile": "policies/assistant.json"
+   },
+   {
+    "ProductIdentifier": "Development",
+    "ProductDisplayName": "Studio",
+    "PolicyName": "Secure Development & Code Quality Gates",
+    "PolicyFile": "policies/development.json"
+   },
+   {
+    "ProductIdentifier": "Robot",
+    "ProductDisplayName": "Robot",
+    "PolicyName": "Runtime Access And Behavior Controls",
+    "PolicyFile": "policies/robot.json"
+   },
+   {
+    "ProductIdentifier": "StudioWeb",
+    "ProductDisplayName": "Studio Web",
+    "PolicyName": "Secure Development & Code Quality Gates",
+    "PolicyFile": "policies/studio-web.json"
+   }
+  ],
+  "Clauses": [
+   {
+    "ClauseId": "6.1.4",
+    "ClauseName": "AI system impact assessment",
+    "ProductCount": 1,
+    "ControlCount": 2,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "AI Capabilities And Safety Governance",
+      "ProductIdentifier": "AITrustLayer",
+      "ProductDisplayName": "AI Trust Layer",
+      "DeploymentPolicyFile": "policies/ai-trust-layer.json",
+      "ControlCount": 2,
+      "HighImpactCount": 2,
+      "Controls": [
+       {
+        "DisplayName": "Agent Guardrail — Sensitive Data Exposure Protection",
+        "Description": "The organization shall enable sensitive data exposure protection guardrails in UiPath agents as a control to mitigate identified impacts on individuals. This guardrail directly supports the AI system impact assessment process by operationalizing protections for personal and confidential data in AI interactions.",
+        "RecommendedSetting": "Enabled",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Centralized Guardrails",
+        "Impact": "High",
+        "ContributionKeys": [
+         "container.pii-in-flight-agents",
+         "container.pii-in-flight-conversational-agents",
+         "container.pii-in-flight-uipath-agenthub",
+         "container.pii-in-flight-uipath-ai-rdk",
+         "container.pii-in-flight-uipath-autopilot1",
+         "container.pii-in-flight-uipath-test-manager",
+         "pii-processing-mode",
+         "container.pii-in-flight-uipath-guardrails"
+        ],
+        "ControlId": "agent-guardrail-sensitive-data-exposure"
+       },
+       {
+        "DisplayName": "Agent Guardrail — Prompt Injection Prevention",
+        "Description": "The organization shall enable prompt injection prevention guardrails in UiPath agents as a risk treatment control identified through the AI system impact assessment. Prompt injection represents a foreseeable misuse of AI systems that can result in unauthorized actions or data exposure.",
+        "RecommendedSetting": "Enabled",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Centralized Guardrails",
+        "Impact": "High",
+        "ContributionKeys": [
+         "prompt-injection-container.prompt-injection-in-flight-agents",
+         "prompt-injection-container.prompt-injection-in-flight-conversational-agents",
+         "prompt-injection-container.prompt-injection-in-flight-uipath-agenthub",
+         "prompt-injection-container.prompt-injection-in-flight-uipath-ai-rdk",
+         "prompt-injection-container.prompt-injection-in-flight-uipath-autopilot1",
+         "prompt-injection-container.prompt-injection-in-flight-uipath-guardrails"
+        ],
+        "ControlId": "agent-guardrail-prompt-injection"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "container.pii-in-flight-agents",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "container.pii-in-flight-conversational-agents",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "container.pii-in-flight-uipath-ai-rdk",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "container.pii-in-flight-uipath-agenthub",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "container.pii-in-flight-uipath-autopilot1",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "container.pii-in-flight-uipath-test-manager",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "pii-processing-mode",
+        "Required": {
+         "Eq": "Masking"
+        }
+       },
+       {
+        "Key": "prompt-injection-container.prompt-injection-in-flight-agents",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "prompt-injection-container.prompt-injection-in-flight-conversational-agents",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "prompt-injection-container.prompt-injection-in-flight-uipath-ai-rdk",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "prompt-injection-container.prompt-injection-in-flight-uipath-agenthub",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "prompt-injection-container.prompt-injection-in-flight-uipath-autopilot1",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "prompt-injection-container.prompt-injection-in-flight-uipath-guardrails",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "container.pii-in-flight-uipath-guardrails",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.2.4",
+       "A.6.2.8",
+       "A.7.2",
+       "A.9.2",
+       "A.9.3",
+       "A.10.3"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.4.5",
+    "ClauseName": "System and computing resources",
+    "ProductCount": 1,
+    "ControlCount": 1,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "Assistant Governance and Experience",
+      "ProductIdentifier": "Assistant",
+      "ProductDisplayName": "Assistant",
+      "DeploymentPolicyFile": "policies/assistant.json",
+      "ControlCount": 1,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "Assistant — Display EDR Status",
+        "Description": "The organization should enable EDR status visibility in UiPath Assistant as part of its documentation and monitoring of system and computing resources used by AI automation. Endpoint protection status is a relevant attribute of the computing resources on which AI automation executes, and its visibility supports the organization's AI system resource management processes.",
+        "RecommendedSetting": "Enabled",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Assistant > Feature Toggles",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "displayEdrMessage"
+        ],
+        "ControlId": "assistant-display-edr-status"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "displayEdrMessage",
+        "Required": {
+         "Eq": "yes"
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.2.8",
+       "A.9.2",
+       "A.9.4",
+       "A.10.3"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.1.3",
+    "ClauseName": "Processes for responsible AI system design and development",
+    "ProductCount": 1,
+    "ControlCount": 2,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "Secure Development & Code Quality Gates",
+      "ProductIdentifier": "Development",
+      "ProductDisplayName": "Studio",
+      "DeploymentPolicyFile": "policies/development.json",
+      "ControlCount": 2,
+      "HighImpactCount": 2,
+      "Controls": [
+       {
+        "DisplayName": "Studio — Object Repository Enforcement",
+        "Description": "The organization shall enforce the use of the UiPath Object Repository for UI element management as part of its responsible AI design process, ensuring that selectors used in AI automation are centrally governed and maintainable.",
+        "RecommendedSetting": "Recommended",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Design > Object Repository enforced",
+        "Impact": "High",
+        "ContributionKeys": [
+         "object-repository-enforced"
+        ],
+        "ControlId": "studio-object-repository-enforcement"
+       },
+       {
+        "DisplayName": "Workflow Analyzer — Required Packages (ST-USG-027)",
+        "Description": "The organization shall use UiPath Workflow Analyzer rule ST-USG-027 to mandate inclusion of required packages (e.g. logging, security) in all AI automation projects, ensuring that responsible design standards are consistently applied. To configure: enable ST-USG-027 at Error and list the mandatory packages in RequiredPackages.",
+        "RecommendedSetting": "Mandate security packages",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Workflow Analyzer > Rules > ST-USG-027",
+        "Impact": "High",
+        "ContributionKeys": [
+         "embedded-rules-config-rules"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "workflow-analyzer-required-packages-st-usg-027"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "object-repository-enforced",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "embedded-rules-config-rules",
+        "Required": {
+         "Contains": [
+          {
+           "CodeEmbeddedRulesConfigRules": "ST-USG-027",
+           "IsEnabledEmbeddedRulesConfigRules": true,
+           "DefaultAction": "Error"
+          }
+         ]
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.2.2",
+       "A.6.2.4",
+       "A.6.2.5",
+       "A.6.2.7",
+       "A.9.4",
+       "A.10.3"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.2.2",
+    "ClauseName": "AI system requirements and specification",
+    "ProductCount": 2,
+    "ControlCount": 3,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "Secure Development & Code Quality Gates",
+      "ProductIdentifier": "Development",
+      "ProductDisplayName": "Studio",
+      "DeploymentPolicyFile": "policies/development.json",
+      "ControlCount": 1,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "Studio — Allowed Compatibility Frameworks",
+        "Description": "The organization shall define permitted compatibility frameworks (Windows, Cross-platform) in UiPath as part of the AI system requirements specification, ensuring consistent deployment targets and reducing support complexity. To configure: enable the toggle and select the permitted frameworks (Windows / Cross-platform).",
+        "RecommendedSetting": "Standardize per org",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Design > Allowed compatibility frameworks",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "allowed-project-frameworks-toggle"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "studio-allowed-compatibility-frameworks"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "allowed-project-frameworks-toggle",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.1.3",
+       "A.6.2.4",
+       "A.6.2.5",
+       "A.6.2.7",
+       "A.9.4",
+       "A.10.3"
+      ]
+     },
+     {
+      "DisplayName": "Runtime Access And Behavior Controls",
+      "ProductIdentifier": "Robot",
+      "ProductDisplayName": "Robot",
+      "DeploymentPolicyFile": "policies/robot.json",
+      "ControlCount": 2,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "ScreenPlay — App Custom Prompts",
+        "Description": "The organization shall define and document application-specific prompt additions used in UiPath ScreenPlay as part of the AI system requirements, ensuring custom prompts have been reviewed for prompt injection risks and unintended behavioral effects. To configure: enable the Applications custom prompts rule and add security-reviewed application-specific prompt text.",
+        "RecommendedSetting": "Security-reviewed prompts only",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > UIAutomation > ScreenPlay > Applications custom prompts",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "screen-play-rules[Applications custom prompts]"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "screenplay-app-custom-prompts"
+       },
+       {
+        "DisplayName": "ScreenPlay — URL Custom Prompts",
+        "Description": "The organization shall define and document URL-specific prompt additions used in UiPath ScreenPlay as part of the AI system requirements, ensuring they have been reviewed for prompt injection risks and are constrained to the intended use of the AI system. To configure: enable the URLs custom prompts rule and add security-reviewed URL-specific prompt text.",
+        "RecommendedSetting": "Security-reviewed prompts only",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > UIAutomation > ScreenPlay > URLs custom prompts",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "screen-play-rules[URLs custom prompts]"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "screenplay-url-custom-prompts"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "screen-play-rules[Applications custom prompts]",
+        "Required": {
+         "Contains": [
+          {
+           "ScreenPlayRuleId": "Applications custom prompts",
+           "ScreenPlayRuleIsEnabled": true
+          }
+         ]
+        }
+       },
+       {
+        "Key": "screen-play-rules[URLs custom prompts]",
+        "Required": {
+         "Contains": [
+          {
+           "ScreenPlayRuleId": "URLs custom prompts",
+           "ScreenPlayRuleIsEnabled": true
+          }
+         ]
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.2.8",
+       "A.9.3",
+       "A.9.4"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.2.4",
+    "ClauseName": "AI system verification and validation",
+    "ProductCount": 3,
+    "ControlCount": 10,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "AI Capabilities And Safety Governance",
+      "ProductIdentifier": "AITrustLayer",
+      "ProductDisplayName": "AI Trust Layer",
+      "DeploymentPolicyFile": "policies/ai-trust-layer.json",
+      "ControlCount": 1,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "Test Manager — Enable Test Manager AI",
+        "Description": "The organization shall enable AI-assisted test case generation in UiPath Test Manager as part of its AI system verification and validation processes, ensuring that AI-generated test cases are reviewed by qualified personnel before use.",
+        "RecommendedSetting": "Enabled",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable Test Manager features",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "uipath-testmanager"
+        ],
+        "ControlId": "test-manager-enable-ai"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "uipath-testmanager",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "6.1.4",
+       "A.6.2.8",
+       "A.7.2",
+       "A.9.2",
+       "A.9.3",
+       "A.10.3"
+      ]
+     },
+     {
+      "DisplayName": "Secure Development & Code Quality Gates",
+      "ProductIdentifier": "Development",
+      "ProductDisplayName": "Studio",
+      "DeploymentPolicyFile": "policies/development.json",
+      "ControlCount": 8,
+      "HighImpactCount": 7,
+      "Controls": [
+       {
+        "DisplayName": "Studio — Enforce Analyzer before Publish",
+        "Description": "The organization shall enforce Workflow Analyzer execution before publishing in UiPath, ensuring that automated quality and security checks are a mandatory step in the AI system verification process prior to deployment.",
+        "RecommendedSetting": "Enforced",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Design > Enforce Analyzer before Publish",
+        "Impact": "High",
+        "ContributionKeys": [
+         "enforce-analyzer-before-publish"
+        ],
+        "ControlId": "studio-enforce-analyzer-before-publish"
+       },
+       {
+        "DisplayName": "Studio — Enforce Analyzer before Run",
+        "Description": "The organization shall enforce Workflow Analyzer execution before running automations in UiPath, ensuring that AI system components meet defined quality criteria before execution in any environment.",
+        "RecommendedSetting": "Enforced",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Design > Enforce Analyzer before Run",
+        "Impact": "High",
+        "ContributionKeys": [
+         "enforce-analyzer-before-run"
+        ],
+        "ControlId": "studio-enforce-analyzer-before-run"
+       },
+       {
+        "DisplayName": "Studio — Enforce Analyzer before Push",
+        "Description": "The organization shall enforce Workflow Analyzer checks before source control commits in UiPath, integrating AI system validation into the development workflow and preventing known issues from entering the code repository.",
+        "RecommendedSetting": "Enforced",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Design > Enforce Analyzer before Push/Check-In",
+        "Impact": "High",
+        "ContributionKeys": [
+         "enforce-analyzer-before-push"
+        ],
+        "ControlId": "studio-enforce-analyzer-before-push"
+       },
+       {
+        "DisplayName": "Studio — Allow Preview Packages",
+        "Description": "The organization shall restrict the use of preview activity packages in production UiPath environments, as unvalidated packages do not meet the organization's AI system verification criteria and may introduce untested behaviors.",
+        "RecommendedSetting": "Disabled in production",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Design > Allow preview packages in Activities Panel",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "preview-packages-enabled"
+        ],
+        "ControlId": "studio-allow-preview-packages"
+       },
+       {
+        "DisplayName": "Workflow Analyzer — Security Rules (ST-SEC-*)",
+        "Description": "The organization shall enable and enforce UiPath Workflow Analyzer security rules (ST-SEC-*) at Error level, ensuring that automated static analysis detects hardcoded credentials, insecure string handling, and other security violations as part of the AI system verification process.",
+        "RecommendedSetting": "Enabled (Error level)",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Workflow Analyzer > Rules > ST-SEC*",
+        "Impact": "High",
+        "ContributionKeys": [
+         "embedded-rules-config-rules[ST-SEC]"
+        ],
+        "ControlId": "workflow-analyzer-security-rules-st-sec"
+       },
+       {
+        "DisplayName": "Workflow Analyzer — App/URL Restrictions (UI-SEC-010)",
+        "Description": "The organization shall enable UiPath Workflow Analyzer rule UI-SEC-010 to allow/forbid apps/URLs automation as part of the AI system verification process. To configure: enable UI-SEC-010 and populate whitelistApps, blacklistApps, whitelistUrls and blacklistUrls.",
+        "RecommendedSetting": "Enabled",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Workflow Analyzer > Rules > UI-SEC-010",
+        "Impact": "High",
+        "ContributionKeys": [
+         "embedded-rules-config-rules[UI-SEC-010]"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "workflow-analyzer-app-url-restrictions-ui-sec-010"
+       },
+       {
+        "DisplayName": "Workflow Analyzer — Insecure Password Detection (UX-DBP-029)",
+        "Description": "The organization shall enable UiPath Workflow Analyzer rule UX-DBP-029 at Error level to detect plaintext password handling in AI automation code, enforcing SecureString usage as a mandatory verification criterion.",
+        "RecommendedSetting": "Enabled (Error level)",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Workflow Analyzer > Rules > UX-DBP-029",
+        "Impact": "High",
+        "ContributionKeys": [
+         "embedded-rules-config-rules[UX-DBP-029]"
+        ],
+        "ControlId": "workflow-analyzer-insecure-password-ux-dbp-029"
+       },
+       {
+        "DisplayName": "Workflow Analyzer — Variables in Selectors (UI-DBP-030)",
+        "Description": "The organization shall enable UiPath Workflow Analyzer rule UI-DBP-030 to flag the use of variables in selectors, which may introduce injection risks in AI-driven UI automation and must be reviewed as part of the verification process.",
+        "RecommendedSetting": "Warning or Error",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Workflow Analyzer > Rules > UI-DBP-030",
+        "Impact": "High",
+        "ContributionKeys": [
+         "embedded-rules-config-rules[UI-DBP-030]"
+        ],
+        "ControlId": "workflow-analyzer-variables-in-selectors-ui-dbp-030"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "enforce-analyzer-before-publish",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "enforce-analyzer-before-run",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "enforce-analyzer-before-push",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "preview-packages-enabled",
+        "Required": {
+         "Eq": false
+        }
+       },
+       {
+        "Key": "embedded-rules-config-rules[ST-SEC]",
+        "Required": {
+         "Contains": [
+          {
+           "CodeEmbeddedRulesConfigRules": "ST-SEC-007",
+           "IsEnabledEmbeddedRulesConfigRules": true,
+           "DefaultAction": "Error"
+          },
+          {
+           "CodeEmbeddedRulesConfigRules": "ST-SEC-008",
+           "IsEnabledEmbeddedRulesConfigRules": true,
+           "DefaultAction": "Error"
+          },
+          {
+           "CodeEmbeddedRulesConfigRules": "ST-SEC-009",
+           "IsEnabledEmbeddedRulesConfigRules": true,
+           "DefaultAction": "Error"
+          }
+         ]
+        }
+       },
+       {
+        "Key": "embedded-rules-config-rules[UI-SEC-010]",
+        "Required": {
+         "Contains": [
+          {
+           "CodeEmbeddedRulesConfigRules": "UI-SEC-010",
+           "IsEnabledEmbeddedRulesConfigRules": true,
+           "DefaultAction": "Warning"
+          }
+         ]
+        }
+       },
+       {
+        "Key": "embedded-rules-config-rules[UX-DBP-029]",
+        "Required": {
+         "Contains": [
+          {
+           "CodeEmbeddedRulesConfigRules": "UX-DBP-029",
+           "IsEnabledEmbeddedRulesConfigRules": true,
+           "DefaultAction": "Error"
+          }
+         ]
+        }
+       },
+       {
+        "Key": "embedded-rules-config-rules[UI-DBP-030]",
+        "Required": {
+         "Contains": [
+          {
+           "CodeEmbeddedRulesConfigRules": "UI-DBP-030",
+           "IsEnabledEmbeddedRulesConfigRules": true,
+           "DefaultAction": "Warning"
+          }
+         ]
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.1.3",
+       "A.6.2.2",
+       "A.6.2.5",
+       "A.6.2.7",
+       "A.9.4",
+       "A.10.3"
+      ]
+     },
+     {
+      "DisplayName": "Secure Development & Code Quality Gates",
+      "ProductIdentifier": "StudioWeb",
+      "ProductDisplayName": "Studio Web",
+      "DeploymentPolicyFile": "policies/studio-web.json",
+      "ControlCount": 1,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "StudioWeb — Allow Preview Packages",
+        "Description": "The organization shall restrict the use of preview activity packages in production UiPath environments, as unvalidated packages do not meet the organization's AI system verification criteria and may introduce untested behaviors.",
+        "RecommendedSetting": "Disabled in production",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio Web > Activities > Enable preview packages and activities",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "preview-library-packages-enabled"
+        ],
+        "ControlId": "studio-web-allow-preview-packages"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "preview-library-packages-enabled",
+        "Required": {
+         "Eq": false
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.2.5",
+       "A.6.2.6",
+       "A.8.3",
+       "A.9.2"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.2.5",
+    "ClauseName": "AI system deployment",
+    "ProductCount": 2,
+    "ControlCount": 3,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "Secure Development & Code Quality Gates",
+      "ProductIdentifier": "Development",
+      "ProductDisplayName": "Studio",
+      "DeploymentPolicyFile": "policies/development.json",
+      "ControlCount": 1,
+      "HighImpactCount": 1,
+      "Controls": [
+       {
+        "DisplayName": "Studio — Enforce Check-In before Publish",
+        "Description": "The organization shall require source control check-in before publishing AI automation in UiPath, ensuring that all deployed AI system components are version-controlled and traceable as part of the deployment process.",
+        "RecommendedSetting": "Enforced",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Design > Enforce Check-In before Publish",
+        "Impact": "High",
+        "ContributionKeys": [
+         "enforce-checkin-before-publish"
+        ],
+        "ControlId": "studio-enforce-checkin-before-publish"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "enforce-checkin-before-publish",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.1.3",
+       "A.6.2.2",
+       "A.6.2.4",
+       "A.6.2.7",
+       "A.9.4",
+       "A.10.3"
+      ]
+     },
+     {
+      "DisplayName": "Secure Development & Code Quality Gates",
+      "ProductIdentifier": "StudioWeb",
+      "ProductDisplayName": "Studio Web",
+      "DeploymentPolicyFile": "policies/studio-web.json",
+      "ControlCount": 2,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "StudioWeb — Allow Project Import",
+        "Description": "The organization shall control project import capabilities in UiPath Studio Web, ensuring that imported automation projects are subject to review before deployment, consistent with the organization's AI system deployment requirements.",
+        "RecommendedSetting": "Controlled",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio Web > Feature Toggles > Allow users to import projects",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "import-project-enabled"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "studio-web-allow-project-import"
+       },
+       {
+        "DisplayName": "StudioWeb — Publish Outside Personal Workspace",
+        "Description": "The organization shall restrict publishing outside personal workspaces in UiPath Studio Web to authorized personnel, ensuring that AI automation deployment is controlled and consistent with documented release criteria.",
+        "RecommendedSetting": "Development only",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio Web > Feature Toggles > Allow users to publish outside Personal Workspace",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "publish-outside-personal-workspace-enabled"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "studio-web-publish-outside-personal-workspace"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "import-project-enabled",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "publish-outside-personal-workspace-enabled",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.2.4",
+       "A.6.2.6",
+       "A.8.3",
+       "A.9.2"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.2.6",
+    "ClauseName": "AI system operation and monitoring",
+    "ProductCount": 1,
+    "ControlCount": 1,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "Secure Development & Code Quality Gates",
+      "ProductIdentifier": "StudioWeb",
+      "ProductDisplayName": "Studio Web",
+      "DeploymentPolicyFile": "policies/studio-web.json",
+      "ControlCount": 1,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "StudioWeb — Enforce Dependencies Auto-Update",
+        "Description": "The organization shall configure dependency auto-update policies in UiPath Studio Web to require review before application, ensuring that updates to AI system component dependencies are controlled and do not introduce unvalidated changes.",
+        "RecommendedSetting": "Review mode",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio Web > Activities > Enforce dependencies auto-update",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "autoupdate-project",
+         "autoupdate-project-toggle"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "studio-web-enforce-dependencies-auto-update"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "autoupdate-project",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "autoupdate-project-toggle",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.2.4",
+       "A.6.2.5",
+       "A.8.3",
+       "A.9.2"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.2.7",
+    "ClauseName": "AI system technical documentation",
+    "ProductCount": 1,
+    "ControlCount": 1,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "Secure Development & Code Quality Gates",
+      "ProductIdentifier": "Development",
+      "ProductDisplayName": "Studio",
+      "DeploymentPolicyFile": "policies/development.json",
+      "ControlCount": 1,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "Studio — Enforce Release Notes",
+        "Description": "The organization shall enforce release notes for all UiPath automation publications, ensuring that changes to AI system components are documented and available to relevant stakeholders as part of the AI system technical documentation requirements.",
+        "RecommendedSetting": "Enforced",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Design",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "enforce-release-notes"
+        ],
+        "ControlId": "studio-enforce-release-notes"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "enforce-release-notes",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.1.3",
+       "A.6.2.2",
+       "A.6.2.4",
+       "A.6.2.5",
+       "A.9.4",
+       "A.10.3"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.6.2.8",
+    "ClauseName": "AI system recording of event logs",
+    "ProductCount": 3,
+    "ControlCount": 6,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "AI Capabilities And Safety Governance",
+      "ProductIdentifier": "AITrustLayer",
+      "ProductDisplayName": "AI Trust Layer",
+      "DeploymentPolicyFile": "policies/ai-trust-layer.json",
+      "ControlCount": 2,
+      "HighImpactCount": 2,
+      "Controls": [
+       {
+        "DisplayName": "Trace Management — Trace Data TTL",
+        "Description": "The organization shall configure the UiPath AI Trust Layer trace data retention period to ensure that AI interaction records are preserved for a duration sufficient to support incident investigation, bias detection, and compliance audits, as defined in the AI management system documentation.",
+        "RecommendedSetting": "30 days minimum",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Feature Toggles",
+        "Impact": "High",
+        "ContributionKeys": [
+         "traces-ttl-effective",
+         "traces-ttl-enforcement"
+        ],
+        "ControlId": "trace-management-trace-data-ttl"
+       },
+       {
+        "DisplayName": "Trace Management — Input/Output Logging",
+        "Description": "The organization shall enable input/output logging in the UiPath AI Trust Layer to create an auditable record of prompts submitted to and responses received from AI models. This log is a critical control for detecting prompt injection, investigating AI incidents, and demonstrating responsible AI use.",
+        "RecommendedSetting": "Enabled",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Feature Toggles",
+        "Impact": "High",
+        "ContributionKeys": [
+         "saveprompts"
+        ],
+        "ControlId": "trace-management-input-output-logging"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "traces-ttl-effective",
+        "Required": {
+         "Eq": "30d"
+        }
+       },
+       {
+        "Key": "traces-ttl-enforcement",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "saveprompts",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "6.1.4",
+       "A.6.2.4",
+       "A.7.2",
+       "A.9.2",
+       "A.9.3",
+       "A.10.3"
+      ]
+     },
+     {
+      "DisplayName": "Runtime Access And Behavior Controls",
+      "ProductIdentifier": "Robot",
+      "ProductDisplayName": "Robot",
+      "DeploymentPolicyFile": "policies/robot.json",
+      "ControlCount": 3,
+      "HighImpactCount": 2,
+      "Controls": [
+       {
+        "DisplayName": "Healing Agent — Allow Screenshot Saving",
+        "Description": "The organization shall configure screenshot saving for the UiPath Healing Agent with a defined retention policy, ensuring visual diagnostic records are available for AI incident investigation while minimizing unnecessary data capture.",
+        "RecommendedSetting": "Enabled with retention policy",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > Healing Agent",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "healing-agent-allow-screenshot-collection"
+        ],
+        "ControlId": "healing-agent-allow-screenshot-saving"
+       },
+       {
+        "DisplayName": "UIAutomation — Trace Retention",
+        "Description": "The organization shall configure UiPath UIAutomation trace retention in accordance with its AI event log requirements, ensuring records are preserved for the duration needed to support monitoring, debugging, and compliance auditing.",
+        "RecommendedSetting": "30 days minimum",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > UIAutomation > Generic",
+        "Impact": "High",
+        "ContributionKeys": [
+         "uiautomationTraceRetention"
+        ],
+        "ControlId": "uiautomation-trace-retention"
+       },
+       {
+        "DisplayName": "ScreenPlay — Trace Retention",
+        "Description": "The organization shall configure UiPath ScreenPlay trace retention to ensure that AI-driven UI interaction records are available for the duration required by the AI management system's event log requirements.",
+        "RecommendedSetting": "30 days minimum",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > UIAutomation > ScreenPlay",
+        "Impact": "High",
+        "ContributionKeys": [
+         "screenPlayRetentionTrace"
+        ],
+        "ControlId": "screenplay-trace-retention"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "healing-agent-allow-screenshot-collection",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "uiautomationTraceRetention",
+        "Required": {
+         "Eq": 30
+        }
+       },
+       {
+        "Key": "screenPlayRetentionTrace",
+        "Required": {
+         "Eq": 30
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.2.2",
+       "A.9.3",
+       "A.9.4"
+      ]
+     },
+     {
+      "DisplayName": "Assistant Governance and Experience",
+      "ProductIdentifier": "Assistant",
+      "ProductDisplayName": "Assistant",
+      "DeploymentPolicyFile": "policies/assistant.json",
+      "ControlCount": 1,
+      "HighImpactCount": 1,
+      "Controls": [
+       {
+        "DisplayName": "Assistant — Allow Logging Level Changes",
+        "Description": "The organization shall restrict the ability for users to change logging levels in UiPath, ensuring that AI system event log verbosity remains consistent with the organization's monitoring and audit requirements.",
+        "RecommendedSetting": "Restricted",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Assistant > Feature Toggles",
+        "Impact": "High",
+        "ContributionKeys": [
+         "assistantAllowLoggingChanges"
+        ],
+        "ControlId": "assistant-allow-logging-level-changes"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "assistantAllowLoggingChanges",
+        "Required": {
+         "Eq": "no"
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.4.5",
+       "A.9.2",
+       "A.9.4",
+       "A.10.3"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.7.2",
+    "ClauseName": "Data for development and enhancement of AI system",
+    "ProductCount": 1,
+    "ControlCount": 1,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "AI Capabilities And Safety Governance",
+      "ProductIdentifier": "AITrustLayer",
+      "ProductDisplayName": "AI Trust Layer",
+      "DeploymentPolicyFile": "policies/ai-trust-layer.json",
+      "ControlCount": 1,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "Trace Management — Restrict Insights Trace Data",
+        "Description": "The organization shall configure the level of AI trace detail forwarded to UiPath Insights in accordance with its data management processes, ensuring that sensitive prompt and response data is not exposed beyond the personnel authorized to access it.",
+        "RecommendedSetting": "Enabled. Configure per sensitivity",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Feature Toggles > Restrict Insights Trace data",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "traces-disable-insights"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "trace-management-restrict-insights-trace-data"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "traces-disable-insights",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "6.1.4",
+       "A.6.2.4",
+       "A.6.2.8",
+       "A.9.2",
+       "A.9.3",
+       "A.10.3"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.8.3",
+    "ClauseName": "External reporting",
+    "ProductCount": 1,
+    "ControlCount": 1,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "Secure Development & Code Quality Gates",
+      "ProductIdentifier": "StudioWeb",
+      "ProductDisplayName": "Studio Web",
+      "DeploymentPolicyFile": "policies/studio-web.json",
+      "ControlCount": 1,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "StudioWeb — Allow User Feedback",
+        "Description": "The organization shall enable the UiPath Studio Web user feedback mechanism to provide a channel for reporting concerns about AI system behavior, supporting the organization's obligation to maintain external reporting capabilities for AI-related issues.",
+        "RecommendedSetting": "Optional",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio Web > Feature Toggles",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "feedback-enabled"
+        ],
+        "ControlId": "studio-web-allow-user-feedback"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "feedback-enabled",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.2.4",
+       "A.6.2.5",
+       "A.6.2.6",
+       "A.9.2"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.9.2",
+    "ClauseName": "Processes for responsible use of AI systems",
+    "ProductCount": 3,
+    "ControlCount": 17,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "AI Capabilities And Safety Governance",
+      "ProductIdentifier": "AITrustLayer",
+      "ProductDisplayName": "AI Trust Layer",
+      "DeploymentPolicyFile": "policies/ai-trust-layer.json",
+      "ControlCount": 14,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "Product Toggles — Enable Agents",
+        "Description": "The organization shall enable the UiPath Agents capability only where a documented process for responsible use is in place, including defined human oversight mechanisms, given the autonomous nature of agent-based AI systems.",
+        "RecommendedSetting": "Enable per business need",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable Agents",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "agents"
+        ],
+        "ControlId": "product-toggle-agents"
+       },
+       {
+        "DisplayName": "Product Toggles — Enable Coded Agents",
+        "Description": "The organization shall enable Coded Agents in UiPath only for development personas with documented AI responsibilities, and shall require code review of agent logic before deployment as part of its processes for responsible use of AI systems.",
+        "RecommendedSetting": "Restricted to developers",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable Coded Agents",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "agenthub",
+         "agents"
+        ],
+        "ControlId": "product-toggle-coded-agents"
+       },
+       {
+        "DisplayName": "Product Toggles — Enable Autopilot for Everyone",
+        "Description": "The organization shall enable Autopilot in UiPath Assistant only after defining a process that ensures users understand the AI system's intended use, data handling implications, and limitations, consistent with the organization's responsible AI use framework.",
+        "RecommendedSetting": "Enable per user need",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable Autopilot for everyone",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "jarvis"
+        ],
+        "ControlId": "product-toggle-autopilot-for-everyone"
+       },
+       {
+        "DisplayName": "Product Toggles — Enable Studio/Studio Web Autopilot",
+        "Description": "The organization shall enable Autopilot for Studio/Studio Web as part of a documented responsible use process that includes review of AI-generated code by qualified personnel before publication or deployment.",
+        "RecommendedSetting": "Enabled for developers",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable Studio and Studio Web features",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "wingman"
+        ],
+        "ControlId": "product-toggle-studio-autopilot"
+       },
+       {
+        "DisplayName": "Product Toggles — Enable Apps AI Features",
+        "Description": "The organization shall enable AI features in UiPath Apps only where a documented review process ensures that AI-generated application components meet the organization's security and responsible use standards before deployment.",
+        "RecommendedSetting": "Enable per business need",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable Apps features",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "apps"
+        ],
+        "ControlId": "product-toggle-apps-ai"
+       },
+       {
+        "DisplayName": "Product Toggles — Enable Document Understanding AI",
+        "Description": "The organization shall enable generative AI features in UiPath Document Understanding only where document types and data sensitivity have been assessed, and where data handling practices comply with the organization's responsible AI use processes.",
+        "RecommendedSetting": "Enable for DU projects",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable Document Understanding features",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "documentunderstanding"
+        ],
+        "ControlId": "product-toggle-document-understanding-ai"
+       },
+       {
+        "DisplayName": "Product Toggles — Enable UIAutomation AI",
+        "Description": "The organization shall enable AI-powered UIAutomation features in UiPath only where application and URL guardrails are configured, ensuring that AI-driven UI interactions are constrained to approved systems as part of the organization's responsible use processes.",
+        "RecommendedSetting": "Enable with guardrails",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable UIAutomation AI features",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "uia"
+        ],
+        "ControlId": "product-toggle-uiautomation-ai"
+       },
+       {
+        "DisplayName": "Product Toggles — Enable GenAI Activities",
+        "Description": "The organization shall enable GenAI Activities in UiPath only where third-party LLM calls have been assessed for data residency and cost implications, and where usage is governed by the organization's processes for responsible use of AI systems.",
+        "RecommendedSetting": "Enable per business need",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable UiPath GenAI activities",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "uipath-ai-rdk"
+        ],
+        "ControlId": "product-toggle-genai-activities"
+       },
+       {
+        "DisplayName": "Product Toggles — Enable Communications Mining AI",
+        "Description": "The organization shall enable external LLM access for Communications Mining only where the LLM provider has been assessed and approved under the organization's supplier management and responsible AI use processes, given that communications data may be sensitive.",
+        "RecommendedSetting": "Enable per business need",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable IXP",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "communicationsmining"
+        ],
+        "ControlId": "product-toggle-communications-mining-ai"
+       },
+       {
+        "DisplayName": "Global Controls — Master AI Toggle",
+        "Description": "The organization shall define a documented process governing the use of the UiPath AI Trust Layer master toggle, including criteria for disabling third-party AI model calls across the platform. This control is a primary mechanism for operationalizing the organization's processes for responsible use of AI systems.",
+        "RecommendedSetting": "Enabled with product controls",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product toggles",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "global-control-toggle"
+        ],
+        "ControlId": "global-master-ai-toggle"
+       },
+       {
+        "DisplayName": "Document Understanding — Generative Classification",
+        "Description": "The organization shall enable generative AI classification in UiPath Document Understanding only where document types and data sensitivity have been assessed and where data handling complies with the organization's responsible AI use processes.",
+        "RecommendedSetting": "Enable for DU projects",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product toggles",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "documentunderstanding"
+        ],
+        "ControlId": "document-understanding-generative-classification"
+       },
+       {
+        "DisplayName": "Document Understanding — Generative Extraction",
+        "Description": "The organization shall enable generative AI extraction in UiPath Document Understanding only where the organization's responsible use process has assessed the document types, data sensitivity, and applicable regulatory requirements.",
+        "RecommendedSetting": "Enable for DU projects",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product toggles",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "documentunderstanding"
+        ],
+        "ControlId": "document-understanding-generative-extraction"
+       },
+       {
+        "DisplayName": "Product Toggles — Enable GenAI Recovery Methods",
+        "Description": "The organization shall enable AI-powered recovery methods in the UiPath Healing Agent only where the responsible use process includes monitoring of recovery outcomes and a defined escalation path when AI recovery produces unexpected results.",
+        "RecommendedSetting": "Enable with monitoring",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable Healing Agent GenAI recovery methods",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "healing-agent"
+        ],
+        "ControlId": "product-toggle-genai-recovery-methods"
+       },
+       {
+        "DisplayName": "Product Toggles — Enable Healing Agent GenAI",
+        "Description": "The organization shall enable GenAI-powered recovery in the UiPath Healing Agent only for non-critical processes initially, and shall define escalation and monitoring processes to govern autonomous AI recovery actions.",
+        "RecommendedSetting": "Enable with restrictions",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable Healing Agent GenAI recovery methods",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "healing-agent"
+        ],
+        "ControlId": "product-toggle-healing-agent-genai"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "agents",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "agenthub",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "jarvis",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "wingman",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "apps",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "documentunderstanding",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "uia",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "uipath-ai-rdk",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "communicationsmining",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "global-control-toggle",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "healing-agent",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "6.1.4",
+       "A.6.2.4",
+       "A.6.2.8",
+       "A.7.2",
+       "A.9.3",
+       "A.10.3"
+      ]
+     },
+     {
+      "DisplayName": "Assistant Governance and Experience",
+      "ProductIdentifier": "Assistant",
+      "ProductDisplayName": "Assistant",
+      "DeploymentPolicyFile": "policies/assistant.json",
+      "ControlCount": 2,
+      "HighImpactCount": 1,
+      "Controls": [
+       {
+        "DisplayName": "Assistant — Run Outside Personal Workspace",
+        "Description": "The organization shall restrict the ability to run automation from outside personal workspaces to production-authorized personnel, ensuring that AI automation access is governed by the organization's responsible use processes.",
+        "RecommendedSetting": "Development only",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Assistant > Feature Toggles",
+        "Impact": "High",
+        "ContributionKeys": [
+         "allowAutomationsOutsidePw"
+        ],
+        "ControlId": "assistant-run-outside-personal-workspace"
+       },
+       {
+        "DisplayName": "Assistant — Share Automation URLs",
+        "Description": "The organization shall control the ability to share automation URLs in UiPath Assistant, ensuring that access to AI automation entry points is governed and does not bypass the organization's responsible use controls.",
+        "RecommendedSetting": "Controlled",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Assistant > Feature Toggles",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "assistantAllowCopyAutomationLink"
+        ],
+        "ControlId": "assistant-share-automation-urls"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "allowAutomationsOutsidePw",
+        "Required": {
+         "Eq": "yes"
+        }
+       },
+       {
+        "Key": "assistantAllowCopyAutomationLink",
+        "Required": {
+         "Eq": "yes"
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.4.5",
+       "A.6.2.8",
+       "A.9.4",
+       "A.10.3"
+      ]
+     },
+     {
+      "DisplayName": "Secure Development & Code Quality Gates",
+      "ProductIdentifier": "StudioWeb",
+      "ProductDisplayName": "Studio Web",
+      "DeploymentPolicyFile": "policies/studio-web.json",
+      "ControlCount": 1,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "StudioWeb — Allow Autopilot",
+        "Description": "The organization shall enable Autopilot in UiPath Studio Web as part of a documented responsible use process that includes human review of AI-generated development outputs before publication.",
+        "RecommendedSetting": "Enabled for developers",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio Web > Feature Toggles",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "enable-generative-ai"
+        ],
+        "ControlId": "studio-web-allow-autopilot"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "enable-generative-ai",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.2.4",
+       "A.6.2.5",
+       "A.6.2.6",
+       "A.8.3"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.9.3",
+    "ClauseName": "Objectives for responsible use of AI system",
+    "ProductCount": 2,
+    "ControlCount": 3,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "AI Capabilities And Safety Governance",
+      "ProductIdentifier": "AITrustLayer",
+      "ProductDisplayName": "AI Trust Layer",
+      "DeploymentPolicyFile": "policies/ai-trust-layer.json",
+      "ControlCount": 1,
+      "HighImpactCount": 1,
+      "Controls": [
+       {
+        "DisplayName": "Agent Guardrail — Output Content Filtering",
+        "Description": "The organization shall enable output content filtering in UiPath agents to ensure that AI-generated responses meet the safety and compliance standards defined in the organization's objectives for responsible AI use before delivery to users.",
+        "RecommendedSetting": "Enabled",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Centralized Guardrails",
+        "Impact": "High",
+        "ContributionKeys": [
+         "harmful-content-container.harmful-content-in-flight-agents",
+         "harmful-content-container.harmful-content-in-flight-conversational-agents",
+         "harmful-content-container.harmful-content-in-flight-uipath-agenthub",
+         "harmful-content-container.harmful-content-in-flight-uipath-ai-rdk",
+         "harmful-content-container.harmful-content-in-flight-uipath-autopilot1",
+         "harmful-content-container.harmful-content-in-flight-uipath-guardrails"
+        ],
+        "ControlId": "agent-guardrail-output-content-filtering"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "harmful-content-container.harmful-content-in-flight-agents",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "harmful-content-container.harmful-content-in-flight-conversational-agents",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "harmful-content-container.harmful-content-in-flight-uipath-ai-rdk",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "harmful-content-container.harmful-content-in-flight-uipath-agenthub",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "harmful-content-container.harmful-content-in-flight-uipath-autopilot1",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "harmful-content-container.harmful-content-in-flight-uipath-guardrails",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "6.1.4",
+       "A.6.2.4",
+       "A.6.2.8",
+       "A.7.2",
+       "A.9.2",
+       "A.10.3"
+      ]
+     },
+     {
+      "DisplayName": "Runtime Access And Behavior Controls",
+      "ProductIdentifier": "Robot",
+      "ProductDisplayName": "Robot",
+      "DeploymentPolicyFile": "policies/robot.json",
+      "ControlCount": 2,
+      "HighImpactCount": 1,
+      "Controls": [
+       {
+        "DisplayName": "Healing Agent — Allow Fix Recommendations",
+        "Description": "The organization shall configure the UiPath Healing Agent to generate fix recommendations for human review, in alignment with the objective of maintaining meaningful human oversight of AI-driven decisions that affect production automation.",
+        "RecommendedSetting": "Enabled",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > Healing Agent",
+        "Impact": "High",
+        "ContributionKeys": [
+         "healing-agent-allow-recommendation"
+        ],
+        "ControlId": "healing-agent-allow-fix-recommendations"
+       },
+       {
+        "DisplayName": "Healing Agent — Allow Self-Healing",
+        "Description": "The organization shall restrict autonomous self-healing in UiPath to non-critical processes during initial deployment, in accordance with the objective of responsible AI use that balances automation efficiency with the need for human oversight of consequential AI actions.",
+        "RecommendedSetting": "Non-production first",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > Healing Agent",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "healing-agent-allow-self-heal"
+        ],
+        "ControlId": "healing-agent-allow-self-healing"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "healing-agent-allow-recommendation",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "healing-agent-allow-self-heal",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.2.2",
+       "A.6.2.8",
+       "A.9.4"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.9.4",
+    "ClauseName": "Intended use of the AI system",
+    "ProductCount": 3,
+    "ControlCount": 8,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "Assistant Governance and Experience",
+      "ProductIdentifier": "Assistant",
+      "ProductDisplayName": "Assistant",
+      "DeploymentPolicyFile": "policies/assistant.json",
+      "ControlCount": 1,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "Assistant — Enable Picture in Picture",
+        "Description": "The organization shall govern the use of Picture-in-Picture mode in UiPath, ensuring that visibility into AI automation sessions is controlled and that sensitive data processed by AI automation is not inadvertently exposed.",
+        "RecommendedSetting": "Enable per need",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Assistant > Feature Toggles > Enable Picture-in-Picture",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "showPip"
+        ],
+        "ControlId": "assistant-enable-picture-in-picture"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "showPip",
+        "Required": {
+         "Eq": "yes"
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.4.5",
+       "A.6.2.8",
+       "A.9.2",
+       "A.10.3"
+      ]
+     },
+     {
+      "DisplayName": "Secure Development & Code Quality Gates",
+      "ProductIdentifier": "Development",
+      "ProductDisplayName": "Studio",
+      "DeploymentPolicyFile": "policies/development.json",
+      "ControlCount": 1,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "Workflow Analyzer — Activity Restrictions (ST-USG-026)",
+        "Description": "The organization shall configure UiPath Workflow Analyzer activity restrictions (ST-USG-026) to block activities that fall outside the intended use of AI automation, preventing the use of high-risk or unauthorized automation capabilities. To configure: enable ST-USG-026 at Error and populate ProhibitedActivities and AllowedActivities.",
+        "RecommendedSetting": "Block high-risk activities",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Workflow Analyzer > Rules > ST-USG-026",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "embedded-rules-config-rules"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "workflow-analyzer-activity-restrictions-st-usg-026"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "embedded-rules-config-rules",
+        "Required": {
+         "Contains": [
+          {
+           "CodeEmbeddedRulesConfigRules": "ST-USG-026",
+           "IsEnabledEmbeddedRulesConfigRules": true,
+           "DefaultAction": "Error"
+          }
+         ]
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.1.3",
+       "A.6.2.2",
+       "A.6.2.4",
+       "A.6.2.5",
+       "A.6.2.7",
+       "A.10.3"
+      ]
+     },
+     {
+      "DisplayName": "Runtime Access And Behavior Controls",
+      "ProductIdentifier": "Robot",
+      "ProductDisplayName": "Robot",
+      "DeploymentPolicyFile": "policies/robot.json",
+      "ControlCount": 6,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "Runtime Analyzer — Application Allowlist",
+        "Description": "The organization shall configure a runtime application allowlist in UiPath Automation Ops robot policies, ensuring that AI automation interacts only with applications within its documented intended use during execution. To configure: enable RT-UIA-001 at Error and add approved applications to whitelistApps.",
+        "RecommendedSetting": "Configured per process",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > Runtime Analyzer > RT-UIA-001",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "embedded-rules-config-rules"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "runtime-analyzer-application-allowlist"
+       },
+       {
+        "DisplayName": "Runtime Analyzer — Application Blocklist",
+        "Description": "The organization shall configure a runtime application blocklist in UiPath Automation Ops to prevent AI automation from interacting with sensitive or restricted applications (e.g. security tools, privileged consoles) that fall outside its intended use. To configure: enable RT-UIA-001 at Error and add restricted applications to blacklistApps.",
+        "RecommendedSetting": "Block sensitive apps",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > Runtime Analyzer > RT-UIA-001",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "embedded-rules-config-rules"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "runtime-analyzer-application-blocklist"
+       },
+       {
+        "DisplayName": "Runtime Analyzer — URL Allowlist",
+        "Description": "The organization shall configure a runtime URL allowlist in UiPath Automation Ops robot policies, ensuring that AI-driven web automation accesses only approved domains within the documented intended use of the AI system. To configure: enable RT-UIA-001 at Error and add approved domains to whitelistUrls.",
+        "RecommendedSetting": "Configured per process",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > Runtime Analyzer > RT-UIA-001",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "embedded-rules-config-rules"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "runtime-analyzer-url-allowlist"
+       },
+       {
+        "DisplayName": "Runtime Analyzer — URL Blocklist",
+        "Description": "The organization shall configure a runtime URL blocklist in UiPath Automation Ops to prevent AI automation from accessing unauthorized or high-risk web destinations outside its documented intended use. To configure: enable RT-UIA-001 at Error and add high-risk destinations to blacklistUrls.",
+        "RecommendedSetting": "Block risky sites",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > Runtime Analyzer > RT-UIA-001",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "embedded-rules-config-rules"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "runtime-analyzer-url-blocklist"
+       },
+       {
+        "DisplayName": "Healing Agent — Allowed/Restricted App-URLs",
+        "Description": "The organization shall configure application and URL restrictions for the UiPath Healing Agent to ensure that AI-driven recovery actions are constrained to systems within the documented intended use of the AI system. To configure: enable HA-UIA-001 and set allowedApps, forbiddenApps, allowedUrls and forbiddenUrls.",
+        "RecommendedSetting": "Allowlist approved apps/URLs only",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > Healing Agent > HA-UIA-001",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "healing-agent-rules[HA-UIA-001]"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "healing-agent-app-url-restrictions-ha-uia-001"
+       },
+       {
+        "DisplayName": "Healing Agent — Close Popup Restrictions",
+        "Description": "The organization shall configure popup closure restrictions for the UiPath Healing Agent to prevent AI-driven dismissal of security dialogs, confirmation prompts, or other interactions that fall outside the agent's intended use. To configure: enable HA-UIA-002 and list the dialogs to block in forbiddenPopups.",
+        "RecommendedSetting": "Configured per application context",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Robot > Healing Agent > HA-UIA-002",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "healing-agent-rules[HA-UIA-002]"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "healing-agent-close-popup-restrictions-ha-uia-002"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "embedded-rules-config-rules",
+        "Required": {
+         "Contains": [
+          {
+           "CodeEmbeddedRulesConfigRules": "RT-UIA-001",
+           "IsEnabledEmbeddedRulesConfigRules": true,
+           "DefaultAction": "Error"
+          }
+         ]
+        }
+       },
+       {
+        "Key": "healing-agent-rules[HA-UIA-001]",
+        "Required": {
+         "Contains": [
+          {
+           "HealingAgentRuleId": "HA-UIA-001",
+           "HealingAgentRuleIsEnabled": true,
+           "HealingAgentRuleDefaultAction": "Error"
+          }
+         ]
+        }
+       },
+       {
+        "Key": "healing-agent-rules[HA-UIA-002]",
+        "Required": {
+         "Contains": [
+          {
+           "HealingAgentRuleId": "HA-UIA-002",
+           "HealingAgentRuleIsEnabled": true,
+           "HealingAgentRuleDefaultAction": "Error"
+          }
+         ]
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.2.2",
+       "A.6.2.8",
+       "A.9.3"
+      ]
+     }
+    ]
+   },
+   {
+    "ClauseId": "A.10.3",
+    "ClauseName": "Suppliers",
+    "ProductCount": 3,
+    "ControlCount": 5,
+    "EditorialPolicies": [
+     {
+      "DisplayName": "AI Capabilities And Safety Governance",
+      "ProductIdentifier": "AITrustLayer",
+      "ProductDisplayName": "AI Trust Layer",
+      "DeploymentPolicyFile": "policies/ai-trust-layer.json",
+      "ControlCount": 2,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "Model Governance — Third-Party AI Providers Allowlist",
+        "Description": "The organization shall maintain an approved list of third-party AI providers accessible through UiPath Integration Service, ensuring each provider is assessed under the supplier management process for compliance with the organization's responsible AI use requirements.",
+        "RecommendedSetting": "Approved providers only",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Models",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "anthropic-control-toggle",
+         "azure-openai-control-toggle",
+         "gemini-control-toggle"
+        ],
+        "ControlId": "model-governance-third-party-ai-providers"
+       },
+       {
+        "DisplayName": "Communications Mining — External LLM Access",
+        "Description": "The organization shall assess and approve external LLM providers used by UiPath Communications Mining under its supplier management process, ensuring that AI model providers meet the organization's responsible use requirements before communication data is processed.",
+        "RecommendedSetting": "Enable per business need",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > AI Trust Layer > Product Toggles > Enable IXP",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "communicationsmining"
+        ],
+        "ControlId": "communications-mining-external-llm-access"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "azure-openai-control-toggle",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "anthropic-control-toggle",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "gemini-control-toggle",
+        "Required": {
+         "Eq": true
+        }
+       },
+       {
+        "Key": "communicationsmining",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "6.1.4",
+       "A.6.2.4",
+       "A.6.2.8",
+       "A.7.2",
+       "A.9.2",
+       "A.9.3"
+      ]
+     },
+     {
+      "DisplayName": "Secure Development & Code Quality Gates",
+      "ProductIdentifier": "Development",
+      "ProductDisplayName": "Studio",
+      "DeploymentPolicyFile": "policies/development.json",
+      "ControlCount": 1,
+      "HighImpactCount": 1,
+      "Controls": [
+       {
+        "DisplayName": "Workflow Analyzer — Package Restrictions (ST-USG-014)",
+        "Description": "The organization shall configure UiPath Workflow Analyzer package restrictions (ST-USG-014) to enforce an approved package allowlist, ensuring that only supplier-provided components that have been assessed and approved are used in AI automation. To configure: enable ST-USG-014 at Error and populate AllowedPackages and ProhibitedPackages.",
+        "RecommendedSetting": "Configured per policy",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Studio > Workflow Analyzer > Rules > ST-USG-014",
+        "Impact": "High",
+        "ContributionKeys": [
+         "embedded-rules-config-rules"
+        ],
+        "IsManualConfigNeeded": true,
+        "ControlId": "workflow-analyzer-package-restrictions-st-usg-014"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "embedded-rules-config-rules",
+        "Required": {
+         "Contains": [
+          {
+           "CodeEmbeddedRulesConfigRules": "ST-USG-014",
+           "IsEnabledEmbeddedRulesConfigRules": true,
+           "DefaultAction": "Error"
+          }
+         ]
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.6.1.3",
+       "A.6.2.2",
+       "A.6.2.4",
+       "A.6.2.5",
+       "A.6.2.7",
+       "A.9.4"
+      ]
+     },
+     {
+      "DisplayName": "Assistant Governance and Experience",
+      "ProductIdentifier": "Assistant",
+      "ProductDisplayName": "Assistant",
+      "DeploymentPolicyFile": "policies/assistant.json",
+      "ControlCount": 2,
+      "HighImpactCount": 0,
+      "Controls": [
+       {
+        "DisplayName": "Assistant — Allow Custom Widgets",
+        "Description": "The organization shall restrict UiPath Assistant custom widgets to sources that have been assessed under its supplier management process, ensuring that third-party widget components meet the organization's responsible AI use standards.",
+        "RecommendedSetting": "Disabled (official only)",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Assistant > Widgets > Allow custom widgets",
+        "Impact": "Low",
+        "ContributionKeys": [
+         "allowCustomWidgets"
+        ],
+        "ControlId": "assistant-allow-custom-widgets"
+       },
+       {
+        "DisplayName": "Assistant — Use Official Widget Feeds",
+        "Description": "The organization shall prefer official UiPath widget feeds over custom sources, as official widgets are subject to the vendor's quality and security review process, providing greater assurance for the organization's AI management system.",
+        "RecommendedSetting": "Enabled",
+        "ConfigLocation": "Governance > Policy Library > Automation Ops > Assistant > Widgets > Use official feeds",
+        "Impact": "Medium",
+        "ContributionKeys": [
+         "enableOfficialFeeds"
+        ],
+        "ControlId": "assistant-use-official-widget-feeds"
+       }
+      ],
+      "Contributions": [
+       {
+        "Key": "allowCustomWidgets",
+        "Required": {
+         "Eq": "no"
+        }
+       },
+       {
+        "Key": "enableOfficialFeeds",
+        "Required": {
+         "Eq": true
+        }
+       }
+      ],
+      "AlsoInClauseIds": [
+       "A.4.5",
+       "A.6.2.8",
+       "A.9.2",
+       "A.9.4"
+      ]
+     }
+    ]
+   }
+  ],
+  "DocumentationUrl": "https://uipath.clickup.com/docs/8454543/p/h/820cf-52091/d453010ac8b2c1a",
+  "UnsupportedClauses": [
+   {
+    "ClauseId": "A.2.2",
+    "ClauseName": "AI Policy",
+    "Description": "The organization shall document a policy for the development or use of AI systems."
+   },
+   {
+    "ClauseId": "A.2.3",
+    "ClauseName": "Alignment with other organizational policies",
+    "Description": "The organization shall determine where other policies can be affected by or apply to, the organization’s objectives with respect to AI systems."
+   },
+   {
+    "ClauseId": "A.2.4",
+    "ClauseName": "Review of the AI policy",
+    "Description": "The AI policy shall be reviewed at planned intervals or additionally as needed to ensure its continuing suitability, adequacy and effectiveness"
+   },
+   {
+    "ClauseId": "A.3.2",
+    "ClauseName": "AI roles and responsibilities",
+    "Description": "Roles and responsibilities for AI shall be defined and allocated according to the needs of the organization"
+   },
+   {
+    "ClauseId": "A.3.3",
+    "ClauseName": "Reporting of concerns",
+    "Description": "The organization shall define and put in place a process to report concerns about the organization’s role with respect to an AI system throughout its life cycle."
+   },
+   {
+    "ClauseId": "A.4.2",
+    "ClauseName": "Resource documentation",
+    "Description": "The organization shall identify and document relevant resources required for the activities at given AI system life cycle stages and other AI-related activities relevant for the organization."
+   },
+   {
+    "ClauseId": "A.4.3",
+    "ClauseName": "Data resources",
+    "Description": "As part of resource identification, the organization shall document information about the data resources utilized for the AI system."
+   },
+   {
+    "ClauseId": "A.4.4",
+    "ClauseName": "Tooling resources",
+    "Description": "As part of resource identification, the organization shall document information about the tooling resources utilized for the AI system."
+   },
+   {
+    "ClauseId": "A.4.6",
+    "ClauseName": "Human resources",
+    "Description": "As part of resource identification, the organization shall document information about the human resources and their competences utilized for the development, deployment, operation, change management, maintenance, transfer and decommissioning, as well as verification and integration of the AI system."
+   },
+   {
+    "ClauseId": "A.5.2",
+    "ClauseName": "AI system impact assessment process",
+    "Description": "The organization shall establish a process to assess the potential consequences for individuals or groups of individuals, or both, and societies that can result from the AI system throughout its life cycle."
+   },
+   {
+    "ClauseId": "A.5.3",
+    "ClauseName": "Documentation of AI system impact assessments",
+    "Description": "The organization shall document the results of AI system impact assessments and retain results for a defined period."
+   },
+   {
+    "ClauseId": "A.5.5",
+    "ClauseName": "Assessing societal impacts of AI systems",
+    "Description": "The organization shall assess and document the potential societal impacts of their AI systems throughout the system’s life cycle."
+   },
+   {
+    "ClauseId": "A.6.1.2",
+    "ClauseName": "Objectives for responsible development of AI system",
+    "Description": "The organization shall identify and document objectives to guide the responsible development AI systems, and take those objectives into account and integrate measures to achieve them in the development life cycle."
+   },
+   {
+    "ClauseId": "A.6.2.3",
+    "ClauseName": "Documentation of AI system design and development",
+    "Description": "The organization shall document the AI system design and development based on organizational objectives, documented requirements and specification criteria."
+   },
+   {
+    "ClauseId": "A.7.3",
+    "ClauseName": "Acquisition of data",
+    "Description": "The organization shall determine and document details about the acquisition and selection of the data used in AI systems."
+   },
+   {
+    "ClauseId": "A.7.4",
+    "ClauseName": "Quality of data for AI systems",
+    "Description": "The organization shall define and document requirements for data quality and ensure that data used to develop and operate the AI system meet those requirements."
+   },
+   {
+    "ClauseId": "A.7.5",
+    "ClauseName": "Data provenance",
+    "Description": "The organization shall define and document a process for recording the provenance of data used in its AI systems over the life cycles of the data and the AI system."
+   },
+   {
+    "ClauseId": "A.7.6",
+    "ClauseName": "Data preparation",
+    "Description": "The organization shall define and document its criteria for selecting data preparations and the data preparation methods to be used."
+   },
+   {
+    "ClauseId": "A.8.4",
+    "ClauseName": "Communication of incidents",
+    "Description": "The organization shall determine and document a plan for communicating incidents to users of the AI system."
+   },
+   {
+    "ClauseId": "A.8.5",
+    "ClauseName": "Information for interested parties",
+    "Description": "The organization shall determine and document their obligations to reporting information about the AI system to interested parties."
+   },
+   {
+    "ClauseId": "A.10.2",
+    "ClauseName": "Allocating responsibilities",
+    "Description": "The organization shall ensure that responsibilities within their AI system life cycle are allocated between the organization, its partners, suppliers, customers and third parties."
+   },
+   {
+    "ClauseId": "A.10.4",
+    "ClauseName": "Customers",
+    "Description": "The organization shall ensure that its responsible approach to the development and use of AI systems considers their customer expectations and needs."
+   }
+  ]
+ }
+}

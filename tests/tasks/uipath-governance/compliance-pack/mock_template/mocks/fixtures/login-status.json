@@ -1,0 +1,20 @@
+{
+ "Result": "Success",
+ "Code": "LoginStatus",
+ "Data": {
+  "Status": "Logged in",
+  "Identity": "admin@codereval.local",
+  "IdentityType": "User",
+  "CredentialSource": "SavedLogin",
+  "Provider": "File",
+  "UserId": "2c7e9f14-8b05-4d3a-a6e1-90f3b5d27c48",
+  "UserEmail": "admin@codereval.local",
+  "UserName": "admin",
+  "BaseUrl": "https://alpha.uipath.com",
+  "Organization": "codereval",
+  "OrganizationId": "8e1d4b27-6a3f-4c90-b5e2-7f04c9a1d3b6",
+  "Tenant": "DefaultTenant",
+  "TenantId": "5f0c2a8e-3b1d-4e7a-9c64-2d8b7e1f4a90",
+  "ExpirationDate": "2026-09-30T06:49:39.000Z"
+ }
+}

@@ -7,31 +7,21 @@ description: >
 
 tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
 
+# Restore is active-pack-only, and pack state is tenant-global: a concurrent
+# task's cleanup disabled the pack between this task's enable and the agent's
+# `state get`, so a correct agent refused to restore (CI run 36674826204). The
+# `uip` shim serves compliance-pack calls from recorded fixtures and keeps pack
+# state in the sandbox — see mock_template/mocks/uip. `drifted` = active pack
+# with 5 settings changed since applied (a live capture).
 sandbox:
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
-    - type: template_dir
-      path: _setup
-      mount_point: _setup
+    - {type: template_dir, path: mock_template}
 
-# Precondition: the shared tenant is mutable and the compliance-pack cleanup
-# DISABLES the pack, so ISO 42001 is often already inactive when this task runs.
-# Restore is active-pack-only — a correct agent that checks state first then
-# sees Active:false rightly stops with "enable it first", never emitting
-# `state restore` and failing through no fault of its own (seen in CI run
-# 30455293977). Enable the pack first, same as disable_smoke. Tolerant of
-# no-auth (always exits 0), so local runs are unaffected.
 pre_run:
-  - command: 'python3 _setup/setup_enable_compliance_pack.py'
-    timeout: 120
-
-# Safety net: smoke sandboxes have live tenant auth in CI — the agent's
-# `state restore` only resets an active pack to its suggested values, but a
-# wrong-direction run (state disable / aops-policy create) really mutates the
-# tenant. Clean up after.
-post_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
+  - command: 'printf drifted > .compliance-mock-scenario'
+    timeout: 10
 
 initial_prompt: |
   I changed some of the ISO 42001 policies on my tenant by hand — reset them back to the values the standard recommends.
@@ -40,14 +30,16 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - Run each command once, capture output, move on. Do NOT retry or login.
+  - Do NOT run uip login.
   - Always pass --output json.
   - Do NOT prompt for confirmation - this is an automated test.
 
 success_criteria:
+  # Either pre-check is correct: restore/impl.md skips `state get` when the
+  # agent arrives from a coverage drift check (drift proves the pack is active).
   - type: command_executed
-    description: "Agent checked current pack state before restoring (restore is active-pack-only)"
-    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+get\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+)'
+    description: "Agent checked the pack before restoring — state get, or a coverage drift check (restore is active-pack-only)"
+    command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+(?:get|coverage)\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -57,6 +49,18 @@ success_criteria:
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+restore\s+(?:tenant|organization)\s+\S+\s+(?:iso-42001|\$\S+)'
     min_count: 1
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Restore actually ran against the active pack (shim state)"
+    command: >-
+      python3 -c "import json, os, sys;
+      p = '.compliance-mock-state.json';
+      s = json.load(open(p)) if os.path.exists(p) else {};
+      sys.exit(0 if s.get('restored', 0) >= 1 else 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed
