@@ -3,7 +3,8 @@ description: >
   Adds a business-rule task to the Review stage of an existing LinearThreeStages
   case from a saved `tasks describe` result. Graded on the binding contract the
   engine runs a rule by (BusinessRule `name` + `folderPath`),
-  the rule's flat v2 output names, the bindings sidecar, and `validate`.
+  the v3 task version and decision-keyed result (`output` from `=result`,
+  with `riskBand` extracted from `RiskDecision`), the bindings sidecar, and `validate`.
   Offline, no debug.
 tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate]
 max_iterations: 1
@@ -64,7 +65,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The business-rule task binds BusinessRule name + folderPath, maps the flat creditScore / riskBand rows, and bindings_v2.json carries the rule"
+    description: "The business-rule task binds BusinessRule name + folderPath, is v3, maps creditScore in and output (=result) + riskBand (=result.RiskDecision.riskBand) out, and bindings_v2.json carries the rule"
     command: "python3 $REFERENCE_DIR/check_add_business_rule_task.py"
     timeout: 30
     expected_exit_code: 0

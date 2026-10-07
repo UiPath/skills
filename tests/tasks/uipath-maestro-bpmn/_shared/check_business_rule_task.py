@@ -24,11 +24,12 @@ from _shared.bpmn_assertions import (  # noqa: E402
 
 PROJECT = Path("BusinessRuleDecision/BusinessRuleDecision")
 BPMN_NAME = "BusinessRuleDecision.bpmn"
-RULE_KEY = "loan-eligibility-rule"
+RULE_FOLDER = "Shared"
+RULE_KEY = f"{RULE_FOLDER}.LoanEligibility"
 # Context field -> (propertyAttribute, expected default); None requires a default of any value.
 RULE_CONTEXT_BINDINGS = {
     "name": ("name", "LoanEligibility"),
-    "folderPath": ("folderPath", None),
+    "folderPath": ("folderPath", RULE_FOLDER),
 }
 
 
@@ -78,6 +79,14 @@ def main() -> None:
     outputs = mapping_outputs(task)
     if len(outputs) < 1:
         fail("businessRuleTask should map rule outputs")
+    type_elem = task.find(f".//{{{UIPATH_NS}}}type")
+    if type_elem is None or type_elem.attrib.get("version") != "v3":
+        fail("Orchestrator.BusinessRules must be version v3; below v3 the engine cannot run a .uirule package")
+    sources = {out.attrib.get("name"): out.attrib.get("source") for out in outputs}
+    if sources.get("output") != "=result":
+        fail(f"rule result must map as output named 'output' with source '=result', got {sources}")
+    if sources.get("Error") != "=Error":
+        fail(f"rule must map an Error output with source '=Error', got {sources}")
 
     declared = variable_ids(root)
     output_targets = {out.attrib.get("var") or out.attrib.get("target") for out in outputs}
