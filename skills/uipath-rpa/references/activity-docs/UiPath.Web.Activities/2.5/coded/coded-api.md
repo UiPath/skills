@@ -506,7 +506,7 @@ Used by `ResponseOptions.FileOverwrite`.
 [Workflow]
 public void Execute()
 {
-    var response = http.GetAsync("https://httpbin.org/get").GetAwaiter().GetResult();
+    var response = http.GetAsync("https://api.example.com/items").GetAwaiter().GetResult();
     Log($"Status: {response.StatusCode}");
 }
 ```
@@ -517,7 +517,7 @@ public void Execute()
 [Workflow]
 public void Execute()
 {
-    var options = HttpRequestOptions.ForPost("https://httpbin.org/post")
+    var options = HttpRequestOptions.ForPost("https://api.example.com/items")
         .WithJsonBody("{\"name\":\"uipath\"}")
         .WithHeader("X-Trace-Id", Guid.NewGuid().ToString())
         .WithBearerToken("token-value")
