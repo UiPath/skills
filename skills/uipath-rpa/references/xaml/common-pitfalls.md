@@ -147,9 +147,9 @@ Alternatives:
 
 Every UIA `N*` activity carries a `Version` attribute in its `uip rpa activities get-default-xaml` starter (e.g. `NGetText Version="V5"`, `NApplicationCard Version="V2"`). Dropping it survives BOTH `validate` and `build` and fails only at runtime with `System.InvalidOperationException ... ThrowIfNotInTree` on the activity's argument bindings. Carry over **every** attribute the starter emits. See [csharp-activity-binding-guide.md § `ThrowIfNotInTree` at runtime](csharp-activity-binding-guide.md#throwifnotintree-at-runtime--two-causes).
 
-## OCR Engines in XAML Fail `build` With "please install the UiPath.CoreIPC package"
+## OCR Engine Asks to "install the UiPath.CoreIPC package"
 
-Every OCR engine activity (Tesseract `GoogleOCR`, UiPath Document OCR, …) fails `build` and `run` in the headless Studio host with `In order to use this activity in this Studio version, please install the UiPath.CoreIPC package, version 2.0.1 or higher.`, even when `validate` passes. The check reads the host process, not the project, so no project edit clears it. Read the PDF from a coded workflow instead — it calls the PDF package's coded `ReadPdfWithOcr` — and invoke that workflow from the XAML; the robot process passes the check. Screen OCR has no such route: report the blocker to the user.
+If an OCR engine activity in XAML fails `build` or `run` with that message, read the PDF from a coded workflow that calls the PDF package's coded `ReadPdfWithOcr`, and invoke it from the XAML.
 
 ## ActivityAction/ActivityFunc Initialization
 
