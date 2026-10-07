@@ -822,7 +822,8 @@ The boxed array reaches `ArrayRow` (whose property type is `Object[]`) correctly
 
 The `<sap2010:WorkflowViewState.ViewStateManager>` section can become corrupted:
 - **Studio crashes during save** can truncate the ViewState, causing "Unexpected end of file" errors
-- **Duplicate `sap2010:WorkflowViewState.IdRef`** values cause deserialization failures
+- **Duplicate `sap2010:WorkflowViewState.IdRef`** values break IdRef-addressed tooling (breakpoints, `focus-activity`) and designer-state correlation
+- **Renumbered or rewritten IdRefs** silently detach breakpoints and designer state from their activity — never change an existing IdRef; new activities take the next free number for their type ([xaml-basics-and-rules.md](xaml-basics-and-rules.md) Rule 25)
 - **Manual editing of ViewState** almost always causes problems — it contains serialized designer positions, expanded/collapsed states, and breakpoint info
 
 **Fix:** If ViewState is corrupted, use the `Edit` tool to delete the entire `<sap2010:WorkflowViewState.ViewStateManager>` section. Studio will regenerate it when the file is opened (you'll lose designer layout but not workflow logic).
