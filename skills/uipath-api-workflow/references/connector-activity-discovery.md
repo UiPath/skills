@@ -157,10 +157,10 @@ Never use Http kind with a vendor UUID, the simple `call: "http"` form, or a ven
 
 `with.method` is always `POST`; `with.endpoint` is always `/http-request`. Put the actual request in `bodyParameters`: `authentication` (`"manual"` or `"connector"`), actual `method`, `url`, `headers`, `body`, and other inputs. Output is an envelope; use `Data.ExportBucketKey`, then `.content`, `.statusCode`, `.headers`, etc.
 
-Example: stub the HTTP Request activity with `--inputs '{"url":"https://catfact.ninja/fact","method":"GET"}'`.
+Example: stub the HTTP Request activity with `--inputs '{"url":"https://api.example.com/facts/random","method":"GET"}'`.
 
 <!--skill-flavor:http-example-execution-proof:start-->
-Verified end-to-end: `uip api-workflow run --no-auth` on the resulting workflow returns `statusCode: 200`, `content.fact: "..."`. StudioWeb's designer renders the activity as the unified HTTP Request card. See [../assets/templates/connector-call-example.json](../assets/templates/connector-call-example.json) for a complete stub-generated workflow.
+Against a live endpoint, `uip api-workflow run --no-auth` on the resulting workflow returns `statusCode: 200` with the parsed response body under `content`. StudioWeb's designer renders the activity as the unified HTTP Request card. See [../assets/templates/connector-call-example.json](../assets/templates/connector-call-example.json) for a complete stub-generated workflow.
 <!--skill-flavor:http-example-execution-proof:end-->
 
 ### IntSvc kind
