@@ -6,7 +6,7 @@ confidence: high
 
 ## Context
 
-A UI Automation Next interaction activity completed its primary action successfully, but its `VerifyOptions` post-condition check did not hold within the verify retry window. The driver throws `VerifyActivityExecutionException`. The action's side effects are NOT rolled back — the click already clicked, the hover already hovered, the keystrokes were already sent.
+A UI Automation Next interaction activity completed its primary action successfully, but its `VerifyOptions` post-condition check did not hold within the verify `Timeout`. The driver throws `VerifyActivityExecutionException`. The action's side effects are NOT rolled back — the click already clicked, the hover already hovered, the keystrokes were already sent — and with `Retry` on (the default) each failed check ran the action again, so they may have happened several times.
 
 Applies to every UIAutomationNext activity that exposes `VerifyOptions`:
 
@@ -27,7 +27,7 @@ What this looks like:
   - `The verification failed because the verification target does not support text attribute.` (`ExceptionVerificationTextNotSupported`)
   - `The activity execution was recovered by Autopilot, but the verification configured on the activity failed.` (`ExceptionRecoveredButValidationFailed`)
 - Stack origin: `VerifyExecutionService.ExecuteWithVerifyInternalAsync` → `ExecuteWithVerifyAsync` → `<Activity>.ExecuteAsync`
-- Fault duration is close to the verify `Timeout` (default 5s) plus a few retry cycles — the retry loop in `VerifyExecutionService` keeps re-running the assertion until the verify timeout, the activity timeout, or the node becomes invalid.
+- Fault duration follows `Retry`. Each check waits up to the verify `Timeout` (default 10s). With `Retry` off, or once the acted-on element is gone, the first failed check throws: about one verify `Timeout`. With `Retry` on (default), `VerifyExecutionService` re-runs the whole activity — action and check — until the activity's own `Timeout` (default 30s) has elapsed: about the activity `Timeout`, up to one verify `Timeout` more.
 - The action itself succeeded — there is NO `NodeNotFoundException` / `SelectorNotFoundException` / `UiNodeDisabledElementException` in the same trace for the failing activity.
 
 What can cause it:
@@ -52,12 +52,12 @@ What to look for:
 2. Open the workflow source. Locate the failing activity by name or `IdRef`. Read its full `VerifyOptions` block:
    - `Mode` (`Appears` / `Disappears` / `TextChanges` / `AspectChanges`)
    - `Target` — the full selector and any anchors / scope (note the `BrowserURL`, `ScopeSelectorArgument`, `aaname`, `tag`)
-   - `Timeout` — explicit value, or empty `<InArgument x:TypeArguments="x:Double" />` meaning the default (~5s)
+   - `Timeout` — explicit value, or empty `<InArgument x:TypeArguments="x:Double" />` meaning the default (10s)
    - `Retry` — `true` / `false` / unset (default `true`)
 3. Read the activity's own `Target` selector and its `InteractionMode` (separate concern, but useful context).
 4. Compare the verify `Target.BrowserURL` / scope to where the action actually lands. If they differ, the action navigates somewhere — verify whether the verify target is realistically reachable from the action's landing page.
 5. Check whether the asserted outcome is deterministic. If the action can produce different end states across runs (search result page, dynamic content, A/B variants), an `Appears` assertion on a specific element is fragile.
-6. Compute the fault duration. If it is approximately the verify `Timeout` value, the retry loop exhausted — the assertion never held. If it is much shorter, an inner failure short-circuited (e.g., verify target selector invalid at parse time).
+6. Compute the fault duration and read it against `Retry`. About one verify `Timeout` (`Retry` off, or the acted-on element gone after the first run): the action ran once and the check never held. About the activity `Timeout` with `Retry` on: the action ran several times and no check held — check the application for repeated effects (a second submission, text typed twice). Much shorter than one verify `Timeout`: an inner failure short-circuited (e.g., verify target selector invalid at parse time).
 7. If Healing Agent ran on this job, check whether the action was *recovered* (the original target was healed) — the recovered action can resolve to a different landing page than the workflow author expected, which can make the verify target unreachable. See [interpretations/healing-agent-data.md](../interpretations/healing-agent-data.md).
 
 ## Resolution
@@ -82,7 +82,7 @@ Walk this tree from the top. Stop at the first branch that matches.
    - YES → branch **(D)**. The verify target presumes a specific outcome that the action does not guarantee.
    - NO → continue.
 
-5. **Is the fault duration close to the verify `Timeout` AND the asserted state is reachable but slow** (animations, async load, navigation)?
+5. **Did the checks run their full verify `Timeout` (fault duration, Investigation step 6) AND is the asserted state reachable but slow** (animations, async load, navigation)?
    - YES → branch **(E)**. Verify timeout is too short for the real settle time.
    - NO → continue.
 
@@ -108,15 +108,15 @@ Walk this tree from the top. Stop at the first branch that matches.
   - Do NOT extend the timeout — the issue is not slowness, it is non-existence on this run.
   - **Do NOT remove `VerifyOptions`** to make the exception go away. Stripping the assertion turns a noisy failure into a silent one and weakens the workflow. If no stable verify target exists across all reachable outcomes AND no region is suitable for `AspectChanges`, surface that to the workflow author as a design issue — the action's outcome cannot be asserted and the workflow needs rethinking — instead of deleting the verify block.
 
-- **(E) Verify timeout too short for the real settle time.** The asserted state is reachable but takes longer than the verify timeout to appear/change. Increase `VerifyOptions.Timeout` to a value that comfortably covers worst-case settle (e.g., 10–15s for typical web navigation, 20–30s for app launches or remote workflows). Do NOT extend blindly — first confirm that the verify target *does* eventually appear when the activity is rerun with a longer timeout. If the target never appears regardless of wait, the cause is branch (D) or (F), not timeout.
+- **(E) Verify timeout too short for the real settle time.** The asserted state is reachable but takes longer than the verify timeout to appear/change. Increase `VerifyOptions.Timeout` above the 10s default to a value that comfortably covers worst-case settle (e.g., 15–20s for slow web navigation, 20–30s for app launches or remote workflows). Do NOT extend blindly — first confirm that the verify target *does* eventually appear when the activity is rerun with a longer timeout. If the target never appears regardless of wait, the cause is branch (D) or (F), not timeout. With `Retry` on, every check that ran out re-ran the action: check the application for repeated effects, and set `Retry` to `False` on an action whose second run changes state (submit, save, send, typing into a field that was not emptied).
 
 - **(F) Action had no UI effect — diagnose why.** The action dispatched but the application did not respond. Common causes (investigate in this order):
   - **Click intercepted by an overlay / popup.** Inspect Healing Agent data for popup detections; add a deterministic dismiss step before the action. See [interpretations/healing-agent-data.md](../interpretations/healing-agent-data.md).
   - **Wrong element targeted.** The action's selector matched a duplicate or shadow element (off-screen iframe, hidden carousel, ARIA-hidden duplicate). Tighten the action's selector — not the verify target.
   - **`InputMode` mismatch with target tech.** `Simulate` on a non-HTML host, `HardwareEvents` on a screen region that has moved, `ChromiumAPI` on a non-Chromium frame. The action lands at the OS layer but the application's event handler never fires. Switch `InputMode` to match the target tech.
   - **Focus lost between activities.** A prior activity left focus on a different app/tab. Add a Use Application / Activate step before the action.
-  - **Timing — DOM not ready.** The action runs against a stale DOM (page was re-rendered between action and verify). Add a Check App State before the action; or set `WaitForReady = COMPLETE` on the action's target.
+  - **Timing — DOM not ready.** The action runs against a stale DOM (page was re-rendered between action and verify). Set `WaitForReady` = `Complete` on the action's target, or a `DelayBefore` on the action when the page re-renders after the target first appears. A Check App State before the action adds nothing: it waits for the element to appear, which the action already does.
 
   Once the action's actual effect is restored, the verify assertion will hold without changes.
 
-**Applying these fixes.** Re-targeting the verify selector, changing `Mode`, raising `Timeout`, or adding a dismiss / focus / Check App State step all change the workflow `.xaml` — interactive: the troubleshooter never edits the workflow itself; on the user's approval it delegates the apply, otherwise it recommends only. Never strip `VerifyOptions` to silence the exception (see branches A and D); configure or re-target it. Any Studio Desktop Recovery Panel fix or re-publish is a user action — recommend it, do not execute.
+**Applying these fixes.** Re-targeting the verify selector, changing `Mode`, raising `Timeout`, turning `Retry` off, or adding a dismiss / focus step all change the workflow `.xaml` — interactive: the troubleshooter never edits the workflow itself; on the user's approval it delegates the apply, otherwise it recommends only. Never strip `VerifyOptions` to silence the exception (see branches A and D); configure or re-target it. Any Studio Desktop Recovery Panel fix or re-publish is a user action — recommend it, do not execute.
