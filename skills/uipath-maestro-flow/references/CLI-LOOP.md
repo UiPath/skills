@@ -225,11 +225,15 @@ double quotes instead of single ones:
 --output-filter '{status:finalStatus,raw:variables.globals."multiply.output"}'
 ```
 
-**There is no `incidents` in this envelope.** `Data` carries exactly
+**A completed run has no `incidents` in this envelope.** Its `Data` carries
 `finalStatus`, `entryPoint`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`,
-`folderKey`, `solutionId`, `variables` and `elementExecutions` — an
-`incidents:incidents` projection silently yields `null`. Incidents come from the separate
-`debug-instance incidents` call below, keyed by the `instanceId` you just read.
+`folderKey`, `solutionId`, `variables` and `elementExecutions`, plus
+`variablesFetch` when the variables read needed a retry; `variablesError`
+replaces `variables` when that read fails. So an `incidents:incidents`
+projection yields `null`. A faulted run carries `Data.incidents`, and the CLI
+prints that whole envelope whatever `--output-filter` says. Otherwise, fetch
+incidents with the separate `debug-instance incidents` call below, keyed by the
+`instanceId` you just read.
 
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
@@ -249,8 +253,8 @@ from `Data`. Read and retain `Result`, the projected status/instance/URL, the
 product-runtime path; a bare process exit code is not. Omit the filter only when
 diagnosing a field the projection did not retain.
 
-Incidents are **not** in this envelope — fetch them by the `instance` you just
-read, and only when something actually failed.
+On a completed run, incidents are **not** in this envelope — fetch them by the
+`instance` you just read, and only when something actually failed.
 
 For a fault, query the backend incident payload with the returned instance id:
 
