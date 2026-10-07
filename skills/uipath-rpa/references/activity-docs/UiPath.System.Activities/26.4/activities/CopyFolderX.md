@@ -2,7 +2,7 @@
 
 `UiPath.Core.Activities.CopyFolderX`
 
-Copies a specified folder to another location.
+Copies a specified folder into another folder.
 
 **Package:** `UiPath.System.Activities`
 **Category:** System > File
@@ -15,8 +15,8 @@ Copies a specified folder to another location.
 |------|-------------|------|------|----------|---------|-------------|
 | `From` | From | `InArgument` | `string` | Yes* | — | Full path of the source folder. Visible when `FromResource` has no value. |
 | `FromResource` | Source Folder Resource | `InArgument` | `IResource` | Yes* | — | Resource reference to the source folder. Visible when `From` has no value. |
-| `To` | To | `InArgument` | `string` | Yes* | — | Destination path for the copied folder. Visible when `ToResource` has no value. |
-| `ToResource` | Destination Folder Resource | `InArgument` | `IResource` | Yes* | — | Resource reference to the destination folder. Visible when `To` has no value. |
+| `To` | To | `InArgument` | `string` | Yes* | — | Existing folder the source folder is copied into: the copy is `<To>\<source folder name>`. Visible when `ToResource` has no value. |
+| `ToResource` | Destination Folder Resource | `InArgument` | `IResource` | Yes* | — | Resource reference to the existing folder the source folder is copied into. Visible when `To` has no value. |
 | `ContinueOnError` | Continue On Error | `InArgument` | `bool` | No | `null` | When `true`, execution continues even if an error occurs. |
 
 ### Configuration
@@ -40,10 +40,11 @@ Both source and destination support two mutually exclusive input modes toggled v
 ## XAML Example
 
 ```xml
+<!-- Produces C:\archive\reports -->
 <ui:CopyFolderX
     DisplayName="Copy Folder"
     From="&quot;C:\source\reports&quot;"
-    To="&quot;C:\archive\reports&quot;"
+    To="&quot;C:\archive&quot;"
     IncludeSubfolders="True"
     Overwrite="True" />
 ```
@@ -53,4 +54,7 @@ Both source and destination support two mutually exclusive input modes toggled v
 ## Notes
 
 - The copy is recursive by default (`IncludeSubfolders = true`).
+- `From` and `To` must both exist; otherwise the activity fails with `Source or destination folder missing.`
+- `To` may be neither the parent of `From` (`Destination folder should not be the parent of source folder.`) nor a folder inside it (`"To" directory is a child of "From" directory`).
+- With `ContinueOnError` set to `true`, these checks and a failed copy end the activity without an error.
 - This activity produces no output argument.
