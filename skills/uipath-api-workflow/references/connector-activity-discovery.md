@@ -44,7 +44,7 @@ When several connectors expose similar names, include the connector name in the 
 
 ### Step 2 — Verify a vendor connection (IntSvc only)
 
-Skip this step for `uipath-uipath-http`; HTTP uses `connectionId: "ImplicitConnection"` and needs no real connection. For every other connector, use the exact `ConnectorKey` from resolution.
+Skip this step for `uipath-uipath-http`; HTTP uses `connectionId: "ImplicitConnection"` and needs no real connection. Every other connector needs one, UiPath's own included: a Data Fabric (`uipath-uipath-dataservice`) activity sent with `ImplicitConnection` answers 404. Use the exact `ConnectorKey` from resolution.
 
 ```bash
 uip is connections list <connector-key> --output json
@@ -63,7 +63,12 @@ uip is connections list --all-folders --output json
 Search both results for the required `ConnectorKey`, try another UUID, and ping it. The unfiltered list can expose stale/orphaned records; `--all-folders` is required before concluding that no connection exists. It cannot be combined with `--folder` or `--folder-key`. Only after all three listings yield no UUID that pings successfully should you stop — see the connection-remediation note below.
 
 <!--skill-flavor:connection-remediation:start-->
-Only after the filtered, unfiltered, AND `--all-folders` listings have been exhausted (no UUID for that `ConnectorKey` pings cleanly) should you abort and tell the user to either re-authenticate (`uip is connections edit <connection-uuid>` opens a browser for OAuth) or create a fresh connection in the StudioWeb UI. **Do NOT author a workflow against a connection that hasn't pinged successfully** — it will 401 in cloud regardless of how correct the workflow JSON is.
+Only after the filtered, unfiltered, AND `--all-folders` listings have been exhausted (no UUID for that `ConnectorKey` pings cleanly) should you stop and have the user repair or create the connection. Both need the user's sign-in in a browser:
+
+- Re-authenticate a broken one: `uip is connections edit <connection-uuid>` opens a browser for OAuth.
+- Create one: `uip is connections create <connector-key>` opens a browser, waits for the consent, then prints the connection with its `Folder`. Without a browser, `--no-wait` returns `Code: ConnectionAuthorizationPending` with `Data.AuthUrl`, which expires within minutes — give the user the interactive command to run rather than a link that may lapse first. The command takes no folder: check the `Folder` it reports before using the connection.
+
+Ping the new or repaired connection before stubbing. **Do NOT author a workflow against a connection that hasn't pinged successfully** — it will 401 in cloud regardless of how correct the workflow JSON is.
 <!--skill-flavor:connection-remediation:end-->
 
 ### Step 3 — Stub the activity
@@ -166,6 +171,8 @@ Verified end-to-end: `uip api-workflow run --no-auth` on the resulting workflow 
 ### IntSvc kind
 
 Use the vendor key, pinged UUID in both connection fields, IS method, full IS endpoint, and schema-derived `queryParameters`, `pathParameters`, `bodyParameters`, and optional `multipartParameters`. Do not supply a vendor API URL; the connector and IS proxy perform that routing.
+
+**Data Fabric's Query Entity Records** (`uipath-uipath-dataservice`) takes `entityScope` — `tenant` for a tenant-level entity — and `tenantEntityName`. `stub` returns no `ResponseFields` for it: the answer's `content` is a bare array of rows, the entity's own columns under their names and the system fields in PascalCase (`Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`, `RecordOwner`). One call returns at most 1000 rows, so a full read pages. A long-text (`MULTILINE_MAX`) column comes back cut at 10,000 characters with `...[Truncated]` appended; read a row whose cell ends so again with Get Entity Record by ID (`GetEntityRecord_V3`, `recordId` the row's `Id`), which returns the whole text.
 
 ### Generic activities
 
