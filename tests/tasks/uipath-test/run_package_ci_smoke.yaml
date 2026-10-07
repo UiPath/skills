@@ -2,13 +2,13 @@ task_id: skill-test-run-package-ci-smoke
 description: >
   Smoke test: agent uses the uipath-test skill to run every test in a package
   that is already uploaded to Orchestrator, the way a CI step would, with
-  `uip tm run-package`. Grades the real outcome — a JUnit report on disk that
-  holds a `<testsuite>` — plus the single complete run-package command, and
+  `uip tm run --type package`. Grades the real outcome — a JUnit report on disk that
+  holds a `<testsuite>` — plus the single complete `tm run --type package` command, and
   guards against the old hand-built chain (link-package → testsets create →
-  testsets run → wait → result download) that run-package replaces. Test
-  results themselves are not graded: run-package exits 1 when a test fails,
+  testsets run → wait → result download) that it replaces. Test
+  results themselves are not graded: the command exits 1 when a test fails,
   and the skill teaches that this is a result to report, not a CLI error.
-  Requires a `uip` release that ships `tm run-package`.
+  Requires a `uip` release that ships `tm run --type package`.
 tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
 
 run_limits:
@@ -33,9 +33,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete run-package command: package, folder, project HEALTH, one retry, report under results/"
+    description: "Complete tm run --type package command: package, folder, project HEALTH, one retry, report under results/"
     tool_name: "Bash"
-    command_pattern: '(?=.*--package-name\s+["\x27]?Testcases\.with\.parameters)(?=.*--package-version\s+\S)(?=.*--folder-(path\s+["\x27]?uipath-test-folder-feed|key\s+\S))(?=.*--project-key\s+HEALTH)(?=.*--max-retries\s+1)(?=.*--result-path\s+["\x27]?(\./)?results)uip\s+tm\s+run-package'
+    command_pattern: '(?=.*--package-name\s+["\x27]?Testcases\.with\.parameters)(?=.*--package-version\s+\S)(?=.*--folder-(path\s+["\x27]?uipath-test-folder-feed|key\s+\S))(?=.*--project-key\s+HEALTH)(?=.*--max-retries\s+1)(?=.*--result-path\s+["\x27]?(\./)?results)(?=.*--type[\s=]+package)uip\s+tm\s+run\s'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

@@ -1,17 +1,18 @@
 # Run an Uploaded Test Package (CI)
 
-`uip tm run-package` runs every test in a package that is already uploaded to Orchestrator, waits for the results, re-runs failures, writes a JUnit or UiPath JSON report, and sets the exit code a CI step reads. It replaces `uipcli test run`. Use it whenever the user wants "all the tests in this package" run, instead of chaining `link-package` → `testsets create` → `testsets run` → `wait` → `result download` by hand.
+`uip tm run --type package` runs every test in a package that is already uploaded to Orchestrator, waits for the results, re-runs failures, writes a JUnit or UiPath JSON report, and sets the exit code a CI step reads. It replaces `uipcli test run`. Use it whenever the user wants "all the tests in this package" run, instead of chaining `link-package` → `testsets create` → `testsets run` → `wait` → `result download` by hand.
 
 Packing and uploading are separate (`uip rpa pack`, `uip or packages upload`); this command starts from the uploaded package.
 
 ## Command
 
 ```bash
-uip tm run-package --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-path <FOLDER_PATH> --project-key <PROJECT_KEY> --result-path <DIR> --output json
+uip tm run --type package --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-path <FOLDER_PATH> --project-key <PROJECT_KEY> --result-path <DIR> --output json
 ```
 
 | Option | Required | Notes |
 |---|---|---|
+| `--type package` | Yes | What to run. `package` is the only type today. |
 | `--package-name` | Yes | Package id as uploaded to Orchestrator. |
 | `--package-version` | Yes | `1.0` (app version) runs the latest `1.0.x` patch. An exact version (`1.0.244878764`) must be the latest patch of its app version; an older one is refused. After a fresh upload in CI, pass the exact version just published so the command waits for that build. |
 | `--folder-path` / `--folder-key` | One of them | Orchestrator folder the tests run in. Get the key with `uip or folders list -n <folder-name> --all --output json` when only the name is known. |
