@@ -38,7 +38,7 @@ the BPMN engine and cannot establish that public input/output bridges or
 business outputs produce the intended runtime values. Do not describe `Valid`
 as a successful business execution.
 
-> **Don't conclude "it doesn't exist" from truncated discovery output.** A row past a cutoff reads exactly like a missing row. Two cutoffs bite here: `registry list` defaults to **30** — pass `--limit -1` for the full set — and piping `registry search`/`is connections list` through `head`/`tail`/`grep -m`/a pager drops everything past the cap. To check existence, narrow the query (keyword to `registry search`, `--all-folders` to connection lists) rather than capping rows; cap only data already known complete.
+> **Don't conclude "it doesn't exist" from truncated discovery output.** A row past a cutoff reads exactly like a missing row. Two cutoffs bite here: `registry list` defaults to **30** — pass `--limit -1` for the full set — and piping `registry search`/`is connections list` through `head`/`tail`/`sed -n`/`grep -m`/a pager drops everything past the cap. To check existence, narrow the query (keyword to `registry search`, `--all-folders` to connection lists) rather than capping rows; cap only data already known complete.
 
 ## Output parsing
 
@@ -88,4 +88,5 @@ Connection IDs, `releaseKey`/process keys, queue keys, connector keys, app IDs,
 folder IDs/paths — every concrete identifier comes from discovery
 (`registry get`, `registry search`, `uip is connections list`) or from the user.
 Never invent one. When a required identifier is unknown, leave the placeholder
-in place, flag it as a draft binding, and ask the user.
+in place and flag it as a draft binding (SKILL.md step 1); ask only under
+Rule 4.

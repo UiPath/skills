@@ -1,0 +1,3 @@
+<!--skill-flavor:planner-next-step:start-->
+The planner detects the `## Planner Handoff` header, parses §4 Activities Inventory and §9 Integrated Components, derives the per-skill task list (routing each task to `uipath-maestro-bpmn`, `uipath-rpa`, `uipath-agents`, `uipath-api-workflow`, `uipath-platform`, etc. — userTask/HITL nodes stay inline with `uipath-maestro-bpmn`), writes `<PROCESS_NAME_KEBAB>-tasks.md` alongside this SDD. If `Execution autonomy: interactive`, it presents the task list for approval in plan mode, and the approved plan becomes the live task list.
+<!--skill-flavor:planner-next-step:end-->

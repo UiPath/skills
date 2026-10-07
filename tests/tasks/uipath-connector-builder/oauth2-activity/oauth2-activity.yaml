@@ -42,11 +42,23 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent configured auth via auth set"
-    tool_name: Bash
-    command_pattern: 'uip\s+is\s+connectors\s+builder\s+auth\s+set'
-    min_count: 1
+  # Outcome check, not a verb check. SKILL.md Rule 3 documents two equivalent
+  # ways to configure OAuth2 at create time — inline `init --auth oauth2 ...`
+  # (the skill's own "New connector" workflow) and `auth set --auth-type oauth2`
+  # — and both write identical element.json state. Matching only `auth set`
+  # failed agents that followed the skill verbatim, so grade the resulting auth
+  # block: type oauth2, typeOauth true, and the spec'd token/authorize URLs.
+  - type: run_command
+    description: "OAuth2 authorization-code auth configured with the spec'd endpoints (via init --auth or auth set)"
+    command: >-
+      node -e "const d=require('./periodic-design-acme-acmewidgets/app/element/element.json');
+      const c=Object.fromEntries((d.configuration||[]).map(e=>[e.key,e.defaultValue]));
+      const ok=d.authentication&&d.authentication.type==='oauth2'&&d.typeOauth===true
+      &&c['oauth.token.url']==='https://api.acme.example.com/oauth/token'
+      &&c['oauth.authorization.url']==='https://api.acme.example.com/oauth/authorize';
+      process.exit(ok?0:1)"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

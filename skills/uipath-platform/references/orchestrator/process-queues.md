@@ -327,4 +327,5 @@ Curated queue-item rows expose both `Key` and `UniqueKey` (PascalCase). With `--
 
 - [resources.md](resources.md) -- Orchestrator resources overview and libraries
 - [Triggers & Webhooks](triggers-and-webhooks.md) -- Queue triggers fire automations when item count exceeds a threshold
+- [Business ROI](business-roi.md) -- `uip or queue-roi`: the manual time, volume and cost a queue saves
 - [Setup Environment](setup-environment.md) -- Folder and machine setup

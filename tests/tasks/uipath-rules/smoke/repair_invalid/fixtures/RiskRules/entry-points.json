@@ -1,0 +1,37 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/Business rule.dmn#decision_25a2c471-1c6f-46cb-a22a-f4b2dfdb7ee7",
+      "uniqueId": "8f3e6a52-1c7d-4b9e-a2f0-6d4b1e9c3a77",
+      "type": "BusinessRules",
+      "displayName": "Decision",
+      "input": {
+        "type": "object",
+        "properties": {
+          "creditScore": {
+            "type": "number",
+            "title": "creditScore"
+          }
+        },
+        "required": []
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "decision1": {
+            "type": "object",
+            "properties": {
+              "riskBand": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [],
+        "x-uipath-decision-keyed": true
+      }
+    }
+  ]
+}

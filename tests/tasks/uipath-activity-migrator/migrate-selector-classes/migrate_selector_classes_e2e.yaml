@@ -1,0 +1,200 @@
+task_id: skill-migrator-migrate-selector-classes-e2e
+description: >
+  End-to-end, on demand: the agent migrates payment-review-edge (Acme.PaymentReview:
+  classic UIA in a Windows-framework project, selectors held in variables, Edge,
+  local pages) pinned to UIAutomation 26.10.4 and runs the post-migration fix. The
+  migrated output holds one construction per fix-guide class: a standalone full
+  check (A), a top-level generated card with a full value (D), loose checks in a
+  real card with a same-window full (E), element-only (F) and other-page full (L)
+  value, generated cards nested in a real card with a full (G) and an element-only
+  (H) value, a migrated Attach Window with a literal loose probe (I), and a loose
+  check under an Element Scope (J); there is no Case C or K. Graded on the exact
+  end structure (only E, F, J lose IsLoose, only H is unwrapped, L and I keep
+  IsLoose, D and G keep their cards), the annotation rewrites, an untouched
+  source, a build the harness runs itself, and a report judge. The runtime check is
+  declined. Skipped in CI: run with -e experiments/smoke-windows.yaml
+  --include-skipped; the report judge needs the checker credentials.
+tags: [uipath-activity-migrator, e2e, mode:build, lifecycle:generate, windows]
+skip: true  # on demand: new first-wave task, not yet part of the CI set
+
+run_limits:
+  expected_turns: 70
+  max_turns: 130
+  task_timeout: 6000
+  turn_timeout: 6000
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: fixture
+
+initial_prompt: |
+  Migrate the UiPath project in ./payment-review-edge with the Activity
+  Migrator, targeting UIAutomation 26.10.4, and leave it ready to open in
+  Studio. Do not run the migrated project.
+
+  The `uip` CLI is available and authenticated in this sandbox.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the developer who owns payment-review-edge and asked for the
+    migration. You trust the agent's procedure and want it finished. You know
+    nothing about the project beyond what is on disk.
+  goal: |
+    Let the agent complete the migration, including the post-migration fixes
+    it proposes, so the run reaches the build and the final report.
+  constraints:
+    - "When asked which UIAutomation line or version to target, choose 26.10.4."
+    - "When asked which edits or annotation rewrites to apply, choose to apply all of them: pick the recommended / first / all option."
+    - "When asked whether to run the migrated project, or any workflow, answer No."
+    - "When asked for a variable's value or a config value you do not know, say the value in the XAML files is the one to use."
+    - "Never invent facts about the project, the applications it drives, or the environment."
+    - "Keep replies to one sentence or a numbered option."
+    - "Never tell the agent to stop, skip a step, or rewrite files wholesale."
+  max_turns: 8
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-activity-migrator skill"
+    skill_name: "uipath-activity-migrator"
+    expected_skill: "uipath-activity-migrator"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Rule 8: every `uip rpa` command clears the host Studio pin, `env -u
+  # UIPATH_STUDIO_PID` in bash or `$env:UIPATH_STUDIO_PID = $null` in PowerShell.
+  # Flagged: a bare `uip rpa` at the start of a command, or after ;, &&, | or a
+  # line break, in a command that never mentions UIPATH_STUDIO_PID at all; inside
+  # Studio's terminal such a command opens the project in the user's Studio.
+  - type: command_not_executed
+    description: "No uip rpa command ran without clearing UIPATH_STUDIO_PID (Rule 8)"
+    command_pattern: '\A(?![\s\S]*UIPATH_STUDIO_PID)[\s\S]*?(?:^|[;&|(]\s*|\n\s*)(?:uip|\$UIP)\s+rpa\s+(?:build|validate|run|debug|instances|execution|activities|uia)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran analyze with --output-format sarif"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--output-format\s+sarif)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran upgrade into a separate output path"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--output-path)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pinned the UIAutomation version with the = form"
+    command_pattern: '--uia-package-version=\d'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated edited files at error severity"
+    command_pattern: 'uip\s+rpa\s+validate(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--min-severity\s+error)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Output project.json is a Windows project pinned to UIAutomation 26.10.4"
+    path: "payment-review-edge_Upgraded/project.json"
+    patterns:
+      - pattern: '"targetFramework"\s*:\s*"Windows"'
+        must_match: true
+      - pattern: '"UiPath\.UIAutomation\.Activities"\s*:\s*"\[26\.10\.4\]"'
+        must_match: true
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Measured on 26.10.4 before the fix: 7 cards (3 generated: D, G, H), 5 IsLoose
+  # (E, F, I, J, L). A correct fix removes IsLoose from E, F, J only and unwraps H only.
+  # Checked per case on the parsed XAML, so a fix applied to the wrong case fails: every
+  # case exists once; only I and L are loose; D sits in its own generated card and G in a
+  # generated card inside Attach Browser; E, F, H and L sit directly in Attach Browser with
+  # no generated card above H; I in Attach Window; J under the Element Scope.
+  - type: run_command
+    description: "Only E, F and J lost IsLoose and only H's generated card was unwrapped"
+    command: |-
+      python -c "import sys, xml.etree.ElementTree as E; r = E.parse('payment-review-edge_Upgraded/Main.xaml').getroot(); P = {c: p for p in r.iter() for c in p}; up = lambda e: [P[e]] + up(P[e]) if e in P else []; L = lambda e: e.tag.split('}')[-1]; cards = lambda e: [a for a in up(e) if L(a) == 'NApplicationCard']; gen = lambda a: a.get('IsDisplayNameAuto') == 'True'; names = [e.get('DisplayName')[5:] for e in r.iter() if (e.get('DisplayName') or '').startswith('Case ')]; c = {e.get('DisplayName')[5:]: e for e in r.iter() if (e.get('DisplayName') or '').startswith('Case ')}; home = lambda k, n: bool(cards(c[k])) and not gen(cards(c[k])[0]) and cards(c[k])[0].get('DisplayName') == n; ok = sorted(names) == list('ABDEFGHIJL') and {k for k, e in c.items() if e.get('IsLoose') == 'True'} == {'I', 'L'} and all(home(k, 'Attach Browser') for k in 'EFHL') and not any(gen(a) for a in cards(c['H'])) and len(cards(c['D'])) == 1 and gen(cards(c['D'])[0]) and len(cards(c['G'])) == 2 and gen(cards(c['G'])[0]) and cards(c['G'])[1].get('DisplayName') == 'Attach Browser' and home('I', 'Attach Window') and any(L(a) == 'NElementScope' for a in up(c['J'])) and sum(L(e) == 'NApplicationCard' for e in r.iter()) == 6 and sum(L(e) == 'NApplicationCard' and gen(e) for e in r.iter()) == 2; sys.exit(0 if ok else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # E, F, H, J Remediated; G's child and card Verified healthy; only L keeps its
+  # action-required line (cross-window, left loose on purpose). Each annotation is matched
+  # to the element that carries it, so a line on the wrong activity fails.
+  - type: run_command
+    description: "Annotations: Remediated on E, F, H, J; Verified healthy on G and its card; only Case L still action-required"
+    command: |-
+      python -c "import sys, xml.etree.ElementTree as E; r = E.parse('payment-review-edge_Upgraded/Main.xaml').getroot(); P = {c: p for p in r.iter() for c in p}; up = lambda e: [P[e]] + up(P[e]) if e in P else []; cards = lambda e: [a for a in up(e) if a.tag.split('}')[-1] == 'NApplicationCard']; A = lambda e: next((v for k, v in e.attrib.items() if k.endswith('Annotation.AnnotationText')), ''); c = {e.get('DisplayName')[5:]: e for e in r.iter() if (e.get('DisplayName') or '').startswith('Case ')}; on = lambda t: {e for e in r.iter() if t in A(e)}; ok = on('Remediated by uipath-activity-migrator') == {c[k] for k in 'EFHJ'} and on('Verified healthy by uipath-activity-migrator') == {c['G'], cards(c['G'])[0]} and on('PostMigration Action Required') == {c['L']}; sys.exit(0 if ok else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The tool itself writes .upgrade/ (reports) and .local/ (restore cache) into the source;
+  # outside those two, the source must hold exactly the fixture's files, byte-identical.
+  - type: run_command
+    description: "Source holds only the fixture's files, byte-identical, besides the tool's .upgrade and .local folders"
+    command: |-
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'payment-review-edge'); s = 'payment-review-edge'; fs = lambda root: sorted(os.path.relpath(os.path.join(d, f), root) for d, _, files in os.walk(root) if os.path.relpath(d, root).split(os.sep)[0] not in ('.upgrade', '.local') for f in files); ref = fs(t); sys.exit(0 if fs(s) == ref and all(filecmp.cmp(os.path.join(t, f), os.path.join(s, f), shallow=False) for f in ref) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rpa build exits 0 against the migrated and fixed output"
+    command: |-
+      python -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); sys.exit(subprocess.call([uip, 'rpa', 'build', os.path.abspath('payment-review-edge_Upgraded'), '--output', 'json'], env=env))"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run or debug the migrated project"
+    command_pattern: 'uip\s+rpa\s+(run|debug)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Report lists the non-fixed findings correctly and follows the Step 6 shape"
+    weight: 1.5
+    pass_threshold: 0.7
+    include_dialog: false
+    include_agent_output: true
+    prompt: |
+      Grade only the agent's last [ASSISTANT] message, the migration report. A
+      [RESULT - ...] block after it repeats that message and is harness output.
+
+      The project has ten checks and text reads named Case A, B, D to J and L
+      (there is no Case C or Case K).
+      Correct content:
+        - Fixes applied: Case E, Case F and Case J had IsLoose removed, Case H
+          was unwrapped from its generated Use Application/Browser; one line
+          each. One further line may say 2 annotations were rewritten to
+          Verified healthy.
+        - Needs attention: Case L only, left loose on purpose because its
+          selector targets another page; it is not presented as fixed.
+        - Case A, B, D, G and I are not listed as problems.
+      Shape: a "Migration result: partial" heading (not "success": Case L is
+      still open) with one counts line, the blocks above, a short Next steps
+      block; no table of what changed, no description of migration mechanics,
+      no per-activity list beyond the items above.
+      Score 1.0 when content and shape hold, 0.7 when the content holds with
+      minor padding, 0.3 when a Case is misclassified (for example L reported
+      as fixed, or A, B, D, G or I listed as a problem) or the heading says
+      success, 0.0 when the message is free prose with no status line.
+      Return JSON: {"score": <float>, "rationale": "<one sentence>"}

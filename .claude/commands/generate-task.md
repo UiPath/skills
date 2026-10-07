@@ -226,7 +226,6 @@ Then — **always, never omit** — a clearly-flagged reminder that the YAML is 
 
 ```
 cd tests
-make plugin-root
 SKILLS_REPO_PATH=$(cd .. && pwd) \
   .venv/bin/coder-eval run tasks/<skill>/<path>.yaml \
   -e experiments/<tier>.yaml

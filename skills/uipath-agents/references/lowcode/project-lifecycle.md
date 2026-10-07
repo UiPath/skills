@@ -157,10 +157,10 @@ For discovery, retrieval settings, memory item types, and troubleshooting, see [
 Run the autonomous agent end-to-end on Studio Web and stream the result. **Uploads the enclosing solution** to Studio Web, then runs it — one step, no separate `uip solution upload`, so the debugged copy always matches local. **Executes the agent for real** — confirm with the user first (per [critical-rules/critical-rules.md](critical-rules/critical-rules.md) Rule 8: consent before upload/publish/deploy).
 
 ```bash
-uip agent debug <AGENT_PROJECT_DIR> --inputs '{"input":"..."}' --output json
+uip agent debug <AGENT_PROJECT_DIR> --inputs '{"input":"..."}' [--attachment <FIELD>=<FILE_PATH>] --output json
 ```
 
-Returns `Code: "AgentDebug"` with `Data.State`, `Data.Output`, and `Data.TraceId`. A `Faulted` run returns `Result: "Failure"` (exit 1); inspect it with `uip traces spans get <TraceId> --output json`. Full options and reporting in [debug.md](debug.md).
+Returns `Code: "AgentDebug"` with `Data.State`, `Data.Output`, `Data.TraceId`, and — when `--attachment` was used — `Data.Attachments`. A `Faulted` run returns `Result: "Failure"` (exit 1); inspect it with `uip traces spans get <TraceId> --output json`. `--attachment <FIELD>=<FILE_PATH>` (repeatable) uploads a local file into a `job-attachment` input field. Full options, attachment rules, and reporting in [debug.md](debug.md).
 
 > The debug command is currently not supported for conversational agents, so only attempt to debug autonomous agents.
 
@@ -326,7 +326,17 @@ The canonical happy-path walkthrough for creating, configuring, validating, and 
 which uip || npm root -g 2>/dev/null | xargs -I{} echo {}/uip/bin/uip
 ```
 
-If not found: `npm install -g @uipath/cli`
+If not found, use the official installer. It installs Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
+
+macOS/Linux:
+```bash
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
+```
+
+Windows PowerShell:
+```powershell
+irm https://download.uipath.com/uipath-cli/install.ps1 | iex
+```
 
 ### Step 1 — Check login status
 
@@ -447,7 +457,7 @@ All solution lifecycle operations go through `uip solution` CLI. Never call Auto
 | Register project (fallback) | `uip solution projects add "<PATH>" --output json` — when `agent init` returned `Skipped` / `Failed` / `NotInSolution` | Solution directory | — |
 | Refresh + regenerate derived files | `uip agent refresh [path] --output json` | Agent dir or any with path | — |
 | Validate (strict read-only) | `uip agent validate [path] --output json` | Agent dir or any with path | — |
-| Debug / run end-to-end on Studio Web | `uip agent debug <AgentDir> --inputs '{...}' --output json` | Agent dir | `Successful`, `Faulted`, `Stopped` |
+| Debug / run end-to-end on Studio Web | `uip agent debug <AgentDir> --inputs '{...}' [--attachment <FIELD>=<FILE_PATH>] --output json` | Agent dir | `Successful`, `Faulted`, `Stopped`; `--attachment` binds a local file to a `job-attachment` input |
 | Add memory space feature | `uip agent memory add <FeatureName> --memory-space <Name> --folder-path <Folder> --path <AgentDir> --output json` | Any directory | Writes `features/<FeatureName>/feature.json`; run refresh/validate after |
 | Seed memory item | `uip agent memory item add <FeatureName> <key> <value> --memory-type episodic --feedback-id <FEEDBACK_ID> --path <AgentDir> --output json` | Any directory | Updates existing item with same key |
 | List guardrail validators | `uip agent guardrails list --output json` | Any directory | — |

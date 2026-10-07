@@ -9,7 +9,10 @@ user_prompt_attacks in agent.json with correct scope constraints:
     and validatorType == "user_prompt_attacks"
   - selector.scopes is exactly ["Llm"] — NOT Agent or Tool
     (user_prompt_attacks is Llm-only, PreExecution-only — anti-pattern 3)
-  - validatorParameters is empty (this validator takes no parameters)
+  - validatorParameters is empty OR contains only parameters the live
+    guardrail catalog declares for user_prompt_attacks (all its parameters
+    are optional today — e.g. appliesTo, added by AL-594 — and a future
+    non-breaking catalog addition must not break this test)
   - action.$actionType == "block"
   - id is UUID-shaped
 
@@ -19,11 +22,29 @@ adding user_prompt_attacks to Agent or Tool scope (which is invalid).
 
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(os.getcwd()) / "UPASol" / "UPAAgent"
 AGENT = ROOT / "agent.json"
+
+
+def catalog_parameter_ids(validator: str) -> set | None:
+    """Parameter ids the live catalog declares for `validator`, or None if
+    the catalog is unreachable (not logged in, CLI missing, timeout)."""
+    try:
+        proc = subprocess.run(
+            ["uip", "agent", "guardrails", "list", "--output", "json"],
+            capture_output=True, text=True, timeout=20,
+        )
+        data = json.loads(proc.stdout)
+        entries = [e for e in data.get("Data", []) if e.get("Validator") == validator]
+        if proc.returncode != 0 or not entries:
+            return None
+        return {p["Id"] for e in entries for p in e.get("Parameters", []) if "Id" in p}
+    except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError, KeyError, TypeError):
+        return None
 
 
 def load(path: Path) -> dict:
@@ -104,16 +125,42 @@ def main() -> None:
         )
     print('OK: action.$actionType == "block"')
 
-    # --- validatorParameters: must be empty (no parameters for this validator) ---
+    # --- validatorParameters: empty, or only catalog-declared parameters ---
+    # All user_prompt_attacks parameters are optional (appliesTo since AL-594),
+    # so both shapes are correct. Validating against the live catalog instead
+    # of a hardcoded list keeps future non-breaking catalog additions from
+    # failing this test.
     params = g.get("validatorParameters", [])
     if not isinstance(params, list):
         sys.exit(f"FAIL: validatorParameters must be an array, got {params!r}")
-    if len(params) != 0:
-        sys.exit(
-            "FAIL: user_prompt_attacks takes no parameters — validatorParameters "
-            f"must be empty, got {params!r}"
-        )
-    print("OK: validatorParameters is empty (correct — validator takes no params)")
+    if len(params) == 0:
+        print("OK: validatorParameters is empty (all parameters are optional)")
+    else:
+        ids = []
+        for p in params:
+            if not isinstance(p, dict) or not isinstance(p.get("id"), str) or "value" not in p:
+                sys.exit(
+                    "FAIL: each validatorParameters entry must be an object "
+                    f"with a string 'id' and a 'value', got {p!r}"
+                )
+            ids.append(p["id"])
+        if len(ids) != len(set(ids)):
+            sys.exit(f"FAIL: duplicate validatorParameters ids: {ids}")
+        declared = catalog_parameter_ids("user_prompt_attacks")
+        if declared is None:
+            print(
+                "WARN: guardrail catalog unreachable — skipping the "
+                f"declared-parameter cross-check for ids {ids}"
+            )
+        else:
+            unknown = [i for i in ids if i not in declared]
+            if unknown:
+                sys.exit(
+                    f"FAIL: validatorParameters ids {unknown} are not declared "
+                    f"for user_prompt_attacks in the guardrail catalog "
+                    f"(declared: {sorted(declared)})"
+                )
+            print(f"OK: validatorParameters {ids} are all catalog-declared")
 
     print("OK: user prompt attacks guardrail is valid with Llm-only scope")
 

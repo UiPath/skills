@@ -306,10 +306,10 @@ NARROW_TASKS = {
     },
 }
 
-# Tasks in this tree that grade the alerts, dashboards, machines, queues, RBAC
-# and filter-discovery command families. The jobs playbook does not run those
-# reads, so the routing question does not arise for them. The pattern, count
-# and advisory guards below still cover them.
+# Tasks in this tree that grade the alerts, dashboards, machines, queues, RBAC,
+# filter-discovery and export command families. The jobs playbook does not run
+# those reads, so the routing question does not arise for them. The pattern,
+# count and advisory guards below still cover them.
 OTHER_TASKS = (
     "alerts/absolute_window_triage_smoke.yaml",
     "alerts/filtered_history_smoke.yaml",
@@ -320,6 +320,7 @@ OTHER_TASKS = (
     "dashboards/delete_smoke.yaml",
     "dashboards/smoke.yaml",
     "dashboards/update_smoke.yaml",
+    "export/verify_smoke.yaml",
     "filters/smoke.yaml",
     "machines/smoke.yaml",
     "queues/smoke.yaml",
@@ -342,6 +343,7 @@ EXPECTED_COMMAND_CRITERIA = {
     "dashboards/update_smoke.yaml": 9,
     "envelope-contract/all_commands_envelope_e2e.yaml": 8,
     "errors/envelope_contract_smoke.yaml": 7,
+    "export/verify_smoke.yaml": 7,
     "filters/folder_scoped_smoke.yaml": 8,
     "filters/smoke.yaml": 6,
     "job-health/job_health_investigation_e2e.yaml": 5,

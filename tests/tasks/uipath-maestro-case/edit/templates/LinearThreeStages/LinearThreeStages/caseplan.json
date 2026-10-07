@@ -1,6 +1,6 @@
 {
     "id": "case-Lx7Rq2mPnK",
-    "version": "30.0.0",
+    "version": "32.0.3",
     "name": "LinearThreeStages",
     "description": "Three regular stages chained linearly behind a manual trigger; exercises stage-entry conditions, parallel wait-for-timer tasks, and the full Variable / In / Out argument trio.",
     "metadata": {

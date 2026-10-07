@@ -1,0 +1,136 @@
+<Activity mc:Ignorable="sap sap2010" x:Class="Main" sap2010:WorkflowViewState.IdRef="ActivityBuilder_1" xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation" xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation" xmlns:scg="clr-namespace:System.Collections.Generic;assembly=System.Private.CoreLib" xmlns:ui="http://schemas.uipath.com/workflow/activities" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <TextExpression.NamespacesForImplementation>
+    <scg:List x:TypeArguments="x:String" Capacity="16">
+      <x:String>Microsoft.VisualBasic</x:String>
+      <x:String>Microsoft.VisualBasic.Activities</x:String>
+      <x:String>System</x:String>
+      <x:String>System.Activities</x:String>
+      <x:String>System.Activities.Statements</x:String>
+      <x:String>System.Collections.Generic</x:String>
+      <x:String>System.Collections.ObjectModel</x:String>
+      <x:String>System.IO</x:String>
+      <x:String>System.Linq</x:String>
+      <x:String>UiPath.Core</x:String>
+      <x:String>UiPath.Core.Activities</x:String>
+    </scg:List>
+  </TextExpression.NamespacesForImplementation>
+  <TextExpression.ReferencesForImplementation>
+    <scg:List x:TypeArguments="AssemblyReference" Capacity="16">
+      <AssemblyReference>Microsoft.VisualBasic</AssemblyReference>
+      <AssemblyReference>mscorlib</AssemblyReference>
+      <AssemblyReference>System</AssemblyReference>
+      <AssemblyReference>System.Activities</AssemblyReference>
+      <AssemblyReference>System.Collections</AssemblyReference>
+      <AssemblyReference>System.ComponentModel.TypeConverter</AssemblyReference>
+      <AssemblyReference>System.Core</AssemblyReference>
+      <AssemblyReference>System.Linq</AssemblyReference>
+      <AssemblyReference>System.ObjectModel</AssemblyReference>
+      <AssemblyReference>System.Private.CoreLib</AssemblyReference>
+      <AssemblyReference>System.Runtime</AssemblyReference>
+      <AssemblyReference>System.ValueTuple</AssemblyReference>
+      <AssemblyReference>UiPath.System.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UiAutomation.Activities</AssemblyReference>
+      <AssemblyReference>UiPath.UIAutomationCore</AssemblyReference>
+    </scg:List>
+  </TextExpression.ReferencesForImplementation>
+  <Sequence DisplayName="Main" sap2010:WorkflowViewState.IdRef="Sequence_1">
+    <Sequence.Variables>
+      <Variable x:TypeArguments="ui:Browser" Name="portalBrowser" />
+      <Variable x:TypeArguments="ui:UiElement" Name="statusElement" />
+      <Variable x:TypeArguments="x:String" Name="vendorId" />
+      <Variable x:TypeArguments="ui:GenericValue" Name="vendorCode" />
+      <Variable x:TypeArguments="x:String" Name="syncStatus" />
+    </Sequence.Variables>
+    <sap:WorkflowViewStateService.ViewState>
+      <scg:Dictionary x:TypeArguments="x:String, x:Object">
+        <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      </scg:Dictionary>
+    </sap:WorkflowViewStateService.ViewState>
+    <ui:LogMessage DisplayName="Log start" sap2010:WorkflowViewState.IdRef="LogMessage_1" Level="Info" Message="[&quot;Vendor portal sync started.&quot;]" />
+    <ui:StartProcess Arguments="[&quot;file:///&quot; &amp; Path.GetFullPath(&quot;web\vendors.html&quot;).Replace(&quot;\&quot;, &quot;/&quot;)]" DisplayName="Launch vendor portal" FileName="msedge.exe" sap2010:WorkflowViewState.IdRef="StartProcess_1" WorkingDirectory="{x:Null}" />
+    <ui:BrowserScope Browser="{x:Null}" SearchScope="{x:Null}" TimeoutMS="{x:Null}" BrowserType="Edge" DisplayName="Attach vendor portal" sap2010:WorkflowViewState.IdRef="BrowserScope_1" Selector="&lt;html app='msedge.exe' title='*Vendor Portal*' /&gt;" UiBrowser="[portalBrowser]">
+      <ui:BrowserScope.Body>
+        <ActivityAction x:TypeArguments="x:Object">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="x:Object" Name="ContextTarget" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Sync vendor record" sap2010:WorkflowViewState.IdRef="Sequence_2">
+            <ui:AnchorBase AnchorPosition="Auto" DisplayName="Read vendor ID next to its label" sap2010:WorkflowViewState.IdRef="AnchorBase_1">
+              <ui:AnchorBase.AnchorProvider>
+                <ui:WaitUiElementAppear FoundElement="{x:Null}" WaitActive="{x:Null}" WaitVisible="{x:Null}" DisplayName="Find Vendor ID label" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_1">
+                  <ui:WaitUiElementAppear.Target>
+                    <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="6a3e9d15-0001-4b82-a7c4-9f1e2d6b8c05" Selector="&lt;webctrl innertext='Vendor ID' tag='LABEL' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+                  </ui:WaitUiElementAppear.Target>
+                </ui:WaitUiElementAppear>
+              </ui:AnchorBase.AnchorProvider>
+              <ui:AnchorBase.Action>
+                <ActivityAction x:TypeArguments="ui:Anchor">
+                  <ActivityAction.Argument>
+                    <DelegateInArgument x:TypeArguments="ui:Anchor" Name="ContextAnchor" />
+                  </ActivityAction.Argument>
+                  <ui:GetValue ContinueOnError="{x:Null}" DisplayName="Read vendor ID" sap2010:WorkflowViewState.IdRef="GetValue_1">
+                    <ui:GetValue.Target>
+                      <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="6a3e9d15-0002-4b82-a7c4-9f1e2d6b8c05" Selector="&lt;webctrl class='field-value' tag='SPAN' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+                    </ui:GetValue.Target>
+                    <ui:GetValue.Value>
+                      <OutArgument x:TypeArguments="x:String">[vendorId]</OutArgument>
+                    </ui:GetValue.Value>
+                  </ui:GetValue>
+                </ActivityAction>
+              </ui:AnchorBase.Action>
+            </ui:AnchorBase>
+            <ui:SetWebAttribute Attribute="value" ContinueOnError="{x:Null}" DelayAfter="{x:Null}" DelayBefore="{x:Null}" DisplayName="Fill vendor code" sap2010:WorkflowViewState.IdRef="SetWebAttribute_1" Value="[&quot;ACME-&quot; &amp; vendorId]">
+              <ui:SetWebAttribute.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="6a3e9d15-0003-4b82-a7c4-9f1e2d6b8c05" Selector="&lt;webctrl id='vendor-code' tag='INPUT' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+              </ui:SetWebAttribute.Target>
+            </ui:SetWebAttribute>
+            <ui:GetAttribute Attribute="value" ContinueOnError="{x:Null}" DisplayName="Read back vendor code" sap2010:WorkflowViewState.IdRef="GetAttribute_1">
+              <ui:GetAttribute.Result>
+                <OutArgument x:TypeArguments="ui:GenericValue">[vendorCode]</OutArgument>
+              </ui:GetAttribute.Result>
+              <ui:GetAttribute.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="6a3e9d15-0004-4b82-a7c4-9f1e2d6b8c05" Selector="&lt;webctrl id='vendor-code' tag='INPUT' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+              </ui:GetAttribute.Target>
+            </ui:GetAttribute>
+            <ui:TypeInto ClickBeforeTyping="{x:Null}" DelayBefore="{x:Null}" DelayBetweenKeys="{x:Null}" DelayMS="{x:Null}" EmptyField="{x:Null}" SendWindowMessages="{x:Null}" SimulateType="{x:Null}" Activate="True" AlterIfDisabled="True" DisplayName="Type sync note" sap2010:WorkflowViewState.IdRef="TypeInto_1" Text="Synced by robot">
+              <ui:TypeInto.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="6a3e9d15-0005-4b82-a7c4-9f1e2d6b8c05" Selector="&lt;webctrl id='vendor-notes' tag='INPUT' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+              </ui:TypeInto.Target>
+            </ui:TypeInto>
+            <ui:Click AlterIfDisabled="{x:Null}" DelayBefore="{x:Null}" DelayMS="{x:Null}" SendWindowMessages="{x:Null}" SimulateClick="{x:Null}" ClickType="CLICK_SINGLE" DisplayName="Click Sync" sap2010:WorkflowViewState.IdRef="Click_1" KeyModifiers="None" MouseButton="BTN_LEFT">
+              <ui:Click.CursorPosition>
+                <ui:CursorPosition Position="Center">
+                  <ui:CursorPosition.OffsetX>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetX>
+                  <ui:CursorPosition.OffsetY>
+                    <InArgument x:TypeArguments="x:Int32" />
+                  </ui:CursorPosition.OffsetY>
+                </ui:CursorPosition>
+              </ui:Click.CursorPosition>
+              <ui:Click.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="6a3e9d15-0006-4b82-a7c4-9f1e2d6b8c05" Selector="&lt;webctrl id='sync-button' tag='BUTTON' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+              </ui:Click.Target>
+            </ui:Click>
+            <ui:WaitUiElementAppear DisplayName="Find sync status" FoundElement="[statusElement]" sap2010:WorkflowViewState.IdRef="WaitUiElementAppear_2" WaitActive="{x:Null}" WaitVisible="{x:Null}">
+              <ui:WaitUiElementAppear.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="6a3e9d15-0007-4b82-a7c4-9f1e2d6b8c05" Selector="&lt;webctrl id='sync-status' tag='SPAN' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+              </ui:WaitUiElementAppear.Target>
+            </ui:WaitUiElementAppear>
+            <ui:WaitAttribute Attribute="innertext" AttributeValue="[&quot;Ready&quot;]" DisplayName="Wait until sync is ready" Element="[statusElement]" sap2010:WorkflowViewState.IdRef="WaitAttribute_1" TimeoutMS="10000" />
+            <ui:GetFullText IgnoreHidden="{x:Null}" DisplayName="Read sync status" sap2010:WorkflowViewState.IdRef="GetFullText_1">
+              <ui:GetFullText.Target>
+                <ui:Target ClippingRegion="{x:Null}" Element="{x:Null}" Id="6a3e9d15-0008-4b82-a7c4-9f1e2d6b8c05" Selector="&lt;webctrl id='sync-status' tag='SPAN' /&gt;" TimeoutMS="10000" WaitForReady="COMPLETE" />
+              </ui:GetFullText.Target>
+              <ui:GetFullText.Text>
+                <OutArgument x:TypeArguments="x:String">[syncStatus]</OutArgument>
+              </ui:GetFullText.Text>
+            </ui:GetFullText>
+          </Sequence>
+        </ActivityAction>
+      </ui:BrowserScope.Body>
+    </ui:BrowserScope>
+    <ui:CloseTab Browser="[portalBrowser]" DisplayName="Close vendor portal" sap2010:WorkflowViewState.IdRef="CloseTab_1" />
+    <ui:LogMessage DisplayName="Log result" sap2010:WorkflowViewState.IdRef="LogMessage_2" Level="Info" Message="[String.Format(&quot;Vendor portal sync finished. Vendor ID: {0}. Vendor code: {1}. Sync status: {2}.&quot;, vendorId, vendorCode, syncStatus)]" />
+  </Sequence>
+</Activity>

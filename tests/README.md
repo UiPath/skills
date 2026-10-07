@@ -61,20 +61,12 @@ make tags TAGS="integration connector-feature" EXPERIMENT=experiments/smoke.yaml
 make test-uipath-maestro-flow
 
 # Run a single task file
-make plugin-root
 SKILLS_REPO_PATH=$(cd .. && pwd) \
   .venv/bin/coder-eval run tasks/uipath-maestro-flow/smoke/init_validate.yaml \
   -e experiments/default.yaml
 ```
 
 The `SKILLS_REPO_PATH` environment variable defaults to the parent directory (repo root) when using `make`.
-
-Every `make` run target stages `.plugin-root` first — the pruned plugin tree the
-experiments hand the agent, built by `tests/scripts/stage_plugin_root.py`. The
-experiments never point the agent at the repo root, because coder_eval mounts
-that path into the task container and the repo root carries `tests/tasks`: the
-graders and the reference answers. Call `coder-eval` directly and you must run
-`make plugin-root` yourself, or the agent loads no skills.
 
 ### Parallelism
 
@@ -200,7 +192,7 @@ criteria that passed.
 | `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
-| `flow-v2-preview.yaml` | docker | Flow v2 builder-SDK preview skills | 200 | 1200s | 900s |
+| `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow promoted; Case, BPMN preview) | 200 | 1200s | 900s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
 campaign runner first builds the pinned `skills-image:sg1`, prepares isolated
@@ -211,9 +203,16 @@ runner. The image build passes the package credential as
 exists only for the external nightly caller during migration. Regular nightly
 and smoke jobs continue to use `skills-image:latest`.
 
-`flow-v2-preview.yaml` runs the three `preview/skills/uipath-maestro-{flow,case,bpmn}`
-builder-SDK skills as the ONLY skill catalog, so a run measures the Flow v2
-authoring path rather than a mix of both generations. `preview/` is a Claude Code
+`flow-v2-preview.yaml` runs the three builder-SDK skills
+`uipath-maestro-{flow,case,bpmn}` as the ONLY skill catalog, so a run measures the
+Flow v2 authoring path rather than a mix of both generations. Flow has been
+promoted: its tree lives in `skills/uipath-maestro-flow` (the default catalog, so
+`nightly.yaml` runs it too), and `preview/skills/uipath-maestro-flow` is a relative
+symlink to it so this arm keeps loading all three. Case and BPMN are still
+`preview/`-only. The previous Flow generation lives in
+`classic/skills/uipath-maestro-flow` (shipped only in the Studio Web flavor). It is
+in no plugin catalog, but the read-only repo mount leaves it readable from inside
+eval containers, so a prompt must not name a v1 Flow reference file. `preview/` is a Claude Code
 **plugin root** (`preview/.claude-plugin/plugin.json` + `preview/skills/<name>/SKILL.md`),
 which is the one layout every harness loads: Claude Code requires it, the
 Delegate SDK appends `/skills` to it, Codex and Antigravity accept it. Skills load
@@ -221,8 +220,10 @@ as `uipath-preview:uipath-maestro-flow` (the repo-root catalog is `uipath:`). Ne
 point `plugins.path` at a bare directory of skill folders: Claude Code loads
 nothing from it and says so only as a per-task WARNING in task.log (every v2 run
 08-20 → 09-03 ran that way). Narrowing `plugins.path` to `preview/` drops the automatic
-repo-root bind mount, so the root is remounted explicitly; the image also needs
-runtime npm auth for the `@uipath` scope. Login state mounts at `/.uipath`,
+repo-root bind mount, so the root is remounted explicitly. The symlink needs a
+checkout with symlinks enabled (the default on Linux and macOS; on Windows,
+`git config core.symlinks true` before cloning); the arm runs in the Linux
+container. Login state mounts at `/.uipath`,
 identical to `nightly.yaml`. Confirm that mount resolves before a full run, or
 every tenant call fails as a capability problem rather than a config one:
 
@@ -231,7 +232,7 @@ docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
   --entrypoint bash skills-codex:latest -c 'uip login status'
 ```
 
-`activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`) with `stop_early: true`: the armed `skill_triggered` criteria (`stop_when: auto`) end a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.1. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
+`activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`); arming is per-criterion — each `skill_triggered` criterion carries a `stop_early: {on_pass: stop}` block that ends a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.5: 0.9.5 removed `stop_when` and the run-level `run_limits.stop_early: true` master arm — both are hard errors now. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
 
 For **A/B comparisons between two skill variants** (e.g. `main` vs a feature branch, or two historical commits), see [`experiments/skill-comparison-playbook.md`](experiments/skill-comparison-playbook.md) and the [`experiments/skill-comparison-template.yaml`](experiments/skill-comparison-template.yaml). The playbook covers worktree setup, SHA pinning for reproducibility, getting N>1, and interpreting divergent tasks. To automate the whole flow, use the `/skill-compare <ref_a> <ref_b> [task_selector] [n_reps]` slash command — each ref can be a branch name or a commit SHA, and `task_selector` accepts a skill name (`uipath-maestro-flow`), tag list (`tags:smoke,init`), or path globs (`paths:tasks/uipath-maestro-flow/*.yaml`).
 
@@ -304,7 +305,6 @@ route — i.e. those with an `llm_judge` or `agent_judge` criterion. A task with
 
 ```bash
 cd tests && make install          # once
-make plugin-root
 SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run <task.yaml> \
   -e experiments/default.yaml -v
 ```
@@ -656,7 +656,6 @@ runs/
 
 4. **Re-run a single task with verbose output:**
    ```bash
-   make plugin-root
    SKILLS_REPO_PATH=$(cd .. && pwd) \
      .venv/bin/coder-eval run tasks/uipath-maestro-flow/smoke/init_validate.yaml \
      -e experiments/default.yaml -v

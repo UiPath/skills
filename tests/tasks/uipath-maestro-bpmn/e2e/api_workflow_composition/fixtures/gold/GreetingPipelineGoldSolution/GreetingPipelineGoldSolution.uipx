@@ -1,0 +1,17 @@
+{
+    "DocVersion": "1.0.0",
+    "StudioMinVersion": "2025.10.0",
+    "SolutionId": "98c05171-c9fc-482b-bfba-08df141bb3a6",
+    "Projects": [
+        {
+            "Type": "Api",
+            "ProjectRelativePath": "GreetingApi/project.uiproj",
+            "Id": "209a04c5-4ec9-4f90-bea4-29e31a08180b"
+        },
+        {
+            "Type": "processOrchestration",
+            "ProjectRelativePath": "GreetingProcess/project.uiproj",
+            "Id": "75a5fd8f-9d2b-4b5b-aca3-9cdbf1b398f0"
+        }
+    ]
+}

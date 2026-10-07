@@ -11,7 +11,7 @@ description: >
   that the CLI validates the comparison synchronously and refuses the mismatch.
   An agent that only flips the kind has written the bug, not the fix.
 
-  Command-construction only — no live tenant. Commands fail with auth errors;
+  Command-construction only — no live tenant. Commands fail;
   what matters is which commands the agent chooses and what expression it
   writes.
 tags: [uipath-process-mining, integration, mode:build, lifecycle:setup, model-editing, data-kind]
@@ -36,9 +36,12 @@ initial_prompt: |
   - Write any expression JSON you push to ./expression.json (this test
     inspects that exact path).
   - The `uip` CLI is available but is not connected to a live tenant.
-    Commands WILL fail with auth errors — that is expected and acceptable.
+    Commands WILL fail — that is expected and acceptable.
     Run each command exactly once regardless of errors.
     Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - If a command you needed an id from fails, substitute a placeholder id
+    of the same shape and still run the remaining commands, so we can
+    verify their shape.
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:

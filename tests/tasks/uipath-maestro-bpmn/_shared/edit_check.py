@@ -44,11 +44,35 @@ def load_original(task_dir: str, basename: str) -> ET.Element:
     return ET.parse(path).getroot()
 
 
+# Readers pick ``extensionElements`` children BY TYPE, and Studio Web, the builder SDK
+# and these fixtures disagree on the order they write them in. So its children are
+# grouped by tag before comparing. Everything outside this set stays order-sensitive:
+# variable declarations must round-trip untouched, in order.
+_UNORDERED_CONTAINERS = frozenset({"extensionElements"})
+
+
+def _children_view(element: ET.Element, views: tuple):
+    """Children in document order, or grouped by tag where readers select by type.
+
+    Sorted on the TAG alone, and Python's sort is stable, so siblings of different
+    types become order-free while siblings of the SAME type keep document order. That
+    distinction is load-bearing: readers that select by type also disagree about which
+    of several same-type siblings wins — ``ScriptReader`` in PO.BpmnEngine takes the
+    FIRST ``uipath:scriptVersion``, the local engine's parser lets the LAST
+    ``uipath:Mapping`` set the serviceType — so swapping two of a kind changes the
+    runtime contract and must not compare equal. Sorting whole views would have hidden
+    it.
+    """
+    if local(element.tag) not in _UNORDERED_CONTAINERS:
+        return views
+    return tuple(sorted(views, key=lambda view: view[0]))
+
+
 def canonical(element: ET.Element):
     """A hashable, order- and whitespace-normalized view of an element subtree."""
     text = (element.text or "").strip()
     attribs = tuple(sorted(element.attrib.items()))
-    children = tuple(canonical(child) for child in element)
+    children = _children_view(element, tuple(canonical(child) for child in element))
     return (local(element.tag), attribs, text, children)
 
 
@@ -56,8 +80,9 @@ def canonical_ex(element: ET.Element, ignore: set[str] = frozenset()):
     """Like ``canonical`` but skips child elements whose local name is in ``ignore``."""
     text = (element.text or "").strip()
     attribs = tuple(sorted(element.attrib.items()))
-    children = tuple(
-        canonical_ex(child, ignore) for child in element if local(child.tag) not in ignore
+    children = _children_view(
+        element,
+        tuple(canonical_ex(child, ignore) for child in element if local(child.tag) not in ignore),
     )
     return (local(element.tag), attribs, text, children)
 

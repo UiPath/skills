@@ -38,37 +38,40 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+  # The literal `--category <X>` checks are advisory: an agent that wraps create-resource in a
+  # shell helper or loop (`mk(){ ... --category "$1" ...; }; mk agent ...`) adds the same tools
+  # without the literal ever appearing. The live per-category check below is the gate.
   - type: command_executed
-    description: "Added an automation tool"
+    description: "Advisory: create-resource ran with a literal --category automation"
     tool_name: "Bash"
     command_pattern: '(?s)create-resource.*--category\s+"?automation'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Added an agent tool"
+    description: "Advisory: create-resource ran with a literal --category agent"
     tool_name: "Bash"
     command_pattern: '(?s)create-resource.*--category\s+"?agent\b'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Added an agentic-process tool"
+    description: "Advisory: create-resource ran with a literal --category agentic-process"
     tool_name: "Bash"
     command_pattern: '(?s)create-resource.*--category\s+"?agentic-process'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.0
+    pass_threshold: 0.0
 
   - type: command_executed
-    description: "Added an api-workflow tool"
+    description: "Advisory: create-resource ran with a literal --category api-workflow"
     tool_name: "Bash"
     command_pattern: '(?s)create-resource.*--category\s+"?api-workflow'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.0
+    pass_threshold: 0.0
 
   - type: skill_triggered
     description: "uipath-mcp-servers skill auto-loaded (inferred from the task, not named in the prompt)"
@@ -86,6 +89,17 @@ success_criteria:
   - type: run_command
     description: "Live tenant: the MCP server has all 4 resource tools"
     command: 'uip agenthub mcp-tools list --mcp "$(jq -r .slug report.json)" --folder-path Shared --output json | jq -e ".Data.Items | length >= 4"'
+    timeout: 60
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  # ProcessType is the --category value as sent (the service stores it verbatim); the RCS
+  # entity sub-types an agent may copy from `candidates` into --file map back to the category.
+  - type: run_command
+    description: "Live tenant: the MCP server has one tool per category (automation, agent, agentic-process, api-workflow)"
+    command: |-
+      uip agenthub mcp-tools list --mcp "$(jq -r .slug report.json)" --folder-path Shared --output json | jq -e '["automation", "agent", "agentic-process", "api-workflow"] - [(.Data.Items // .Data.items // [])[] | (.ProcessType // .processType // "" | ascii_downcase) | {"process": "automation", "processorchestration": "agentic-process", "api": "api-workflow"}[.] // .] | length == 0'
     timeout: 60
     expected_exit_code: 0
     weight: 6.0

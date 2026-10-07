@@ -12,12 +12,12 @@ rest of the fixture corpus).
 
 from __future__ import annotations
 
-import glob
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
+    require_no_hand_authored_package_files,
     attr,
     elements,
     fail,
@@ -63,20 +63,10 @@ def main() -> None:
     if not any(attr(f, "sourceRef") == start_id for f in elements(root, "sequenceFlow")):
         fail("trigger start event must have an outgoing sequence flow")
 
-    # Draft boundary: connection binding + package metadata are CLI-owned; the
-    # agent must not hand-author the generated package files.
-    generated = [
-        name
-        for name in (
-            "bindings_v2.json",
-            "entry-points.json",
-            "operate.json",
-            "package-descriptor.json",
-        )
-        if glob.glob(f"**/{name}", recursive=True)
-    ]
-    if generated:
-        fail(f"draft trigger should not hand-author generated package files: {generated}")
+    # Draft boundary: connection binding + package metadata are CLI-owned. Files the
+    # CLI wrote (`init` / `update-metadata`) are that boundary; hand-written ones, or a
+    # resolved connection id, are what breach it — see require_no_hand_authored_package_files.
+    require_no_hand_authored_package_files()
 
     require_no_private_connector_values(root)
     require_sequence_integrity(root)

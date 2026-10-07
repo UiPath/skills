@@ -47,7 +47,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used guardrails byo-configurations against the supplied connection — create attempt, or probe/list-validators pre-check"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+guardrails\s+byo-configurations\s+(create|probe|list-validators)(?=[\s\S]*7c2a91e4-5b83-4d1f-9a06-3e5f8b1c204d)'
+    command_pattern: '(?=[\s\S]*7c2a91e4-5b83-4d1f-9a06-3e5f8b1c204d)(?=[\s\S]*(uip|\$UIP)\s+guardrails\s+byo-configurations\s+(create|probe|list-validators))'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

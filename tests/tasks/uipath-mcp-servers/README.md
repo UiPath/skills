@@ -27,7 +27,6 @@ From the repo root:
 
 ```bash
 cd tests
-make plugin-root
 .venv/bin/coder-eval run tasks/uipath-mcp-servers/resource-create/task.yaml -e experiments/default.yaml -v
 ```
 

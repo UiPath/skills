@@ -25,6 +25,12 @@ listing silently misses them. An empty or unmatched result from a missing
 found via `registry search`, is a **false negative** — never conclude "no
 connection exists" or ask the user to create one until you have searched the
 registry for the real connector key and listed across all folders.
+Select rows by field, never by position, lower-casing `Data` keys first
+(their casing is not fixed): `uip is connections list --all-folders --output json
+| jq '.Data[] | with_entries(.key |= ascii_downcase)
+| select(.connectorkey=="<connectorKey>" and .state=="Enabled")'`.
+A truncated listing is also a false negative; see
+[cli-conventions.md](cli-conventions.md).
 
 `registry list` returns four buckets in `Data`: `ExtensionTypes` (the OOTB
 extension types, always available), `Connectors` and `Processes` (only after
@@ -76,8 +82,9 @@ opaque types such as `custom` and product-specific types such as
 to `string`, `object`, or `jsonSchema`. Leave the opaque type in place; live
 enrichment replaces it with concrete typed rows later, so do not pre-empt it.
 
-For an unresolved portable dynamic node, fill resource identity slots with the
-escaped public placeholders SKILL.md defines (`&lt;TENANT_URL&gt;`,
+For a dynamic node left unresolved (SKILL.md step 1: the user asked for a
+draft or placeholders, or no candidate pings `Enabled`), fill resource
+identity slots with the escaped public placeholders SKILL.md defines (`&lt;TENANT_URL&gt;`,
 `&lt;FOLDER_KEY&gt;`, `&lt;CONNECTION_NAME&gt;`), keep the retrieved
 context/output shape, and use only user-supplied values in the body or
 configurable context fields. Report the node as **draft** and name the
@@ -155,6 +162,35 @@ are the entity's columns, so Create and Update take their body from it.
 
 The file rows take the field as a `fieldName` path parameter. Their `V2`
 counterparts expose no field parameter, so do not use them.
+
+`QueryEntityRecordsCurated` reports an empty `RequestFields` until you pass
+the entity:
+
+```bash
+uip is resources describe <connectorKey> <object> --connection-id <id> \
+    --operation Create --field entityName=<EntityName> --output json
+```
+
+`RequestFields` then lists `_sortFieldName`. Send it only in the body; as a
+query parameter it is ignored. Always set `isAscending`: omitted, the query
+sorts ascending, whatever its `DefaultValue` says.
+
+No `uip maestro bpmn` command compiles a filter tree, so write the filter in
+`queryExpression` as a CEQL string yourself, even when the request asks for a
+FilterBuilder tree and no raw CEQL. CEQL supports `=`, `!=`, `<`, `<=`, `>`,
+`>=`, `LIKE`, `NOT LIKE`, `IN`, `NOT IN`, `IS NULL`, `IS NOT NULL`, joined by
+`AND` / `OR`; "contains" is `LIKE '%<text>%'`. A tree in `queryExpression`
+fails with `400 Error parsing query`.
+Put a requested tree in the context `metadata` at
+`activityPropertyConfiguration.configuration.essentialConfiguration.savedFilterTrees.queryExpression`,
+and say in your summary that the runtime filter is the CEQL string.
+
+```xml
+<uipath:input name="entityName" type="string" target="path" value="&lt;EntityName&gt;" />
+<uipath:input name="queryExpression" type="string" target="query" value="&lt;field&gt; = &apos;&lt;value&gt;&apos; AND &lt;field&gt; &gt;= &lt;number&gt;" />
+<uipath:input name="isAscending" type="boolean" target="query" value="false" />
+<uipath:input name="body" type="json" target="body"><![CDATA[{"_sortFieldName":"<field>"}]]></uipath:input>
+```
 
 For a Data Fabric operation not listed, drop objects whose display name ends
 in `(Preview)` or `(Deprecated)`, then prefer a path starting with `/v2/`.
@@ -274,6 +310,16 @@ reverse map accepts only those plus raw HTTP verbs, which is also exactly what
 `uip is resources run` exposes as subcommands. `--operation` takes the same
 value, so pass `--operation Create`.
 
+### Set every required `RequestFields` entry
+
+Put every `RequestFields` entry marked `Required: true` in the body under its
+described name. List them from the describe `--output json` result with
+`jq '.Data | with_entries(.key |= ascii_downcase) | .requestfields
+| map(with_entries(.key |= ascii_downcase) | select(.required) | .name)'`;
+never filter `RequestFields` by the names you expect. A missing Slack
+`messageToSend` faults with `invalid_blocks`. Describe for Jira
+`curated_create_issue` omits `fields.summary`; set it there anyway.
+
 ### Required `Parameters` are separate from the body — emit every one
 
 `uip is resources describe` reports `Parameters` alongside `RequestFields`.
@@ -292,17 +338,57 @@ runtime with `400` and `Value for required parameter '<name>' not found`. A
 required entry (Slack's `send_message_to_channel_v2` requires `send_as`), so
 check it per activity rather than assuming.
 
+### A `Reference` entry takes a looked-up value, never the display name
+
+A `Parameters` or `RequestFields` entry that carries `Reference` takes the
+`LookupValue` field of the row whose `LookupNames` match the user's value. Slack
+`ConversationsInfo_GET` parameter `conversationsInfoId` carries
+`{"ObjectName": "curated_channels", "LookupNames": ["name", "id"], "LookupValue": "id"}`:
+the value is the channel id (`C0123ABCDEF`), not `<channel-name>`. A name
+passes `validate` and faults at runtime (`channel_not_found`).
+
+List `Reference.ObjectName` itself, not a sibling object such as
+`conversations`, on the connection the node binds:
+
+```bash
+uip is resources run list uipath-salesforce-slack "curated_channels?types=public_channel,private_channel" --connection-id <id> --output json
+```
+
+- A nonzero exit or a `Result` other than `Success` is a lookup failure, not an
+  empty result.
+- Match keys inside `Data` case-insensitively (`items`, `Pagination`,
+  `HasMore`, `NextPageToken`).
+- While `HasMore` is true, re-run with `--query "nextPage=<NextPageToken>"`.
+  `pageToken=`, `page=`, and `name=` are ignored and return page 1 again. Stop
+  at the first match, or when a page adds no rows you have not already seen.
+
+No match on that connection: repeat on every other `Enabled` connection from
+`uip is connections list <connector-key> --all-folders --output json` and bind
+the one that holds it. The `IsDefault` connection can reach a workspace
+without the value. No connection holds it, or a lookup fails: stop and report
+that field. Never write the display name in its place.
+
 ## 4. Bindings — from `bindingInfo`, never invented
 
 A node that targets a cloud resource carries a binding. The `bindingInfo` on the
 extension type tells you the binding shape; the concrete value comes from
 discovery or the user.
 
-- **Resource bindings** (`bindingInfo.resource` = `process` / `queue` /
-  `businessRule`): the context field named by `bindingInfo.contextField`
-  (e.g. `releaseKey`, `queueName`) holds the resource key
-  (`bindingInfo.propertyAttribute`, usually `Key`). Resolve the real key with
-  `registry search` / discovered `Processes` / `Queues`; never guess a GUID.
+- **Resource bindings** (`bindingInfo.resource` = `process` / `queue`): the
+  context field named by `bindingInfo.contextField` (e.g. `releaseKey`,
+  `queueName`) holds the resource key (`bindingInfo.propertyAttribute`,
+  usually `Key`). Resolve the real key with `registry search` / discovered
+  `Processes` / `Queues`; never guess a GUID.
+- **Business rule bindings** (`BusinessRule`): the context `name` and
+  `folderPath` each reference a `BusinessRule` binding (`propertyAttribute`
+  `name` / `folderPath`) — never a `Key` binding or a `process` `releaseKey`,
+  even when `registry get` returns one. Both bindings carry the rule key as
+  `resourceKey`: the rule's catalog entity key, never a `Key` from `Processes`
+  or a release key; if the user has not given it, ask. Bind only a deployed
+  rule; one defined only in this solution is deployed first (SKILL.md rule 17).
+  The `folderPath` binding always carries a `default`, `""` when
+  the rule lives in the running job's folder. The unbound `_label` context
+  input holds the rule's name.
 - **Connection bindings** (`Intsvc.*`): the context references a connection via
   `=bindings.<bindingId>`, and a `<uipath:binding>` of `resource="Connection"`
   with `propertyAttribute="ConnectionId"` in the process-level
@@ -320,10 +406,16 @@ block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, an
 `default` value (the resolved key or id). On a **connection** binding
 `resourceKey` is required too — omitting it fails `validate` with
 `Integration Service activity connection binding "<id>" is missing
-resourceKey`. Other binding kinds (`process`, `queue`, `businessRule`) carry
-no `resourceKey`; do not invent one.
+resourceKey`. `process` and `queue` bindings carry `resourceKey` from
+`bindingInfo.resourceKeyPattern`. Both `BusinessRule` bindings carry the same
+`resourceKey`, the rule key:
 
-A folder-scoped connector activity needs TWO bindings that share one
+```xml
+<uipath:binding id="Binding_RuleName"   name="name"         type="string" resource="BusinessRule" propertyAttribute="name"       resourceKey="<RULE_KEY>" default="<RULE_NAME>" />
+<uipath:binding id="Binding_RuleFolder" name="folderPath"   type="string" resource="BusinessRule" propertyAttribute="folderPath" resourceKey="<RULE_KEY>" default="" />
+```
+
+Every `Intsvc.ActivityExecution` bound to a connection needs TWO bindings that share one
 `resourceKey` (the connection id) and differ in `propertyAttribute`: the
 connection binding's `default` is the connection id, the folder binding's
 `default` is the folder key.
@@ -350,15 +442,18 @@ lookup misses, producing
 naming the activity when the defect is one attribute on the binding. The
 `folderKey` input is read separately and never goes through the lookup.
 
-## Agent wrapper selection — pick by `processType`, not the label
+## Agent wrapper selection — pick by `ProcessType`, not the label
 
 When a node invokes an agent, choose the wrapper by the resource's
-**`processType`** (from `uip or processes list --all-fields`), not its display
-label:
+**`ProcessType`**, not its display label. The default
+`uip or processes list --folder-path <path> --output json` row has no
+`ProcessType`; add `--all-fields` to the same call and read `ProcessType`,
+`Key`, and `FolderKey` from that one response — same PascalCase as the
+default list; `--all-fields` only adds fields, it does not change casing.
 
-- Coded Python agents publish as `processType: "Function"` — use the
+- Coded Python agents publish as `ProcessType: "Function"` — use the
   `Orchestrator.StartJob` process contract, **not** `StartAgentJob`.
-- Agent Builder (low-code) publishes as `processType: "Agent"` →
+- Agent Builder (low-code) publishes as `ProcessType: "Agent"` →
   `Orchestrator.StartAgentJob`.
 - External A2A agent addressed by URL / skillId → `A2A.AgentExecution`.
 - Integration Service external agent → `Intsvc.*AgentExecution`.
@@ -368,20 +463,66 @@ Action dropdown** in Studio Web. Do not use it for a folder-deployed agent — t
 canvas treats the task as misconfigured. Use `StartAgentJob`/`StartJob` for
 folder-deployed resources.
 
-## API workflow — wait vs fire-and-forget
+## API workflow invocation — `ExecuteApiWorkflowAsync` waits, despite the name
 
-Pick the wrapper by whether downstream needs the invocation result:
-`Orchestrator.ExecuteApiWorkflow` **waits** for completion (result available to
-later nodes); `Orchestrator.ExecuteApiWorkflowAsync` **returns immediately**
-(fire-and-forget). Both are `bpmn:serviceTask` activities. Resolve `ReleaseKey`
-(process GUID), `FolderKey`/`FolderPath`, and the request/response schemas before
-the node is runnable — make the wait-versus-async choice explicit in the model.
+There is one registry type for invoking a published API workflow from a
+`bpmn:serviceTask`: `Orchestrator.ExecuteApiWorkflowAsync`. Its display label —
+`Start and wait for API workflow` — is the accurate behavior: it **waits** for
+completion and the result is available to later nodes. There is no separate
+fire-and-forget API-workflow wrapper; do not model one. Resolve the invoked
+workflow's release key and folder key, plus its request/response schemas,
+before the node is runnable — the served template is broken as-is; see the
+next section for the fix.
+
+## Job-wrapper v1 trap — `releaseKey` templates are unrunnable
+
+`Orchestrator.StartJob`, `Orchestrator.ExecuteApiWorkflowAsync`, and
+`Orchestrator.StartAgenticProcess[Async]` / `StartCaseMgmtProcess[Async]` all
+serve the same **v1** `xmlTemplate`:
+`<uipath:activity version="v1">` with a hidden, unbound `releaseKey` /
+`folderId` / `folderPath` / `name` context (`binding: false` on every field
+except `releaseKey`, which carries `bindingInfo` — `resource: "process"`,
+`propertyAttribute: "Key"` — in `validator/bpmn-spec.json`). Pasted with the
+template's blank placeholders it passes `validate` and packs clean, then
+faults at runtime because nothing ever resolves `releaseKey`
+(`ExecuteApiWorkflowAsync`: `170009 Could not get value for key:ReleaseKey
+from context in input`).
+
+**The fix is not to drop `releaseKey` — it is to resolve it, and to correct
+the template's second bug.** Verified end-to-end for
+`Orchestrator.ExecuteApiWorkflowAsync` against a live deployed API workflow:
+
+1. **Bind `releaseKey`** via the resource-binding mechanism this field's
+   `bindingInfo` already documents (see [§4
+   Bindings](#4-bindings--from-bindinginfo-never-invented) above): a
+   process-kind `<uipath:binding resource="process" propertyAttribute="Key"
+   resourceKey="<RELEASE_KEY>" default="<RELEASE_KEY>" />`, referenced from the context as
+   `=bindings.<id>`. Resolve `<RELEASE_KEY>` from `uip or processes list
+   --folder-path <path> --output json` → the deployed resource's
+   `Key` — never leave the template's `{releaseKey}` placeholder unresolved.
+2. **The template's `folderId` context field is misnamed — the runtime reads
+   `folderKey`, not `folderId` or `folderPath`.** Populating `releaseKey`
+   alone still faults with `Could not get value for key:FolderKey from
+   context in input`. Add a context field literally named `folderKey` holding
+   the target folder's `FolderKey` GUID (the same `or processes list`
+   response carries it as `FolderKey`) — a plain literal value, not a binding.
+   Re-read it after every deploy: `deploy run` creates a new folder.
+3. With both fields correct — `releaseKey` bound to the resource's real `Key`,
+   `folderKey` literal to the folder's real `FolderKey` — the node runs to
+   completion. For `Orchestrator.ExecuteApiWorkflowAsync`, drop the
+   template's own `folderId`/`folderPath`/`name` context fields.
+
+For the other types in the list, apply step 1 only. Apply step 2 after a
+live run faults with `key:FolderKey`; without a run, report the node
+unverified.
 
 When the caller asks for API workflow invocation/status/result fields, map those
 fields as `uipath:output` rows on the API workflow `bpmn:serviceTask` itself
 using the discovered output names/types and `source` expressions, for example
 `source="=invocation"`, `source="=status"`, and `source="=result"` (or the exact
-schema fields returned by discovery). Do not add a downstream script task solely
+schema fields returned by discovery). For a `=result.<key>` source, use the key
+a debug run showed when one ran (SKILL.md rule 17 step 5); otherwise use the
+schema field name and report the mapping as unverified. Do not add a downstream script task solely
 to split the API workflow service-task result into variables; that hides the
 requested service-task output contract from the model.
 
@@ -413,10 +554,20 @@ rows (`uipath-uipath-jdbc`) it is the only path; take its object from
 return an empty list without `--connection-id`.
 
 `registry get` returns the node template and its `InputFields`, not the event
-schema. That comes from `uip is triggers describe`: build the filter tree's
-leaves from its `FilterFields`, never from an activity's `RequestFields`;
-`EventParameters` are the trigger's scoping inputs, `OutputFields` the event
-payload.
+schema. That comes from `uip is triggers describe`: build the filter from its
+`FilterFields`, never from an activity's `RequestFields`; `EventParameters` are
+the trigger's scoping inputs, `OutputFields` the event payload.
+
+The runtime reads only a `target="body"` input; the template's `filter` and
+`parameters` fields, and any sibling input without `target`, are dropped. Write one
+`body` input as a sibling of `uipath:context`: `queryParams` holds the
+`EventParameters`; `filters.expression` AND-joins one equality clause per event
+parameter with the `FilterFields` conditions. No filter tree; only the
+expression is evaluated.
+
+```xml
+<uipath:input name="body" type="json" target="body"><![CDATA[{"filters":{"expression":"(parentFolderId == '<INBOX_ID>') && (contains(subject, 'Invoice'))"},"queryParams":{"parentFolderId":"<INBOX_ID>"}}]]></uipath:input>
+```
 
 `uip is triggers` and `registry get` uppercase the operation, so a connector
 whose trigger operations are mixed case (`uipath-uipath-testmanager`:
@@ -502,7 +653,7 @@ exact template for any of them with `registry get <type>`.
 | `Orchestrator.StartCaseMgmtProcess[Async]` | `bpmn:callActivity` | activity |
 | `Intsvc.ActivityExecution` | `bpmn:sendTask` | activity |
 | `Intsvc.HttpExecution` / `Intsvc.UnifiedHttpRequest` | `bpmn:sendTask` | activity |
-| `Intsvc.WaitForEvent` | `bpmn:receiveTask` | event |
+| `Intsvc.WaitForEvent` | `bpmn:receiveTask`; or its `uipath:event` block on a `bpmn:intermediateCatchEvent` (incoming + outgoing) or a `bpmn:boundaryEvent` (`attachedToRef`, outgoing only), with a bare `<bpmn:messageEventDefinition />` after the flows | event |
 | `Intsvc.EventTrigger` | `bpmn:startEvent` | event |
 | `Intsvc.TimerTrigger` | `bpmn:startEvent` | activity |
 | `Intsvc.{Async,SyncAgent,AsyncAgent,SyncWorkflow,AsyncWorkflow}Execution` | `bpmn:serviceTask` | activity |
@@ -515,12 +666,6 @@ exact template for any of them with `registry get <type>`.
 
 This table is a discovery aid, not a substitute for `registry get` — always pull
 the live template before authoring.
-
-If a registry `xmlTemplate` returns a PascalCase BPMN host tag such as
-`bpmn:SendTask` or `bpmn:ReceiveTask`, normalize only the BPMN host element
-names to the serializer's lower-camel form (`bpmn:sendTask`,
-`bpmn:receiveTask`) when inserting it into a source file. Keep the
-`uipath:*` payload and its `uipath:type` value unchanged.
 
 Event types stay event-wrapped even when you place them on task-like BPMN
 hosts: `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,

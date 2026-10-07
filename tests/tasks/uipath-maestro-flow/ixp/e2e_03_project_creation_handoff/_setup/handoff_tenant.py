@@ -44,6 +44,10 @@ IXP_NODE_PREFIX = "uipath.ixp."
 # domain, not a judgment about whether it's a defect.
 DOMAIN_MARKERS = ("falconry", "bird-of-prey", "bird_of_prey")
 
+# Page size for the tenant process-feed listings (`or packages list/versions`).
+# A full page is reported, never silently treated as the whole feed.
+PACKAGE_LIST_LIMIT = "100"
+
 # Folder deletes can fail transiently (provisioning race on a just-created
 # folder). Retried briefly wherever a folder is deleted. Env-tunable so the
 # unit-test suite is not slowed by real sleeps.
@@ -270,3 +274,60 @@ def delete_folder_with_retry(folder_key: str) -> subprocess.CompletedProcess[str
             time.sleep(FOLDER_DELETE_RETRY_SECONDS)
     assert completed is not None
     return completed
+
+
+def list_domain_package_versions() -> list[dict[str, Any]]:
+    """Every version of every fixture-domain package in the tenant process feed.
+
+    Packages are TENANT-scoped: deleting the run folder removes the process an
+    agent bound there but leaves the uploaded .nupkg in the feed. Each run that
+    deploys its flow therefore leaks one, and the next run naming its flow the
+    obvious way (`FalconryLicenceFlow`) gets `HTTP 409: Package already exists`.
+    Returns `{Key: "Id:Version", Published: ISO}` records.
+    """
+    package_ids: set[str] = set()
+    # Both casings: agents name packages `Falconry…`, and the feed's search is
+    # not verified to be case-insensitive. Matching below is case-insensitive.
+    terms = sorted({term for marker in DOMAIN_MARKERS for term in (marker, marker.title())})
+    for marker in terms:
+        payload = run_uip_json(
+            ["or", "packages", "list", "--search", marker,
+             "--limit", PACKAGE_LIST_LIMIT, "--output", "json"]
+        )
+        if (payload.get("Pagination") or {}).get("HasMore"):
+            print(f"WARN: package search '{marker}' filled a page; some leaks stay")
+        for package in payload.get("Data") or []:
+            package_id = str(package.get("Key") or "").rpartition(":")[0]
+            if package_id and matches_fixture_domain(package_id):
+                package_ids.add(package_id)
+    versions: list[dict[str, Any]] = []
+    for package_id in sorted(package_ids):
+        payload = run_uip_json(
+            ["or", "packages", "versions", package_id,
+             "--limit", PACKAGE_LIST_LIMIT, "--output", "json"]
+        )
+        versions.extend(payload.get("Data") or [])
+    return versions
+
+
+def list_folder_process_packages(folder_key: str) -> list[str]:
+    """`Id:Version` package keys of the processes bound in one folder."""
+    payload = run_uip_json(
+        ["or", "processes", "list", "--folder-key", folder_key, "--output", "json"]
+    )
+    return [
+        f"{process['ProcessKey']}:{process['ProcessVersion']}"
+        for process in payload.get("Data") or []
+        if process.get("ProcessKey") and process.get("ProcessVersion")
+    ]
+
+
+def delete_package(package_key: str) -> bool:
+    """Delete one package version from the tenant feed; True when it went."""
+    completed = run_uip(["or", "packages", "delete", package_key, "--yes", "--output", "json"])
+    if completed.returncode == 0:
+        print(f"OK: deleted package '{package_key}'")
+        return True
+    detail = (completed.stdout or completed.stderr).strip()
+    print(f"WARN: could not delete package '{package_key}' (exit {completed.returncode}): {detail}")
+    return False

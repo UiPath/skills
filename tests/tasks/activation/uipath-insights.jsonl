@@ -53,3 +53,6 @@
 {"id": "uipath-insights-053", "prompt": "Rename my Insights dashboard and put the failures chart first.", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-054", "prompt": "Delete the test Insights dashboard I made yesterday, but keep a copy of it.", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-055", "prompt": "Give the new order process the same Insights dashboard the old one has.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-056", "prompt": "Our Azure Event Hub export went quiet yesterday. Is Insights still able to reach it?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-057", "prompt": "Which export destinations has our organization configured in Insights?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-058", "prompt": "Do we already have an Insights export pointed at an SQS queue?", "expected_skill": "uipath-insights"}

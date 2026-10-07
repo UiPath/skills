@@ -28,10 +28,18 @@ Each plugin's `planning.md` says how to read that element out of the SDD and wha
 
 ## Step 0 — Resolve the `uip` binary
 
-`uip` is installed via npm. Resolve the binary (it may not be on PATH in nvm environments), capture its version, and upgrade only when the installed version is **older** than the latest published `@uipath/cli` — dev builds may be newer than the npm release, leave those alone:
+Resolve the `uip` binary (it may not be on PATH in nvm environments), capture its version, and upgrade only when the installed version is **older** than the latest published `@uipath/cli` — dev builds may be newer than the npm release, leave those alone. If `uip` is absent on a fresh machine, stop and ask the user to run the official installer first; do not auto-run an installer from this resolver.
 
 ```bash
-UIP=$(command -v uip 2>/dev/null || echo "$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip")
+UIP=$(command -v uip 2>/dev/null || true)
+if [ -z "$UIP" ] && command -v npm >/dev/null 2>&1; then
+  UIP="$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip"
+fi
+if [ -z "$UIP" ] || [ ! -x "$UIP" ]; then
+  echo "UiPath CLI not found. Ask the user to run the official installer, then rerun this step with PATH updated:" >&2
+  echo "  curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash" >&2
+  exit 2
+fi
 CURRENT=$($UIP --version 2>/dev/null | awk '{print $NF}')
 LATEST=$(npm view @uipath/cli version 2>/dev/null)
 OLDEST=$(printf '%s\n%s\n' "$LATEST" "$CURRENT" | sort -V | head -n1)
@@ -44,7 +52,7 @@ $UIP --version
 
 Use `$UIP` in place of `uip` for all subsequent commands if the plain `uip` command isn't found.
 
-If `npm install -g` fails with a permission error, prompt the user to re-run it with the appropriate privileges (e.g., `sudo npm install -g @uipath/cli@latest`) — do not retry automatically.
+On Windows PowerShell, ask the user to run `irm https://download.uipath.com/uipath-cli/install.ps1 | iex` for the fresh-machine bootstrap. If `npm install -g` fails with a permission error during an upgrade, prompt the user to re-run it with the appropriate privileges (e.g., `sudo npm install -g @uipath/cli@latest`) — do not retry automatically.
 
 ## Step 1 — HARD GATE: check login and pull registry
 
@@ -67,7 +75,7 @@ Accept the `sdd.md` file path from the user, or ask if not provided. When the di
 
 If the resolved path has **no `sdd.md`**, the skill hands the design to the `uipath-planner` Case Design Lane in this conversation before this step (SKILL.md Rule 16 + § Design handoff). Phase 1 begins after the Case Review's Build answer, once the lane has written `sdd.md`. The in-memory model that rendered the file drives planning directly (Rule 2 — do not re-read the just-written file); the Case Review is approval context, not a parsing source.
 
-`sdd.md` is the **sole required input**. It describes stages, tasks, conditions, SLA, component types, persona information, and provides the search keys for registry lookups. The portable name is type-specific: `Resolved Resource` for process/agent/rpa/api-workflow, the Action App title in `HITL Implementation` for action, and `Child Case` for case-management. The corresponding identity cell (`Resource Identity` or `Action App ID`) says whether an earlier phase resolved it. (The SDD does not describe edges — transitions are stage entry/exit conditions; Rule 21.) The skill does not validate or gap-fill sdd.md — trust it as written. (The delegated design lane may have produced it; once approved, Rule 2 applies regardless of source.)
+`sdd.md` is the **sole required input**. It describes stages, tasks, conditions, SLA, component types, persona information, and provides the search keys for registry lookups. The portable name is type-specific: `Resolved Resource` for process/agent/rpa/api-workflow/function, the Action App title in `HITL Implementation` for action, and `Child Case` for case-management. The corresponding identity cell (`Resource Identity` or `Action App ID`) says whether an earlier phase resolved it. (The SDD does not describe edges — transitions are stage entry/exit conditions; Rule 21.) The skill does not validate or gap-fill sdd.md — trust it as written. (The delegated design lane may have produced it; once approved, Rule 2 applies regardless of source.)
 
 > **Cache-state distinction — mandatory.** Step 1 refreshes discovery state; it does not validate or override sdd.md. Before a successful pull, a missing cache directory or type index is a failed refresh precondition, not evidence that the SDD resource is unavailable. After a successful pull, search by the SDD's concrete portable name; only an empty exact-name match set (or a still-absent type index) is a genuine empty lookup. An `<UNRESOLVED>` identity or folder means name-only discovery, not permission to skip discovery.
 
@@ -100,12 +108,12 @@ Otherwise, continue with the normal resolution path:
 
 1. **Identify the plugin** by matching the sdd.md component description to an entry in the catalogs below (§3.1–§3.3).
 2. **Load the plugin's `planning.md` — once per plugin type, not per component.** It lists the exact fields to resolve from sdd.md, the cache file(s) to consult, and any discovery steps required. Group the SDD's components by plugin type, read that plugin's `planning.md` a single time, then resolve and emit EVERY component of that type from the one read. Re-reading a plugin reference per element is a read-budget defect (observed: `planning.md` re-read 10–16×, `impl-json.md` up to 26× per build); after context compaction, re-read only the plugin for the section in progress.
-3. **Resolve every task in one call** — `uip maestro case sdd resolve "<SDD_PATH>" --out tasks/registry-resolved.json --output json` (SKILL.md Rule 3). It reads each task's type-specific portable name (`Resolved Resource` for process/agent/rpa/api-workflow, the Action App title for action, `Child Case` for case-management), searches the matching index, narrows by folder, and writes the whole Rule 10 ledger. `Data.Counts` says how many it selected; `Data.Unresolved[]` lists the rest. A missing or `<UNRESOLVED>` portable name violates the SDD contract and must be surfaced instead of silently falling back to `Task Name`.
+3. **Resolve every task in one call** — `uip maestro case sdd resolve "<SDD_PATH>" --out tasks/registry-resolved.json --output json` (SKILL.md Rule 3). It reads each task's type-specific portable name (`Resolved Resource` for process/agent/rpa/api-workflow/function, the Action App title for action, `Child Case` for case-management), searches the matching index, narrows by folder, and writes the whole Rule 10 ledger. `Data.Counts` says how many it selected; `Data.Unresolved[]` lists the rest. A missing or `<UNRESOLVED>` portable name violates the SDD contract and must be surfaced instead of silently falling back to `Task Name`.
 4. **Work only what resolve left.** Apply [registry-discovery.md](registry-discovery.md) — and a plugin `planning.md`'s Registry Resolution section — by hand to the `Data.Unresolved[]` entries alone: an `absent` entry runs the cross-type fallback and in-solution sibling check before the Rule 18 gate; an `ambiguous` one takes the match priority there. Never re-search a task resolve selected, and never rewrite its entry.
 
 ### 3.1 Task Type catalog
 
-> **Closed enum — 9 values.** sdd.md `Type:` and caseplan.json `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 17 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
+> **Closed enum — 11 values.** sdd.md `Type:` and caseplan.json `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 17 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
 
 | sdd.md `Type:` / caseplan.json `type` | Plugin folder |
 |---|---|
@@ -114,12 +122,14 @@ Otherwise, continue with the normal resolution path:
 | `rpa` | `plugins/tasks/rpa/` |
 | `action` | `plugins/tasks/action/` |
 | `api-workflow` | `plugins/tasks/api-workflow/` |
+| `function` | `plugins/tasks/function/` |
+| `business-rule` | `plugins/tasks/business-rule/` |
 | `case-management` | `plugins/tasks/case-management/` |
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 
-> **`agent` & `api-workflow` — create-on-missing.** Both kinds can be built inline at the Rule 18 gate — flow in [§ 3.4](#34-unresolved-resources); type specifics: [agent](plugins/tasks/agent/planning.md#creating-an-agent-inline) / [api-workflow](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline). All other kinds (regular RPA `process`, action, connectors, agentic process) use the §3.4 placeholder path.
+> **`agent` & `api-workflow` — create-on-missing.** Both kinds can be built inline at the Rule 18 gate — flow in [§ 3.4](#34-unresolved-resources); type specifics: [agent](plugins/tasks/agent/planning.md#creating-an-agent-inline) / [api-workflow](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline). All other kinds (regular RPA `process`, action, function, connectors, agentic process) use the §3.4 placeholder path.
 
 ### 3.2 Trigger Type catalog (case-level)
 

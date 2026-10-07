@@ -114,21 +114,34 @@ For the app's **JS/TS function backend** — authoring the `defineFunction` endp
 ## CLI Setup
 
 ```bash
-# Install the UiPath CLI (run once)
-npm install -g @uipath/cli
+# Fresh macOS/Linux machine: installs Node.js >= 20, uip, agent skills, .NET SDK 8.0, and Python 3.11-3.14
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
+
+# Resolve the CLI binary before using it
+UIP=$(command -v uip 2>/dev/null || true)
+if [ -z "$UIP" ] && command -v npm >/dev/null 2>&1; then
+  UIP="$(npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip"
+fi
+if [ -z "$UIP" ] || [ ! -x "$UIP" ]; then
+  echo "UiPath CLI not found after bootstrap. Update PATH for this host, then rerun this step." >&2
+  exit 2
+fi
+$UIP --version
 
 # Install the coded apps tool
-uip tools install @uipath/codedapp-tool
+$UIP tools install @uipath/codedapp-tool
 
 # Install the Orchestrator tool (needed to resolve folder name → key for deploy)
-uip tools install @uipath/orchestrator-tool
+$UIP tools install @uipath/orchestrator-tool
 
 # Verify both are installed
-uip tools list
+$UIP tools list
+```
 
-# Resolve uip if not on PATH
-UIP=$(command -v uip 2>/dev/null || npm root -g 2>/dev/null | sed 's|/node_modules$||')/bin/uip
-$UIP --version
+Windows PowerShell fresh-machine setup:
+
+```powershell
+irm https://download.uipath.com/uipath-cli/install.ps1 | iex
 ```
 
 Authenticate before any cloud command:
@@ -144,14 +157,17 @@ uip login --authority https://alpha.uipath.com   # non-production environments
 #   Apps.Read Apps.Write  → Apps-service registration in `uip codedapp publish`
 # Do NOT substitute granular Orchestrator scopes (OR.Folders/OR.Execution/
 # OR.Administration) for OR.Default.
+# Credentials come from env vars via the CLI's env.<NAME> syntax — never inline.
 uip login \
-  --client-id <id> \
-  --client-secret <secret> \
+  --client-id env.UIPATH_CLIENT_ID \
+  --client-secret env.UIPATH_CLIENT_SECRET \
   --organization <org> \
   --tenant <tenant> \
   --scope "OR.Default Apps.Read Apps.Write" \
   --authority https://alpha.uipath.com   # omit --authority for production
 ```
+
+> **Never handle the client secret in the conversation.** Do not ask the user to paste it into chat, do not write it into a command line or file, and do not echo it. If `UIPATH_CLIENT_ID` / `UIPATH_CLIENT_SECRET` are not set, ask the user to export them in their own shell, then run the command above.
 
 > **The `uip login` session scope is separate from the app's runtime OAuth scopes.** The scopes in `uipath.json` are what the *deployed app* requests at runtime (see [oauth-scopes.md](references/oauth-scopes.md)). The `--scope` on `uip login` above is what the *CLI session* needs to call the Apps registration API during `uip codedapp publish`. `uip codedapp publish` does two things: uploads the package (needs `OR.Default`) **and** registers the coded app (needs `Apps.Read Apps.Write`). For what each failure looks like, see [debug.md](references/debug.md#publish--deploy-fails-under-a-client-credentials-login).
 

@@ -35,11 +35,24 @@ If you don't yet have values, omit the flag — the default empty `caseShape` is
 ```jsonc
 {
     "eventParameters": {},   // optional — design-time params scoping the trigger
+    "queryParameters": {},   // optional — trigger query params (scope selectors, resource pickers)
+    "pathParameters":  {},   // optional — trigger path params
     "filter":          {}    // optional — FilterTree (compiles to JMESPath)
 }
 ```
 
 Empty input details (`{}`) is valid and a no-op — equivalent to omitting the flag.
+
+#### `--trigger-kind` (trigger only)
+
+A case start trigger and a wait-for-connector task share one TypeCache entry; the runtime tells them apart only by `activityType`. Always pass it:
+
+| `--trigger-kind` | Use for |
+|---|---|
+| `start` | case-level start trigger (`Intsvc.EventTrigger` on the trigger node) |
+| `wait-for` (default) | in-stage `wait-for-connector` task, or a connector-bound condition rule |
+
+A start trigger spec'd without `--trigger-kind start` is typed as a wait and never fires.
 
 ---
 
@@ -85,7 +98,7 @@ A different Send Email-like operation (Microsoft Graph passthrough, Gmail API, c
 
 **Rejected for synthetic HTTP request activities** (`objectName === "httpRequest"` / `"http-request"`) — the synthetic activity has no curated body schema.
 
-### `queryParameters` (activity only)
+### `queryParameters` (activity)
 
 Object keyed by query-string param name. Merged into the existing query body (so `case spec` defaults are preserved unless you override them).
 
@@ -98,7 +111,7 @@ Object keyed by query-string param name. Merged into the existing query body (so
 }
 ```
 
-### `pathParameters` (activity only)
+### `pathParameters` (activity)
 
 Object keyed by path-template variable name. Used for endpoints like `/UpdateEvent/{id}`.
 
@@ -146,7 +159,19 @@ The same combined expression also lands at `caseShape.context[name="metadata"].b
 
 For Outlook 365 `EMAIL_RECEIVED`, `parentFolderId` is required. The connector contract is in `inputs.eventParameters[?required]`, a sibling of `caseShape` in the spec response — consult that array to know which event params your trigger needs.
 
-> **Note:** `body.parameters` is not emitted for triggers. The FE reserves that key for queryParameters/pathParameters, neither of which exists in the trigger input contract.
+> **Note:** event parameters never reach `body.parameters`. That key holds the trigger's query and path values — see the next section.
+
+### `queryParameters` / `pathParameters` (trigger)
+
+Some triggers are scoped by query or path parameters that are not event parameters, such as a scope selector or a resource picker. `case spec` lists them under `inputs.queryParameters` / `inputs.pathParameters`. Their values land in `caseShape.inputs[name="body"].body.parameters` (merged) and in `caseShape.context[name="metadata"].body.inputMetadata.triggerQueryParameters` / `triggerPathParameters`.
+
+```jsonc
+{
+    "queryParameters": { "<scope field>": "<lookup value>", "<picker field>": "<resource name>" }
+}
+```
+
+A solution-resource picker among them is resolved into the solution as for activities ([connector-activity impl-json.md § Step 1](plugins/tasks/connector-activity/impl-json.md)): both copies become `=bindings.{{RESOURCE_BINDING_ID:<field>}}` and `resourceBindings` lists the rows to mint.
 
 > **What NOT to do:** don't duplicate a connector-mandated event-param value in the freeform `filter` tree. The CLI AND-joins the mandatory expression automatically; duplicating the clause would double-apply it (e.g. `(parentFolderId == 'Inbox') && (parentFolderId == 'Inbox' && ...)`). Set required event-param values via `eventParameters` ONLY.
 
