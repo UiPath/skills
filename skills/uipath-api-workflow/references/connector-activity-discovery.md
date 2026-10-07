@@ -378,6 +378,7 @@ You don't pick the form — `connectorKey` does. Trying to use Http kind with a 
 
 The HTTP-passthrough variant (`UiPath.Http` with `bodyParameters.targetConnector` pointing at a vendor) is **NOT generally available** — it requires a special UiPath HTTP-connector connection that's been authorized for the vendor. Don't use it unless you know you have such a connection.
 
+<<<<<<< HEAD
 ### Http kind — `call: "UiPath.Http"` (HTTP Request curated activity)
 
 The Http kind has a fixed shape: `with.method` is always `"POST"` (the outer wrapper), `with.endpoint` is always `"/http-request"`. The actual HTTP call lives in `bodyParameters`:
@@ -714,9 +715,12 @@ The resulting workflow activity (drop into the root sequence):
 ```
 
 The `unifiedTypesCompatible: true` + `savedJitInputFieldId: "in_http-request"` flags inside `essentialConfiguration` are what tell StudioWeb to render the unified HTTP card.
+=======
+Example: stub the HTTP Request activity with `--inputs '{"url":"https://api.example.com/facts/random","method":"GET"}'`.
+>>>>>>> 85a3ffa6b (fix(skills): replace third-party public API hosts in examples with example.com)
 
 <!--skill-flavor:http-example-execution-proof:start-->
-Verified end-to-end: `uip api-workflow run --no-auth` on the resulting workflow returns `statusCode: 200`, `content.fact: "..."`. StudioWeb's designer renders the activity as the unified HTTP Request card. See [../assets/templates/connector-call-example.json](../assets/templates/connector-call-example.json) for a complete stub-generated workflow.
+Against a live endpoint, `uip api-workflow run --no-auth` on the resulting workflow returns `statusCode: 200` with the parsed response body under `content`. StudioWeb's designer renders the activity as the unified HTTP Request card. See [../assets/templates/connector-call-example.json](../assets/templates/connector-call-example.json) for a complete stub-generated workflow.
 <!--skill-flavor:http-example-execution-proof:end-->
 
 ## Worked example — Outlook Get Newest Email (IntSvc kind)
