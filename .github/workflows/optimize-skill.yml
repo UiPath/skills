@@ -5,9 +5,10 @@ run-name: Optimize skill · ${{ inputs.skill }} · @${{ github.actor }}
 # Self-serve token optimization for skill owners. Queues the skill-trimming optimizer's
 # ADO pipeline (UiPath/skill-trimming-optimizer, .azure-pipelines/optimize-bundle.yml),
 # which shortens the description, body and references, gates every cut on this repo's
-# eval tasks (dev runs + a full-suite docker verdict), and opens a DRAFT PR here with the
-# report. The heavy run stays on ADO (a 16 vCPU / 64 GB BYOS agent, multi-hour, Key
-# Vault secrets); this workflow only checks who is asking and queues it.
+# eval tasks (dev runs + a full-suite final verdict), and opens a DRAFT PR here with the
+# report. The heavy run stays on ADO (a 16 vCPU / 64 GB BYOS agent — Linux, or Windows for
+# skills whose tasks need it, picked by the pipeline — multi-hour, Key Vault secrets);
+# this workflow only checks who is asking and queues it.
 #
 # Who can run it: a CODEOWNER of skills/<skill>/ (a listed user, or an active member of a
 # listed team when the token can read it), or one of OPTIMIZER_MAINTAINERS below.
@@ -37,7 +38,7 @@ on:
         type: boolean
         default: true
       final_gate:
-        description: 'Final docker gate: luna (always) · opus / terra add a 1-seed arm on that model.'
+        description: 'Final verdict: luna (always) · opus / terra add a 1-seed arm on that model (Linux skills only for now — Windows skills such as uipath-rpa need luna).'
         type: choice
         options: [luna, opus, terra, opus+terra]
         default: luna
@@ -173,7 +174,7 @@ jobs:
             echo
             echo "ADO run: $URL"
             echo
-            echo "It runs for several hours. When every gate passes, a **draft PR** opens on this repo with the report, and you are requested as its reviewer."
-            echo "No PR opens if the docker verdict finds a regression, the budget cap is hit, or a HIGH faithfulness finding remains; the ADO run's summary says why."
+            echo "It runs for several hours; skills whose tasks need Windows (uipath-rpa, uipath-activity-migrator) run on a Windows agent and can take up to a day. When every gate passes, a **draft PR** opens on this repo with the report, and you are requested as its reviewer."
+            echo "No PR opens if the final verdict finds a regression, the budget cap is hit, or a HIGH faithfulness finding remains; the ADO run's summary says why."
           } >> "$GITHUB_STEP_SUMMARY"
           echo "Queued: $URL"
