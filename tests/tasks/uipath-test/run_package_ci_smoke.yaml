@@ -1,4 +1,8 @@
+# skip:true until a uip release ships `tm run --type package` (UiPath/cli#4845):
+# CI installs @uipath/cli@latest, which does not have the command yet, so the
+# graded report can never be written. Flip to skip:false after that release.
 task_id: skill-test-run-package-ci-smoke
+skip: true
 description: >
   Smoke test: agent uses the uipath-test skill to run every test in a package
   that is already uploaded to Orchestrator, the way a CI step would, with
