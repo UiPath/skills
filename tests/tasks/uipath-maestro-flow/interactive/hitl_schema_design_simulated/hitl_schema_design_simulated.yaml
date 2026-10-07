@@ -127,8 +127,8 @@ success_criteria:
     pass_threshold: 0
 
   # Advisory (weight 0, pass_threshold 0): confirms the simulator kept the fixed
-  # priority sentence in its opener. A 0 here means a priority miss above
-  # measured the simulator, not the agent.
+  # priority sentence in its opener. A 0 here means the opener drifted, so a
+  # priority miss above may reflect the simulator, not the agent.
   - type: llm_judge
     description: "Advisory: the simulated user's opening message contains the fixed priority sentence"
     weight: 0
@@ -140,5 +140,4 @@ success_criteria:
       contains this sentence word for word (ignore case, surrounding quotes and
       trailing whitespace): "The review is time-sensitive, so the review task
       itself must be marked High priority." Score 0.0 if the sentence is
-      missing, split, reworded, or attached to something other than the review
-      task. Ignore every other turn and the agent's messages.
+      missing, split, or reworded. Ignore every other turn and the agent's messages.
