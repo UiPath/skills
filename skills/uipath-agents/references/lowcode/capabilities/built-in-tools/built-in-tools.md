@@ -53,7 +53,7 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 1. **Author** the agent-level `resources/{ToolName}/resource.json` with the canonical shape from the per-tool walkthrough.
 2. **Refresh** with `uip agent refresh "<AGENT_NAME>" --output json` — regenerates `entry-points.json` and `bindings_v2.json`.
 3. **Validate** with `uip agent validate "<AGENT_NAME>" --output json` (read-only check).
-4. **Bundle and upload** the solution. No solution-resource refresh needed.
+4. **Upload** the solution with `uip solution upload . --output json`. No solution-resource refresh needed.
 
 ## Tool Registry
 

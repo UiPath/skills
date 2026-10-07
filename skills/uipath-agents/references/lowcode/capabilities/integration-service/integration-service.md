@@ -323,8 +323,7 @@ uip solution resources refresh --output json
 At this point, the solution can be uploaded to Studio Web and tested:
 
 ```bash
-uip solution bundle . -d ./dist --output json
-uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
+uip solution upload . --output json
 ```
 
 ## Gotchas

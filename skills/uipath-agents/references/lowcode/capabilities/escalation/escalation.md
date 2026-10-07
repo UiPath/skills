@@ -253,11 +253,10 @@ After refresh, confirm the four solution-level app files exist under `resources/
 
 If any are missing, hand-author them using the templates above and the Apps API + `publish/versions` + Orchestrator `/odata/Releases` data. The `process/webApp/<AppName>.json` file is the one most commonly missing and its absence causes "Resource provisioning failed (#100)" on solution import.
 
-### Step 8 — Bundle and upload
+### Step 8 — Upload
 
 ```bash
-uip solution bundle . -d ./dist --output json
-uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
+uip solution upload . --output json
 ```
 
 ## Gotchas

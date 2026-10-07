@@ -203,7 +203,7 @@ Run from the solution directory. The first argument is the path to the agent pro
 
 ### Upload to Studio Web
 
-Upload sends the solution to Studio Web. Accepts a solution directory (containing `.uipx`), a `.uipx` file, or a `.uis` file.
+Upload sends the solution to Studio Web. Accepts a solution directory (containing `.uipx`), a `.uipx` file, or a `.uis` file. It bundles a solution directory internally — there is no separate `uip solution bundle` command.
 
 ```bash
 uip solution upload . --output json
@@ -257,12 +257,6 @@ Uninstall removes the resources and the folder; the deployment itself stays in `
 
 ```bash
 uip solution deploy delete "<DEPLOYMENT_NAME>" --yes --output json
-```
-
-### Bundle for Upload
-
-```bash
-uip solution bundle . -d ./dist --output json
 ```
 
 ## Resource Discovery

@@ -208,9 +208,8 @@ uip agent validate "<AGENT_NAME>" --output json
 #    `userProfile/<userId>/debug_overwrites.json`. No hand-authoring needed.
 uip solution resources refresh --output json
 
-# 8. Bundle + upload
-uip solution bundle . -d ./dist --output json
-uip solution upload ./dist/<SOLUTION_NAME>.uis --output json
+# 8. Upload — bundles the solution directory and uploads it in one pass.
+uip solution upload . --output json
 ```
 
 ## Multi-Agent Solution Example
