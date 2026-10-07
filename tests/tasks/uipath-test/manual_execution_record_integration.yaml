@@ -248,14 +248,18 @@ success_criteria:
       # Created is a millisecond ISO-8601 stamp, so this is a real recency pick
       # even if the agent opened more than one run.
       st = max(runs, key=lambda r: r.get('Created') or '')
-      got = {k: st.get(k) for k in ('Passed','Failed','None')}
-      assert st.get('Passed') == 2, f'expected Passed=2, got {got}'
-      assert st.get('Failed') == 1, f'expected Failed=1, got {got}'
+
+      # Count from the testcaselogs, the authoritative per-case record, like
+      # every sibling task - 'executions list' rows carry no Passed/Failed
+      # aggregate (that is 'executions get-stats').
+      logs = (uip('tm','executions','testcaselogs','list',
+                  '--execution-id',st['Id'],'--project-key','CLAIM').get('Data') or [])
+      results = [r.get('Result') for r in logs]
+      passed, failed = results.count('Passed'), results.count('Failed')
+      assert passed == 2 and failed == 1, f'expected 2 passed / 1 failed, got {passed}/{failed} from {results}'
 
       # Totals alone do not say WHICH case failed: recording TC2 passed and
       # TC3 failed inverts what the user asked for and still tallies 2/1.
-      logs = (uip('tm','executions','testcaselogs','list',
-                  '--execution-id',st['Id'],'--project-key','CLAIM').get('Data') or [])
       by_name = {(r.get('TestCase') or {}).get('Name'): r.get('Result') for r in logs}
       want = {'EVFX-MANUAL-TC1':'Passed','EVFX-MANUAL-TC2':'Failed','EVFX-MANUAL-TC3':'Passed'}
       wrong = {k:(by_name.get(k),v) for k,v in want.items() if by_name.get(k) != v}
