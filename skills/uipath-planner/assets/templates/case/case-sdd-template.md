@@ -479,9 +479,23 @@ runtime metadata (agent prompts, package versions, endpoints) stays out of the S
 
 ### Personas
 
-| Persona | Stage Scope | Permissions | Description |
-|---------|-------------|-------------|-------------|
-| <persona name> | <comma-separated stage names, or All> | <View, Act, Reassign, etc.> | <description of this persona's role> |
+<!-- Each row becomes a case role (`metadata.caseRoles[]`) at `uip maestro case sdd convert`, and a
+     role resource carrying these permissions at `uip solution pack`. The cells are read, not interpreted:
+     Scope is `Case` or `Stages`; Stages lists exact stage display names from Section 2 (`—` for a
+     `Case` persona); Permissions lists permission keys only, comma-separated, from this set —
+     View, Create, Edit, Close, Reopen, Assign, ManageSLA, RunAdhocTasks, SelectStage, ViewSummary,
+     LogsView, TasksView, TasksCreate, TasksEdit, TasksDelete, TaskAssignmentView, TaskAssignmentCreate,
+     TaskAssignmentEdit, TaskAssignmentDelete, TaskSelfAssignmentCreate, TaskSelfAssignmentEdit,
+     TaskSelfAssignmentDelete, Manage. A `Stages` persona may hold only View, Assign, ManageSLA and
+     RunAdhocTasks. Names are unique, at most 64 characters, with none of < > " % ; & '. Description
+     is required (at most 500 characters) and ships as the role's description. A condition on the
+     persona ("loans > $5M only") is not a permission: write it in Notes and encode it as a guarded
+     cell on the owning task (checklist rule 32). A cell convert cannot map is reported as a
+     `case-role` Unresolved item, never guessed at. -->
+
+| Persona | Scope | Stages | Permissions | Description | Notes |
+|---------|-------|--------|-------------|-------------|-------|
+| <persona name> | <Case \| Stages> | <comma-separated stage display names, or —> | <permission keys, comma-separated> | <what this persona does> | <conditions or prose; not read> |
 
 ### Process App Views
 

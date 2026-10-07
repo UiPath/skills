@@ -55,7 +55,7 @@ Run it **after** the Phase 1 registry gate and [planning.md Step 4](planning.md#
 
 **Version guard.** If the response names `sdd` or `convert` as an unknown command (typically `ErrorCode: "invalid_argument"`, exit 3), author Phase 2 by hand exactly as described below, say so in one line, and continue. Exit 3 *without* that command-specific message is a real failure — report it and do not fall back.
 
-**`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). There are **19 kinds** (the authoritative list is the `UnresolvedItem` union in the CLI's `sdd-convert/types.ts` — read it there, never retype it). The three below are the ones with a *named downstream closer*; every other kind is closed by the Phase 4 repair loop acting on the entry's own `detail`. Each is closed by a later step, not by re-deriving it from the SDD.
+**`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). There are **20 kinds** (the authoritative list is the `UnresolvedItem` union in the CLI's `sdd-convert/types.ts` — read it there, never retype it). The four below are the ones with a *named downstream closer*; every other kind is closed by the Phase 4 repair loop acting on the entry's own `detail`. Each is closed by a later step, not by re-deriving it from the SDD.
 
 > This table is the only place in this skill that names an `Unresolved` kind. That makes it the sole definition **and** the sole opportunity for an error — a kind added here and nowhere else has nothing to contradict it. Check a name against `types.ts` before trusting it.
 
@@ -64,8 +64,11 @@ Run it **after** the Phase 1 registry gate and [planning.md Step 4](planning.md#
 | `resource-binding` | which tenant resource a task runs | Phase 1 bindings — project `selected` into root bindings (Step 12 Check 7) |
 | `output-type` | an output's shape, which comes from the resolved resource's schema | Step 9, via `uip maestro case tasks describe` or `case spec` |
 | `connector-context` | `folderKey` and the connector version `metadata` | Phase 3 connector context (Step 12 Check 12) |
+| `case-role` | a Personas cell that is not a permission key, a stage the SDD does not declare, a permission the stage scope cannot grant, or a persona left with nothing to grant | Fix the SDD row (the planner template's Personas comment lists the keys) and re-run convert — never hand-edit `metadata.caseRoles` to a guess |
 
-**The sidecar is not convert's job.** Convert emits the root `bindings[]` — two entries per resource, `name` and `folderPath` sharing one `resourceKey` — but never `bindings_v2.json`. That sidecar is still derived from those entries by `uip maestro case bindings sync` at the end of Step 9 and again at Step 12 Check 7, after resource resolution can still change them. Do not sync it here.
+**Personas become `metadata.caseRoles`.** Convert maps each Personas row to a case role — name, description, `case` or `stages` scope with the stage ids, and the permission literals — and sets `caseAppVersion: v2`, the case app that honours roles. Permissions do not travel in the package: `bindings sync` writes one `Role` entry per role, `uip solution pack` mints the role resource from it and writes `spec.actions`, and pack refuses a role with no `Role` entry (`case_role_unbound`) until the sync has run. Phase 4's `--strict --sdd` compares the roles against the table and fails a template-shape persona the plan does not honour.
+
+**The sidecar is not convert's job.** Convert emits the root `bindings[]` — two entries per resource, `name` and `folderPath` sharing one `resourceKey` — but never `bindings_v2.json`. That sidecar is still derived from those entries, and from `metadata.caseRoles`, by `uip maestro case bindings sync` at the end of Step 9 and again at Step 12 Check 7, after resource resolution can still change them. Do not sync it here.
 
 **`Unresolved[]` is a floor, not a ceiling.** It reports what convert knew it was skipping — never what convert emitted wrongly, and never what it omitted silently. Phase 4's `--strict --sdd` stays the authority, and a plain-profile `Status: Valid` on convert output is not a finished plan.
 
