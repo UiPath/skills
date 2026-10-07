@@ -11,7 +11,7 @@ A UiPath OCR activity failed before or during engine initialization — a missin
 What this looks like:
 - `Please make sure you have the UiPath.ComputerVision.LocalServer package version <n> or higher installed in order to use local server mode.` (`NotSupportedException`) — Screen OCR in local mode without the CV LocalServer package.
 - `Please make sure you have the UiPath.DocumentUnderstanding.OCR.LocalServer package installed in order to use local server mode.` (`NotSupportedException`) — Document OCR in local mode without the DU OCR LocalServer package.
-- `In order to use this activity in this Studio version, please install the UiPath.CoreIPC package, version 2.0.1 or higher. For more information please check the documentation.` — the process validating or running the OCR engine has not loaded the `UiPath.CoreIpc` assembly.
+- `In order to use this activity in this Studio version, please install the UiPath.CoreIPC package, version 2.0.1 or higher. For more information please check the documentation.` — the package's CoreIPC availability check misreporting (§ Missing CoreIPC).
 - `This version of the OCR.Activities package is incompatible with UiPath.IntelligentOCR.Activities older than v6.20.0, UiPath.PDF.Activities older than v3.20.0, UiPath.DocumentUnderstanding.ML.Activities older than v1.29.0, UiPath.OmniPage.Activities older than v1.20.0` — mismatched companion package versions.
 - `Value for a required activity argument 'ApiKey' was not supplied.` / `Value for a required activity argument <name> was not supplied in activity designer nor in project settings.` — a required setting is missing.
 - `Unsupported engine: <engine>` — an invalid engine selection reached the engine factory.
@@ -40,9 +40,7 @@ What to look for:
 Install the named LocalServer package (`UiPath.ComputerVision.LocalServer` for Screen, `UiPath.DocumentUnderstanding.OCR.LocalServer` for Document) at the required version, or turn off local server mode to use the cloud endpoint.
 
 ### Missing CoreIPC
-The check reads whether the process has loaded `UiPath.CoreIpc` 2.0+, never `project.json`, so no project change clears it.
-- **`build` / `run` in the headless Studio host** (`validate` may pass): the host never loads it. Move the OCR into a coded workflow that calls the PDF package's coded `ReadPdfWithOcr`, and invoke it from the XAML.
-- **At run time** (`InvalidOperationException` from the engine): the robot executor lacks it; escalate with the Robot and OCR package versions.
+No package is missing: the check fails wherever it cannot locate CoreIPC through Studio, the headless `uip rpa` host included, and no project change clears it. The UI Automation and OCR activities packages no longer carry the check; update to a release without it. If the message still appears, read the PDF from a coded workflow that calls the PDF package's coded `ReadPdfWithOcr`, and invoke it from the XAML.
 
 ### Incompatible companion versions
 Upgrade the named companion packages (IntelligentOCR, PDF, DU.ML, OmniPage) to at least the stated minimums.
