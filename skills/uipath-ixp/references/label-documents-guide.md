@@ -5,7 +5,7 @@ Reusable workflow for labelling documents in an IXP project. Used by:
 - [Project Setup](project-setup-guide.md) — initial labelling after creating a project
 - [Improve Prompts](improve-prompts-guide.md) — reviewing predictions during optimization
 
-You act as a **reviewer** — IXP generates predictions, you validate them field-by-field against the document. Only fields that are correct get confirmed. Fields that are wrong are left unannotated. Fields where the prediction found the right location but the value is OCR-mangled get corrected.
+You act as a **reviewer** — IXP generates predictions, you validate them field-by-field against the document. Only fields that are correct get confirmed. Fields that are wrong are left unannotated.
 
 ## Step 1 — Get Documents and Taxonomy
 
@@ -49,11 +49,10 @@ Use the document ID as the filename. Pass `-o` **without an extension** — the 
 Use the **Read tool** to view the document file (read the whole document in one call, no `pages` parameter — a full Read returns text + image natively for digital and scanned PDF/PNG/JPG docs; no PDF tools to install), then review each predicted field against the document:
 
 1. **Look at the document** to understand the layout and where field values appear.
-2. **For each predicted field**, assign one of four verdicts:
+2. **For each predicted field**, assign one of three verdicts:
    - **CONFIRMED** — the predicted value matches what is in the document, literally or in its data type's normalized form. Minor OCR-level differences (capitalization, whitespace) are acceptable, as is any difference that is purely the type's normalization — a `Date` reads back as `2022-06-21T00:00:00Z` for a page showing `21-JUN-22`, a `Monetary Quantity` as `114.91 AUD` for a page showing `114.91`. Compare the values by reading them; do not write a script to convert or check formats. See [CLI Reference § Normalized output formats](cli-reference.md#normalized-output-formats).
-   - **CORRECTED** — **OCR-mangled values only.** The prediction found the right field in the right location, the bytes-on-page are correct, but the text was garbled in transcription (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`, `lNGRAM` instead of `INGRAM`, or a misread digit in a number — page `£7,300.00` predicted as `£730.00`). The reference is correct, only the literal characters need fixing. **A number whose magnitude differs from the page is OCR garble, never type normalization** (Rule 8). Do NOT use CORRECTED to restore a page's date or amount formatting, for booleans that came back with the wrong answer, inferred/computed values that came back wrong, or any case where IXP picked the wrong source on the page — those are NOT CONFIRMED.
    - **MISSING** — IXP predicted **no value** (empty `FormattedValue`) AND the field is genuinely absent from the document. Both conditions must hold. If IXP predicted a value but the field isn't actually in the document, that's NOT CONFIRMED, not MISSING — Critical Rule 11 forbids overriding a non-empty prediction with "missing".
-   - **NOT CONFIRMED** — the prediction is wrong for any reason other than OCR mangling. Covers: wrong literal value on the right field, wrong-source extraction, hallucinated value, boolean came back with the wrong answer, inferred/computed value came back wrong, predicted a value the document doesn't contain. Left unannotated. Do NOT try to "fix" these with `--corrections` — `--corrections` is OCR-only (see Critical Rule 8). Improve the prompt instead.
+   - **NOT CONFIRMED** — the prediction does not match the document. Covers: wrong literal value on the right field, garbled characters (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`), a misread digit in a number (page `£7,300.00` predicted as `£730.00` — **a number whose magnitude differs from the page is never type normalization**, Rule 8), wrong-source extraction, hallucinated value, boolean came back with the wrong answer, inferred/computed value came back wrong, predicted a value the document doesn't contain. Left unannotated (see Critical Rule 8) — improve the prompt so IXP predicts it correctly. **Exception — OCR errors** (garbled characters, a misread digit): no prompt fixes them, so report them to the user as a data quality issue and do not spend prompt iterations on them.
 3. **Report your verdict for every field.** Print a table per document:
 
 ```text
@@ -61,11 +60,11 @@ Document: <document-id>
 
 Field                    | Verdict       | Reason
 -------------------------|---------------|-----------------------------------------------
-Invoice Number           | CORRECTED     | OCR mangled "MSIÓÓÓ601020/" → "MSI0601020", top-right of page 1
+Invoice Number           | NOT CONFIRMED | OCR: predicted "MSIÓÓÓ601020/" but actual is "MSI0601020", top-right of page 1
 Invoice Date             | CONFIRMED     | Predicted "2018-02-28T00:00:00Z" matches "28-Feb-2018" (normalized Date)
 Vendor Address           | NOT CONFIRMED | Predicted "123 Main St" but actual is "456 Oak Ave", top-left of page 1
-Has Signature            | NOT CONFIRMED | Predicted "false" but signature visible bottom-right (boolean came back wrong — NOT CORRECTED)
-Total After Tax          | NOT CONFIRMED | Predicted "$1100.00" but Subtotal+Tax = "$1210.00" (inferred value wrong — NOT CORRECTED)
+Has Signature            | NOT CONFIRMED | Predicted "false" but signature visible bottom-right (boolean came back wrong)
+Total After Tax          | NOT CONFIRMED | Predicted "$1100.00" but Subtotal+Tax = "$1210.00" (inferred value wrong)
 Terms of Payment         | MISSING       | IXP predicted no value AND field not visible in document
 Discount                 | MISSING       | IXP predicted no value AND no discount section on the page
 Line Items > Description | CONFIRMED     | Predicted "Widget A" matches row 1 in the table
@@ -79,56 +78,31 @@ Line Items > Description (occurrence 1) | CONFIRMED     | "Widget B" matches lin
 Line Items > Description (occurrence 3) | NOT CONFIRMED | Predicted "Widget D" but line 4 shows "Widget Z"
 ```
 
-For **CORRECTED** fields: state the mangled predicted value, the corrected value, and where it appears. The mistake must be at the character level — same field, same location, garbled bytes.
 For **MISSING** fields: state that the prediction was empty AND describe how you verified the field is absent (e.g., "no payment-terms section anywhere in the document").
-For **NOT CONFIRMED** fields: state the predicted value, the actual value (if visible) and location. Includes any non-OCR mistake — wrong source, wrong boolean, wrong inferred value, hallucination, value the document doesn't contain. **Do NOT use `--corrections` to fix these** — improve the field's prompt instructions instead.
+For **NOT CONFIRMED** fields: state the predicted value, the actual value (if visible) and location; start the reason of an OCR error with `OCR:`. Includes any mismatch — garbled characters, wrong source, wrong boolean, wrong inferred value, hallucination, value the document doesn't contain.
 
-4. **Build two lists from the table:**
-   - **Submit field IDs** — all CONFIRMED + CORRECTED + MISSING fields (one combined list — the CLI applies the right semantic per field based on IXP's prediction)
-   - **Corrections JSON** — only CORRECTED fields: `[{"field_id":"...","value":"corrected text"}]`
+4. **Build the submit list from the table:** all CONFIRMED + MISSING field IDs, in one combined list — the CLI applies the right semantic per field based on IXP's prediction.
 
-### 2d. Confirm and correct
+### 2d. Confirm
 
-Submit confirmed, corrected, and missing fields for this document — all in one `confirm` call.
+Submit confirmed and missing fields for this document — all in one `confirm` call.
 
 **Pass the version you reviewed.** Add `-m <model_version>` (the `ModelVersion` from step 2a) to every `confirm` call below — the narrowed `--occurrence`/`--updates` forms included. If a retrain landed since you read the predictions, the confirm is rejected with `PredictionVersionChangedError` instead of stamping values you never saw — re-run step 2a, re-review this document, then confirm again.
 
-**If there are corrections:**
-
 ```bash
 uip ixp labellings confirm <project-name> <document-id> \
-  --fields "<all_submitted_ids>" \
-  --corrections '[{"field_id":"<id>","value":"<corrected_value>"}]' \
-  -m <model_version> \
-  --output json
+  --fields "<confirmed_id_1>,<confirmed_id_2>,<missing_id>" -m <model_version> --output json
 ```
 
-The `--fields` list includes CONFIRMED, CORRECTED, and MISSING field IDs together — the CLI writes the right annotation per field based on IXP's prediction (content → confirm, content with override → correct, empty → missing marker). The `--corrections` JSON overrides the predicted value for corrected fields while keeping their document references (bounding boxes).
+The `--fields` list includes CONFIRMED and MISSING field IDs together. The `confirm` command applies one uniform rule per listed field: if IXP predicted content, the content is confirmed; if IXP predicted nothing, a missing marker is written. No separate call needed.
 
-**If there are no corrections (all approved fields are exact matches):**
-
-```bash
-uip ixp labellings confirm <project-name> <document-id> \
-  --fields "<field_id_1>,<field_id_2>,<field_id_3>" -m <model_version> --output json
-```
-
-If ALL predicted fields for a document are correct with no corrections needed, you can omit `--fields` to confirm every predicted field on **that one document** in a single call:
+If you reviewed every predicted field on a document and all are correct, you can omit `--fields` to confirm every predicted field on **that one document** in a single call (Critical Rule 14):
 
 ```bash
 uip ixp labellings confirm <project-name> <document-id> -m <model_version> --output json
 ```
 
 This per-document form is fine **once you've reviewed the document and every field is correct** (2c). What you must NOT do is run `confirm` **without a `<document-id>`** — that confirms every document in the project at once, bypassing the per-document review loop. Confirming unreviewed predictions bakes wrong values into the labels, and because F1 compares predictions against those labels, **the metric reports 1.00 even when the confirmed values are wrong**. F1 alone is never evidence the values are correct.
-
-**If there are missing fields**, include their IDs in the same `--fields` list as the CONFIRMED and CORRECTED IDs. The `confirm` command applies one uniform rule per listed field: if IXP predicted content, the content is confirmed; if IXP predicted nothing, a missing marker is written. No separate call needed.
-
-```bash
-uip ixp labellings confirm <project-name> <document-id> \
-  --fields "<confirmed_id>,<corrected_id>,<missing_id_1>,<missing_id_2>" \
-  --corrections '[{"field_id":"<corrected_id>","value":"<corrected_value>"}]' \
-  -m <model_version> \
-  --output json
-```
 
 **Only include a field in the `--fields` list for the MISSING case when IXP itself predicted nothing for it** — see Critical Rule 11. If IXP predicted a wrong value, omit the field entirely (don't list it).
 
@@ -225,18 +199,14 @@ At the end, report a full summary:
 Labelling complete.
 
 Documents: N processed, M confirmed, K skipped (no predictions)
-Fields: X confirmed, Y corrected, W marked missing, Z not confirmed
-
-OCR Corrections Applied:
-  Doc <uid-1>: Invoice Number "MSIÓÓÓ601020/" → "MSI0601020"
-  Doc <uid-1>: Vendor Name "INGRAM NTCRO INC" → "INGRAM MICRO INC"
-  Doc <uid-3>: Bill-To Address "123 Mam St" → "123 Main St"
+Fields: X confirmed, W marked missing, Z not confirmed
 
 Marked Missing (IXP predicted empty AND field absent from document):
   Doc <uid-2>: Terms of Payment
   Doc <uid-4>: Discount
 
 Not Confirmed (skipped):
+  Doc <uid-1>: Invoice Number — OCR: predicted "MSIÓÓÓ601020/" but actual is "MSI0601020"
   Doc <uid-3>: Total Amount — predicted "500.00" but actual is "5000.00" (bottom-right, page 1)
   Doc <uid-5>: Vendor Address — predicted "123 Main St" but actual is "456 Oak Ave"
 ```
