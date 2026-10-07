@@ -19,7 +19,7 @@ uip maestro flow eval set remove "<id_or_name>" --path <flow_project> --output j
 
 `--evaluators` accepts comma-separated evaluator IDs or generated file base names. If omitted, the set links to all evaluators present at creation and writes generated evaluator file refs such as `greeting-match-62c0793a.json`; prefer omission when using every current evaluator. Do not pass an evaluator display name such as `greeting-match`: this writes the display name into `evaluatorRefs`, which Studio Web eval runs cannot resolve. For an explicit list, run `uip maestro flow eval evaluator add/list --output json` and pass the generated ID/file ref. Evaluators added later are not auto-attached; rerun `set add` with explicit generated refs or carefully repair `evaluatorRefs` using CLI-created evaluator file refs.
 
-`--entry-point` is stored as `selectedEntrypoint` and must be a trigger node ID from the `.flow`, such as `start_a1b2c3d4`. Do not store a BPMN path like `/Main.bpmn#start`: Studio Web cannot resolve it, and CLI 1.203 and later reject it. `eval run start` uses it unless overridden with `--entry-point`, which also accepts the `/Main.bpmn#start` form. Pin it when multiple entry points exist; otherwise the trigger marked `isDefaultEntryPoint` is used, else the first trigger.
+`--entry-point` is stored as `selectedEntrypoint` and accepts `/Main.bpmn#start` or a start node ID such as `start_a1b2c3d4`. `eval run start` uses it unless overridden with `--entry-point`. Pin it when multiple entry points exist; otherwise the first start node found is used.
 
 ## Data Point Lifecycle
 

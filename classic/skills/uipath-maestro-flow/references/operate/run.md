@@ -110,7 +110,7 @@ uip maestro flow process run <process-key> <folder-key> --output json \
 
 > **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [shared/cli-commands.md — Pre-flight](../shared/cli-commands.md#pre-flight---attachment-binding). On `process run` only: `--attachment` overrides `--inputs` on key collisions; `--validate` accepts pre-uploaded attachment references for file-typed slots (passes the JSON-schema check even though the slot's nominal type is `string`).
 
-To start the job at a specific trigger, pass `--entry-point <triggerNodeId>`; `--validate` then checks inputs against that trigger's schema. Without it, the job starts at the package's main entry point, which is the first trigger. `--feed-id` is not needed; the CLI reads the feed from the release.
+To start the job at a specific trigger, pass `--entry-point <triggerNodeId>`; `--validate` then checks inputs against that trigger's schema. A wrong ID exits 3 and lists the process's trigger node IDs. Without it, the job starts at the package's main entry point, which may not be the trigger marked `isDefaultEntryPoint`; pass `--entry-point` whenever the trigger matters. `--feed-id` is not needed; the CLI reads the feed from the release.
 
 Run `uip maestro flow process --help` for all subcommands and options.
 

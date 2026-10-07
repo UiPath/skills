@@ -227,8 +227,8 @@ double quotes instead of single ones:
 
 **There is no `incidents` in this envelope.** `Data` carries exactly
 `finalStatus`, `entryPoint`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`,
-`folderKey`, `solutionId`, `variables` and `elementExecutions` — an `incidents:incidents`
-projection silently yields `null`. Incidents come from the separate
+`folderKey`, `solutionId`, `variables` and `elementExecutions` — an
+`incidents:incidents` projection silently yields `null`. Incidents come from the separate
 `debug-instance incidents` call below, keyed by the `instanceId` you just read.
 
 For example, a direct-input claim can keep the useful status, outputs, and

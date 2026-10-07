@@ -137,8 +137,9 @@ uip maestro flow debug <project-dir> --output json --entry-point <triggerNodeId>
 A wrong id exits 3 and lists the valid trigger node ids. `Data.entryPoint` names
 the trigger the run started from.
 
-**A conversational flow cannot be debugged headlessly.** On a flow whose trigger
-is `conversationTrigger()`, debug uploads, returns
+**A conversational flow cannot be debugged headlessly.** On a run that starts at
+a `conversationTrigger()` root (the default root, or the one `--entry-point`
+names), debug uploads, returns
 `Code: FlowDebugStudioWebHandoff` with `Data.studioWebUrl`, and starts no run;
 `--timeout` does nothing. Chat from Studio Web (`--open-in-browser` opens it) or
 the Maestro VS Code extension.
@@ -177,10 +178,11 @@ and `--validate` accepts pre-uploaded attachment references for file slots —
 they pass the JSON-schema check even though the slot's nominal type is `string`.
 
 `--entry-point <triggerNodeId>` starts the job at that root, and `--validate`
-then checks the inputs against that root's schema. Without it, the job starts at
-the package's main entry point, which is the first trigger even when another one
-is the default root — pass `--entry-point` whenever the root matters. You do not
-need `--feed-id`; the CLI reads the feed from the release.
+then checks the inputs against that root's schema. A wrong id exits 3 and lists
+the process's trigger node ids. Without it, the job starts at the package's main
+entry point; `flow pack` sets that to the first trigger in the file, so pass
+`--entry-point` whenever the root matters. You do not need `--feed-id`; the CLI
+reads the feed from the release.
 
 ## Inspect a job
 
