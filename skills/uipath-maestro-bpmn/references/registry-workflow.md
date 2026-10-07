@@ -382,9 +382,11 @@ discovery or the user.
 - **Business rule bindings** (`BusinessRule`): the context `name` and
   `folderPath` each reference a `BusinessRule` binding (`propertyAttribute`
   `name` / `folderPath`) — never a `Key` binding or a `process` `releaseKey`,
-  even when `registry get` returns one. Both bindings carry the rule key as
-  `resourceKey`: the rule's catalog entity key, never a `Key` from `Processes`
-  or a release key; if the user has not given it, ask. Bind only a deployed
+  even when `registry get` returns one. Both bindings carry the same
+  `resourceKey`: `<folderPath>.<name>`, or `<name>` alone when the folder path
+  is empty — never the catalog entity key, a `Key` from `Processes`, or a
+  release key. The engine runs the rule by `name` + `folderPath` and uses
+  `resourceKey` only to match deploy-time binding overwrites. Bind only a deployed
   rule; one defined only in this solution is deployed first (SKILL.md rule 17).
   The `folderPath` binding always carries a `default`, `""` when
   the rule lives in the running job's folder. The unbound `_label` context
