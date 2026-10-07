@@ -31,9 +31,11 @@ The command creates a hidden, one-off test set. It does not need, and should not
 | Exit | `Result` / `Code` | Meaning |
 |---|---|---|
 | 0 | `Success` / `RunPackage` | Every test passed. `Data` has `ExecutionId`, `ExecutionUrl`, `PackageVersion` (the exact version that ran), counts and `OutputPath`. |
-| 1 | `Failure` / `RunPackageTestsFailed`, `ErrorCode: execution_failed` | The run finished but a test failed or was cancelled, or no tests ran. `Data` still carries the full summary, and the report was written. This is a test result, not a CLI error: report it, do not retry. |
-| 1 | `Failure`, other `ErrorCode` | The run could not start or finish (bad version, folder, input file, permissions). `Message` says what, `Instructions` what to do. |
-| 2 | `Failure`, `ErrorCode: timeout` | `--timeout` ran out, or Test Manager did not index the package within 5 minutes. The execution may still be running. If the tests had started, `Data.OutputPath` holds a report of what finished, with unfinished tests marked skipped. Report the timeout; do not treat skipped tests as passed. |
+| 1 | `Failure` / `RunPackageTestsFailed` or `RunPackageCancelled`, `ErrorCode: execution_failed` | The run finished but a test failed or no tests ran (`RunPackageTestsFailed`), or the execution was cancelled (`RunPackageCancelled`). `Data` still carries the full summary, and the report was written. This is a test result, not a CLI error: report it, do not retry. |
+| 1 | `Failure`, other `ErrorCode` | The run could not start or finish (version or folder not found, service error). `Message` says what, `Instructions` what to do. |
+| 2 | `AuthenticationError`, `ErrorCode: permission_denied` or `authentication_required` | The login or a permission is the problem (401/403, missing scope, no role on the folder or project). Fix the login; do not retry. |
+| 3 | `ValidationError`, `ErrorCode: invalid_argument` | A bad option or input: missing project, malformed version, an older patch, a bad `--input-path` file. Nothing was created. |
+| 4 | `TimeoutError`, `ErrorCode: timeout` | `--timeout` ran out, or Test Manager did not index the package within 5 minutes. The execution may still be running. If the tests had started, `Data.OutputPath` holds a report of what finished, with unfinished tests marked skipped. Report the timeout; do not treat skipped tests as passed. |
 
 A failed test's JUnit `<testcase>` has `<failure type="AssertionError">` when an assertion failed, or `<error type="Fault">` when the job or robot faulted (for example a package that cannot be installed).
 
@@ -45,7 +47,7 @@ A failed test's JUnit `<testcase>` has `<failure type="AssertionError">` when an
 | `Version … of … is not uploaded` / `No 1.0.x version of …` | Check `uip or packages versions <PACKAGE_NAME> --output json`. |
 | `Folder '…' not found.` | Use `uip or folders list -n <folder-name> --all --output json`. |
 | `Input file '…'` / `Entry N in '…'` | Fix the `--input-path` file; nothing was created. |
-| `Orchestrator refused to …(403)` | The login needs `OR.Folders.Read` and `OR.Execution`, and a role on the folder. |
+| `Orchestrator refused to …(403)` | Exit 2. The login needs `OrchestratorApiUserAccess`, or `OR.Folders.Read` and `OR.Execution`, and a role on the folder. |
 | `No project was given.` | Pass `--project-key` or `--project-id`. |
 
 ## Requirements
