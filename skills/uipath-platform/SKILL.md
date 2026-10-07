@@ -162,9 +162,9 @@ For a named interactive login:
 uip login --profile dev --output json
 ```
 
-For a custom authority (e.g., alpha.uipath.com):
+For a custom authority (Automation Suite, dedicated, or other non-default host):
 ```bash
-uip login --authority "https://alpha.uipath.com/identity_" --it --output json
+uip login --authority "<AUTHORITY_URL>" --it --output json
 ```
 
 For non-interactive (CI/CD) scenarios, use client credentials read from environment variables with the CLI's `env.<NAME>` syntax. Never ask the user to paste the secret into chat or put it on the command line:
