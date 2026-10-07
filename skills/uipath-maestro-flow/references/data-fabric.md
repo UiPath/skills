@@ -13,7 +13,7 @@
 **Wrong here fails SILENTLY** — a bad column is dropped, not rejected, so `validate` passing is not evidence. Resolve columns with `uip df entities get` first.
 Delete publishes nothing; system columns (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) are never writable; `fromRead` needs a single-record read; a folder-scoped entity needs `folderKey` AND `resourceKey`.
 
-**Still connector-only**: file record fields and Record Created/Updated events — `connector('uipath-uipath-dataservice', …)` + `registry prepare -f entityName=<Entity>`.
+**Still connector-only**: get-by-id when the whole value of a long-text field is needed (native reads return a 10,000-character preview, [see below](#long-text-queries-return-a-10000-character-preview)), file record fields, and Record Created/Updated events — `connector('uipath-uipath-dataservice', …)` + `registry prepare -f entityName=<Entity>`.
 
 ## One product, two surfaces
 
