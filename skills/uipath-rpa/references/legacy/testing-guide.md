@@ -324,17 +324,17 @@ Create a DataTable in code, then write it via Excel Interop:
 
 ```xml
 <!-- Step 1: Build DataTable with InvokeCode -->
-<ui:InvokeCode Code="
-Dim dt As New DataTable()
-dt.Columns.Add(&quot;Name&quot;, GetType(String))
-dt.Columns.Add(&quot;Amount&quot;, GetType(Double))
-dt.Columns.Add(&quot;Date&quot;, GetType(String))
-dt.Columns.Add(&quot;Status&quot;, GetType(String))
-dt.Rows.Add(&quot;Invoice-001&quot;, 1500.50, &quot;2024-01-15&quot;, &quot;Active&quot;)
-dt.Rows.Add(&quot;Invoice-002&quot;, 2300.00, &quot;2024-02-20&quot;, &quot;Pending&quot;)
-dt.Rows.Add(&quot;Invoice-003&quot;, 890.25, &quot;2024-03-10&quot;, &quot;Closed&quot;)
-dt.Rows.Add(&quot;Invoice-004&quot;, 0, &quot;&quot;, &quot;Active&quot;)
-dt.Rows.Add(&quot;Invoice-005&quot;, -100.00, &quot;2024-12-31&quot;, &quot;Error&quot;)
+<ui:InvokeCode Code="&#xA;
+Dim dt As New DataTable()&#xA;
+dt.Columns.Add(&quot;Name&quot;, GetType(String))&#xA;
+dt.Columns.Add(&quot;Amount&quot;, GetType(Double))&#xA;
+dt.Columns.Add(&quot;Date&quot;, GetType(String))&#xA;
+dt.Columns.Add(&quot;Status&quot;, GetType(String))&#xA;
+dt.Rows.Add(&quot;Invoice-001&quot;, 1500.50, &quot;2024-01-15&quot;, &quot;Active&quot;)&#xA;
+dt.Rows.Add(&quot;Invoice-002&quot;, 2300.00, &quot;2024-02-20&quot;, &quot;Pending&quot;)&#xA;
+dt.Rows.Add(&quot;Invoice-003&quot;, 890.25, &quot;2024-03-10&quot;, &quot;Closed&quot;)&#xA;
+dt.Rows.Add(&quot;Invoice-004&quot;, 0, &quot;&quot;, &quot;Active&quot;)&#xA;
+dt.Rows.Add(&quot;Invoice-005&quot;, -100.00, &quot;2024-12-31&quot;, &quot;Error&quot;)&#xA;
 testData = dt" Language="VBNet">
   <ui:InvokeCode.Arguments>
     <scg:Dictionary x:TypeArguments="x:String, Argument">

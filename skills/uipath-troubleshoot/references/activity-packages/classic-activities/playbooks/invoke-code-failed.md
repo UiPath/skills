@@ -21,6 +21,10 @@ What can cause it:
 - An argument referenced in the snippet whose name/type/direction does not match the `Arguments`
   defined on the activity
 - A language selected that the current runtime/project does not support
+- No `Language` on the activity: it defaults to `VBNet` whatever the project's language, so a C# snippet
+  is compiled as VB and fails with "No compiled code to run" and VB errors (`BC30800`, `BC30037`, …)
+- A VB snippet written as element text inside `<ui:InvokeCode.Code>` (bare or CDATA): its line breaks
+  collapse into spaces, giving `BC30205: End of statement expected. At line 0`
 - Missing assembly/namespace imports for the APIs the snippet uses
 - The snippet compiles but throws at run time because of the data it operates on or an external
   dependency it calls
@@ -40,10 +44,15 @@ What to look for:
 3. Compare the snippet's referenced identifiers against the activity's `Arguments` (name, type,
    direction) and against the project's imports/references.
 4. For run-time exceptions, identify which statement threw and what input/data it was operating on.
-5. Confirm the selected language is supported by the project/runtime.
+5. Confirm the activity's `Language` matches the snippet's language (no `Language` means `VBNet`) and
+   is supported by the project/runtime.
 
 ## Resolution
 
+- **If a C# snippet fails with VB `BC3xxxx` errors:** set `Language="CSharp"` on the activity; the
+  snippet itself is not at fault.
+- **If a VB snippet fails with `BC30205` at line 0:** move the code into the `Code` attribute, with
+  `&#xA;` for each line break.
 - **If there are syntax/type errors:** fix the snippet syntax and add the required namespace
   imports / assembly references in the project.
 - **If arguments don't match:** align the activity's `Arguments` with the identifiers, types, and

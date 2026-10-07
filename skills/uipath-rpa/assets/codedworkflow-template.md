@@ -357,7 +357,8 @@ using UiPath.CodedWorkflows;
 
 namespace {{PROJECT_NAME}}
 {
-    public partial class CodedWorkflow : IBeforeAfterRun
+    // Name CodedWorkflowBase on every partial part, or build compiles CodedWorkflow without a base
+    public partial class CodedWorkflow : CodedWorkflowBase, IBeforeAfterRun
     {
         public void Before(BeforeRunContext context)
         {
@@ -393,7 +394,8 @@ using UiPath.CodedWorkflows;
 
 namespace {{PROJECT_NAME}}
 {
-    public partial class CodedWorkflow
+    // Name CodedWorkflowBase on every partial part, or build compiles CodedWorkflow without a base
+    public partial class CodedWorkflow : CodedWorkflowBase
     {
         // Shared helper available in all workflows and test cases
         protected string GetEnvironmentUrl()

@@ -57,7 +57,7 @@ BLOCK_RE = re.compile(
 def load_manifest():
     if not MANIFEST_PATH.exists():
         sys.exit(f"Manifest not found at {MANIFEST_PATH}.")
-    return json.loads(MANIFEST_PATH.read_text())
+    return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
 
 def split_frontmatter(text):
@@ -113,7 +113,7 @@ def validate(manifest):
                              "error": f"invalid status {status!r} "
                                       f"(expected one of {sorted(valid_statuses)})"})
 
-        text = (SKILLS_DIR / name / "SKILL.md").read_text()
+        text = (SKILLS_DIR / name / "SKILL.md").read_text(encoding="utf-8")
         frontmatter, body = split_frontmatter(text)
         if FM_TAG_RE.search(extract_description(frontmatter)):
             findings.append({"skill": name,
@@ -152,7 +152,7 @@ def render_region(manifest):
 def write_readme(manifest):
     if not README_PATH.exists():
         sys.exit(f"README not found at {README_PATH}.")
-    text = README_PATH.read_text()
+    text = README_PATH.read_text(encoding="utf-8")
     if not BLOCK_RE.search(text):
         sys.exit(f"Marker pair not found in {README_PATH}. Add this block once:\n"
                  f"{BEGIN_MARKER}\n{END_MARKER}")
@@ -160,7 +160,7 @@ def write_readme(manifest):
         lambda m: BEGIN_MARKER + render_region(manifest) + END_MARKER, text
     )
     if new_text != text:
-        README_PATH.write_text(new_text)
+        README_PATH.write_text(new_text, encoding="utf-8")
         print(f"Updated skill status table in {README_PATH.name}.")
     else:
         print(f"{README_PATH.name} skill status table already current.")
@@ -170,7 +170,7 @@ def write_readme(manifest):
 def check_readme(manifest):
     if not README_PATH.exists():
         sys.exit(f"README not found at {README_PATH}.")
-    text = README_PATH.read_text()
+    text = README_PATH.read_text(encoding="utf-8")
     match = BLOCK_RE.search(text)
     if not match:
         print(f"FAIL — marker pair not found in {README_PATH.name}. "
