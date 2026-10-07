@@ -101,7 +101,7 @@ an app. Do not write a synthetic CSV instead.
 |---------|---------|-----|
 | `Failure`, *"has no sample data"* | Template ships none (`SampleDataAvailable: false`), or the app was imported | Pick a template from step 1, or use the user's own data |
 | non-zero exit, *"cannot be used with"* | `--sample-data` combined with `--file-format` / `--field-delimiter` / `--quote-character` / `--encoding` | Drop the file-format flags — sample data needs none |
-| *"unknown option '--sample-data'"* | Installed `uip` predates the flag | `npm install -g @uipath/cli@latest`, then retry; do not call the REST API by hand |
+| *"unknown option '--sample-data'"* | Installed `uip` predates the flag | `npm install -g @uipath/cli@latest`, then retry; do not call the REST API by hand. Cannot update ⇒ stop and tell the user. Never run a plain `ingestions create` in its place |
 | `--wait` ends `FAILED` | Loader/transform error, printed by `--wait` | Treat as any failed ingestion — read the printed error; `ingestions logs` for more |
 
 After loading, everything else is unchanged: transform, extend with add-table,

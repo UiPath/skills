@@ -85,6 +85,12 @@ success_criteria:
     weight: 2.0
 
   - type: command_not_executed
+    description: "Agent must NOT fall back to a plain ingestion (no --sample-data) when the flag is rejected — there is no uploaded data to ingest"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+ingestions\s+create\b(?![^\n]*--sample-data)(?![^\n]*--help)'
+    weight: 2.0
+
+  - type: command_not_executed
     description: "Agent must NOT mix --sample-data with file-format flags (rejected by the CLI)"
     tool_name: "Bash"
     command_pattern: '--sample-data\b[^\n]*--(file-format|field-delimiter|quote-character|encoding)\b|--(file-format|field-delimiter|quote-character|encoding)\b[^\n]*--sample-data\b'
