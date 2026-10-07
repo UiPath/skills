@@ -62,6 +62,9 @@ on different triggers, and each entry point's caller-facing input is keyed by
 that id. So two roots cannot both take `amount`; `check` reports
 `ENTRY_POINT_INPUT_COLLISION`.
 
+To run a root other than the default, pass `--entry-point <id>` to
+`uip maestro flow debug` or `uip maestro flow process run`.
+
 ### One input, whichever root fired: `{ shared }`
 
 This is the default way to hand the shared body "the input, whichever root

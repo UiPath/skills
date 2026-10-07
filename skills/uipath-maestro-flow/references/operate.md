@@ -126,6 +126,17 @@ the input's own name:
 At run time that variable is an OBJECT, not a path — a script reads the uploaded
 name as `$vars.<triggerNodeId>.output.<inputName>.FullName`.
 
+**A flow with more than one root starts at the default root.** That is the
+trigger marked `isDefaultEntryPoint`, else the first trigger. To run another
+root, pass its trigger node id:
+
+```bash
+uip maestro flow debug <project-dir> --output json --entry-point <triggerNodeId>
+```
+
+A wrong id exits 3 and lists the valid trigger node ids. `Data.entryPoint` names
+the trigger the run started from.
+
 **A conversational flow cannot be debugged headlessly.** On a flow whose trigger
 is `conversationTrigger()`, debug uploads, returns
 `Code: FlowDebugStudioWebHandoff` with `Data.studioWebUrl`, and starts no run;
@@ -164,6 +175,12 @@ uip maestro flow process run <process-key> <folder-key> --output json \
 On `process run` only, `--attachment` overrides `--inputs` on a key collision,
 and `--validate` accepts pre-uploaded attachment references for file slots —
 they pass the JSON-schema check even though the slot's nominal type is `string`.
+
+`--entry-point <triggerNodeId>` starts the job at that root, and `--validate`
+then checks the inputs against that root's schema. Without it, the job starts at
+the package's main entry point, which is the first trigger even when another one
+is the default root — pass `--entry-point` whenever the root matters. You do not
+need `--feed-id`; the CLI reads the feed from the release.
 
 ## Inspect a job
 

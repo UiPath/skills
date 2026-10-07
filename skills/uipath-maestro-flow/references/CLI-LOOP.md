@@ -161,6 +161,7 @@ These are the common flags; use only the ones the behavior claim needs:
 | JSON inputs | `-i '{"name":"value"}'` or `--inputs @inputs.json` |
 | File input | `--attachment <input-name>=<path>`; repeat for multiple files |
 | Folder | one of `--folder-id`, `--folder-key`, or `--folder-path`; omit to auto-detect |
+| Start trigger | `--entry-point <trigger-node-id>`; omit to start at the default root |
 | Poll bound | `--timeout <seconds> --poll-interval <milliseconds>`; keep the stated task bound |
 | Compact read-back | `--output-filter "<JMESPath>" --output json` |
 | Quiet logs | `--log-level error`, or `--log-file <path>` to move them off the stream entirely |
@@ -225,8 +226,8 @@ double quotes instead of single ones:
 ```
 
 **There is no `incidents` in this envelope.** `Data` carries exactly
-`finalStatus`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`, `folderKey`,
-`solutionId`, `variables` and `elementExecutions` — an `incidents:incidents`
+`finalStatus`, `entryPoint`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`,
+`folderKey`, `solutionId`, `variables` and `elementExecutions` — an `incidents:incidents`
 projection silently yields `null`. Incidents come from the separate
 `debug-instance incidents` call below, keyed by the `instanceId` you just read.
 

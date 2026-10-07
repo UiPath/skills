@@ -123,7 +123,11 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --attachment <variableId>=<localPath> \
   --attachment <variableId>=<localPath>
+UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
+  --entry-point <triggerNodeId>
 ```
+
+A flow with more than one trigger starts at the trigger marked `isDefaultEntryPoint`, else the first trigger. `--entry-point <triggerNodeId>` starts at another trigger; a wrong ID exits 3 and lists the valid IDs. `Data.entryPoint` names the trigger the run started from.
 <!--skill-flavor:flow-debug-command-usage:end-->
 
 Pass the project directory containing `project.uiproj` (`<ProjectName>/` from the solution root, or `.` inside it). Use `--inputs` for a JSON object of flow input arguments. Repeat `--attachment <variableId>=<localPath>` to upload files for file-typed inputs; a bare path is rejected.
@@ -162,7 +166,11 @@ uip maestro flow process run <process-key> <folder-key> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
 uip maestro flow process run <process-key> <folder-key> --output json \
   --attachment <variableId>=<localPath>
+uip maestro flow process run <process-key> <folder-key> --output json \
+  --entry-point <triggerNodeId>
 ```
+
+`--entry-point <triggerNodeId>` starts the job at that trigger, and `--validate` then checks inputs against that trigger's schema. Without it, the job starts at the package's main entry point, which is the first trigger. `--feed-id` is not needed; the CLI reads the feed from the release.
 
 `--attachment` must match a `variables.globals[]` entry with `direction:"in"` and `type:"file"`; repeat it for multiple files. If `--inputs` and `--attachment` collide, attachment wins and the CLI logs an override warning. `--validate` accepts pre-uploaded attachment references for file-typed slots although their nominal type is `string`. Run `uip maestro flow process --help` for other subcommands.
 
