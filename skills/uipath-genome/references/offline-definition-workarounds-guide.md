@@ -102,7 +102,7 @@ The error names the attribute, but the attribute is valid: keep it, because the 
 2. In the definition file, rewrite that expression (or that literal) as an interpolated string: `string.Format("…tableRow='{0}'…", Row)` becomes `$"…tableRow='{Row}'…"`. In a C# project that is the text of the `CSharpValue`; in a VB project it is the attribute value `[$"…"]` (both checked).
 3. Register the definition with `create-elements` (`replace-elements` for an existing element), then link as usual.
 4. After the link pass, every target linked to that element in one workflow file is the same tag, without the selector. Restore them with one Edit per file and element, `replace_all` on that tag: add the definition's `FullSelectorArgument`, text unchanged, and keep `Reference`. It is a child element in a C# project and an attribute in a VB project. Validate the file. The build compiles the expression, and per-file `validate`, `build` and the run accept the target.
-5. A re-link writes the target without the expression again, and no link command keeps it. Re-apply step 4 after every re-link and after every `replace-elements` that changes the expression text. The link table marks these rows, and the report lists them.
+5. A re-link writes the target without the expression again, and no link command keeps it. Re-apply step 4 after every re-link and after every `replace-elements` that changes the expression text. The run's target tool does it ([source-migration-guide.md § UI targets](source-migration-guide.md)). The link table marks these rows, and the report lists them.
 
 Linked target after step 4 (C# project):
 
