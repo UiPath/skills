@@ -124,6 +124,37 @@ Requires `--connection-id` and `--operation`. Cache is bypassed when `--field` i
 
 When no api-type action's `rules[]` are satisfied by the supplied fields, the CLI errors with `No api-type ObjectAction matched for fields [...]`. List the operation's actions from the describe output's `connectorMethodInfo.design.actions[]` (or top-level `objectActions[]` for older shapes) to see which fields each action requires.
 
+### Solution-resource pickers
+
+Some parent fields pick a **solution resource** rather than a plain value — a Data Fabric folder entity is the common case, but any kind works the same way. Spot them in the describe output's `Method` JSON: the parameter's `design` carries `"solutionResourceKind"` (the resource kind, e.g. `"entity"`) and usually `"component": "Resources"`. The design action that reads such a field is a `POST`, and the connector builds the dependent fields from the resource's configuration graph sent in that POST's body — it cannot look the resource up itself.
+
+Pass the resource **name** with `-f` like any other parent value. The CLI reads the field's `solutionResourceKind`, finds the resource of that kind by name, and sends its graph (the resource plus every resource it depends on — e.g. the choice sets behind an entity's fields):
+
+```bash
+# Create Entity Record: folderEntityName is an entity picker
+uip is resources describe uipath-uipath-dataservice CreateEntityRecord_V3 \
+  --connection-id "<id>" --operation Create \
+  -f entityScope=folder \
+  -f folderEntityName="<entity-name>" \
+  --solution-folder <solution-dir> \
+  --output json
+# → RequestFields lists the entity's fields; a choice-set field's Enum holds the option NumberIds
+#   (labels: the solution's choiceSet/<name>.json, or `uip df choice-sets list-values <choice-set-id>`)
+```
+
+Where the resource is looked up:
+
+- **Local solution first** — `--solution-folder`, or the current directory when it is a solution. A resource declared there (deployed or not) wins, and local edits are what the connector sees.
+- **Otherwise the tenant's resource catalog** — e.g. run from outside any solution. The graph is the one `uip solution resources get <key> --include-dependencies` returns.
+
+| Situation | What to do |
+|-----------|-----------|
+| The catalog has the name in several folders → `ErrorCode: "invalid_argument"`, `Instructions` list up to 10 `<folder> (folder key …, resource key …)` | Add `-f <field>_folderKey=<folder-key>` for the folder you mean (the same companion field the activity stores). Not in the list? `uip solution resources list --source remote --kind <kind> --search "<name>"` shows every folder. This is a `-f` field, not the `--folder-key` option used for folder-scoped connections. |
+| No resource of that kind has the name → `ErrorCode: "not_found"` | Check the name and kind — `uip solution resources list --kind <kind> --search "<name>"` (add `--source remote` for the tenant). |
+| You already have the resource key, or the field's `design.selection` is not `{resourceName}` (the value is not the bare name) | Bind it explicitly: `--resource-key <field>=<resource-key>`. `<field>` must also be passed with `-f`; the body is keyed by that `-f` value. |
+
+Do not drop the picker field and retry when the lookup fails: without the graph the design action fails with `400 … Value for required parameter 'body' not found`. A `GET` design action (e.g. `FetchObjectMetadataTenant` over `tenantEntityName`, or a connector whose folder action is still a `GET`) carries no body, so no lookup happens there and `--resource-key` is ignored with a warning.
+
 ---
 
 ## Execute Operations
