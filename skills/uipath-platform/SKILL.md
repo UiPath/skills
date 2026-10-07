@@ -162,12 +162,7 @@ For a named interactive login:
 uip login --profile dev --output json
 ```
 
-<<<<<<< HEAD
-For a custom authority (e.g., alpha.uipath.com):
-=======
 For a custom authority (Automation Suite, dedicated, or other non-default host):
-
->>>>>>> 7bbe60497 (fix(skills): remove alpha/staging UiPath hosts from customer-facing skills (#3792))
 ```bash
 uip login --authority "<AUTHORITY_URL>" --it --output json
 ```
