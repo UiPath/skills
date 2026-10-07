@@ -17,8 +17,7 @@ Needed inputs: app name, redirect URI(s), required OAuth scopes (from [oauth-sco
 | Environment | Cloud Host |
 |---|---|
 | cloud | `https://cloud.uipath.com` |
-| staging | `https://staging.uipath.com` |
-| alpha | `https://alpha.uipath.com` |
+| Custom | The portal host from `uip login status --output json` → `Data.BaseUrl` |
 
 ## Scope model — CLI vs portal
 

@@ -15,7 +15,7 @@ Every command accepts `--output json`. Parse the structured response:
 ```bash
 uip login status --output json                 # Data.Status == "Logged in"
 uip login                                      # interactive OAuth
-uip login --authority https://alpha.uipath.com # non-prod
+uip login --authority "<AUTHORITY_URL>"        # non-default host
 ```
 
 See [auth-context.md](auth-context.md) for reading `~/.uipath/.auth` (the canonical source for `UIPATH_TENANT_ID`, `UIPATH_TENANT_NAME`, `UIPATH_ORGANIZATION_ID`, `UIPATH_ACCESS_TOKEN`).

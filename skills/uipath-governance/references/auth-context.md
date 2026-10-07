@@ -42,7 +42,7 @@ Before any capability runs, verify:
 1. `uip login status --output json` returns `Data.Status == "Logged in"`.
 2. `~/.uipath/.auth` exists and `UIPATH_TENANT_ID` is non-empty.
 
-If either fails, halt and ask the user to run `uip login` (or `uip login --authority https://alpha.uipath.com` for non-prod).
+If either fails, halt and ask the user to run `uip login` (or `uip login --authority "<AUTHORITY_URL>"` for a non-default host).
 
 ## Tenant-intent validation (Apply / Advise / Diagnose)
 
@@ -64,7 +64,7 @@ On mismatch, halt with:
 
   If you need a different org or authority:
     uip login                                   # interactive (cloud.uipath.com)
-    uip login --authority https://alpha.uipath.com  # non-prod alpha
+    uip login --authority "<AUTHORITY_URL>"     # non-default host
 
   Or, if this IS the tenant you meant, reply 'yes, continue on <currentTenantName>'.
 ```
@@ -90,12 +90,12 @@ uip login status --output json
 # → Data.Tenant should now show the new tenant
 ```
 
-When the user needs a different **org** or **authority** (e.g. alpha vs cloud.uipath.com):
+When the user needs a different **org** or **authority** (e.g. an Automation Suite host vs cloud.uipath.com):
 
 ```bash
 # Full re-login — browser OAuth flow
 uip login                                       # cloud.uipath.com (default)
-uip login --authority https://alpha.uipath.com  # non-prod alpha
+uip login --authority "<AUTHORITY_URL>"         # non-default host (Automation Suite, dedicated)
 ```
 
 **Show this to the user** when the mismatch block fires — the tenant set path is much faster than a full re-login when they're already in the right org.
