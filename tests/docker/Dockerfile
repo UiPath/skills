@@ -164,6 +164,7 @@ RUN --mount=type=secret,id=npm_auth_token \
     uip tools search --output json > /tmp/uip-tools-search.json && \
     tools="$(grep -oE '@uipath/[a-z0-9-]+-tool' /tmp/uip-tools-search.json | sort -u || true)" && \
     installed=0 && \
+    lagging="" && \
     for tool in $tools; do \
       pick_rc=0 && \
       tool_version="$(node "$tool_line_js" pick "$tool" "$cli_line" "$tool_tag" $tool_registry)" || pick_rc=$?; \
@@ -173,10 +174,16 @@ RUN --mount=type=secret,id=npm_auth_token \
              { echo "Error: ${tool}@${tool_version} failed to install"; exit 1; }; \
            installed=$((installed + 1)) ;; \
         3) echo "WARN: ${tool} has nothing to install on the @${tool_tag} train at or below ${cli_line}x — skipping" ;; \
-        4) echo "Error: ${tool} has @${tool_tag} builds, but none on the CLI's ${cli_line}x line yet. Rebuild once it publishes."; exit 1 ;; \
+        4) echo "Error: ${tool} has @${tool_tag} builds, but none on the CLI's ${cli_line}x line yet"; \
+           lagging="${lagging} ${tool}" ;; \
         *) echo "Error: could not look up ${tool} (tool-line.mjs pick exit ${pick_rc})"; exit 1 ;; \
       esac; \
     done && \
+    # Fail after the loop so the log names every lagging tool, not just the first.
+    if [ -n "$lagging" ]; then \
+      echo "Error: no @${tool_tag} build on the CLI's ${cli_line}x line yet for:${lagging}. Rebuild once they publish."; \
+      exit 1; \
+    fi && \
     echo "Installed ${installed} tool plugins (floor ${MIN_TOOLS})" && \
     if [ "$installed" -lt "$MIN_TOOLS" ]; then \
       echo "Error: only ${installed} tools installed (< ${MIN_TOOLS}) — feed outage or wrong dist-tag?"; \

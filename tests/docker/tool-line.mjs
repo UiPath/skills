@@ -24,12 +24,15 @@
 //       <registry> overrides the `@uipath` scope registry for the lookup.
 //       Exit codes:
 //         0  printed the version.
-//         3  nothing to install: the package is not on the registry, or the
-//            train has no build on this line or an older one (the tool is
-//            newer than the CLI). Safe to skip.
+//         3  nothing to install: the package is not on <registry> (E404,
+//            only when <registry> is given), or the train has no build on
+//            this line or an older one (the tool is newer than the CLI).
+//            Safe to skip.
 //         4  the train has builds on an older line but none on this one: the
 //            tool lags the CLI (a line bump in progress). Fail the build.
-//         5  the registry lookup failed (network, auth). Fail the build.
+//         5  the registry lookup failed (network, auth), including an E404
+//            from the default (GitHub Packages) registry: a token that cannot
+//            read a package also gets a 404 there. Fail the build.
 //   node tool-line.mjs check <line-prefix> <expected-count>  < tools-list.json
 //       Read `uip tools list --output json` on stdin. Exit 1 when the list is
 //       unreadable or empty, when it does not hold <expected-count> tools, or
@@ -139,9 +142,11 @@ export function offLineTools(toolList, prefix, expected) {
         .map((tool) => `${tool.Name}@${tool.Version}`);
 }
 
-// `npm view` exit status and stderr -> "missing" (E404) or "error".
-export function lookupFailure(stderr) {
-    return /\bE404\b/.test(String(stderr)) ? "missing" : "error";
+// `npm view` stderr -> "missing" or "error". An E404 means "missing" only on
+// an explicit <registry> (public npm). On the default GitHub Packages feed a
+// token without read access to a package also gets a 404, so it is an error.
+export function lookupFailure(stderr, registry) {
+    return registry && /\bE404\b/.test(String(stderr)) ? "missing" : "error";
 }
 
 function main(argv) {
@@ -163,7 +168,7 @@ function main(argv) {
             stdio: ["ignore", "pipe", "pipe"],
         });
         if (result.status !== 0) {
-            if (lookupFailure(result.stderr) === "missing") {
+            if (lookupFailure(result.stderr, registry) === "missing") {
                 console.error(`${pkg}: not published on this registry`);
                 return 3;
             }

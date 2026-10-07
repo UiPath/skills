@@ -143,9 +143,11 @@ describe("offLineTools", () => {
 });
 
 describe("lookupFailure", () => {
-    test("E404 means not published; anything else is a lookup error", () => {
-        assert.equal(lookupFailure("npm error code E404\nnpm error 404 Not Found"), "missing");
-        assert.equal(lookupFailure("npm error code E401\nnpm error 401 Unauthorized"), "error");
+    test("E404 means not published only on an explicit registry", () => {
+        const npm = "https://registry.npmjs.org";
+        assert.equal(lookupFailure("npm error code E404\nnpm error 404 Not Found", npm), "missing");
+        assert.equal(lookupFailure("npm error code E404\nnpm error 404 Not Found"), "error");
+        assert.equal(lookupFailure("npm error code E401\nnpm error 401 Unauthorized", npm), "error");
         assert.equal(lookupFailure("npm error code ECONNRESET"), "error");
     });
 });
@@ -179,12 +181,20 @@ describe("command line", () => {
         });
         assert.equal(result.status, 3);
 
-        result = run(["pick", "@uipath/rules-tool", "1.202.", "latest"], {
+        result = run(
+            ["pick", "@uipath/rules-tool", "1.202.", "latest", "https://registry.npmjs.org"],
+            { npmErr: "npm error code E404\n", npmRc: 1 },
+        );
+        assert.equal(result.status, 3);
+        assert.match(result.stderr, /not published/);
+
+        // GitHub Packages answers 404 to a token that cannot read the package.
+        result = run(["pick", "@uipath/maestro-tool", "1.204.", "dev"], {
             npmErr: "npm error code E404\n",
             npmRc: 1,
         });
-        assert.equal(result.status, 3);
-        assert.match(result.stderr, /not published/);
+        assert.equal(result.status, 5);
+        assert.match(result.stderr, /registry lookup failed/);
 
         result = run(["pick", "@uipath/maestro-tool", "1.204.", "dev"], {
             npmErr: "npm error code E401\n",
