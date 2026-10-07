@@ -29,6 +29,8 @@ _spec.loader.exec_module(_flow_check)
 assert_output_nonempty = _flow_check.assert_output_nonempty
 run_debug = _flow_check.run_debug
 
+CASE_COUNT = 3
+
 
 def normalized(value: Any) -> Any:
     """Normalize scalar runtime values without accepting loose substrings."""
@@ -64,8 +66,8 @@ def main() -> None:
         raise SystemExit("FAIL: seed.json is missing; pre_run did not complete")
     seed = json.loads(seed_path.read_text(encoding="utf-8"))
     cases = seed.get("cases")
-    if not isinstance(cases, list) or len(cases) != 2:
-        raise SystemExit("FAIL: seed.json must contain exactly two cases")
+    if not isinstance(cases, list) or len(cases) != CASE_COUNT:
+        raise SystemExit(f"FAIL: seed.json must contain exactly {CASE_COUNT} cases")
     for case in cases:
         verify_case(case)
 

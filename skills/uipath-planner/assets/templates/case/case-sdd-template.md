@@ -610,7 +610,9 @@ Load `uipath-planner` with this SDD path to derive the task list:
 
 > Load `uipath-planner`. SDD path: `<this-file>`.
 
+<!--skill-flavor:planner-next-step:start-->
 The planner detects the `## Planner Handoff` header, parses Section 2: Stages & Tasks and Section 4: Integrations, derives the per-skill task list, and emits live `TaskCreate` calls. If `Execution autonomy: interactive`, it enters plan mode for task review before execution.
+<!--skill-flavor:planner-next-step:end-->
 
 Implementation tasks **do not live in this SDD** — they live in the planner's output.
 

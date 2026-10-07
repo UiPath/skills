@@ -36,34 +36,40 @@ leave an earlier `*.merged.flow` there: the project validator treats every
 
 ## The generated pipeline
 
-`decompile` writes `<Name>.pipeline.mjs` alongside the source. Prefer it for any
-narrow edit: it chains all four steps below, and it captures the baseline before
-your edit rather than after, which is the ordering mistake that forces a rebuild.
+`decompile` writes `<Name>.pipeline.mjs` into the `.flow-sdk/` work directory
+beside the source. Prefer it for any narrow edit: it chains all four steps below,
+and it captures the baseline before your edit rather than after, which is the
+ordering mistake that forces a rebuild.
 
 ```bash
-uip maestro flow decompile Deployed.flow -o Deployed.flow.ts
-node Deployed.pipeline.mjs    # compiles the pristine baseline; stops there
-# Edit Deployed.flow.ts narrowly; preserve existing step ids.
-node Deployed.pipeline.mjs    # compiles the edit, merges into Deployed.merged.flow
+uip maestro flow decompile Deployed.flow -o .flow-sdk/Deployed.flow.ts
+node .flow-sdk/Deployed.pipeline.mjs    # compiles the pristine baseline; stops there
+# Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
+node .flow-sdk/Deployed.pipeline.mjs    # compiles the edit, merges into .flow-sdk/Deployed.merged.flow
 ```
 
 Re-running it after further edits repeats only the compile and merge — the
 baseline is captured once and reused. Pass `--no-pipeline` to `decompile` when
 you deliberately want the manual sequence instead. The pipeline writes its
-`.flow` artifacts beside the `.flow.ts`; use it only when that source directory
-is already outside the canonical Flow project. When source must remain in the
+`.flow` artifacts into that `.flow-sdk/` directory; use it only when the
+directory is outside the canonical Flow project, because product validation
+treats every `.flow` below the project, hidden folders included, as a
+deliverable. When source must remain in the
 project for relative sidecars, use the safe project loop above.
 
 ## The same loop by hand
 
 ```bash
-uip maestro flow decompile Deployed.flow -o Deployed.flow.ts
-uip maestro flow compile Deployed -o Deployed.baseline.flow
-# Edit Deployed.flow.ts narrowly; preserve existing step ids.
-uip maestro flow compile Deployed -o Deployed.edited.flow
-uip maestro flow merge Deployed.flow Deployed.edited.flow \
-  -o Deployed.merged.flow --baseline Deployed.baseline.flow
+uip maestro flow decompile Deployed.flow -o .flow-sdk/Deployed.flow.ts --no-pipeline
+uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/Deployed.baseline.flow
+# Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
+uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/Deployed.edited.flow
+uip maestro flow merge Deployed.flow .flow-sdk/Deployed.edited.flow \
+  -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/Deployed.baseline.flow
 ```
+
+Like the pipeline, this keeps every candidate in `.flow-sdk/`; validate
+`.flow-sdk/Deployed.merged.flow`, then replace the original with it.
 
 The baseline must be compiled from the pristine decompiled source, before any
 edit. It lets merge distinguish authored changes from reconstructed content;

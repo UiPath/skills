@@ -1,6 +1,7 @@
 {
   "version": 2,
   "rules": [
+    { "match": "--help",                                              "passthrough": true },
     { "match": "or folders list",                                     "file": "or_folders_list.json" },
     { "match": "agenthub mcp list",                                   "file": "agenthub_mcp_list.json" },
     { "match": "agenthub mcp-tools list --mcp test-mcp-skill",        "file": "mcp_tools_list.json" },

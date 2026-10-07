@@ -1,15 +1,14 @@
 # Symbolic connector bindings
 
 `bindings.json` maps the short connection and folder names in authored
-TypeScript to tenant resource keys. It lives in `.flow-sdk/` beside the
-`<Name>.flow.ts` file; a legacy `bindings.json` at the root is still read when
-`.flow-sdk/bindings.json` is absent.
+TypeScript to tenant resource keys. It lives in the SDK's work directory,
+`.flow-sdk/`, beside the `<Name>.flow.ts` file.
 
 ## Project layout
 
 ```text
-<Name>.flow.ts
 .flow-sdk/
+  <Name>.flow.ts
   bindings.json
   connectors/
     <connector-key>.ts
@@ -21,11 +20,12 @@ TypeScript to tenant resource keys. It lives in `.flow-sdk/` beside the
         ...generated descriptor data...
 ```
 
-`uip maestro registry prepare` prints the import for
-`.flow-sdk/connectors-local/<connector-key>.ts`.
-The generated descriptor data lives below `.flow-sdk/connectors-local/descriptors/`;
-do not import it directly. `bindings.json` is independent of that descriptor
-overlay.
+`uip maestro registry prepare` writes `.flow-sdk/bindings.json` and prints the
+import for `./connectors-local/<connector-key>.ts`, relative to the source.
+The generated descriptor data lives below `connectors-local/descriptors/`; do
+not import it directly. `bindings.json` is independent of that descriptor
+overlay. Studio Web reads none of these files, and `uip solution pack`/`upload`
+leave `.flow-sdk/` out.
 
 ## Schema
 
@@ -144,9 +144,11 @@ Use unique `id` and `name` values. The resolver takes the first entry whose
 ## Resolution and precedence
 
 The compile commands load `--bindings <file>` when supplied. Otherwise they
-load `.flow-sdk/bindings.json` from the current directory, or a legacy
-`./bindings.json`, when it exists. `emitFlow()` uses the same default unless
-`bindingsFile` or a `Bindings` instance is supplied.
+load `.flow-sdk/bindings.json` under the current directory when it exists. A
+workspace laid out before `.flow-sdk/` existed, with only a root-level
+`./bindings.json`, keeps using that file; when both exist the `.flow-sdk/` one
+wins and stderr names the ignored root file. `emitFlow()` uses the same
+default unless `bindingsFile` or a `Bindings` instance is supplied.
 
 ```ts
 .step('notify', connector(SendMessage, {
@@ -161,15 +163,15 @@ is `slack`; `folder: 'shared'` is resolved the same way. For each match,
 do not treat a successful compile as proof that an invented id exists.
 
 Only compile/emission reads the authored file. `uip maestro flow validate`,
-solution resource refresh, and product debug read the emitted `.flow`, not the
-authored `bindings.json`. A compile regenerates the artifact from the authored
+solution resource refresh, and product debug read the emitted `.flow`, not
+`.flow-sdk/bindings.json`. A compile regenerates the artifact from the authored
 mapping. A later direct edit to the artifact remains in effect only until the
 next compile.
 
 ## Emitted-artifact bindings
 
 `uip maestro flow binding add` edits bindings inside an already emitted `.flow`;
-it does not create or update the authored symbolic file. SDK-authored Integration
+it does not create or update `.flow-sdk/bindings.json`. SDK-authored Integration
 Service actions and managed HTTP nodes should instead keep symbolic names in
 source plus `bindings.json`, so recompilation deterministically restores the
 same node detail and product bindings. Use direct artifact edits only for a

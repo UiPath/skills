@@ -517,6 +517,19 @@ The CLI probes Studio Web for the bundled `SolutionId` and picks the operation i
 | `--force` | Assert the solution exists and overwrite it without the probe. Not normally needed; fails `not_found` when the cloud solution is gone | Probe runs |
 | `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
 
+The bundle leaves out `.venv/`, `node_modules/`, `__pycache__/`, `.git/`, `.local/` and `.env*` files on its own. To leave more out, add a `.uipignore` file with `.gitignore` syntax — at the solution root (patterns relative to the solution) or inside a project next to its `project.uiproj` (patterns relative to that project, applying to it only):
+
+```gitignore
+# build output and logs anywhere in the solution
+dist/
+*.log
+!important.log
+# one project's generated code
+MyAgent/generated/
+```
+
+A pattern that would drop a project the `.uipx` lists is refused with `ErrorCode: invalid_argument` — take the project out with `uip solution projects remove` instead. `uip codedapp push` reads the same `.uipignore`; `uip solution pack` does not.
+
 > A project's target framework (platform) is fixed at creation and **cannot be mutated** — re-uploading or editing configuration will not change it. To target a different platform (e.g., Windows → Cross-platform), **recreate the project** with the correct target framework and upload that.
 
 ## Step 13: Delete from Studio Web

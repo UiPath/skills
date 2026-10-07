@@ -16,3 +16,9 @@ or fall through to shared work is a business-flow choice.
 
 The two sequence ports are `true` and `false`. Arm `.label(text)` values become
 `trueLabel` and `falseLabel`, defaulting to `True` and `False`.
+
+## At a glance
+
+Split runtime control into true and false paths.
+
+Use branch for a two-way decision; decide whether arms return or ref back into shared work.

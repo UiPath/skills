@@ -209,10 +209,10 @@ For registry-evidence-only tasks, follow the command-first recipe in
    rank them. Do not call `registry get` for structural
    gaps the registry never owns: sequence flows, gateways, events, boundary
    events, multi-instance/loop markers, `errorMapping`/retry structure, or
-   diagrams. If a registry template's BPMN host tag is PascalCase (for example
-   `<bpmn:SendTask>` or `<bpmn:ReceiveTask>`), normalize the host tag to the
-   serializer's lower-camel BPMN element (`<bpmn:sendTask>`,
-   `<bpmn:receiveTask>`) while preserving the `uipath:*` payload exactly.
+   diagrams. On every `bpmn:` tag you paste, opening and closing, lowercase
+   the first letter after `bpmn:`: `<bpmn:UserTask>` → `<bpmn:userTask>`,
+   `<bpmn:ServiceTask>` → `<bpmn:serviceTask>`. Preserve the `uipath:*`
+   payload exactly.
    `BPMN.ScriptTask` is the registry lookup key, but a new node serializes
    `<uipath:type value="BPMN.Variables" version="v1" />` — never the lookup
    key. Local validation accepts the older discriminator, so a clean
@@ -282,6 +282,36 @@ For registry-evidence-only tasks, follow the command-first recipe in
    by the HITL template's `<uipath:output ... var="...">` (for example
    `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
    variable.
+   For an `Intsvc.*` activity whose `inputTarget` is `body`
+   (`Intsvc.ActivityExecution` and its async, agent, and workflow variants),
+   these rules override the template's `InputNotes`, `DiscoveryNotes`, and
+   `ContextFieldNotes`:
+   - **One body.** Exactly one `<uipath:input name="body" type="json"
+     target="body">` holding the whole request object in CDATA, never one
+     input per field and never a bare array. Dotted names nest
+     (`fields.project.key` → `{"fields":{"project":{"key":…}}}`); `users[*]`
+     is an array under `users` (`{"users":["U1","U2"]}`). See
+     [Body shape](references/registry-workflow.md#body-shape-hand-authored-files-need-one-targetbody-input).
+   - **Required `Parameters`.** Each `Required: true` entry (Slack `send_as`)
+     is its own `uipath:input` with `target` set to its `Type`, after
+     `</uipath:context>`, valued from the request, else its `DefaultValue`. See
+     [Parameters](references/registry-workflow.md#required-parameters-are-separate-from-the-body--emit-every-one).
+   - **`operation`** (`Intsvc.ActivityExecution` only) is the described
+     `Operation.Name` (`Create`, `List`, `Retrieve`, `Update`, `Delete`,
+     `Replace`), never the activity's `Name`.
+   - **Data Service files** use `UploadFileToRecordField`,
+     `DownloadFileFromRecordField`, and `DeleteFileFromRecordField`, never the
+     `V2` objects `uip is resources list` shows. See
+     [Picking the object](references/registry-workflow.md#picking-the-object-take-it-from-the-table-do-not-infer-it).
+   - **`folderKey`** (`Intsvc.ActivityExecution` only). Keep the template's
+     `folderKey` context input as `=bindings.<folderBindingId>` plus its
+     folder binding on every node that binds a connection. Without it the run faults `102010` `Value cannot be
+     null (Parameter 'Folder')`. See
+     [Bindings](references/registry-workflow.md#4-bindings--from-bindinginfo-never-invented).
+   - **Values.** A `Reference` field takes the looked-up id (Rule 2). A body
+     value without a leading `=` is a literal: write `"=vars.<id>"`, and make
+     text mixed with variables one `=js:` expression
+     (`"=js:'Severity: ' + vars.Var_Severity"`).
    For an Integration Service draft or boundary handoff the user asked for (a
    request that only says to validate is not one), emit **only** the
    `.bpmn` plus the notes file — do NOT create the four generated package files
@@ -357,13 +387,18 @@ For registry-evidence-only tasks, follow the command-first recipe in
    event-object checks) offline, plus deploy-readiness checks:
 
    ```bash
-   python3 -c "import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])" <file.bpmn>
-   uip maestro bpmn validate <file.bpmn> --output json
+   python3 -c "import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])" <file.bpmn> &&
+     ! grep -nE '</?bpmn:[A-Z]' <file.bpmn> &&
+     uip maestro bpmn validate <file.bpmn> --output json
    ```
 
-   Exit 0 = valid; exit 1 = validation failed. Read severity from each issue's
-   `[error]`/`[warning]` tag, not from the `Found N error(s)` header, which
-   counts errors while the list under it prints warnings too. Fix only
+   `validate` ignores tag case; a line the `grep` prints is a tag to lowercase
+   (step 2).
+
+   Exit 0 = valid. Exit 1 = a parse error, a `grep` hit, or a `validate`
+   failure. Read severity from each issue's `[error]`/`[warning]` tag, not
+   from the `Found N error(s)` header, which counts errors while the list under
+   it prints warnings too. Fix only
    error-severity findings, then re-run step 4 and validate again; stop
    re-validating once every remaining finding is a warning or the placeholder
    pair below. `read but never assigned` is a defect no error covers: nothing
@@ -470,10 +505,6 @@ and honestly surfaced to the user as gaps when asked.
 3. **Structural BPMN is authored, not invented.** Follow the spec/canvas
    contract in [references/structural-bpmn.md](references/structural-bpmn.md);
    flag honestly what the registry does not expose.
-   BPMN XML element names are case-sensitive: use exact lower-camel tags such
-   as `<bpmn:startEvent>`, `<bpmn:intermediateCatchEvent>`,
-   `<bpmn:scriptTask>`, and `<bpmn:endEvent>`. Do not write PascalCase tags
-   like `<bpmn:IntermediateCatchEvent>`.
 4. **One clarifying round, then author.** Ask (AskUserQuestion) only for a
    choice that the request and the CLI evidence leave undecidable and whose
    wrong answer is unrecoverable or forces an invented identifier; batch those
@@ -543,8 +574,11 @@ and honestly surfaced to the user as gaps when asked.
    asks for none of those — emit
    only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers.
 17. **Incorporating a resource delegated to a sibling skill (RPA workflow, API
-   workflow, agent) is a five-step sequence, in this order. Stopping after
-   the owning skill hands the resource back is not done.**
+   workflow, agent, business rule) is a five-step sequence, in this order.
+   Stopping after the owning skill hands the resource back is not done.**
+   (A business rule skips step 4, and step 3's release and folder keys do
+   not apply: it binds by catalog entity key and `folderPath` per
+   [registry-workflow.md](references/registry-workflow.md) § Business rule bindings.)
 <!--skill-flavor:delegated-resource-solution-first:start-->
    (1) Create or open the solution **first** (`uip solution init`; on
    `unknown command`, the older `uip solution new`), and
@@ -578,7 +612,7 @@ and honestly surfaced to the user as gaps when asked.
    property name. Without a run, use the schema name and report the mapping
    as unverified.
 18. **Job-wrapper registry templates (`Orchestrator.StartJob`,
-   `ExecuteApiWorkflowAsync`, `BusinessRules`, `StartAgenticProcess[Async]`,
+   `ExecuteApiWorkflowAsync`, `StartAgenticProcess[Async]`,
    `StartCaseMgmtProcess[Async]`) serve an unresolved `releaseKey` that
    validates but faults at runtime. This is the one exception to rule 6's
    paste-literally.** For all of them, bind `releaseKey` via

@@ -374,18 +374,21 @@ A node that targets a cloud resource carries a binding. The `bindingInfo` on the
 extension type tells you the binding shape; the concrete value comes from
 discovery or the user.
 
-- **Resource bindings** (`bindingInfo.resource` = `process` / `queue` /
-  `BusinessRule`): the context field named by `bindingInfo.contextField`
-  (e.g. `releaseKey`, `queueName`, `entityKey`) holds the resource key
-  (`bindingInfo.propertyAttribute`, usually `Key`). Resolve the real key with
-  `registry search` / discovered `Processes` / `Queues`; never guess a GUID.
-  A business rule binds `entityKey`, `name`, and `folderPath` to `BusinessRule`
-  (`Key`, `name`, `folderPath`) — never a `process` `releaseKey`, even when
-  `registry get` returns one. Its key is the rule's catalog entity key, never a
-  `Key` from `Processes` or a release key; if the user has not given it, ask.
-  A rule defined only in this solution uses its name as the key. The
-  `folderPath` binding always carries a `default`, `""` when the rule lives in
-  the running job's folder. Its unbound `_label` context holds the rule's name.
+- **Resource bindings** (`bindingInfo.resource` = `process` / `queue`): the
+  context field named by `bindingInfo.contextField` (e.g. `releaseKey`,
+  `queueName`) holds the resource key (`bindingInfo.propertyAttribute`,
+  usually `Key`). Resolve the real key with `registry search` / discovered
+  `Processes` / `Queues`; never guess a GUID.
+- **Business rule bindings** (`BusinessRule`): the context `name` and
+  `folderPath` each reference a `BusinessRule` binding (`propertyAttribute`
+  `name` / `folderPath`) — never a `Key` binding or a `process` `releaseKey`,
+  even when `registry get` returns one. Both bindings carry the rule key as
+  `resourceKey`: the rule's catalog entity key, never a `Key` from `Processes`
+  or a release key; if the user has not given it, ask. Bind only a deployed
+  rule; one defined only in this solution is deployed first (SKILL.md rule 17).
+  The `folderPath` binding always carries a `default`, `""` when
+  the rule lives in the running job's folder. The unbound `_label` context
+  input holds the rule's name.
 - **Connection bindings** (`Intsvc.*`): the context references a connection via
   `=bindings.<bindingId>`, and a `<uipath:binding>` of `resource="Connection"`
   with `propertyAttribute="ConnectionId"` in the process-level
@@ -403,11 +406,16 @@ block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, an
 `default` value (the resolved key or id). On a **connection** binding
 `resourceKey` is required too — omitting it fails `validate` with
 `Integration Service activity connection binding "<id>" is missing
-resourceKey`. A `BusinessRule` binding carries the rule key as `resourceKey`.
-Other binding kinds (`process`, `queue`) carry no `resourceKey`; do not invent
-one.
+resourceKey`. `process` and `queue` bindings carry `resourceKey` from
+`bindingInfo.resourceKeyPattern`. Both `BusinessRule` bindings carry the same
+`resourceKey`, the rule key:
 
-A folder-scoped connector activity needs TWO bindings that share one
+```xml
+<uipath:binding id="Binding_RuleName"   name="name"         type="string" resource="BusinessRule" propertyAttribute="name"       resourceKey="<RULE_KEY>" default="<RULE_NAME>" />
+<uipath:binding id="Binding_RuleFolder" name="folderPath"   type="string" resource="BusinessRule" propertyAttribute="folderPath" resourceKey="<RULE_KEY>" default="" />
+```
+
+Every `Intsvc.ActivityExecution` bound to a connection needs TWO bindings that share one
 `resourceKey` (the connection id) and differ in `propertyAttribute`: the
 connection binding's `default` is the connection id, the folder binding's
 `default` is the folder key.
@@ -468,9 +476,9 @@ next section for the fix.
 
 ## Job-wrapper v1 trap — `releaseKey` templates are unrunnable
 
-`Orchestrator.StartJob`, `Orchestrator.ExecuteApiWorkflowAsync`,
-`Orchestrator.BusinessRules`, and `Orchestrator.StartAgenticProcess[Async]` /
-`StartCaseMgmtProcess[Async]` all serve the same **v1** `xmlTemplate`:
+`Orchestrator.StartJob`, `Orchestrator.ExecuteApiWorkflowAsync`, and
+`Orchestrator.StartAgenticProcess[Async]` / `StartCaseMgmtProcess[Async]` all
+serve the same **v1** `xmlTemplate`:
 `<uipath:activity version="v1">` with a hidden, unbound `releaseKey` /
 `folderId` / `folderPath` / `name` context (`binding: false` on every field
 except `releaseKey`, which carries `bindingInfo` — `resource: "process"`,
@@ -488,8 +496,8 @@ the template's second bug.** Verified end-to-end for
    `bindingInfo` already documents (see [§4
    Bindings](#4-bindings--from-bindinginfo-never-invented) above): a
    process-kind `<uipath:binding resource="process" propertyAttribute="Key"
-   default="<resolved-key>" />`, referenced from the context as
-   `=bindings.<id>`. Resolve `<resolved-key>` from `uip or processes list
+   resourceKey="<RELEASE_KEY>" default="<RELEASE_KEY>" />`, referenced from the context as
+   `=bindings.<id>`. Resolve `<RELEASE_KEY>` from `uip or processes list
    --folder-path <path> --output json` → the deployed resource's
    `Key` — never leave the template's `{releaseKey}` placeholder unresolved.
 2. **The template's `folderId` context field is misnamed — the runtime reads
@@ -658,12 +666,6 @@ exact template for any of them with `registry get <type>`.
 
 This table is a discovery aid, not a substitute for `registry get` — always pull
 the live template before authoring.
-
-If a registry `xmlTemplate` returns a PascalCase BPMN host tag such as
-`bpmn:SendTask` or `bpmn:ReceiveTask`, normalize only the BPMN host element
-names to the serializer's lower-camel form (`bpmn:sendTask`,
-`bpmn:receiveTask`) when inserting it into a source file. Keep the
-`uipath:*` payload and its `uipath:type` value unchanged.
 
 Event types stay event-wrapped even when you place them on task-like BPMN
 hosts: `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,

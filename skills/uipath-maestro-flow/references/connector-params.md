@@ -16,13 +16,23 @@ see [`data-fabric.md`](data-fabric.md) for the routing table.
 Signatures:
 
 - `connector(descriptor, inputs, opts?)`
-- `connector(key, action, inputs?, { connection?, folder?, object?, version? })`
+- `connector(key, action, inputs?, { connection, folder, object?, version? })` (`connection` and `folder` are required: `check` reports `BINDING_MISSING` without them)
 
 ```ts
 .step('issue', connector('uipath-atlassian-jira', 'get-issue',
   { issueId: input('issueId'), project: 'IN', issuetype: 'Task' },
   { connection: 'jira', folder: 'shared' }))
 ```
+
+## At a glance
+
+Call a curated or generic connector operation using a generated descriptor or key/action pair.
+
+Data Fabric is also connector key `uipath-uipath-dataservice`: use it for file
+record fields, Record Created/Updated events, or a scenario that names the
+connector. Record CRUD is native ([Data Fabric](data-fabric.md)). Discover tenant-specific fields and ids; preserve every scenario-named input.
+
+**Bindings: [`bindings.md`](bindings.md)**
 
 ## Author first — `check` names every prepare you owe
 
@@ -33,7 +43,7 @@ source. The loop is:
 2. **Author** the step from the task's own words — the fields you intend,
    `lookup()` tokens for ids, `{ object: '<name-as-the-task-said-it>' }` for a
    generic operation.
-3. **Check**: `uip maestro flow check <Name>.flow.ts --source`. It names each
+3. **Check**: `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`. It names each
    gap with the exact command — `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`,
    `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
 4. **Prepare once** — `--object`, `--resolve` and `-f` compose in a single
@@ -79,7 +89,7 @@ uip maestro registry pull
 The library and its Markdown go to a shared cache
 (`~/.uipath/cache/flow-sdk/library/current/`), and `compile`, `check` and
 `registry search` resolve them from there with no flag. The project gets only
-`./.flow-sdk/connectors/`, holding a descriptor per connector it references.
+`.flow-sdk/connectors/`, holding a descriptor per connector it references.
 
 To read the Markdown directly, ask where it is:
 
@@ -123,7 +133,7 @@ uip maestro registry prepare <connector-key> <action> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
 
-The result lands in `./.flow-sdk/connectors-local/`, which the compilers union over the
+The result lands in `.flow-sdk/connectors-local/`, which the compilers union over the
 library. Calls accumulate, so preparing a second operation keeps the first.
 
 `prepare` picks the connection itself (see below). Pass `--connection-id <id>`
@@ -136,11 +146,12 @@ reject every input as unknown — the refusal is the only signal that says
 
 Descriptors from either tree are imported with their real `.ts` extension — a
 `.js` specifier does not resolve, because these are sources rather than compiled
-output:
+output. The paths are relative to the source, which sits in `.flow-sdk/` beside
+both trees:
 
 ```ts
-import { CreateInvoiceShare } from './.flow-sdk/connectors-local/uipath-salesforce-sfdc.ts';
-import { SendMessageToChannel } from './.flow-sdk/connectors/uipath-salesforce-slack.ts';
+import { CreateInvoiceShare } from './connectors-local/uipath-salesforce-sfdc.ts';
+import { SendMessageToChannel } from './connectors/uipath-salesforce-slack.ts';
 ```
 
 Older environments provide the same tool as a bare `prepare-connector` on
@@ -251,6 +262,11 @@ what is constant and narrow the rest downstream, or accept the design-time gap
 deliberately.
 
 ## Schema-dynamic operations: the parent-field loop
+
+The discovery-first gate the author-first loop replaced still holds for schema-dynamic operations (`loadByDefault`, dependent dropdowns, `customFieldsRequestDetails`): the static library descriptor is not sufficient there, and the prepare that check names — with every required `-f NAME=VALUE` — is what creates the design-time schema-replay cache.
+Do not substitute manual `resources run list` lookups plus a static `./connectors/<key>.ts` import: the lookups choose values but do not create that cache.
+After compiling, inspect the emitted connector configuration.
+`flow validate` can accept a missing cache, so completion requires non-null `customFieldsRequestDetails` whose parent values match the runtime inputs.
 
 A connection alone does not resolve these operations. Their real field set is a
 function of the **values** of a few *parent* fields, so the same operation on the

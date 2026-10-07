@@ -51,9 +51,9 @@ CLI: `uip is --help`
 
 ## API Workflows
 
-Studio Web project type for real-time, system-to-system integration over APIs — JSON workflows (Serverless Workflow DSL) run by `uip api-workflow run` and published to Orchestrator as API processes (executions are Orchestrator jobs). No UI automation, no robot, no agent runtime. Issues here involve runtime execution faults (expression errors, `<name> is not defined`, undefined `$context.outputs.<Activity>`, loop/logic faults), connector-call 401/403 in cloud (401: wrong activity kind or stale connection binding; 403: broken/disabled or under-scoped Integration Service connection), designer-roundtrip corruption (runs locally, breaks after a Studio Web save), and pack/publish/deploy failures. Connection faults surface through Integration Service; job/trigger mechanics through Orchestrator.
+Studio Web project type for real-time, system-to-system integration over APIs — JSON workflows (Serverless Workflow DSL) run by `uip api-workflow run` and published to Orchestrator as API processes (executions are Orchestrator jobs). No UI automation, no robot, no agent runtime. Issues here involve runtime execution faults (expression errors, `<name> is not defined`, undefined `$context.outputs.<Activity>`, loop/logic faults), connector-call 401/403 in cloud (401: wrong activity kind or stale connection binding; 403: broken/disabled or under-scoped Integration Service connection), designer-roundtrip corruption (runs locally, breaks after a Studio Web save), and pack/publish/deploy failures. Three more kinds of failure leave no trace in the workflow file, and neither `validate` nor a local `run` will show them: the workflow never ran at all (no job record — the trigger is off, points at an old release, its event connection is dead, or nothing called it), a platform limit cut the run off (a Script's 10-second budget, a loop stopping quietly at its `limit`, the 15-minute serverless job limit), and an outbound call blocked because the target allows the IP range of the other route. Connection faults surface through Integration Service; job/trigger mechanics through Orchestrator.
 
-CLI: `uip api-workflow validate`, `uip api-workflow run --no-auth`, `uip is connections ping`, `uip or jobs get`/`logs`, `uip traces spans get --job-key`
+CLI: `uip api-workflow validate`, `uip api-workflow run --no-auth`, `uip is connections ping`, `uip or jobs get`/`logs`, `uip or triggers list`/`history`, `uip traces spans get --job-key`
 
 - [products/api-workflows/overview.md](./products/api-workflows/overview.md) — Product overview, dependencies, evidence surfaces, and fault families
 - [products/api-workflows/summary.md](./products/api-workflows/summary.md) — All playbooks for API Workflow issues
@@ -321,6 +321,9 @@ For problems with nothing greppable (no exception, no error code — silent fail
 | Job stuck Pending | orchestrator | `PendingReasons` on the job record — its error codes ARE greppable signatures; re-grep after fetching |
 | Job/instance stuck Running | orchestrator (plain job) / maestro (BPMN instance) | Child-job states + open incidents; a Maestro instance with an Open incident is blocked until the incident is resolved |
 | Works in Debug, fails deployed | maestro | Debug-vs-deploy silent playbook |
+| Published API workflow "didn't run" — no job record exists | api-workflows | Something failed to start it, rather than the workflow being broken: check the trigger and `uip or triggers history`, or the caller one step upstream |
+| API workflow run stops with no error, or a loop returns short | api-workflows | A platform limit (Script 10 s budget; a loop stopping quietly at its `limit`, logging `reached iteration limit`; the 15-minute serverless limit) — `validate` cannot see any of them |
+| API workflow call to a firewalled host times out, connection pings healthy | api-workflows | Wrong outbound IP range allowed — serverless robots and Integration Service leave by different routes |
 | Duplicate task/element executions | maestro | Boundary-event silent playbook |
 | Traces/evidence missing or disappearing | maestro / orchestrator retention | Silent playbooks; retention windows |
 | Robot unresponsive, heartbeat gaps | orchestrator | Machine/session state via the orchestrator investigation guide |

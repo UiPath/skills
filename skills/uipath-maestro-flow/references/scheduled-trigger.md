@@ -13,6 +13,16 @@ export default flow('nightly')
   .build();
 ```
 
+## At a glance
+
+A platform timer starts the flow on a recurring interval.
+
+Signature: `.trigger(scheduled({ every: string }))`. `every` takes an ISO-8601
+repeating interval, or a Quartz cron expression (e.g. `'0 0 2 * * ?'`), which
+selects the trigger's 1.2 definition automatically.
+
+Prefer self-contained variables because there may be no caller supplying inputs.
+
 ## Authoring judgment
 
 A timer usually has no caller, so prefer `.var(...)` defaults or tenant-backed

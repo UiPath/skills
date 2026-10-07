@@ -53,7 +53,9 @@ All sub-steps are non-interactive. Run them first; their outputs drive the Step 
 
 If Step 1 resolves the request to **one project owned end-to-end by one specialist** — even when it bundles inline HITL / script / connector nodes or its own solution wrapper (author sub-steps, per the Skip paragraph in SKILL.md) — **stop Lane B**:
 
+<!--skill-flavor:single-skill-exit-no-plan:start-->
 1. Do NOT write a plan file. Do NOT emit `TaskCreate` calls. Do NOT ask the Step 3 batch.
+<!--skill-flavor:single-skill-exit-no-plan:end-->
 2. Say which specialist owns it and why ("Single-project `.flow` build — loading `uipath-maestro-flow` directly").
 3. Hand off the Step 1 context (detected paths, delivery model, any resolved answers) so the specialist does not re-discover it.
 
@@ -83,6 +85,7 @@ All inputs below are known by the end of Step 1/2 — no skip rule depends on a 
 > 1. **Explore first, then plan** — analyze the project and requirements, run non-mutating discovery, then present a plan for approval before any project changes *(recommended for non-trivial requests)*
 > 2. **Explore, plan, and execute simultaneously** — emit the plan as text and the main agent starts executing right away
 
+<!--skill-flavor:approach-behavior:start-->
 **If "explore first, then plan":**
 - You may run non-mutating discovery: `uip rpa analyze`, `uip rpa get-errors`, reading `project.json`.
 - Do NOT run commands that mutate the project (create files, register targets, install packages) — those belong to execution.
@@ -91,6 +94,7 @@ All inputs below are known by the end of Step 1/2 — no skip rule depends on a 
 **If "explore, plan, and execute simultaneously":**
 - Emit the plan as text in Step 5. The main agent loads the first specialist skill immediately and follows that skill's own workflow.
 - Do NOT call `EnterPlanMode`.
+<!--skill-flavor:approach-behavior:end-->
 
 ### Question 2 — Execution autonomy
 
@@ -136,9 +140,11 @@ Record the answers in the plan header AND summarize them in the relevant task's 
 
 ## Step 5 — Write the plan
 
+<!--skill-flavor:write-plan-target:start-->
 Compose `<feature>.md` per the schema in [plan-and-tasks-format.md → Non-PDD lane](plan-and-tasks-format.md#non-pdd-lane-featuremd). Plan body holds the task list with the same task row schema as Lane A.
 
 **Every task's Skill prompt embeds the plan path** — the exact relative or absolute path of the file written below (mirroring Lane A's embedded SDD path). `TaskCreate` copies prompts verbatim; a bare "this plan" leaves a resumed task with no way to find its values.
+<!--skill-flavor:write-plan-target:end-->
 
 ### Self-review before saving
 
@@ -147,7 +153,9 @@ Compose `<feature>.md` per the schema in [plan-and-tasks-format.md → Non-PDD l
 3. **Skill order** — correct specialist per task; skills load in the right order (e.g., RPA before platform deploy; testing before deploy).
 4. **Validation gaps** — every generation task ends with a `Validate:` compile / build / lint check.
 5. **Testing task present** — a dedicated `Testing (MANDATORY)` task exists for every generation skill in the plan. Routes to the specialist's testing references — does not describe the procedure.
+<!--skill-flavor:self-review-plan-path:start-->
 6. **Plan path present** — every Skill prompt names the plan file path (not "this plan").
+<!--skill-flavor:self-review-plan-path:end-->
 7. **No internal-flow leakage** — the plan does not duplicate steps from any specialist's own references.
 8. **Anti-hallucination rule** appended to every Skill prompt.
 
@@ -155,7 +163,9 @@ Fix issues before saving.
 
 ### Save location
 
+<!--skill-flavor:save-location-scope:start-->
 Save as `YYYY-MM-DD-<feature-name>.md`:
+<!--skill-flavor:save-location-scope:end-->
 
 - **Project directory exists** (`project.json`, `flow_files/`, `.uipath/`, or `pyproject.toml`) → save to `docs/plans/` within the project. Create the directory if needed.
 - **No project directory** → save to `./plans/` (relative to the current working directory). Create the directory if needed.
@@ -169,13 +179,17 @@ If a plan file already exists at the target path, ask the user via `AskUserQuest
 > 1. **Continue with the current plan** *(recommended)* — pick up where you left off; checkbox state preserved
 > 2. **Regenerate from the current request** — discard the current plan and rebuild
 
+<!--skill-flavor:resume-choices:start-->
 Option 1: read existing plan → recreate live `TaskCreate` calls with status preserved → done.
 Option 2: parse the request fresh, run identity-matching against the old file (preserve completed work), write the new plan, emit live tasks. Same regenerate algorithm as Lane A — see [plan-and-tasks-format.md → Regenerate logic](plan-and-tasks-format.md#regenerate-logic-pdd-driven-lane-only).
+<!--skill-flavor:resume-choices:end-->
 
 ## Step 6 — Present the plan
 
+<!--skill-flavor:present-plan:start-->
 - **Explore first, then plan:** call `EnterPlanMode` with the plan content. User approves → `ExitPlanMode` → emit live `TaskCreate` calls.
 - **Explore, plan, and execute simultaneously:** emit the plan as text. Then immediately emit live `TaskCreate` calls. Main agent starts executing.
+<!--skill-flavor:present-plan:end-->
 
 ## Lane B budget
 

@@ -13,6 +13,14 @@ A handler may `.return(...)`, `.terminate(...)`, or `.stepToRef(target)`.
 .step('useValue', script({ code: 'return "done";' }))
 ```
 
+## At a glance
+
+Route the immediately preceding action's failure through a handler path.
+
+Signature: `.step(name, action).onError(handler => ... )`; the handler reads the failure with `h.err(field)` (or `err(step, field)`) and may `stepToRef(target)`. `.stepToList(port, fn)` runs a path from any port; `.stepToRef(port, target)` is a side exit that leaves the success path running. Never read the failed step's `out(...)` inside its own handler — that output was never written.
+
+Choose deliberately between handling, rejoining, returning, terminating, and failing loud; test success and failure.
+
 ## Reading the failure
 
 `err()` writes ONE shape — `$vars.<step>.error.<field>` — and the compiler resolves where that family actually publishes the envelope.
@@ -65,7 +73,7 @@ success-path work.
 
 Two limits `check` enforces on a ref, and one it only warns about. It refuses an
 unknown target, a target inside another port's path, and a target inside a LOOP
-BODY — a loop reads `currentItem` / `currentIndex` per iteration, and an edge
+BODY — a loop reads `currentItem` / `currentIteration` per iteration, and an edge
 arriving from outside carries no iteration. It WARNS when a ref leaves a loop body
 (a break, which Flow has no node for) or crosses a parallel arm boundary (the Merge
 waits for every branch it forked). Those are best effort: verify them with

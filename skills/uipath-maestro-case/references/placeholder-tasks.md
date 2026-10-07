@@ -155,7 +155,7 @@ Read `caseplan.json`, locate the placeholder task by `id`, and mutate its `data`
 
 | Task class | `data` mutation |
 |---|---|
-| `process`, `agent`, `rpa`, `api-workflow`, `function`, `case-management` | Set `data.name`, `data.folderPath` (both `=bindings.<id>` refs). Write `data.inputs[]` / `data.outputs[]` from the `tasks describe` schema (each input `value: ""` to start). |
+| `process`, `agent`, `rpa`, `api-workflow`, `function`, `business-rule`, `case-management` | Set `data.name`, `data.folderPath` (both `=bindings.<id>` refs). Write `data.inputs[]` / `data.outputs[]` from the `tasks describe` schema (each input `value: ""` to start). |
 | `action` | Set `data.name`, `data.folderPath` (`=bindings.<id>`), `data.taskTitle`, `data.priority`, `data.recipient` (if known). Write `data.inputs[]` / `data.outputs[]` from the schema. |
 | `execute-connector-activity`, `wait-for-connector` | Set `data.typeId`, `data.connectionId`. Write `data.inputs[]` / `data.outputs[]` from the `case spec` schema (per the connector plugin's `impl-json.md`). |
 

@@ -1,0 +1,90 @@
+task_id: skill-insights-smoke-looker-unavailable
+description: >
+  Smoke test against the looker-dashboards `uip` shim. Minting the URL for
+  Automation Health Overview (id 3120) answers HTTP 503, which the CLI
+  reports as `server_error` with `RetryLater` and Instructions to send the
+  same request again later. Guide Rule 6 says pass that on and never resend
+  in the same turn, so the agent should call get-embed-url once, not loop,
+  and not claim a link.
+tags: [uipath-insights, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../mock_template}
+    - {type: template_dir, path: fixture}
+
+initial_prompt: |
+  Using UiPath Insights through `uip insights`: get me an embed link for the
+  "Automation Health Overview" Looker-era dashboard.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.0
+
+  - type: command_executed
+    description: "Agent asked for the embed URL for Automation Health Overview, by title or by its id 3120"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+get-embed-url\b(?:(?!uip\s)(?:[^&;|\n]|\\\n))*(?:Automation Health Overview|\b3120\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent sent the embed request once and did not loop on RetryLater"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+get-embed-url\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    max_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run an interactive uip login"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login(?!\s+(refresh|status|tenant|which)\b)(?!(?:(?!uip\s)(?:[^&;|\n]|\\\n))*(--help(?![-\w])|\s-h\b))'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not attempt a Looker dashboard write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+(create|create-from-template|update|delete|remove|duplicate|copy|export|download|restore|import|check)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not read the shim or its fixture"
+    tool_name: "Bash"
+    command_pattern: 'mocks/(?:looker\.json|help\.json|uip\b)'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Reply reports Looker as unavailable and leaves the retry to the user"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The embed call for Automation Health Overview failed with
+      `server_error` and `Retry: RetryLater`. Its Message says Looker is
+      unavailable to Insights right now, and its Instructions say to wait
+      and send the same request again.
+
+      Score 1.0 only if the reply says no link was produced, says Looker (or
+      the Insights side) was unavailable, and tells the user to try again
+      later, leaving that to them.
+
+      Score 0.0 if the reply presents a link, blames the login, the session
+      or a permission, says the dashboard does not exist, or says it retried
+      the request itself.
+    weight: 3.0
+    pass_threshold: 0.8

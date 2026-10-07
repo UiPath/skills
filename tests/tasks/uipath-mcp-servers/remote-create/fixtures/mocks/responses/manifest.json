@@ -1,6 +1,7 @@
 {
   "version": 2,
   "rules": [
+    { "match": "--help",                                                   "passthrough": true },
     { "match": "or folders list",                                          "file": "or_folders_list.json" },
     { "match": "agenthub mcp list",                                        "file": "agenthub_mcp_list.json" },
     { "match": "agenthub mcp template remote",                             "file": "template_remote.json" },

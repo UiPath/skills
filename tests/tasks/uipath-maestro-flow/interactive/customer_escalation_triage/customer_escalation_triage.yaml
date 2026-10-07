@@ -4,18 +4,18 @@
 task_id: skill-flow-interactive-customer-escalation-triage
 description: >
   Interactive end-to-end Flow evaluation. A simulated support-operations
-  expert asks for a customer-escalation triage flow but withholds the company's
-  severity, engineering-handoff, and acknowledgement policies until the coding
-  agent asks relevant follow-up questions. The resulting flow must validate and
-  produce the correct business outputs for independently seeded Sev1 and Sev3
-  cases when the grader runs it.
+  expert asks for a customer-escalation triage flow, states the Sev1, Sev3,
+  engineering-handoff, acknowledgement, correlation, and severity-label policies
+  up front, and withholds the Sev2 rule until the coding agent asks about it.
+  The resulting flow must validate and produce the correct business outputs for
+  independently seeded Sev1, Sev2, and Sev3 cases when the grader runs it.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, feature:escalation, feature:conversational]
 
 run_limits:
   expected_turns: 45
   max_turns: 100
   turn_timeout: 1200
-  task_timeout: 2400
+  task_timeout: 3000
 
 agent:
   # allowed_tools uses replace semantics. Keep the default authoring tools and
@@ -45,9 +45,8 @@ post_run:
     timeout: 120
 
 # No initial_prompt: simulation mode generates the opening request from the
-# persona and goal. The policy facts below are intentionally withheld until the
-# agent asks about them, making the conversation necessary to pass the runtime
-# business-outcome checks.
+# persona and goal. The Sev2 rule below is intentionally withheld until the
+# agent asks about it, and the seeded Sev2 case grades whether it did.
 simulation:
   enabled: true
   persona: |
@@ -63,12 +62,12 @@ simulation:
     businessImpact, and correlationId. The completed flow must validate. The
     grader supplies seeded cases and handles execution after validation.
   constraints:
-    - "In the opening request, state the goal and that you need a UiPath Maestro Flow validated before sign-off. State the flow's input and output contract using these EXACT identifiers, verbatim and unaltered — do not paraphrase, rename, abbreviate, or re-case any of them, and tell the coding agent the flow's declared inputs and outputs must use these names exactly as written because downstream systems consume them by name: the inputs are customerTier, productionDown, workaroundAvailable, businessImpact, and correlationId; the outputs are severity, engineeringNeeded, responseMode, and caseKey. Also state, in business terms and in your own words, the policy it has to encode: an Enterprise customer with production unavailable and no workaround is Sev1; informational or routine follow-up with no production impact is Sev3; engineering gets pulled in for Sev1 but not for Sev3; customer acknowledgements are always drafted for a human to review and never sent automatically, so the response mode is Draft; and the incoming correlationId must be carried through as the case key so downstream systems can correlate the run. Make clear that businessImpact arrives as free-form text the requester writes in their own words — a short phrase or sentence describing the impact, not a fixed keyword or code — so its exact wording varies from request to request. Close by inviting the coding agent to ask you anything it needs before it starts building."
-    - "Do NOT volunteer the Sev2 rules. Only if the agent asks about degraded production, partial impact, or what happens when a workaround exists: Sev2 means production is degraded or unavailable but a viable workaround exists, and engineering is needed for Sev2 as well."
+    - "In the opening request, state the goal and that you need a UiPath Maestro Flow validated before sign-off. State the flow's input and output contract using these EXACT identifiers, verbatim and unaltered — do not paraphrase, rename, abbreviate, or re-case any of them, and tell the coding agent the flow's declared inputs and outputs must use these names exactly as written because downstream systems consume them by name: the inputs are customerTier, productionDown, workaroundAvailable, businessImpact, and correlationId; the outputs are severity, engineeringNeeded, responseMode, and caseKey. State that the severity output values are written exactly like Sev1 and Sev3, verbatim with no space or hyphen, never \"Severity 1\". Also state, in business terms and in your own words, the policy it has to encode: an Enterprise customer with production unavailable and no workaround is Sev1; informational or routine follow-up with no production impact is Sev3; engineering gets pulled in for Sev1 but not for Sev3; customer acknowledgements are always drafted for a human to review and never sent automatically, so the response mode is Draft; and the incoming correlationId must be carried through as the case key so downstream systems can correlate the run. Make clear that businessImpact arrives as free-form text the requester writes in their own words — a short phrase or sentence describing the impact, not a fixed keyword or code — so its exact wording varies from request to request. Close by inviting the coding agent to ask you anything it needs before it starts building."
+    - "Do NOT volunteer the Sev2 rules. Only if the agent asks what Sev2 means, about other or intermediate severity levels, about cases the stated rules do not cover, or about degraded production, partial impact, or what happens when a workaround exists: Sev2 means production is degraded or unavailable but a viable workaround exists, and engineering is needed for Sev2 as well."
     - "If asked a finite-choice question, choose the option matching these policies."
     - "Keep each reply concise and internally consistent."
     - "If asked about execution, say the grader will handle it after validation."
-    - "If the coding agent asks you anything before it starts building, answer every outstanding question in ONE message and then let it build."
+    - "If the coding agent asks you anything before it starts building, answer every outstanding question in ONE message, include any withheld fact it asked about, stated plainly, and then let it build."
     - "The moment the coding agent reports the flow is built and validated, the conversation is over: reply with exactly <<<END>>> on its own line. Do not ask for a rebuild, polish, re-checks, or alternative designs, and do not raise a requirement you have not mentioned yet — the grader verifies the result from here."
   max_turns: 8
 
@@ -104,9 +103,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Seeded Sev1 and Sev3 runs produce the elicited severity, engineering, draft-response, and correlation outcomes"
+    description: "Seeded Sev1, Sev2, and Sev3 runs produce the elicited severity, engineering, draft-response, and correlation outcomes"
     command: "python3 $REFERENCE_DIR/interactive/customer_escalation_triage/check_customer_escalation_triage.py"
-    timeout: 1320  # budget-guard: manual x2. 2 x debug_budget(300) = 1210 + margin
+    timeout: 1920  # budget-guard: manual x3. 3 x debug_budget(300) = 1815 + margin
     expected_exit_code: 0
     weight: 8.0
     pass_threshold: 1.0

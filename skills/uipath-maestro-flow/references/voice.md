@@ -28,6 +28,24 @@ export default flow('support-line')
 }))
 ```
 
+## At a glance
+
+Talk to someone on a phone call. The call is identified by a `callContext`
+OBJECT — pass the whole thing, never a field inside it.
+
+Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, inputs?, callContext, voice?, maxIterations? })`.
+
+```ts
+.step('dial', createOutgoingCall({ from: '+15550001111', to: input('phone') }))
+.step('talk', voiceAgent({ systemPrompt: 'Confirm {{input.customerName}}\'s delivery window.',
+  inputs: { customerName: input('customerName') },
+  callContext: out('dial', 'callContext'),
+  voice: { model: 'gemini-3.1-flash-live-preview', persona: 'Kore' } }))
+.step('bye', endCall({ callContext: out('dial', 'callContext') }))
+```
+
+The incoming-call trigger publishes `out('start', 'callContext')`. A persona belongs to its voice model; `maxIterations` is capped at 8.
+
 ## The call context
 
 `out('start', 'callContext')` (inbound) or `out('<dialStep>', 'callContext')`

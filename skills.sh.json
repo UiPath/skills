@@ -12,6 +12,7 @@
         "uipath-agents",
         "uipath-maestro-bpmn",
         "uipath-maestro-case",
+        "uipath-rules",
         "uipath-coded-apps",
         "uipath-api-workflow",
         "uipath-human-in-the-loop",

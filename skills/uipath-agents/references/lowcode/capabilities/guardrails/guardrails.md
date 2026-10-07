@@ -12,6 +12,60 @@ Two types exist:
 
 > **This reference is the schema authority — do not inspect CLI internals.** The JSON shapes and examples in this file are authoritative and complete. Do NOT reverse-engineer guardrail schemas from the CLI installation: never grep `/usr/lib/node_modules/@uipath/**/dist/*.js`, read bundled/minified sources, or import-probe SDK packages to "confirm" a field. Copy the complete example for your guardrail type, adapt the values, then run `uip agent refresh "<AGENT_NAME>" --output json` and `uip agent validate "<AGENT_NAME>" --output json` — validate is the only schema check needed, and its errors name the offending field. Write the guardrail first and let validate correct you; do not spend turns pre-verifying a schema this file already gives you.
 
+## Walkthrough
+
+Use when adding input/output safeguards (PII detection, harmful content blocking, custom word rules) to a low-code agent. Guardrails are configured at the agent.json root `guardrails` array.
+
+> **Read only what the task needs.** For guardrail work this file (plus [escalation-guide.md](escalation-guide.md) or [custom-rules-guide.md](custom-rules-guide.md) when those types apply) is sufficient — do not read the model-selection, prompting, or evals references for a guardrail task. Run `uip agent guardrails list` directly: the CLI handles authentication itself, so never run a login/auth/config preflight command first — react only to an actual authentication error from the command itself.
+
+> **MANDATORY: Read this file BEFORE writing any guardrail JSON.** The guardrail schema uses discriminator fields (`$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. PII detection uses `$guardrailType: "builtInValidator"` with `validatorType: "pii_detection"` — NOT `$guardrailType: "pii"`. Parameters use `id` (not `name`) and require `$parameterType`. Actions use `$actionType` (not `type`). PII entities are PascalCase (`"Email"`, not `"email_address"`). There is no `pattern`, `target`, or `message` field.
+>
+> **MANDATORY for `builtInValidator` guardrails: run `uip agent guardrails list --output json` before writing one.** The command gives you the exact `$parameterType` values, parameter `id` names, and allowed scopes — values you cannot safely derive from the type name alone. Skipping it leads to invalid parameter shapes that fail schema validation. **Custom guardrails (`$guardrailType: "custom"`) do NOT need this step** — their rules (word/number/boolean/always), operators, and actions are fully specified in [custom-rules-guide.md](custom-rules-guide.md) and use no validator catalog. Only run `guardrails list` for a custom guardrail if you are unsure whether the request should instead use a built-in validator.
+
+### Step 0 — Fetch available validators (mandatory for `builtInValidator` guardrails; skip for custom-only)
+
+Run `uip agent guardrails list --output json` and apply the four availability outcomes in [Step 0 — Fetch Available Validators (Mandatory First Step)](#step-0--fetch-available-validators-mandatory-first-step) before configuring anything. Skip this step when the guardrail is purely custom (deterministic rules); the validator catalog does not apply to custom rules.
+
+### Step 1 — Verify existing agent
+
+Ensure the agent project exists and has a valid `agent.json`. If starting fresh, follow [../../project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent) first.
+
+### Step 2 — Verify target tools exist (required for Tool-scoped guardrails)
+
+**Skip this step if the guardrail targets only `"Agent"` or `"Llm"` scope with no `matchNames`.**
+
+If the guardrail will use `selector.scopes: ["Tool"]` with `selector.matchNames`, list the tools already added to the agent:
+
+```bash
+uip agent tool list --output json
+```
+
+For each tool name you plan to put in `matchNames`:
+- **Found in `Data`** — proceed.
+- **Not found** — **STOP.** Do not add the guardrail yet. Add the tool first, then return here:
+  - Process tool — RPA / agent / API / agentic, local or external: [../process/process.md](../process/process.md)
+  - Integration Service tool: [../integration-service/integration-service.md](../integration-service/integration-service.md)
+
+> `uip agent validate` enforces this: it fails with an error if a Tool-scoped guardrail references a tool that has not been added to the agent.
+
+### Step 3 — Add a guardrail to agent.json
+
+For built-in validators, see [Built-in Validator Guardrails](#built-in-validator-guardrails-guardrailtype-builtinvalidator) for the full schema and worked examples (Examples 1–5). For the `escalate` action (Action Center app + recipient), follow [escalation-guide.md](escalation-guide.md).
+
+For custom rules (word/number/boolean/always), see [custom-rules-guide.md](custom-rules-guide.md) for the full schema, rule types, field selectors, and worked examples.
+
+Copy the complete example that matches the request and adapt the values — e.g., [Example 1](#example-1-block-pii-in-agent-and-tool-outputs) for a built-in PII block guardrail. Generate a fresh UUID for `id`. Placement in `agent.json` is shown in [agent.json with Guardrails](#agentjson-with-guardrails).
+
+### Step 4 — Refresh and validate
+
+```bash
+uip agent refresh  "<AGENT_NAME>" --output json
+uip agent validate "<AGENT_NAME>" --output json
+```
+
+Confirm the guardrails appear in the validated output without errors. Refresh regenerates `entry-points.json` and `bindings_v2.json` so Studio Web sees the updated guardrails.
+
+
 ## Conversational Support
 
 **Status: Custom (deterministic) `Tool`-scoped guardrails ONLY. No built-in validators.** Built-in validators (any `$guardrailType: "builtInValidator"` — the validators returned by `uip agent guardrails list`; see the [Validators Quick Reference](#validators-quick-reference)) are autonomous-only — the conversational runtime never runs them, at any scope. The only guardrails that run are `$guardrailType: "custom"` deterministic rules (word/number/boolean/always) with `selector.scopes: ["Tool"]`. Write each as the **same object (same `id`) in two places** — the `agent.json` root `guardrails[]` is **authoritative** (source for the Studio Web UI and both runtimes); the tool's `resources/<Tool>/resource.json` → `guardrail.policies[]` is its **mirror**. Write both (the CLI doesn't auto-sync), but a guardrail present only in the tool resource is invisible in Studio Web and does not run on the Unified (Python) runtime. `"Agent"` and `"Llm"` scopes are not available. If asked for PII / harmful-content / injection detection, explain built-in validators are autonomous-only and offer a Custom Tool guardrail or an autonomous agent instead.
@@ -170,434 +224,11 @@ Removes specific fields from the input/output.
 
 ### escalate — Hand Off to Action Center
 
-Creates a task in an Action Center app for human review.
-
-**Minimum required from user:** app name + recipient (email is the simplest form).
-
-```json
-"action": {
-  "$actionType": "escalate",
-  "app": {
-    "id": "<Key from uip solution resources list --kind App>",
-    "name": "<app Name>",
-    "version": "0",
-    "folderName": "<Folder from uip solution resources list --kind App>"
-  },
-  "recipient": {
-    "type": 3,
-    "value": "reviewer@example.com"
-  }
-}
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `$actionType` | `"escalate"` | Yes | Action discriminator |
-| `app.id` | string | Yes | App deployment ID — the `Key` field from `uip solution resources list --kind App` |
-| `app.name` | string | Yes | Action Center app name — the `Name` field from `uip solution resources list --kind App` |
-| `app.version` | string | Yes | Always `"0"` for solution-embedded apps |
-| `app.folderId` | string | No | Omit — not used by validate |
-| `app.folderName` | string | Yes | Literal Orchestrator folder — the `Folder` field from `uip solution resources list --kind App` (e.g., `"Shared"`, `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. |
-| `app.appProcessKey` | string | No | Omit — only used in advanced scenarios |
-| `recipient.type` | integer | Yes | Recipient kind — see shapes below: 1=UserId, 2=GroupId, 3=UserEmail, 4=AssetUserEmail, 5=GroupName, 6=AssetGroupName, 7=ArgumentEmail, 8=ArgumentGroupName |
-| `recipient.*` | — | — | Remaining fields depend on `type` — see recipient shapes below |
-
-**Recipient shapes (discriminated by `type`):**
-
-**Types 1, 2, 3, 5 — StandardRecipient** (UserId, GroupId, UserEmail, GroupName)
-
-```json
-{ "type": 3, "value": "reviewer@example.com" }
-{ "type": 1, "value": "<user-guid>", "displayName": "Jane Doe" }
-{ "type": 5, "value": "ReviewersGroup" }
-```
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `value` | Yes | User GUID (type 1), group GUID (type 2), email address (type 3), group name string (type 5) |
-| `displayName` | No | Recommended for type 1 (UserId); omit for types 2, 3, 5 |
-
-**Types 4, 6 — AssetRecipient** (AssetUserEmail, AssetGroupName)
-
-Resolves the email or group name from an Orchestrator asset at runtime — do NOT use `value`.
-
-```json
-{ "type": 4, "assetName": "ReviewerEmailAsset", "folderPath": "Shared" }
-{ "type": 6, "assetName": "ReviewGroupAsset", "folderPath": "Shared/MyTeam" }
-```
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `assetName` | Yes | Name of the Orchestrator asset holding the email or group value |
-| `folderPath` | Yes | Fully-qualified Orchestrator folder path where the asset lives |
-
-**Types 7, 8 — ArgumentRecipient** (ArgumentEmail, ArgumentGroupName)
-
-Resolves the email or group name from the agent's input arguments at runtime — do NOT use `value`.
-
-```json
-{ "type": 7, "argumentName": "user.email" }
-{ "type": 8, "argumentName": "team.groupName" }
-```
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `argumentName` | Yes | Dot-path into the agent's input schema (e.g. `"user.email"`, `"reviewerEmail"`) |
-
-Prefer `type: 3` (UserEmail) when adding manually — it requires no GUID or asset lookup. Studio Web uses `type: 1` (UserId) when a user is selected via the UI.
-
-#### Adding an escalation guardrail — step-by-step
-
-<!--skill-flavor:scaffolding-gate:start-->
-**Scaffolding gate (MANDATORY):** when the request includes creating a solution
-or agent, run both `uip solution init` and `uip agent init` before app discovery.
-An incompatible or missing escalation app rejects only the guardrail; it does
-not cancel the requested local solution and agent scaffolding.
-<!--skill-flavor:scaffolding-gate:end-->
-
-**Step 0 — Discover available validators (MANDATORY — do not skip even when validator type is already known):**
-
-```bash
-uip agent guardrails list --output json
-```
-
-Confirm the target validator is listed. Record the exact parameter `id` values and `$parameterType` tags from the output — these must match precisely in the guardrail JSON. Skipping this step leads to invalid parameter shapes.
-
-**Step 1 — Discover the app** using `--kind App` from the solution root:
-
-```bash
-uip solution resources list --kind App --source remote --search "<app-name>" --output json
-```
-
-Filter results for `"Type": "Workflow Action"`. Use these three fields from the result:
-
-| Resource list field | Maps to `app.*` field |
-|---------------------|----------------------|
-| `Key` | `app.id` |
-| `Name` | `app.name` |
-| `Folder` | `app.folderName` (literal, e.g., `"Shared"`) |
-
-`app.version` is always `"0"` — that's a fixed value, not derived from the `resource list` row. `app.folderName` carries the literal `Folder` and `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Do not use `FolderKey` for any `app.*` field.
-
-If multiple entries share the same name in different folders, ask the user which deployment to use.
-
-Example entry:
-```json
-{
-  "Source": "Remote",
-  "Key": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
-  "Name": "Tool.Guardrail.Escalation.Action.App",
-  "Kind": "app",
-  "Type": "Workflow Action",
-  "Folder": "Shared",
-  "FolderKey": "627fe423-5c73-464a-abff-41fdaad6ac19"
-}
-```
-
-> **Important:** Do NOT use `--kind Process` with `Type: "webApp"` to find Action Center apps. Those entries are the code-behind processes — their `Key` values are process release GUIDs, not app deployment IDs. Using them as `app.id` will cause runtime resolution failures.
-
-**Step 1 completion gate — both branches MUST run `resources get`:**
-
-- Exact app row found: immediately run
-  `uip solution resources get "<Key from the row>" --output json`.
-- No exact app row/key found: immediately run
-  `uip solution resources get "<requested app name>" --output json` once and
-  treat its failure as `GET_ERROR`.
-
-Do not edit files, refresh, validate, or respond to the user between
-`resources list` and this required `resources get` attempt. A missing catalog
-row is not a completed schema check and is never permission to skip the
-command.
-
-**Step 2 — Verify the app exposes the guardrail action-schema contract** (do this **before** writing the guardrail JSON — an incompatible app must be rejected, not authored).
-
-**Required command gate:** execute
-`uip solution resources get "<Key from Step 1>" --output json` for the selected
-app before deciding whether it is compatible. The `resources list` row is not
-an action schema and cannot replace this command. Do not write or reject the
-guardrail until the returned action schema has been checked.
-
-A guardrail escalation app must expose a specific action-schema contract. If verification fails, stop and report to the user: `<APP_NAME> does not have the required action schema configuration for tool guardrails.` (replace `<APP_NAME>` with the app's `Name` from Step 1). Do NOT write the guardrail.
-
-`uip solution resources get` returns the app's action schema in one CLI-native call — no auth handling, no Apps API endpoints. Pipe its output into a verifier that confirms every required argument name. The CLI handles authentication, so Claude never touches the auth file or the token.
-
-```bash
-cat > /tmp/verify_escalation_app.py <<'PY'
-import sys, json
-data = json.load(sys.stdin)
-if data.get("Result") != "Success":
-    sys.exit("GET_ERROR: uip solution resources get failed: " + str(data.get("Message", "unknown error")))
-raw = data.get("Data", {}).get("Spec", {}).get("ActionSchema")
-if not raw:
-    sys.exit("NO_SCHEMA: app spec has no ActionSchema — not a deployed Workflow Action app")
-sch = json.loads(raw)
-need = {"inputs": {"GuardrailName", "GuardrailDescription", "TenantName", "AgentTrace", "Tool", "ExecutionStage", "ToolInputs", "ToolOutputs"},
-        "outputs": {"ReviewedInputs", "ReviewedOutputs", "Reason"},
-        "outcomes": {"Approve", "Reject"}}
-miss = {k: sorted(v - {x["name"] for x in sch.get(k, [])}) for k, v in need.items() if v - {x["name"] for x in sch.get(k, [])}}
-print("OK" if not miss else "MISSING: " + json.dumps(miss))
-sys.exit(0 if not miss else 1)
-PY
-uip solution resources get "<Key from Step 1>" --output json | python3 /tmp/verify_escalation_app.py
-```
-
-Decision rule — the verifier exits 0 (`OK`) or 1 (with a tagged reason). All exit-1 cases mean **do NOT write the guardrail**:
-
-| Verifier output | Meaning | Action |
-|-----------------|---------|--------|
-| exit 0, `OK` | Contract satisfied | Proceed to Step 3 |
-| exit 1, `MISSING: {...}` | App exists but its action schema is missing required argument names | Stop. Report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` |
-| exit 1, `NO_SCHEMA: ...` | The resource has no action schema — not a deployed Workflow Action app | Stop. Report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` |
-| exit 1, `GET_ERROR: ...` | `uip solution resources get` failed (app not found, no access, or CLI error) | Stop. Report `<APP_NAME> could not be verified for the required action schema configuration.` **Do NOT re-authenticate or try alternate endpoints** — a single failed verifier call is terminal for this run |
-
-The check is **name-only** (types, `required` flags, `isList` are not checked); the app may carry extra arguments beyond these:
-
-| Category | Required names |
-|----------|---------------|
-| `inputs` (8) | `GuardrailName`, `GuardrailDescription`, `TenantName`, `AgentTrace`, `Tool`, `ExecutionStage`, `ToolInputs`, `ToolOutputs` |
-| `outputs` (3) | `ReviewedInputs`, `ReviewedOutputs`, `Reason` |
-| `outcomes` (2) | `Approve`, `Reject` |
-
-**Step 3 — Construct and add the escalate action** in `agent.json`'s `guardrails` array (only after Step 2 passed):
-
-```json
-{
-  "$actionType": "escalate",
-  "app": {
-    "id": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
-    "name": "Tool.Guardrail.Escalation.Action.App",
-    "version": "0",
-    "folderName": "Shared"
-  },
-  "recipient": { "type": 3, "value": "reviewer@example.com" }
-}
-```
-
-`app.id`, `app.name`, and `app.folderName` come from Step 1 (`Key`, `Name`, `Folder` respectively). `app.version` is always `"0"` — fixed value for solution-embedded apps.
-
-**Step 4 — Generate solution resource files**
-
-Run from the solution root:
-
-```bash
-uip agent refresh   <AgentName> --output json
-uip agent validate  <AgentName> --output json
-uip solution resources refresh   --output json
-```
-
-- `refresh` regenerates `entry-points.json` and `bindings_v2.json` with a `resource: "app"` binding for the escalation app. The binding carries both `name` (from `app.name`) and `folderPath` (translated from `app.folderName`).
-- `validate` is a read-only check. Fails with `AgentValidationOutdated` if refresh is needed.
-- `solution resources refresh` reads `bindings_v2.json`, fetches the app from the Resource Catalog Service using the joint `(name, folderPath)` key, and generates all 4 solution-level resource files (`app/workflow Action/`, `appVersion/`, `package/`, `process/webApp/`) plus the `debug_overwrites.json` entries for both the app and its code-behind process.
-
-**Step 5 — Upload:**
-
-```bash
-uip solution upload . --output json
-```
+Creates a task in an Action Center app for human review. Requires app discovery (`uip solution resources list --kind App`), a mandatory action-schema compatibility check, and a recipient — the complete action schema, recipient shapes, step-by-step workflow, and worked example are in [escalation-guide.md](escalation-guide.md). Do not author an `escalate` action without that guide.
 
 ## Custom Guardrails (`$guardrailType: "custom"`)
 
-Custom guardrails use deterministic rules you define. They have a `rules` array containing one or more rule objects.
-
-> **Rule combination logic is AND.** Multiple rules in a single guardrail are evaluated with AND — all rules must match for the guardrail to trigger. Multiple fields selected within a single rule (via `$selectorType: "specific"` with multiple `fields` entries) are also AND — every listed field must satisfy the operator.
->
-> Example with two rules and multi-field selector:
-> ```json
-> "rules": [
->   {
->     "$ruleType": "word",
->     "fieldSelector": {
->       "$selectorType": "specific",
->       "fields": [
->         { "path": "editPermissions[*].project.archivedBy.applicationRoles.items[*].groups[*]", "source": "output", "title": "Edit permissions project archived by application roles items groups" },
->         { "path": "editPermissions[*].project.archivedBy.applicationRoles.items[*].key", "source": "output", "title": "Edit permissions project archived by application roles items key" }
->       ]
->     },
->     "operator": "doesNotStartWith",
->     "value": "AL"
->   },
->   {
->     "$ruleType": "word",
->     "fieldSelector": {
->       "$selectorType": "specific",
->       "fields": [
->         { "path": "description", "source": "output", "title": "Description" }
->       ]
->     },
->     "operator": "isNotEmpty",
->     "value": ""
->   }
-> ]
-> ```
-> Evaluation: `(groups doesNotStartWith "AL" AND key doesNotStartWith "AL") AND (description isNotEmpty)` — all three conditions must be true for the guardrail to trigger.
->
-> **OR logic is not supported.** To achieve OR behavior, create separate guardrails — one per condition branch. Each guardrail triggers independently.
-
-> **Critical discriminator fields:** Every rule needs `$ruleType`. Every field selector needs `$selectorType`. Every action needs `$actionType`. Missing any of these causes validation failure.
-
-```json
-{
-  "$guardrailType": "custom",
-  "id": "<uuid>",
-  "name": "Block forbidden terms",
-  "description": "Prevents agent from using blacklisted words",
-  "enabledForEvals": true,
-  "selector": { "scopes": ["Tool"], "matchNames": ["MyToolName"] },
-  "action": { "$actionType": "block", "reason": "Forbidden term detected" },
-  "rules": [
-    {
-      "$ruleType": "word",
-      "fieldSelector": {
-        "$selectorType": "all"
-      },
-      "operator": "contains",
-      "value": "CONFIDENTIAL"
-    }
-  ]
-}
-```
-
-### Rule Types
-
-#### Word Rules (`$ruleType: "word"`)
-
-String matching against field values.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `$ruleType` | `"word"` | Yes | Rule type discriminator |
-| `fieldSelector` | object | Yes | Field selector — see [Field Selectors](#field-selectors) |
-| `operator` | string | Yes | Match operator |
-| `value` | string | Yes | Value to match against |
-
-**Operators:**
-
-| Operator | Behavior |
-|----------|----------|
-| `contains` | Field value contains the string |
-| `equals` | Field value exactly equals the string |
-| `startsWith` | Field value starts with the string |
-| `endsWith` | Field value ends with the string |
-| `matchesRegex` | Field value matches the regular expression |
-| `doesNotContain` | Field value does not contain the string |
-| `doesNotEqual` | Field value does not equal the string |
-| `doesNotStartWith` | Field value does not start with the string |
-| `doesNotEndWith` | Field value does not end with the string |
-| `isEmpty` | Field value is empty (no `value` needed) |
-| `isNotEmpty` | Field value is not empty (no `value` needed) |
-
-#### Number Rules (`$ruleType: "number"`)
-
-Numeric comparison against field values.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `$ruleType` | `"number"` | Yes | Rule type discriminator |
-| `fieldSelector` | object | Yes | Field selector |
-| `operator` | string | Yes | Comparison operator |
-| `value` | number | Yes | Value to compare against |
-
-**Operators:** `equals`, `doesNotEqual`, `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual`
-
-Complete example — log a Warning when a tool's numeric `sum` output exceeds 100:
-
-```json
-{
-  "$guardrailType": "custom",
-  "id": "<uuid>",
-  "name": "Warn on high source count",
-  "description": "Logs a warning when the sum output exceeds the allowed limit",
-  "enabledForEvals": true,
-  "selector": { "scopes": ["Tool"], "matchNames": ["MyToolName"] },
-  "action": { "$actionType": "log", "severityLevel": "Warning" },
-  "rules": [
-    {
-      "$ruleType": "number",
-      "fieldSelector": {
-        "$selectorType": "specific",
-        "fields": [{ "path": "sum", "source": "output" }]
-      },
-      "operator": "greaterThan",
-      "value": 100
-    }
-  ]
-}
-```
-
-#### Boolean Rules (`$ruleType: "boolean"`)
-
-Boolean equality check.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `$ruleType` | `"boolean"` | Yes | Rule type discriminator |
-| `fieldSelector` | object | Yes | Field selector |
-| `operator` | `"equals"` | Yes | Only `equals` is supported |
-| `value` | boolean | Yes | `true` or `false` |
-
-Complete example — block a tool call when its boolean `verified` input is `false`:
-
-```json
-{
-  "$guardrailType": "custom",
-  "id": "<uuid>",
-  "name": "Block unverified requests",
-  "description": "Blocks the tool call when the verified flag is false",
-  "enabledForEvals": true,
-  "selector": { "scopes": ["Tool"], "matchNames": ["MyToolName"] },
-  "action": { "$actionType": "block", "reason": "Request is not verified" },
-  "rules": [
-    {
-      "$ruleType": "boolean",
-      "fieldSelector": {
-        "$selectorType": "specific",
-        "fields": [{ "path": "verified", "source": "input" }]
-      },
-      "operator": "equals",
-      "value": false
-    }
-  ]
-}
-```
-
-#### Always / Universal Rules (`$ruleType: "always"`)
-
-Fires on every input/output — no condition check. Use `applyTo` to control whether it runs on input, output, or inputAndOutput.
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `$ruleType` | `"always"` | Yes | Rule type discriminator |
-| `applyTo` | `"input"` \| `"output"` \| `"inputAndOutput"` | Yes | When the rule fires |
-
-### Field Selectors
-
-Each rule (except `always`) has a `fieldSelector` object with a `$selectorType` discriminator.
-
-**All fields:**
-```json
-"fieldSelector": {
-  "$selectorType": "all"
-}
-```
-
-**Specific fields:**
-```json
-"fieldSelector": {
-  "$selectorType": "specific",
-  "fields": [
-    { "path": "content", "source": "output" },
-    { "path": "email", "source": "input", "title": "Email Address" }
-  ]
-}
-```
-
-| Field | Type | Required | Description |
-|-------|------|-------------|-------------|
-| `$selectorType` | `"all"` \| `"specific"` | Yes | Discriminator — match all fields or named fields |
-| `fields` | array | Yes (when `"specific"`) | Array of field references |
-| `fields[].path` | string | Yes | Field path from the agent's input/output schema |
-| `fields[].source` | `"input"` \| `"output"` | Yes | Which side to inspect |
-| `fields[].title` | string | No | Human-readable label |
+Deterministic rules you define — word matching, number comparison, boolean checks, universal triggers — with a `rules` array. `Tool` scope only, exactly one tool in `matchNames`; the only guardrail type the conversational runtime executes. Full schema, rule types, operators, field selectors, and worked examples: [custom-rules-guide.md](custom-rules-guide.md).
 
 ## Step 0 — Fetch Available Validators (Mandatory First Step)
 
@@ -850,194 +481,12 @@ PostExecution only — no content exists to check before the LLM generates outpu
 }
 ```
 
-### Example 6: Custom Word Rule — Block Forbidden Terms in Specific Tool Output
+### Custom-rule, filter, and escalation examples
 
-```json
-{
-  "$guardrailType": "custom",
-  "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
-  "name": "Block forbidden output",
-  "description": "",
-  "rules": [
-    {
-      "$ruleType": "word",
-      "fieldSelector": {
-        "$selectorType": "specific",
-        "fields": [
-          {
-            "path": "content",
-            "source": "output"
-          }
-        ]
-      },
-      "operator": "contains",
-      "value": "CONFIDENTIAL"
-    }
-  ],
-  "action": {
-    "$actionType": "block",
-    "reason": "Forbidden term detected in tool output."
-  },
-  "enabledForEvals": true,
-  "selector": {
-    "scopes": ["Tool"],
-    "matchNames": ["MyToolName"]
-  }
-}
-```
+Moved to the owning guides:
 
-### Example 7: Custom Word Rule — Log on All Tool Fields
-
-```json
-{
-  "$guardrailType": "custom",
-  "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
-  "name": "Log sensitive terms",
-  "description": "",
-  "rules": [
-    {
-      "$ruleType": "word",
-      "fieldSelector": {
-        "$selectorType": "all"
-      },
-      "operator": "contains",
-      "value": "password"
-    }
-  ],
-  "action": {
-    "$actionType": "log",
-    "severityLevel": "Warning"
-  },
-  "enabledForEvals": true,
-  "selector": {
-    "scopes": ["Tool"],
-    "matchNames": ["MyToolName"]
-  }
-}
-```
-
-### Example 8: Escalate PII Violations to Action Center — Multiple Tool Targets
-
-Escalates to an Action Center app when email or credit card PII is detected at the agent level. `app.id`, `app.name`, and `app.folderName` come from `uip solution resources list --kind App`.
-
-```json
-{
-  "$guardrailType": "builtInValidator",
-  "id": "10d5f10f-da4e-4bf1-ace9-dd880e33d9be",
-  "name": "PII Email and Credit Card escalation guardrail",
-  "description": "Detects email addresses and credit card numbers, escalates to human review",
-  "validatorType": "pii_detection",
-  "validatorParameters": [
-    {
-      "$parameterType": "enum-list",
-      "id": "entities",
-      "value": ["Email", "CreditCardNumber"]
-    },
-    {
-      "$parameterType": "map-enum",
-      "id": "entityThresholds",
-      "value": {
-        "Email": 0.5,
-        "CreditCardNumber": 0.5
-      }
-    }
-  ],
-  "action": {
-    "$actionType": "escalate",
-    "app": {
-      "id": "8137af9d-8dd3-4454-84d7-e0d93ce80c7e",
-      "name": "Tool.Guardrail.Escalation.Action.App",
-      "version": "0",
-      "folderName": "Shared"
-    },
-    "recipient": {
-      "type": 3,
-      "value": "reviewer@example.com"
-    }
-  },
-  "enabledForEvals": true,
-  "selector": {
-    "scopes": ["Agent"]
-  }
-}
-```
-
-`app.id`, `app.name`, and `app.folderName` are sourced from Step 1 (`resource list` → `Key`, `Name`, `Folder`). `app.version` is always `"0"`.
-
-### Example 9: Custom Word Rule — Specific Fields with Titles on a Named Tool
-
-Inspects specific output fields (with human-readable `title`) of an Integration Service tool. Logs a violation when the field value contains a forbidden string.
-
-```json
-{
-  "$guardrailType": "custom",
-  "id": "68005ea0-9d46-4094-8113-d497f53fd17f",
-  "name": "Log sensitive URLs in Jira output",
-  "description": "",
-  "rules": [
-    {
-      "$ruleType": "word",
-      "fieldSelector": {
-        "$selectorType": "specific",
-        "fields": [
-          {
-            "path": "baseUrl",
-            "source": "output",
-            "title": "Base url"
-          },
-          {
-            "path": "scmInfo",
-            "source": "output",
-            "title": "Scm info"
-          }
-        ]
-      },
-      "operator": "contains",
-      "value": "internal.corp"
-    }
-  ],
-  "action": {
-    "$actionType": "log",
-    "severityLevel": "Info"
-  },
-  "enabledForEvals": true,
-  "selector": {
-    "scopes": ["Tool"],
-    "matchNames": ["Get Instance Details"]
-  }
-}
-```
-
-### Example 10: Filter — Redact Fields from Tool Output
-
-Redacts specific fields from a tool's output instead of blocking or logging. Use when you want the agent to continue but with sensitive data removed.
-
-```json
-{
-  "$guardrailType": "custom",
-  "id": "f6a7b8c9-d0e1-2345-abcd-678901234567",
-  "name": "Redact SSN from output",
-  "description": "Removes SSN field from tool output before returning to user",
-  "rules": [
-    {
-      "$ruleType": "always",
-      "applyTo": "output"
-    }
-  ],
-  "action": {
-    "$actionType": "filter",
-    "fields": [
-      { "path": "ssn", "source": "output", "title": "SSN" },
-      { "path": "taxId", "source": "output", "title": "Tax ID" }
-    ]
-  },
-  "enabledForEvals": true,
-  "selector": {
-    "scopes": ["Tool"],
-    "matchNames": ["GetCustomerProfile"]
-  }
-}
-```
+- Custom word rules (block / log / specific fields with titles) and the filter redaction example → [custom-rules-guide.md § Examples](custom-rules-guide.md#examples)
+- Escalate PII violations to Action Center → [escalation-guide.md](escalation-guide.md#example-escalate-pii-violations-to-action-center--multiple-tool-targets)
 
 ## agent.json with Guardrails
 
@@ -1072,6 +521,7 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 }
 ```
 
+
 ## What NOT to Do
 
 > Canonical guardrail anti-patterns — discriminator omission (`$actionType` / `$parameterType` / `$ruleType` / `$selectorType`), lowercase scope values, populating `guardrail.policies` on tool resources, and UUID reuse — live in [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) § What NOT to Do. The validator-specific anti-patterns below extend (do not repeat) that canonical list.
@@ -1089,7 +539,7 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 11. **Do not use `--kind Process` (Type: `"webApp"`) to find escalation apps** — those entries are code-behind processes, not app deployments. Their `Key` values are process release GUIDs, not app IDs. Always use `--kind App` with `Type: "Workflow Action"`.
 12. **Do not put `"solution_folder"` into `app.folderName`** — set it to the literal `Folder` from `uip solution resources list --kind App` (e.g., `"Shared/Approvals"`). `uip agent refresh` translates it to `folderPath` in the App binding inside `bindings_v2.json`. Omit `app.folderId`. `FolderKey` from `resource list` is NOT used in any `app.*` field — it IS correct in `debug_overwrites.json` entries, where it maps the solution-embedded resource to its real runtime location.
 13. **Do not add a Tool-scoped guardrail before the tool is added to the agent** — every name in `selector.matchNames` must match an existing tool resource under `<AGENT_NAME>/resources/<ToolName>/resource.json`. A guardrail referencing a non-existent tool will be caught by `uip agent validate` and fail with an error. Always run `uip agent tool list` first (Step 2) and confirm target tools are present.
-14. **Do not skip action schema validation for escalation apps** — before writing a guardrail with `"$actionType": "escalate"`, fetch the app's action schema and verify all required inputs (8), outputs (3), and outcomes (2) are present by name. If any are missing, report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` and do not proceed. See [§ Adding an escalation guardrail — Step 2](#adding-an-escalation-guardrail--step-by-step).
+14. **Do not skip action schema validation for escalation apps** — before writing a guardrail with `"$actionType": "escalate"`, fetch the app's action schema and verify all required inputs (8), outputs (3), and outcomes (2) are present by name. If any are missing, report `<APP_NAME> does not have the required action schema configuration for tool guardrails.` and do not proceed. See [escalation-guide.md § Adding an escalation guardrail](escalation-guide.md#adding-an-escalation-guardrail--step-by-step).
 15. **Do not use `Agent` or `Llm` scopes on custom guardrails** — custom guardrails (`$guardrailType: "custom"`) only support `"Tool"` scope with exactly one tool in `matchNames`. Custom rules depend on the tool's input/output schema, so they cannot target multiple tools. Create a separate custom guardrail per tool.
 16. **Do not auto-generate a custom guardrail as fallback** — when a built-in validator is unavailable, unsupported for the requested scope, or unauthorized, inform the user and stop. Do not silently generate a custom guardrail as a workaround. You may suggest a custom guardrail alternative (for `Tool` scope only), but only generate it after explicit user confirmation.
 17. **Do not create separate guardrails per scope** — when a guardrail applies to multiple scopes (e.g., `Agent` and `Tool`), combine them into a single guardrail with `"scopes": ["Agent", "Tool"]`. Do not create two separate guardrail objects with identical configuration differing only in scope.
@@ -1100,59 +550,10 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 22. **Do not leave a key in `harmfulContentEntityThresholds` (or any `map-enum` threshold parameter, e.g. `entityThresholds`) that is not in the corresponding entities list** — threshold keys must exactly match the selected entities: no extra keys, no missing keys. `uip agent validate` does NOT flag the mismatch, so a stale extra key passes validation and silently misconfigures the guardrail. When editing the entities list, prune the thresholds map in the same edit.
 23. **Do not reverse-engineer guardrail schemas from the CLI installation or SDK packages** — never grep `/usr/lib/node_modules/@uipath/**/dist/*.js`, read minified bundles, or import-probe packages to confirm a field. This reference is the schema authority (see [Overview](#overview)); write the guardrail from the complete examples here and let `uip agent validate` confirm the shape.
 
-## Walkthrough
-
-Use when adding input/output safeguards (PII detection, harmful content blocking, custom word rules) to a low-code agent. Guardrails are configured at the agent.json root `guardrails` array.
-
-> **MANDATORY: Read this file BEFORE writing any guardrail JSON.** The guardrail schema uses discriminator fields (`$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. PII detection uses `$guardrailType: "builtInValidator"` with `validatorType: "pii_detection"` — NOT `$guardrailType: "pii"`. Parameters use `id` (not `name`) and require `$parameterType`. Actions use `$actionType` (not `type`). PII entities are PascalCase (`"Email"`, not `"email_address"`). There is no `pattern`, `target`, or `message` field.
->
-> **MANDATORY for `builtInValidator` guardrails: run `uip agent guardrails list --output json` before writing one.** The command gives you the exact `$parameterType` values, parameter `id` names, and allowed scopes — values you cannot safely derive from the type name alone. Skipping it leads to invalid parameter shapes that fail schema validation. **Custom guardrails (`$guardrailType: "custom"`) do NOT need this step** — their rules (word/number/boolean/always), operators, and actions are fully specified here in this reference and use no validator catalog. Only run `guardrails list` for a custom guardrail if you are unsure whether the request should instead use a built-in validator.
-
-### Step 0 — Fetch available validators (mandatory for `builtInValidator` guardrails; skip for custom-only)
-
-Run `uip agent guardrails list --output json` and apply the four availability outcomes in [Step 0 — Fetch Available Validators (Mandatory First Step)](#step-0--fetch-available-validators-mandatory-first-step) before configuring anything. Skip this step when the guardrail is purely custom (deterministic rules); the validator catalog does not apply to custom rules.
-
-### Step 1 — Verify existing agent
-
-Ensure the agent project exists and has a valid `agent.json`. If starting fresh, follow [../../project-lifecycle.md § End-to-End Example](../../project-lifecycle.md#end-to-end-example--new-standalone-agent) first.
-
-### Step 2 — Verify target tools exist (required for Tool-scoped guardrails)
-
-**Skip this step if the guardrail targets only `"Agent"` or `"Llm"` scope with no `matchNames`.**
-
-If the guardrail will use `selector.scopes: ["Tool"]` with `selector.matchNames`, list the tools already added to the agent:
-
-```bash
-uip agent tool list --output json
-```
-
-For each tool name you plan to put in `matchNames`:
-- **Found in `Data`** — proceed.
-- **Not found** — **STOP.** Do not add the guardrail yet. Add the tool first, then return here:
-  - Process tool — RPA / agent / API / agentic, local or external: [../process/process.md](../process/process.md)
-  - Integration Service tool: [../integration-service/integration-service.md](../integration-service/integration-service.md)
-
-> `uip agent validate` enforces this: it fails with an error if a Tool-scoped guardrail references a tool that has not been added to the agent.
-
-### Step 3 — Add a guardrail to agent.json
-
-For built-in validators, see [Built-in Validator Guardrails](#built-in-validator-guardrails-guardrailtype-builtinvalidator) for the full schema and worked examples (Examples 1–5, 8).
-
-For custom rules (word/number/boolean/always), see [Custom Guardrails](#custom-guardrails-guardrailtype-custom) for the full schema and worked examples (Examples 6, 7, 9, 10).
-
-Copy the complete example that matches the request and adapt the values — e.g., [Example 1](#example-1-block-pii-in-agent-and-tool-outputs) for a built-in PII block guardrail. Generate a fresh UUID for `id`. Placement in `agent.json` is shown in [agent.json with Guardrails](#agentjson-with-guardrails).
-
-### Step 4 — Refresh and validate
-
-```bash
-uip agent refresh  "<AGENT_NAME>" --output json
-uip agent validate "<AGENT_NAME>" --output json
-```
-
-Confirm the guardrails appear in the validated output without errors. Refresh regenerates `entry-points.json` and `bindings_v2.json` so Studio Web sees the updated guardrails.
-
 ## References
 
 - [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) — canonical low-code rules and guardrail anti-patterns (discriminators, scope casing, populating `guardrail.policies` on tool resources, UUID reuse)
 - [../../project-lifecycle.md](../../project-lifecycle.md) § `uip agent guardrails list` — CLI reference for validator discovery
 - [../../agent-definition.md](../../agent-definition.md) § Guardrails — root-level placement in `agent.json`
+- [escalation-guide.md](escalation-guide.md) — `escalate` action schema, app verification workflow, worked example
+- [custom-rules-guide.md](custom-rules-guide.md) — custom (deterministic) guardrail schema, rule types, field selectors, worked examples

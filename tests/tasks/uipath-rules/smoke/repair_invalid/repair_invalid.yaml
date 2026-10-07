@@ -1,0 +1,55 @@
+task_id: skill-rules-smoke-repair-invalid
+description: >
+  Agent repairs a Business Rules project Studio Web refuses to publish, offline:
+  the fixture is DMN 1.3, and has an output name with a space, a malformed FEEL
+  cell, and an entry-points.json out of step with the .dmn. Grades the agent
+  running `uip rules validate`, the grader's own `uip rules validate` passing,
+  the rule being DMN 1.5, the policy's risk bands still holding, and the entry
+  point carrying the contract.
+tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Studio Web won't publish our `RiskRules/` Business Rules project. Fix it
+  without changing what the rule returns:
+
+  - A credit score below 580 is High risk.
+  - A credit score from 580 up to 699 is Medium risk when income is at least
+    50000, otherwise High risk.
+  - A credit score of 700 or more is Low risk.
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent found the problems with rules validate"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the repaired project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The rule is DMN 1.5, the policy's risk bands still hold, and the entry point carries the contract"
+    command: "python3 $REFERENCE_DIR/smoke/repair_invalid/check_repair_invalid.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

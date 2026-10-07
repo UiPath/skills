@@ -23,6 +23,48 @@ make from syntax alone. Exact signatures remain in the generated API.
   input given a `name` (`.input('amount', 'number', { name: 'Amount' })`) is supplied
   under `Amount`. Leave `name` off unless the caller's key is meant to differ from the id.
 
+<!-- RULE:bpmn.variables.node-output-declares-itself -->
+- **Do not declare a variable for a node's own output.** An output row declares the
+  variable it fills: the compiler derives a declaration from the row, attributed to that
+  node, with the row's `name` and `type`. Writing a `.var()` beside the node for the same
+  id states the same thing twice and makes it the author's declaration instead of the
+  node's. Where the variable carries a JSON Schema, put it on the ROW as `varSchema` —
+  the platform writes the shape on the declaration and not on the row, so `varSchema` is
+  what reaches it:
+
+  ```ts
+  outputRows: [{ name: 'response', type: 'jsonSchema', var: 'act_response',
+                 source: '=result', varSchema: 'responseSchema' }]
+  ```
+
+  Reserve `.var()` for process-level state nothing fills for you. In the real exports
+  measured, 688 of 842 declarations are a node's own output and the product marks only
+  the author's with `custom="true"`.
+
+<!-- RULE:bpmn.variables.element-id-is-placement -->
+- `elementId` is placement, not scope. The runtime seeds every declaration into one flat
+  namespace and resolves `vars.<id>` there whatever it says, and an id is unique across
+  the whole document — so two elements cannot each own a `response`. What it decides is
+  which element the declaration BELONGS to, which is what the canvas and
+  `uip maestro bpmn validate` read (1.203 requires one).
+
+<!-- RULE:bpmn.variables.array-forms -->
+- `.vars([…])`, `.bindings([…])` and `.schemas([…])` take the whole block at once, with
+  `direction: 'input' | 'output'` on an entry that is not internal state. The singular
+  `.var()` / `.input()` / `.output()` / `.binding()` / `.schema()` calls are unchanged and
+  mix freely; prefer the array form where there is more than a handful, which is what
+  `bpmn decompile` writes.
+
+<!-- RULE:bpmn.variables.preserve-block -->
+- `.preserve({ … })` is NOT authoring surface. It carries state a source document had
+  that no rule derives and nothing executes — today `variableOrder`, the order the
+  variables panel lists declarations in. `bpmn decompile` writes it; leave it alone, and
+  do not add to it. Anything authorable belongs in the typed builder, where `check` and a
+  reader can see it. If you add or rename a declaration in a decompiled file, either
+  update every id in that array or delete the call — `check` warns
+  `VARIABLE_ORDER_INCOMPLETE` / `VARIABLE_ORDER_UNKNOWN_ID` /
+  `VARIABLE_ORDER_DUPLICATE_ID`, because a PARTIAL list silently reorders the block.
+
 ## Events and timers
 
 <!-- RULE:bpmn.event.payload-live -->
@@ -66,13 +108,30 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## Connectors and bindings
 
+Choosing the operation, and the author → check → prepare → check → compile loop
+that fills it in, are in **[`connectors.md`](connectors.md)**. What follows is the
+binding half, which is the same for every connector-backed node.
+
 <!-- RULE:bpmn.connector.bindings -->
 - Keep connection and folder values symbolic in TypeScript and resolve them from
   `bindings.json`. Only a live run proves those environment bindings.
 
+<!-- RULE:bpmn.binding.value-vs-resource-key -->
+- `value` is the value; `resourceKey` is never resolved. `=bindings.<id>` evaluates to
+  `value` (the wire's `default`), and that is the only field a run reads — resolution is
+  `supplied[id] ?? supplied[name] ?? value`, so a binding with neither is UNRESOLVED and
+  a dispatching run refuses to start naming every one. `resourceKey` is design-time
+  provenance: which tenant resource this was bound to, for a deploy to re-resolve `value`
+  against. They are equal only when the property asked for IS the resource's identity (a
+  queue is its name); set both when they are different things, and expect no `value` on a
+  `folderPath`, which is not knowable when the resource is picked.
+  Note the author-side `bindings.json` uses `resourceKey` the OTHER way round — the real
+  tenant value, with `default` as an offline placeholder — so do not carry one file's
+  reading into the other.
+
 <!-- RULE:bpmn.connector.folder-companion -->
 - A `folderKey` binding is the companion of a connection, not a resource of its
-  own: its `resourceKey` is the connection's key and only its `default` is the
+  own: its `resourceKey` is the connection's key and only its `value` is the
   folder key. That is how the platform resolves the connection, and `validate`
   reports `MISSING_BINDING` for a folder binding keyed by the folder. Declare the
   pair once — `.binding(c, { resource: 'Connection', propertyAttribute:
@@ -121,6 +180,14 @@ make from syntax alone. Exact signatures remain in the generated API.
   so a type absent from them is not evidence the platform lacks it — ask the
   registry before concluding a node cannot be authored.
 
+<!-- RULE:bpmn.activity.two-registries -->
+- **This is not the connector library.** `uip maestro bpmn registry` serves the
+  `uipath:*` EXTENSION TYPES; `uip maestro registry` (no family word) serves the
+  Integration Service OPERATIONS. A connector key passed to the first answers
+  `Extension type not found`, which is correct and is not evidence the connector is
+  missing. The caches are separate and pulling one does nothing to the other. See
+  [`connectors.md`](connectors.md).
+
 <!-- RULE:bpmn.activity.registry-freshness -->
 - `registry search` and `registry get` answer from a local cache that does not
   refresh itself. Run `uip maestro bpmn registry pull --force` first whenever a
@@ -152,6 +219,17 @@ make from syntax alone. Exact signatures remain in the generated API.
 <!-- RULE:bpmn.brownfield.nested-style -->
 - `bpmn decompile --style nested` lifts an import's boundary events, gateways and event sub-processes into the nesting constructs, writes the top level in `flowMode('sequence')`, and prints why each region it left flat stayed flat; the lifted source is written only after it has been compiled and its graph verified identical to the flat form's. The flow ids the constructs imply are KEPT: each is pinned back with `.flowIds([{ source, target, id }])`, emitted once at the top of the chain, so the recompiled artifact carries the ids it arrived with. This is what makes the lift safe for brownfield editing — `uip maestro bpmn merge` keys every process child by id with no filter for kind, so renaming a flow made the merge treat it as new, delete the original along with its `BPMNEdge`, and leave an untouched gateway's `default` naming an id that no longer exists (`MISSING_CONDITION_EXPRESSION` at validate). Measured on a three-flow fixture, a no-edit round trip now merges back byte-identical. `--keep-flow-ids` confines the lift to regions whose ids already match the derived form, for source with no pin table.
   A flow id that is not `Flow_<source>_<target>` keeps its region flat; the graph, its ids and `merge` are unaffected either way, so the choice is about the source you read and edit, not the artifact.
+
+<!-- RULE:bpmn.brownfield.unused-bindings -->
+- `bpmn decompile` DROPS a binding nothing references, and names what it dropped. The
+  designer writes a binding pair every time a resource is picked and collects none of
+  them, so a real export accumulates rows no `=bindings.<id>` reads — 298 of 528 across
+  the exports measured, including four `folderPath` rows for one queue. They are not
+  inert: a binding with no `value` is unresolved, so each one is reported missing and a
+  dispatching run refuses to start, and the canvas offers no way to delete one. The
+  cleanup reaches the tenant through `uip maestro bpmn merge`, which takes the process
+  extension block from the edited file. Pass `--keep-unused-bindings` when you need the
+  decompiled source to match the original row for row instead.
 
 <!-- RULE:bpmn.brownfield.format -->
 - Format after adding elements that need diagram shapes. Avoid formatting a
