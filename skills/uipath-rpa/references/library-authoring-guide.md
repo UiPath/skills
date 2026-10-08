@@ -143,7 +143,7 @@ Each public workflow is an API surface. Apply every rule:
 - **Never swallow errors**: no empty `Catch` blocks, no `out` boolean success flags in place of exceptions. A swallowed error returns control to a consumer whose target app is in an unknown state.
 - **Never set `ContinueOnError` inside a library** — the consumer decides failure policy.
 - **No hardcoded paths** — accept paths as arguments, or build from `UiPath.Constants.Project.Location` for files packed with the library.
-- **No embedded config or secrets** — read Orchestrator assets and credentials at the consumer level and pass them in as arguments.
+- **No embedded config or secrets** — read Orchestrator assets at the consumer level and pass them in as arguments. A credential passes as its asset's name, and the library reads it inside the scope that uses it: a `SecureString` argument fails `build` ([cli-reference.md § Analyzer errors](cli-reference.md#analyzer-errors)).
 
 ## Versioning
 
@@ -163,12 +163,11 @@ Each public workflow is an API surface. Apply every rule:
 
 ```bash
 uip rpa pack "<PROJECT_DIR>" "<OUTPUT_DIR>" --output json
-uip or libraries upload --file "<OUTPUT_DIR>/<LIBRARY_NAME>.<VERSION>.nupkg" --output json
+uip rpa publish "<OUTPUT_DIR>/<LIBRARY_NAME>.<VERSION>.nupkg" --output json
 ```
 
-- Libraries upload to the tenant-scoped **libraries feed** — not the per-folder processes feed that [cli-reference.md § Pack & Publish to Orchestrator](cli-reference.md#pack--publish-to-orchestrator) covers with `uip or packages upload`. There is no `uip rpa publish`.
+- `publish` reads the package's type and sends a library to the tenant **Libraries feed** (`Data.Feed`: `Orchestrator Tenant Libraries Feed`), not the processes feed a process goes to. Other destinations, refusals and the duplicate-version error: [cli-reference.md § Pack & Publish to Orchestrator](cli-reference.md#pack--publish-to-orchestrator).
 - `<OUTPUT_DIR>` must be OUTSIDE the project directory tree — `pack` refuses an output path inside the project. Use a sibling directory (e.g. `dist/`).
-- `--feed-id <FEED_ID>` targets a non-default feed.
 - Verify the publish:
 
 ```bash
@@ -188,13 +187,13 @@ uip or libraries download "<PackageId>:<Version>" --destination "<LOCAL_DIR>/<LI
 uip rpa build "<CONSUMER_PROJECT_DIR>" --nuget-sources-config-path "<SOURCES_JSON>" --output json
 ```
 
-`<SOURCES_JSON>` content:
+`<SOURCES_JSON>` content, with forward slashes in the path (a backslash path is rejected as an invalid JSON escape):
 
 ```json
 [{"Url": "<LOCAL_DIR>"}]
 ```
 
-4. **Author against the library in consumer XAML.** Library activities are not in the `activities find` catalog and `activities get-default-xaml` does not load library types — get the activity surface from the package itself:
+4. **Author against the library in consumer XAML.** Once the library is installed, `activities find` returns its public workflows and `activities get-default-xaml` returns each one's element with its arguments as properties, without their types or directions — read those from the package itself:
 
 ```bash
 uip rpa packages inspect --nupkg-path "<LOCAL_DIR>/<LIBRARY_NAME>.<VERSION>.nupkg" --output json
@@ -210,6 +209,7 @@ Declare the namespace and use each public workflow as an element — property na
 `<SANITIZED_NAMESPACE>` is the underscore form from [§ Activity identity](#activity-identity). Bind non-literal properties per the project's expression language rules ([xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md)).
 
 5. **Stale design session after the dependency becomes resolvable:** `build` compiles the consumer but `validate` keeps failing with `Cannot create unknown type` for the library activity. Kill the `UiPath.Studio.Helm` process (it relaunches on the next command) and re-run `validate`.
+6. **Same version repacked:** the package cache keeps the first package under an id and version and ignores a repack, so bump the library version whenever a consumer must see a change.
 
 ## Library Patterns
 

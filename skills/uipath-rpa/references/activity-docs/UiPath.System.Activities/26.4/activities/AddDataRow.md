@@ -38,12 +38,13 @@ Adds a DataRow to a specified DataTable.
 ```xml
 <!-- Using ArrayRow -->
 <ui:AddDataRow DisplayName="Add Data Row"
-               xmlns:ui="clr-namespace:UiPath.Core.Activities;assembly=UiPath.System.Activities">
+               xmlns:ui="clr-namespace:UiPath.Core.Activities;assembly=UiPath.System.Activities"
+               xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib">
   <ui:AddDataRow.DataTable>
     <InOutArgument x:TypeArguments="sd:DataTable">[myDataTable]</InOutArgument>
   </ui:AddDataRow.DataTable>
   <ui:AddDataRow.ArrayRow>
-    <InArgument x:TypeArguments="x:Object[]">[New Object() {"Alice", 30, "HR"}]</InArgument>
+    <InArgument x:TypeArguments="s:Object[]">[New Object() {"Alice", 30, "HR"}]</InArgument>
   </ui:AddDataRow.ArrayRow>
 </ui:AddDataRow>
 

@@ -6,7 +6,7 @@ InvokeCode is best suited as a quick escape hatch for simple, self-contained cod
 
 ## Language Attribute
 
-By default, InvokeCode infers the language from the project's `expressionLanguage` setting in `project.json`, so omitting the `Language` attribute is usually fine. However, if you do set it explicitly, use the correct enum values — they differ from `project.json`:
+`Language` defaults to `VBNet` whatever the project's `expressionLanguage` is: without it, a C# body is compiled as VB.NET and fails with VB `BC3xxxx` errors. Set it on every InvokeCode. The enum values differ from `project.json`:
 
 | project.json `expressionLanguage` | InvokeCode `Language` value |
 |-----------------------------------|-----------------------------|
@@ -21,9 +21,6 @@ By default, InvokeCode infers the language from the project's `expressionLanguag
 
 <!-- CORRECT — explicit language -->
 <ui:InvokeCode Language="VBNet" Code="..." />
-
-<!-- ALSO CORRECT — language inferred from project -->
-<ui:InvokeCode Code="..." />
 ```
 
 ## XAML Structure
@@ -31,6 +28,7 @@ By default, InvokeCode infers the language from the project's `expressionLanguag
 ```xml
 <ui:InvokeCode ContinueOnError="{x:Null}"
   DisplayName="My Code Block"
+  Language="VBNet"
   sap2010:WorkflowViewState.IdRef="InvokeCode_1"
   Code="Dim result As String = &quot;hello&quot;">
   <ui:InvokeCode.Arguments>
