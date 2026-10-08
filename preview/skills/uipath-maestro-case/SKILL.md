@@ -86,7 +86,28 @@ uip solution resources refresh --solution-folder <solution> --output json
 ```
 
 `check` owns source-level invariants and emits teaching diagnostics. Product
-validation owns the compiled Case contract. Do not repair emitted JSON by hand;
+validation owns the compiled Case contract.
+
+`check` also reads the connector library, the same one `compile` resolves
+against: `$FLOW_SDK_LIBRARY_JSON`, else the `uip maestro registry pull`
+snapshot, plus `.flow-sdk/connectors-local` when `registry prepare` wrote it.
+A connector task, external task, event trigger or wait-for-connector that
+`compile` cannot resolve fails `check` first, with compile's code and text:
+
+- `CONNECTOR_NOT_IN_LIBRARY` — no such operation or connector; use the
+  `Closest:` slug the message names, or `uip maestro registry pull` when the
+  operation is newer than the library.
+- `CONNECTOR_OBJECT_REQUIRED` — a generic operation needs `object`;
+  `CONNECTOR_OBJECT_NOT_GENERIC` — drop `object` on a single operation.
+- `CONNECTOR_LIBRARY_ENTRY_UNREADABLE` — the library on disk is damaged;
+  re-pull, or re-run the `prepare` that wrote the overlay file.
+- `EVENT_UNKNOWN` — the event is not in the library.
+
+With no library cached these rules stay silent, so a clean `check` on a
+connector Case without a pulled library proves nothing about the connector.
+To point `check` at another library, set `$FLOW_SDK_LIBRARY_JSON`: the SDK's
+`case check` takes `--library` / `--connectors-local`, but
+`uip maestro case check` does not forward them yet (`case compile` does). Do not repair emitted JSON by hand;
 change the TypeScript source and rebuild.
 
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
