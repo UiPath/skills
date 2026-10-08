@@ -80,12 +80,12 @@ Not transactional: an agent started once per invoice by the orchestration; the p
 
 ## Acceptance Criteria
 
-- [ ] Given a single `unmatched-line` discrepancy where one PO line has the same description and price, the proposal is `repost-with-correction` with that PO line in `CorrectedRecord`.
-- [ ] Given a line price 15% above the PO price, the proposal is `request-supplier-credit-note`.
-- [ ] Given a `duplicate` discrepancy, the proposal is `reject` regardless of other discrepancies.
-- [ ] Given two discrepancies of unknown type, `Confidence` is at least 0.4 lower than for the same record with known types.
-- [ ] Given any input, `Rationale` mentions every discrepancy field by name.
-- [ ] Given any input, the output is exactly one of the three proposals or `manual`.
+1. Given a single `unmatched-line` discrepancy where one PO line has the same description and price, the proposal is `repost-with-correction` with that PO line in `CorrectedRecord`.
+2. Given a line price 15% above the PO price, the proposal is `request-supplier-credit-note`.
+3. Given a `duplicate` discrepancy, the proposal is `reject` regardless of other discrepancies.
+4. Given two discrepancies of unknown type, `Confidence` is at least 0.4 lower than for the same record with known types.
+5. Given any input, `Rationale` mentions every discrepancy field by name.
+6. Given any input, the output is exactly one of the three proposals or `manual`.
 
 ## Complexity
 

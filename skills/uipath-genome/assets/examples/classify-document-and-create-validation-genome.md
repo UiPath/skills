@@ -100,13 +100,13 @@ Not transactional: one item's work started per item by the caller that passes th
 
 ## Acceptance Criteria
 
-- [ ] Given a document file, the automation returns a document type from the configured set with a confidence score.
-- [ ] Given a classification at or above the threshold, no validation task is created and the result is returned as final.
-- [ ] Given a classification below the threshold, a validation task appears in Action Center with the document name and the suggested type.
-- [ ] Given a validation task is created, the process suspends and resumes only after the reviewer completes it.
-- [ ] Given a low-confidence classification, the job log contains the document type and confidence before suspension.
-- [ ] Given a completed validation task, the automation returns the reviewer's confirmed or corrected type with `ValidatedByHuman` true.
-- [ ] Given the classifier is unavailable twice in a row, the job fails with the classifier error in the log.
+1. Given a document file, the automation returns a document type from the configured set with a confidence score.
+2. Given a classification at or above the threshold, no validation task is created and the result is returned as final.
+3. Given a classification below the threshold, a validation task appears in Action Center with the document name and the suggested type.
+4. Given a validation task is created, the process suspends and resumes only after the reviewer completes it.
+5. Given a low-confidence classification, the job log contains the document type and confidence before suspension.
+6. Given a completed validation task, the automation returns the reviewer's confirmed or corrected type with `ValidatedByHuman` true.
+7. Given the classifier is unavailable twice in a row, the job fails with the classifier error in the log.
 
 ## Complexity
 

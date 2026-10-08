@@ -4,10 +4,11 @@
 Usage:
   execute_check.py build                       the one RPA project built from the genome compiles (uip rpa build)
   execute_check.py settings --expect NAME …    that project reads every named setting as an Orchestrator asset:
-                                               each name appears in its workflows, code or configuration file
+                                               each name is an asset read's asset name, or a cell of a
+                                               configuration workbook's Assets sheet
   execute_check.py open-items --expect TOKEN … [--sections]   a Markdown file outside every project, under any
-                                               name, naming every expected token; --sections also requires
-                                               the always-present section headings
+                                               name, headed '# Open items' and naming every expected token;
+                                               --sections also requires the always-present section headings
   execute_check.py genome-unchanged <genome> <reference>   execution left the genome byte-identical
 
 Cross-platform on purpose: coder-eval runs run_command through cmd.exe on Windows, so criteria call this
@@ -16,12 +17,14 @@ script through `python -c` and read REFERENCE_DIR from the environment. Exit 0 o
 
 import argparse
 import filecmp
+import html
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
@@ -58,12 +61,63 @@ def cmd_build(_: argparse.Namespace) -> int:
     return 0 if code == 0 else 1
 
 
-ASSET_READ = re.compile(r"AssetName|GetAsset|GetRobotAsset|GetCredential", re.I)
+XAML_ASSET_READ = re.compile(r"<(\w+:)?(GetRobotAsset|GetRobotCredential|GetAsset|GetCredential)\b(?:[^>]*?/>|.*?</(?:\w+:)?\2>)", re.S)
+XAML_ASSET_NAME = re.compile(r'\bAssetName="([^"]*)"|\.AssetName>(.*?)</', re.S)
+CODE_ASSET_READ = re.compile(r"\b(?:GetAsset|GetRobotAsset|GetCredential|GetRobotCredential)\s*\(\s*([^,)]*)")
+SHEET_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+REL_NS = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 
 
-def setting_reads(project: Path) -> tuple[list[str], str]:
-    """(code files, workbooks): the text of each workflow and code file, and of every configuration workbook."""
-    code, books = [], []
+def resolve_name(argument: str, text: str) -> str:
+    """The asset-name argument, plus the value of the one identifier it names (a constant, a variable's default)."""
+    m = re.fullmatch(r"\s*\[?\s*(\w+)\s*\]?\s*", html.unescape(argument))
+    if not m:
+        return argument
+    ident = re.escape(m.group(1))
+    bound = re.search(rf"\b{ident}\b\s*(?:As\s+String\s*)?=\s*\"([^\"]*)\"", text) \
+        or re.search(rf"<Variable\b(?=[^>]*\bName=\"{ident}\")[^>]*\bDefault=\"([^\"]*)\"", text)
+    return argument + " " + (bound.group(1) if bound else "")
+
+
+def asset_name_arguments(path: Path) -> list[str]:
+    """The asset-name argument of every asset read in one workflow or code file."""
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    if path.suffix.lower() == ".xaml":
+        found = [a or b for m in XAML_ASSET_READ.finditer(text) for a, b in XAML_ASSET_NAME.findall(m.group(0))]
+    else:
+        found = CODE_ASSET_READ.findall(text)
+    return [resolve_name(arg, text) for arg in found]
+
+
+def assets_sheet_cells(path: Path) -> list[str]:
+    """Every cell value on a workbook's Assets sheet (the REFramework configuration names the assets it reads there)."""
+    with zipfile.ZipFile(path) as z:
+        names = set(z.namelist())
+        book = ET.fromstring(z.read("xl/workbook.xml"))
+        rels = {r.get("Id"): r.get("Target") for r in ET.fromstring(z.read("xl/_rels/workbook.xml.rels"))}
+        shared = ["".join(t.text or "" for t in si.iter(f"{SHEET_NS}t"))
+                  for si in ET.fromstring(z.read("xl/sharedStrings.xml")).iter(f"{SHEET_NS}si")] \
+            if "xl/sharedStrings.xml" in names else []
+        cells = []
+        for sheet in book.iter(f"{SHEET_NS}sheet"):
+            if sheet.get("name", "").strip().lower() != "assets":
+                continue
+            target = rels.get(sheet.get(f"{REL_NS}id"), "")
+            target = target.lstrip("/") if target.startswith("/") else "xl/" + target
+            for c in ET.fromstring(z.read(target)).iter(f"{SHEET_NS}c"):
+                v = c.find(f"{SHEET_NS}v")
+                if c.get("t") == "s" and v is not None:
+                    cells.append(shared[int(v.text)])
+                elif c.get("t") == "inlineStr":
+                    cells.append("".join(t.text or "" for t in c.iter(f"{SHEET_NS}t")))
+                elif v is not None:
+                    cells.append(v.text or "")
+        return cells
+
+
+def setting_reads(project: Path) -> tuple[list[str], list[str]]:
+    """(asset-name arguments of the workflow and code files, cells of the workbooks' Assets sheets)."""
+    arguments, cells = [], []
     for dirpath, dirnames, filenames in os.walk(project):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
         for name in filenames:
@@ -71,24 +125,22 @@ def setting_reads(project: Path) -> tuple[list[str], str]:
             suffix = path.suffix.lower()
             try:
                 if suffix in {".xaml", ".cs", ".vb"}:
-                    code.append(path.read_text(encoding="utf-8", errors="ignore"))
+                    arguments += asset_name_arguments(path)
                 elif suffix == ".xlsx":
-                    with zipfile.ZipFile(path) as z:
-                        books += [z.read(n).decode("utf-8", "ignore") for n in z.namelist() if n.endswith(".xml")]
-            except (OSError, zipfile.BadZipFile):
-                continue
-    return code, "\n".join(books)
+                    cells += assets_sheet_cells(path)
+            except (OSError, KeyError, ValueError, IndexError, zipfile.BadZipFile, ET.ParseError) as e:
+                print(f"skipped {path}: {e}")
+    return arguments, cells
 
 
 def cmd_settings(a: argparse.Namespace) -> int:
-    """Each setting is read as an Orchestrator asset: its name appears in a workflow or code file that
-    reads assets (the name may sit in a constant away from the call), or in a configuration workbook
-    (the REFramework's Assets sheet names the assets it reads). A file that never reads an asset — an
-    environment variable, a literal default — does not count."""
+    """Each setting is read as an Orchestrator asset: its name is the asset-name argument of an asset read in a
+    workflow or code file (directly, or through the one constant or variable that argument names), or a cell of a
+    configuration workbook's Assets sheet. A name anywhere else — a Settings row, a literal, an unrelated call —
+    does not count."""
     project = one_project()
-    code, books = setting_reads(project)
-    reading = [text for text in code if ASSET_READ.search(text)]
-    missing = [n for n in a.expect if not any(n in text for text in reading) and n not in books]
+    arguments, cells = setting_reads(project)
+    missing = [n for n in a.expect if not any(n in arg for arg in arguments) and n not in {c.strip() for c in cells}]
     if missing:
         print(f"FAIL: {project.name} does not read these settings as Orchestrator assets: {', '.join(missing)}")
         return 1
@@ -113,15 +165,20 @@ def handoff_candidates(projects: list[Path]) -> tuple[list[Path], list[Path]]:
     return outside, inside
 
 
+OPEN_ITEMS_HEADING = re.compile(r"^# Open items\b", re.M | re.I)
+
+
 def cmd_open_items(a: argparse.Namespace) -> int:
-    """The engineer's open items: a Markdown file outside every project that names every expected
-    token, whatever it is called. --sections also requires the always-present section headings."""
+    """The engineer's open items: a Markdown file outside every project, whatever it is called, headed
+    '# Open items' as the open-items guide's template is, that names every expected token — a run brief,
+    ledger or report naming the same tokens does not count. --sections also requires the always-present
+    section headings."""
     projects = rpa_projects(Path("."))
     outside, inside = handoff_candidates(projects)
 
     def names_all(path: Path) -> bool:
         text = path.read_text(encoding="utf-8", errors="ignore")
-        return all(t in text for t in a.expect)
+        return bool(OPEN_ITEMS_HEADING.search(text)) and all(t in text for t in a.expect)
 
     found = [p for p in outside if names_all(p)]
     if not found:
@@ -129,7 +186,7 @@ def cmd_open_items(a: argparse.Namespace) -> int:
         if misplaced:
             print(f"FAIL: open items found only inside a project, where they ship in its package: {', '.join(map(str, misplaced))}")
         else:
-            print(f"FAIL: no Markdown file outside the project names {', '.join(a.expect)}")
+            print(f"FAIL: no Markdown file outside the project is headed '# Open items' and names {', '.join(a.expect)}")
         return 1
     if a.sections:
         missing = {str(p): [s for s in SECTIONS if not any(l.strip() == s for l in p.read_text(encoding='utf-8', errors='ignore').splitlines())] for p in found}

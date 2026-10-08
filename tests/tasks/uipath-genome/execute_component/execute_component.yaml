@@ -11,7 +11,7 @@ tags: [uipath-genome, windows, e2e, mode:build, lifecycle:generate]
 run_limits:
   expected_turns: 60
   max_turns: 150
-  task_timeout: 5400
+  task_timeout: 6000  # the turn plus the criteria's 540s of grading
   turn_timeout: 5400
 
 sandbox:
@@ -27,11 +27,8 @@ reference:
 
 initial_prompt: |
   Build the automation described in `daily-sales-summary-genome.md` in this folder.
-  This is an unattended run: take the default for every question. The three folders
-  differ per environment and must be set in each customer's Orchestrator. Do not publish
-  or deploy anything — the automation will be deployed to the customer's Orchestrator later.
-
-  Before starting, load the uipath-genome skill and follow its execution workflow.
+  This is an unattended run: take the default for every question. Do not publish or
+  deploy anything — the automation will be deployed to the customer's Orchestrator later.
 
 success_criteria:
   - type: skill_triggered
@@ -109,6 +106,6 @@ success_criteria:
   - type: command_not_executed
     description: "Nothing is published or deployed"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+solution\s+(publish|deploy|upload)'
+    command_pattern: '(uip|\$UIP)\s+(solution\s+(publish|deploy|upload)|rpa\s+publish|or\s+packages\s+upload)'
     weight: 1.0
     pass_threshold: 1.0

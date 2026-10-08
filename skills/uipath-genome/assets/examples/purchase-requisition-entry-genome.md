@@ -182,14 +182,14 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 
 **Split options** — none asserted; runner counts are deployment settings:
 
-| Unit of work | Option | Processes | Item store | Requires | Changes against as-is |
-|---|---|---|---|---|---|
-| one requisition row | A — one process, both roles | one RPA process that reads the open rows and keys them in the same job | in-process list | excluded: three robots share the items and an item must survive a failed run | the queue and the 06:30 start disappear; one robot keys all 300 requisitions |
-| one requisition row | B — a producer process and a consumer process | two processes — entry point A (queue the open rows, 06:00) and entry point B (key the requisitions on the REFramework in queue mode, three robots from 06:30), published from one project (the as-is) or from two projects | `PR_Requisitions` | entry point A triggered once at 06:00; the dispatched timestamp keeps a second dispatch harmless | none as one project — the as-is; as two projects, two packages and the workbook location and mailbox settings held twice or in a shared library |
-| one requisition row | C — one process, both roles, with a queue | one RPA process with one entry point, started on the three robots at 06:00: every job first queues the open rows behind a once-guard, then keys requisitions from the queue on the REFramework in queue mode | `PR_Requisitions` | a once-guard for the dispatch, since all three robots run it — the dispatched timestamp plus the requisition number the queue refuses twice; both roles on the same robots and schedule | one entry point and one trigger instead of two; keying starts right after the dispatch instead of at 06:30; whichever robot dispatches first writes the dispatched column, the other two find no undispatched rows or wait on the locked workbook (step 2's retry) |
-| one requisition line | A — one process, both roles | one RPA process whose items are lines; the first line of a requisition creates its header | in-process list of lines | excluded: as for one requisition row | the requester mail and the total check run after a requisition's last line in the same job |
-| one requisition line | B — a producer process and a consumer process | producer and consumer processes over a queue of lines | one queue of lines | Coupa accepting lines added to an open requisition | header creation guarded when several robots take lines of one requisition; the requester mail and the total check need all lines of a requisition to be final |
-| one requisition line | C — one process, both roles, with a queue | one RPA process that queues the lines behind a once-guard and then works them, in every job | one queue of lines | as for B, plus the once-guard for the dispatch on every robot | as for B, with one entry point and one trigger |
+| Unit of work | Option | Requires | Changes against as-is |
+|---|---|---|---|
+| one requisition row | A | excluded: three robots share the items and an item must survive a failed run | the queue and the 06:30 start disappear; one robot reads the open rows and keys all 300 requisitions in the same job |
+| one requisition row | B | entry point A triggered once at 06:00; the dispatched timestamp keeps a second dispatch harmless | none as one project — the as-is, entry points A and B published as two processes; as two projects, two packages and the workbook location and mailbox settings held twice or in a shared library |
+| one requisition row | C | a once-guard for the dispatch, since all three robots run it — the dispatched timestamp plus the requisition number the queue refuses twice; both roles on the same robots and schedule | one entry point and one trigger instead of two; keying starts right after the dispatch instead of at 06:30; whichever robot dispatches first writes the dispatched column, the other two find no undispatched rows or wait on the locked workbook (step 2's retry) |
+| one requisition line | A | excluded: as for one requisition row | the first line of a requisition creates its header; the requester mail and the total check run after a requisition's last line in the same job |
+| one requisition line | B | Coupa accepting lines added to an open requisition | header creation guarded when several robots take lines of one requisition; the requester mail and the total check need all lines of a requisition to be final |
+| one requisition line | C | as for B, plus the once-guard for the dispatch on every robot | as for B, with one entry point and one trigger |
 
 **Evidence:** three unattended robots share the queue from 06:30; the rows are dispatched once per business day at 06:00; an item must survive a failed run and be retried in a later one; Coupa submits a requisition with all its lines at once; purchasing operations need per-item visibility.
 **Configuration:** settings — questions 1-6 and 9 (workbook location, sheet names, queue name, portal address, sending mailbox, operations address, supplier lookup source); constants — questions 7, 8, 10 and 11 (item retries, consecutive-failure threshold, submit wait, same-day delivery date); assets — every Credential and Text row of Platform Dependencies, read at the start of the run.
@@ -197,23 +197,23 @@ Rejections are a normal outcome rather than a failure. A supplier that is not on
 
 ## Acceptance Criteria
 
-- [ ] Given 300 open rows with no dispatched timestamp, entry point A creates 300 items on `PR_Requisitions`, one per requisition number, and writes the run timestamp on each row.
-- [ ] Given a row whose requisition number already has an item on the queue, entry point A creates no second item, counts the row as skipped, and still marks it dispatched.
-- [ ] Given the open-requisitions sheet has no undispatched rows, entry point A ends the run with zero items created and sends no alert.
-- [ ] Given the workbook is locked by another user, entry point A retries three times, dispatches nothing, and alerts purchasing operations with the reason.
-- [ ] Given a signed-in portal session, entry point B reads the approved-supplier list and the cost-centre list once for the whole run rather than per requisition.
-- [ ] Given a requisition whose supplier is not on the approved-supplier list, entry point B creates nothing in the portal, records the item with reason `supplier-not-approved`, and emails the requester that reason.
-- [ ] Given a cost centre that is closed on the run date, the item is recorded with reason `cost-centre-closed` and the requester is emailed, while the next item is still worked.
-- [ ] Given a requisition with an empty delivery date, the item is recorded with reason `mandatory-field-empty` naming the delivery date.
-- [ ] Given a delivery date one day before the run date, the item is recorded with reason `delivery-date-past`.
-- [ ] Given a requisition number that already carries a Coupa requisition, entry point B creates no second requisition and records `already-created` with the existing Coupa requisition number.
-- [ ] Given a valid requisition with three line items, entry point B creates a Coupa requisition with three lines matching description, quantity and unit price, submits it, and records the Coupa requisition number.
-- [ ] Given a submitted requisition, the requester receives an email naming both the requisition number and the Coupa requisition number.
-- [ ] Given the portal session is lost while a requisition is being entered, entry point B captures a screenshot, signs in again, retries the same requisition at most twice, and then records it as failed with the reason.
-- [ ] Given a third consecutive system exception, entry point B stops the run, leaves the untaken items on the queue, and alerts purchasing operations with the three reasons.
-- [ ] Given the mail server is unavailable after a requisition was created, the item keeps its Coupa requisition number, is recorded as failed with reason `notification-not-sent`, and no second requisition is created.
-- [ ] Given a completed run, the summary sheet gains one row with items taken, created, rejected by reason and failed, and purchasing operations receives the same figures by email.
-- [ ] Given three robots taking items at the same time, each requisition is worked exactly once.
+1. Given 300 open rows with no dispatched timestamp, entry point A creates 300 items on `PR_Requisitions`, one per requisition number, and writes the run timestamp on each row.
+2. Given a row whose requisition number already has an item on the queue, entry point A creates no second item, counts the row as skipped, and still marks it dispatched.
+3. Given the open-requisitions sheet has no undispatched rows, entry point A ends the run with zero items created and sends no alert.
+4. Given the workbook is locked by another user, entry point A retries three times, dispatches nothing, and alerts purchasing operations with the reason.
+5. Given a signed-in portal session, entry point B reads the approved-supplier list and the cost-centre list once for the whole run rather than per requisition.
+6. Given a requisition whose supplier is not on the approved-supplier list, entry point B creates nothing in the portal, records the item with reason `supplier-not-approved`, and emails the requester that reason.
+7. Given a cost centre that is closed on the run date, the item is recorded with reason `cost-centre-closed` and the requester is emailed, while the next item is still worked.
+8. Given a requisition with an empty delivery date, the item is recorded with reason `mandatory-field-empty` naming the delivery date.
+9. Given a delivery date one day before the run date, the item is recorded with reason `delivery-date-past`.
+10. Given a requisition number that already carries a Coupa requisition, entry point B creates no second requisition and records `already-created` with the existing Coupa requisition number.
+11. Given a valid requisition with three line items, entry point B creates a Coupa requisition with three lines matching description, quantity and unit price, submits it, and records the Coupa requisition number.
+12. Given a submitted requisition, the requester receives an email naming both the requisition number and the Coupa requisition number.
+13. Given the portal session is lost while a requisition is being entered, entry point B captures a screenshot, signs in again, retries the same requisition at most twice, and then records it as failed with the reason.
+14. Given a third consecutive system exception, entry point B stops the run, leaves the untaken items on the queue, and alerts purchasing operations with the three reasons.
+15. Given the mail server is unavailable after a requisition was created, the item keeps its Coupa requisition number, is recorded as failed with reason `notification-not-sent`, and no second requisition is created.
+16. Given a completed run, the summary sheet gains one row with items taken, created, rejected by reason and failed, and purchasing operations receives the same figures by email.
+17. Given three robots taking items at the same time, each requisition is worked exactly once.
 
 ## Complexity
 

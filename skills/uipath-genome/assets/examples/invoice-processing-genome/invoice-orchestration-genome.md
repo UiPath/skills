@@ -94,22 +94,17 @@ Each queue item on the intake queue starts one instance of this process. The ins
 
 ## Transactional Shape
 
-
-### Flow 1 — one supplier invoice: component 2 → component 1
-
-**Role:** takes Flow 1's items — its queue trigger starts one instance per invoice, and that instance retries, tracks and escalates its invoice; a coordinator, not an RPA consumer.
-
-Split options: per the process genome, Flow 1.
+Not transactional: a coordinator whose per-item lifecycle is the orchestration's — its queue trigger starts one instance per invoice, which retries, tracks and escalates it.
 
 ## Acceptance Criteria
 
-- [ ] Given a queue item, exactly one instance starts and reads all four specific-content fields.
-- [ ] Given `MatchResult` = `matched` and total below the ceiling, the posting job starts without a triage or review step.
-- [ ] Given `MatchResult` = `exception`, the triage agent job starts before any Action Center task is created.
-- [ ] Given agent confidence 0.3, the review task shows proposal `manual`.
-- [ ] Given a review task older than the SLA, it is reassigned to the team lead and the instance keeps waiting.
-- [ ] Given the clerk rejects with a reason, the supplier email contains that reason and the invoice number, and the queue item is Failed with the same reason.
-- [ ] Given two ERP rejections, the instance ends `rejected` without a third posting attempt.
+1. Given a queue item, exactly one instance starts and reads all four specific-content fields.
+2. Given `MatchResult` = `matched` and total below the ceiling, the posting job starts without a triage or review step.
+3. Given `MatchResult` = `exception`, the triage agent job starts before any Action Center task is created.
+4. Given agent confidence 0.3, the review task shows proposal `manual`.
+5. Given a review task older than the SLA, it is reassigned to the team lead and the instance keeps waiting.
+6. Given the clerk rejects with a reason, the supplier email contains that reason and the invoice number, and the queue item is Failed with the same reason.
+7. Given two ERP rejections, the instance ends `rejected` without a third posting attempt.
 
 ## Complexity
 

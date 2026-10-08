@@ -106,28 +106,18 @@ One RPA project, three entry points. The intake entry point runs every 15 minute
 
 ## Transactional Shape
 
-
-### Flow 1 — one supplier invoice: component 2 → component 1
-
-**Role:** producer — entry point A creates the items; entry points B and C run one item's work per job component 1 starts, so the project has no consumer role.
-
-| Aspect | As-is |
-|---|---|
-| Produced by | Entry point A (intake), every 15 minutes: unread mails with a PDF attachment in the configured mailbox folder become one item per mail id on `AP_InvoiceIntake`; a second item for the same mail id is closed as `duplicate` by the orchestration |
-| Source item once queued | The mail is marked read and its PDF saved to the bucket |
-
-Split options: per the process genome, Flow 1.
+Not transactional: the intake entry point hands each invoice to component 1 through `AP_InvoiceIntake`, whose queue trigger starts one instance per invoice; the matching and posting entry points run one invoice's work per job that instance starts.
 
 ## Acceptance Criteria
 
-- [ ] Given three unread mails with PDFs and one without, the intake entry point creates three queue items and emails the fourth sender.
-- [ ] Given an invoice PDF, entry point B returns vendor, invoice number, date, PO number, line items, subtotal, tax, total, and currency.
-- [ ] Given a field below the confidence threshold, `MatchResult` is `exception` with `unreadable-field` naming the field.
-- [ ] Given an invoice whose lines match the PO within 1% and total below the remaining value, `MatchResult` is `matched` with no discrepancies.
-- [ ] Given a line price 3% above the PO price, `Discrepancies` contains the line, the PO price, and the invoice price.
-- [ ] Given an invoice number already posted for the vendor, `Discrepancies` contains `duplicate`.
-- [ ] Given a valid record, the poster returns an SAP document number and the invoice is visible in SAP against the PO.
-- [ ] Given SAP rejects the posting, `ErpRejection` carries SAP's message and no second attempt is made.
+1. Given three unread mails with PDFs and one without, the intake entry point creates three queue items and emails the fourth sender.
+2. Given an invoice PDF, entry point B returns vendor, invoice number, date, PO number, line items, subtotal, tax, total, and currency.
+3. Given a field below the confidence threshold, `MatchResult` is `exception` with `unreadable-field` naming the field.
+4. Given an invoice whose lines match the PO within 1% and total below the remaining value, `MatchResult` is `matched` with no discrepancies.
+5. Given a line price 3% above the PO price, `Discrepancies` contains the line, the PO price, and the invoice price.
+6. Given an invoice number already posted for the vendor, `Discrepancies` contains `duplicate`.
+7. Given a valid record, the poster returns an SAP document number and the invoice is visible in SAP against the PO.
+8. Given SAP rejects the posting, `ErpRejection` carries SAP's message and no second attempt is made.
 
 ## Complexity
 

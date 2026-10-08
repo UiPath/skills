@@ -44,7 +44,7 @@ Never ask ([genome-format-guide.md § Complexity](genome-format-guide.md)). Sign
 | Multiple systems, field mappings, business rules, conditional logic, explicit "retry" or "exception handling", scheduled or event trigger, "multiple departments" | medium |
 | Multi-phase workflow, human approval or escalation, several integrations, orchestration, multiple deployable units | complex |
 
-"Read Excel, fill a web form" stays simple even when described in detail. Any human approval step is at least complex for a component and forces a process genome when the approval lives outside the automation.
+"Read Excel, fill a web form" stays simple even when described in detail. A human approval step weighs toward complex without deciding the level alone: the level is where most signals land. It forces a process genome when the approval lives outside the automation.
 
 ## Step 4 — Extract
 
@@ -64,7 +64,7 @@ Add these even when the user did not name them:
 | PDFs, scanned documents, forms | Document Understanding activities in `uipath-rpa` step; `uipath-ixp` component when custom extraction model needed |
 | Clicking, typing, reading a screen, desktop app | UI automation in `uipath-rpa` |
 | REST APIs, connectors, SaaS systems | Integration Service connector activities (`uipath-rpa`) or `uipath-api-workflow` component when no UI involved |
-| Many items processed independently, retries, resilience, several robots | Transactional Shape with the As-is, the split options and the evidence ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)); an Orchestrator queue under Platform Dependencies only when the description itself shares items across robots or runs — otherwise the store is named per split option, not imposed |
+| Many items processed independently, retries, resilience, several robots | Transactional Shape with the As-is, the split options and the evidence ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)); an Orchestrator queue under Platform Dependencies only when the description itself shares items across robots or runs — otherwise the store follows the split chosen at execution, not imposed |
 | Coordinating several automations, waiting on events | `uipath-maestro-flow` (short-lived) or `uipath-maestro-bpmn` (long-running, human lanes) coordinator component |
 | Judgement, classification, summarisation, free-text decisions | `uipath-agents` component |
 | Human review, approval, sign-off | Human-in-the-loop checkpoint in coordinator; actor row in Actors and Systems |
@@ -89,7 +89,13 @@ Interface by component type ([genome-format-guide.md § Interface](genome-format
 
 ## Step 8 — Write, then offer edits
 
-Write the file named by the slug rule ([genome-format-guide.md § File Naming and Location](genome-format-guide.md)), then offer edits ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)). Edits are in-place, never a regeneration:
+Write the file named by the slug rule ([genome-format-guide.md § File Naming and Location](genome-format-guide.md)), then check it:
+
+```bash
+python3 "<SKILL_DIR>/scripts/check-genome.py" <process|component> "<GENOME_MD>" --profile strict
+```
+
+Use `python` on Windows. A process genome takes the checker to every component genome it links. Fix every `FAIL` line and run it again, at most three rounds, then offer edits ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)), naming what is left. Edits are in-place, never a regeneration, and each is checked the same way before answering:
 
 | Request | Update |
 |---|---|

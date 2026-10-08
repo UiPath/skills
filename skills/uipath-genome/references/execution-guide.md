@@ -39,7 +39,7 @@ Three groups of questions, asked in this order:
 
 **Split questions** — asked once per flow when the genome's Transactional Shape is not the stub, after the genome questions and before any scaffolding question, because the project list depends on every flow's answers: [transactional-execution-guide.md § Split questions](transactional-execution-guide.md).
 
-**Scaffolding questions** — always asked, once per project the genome will create or the split answer materialises (per component for a process genome, once per project a split adds, once for the single test project):
+**Scaffolding questions** — always asked, for every project the genome will create or the split answer materialises (each component of a process genome, each project a split adds, the single test project). They are asked once per owning skill and the answer applies to all its projects; a project gets its own answer only where it differs (an existing project to reuse, another location, the test project's packages), and each such question names the project:
 
 | Topic | Question | Options (first = Recommended) |
 |---|---|---|
@@ -64,7 +64,7 @@ Rules:
 3. Present with `AskUserQuestion`, at most four per batch; collect a batch before showing the next. When the questions run past three batches, the first batch also asks how to answer them — batch by batch, the defaults, or the defaults with named overrides; the user's choice is the explicit request the autonomous-run paragraph below requires.
 4. Record answers as a `Configuration Answers` list with a `Scaffolding` group; the project-creation step in 1.4 receives the scaffolding answers, and every later build step receives the answers relevant to it.
 5. A default in the genome, a value found by discovery, a stub section, a "(Recommended)" option or a silent user never licenses skipping the question. Only the user answers it.
-6. Process genomes: ask the process-level genome questions first, then each component's genome questions in Components order, then the scaffolding questions per project.
+6. Process genomes: ask the process-level genome questions first, then each component's genome questions in Components order, then the scaffolding questions per owning skill, with the per-project differences after them.
 7. The split questions follow their own rules and record their own answer line: [transactional-execution-guide.md § Split questions](transactional-execution-guide.md).
 8. **An empty or malformed setting that would change the flow, or fail only after business work has begun, is guarded, not defaulted.** A configuration value marked as a setting and left empty — "not in the export", or by the user's instruction — is built as a setting with an empty value. Where the empty value would silently change what the automation does instead of failing (an end-of-day time that compares as reached, a mode switch that falls to its else branch, a name list matched by containment that matches everything, a folder name that resolves to the drive root), and where a value of a fixed format would fail only where it is first used, after items have been worked (an end time that does not parse as `HH:mm`), the build checks it where the settings load and stops the run naming the setting and its source reference. The guards are listed in the report.
 
@@ -82,10 +82,12 @@ Every project is created with the `Scaffolding` answers from 1.3: location, targ
 **Process genome:**
 <!--skill-flavor:process-genome-solution:start-->
 1. Create or reuse a solution named after the process (`uip solution init "<NAME>" --output json` when none exists). Record `SOLUTION_DIR`.
-2. Each non-test component becomes one project inside the solution folder: create it through its owning skill with that component's scaffolding answers. A **process** created inside the solution folder is registered in the `.uipx` by `init` itself (`solutionRegistration.Status: Registered`); a project created elsewhere is registered with `uip solution projects add <PROJECT_PATH> --output json`.
+2. Each non-test component becomes one project inside the solution folder: create it through its owning skill with that component's scaffolding answers. A **process** created inside the solution folder is registered by its creation; a project created elsewhere is added to the solution per `uipath-solution`.
 <!--skill-flavor:process-genome-solution:end-->
-   A **library** is never a solution project — the CLI refuses it (`Status: Skipped`, "A library cannot be a project inside a solution — it is a reusable .nupkg"): create it in the solution folder anyway, consume it as a package (§ 1.5), and attach it to the solution only as a resource once it is published to the tenant (`uip solution resources add --source remote --kind Library --name <library>`, which needs a login).
+   A **library** is never a solution project (`uipath-solution` states the refusal and how a published library joins the solution as a resource): create it in the solution folder anyway and consume it as a package (§ 1.5).
+<!--skill-flavor:process-genome-test-project:start-->
 3. **All test components share one test project** ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1). Create `<ProcessName>.Tests` once through `uipath-rpa`'s test-project creation step, register it once, and give every test component the same `PROJECT_DIR` with its own subfolder (`<ComponentSlug>/`) for test cases and data files, plus a shared `Config/` folder for the configuration workflow. The process genome's Project layout table names the folders; when an older genome lacks it, derive the folder names from the component names and say so.
+<!--skill-flavor:process-genome-test-project:end-->
 4. Verify with `uip solution projects list --output json` after all components exist (libraries do not appear in it).
 
 If the genome's Deployment section says "independent packages", skip the solution and treat each component as a standalone project.
@@ -96,12 +98,12 @@ If the genome's Deployment section says "independent packages", skip the solutio
 
 A component of type library is consumed by the other components as a package dependency, so it gates them:
 
-1. The library is built, validated and packed first with the owning skill's pack command. Analyzer rules configured as Error fail `build` and `pack` but not per-file `validate`, so a project whose every file validates clean can still fail `build`; fix the workflow first and, only when a rule cannot be satisfied, decide with the user between lowering it and packing with the analyzer skipped, and record the decision. Rules that fire as Errors under the default configuration in migrated projects, and the fix for each: `ST-SEC-007` — a SecureString workflow argument → the argument carries the asset's name and the workflow reads the secret inside the scope that consumes it ([source-migration-guide.md](source-migration-guide.md) rule 4); `ST-SEC-008` — a SecureString variable used outside the scope that declares it → declare it on the Sequence that directly contains the activity creating it and every activity consuming it; `ST-SEC-009` — a SecureString converted to text (`NetworkCredential(…).Password`) to feed a plain-string property → when the value is an identifier rather than a secret (an OAuth client or tenant id), read it from a Text asset instead ([source-migration-guide.md](source-migration-guide.md) rule 4); when it is a secret a request needs (a bearer token), pass the SecureString as an argument of the code step that builds the request and convert it inside that code; `UI-REL-001` — a literal `idx` above 2 in a strict selector → the recorded identifier or name, a text-pinned container or a table header replaces the index ([selector-translation-guide.md](selector-translation-guide.md) rule 7); an index none of them replaces is a rule that cannot be satisfied; `ST-DBP-002` — more than 20 arguments → the options object of [genome-format-guide.md § Interface](genome-format-guide.md) as a coded class, an Interface deviation when the genome lacks it.
-2. Consumers install the dependency from a local feed: a sources file listing the folder that holds the package, passed to install and build with the owning skill's sources flag. The feed folder lives outside every project. Two formats exist: `uip rpa packages install` / `uip rpa build --nuget-sources-config-path` take a JSON list `[{"Url": "C:/feed"}]` whose path must use forward slashes (a backslash path is rejected as an invalid JSON escape), while `uip solution pack --nuget-sources-config-path` takes an XML `NuGet.config`.
-3. Repacking under the same id and version is ignored by the package cache, and the cached copy cannot be cleared while a host holds its DLLs. Before the first pack, list the cache folder for the package id (`~/.nuget/packages/<PACKAGE_ID>/`; on Windows `%USERPROFILE%\\.nuget\\packages\\<PACKAGE_ID>\\`) and bump the library version when that version already exists there — a previous day's build of the same solution is the usual case. Signature of a stale cache in the consumer after an install that reported success: `Cannot create unknown type '{clr-namespace:<Namespace>;assembly=<Library>}<Activity>'` and `Cannot set unknown member '<Class>.<Argument>'` on activities the new package changed; the fix is a version bump, never another install.
+1. The library is built, validated and packed first with the owning skill's pack command, clearing the analyzer errors that skill lists. Where a fix touches what the genome settles, the genome's rule decides it: a credential, or an identifier read from an asset, follows [source-migration-guide.md](source-migration-guide.md) rule 4; more than 20 arguments become the options object of [genome-format-guide.md § Interface](genome-format-guide.md), an Interface deviation when the genome lacks it; a literal `idx` above 2 is replaced per [selector-translation-guide.md](selector-translation-guide.md) rule 7, and an index none of its replacements removes is a rule that cannot be satisfied. A rule that cannot be satisfied is decided with the user and recorded.
+2. Consumers install the dependency from a local feed, a folder outside every project, through the owning skill's sources file for install and build; the solution pack takes `uipath-solution`'s sources file.
+3. Each library packs under a version the package cache does not hold yet, per the owning skill's same-version rule; a previous day's build of the same solution is the usual collision.
 4. **Consumers call a library's activities directly**, in the steps that use them. A workflow wrapping one library activity adds a file and an invoke to every call and nothing else, so none is written. A consumer workflow that calls a library activity is written once the package is installed in the consumer, with the activity names and namespace item 6 returns and the arguments of the library genome's Interface ([genome-format-guide.md § Interface](genome-format-guide.md)); the consumer's other workflows need not wait for the pack. Do not build an interface-only stand-in package unless the user asks for one, and delete it afterwards.
 5. **What the library keeps private is a contract with its consumers, not tidiness.** A workflow marked private does not surface as an activity in the consuming project, and a consumer cannot reach into the package to invoke a workflow file by path — the only way in is a public workflow's activity. The genome settles which is which before the library is packed: a workflow is public when a consumer's steps, handoffs or error handling invoke it, private otherwise. Internals built for the library's own use (the composite-pattern helpers) are private; a helper a consumer calls stays public however internal it looks — the evidence/screenshot workflow a test case's exception handler uses is the common case.
-6. **Read the consuming project's activity names from the installed package, never from the library's folder layout.** A public workflow surfaces under a class name the package derives from the project name and the workflow's folder, and the consumer's XAML needs that name and its namespace declaration. Ask the owning skill's activity-discovery command in the *consumer* project for the real names once the package is installed, and build the invocations from what it returns. The packed surface itself — public workflows and their arguments — is listed by `uip rpa packages inspect`; check it before writing an invocation's arguments. A discovery listing can be capped below a library's activity count, so a class missing from it is looked up by name through the default-XAML command before anyone concludes it is absent; `packages inspect` also lists the library's private helpers (marked not browsable) — a consumer never invokes those.
+6. **Read the consuming project's activity names from the installed package, never from the library's folder layout.** A public workflow surfaces under a class name the package derives from the project name and the workflow's folder, and the consumer's XAML needs that name and its namespace declaration. Take the names, the namespace and the argument types from the owning skill's library-consumption steps, run in the *consumer* project once the package is installed. The packed surface also lists the library's private helpers (marked not browsable) — a consumer never invokes those.
 7. **A library that calls another library's public workflow depends on that library's package.** It installs the package like any consumer (items 2 and 6) and is packed after it. A private copy of the workflow inside the calling library drifts from the original on the first change to either.
 
 ## Phase 2 — Build
@@ -156,7 +158,7 @@ A group built in parts, a build run through subagents or forks, and a pause or a
 
 ### 2.2b Migrate UI targets (extracted genomes)
 
-Before the first UI group, run [source-migration-guide.md § Migration preflight](source-migration-guide.md) with the export resolved in 1.3 (catalogs, step map and target spec into the build's working folder). Each UI group registers and links its files' targets from the target spec with the run's target tool, per that guide's § UI targets, § Object Repository identity and § Composite interactions, and verifies them per § Verifying targets. Report screens, elements, confidence counts, fragile targets (positional indexes, semantic-only) and derived elements as the first healing-pass targets. Placeholder stubs remain only for activities the catalog cannot cover, and the report lists them.
+Before the first UI group, run [source-migration-guide.md § Migration preflight](source-migration-guide.md) with the export resolved in 1.3 (catalogs and target spec into the build's working folder, the genome's step tables checked against the export). Each UI group registers and links its files' targets from the target spec with the run's target tool, per that guide's § UI targets, § Object Repository identity and § Composite interactions, and verifies them per § Verifying targets. Report screens, elements, confidence counts, fragile targets (positional indexes, semantic-only) and derived elements as the first healing-pass targets. Placeholder stubs remain only for activities the catalog cannot cover, and the report lists them.
 
 ### 2.2c Migrate test data (extracted genomes)
 
@@ -166,13 +168,17 @@ After the test project exists, fill the data files of each of its folders from t
 
 Component genome: after all groups, connect steps built by different skills (a coded workflow invoking a XAML workflow, a shared state file, a main entry point calling the others). Edit, then re-validate touched files.
 
-Process genome: implement every Handoffs row with the named mechanism: queue item (queue declared as a solution resource), start job, Flow or BPMN invoke of a sibling component, Action Center task, file drop. Confirm each component's Interface matches the data the Handoffs row passes. Then `uip solution resources refresh --output json` and `uip solution pack --output json` per the `uipath-solution` skill; on failure follow that skill's diagnosis. Without a tenant login `resources refresh`, `publish` and `deploy` are out of reach; `uip solution pack --dry-run` (with `--nuget-sources-config-path` naming the local feed's `NuGet.config` when libraries come from it) still proves the solution packs and is the last local gate; a failure there takes the same `uipath-solution` diagnosis as `pack`.
+Process genome: implement every Handoffs row with the named mechanism: queue item (queue declared as a solution resource), start job, Flow or BPMN invoke of a sibling component, Action Center task, file drop. Confirm each component's Interface matches the data the Handoffs row passes.
+
+<!--skill-flavor:process-genome-pack:start-->
+Then refresh the solution's resources and pack it per the `uipath-solution` skill; on failure follow that skill's diagnosis. Without a tenant login, resource refresh, publish and deploy are out of reach; that skill's pack dry run, resolving packages from the local feed when libraries come from it, still proves the solution packs and is the last local gate, and a failure there takes the same diagnosis as pack.
+<!--skill-flavor:process-genome-pack:end-->
 
 ## Phase 3 — Validate
 
 ### 3.1 Acceptance criteria
 
-For every criterion (component criteria first, then process criteria):
+For every criterion (component criteria first, then process criteria), cited by its number in its genome:
 
 | Verdict | Meaning |
 |---|---|
@@ -188,10 +194,10 @@ Where the owning skill offers a local run (`uip rpa run`, `uip maestro flow debu
 
 ```
 Acceptance Criteria
-  ✓ Given an invoice PDF, extracts vendor_name, … — Met (ProcessInvoice.xaml)
-  ⚠ When confidence < 70%, creates a validation task — Partial: task created, priority not set
-  ✗ Duplicate invoice is skipped — Not Met
-  ○ Sends notification on failure — Not Verifiable (SMTP)
+  ✓ 1. Given an invoice PDF, extracts vendor_name, … — Met (ProcessInvoice.xaml)
+  ⚠ 2. When confidence < 70%, creates a validation task — Partial: task created, priority not set
+  ✗ 3. Duplicate invoice is skipped — Not Met
+  ○ 4. Sends notification on failure — Not Verifiable (SMTP)
 Result: 5/8 met, 1 partial, 1 not met, 1 not verifiable
 ```
 
@@ -212,7 +218,9 @@ Split (one line per flow): Flow <N> (<components>) — option <A|B|C> — <mater
 Acceptance criteria: N/total met
 Configuration answers: … (defaults marked)
 Scaffolding: <target framework>, <expression language>, <package@version, …> (pinned | latest) per project
-Gate: validate + build per project (errors / warnings), libraries packed to <feed>, solution pack --dry-run <verdict>; runs performed or "compile only — no reachable application"
+<!--skill-flavor:report-gate:start-->
+Gate: validate + build per project (errors / warnings), libraries packed to <feed>, solution pack dry run <verdict>; runs performed or "compile only — no reachable application"
+<!--skill-flavor:report-gate:end-->
 Run: <the owning skill's run command for the entry point>
 Open items: <top open-items file> (<n> setup steps for the target environment; open-items-guide.md)
 ```
@@ -234,4 +242,5 @@ Execution ends by writing, beside the solution or project folder, what the targe
 7. **Skipping acceptance validation** because "everything compiled". Criteria are the definition of done.
 8. **Building past the owning skill.** Activity XML written from memory, or a subagent dispatched without the skill's mandatory reads and authoring journey (2.2 step 2).
 9. **Skipping the export question, or deriving nothing because no catalog sat beside the genome**, and so shipping placeholder targets or generated test rows for a reachable export (1.3, 2.2b, 2.2c). Every other migration mistake — naive composite translation, per-step Object Repository entries, Check activities instead of `VerifyOptions`, copied credentials — is prohibited in [source-migration-guide.md § Anti-patterns](source-migration-guide.md).
-10. **Generating workflows by script.** Every fix goes into the generator and regenerates the project; regeneration after linking drops Object Repository links; template shapes bypass the discovery commands; reviewers must read the generator to judge the build (2.2 step 2).
+10. **Writing to a tenant the user did not ask for** — publishing or deploying a package, creating a queue, asset or trigger. The build is local; what the target environment needs goes into the open-items files (§ 3.4).
+11. **Generating workflows by script.** Every fix goes into the generator and regenerates the project; regeneration after linking drops Object Repository links; template shapes bypass the discovery commands; reviewers must read the generator to judge the build (2.2 step 2).

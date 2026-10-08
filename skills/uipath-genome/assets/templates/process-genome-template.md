@@ -35,7 +35,7 @@ Build order follows the table unless **Handoffs** requires otherwise.
 
 | Folder in `{ProcessName}.Tests` | Component | Test cases | Data file(s) |
 |---|---|---|---|
-| `{ComponentSlug}/` | {#} | {test case names} | `{ComponentSlug}.xlsx` ({n} rows) |
+| `{ComponentSlug}/` | {#} | {test case names} | `.variations/{TestCase}.json` ({n} rows) per data-driven case, or none |
 | `Config/` | shared | — | configuration workflow: the Configuration Questions' values and the constants the test components' Interfaces list, credential-asset name → environment URL map |
 
 ## Process Map
@@ -121,7 +121,7 @@ flowchart LR
 
 ## Transactional Shape
 
-{Does the process iterate over units of work — items that succeed, fail, are retried and are tracked independently? Describe how the process handles them as it is and which splits are possible; decide nothing — the Components table's Type cell reads `RPA process`, and the split, the store and the template are chosen at execution. A process can hold several flows — one kind of item handed from its producer to its consumer (components 1 → 2, 2 → 3, an independent 5 → 6): one `### Flow N` block each, even when there is one. When a flow has no RPA consumer, one sentence naming what takes its items replaces its Consumed by row. Component genomes carry their own role per flow.}
+{Does the process iterate over units of work — items that succeed, fail, are retried and are tracked independently? Describe how the process handles them as it is and which splits are possible; decide nothing — the Components table's Type cell reads `RPA process`, and the split, the store and the template are chosen at execution. A process can hold several flows — one kind of item handed from its producer to its consumer (components 1 → 2, 2 → 3, an independent 5 → 6): one `### Flow N` block each, even when there is one. A flow whose items a coordinator takes, one instance per item, has no RPA consumer and is no flow: the stub (format guide § Transactional Shape rule 1). Component genomes carry their own role per flow.}
 
 **Flows:** Flow 1 — {unit}: component {p} → component {c} (Handoffs row {n}); Flow 2 — {unit}: component {c} → component {d} (Handoffs row {m}); chains: component {c} consumes Flow 1 and produces Flow 2; independent: {Flow k}.
 
@@ -149,16 +149,16 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Business exception | {component #} Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
 | System exception | every other failure — {component #} Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
 
-**Split options** — three rows (A, B, C) for the unit of work and three for each unit the Alternative units line lists; runner counts are deployment settings, never options; none asserted. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (format guide § Transactional Shape rule 9):
+**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists, each option by its letter (format guide § Transactional Shape rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
 
-| Unit of work | Option | Processes | Item store | Requires | Changes against as-is |
-|---|---|---|---|---|---|
-| {unit} | A — one process, both roles | one RPA process (REFramework direct mode or a plain per-item loop) | in-process list (one job, one runner); no queue | {nothing else touches the items; one runner; a rerun is safe} | {…} |
-| {unit} | B — a producer process and a consumer process | two RPA processes (two projects, or two entry points each published as a process), each with its own trigger and runner count | one Orchestrator queue per unit of work | {several consumer runners, retries across runs, different cadences, machines, credentials or ownership} | {…} |
-| {unit} | C — one process, both roles, with a queue | one RPA process, one entry point and one trigger: every job produces behind a once-guard, then consumes the queue (REFramework queue mode, producer steps in its initialisation); any number of identical runners | one Orchestrator queue per unit of work | {several runners, retries across runs or a later reader of the items, while both roles share cadence, machines, credentials and owner; population once per period (unique reference or kept ledger)} | {…} |
-| {alternative unit} | A — one process, both roles | … | … | … | {…} |
-| {alternative unit} | B — a producer process and a consumer process | … | … | … | {…} |
-| {alternative unit} | C — one process, both roles, with a queue | … | … | … | {…} |
+| Unit of work | Option | Requires | Changes against as-is |
+|---|---|---|---|
+| {unit} | A | {what this flow needs for one job to hold both roles — or "excluded: {the fact that rules it out}"} | {projects and schedules, where per-item state is visible, retry granularity, end-of-parent work} |
+| {unit} | B | {…} | {…} |
+| {unit} | C | {…; the once-guard for this flow's population} | {…} |
+| {alternative unit} | A | … | {…} |
+| {alternative unit} | B | … | {…} |
+| {alternative unit} | C | … | {…} |
 
 **Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
 **Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every Credential and Text row of Platform Dependencies.
@@ -174,8 +174,8 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 
 {End-to-end criteria that span components. Component-level criteria stay in the component genomes.}
 
-- [ ] Given {input at the process entry}, {observable outcome at the process exit} within {time or condition}
-- [ ] When {component} fails at {stage}, {recovery behaviour is observable}
+1. Given {input at the process entry}, {observable outcome at the process exit} within {time or condition}
+2. When {component} fails at {stage}, {recovery behaviour is observable}
 
 ## Deployment
 

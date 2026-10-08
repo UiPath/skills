@@ -50,7 +50,7 @@
 1. {Question}? ({setting | constant}; default: {value})
 2. {Question}? ({setting | constant}; default: {value})
 
-*Stub when none: "Description covers the scope — no additional configuration needed."*
+*Stub when none: "No open values — no configuration needed."*
 
 ## Workflow
 
@@ -68,7 +68,7 @@
 ### General
 - {Rule that applies across steps}
 
-*Stub when none: "No explicit business rules — agent applies standard validation patterns."*
+*Stub when none: "No business rules beyond the Workflow substeps."*
 
 ## Error Handling
 
@@ -78,7 +78,7 @@
 ### Global
 - Unhandled exception: {behaviour}
 
-*Stub when none: "Standard error handling — retry on transient failures, log and skip on permanent errors."*
+*Stub when none: "No error handling: a failure stops the run."*
 
 ## Transactional Shape
 
@@ -112,16 +112,16 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Business exception | Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
 | System exception | every other failure — Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
 
-**Split options** — three rows (A, B, C) for the unit of work and three for each unit the Alternative units line lists; runner counts are deployment settings, never options; none asserted. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (format guide § Transactional Shape rule 9):
+**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists, each option by its letter (format guide § Transactional Shape rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
 
-| Unit of work | Option | Processes | Item store | Requires | Changes against as-is |
-|---|---|---|---|---|---|
-| {unit} | A — one process, both roles | one RPA process (REFramework direct mode or a plain per-item loop) | in-process list (one job, one runner); no queue | {nothing else touches the items; one runner; a rerun is safe} | {…} |
-| {unit} | B — a producer process and a consumer process | two RPA processes (two projects, or two entry points each published as a process), each with its own trigger and runner count | one Orchestrator queue per unit of work | {several consumer runners, retries across runs, different cadences, machines, credentials or ownership} | {…} |
-| {unit} | C — one process, both roles, with a queue | one RPA process, one entry point and one trigger: every job produces behind a once-guard, then consumes the queue (REFramework queue mode, producer steps in its initialisation); any number of identical runners | one Orchestrator queue per unit of work | {several runners, retries across runs or a later reader of the items, while both roles share cadence, machines, credentials and owner; population once per period (unique reference or kept ledger)} | {…} |
-| {alternative unit} | A — one process, both roles | … | … | … | {…} |
-| {alternative unit} | B — a producer process and a consumer process | … | … | … | {…} |
-| {alternative unit} | C — one process, both roles, with a queue | … | … | … | {…} |
+| Unit of work | Option | Requires | Changes against as-is |
+|---|---|---|---|
+| {unit} | A | {what this flow needs for one job to hold both roles — or "excluded: {the fact that rules it out}"} | {projects and schedules, where per-item state is visible, retry granularity, end-of-parent work} |
+| {unit} | B | {…} | {…} |
+| {unit} | C | {…; the once-guard for this flow's population} | {…} |
+| {alternative unit} | A | … | {…} |
+| {alternative unit} | B | … | {…} |
+| {alternative unit} | C | … | {…} |
 
 **Evidence:** {facts only — robots, schedules, sources, applications per item kind, whether items survive a run today}.
 **Configuration:** settings — questions {a, b}; constants — questions {c, d}; assets — every Credential and Text row of Platform Dependencies.
@@ -131,9 +131,9 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 
 ## Acceptance Criteria
 
-- [ ] Given {specific input}, the automation {specific observable outcome}
-- [ ] When {condition}, the automation {expected behaviour}
-- [ ] {Specific action} produces {specific result}
+1. Given {specific input}, the automation {specific observable outcome}
+2. When {condition}, the automation {expected behaviour}
+3. {Specific action} produces {specific result}
 
 ## Complexity
 
@@ -147,10 +147,18 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 
 *Extraction only — omit for authored genomes. Delete on request when the genome is shared as a reusable blueprint.*
 
-| Workflow step | Source artifact | Notes |
-|---------------|-----------------|-------|
-| {Step N} | {Source framework}: `{file or object name}` ({id} where names repeat); {data sets that drive it}; {captures: n, when the source captures the screen in the step} | {ambiguity, dead code, or unresolved reference} |
+| Row | Source artifact | Notes |
+|-----|-----------------|-------|
+| {Dead code / Unresolved invocation / Inferred / a finding} | {Source framework}: `{Name}` ({id}) | {what it is, the lines that show it} |
 | Related resources | {path or link} — {kind} | {what it settled, or "not read" and why} |
 | Resource discrepancies | {resource}: {what it says} | {what the source does} |
 
 *A component of a process genome inherits the Source framework, Source export, Inventory, Not covered and Related resources rows from the process genome; a standalone component genome carries them itself.*
+
+### Steps
+
+| Step | Source objects | Data sets | Captures | Notes |
+|------|----------------|-----------|----------|-------|
+| {N} | `{Name}` ({id}[, {locator}]); … — the primary object first; a UiPath source: `{Folder/Workflow.xaml}` | `{Name}` ({id}); … or none | {n} | {callers, callees that are steps of their own, lines, quirks} |
+
+*One row per Workflow step, keyed by its number (format guide § Source Map, the step table).*

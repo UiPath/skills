@@ -107,15 +107,15 @@ Not transactional: the run is one unit of work — one poll, one change decision
 
 ## Acceptance Criteria
 
-- [ ] Given the Spaceflight News API returns a new Artemis II event not present in the state file, the automation sends an email containing the event description and timestamp to the configured recipients.
-- [ ] Given the mission phase changes from "Trans-Lunar Injection" to "Lunar Flyby" between two consecutive polls, the email subject includes "Milestone: Lunar Flyby" and the body shows the phase transition.
-- [ ] Given an event description containing "anomaly", the automation sends an email immediately regardless of the 5-minute rate limit.
-- [ ] Given both APIs return no new data for 15+ minutes, the automation reads the NASA mission status page and uses the scraped phase for change detection.
-- [ ] Given no state file exists, the automation initializes state and polls events from the configured lookback without crashing.
-- [ ] Given a state file with invalid JSON, the automation renames it, initializes fresh state, and logs a warning.
-- [ ] Given an event ID reported in a previous run, no duplicate email is sent for that event.
-- [ ] Given the mail server rejects the email, the automation writes the unsent body to `unsent/` and logs the failure details.
-- [ ] Given an API returns HTTP 500, the automation logs the error and continues to the next data source without failing the job.
+1. Given the Spaceflight News API returns a new Artemis II event not present in the state file, the automation sends an email containing the event description and timestamp to the configured recipients.
+2. Given the mission phase changes from "Trans-Lunar Injection" to "Lunar Flyby" between two consecutive polls, the email subject includes "Milestone: Lunar Flyby" and the body shows the phase transition.
+3. Given an event description containing "anomaly", the automation sends an email immediately regardless of the 5-minute rate limit.
+4. Given both APIs return no new data for 15+ minutes, the automation reads the NASA mission status page and uses the scraped phase for change detection.
+5. Given no state file exists, the automation initializes state and polls events from the configured lookback without crashing.
+6. Given a state file with invalid JSON, the automation renames it, initializes fresh state, and logs a warning.
+7. Given an event ID reported in a previous run, no duplicate email is sent for that event.
+8. Given the mail server rejects the email, the automation writes the unsent body to `unsent/` and logs the failure details.
+9. Given an API returns HTTP 500, the automation logs the error and continues to the next data source without failing the job.
 
 ## Complexity
 

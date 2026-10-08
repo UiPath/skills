@@ -349,11 +349,12 @@ What the Source Map rows of [genome-format-guide.md § Source Map](genome-format
 | Identity of | Carried as |
 |---|---|
 | The source | Project path, `projectId`, `projectVersion`; a solution's `.uipx` `SolutionId` with each project's `projectId`; the repository commit when the project sits in one |
-| A workflow step | The workflow's project-relative path — unique in a project; a solution prefixes the project folder |
-| A test case | Its path plus `testCaseId`; a checkpoint inside it by its activity `IdRef` |
+| A workflow step | The workflow's project-relative path — unique in a project; a solution prefixes the project folder: `` `Folder/Workflow.xaml` `` in the step table's Source objects cell |
+| A test case | Its path plus `testCaseId`, `` `Tests/Case.xaml` (<testCaseId>) ``; a checkpoint inside it by its activity `IdRef` |
+| A step's data set | The data variation file's project-relative path, `` `.variations/<Case>.json` ``, in the step table's Data sets cell |
 | Inventory | Workflows per artifact type, test cases, data files and rows, Object Repository applications, screens and elements, accounts |
 
-No inventory script derives a process inventory or a recordset list, so `scripts/genome-step-map.py` does not apply; the check that replaces it is [extraction-guide.md](extraction-guide.md) Step 6b.
+No inventory script derives a process inventory or a recordset list, so the genome check runs without the export check, and [extraction-guide.md](extraction-guide.md) Step 6b's Glob check takes its place.
 
 ## Framework Pitfalls
 

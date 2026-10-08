@@ -81,24 +81,20 @@ The run's target tool ([source-migration-guide.md § UI targets](source-migratio
 
 ## Selector variables in number attributes
 
-A number attribute bound to a selector variable (`tableRow='{{Row}}'`) cannot be registered through the CLI. That holds for `tableRow` and `tableCol` on a `sap`, `uia` or `java` target, and for the `nav` counts `up`, `next` and `prev`. For `idx` it depends on the installed UI Automation package:
-- **26.10.3:** `update-definition` rejects `idx` bound to a variable at the first call, on every tag (checked on `java` and `webctrl`).
-- **26.10.4:** it stores the `string.Format` form and passes every command.
-
-**Probe once per run, before the first element is defined:** run one `update-definition` with `idx='{{Row}}'` on a seed copy, against the project, and record the answer in the brief. If it is rejected, every positional selector variable takes the workaround below.
+A number attribute bound to a selector variable (`tableRow='{{Row}}'`) cannot be registered through the CLI. That holds for `tableRow` and `tableCol` on a `sap`, `uia` or `java` target, and for the `nav` counts `up`, `next` and `prev`; `idx` bound to a variable registers (table below).
 
 | Command | Result |
 |---|---|
-| `target-anchorable update-definition --full-selector` with the variable | stores the `string.Format` form, reports success; `idx` under 26.10.3: rejected at once with the error below |
+| `target-anchorable update-definition --full-selector` with the variable | stores the `string.Format` form, reports success |
 | any later command reading that definition — `update-definition` without `--full-selector` (`--name`, `--description`, `--activity-type`), `create-elements`, `replace-elements` | `Invalid configuration for Target '<name>': The attribute '<attribute>' is not supported.` |
 | same selector, literal value | passes every command |
-| `idx` bound to a variable (26.10.4) — any tag, in element, fuzzy, scope and screen selectors; `webctrl` table attributes bound to a variable | pass every command and resolve at run time |
+| `idx` bound to a variable — any tag, in element, fuzzy, scope and screen selectors; `webctrl` table attributes bound to a variable | pass every command and resolve at run time |
 | definition's `string.Format` rewritten as an interpolated string or a concatenation | registers; `link-elements` then writes the activity's target without a strict selector and still reports success |
 | `target-anchorable link` with that registered definition file | links with the `Reference` and drops the expression the same way |
 
 The error names the attribute, but the attribute is valid: keep it, because the selector without it no longer names the row, column or relative node it acts on. A run evaluates the Object Repository element's selector, not the activity's copy in the workflow, and an expression selector runs only when the build compiled the same expression text from the workflow; otherwise the activity fails with `Expression Activity type 'CSharpValue`1 (…)' requires compilation in order to run`. Workaround, per element:
 
-1. Run one `target-anchorable update-definition` on the element's definition with the variable selector in `--full-selector`, and with `--name`, `--description` and `--activity-type` in the same call: every later call without `--full-selector` rejects the file. It writes the `string.Format` expression in the project's expression language. Where the variable is rejected at once (`idx` under 26.10.3), pass the selector with a literal in the variable's place instead.
+1. Run one `target-anchorable update-definition` on the element's definition with the variable selector in `--full-selector`, and with `--name`, `--description` and `--activity-type` in the same call: every later call without `--full-selector` rejects the file. It writes the `string.Format` expression in the project's expression language.
 2. In the definition file, rewrite that expression (or that literal) as an interpolated string: `string.Format("…tableRow='{0}'…", Row)` becomes `$"…tableRow='{Row}'…"`. In a C# project that is the text of the `CSharpValue`; in a VB project it is the attribute value `[$"…"]` (both checked).
 3. Register the definition with `create-elements` (`replace-elements` for an existing element), then link as usual.
 4. After the link pass, every target linked to that element in one workflow file is the same tag, without the selector. Restore them with one Edit per file and element, `replace_all` on that tag: add the definition's `FullSelectorArgument`, text unchanged, and keep `Reference`. It is a child element in a C# project and an attribute in a VB project. Validate the file. The build compiles the expression, and per-file `validate`, `build` and the run accept the target.
@@ -119,7 +115,7 @@ Linked target after step 4 (C# project):
 ## CLI behaviour observed offline
 
 - `uip rpa uia …` relay commands (`object-repository *`, `target-anchorable *`, `target-app *`) reject `--output`; read what they print.
-- On Windows `uip` resolves to a `.cmd` shim, so arguments a script passes to it go through `cmd.exe`, which splits free text at `|`, `&`, `<` and `>` and expands `%VAR%`. A description quoting a source path (`1|1|$vRow$`) then fails with `'1' is not recognized as an internal or external command` and nothing is written. A script calls the CLI's node entry point instead (`node <npm prefix>/node_modules/@uipath/cli/dist/index.js rpa uia …`) with an argument list; that stores the text byte for byte (both checked).
+- On Windows a script that starts `uip.cmd`, the shim other languages' process calls resolve `uip` to, passes its arguments through `cmd.exe`, which expands `%VAR%` and splits unquoted free text at `|`, `&`, `<` and `>`. A description quoting a source path (`1|1|$vRow$`) then fails with `'1' is not recognized as an internal or external command` and nothing is written. A script passes free text to the CLI from PowerShell 7 (`pwsh`), calling `uip` by name: the `uip.ps1` shim PowerShell resolves it to passes each argument byte for byte, double quotes included (checked). Windows PowerShell 5.1 drops embedded double quotes, and Git Bash rewrites an argument starting with `/` into a Windows path.
 - `object-repository get-element-definition` takes about ten seconds per element. To check what the store holds, read each element's `.metadata` under `.objects` (JSON: `Name`, `Description`, `Type`, `Reference`) instead of exporting it again; the definition in its `.data` folder declares `utf-16` but is UTF-8.
 - `target-app update-definition` prints nothing on success; confirm the write by reading the definition file back (`--name` / `--description` land in its `.metadata` sibling).
 - `object-repository link-screen` / `link-elements` resolve `--workflow-file-path` against the shell's working directory, not `--project-dir`: pass an absolute path inside the project, or every entry fails with "not inside the project directory".

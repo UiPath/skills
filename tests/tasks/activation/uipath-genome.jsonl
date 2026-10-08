@@ -17,3 +17,4 @@
 {"id": "uipath-genome-017", "prompt": "Turn our month-end close SOP in ./docs/close-sop.md into a genome we can build from later", "expected_skill": "uipath-genome"}
 {"id": "uipath-genome-018", "prompt": "I'm running a self-paced workshop next week for people new to UiPath agents and Maestro. Propose a couple of scenarios they could build in an afternoon with only public APIs and Excel.", "expected_skill": "uipath-genome"}
 {"id": "uipath-genome-019", "prompt": "Blueprint what the Windows-Legacy project in ./OldBot does before we rebuild it from scratch on the Windows framework", "expected_skill": "uipath-genome"}
+{"id": "uipath-genome-020", "prompt": "Turn the claims-handling PDD in ./docs/claims-pdd.md into a genome we can build from", "expected_skill": "uipath-genome"}

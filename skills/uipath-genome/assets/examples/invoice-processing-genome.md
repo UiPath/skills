@@ -154,56 +154,18 @@ flowchart LR
 
 ## Transactional Shape
 
-
-**Flows:** Flow 1 — supplier invoice: component 2 (intake entry point) → component 1 (Handoffs row 1). No other flow: component 2's matching and posting entry points and component 3 run one item's work per job component 1 starts.
-
-### Flow 1 — one supplier invoice: component 2 → component 1
-
-**Unit of work:** one supplier invoice; reference the mail id at intake, with vendor plus invoice number as the duplicate key; fields as in Handoffs row 1; ≈400 a day, dispatched every 15 minutes; chosen because one invoice is matched, triaged and posted on its own and vendor plus invoice number identify it in SAP.
-**Alternative units of work:** one mail with all its PDF attachments — fits when suppliers send exactly one invoice per mail and the intake must answer each mail once.
-
-**As-is** — how the process handles the invoices:
-
-| Aspect | As-is |
-|---|---|
-| Produced by | Component 2, intake entry point, every 15 minutes: one item per mail id on `AP_InvoiceIntake`; a second item for the same mail id is closed as `duplicate` by the orchestration |
-| Consumed by | No RPA consumer: component 1's queue trigger starts one process instance per item, and every per-invoice retry, status and SLA lives in that instance |
-| Item store | `AP_InvoiceIntake`; per-invoice state in the process instance and the PDF and extraction JSON in `AP_Invoices` |
-| Coordination | None |
-| Item kinds | One kind |
-| Step groups | Not applicable — component 1's instance owns the lifecycle; component 2's matching and posting entry points run one invoice's work per job |
-
-| Outcome | When | Effect |
-|---|---|---|
-| Success | every per-item step completed — component 1 steps 3 and 6 route the invoice to posting and component 2 step 9 returns a document number | item recorded as done with the ERP document number |
-| Business exception | component 2 steps 5–7 rules — unreadable field, unknown vendor, no open PO, unmatched line, tolerance, duplicate — and an ERP rejection at step 9 | no retry of the item; component 1 routes it to triage and human review (Process Map steps 4–6); the item ends posted or rejected by a clerk's decision |
-| System exception | every other failure — component 2 steps 2, 5 and 9 handlers: mailbox, Document Understanding, SAP session | the job faults; component 1 retries it once after 5 minutes (Handoffs row 2), then routes the invoice to triage with `extraction-failed`; a robot pool outage leaves items `New` and alerts the team lead after 4 hours (Error Handling and Recovery) |
-
-**Split options** — none asserted; runner counts are deployment settings:
-
-| Unit of work | Option | Processes | Item store | Requires | Changes against as-is |
-|---|---|---|---|---|---|
-| one supplier invoice | A — one process, both roles | one RPA process taking the invoices itself | — | excluded: the invoices are consumed by the BPMN orchestration (component 1), one instance per invoice with human review in Action Center, which an RPA process does not absorb | — |
-| one supplier invoice | B — a producer process and a consumer process | component 2 produces, component 1 consumes (the as-is) | `AP_InvoiceIntake` | component 1's queue trigger | none — the as-is |
-| one supplier invoice | C — one process, both roles, with a queue | one RPA process queuing the invoices and then taking them itself | `AP_InvoiceIntake` | excluded: the invoices are consumed by the BPMN orchestration (component 1), one instance per invoice with human review in Action Center, which an RPA process does not absorb | — |
-| one mail with its PDFs | A — one process, both roles | one RPA process taking the mails itself | — | excluded: as for one supplier invoice | — |
-| one mail with its PDFs | B — a producer process and a consumer process | component 2 queues one item per mail; component 1's instance works the mail's invoices | one queue of mails | one invoice per mail, or an instance that handles several invoices | triage, review and posting per invoice move inside one instance; a mail's invoices fail and retry together |
-| one mail with its PDFs | C — one process, both roles, with a queue | one RPA process queuing the mails and then taking them itself | one queue of mails | excluded: as for one supplier invoice | — |
-
-**Evidence:** about 400 invoices a day arrive as PDF attachments, one or several per mail; the orchestration already owns every per-invoice retry, status and SLA; human review is an Action Center task per invoice.
-**Configuration:** settings — questions 1, 5, 6 (mailbox, digest recipient, company codes); constants — questions 2, 3, 4 (ceiling, tolerance, confidence floor); assets — every Credential and Text row of Platform Dependencies.
-**Traceability:** the queue item's status and the process instance record each invoice's outcome and reason; the robot screenshot on a SAP failure (component 2 Error Handling § Global); the daily digest to the AP team lead is the run summary.
+Not transactional: a coordinator whose per-item lifecycle is the orchestration's — component 1's queue trigger starts one process instance per invoice on `AP_InvoiceIntake`, and that instance retries, tracks and escalates its invoice; component 2's matching and posting entry points and component 3 run one invoice's work per job component 1 starts.
 
 ## Acceptance Criteria
 
-- [ ] Given a PDF invoice arrives in the AP mailbox, a queue item exists within 15 minutes and exactly one process instance starts for it.
-- [ ] Given a clean invoice (active vendor, open PO, lines within tolerance, total below the ceiling), the invoice is posted in SAP with a document number and the instance completes without any Action Center task.
-- [ ] Given an invoice whose total exceeds the PO remaining value by more than the tolerance, an Action Center task is created carrying the discrepancy and an agent proposal, and no posting happens before the clerk decides.
-- [ ] Given the clerk approves a `repost-with-correction` proposal, the corrected record is posted and the ERP document number appears on the instance.
-- [ ] Given the clerk chooses Reject, the supplier receives a rejection email with the reason and the instance completes as rejected.
-- [ ] Given the agent is unavailable, the Action Center task is still created with proposal `manual`.
-- [ ] Given SAP rejects a posting as duplicate, the instance returns to triage once, and a second rejection ends as Reject with a supplier notification.
-- [ ] Given a review task open longer than one business day, the task is reassigned to the team lead and the invoice appears in the next daily digest.
+1. Given a PDF invoice arrives in the AP mailbox, a queue item exists within 15 minutes and exactly one process instance starts for it.
+2. Given a clean invoice (active vendor, open PO, lines within tolerance, total below the ceiling), the invoice is posted in SAP with a document number and the instance completes without any Action Center task.
+3. Given an invoice whose total exceeds the PO remaining value by more than the tolerance, an Action Center task is created carrying the discrepancy and an agent proposal, and no posting happens before the clerk decides.
+4. Given the clerk approves a `repost-with-correction` proposal, the corrected record is posted and the ERP document number appears on the instance.
+5. Given the clerk chooses Reject, the supplier receives a rejection email with the reason and the instance completes as rejected.
+6. Given the agent is unavailable, the Action Center task is still created with proposal `manual`.
+7. Given SAP rejects a posting as duplicate, the instance returns to triage once, and a second rejection ends as Reject with a supplier notification.
+8. Given a review task open longer than one business day, the task is reassigned to the team lead and the invoice appears in the next daily digest.
 
 ## Deployment
 

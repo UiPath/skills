@@ -9,11 +9,11 @@ description: >
   windows-tagged task (execute_component), so without the tag no PR would run it.
 tags: [uipath-genome, windows, smoke, mode:build, lifecycle:generate]
 
-# run_command goes through cmd.exe on Windows, so every check calls _shared/genome_check.py
-# through `python -c` and reads REFERENCE_DIR from the environment. The genome's file name is the
-# agent's choice: the checker resolves the "*-genome.md" pattern itself.
+# run_command goes through cmd.exe on Windows, so every check calls the skill's check-genome.py
+# through `python -c` and reads REFERENCE_DIR (the skill's scripts folder) from the environment. The
+# genome's file name is the agent's choice: the checker resolves the "*-genome.md" pattern itself.
 reference:
-  directory: ..
+  directory: ../../../../skills/uipath-genome/scripts
 
 initial_prompt: |
   Write a genome for an automation called "Customer Address Sync" and save it in the
@@ -31,8 +31,7 @@ initial_prompt: |
   every row of the day and a summary when the run ends. Document it as one project with
   two entry points.
 
-  Before starting, load the uipath-genome skill and follow its authoring workflow. Do not
-  ask follow-up questions — take the defaults. Do not run any `uip` commands.
+  Do not ask follow-up questions — take the defaults. Do not run any `uip` commands.
 
 success_criteria:
   - type: skill_triggered
@@ -46,7 +45,7 @@ success_criteria:
     description: "Exactly one component genome written"
     command: >-
       python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
-      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'tokens', '*-genome.md',
+      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.py'), 'tokens', '*-genome.md',
       '--files', '1', '--expect', 'UIPATH-AUTOMATION-GENOME: component']))"
     timeout: 60
     expected_exit_code: 0
@@ -57,7 +56,7 @@ success_criteria:
     description: "Genome meets the core contract and describes one flow whose unit of work is a row"
     command: >-
       python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
-      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'component', '*-genome.md',
+      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.py'), 'component', '*-genome.md',
       '--profile', 'core', '--expect', 'uipath-rpa', 'Dynamics 365',
       '--shape', 'transactional', '--flows', '1', '--unit', 'row']))"
     timeout: 60
@@ -69,7 +68,7 @@ success_criteria:
     description: "Business rules, schedule and notification target come from the description"
     command: >-
       python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
-      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'tokens', '*-genome.md',
+      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.py'), 'tokens', '*-genome.md',
       '--min', '0.75', '--expect', 'postcode', '07:00', 'requester', 'customer number']))"
     timeout: 60
     expected_exit_code: 0
@@ -87,7 +86,7 @@ success_criteria:
     description: "Advisory: genome meets every mechanical format rule (strict profile)"
     command: >-
       python -c "import os, subprocess, sys; sys.exit(subprocess.call([sys.executable,
-      os.path.join(os.environ['REFERENCE_DIR'], '_shared', 'genome_check.py'), 'component', '*-genome.md',
+      os.path.join(os.environ['REFERENCE_DIR'], 'check-genome.py'), 'component', '*-genome.md',
       '--profile', 'strict']))"
     timeout: 60
     expected_exit_code: 0
