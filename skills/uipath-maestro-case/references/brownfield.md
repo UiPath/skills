@@ -1,12 +1,12 @@
 # Brownfield — Edit an Existing Case
 
-Targeted changes to an existing `caseplan.json`. Skips the design handoff and the Phase 1–7 build pipeline. Terminates at `validate`, then hands off to Phase 5 (publish) / Phase 6 (debug) / Phase 7 (publish to Orchestrator).
+Targeted changes to an existing `caseplan.case`. Skips the design handoff and the Phase 1–7 build pipeline. Terminates at `validate`, then hands off to Phase 5 (publish) / Phase 6 (debug) / Phase 7 (publish to Orchestrator).
 
-> **Greenfield (new case from `sdd.md`) uses a different journey.** If `caseplan.json` does not yet exist, or the user wants to (re)build from a spec, see [planning.md](planning.md) → [implementation.md](implementation.md) → [phased-execution.md](phased-execution.md) instead.
+> **Greenfield (new case from `sdd.md`) uses a different journey.** If `caseplan.case` does not yet exist, or the user wants to (re)build from a spec, see [planning.md](planning.md) → [implementation.md](implementation.md) → [phased-execution.md](phased-execution.md) instead.
 
 ## When this journey applies
 
-`caseplan.json` already exists AND the user wants a targeted edit ("add a stage", "remove task X", "change this condition", "swap the trigger"). No `sdd.md`, no resolution phase, no planning phase, no prototyping hard stop. Routing lives in [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
+`caseplan.case` already exists AND the user wants a targeted edit ("add a stage", "remove task X", "change this condition", "swap the trigger"). No `sdd.md`, no resolution phase, no planning phase, no prototyping hard stop. Routing lives in [SKILL.md](../SKILL.md#routing--greenfield-vs-brownfield).
 
 ## Kickoff — set dev expectations first
 
@@ -21,7 +21,7 @@ Before the first edit, present the flow once so the dev knows the steps and wher
 
 ## Pull latest first (before editing)
 
-Most "edit an existing case" requests mean a case **deployed in Studio Web**, not just a local file. Editing the local `caseplan.json` and re-publishing (Phase 5 `uip solution upload`) **overwrites server state** — if the case changed in Studio Web after the local copy was made, the upload silently clobbers those changes, with no diff and no conflict check. Reconcile **before** the first edit.
+Most "edit an existing case" requests mean a case **deployed in Studio Web**, not just a local file. Editing the local `caseplan.case` and re-publishing (Phase 5 `uip solution upload`) **overwrites server state** — if the case changed in Studio Web after the local copy was made, the upload silently clobbers those changes, with no diff and no conflict check. Reconcile **before** the first edit.
 
 1. **Determine where the case lives.** If not already known, AskUserQuestion: `Edit my Studio Web case (pull latest first)` (default) / `Edit a local-only project (no pull)`.
 2. **Lives in Studio Web (has a SolutionId)** → pull current server state into the working dir before editing:
@@ -31,7 +31,7 @@ Most "edit an existing case" requests mean a case **deployed in Studio Web**, no
    - `--extract` / `resync` **overwrite the destination**. Run before any edit. If you have already edited the local copy this session, pulling discards those edits — confirm with the user first.
 3. **Local-only project (no SolutionId)** → proceed as today, no pull.
 4. The pull is a CLI boundary operation (like `uip solution upload`), not a Rule 14 artifact mutation — it runs once, before editing. After it, all edits resume via Read/Write/Edit only.
-5. **Find the plan file by Studio Web's names, newest first: `caseplan.case`, `caseplan.json`, `case.stage.json`, `default.stage.json`.** Studio Web renames the plan to `caseplan.case` on its first save (with a `caseplan.case.bpmn` sidecar), and reads the newest name present. Edit and validate whichever name the pulled project has. Never create `caseplan.json` beside an existing `caseplan.case` — Studio Web would keep reading `caseplan.case` and silently ignore the edit. Every `caseplan.json` path in this guide means the plan file found here.
+5. **Find the plan file by Studio Web's names, newest first: `caseplan.case`, `caseplan.json`, `case.stage.json`, `default.stage.json`.** Studio Web renames the plan to `caseplan.case` on its first save (with a `caseplan.case.bpmn` sidecar), and reads the newest name present. Edit and validate whichever name the pulled project has. Never create a `caseplan.case` beside an existing plan of another name, or the reverse — Studio Web reads only the newest name present, so the other file is silently ignored. Every `caseplan.case` path in this guide means the plan file found here.
 6. **A designer-saved plan may declare a newer case schema than the installed CLI accepts.** If `validate` fails with `CASE_MGMT_VERSION_NEWER_THAN_SCHEMA`, stop and report it: the installed CLI cannot validate this plan yet. Never lower the `version` field to make validation pass — the plan was saved in the newer shape, and Studio Web would then read a document that misstates its own schema.
 
 Record the outcome (pulled from SW at `<SolutionId>`, or local-only) for the freshness note in [Completion Output](#completion-output).
@@ -47,7 +47,7 @@ When an edit touches many nodes or reads like "rebuild this case", confirm scope
 ## Read this first
 
 - **All mutations via Read/Write/Edit only** (Rule 14). CLI never mutates the case file in place: metadata fetches (`uip maestro case tasks describe`, `uip maestro case spec`, `is resources/triggers describe`), `uip maestro case validate`, the pre-edit pull (`uip solution download` / `solution projects resync` — see [§ Pull latest first](#pull-latest-first-before-editing)), and (on handoff) `uip solution resources refresh` / `uip solution upload` / `uip maestro case debug`. No `python`/`node`/`jq`/`sed`/`awk`/helper scripts touching the file.
-- **`id-map.json` may be absent.** When editing a `caseplan.json` not built in this session, the `id-map.json` sidecar may not exist. Read node IDs directly from `caseplan.json`; do not assume the sidecar is present. If absent, do not synthesize one.
+- **`id-map.json` may be absent.** When editing a `caseplan.case` not built in this session, the `id-map.json` sidecar may not exist. Read node IDs directly from `caseplan.case`; do not assume the sidecar is present. If absent, do not synthesize one.
 - **Connector edits need a metadata fetch first.** Adding/altering a connector-activity task or connector-bound rule requires `uip maestro case spec --type ...` (or `tasks describe`) before authoring the shape — never hand-author connector schemas. See [connector-integration.md](connector-integration.md).
 - **Cross-cutting mechanics** (ID generation, Pre-flight Checklist, expression prefixes, per-section batch contract) live in [case-editing-operations.md](case-editing-operations.md). This doc routes; that doc supplies the recipe.
 
@@ -94,7 +94,7 @@ An SLA clock and its **response** are separate edits. Pick the response, the sta
 
 ## After edits
 
-1. **Validate** — `uip maestro case validate <ProjectName>/caseplan.json --strict --output json` (fall back to the default profile only if the CLI rejects `--strict`, and say so). Authoritative; retry ≤3, fix on failure. On 3rd failure HARD STOP: AskUserQuestion `Retry with fix` / `Pause for manual edit` / `Abort` (same contract as Phase 4).
+1. **Validate** — `uip maestro case validate <ProjectName>/caseplan.case --strict --output json` (fall back to the default profile only if the CLI rejects `--strict`, and say so). Authoritative; retry ≤3, fix on failure. On 3rd failure HARD STOP: AskUserQuestion `Retry with fix` / `Pause for manual edit` / `Abort` (same contract as Phase 4).
 2. **Any edit that adds, removes, or repoints a resource binding — connector OR non-connector** — regenerate `bindings_v2.json` per [bindings-v2-sync.md](bindings-v2-sync.md), then `uip solution resources refresh --solution-folder <SolutionDir> --output json` (Rule 15) before any debug/publish. `bindings_v2.json` holds non-connector bindings too (process/agent/rpa/action/api-workflow/function/business-rule/case-management — [bindings-v2-sync.md § What `resource refresh` produces](bindings-v2-sync.md#what-resource-refresh-produces)); a stale file makes `uip solution upload` / `debug` throw "Resource is not configured". A pure schema-only re-sync (same resource, no binding change) needs no refresh. Repoint or removal → also prune the orphan ([bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)). If step 1 reported `STRICT_BINDINGS_UNREFERENCED`, the edit left root bindings nothing uses: repair per [validator-codes.md § Binding cleanup](validator-codes.md#binding-cleanup--unreferenced-root-bindings) before finishing — a `Valid` carrying that warning is not done.
 
 ## Completion Output

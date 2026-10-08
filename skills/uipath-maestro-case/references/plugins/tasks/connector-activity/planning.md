@@ -152,7 +152,7 @@ Dotted keys (`message.body.content`) get nested into structured objects via `nes
 | sdd.md cell | `\n` |
 | `input-values` in `registry-resolved.json` | `\\n` |
 | `--input-details` JSON | `\\n` |
-| `caseplan.json` on disk | `\\n` |
+| `caseplan.case` on disk | `\\n` |
 | the JavaScript the runtime parses | `\n` |
 
 `uip maestro case validate` returns `Valid` either way and the packer copies the broken form into the `.bpmn` unchanged, so nothing before the run reports it. A raw line break is legal inside a backtick template literal and between operands; only a `'` or `"` literal breaks.
