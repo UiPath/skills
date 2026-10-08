@@ -79,10 +79,16 @@ def _sidecar_connections(project_dir):
 
 def check(solution_dir, quiet=False):
     solution_dir = pathlib.Path(solution_dir)
-    caseplans = sorted(solution_dir.glob("*/caseplan.json"))
+    # Studio Web's plan names, newest first; one plan per project, the newest present.
+    names = ("caseplan.case", "caseplan.json", "case.stage.json", "default.stage.json")
+    caseplans = []
+    for project in sorted(p for p in solution_dir.iterdir() if p.is_dir()):
+        found = next((project / n for n in names if (project / n).is_file()), None)
+        if found:
+            caseplans.append(found)
     if not caseplans:
         if not quiet:
-            print(f"SKIP: no */caseplan.json under {solution_dir} — not a case solution")
+            print(f"SKIP: no case plan (caseplan.case / caseplan.json) under {solution_dir} — not a case solution")
         return 0
 
     failures = []

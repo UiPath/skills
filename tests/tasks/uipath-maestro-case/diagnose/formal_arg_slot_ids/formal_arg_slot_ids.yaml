@@ -51,7 +51,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate still passes after the repair"
-    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    command: "p=$(ls LinearThreeStages/LinearThreeStages/caseplan.case LinearThreeStages/LinearThreeStages/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 1.5

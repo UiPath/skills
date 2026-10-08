@@ -33,6 +33,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 from _shared.case_check import (  # noqa: E402
+    existing_caseplan,
     find_caseplan,
     find_stages,
     iter_tasks,
@@ -137,7 +138,7 @@ def parse_fixture() -> dict:
 def load_artifacts() -> tuple[dict, str, str]:
     """Return (plan, caseplan_text, bindings_text); texts are lowercased."""
     caseplan_path = (
-        EXPECTED_CASEPLAN if os.path.exists(EXPECTED_CASEPLAN) else find_caseplan()
+        existing_caseplan(EXPECTED_CASEPLAN) or find_caseplan()
     )
     plan = read_caseplan(caseplan_path)
     with open(caseplan_path, encoding="utf-8") as stream:

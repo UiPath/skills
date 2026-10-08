@@ -140,7 +140,12 @@ def _our_stage_ids() -> set:
     a reliable fingerprint for OUR instance. Trigger ids are not: the skill often
     emits the literal ``trigger_1``, which any other case can also carry.
     """
-    hits = glob.glob("**/caseplan.json", recursive=True)
+    # Any plan name, newest first: Studio Web saves the plan as caseplan.case.
+    hits = []
+    for name in ("caseplan.case", "caseplan.json", "case.stage.json", "default.stage.json"):
+        hits = glob.glob(f"**/{name}", recursive=True)
+        if hits:
+            break
     if not hits:
         return set()
     try:

@@ -35,6 +35,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from case_check import CASE_PLAN_NAMES  # noqa: E402
+
 SKIP = {".venv", "node_modules", ".npm-prefix", "dist"}
 
 SUMMARY_START = "<!--build-issues:summary:start-->"
@@ -47,6 +50,15 @@ def find_one(root: Path, name: str) -> Path | None:
     for p in root.rglob(name):
         if SKIP.isdisjoint(p.parts):
             return p
+    return None
+
+
+def find_plan(root: Path) -> Path | None:
+    """The case plan under any name (caseplan.case, caseplan.json, ...), newest name first."""
+    for name in CASE_PLAN_NAMES:
+        found = find_one(root, name)
+        if found is not None:
+            return found
     return None
 
 
@@ -63,7 +75,7 @@ def carries_unresolved(root: Path) -> tuple[bool, str]:
         except OSError:
             pass
 
-    caseplan = find_one(root, "caseplan.json")
+    caseplan = find_plan(root)
     if caseplan is not None:
         try:
             case = json.loads(caseplan.read_text())
@@ -113,7 +125,7 @@ def main() -> int:
     print(f"unresolved work: {why or 'none'}")
 
     issues = find_one(root, "build-issues.md")
-    reached_phase2 = find_one(root, "caseplan.json") is not None
+    reached_phase2 = find_plan(root) is not None
 
     if issues is None:
         if not reached_phase2:

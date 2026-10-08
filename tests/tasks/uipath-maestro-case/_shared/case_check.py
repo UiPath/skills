@@ -1,6 +1,6 @@
 """Shared helpers for uipath-maestro-case single-node e2e checks.
 
-Locates the generated `caseplan.json`, runs ``uip maestro case validate``,
+Locates the generated case plan (`caseplan.case` or `caseplan.json`), runs ``uip maestro case validate``,
 and asserts that a task of the expected ``type`` exists somewhere in the
 case definition. ``case-management`` tasks are allowed to land as skeletons
 (empty ``data``) when the referenced sub-case isn't published on the tenant
@@ -26,12 +26,51 @@ import time
 from typing import Any, Iterable, NoReturn, Sequence
 
 
-def find_caseplan(pattern: str = "**/caseplan.json") -> str:
-    matches = sorted(
-        p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
+# The names Studio Web gives a case plan on disk, newest first (the CLI's
+# CasePlanFileNames). Studio Web renames the plan to `caseplan.case` on its first
+# save and reads the newest name present, so a grader accepts every name and, in
+# one directory, takes the newest the way Studio Web does.
+CASE_PLAN_NAMES = ("caseplan.case", "caseplan.json", "case.stage.json", "default.stage.json")
+
+
+def glob_caseplans(pattern: str = "**/caseplan.json") -> list[str]:
+    """Plans matching ``pattern``, with ``caseplan.json`` in it read as any plan name.
+
+    One plan per directory: where a directory holds several names, the newest wins.
+    """
+    patterns = (
+        [pattern.replace("caseplan.json", name) for name in CASE_PLAN_NAMES]
+        if "caseplan.json" in pattern
+        else [pattern]
     )
+    by_dir: dict[str, str] = {}
+    for rank_pattern in patterns:
+        for path in glob.glob(rank_pattern, recursive=True):
+            if "/.venv/" not in path:
+                by_dir.setdefault(os.path.dirname(path), path)
+    return sorted(by_dir.values())
+
+
+def existing_caseplan(path: str) -> str | None:
+    """The plan in ``path``'s directory under any plan name, newest first; None if absent.
+
+    ``path`` names the expected plan, e.g. ``Sol/Case/caseplan.json``. A path whose
+    file name is not a plan name is returned as is when it exists.
+    """
+    if os.path.basename(path) not in CASE_PLAN_NAMES:
+        return path if os.path.isfile(path) else None
+    directory = os.path.dirname(path)
+    for name in CASE_PLAN_NAMES:
+        candidate = os.path.join(directory, name)
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def find_caseplan(pattern: str = "**/caseplan.json") -> str:
+    matches = glob_caseplans(pattern)
     if not matches:
-        _fail(f"No caseplan.json found matching {pattern}")
+        _fail(f"No case plan ({' / '.join(CASE_PLAN_NAMES)}) found matching {pattern}")
     if len(matches) == 1:
         return matches[0]
 
@@ -712,11 +751,7 @@ def _split_case_husks(
 
 def _caseplan_node_count(root: str) -> int | None:
     """Return the node count for one unambiguous Case plan under ``root``."""
-    plans = sorted(
-        path
-        for path in glob.glob(os.path.join(root, "**/caseplan.json"), recursive=True)
-        if "/.venv/" not in path
-    )
+    plans = glob_caseplans(os.path.join(root, "**/caseplan.json"))
     if len(plans) != 1:
         return None
     try:

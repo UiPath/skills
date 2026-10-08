@@ -73,14 +73,14 @@ success_criteria:
     tool_name: "Bash"
     # The path may arrive through a shell variable (`C=…/caseplan.json; uip maestro
     # case validate $C`); the run_command criteria below grade the real file.
-    command_pattern: 'uip\s+maestro\s+case\s+validate\s+(?:"?AgedInvoiceResolution/AgedInvoiceResolution/caseplan\.json|"?\$\{?\w+\}?)'
+    command_pattern: 'uip\s+maestro\s+case\s+validate\s+(?:"?AgedInvoiceResolution/AgedInvoiceResolution/caseplan\.(json|case)|"?\$\{?\w+\}?)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "uip maestro case validate passes on the generated AgedInvoiceResolution caseplan.json"
-    command: "uip maestro case validate AgedInvoiceResolution/AgedInvoiceResolution/caseplan.json --output json"
+    command: "p=$(ls AgedInvoiceResolution/AgedInvoiceResolution/caseplan.case AgedInvoiceResolution/AgedInvoiceResolution/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -89,7 +89,7 @@ success_criteria:
   - type: run_command
     description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — every SDD stage, task, type, condition row, SLA, trigger and variable present (replaces the retired audit_caseplan.py criterion)"
     command: >-
-      uip maestro case validate AgedInvoiceResolution/AgedInvoiceResolution/caseplan.json
+      p=$(ls AgedInvoiceResolution/AgedInvoiceResolution/caseplan.case AgedInvoiceResolution/AgedInvoiceResolution/caseplan.json 2>/dev/null | head -1); uip maestro case validate "$p"
       --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
     timeout: 60
     expected_exit_code: 0

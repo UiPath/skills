@@ -28,6 +28,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import (  # noqa: E402
+    existing_caseplan,
     find_stages,
     find_transitions,
     find_triggers,
@@ -143,7 +144,7 @@ def _assert_required_external_bindings(bindings: dict) -> None:
 
 
 def main():
-    plan = read_caseplan(EXPECTED_CASEPLAN if os.path.exists(EXPECTED_CASEPLAN) else None)
+    plan = read_caseplan(existing_caseplan(EXPECTED_CASEPLAN))
     if not os.path.exists(EXPECTED_BINDINGS_V2):
         _fail(f"missing required {EXPECTED_BINDINGS_V2}")
     with open(EXPECTED_BINDINGS_V2, encoding="utf-8") as f:

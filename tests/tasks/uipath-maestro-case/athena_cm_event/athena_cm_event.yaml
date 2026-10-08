@@ -59,14 +59,14 @@ success_criteria:
   - type: command_executed
     description: "Agent ran case validation (advisory; outcome is graded below)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*AthenaCMEventCase/AthenaCMEventCase/caseplan\.json'
+    command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*AthenaCMEventCase/AthenaCMEventCase/caseplan\.(json|case)'
     min_count: 1
     weight: 1.0
     pass_threshold: 0
 
   - type: run_command
     description: "uip maestro case validate passes on the generated AthenaCMEventCase caseplan"
-    command: "uip maestro case validate AthenaCMEventCase/AthenaCMEventCase/caseplan.json --output json"
+    command: "p=$(ls AthenaCMEventCase/AthenaCMEventCase/caseplan.case AthenaCMEventCase/AthenaCMEventCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -87,7 +87,7 @@ success_criteria:
   - type: run_command
     description: "caseplan is complete against the staged sdd.md under validate --strict --sdd, and the Rule 10 registry ledger justifies any placeholder"
     command: >-
-      uip maestro case validate AthenaCMEventCase/AthenaCMEventCase/caseplan.json
+      p=$(ls AthenaCMEventCase/AthenaCMEventCase/caseplan.case AthenaCMEventCase/AthenaCMEventCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate "$p"
       --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
     timeout: 60
     expected_exit_code: 0

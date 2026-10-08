@@ -178,7 +178,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json --output json"
+    command: "p=$(ls ExpenseApprovalCase/ExpenseApprovalCase/caseplan.case ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -186,7 +186,7 @@ success_criteria:
 
   - type: json_check
     description: "Caseplan contains both action and process tasks"
-    path: "ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json"
+    path: "ExpenseApprovalCase/ExpenseApprovalCase/caseplan.[cj][as][so][en]"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
         operator: gt
@@ -199,7 +199,7 @@ success_criteria:
 
   - type: run_command
     description: "Cross-task wiring is recorded — `=vars.` in caseplan.json OR a Review Expense.approved reference in the registry audit"
-    command: "grep -q '=vars\\.' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json || grep -q 'Review Expense.*approved' tasks/registry-resolved.json"
+    command: "p=$(ls ExpenseApprovalCase/ExpenseApprovalCase/caseplan.case ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json 2>/dev/null | head -1); grep -q '=vars\\.' \"$p\" || grep -q 'Review Expense.*approved' tasks/registry-resolved.json"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -207,7 +207,7 @@ success_criteria:
 
   - type: run_command
     description: "the action output binding for `approved` is recorded (caseplan on the resolved path, registry audit on the skeleton path)"
-    command: "grep -q 'approved' ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json || grep -q 'approved' tasks/registry-resolved.json"
+    command: "p=$(ls ExpenseApprovalCase/ExpenseApprovalCase/caseplan.case ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json 2>/dev/null | head -1); grep -q 'approved' \"$p\" || grep -q 'approved' tasks/registry-resolved.json"
     timeout: 10
     expected_exit_code: 0
     weight: 1.5

@@ -184,3 +184,13 @@ def test_header_row_is_not_counted(tmp_path, header):
     res = run(tmp_path, case=caseplan(), log=log)
     assert res.returncode == 0, res.stdout
     assert "1 row(s)" in res.stdout
+
+
+def test_a_plan_saved_as_caseplan_case_is_graded(tmp_path):
+    """Studio Web renames the plan to caseplan.case; the grader still sees Phase 2."""
+    d = tmp_path / "Sol" / "Proj"; d.mkdir(parents=True)
+    (d / "caseplan.case").write_text(json.dumps(caseplan()))
+    res = run(tmp_path)
+    assert res.returncode == 1, res.stdout
+    assert "placeholder task(s)" in res.stdout
+    assert "NO tasks/build-issues.md" in res.stdout

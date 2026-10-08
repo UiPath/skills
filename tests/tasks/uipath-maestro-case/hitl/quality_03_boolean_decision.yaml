@@ -245,7 +245,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate VendorApprovalCase/VendorApprovalCase/caseplan.json --output json"
+    command: "p=$(ls VendorApprovalCase/VendorApprovalCase/caseplan.case VendorApprovalCase/VendorApprovalCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -253,7 +253,7 @@ success_criteria:
 
   - type: json_check
     description: "Caseplan contains an action task"
-    path: "VendorApprovalCase/VendorApprovalCase/caseplan.json"
+    path: "VendorApprovalCase/VendorApprovalCase/caseplan.[cj][as][so][en]"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
         operator: gt
@@ -263,7 +263,7 @@ success_criteria:
 
   - type: run_command
     description: "Both semantic boolean branches reference approved"
-    command: "python3 $REFERENCE_DIR/check_boolean_routing.py VendorApprovalCase/VendorApprovalCase/caseplan.json"
+    command: "p=$(ls VendorApprovalCase/VendorApprovalCase/caseplan.case VendorApprovalCase/VendorApprovalCase/caseplan.json 2>/dev/null | head -1); python3 $REFERENCE_DIR/check_boolean_routing.py \"$p\""
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -271,7 +271,7 @@ success_criteria:
 
   - type: file_contains
     description: "Caseplan uses selected-tasks-completed (exits) and selected-stage-exited (entries)"
-    path: "VendorApprovalCase/VendorApprovalCase/caseplan.json"
+    path: "VendorApprovalCase/VendorApprovalCase/caseplan.[cj][as][so][en]"
     includes:
       - "selected-tasks-completed"
       - "selected-stage-exited"

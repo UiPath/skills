@@ -1,5 +1,8 @@
 import json,os,re,sys
-CP = "LinearThreeStages/LinearThreeStages/caseplan.json"
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from _shared.case_check import existing_caseplan
+# Any plan name (caseplan.case / caseplan.json / ...), newest first; the json name when none exists.
+CP = existing_caseplan("LinearThreeStages/LinearThreeStages/caseplan.json") or "LinearThreeStages/LinearThreeStages/caseplan.json"
 def fail(m): sys.exit(f"FAIL: {m}")
 def load():
     if not os.path.isfile(CP): fail(f"{CP} not found")
