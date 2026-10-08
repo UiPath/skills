@@ -41,8 +41,8 @@ log = logging.getLogger(__name__)
 LOCK_NAME = "coder-eval-compliance-pack-lock"
 LOCK_FOLDER = os.environ.get("COMPLIANCE_LOCK_FOLDER", "Shared")
 OWNER_FILE = ".compliance-lock-owner"
-WAIT_SECONDS = int(os.environ.get("COMPLIANCE_LOCK_WAIT", "1200"))
-STALE_SECONDS = int(os.environ.get("COMPLIANCE_LOCK_STALE", "1500"))
+WAIT_SECONDS = float(os.environ.get("COMPLIANCE_LOCK_WAIT", "1200"))
+STALE_SECONDS = float(os.environ.get("COMPLIANCE_LOCK_STALE", "1500"))
 POLL_SECONDS = float(os.environ.get("COMPLIANCE_LOCK_POLL", "15"))
 
 
@@ -102,6 +102,11 @@ def delete(key):
 
 
 def acquire():
+    # coder-eval caps each pre_run step at 300s, so the task chains two acquire
+    # steps to wait longer; the second is a no-op once the first got the lock.
+    if os.path.exists(OWNER_FILE):
+        log.info("Already held by this run — nothing to do")
+        return
     owner = f"{os.environ.get('GITHUB_RUN_ID', 'local')}-{uuid.uuid4().hex[:12]}"
     deadline = time.time() + WAIT_SECONDS
     while time.time() < deadline:
