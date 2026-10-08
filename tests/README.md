@@ -193,6 +193,7 @@ criteria that passed.
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
 | `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow promoted; Case, BPMN preview) | 200 | 1200s | 900s |
+| `autopilot-golden.yaml` | docker | Autopilot golden scenarios (Delegate, Luna xhigh, 8 replicates) | task's own | 2400s | 1800s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
 campaign runner first builds the pinned `skills-image:sg1`, prepares isolated
@@ -230,6 +231,48 @@ every tenant call fails as a capability problem rather than a config one:
 ```bash
 docker run --rm --env HOME="$HOME" -v ~/.uipath:/.uipath:rw \
   --entrypoint bash skills-codex:latest -c 'uip login status'
+```
+
+`autopilot-golden.yaml` measures the Autopilot golden scenarios: Autopilot through
+coder-eval's built-in `delegate` agent on GPT-5.6 Luna at `xhigh` effort, 8
+replicates per task, in `nightly.yaml`'s docker sandbox, which masks the eval material
+from the agent. To run it locally,
+install the `@uipath/delegate-stdio` host, export `DELEGATE_ENV=alpha`, and sign
+Delegate in (`npx @uipath/delegate-cli login --env alpha`, or
+`DELEGATE_AUTH_TOKEN`/`DELEGATE_TENANT_ID`/`DELEGATE_ORG_ID` with the
+`DELEGATE_ORG_SLUG`/`DELEGATE_TENANT_SLUG` slugs), as coder_eval's
+`docs/agents/DELEGATE.md` describes. `--driver tempdir` runs it without the image, so
+also sign the host CLI in with `uip login` (HTTP and connector activities resolve
+through the registry) and export `SKILLS_REPO_PATH`, without which coder_eval only
+warns and loads no skills. Keep `-j` at 6 or below: 8 concurrent Delegate tasks
+starve the host's 60s init handshake. On tempdir the agent can also read this
+repository, graders included, so a local run is a measurement rather than a hardened
+gate.
+
+The three scenarios live under `tasks/uipath-api-workflow/golden/`: `vat_check`
+(EU VIES, no connection), `jira_release_notes` and `salesforce_expiring_contracts`.
+The last two need exactly one Enabled connection per connector on the tenant the run
+signs in to, so they ship `skip: true` and run only with `--include-skipped` until
+that tenant has them:
+
+| Task | Connections | Fixture |
+|------|-------------|---------|
+| `jira_release_notes` | `uipath-atlassian-jira`, `uipath-openai-openai` | Two epics with closed and open tickets, created once by `seed_jira_fixture.py`, which writes their keys into `fixture.json`; commit it. The grader adds one more closed ticket before it runs the workflow and deletes it after |
+| `salesforce_expiring_contracts` | `uipath-salesforce-sfdc`, signed in as a dedicated test user that can create, activate and delete Accounts and Contracts, never a personal org | Created by `pre_run` and deleted by `post_run`; the grader adds one more contract before it runs the workflow |
+
+Use `--include-skipped` only on a tenant whose connections exist for these tests: the
+Salesforce task creates and deletes records in whatever org its connection signs in
+to, and the agent builds against whichever connection it finds. The Jira task's
+`llm_judge` grades through `checker_context` (litellm), so a local run also needs
+`CODEX_BASE_URL` and `CODEX_API_KEY`. Scheduled runs leave skipped tasks out: flip a
+task's `skip` once the tenant those runs use has its connections. A run that ends as ERROR in `pre_run`, or a
+criterion that fails with an `INFRA:` line (grader exit 3), means a service or fixture
+was unavailable (VIES down, a missing or duplicate connection, an unseeded Jira
+fixture, a provider refusing for load or quota): re-run it instead of counting it
+against the pass rate.
+
+```bash
+coder-eval run 'tasks/uipath-api-workflow/golden/**/*.yaml' -e experiments/autopilot-golden.yaml --driver tempdir --include-skipped -j 6
 ```
 
 `activation.yaml` is a different shape from the tiered configs above — it runs the agent against single-prompt rows to measure whether the right skill fires (precision/recall/F1 per skill). Rows get a small turn budget (`max_turns: 3`); arming is per-criterion — each `skill_triggered` criterion carries a `stop_early: {on_pass: stop}` block that ends a row as soon as its outcome is live-decided. A positive row pass-stops the moment the expected skill engages; a negative row fail-stops on its first engagement. A wrong-skill engagement alone does NOT end a positive row — fail-stop is deferred while the row's positive criterion is still undecided, so a positive row that only misfires runs to the cap, as do rows with no engagement. Decided rows cost ~1 turn and a late-but-correct invocation is no longer truncated. Requires coder_eval >= 0.9.5: 0.9.5 removed `stop_when` and the run-level `run_limits.stop_early: true` master arm — both are hard errors now. It's an opt-in benchmark, not a smoke gate. See [`tasks/activation/README.md`](tasks/activation/README.md).
