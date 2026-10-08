@@ -40,7 +40,7 @@ Failure: `Result` is `Failure`/`ValidationError` with a `Message` and usually an
 | Command | Purpose | Data shape notes |
 |---|---|---|
 | `uip ah auth-info get` | connectivity + who/where am I; the signed-in identity is the **default owner/submitter** and the authority for it | `Data.Tenant.Url`, `Data.User.Email`, `IsActive`, `Roles` |
-| `uip ah idea-flows list` | flow names → ids | entries carry `Id`, `Name`, `Phases` |
+| `uip ah idea-flows list` | flow names → ids | entries carry `Id`, `Name`, `Phases`; pass `--all-fields` for the raw `"Idea flow type"` and every phase's `phase_variable`/`status_variable` — select flows by that type (see `api-endpoints.md` → **Idea flow types**) |
 | `uip ah automations schema get --idea-flow-id <id> --destination <file>` | write the flow's schema + `user_inputs` template to a file | same document as the raw `/idea-schema` |
 | `uip ah categories get` | category tree | `Data.Levels` + `Data.Categories` (nested `subcategories`; pick `category_is_active: 1` only) |
 | `uip ah users list` | list tenant users | entries carry `Email`, `IsActive`, `InviteStatus`; paged (default 20); filters: `--search`, `--invite-status`, `--limit` |
@@ -52,8 +52,9 @@ Failure: `Result` is `Failure`/`ValidationError` with a `Message` and usually an
 | `uip ah documents list <automation-id>` | verify attachments | entries carry `Id`, `Title`, `FileId` (file-backed) or `EmbedLink` (link-backed) |
 | `uip ah documents download <file-id> --destination <path>` | **download a document's bytes** | takes the `FileId` from `documents list`, **not** the document `Id` |
 | `uip ah automations update <id> --file <answers.json>` | edit assessment answers post-create (e.g. set the Studio Web link) | same `user_inputs` document shape as create |
+| `uip ah automations change-idea-flow <automation-id> --idea-flow <type\|id\|name> --phase <PHASE_VARIABLE> --status <STATUS_VARIABLE>` | **move an automation to another idea flow** (e.g. idea → Business Process) | slow (~20 s+), never retry blind; 403 = no Change idea flow permission — flow: `change-idea-flow-cli-guide.md` |
 | `uip ah automations list --search <text> --limit 20` | name → process id | projected records with `Id`, `Name`, `Phase` |
-| `uip ah automations get <id> [--all-fields]` | one process record | default projection has `Id`/`Name`/`Phase`/`Tags`; `--all-fields` for the raw record (needed for `process_slug`) |
+| `uip ah automations get <id> [--all-fields]` | one process record | default projection has `Id`/`Name`/`Phase`/`PhaseStatus`/`SubmissionType` (the flow type it is in)/`Tags`; `--all-fields` for the raw record (needed for `process_slug`) |
 | `uip ah components list --automation-id <id>` | linked components (optional, get flow) | same record shape as the tenant-wide catalogue |
 
-**Version note:** the `ah` surface first appears in `uip` **1.201.0** (as of 2026-08-21 no public release ships it — the latest release is 1.199.0; the Step-0 preflight routes older installs to the raw-API flows). `documents create --file` and `automations create --idea-flow-id` additionally come from CLI PR #3720 — if either flag is rejected as unknown, the installed `uip` has the `ah` surface but predates those flags: tell the user to upgrade `uip` and **stop**. Never switch to the raw-API path mid-run — the transport was already selected at preflight.
+**Version note:** the `ah` surface first appears in `uip` **1.201.0** (as of 2026-08-21 no public release ships it — the latest release is 1.199.0; the Step-0 preflight routes older installs to the raw-API flows). `documents create --file` and `automations create --idea-flow-id` additionally come from CLI PR #3720 — if either flag is rejected as unknown, the installed `uip` has the `ah` surface but predates those flags: tell the user to upgrade `uip` and **stop**. Never switch to the raw-API path mid-run — the transport was already selected at preflight. `automations change-idea-flow` needs a later `uip` and an AH server with RPANAV-19226 — if the subcommand is unknown, say the capability isn't available yet (see `change-idea-flow-cli-guide.md` → **Not available yet**).
