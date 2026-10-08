@@ -65,6 +65,16 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # Runtime guide, Limits: replacing the Try Catch with Check App State is
+  # authoring, so the edit goes through the RPA authoring skill's subagent.
+  # The checker records the subagent's Skill call, namespace stripped.
+  - type: skill_triggered
+    description: "The authoring edit went through the RPA authoring skill"
+    skill_name: "uipath-rpa"
+    expected_skill: "uipath-rpa"
+    weight: 1.5
+    pass_threshold: 1.0
+
   # Rule 8: every `uip rpa` command clears the host Studio pin, `env -u
   # UIPATH_STUDIO_PID` in bash or `$env:UIPATH_STUDIO_PID = $null` in PowerShell.
   # Flagged: a bare `uip rpa` at the start of a command, or after ;, &&, | or a
@@ -73,6 +83,7 @@ success_criteria:
   - type: command_not_executed
     description: "No uip rpa command ran without clearing UIPATH_STUDIO_PID (Rule 8)"
     command_pattern: '\A(?![\s\S]*UIPATH_STUDIO_PID)[\s\S]*?(?:^|[;&|(]\s*|\n\s*)(?:uip|\$UIP)\s+rpa\s+(?:build|validate|run|debug|instances|execution|activities|uia)\b'
+    tool_name: "Bash"
     weight: 1.0
     pass_threshold: 1.0
 
@@ -136,7 +147,7 @@ success_criteria:
         must_match: false
       - pattern: 'TypeArguments="ui:SelectorNotFoundException"'
         must_match: false
-      - pattern: 'Remediated by uipath-activity-migrator on \d{4}-\d{2}-\d{2}'
+      - pattern: 'Annotation\.AnnotationText="[^"]*Remediated by uipath-activity-migrator on \d{4}-\d{2}-\d{2}'
         must_match: true
       - pattern: 'PostMigration Action Required'
         must_match: false
