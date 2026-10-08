@@ -165,11 +165,25 @@ def test_recorder_skips_harness_calls(sandbox: Path) -> None:
     assert not (sandbox / ".uip-recorder" / ".calls.jsonl").exists()
 
 
-def test_recorder_uses_the_tenant_home(sandbox: Path, tmp_path: Path) -> None:
+def test_recorder_switches_tenant_through_env_auth(sandbox: Path, tmp_path: Path) -> None:
     probe = tmp_path / "real-bin" / "uip"
-    probe.write_text("#!/usr/bin/env python3\nimport os\nprint(os.environ['HOME'])\n")
-    (sandbox / ".ah-tenant-home").write_text("/tmp/ah-tenant-xyz")
-    assert uip(sandbox, "login", "status").stdout.strip() == "/tmp/ah-tenant-xyz"
+    probe.write_text("#!/usr/bin/env python3\nimport json, os\nprint(json.dumps({k: v for k, v in os.environ.items() if k.startswith('UIPATH_CLI_')}))\n")
+    login = tmp_path / "shared.auth"
+    login.write_text("UIPATH_ACCESS_TOKEN=tok\nUIPATH_ORGANIZATION_NAME=codereval\nUIPATH_ORGANIZATION_ID=org-1\n"
+                     "UIPATH_TENANT_NAME=DefaultTenant\nUIPATH_TENANT_ID=t-default\n")
+    (sandbox / ".ah-tenant.json").write_text(json.dumps(
+        {"tenant_name": "coderevalsAH", "tenant_id": "t-second", "auth_file": str(login)}))
+    env = json.loads(uip(sandbox, "login", "status").stdout)
+    assert env == {"UIPATH_CLI_ENABLE_ENV_AUTH": "true", "UIPATH_CLI_AUTH_TOKEN": "tok",
+                   "UIPATH_CLI_ORGANIZATION_NAME": "codereval", "UIPATH_CLI_ORGANIZATION_ID": "org-1",
+                   "UIPATH_CLI_TENANT_NAME": "coderevalsAH", "UIPATH_CLI_TENANT_ID": "t-second"}
+
+
+def test_recorder_refuses_the_default_tenant_when_the_switch_breaks(sandbox: Path, tmp_path: Path) -> None:
+    (sandbox / ".ah-tenant.json").write_text(json.dumps(
+        {"tenant_name": "coderevalsAH", "tenant_id": "t-second", "auth_file": str(tmp_path / "missing.auth")}))
+    result = uip(sandbox, "ah", "auth-info", "get")
+    assert result.returncode == 2 and "refusing" in result.stderr
 
 
 # --- the grader -----------------------------------------------------------------
