@@ -123,11 +123,7 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --attachment <variableId>=<localPath> \
   --attachment <variableId>=<localPath>
-UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
-  --entry-point <triggerNodeId>
 ```
-
-A flow with more than one trigger starts at the trigger marked `isDefaultEntryPoint`, else the first trigger. `--entry-point <triggerNodeId>` starts at another trigger; a wrong ID exits 3 and lists the valid IDs. `Data.entryPoint` names the trigger the run started from.
 <!--skill-flavor:flow-debug-command-usage:end-->
 
 Pass the project directory containing `project.uiproj` (`<ProjectName>/` from the solution root, or `.` inside it). Use `--inputs` for a JSON object of flow input arguments. Repeat `--attachment <variableId>=<localPath>` to upload files for file-typed inputs; a bare path is rejected.

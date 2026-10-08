@@ -52,17 +52,6 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
 
 > **Reading the bound file.** At runtime a `file` variable is an object — a Script node reads the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [shared/variables-and-expressions.md — Runtime shape of a `file` variable](../shared/variables-and-expressions.md#file-input).
 
-<!--skill-flavor:flow-debug-entry-point:start-->
-A flow with more than one trigger starts at the trigger marked `isDefaultEntryPoint`, else the first trigger. To start at another trigger, pass its node ID:
-
-```bash
-UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
-  --entry-point <triggerNodeId>
-```
-
-A wrong ID exits 3 and lists the valid IDs. `Data.entryPoint` names the trigger the run started from.
-<!--skill-flavor:flow-debug-entry-point:end-->
-
 ### Reporting debug runs to the user
 
 The CLI response includes a **Studio Web URL** (where the user inspects the run) and an **instanceId** (for log/trace correlation). Parse both from the JSON output — typically `Data.studioWebUrl` and `Data.instanceId` — and **always show them as the first two lines of the summary**:
