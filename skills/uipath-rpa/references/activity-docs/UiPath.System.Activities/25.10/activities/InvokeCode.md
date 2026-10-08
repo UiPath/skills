@@ -13,10 +13,10 @@ InvokeCode is best suited as a quick escape hatch for simple, self-contained cod
 | `"VisualBasic"` | `"VBNet"` |
 | `"CSharp"` | `"CSharp"` |
 
-**IMPORTANT:** `"VisualBasic"` is NOT a valid `Language` value — it will pass Studio validation but fail at runtime with: *"VisualBasic is not a valid value for NetLanguage"*. This is a known mismatch between project.json naming and the runtime enum.
+**IMPORTANT:** `"VisualBasic"` is NOT a valid `Language` value — the workflow fails to load, and `validate` reports *"Failed to create a 'Language' from the text 'VisualBasic'"*. This is a known mismatch between project.json naming and the runtime enum.
 
 ```xml
-<!-- WRONG — passes Studio validation but fails at runtime -->
+<!-- WRONG — the workflow fails to load -->
 <ui:InvokeCode Language="VisualBasic" Code="..." />
 
 <!-- CORRECT — explicit language -->

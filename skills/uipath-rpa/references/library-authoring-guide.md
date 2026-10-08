@@ -174,28 +174,17 @@ uip rpa publish "<OUTPUT_DIR>/<LIBRARY_NAME>.<VERSION>.nupkg" --output json
 uip or libraries list --search "<LIBRARY_NAME>" --output json
 ```
 
-Returns the library with `key` = `<PackageId>:<Version>` and `projectType: "ProcessLibrary"`.
+Returns the library with `Key` = `<PackageId>:<Version>` and `ProjectType: "ProcessLibrary"`.
 
 ## Consumption Loop
 
 1. **Discover** existing libraries before building new ones — [tenant-library-search-guide.md](tenant-library-search-guide.md) (SKILL.md Rule 9).
 2. **Install** into the consumer as a dependency — SKILL.md § Resolving Packages & Activity Docs. The install records the dependency in the consumer's `project.json`; the library's activities become available.
-3. **Build-time resolution:** the tenant libraries feed is not among the default build NuGet sources. If `build`/`pack` of the consumer fails with `Unable to find package <LIBRARY_NAME>`, download the package and add its folder as a source:
-
-```bash
-uip or libraries download "<PackageId>:<Version>" --destination "<LOCAL_DIR>/<LIBRARY_NAME>.<VERSION>.nupkg" --output json
-uip rpa build "<CONSUMER_PROJECT_DIR>" --nuget-sources-config-path "<SOURCES_JSON>" --output json
-```
-
-`<SOURCES_JSON>` content, with forward slashes in the path (a backslash path is rejected as an invalid JSON escape):
-
-```json
-[{"Url": "<LOCAL_DIR>"}]
-```
-
+3. **Build-time resolution:** signed in, `build` and `pack` restore the library from the tenant's libraries feeds, as the install does; no extra NuGet source is needed.
 4. **Author against the library in consumer XAML.** Once the library is installed, `activities find` returns its public workflows and `activities get-default-xaml` returns each one's element with its arguments as properties, without their types or directions — read those from the package itself:
 
 ```bash
+uip or libraries download "<PackageId>:<Version>" --destination "<LOCAL_DIR>/<LIBRARY_NAME>.<VERSION>.nupkg" --output json
 uip rpa packages inspect --nupkg-path "<LOCAL_DIR>/<LIBRARY_NAME>.<VERSION>.nupkg" --output json
 ```
 
@@ -208,7 +197,7 @@ Declare the namespace and use each public workflow as an element — property na
 
 `<SANITIZED_NAMESPACE>` is the underscore form from [§ Activity identity](#activity-identity). Bind non-literal properties per the project's expression language rules ([xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md)).
 
-5. **Stale design session after the dependency becomes resolvable:** `build` compiles the consumer but `validate` keeps failing with `Cannot create unknown type` for the library activity. Kill the `UiPath.Studio.Helm` process (it relaunches on the next command) and re-run `validate`.
+5. **Stale design session after the dependency becomes resolvable:** `build` compiles the consumer but `validate` keeps failing with `Cannot create unknown type` for the library activity. Run `uip rpa project close --project-dir "<CONSUMER_PROJECT_DIR>"` and re-run `validate`; the next command reloads the project.
 6. **Same version repacked:** the package cache keeps the first package under an id and version and ignores a repack, so bump the library version whenever a consumer must see a change.
 
 ## Library Patterns
