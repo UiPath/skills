@@ -107,7 +107,9 @@ With no library cached these rules stay silent, so a clean `check` on a
 connector Case without a pulled library proves nothing about the connector.
 To point `check` at another library, set `$FLOW_SDK_LIBRARY_JSON`: the SDK's
 `case check` takes `--library` / `--connectors-local`, but
-`uip maestro case check` does not forward them yet (`case compile` does). Do not repair emitted JSON by hand;
+`uip maestro case check` does not forward them yet (`case compile` does).
+
+Do not repair emitted JSON by hand;
 change the TypeScript source and rebuild.
 
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
