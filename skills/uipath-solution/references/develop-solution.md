@@ -259,8 +259,8 @@ Add a single resource to the solution without touching `bindings_v2.json` or re-
 # Create a local virtual queue (no auth required)
 uip solution resources add --source local --kind Queue --name InvoiceQueue --output json
 
-# Local asset with explicit subtype (values in the --type row below)
-uip solution resources add --source local --kind Asset --name ApiKey --type secretAsset --output json
+# Local asset with explicit subtype
+uip solution resources add --source local --kind Asset --name ApiKey --type Text --output json
 
 # Import an existing remote queue (folder disambiguates same-name resources)
 uip solution resources add --source remote --kind Queue --name InvoiceQueue --folder-path Sales/CRM --output json
@@ -281,7 +281,7 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 | `--source <source>` | `local`, `remote` | **required** |
 | `--kind <kind>` | Any kind RCS indexes (e.g. Queue, Asset, Bucket, Process, Connection, App, Index, Trigger, Entity, ChoiceSet). Case-insensitive lookup; trimmed and lowerFirstChar-applied before persistence | **required** |
 | `--name <name>` | Resource name (max 256 chars; path separators, control chars, and `: * ? " < > |` are rejected). Per-kind Orchestrator limits are stricter — queues cap at 50 | **required** |
-| `--type <type>` | Resource subtype. Asset: `Text`, `integerAsset`, `booleanAsset`, `credentialAsset`, `secretAsset` — any other value (`Bool`, `Boolean`, `Integer`, `Credential`, `Secret`) is accepted and silently creates a Text asset (`Data.Type: stringAsset`). Connection: the connector type. On `--source remote` it is inferred from the matched resource when omitted; pass it only to override | None |
+| `--type <type>` | Resource subtype (e.g. `Text`/`Bool`/`Integer` for Asset, connector type for Connection). On `--source remote` it is inferred from the matched resource when omitted; pass it only to override | None |
 | `--folder-path <path>` | Orchestrator folder for remote lookup. **Not valid with `--source local`** — virtual stubs live under the solution folder | None |
 | `--cloud-key <guid>` | Skip RCS search, import this exact resource key. Only valid with `--source remote`; must be a GUID | None |
 | `--solution-folder <path>` | Path to solution root (must directly contain a `.uipx`) | Current working directory |
@@ -308,7 +308,7 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 
 `Status` is `"Added"` (newly created), `"Updated"` (cloud spec re-applied when SDK detects drift on `--source remote`), or `"Unchanged"` (idempotency hit). For local stubs `Folder` is always `solution_folder` and `Source` is `"local"`; for remote imports, the resource lands locally under `solution_folder` regardless of which cloud folder it came from (debug overwrites carry the cloud-folder context for deploy).
 
-A local stub starts from the kind's defaults: a queue has automatic retry on, `maxNumberOfRetries: 1` and `enforceUniqueReference: false`; an asset has an empty value. When the design needs other values, set them with [`resources edit`](#step-11-edit-a-resource) right after `add`.
+A local stub starts from the kind's defaults: a queue has automatic retry on, `maxNumberOfRetries: 1` and `enforceUniqueReference: false`; an asset has an empty value, which deploy refuses until a value is set or an existing asset linked ([Local virtual asset § What happens at deploy](scenarios/virtual-resource.md#what-happens-at-deploy)). When the design needs other values, set them with [`resources edit`](#step-11-edit-a-resource) right after `add`.
 
 ### Data Fabric kinds
 

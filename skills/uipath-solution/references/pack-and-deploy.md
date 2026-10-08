@@ -63,13 +63,13 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 | Option | Description | Default |
 |--------|-------------|---------|
 | `<solutionPath>` | Directory containing a `.uipx` or `.uis` file (required) | -- |
-| `<output-path>` | Directory where the .zip will be written (required positional, no default — omitting it errors with `missing required argument 'output-path'`) | -- |
+| `<output-path>` | Directory where the .zip will be written (required unless `--dry-run`) | -- |
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
 | `--nuget-sources-config-path <path>` | Local `NuGet.config` that sets the package sources used for resolution | -- |
 | `--author <author>` | Set the package author | `UiPath` |
 | `--description <text>` | Set the package description | `Created by UiPath` |
-| `--dry-run` | Run the full pack pipeline against a temporary directory and discard the output — proves the solution packs without producing a package; `<output-path>` is then optional | off |
+| `--dry-run` | Run the full pack pipeline against a temporary directory and discard the output — proves the solution packs without producing a package | off |
 
 The output is a `.zip` file named `<name>_<version>.zip` — **underscore between name and version, not a dot** — written under `<output-path>/` (e.g., `MySolution_2.0.0.zip`). Don't guess the filename: read it from the command's `Data.Packages` field, or list `<output-path>/`. Run `solution resources refresh` first (from inside the solution dir, or with `--solution-folder <path>`) to ensure the solution's artefact files and debug overwrites are up to date — they're bundled into the package.
 
@@ -408,16 +408,6 @@ These are different commands with different destinations:
 |---------|-------------|---------|
 | `solution publish` | Solution feed | For deployment via `deploy run` |
 | `solution upload` | Studio Web | For browser-based editing |
-
-### Invoked Coded Workflows Reported Missing — 8.3 Temp Path
-
-`pack` copies the solution into the temp folder and packs the copy. When `TEMP` / `TMP` hold an 8.3 short path (`C:\\Users\\ABCDEF~1\\AppData\\Local\\Temp`, the usual form for a Windows user name longer than eight characters), a project whose XAML invokes a coded `.cs` workflow fails with `The following invoked workflows are missing: …\\<Workflow>.cs` — although `uip rpa build` of the same project is clean. Run the pack with both variables set to the long path:
-
-```bash
-TEMP="<LONG_TEMP_PATH>" TMP="<LONG_TEMP_PATH>" uip solution pack ./MySolution ./output --output json
-```
-
-`<LONG_TEMP_PATH>` is the same folder with the full user-profile name (`C:\\Users\\<USER_NAME>\\AppData\\Local\\Temp`). The same applies to `--dry-run`.
 
 ### `deploy run` Always Creates a New Folder
 
