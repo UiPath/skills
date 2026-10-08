@@ -504,7 +504,7 @@ Output (JSON) emits `PackagePath` — the full `.nupkg` path (`OutputPath` is it
 uip rpa publish "<NUPKG_PATH>" --output json
 ```
 
-`<NUPKG_PATH>` (positional) is the `.nupkg` from `pack`; `publish` takes a package, never a project folder. Without a destination flag it reads the package's type and publishes to the tenant feed for that type: a process or a test project to the tenant Processes feed, a library to the tenant Libraries feed. Success returns `Data.Destination` (`TenantFeed`, `PersonalWorkspace`, `FolderFeed`), `Data.Feed` and `Data.FeedId`. Pass at most one destination flag:
+`<NUPKG_PATH>` (positional) is the `.nupkg` from `pack`; `publish` takes a package, never a project folder. Without a destination flag it reads the package's type and publishes to the tenant feed for that type: a process or a test project to the tenant Processes feed, a library to the tenant Libraries feed. Success returns `Data.Destination` (`TenantFeed`, `PersonalWorkspace`, `FolderFeed`, `SharedLibraries`), `Data.Feed` and `Data.FeedId`. Pass at most one destination flag:
 
 | Flag | Destination | Notes |
 |---|---|---|

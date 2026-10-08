@@ -347,7 +347,7 @@ Or omit `Default` entirely if the variable is assigned before its first read.
 
 ## InvokeCode Code Property — Attribute Form Only
 
-Author `Code` as an XML **attribute** (XML-escaped; each line break written as `&#xA;` — a literal line break inside an attribute value becomes a space too). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). Code that depends on line breaks changes meaning: a C# `//` comment swallows every statement after it, which then never runs while `validate` passes, and a VB body fails `validate` with `BC30205: End of statement expected. At line 0`. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
+Author `Code` as an XML **attribute** (XML-escaped; each line break written as `&#xA;` — a literal line break inside an attribute value becomes a space too). In a child element — bare text or CDATA inside `<ui:InvokeCode.Code>` — each line break collapses into a space ([§ Runs of Whitespace](#runs-of-whitespace-in-element-text-collapse--use-xmlspacepreserve)). Code that depends on line breaks changes meaning: a C# `//` comment swallows every statement after it, which then never runs, and a VB body fails to compile with `BC30205: End of statement expected. At line 0`. `validate` and `build` do not compile the Invoke Code body, so both pass either way; a body that does not compile fails only when the activity runs, with `Code: No compiled code to run` and the compiler errors. A child `<x:String xml:space="preserve">` keeps the line breaks; `xml:space` on `<ui:InvokeCode.Code>` itself fails to load.
 
 **Correct:**
 ```xml
@@ -369,13 +369,12 @@ The `Language` property on `InvokeCode` uses the `UiPath.Core.Activities.NetLang
 
 **Critical:** The project-level `expressionLanguage` in `project.json` uses `"VisualBasic"`, but InvokeCode's `Language` attribute requires `"VBNet"` instead. Do NOT use `"VisualBasic"` or `"VB"` — neither is a valid `NetLanguage` value. `"CSharp"` is the same in both.
 
-**What happens:** `Language="VisualBasic"` (or `"VB"`) passes Studio validation but fails at runtime:
+**What happens:** `Language="VisualBasic"` (or `"VB"`) fails to load, and `validate` reports it:
 ```
-Failed to create a 'Language' from the text 'VisualBasic'.
-System.FormatException: VisualBasic is not a valid value for NetLanguage.
+Could not load <FILE> file: 'Failed to create a 'Language' from the text 'VisualBasic'.'
 ```
 
-Without `Language`, the code compiles as VB.NET whatever the project's expression language: the default is `VBNet`. A C# body without `Language="CSharp"` fails `validate` with VB errors:
+Without `Language`, the code compiles as VB.NET whatever the project's expression language: the default is `VBNet`. A C# body without `Language="CSharp"` fails when the activity runs, with VB errors:
 ```
 error BC30800: Method arguments must be enclosed in parentheses.
 error BC30037: Character is not valid.
