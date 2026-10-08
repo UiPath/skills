@@ -4,7 +4,6 @@ description: >
   standard state first, then call state disable. Must NOT call state enable (that would be
   the opposite operation) and must NOT skip the state get pre-check.
 
-  Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
 
 sandbox:
@@ -38,7 +37,6 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - uip CLI is not connected to a live tenant - auth errors expected.
   - Run each command once, capture output, move on. Do NOT retry or login.
   - Always pass --output json.
   - Do NOT prompt for confirmation - this is an automated test.

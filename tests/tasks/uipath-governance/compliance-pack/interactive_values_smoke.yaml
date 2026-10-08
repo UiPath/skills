@@ -5,7 +5,6 @@ description: >
   the user before proceeding. Tests Step 1b of partial-apply/impl.md for the ISO 42001
   compliance standard.
 
-  Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, mode:build, lifecycle:setup, feature:compliance]
 
 
@@ -37,7 +36,7 @@ initial_prompt: |
 
   If you're asked for the URL or application lists, just answer SKIP for now.
   Important:
-  - uip CLI not connected — auth errors expected. Run each command once and continue.
+  - Run each command once and continue.
   - Always pass --output json. Do NOT prompt for confirmation.
   - Write any helper scripts to the current working directory using relative paths
     (e.g. ./scripts/, ./compliance-session/), not to AppData or TEMP paths.
