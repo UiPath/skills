@@ -1,6 +1,6 @@
 # Selector Translation Guide — source locators → UiPath targets
 
-UiPath side of UI target migration, shared by every source framework. A framework pack's selectors guide (`<PACK_DIR>/<framework>/selectors-guide.md`, [SKILL.md § Source Frameworks](../SKILL.md)) says what *its* framework recorded and which UiPath attribute each recorded field becomes; this guide says what UiPath can match on, per technology, and the rules every translation obeys. Vocabulary: UiPath driver's selector schema (tag names, attribute names) and UI Automation package's selector references (reliability tiers). Execution mechanics — Object Repository elements, linking, reporting: [source-migration-guide.md](source-migration-guide.md); no-application shapes: [offline-definition-workarounds-guide.md](offline-definition-workarounds-guide.md).
+What UiPath can match on, per technology, and the rules every translation obeys. A framework pack's selectors guide (`<PACK_DIR>/<framework>/selectors-guide.md`, [SKILL.md § Source Frameworks](../SKILL.md)) says what *its* framework recorded and which UiPath attribute each recorded field becomes. Execution mechanics — Object Repository elements, linking, reporting: [source-migration-guide.md](source-migration-guide.md); no-application shapes: [offline-definition-workarounds-guide.md](offline-definition-workarounds-guide.md).
 
 ## Technology → tag chain
 
@@ -354,7 +354,7 @@ How the selector engine reads what a translation writes — properties of the en
 
 ## Checking a definition
 
-Most of these rules are decidable from a definition file alone; the rest need one live command. The list exists so an executor can read a batch of definitions back — by hand, or with a throwaway script written for the run when there are hundreds; the skill deliberately ships no selector checker, because a passing structural check proves shape, not that anything matches the screen, and a maintained checker's rule set drifts from this guide.
+Most of these rules are decidable from a definition file alone; the rest need one live command. Read a batch of definitions back by hand, or with a throwaway script written for the run when there are hundreds. A passing structural check proves shape, not that anything matches the screen.
 
 A throwaway checker has to encode each rule's **scope**, or it reports this guide's own prescribed shapes as violations and the executor "fixes" correct selectors. The two that bite: the content-attribute ban is on the **acting leaf** — an ancestor that scopes by a stable field label or row key is the prescribed shape (rule 4, last sentence) — and the `DIV` ban is on an **assumed** tag, not on one the source recorded or a known node role vouches for (rule 14). A finding count that jumps into the hundreds is the checker being wrong, not the batch.
 
@@ -382,9 +382,4 @@ A throwaway checker has to encode each rule's **scope**, or it reports this guid
 
 ## What a translation produces per element
 
-Source guide's row supplies the left side; this guide fixes the right side. Each translated control yields: strict selector (tag chain, with the `<nav>` path from its caption where rule 6 gives one), semantic description (what the control is, from the source's names), confidence tier, list of dropped attributes with reason (state, runtime, volatile, negative criteria, positional, no equivalent), and flags `positional`, `volatile`, `derived`, `frame-unresolved`, `offline-unverified`. Where these land: [source-migration-guide.md § What the executor records](source-migration-guide.md).
-
-## Adding a technology or a framework
-
-- New **source framework**: add `<framework>/selectors-guide.md` to the framework migration pack ([SKILL.md § Source Frameworks](../SKILL.md)) with one table per technology it records: `source field (any case) | UiPath tag.attribute | criteria/value transform | confidence | notes`. Every right-hand side is an attribute listed in this catalog; driver schema is closed except for `webctrl`.
-- New **UiPath technology** (new driver tag or new SAP/UI5 attribute family): add here first, with its tier source (package reference, or *derived*), then reference it from a source guide.
+Each translated control yields: strict selector (tag chain, with the `<nav>` path from its caption where rule 6 gives one), semantic description (what the control is, from the source's names), confidence tier, list of dropped attributes with reason (state, runtime, volatile, negative criteria, positional, no equivalent), and flags `positional`, `volatile`, `derived`, `frame-unresolved`, `offline-unverified`. Where these land: [source-migration-guide.md § What the executor records](source-migration-guide.md).

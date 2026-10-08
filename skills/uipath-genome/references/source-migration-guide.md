@@ -1,6 +1,6 @@
 # Source Migration Guide — UI targets and test data at execution
 
-Execution of an extracted genome migrates what the genome body leaves out: the source automation's **UI targets** (selectors) and **test data**. Both come from the export the Source Map names ([genome-format-guide.md § Source Map](genome-format-guide.md)); execution derives its catalogs from that export at build time. This guide is framework-agnostic and owns the execution-time procedure. Source guide § UI Target Locators and § Test Data say what the source provides; its selectors companion says how each recorded field translates; [selector-translation-guide.md](selector-translation-guide.md) owns every UiPath-side selector rule (tags, attributes, matching, scope, anchors, confidence, node identity).
+Execution of an extracted genome migrates what the genome body leaves out: the source automation's **UI targets** (selectors) and **test data**. Both come from the export the Source Map names ([genome-format-guide.md § Source Map](genome-format-guide.md)); execution derives its catalogs from that export at build time.
 
 ## Migration preflight — derive the catalogs from the export
 
@@ -66,7 +66,7 @@ Mapping rules: every UI activity mapped once, activity ids file-unique; the step
 - **Who writes the tool:** the first part that registers targets writes it once, in the working folder and outside every project, taking the project as a parameter, and the brief names it. Every later part, in any project, appends spec entries and link rows and runs that tool, never a copy of its own.
 - **What it does for the files it is given:** builds the definitions of their spec entries, each with its semantic description as the semantic step beside the strict one and its description composed from the spec entry's fields (§ Rules, rule 2), looks each entry up in the registry and in the store before creating it (§ Object Repository identity rule 4), creates each screen's new elements in one batch, replaces every entry whose fingerprint changed, links screens and then elements, re-applies number-attribute selector variables ([offline-definition-workarounds-guide.md § Selector variables in number attributes](offline-definition-workarounds-guide.md) step 5), and counts the references in each file against the link table.
 
-Command order, output shapes and the CLI defects the tool works around: [offline-definition-workarounds-guide.md § Order of commands, offline](offline-definition-workarounds-guide.md). The skill ships no such tool, because its commands follow the installed UI Automation package.
+Command order, output shapes and the CLI defects the tool works around: [offline-definition-workarounds-guide.md § Order of commands, offline](offline-definition-workarounds-guide.md).
 
 **Linking is the last thing done to a workflow file, and it is not self-verifying.** Four mechanics decide whether step 5 of the pipeline survives; each one fails quietly:
 
@@ -219,7 +219,7 @@ Families to walk for a typical form-driven application: window scope; labelled t
 
 Stale refs are normal — every capture re-mints them, a driver-default call can invalidate the refs of the capture it read from, and a click that re-renders a widget (a search box or prompt moving into a popup) invalidates its refs too; re-capture rather than retry.
 
-Application not reachable: read the definitions back against [selector-translation-guide.md § Checking a definition](selector-translation-guide.md) and the offline guide's own checks (a throwaway script for the run is fine when there are hundreds; the skill ships none), fix what fails, and label every element `offline-unverified`. A structural pass proves shape, not that anything matches the screen.
+Application not reachable: read the definitions back against [selector-translation-guide.md § Checking a definition](selector-translation-guide.md) and the offline guide's own checks, fix what fails, and label every element `offline-unverified`. A structural pass proves shape, not that anything matches the screen.
 
 ## Result parity — making a UiPath run comparable with the source's
 
@@ -273,7 +273,7 @@ Mechanics — creating screens and elements, updating definitions, fuzzifying, l
 - per interaction family: live verdict (§ Verifying targets) or `offline-unverified`;
 - per test case: result parity table (§ Result parity) — source checkpoint, expected value, UiPath assertion, evidence, compare rule — and its counts;
 - per component, when the Source fidelity answer keeps it: the correspondence table (§ Source steps that are not UI actions), `migration/correspondence/<component>.md`, holding the differences only — one row per source step the target does not build under its own name, in the source's order, and one per added node; a step built under its own name has no row. Columns `Source step | Target node | Relation | Reason`: the source step as `` `Workflow` › `Name` `` (a dash for an added node), the target node by its display name in its file, the relation (`renamed`, `absorbed into`, `merged into`, `split into`, `dropped`, `added`) and the reason. The columns are the schema every executor writes, so a scorer reads the tables of every run alike; the table is written with the component and kept current with it;
-- per source command family: what it was realised as in this build — the activity class, the property encoding the package's per-activity doc prescribed, the analyzer findings accepted — fetched at the version built against ([execution-guide.md § 2.2](execution-guide.md)). This record belongs to the build: a framework pack states the realisation at capability level only (its source guide's "Realised at execution" table) and never copies the class-level record, which is stale on the next package bump.
+- per source command family: what it was realised as in this build — the activity class, the property encoding the package's per-activity doc prescribed, the analyzer findings accepted — fetched at the version built against ([execution-guide.md § 2.2](execution-guide.md)).
 
 The target spec, the link table and the Object Repository registry carry the fields § Migration preflight step 3a and § UI targets name; their file format, the run's target tool and any other scripting (mapping files, validators) are the executor's, within the authoring mode of [execution-guide.md § 2.2](execution-guide.md); the reports are the deliverable. One `migration/` folder in the build — the derived `source/` catalogs, the configuration answers, one report per project, the local feed's sources files — keeps them reviewable together and out of every project.
 

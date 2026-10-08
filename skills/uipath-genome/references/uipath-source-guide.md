@@ -1,7 +1,5 @@
 # UiPath Source Guide
 
-Framework-specific knowledge for extracting a genome from UiPath artifacts — the reference implementation of a source guide; the section contract every source guide follows is `CONTRACT.md` in the framework migration pack ([SKILL.md § Source Frameworks](../SKILL.md)). Pipeline: [extraction-guide.md](extraction-guide.md).
-
 Read § Reading the Project through § Component Detection, § Call Graph Rules, § Platform Resources, § Provenance and § Framework Pitfalls in full. Read a § Signals section only for artifact types present in the inventory.
 
 ## Reading the Project

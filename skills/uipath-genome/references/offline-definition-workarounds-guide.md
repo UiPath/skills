@@ -1,7 +1,5 @@
 # Offline Target Definition Workarounds — TEMPORARY
 
-**Delete this file when the UIA CLI gains a `create-definition` command and registers a number attribute bound to a selector variable.** It records shapes and workarounds the CLI would otherwise own, so a migration need not rediscover them.
-
 Scope: a migration whose only input is the target catalog derived from the source export, with **no reachable application**. `target-anchorable resolve-defaults` takes live snapshot refs (`e*`/`w*`) and there is no `create-definition`, so no first definition can be produced through the CLI there. An offline definition carries no anchor: a caption the source recorded beside a control becomes a `<nav>` path in the strict selector ([selector-translation-guide.md](selector-translation-guide.md) rules 6 and 12). One section applies whether the application is reachable or not: § Selector variables in number attributes, a defect no CLI path avoids.
 
 **Precedence: whenever the application is reachable, the CLI path wins and the offline sections do not apply.** The UIA package guide's rule stands — definitions are CLI-owned, never hand-edited. What follows is the documented exception for the offline case and for that defect, not general licence.

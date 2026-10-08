@@ -1,7 +1,5 @@
 # Package Doc and Tool Errata — TEMPORARY
 
-Delete a package's section once the installed package's own docs carry the corrected text, a tool's row once the tool behaves as its docs say, and this file once no section is left. A package's corrected docs reach a build only with that package's next release; until then the build reads the shipped text.
-
 The owning skill's contract reads the installed package's per-activity doc for every activity kind a build uses ([execution-guide.md § 2.2](execution-guide.md)). **Precedence.** While the installed doc still says what a row's second column quotes, the row wins, because it was checked against the activity's source and a validate or build. Once the doc carries the corrected text, the doc wins and the row is obsolete. Check the installed doc every run: the version a project pins decides which text it ships.
 
 ## `UiPath.System.Activities` — docs shipped with 26.8.2 and earlier
