@@ -31,6 +31,8 @@ Most "edit an existing case" requests mean a case **deployed in Studio Web**, no
    - `--extract` / `resync` **overwrite the destination**. Run before any edit. If you have already edited the local copy this session, pulling discards those edits — confirm with the user first.
 3. **Local-only project (no SolutionId)** → proceed as today, no pull.
 4. The pull is a CLI boundary operation (like `uip solution upload`), not a Rule 14 artifact mutation — it runs once, before editing. After it, all edits resume via Read/Write/Edit only.
+5. **Find the plan file by Studio Web's names, newest first: `caseplan.case`, `caseplan.json`, `case.stage.json`, `default.stage.json`.** Studio Web renames the plan to `caseplan.case` on its first save (with a `caseplan.case.bpmn` sidecar), and reads the newest name present. Edit and validate whichever name the pulled project has. Never create `caseplan.json` beside an existing `caseplan.case` — Studio Web would keep reading `caseplan.case` and silently ignore the edit. Every `caseplan.json` path in this guide means the plan file found here.
+6. **A designer-saved plan may declare a newer case schema than the installed CLI accepts.** If `validate` fails with `CASE_MGMT_VERSION_NEWER_THAN_SCHEMA`, stop and report it: the installed CLI cannot validate this plan yet. Never lower the `version` field to make validation pass — the plan was saved in the newer shape, and Studio Web would then read a document that misstates its own schema.
 
 Record the outcome (pulled from SW at `<SolutionId>`, or local-only) for the freshness note in [Completion Output](#completion-output).
 
