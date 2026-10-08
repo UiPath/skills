@@ -117,8 +117,8 @@ share the same approver variables because only one runs per instance.
   the user task, not boundary timers (SKILL.md rule 12).
 - **Segregation of duties** — enforce at approver lookup, so no one person signs
   consecutive steps. It is not a BPMN construct.
-- **`evaluate`** — `Orchestrator.BusinessRules`, with rules uploaded to
-  Orchestrator separately.
+- **`evaluate`** — `Orchestrator.BusinessRules`, bound to a rule from a
+  separate BusinessRules project (uipath-rules; SKILL.md rule 17).
 - **`fulfill`** — ERP, CRM, provisioning system. **`notify`** — email, chat,
   requester callback.
 

@@ -1,0 +1,6 @@
+{
+  "ProjectType": "Flow",
+  "Name": "InvoiceOrchestrator",
+  "Description": "Nightly flow: runs the invoice intake robot, then posts every approved invoice to the ERP and alerts the AP lead on failures.",
+  "MainFile": "InvoiceOrchestrator.flow"
+}

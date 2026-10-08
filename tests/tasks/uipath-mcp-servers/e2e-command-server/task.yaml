@@ -3,7 +3,7 @@ description: >
   E2E (live DefaultTenant): register a `command`-type AgentHub MCP server that launches the public
   MCP reference "everything" server over stdio, trigger refresh-tools (async), verify the server
   resolved, then the harness deletes it.
-tags: [uipath-mcp-servers, e2e, mode:build]
+tags: [uipath-mcp-servers, e2e, mode:build, lifecycle:setup, outcome-graded]
 sandbox:
   template_sources:
     - type: template_dir
@@ -41,18 +41,18 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Passed the launch command (npx)"
-    tool_name: "Bash"
-    command_pattern: '(?s)mcp\s+create\s+command.*--command'
-    min_count: 1
+  - type: run_command
+    description: "Live tenant: the server launches npx @modelcontextprotocol/server-everything (scalar flags or a --file/--body payload)"
+    command: 'uip agenthub mcp get "$(jq -r .slug report.json)" --folder-path Shared --output json | jq -e ".Data.Type == 1 and .Data.Command == \"npx\" and ((.Data.Arguments // \"\") | test(\"@modelcontextprotocol/server-everything\"))"'
+    timeout: 60
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Triggered refresh-tools with --folder-key (async for command servers; endpoint requires the folder key)"
+    description: "Triggered refresh-tools with a folder context (--folder-key or --folder-path; async for command servers)"
     tool_name: "Bash"
-    command_pattern: '(?s)uip\s+agenthub\s+mcp\s+refresh-tools.*--folder-key'
+    command_pattern: '(?s)uip\s+agenthub\s+mcp\s+refresh-tools.*--folder-(key|path)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

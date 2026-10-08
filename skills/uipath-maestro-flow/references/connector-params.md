@@ -9,9 +9,11 @@ Call a curated or generic Integration Service operation.
 key `uipath-uipath-dataservice` as *UiPath Data Fabric*. CRUD is NATIVE:
 `core.datafabric.*` has all four verbs (`dataFabricRead()`,
 `dataFabricCreate()`, `dataFabricUpdate()`, `dataFabricDelete()`), and the read
-verb covers filters, paging, sort, and get-by-id (filter on `Id`). What still
-routes here is the file record fields and the Record Created / Updated events;
-see [`data-fabric.md`](data-fabric.md) for the routing table.
+verb covers filters, paging and sort. What still routes here is get-by-id when
+the whole value of a long-text field is needed (a native read, even one filtered
+on `Id`, returns a 10,000-character preview), the file record fields, and the
+Record Created / Updated events; see [`data-fabric.md`](data-fabric.md) for the
+routing table.
 
 Signatures:
 

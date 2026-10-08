@@ -92,10 +92,10 @@ reaches manual triage.
 - **`classify`** — the node that classifies at runtime, typically a UiPath agent
   job. Place and bind it; never decide the categories or write classification
   logic while authoring.
-- **`apply_rules`** — `Orchestrator.BusinessRules`. The rules are authored and
-  uploaded to Orchestrator separately, and the BPMN references them; there is no
-  in-file rule authoring. This applies to the rule-based and hybrid variants
-  both.
+- **`apply_rules`** — `Orchestrator.BusinessRules`. The rules live in a
+  separate BusinessRules project (uipath-rules), deployed before the BPMN binds
+  it (SKILL.md rule 17); there is no in-file rule authoring. This applies to the
+  rule-based and hybrid variants both.
 - **`extract`** — Document Understanding, or any step that pulls the fields the
   classifier needs out of an unstructured source.
 - **`handle_a..c`** — see Adapting below; usually a message dispatch rather than
