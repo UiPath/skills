@@ -1,0 +1,153 @@
+{
+ "Result": "Success",
+ "Code": "AopsPolicyGet",
+ "Data": {
+  "Name": "ISO 42001 A.9.4 - Robot URL and Application Restrictions",
+  "Identifier": "3e39c661-54be-445b-b4b8-f1d4299cd50f",
+  "Description": "Restricts which URLs and applications robots (Runtime Analyzer RT-UIA-001, Healing Agent HA-UIA-001/002) are allowed to automate, per ISO/IEC 42001:2023 clause A.9.4. Allow/block list values pending org input.",
+  "Priority": 13,
+  "Availability": 30,
+  "Product": {
+   "Name": "Robot",
+   "Label": "Robot",
+   "IsRestricted": false,
+   "IsCloud": false,
+   "IsRemote": false
+  },
+  "Data": {
+   "embedded-rules-config-rules": [
+    {
+     "identifier": "RT-UIA-001",
+     "is-enabled-embedded-rules-config-rules": true,
+     "code-embedded-rules-config-rules": "RT-UIA-001",
+     "default-action": "Error",
+     "name-embedded-rules-config-rules": "App/Url Restrictions",
+     "parameters-embedded-rules-config-rules": [
+      {
+       "identifier_1": "RT-UIA-001whitelistUrls",
+       "key-embedded-rules-config-rules": "whitelistUrls",
+       "value-use-default-value-rules": true
+      },
+      {
+       "identifier_1": "RT-UIA-001blacklistUrls",
+       "key-embedded-rules-config-rules": "blacklistUrls",
+       "value-use-default-value-rules": true
+      },
+      {
+       "identifier_1": "RT-UIA-001whitelistApps",
+       "key-embedded-rules-config-rules": "whitelistApps",
+       "value-use-default-value-rules": true
+      },
+      {
+       "identifier_1": "RT-UIA-001blacklistApps",
+       "key-embedded-rules-config-rules": "blacklistApps",
+       "value-use-default-value-rules": true
+      },
+      {
+       "identifier_1": "RT-UIA-001CustomMessage",
+       "key-embedded-rules-config-rules": "CustomMessage",
+       "value-use-default-value-rules": true
+      }
+     ]
+    },
+    {
+     "identifier": "RT-OUT-001",
+     "is-enabled-embedded-rules-config-rules": true,
+     "code-embedded-rules-config-rules": "RT-OUT-001",
+     "default-action": "Error",
+     "name-embedded-rules-config-rules": "Email Blocklist",
+     "parameters-embedded-rules-config-rules": [
+      {
+       "identifier_1": "RT-OUT-001EmailRegex",
+       "key-embedded-rules-config-rules": "EmailRegex",
+       "value-use-default-value-rules": true
+      },
+      {
+       "identifier_1": "RT-OUT-001CustomMessage",
+       "key-embedded-rules-config-rules": "CustomMessage",
+       "value-use-default-value-rules": true
+      }
+     ]
+    }
+   ],
+   "healing-agent-allow-recommendation": true,
+   "healing-agent-allow-self-heal": true,
+   "healing-agent-allow-screenshot-collection": true,
+   "healing-agent-rules": [
+    {
+     "identifier": "",
+     "healing-agent-rule-is-enabled": true,
+     "healing-agent-rule-id": "HA-UIA-001",
+     "healing-agent-rule-default-action": "Error",
+     "healing-agent-rule-name": "App/Url Restrictions",
+     "healing-agent-rule-parameters": [
+      {
+       "healing-agent-identifier_1": "undefined",
+       "healing-agent-rule-parameter-key": "allowedUrls",
+       "healing-agent-rule-parameter-use-default-value": true
+      },
+      {
+       "healing-agent-identifier_1": "undefined",
+       "healing-agent-rule-parameter-key": "forbiddenUrls",
+       "healing-agent-rule-parameter-use-default-value": true
+      },
+      {
+       "healing-agent-identifier_1": "undefined",
+       "healing-agent-rule-parameter-key": "allowedApps",
+       "healing-agent-rule-parameter-use-default-value": true
+      },
+      {
+       "healing-agent-identifier_1": "undefined",
+       "healing-agent-rule-parameter-key": "forbiddenApps",
+       "healing-agent-rule-parameter-use-default-value": true
+      },
+      {
+       "healing-agent-identifier_1": "undefined",
+       "healing-agent-rule-parameter-key": "ruleCustomMessage",
+       "healing-agent-rule-parameter-use-default-value": true
+      }
+     ]
+    },
+    {
+     "identifier": "",
+     "healing-agent-rule-is-enabled": true,
+     "healing-agent-rule-id": "HA-UIA-002",
+     "healing-agent-rule-default-action": "Error",
+     "healing-agent-rule-name": "Close Popup Restrictions",
+     "healing-agent-rule-parameters": [
+      {
+       "healing-agent-identifier_1": "undefined",
+       "healing-agent-rule-parameter-key": "forbiddenPopups",
+       "healing-agent-rule-parameter-use-default-value": true
+      },
+      {
+       "healing-agent-identifier_1": "undefined",
+       "healing-agent-rule-parameter-key": "ruleCustomMessage",
+       "healing-agent-rule-parameter-use-default-value": true
+      }
+     ]
+    }
+   ],
+   "uiautomationTraceRetention": null,
+   "uiautomationTraceMasking": "",
+   "screenPlayRetentionTrace": null,
+   "screenPlayDefaultRule": "",
+   "screen-play-rules": [
+    {
+     "identifier": "Applications custom prompts",
+     "screen-play-rule-is-enabled": true,
+     "screen-play-rule-id": "Applications custom prompts",
+     "screen-play-rule-parameters": []
+    },
+    {
+     "identifier": "URLs custom prompts",
+     "screen-play-rule-is-enabled": true,
+     "screen-play-rule-id": "URLs custom prompts",
+     "screen-play-rule-parameters": []
+    }
+   ],
+   "cvTraceRetention": null,
+   "submit": false
+  }
+ }
+}

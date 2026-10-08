@@ -8,23 +8,19 @@ description: >
 
 tags: [uipath-governance, smoke, mode:build, lifecycle:setup, feature:compliance]
 
+# Compliance-pack and AOps state is tenant-global, so live runs collided with
+# concurrent tasks (CI run 36674826204). The `uip` shim serves those calls from
+# recorded fixtures and keeps state in the sandbox — see mock_template/mocks/uip.
+# Scenario `inactive`: ISO 42001 never applied; AOps policies and tenant assignments are recorded.
 sandbox:
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
-    - type: template_dir
-      path: _setup
-      mount_point: _setup
+    - {type: template_dir, path: mock_template}
 
-# CI passes live tenant auth into every smoke sandbox, so the partial-apply
-# flow can REALLY create `iso-42001-2023-*-aitl` AOps policies. Clean up before
-# (prevents name-collision suffix churn) and after.
 pre_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
-
-post_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
+  - command: 'printf inactive > .compliance-mock-scenario'
+    timeout: 10
 
 initial_prompt: |
   For our ISO 42001 alignment, I want to lock down which AI model providers are
@@ -60,6 +56,18 @@ success_criteria:
     description: "Partial apply does NOT use state enable (full compliance standard path only)"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable'
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "An AI Trust Layer policy is assigned to the tenant (shim state)"
+    command: >-
+      python3 -c "import json, os, sys;
+      p = '.compliance-mock-state.json';
+      s = json.load(open(p)) if os.path.exists(p) else {};
+      sys.exit(0 if any(a['ProductIdentifier'] == 'AITrustLayer' and a['PolicyIdentifier'] for a in s.get('assignments') or []) else 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: file_exists

@@ -1,0 +1,47 @@
+{
+ "Result": "Success",
+ "Code": "AopsPolicyDeploymentTenantGet",
+ "Data": {
+  "Name": "DefaultTenant",
+  "Identifier": "5f0c2a8e-3b1d-4e7a-9c64-2d8b7e1f4a90",
+  "Url": "http://istio-egressgateway.istio-system.svc.cluster.local/codereval/DefaultTenant/orchestrator_/",
+  "Status": "Enabled",
+  "TenantPolicies": [
+   {
+    "TenantIdentifier": "5f0c2a8e-3b1d-4e7a-9c64-2d8b7e1f4a90",
+    "PolicyIdentifier": null,
+    "ProductIdentifier": "AITrustLayer",
+    "LicenseTypeIdentifier": "NoLicense",
+    "TenantName": "DefaultTenant"
+   },
+   {
+    "TenantIdentifier": "5f0c2a8e-3b1d-4e7a-9c64-2d8b7e1f4a90",
+    "PolicyIdentifier": null,
+    "ProductIdentifier": "Assistant",
+    "LicenseTypeIdentifier": "NoLicense",
+    "TenantName": "DefaultTenant"
+   },
+   {
+    "TenantIdentifier": "5f0c2a8e-3b1d-4e7a-9c64-2d8b7e1f4a90",
+    "PolicyIdentifier": null,
+    "ProductIdentifier": "Development",
+    "LicenseTypeIdentifier": "NoLicense",
+    "TenantName": "DefaultTenant"
+   },
+   {
+    "TenantIdentifier": "5f0c2a8e-3b1d-4e7a-9c64-2d8b7e1f4a90",
+    "PolicyIdentifier": null,
+    "ProductIdentifier": "Robot",
+    "LicenseTypeIdentifier": "NoLicense",
+    "TenantName": "DefaultTenant"
+   },
+   {
+    "TenantIdentifier": "5f0c2a8e-3b1d-4e7a-9c64-2d8b7e1f4a90",
+    "PolicyIdentifier": null,
+    "ProductIdentifier": "StudioWeb",
+    "LicenseTypeIdentifier": "NoLicense",
+    "TenantName": "DefaultTenant"
+   }
+  ]
+ }
+}

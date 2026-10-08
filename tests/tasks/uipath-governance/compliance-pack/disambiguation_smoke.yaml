@@ -10,19 +10,19 @@ description: >
   a real artifact on the wrong branch.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, feature:compliance]
 
+# Compliance-pack and AOps state is tenant-global, so live runs collided with
+# concurrent tasks (CI run 36674826204). The `uip` shim serves those calls from
+# recorded fixtures and keeps state in the sandbox — see mock_template/mocks/uip.
+# Scenario `inactive`: ISO 42001 never applied.
 sandbox:
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
-    - type: template_dir
-      path: _setup
-      mount_point: _setup
+    - {type: template_dir, path: mock_template}
 
-# Safety net: smoke sandboxes have live tenant auth in CI, so an agent that
-# fails this test (silently routes and creates a policy) really mutates the
-# tenant. Clean up after.
-post_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
+pre_run:
+  - command: 'printf inactive > .compliance-mock-scenario'
+    timeout: 10
 
 run_limits:
   max_turns: 5

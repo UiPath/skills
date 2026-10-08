@@ -1,0 +1,202 @@
+{
+ "Result": "Success",
+ "Code": "AopsPolicyList",
+ "Data": {
+  "TotalCount": 14,
+  "Result": [
+   {
+    "Name": "AI Capabilities And Safety Governance (1)",
+    "Identifier": "c4d86d68-ca5a-40b3-a8c4-615c12203808",
+    "Description": "ISO/IEC 42001:2023 — AI Trust Layer tenant-level governance",
+    "Priority": 1,
+    "Availability": 365,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "Enable GenAI AI Team",
+    "Identifier": "5ac1ddd7-641a-46fa-9662-42e66f42a3e3",
+    "Priority": 2,
+    "Availability": 30,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "AI Capabilities And Safety Governance",
+    "Identifier": "e97a2cbc-8963-4c53-a94a-cd5675bcf281",
+    "Description": "ISO/IEC 42001:2023 — AI Trust Layer tenant-level governance",
+    "Priority": 3,
+    "Availability": 365,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "Disable GenAI Tenant",
+    "Identifier": "5f691530-54ad-44ce-8c8a-7ae0e158c885",
+    "Priority": 4,
+    "Availability": 30,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 A.6.2.8 Traceability - AI Trust Layer",
+    "Identifier": "f60b9c1f-55a6-44e9-93a6-9d2d8faa1ec9",
+    "Priority": 5,
+    "Availability": 30,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "AI Trust Layer — Block ChatGPT in Agents",
+    "Identifier": "d820d80c-04fa-41e9-b102-b663728385dc",
+    "Description": "Block OpenAI/ChatGPT model endpoints in Agents and Agent Builder.",
+    "Priority": 6,
+    "Availability": 30,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO42001 AI Provider Lockdown - SKIP",
+    "Identifier": "502ec833-78e8-41d1-b2d8-b91a0453f193",
+    "Description": "Locks down third-party AI provider access by disabling Anthropic, OpenAI, and Gemini until the approved-provider list is finalized.",
+    "Priority": 7,
+    "Availability": 30,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 Traceability Only - AI Trust Layer (A.6.2.8+A.7.2)",
+    "Identifier": "c84e4010-b219-4ed1-8cc0-14b580feb490",
+    "Description": "Traceability-only ISO 42001 partial apply for AI model input/output logging, trace TTL, and restricted Insights trace data.",
+    "Priority": 8,
+    "Availability": 30,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 A.10.3 — Approved AI Model Providers (AI Trust Layer)",
+    "Identifier": "6c29b9f1-8942-4cf6-88b5-86e473278ff6",
+    "Description": "ISO/IEC 42001 A.10.3 (Suppliers) partial apply: enables per-provider governance control toggles (Azure OpenAI, Anthropic, Gemini) and Communications Mining external LLM access review, so only approved third-party AI model providers are used org-wide.",
+    "Priority": 9,
+    "Availability": 30,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 A.10.3 — Approved AI Model Providers (Model Governance Only)",
+    "Identifier": "7a52a237-d92f-436d-84d1-c0d89afc243f",
+    "Description": "ISO/IEC 42001 A.10.3 (Suppliers) partial apply: enables governance control toggles for Azure OpenAI, Anthropic, and Gemini in AI Trust Layer so only approved third-party AI model providers are used org-wide. Scoped to the Model Governance control only (Communications Mining external LLM access is a separate control, not included).",
+    "Priority": 10,
+    "Availability": 30,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 A.10.3 - Approved AI Model Providers (Model Governance)",
+    "Identifier": "ac36930e-d87e-420d-9b4c-44a263812ea4",
+    "Description": "ISO/IEC 42001 A.10.3 (Suppliers) partial apply: enables the Model Governance - Third-Party AI Providers Allowlist control only (Azure OpenAI, Anthropic, Gemini control toggles) so only approved AI model providers are used org-wide via AI Trust Layer. Scoped to this single control; Communications Mining external LLM access and other A.10.3 controls are not included.",
+    "Priority": 11,
+    "Availability": 30,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 A.10.3 — Approved AI Model Providers",
+    "Identifier": "ee514647-7efe-4a5f-80b1-cd5b9b0afa63",
+    "Description": "ISO/IEC 42001 A.10.3 (Suppliers) partial apply: enables the Model Governance — Third-Party AI Providers Allowlist control only (Azure OpenAI, Anthropic, Gemini toggles) in AI Trust Layer, so only approved third-party AI model providers are used org-wide. Scoped to this single control; other A.10.3 controls (e.g. Communications Mining external LLM access) are not included. Specific approved provider list not yet finalized — SKIP.",
+    "Priority": 12,
+    "Availability": 30,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 Traceability Only - AI Trust Layer (A.6.2.8+A.7.2) - scoped",
+    "Identifier": "fd392b96-fcdd-4067-93f8-ab70379d3e88",
+    "Description": "Traceability-only ISO 42001 partial apply for AI model input/output logging, trace TTL, and restricted Insights trace data.",
+    "Priority": 13,
+    "Availability": 30,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   },
+   {
+    "Name": "ISO 42001 A.10.3 — Approved AI Model Providers (SKIP)",
+    "Identifier": "f5eb2e3a-1fc7-4c54-a072-38e731e5e81d",
+    "Description": "ISO/IEC 42001 A.10.3 model governance only: no third-party AI model providers are approved until the organization finalizes its provider list.",
+    "Priority": 14,
+    "Availability": 30,
+    "Product": {
+     "Name": "AITrustLayer",
+     "Label": "AI Trust Layer",
+     "IsRestricted": false,
+     "IsCloud": true,
+     "IsRemote": false
+    }
+   }
+  ]
+ }
+}
