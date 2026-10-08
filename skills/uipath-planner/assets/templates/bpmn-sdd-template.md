@@ -191,6 +191,28 @@ flowchart LR
 |---|---|---|---|---|
 | `<FLOW_KEY>` | `<SOURCE_NODE>` | `<TARGET_NODE>` | <EXPRESSION_OR_—> | <NOTES> |
 
+### Decision Tables
+
+<!-- Deterministic business rules, DMN-style: one table per decision (D1, D2, …), one row per rule or tier, each row citing its BR. Each is evaluated by a businessRuleTask in §4, and gateways route on its output. Cell syntax, hit policy and completeness: references/business-rules-guide.md § 2. `None. Every gateway condition is a single comparison.` when there are none. -->
+
+#### D1 — <DECISION_NAME>
+**Hit policy:** <UNIQUE / FIRST / COLLECT>
+**Inputs:** `<inputName>` (<string / number / boolean / date>), …
+**Output:** `<outputName>` (<type, with allowed values for a string>)
+**Runs in:** `<BUSINESS_RULE_TASK_NODE_KEY>`
+
+| # | <inputName> | <inputName> | → <outputName> | Rule |
+|---|---|---|---|---|
+| 1 | <ENTRY> | <ENTRY> | <OUTPUT> | BR-<NN> |
+
+### Rules That Need Reasoning
+
+<!-- Every business rule a decision table can't implement: an agent (serviceTask hosting the agent) or a person (userTask, also in §9 HITL Touchpoints) applies it. references/business-rules-guide.md § 3. `None. Every rule is deterministic.` when there are none. -->
+
+| ID | Rule | Applied by | Inputs → Output | Where it runs |
+|---|---|---|---|---|
+| BR-<NN> | <RULE> | <Agent / Person> | <INPUTS> → <OUTPUT> | `<NODE_KEY>` |
+
 ---
 
 ## 6. Events
