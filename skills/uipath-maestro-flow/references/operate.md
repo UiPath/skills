@@ -157,9 +157,10 @@ Instance ID: <instanceId>
 
 Emit the label with `<not returned by CLI>` rather than dropping a line.
 
-`Data.finalStatus: "Faulted"` means the cause is already in that same response.
-Read it there rather than re-running. On a faulted run the CLI ignores
-`--output-filter` and prints the whole envelope, so redirect and search the file:
+`Data.finalStatus: "Faulted"` means the cause is already in that same response,
+unless an `--output-filter` projection dropped it: the filter applies to a
+faulted run's `Data` too. Read it there rather than re-running; redirect the
+output and search the file:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flow-debug.json

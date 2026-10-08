@@ -59,7 +59,7 @@ for element in data.get("variables", {}).get("elements", []):
 EOF
 ```
 
-The CLI applies `--output-filter` only when a command succeeds; a faulted run prints the whole envelope.
+`--output-filter` applies to a faulted run too, so a projection that omits `incidents` and `elementExecutions` drops the cause.
 
 ### Match the fault code
 

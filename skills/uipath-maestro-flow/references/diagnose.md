@@ -15,9 +15,10 @@ first one did.
 
 ## Step 0 — read the cause in the output you already have
 
-`Data.finalStatus: "Faulted"` means the response in hand holds the reason. On a
-faulted run the CLI ignores `--output-filter` and prints the whole envelope, so
-redirect it and search the file rather than re-running:
+`Data.finalStatus: "Faulted"` means the response in hand holds the reason,
+unless an `--output-filter` projection dropped it: the filter applies to a
+faulted run's `Data` too. Redirect the output and search the file rather than
+re-running:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flow-debug.json
