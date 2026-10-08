@@ -21,10 +21,10 @@ import {
 export default flow('pottery-studio-callback')
   .name('PotteryStudioCallback')
   .version('1.0.0')
-  .input({ customerName: types.string, customerPhone: types.string, pieceCount: types.number })
+  .input({ callerNumber: types.string, customerName: types.string, customerPhone: types.string, pieceCount: types.number })
   .output({ callSummary: types.string })
   .step('dial', createOutgoingCall({
-    from: '+15550001111',
+    from: input('callerNumber'),
     to: input('customerPhone'),
   }))
   .step('talk', voiceAgent({

@@ -96,18 +96,21 @@ After `uip codedagent new`, check the directory before running anything else:
 - **`packOptions`** - Control which files are included when packaging for deployment
 - **`functions`** - Entrypoint mappings (format: `"file_path:function_name"`)
 
-### `packOptions.directoriesExcluded` for solution context
+### Keeping Python artifacts out of the solution upload
 
-When the agent project is registered in a solution and uploaded via `uip solution upload`, the agent directory is bundled into the solution archive. Set `directoriesExcluded` to keep Python build artifacts out of the archive:
+When the agent project is registered in a solution and uploaded via `uip solution upload`, the agent directory is bundled into the solution archive. The CLI already leaves `.venv/`, `__pycache__/`, `node_modules/`, `.git/`, `.local/` and `.env*` files out of that archive — no configuration needed. `.venv/` is hundreds of MB of installed wheels and `__pycache__/` is ephemeral bytecode; both regenerate from `pyproject.toml` + `uv.lock` on the target side.
 
-```json
-"packOptions": {
-  "directoriesExcluded": [".venv", "__pycache__"],
-  "includeUvLock": true
-}
+To leave more out (test fixtures, logs, generated files), add a `.uipignore` file with `.gitignore` syntax — at the solution root (patterns relative to the solution) or next to the agent's `project.uiproj` (patterns relative to the agent, applying to it only):
+
+```gitignore
+fixtures/
+*.log
+!important.log
 ```
 
-`.venv/` is hundreds of MB of installed wheels and breaks uploads. `__pycache__/` is ephemeral bytecode. Both regenerate from `pyproject.toml` + `uv.lock` on the target side. Without these exclusions, `uip solution upload` produces an oversized archive that can be rejected by Studio Web.
+A pattern that would drop a project the `.uipx` lists (its folder name, or `*.uiproj`) is refused with `ErrorCode: invalid_argument` — remove the project with `uip solution projects remove` instead. `uip solution pack` does not read `.uipignore`.
+
+`packOptions.directoriesExcluded` in `uipath.json` is a different mechanism: it controls the `.nupkg` contents at pack time (see [deployment](deployment.md)) and has no effect on what `uip solution upload` bundles.
 
 - `isConversational: true` for chat-style agents.
 - `packOptions` controls `.nupkg` contents at deploy time.

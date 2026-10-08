@@ -115,8 +115,8 @@ has the same blind spots, so the second call verifies nothing.
   Never decide the categories or hardcode a result while authoring.
 - **`perform_action`** — the downstream target: ERP, CRM, case system, outbound
   message.
-- **`validate`** — `Orchestrator.BusinessRules`. Rules are uploaded to
-  Orchestrator separately; the BPMN references them.
+- **`validate`** — `Orchestrator.BusinessRules`. The rules live in a separate
+  BusinessRules project (uipath-rules; SKILL.md rule 17); the BPMN binds them.
 - **`human_review`** — `Actions.HITL`. Route `post_review_gate` on the exact
   variable the template's `<uipath:output ... var="...">` binds, not a copy.
 - **Review SLA** — the timer and its breach outcome are properties of the user

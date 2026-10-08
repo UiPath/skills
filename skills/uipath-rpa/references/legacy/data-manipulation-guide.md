@@ -386,7 +386,7 @@ DateTime.ParseExact(dateText, "MM/dd/yyyy", System.Globalization.CultureInfo.Inv
 | Trap | Issue | Fix |
 |---|---|---|
 | `CInt("12.5")` | Rounds to 12 (not truncates) | Use `CInt(Math.Floor(CDbl("12.5")))` for truncation |
-| `CDate("01/02/2025")` | Jan 2 or Feb 1? Depends on locale | Use `DateTime.ParseExact` with explicit format |
+| `CDate(dateText)` on `NN/NN/YYYY` | Month-first or day-first? Depends on locale | Use `DateTime.ParseExact` with explicit format |
 | `CBool("yes")` | Throws — only `"True"`/`"False"` work | Use `If(value.ToLower() = "yes", True, False)` |
 | `GenericValue("10") > GenericValue("9")` | Returns `False` — string comparison | Cast to `Int32` first: `CInt(gv1) > CInt(gv2)` |
 | `Convert.ToInt32(Nothing)` | Returns 0 (not exception) | Check for Nothing first if 0 is a valid value |

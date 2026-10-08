@@ -42,7 +42,7 @@ success_criteria:
   # exclusion is anchored to a help probe of that same command rather than the
   # bare string --help, so a read that merely shares a call with the word
   # (an echo, a comment) still counts. Same intent as the bare --help exclusion
-  # in tests/tasks/uipath-agents/lowcode/inline_solution_agent_tool.
+  # in tests/tasks/uipath-maestro-flow/inline_agent/inline_solution_agent_tool.
   - type: command_executed
     description: "Agent ran users list to enumerate Insights users"
     tool_name: "Bash"

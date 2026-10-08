@@ -40,7 +40,7 @@ SR file. `activity create` auto-curates every method by default. Field visibilit
 app/element/
 ├── element.json              # Core definition: auth, configuration[], resources[], parameters[], hooks[]
 ├── element-metadata.json     # Catalog entry: name, categories, capability flags, latestVersion
-├── image.svg                 # Icon
+├── image.svg                 # Icon (must stay visible on a dark surface — see icon.md)
 ├── hooks/*.js                # JS pre/post request transformers (extracted from element.json by scripts/build)
 ├── standard-resources/*.json # Per-object metadata: fields, methods, curated, events
 └── event-hook/               # Event/polling hook definitions

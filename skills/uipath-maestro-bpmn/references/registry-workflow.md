@@ -11,6 +11,7 @@ uip maestro bpmn registry pull            # sync + cache (login for connectors/p
 uip maestro bpmn registry list --limit -1 --output json   # all extension types
 uip maestro bpmn registry search <keyword> --output json  # find a type by intent
 uip is connections list --all-folders --output json   # live IS connections (all folders)
+uip rules list --all-folders --output json            # deployed business rules (all folders)
 ```
 
 Map the user's intent to an extension type from the list. Pick the
@@ -382,10 +383,21 @@ discovery or the user.
 - **Business rule bindings** (`BusinessRule`): the context `name` and
   `folderPath` each reference a `BusinessRule` binding (`propertyAttribute`
   `name` / `folderPath`) — never a `Key` binding or a `process` `releaseKey`,
-  even when `registry get` returns one. Both bindings carry the rule key as
-  `resourceKey`: the rule's catalog entity key, never a `Key` from `Processes`
-  or a release key; if the user has not given it, ask. A rule defined only in
-  this solution uses its name as the key. The `folderPath` binding always carries a `default`, `""` when
+  even when `registry get` returns one. Find the rule with
+  `uip rules list --all-folders`; its `Name` and `FolderPath` fill the
+  bindings. Both bindings carry the same
+  `resourceKey`: `<folderPath>.<name>`, or `<name>` alone when the folder path
+  is empty — never the catalog entity key, a `Key` from `Processes`, or a
+  release key. The engine runs the rule by `name` + `folderPath` and uses
+  `resourceKey` only to match deploy-time binding overwrites. Bind only a deployed
+  rule; one defined only in this solution is deployed first (SKILL.md rule 17).
+  The task is `version="v3"`: below v3 the engine cannot read the `.uirule`
+  package a BusinessRules project deploys.
+  Bind only a decision-keyed rule: the `OutputArguments` from
+  `uip rules describe` must carry `"x-uipath-decision-keyed": true`. A rule
+  without it reads back empty columns from the task's `output`; do not bind it —
+  run `uip rules refresh <project-path>` on its project and redeploy it first.
+  The `folderPath` binding always carries a `default`, `""` when
   the rule lives in the running job's folder. The unbound `_label` context
   input holds the rule's name.
 - **Connection bindings** (`Intsvc.*`): the context references a connection via
@@ -407,11 +419,11 @@ block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, an
 `Integration Service activity connection binding "<id>" is missing
 resourceKey`. `process` and `queue` bindings carry `resourceKey` from
 `bindingInfo.resourceKeyPattern`. Both `BusinessRule` bindings carry the same
-`resourceKey`, the rule key:
+`resourceKey`, `<folderPath>.<name>` (`<name>` alone when the folder path is empty):
 
 ```xml
-<uipath:binding id="Binding_RuleName"   name="name"         type="string" resource="BusinessRule" propertyAttribute="name"       resourceKey="<RULE_KEY>" default="<RULE_NAME>" />
-<uipath:binding id="Binding_RuleFolder" name="folderPath"   type="string" resource="BusinessRule" propertyAttribute="folderPath" resourceKey="<RULE_KEY>" default="" />
+<uipath:binding id="Binding_RuleName"   name="name"         type="string" resource="BusinessRule" propertyAttribute="name"       resourceKey="<FOLDER_PATH>.<RULE_NAME>" default="<RULE_NAME>" />
+<uipath:binding id="Binding_RuleFolder" name="folderPath"   type="string" resource="BusinessRule" propertyAttribute="folderPath" resourceKey="<FOLDER_PATH>.<RULE_NAME>" default="<FOLDER_PATH>" />
 ```
 
 Every `Intsvc.ActivityExecution` bound to a connection needs TWO bindings that share one

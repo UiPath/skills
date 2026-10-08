@@ -321,7 +321,7 @@ var requestBody = new CreateOrderRequest
 {
     ProductId = "PROD-001",
     Quantity = 2,
-    ShippingAddress = "123 Main St"
+    ShippingAddress = "<STREET_ADDRESS>"
 };
 
 var json = JsonConvert.SerializeObject(requestBody);

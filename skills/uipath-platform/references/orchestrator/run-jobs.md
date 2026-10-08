@@ -225,6 +225,8 @@ uip or jobs logs <job-key> --export --destination ./logs.csv  # Export to CSV fi
 
 `--export` writes a CSV file instead of terminal output. Combine with `--destination` (or `-d`) to set the file path. Logs are cross-folder -- no `--folder-path` required.
 
+> **`--export` spends a daily quota.** It calls the RobotLogs Export endpoint, which is limited to 100 requests per day per tenant and shared with everyone on the tenant. To read or diagnose logs, use `--output json` (optionally `--level Error`). Export only when the user asks for a CSV file. See [api-limits.md](api-limits.md).
+
 ## Step 7: Get Traces
 
 LLM and agentic execution traces are served by the traces tool, keyed by the job:
@@ -238,6 +240,8 @@ Traces exist only for processes that use UiPath Autopilot or Agent capabilities;
 `uip or jobs traces` was the old entry point. It is removed — it still parses, but only prints a pointer to the command above and exits non-zero, so replace it in any script that still calls it.
 
 Traces are cross-folder -- no `--folder-path` required.
+
+> **Runtime evaluations** — to evaluate a published agent's output quality, trajectory, or tool use against eval sets and evaluators, load [`uipath-agents`](/uipath:uipath-agents). Commands live under `uip eval` (formerly `uip or eval`).
 
 ## Step 8: Get Healing Data
 
@@ -315,7 +319,6 @@ uip or jobs start <process-key> --folder-path "Finance" \
   --wait-for-completion --timeout 600 --output json
 
 uip or jobs logs <job-key> --level Error --output json
-uip or jobs logs <job-key> --export --destination ./invoice-logs.csv
 ```
 
 ---
