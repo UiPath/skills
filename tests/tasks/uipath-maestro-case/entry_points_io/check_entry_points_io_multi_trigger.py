@@ -19,6 +19,9 @@ import json
 import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _shared.case_check import existing_caseplan, glob_caseplans  # noqa: E402
+
 
 def fail(msg):
     sys.exit(f"FAIL: {msg}")
@@ -46,12 +49,12 @@ def out_props(entry):
 
 
 def load_sibling_caseplan(ep_path):
-    cp = os.path.join(os.path.dirname(os.path.abspath(ep_path)), "caseplan.json")
-    if not os.path.isfile(cp):
-        hits = glob.glob(os.path.join(os.path.dirname(ep_path) or ".", "**", "caseplan.json"), recursive=True)
+    cp = existing_caseplan(os.path.join(os.path.dirname(os.path.abspath(ep_path)), "caseplan.json"))
+    if not cp:
+        hits = glob_caseplans(os.path.join(os.path.dirname(ep_path) or ".", "**", "caseplan.json"))
         cp = hits[0] if hits else None
     if not cp or not os.path.isfile(cp):
-        fail(f"sibling caseplan.json not found next to {ep_path} (needed to verify each entry's trigger type)")
+        fail(f"sibling caseplan.case / caseplan.json not found next to {ep_path} (needed to verify each entry's trigger type)")
     try:
         return json.load(open(cp))
     except (OSError, json.JSONDecodeError) as e:

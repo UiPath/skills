@@ -343,10 +343,12 @@ def fieldname_caseplan() -> dict:
     }
 
 
-def run_checker(checker: Path, plan: dict) -> subprocess.CompletedProcess:
+def run_checker(
+    checker: Path, plan: dict, name: str = "caseplan.json"
+) -> subprocess.CompletedProcess:
     with tempfile.TemporaryDirectory() as temporary:
         caseplan = (
-            Path(temporary) / "ContractExecution" / "ContractExecution" / "caseplan.json"
+            Path(temporary) / "ContractExecution" / "ContractExecution" / name
         )
         caseplan.parent.mkdir(parents=True)
         caseplan.write_text(json.dumps(plan), encoding="utf-8")
@@ -372,6 +374,10 @@ class TopologyCheckerTests(unittest.TestCase):
     def test_accepts_expected_structure(self) -> None:
         result = self._run(copy.deepcopy(expected_caseplan()))
 
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_accepts_a_plan_saved_as_caseplan_case(self) -> None:
+        result = run_checker(TOPOLOGY_CHECKER, expected_caseplan(), "caseplan.case")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_rejects_missing_stage(self) -> None:

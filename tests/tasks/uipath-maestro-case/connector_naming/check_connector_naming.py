@@ -32,6 +32,9 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _shared.case_check import existing_caseplan  # noqa: E402
+
 CASEPLAN = "ConnectorNaming/ConnectorNaming/caseplan.json"
 ERROR_OUTPUT_NAMES = {"error"}
 ENVELOPE_BODY_KEYS = {"parameters", "filters", "queryParams"}
@@ -485,7 +488,8 @@ def check_bindings(label: str, block: dict, root_bindings: list) -> None:
 
 
 def main() -> int:
-    path = sys.argv[1] if len(sys.argv) > 1 else CASEPLAN
+    requested = sys.argv[1] if len(sys.argv) > 1 else CASEPLAN
+    path = existing_caseplan(requested) or requested
     if not os.path.exists(path):
         print(f"FAIL: {path} not found")
         return 1

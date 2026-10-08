@@ -184,7 +184,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "uip maestro case validate ParallelAfterPredecessor/ParallelAfterPredecessor/caseplan.json --output json"
+    command: "p=$(ls ParallelAfterPredecessor/ParallelAfterPredecessor/caseplan.case ParallelAfterPredecessor/ParallelAfterPredecessor/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 1.5

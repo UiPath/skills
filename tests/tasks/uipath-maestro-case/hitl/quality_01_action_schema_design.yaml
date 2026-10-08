@@ -191,7 +191,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate VendorPOReviewCase/VendorPOReviewCase/caseplan.json --output json"
+    command: "p=$(ls VendorPOReviewCase/VendorPOReviewCase/caseplan.case VendorPOReviewCase/VendorPOReviewCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -199,7 +199,7 @@ success_criteria:
 
   - type: json_check
     description: "Caseplan contains an action-typed task"
-    path: "VendorPOReviewCase/VendorPOReviewCase/caseplan.json"
+    path: "VendorPOReviewCase/VendorPOReviewCase/caseplan.[cj][as][so][en]"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
         operator: gt
@@ -209,7 +209,7 @@ success_criteria:
 
   - type: json_check
     description: "The Review action task is placed and enveloped as the SDD states, and the task-less Closed stage is kept"
-    path: "VendorPOReviewCase/VendorPOReviewCase/caseplan.json"
+    path: "VendorPOReviewCase/VendorPOReviewCase/caseplan.[cj][as][so][en]"
     # Graded from the plan, not a self-written report. The "Review PO" app is
     # absent from the tenant, so the task is a placeholder with empty `data`:
     # taskTitle / priority / recipient / I/O are not in the plan to grade.

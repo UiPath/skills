@@ -78,7 +78,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes on the generated CMGoldenExpense caseplan.json"
-    command: "uip maestro case validate CMGoldenExpense/CMGoldenExpense/caseplan.json --output json"
+    command: "p=$(ls CMGoldenExpense/CMGoldenExpense/caseplan.case CMGoldenExpense/CMGoldenExpense/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -87,7 +87,7 @@ success_criteria:
   - type: run_command
     description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — a plain-profile Valid does not close the golden"
     command: >-
-      uip maestro case validate CMGoldenExpense/CMGoldenExpense/caseplan.json
+      p=$(ls CMGoldenExpense/CMGoldenExpense/caseplan.case CMGoldenExpense/CMGoldenExpense/caseplan.json 2>/dev/null | head -1); uip maestro case validate "$p"
       --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
     timeout: 60
     expected_exit_code: 0
@@ -136,7 +136,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not edit caseplan.json in place with a script (Rule 14: Write/Edit only; validator findings are repaired by hand, not perl -pi)"
     tool_name: "Bash"
-    command_pattern: '(perl|sed)\s+-\S*i\S*\s[^\n]*caseplan\.json|(python3?|node|ruby)\b[^\n]*(write_text|writeFile|File\.write|open\([^\n]*[''"]w[''"])[^\n]*caseplan\.json'
+    command_pattern: '(perl|sed)\s+-\S*i\S*\s[^\n]*caseplan\.(json|case)|(python3?|node|ruby)\b[^\n]*(write_text|writeFile|File\.write|open\([^\n]*[''"]w[''"])[^\n]*caseplan\.(json|case)'
     weight: 2.0
     pass_threshold: 1.0
 
