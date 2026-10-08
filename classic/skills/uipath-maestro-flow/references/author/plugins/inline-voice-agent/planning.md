@@ -110,19 +110,19 @@ Outbound is the only shape with a local test loop; inbound cannot be exercised a
 
 ## Scaffolding Prerequisite
 
-The voice agent's backing directory is created with the same command as any inline agent, plus the conversational flag:
+The voice agent's backing directory is created with the same command as any inline agent, plus the voice flag:
 
 ```bash
-uip agent init "<FlowProjectDir>" --inline-in-flow --conversational --output json
+uip agent init "<FlowProjectDir>" --inline-in-flow --voice --output json
 ```
 
-Record the returned `ProjectId` — the voice node's `inputs.source` must match it exactly. The scaffold produces a conversational agent (`settings.engine: "conversational-v1"`, `metadata.isConversational: true`) **without** a `settings.voice` block — adding it by hand is mandatory, or `flow validate` fails. Shape and defaults: [impl.md § Configure `agent.json`](impl.md#configure-agentjson).
+Record the returned `ProjectId` — the voice node's `inputs.source` must match it exactly. The scaffold produces a conversational agent (`settings.engine: "conversational-v1"`, `metadata.isConversational: true`) with Studio Web's default `settings.voice`. On a CLI that rejects `--voice` as an unknown option, scaffold with `--conversational` and add `settings.voice` by hand, or `flow validate` fails. Shape, defaults and the optional turn settings: [impl.md § Configure `agent.json`](impl.md#configure-agentjson).
 
 ## Planning Annotation
 
 In the architectural plan:
 
 - `voice-topology: inbound | outbound` — which of the two shapes
-- `voice-agent: <description>` with a `<projectId-placeholder>` — the UUID is assigned during Phase 2 when `uip agent init --inline-in-flow --conversational` runs
+- `voice-agent: <description>` with a `<projectId-placeholder>` — the UUID is assigned during Phase 2 when `uip agent init --inline-in-flow --voice` runs
 - Outbound only: `voice-from: <SIP trunk E.164 number>` — one of the tenant's outbound-enabled trunks (§ Phone Numbers and SIP Trunks) — and `voice-to: <destination E.164 number>`, which the user supplies
 - Tools/contexts/escalations on the voice agent reuse the [inline-agent](../inline-agent/planning.md) annotations
