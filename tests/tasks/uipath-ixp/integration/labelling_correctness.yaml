@@ -175,7 +175,8 @@ success_criteria:
     pass_threshold: 1.0
 
 # Frees tenant quota before this run creates its project: deletes `codereval-*`
-# projects older than three hours, which earlier runs leaked. Always exits 0, and
+# projects older than three hours, which earlier runs leaked, then the AuthZ
+# role assignments those deletes leave behind (RE-12819). Always exits 0, and
 # fail_on_error is off so even a timed-out sweep never costs the run.
 pre_run:
   - command: "python3 _setup/sweep_stale_projects.py"
