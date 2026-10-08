@@ -1,9 +1,0 @@
-{
-  "Result": "Success",
-  "Code": "AhAutomationsSchemaGet",
-  "Data": {
-    "SourceType": "COE",
-    "IdeaFlowId": 8,
-    "Destination": "./ah-schema.json"
-  }
-}

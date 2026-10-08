@@ -1,21 +1,22 @@
 task_id: skill-ah-publish-from-pdd-structural
 description: >
-  STRUCTURAL PUBLISH — the Cartographer -> Automation Hub hand-off, graded on what
-  the agent actually submits. A fictional, reduced PDD (Retail Account Onboarding)
-  and its laid-out BPMN process map are staged in the sandbox, and `uip` is a
-  mocked Automation Hub tenant: a Business Process idea flow, a schema that
-  requires "Applications used" and offers `new_applications`, an inventory with
-  two of the PDD's five systems plus decoys (including the PDD's explicitly
-  out-of-scope Avaloq), and an archived category beside the active ones. The mock
-  snapshots every `--file` at call time, and a checker grades the submitted
-  answers: one create, the auth-info identity as owner/submitter, an active
-  category, verbatim enum codes, applications matching the PDD's systems exactly,
-  both documents uploaded byte-identical with the right type ids, and a
-  post-create read-back. It extends the command-shape smoke tests to the submitted
-  content, and the live e2e publish (e2e_publish_outcome) sits above it — no
-  tenant, deterministic, judge-free.
-# smoke: deterministic (mocked tenant, no login, judge-free) and inside the smoke budget
-# (~2.5 min, ~30 calls), so it gates every PR that touches the skill. RPANAV-19150 AC 1-3.
+  STRUCTURAL PUBLISH — the Cartographer -> Automation Hub hand-off against the live
+  alpha tenant, graded on what the agent actually SUBMITS. A fictional, reduced PDD
+  (Retail Account Onboarding) and its laid-out BPMN process map, both carrying a
+  per-run reference token, are staged in the sandbox. The agent's `uip` is the real
+  CLI behind a call recorder (`.uip-recorder/uip`), which logs every call and
+  snapshots each `--file` as it is sent, because the tenant's read-back normalizes
+  what was submitted. pre_run snapshots the tenant (owner, Business Process flow,
+  application inventory, category tree) and fails as ERROR when it cannot take a
+  publish; the checker grades the submitted answers against that snapshot: one
+  successful create, the auth-info identity as owner/submitter, an active category,
+  verbatim enum codes, every PDD system answered (by inventory id where the
+  inventory has it, else by name) with no decoy or out-of-scope system, both
+  documents uploaded byte-identical with the right type ids, and a post-create
+  read-back. post_run archives this run's process. The outcome-graded e2e publish
+  (e2e_publish_outcome) reads the same kind of publish back from the tenant.
+# smoke: judge-free and inside the smoke budget (~3 min, ~30 calls), so it gates every
+# PR that touches the skill. Needs the CI alpha login. RPANAV-19150 AC 1-3.
 tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
 
 run_limits:
@@ -25,14 +26,23 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../_shared/mock_template
+      path: ../_shared/live_template
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
     - type: template_dir
       path: fixtures
   mock_path_dirs:
-    - mocks
+    - .uip-recorder
 
 reference:
   directory: .
+
+pre_run:
+  - command: "python3 _setup/preflight_ah.py --require-new-applications"
+    timeout: 300
+  - command: "python3 _setup/seed_publish.py"
+    timeout: 60
 
 initial_prompt: |
   Our Retail Account Onboarding process is approved. Its PDD is
@@ -42,11 +52,12 @@ initial_prompt: |
   documents.
 
   The PDD is the only source for what the process is and which systems it uses.
+  Keep the process name exactly as the PDD titles it, including its reference code.
 
   Important:
-  - The `uip` CLI is already available and authenticated; it is backed by a local
-    test harness. Do NOT run `uip login` and do NOT handle a token yourself.
-  - Do NOT inspect `mocks/` directly.
+  - The `uip` CLI is already available and authenticated against the target
+    tenant. Do NOT run `uip login` and do NOT handle a token yourself.
+  - Do NOT inspect `_setup/`, `.uip-recorder/` or `seed.json`.
   - Do NOT call AskUserQuestion — it is not available in this harness. Treat the
     payload preview as approved and keep going.
 
@@ -82,7 +93,7 @@ success_criteria:
     pass_threshold: 1.0
 
   # The schema offers new_applications, so missing systems go in the answer. The
-  # admin upsert needs MANAGE_APP_INVENTORY (the mock 403s it) and must not be
+  # admin upsert needs MANAGE_APP_INVENTORY (the CI identity lacks it) and must not be
   # reached for here — applications never block the publish.
   - type: command_not_executed
     description: "Agent added missing systems through new_applications, not the admin applications upsert"
@@ -92,7 +103,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Exactly one automations create --from-schema, on the Business Process idea flow (a success is never re-run)"
+    description: "Exactly one automations create --from-schema, on the Business Process idea flow, and it succeeded on the tenant (a success is never re-run)"
     command: "python3 $REFERENCE_DIR/check_publish.py create-once"
     timeout: 30
     expected_exit_code: 0
@@ -100,7 +111,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Submitted answers resolve every required field: PDD process name and description, an active onboarding category (not the template's 1 or the archived 4), the auth-info email as owner and submitter (bare string or value-wrapped), documentation codes verbatim from the schema enum and never 'none'/'don't know', no template placeholders"
+    description: "Submitted answers resolve every required field: PDD process name and description, an active, non-'Other' category from the tenant's tree, the auth-info email as owner and submitter (bare string or value-wrapped), documentation codes verbatim from the schema enum and never 'none'/'don't know', no template placeholders"
     command: "python3 $REFERENCE_DIR/check_publish.py payload"
     timeout: 30
     expected_exit_code: 0
@@ -108,12 +119,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Applications match the PDD exactly: inventory ids for Dynamics 365 + Signicat, Trapets / Scrive / Temenos T24 as new_applications, no decoys, no out-of-scope Avaloq, no thin apps"
+    description: "Applications match the PDD exactly: every one of its five systems answered, by inventory id where the start-of-run inventory had it and as new_applications where it did not; no decoy id, no out-of-scope Avaloq, no thin apps"
     command: "python3 $REFERENCE_DIR/check_publish.py applications"
     timeout: 30
     expected_exit_code: 0
     # Primary signal of this task (the bug class behind RPANAV-19120), kept at the
-    # table's ceiling for mock-graded artifact content rather than the e2e 5.0-6.0 band.
+    # table's ceiling for submitted-artifact content rather than the e2e 5.0-6.0 band.
     weight: 3.0
     pass_threshold: 1.0
 
@@ -142,8 +153,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not read the mocked tenant data directly instead of through the CLI"
+    description: "Agent did not read the harness's call log, snapshot or setup scripts instead of the tenant"
     tool_name: "Bash"
-    command_pattern: '(cat|less|head|tail|grep|jq|python3?)\s+[\s\S]*mocks/(responses|\.calls)'
+    command_pattern: '(cat|less|head|tail|grep|jq|python3?)\s+[\s\S]*(\.uip-recorder/|seed\.json|_setup/)'
     weight: 1.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_ah.py"
+    timeout: 300

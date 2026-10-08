@@ -89,9 +89,9 @@ jobs:
       - name: Run pytest
         run: pytest tests/tasks/uipath-maestro-case/ -v
 
-  # Covers the Automation Hub publish graders: the structural checker that reads
-  # the mocked-uip call log, the e2e outcome grader, and the _setup
-  # preflight/seed/cleanup scripts (all driven through the mock dispatcher).
+  # Covers the Automation Hub publish graders and the `.uip-recorder` shim the
+  # live tasks run behind, offline: a stub stands in for the real CLI, so these
+  # test the call log and its grading, never tenant behaviour.
   pytest-automationhub-check:
     runs-on: uipath-ubuntu-latest
     name: uipath-automationhub checker unit tests

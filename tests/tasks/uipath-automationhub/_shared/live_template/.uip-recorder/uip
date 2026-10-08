@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+"""Record each `uip` call, then run the real CLI against the live tenant.
+
+PATH-shadows `uip` in the sandbox (`mock_path_dirs`). Nothing is faked: every
+call reaches the real CLI and the real tenant, and its exit code and output reach
+the agent unchanged. Alongside, one JSON line per call goes to `.calls.jsonl`
+next to this script, so a grader can read what the agent SUBMITTED, which the
+tenant's normalized read-back cannot show:
+
+    {"ts": ..., "args": "ah automations create --from-schema ...",
+     "exit_code": 0, "result": "Success", "data_id": 4815,
+     "captured": {"path": "./ah-answers.json", "sha256": ..., "json": {...}}}
+
+`captured` snapshots the `--file` argument before the call runs, so a file the
+agent rewrites afterwards does not change the grade. `result` and `data_id` come
+from the CLI's JSON envelope (`Result`, `Data.Id`) when it printed one.
+
+Two switches, both set by the harness, never by the agent:
+  AH_EVAL_NO_RECORD=1   run without recording (setup and grading scripts' own calls)
+  ../.ah-tenant-home    when present, HOME for the real CLI: a login copy pointed at
+                        another tenant of the same organization (_setup/use_tenant.py)
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+CALL_LOG = SCRIPT_DIR / ".calls.jsonl"
+TENANT_HOME_MARKER = SCRIPT_DIR.parent / ".ah-tenant-home"
+_DECODER = json.JSONDecoder()
+
+
+def real_uip() -> str | None:
+    """The real CLI: first `uip` on PATH outside this script's directory."""
+    others = []
+    for entry in os.environ.get("PATH", "").split(os.pathsep):
+        try:
+            if entry and Path(entry).resolve() != SCRIPT_DIR:
+                others.append(entry)
+        except (OSError, ValueError):
+            others.append(entry)
+    return shutil.which("uip", path=os.pathsep.join(others))
+
+
+def child_env() -> dict:
+    env = dict(os.environ)
+    if TENANT_HOME_MARKER.is_file():
+        home = TENANT_HOME_MARKER.read_text(encoding="utf-8").strip()
+        if home:
+            env["HOME"] = env["USERPROFILE"] = home
+    return env
+
+
+def flag_value(argv: list[str], name: str) -> str | None:
+    for i, token in enumerate(argv):
+        if token == name and i + 1 < len(argv):
+            return argv[i + 1]
+        if token.startswith(name + "="):
+            return token[len(name) + 1:]
+    return None
+
+
+def capture_file(argv: list[str]) -> dict | None:
+    path = flag_value(argv, "--file")
+    if path is None:
+        return None
+    record: dict = {"path": path}
+    try:
+        data = Path(path).read_bytes()
+    except OSError as exc:
+        record["error"] = str(exc)
+        return record
+    record["size"] = len(data)
+    record["sha256"] = hashlib.sha256(data).hexdigest()
+    if path.lower().endswith(".json"):
+        try:
+            record["json"] = json.loads(data.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            record["json_error"] = str(exc)
+    return record
+
+
+def envelope(stdout: str) -> dict | None:
+    """The CLI's JSON envelope, skipping any update-check chatter around it."""
+    start = stdout.find("{")
+    while start != -1:
+        try:
+            value, _ = _DECODER.raw_decode(stdout, start)
+        except json.JSONDecodeError:
+            value = None
+        if isinstance(value, dict):
+            return value
+        start = stdout.find("{", start + 1)
+    return None
+
+
+def log(record: dict) -> None:
+    """Best-effort: a broken log never breaks the agent's command."""
+    try:
+        with CALL_LOG.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record) + "\n")
+    except OSError:
+        pass
+
+
+def main(argv: list[str]) -> int:
+    target = real_uip()
+    if target is None:
+        sys.stderr.write("uip recorder: the real uip CLI is not on PATH\n")
+        return 127
+    if os.environ.get("AH_EVAL_NO_RECORD") == "1":
+        return subprocess.run([target, *argv], env=child_env()).returncode
+
+    record: dict = {"ts": time.time(), "args": " ".join(argv)}
+    captured = capture_file(argv)
+    if captured is not None:
+        record["captured"] = captured
+    # stdin and stderr pass straight through; stdout is buffered only to read the
+    # envelope, then written out unchanged.
+    proc = subprocess.run([target, *argv], env=child_env(), stdout=subprocess.PIPE)
+    sys.stdout.buffer.write(proc.stdout)
+    sys.stdout.flush()
+    out = proc.stdout.decode("utf-8", errors="replace")
+    record["exit_code"] = proc.returncode
+    parsed = envelope(out)
+    if parsed is not None:
+        record["result"] = parsed.get("Result")
+        data = parsed.get("Data")
+        if isinstance(data, dict) and data.get("Id") is not None:
+            record["data_id"] = data["Id"]
+    log(record)
+    return proc.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
