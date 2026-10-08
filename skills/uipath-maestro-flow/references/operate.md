@@ -161,8 +161,8 @@ Emit the label with `<not returned by CLI>` rather than dropping a line.
 A projection can drop `Data.incidents`, but `--output-filter` never filters
 `Message` and `Instructions`: they summarize the incidents, when PIMS returned
 any, and name the `uip maestro flow debug-instance incidents <instanceId>`
-command. If `Data.incidents` is not in what you have, run that command. Do not
-re-run the flow. On the next run, add `incidents:incidents` to the projection,
+command. If `Data.incidents` is missing, or `null` in a projection, run that
+command. Do not re-run the flow. On the next run, add `incidents:incidents` to the projection,
 or redirect the unfiltered output to a file and search it:
 
 ```bash

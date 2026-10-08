@@ -198,7 +198,7 @@ read-back into seven tool calls.
 # Did it finish? The cheapest possible check.
 --output-filter "{status:finalStatus,instance:instanceId}"
 
-# The standard read-back: status, where to look, what did NOT complete, all globals.
+# The standard read-back: status, where to look, what did NOT complete, all globals, incidents.
 --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,\
 failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},\
 globals:variables.globals,incidents:incidents}"
@@ -249,7 +249,8 @@ diagnostics in one read-back instead of printing the full execution envelope:
 
 The top-level envelope still carries `Result`; the projection above selects
 from `Data`. Read and retain `Result`, the projected status/instance/URL, the
-`failed` element executions, and the globals the claim needs.
+`failed` element executions, the globals the claim needs, and `incidents` on a
+faulted run.
 `Completed` with the expected globals and an empty `failed` is evidence for the
 product-runtime path; a bare process exit code is not. Omit the filter only when
 diagnosing a field the projection did not retain.
