@@ -1,14 +1,15 @@
 task_id: skill-platform-users-import-robot-smoke
 description: >
   Smoke test: agent uses the uipath-platform skill to import a robot
-  account into the Orchestrator tenant. Verifies the agent (a) finds the
-  IS UUID via `admin robot-accounts list --search` (or remembers it from
-  a prior `admin robot-accounts create`), and (b) calls
-  `uip or users import --directory-id <uuid> --type DirectoryRobot
-  --domain autogen` with all three flags. Without --directory-id the
-  CLI rejects with "Missing --directory-id"; without --type the CLI
-  errors on a required option. Auth/404 errors are acceptable — goal is
-  correct command shape.
+  account into the Orchestrator tenant. Verifies the agent calls
+  `uip or users import --directory-id <uuid> --type DirectoryRobot` with
+  the IS UUID from the prompt (or from `admin robot-accounts list
+  --search`). Without --directory-id the CLI rejects with "Missing
+  --directory-id"; without --type the CLI errors on a required option.
+  `--domain autogen` is advisory only: newer CLIs fill it in for
+  DirectoryRobot, and here it cannot change the outcome. The id is a
+  placeholder, so the server rejects the import (auth, 403, 404 or 400)
+  whatever the domain — the goal is correct command shape.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup]
 
 run_limits:
@@ -22,19 +23,25 @@ initial_prompt: |
   Use `--output json` on all uip commands.
 
   Important:
-  - Auth, Forbidden and 404 errors are expected here and count as done —
-    whether the tenant accepts the import is not what this checks. If the CLI
-    itself rejects the command as malformed, that is different: fix the
+  - Auth, Forbidden, 404 and HTTP 400 errors from the server are expected
+    here and count as done — whether the tenant accepts the import is not
+    what this checks. If the CLI itself rejects the command before it reaches
+    the server (a missing or invalid option), that is different: fix the
     command and run it again.
   - Do NOT log in, refresh tokens, inspect environment variables, decode
     tokens, or call REST APIs with curl. Once the import command reaches the
     server, stop and summarize the result.
 
+# Every pattern below is scoped to ONE command segment (tests/README.md,
+# `command_executed`): the lookaheads use
+#   (?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*
+# so a flag on another command in the same Bash call cannot satisfy, or hide,
+# a check on the import. `(?!…\s(?:--help|-h)(?![\w-]))` drops help calls.
 success_criteria:
   - type: command_executed
     description: "Agent called `uip or users import` (the single IS→tenant integration point)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+import'
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+users\s+import(?![\w-])(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?:--help|-h)(?![\w-]))'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -42,7 +49,7 @@ success_criteria:
   - type: command_executed
     description: "Agent passed --type DirectoryRobot"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+import[\s\S]*--type\s+DirectoryRobot'
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+users\s+import(?![\w-])(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?:--help|-h)(?![\w-]))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--type(?:\s+|=)["'']?DirectoryRobot(?![\w-]))'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -50,18 +57,22 @@ success_criteria:
   - type: command_executed
     description: "Agent passed --directory-id (required for Robot — server-side Key check)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+import[\s\S]*--directory-id'
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+users\s+import(?![\w-])(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?:--help|-h)(?![\w-]))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--directory-id(?:\s+|=)\S)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent passed --domain (required; 'autogen' for Robot)"
+    # Advisory: the skill documents `--domain autogen` for robot accounts, but
+    # newer CLIs send it themselves for --type DirectoryRobot, and with a
+    # placeholder id the server rejects the import whatever the domain. So
+    # this records whether the agent followed the skill without docking it.
+    description: "Advisory: agent passed --domain autogen as the skill documents"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+import[\s\S]*--domain\s+autogen'
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+users\s+import(?![\w-])(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?:--help|-h)(?![\w-]))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--domain(?:\s+|=)["'']?autogen(?![\w-]))'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0
 
   - type: command_not_executed
     # The rationale this used to carry — "omitting --type defaults to
@@ -71,9 +82,10 @@ success_criteria:
     # shape guard, not a corruption guard. Note it is strict on EVERY import
     # call, so an agent that probes without --type before correcting trips it;
     # if that shows up in practice, drop this criterion — criterion 2 already
-    # pins the successful call, and the CLI enforces the rest.
+    # pins the successful call, and the CLI enforces the rest. Help calls
+    # (`--help` / `-h`) are not imports and do not count.
     description: "Agent never issued an import without --type (CLI rejects it; shape guard)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+(or|orchestrator)\s+users\s+import(?!\s+--help)(?![\s\S]*--type)'
+    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+users\s+import(?![\w-])(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?:--help|-h)(?![\w-]))(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--type(?![\w-]))'
     weight: 2.0
     pass_threshold: 1.0
