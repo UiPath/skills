@@ -1,0 +1,118 @@
+task_id: skill-agent-usecase-enablement-chat-assistant
+description: >
+  Use-case pattern "conversational assistant that answers from knowledge and
+  takes actions". A chat assistant answers sales-engineer questions from the
+  existing "UiPathAgentsProductKnowledge" index and, on request, hands off
+  to the existing deployed "CustomerFollowUpDrafter" agent to draft a
+  customer follow-up email.
+  Graded on the final project only: conversational variant constraints
+  (engine, empty outputSchema, no reserved inputs, blank user message, no
+  built-in validators), index context + binding, external agent tool,
+  read-only `uip agent validate`, and an LLM judge on the system prompt.
+  Cloud auth required — the staging tenant must have the index and the
+  CustomerFollowUpDrafter agent in Shared/uipath-agents.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, context-grounding, feature:conversational]
+
+run_limits:
+  expected_turns: 40
+  turn_timeout: 1200
+  task_timeout: 1500
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  Our CoE wants a chat assistant for sales engineers who get questions about
+  UiPath Agents from customers. Build it as a UiPath low-code agent,
+  "AgentsEnablementAssistant", in a solution called "EnablementSol".
+
+  In the chat, sales engineers ask things like "can an agent read scanned
+  PDFs?" or "how do escalations work?". The assistant should answer from our
+  existing "UiPathAgentsProductKnowledge" knowledge index (already in our
+  tenant), keep answers short, mention which docs it used, and say plainly
+  when the docs don't cover something instead of guessing.
+
+  When a sales engineer asks for help writing a follow-up email to a
+  customer, the assistant should get the draft from our existing
+  "CustomerFollowUpDrafter" agent (already deployed in our tenant) and show it in the
+  chat so they can tweak it.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "AgentsEnablementAssistant/agent.json exists"
+    path: "EnablementSol/AgentsEnablementAssistant/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent is a conversational low-code agent with no structured output"
+    path: "EnablementSol/AgentsEnablementAssistant/agent.json"
+    assertions:
+      - expression: "metadata.isConversational"
+        operator: "equals"
+        expected: true
+      - expression: "settings.engine"
+        operator: "equals"
+        expected: "conversational-v1"
+      - expression: "length(outputSchema.properties)"
+        operator: "equals"
+        expected: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final project passes read-only uip agent validate (derived files current)"
+    command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate EnablementSol/AgentsEnablementAssistant"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Conversational constraints, index context + binding, CustomerFollowUpDrafter wired as an external agent tool mirroring its schemas"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/enablement_chat_assistant/check_enablement_chat_assistant.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt grounds answers, admits gaps, and knows when and how to use CustomerFollowUpDrafter"
+    files: ["EnablementSol/AgentsEnablementAssistant/agent.json"]
+    weight: 2.0
+    pass_threshold: 0.75
+    include_reference: false
+    prompt: |
+      You are grading the system prompt of a UiPath low-code conversational
+      assistant for sales engineers. It has a product-knowledge index and an
+      "CustomerFollowUpDrafter" agent as a tool. Read
+      `EnablementSol/AgentsEnablementAssistant/agent.json` and grade ONLY the
+      `content` of the `messages[]` entry whose `role == "system"`. Ignore
+      schemas, settings, resources and the user message.
+
+      Score four rubric items, each worth 1/4:
+
+        R1. Grounding — answers product questions from the knowledge index,
+            mentions the docs used, and plainly says when the docs don't
+            cover a question instead of guessing; bounds how often it
+            searches per turn.
+        R2. Email hand-off — calls CustomerFollowUpDrafter only when the
+            user asks for help with a customer email; fills its inputs from
+            the conversation (customer name, context, key points, tone),
+            asking a clarifying question first if the customer or key points
+            are missing; and shows the returned subject and body for the user
+            to edit rather than sending anything.
+        R3. Conversational behaviour — short answers suited to chat, asks
+            clarifying questions when a request is ambiguous, stays on the
+            UiPath Agents topic.
+        R4. Boundaries — does not invent features, limits, pricing or
+            roadmap commitments; does not claim an email was sent.
+
+      Award 1.0 for clear, specific coverage, 0.5 for partial or vague
+      coverage, 0.0 for missing. The final `score` is the average of R1–R4,
+      rounded to two decimals. If the file or the system message is missing,
+      score 0.0.

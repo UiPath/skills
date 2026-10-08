@@ -1,0 +1,118 @@
+task_id: skill-agent-usecase-ap-inbox-triage
+description: >
+  Use-case pattern "completion agent as classifier / router" (no tools — the
+  most common agent step inside Maestro processes) plus evaluations. The
+  prompt describes an accounts-payable mailbox triage in business terms; the
+  agent must produce a tool-free autonomous low-code agent with an enum-typed
+  routing contract and an evaluation set covering every category. Graded on
+  the final project only: structure check, read-only `uip agent validate`,
+  and an LLM judge on the system prompt.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, feature:eval]
+
+run_limits:
+  expected_turns: 30
+  turn_timeout: 1200
+  task_timeout: 1500
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  Our accounts-payable shared mailbox gets a few hundred vendor emails a day
+  and two clerks sort them by hand. I want a UiPath low-code agent,
+  "APInboxTriageAgent", in a solution called "APTriageSol", that reads one
+  email at a time and tells us where it should go. An automation upstream
+  passes it `from`, `subject` and `body` (all strings), and a downstream
+  step moves the email to a work queue based on the answer, so the result
+  has to be structured:
+
+    - `category`: one of invoice_submission, payment_status_inquiry,
+      invoice_dispute, vendor_master_update, statement_reconciliation, other
+    - `priority`: one of low, normal, high, urgent
+    - `referenceNumbers`: every invoice or PO number mentioned (empty list if none)
+    - `summary`: one sentence for the clerk
+    - `needsHumanReview`: true or false
+
+  Some things the clerks know that the agent should too: final notices,
+  payment holds, or threats of legal action or supply stoppage are urgent.
+  Any request to change a vendor's bank details is a known fraud pattern —
+  treat it as a vendor master update, at least high priority, and always
+  flag it for human review. Vendors often write about several things in one
+  email; in that case pick the main request and flag it for review. The
+  agent only reads the email — it doesn't need tools or any other data.
+
+  Before handing it over, add a few test cases — at least one per category —
+  so we catch regressions when someone edits the prompt later.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "APInboxTriageAgent/agent.json exists"
+    path: "APTriageSol/APInboxTriageAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent project is registered in the APTriageSol solution"
+    path: "APTriageSol/APTriageSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final project passes read-only uip agent validate (derived files current)"
+    command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate APTriageSol/APInboxTriageAgent"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Tool-free autonomous agent, routing contract (enums, list, boolean), inputs templated, eval set covers every category"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/ap_inbox_triage/check_ap_inbox_triage.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt encodes the clerks' routing knowledge"
+    files: ["APTriageSol/APInboxTriageAgent/agent.json"]
+    weight: 2.0
+    pass_threshold: 0.75
+    include_reference: false
+    prompt: |
+      You are grading the system prompt of a UiPath low-code agent that triages
+      accounts-payable emails. Read `APTriageSol/APInboxTriageAgent/agent.json`
+      and grade ONLY the `content` of the `messages[]` entry whose
+      `role == "system"`. Ignore schemas, settings and the user message.
+
+      Score four rubric items, each worth 1/4:
+
+        R1. Category definitions — distinguishes the six categories with
+            concrete signals, in particular telling an invoice dispute
+            (vendor disagrees with an amount/charge) apart from a payment
+            status inquiry (vendor asks when/whether they will be paid), and
+            says when to use `other`.
+        R2. Priority rules — gives criteria for the four levels, and names
+            final notices / payment holds / legal or supply-stoppage threats
+            as urgent.
+        R3. Fraud and ambiguity rules — bank-detail change requests are a
+            vendor master update, at least high priority, always flagged for
+            human review; multi-request emails get the main category plus
+            `needsHumanReview = true`; low confidence also sets the flag.
+        R4. Output discipline — tells the agent to return every output field,
+            to list only reference numbers that literally appear in the email
+            (never invent them; empty list when none), and to keep the
+            summary to one sentence.
+
+      Award 1.0 for clear, specific coverage, 0.5 for partial or vague
+      coverage, 0.0 for missing. The final `score` is the average of R1–R4,
+      rounded to two decimals. If the file or the system message is missing,
+      score 0.0.

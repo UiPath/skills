@@ -1,0 +1,111 @@
+task_id: skill-agent-usecase-expense-gl-batch-transform
+description: >
+  Use-case pattern "tabular file input processed row by row" (CSV + Batch
+  Transform), including the recurring "Analyze Files can't read my
+  spreadsheet" complaint. The agent receives a month of card transactions as
+  a CSV and must enrich every row with GL coding columns via the built-in
+  Batch Transform tool, writing the enriched file to a fixed output
+  location. Graded on the final project only: CSV attachment input, Batch
+  Transform output columns / web grounding / destination, output contract,
+  read-only `uip agent validate`, and an LLM judge on the system prompt.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, context-grounding]
+
+run_limits:
+  expected_turns: 30
+  turn_timeout: 1200
+  task_timeout: 1500
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  Every month finance exports all corporate-card transactions as a CSV —
+  usually a few thousand rows with date, cardholder, merchant, description
+  and amount — and someone assigns a GL account to each line by hand. We
+  tried pointing an agent at the file with Analyze Files and it couldn't
+  cope with a spreadsheet that size.
+
+  Build a UiPath low-code agent, "ExpenseCodingAgent", in a solution called
+  "ExpenseCodingSol". It gets the export as `transactionsFile` and has to
+  add three columns to every row:
+
+    - GL Account — one of 6100 Travel, 6200 Meals, 6300 Software,
+      6400 Office Supplies, 6500 Professional Services, or 6999 Unclassified
+      when it can't tell
+    - Confidence — HIGH, MEDIUM or LOW
+    - Review Flag — YES when confidence is LOW, the account is 6999, or the
+      amount is over 5,000; otherwise NO
+
+  The merchant and description are enough to decide — it shouldn't look
+  anything up on the web. Write the enriched file to the `expense-coding`
+  output folder. The agent returns `outputLocation` (where the enriched file
+  went), `rowsProcessed` and a short `summary` for the finance team.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "ExpenseCodingAgent/agent.json exists"
+    path: "ExpenseCodingSol/ExpenseCodingAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent project is registered in the ExpenseCodingSol solution"
+    path: "ExpenseCodingSol/ExpenseCodingSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final project passes read-only uip agent validate (derived files current)"
+    command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate ExpenseCodingSol/ExpenseCodingAgent"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "CSV attachment input, Batch Transform with the three columns and their instructions (chart of accounts, confidence levels, review rule), web grounding off, expense-coding destination, output contract"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/expense_gl_batch_transform/check_expense_gl_batch_transform.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt drives one Batch Transform pass over the file and an honest result"
+    files: ["ExpenseCodingSol/ExpenseCodingAgent/agent.json"]
+    weight: 2.0
+    pass_threshold: 0.75
+    include_reference: false
+    prompt: |
+      You are grading the system prompt of a UiPath low-code agent that
+      GL-codes every row of a card-transaction CSV with the built-in Batch
+      Transform tool (the per-column instructions live in the tool, not in
+      this prompt). Read `ExpenseCodingSol/ExpenseCodingAgent/agent.json` and
+      grade ONLY the `content` of the `messages[]` entry whose
+      `role == "system"`. Ignore schemas, settings, resources and the user
+      message.
+
+      Score three rubric items, each worth 1/3:
+
+        R1. Tool use — tells the agent to run Batch Transform once over the
+            provided transactions file instead of reading or coding rows
+            itself (and not to use Analyze Files on the CSV).
+        R2. Row framing — gives the per-row task context: GL-code each card
+            transaction from its merchant and description against the
+            company chart of accounts, without web lookups.
+        R3. Honest result — `outputLocation`, `rowsProcessed` and `summary`
+            must come from the tool's result; the agent must not invent row
+            counts or a location, and reports a failure if the tool fails.
+
+      Award 1.0 for clear, specific coverage, 0.5 for partial or vague
+      coverage, 0.0 for missing. The final `score` is the average of R1–R3,
+      rounded to two decimals. If the file or the system message is missing,
+      score 0.0.

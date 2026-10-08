@@ -1,0 +1,117 @@
+task_id: skill-agent-usecase-vendor-dd-deeprag
+description: >
+  Use-case pattern "document + knowledge": DeepRAG / just-in-time context
+  grounding over the documents passed in with each run (the second most
+  common capability combination — vendor due diligence, medical-record
+  review, RFP analysis). The agent answers a due-diligence questionnaire
+  from a vendor's long PDF documents, so it needs an ephemeral index over
+  the runtime attachments rather than a pre-built index or one-shot Analyze
+  Files. Graded on the final project only: attachment input, a DeepRAG tool
+  or attachments context, output contract, read-only `uip agent validate`,
+  and an LLM judge on the system prompt.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, context-grounding]
+
+run_limits:
+  expected_turns: 30
+  turn_timeout: 1200
+  task_timeout: 1500
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  Third-party risk reviews take our analysts days. For every new vendor we
+  send a due-diligence questionnaire and the vendor sends back their
+  evidence: a SOC 2 report, security and privacy policies, a business
+  continuity plan — usually several PDFs of 50 to 300 pages each.
+
+  Build a UiPath low-code agent, "VendorDueDiligenceAgent", in a solution
+  called "VendorRiskSol". Each run gets the vendor's documents as
+  `vendorDocuments` (a list of files) and our `questions` (a list of
+  strings). For every question it should research the answer across all of
+  that vendor's documents — the answer often sits in a different document
+  than you'd expect — and return `answers`, one entry per question with:
+
+    - the `question`
+    - the `answer`
+    - a `status`: answered, partially_answered or not_found
+    - the `sources` it relied on (document and location)
+
+  Analysts must be able to trust every answer, so nothing may come from
+  general knowledge: if the documents don't cover a question, the status is
+  not_found. We don't keep these documents in any index — they're only
+  available for the run.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "VendorDueDiligenceAgent/agent.json exists"
+    path: "VendorRiskSol/VendorDueDiligenceAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent project is registered in the VendorRiskSol solution"
+    path: "VendorRiskSol/VendorRiskSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final project passes read-only uip agent validate (derived files current)"
+    command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate VendorRiskSol/VendorDueDiligenceAgent"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "File-list input, DeepRAG / attachments grounding over the run's documents (no pre-built index), inputs templated, per-question answer contract"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/vendor_dd_deeprag/check_vendor_dd_deeprag.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt drives per-question grounded research, the not_found rule and status mapping"
+    files: ["VendorRiskSol/VendorDueDiligenceAgent/agent.json"]
+    weight: 2.0
+    pass_threshold: 0.75
+    include_reference: false
+    prompt: |
+      You are grading the system prompt of a UiPath low-code agent that
+      answers a vendor due-diligence questionnaire by researching the
+      vendor's documents with a DeepRAG / document-grounding tool. Read
+      `VendorRiskSol/VendorDueDiligenceAgent/agent.json` and grade ONLY the
+      `content` of the `messages[]` entry whose `role == "system"`. Ignore
+      schemas, settings, resources and the user message.
+
+      Score four rubric items, each worth 1/4:
+
+        R1. Grounded research per question — tells the agent to research
+            each question against the provided documents with its
+            document-research tool (passing the question as the research
+            prompt), across all documents, and to answer only from what that
+            research returns, never from general knowledge.
+        R2. Not-found path — says what to do when the documents hold nothing
+            relevant (status not_found, no invented answer), including
+            telling the research step what to return in that case so it
+            doesn't come back empty.
+        R3. Status mapping — distinguishes answered vs partially_answered vs
+            not_found with clear criteria, and requires exactly one answer
+            entry per input question, in order.
+        R4. Sources — requires `sources` to come from the research tool's
+            citations (document and location) and does not tell the tool to
+            use its own citation format or invent page numbers.
+
+      Award 1.0 for clear, specific coverage, 0.5 for partial or vague
+      coverage, 0.0 for missing. The final `score` is the average of R1–R4,
+      rounded to two decimals. If the file or the system message is missing,
+      score 0.0.

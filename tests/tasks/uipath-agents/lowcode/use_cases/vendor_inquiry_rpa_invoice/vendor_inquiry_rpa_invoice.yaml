@@ -1,0 +1,121 @@
+task_id: skill-agent-usecase-vendor-inquiry-rpa-invoice
+description: >
+  Use-case pattern "document + RPA" — the single most common capability
+  combination. The agent answers a vendor's invoice inquiry by calling the
+  deployed "DownloadVendorInvoice" RPA process, which returns the invoice PDF
+  as a File output argument, and then reads that returned file. Exercises the
+  recurring attachment-passing failure: the RPA tool's output schema must
+  carry the File as a job-attachment (from the process's V2 argument
+  schemas), and the returned attachment must be handed to a file-reading
+  built-in tool. Graded on the final project only: RPA tool wiring + schemas,
+  bindings, solution-level process declaration, file-reading tool, output
+  contract, read-only `uip agent validate`, and an LLM judge on the system
+  prompt. Cloud auth required — the tenant must have DownloadVendorInvoice in
+  Shared/uipath-agents/DownloadVendorInvoiceSol.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code]
+
+run_limits:
+  expected_turns: 35
+  turn_timeout: 1200
+  task_timeout: 1500
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  Vendors constantly email accounts payable asking about an invoice: what we
+  have on file, the amount, when it's due. The invoices only live in our
+  legacy AP archive, which has no API — we already have an RPA process,
+  "DownloadVendorInvoice", deployed in our tenant, that takes an invoice
+  number, fetches the invoice PDF from the archive and hands back the file
+  (and whether it found one).
+
+  Build a UiPath low-code agent, "VendorInquiryAgent", in a solution called
+  "VendorInquirySol". It gets the `vendorName` and the vendor's `inquiry`
+  (the email text). It should find the invoice number in the inquiry, get
+  the invoice through DownloadVendorInvoice, read the PDF it gets back, and
+  answer from what's actually on the invoice.
+
+  It returns:
+
+    - `invoiceNumber` (empty if the email doesn't mention one)
+    - `invoiceFound` (true or false)
+    - `invoiceAmount` and `dueDate` as read from the invoice
+    - `reply`: a short answer to the vendor
+    - `needsHumanFollowUp`: true when there's no invoice number, the
+      invoice isn't found, or the PDF doesn't answer the question
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "VendorInquiryAgent/agent.json exists"
+    path: "VendorInquirySol/VendorInquiryAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent project is registered in the VendorInquirySol solution"
+    path: "VendorInquirySol/VendorInquirySol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final project passes read-only uip agent validate (derived files current)"
+    command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate VendorInquirySol/VendorInquiryAgent"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "External RPA tool for DownloadVendorInvoice with schemas mirroring the process (File output as job-attachment), binding + solution process declaration, file-reading tool, output contract"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/vendor_inquiry_rpa_invoice/check_vendor_inquiry_rpa_invoice.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt chains RPA → file reading, handles missing/not-found invoices, and grounds the reply in the PDF"
+    files: ["VendorInquirySol/VendorInquiryAgent/agent.json"]
+    weight: 2.0
+    pass_threshold: 0.75
+    include_reference: false
+    prompt: |
+      You are grading the system prompt of a UiPath low-code agent that answers
+      vendor invoice inquiries. It has an RPA tool, DownloadVendorInvoice, that
+      returns the invoice PDF as a file, and a file-analysis tool. Read
+      `VendorInquirySol/VendorInquiryAgent/agent.json` and grade ONLY the
+      `content` of the `messages[]` entry whose `role == "system"`. Ignore
+      schemas, settings, resources and the user message.
+
+      Score four rubric items, each worth 1/4:
+
+        R1. Invoice number first — extract the invoice number from the
+            inquiry before calling DownloadVendorInvoice, and do not call the
+            tool when there is none (return an empty invoiceNumber and flag
+            human follow-up instead).
+        R2. Read the returned file — pass the invoice file returned by
+            DownloadVendorInvoice to the file-analysis tool to read its
+            contents (amount, due date, other details); the file reference
+            itself carries only metadata, so the agent must not answer from
+            it directly.
+        R3. Not found / unreadable — when DownloadVendorInvoice reports
+            found = false, or the PDF can't be read or doesn't answer the
+            question, set invoiceFound / needsHumanFollowUp accordingly and
+            reply without inventing details.
+        R4. Grounded reply — the reply, invoiceAmount and dueDate come only
+            from the invoice contents; never guess amounts or dates, and
+            keep the reply short and addressed to the vendor.
+
+      Award 1.0 for clear, specific coverage, 0.5 for partial or vague
+      coverage, 0.0 for missing. The final `score` is the average of R1–R4,
+      rounded to two decimals. If the file or the system message is missing,
+      score 0.0.
