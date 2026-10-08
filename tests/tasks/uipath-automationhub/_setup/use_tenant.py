@@ -6,13 +6,13 @@ Usage:
 
 Some scenarios need tenant settings that cannot coexist with the default tenant's
 (e.g. a Business Process schema without `new_applications`), so they run on a
-second tenant in the same organization. CI logs in once and mounts one `~/.uipath`
-into every sandbox, read-write, so switching it with `uip login tenant set` would
-move every concurrent task. Instead this copies the login to a private directory
-OUTSIDE the sandbox (the copy holds the access token, and the sandbox is kept as a
-run artifact), rewrites the tenant there, and records that directory in
-`.ah-tenant-home`. The `.uip-recorder` shim and ah_cli.py both run the real CLI
-with HOME set to it; nothing else changes.
+second tenant in the same organization. CI logs in once and shares one login file
+with every sandbox, read-write, so switching it with `uip login tenant set` would
+move every concurrent task. Instead this writes `.ah-tenant.json` (the tenant's
+name and id, and where the shared login file is). The `.uip-recorder` shim and
+ah_cli.py then run the real CLI through its env-var auth on that tenant, taking
+the token and organization from the shared login file on each call. No token is
+copied, and the shared login is never modified.
 
 The CLI's login token is organization-scoped, so the same login serves any tenant
 of the organization where the identity has access.
@@ -20,15 +20,13 @@ of the organization where the identity has access.
 
 from __future__ import annotations
 
+import json
 import os
-import re
-import shutil
 import sys
-import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ah_cli import (  # noqa: E402
-    TENANT_HOME_MARKER,
+    TENANT_MARKER,
     describe_failure,
     items,
     precondition_failed,
@@ -36,7 +34,13 @@ from ah_cli import (  # noqa: E402
     uip_json,
 )
 
-AUTH_FILE = ".auth"
+
+def login_file() -> str:
+    which = uip_json(["login", "which"])
+    data = which.get("Data") or {}
+    if not succeeded(which) or not data.get("Exists") or not data.get("Path"):
+        precondition_failed(f"no login file for uip to switch tenants from: {describe_failure(which) or data}")
+    return str(data["Path"])
 
 
 def tenant_id(name: str) -> str:
@@ -56,36 +60,19 @@ def main(argv: list[str]) -> int:
         print(f"usage: {sys.argv[0]} <tenant-name>", file=sys.stderr)
         return 2
     name = argv[0]
-    if os.path.exists(TENANT_HOME_MARKER):
-        precondition_failed(f"{TENANT_HOME_MARKER} already exists; use_tenant.py must run once, first")
+    if os.path.exists(TENANT_MARKER):
+        precondition_failed(f"{TENANT_MARKER} already exists; use_tenant.py must run once, first")
 
-    source = os.path.join(os.path.expanduser("~"), ".uipath")
-    if not os.path.isfile(os.path.join(source, AUTH_FILE)):
-        precondition_failed(f"no {AUTH_FILE} login file under {source}; a second tenant needs a file login")
-    target_id = tenant_id(name)
-
-    home = tempfile.mkdtemp(prefix="ah-tenant-")
-    login = os.path.join(home, ".uipath")
-    shutil.copytree(source, login)
-    auth_path = os.path.join(login, AUTH_FILE)
-    with open(auth_path, encoding="utf-8") as handle:
-        auth = handle.read()
-    for key, value in (("UIPATH_TENANT_NAME", name), ("UIPATH_TENANT_ID", target_id)):
-        auth, count = re.subn(rf"^{key}=.*$", f"{key}={value}", auth, flags=re.M)
-        if count != 1:
-            precondition_failed(f"{AUTH_FILE} has {count} {key} lines; expected exactly one")
-    with open(auth_path, "w", encoding="utf-8") as handle:
-        handle.write(auth)
-    os.chmod(auth_path, 0o600)
-
-    with open(TENANT_HOME_MARKER, "w", encoding="utf-8") as handle:
-        handle.write(home)
+    target = {"tenant_name": name, "tenant_id": tenant_id(name), "auth_file": login_file()}
+    with open(TENANT_MARKER, "w", encoding="utf-8") as handle:
+        json.dump(target, handle, indent=1)
 
     status = uip_json(["login", "status"])
     active = (status.get("Data") or {}).get("Tenant")
     if not succeeded(status) or str(active).lower() != name.lower():
-        precondition_failed(f"login copy does not resolve to {name} (got {active!r}): {describe_failure(status)}")
-    print(f"use_tenant: uip now targets tenant {name} ({target_id})")
+        os.remove(TENANT_MARKER)
+        precondition_failed(f"the switched login does not resolve to {name} (got {active!r}): {describe_failure(status)}")
+    print(f"use_tenant: uip now targets tenant {name} ({target['tenant_id']})")
     return 0
 
 
