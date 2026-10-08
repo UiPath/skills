@@ -95,7 +95,8 @@ pass, so the body always runs at least once (`core.logic.dowhile`). The
 container publishes no data output: write results to a `.var()` from inside
 the body with `{ updates }`. `limit` caps iterations (1–10,000; blank means
 the platform default of 10,000), and `body.break()` works exactly as in
-`.loop()`.
+`.loop()`. A body step's failure can route to `.onError()` after the
+`.doWhile(...)`, as with `.loop()` ([error-handling.md](error-handling.md)).
 
 Signature: `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })`.
 
