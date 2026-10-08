@@ -1,0 +1,8 @@
+{
+  "clientId": "<CLIENT_ID>",
+  "scope": "openid profile email offline_access OR.Execution.Read",
+  "orgName": "<ORG_NAME>",
+  "tenantName": "<TENANT_NAME>",
+  "baseUrl": "https://api.uipath.com",
+  "redirectUri": "http://localhost:5173"
+}
