@@ -15,10 +15,12 @@ first one did.
 
 ## Step 0 — read the cause in the output you already have
 
-`Data.finalStatus: "Faulted"` means the response in hand holds the reason,
-unless an `--output-filter` projection dropped it: the filter applies to a
-faulted run's `Data` too. Redirect the output and search the file rather than
-re-running:
+`Data.finalStatus: "Faulted"` means the response in hand holds the reason. A
+projection can drop `Data.incidents`, but `Message` and `Instructions` are never
+filtered: they name each incident and the
+`uip maestro flow debug-instance incidents <instanceId>` command for the full
+payload. Run that command; do not re-run the flow. On the next run, redirect the
+unfiltered output and search the file:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flow-debug.json

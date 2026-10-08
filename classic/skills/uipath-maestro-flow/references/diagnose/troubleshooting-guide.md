@@ -59,7 +59,7 @@ for element in data.get("variables", {}).get("elements", []):
 EOF
 ```
 
-`--output-filter` applies to a faulted run too, so a projection that omits `incidents` and `elementExecutions` drops the cause.
+`--output-filter` projects a faulted run's `Data` too, so a projection that omits `incidents` or `variables` drops the fault code and detail. Redirect without a filter.
 
 ### Match the fault code
 

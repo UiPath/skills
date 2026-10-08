@@ -157,10 +157,12 @@ Instance ID: <instanceId>
 
 Emit the label with `<not returned by CLI>` rather than dropping a line.
 
-`Data.finalStatus: "Faulted"` means the cause is already in that same response,
-unless an `--output-filter` projection dropped it: the filter applies to a
-faulted run's `Data` too. Read it there rather than re-running; redirect the
-output and search the file:
+`Data.finalStatus: "Faulted"` means the cause is already in that same response.
+A projection can drop `Data.incidents`, but `Message` and `Instructions` are
+never filtered: they name each incident and the
+`uip maestro flow debug-instance incidents <instanceId>` command for the full
+payload. Run that command; do not re-run the flow. On the next run, redirect the
+unfiltered output and search the file:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flow-debug.json
@@ -181,8 +183,9 @@ they pass the JSON-schema check even though the slot's nominal type is `string`.
 `--entry-point <triggerNodeId>` starts the job at that root, and `--validate`
 then checks the inputs against that root's schema. A wrong id exits 3 and lists
 the process's trigger node ids. Without it, the job starts at the package's main
-entry point; `flow pack` sets that to the first trigger in the file, so pass
-`--entry-point` whenever the root matters. You do not need `--feed-id`; the CLI
+entry point; `flow pack` and `solution pack` set that to the first trigger in
+the flow, which for an SDK-built flow is the default root. Pass `--entry-point`
+whenever the root matters. You do not need `--feed-id`; the CLI
 reads the feed from the release.
 
 ## Inspect a job

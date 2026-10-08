@@ -230,9 +230,9 @@ double quotes instead of single ones:
 `folderKey`, `solutionId`, `variables` and `elementExecutions`, plus
 `variablesFetch` when the variables read needed a retry; `variablesError`
 replaces `variables` when that read fails. So an `incidents:incidents`
-projection yields `null`. A faulted run carries `Data.incidents`, and
-`--output-filter` projects failure `Data` too, so add `incidents:incidents` to
-the projection to keep them. Otherwise, fetch incidents with the separate
+projection yields `null`. A faulted run usually carries `Data.incidents` (absent
+when PIMS returns none or the fetch fails), and `--output-filter` projects
+failure `Data` too, so add `incidents:incidents` to the projection to keep them. Otherwise, fetch incidents with the separate
 `debug-instance incidents` call below, keyed by the `instanceId` you just read.
 
 For example, a direct-input claim can keep the useful status, outputs, and
@@ -253,8 +253,8 @@ from `Data`. Read and retain `Result`, the projected status/instance/URL, the
 product-runtime path; a bare process exit code is not. Omit the filter only when
 diagnosing a field the projection did not retain.
 
-Fetch incidents by `instance` only when a failed run's `Data.incidents` is
-empty or your projection dropped it.
+Fetch incidents by `instance` only when a failed run has no `Data.incidents`
+(`null` in a projection) or your projection dropped it.
 
 For a fault, query the backend incident payload with the returned instance id:
 
