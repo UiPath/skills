@@ -24,7 +24,7 @@ A Business Rules project holds one DMN decision table. DMN and FEEL follow the O
 5. **Use the designer's types.** `string`, `number`, `boolean`, `Any`, `date`, `time`, `date and time`, `dayTimeDuration`, `yearMonthDuration`, for both columns and input arguments.
 <!--skill-flavor:lifecycle-rules:start-->
 6. **Scaffold with `init`; after every edit, `refresh` then `validate`.** Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; edit the scaffolded `.dmn` in place, keeping its root element.
-7. **A rule is done when `validate` passes and `debug` returns what the reviewed table expects.** On a wrong output, read the trace from `Data.traceId`. Stop after 3 fix rounds and show the user the table and the failing inputs.
+7. **A rule is done when `validate` passes and `debug` returns what the reviewed table expects.** On a wrong output, read the trace with `uip traces spans get <Data.traceId>`. Stop after 3 fix rounds and show the user the table and the failing inputs.
 <!--skill-flavor:lifecycle-rules:end-->
 8. **Stop on a tenant without Business Rules, and publish through `uip solution`.** When `rules debug` fails with `Business Rules is not enabled on tenant '<TENANT>'.`, stop and relay the CLI's instruction. Pack, publish, and deploy belong to the uipath-solution skill.
 
@@ -74,7 +74,7 @@ Fix every error in `Data.Diagnostics`, then run both again.
 uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --output json
 ```
 
-`--inputs` takes one JSON object keyed by input-argument name, or `@<FILE>`. Compare `Data.result.decisions[].outputs` with the expected values. The run failed when `Data.error` is set; the engine's errors are in `Data.result`. On a mismatch, read the trace:
+`--inputs` takes one JSON object keyed by input-argument name, or `@<FILE>`. Compare `Data.result.decisions[].outputs` with the expected values. The run failed when `debug` exits 1 (`Result: Failure`); the decision and input errors are in `Data.result`, the summary code in `Data.error`. On a mismatch, read the trace:
 
 ```bash
 uip traces spans get <TRACE_ID> --output json
