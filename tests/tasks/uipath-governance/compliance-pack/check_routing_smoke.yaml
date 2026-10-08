@@ -6,22 +6,21 @@ description: >
   The prompt names ISO 42001 explicitly, so the pack-scoped commands must target
   iso-42001 - several standards are available and picking the wrong one fails.
 
-  Run once, capture to output.txt, move on.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
 
-
+# Compliance-pack and AOps state is tenant-global, so live runs collided with
+# concurrent tasks (CI run 36674826204). The `uip` shim serves those calls from
+# recorded fixtures and keeps state in the sandbox — see mock_template/mocks/uip.
+# Scenario `inactive`: ISO 42001 never applied.
 sandbox:
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
-    - type: template_dir
-      path: _setup
-      mount_point: _setup
+    - {type: template_dir, path: mock_template}
 
-# Safety net: smoke sandboxes have live tenant auth in CI, so an agent that
-# fails this test (calls state enable) really mutates the tenant. Clean up after.
-post_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
+pre_run:
+  - command: 'printf inactive > .compliance-mock-scenario'
+    timeout: 10
 
 initial_prompt: |
   Check my ISO 42001 compliance standard posture. Show me which recommended settings are already
@@ -31,7 +30,6 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - Run each command once, capture output, and move on. Do NOT retry.
   - Always pass --output json.
   - Do NOT prompt for confirmation - this is an automated test.
 
@@ -54,6 +52,18 @@ success_criteria:
     description: "Agent did NOT call state enable (check-only mode)"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable'
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A state coverage call returned posture data (resolved tenant id)"
+    command: >-
+      python3 -c "import json, os, sys;
+      p = '.compliance-mock-log.jsonl';
+      calls = [json.loads(l) for l in open(p)] if os.path.exists(p) else [];
+      sys.exit(0 if any(c['Code'] == 'CompliancePacksStateCoverage' for c in calls) else 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: file_exists

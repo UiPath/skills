@@ -12,27 +12,25 @@ description: >
 
 tags: [uipath-governance, smoke, mode:operate, lifecycle:discover, feature:compliance]
 
+# Compliance-pack and AOps state is tenant-global, so live runs collided with
+# concurrent tasks (CI run 36674826204). The `uip` shim serves those calls from
+# recorded fixtures and keeps state in the sandbox — see mock_template/mocks/uip.
+# Scenario `inactive`: ISO 42001 never applied.
 sandbox:
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
-    - type: template_dir
-      path: _setup
-      mount_point: _setup
+    - {type: template_dir, path: mock_template}
 
-# Safety net: smoke sandboxes have live tenant auth in CI, so an agent that fails
-# this test (defaults to a pack and applies it) really mutates the tenant.
-post_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
+pre_run:
+  - command: 'printf inactive > .compliance-mock-scenario'
+    timeout: 10
 
 initial_prompt: |
   Check my compliance posture and tell me where I stand.
 
   Capture all command output to ./output.txt
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
-
-  Important:
-  - Run each command once, capture output, and move on. Do NOT retry.
 
 success_criteria:
   - type: command_executed

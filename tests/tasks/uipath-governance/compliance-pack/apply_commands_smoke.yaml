@@ -6,24 +6,19 @@ description: >
 
 tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
 
-
+# Compliance-pack and AOps state is tenant-global, so live runs collided with
+# concurrent tasks (CI run 36674826204). The `uip` shim serves those calls from
+# recorded fixtures and keeps state in the sandbox — see mock_template/mocks/uip.
+# Scenario `inactive`: ISO 42001 never applied, so coverage shows gaps and enable is the meaningful next step.
 sandbox:
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
-    - type: template_dir
-      path: _setup
-      mount_point: _setup
+    - {type: template_dir, path: mock_template}
 
-# CI passes live tenant auth into every smoke sandbox, so `state enable` here
-# REALLY enables the pack. Clean up compliance-pack debris before (keeps coverage gaps present so
-# the enable path is exercised deterministically) and after.
 pre_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
-
-post_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
+  - command: 'printf inactive > .compliance-mock-scenario'
+    timeout: 10
 
 initial_prompt: |
   Apply the ISO 42001 recommended settings to my tenant to improve my posture
@@ -33,7 +28,7 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - Run each command once, capture output, move on. Do NOT retry or login.
+  - Do NOT run uip login.
   - Always pass --output json.
   - Do NOT prompt for confirmation - this is an automated test.
 
@@ -56,6 +51,18 @@ success_criteria:
     description: "Full apply does NOT call aops-policy create directly (wrong path)"
     command_pattern: 'uip\s+gov\s+aops-policy\s+create'
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The pack was really enabled on the tenant (shim state)"
+    command: >-
+      python3 -c "import json, os, sys;
+      p = '.compliance-mock-state.json';
+      s = json.load(open(p)) if os.path.exists(p) else {};
+      sys.exit(0 if s.get('enabled') else 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: file_exists

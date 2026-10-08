@@ -57,7 +57,7 @@ success_criteria:
       python3 -c "import json, os, sys;
       p = '.compliance-mock-state.json';
       s = json.load(open(p)) if os.path.exists(p) else {};
-      sys.exit(0 if s.get('restored', 0) >= 1 else 1)"
+      sys.exit(0 if s.get('restored') else 1)"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

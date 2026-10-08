@@ -9,34 +9,25 @@ description: >
   "restore", they ask for posture, and the drift data is what turns the answer
   into a restore offer.
 
-  Platform note: in CI the tenant is live and these commands succeed; locally
-  they fail with auth errors. The prompt must not assert either way — telling
-  the agent "auth errors expected" made it grep output.txt for auth keywords,
-  hit the words "unauthorized"/"forbidden" in the ISO 42001 control prose that
-  `catalog get` returns, and abort before running coverage (run
-  2026-08-07_04-44-12).
+  Prompt note: a prompt warning of auth errors once made the agent grep
+  output.txt for auth keywords, hit "unauthorized"/"forbidden" in the ISO 42001
+  control prose that `catalog get` returns, and abort before running coverage
+  (run 2026-08-07_04-44-12) — hence the `Result`-field instruction.
 tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
 
+# Compliance-pack and AOps state is tenant-global, so live runs collided with
+# concurrent tasks (CI run 36674826204). The `uip` shim serves those calls from
+# recorded fixtures and keeps state in the sandbox — see mock_template/mocks/uip.
+# Scenario `drifted`: ISO 42001 applied with 5 settings changed since (a live capture).
 sandbox:
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
-    - type: template_dir
-      path: _setup
-      mount_point: _setup
+    - {type: template_dir, path: mock_template}
 
-# Same precondition as restore_smoke: drift can only exist on an active pack,
-# and the shared-tenant cleanup disables it between runs. Enable first so a
-# correct agent isn't stopped at "enable it first" through no fault of its own.
 pre_run:
-  - command: 'python3 _setup/setup_enable_compliance_pack.py'
-    timeout: 120
-
-# Safety net: smoke sandboxes have live tenant auth in CI. Coverage is read-only,
-# but a wrong-direction run (aops-policy update / state disable) really mutates
-# the tenant. Clean up after.
-post_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
+  - command: 'printf drifted > .compliance-mock-scenario'
+    timeout: 10
 
 initial_prompt: |
   Check my ISO 42001 compliance posture and tell me how to fix whatever isn't right.
@@ -45,13 +36,10 @@ initial_prompt: |
   (use `> output.txt 2>&1` for the first command, `>> output.txt 2>&1` for the rest).
 
   Important:
-  - A uip command may fail with an auth error. If one does, carry on with the
-    remaining steps - do NOT retry or login.
   - Decide whether a command succeeded from the `Result` field of that command's
     own JSON response. Do NOT search the accumulated output.txt for words like
     "unauthorized" or "forbidden" - the ISO 42001 control descriptions contain
     them as ordinary policy text, so that check reports failure on a good run.
-  - Run each command once, capture output, move on.
   - Always pass --output json.
   - Do NOT prompt for confirmation - this is an automated test.
 
@@ -91,6 +79,18 @@ success_criteria:
   - type: command_not_executed
     description: "Posture check does NOT disable the standard"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+disable'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A state coverage call returned posture data (resolved tenant id)"
+    command: >-
+      python3 -c "import json, os, sys;
+      p = '.compliance-mock-log.jsonl';
+      calls = [json.loads(l) for l in open(p)] if os.path.exists(p) else [];
+      sys.exit(0 if any(c['Code'] == 'CompliancePacksStateCoverage' for c in calls) else 1)"
+    timeout: 30
+    expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
 
