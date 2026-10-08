@@ -63,7 +63,7 @@ initial_prompt: |
   Important:
   - The `uip` CLI is already available and authenticated against the target
     tenant. Do NOT run `uip login` and do NOT handle a token yourself.
-  - Do NOT inspect `_setup/`, `.uip-recorder/`, `.ah-tenant-home` or `seed.json`.
+  - Do NOT inspect `_setup/`, `.uip-recorder/`, `.ah-tenant.json` or `seed.json`.
   - Do NOT call AskUserQuestion — it is not available in this harness. Treat the
     payload preview as approved and keep going.
 
@@ -151,7 +151,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not read the harness's call log, snapshot or setup scripts instead of the tenant"
     tool_name: "Bash"
-    command_pattern: '(cat|less|head|tail|grep|jq|python3?)\s+[\s\S]*(\.uip-recorder/|\.ah-tenant-home|seed\.json|_setup/)'
+    command_pattern: '(cat|less|head|tail|grep|jq|python3?)\s+[\s\S]*(\.uip-recorder/|\.ah-tenant\.json|seed\.json|_setup/)'
     weight: 1.0
     pass_threshold: 1.0
 
