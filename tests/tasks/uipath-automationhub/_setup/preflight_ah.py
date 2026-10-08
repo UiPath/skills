@@ -55,21 +55,25 @@ ADMIN_ROLES = {"ah-system-admin", "ah-account-owner"}
 SUBMITTER_ROLES = {"ah-standard-user", "ah-authorized-user"} | ADMIN_ROLES
 
 
-def schema_offers_new_applications(flow_id) -> bool:
-    """Whether the flow's schema lets a submission create applications by name.
+def schema_state(flow_id) -> str:
+    """"offered" / "absent": whether the flow's schema lets a submission create
+    applications by name; "unavailable" when the identity gets no schema at all.
 
-    Decides what the applications grader may expect: with `new_applications`
-    every PDD system should end up attached; without it only the ones the
-    inventory already holds. Read-only — the schema is written to a temp file.
+    An identity the flow does not let submit gets `{"message": "No process made for
+    the given idea flow"}` instead of a schema, which must not read as "absent".
+    Read-only — the schema is written to a temp file.
     """
     with tempfile.TemporaryDirectory() as tmp:
         target = os.path.join(tmp, "schema.json")
         result = uip_json(["ah", "automations", "schema", "get", "--source-type", "COE",
                            "--idea-flow-id", str(flow_id), "--destination", target])
         if not succeeded(result) or not os.path.exists(target):
-            return False
+            return "unavailable"
         with open(target, encoding="utf-8") as handle:
-            return '"new_applications"' in handle.read()
+            body = handle.read()
+    if '"properties"' not in body:
+        return "unavailable"
+    return "offered" if '"new_applications"' in body else "absent"
 
 
 def all_category_ids(categories: list[dict]) -> list[int]:
@@ -129,7 +133,11 @@ def main(argv: list[str]) -> int:
         problems.extend(f"inventory already has {app!r}, which this scenario needs to be missing"
                         for app in absent_apps if app.strip().lower() in names)
 
-    offered = schema_offers_new_applications(flow["Id"]) if flow else False
+    state = schema_state(flow["Id"]) if flow else "unavailable"
+    offered = state == "offered"
+    if flow and state == "unavailable":
+        problems.append("this identity gets no Business Process schema, so it cannot submit that idea flow; "
+                        "allow its role to submit Business Process in the idea flow's permissions")
     if require_new_applications and not offered:
         problems.append("the Business Process schema does not offer new_applications, but this scenario needs "
                         "the section's 'add new applications' control turned on")
