@@ -145,9 +145,11 @@ def assert_inline_agent_definition(agent_dir: Path) -> dict:
     `id` equal to the directory name, a non-empty `settings.model`, and a
     non-empty `system` and `user` message.
 
-    Interim: `uip agent validate --inline-in-flow` is the real contract, but
-    it rejects every SDK-compiled agent today (UiPath/flow-builder-sdk#962).
-    Replace this with that command as a gate once #962 is fixed.
+    `uip agent validate --inline-in-flow` is the real contract and runs as
+    its own outcome gate in every inline-agent task
+    (`validate_inline_agent.py`). This stays as a precondition of the contract
+    checks because it catches what validate does not: an empty prompt, and an
+    `id` that does not name its directory.
     """
     path = agent_dir / "agent.json"
     data = load_json(path)
@@ -257,8 +259,10 @@ def assert_edge(
 #   - process (RPA):        https://github.com/UiPath/flow-builder-sdk/issues/922#issuecomment-6000881513
 #   - agent:                https://github.com/UiPath/flow-builder-sdk/issues/922#issuecomment-6001964622
 #   - api, maestro:         https://github.com/UiPath/flow-builder-sdk/issues/922#issuecomment-6026668870
-# The deployed path (pack + deploy + run) is not witnessed for either shape:
-# UiPath/flow-builder-sdk#964.
+# The deployed path (pack + deploy + run) works for the SDK shape once
+# `uip solution resources refresh` has imported the tool's process into the
+# solution; without that import it fails for both shapes:
+#   https://github.com/UiPath/builder-sdk/issues/964#issuecomment-6044561027
 # Solution-local tools: "" and "solution_folder" derive byte-identical solution
 # files, and both pass `uip agent validate --inline-in-flow` after
 # `uip agent refresh --inline-in-flow`.
