@@ -56,7 +56,7 @@ A `.loop()` container CAN carry a handler: `.onError()` after `.loop(...)` wires
 
 A sub-flow step's handler catches a failure in any step of its child the same way: measured, `detail` carries the inner step's message, `element` the failing inner step's label, `message` the family's generic text (`Error invoking script task`), and the instance completes. That is how a run gets one failure path: put its steps in one child flow, call it as the parent's single step, and attach one `.onError()` there, instead of a handler on every step.
 
-A `.doWhile()` cannot, and the reason is the handle rather than the variable: `core.logic.dowhile@1.0` declares an error variable but its handles are input, success, start, continue and break, so an edge would leave a handle the node does not have — the shape that fails product validate with "the current manifest does not declare that handle". Handle the failure inside the body, on the step that can fail. The builder refuses it by name.
+A `.doWhile()` can too. `core.logic.dowhile@1.0` lists no `error` handle, but it sets `supportsErrorHandling: true`, and the product adds the handle from that flag. Measured: `flow validate` accepts the edge, and a body step that throws routes to the handler with the same envelope (`detail` the body's message, `element` the failing body step's canvas label).
 
 `.onError(...)` is the `error` port case of `.stepToList(port, handler)`, which
 runs a path from any named port. When the failure needs no work of its own, name
