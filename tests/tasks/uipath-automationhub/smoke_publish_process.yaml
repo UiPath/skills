@@ -29,6 +29,7 @@ initial_prompt: |
 
     Process name: "Invoice Reconciliation (smoke)"
     Description:  Reconcile supplier invoices against POs.
+    Systems used: Excel
     PDD:          name "PDD", link https://example.invalid/pdd
 
   The `uip` CLI is already available and authenticated against the target
