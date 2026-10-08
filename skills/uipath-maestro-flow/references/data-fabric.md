@@ -225,7 +225,7 @@ uip df entities list --include-folders --output json   # folderId per entity
 uip solution resources list --kind Entity --output json # the resource key
 ```
 
-Nothing mints a resource key for a hand-authored flow. If you cannot resolve one,
+Nothing mints a resource key into a `.flow.ts`. If you cannot resolve one,
 keep the entity tenant-scoped and omit both — a half-authored folder scope is
 worse than none. **This fallback does not apply to an entity the solution
 authors itself** (below). With no keys the node is tenant-scoped, so at run time
@@ -243,13 +243,18 @@ from the solution instead:
 
 ```bash
 uip df entities get <Name> --local --output json           # FolderId → folderKey (always 99999999-9999-9999-9999-999999999999)
-uip solution resources list --kind Entity --output json    # the Source: Local row's Key → resourceKey
+uip solution resources list --kind Entity --output json    # the Source: Local row whose Name is <Name>: its Key → resourceKey
 ```
+
+Pick the row by `Name`: every resource the solution files declare is listed as
+`Source: Local`, including entities the solution only references
+(`uip solution resources add --source remote`), so the first `Local` row may be
+a different entity.
 
 ```ts
 .step('read', dataFabricRead({ entity: 'Product', resultMode: 'multiple',
   folderKey: '99999999-9999-9999-9999-999999999999',
-  resourceKey: '<Key of the Source: Local row>' }))
+  resourceKey: '<Key of the Source: Local row named Product>' }))
 ```
 
 The `99999999-…` folder is a placeholder the platform replaces: `flow debug`

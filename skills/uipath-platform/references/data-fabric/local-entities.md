@@ -196,8 +196,10 @@ authored.
 <!--skill-flavor:flow-sdk-local-entity-keys:start-->
 **Builder SDK (`.flow.ts`, the Flow skill's default).** Pass both keys to the
 `dataFabric*` factory — `folderKey` from `FolderId` in
-`uip df entities get <Name> --local`, `resourceKey` from the `Source: Local` row
-of `uip solution resources list --kind Entity`. Do not look the entity up on the
+`uip df entities get <Name> --local`, `resourceKey` from the `Key` of the
+`Source: Local` row whose `Name` is `<Name>` in
+`uip solution resources list --kind Entity` (an entity the solution only
+references is listed as `Local` too). Do not look the entity up on the
 tenant: it is not there until deploy. Leaving the keys out — the Flow skill's
 fallback for a tenant entity — makes the node look for a tenant entity that
 does not exist, so the run fails. See
@@ -265,11 +267,10 @@ An entity project emits no package of its own — its definition resource under
 `resources/solution_folder/entity/native/` is the deployable payload, so pack
 validates the project rather than building it.
 
-**Studio Web cannot import Entity projects.** `uip solution upload` and
-`uip maestro flow debug` omit them from the package and say so
-(`OmittedProjects` / a warning naming each one). The browser never holds the
-Entity project, so it is not editable there, and a `solution download` will not
-contain it.
+**Studio Web cannot import Entity projects.** It leaves them out of the cloud
+copy of the solution that `uip solution upload` and `uip maestro flow debug`
+create, so the Entity project is not editable in the browser, and a
+`solution download` will not contain it.
 
 **`flow debug` works once per solution, then fails.** The first
 `uip maestro flow debug` creates the cloud solution and provisions the entity

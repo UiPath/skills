@@ -7,16 +7,14 @@ description: >
   become DECIMAL with precision 0), and the `entities validate --local` loop.
   Fully offline: no tenant call is needed or allowed. Needs a CLI with
   `uip df entities --local` (UiPath/cli #4441).
-tags: [uipath-platform, data-fabric, integration, entities, local-entities, mode:build, lifecycle:generate]
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: _shared
-      mount_point: _shared
+tags: [uipath-platform, integration, mode:build, lifecycle:generate, feature:entities]
 run_limits:
   expected_turns: 12
   max_turns: 40
   turn_timeout: 1200
+
+reference:
+  directory: .
 
 pre_run:
   - command: "uip solution init HelpdeskSol --output json"
@@ -49,17 +47,20 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
+    # Advisory: the literal flag. The outcome is graded below by
+    # verify_local_entity.py (the sentinel FolderId proves the entity is local).
     description: "Agent created the entity with the local verb"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+create\b[^\n]*--local'
+    command_pattern: 'uip\s+df\s+entities\s+create\b(?:\\[\s\S]|[^\n;&|\\])*--local'
     min_count: 1
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     description: "Agent must NOT create the entity on the tenant (a create without --local)"
     tool_name: "Bash"
-    command_pattern: '^(?![^\n]*(?:--local|--help|\s-h\b))[^\n]*uip\s+df\s+entities\s+create\b'
+    # Spans `\` continuations, so a --local on the next line is seen.
+    command_pattern: 'uip\s+df\s+entities\s+create\b(?:(?!--local\b|--help\b|\s-h\b)(?:\\[\s\S]|[^\n;&|\\]))*(?=$|[\n;&|])'
     min_count: 0
     max_count: 0
     weight: 3.0
@@ -68,14 +69,14 @@ success_criteria:
   - type: command_executed
     description: "Agent ran the local validate loop"
     tool_name: "Bash"
-    command_pattern: 'uip\s+df\s+entities\s+validate\b[^\n]*--local|uip\s+solution\s+pack\b'
+    command_pattern: 'uip\s+df\s+entities\s+validate\b(?:\\[\s\S]|[^\n;&|\\])*--local|uip\s+solution\s+pack\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Ticket is a local entity with the four columns at the right types"
-    command: "python3 _shared/verify_local_entity.py Ticket title:NVARCHAR:required priority:DECIMAL dueDate:DATE resolved:BIT"
+    command: "python3 $REFERENCE_DIR/_shared/verify_local_entity.py Ticket title:NVARCHAR:required priority:DECIMAL dueDate:DATE resolved:BIT"
     timeout: 20
     expected_exit_code: 0
     weight: 4.0
