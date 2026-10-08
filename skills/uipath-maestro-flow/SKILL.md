@@ -19,14 +19,14 @@ A Flow is authored as `.flow-sdk/<Name>.flow.ts` inside its project folder `<Sol
 
 **Authoring files live in `.flow-sdk/`; the compiled artifact does not.**
 `.flow-sdk/` is the SDK's own work directory: the source, `bindings.json`, `connectors/` and `connectors-local/` all go there by default, relative to the directory you run `uip` from. Each Flow project keeps its own, so a solution can hold several flows; Studio Web never reads it, and `uip solution pack`/`upload` and `flow debug` leave it out.
-**Run the SDK verbs (`flow check`, `compile`, `decompile`, `merge`, `registry pull`/`prepare`, `node .flow-sdk/*.pipeline.mjs`) from the project folder `<Solution>/<Name>/`**, as `( cd <Solution>/<Name> && … )` when your shell does not keep its directory between commands; every `.flow-sdk/` path in this guide and its references is relative to that folder. Everything else runs from the workspace root.
+**Run the SDK verbs (`flow check`, `compile`, `decompile`, `merge`, `registry pull`/`prepare`, `node .flow-sdk/*.pipeline.mjs`) from the project folder `<Solution>/<Name>/`**, as `( cd "<Solution>/<Name>" && … )` when your shell does not keep its directory between commands; every `.flow-sdk/` path in this guide and its references is relative to that folder. Everything else runs from the workspace root.
 Scaffold the project first, seed the source from it, then emit back into it — `compile -o` is the authority over where the emitted file is written.
-`<Solution>` and `<Name>` are the request's own names, used verbatim: a request that gives one name for both ("inside a solution of the same name") uses it for both, and a request that names only the Flow uses `<Name>` for both.
+`<Solution>` and `<Name>` come from the request's own names: a request that gives one name for both ("inside a solution of the same name") or names only the Flow uses that name for both. `<Solution>` takes it as written, spaces included. `<Name>` joins its words and drops every character other than letters, numbers, `_` and `-`, the only ones `flow init` accepts (`Headcount report form` → `HeadcountReportForm`).
 **Look for an existing solution before `uip solution init`:** run `find . -maxdepth 2 -name '*.uipx'`. If one exists and a user can answer, ask which to use (one option per solution, then "Create a new solution", then "Something else") and scaffold nothing until they do; never create a second solution silently. Headless, use the solution the request names, else the only one present, else a new one named as above, and record the choice in the final response.
 
 ```bash
-uip solution init <Solution>
-( cd <Solution> && uip maestro flow init <Name> --sdk-source )
+uip solution init "<Solution>"
+( cd "<Solution>" && uip maestro flow init <Name> --sdk-source )
 # edit <Solution>/<Name>/.flow-sdk/<Name>.flow.ts, then run the Lifecycle loop below
 ```
 
@@ -34,10 +34,10 @@ Do not hand-write the skeleton.
 `--sdk-source` decompiles the trigger-only artifact `flow init` writes into the project's `.flow-sdk/<Name>.flow.ts`, creating the folder; the source carries the flow id and name the product already assigned — a hand-written `flow('<name>')` invents an id instead.
 So the stub is the seed rather than litter: the first `compile -o` overwrites it in place.
 `init` refuses an existing source file unless `--force`; when the source is already there, drop `--sdk-source`.
-**Maestro Automate is `--automate` on the same `flow init`:** when the request names **Maestro Automate** as the product, run `( cd <Solution> && uip maestro flow init <Name> --automate --sdk-source )`; the bare verb ("automate invoice intake") asks for a plain Flow.
+**Maestro Automate is `--automate` on the same `flow init`:** when the request names **Maestro Automate** as the product, run `( cd "<Solution>" && uip maestro flow init <Name> --automate --sdk-source )`; the bare verb ("automate invoice intake") asks for a plain Flow.
 Nothing after `init` changes; the flag writes `runtimeOptions.profile` into `operate.json` plus a `.maestro_automate` marker (how Orchestrator and Studio Web tell the two apart), and `compile -o` rewrites only the `.flow`, so both survive.
 
-An existing project needs no `init`: skip the first two commands and seed from the `.flow` that is already there with `( cd <Solution>/<Name> && uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline )` (`--no-pipeline` skips the brownfield helper, [`references/brownfield.md`](references/brownfield.md)); skip the decompile when the source already exists.
+An existing project needs no `init`: skip the first two commands and seed from the `.flow` that is already there with `( cd "<Solution>/<Name>" && uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline )` (`--no-pipeline` skips the brownfield helper, [`references/brownfield.md`](references/brownfield.md)); skip the decompile when the source already exists.
 The three names stay aligned: `.flow-sdk/<Name>.flow.ts`, the `<Name>` project directory, and `<Name>.flow` inside it.
 Exactly one emitted `<Name>.flow` may exist, at `<Solution>/<Name>/<Name>.flow`, and never a second copy at the workspace root — validators and evidence collectors cannot choose safely between duplicates.
 Emitting to the root is correct only for the packaged-SDK local gates, which never scaffold a project; pick the loop first ([Lifecycle](#lifecycle)) and do not mix the two.
@@ -84,18 +84,18 @@ Pick one loop before any build command; never mix them in one workspace or use o
 The `uip maestro flow` commands delegate their semantics to the installed `@uipath/maestro-builder-sdk`. Emit-only belongs to the project, not the directory you run from: the nearest `package.json` up the tree that declares `flowSdk.emitOnly` decides it, a nested one that does not mention `flowSdk` inherits, and `emitOnly: false` opts out. In that mode `compile` only serializes source, both `flow check` modes refuse, and product `validate` owns structural verification. The base pass is emit, any required artifact bindings, then validate:
 
 ```bash
-( cd <Solution>/<Name> && uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow )
-uip maestro flow validate <Solution>/<Name>/<Name>.flow --output json
+( cd "<Solution>/<Name>" && uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow )
+uip maestro flow validate "<Solution>/<Name>/<Name>.flow" --output json
 # Before anything opens the emitted file (upload, debug, a designer):
-uip maestro flow format <Solution>/<Name>/<Name>.flow --output json
+uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 # Only for a stated runtime-behavior claim:
-( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
-( cd <Solution> && uip maestro flow debug <Name> --log-level error \
+( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
+( cd "<Solution>" && uip maestro flow debug <Name> --log-level error \
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>}" \
   --output json )
 ```
 
-`<Out>`: each declared `out` variable, never all of `variables.globals`. Re-run it from `compile` after the last source or binding edit. Valid is top-level `Result` plus `Data.Status: "Valid"`; treat `Data.Warnings` as failures except the reviewed shared-connection advisory. `Completed` with the expected globals and an empty `failed` is runtime evidence; a bare exit code is not. Debug inputs, attachments, other projections and incidents: [`references/CLI-LOOP.md`](references/CLI-LOOP.md#refresh-debug-and-preserve-evidence).
+`<Out>`: each declared `out` variable, never all of `variables.globals`. Re-run it from `compile` after the last source or binding edit. Valid is top-level `Result` plus `Data.Status: "Valid"`; treat `Data.Warnings` as failures except the reviewed shared-connection advisory and `err()` diagnostics. `Completed` with the expected globals and an empty `failed` is runtime evidence; a bare exit code is not. Debug inputs, attachments, other projections and incidents: [`references/CLI-LOOP.md`](references/CLI-LOOP.md#refresh-debug-and-preserve-evidence).
 
 ## Editing an existing flow
 

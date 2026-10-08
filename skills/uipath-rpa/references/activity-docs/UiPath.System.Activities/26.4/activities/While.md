@@ -15,7 +15,7 @@ Executes contained activities while the condition is True.
 
 | Name | Display Name | Kind | Type | Required | Default | Description |
 |------|-------------|------|------|----------|---------|-------------|
-| `Condition` | Condition | `Activity` | `bool` | No | — | The Boolean condition evaluated before each iteration. The loop continues while this is `True`. Set via the `<ui:InterruptibleWhile.Condition>` property element containing a `<VisualBasicValue x:TypeArguments="x:Boolean">` in VB projects or `<CSharpValue x:TypeArguments="x:Boolean">` in modern C# projects directly — **no `<InArgument>` wrapper**, because `Condition` is `Activity<bool>`, not `InArgument<bool>`. |
+| `Condition` | Condition | `Activity` | `bool` | Yes | — | The Boolean condition evaluated before each iteration. The loop continues while this is `True`. Set via the `<ui:InterruptibleWhile.Condition>` property element containing a `<VisualBasicValue x:TypeArguments="x:Boolean">` in VB projects or `<CSharpValue x:TypeArguments="x:Boolean">` in modern C# projects directly — **no `<InArgument>` wrapper**, because `Condition` is `Activity<bool>`, not `InArgument<bool>`. |
 | `MaxIterations` | Max Iterations | `InArgument` | `int` | No | — | Maximum number of iterations. A value of `0` means unlimited. |
 
 ### Output

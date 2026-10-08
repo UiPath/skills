@@ -97,6 +97,17 @@ Operational constraints, each of which has its own failure:
 - **`Debug polling timed out after <N>s` is not a failure.** The run continues
   server-side. Take `instanceId` from stderr and poll
   `uip maestro flow debug-instance status <INSTANCE_ID> --output json`.
+- **Debug starts the default root.** To run an `.entryPoint('<id>', …)` root,
+  pass `--entry-point <id>` (its trigger node id) and give `--inputs` that
+  root's own input names.
+- **An RPA step does not run under a headless debug** ([rpa-workflow.md](rpa-workflow.md#evidence-boundary)).
+- **Every process and connection node must resolve.** A node bound to a
+  resource the tenant lacks (a placeholder key awaiting the real process, a stub
+  connection) fails provisioning with `validationFailed` 2106 and starts no
+  instance; `Data.missingResources` names it, and `check` and `validate` pass
+  it. To debug the rest before the resource exists, debug a scratch copy of the
+  project without those nodes, delete the copy afterwards, and report the run as
+  the copy's.
 - **Do not pass `--folder-path` or `--folder-key`.** Debug provisions into your
   personal workspace; a shared folder fails `HTTP 500` at
   `Stage: prepare-custom-debug` with no instance started. Shared resources reach
@@ -124,7 +135,11 @@ the input's own name:
 ```
 
 At run time that variable is an OBJECT, not a path — a script reads the uploaded
-name as `$vars.<triggerNodeId>.output.<inputName>.FullName`.
+name as `$vars.<triggerNodeId>.output.<inputName>.FullName`. A script sees only
+that reference (`ID`, `FullName`, `MimeType`, `Metadata`), never the file's
+content: a flow that parses an uploaded file hands the reference to a step that
+reads files, such as an RPA process taking it as its file argument
+([rpa-workflow.md](rpa-workflow.md#where-the-job-runs)).
 
 **A conversational flow cannot be debugged headlessly.** On a flow whose trigger
 is `conversationTrigger()`, debug uploads, returns

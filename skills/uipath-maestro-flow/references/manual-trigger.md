@@ -128,3 +128,6 @@ flow('order-intake')
 
 The two combine: `shared` copies what is the same on every root, and a prefix
 reshapes the rest.
+
+`flow debug --entry-point <id>` runs a root other than the default
+([operate.md](operate.md#debug--a-real-end-to-end-run)).

@@ -40,6 +40,8 @@ uip or packages upload ./MyProcess.1.0.0.nupkg --output json
 uip or packages upload ./MyProcess.1.0.0.nupkg --feed-id <feed-key> --output json
 ```
 
+An upload to a personal workspace's feed also creates a process for the package in that workspace. Look for it with `processes list` before Step 3; `processes create` would add a second process for the same package.
+
 ## Step 2: Inspect Package
 
 Verify the upload and discover entry points before creating a process.
@@ -183,7 +185,7 @@ Key options:
 
 - `--input-arguments <json>` / `--input-file <path>` — pick one. `--input-arguments` inlines a JSON object (validated client-side — invalid JSON is rejected before the call); `--input-file` uploads a file as the job's `InputFile` argument.
   - **10K character cap on job arguments.** Orchestrator caps serialized input/output arguments at 10,240 characters for classic `StartJob` runs; an oversized output is silently dropped (the consuming workflow receives `null`, the job still reports Successful). `StartAgentJob` (agent runs) is not subject to the same cap in practice. Robot 2025.10.1+ removes the cap entirely ("Support for large input and output arguments"). If you hit it: pass big payloads via a storage bucket / queue item reference, or upgrade the Robot.
-- `--attachment <[name=]path>` — upload one or more files and attach them to the job. Repeat the flag for multiple. Pair with `--attachment-id <guid>` to reuse an attachment that was previously uploaded.
+- `--attachment <[name=]path>` — upload one or more files and attach them to the job. Repeat the flag for multiple. Pair with `--attachment-id <guid>` to reuse an attachment that was previously uploaded. An attachment does not fill a file argument: pass the file argument as an attachment reference in `--input-arguments` — `{"<ARGUMENT>": {"ID": "<ATTACHMENT_ID>", "FullName": "<FILE_NAME>"}}` — with `--attachment-id <ATTACHMENT_ID>`.
 - `--runtime-type <type>` — `Unattended`, `Headless`, `NonProduction`, `AgentService`, or `Serverless`. Picks the runtime kind the scheduler will use.
 - `--strategy <strategy>` — one of `ModernJobsCount` (default; spawn N independent jobs, paired with `--jobs-count`), `All` (run on every available robot in the folder), `Specific` (use `--user-keys` / `--machine-keys`), or `JobsCount`. Validated client-side. `--jobs-count` must be a whole number greater than 0.
 - `--user-keys <guids>` / `--machine-keys <guids>` — comma-separated GUIDs to pin the job to specific identities. With `--strategy ModernJobsCount` they restrict the candidate pool; with `Specific` they're required.
