@@ -1,0 +1,228 @@
+{
+  "probe": "MST-15831 round trip, round 1 (open and save without editing)",
+  "written": "2026-10-08, before the first publish; nothing has been uploaded",
+  "golden": "cm_golden_expense, built by claude-opus-5-5 in nightly 2026-10-05_04-24-14 (fresh run, SUCCESS incl. case debug); strict --sdd Valid on cli 59cceb569 with 3 warnings",
+  "basis": "The designer's own converter (@uipath/case-schema 0.1147.0, vendored in the CLI) round-trips this caseplan.json disk -> memory -> disk with zero divergences. So every rule below that expects a change is about the designer front end, not its converter, and every 'survive' rule is what the converter alone guarantees.",
+  "rules": [
+    {
+      "id": "C1-layout",
+      "expect": "change",
+      "file": "*caseplan.json",
+      "path": "layout*",
+      "changes": [
+        "added",
+        "rewritten"
+      ],
+      "why": "the plan carries no layout and no node positions; the canvas must lay nodes out, and a save persists it (top-level layout)"
+    },
+    {
+      "id": "C1b-node-position",
+      "expect": "uncertain",
+      "file": "*caseplan.json",
+      "path": "nodes[*].position*",
+      "changes": [
+        "added"
+      ],
+      "why": "per-node position/measured/style may be written instead of, or as well as, top-level layout"
+    },
+    {
+      "id": "C1b-node-measured",
+      "expect": "uncertain",
+      "file": "*caseplan.json",
+      "path": "nodes[*].measured*",
+      "changes": [
+        "added"
+      ],
+      "why": "per-node position/measured/style may be written instead of, or as well as, top-level layout"
+    },
+    {
+      "id": "C1b-node-style",
+      "expect": "uncertain",
+      "file": "*caseplan.json",
+      "path": "nodes[*].style*",
+      "changes": [
+        "added"
+      ],
+      "why": "per-node position/measured/style may be written instead of, or as well as, top-level layout"
+    },
+    {
+      "id": "C1b-node-width",
+      "expect": "uncertain",
+      "file": "*caseplan.json",
+      "path": "nodes[*].width*",
+      "changes": [
+        "added"
+      ],
+      "why": "per-node position/measured/style may be written instead of, or as well as, top-level layout"
+    },
+    {
+      "id": "C1b-node-height",
+      "expect": "uncertain",
+      "file": "*caseplan.json",
+      "path": "nodes[*].height*",
+      "changes": [
+        "added"
+      ],
+      "why": "per-node position/measured/style may be written instead of, or as well as, top-level layout"
+    },
+    {
+      "id": "C1b-node-zIndex",
+      "expect": "uncertain",
+      "file": "*caseplan.json",
+      "path": "nodes[*].zIndex*",
+      "changes": [
+        "added"
+      ],
+      "why": "per-node position/measured/style may be written instead of, or as well as, top-level layout"
+    },
+    {
+      "id": "C2-sidecar",
+      "expect": "uncertain",
+      "file": "*",
+      "path": "",
+      "changes": [
+        "file-added"
+      ],
+      "why": "the ticket names a 'layout side-car'; no such file exists before. If the designer adds one, it must pass the side-car consistency check"
+    },
+    {
+      "id": "U1-project-metadata",
+      "expect": "uncertain",
+      "file": "*project.uiproj",
+      "path": "*",
+      "why": "Studio Web may stamp project metadata (designer/version) on save; not predicted either way"
+    },
+    {
+      "id": "U2-package-descriptor",
+      "expect": "uncertain",
+      "file": "*package-descriptor.json",
+      "path": "*",
+      "why": "same"
+    },
+    {
+      "id": "U3-operate",
+      "expect": "uncertain",
+      "file": "*operate.json",
+      "path": "*",
+      "why": "same"
+    },
+    {
+      "id": "U4-resources",
+      "expect": "uncertain",
+      "file": "resources/*",
+      "path": "",
+      "changes": [
+        "file-added",
+        "file-dropped",
+        "bytes-rewritten"
+      ],
+      "why": "solution-level files outside the case project (resources/, .uipx, userProfile/) are Studio Web's, not the plan's"
+    },
+    {
+      "id": "U4-uipx",
+      "expect": "uncertain",
+      "file": "*.uipx",
+      "path": "",
+      "changes": [
+        "file-added",
+        "file-dropped",
+        "bytes-rewritten"
+      ],
+      "why": "solution-level files outside the case project (resources/, .uipx, userProfile/) are Studio Web's, not the plan's"
+    },
+    {
+      "id": "U4-userprofile",
+      "expect": "uncertain",
+      "file": "userProfile/*",
+      "path": "",
+      "changes": [
+        "file-added",
+        "file-dropped",
+        "bytes-rewritten"
+      ],
+      "why": "solution-level files outside the case project (resources/, .uipx, userProfile/) are Studio Web's, not the plan's"
+    },
+    {
+      "id": "U4-agent-docs",
+      "expect": "uncertain",
+      "file": "*.md",
+      "path": "",
+      "changes": [
+        "file-added",
+        "file-dropped",
+        "bytes-rewritten"
+      ],
+      "why": "solution-level files outside the case project (resources/, .uipx, userProfile/) are Studio Web's, not the plan's"
+    },
+    {
+      "id": "S1-ids",
+      "expect": "survive",
+      "file": "*caseplan.json",
+      "path": "*.id",
+      "why": "converter identity; every node, task, rule, output and binding id is preserved"
+    },
+    {
+      "id": "S2-element-ids",
+      "expect": "survive",
+      "file": "*caseplan.json",
+      "path": "*.elementId",
+      "why": "output elementIds key cross-task references"
+    },
+    {
+      "id": "S3-entry-points",
+      "expect": "survive",
+      "file": "*entry-points.json",
+      "path": "*",
+      "why": "uniqueId must be stable: Orchestrator keys bindings on it. A rewrite on save is a significant finding, not cosmetic"
+    },
+    {
+      "id": "S4-bindings",
+      "expect": "survive",
+      "file": "*caseplan.json",
+      "path": "bindings*",
+      "why": "converter identity"
+    },
+    {
+      "id": "S5-bindings-v2",
+      "expect": "survive",
+      "file": "*bindings_v2.json",
+      "path": "*",
+      "why": "the CLI's projection of root bindings; nothing in the designer is predicted to touch it"
+    },
+    {
+      "id": "S6-connector-config",
+      "expect": "survive",
+      "file": "*caseplan.json",
+      "path": "nodes[*].data.tasks*.data.*",
+      "why": "MST-16034 says an SDD-built connector task opens needing a UI re-configure. Prediction: an unedited save does not rewrite its context/inputs/outputs; the re-configure is a UI state, recorded separately by whoever opens the canvas"
+    },
+    {
+      "id": "S7-out-arg-companions",
+      "expect": "survive",
+      "file": "*caseplan.json",
+      "path": "*.outputs*",
+      "why": "converter identity; no companion collapse. LIMIT: every output in this golden has id == var, so a collapse of id != var cannot be observed here"
+    },
+    {
+      "id": "S8-version",
+      "expect": "survive",
+      "file": "*caseplan.json",
+      "path": "version",
+      "why": "converter identity keeps 32.0.3; a bump on save would be the FE's, and is a finding"
+    },
+    {
+      "id": "S9-rest-of-plan",
+      "expect": "survive",
+      "file": "*caseplan.json",
+      "path": "*",
+      "why": "anything else in the plan; catches what the rules above do not name"
+    }
+  ],
+  "checks_after_pull": [
+    "strict --sdd validate is still Valid, with no new error code",
+    "entry-points.json consistent: same entry points; each uniqueId unchanged; each filePath '#<id>' names a trigger node in caseplan.json; displayName matches that trigger",
+    "side-car consistent (if one appears): its node keys are exactly caseplan.json's node ids",
+    "CLI-editable: the designer's converter round-trips the pulled caseplan.json with zero divergences, and validate reads it"
+  ],
+  "round_2": "one small canvas edit: rename one wait-for-timer task's display name. Predicted: round 1's diff, plus exactly that task's displayName rewritten; no id, elementId or reference changes, since references key on ids"
+}
