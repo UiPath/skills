@@ -8,15 +8,16 @@ dependency-free: it is staged into the sandbox as a file.
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import time
 
 SEED_FILE = "seed.json"
-# Written by use_tenant.py: HOME for `uip` when the task targets a second tenant.
-TENANT_HOME_MARKER = ".ah-tenant-home"
 BUSINESS_PROCESS_FLOW = "business process"
 ARCHIVED_STATUS = "ARCHIVED"
 PLACEHOLDERS = ("sample input", "first.last@example.com", "example.com")
@@ -56,6 +57,63 @@ def precondition_failed(message: str) -> None:
              "(tenant / identity / fixture), NOT a skill regression")
 
 
+# --- tenant switch: keep in sync with _shared/live_template/.uip-recorder/uip ------
+TENANT_MARKER_NAME = ".ah-tenant.json"
+_ENV_AUTH = {
+    "UIPATH_CLI_AUTH_TOKEN": "UIPATH_ACCESS_TOKEN",
+    "UIPATH_CLI_ORGANIZATION_NAME": "UIPATH_ORGANIZATION_NAME",
+    "UIPATH_CLI_ORGANIZATION_ID": "UIPATH_ORGANIZATION_ID",
+}
+
+
+def _read_login(path: str) -> dict:
+    values = {}
+    with open(path, encoding="utf-8") as handle:
+        for line in handle:
+            key, sep, value = line.strip().partition("=")
+            if sep:
+                values[key] = value
+    return values
+
+
+def _expires_soon(token: str, margin: int = 300) -> bool:
+    try:
+        payload = token.split(".")[1]
+        claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+        return float(claims["exp"]) < time.time() + margin
+    except (IndexError, KeyError, ValueError):
+        return False
+
+
+def tenant_env(env: dict, marker: str, real_uip: str) -> dict:
+    """`env` switched to the marker's tenant through the CLI's env-var auth.
+
+    The token and organization come from the shared login file on every call, so
+    a refresh by any other CLI call is picked up; a token about to expire is
+    refreshed first with a plain file-auth `uip login status`.
+    """
+    with open(marker, encoding="utf-8") as handle:
+        target = json.load(handle)
+    login = _read_login(target["auth_file"])
+    if _expires_soon(login.get("UIPATH_ACCESS_TOKEN", "")):
+        subprocess.run([real_uip, "login", "status", "--output", "json"], env=env,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        login = _read_login(target["auth_file"])
+    switched = dict(env)
+    for env_key, file_key in _ENV_AUTH.items():
+        if not login.get(file_key):
+            raise RuntimeError(f"{file_key} missing from {target['auth_file']}")
+        switched[env_key] = login[file_key]
+    switched["UIPATH_CLI_TENANT_NAME"] = target["tenant_name"]
+    switched["UIPATH_CLI_TENANT_ID"] = target["tenant_id"]
+    switched["UIPATH_CLI_ENABLE_ENV_AUTH"] = "true"
+    return switched
+# ----------------------------------------------------------------------------------
+
+# Written by use_tenant.py when the task targets a second tenant of the organization.
+TENANT_MARKER = TENANT_MARKER_NAME
+
+
 def uip_env() -> dict:
     """Environment for the harness's own `uip` calls.
 
@@ -63,11 +121,8 @@ def uip_env() -> dict:
     use_tenant.py selected when this task runs on a second tenant.
     """
     env = {**os.environ, "UIPATH_CLI_DISABLE_VERSION_SYNC": "1", "AH_EVAL_NO_RECORD": "1"}
-    if os.path.isfile(TENANT_HOME_MARKER):
-        with open(TENANT_HOME_MARKER, encoding="utf-8") as handle:
-            home = handle.read().strip()
-        if home:
-            env["HOME"] = env["USERPROFILE"] = home
+    if os.path.isfile(TENANT_MARKER):
+        env = tenant_env(env, TENANT_MARKER, shutil.which("uip") or "uip")
     return env
 
 
