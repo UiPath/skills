@@ -8,14 +8,18 @@ description: >
   INVALID_FEEDBACK_METADATA. Second, `update` now reads the record before it
   writes and carries over fields the caller omitted, so re-passing the existing
   comment and tags to "protect" them is wrong; the agent must send metadata
-  alone. Auth/404 responses are acceptable outcomes — the graded behavior is
-  command shape.
+  alone. `uip` is an offline `record_cli` mock that answers every call with a
+  404 envelope — the graded behavior is the argv each call received.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, feedback]
 sandbox:
   template_sources:
     - type: template_dir
       path: _setup
       mount_point: _setup
+  record_cli:
+    - tool: uip
+      stdout: |
+        {"Result":"Failure","Message":"Resource not found (404 Not Found)"}
 pre_run:
   - command: "sh _setup/seed_feedback_metadata.sh"
     timeout: 15
@@ -41,32 +45,44 @@ initial_prompt: |
   against this tenant; that is expected and is not a reason to stop. Report what
   each command returns.
 success_criteria:
-  # Segment idiom per tests/README.md: (?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*
-  # confines every lookahead to THIS command, so a chained second `uip` call
-  # cannot satisfy or veto an assertion about the first.
-  # `--metadata[\s=]` (separator required) does not match `--metadata-file`;
-  # the carry-over criterion spells `--metadata(?:-file)?` so an agent that
-  # stages even the short payload in a file still earns it.
-  - type: command_executed
+  # Graded from cli_mocks/calls.jsonl: one record per real invocation, argv
+  # already split by the shell, so line continuations, quoting, and calls
+  # batched into one Bash step need no handling here.
+  # value_flags lists every value-bearing `update` flag so a value never shifts
+  # the positional record ID (e.g. `update --folder-key <key> <id>`).
+  - type: cli_called
     description: "Agent serialized the prose payload as JSON on --metadata, with the required --folder-key"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+update\s+9b41c7e0-5d38-4a62-b1f7-2c8e5a0d94f3(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--metadata[\s=]+["'']?\{)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-key)'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback update"
+    positional: ["9b41c7e0-5d38-4a62-b1f7-2c8e5a0d94f3"]
+    value_flags: [output, folder-key, comment, comment-file, metadata, metadata-file, category, profile]
+    flags:
+      metadata: {matches_regex: '^\s*\{\s*"'}
+      folder-key: "2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2"
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: cli_called
     description: "Agent sent metadata alone (inline or from a file) — omitted comment and categories are preserved by the read-before-write, so re-passing them is wrong"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+update\s+9b41c7e0-5d38-4a62-b1f7-2c8e5a0d94f3(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--metadata(?:-file)?[\s=])(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--comment(?:-file)?[\s=])(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--category[\s=])'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback update"
+    positional: ["9b41c7e0-5d38-4a62-b1f7-2c8e5a0d94f3"]
+    value_flags: [output, folder-key, comment, comment-file, metadata, metadata-file, category, profile]
+    flags:
+      metadata: {present: true, aliases: [metadata-file]}
+      comment: {absent: true, aliases: [comment-file]}
+      category: {absent: true}
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: cli_called
     description: "Agent sourced the nested rubric from review-meta.json rather than retyping it inline"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+update\s+4e07a2d9-8c15-43f6-9a20-7d3b1f6c8e52(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--metadata-file[\s=]+["'']?(?:\$?\S*/)?review-meta\.json)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--metadata[\s=])'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback update"
+    positional: ["4e07a2d9-8c15-43f6-9a20-7d3b1f6c8e52"]
+    value_flags: [output, folder-key, comment, comment-file, metadata, metadata-file, category, profile]
+    flags:
+      metadata-file: {matches_regex: '(^|/)review-meta\.json$'}
+      metadata: {absent: true}
     weight: 2.5
     pass_threshold: 1.0
