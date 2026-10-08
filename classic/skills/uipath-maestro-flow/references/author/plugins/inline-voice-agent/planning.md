@@ -59,7 +59,7 @@ Use voice nodes when the flow's job is a phone conversation — answering an inb
 
 ## Topologies
 
-Exactly two supported shapes. The `callContext` originates at the trigger (inbound) or the create-outgoing-call node (outbound) and must reach both the voice agent and the end-call node. **Both shapes live at the top level of the `.flow`** — a voice agent node inside a `core.subflow` is rejected by `flow validate` and by pack; see [impl.md § What NOT to Do](impl.md#what-not-to-do).
+Exactly two supported shapes. The `callContext` originates at the trigger (inbound) or the create-outgoing-call node (outbound) and must reach both the voice agent and the end-call node. The voice agent can also sit inside a `core.subflow`: the origin node and the end-call node stay in the parent, and `callContext` goes in as a subflow input; see [impl.md § Voice agent inside a subflow](impl.md#voice-agent-inside-a-subflow).
 
 **Inbound** — agent answers a call:
 
