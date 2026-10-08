@@ -1,22 +1,10 @@
 # Querying a process app (`uip pm query`)
 
-Pull numbers out of a built app. Subcommands: `info` (metadata), `run`
-(aggregate group-by + metrics), `details` (raw rows), `percentile`, `rca`
-(root-cause), `insights` (process insights), `layout`. All take `--stage
-dev|published` (default `dev`). Iterate on **`dev`**; `--stage published` needs a
-completed ingestion **on that stage** — run
-`ingestions create <app> --stage published --wait` after `apps publish`. Until that
-ingestion completes the query 400s `UserError_InvalidOrNoIngestion` (see
-[`lifecycle-and-rbac.md`](lifecycle-and-rbac.md)).
+Use `info` for metadata, `run` for aggregate group-by + metrics, `details` for raw rows, `percentile`, `rca` for root-cause, `insights` for process insights, and `layout`. All take `--stage dev|published` (default `dev`); iterate on `dev`. After `apps publish`, run `ingestions create <app> --stage published --wait`. A `published` query requires a completed ingestion on that stage or returns 400 `UserError_InvalidOrNoIngestion` (see [`lifecycle-and-rbac.md`](lifecycle-and-rbac.md)).
 
 ## Start with `query info`
 
-`query info <app>` returns the queryable model: entities (`Cases`, `Event_log`,
-`Tags`, `Due_dates`, `__Process_Events`, process internals, **plus any table you
-added to the data model**) and, per entity, the **fields** with their ids. Field
-ids are hashed, e.g. `F__Cases__Service_Component__f0f7…`; a few standard fields
-keep plain ids (`Case_ID`, `Event_count`). Query bodies reference **ids**, not
-column names (`UserError_FieldNotFound` otherwise).
+`query info <app>` returns queryable entities (`Cases`, `Event_log`, `Tags`, `Due_dates`, `__Process_Events`, process internals, and tables added to the data model) and fields with ids. Query bodies require field ids, not column names; otherwise they return `UserError_FieldNotFound`. IDs are usually hashed (e.g. `F__Cases__Service_Component__f0f7…`); some standard fields retain plain ids (`Case_ID`, `Event_count`).
 
 ## Prefer the sugar over hand-writing the AST
 
@@ -24,11 +12,7 @@ column names (`UserError_FieldNotFound` otherwise).
 uip pm query run <app> --group-by Open_year --metric Event_count:average --metric Case_ID:count --output table
 ```
 
-`--group-by <cols>` (comma-separated names or ids) and `--metric <col:fn[:alias]>`
-(repeatable) resolve human column names to ids via `query info`, build the body,
-and **transpose the engine's columnar response into rows** (great with `--output
-table`). `fn` ∈ `average | count | sum | min | max`. The sugar and a raw
-`--body`/`--body-json` are mutually exclusive.
+`--group-by <cols>` accepts comma-separated names or ids. Repeatable `--metric <col:fn[:alias]>` resolves names to ids via `query info`, builds the body, and transposes the columnar response into rows (useful with `--output table`). `fn` ∈ `average | count | sum | min | max`. Sugar and raw `--body`/`--body-json` are mutually exclusive.
 
 ## The raw aggregate body (`AggregateDataRequestDto`)
 
@@ -37,31 +21,17 @@ table`). `fn` ∈ `average | count | sum | min | max`. The sugar and a raw
   "aggregates": [ { "id": "<yourName>", "argument": "<fieldId>", "aggregation": "<fn>" } ] }
 ```
 
-- `aggregation` is the **`AggregationFunction` enum**: `average`, `count`, `sum`,
-  `min`, `max`. Invalid values (e.g. `maximum`) 400 with a raw .NET enum-convert
-  error.
-- The response `Data` is **columnar**: one entry per group field and per
-  aggregate, keyed by the id, each `{ "values": [...per group...], "ungrouped":
-  <grand total>, "stackValues": null }`. Group and aggregate arrays are
-  **index-aligned**. (Note: the raw object is camelCase `values`/`ungrouped`; the
-  CLI's `--output json/table` formatter may present them PascalCase.)
-- Ungrouped-only queries (`"groupBy": []`) return the total in `ungrouped`, or in
-  `values[0]` when the engine emits it as a single-row column.
+- `aggregation` must be an `AggregationFunction` enum: `average`, `count`, `sum`, `min`, `max`. Invalid values (e.g. `maximum`) return 400 with a raw .NET enum-convert error.
+- `Data` is columnar: each group field and aggregate has an entry keyed by its id, shaped `{ "values": [...per group...], "ungrouped": <grand total>, "stackValues": null }`; arrays are index-aligned. Raw keys are camelCase (`values`/`ungrouped`); CLI `--output json/table` may present them PascalCase.
+- With `"groupBy": []`, the total is in `ungrouped`, or `values[0]` if the engine emits a single-row column.
 
 ## Restrictions & other subcommands
 
-- **`groupBy` on an `Event_log` (event-table) field 400s** `UserError_EventTableUsedInQuery`.
-  `run` aggregates case-level entities only. For event/activity-level breakdowns:
-  use `insights` (`processId` + 1..10 numeric `metrics` from `query info`) or the
-  process model (`layout`), OR precompute the counts in a dbt model (e.g. group
-  the event log by activity), register it as a data-model table
-  ([`data-model.md`](data-model.md)), and `query run` that table.
-- `percentile --field <id> --values 0.5,0.9,0.95 [--filters <json>]` — points in 0..1.
-- `rca` needs a non-empty `selectedSet`; `insights` needs a `processId` and 1..10 numeric `metrics`.
-- `details` returns raw rows (`DetailsDataRequestDto`); `--limit` is clamped 1..1000 server-side.
+- Grouping by an `Event_log` (event-table) field returns 400 `UserError_EventTableUsedInQuery`; `run` aggregates case-level entities only. For event/activity breakdowns, use `insights` (`processId` + 1..10 numeric `metrics` from `query info`) or `layout`; alternatively, precompute event-log activity counts in a dbt model, register it as a data-model table ([`data-model.md`](data-model.md)), then query it with `query run`.
+- `percentile --field <id> --values 0.5,0.9,0.95 [--filters <json>]` accepts points in 0..1.
+- `rca` requires a non-empty `selectedSet`; `insights` requires a `processId` and 1..10 numeric `metrics`.
+- `details` returns raw rows (`DetailsDataRequestDto`); server-side, `--limit` is clamped to 1..1000.
 
 ## Getting custom analytics out
 
-If your numbers live in a custom dbt model, you must first register it as a
-data-model table so `query` can see it — see [`data-model.md`](data-model.md).
-Once registered, everything above (sugar, aggregate AST, percentiles) works on it.
+Register a custom dbt model as a data-model table before querying it (see [`data-model.md`](data-model.md)); registered tables support the sugar, aggregate AST, and percentiles above.
