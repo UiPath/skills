@@ -20,8 +20,8 @@ Conversation behavior:
 - Confirmations: <when to confirm before actions>.
 
 Tools:
-- <toolName>: call when <explicit condition>. Do not call when <condition>.
-- <toolName>: ...
+- @{tools.<Name>}: call when <explicit condition>. Do not call when <condition>.
+- @{tools.<Name>}: ...
 - After tool use, explain <what to summarize, recommend, or ask next>.
 
 Response style:
@@ -84,8 +84,8 @@ Conversation behavior:
 - Confirmations: confirm with the customer before initiating a return.
 
 Tools:
-- lookupOrder: call with the currently opened order number unless the customer specifies a different one. Use for status, delivery, or item details.
-- initiateReturn: call only after the customer confirms in plain language they want to start a return.
+- @{tools.lookupOrder}: call with the currently opened order number unless the customer specifies a different one. Use for status, delivery, or item details.
+- @{tools.initiateReturn}: call only after the customer confirms in plain language they want to start a return.
 - After tool use, summarize the result in 1-2 sentences and ask whether anything else is needed.
 
 Response style:
@@ -93,7 +93,7 @@ Response style:
 - Use plain prose; switch to bullets for multi-item summaries (e.g., multiple shipment events).
 
 Uncertainty:
-- If `lookupOrder` returns no record, ask the customer to verify the order number — do not guess details.
+- If @{tools.lookupOrder} returns no record, ask the customer to verify the order number — do not guess details.
 ```
 
 User message: `""` — left blank. The Conversational Service injects the user turn each exchange.

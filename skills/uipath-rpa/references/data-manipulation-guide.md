@@ -255,8 +255,8 @@ Prefer named over positional groups; escape literal dots (`\.`); for untrusted/l
 
 Parse with an EXPLICIT format + invariant culture (uppercase `MM` = month, lowercase `mm` = minutes) — each `[expr]`:
 ```vb
-DateTime.ParseExact("01/15/2025", "MM/dd/yyyy", System.Globalization.CultureInfo.InvariantCulture)
-' wrong case SILENTLY misparses (does not throw): "mm/dd/yyyy" on "06/15/2025" -> January, "06" read as minutes. Only a test catches it.
+DateTime.ParseExact(dateText, "MM/dd/yyyy", System.Globalization.CultureInfo.InvariantCulture)
+' wrong case SILENTLY misparses (does not throw): "mm/dd/yyyy" on a June date -> January, the month digits read as minutes. Only a test catches it.
 ' multiple accepted formats:
 DateTime.ParseExact(s, New String(){"dd/MM/yyyy", "dd.MM.yyyy"}, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None)
 ' SAFE (no throw) for external dates — uses TryParseExact, see § Safe data access first

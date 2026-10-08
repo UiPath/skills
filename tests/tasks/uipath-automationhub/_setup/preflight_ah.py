@@ -2,7 +2,8 @@
 """pre_run: fail as ERROR, not FAILURE, when the Automation Hub tenant cannot take a publish.
 
 Usage:
-    preflight_ah.py [--require-non-admin]
+    preflight_ah.py [--require-non-admin] [--require-new-applications | --require-no-new-applications]
+                    [--require-app NAME ...] [--require-no-app NAME ...]
 
 Checks, all read-only and all through `uip ah`:
   - auth-info succeeds: AH is provisioned and onboarded for the active tenant, and
@@ -15,8 +16,16 @@ Checks, all read-only and all through `uip ah`:
 tasks that exercise the "applications 403 → publish anyway" fallback — an admin
 would create the applications instead and the regression would go untested.
 
-Writes `ah-preflight.json` (tenant url, owner email, flow id, archive target) for
-seed_publish.py and the graders. Mirrors uipath-maestro-case's preflight: a revoked
+`--require-new-applications` / `--require-no-new-applications` insists the Business
+Process schema does / does NOT offer `new_applications` (the section's "add new
+applications" control), and each
+`--require-app NAME` / `--require-no-app NAME` insists the inventory does / does not
+hold an application of that name. All three are tenant configuration a scenario depends on: when they drift, the run is an
+environment ERROR, never a skill FAILURE.
+
+Writes `ah-preflight.json` (tenant url, owner email, flow id, archive target, and a
+snapshot of the inventory and the category tree) for seed_publish.py and the
+graders, which grade against the tenant as it was when the run started. Mirrors uipath-maestro-case's preflight: a revoked
 login or an asleep tenant must never be scored against the skill.
 """
 
@@ -63,8 +72,20 @@ def schema_offers_new_applications(flow_id) -> bool:
             return '"new_applications"' in handle.read()
 
 
+def all_category_ids(categories: list[dict]) -> list[int]:
+    found: list[int] = []
+    for category in categories or []:
+        found.append(category["CategoryId"])
+        found.extend(all_category_ids(category.get("Subcategories") or []))
+    return found
+
+
 def main(argv: list[str]) -> int:
     require_non_admin = "--require-non-admin" in argv
+    require_new_applications = "--require-new-applications" in argv
+    require_no_new_applications = "--require-no-new-applications" in argv
+    required_apps = [argv[i + 1] for i, arg in enumerate(argv[:-1]) if arg == "--require-app"]
+    absent_apps = [argv[i + 1] for i, arg in enumerate(argv[:-1]) if arg == "--require-no-app"]
     problems: list[str] = []
 
     auth = uip_json(["ah", "auth-info", "get"])
@@ -94,12 +115,27 @@ def main(argv: list[str]) -> int:
     categories = uip_json(["ah", "categories", "get"])
     if not succeeded(categories):
         problems.append(f"uip ah categories get failed: {describe_failure(categories)}")
-    elif not active_categories((categories.get("Data") or {}).get("Categories") or []):
+    tree = (categories.get("Data") or {}).get("Categories") or [] if succeeded(categories) else []
+    if succeeded(categories) and not active_categories(tree):
         problems.append("category tree has no active non-'Other' category")
 
     inventory = uip_json(["ah", "applications", "list", "--limit", "200"])
     if not succeeded(inventory):
         problems.append(f"uip ah applications list failed: {describe_failure(inventory)}")
+    else:
+        names = {str(a.get("Name", "")).strip().lower() for a in items(inventory)}
+        problems.extend(f"inventory has no {app!r} application, which this scenario relies on"
+                        for app in required_apps if app.strip().lower() not in names)
+        problems.extend(f"inventory already has {app!r}, which this scenario needs to be missing"
+                        for app in absent_apps if app.strip().lower() in names)
+
+    offered = schema_offers_new_applications(flow["Id"]) if flow else False
+    if require_new_applications and not offered:
+        problems.append("the Business Process schema does not offer new_applications, but this scenario needs "
+                        "the section's 'add new applications' control turned on")
+    if require_no_new_applications and offered:
+        problems.append("the Business Process schema offers new_applications, but this scenario needs "
+                        "the section's 'add new applications' control turned off")
 
     if problems:
         print("preflight_ah: ENVIRONMENT gap — this tenant/identity cannot take a publish:", file=sys.stderr)
@@ -109,7 +145,7 @@ def main(argv: list[str]) -> int:
 
     archive = archive_target(flow) if flow else None
     summary = {
-        "new_applications_offered": schema_offers_new_applications(flow["Id"]) if flow else False,
+        "new_applications_offered": offered,
         "tenant_url": tenant.get("Url"),
         "owner_email": user.get("Email"),
         "is_admin": bool(user.get("IsAdmin") == 1 or roles & ADMIN_ROLES),
@@ -118,6 +154,8 @@ def main(argv: list[str]) -> int:
         "archive_status": archive[1] if archive else None,
         "inventory": [{"Id": a.get("Id"), "Name": a.get("Name"), "Version": a.get("Version")}
                       for a in items(inventory)],
+        "active_category_ids": sorted(c["CategoryId"] for c in active_categories(tree)),
+        "category_ids": sorted(all_category_ids(tree)),
     }
     with open(OUTPUT, "w", encoding="utf-8") as handle:
         json.dump(summary, handle, indent=1)

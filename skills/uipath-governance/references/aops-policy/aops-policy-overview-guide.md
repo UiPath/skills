@@ -94,7 +94,7 @@ uip login status --output json
 If not logged in:
 ```bash
 uip login                                          # interactive OAuth (opens browser)
-uip login --authority https://alpha.uipath.com     # non-production environments
+uip login --authority "<AUTHORITY_URL>"           # non-default host (Automation Suite, dedicated)
 ```
 
 ### Step 2 — Create a session directory and bootstrap every product's schema

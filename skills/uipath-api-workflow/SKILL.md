@@ -22,6 +22,7 @@ Use for API workflow JSON creation/editing and activities including Sequence, As
 - Local runs, validation, build/packaging, publishing
 <!--skill-flavor:surface-lifecycle-scope:end-->
 - User wants to **handle a file** in an API workflow — take a file input, send a file as base64 to an API, turn a base64 payload back into a file, or asks about `JobAttachment`, `$helpers.file`, `serializeData()`, `--input-file` / `--output-dir`. See [references/files-and-base64.md](references/files-and-base64.md)
+- Starting a workflow from a connector event (Slack button clicked, new Outlook calendar entry), or inspecting/changing an existing trigger (`call: "UiPath.IntSvcEvent"`). See [references/trigger-authoring-guide.md](references/trigger-authoring-guide.md)
 <!--skill-flavor:surface-operations-scope:start-->
 - Operating published workflows
 <!--skill-flavor:surface-operations-scope:end-->
@@ -87,6 +88,14 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
    - In Solutions mode, sync IntSvc bindings with `uip api-workflow bindings sync --workflow <Workflow.json>` and refresh with `uip solution resources refresh --solution-folder <path>`. Skip for HTTP, non-connectors, and standalone projects.
 <!--skill-flavor:connector-solution-registration:end-->
    - See [references/connector-activity-discovery.md](references/connector-activity-discovery.md) for the discovery flow, field-shape rules, and multipart.
+
+16a. **A connector-event trigger is a separate catalog, a separate activity shape, and a second artifact.** When the workflow must start from an event (Slack button clicked, new Outlook calendar entry), run `uip api-workflow registry resolve "<keyword>" --kind trigger` then `registry stub` — never hand-author. Place the stub in exactly one slot: the root Sequence's `do` array, directly after `WorkflowStart` (`do[0].Sequence_1.do[1]`) — never inside an If / ForEach / TryCatch, never after another activity, never a second trigger. `validate` rejects a misplaced or second trigger. A `GenericTrigger` needs `--object-name`. Full flow, filter syntax, anti-patterns: [references/trigger-authoring-guide.md](references/trigger-authoring-guide.md).
+<!--skill-flavor:trigger-binding-registration:start-->
+    - **Run `uip api-workflow bindings sync` after every trigger add or edit.** It writes the `EventTrigger` entry in `bindings_v2.json` that registers the Orchestrator event trigger on deploy. **Without it the workflow validates, packs, publishes and deploys clean — and never fires.** No gate catches this. In Solutions mode follow with `uip solution resources refresh` (rule 16).
+<!--skill-flavor:trigger-binding-registration:end-->
+<!--skill-flavor:trigger-debug-contract:start-->
+    - **A `webhooks` trigger cannot run locally without input.** `uip api-workflow run` replays a live event only for `polling` (side-effecting under rule 21); for either mode, `--input-arguments` shaped like the event payload exercises the rest of the workflow offline.
+<!--skill-flavor:trigger-debug-contract:end-->
 
 <!--skill-flavor:runtime-invocation-io:start-->
 17. **CLI input.** Pass JSON as a string: `--input-arguments '{"key":"value"}'`; invalid JSON exits 1.
@@ -200,6 +209,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 | [references/task-types.md](references/task-types.md) | Activity shapes, required fields, exports, mistakes |
 | [references/control-flow-patterns.md](references/control-flow-patterns.md) | Nested If, loops, TryCatch, Break, branching, key uniqueness |
 | [references/connector-activity-discovery.md](references/connector-activity-discovery.md) | Authoring HTTP Request / Gmail / Outlook / GitHub / Slack / etc. activities via `uip api-workflow registry resolve` + `stub` — discovery flow, connection verification, field-shape rules, multipart |
+| [references/trigger-authoring-guide.md](references/trigger-authoring-guide.md) | Connector-event triggers: `registry resolve --kind trigger` + `stub`, `UiPath.IntSvcEvent` shape, mandatory `EventTrigger` binding, JMESPath filters, polling vs webhooks |
 | [references/expressions-and-context.md](references/expressions-and-context.md) | Expressions, context, inputs, scripts, exports, strict mode |
 | [references/files-and-base64.md](references/files-and-base64.md) | **Files & base64** — `JobAttachment` references, the File to Base64 / Base64 to File activities (exact JSON, `$helpers.file.*`), `serializeData()` for inline bodies/Responses, passing local files in and getting files out of a run, pitfalls |
 <!--skill-flavor:cli-reference-navigation:start-->
@@ -220,6 +230,7 @@ uip solution publish ./build/<package>.zip --tenant <TenantName> --output json
 - [assets/templates/loop-aggregation-example.json](assets/templates/loop-aggregation-example.json) — loop aggregation.
 - [assets/templates/nested-control-flow-example.json](assets/templates/nested-control-flow-example.json) — deeply nested control flow.
 - [assets/templates/file-base64-roundtrip-example.json](assets/templates/file-base64-roundtrip-example.json) — **Files** — a `document` file input → File to Base64 → Base64 to File → Response returning both references. The exact `run.script` shape Studio Web writes for the two activities (rule 23). Verified end-to-end with a signed-in run: local file in → `.base64` reference → decoded file out, bytes identical.
+- [assets/templates/trigger-workflow-template.json](assets/templates/trigger-workflow-template.json) — event-driven skeleton: `WorkflowStart` → `UiPath.IntSvcEvent` trigger → Response reading the payload. Its `<REPLACE_WITH_*>` connection UUID and trigger type id are sentinels; re-stub for real values (rules 16, 16a).
 <!--skill-flavor:template-execution-proof:start-->
 - [assets/templates/connector-call-example.json](assets/templates/connector-call-example.json) — registry-generated HTTP with `ImplicitConnection`.
 <!--skill-flavor:template-execution-proof:end-->

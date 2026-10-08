@@ -27,7 +27,7 @@ export default flow('observatory-seeing')
 
   // Somebody else's uptime, so the call has to ROUTE on failure.
   .step('fetchSun', http({
-    url: tmpl`https://api.sunrise-sunset.org/json?lat=${input('lat')}&lng=${input('lng')}&formatted=0`,
+    url: tmpl`https://api.example.com/sun?lat=${input('lat')}&lng=${input('lng')}`,
     managed: true,
     // Declare what we read, or the read is refused.
     returns: { results: 'object' },

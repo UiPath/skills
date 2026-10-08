@@ -45,10 +45,10 @@ Use `uip codedagent <cmd>`, not `uv run uipath <cmd>`. The wrapper injects sessi
 - **Runtime captures only the last node's delta as output.** `Annotated[list, operator.add]` reducers accumulate inside the graph but vanish from `--output-file` JSON and eval trajectories. Carry aggregate fields forward in each node's return (`{"items": [*state.get("items", []), x]}`) — see [frameworks/langgraph-integration.md](frameworks/langgraph-integration.md) § Runtime Output Quirk.
 - **Verify the JSON, not the streamed display.** After `uip codedagent run --output-file out.json`, inspect `out.json` — the streamed view shows per-node deltas; the JSON is the runtime's actual final result. Mismatches expose the runtime quirk above.
 - **Use `uip codedagent deploy` for packaging/publishing.** `uip codedagent pack` and `uip codedagent publish` are filtered by the wrapper.
-- **NEVER run `uip login` without `--tenant`.** The interactive tenant picker does not work from Claude's Bash tool. Use the one-shot form `uip login --organization "<ORG>" --tenant "<TENANT>"`, mapping staging/alpha to `--authority` (see [../authentication.md](../authentication.md)).
+- **NEVER run `uip login` without `--tenant`.** The interactive tenant picker does not work from Claude's Bash tool. Use the one-shot form `uip login --organization "<ORG>" --tenant "<TENANT>"`, adding `--authority` for a non-default host (see [../authentication.md](../authentication.md)).
 - **Auth MUST be an interactive question only when needed and values are missing.** If the session check fails and the user did not provide all of environment / organization / tenant, your ENTIRE response must be a single direct question. Do NOT wrap it in bullet points, "Next Steps" headers, or status summaries. Just ask and stop:
 
-  > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
+  > What is your UiPath **environment** (cloud, or your custom host URL), **organization name**, and **tenant name**?
 - **In a flow, coded agents are referenced via the `agent` plugin (uipath-maestro-flow skill)** — node type `uipath.core.agent.{key}`, `Orchestrator.StartAgentJob`. See [flow-integration.md](flow-integration.md) for the three patterns: in-solution sibling folder, Orchestrator-published, tool resource.
 
 ## Lifecycle Stages
@@ -110,7 +110,7 @@ Steps 8 and 9 are mandatory stops **for greenfield**: always ask the user, even 
 4. **Bindings** — Sync `bindings.json` with the code using [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md).
 5. **Auth (one-shot)** — Run `uip login status --output json` once. If the user supplied environment + organization + tenant, have them run the matching one-shot login command from [../authentication.md](../authentication.md) in their own terminal, using both `--organization` and `--tenant` in the same `uip login` command (a browser sign-in — if you run it yourself, first tell the user a browser window is about to open). Do this even when `Status: Logged in`, because the existing session may be for a different tenant. If no credentials were supplied and `Status: Logged in`, trust the wrapper for the rest of the run (it auto-refreshes tokens). Otherwise ask for credentials — output ONLY this question as your entire response:
 
-> What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
+> What is your UiPath **environment** (cloud, or your custom host URL), **organization name**, and **tenant name**?
 
 Then STOP and wait. On reply, hand the user the matching one-shot login from [../authentication.md](../authentication.md) to run in their own terminal (maps environment → `--authority`), then confirm with `uip login status --output json`. Never run `uip login` without `--tenant`.
 6. **Run** — Re-run `uip codedagent init` first whenever any of these changed since the last init, **or** when `has_entry_points == false`:

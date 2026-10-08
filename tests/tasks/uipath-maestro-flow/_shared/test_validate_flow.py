@@ -177,6 +177,28 @@ def test_no_flow_file_fails(monkeypatch):
         validate_flow.main()
 
 
+def test_explicit_paths_skip_discovery(monkeypatch, tmp_path):
+    """Named flows are validated as given; discovery is not consulted, so a
+    brownfield fixture's second Flow project cannot make the run ambiguous."""
+    flow = tmp_path / "Named.flow"
+    flow.write_text("{}")
+    calls = _stub(monkeypatch, [_cp(0)])
+
+    def no_discovery():
+        raise AssertionError("discovery must not run when paths are given")
+
+    monkeypatch.setattr(validate_flow, "find_flow_files", no_discovery)
+    assert validate_flow.main([str(flow)]) == 0
+    assert calls["flows"] == [str(flow)]
+
+
+def test_explicit_missing_path_fails_without_running(monkeypatch, capsys):
+    calls = _stub(monkeypatch, [])
+    assert validate_flow.main(["Nope/Nope.flow"]) == 1
+    assert calls["n"] == 0
+    assert "flow file not found: Nope/Nope.flow" in capsys.readouterr().err
+
+
 @pytest.mark.parametrize(
     "remaining, attempts_left, expected",
     [

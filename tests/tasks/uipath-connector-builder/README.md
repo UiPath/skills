@@ -25,6 +25,7 @@ exactly one way to do them (`init`, `activity create`, `validate`).
 |------|------|--------|
 | `init-validate` | smoke | scaffold a connector shell (auth `none`) + validate; element key is derived |
 | `oauth2-activity` | e2e | init → OAuth2 auth → CRUD activity with a typed field schema → validate |
+| `icon-dark-theme` | integration | install a solid-black vendor logo as `image.svg`; graded by `check_icon_contrast.py` (dark + light surface, no backdrop tile) because `validate` passes a black icon |
 
 `import` / `publish` / `download` need `uip login` and a tenant, so they're out of
 scope here — those belong in a live e2e run, not the hermetic task suite.

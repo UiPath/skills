@@ -277,7 +277,7 @@ Illustrative supported activities (confirm against `registry get` for the specif
 
 > **Data Fabric record CRUD has native nodes — they are the default; everything else on this connector is not.** `core.datafabric.read` / `create` / `update` / `delete` ([data-fabric/planning.md](../data-fabric/planning.md)) need no Integration Service connection and are authored with `Edit`/`Write` instead of `node configure`, so for those four operations go native: confirm with `uip maestro flow registry get core.datafabric.read`, and on `NodeGetSuccess` leave this doc. Stay here when **any** of these hold — and they are common:
 >
-> - the operation is **not** one of those four (attachments, file-field downloads, entity metadata, bulk work) — no native node exists, so these activities are the only path, not a fallback; **these activities target the tenant scope only — folder-scoped entities are not supported, so require a tenant-scoped entity**;
+> - the operation is **not** one of those four (attachments, file-field downloads, entity metadata, bulk work) — no native node exists, so these activities are the only path, not a fallback. Tenant- and folder-scoped entities both work; for a folder-scoped one see [Step 6d](#step-6d--solution-resource-picker-fields);
 > - the **user asked for the connector by name** — an explicit request outranks the native default, so build it here as long as the activity exists;
 > - `registry get` ends at "Node not found" after [data-fabric/impl.md — Registry validation](../data-fabric/impl.md#registry-validation).
 
@@ -372,6 +372,26 @@ JSON
 )" --output json
 ```
 
+#### Step 6d — Solution-resource picker fields
+
+Some fields pick a solution resource, such as a Data Fabric entity. Pass the resource **name** as a plain string in its bucket. `node configure` asks the activity which fields are pickers, looks the name up in the resource catalog, adds the resource to the solution, and writes the bindings. If the name exists in more than one folder, configure fails and lists the candidates: add the hidden `<field>_folderKey` companion with a folder key, and rerun.
+
+```json
+{
+  "connectionId": "<CONNECTION_ID>", "folderKey": "<FOLDER_KEY>",
+  "method": "GET", "endpoint": "/GetEntityRecord_V3",
+  "queryParameters": {
+    "entityScope": "folder",
+    "folderEntityName": "Customer",
+    "recordId": "=js:$vars.start.output.id"
+  }
+}
+```
+
+A picker is often gated by a scope selector (for example `entityScope` on Data Service V3). It is a reference field: resolve it per [Step 4](#step-4--resolve-reference-fields) and write the lookup's `value` (`folder`), not its `displayName` (`Folder`). A wrong value hides the picker and configure still succeeds.
+
+After configure, the picker and its companion read `=bindings.<id>`. That is expected: the name and folder key move into two top-level `bindings[]` rows so a deploy can retarget the resource. Do not change them back to literals.
+
 ## IS CLI commands
 
 ```bash
@@ -424,6 +444,8 @@ and:
 
 The connection binding `name` is fetched from IS by `node configure` and must match the definition placeholder. Both entries use the same UUID. `resource` is capitalized `"Connection"`; `propertyAttribute` is exactly `"ConnectionId"` or `"FolderKey"`. Reuse the same pair for nodes sharing a connection; do not add duplicates.
 
+A picked solution resource ([Step 6d](#step-6d--solution-resource-picker-fields)) adds two more rows keyed by the solution resource key: `propertyAttribute` `name` holding the resource name, and `folderKey` holding the folder key. Their `resource` is the picker's kind in lowercase (`entity`), unlike the `Entity` of native Data Fabric nodes; both are correct. `node configure` writes these rows; leave them alone.
+
 An empty `resourceKey` on a configured `ConnectionId` row is a defect and causes `Value cannot be null. (Parameter 'Connection')`. Do not remove or repair bindings by hand. The only legitimate empty stub is a deliberately planned, unconfigured node. An empty stub after successful configure or node removal is a CLI bug to report.
 
 Never hardcode connection IDs; fetch them from IS at authoring time. Connector-trigger flows may additionally emit `EventTrigger` and `Property` resources; see [connector-trigger/impl.md](../connector-trigger/impl.md). Queue and time-trigger resources follow their relevant plugins.
@@ -434,6 +456,7 @@ Never hardcode connection IDs; fetch them from IS at authoring time. Connector-t
 - **Connection ping failed:** re-authenticate the connection in IS.
 - **Missing `inputs.detail`:** run `node configure`.
 - **Display name instead of reference ID:** resolve with `uip is resources run list`.
+- **`=bindings.<id>` where you wrote a resource name:** expected, not a fault. A solution-resource picker is promoted to a binding on configure — see [Step 6d](#step-6d--solution-resource-picker-fields).
 - **Resource not found after clean validate/debug:** resolve the reference again with the current connection; IDs are connection-scoped. Reconfigure and re-debug.
 - **Required field missing:** inspect every `required: true` entry in cached `requestFields` and `parameters`.
 - **`No api-type ObjectAction matched for fields [...]`:** pass the node definition's `model.context[].method` verbatim as `--operation`; do not use `connectorMethodInfo.operation` or `connectorMethodInfo.method`.
