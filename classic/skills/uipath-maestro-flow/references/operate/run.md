@@ -67,7 +67,7 @@ If either value is missing from the response, emit the label with `<not returned
 
 ### When the run faults
 
-`Data.finalStatus: "Faulted"` means the run failed, and the cause is already in that same response — read it there. Redirect stdout to a file and extract the cause from the file. `--output-filter` applies to a faulted run's `Data` too, so a projection that omits `incidents` or `variables` drops the cause:
+`Data.finalStatus: "Faulted"` means the run failed, and the cause is already in that same response — read it there. `--output-filter` also projects a faulted run's `Data`, so a projection that omits `incidents` or `variables` drops them; `Message` and `Instructions` stay whole and name `uip maestro flow debug-instance incidents <instanceId>`. If you projected them away, run that command — do not re-run the flow. Next time, run debug unfiltered and redirect it to a file:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json > /tmp/flow-debug.json

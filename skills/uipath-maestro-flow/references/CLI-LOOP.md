@@ -201,7 +201,7 @@ read-back into seven tool calls.
 # The standard read-back: status, where to look, what did NOT complete, all globals.
 --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,\
 failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},\
-globals:variables.globals}"
+globals:variables.globals,incidents:incidents}"
 
 # Just the values the flow produced.
 --output-filter "variables.globals"
@@ -232,7 +232,8 @@ double quotes instead of single ones:
 replaces `variables` when that read fails. So an `incidents:incidents`
 projection yields `null`. A faulted run usually carries `Data.incidents` (absent
 when PIMS returns none or the fetch fails), and `--output-filter` projects
-failure `Data` too, so add `incidents:incidents` to the projection to keep them. Otherwise, fetch incidents with the separate
+failure `Data` too, so add `incidents:incidents` to the projection to keep
+them. If `Data.incidents` is missing, fetch incidents with the separate
 `debug-instance incidents` call below, keyed by the `instanceId` you just read.
 
 For example, a direct-input claim can keep the useful status, outputs, and
@@ -242,7 +243,7 @@ diagnostics in one read-back instead of printing the full execution envelope:
 ( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
 ( cd <Solution> && uip maestro flow debug <Name> --log-level error \
   --inputs @inputs.json \
-  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals}" \
+  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals,incidents:incidents}" \
   --output json )
 ```
 

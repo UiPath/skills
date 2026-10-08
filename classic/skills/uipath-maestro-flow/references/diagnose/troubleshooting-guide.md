@@ -59,7 +59,7 @@ for element in data.get("variables", {}).get("elements", []):
 EOF
 ```
 
-`--output-filter` projects a faulted run's `Data` too, so a projection that omits `incidents` or `variables` drops the fault code and detail. Redirect without a filter.
+`--output-filter` projects a faulted run's `Data` too, so a projection that omits `incidents` or `variables` drops the fault code and detail. If that already happened, run `uip maestro flow debug-instance incidents <INSTANCE_ID> --output json` — do not re-run the flow. Next time, run debug without a filter.
 
 ### Match the fault code
 

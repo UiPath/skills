@@ -137,9 +137,9 @@ uip maestro flow debug <project-dir> --output json --entry-point <triggerNodeId>
 A wrong id exits 3 and lists the valid trigger node ids. `Data.entryPoint` names
 the trigger the run started from.
 
-**A conversational flow cannot be debugged headlessly.** On a run that starts at
-a `conversationTrigger()` root (the default root, or the one `--entry-point`
-names), debug uploads, returns
+**A conversational flow cannot be debugged headlessly.** When the start root is
+a `conversationTrigger()` (the default root, or the one `--entry-point` names),
+debug uploads, returns
 `Code: FlowDebugStudioWebHandoff` with `Data.studioWebUrl`, and starts no run;
 `--timeout` does nothing. Chat from Studio Web (`--open-in-browser` opens it) or
 the Maestro VS Code extension.
@@ -158,11 +158,12 @@ Instance ID: <instanceId>
 Emit the label with `<not returned by CLI>` rather than dropping a line.
 
 `Data.finalStatus: "Faulted"` means the cause is already in that same response.
-A projection can drop `Data.incidents`, but `Message` and `Instructions` are
-never filtered: they name each incident and the
-`uip maestro flow debug-instance incidents <instanceId>` command for the full
-payload. Run that command; do not re-run the flow. On the next run, redirect the
-unfiltered output and search the file:
+A projection can drop `Data.incidents`, but `--output-filter` never filters
+`Message` and `Instructions`: they summarize the incidents, when PIMS returned
+any, and name the `uip maestro flow debug-instance incidents <instanceId>`
+command. If `Data.incidents` is not in what you have, run that command. Do not
+re-run the flow. On the next run, add `incidents:incidents` to the projection,
+or redirect the unfiltered output to a file and search it:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flow-debug.json
@@ -182,10 +183,11 @@ they pass the JSON-schema check even though the slot's nominal type is `string`.
 
 `--entry-point <triggerNodeId>` starts the job at that root, and `--validate`
 then checks the inputs against that root's schema. A wrong id exits 3 and lists
-the process's trigger node ids. Without it, the job starts at the package's main
-entry point; `flow pack` and `solution pack` set that to the first trigger in
-the flow, which for an SDK-built flow is the default root. Pass `--entry-point`
-whenever the root matters. You do not need `--feed-id`; the CLI
+the process's trigger node ids. Without it, the job starts at the release's
+default entry point. A package from `flow pack` or `solution pack` sets that to
+the first trigger in the flow, which for an SDK-built flow is the default root;
+a package built another way can differ. Pass `--entry-point` whenever the root
+matters. You do not need `--feed-id`; the CLI
 reads the feed from the release.
 
 ## Inspect a job

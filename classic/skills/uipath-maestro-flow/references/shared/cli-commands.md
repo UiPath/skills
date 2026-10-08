@@ -166,7 +166,7 @@ uip maestro flow process run <process-key> <folder-key> --output json \
   --entry-point <triggerNodeId>
 ```
 
-`--entry-point <triggerNodeId>` starts the job at that trigger, and `--validate` then checks inputs against that trigger's schema. A wrong ID exits 3 and lists the process's trigger node IDs. Without it, the job starts at the package's main entry point, which may not be the trigger marked `isDefaultEntryPoint`; pass `--entry-point` whenever the trigger matters. `--feed-id` is not needed; the CLI reads the feed from the release.
+`--entry-point <triggerNodeId>` starts the job at that trigger, and `--validate` then checks inputs against that trigger's schema. A wrong ID exits 3 and lists the process's trigger node IDs. Without it, the job starts at the release's default entry point, which may not be the trigger marked `isDefaultEntryPoint`; pass `--entry-point` whenever the trigger matters. `--feed-id` is not needed; the CLI reads the feed from the release.
 
 `--attachment` must match a `variables.globals[]` entry with `direction:"in"` and `type:"file"`; repeat it for multiple files. If `--inputs` and `--attachment` collide, attachment wins and the CLI logs an override warning. `--validate` accepts pre-uploaded attachment references for file-typed slots although their nominal type is `string`. Run `uip maestro flow process --help` for other subcommands.
 
