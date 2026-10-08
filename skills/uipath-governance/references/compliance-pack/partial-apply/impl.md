@@ -159,8 +159,18 @@ Require y. Halt on anything else.
 > Per **topic subset** — the category keywords in [`planning.md`](planning.md) (traceability, guardrails/PII, model governance, robot allowlists): use the fixed token for that row — `trace`, `pii`, `models`, `uiauto`. Do NOT coin a new word per request: the policy name is what makes a re-apply update the existing policy instead of creating a second one, so the same topic must always produce the same token.
 >
 > If a scope matches none of the four cases above, fall back to the clause-id form for the clauses actually being applied. Never invent a free-form token.
-6. On `yes` → AOps runs `aops-policy create` → **return the policy UUID to partial apply**.
-7. On failure or skip → log product as `skipped`, continue to next product.
+6. On `yes` → AOps runs `aops-policy create` → **return the policy UUID to partial apply**:
+
+   ```bash
+   uip gov aops-policy create \
+     --name "<policyName>" \
+     --product-name "<productIdentifier>" \
+     --input "$SESSION_TEMP/aops-policy-data.json" \
+     --output json
+   ```
+
+   The CLI flag is `--product-name`, NOT `--product` — `--product` belongs to `synthesize-formdata.mjs` (Step 1) and the CLI rejects it (`required option '--product-name <product-name>' not specified`). The policy data goes in `--input`; there is no `--form-data` flag. The new policy UUID is `Data.Identifier` in the response.
+7. On failure or skip → log product as `skipped`, continue to next product. A product whose `create` failed has no policy UUID: never report it as configured.
 
 **Collect all policy UUIDs** from successful creates before proceeding to Step 5.
 
