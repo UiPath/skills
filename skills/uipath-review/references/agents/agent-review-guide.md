@@ -2,7 +2,7 @@
 
 Steps for reviewing an agent project: low-code (`agent.json`) or coded (`main.py` plus framework config or `uipath.json`). Enter from SKILL.md once Step 1 classifies the project. Step 0 (discovery, PDD, scope), Step 1, Steps 3b–3c, Step 4, and the Step 5 report skeleton are shared and stay in SKILL.md; step numbers here match SKILL.md. In a mixed solution, apply this guide to each agent project and keep one report.
 
-> **Important:** `uip agent refresh` (Step 2) and `uip agent review-history add` (Step 6) write CLI-owned files and run by default. If the user explicitly forbids any change to the project, do not run them: list both under **Rules Skipped** and state that the deterministic review ran without a refresh and the grade was not recorded. Never move the project to a copy to work around the user's instruction.
+> **Important:** `uip agent refresh` (Step 2) and `uip agent review-history add` (Step 6) write CLI-owned files and run by default. If the user explicitly forbids any change to the project, do not run them: list both under **Rules Skipped** and state that the deterministic review ran without a refresh and the grade was not recorded. "Explicitly forbids any change" means the user ruled out **every** write, CLI-owned included — "make no changes of any kind", "nothing in this directory may be modified". An instruction scoped to editing — "do not manually edit files", "read-only review", "don't touch the source" — does **not** cover these CLI-owned writes: run both. Never move the project to a copy to work around the user's instruction.
 
 ## Critical Rules
 
