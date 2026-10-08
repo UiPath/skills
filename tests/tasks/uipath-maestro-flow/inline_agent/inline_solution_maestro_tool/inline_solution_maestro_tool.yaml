@@ -1,0 +1,126 @@
+task_id: skill-agent-inline-solution-maestro-tool
+description: >
+  Add an inline-agent Maestro tool inside an existing solution
+  (brownfield). The fixture ships an `OnboardingFlowSol` solution that
+  already contains a registered `EmployeeOnboarding` process
+  orchestration project. The agent must add a NEW `OnboardingFlow` Flow
+  project whose inline low-code agent delegates to the pre-existing
+  `EmployeeOnboarding` as a tool — reusing it, NOT re-creating it and
+  NOT re-initializing the solution. Verifies the tool resource.json
+  under the inline agent's UUID subdirectory uses
+  `type: "processOrchestration"`, `location: "solution"`,
+  `folderPath` "" or "solution_folder" (flow-builder-sdk#922), and that a
+  `uipath.agent.resource.tool.*` flow node is wired to the autonomous
+  agent node's `tool` handle.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, low-code, inline-flow, resource]
+
+run_limits:
+  expected_turns: 80
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/OnboardingFlowSol
+      mount_point: OnboardingFlowSol
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a new UiPath Flow project named "OnboardingFlow" inside the existing
+  "OnboardingFlowSol" solution (in the current directory). Its inline low-code
+  agent should carry out onboarding by handing off to the existing
+  "EmployeeOnboarding" agentic process that's already in the solution, rather
+  than doing it itself.
+
+  Do NOT publish, upload, or deploy.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  # Brownfield: the solution already exists in the fixture.
+  - type: command_not_executed
+    description: "Agent did NOT re-initialize the pre-existing solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    exclude_pattern: '--help'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Brownfield: EmployeeOnboarding ships in the fixture. The agent must
+  # reuse it, not scaffold a fresh copy over it.
+  - type: command_not_executed
+    description: "Agent did NOT re-create the existing EmployeeOnboarding project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+flow\s+init\s+["'']?EmployeeOnboarding'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Informational discovery criteria: the agent may use file reads instead of
+  # CLI discovery. pass_threshold:0 means these never block the run.
+  - type: command_executed
+    description: "Agent discovered the existing EmployeeOnboarding via solution resources list (informational)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources?\s+list\b.*--source\s+local'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Informational, NOT enforced: pass_threshold:0 means score (0 when the
+  # agent skips `resources get`) always clears the bar. The `resources list`
+  # discovery above is the enforced signal; `get` is an acceptable-but-optional
+  # follow-up.
+  - type: command_executed
+    description: "Agent fetched the EmployeeOnboarding configuration with uip solution resources get (informational)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources?\s+get\b'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0.0
+
+  # Outcome-based check: the fixture .uipx starts with EmployeeOnboarding
+  # registered; auto-registration of the new Flow project must bring
+  # Projects[] to 2.
+  - type: json_check
+    description: "OnboardingFlow is registered alongside EmployeeOnboarding in the parent solution .uipx"
+    path: "OnboardingFlowSol/OnboardingFlowSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 2
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "OnboardingFlowSol/OnboardingFlow/OnboardingFlow.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Outcome gate: the authored flow validates, whichever route wrote it.
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py OnboardingFlowSol/OnboardingFlow/OnboardingFlow.flow"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline solution Maestro tool: resource.json shape + flow node + tool-handle edge"
+    command: "python3 $REFERENCE_DIR/inline_agent/_shared/check_inline_solution_maestro_tool.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

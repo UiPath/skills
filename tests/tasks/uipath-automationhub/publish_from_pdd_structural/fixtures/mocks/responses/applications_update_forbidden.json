@@ -1,5 +1,0 @@
-{
-  "Result": "Failure",
-  "Message": "This user is not permitted to perform this action based on their role. (403 Forbidden)",
-  "Instructions": "Managing the application inventory needs the MANAGE_APP_INVENTORY permission."
-}

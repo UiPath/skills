@@ -77,7 +77,7 @@
                 "bodyParameters": {
                   "authentication": "manual",
                   "method": "GET",
-                  "url": "https://catfact.ninja/fact",
+                  "url": "https://api.example.com/facts/random",
                   "headers": {}
                 }
               },

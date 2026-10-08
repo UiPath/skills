@@ -1,0 +1,114 @@
+task_id: skill-insights-smoke-looker-ambiguous-title
+description: >
+  Smoke test against the looker-dashboards `uip` shim. Three dashboards share
+  the title "Business ROI": tenant 4410, the built-in template
+  UiPath-Insights::business_roi, and organization 5520. The user names the
+  organization one. The agent should end up embedding id 5520, either by
+  reading the listing or by following the ambiguous-title envelope's
+  candidates, and never embed the tenant copy or the template. The URL is a
+  credential, so no file may carry it.
+tags: [uipath-insights, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../mock_template}
+    - {type: template_dir, path: fixture}
+
+initial_prompt: |
+  Using UiPath Insights through `uip insights`: we keep a Business ROI
+  dashboard in the organization folder of the Looker-era Insights
+  dashboards. I need an embed link for that one, the organization's, for a
+  leadership page.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-insights skill"
+    skill_name: "uipath-insights"
+    expected_skill: "uipath-insights"
+    weight: 1.0
+
+  - type: command_executed
+    description: "Agent minted the embed URL for the organization dashboard, id 5520"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+get-embed-url\b(?:(?!uip\s)(?:[^&;|\n]|\\\n))*\b5520\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not embed the tenant copy or the built-in template"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+get-embed-url\b(?:(?!uip\s)(?:[^&;|\n]|\\\n))*(?:\b4410\b|::business_roi\b)'
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not attempt a Looker dashboard write"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+insights\s+looker-dashboards\s+(create|create-from-template|update|delete|remove|duplicate|copy|export|download|restore|import|check)\b'
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not read the shim or its fixture"
+    tool_name: "Bash"
+    command_pattern: 'mocks/(?:looker\.json|help\.json|uip\b)'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No file written anywhere in the sandbox carries the minted embed URL"
+    command: |
+      python3 - <<'PY'
+      import os, sys
+      hits = []
+      for root, dirs, files in os.walk("."):
+          dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ("mocks", "node_modules")]
+          for name in files:
+              if name.startswith("."):
+                  continue
+              path = os.path.join(root, name)
+              try:
+                  with open(path, encoding="utf-8", errors="ignore") as handle:
+                      found = "login/embed/" in handle.read()
+              except OSError:
+                  found = True
+              if found:
+                  hits.append(path)
+      print("\n".join(hits))
+      sys.exit(1 if hits else 0)
+      PY
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Reply hands over the organization dashboard's URL as a credential"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The user asked for an embed link for the Business ROI dashboard in the
+      organization folder. Three Looker dashboards carry that title: tenant
+      id 4410, the built-in template, and organization id 5520. Only 5520 is
+      the one the user meant.
+
+      Score 1.0 only if the reply gives the embed URL for dashboard 5520 (a
+      URL containing `/login/embed/`), makes clear it is the organization
+      folder's copy, and says the URL is a signed link tied to the user that
+      should not be stored or shared and should be re-minted rather than
+      reused (any equivalent wording).
+
+      Score 0.0 if the reply hands over a link for the tenant copy or the
+      template, claims a link it did not get, gives the URL with no caveat
+      about what it is, or asks the user to choose when the prompt already
+      said the organization's.
+    weight: 3.0
+    pass_threshold: 0.8

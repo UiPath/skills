@@ -5,7 +5,7 @@ description: |
   `mcp-tools update` with `--target-identifier` + explicit `--target-folder-key`/`--target-folder-path`
   — without the flag the tool's targetFolderKey silently pins to the server folder.
   Uses the manifest-driven uip mock — no real tenant call.
-tags: [uipath-mcp-servers, smoke, 'mode:build']
+tags: [uipath-mcp-servers, smoke, 'mode:build', 'lifecycle:generate']
 agent:
   type: claude-code
   allowed_tools: [Skill, Bash, Read, Write]

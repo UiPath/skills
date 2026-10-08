@@ -471,6 +471,7 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
       "references/expressions-and-context.md",
       "references/operating-published-workflows.md",
       "references/task-types.md",
+      "references/trigger-authoring-guide.md",
       "references/troubleshooting.md",
       "references/workflow-file-format.md",
     ].map((relativePath) => [

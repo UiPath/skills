@@ -3,6 +3,11 @@
 
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/validate_flow.py
+    python3 $REFERENCE_DIR/validate_flow.py <Sol>/<Project>/<Project>.flow [...]
+
+With no arguments the flows are discovered (below). Pass explicit paths when a
+brownfield fixture ships a second Flow project next to the one under test, which
+discovery would rightly refuse as ambiguous.
 
 Why this exists — a hardcoded ``<Name>/<Name>/<Name>.flow`` path in a success
 criterion is brittle: ``uip maestro flow init <Name>`` scaffolds a
@@ -163,8 +168,15 @@ def _validate(flow: str, deadline: float, budget: int) -> int:
     return 1  # unreachable; keeps the return type honest
 
 
-def main() -> int:
-    flows = find_flow_files()  # exits with its own message when nothing is found
+def main(paths: list[str] | None = None) -> int:
+    if paths:
+        missing = [p for p in paths if not os.path.isfile(p)]
+        if missing:
+            print(f"FAIL: flow file not found: {', '.join(missing)}", file=sys.stderr)
+            return 1
+        flows = list(paths)
+    else:
+        flows = find_flow_files()  # exits with its own message when nothing is found
 
     budget = _budget_seconds()
     deadline = time.monotonic() + max(
@@ -183,4 +195,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

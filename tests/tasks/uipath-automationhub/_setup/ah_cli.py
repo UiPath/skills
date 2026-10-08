@@ -1,9 +1,9 @@
-"""Shared helpers for the Automation Hub e2e tasks' setup and grading scripts.
+"""Shared helpers for the live Automation Hub tasks' setup and grading scripts.
 
 Everything goes through the `uip ah` CLI the task itself uses — the scripts never
 build a token or call the Open API directly, so they run under whatever login the
-harness provides (Delegate env-auth, the nightly ROPC `.auth`, or a developer's
-`uip login`). Kept dependency-free: it is staged into the sandbox as a file.
+harness provides (the CI ROPC `.auth`, or a developer's `uip login`). Kept
+dependency-free: it is staged into the sandbox as a file.
 """
 
 from __future__ import annotations
@@ -15,6 +15,8 @@ import subprocess
 import sys
 
 SEED_FILE = "seed.json"
+# Written by use_tenant.py: HOME for `uip` when the task targets a second tenant.
+TENANT_HOME_MARKER = ".ah-tenant-home"
 BUSINESS_PROCESS_FLOW = "business process"
 ARCHIVED_STATUS = "ARCHIVED"
 PLACEHOLDERS = ("sample input", "first.last@example.com", "example.com")
@@ -54,9 +56,24 @@ def precondition_failed(message: str) -> None:
              "(tenant / identity / fixture), NOT a skill regression")
 
 
+def uip_env() -> dict:
+    """Environment for the harness's own `uip` calls.
+
+    Never recorded (the call log is the agent's alone), and on the tenant that
+    use_tenant.py selected when this task runs on a second tenant.
+    """
+    env = {**os.environ, "UIPATH_CLI_DISABLE_VERSION_SYNC": "1", "AH_EVAL_NO_RECORD": "1"}
+    if os.path.isfile(TENANT_HOME_MARKER):
+        with open(TENANT_HOME_MARKER, encoding="utf-8") as handle:
+            home = handle.read().strip()
+        if home:
+            env["HOME"] = env["USERPROFILE"] = home
+    return env
+
+
 def uip_json(args: list[str], timeout: int = 180) -> dict:
     """Run `uip <args> --output json` and return the response envelope."""
-    env = {**os.environ, "UIPATH_CLI_DISABLE_VERSION_SYNC": "1"}
+    env = uip_env()
     proc = subprocess.run(["uip", *args, "--output", "json"],
                           capture_output=True, text=True, timeout=timeout, env=env)
     envelope = parse_envelope(proc.stdout)

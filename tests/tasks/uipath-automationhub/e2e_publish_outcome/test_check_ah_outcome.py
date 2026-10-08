@@ -1,8 +1,9 @@
-"""Self-tests for the e2e grader and the _setup scripts, with `uip` mocked on PATH.
+"""Self-tests for the e2e grader and the _setup scripts, offline.
 
-The group's mock dispatcher stands in for the tenant: a manifest answers the
-read-back verbs with token-named records and serves the staged fixtures for
-`documents download`. No tenant, no credentials.
+The task itself runs against the live tenant. These tests check the grader's and
+the scripts' own logic, so a small stub `uip` (written below) answers the
+read-back verbs from a manifest of canned envelopes and serves the staged
+fixtures for `documents download`. No tenant, no credentials.
 """
 
 from __future__ import annotations
@@ -21,7 +22,29 @@ import ah_cli  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 GROUP = HERE.parent
-MOCK = GROUP / "_shared" / "mock_template" / "mocks" / "uip"
+# Test double for the CLI: first manifest rule whose tokens appear contiguously in
+# argv wins; `write_destination` copies a response file to `--destination`; each
+# call is logged to `.calls.jsonl` so cleanup tests can see what was archived.
+STUB_UIP = r'''#!/usr/bin/env python3
+import json, shutil, sys
+from pathlib import Path
+here = Path(__file__).resolve().parent / "responses"
+argv = sys.argv[1:]
+hay = " ".join(argv).split()
+manifest = json.loads((here / "manifest.json").read_text())
+def matches(rule):
+    needle = rule["match"].split()
+    return any(hay[i:i + len(needle)] == needle for i in range(len(hay) - len(needle) + 1))
+rule = next((r for r in manifest["rules"] if matches(r)), None)
+with (here.parent / ".calls.jsonl").open("a") as log:
+    log.write(json.dumps({"args": " ".join(argv), "matched_rule": rule and rule["match"]}) + "\n")
+if rule is None:
+    default = manifest["unmocked_default"]
+    sys.stdout.write(default["response"]); sys.exit(default["exit_code"])
+if rule.get("write_destination"):
+    shutil.copyfile(here / rule["write_destination"], argv[argv.index("--destination") + 1])
+sys.stdout.write((here / rule["file"]).read_text()); sys.exit(0)
+'''
 CHECKER = HERE / "check_ah_outcome.py"
 TOKEN = "AHE2E-TEST0001"
 PDD = "pdd-retail-account-onboarding.md"
@@ -48,7 +71,7 @@ def sandbox(tmp_path: Path) -> Path:
     shutil.copytree(GROUP / "_setup", tmp_path / "_setup")
     mocks = tmp_path / "mocks"
     mocks.mkdir()
-    shutil.copy(MOCK, mocks / "uip")
+    (mocks / "uip").write_text(STUB_UIP)
     (mocks / "uip").chmod(0o755)
     responses = mocks / "responses"
     responses.mkdir()

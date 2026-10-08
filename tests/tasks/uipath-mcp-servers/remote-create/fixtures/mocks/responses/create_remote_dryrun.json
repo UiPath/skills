@@ -1,0 +1,21 @@
+{
+  "Result": "Success",
+  "Code": "DryRun",
+  "Data": {
+    "Plan": {
+      "Ops": [
+        {
+          "Verb": "POST",
+          "Target": "/api/servers/remote"
+        }
+      ],
+      "ParentType": "remote",
+      "Resolved": {
+        "Name": "Mock Remote API",
+        "Slug": "mock-remote-api",
+        "Uri": "https://mock.api.example.com",
+        "Headers": "Authorization:%ASSETS/SLACK_BOT_TOKEN%"
+      }
+    }
+  }
+}

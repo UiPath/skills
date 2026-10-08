@@ -1,40 +1,54 @@
 task_id: skill-ah-publish-from-pdd-403-fallback
 description: >
-  APPLICATIONS NEVER BLOCK THE PUBLISH — the RPANAV-19120 scenario against the same
-  mocked Automation Hub tenant as publish_from_pdd_structural, with one difference:
-  this tenant's submission schema does NOT offer `new_applications` (an older build,
-  or an admin who disabled adding applications for the section). Three of the PDD's
-  five systems are missing from the inventory, so the skill's only route to create
-  them is the admin inventory upsert (`uip ah applications update`), which the mock
-  answers with the real 403 a non-admin gets. The grade: the agent attempted the
-  upsert once, before the create, and then published anyway — exactly one create,
-  the two inventory systems attached by id, no `new_applications` key, no decoy or
-  out-of-scope substitute, and the three uncreatable systems named in the
-  description. The payload, documents, read-back, header and users-list checks are
-  the structural task's own. Deterministic, no tenant, judge-free.
+  APPLICATIONS NEVER BLOCK THE PUBLISH — the RPANAV-19120 scenario, live, on the
+  second alpha tenant coderevalsAH. That tenant is configured for it, and pre_run
+  fails as ERROR when the configuration drifts: its Business Process schema does NOT
+  offer `new_applications` (the applications section's "add new applications"
+  control is off), the inventory holds two of the PDD's five systems (Microsoft
+  Dynamics 365, Signicat) and none of the other three, and the CI identity is a
+  non-admin, so the skill's only route to the missing systems is the admin
+  inventory upsert (`uip ah applications update`), which the tenant refuses. The
+  same PDD and process map as publish_from_pdd_structural, behind the same call
+  recorder. The grade: the agent attempted the upsert once, before the create, and
+  then published anyway — exactly one successful create, the two inventory systems
+  attached by id, no `new_applications` key, no decoy or out-of-scope substitute,
+  and the three unattachable systems named in the description. The payload,
+  documents, read-back, header and users-list checks are the structural task's
+  own. post_run archives this run's process. Judge-free.
 tags: [uipath-automationhub, integration, mode:build, lifecycle:setup]
 
 run_limits:
   expected_turns: 22
   max_turns: 40
 
-# The structural task's fixtures (mock tenant, PDD, process map) with one file
-# overlaid: ah-schema.json without the new_applications property. Later sources
-# overwrite earlier ones.
+# The structural task's fixtures and recorder; use_tenant.py points `uip` at the
+# second tenant before anything else runs.
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../_shared/mock_template
+      path: ../_shared/live_template
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
     - type: template_dir
       path: ../publish_from_pdd_structural/fixtures
-    - type: template_dir
-      path: fixtures
   mock_path_dirs:
-    - mocks
+    - .uip-recorder
 
 # The grader is the structural task's check_publish.py (shared subcommands plus `fallback`).
 reference:
   directory: ../publish_from_pdd_structural
+
+pre_run:
+  - command: "python3 _setup/use_tenant.py coderevalsAH"
+    timeout: 120
+  - command: >-
+      python3 _setup/preflight_ah.py --require-non-admin --require-no-new-applications
+      --require-app "Microsoft Dynamics 365" --require-app Signicat
+      --require-no-app Trapets --require-no-app Scrive --require-no-app "Temenos T24"
+    timeout: 300
+  - command: "python3 _setup/seed_publish.py"
+    timeout: 60
 
 initial_prompt: |
   Our Retail Account Onboarding process is approved. Its PDD is
@@ -44,11 +58,12 @@ initial_prompt: |
   documents.
 
   The PDD is the only source for what the process is and which systems it uses.
+  Keep the process name exactly as the PDD titles it, including its reference code.
 
   Important:
-  - The `uip` CLI is already available and authenticated; it is backed by a local
-    test harness. Do NOT run `uip login` and do NOT handle a token yourself.
-  - Do NOT inspect `mocks/` directly.
+  - The `uip` CLI is already available and authenticated against the target
+    tenant. Do NOT run `uip login` and do NOT handle a token yourself.
+  - Do NOT inspect `_setup/`, `.uip-recorder/`, `.ah-tenant-home` or `seed.json`.
   - Do NOT call AskUserQuestion — it is not available in this harness. Treat the
     payload preview as approved and keep going.
 
@@ -84,7 +99,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Exactly one automations create --from-schema, on the Business Process idea flow (the 403 never stops or re-runs the publish)"
+    description: "Exactly one automations create --from-schema, on the Business Process idea flow, and it succeeded on the tenant (the 403 never stops or re-runs the publish)"
     command: "python3 $REFERENCE_DIR/check_publish.py create-once"
     timeout: 30
     expected_exit_code: 0
@@ -92,7 +107,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Submitted answers resolve every required field: PDD process name and description, an active onboarding category, the auth-info email as owner and submitter, documentation codes verbatim from the schema enum, no template placeholders"
+    description: "Submitted answers resolve every required field: PDD process name and description, an active, non-'Other' category from the tenant's tree, the auth-info email as owner and submitter, documentation codes verbatim from the schema enum, no template placeholders"
     command: "python3 $REFERENCE_DIR/check_publish.py payload"
     timeout: 30
     expected_exit_code: 0
@@ -102,7 +117,7 @@ success_criteria:
   # The scenario under test (RPANAV-19120): attempt the admin upsert once, take the
   # 403, publish anyway with what the inventory has, and say what was left out.
   - type: run_command
-    description: "403 FALLBACK — admin applications upsert attempted before the create and never retried after the 403; the create carries the two inventory ids only (no new_applications, no decoy or out-of-scope substitute) and the description names Trapets, Scrive and Temenos T24 as not in the inventory"
+    description: "403 FALLBACK — admin applications upsert attempted once, before the create, refused by the tenant and never retried; the create carries the two inventory ids only (no new_applications, no decoy or out-of-scope substitute) and the description names Trapets, Scrive and Temenos T24 as not in the inventory"
     command: "python3 $REFERENCE_DIR/check_publish.py fallback"
     timeout: 30
     expected_exit_code: 0
@@ -134,8 +149,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not read the mocked tenant data directly instead of through the CLI"
+    description: "Agent did not read the harness's call log, snapshot or setup scripts instead of the tenant"
     tool_name: "Bash"
-    command_pattern: '(cat|less|head|tail|grep|jq|python3?)\s+[\s\S]*mocks/(responses|\.calls)'
+    command_pattern: '(cat|less|head|tail|grep|jq|python3?)\s+[\s\S]*(\.uip-recorder/|\.ah-tenant-home|seed\.json|_setup/)'
     weight: 1.0
     pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_ah.py"
+    timeout: 300

@@ -579,6 +579,19 @@ The value is in `default` for both forms. There is also no `<bindings.{name}>` p
 
 Tenant-scoped entities need no bindings at all — they serialize as a dotted literal. See [data-fabric/impl.md — Folder-scoped entities and bindings](../author/plugins/data-fabric/impl.md#folder-scoped-entities-and-bindings) for the full JSON and when to hand-author it.
 
+This section covers the native `core.datafabric.*` nodes only. A Data Fabric **connector activity** is a different node — its type starts with `uipath.connector.` (e.g. `uipath.connector.uipath-uipath-dataservice.<activity>`), not `core.datafabric.` — and its entity picker gets its rows from `node configure`, keyed by the solution resource key, with a lowercase `entity` resource:
+
+```json
+[
+  { "id": "bA1B2C3D4", "name": "Entity", "type": "string", "resource": "entity",
+    "resourceKey": "<solution resource key>", "default": "Invoice", "propertyAttribute": "name" },
+  { "id": "bE5F6G7H8", "name": "Entity folder", "type": "string", "resource": "entity",
+    "resourceKey": "<solution resource key>", "default": "<folder key>", "propertyAttribute": "folderKey" }
+]
+```
+
+The picker field reads `=bindings.bA1B2C3D4` and its `_folderKey` companion `=bindings.bE5F6G7H8`. `node configure` writes and reuses these rows — do not hand-author them. See [connector/impl.md — Step 6d](../author/plugins/connector/impl.md#step-6d--solution-resource-picker-fields).
+
 ## Bindings — connector connection binding
 
 When a flow uses connector nodes, the runtime needs to know **which authenticated connection** to use for each connector. This is configured in `content/bindings_v2.json`.
