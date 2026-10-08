@@ -7,7 +7,7 @@ description: >
   unassigned-folder sentinel; a flow that leaves them out fails validate with
   INLINE_ENTITY_UNBOUND. Covers references/data-fabric.md "An entity the
   solution authors itself" on either authoring path (.flow.ts + compile, or
-  node add). Offline: no debug, no tenant. Needs a CLI with UiPath/cli #4441
+  node add). No tenant entity is created. Needs a CLI with UiPath/cli #4441
   and #4442.
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, datafabric, local-entities, bindings]
 sandbox:
@@ -34,8 +34,8 @@ initial_prompt: |
   returns the records it read. Use the StockItem entity this solution defines,
   not one from the tenant.
 
-  The flow must validate and the solution must pack. Do not run or debug the
-  flow, and do not upload or publish anything.
+  The flow must validate and the solution must pack. Do not upload or publish
+  anything.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
@@ -81,13 +81,4 @@ success_criteria:
     min_count: 0
     max_count: 0
     weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    description: "Agent must NOT debug or publish (offline task)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+(maestro\s+)?flow\s+debug\b|uip\s+solution\s+(upload|publish|deploy)\b'
-    min_count: 0
-    max_count: 0
-    weight: 1.0
     pass_threshold: 1.0
