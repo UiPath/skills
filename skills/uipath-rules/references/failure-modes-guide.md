@@ -39,13 +39,12 @@ Errors exit 1 with `Validation failed for <DIR>`; warnings are reported and do n
 | `Studio Web did not let the rules engine read the uploaded project.` | The account cannot open the uploaded solution in Studio Web; ask the user to check their access. |
 | `--inputs must be a JSON object of input values.` | Pass one object keyed by input-argument name, not an array. |
 | `Input file '<FILE>' could not be read: <REASON>.` | Point `--inputs @<FILE>` at an existing JSON file, or pass the object inline. |
-| `--folder-path and --folder-key set the folder the --explain trace is published into, so they need --explain.` | Add `--explain`, or drop the folder option. |
-| `Could not find your personal workspace to publish the trace into.` | Re-run with `--explain --folder-path <FOLDER_PATH>` pointing at a folder the user can read. |
+| `Could not find your personal workspace to run the rules engine in.` | Re-run with `--folder-path <FOLDER_PATH>` or `--folder-key <FOLDER_KEY>` pointing at a folder the user can read. |
 | `The rules engine did not answer within <SECONDS> seconds.` | Re-run, or pass a larger `--timeout`. |
 | An input reported as unknown | Every input key must match an `inputData` name exactly; names are case-sensitive. |
 | An input reported as a type mismatch | The value does not fit the input argument's `typeRef`; fix the value or the `typeRef`. |
 
-After an `--explain` run, `The rules engine recorded no trace for this run.` means the trace was not published, which is best effort; compare the inputs against each row by hand.
+No `Data.traceId` means the engine did not trace the run (tracing is off for the tenant, or publishing it failed); compare the inputs against each row by hand.
 
 ## `uip rules list` / `get` / `versions` / `describe`
 
