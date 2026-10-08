@@ -109,8 +109,8 @@ detail a runtime-evidence bar needs.
 
 The JSON envelope has top-level `Result`; a successful validation also reports
 `Data.Status: "Valid"` and may carry `Data.Warnings`. Treat warnings as failures
-except for the reviewed shared-connection advisory and the expected error-envelope
-diagnostics ([`error-handling.md`](error-handling.md#reading-the-failure)). Preserve any exception's
+except for the reviewed shared-connection advisory and the `err()` read
+diagnostics in [`error-handling.md`](error-handling.md#reading-the-failure). Preserve any exception's
 exact code/text and rationale instead of broadening an allowlist.
 
 ### Bounded completion
@@ -235,19 +235,19 @@ the read-back hundreds of lines. Trimming it with `tail` or `head` then drops
 only when the claim is about that step.
 
 **`incidents` is filled only for a faulted run.** `Data` carries `finalStatus`,
-`instanceId`, `studioWebUrl`, `jobKey`, `runId`, `solutionId`, `variables` and
-`elementExecutions`; when the run faulted, the CLI also fetches its incidents
-into `Data.incidents` and names the first in the error `Message`. When the
-outputs could not be read, `Data.variablesError` replaces `variables`: treat the
-outputs as unknown, not empty, and read them with
-`uip maestro flow debug-instance variables <instanceId>`.
+`instanceId`, `studioWebUrl`, `jobKey`, `runId`, `folderKey`, `entryPoint`,
+`solutionId`, `variables` and `elementExecutions`; when the run faulted, the CLI
+also fetches its incidents into `Data.incidents` and names the first in the
+error `Message`. When the outputs could not be read, `Data.variablesError`
+replaces `variables`: treat the outputs as unknown, not empty, and read them
+with `uip maestro flow debug-instance variables <instanceId>`.
 
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
 
 ```bash
-( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
-( cd <Solution> && uip maestro flow debug <Name> --log-level error \
+( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
+( cd "<Solution>" && uip maestro flow debug <Name> --log-level error \
   --inputs @inputs.json \
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>}" \
   --output json )

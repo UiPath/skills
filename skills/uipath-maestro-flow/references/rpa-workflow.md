@@ -29,17 +29,16 @@ and the deployed contract rather than copying values from a different folder.
 
 ## Where the job runs
 
-The step starts an Orchestrator job, and the robot that takes it decides the
-project type: serverless cloud robots run only background, cross-platform
-projects (vendor documentation), and jobs a Flow starts have run on them even
-where the folder also had an unattended Windows robot. So a process a Flow
-starts targets the cross-platform framework unless the folder's robots are
-known to be Windows. A process meant to be edited in Studio Web beside the Flow
-is also XAML with VB expressions: Studio Web opens no project holding coded
+The step starts an Orchestrator job on a robot of the process's folder, and the
+project's target framework, fixed when the project is created, decides which
+robots can take it: a serverless cloud robot runs only background,
+cross-platform processes
+([Serverless robots](https://docs.uipath.com/orchestrator/automation-cloud/latest/user-guide/executing-unattended-automations-with-serverless-robots)).
+So create a process a Flow starts as cross-platform unless the folder's robots
+are known to be Windows. A process meant to be edited in Studio Web beside the
+Flow is also XAML with VB expressions: Studio Web opens no project holding coded
 workflows or C# expressions, and lists such a process with errors `20042` and
-`20021` instead. A `types.file` input passed to it arrives as a job
-attachment reference (`ID`, `FullName`, `MimeType`, `Metadata`), the shape the
-process's file argument takes.
+`20021` instead.
 
 ## Evidence boundary
 

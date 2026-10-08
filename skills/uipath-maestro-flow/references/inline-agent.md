@@ -105,8 +105,8 @@ tools: [{
 }]
 ```
 
-Other kinds (`mcp`, `a2a`, `clientside`, `httpRequest`, `function`) and what
-each needs before a live run: [agent-resources.md](agent-resources.md#tool-kinds).
+Other kinds (`mcp`, `a2a`, `clientside`, `httpRequest`, `function`) and the
+identity each takes: [agent-resources.md](agent-resources.md#tool-kinds).
 
 A tool is invoked by the model, not by a control-flow edge. Local execution
 skips tool resources, so it proves their wiring but not that the model called

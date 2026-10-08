@@ -30,10 +30,9 @@ steps over required caller inputs unless the deployment supplies configured
 values. Pick the interval from the business requirement rather than from what
 is convenient to test.
 
-`every` is the trigger's only field: there is no time-zone setting. A schedule
-fixed to local hours (a run at 06:00 local time through daylight-saving
-changes) has no setting here; record the time zone the requirement uses and
-confirm the deployed trigger's run times.
+`every` is the trigger's only field: there is no time-zone setting. When the
+requirement ties the run to local hours, state that time zone in the final
+response.
 
 ## Evidence boundary
 

@@ -41,7 +41,7 @@ Which variable holds the envelope is a per-node-family runtime fact, measured on
 `serialize` rewrites the read for the exception families, so authored source stays uniform and a family moving is a table edit rather than a fleet-wide rewrite.
 A bare `err(step)` is the did-this-fail test and is never rewritten: it reads truthy on every family, the envelope object included.
 
-`flow validate` warns `EXPRESSION_DIAGNOSTIC` on reads the runtime does fill: `element` and `response`, which no manifest declares, and every field read from a managed HTTP step, whose rewritten `<step>.output` read the validator types only as `{ error }`. These warnings are expected; review each against this table rather than rewriting the read.
+`flow validate` warns `EXPRESSION_DIAGNOSTIC` on two kinds of `err()` read the runtime does fill: `element` and `response` on any family, which no manifest declares (`Property 'element' does not exist on type '<Step>_Error'`), and every field of a managed HTTP step's envelope, whose rewritten `<step>.output` read the validator types only as `{ error }` (`Property 'output' does not exist on type '{ error: <Step>_Error; }'`). Accept exactly these, on reads written with `err()` or `h.err()`; any other `EXPRESSION_DIAGNOSTIC` is a read that resolves to nothing.
 
 When a step with a handler fails, a script step still applies its own `{ updates }`; a sub-flow step does not, and neither does a `.loop()` container. An update that must happen only on success goes on the step after it.
 

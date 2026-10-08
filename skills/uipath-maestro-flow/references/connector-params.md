@@ -629,21 +629,6 @@ new measurement to the list-envelope ledger when product debug shows a genuine
 wrapper. One call is one page; use the operation's filtering/paging inputs when
 the business operation needs a narrower or later page.
 
-## Studio Web and compiled connector steps
-
-A compiled connector step runs with the values the source gives it, but Studio
-Web shows its fields empty and flags the required ones: compile does not emit
-the field schema the designer binds stored values to
-(`configuration.fieldsContainer`). A save in Studio Web then drops the body
-values of every compiled connector step.
-
-1. Keep the local source as the Flow's authority, and never take a `.flow` back
-   from Studio Web. The next `solution upload` or `flow debug` from the local
-   source restores the values there.
-2. Tell whoever will open the Flow in Studio Web that its connector steps look
-   unconfigured there but run as built, and that saving the Flow there loses
-   their values.
-
 ## Scenario and evidence boundary
 
 Include every input named by the scenario even when the provider schema marks
