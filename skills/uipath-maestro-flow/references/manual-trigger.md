@@ -63,8 +63,8 @@ that id. So two roots cannot both take `amount`; `check` reports
 `ENTRY_POINT_INPUT_COLLISION`.
 
 To run a root other than the default, pass `--entry-point <id>` (the `id` you
-gave `.entryPoint`; the default root's trigger is `start`) to
-`uip maestro flow debug` or `uip maestro flow process run`.
+gave `.entryPoint`; the default root's trigger is `start` unless the flow sets
+`.triggerId(...)`) to `uip maestro flow debug` or `uip maestro flow process run`.
 
 ### One input, whichever root fired: `{ shared }`
 
