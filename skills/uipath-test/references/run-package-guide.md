@@ -17,7 +17,7 @@ uip tm run --type package --package-name <PACKAGE_NAME> --package-version <VERSI
 | `--package-version` | Yes | `1.0` (app version) runs the latest `1.0.x` patch. An exact version (`1.0.244878764`) must be the latest patch of its app version; an older one is refused. After a fresh upload in CI, pass the exact version just published so the command waits for that build. |
 | `--folder-path` / `--folder-key` | One of them | Orchestrator folder the tests run in. Get the key with `uip or folders list -n <folder-name> --all --output json` when only the name is known. |
 | `--project-key` / `--project-id` | One of them | Test Manager project the tests run in. Get keys with `uip tm project list --output json`. |
-| `--input-path <file>` | No | JSON array `[{"name": "Param", "value": "v"}]`, optional `"type"`. One file for the whole test set; applied to every test that declares the name. |
+| `--input-path <file>` | No | JSON array `[{"name": "Param", "value": "v"}]`, optional `"type"`. One file for the whole test set; applied to every test that declares the name. A name no test declares is not applied: the output lists it in `Data.IgnoredInputs` and a `Warning` (exit code unchanged). Report it to the user; it is usually a typo. |
 | `--max-retries <n>` | No | Re-run only failed tests, in the same execution. Default 0. |
 | `--format junit\|uipath` | No | Report format. Default `junit`. |
 | `--result-path <path>` | No | Report file or directory. Default: current directory. |
