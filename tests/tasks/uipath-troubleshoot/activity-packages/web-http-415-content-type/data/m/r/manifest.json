@@ -19,10 +19,6 @@
       "file": "63636db9b6.json"
     },
     {
-      "match": "or jobs traces 3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75",
-      "file": "72f9d782d3.json"
-    },
-    {
       "match": "traces spans get --job-key 3f8d5a91-2b7c-4e60-9a1f-6c8e4d2b0a75",
       "file": "1b1bb73c81.json",
       "exit_code": 1

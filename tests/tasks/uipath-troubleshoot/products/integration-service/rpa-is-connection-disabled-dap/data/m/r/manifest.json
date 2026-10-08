@@ -36,7 +36,7 @@
       "file": "5d05e6495f.json"
     },
     {
-      "match": "or jobs traces 3baa335d-8cd1-44cf-936c-df8c013c99df --output json",
+      "match": "traces spans get --job-key 3baa335d-8cd1-44cf-936c-df8c013c99df --output json",
       "file": "23cb6207f5.json"
     },
     {

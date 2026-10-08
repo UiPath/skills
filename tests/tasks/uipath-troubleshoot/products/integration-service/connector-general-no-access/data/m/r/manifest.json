@@ -23,10 +23,6 @@
       "file": "e643049825.json"
     },
     {
-      "match": "or jobs traces f5e5eaa8-ce88-482f-9506-01394caa3967",
-      "file": "9afc8c865b.json"
-    },
-    {
       "match": "traces spans get --job-key f5e5eaa8-ce88-482f-9506-01394caa3967",
       "file": "9afc8c865b.json"
     },

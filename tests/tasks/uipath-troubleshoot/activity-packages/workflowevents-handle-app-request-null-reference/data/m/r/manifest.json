@@ -26,11 +26,6 @@
       "_doc": "Pending -> Running -> Faulted transition set; confirms a clean single execution, no diagnostic signal beyond jobs get."
     },
     {
-      "match": "or jobs traces b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
-      "file": "e54213fe0e.json",
-      "_doc": "Three spans: RobotJob (NullReferenceException stack with the HandleAppRequest.EndExecute faulting frame), the Handle Apps Request activity span (FullTypeName UiPath.WorkflowEvents.Activities.HandleAppRequest, WorkflowFile=ProcessRequest.xaml, ConnectionMode=RobotJS \u2014 proves this is an App-invoked workflow), and the faulting Assign span (Value io_Records.Rows.Count, the null dereference inside the invoked workflow). The WorkflowFile + Assign expression are the cause-disambiguation evidence (in-workflow null vs WorkflowEvents-package bug vs SignalR channel)."
-    },
-    {
       "match": "traces spans get --job-key b41d9f07-2e6a-4c8b-9d3f-5a1e7c0b2d49",
       "file": "e54213fe0e.json",
       "_doc": "Alternate trace-retrieval form (platform traces command); same span payload."
