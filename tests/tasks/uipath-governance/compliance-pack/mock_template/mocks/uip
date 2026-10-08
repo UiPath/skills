@@ -347,9 +347,10 @@ def policy_record(args, identifier, existing_priority=None):
     """Build a stored policy from create/update flags; (record, error)."""
     name = flag(args, "--name")
     product = flag(args, "--product-name")
-    missing = [f for f, v in (("--name", name), ("--product-name", product)) if not v]
-    if missing:
-        return None, failure(f"error: required option(s) missing: {', '.join(missing)}")
+    # Commander's wording for the first missing requiredOption.
+    for opt, value, metavar in (("--name", name, "<name>"), ("--product-name", product, "<product-name>")):
+        if not value:
+            return None, failure(f"error: required option '{opt} {metavar}' not specified")
     data, err = read_json_file(flag(args, "--input"))
     if err:
         return None, failure(err)
