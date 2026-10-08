@@ -18,12 +18,25 @@ sandbox:
       path: _setup
       mount_point: _setup
 
+# The only compliance-pack task that still changes the real pack: the smoke
+# suite runs against a `uip` shim. Its copies in the concurrent claude / codex /
+# delegate runs would still undo each other, so pre_run takes a tenant-side lock
+# (an Orchestrator asset) and the last post_run step releases it. The lock never
+# gates the task — see _setup/tenant_lock.py. coder-eval caps a pre_run step at
+# 300s, so the wait (up to ~9 min: the other two runs' copies at ~1.5-3.5 min
+# each) is split over two steps; the second is a no-op once the lock is held.
 pre_run:
+  - command: 'COMPLIANCE_LOCK_WAIT=270 python3 _setup/tenant_lock.py acquire'
+    timeout: 300
+  - command: 'COMPLIANCE_LOCK_WAIT=270 python3 _setup/tenant_lock.py acquire'
+    timeout: 300
   - command: 'python3 _setup/cleanup_compliance_pack.py'
     timeout: 120
 
 post_run:
   - command: 'python3 _setup/cleanup_compliance_pack.py'
+    timeout: 120
+  - command: 'python3 _setup/tenant_lock.py release'
     timeout: 120
 
 run_limits:

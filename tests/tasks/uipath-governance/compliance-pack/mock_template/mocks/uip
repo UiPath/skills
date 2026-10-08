@@ -1,0 +1,516 @@
+#!/usr/bin/env python3
+"""Selective `uip` shim for the compliance-pack smoke tasks.
+
+Serves from fixtures recorded on the live test tenant:
+  - `login status`, `login tenant list`
+  - `gov compliance-packs catalog|state ...`
+  - the `gov aops-policy` calls whose answer must agree with the shim's own
+    writes: `list`, `get`, `create`, `update`, `delete`,
+    `deployment tenant get|configure`
+Every other invocation (including `--help`, `template get|list`,
+`product list`) exec's the REAL `uip` found later on PATH — those are reads
+that do not depend on, or change, tenant state. Any other `aops-policy`
+write is refused.
+
+Why mock: a compliance pack is tenant-global. Enable / disable / restore on
+the shared test tenant collide with the same tasks running concurrently —
+in this suite (`-j 4`) and in the claude / codex / delegate runs that start
+at the same time — so a task's premise ("the pack is active") could be
+undone mid-run by another task's cleanup. Partial apply has the same
+problem one layer down: it creates `iso-42001-*` AOps policies and assigns
+them to the tenant. The graded behavior is which commands the skill drives
+and in what order; the shim keeps that real and moves the state into the
+sandbox.
+
+Fixtures (`fixtures/*.json`) are live `--output json` responses with the
+bot's tenant / org / user identifiers replaced. Not recorded:
+  - `coverage-all-applied.json` — `coverage-active.json` with every manual
+    control set (the live tenant never reaches every-clause-deployed,
+    because manual settings need admin-supplied values).
+  - `state enable organization` — the skill documents it as accepted by the
+    CLI with no backend effect; the shim answers success and changes nothing.
+  - coverage after an AOps partial apply stays at the scenario's capture.
+
+Scenario: the task's pre_run writes one of SCENARIOS' keys to
+`.compliance-mock-scenario`; absent → `inactive`. It sets every tenant's
+starting pack state. Mutations persist to `.compliance-mock-state.json`
+(pack state per tenant id, plus created / updated / deleted policies and the
+tenant assignments), so later reads reflect them. Every handled call is
+appended to `.compliance-mock-log.jsonl` for run_command graders.
+
+A target id that is not a GUID (typically empty — `~/.uipath/.auth` is not
+present in the CI sandbox) gets the same HTTP 404 the live API returned for
+it, so an agent has to recover the tenant id the way it would for real.
+
+`mock_path_dirs: [mocks]` PATH-prepends this script's directory inside the
+sandbox. Linux smoke only (no `windows` tag), hence no `uip.cmd` twin.
+"""
+
+import json
+import os
+import re
+import shutil
+import sys
+import uuid
+
+MOCK_DIR = os.path.dirname(os.path.abspath(__file__))
+SANDBOX = os.path.dirname(MOCK_DIR)
+FIXTURES = os.path.join(MOCK_DIR, "fixtures")
+SCENARIO_PATH = os.path.join(SANDBOX, ".compliance-mock-scenario")
+STATE_PATH = os.path.join(SANDBOX, ".compliance-mock-state.json")
+LOG_PATH = os.path.join(SANDBOX, ".compliance-mock-log.jsonl")
+
+PACK_ID = "iso-42001-2023"
+
+# Starting pack state for every tenant. `coverage` names a fixtures/coverage-*.json.
+SCENARIOS = {
+    "inactive": {"active": False, "coverage": "inactive"},
+    "active": {"active": True, "coverage": "active"},
+    "already-configured": {"active": True, "coverage": "all-applied"},
+    "drifted": {"active": True, "coverage": "drifted"},
+}
+
+GUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
+# Per-command failure Instructions, copied from gov-tool's state.ts.
+STATE_INSTRUCTIONS = {
+    "list": "Ensure you are logged in with 'uip login' and have access to the compliance packs service.",
+    "get": "Check that a state row exists for this scope and pack. Use 'state list' to see recorded states.",
+    "enable": "Check the pack identifier with 'uip gov compliance-packs catalog list'. A 404 means the packId is not in the loaded catalog.",
+    "disable": "Check that a state row exists for this scope and pack. Use 'state list' to see recorded states.",
+    "restore": "Check the pack identifier with 'uip gov compliance-packs catalog list'. A 404 means the packId is not in the loaded catalog.",
+    "coverage": "Check the pack identifier with 'uip gov compliance-packs catalog list'. A 502 means the Aops state could not be fetched.",
+}
+RESTORE_CONFLICT_INSTRUCTIONS = (
+    "The pack is either not active for this scope (run 'state enable' first) or "
+    "another operation on it is in progress (wait a few seconds and retry)."
+)
+STATE_CODES = {
+    "list": "CompliancePacksStateList",
+    "get": "CompliancePacksStateGet",
+    "enable": "CompliancePacksStateEnable",
+    "disable": "CompliancePacksStateDisable",
+    "restore": "CompliancePacksStateRestore",
+    "coverage": "CompliancePacksStateCoverage",
+}
+AOPS_LOGIN_INSTRUCTIONS = "Ensure you are logged in with 'uip login' and have access to the governance service."
+
+# `aops-policy` sub-verbs that change the tenant. Those not handled below are
+# refused: a real write would mutate the shared tenant and contradict the
+# shim's state.
+AOPS_WRITE_VERBS = {"create", "update", "delete", "configure", "remove", "assign", "unassign"}
+
+VALUE_FLAGS = {
+    "--output", "--output-filter", "--login-validity", "--input", "--name",
+    "--product-name", "--product-label", "--description", "--priority",
+    "--availability", "--identifier", "--tenant-name", "--search", "--limit",
+    "--offset", "--sort-by", "--sort-order", "--license-type", "--output-dir",
+    "--output-form-data", "--output-template-locale-resource",
+}
+
+
+def fixture(name):
+    with open(os.path.join(FIXTURES, name + ".json")) as fh:
+        return json.load(fh)
+
+
+def fixture_or_none(name):
+    path = os.path.join(FIXTURES, name + ".json")
+    return fixture(name) if os.path.exists(path) else None
+
+
+def load_state():
+    if os.path.exists(STATE_PATH):
+        try:
+            with open(STATE_PATH) as fh:
+                return json.load(fh)
+        except (OSError, ValueError):
+            pass
+    scenario = "inactive"
+    if os.path.exists(SCENARIO_PATH):
+        with open(SCENARIO_PATH) as fh:
+            scenario = fh.read().strip() or "inactive"
+    if scenario not in SCENARIOS:
+        sys.stderr.write(f"uip (shim): unknown scenario '{scenario}'\n")
+        sys.exit(2)
+    return {
+        "scenario": scenario,
+        "tenants": {},
+        "enabled": [],
+        "disabled": [],
+        "restored": [],
+        "policies": {},
+        "deleted": [],
+        "assignments": None,
+    }
+
+
+def save_state(state):
+    try:
+        with open(STATE_PATH, "w") as fh:
+            json.dump(state, fh)
+    except OSError:
+        pass
+
+
+def tenant_state(state, target_id):
+    return state["tenants"].setdefault(target_id, dict(SCENARIOS[state["scenario"]]))
+
+
+def log_call(args, payload):
+    try:
+        with open(LOG_PATH, "a") as fh:
+            fh.write(json.dumps({
+                "argv": args,
+                "Result": payload.get("Result"),
+                "Code": payload.get("Code"),
+            }) + "\n")
+    except OSError:
+        pass
+
+
+def emit(args, payload):
+    log_call(args, payload)
+    print(json.dumps(payload, indent=2, ensure_ascii=False))
+    return 0 if payload.get("Result") == "Success" else 1
+
+
+def success(code, data):
+    return {"Result": "Success", "Code": code, "Data": data}
+
+
+def failure(message, instructions=None, status=None):
+    payload = {"Result": "Failure", "Message": message}
+    if instructions:
+        payload["Instructions"] = instructions
+    if status:
+        payload["Context"] = {"HttpStatus": status}
+    return payload
+
+
+def not_found(verb):
+    payload = fixture("error-404")
+    payload["Instructions"] = STATE_INSTRUCTIONS.get(verb, payload["Instructions"])
+    return payload
+
+
+def positionals(args):
+    out, skip = [], False
+    for arg in args:
+        if skip:
+            skip = False
+            continue
+        if arg.startswith("-"):
+            skip = arg in VALUE_FLAGS
+            continue
+        out.append(arg)
+    return out
+
+
+def flag(args, name):
+    for i, a in enumerate(args):
+        if a == name:
+            return args[i + 1] if i + 1 < len(args) else None
+        if a.startswith(name + "="):
+            return a.split("=", 1)[1]
+    return None
+
+
+def read_json_file(path):
+    """(value, error) for an --input file, resolved from the caller's cwd."""
+    if not path:
+        return None, None
+    try:
+        with open(path) as fh:
+            return json.load(fh), None
+    except OSError as exc:
+        return None, f"Cannot read input file '{path}': {exc.strerror}"
+    except ValueError as exc:
+        return None, f"Input file '{path}' is not valid JSON: {exc}"
+
+
+# --- compliance-packs ---------------------------------------------------------
+
+def state_detail(tenant, scope, target_id):
+    data = fixture("state-detail")
+    data["ScopeLevel"] = scope
+    data["ScopeTargetId"] = target_id
+    data["Active"] = tenant["active"]
+    return data
+
+
+def handle_catalog(verb, rest):
+    if verb == "list":
+        return fixture("catalog-list")
+    if verb == "get":
+        if rest[:1] == [PACK_ID]:
+            return fixture("catalog-get-" + PACK_ID)
+        return failure(
+            "HTTP 404: Not Found",
+            "Check the pack identifier. Use 'uip gov compliance-packs catalog list' to see available pack IDs.",
+            404,
+        )
+    return None
+
+
+def handle_state(verb, rest):
+    if verb not in STATE_CODES:
+        return None
+    if len(rest) < 2 or rest[0] not in ("tenant", "organization"):
+        return None  # let the real CLI print its own usage error
+    scope, target_id = rest[0], rest[1]
+    if not GUID.match(target_id):
+        return not_found(verb)
+
+    state = load_state()
+    if scope == "organization":
+        # Not recorded: the backend does not implement organization scope. Report
+        # the pack as never applied there and make enable a no-op.
+        tenant = dict(SCENARIOS["inactive"])
+    else:
+        tenant = tenant_state(state, target_id)
+
+    if verb == "list":
+        row = state_detail(tenant, scope, target_id)
+        row.pop("Policies", None)
+        return success(STATE_CODES[verb], [row])
+
+    if len(rest) < 3:
+        return None
+    if rest[2] != PACK_ID:
+        return not_found(verb)
+
+    if verb == "get":
+        return success(STATE_CODES[verb], state_detail(tenant, scope, target_id))
+    if verb == "coverage":
+        cov = fixture("coverage-" + tenant["coverage"])
+        cov["Data"]["ScopeLevel"] = scope
+        cov["Data"]["ScopeTargetId"] = target_id
+        return cov
+
+    if verb == "enable":
+        if scope == "tenant":
+            if not tenant["active"]:
+                tenant.update(active=True, coverage="active")
+            state["enabled"].append(target_id)  # graders count tenants here
+        data = state_detail(dict(tenant, active=True), scope, target_id)
+    elif verb == "disable":
+        tenant.update(active=False, coverage="inactive")
+        state["disabled"].append(target_id)
+        data = {"Status": "Disabled"}
+    else:  # restore
+        if not tenant["active"]:
+            payload = failure("HTTP 409: Conflict", RESTORE_CONFLICT_INSTRUCTIONS, 409)
+            payload["Retry"] = "RetryAfter10Seconds"
+            return payload
+        # Restore resets every pack policy to the bundle values: drift is gone
+        # and the manual settings are back to unset — the post-enable capture.
+        tenant.update(coverage="active")
+        state["restored"].append(target_id)
+        data = state_detail(tenant, scope, target_id)
+    save_state(state)
+    return success(STATE_CODES[verb], data)
+
+
+# --- aops-policy --------------------------------------------------------------
+
+def product_meta(name):
+    return fixture("aops-products").get(name, {
+        "Name": name, "Label": name, "IsRestricted": False, "IsCloud": False, "IsRemote": False,
+    })
+
+
+def recorded_list(product):
+    """Recorded list entries for a product, or None when not recorded."""
+    rec = fixture_or_none("aops-list-" + product) if product else None
+    return rec["Data"]["Result"] if rec else None
+
+
+def all_known_policies(state):
+    """id → list-shaped entry, across recorded lists, recorded gets and the shim's writes."""
+    known = {}
+    for name in fixture("aops-products"):
+        for entry in recorded_list(name) or []:
+            known[entry["Identifier"]] = entry
+    for fname in os.listdir(FIXTURES):
+        if fname.startswith("aops-get-"):
+            data = fixture(fname[:-5])["Data"]
+            known[data["Identifier"]] = {k: v for k, v in data.items() if k != "Data"}
+    for pid, record in state["policies"].items():
+        known[pid] = {k: v for k, v in record.items() if k != "Data"}
+    for pid in state["deleted"]:
+        known.pop(pid, None)
+    return known
+
+
+def policy_record(args, identifier, existing_priority=None):
+    """Build a stored policy from create/update flags; (record, error)."""
+    name = flag(args, "--name")
+    product = flag(args, "--product-name")
+    # Commander's wording for the first missing requiredOption.
+    for opt, value, metavar in (("--name", name, "<name>"), ("--product-name", product, "<product-name>")):
+        if not value:
+            return None, failure(f"error: required option '{opt} {metavar}' not specified")
+    data, err = read_json_file(flag(args, "--input"))
+    if err:
+        return None, failure(err)
+    if data is not None and not isinstance(data, dict):
+        return None, failure("Policy data must be a JSON object (the form-data blueprint, no wrapper).")
+    record = {
+        "Name": name,
+        "Identifier": identifier,
+        "Priority": int(flag(args, "--priority")) if flag(args, "--priority") else existing_priority,
+        "Availability": int(flag(args, "--availability") or 30) or 30,
+        "Product": product_meta(product),
+        "Data": {"policyIdentifier": identifier, "data": data or {}},
+    }
+    if flag(args, "--description"):
+        record["Description"] = flag(args, "--description")
+    return record, None
+
+
+def handle_aops(sub, args):
+    literal = positionals(args)[2:]  # drop "gov aops-policy"
+    state = load_state()
+
+    if sub == "list":
+        product = flag(args, "--product-name")
+        base = recorded_list(product)
+        if base is None:
+            return None  # not recorded → real CLI (read-only)
+        deleted = set(state["deleted"])
+        entries = [e for e in base if e["Identifier"] not in deleted]
+        entries = [state["policies"].get(e["Identifier"], e) for e in entries]
+        entries += [p for pid, p in state["policies"].items()
+                    if p["Product"]["Name"] == product and pid not in {e["Identifier"] for e in base}]
+        entries = [{k: v for k, v in e.items() if k != "Data"} for e in entries]
+        search = flag(args, "--search")
+        if search:
+            entries = [e for e in entries if search.lower() in e["Name"].lower()]
+        sort_by = (flag(args, "--sort-by") or "").lower()
+        if sort_by in ("priority", "name"):
+            key = "Priority" if sort_by == "priority" else "Name"
+            entries.sort(key=lambda e: (e.get(key) is None, e.get(key)),
+                         reverse=(flag(args, "--sort-order") or "asc").lower() == "desc")
+        return success("AopsPolicyList", {"TotalCount": len(entries), "Result": entries})
+
+    if sub == "get":
+        target = literal[1] if len(literal) > 1 else None
+        if target in state["deleted"]:
+            return failure("HTTP 404: Not Found", AOPS_LOGIN_INSTRUCTIONS, 404)
+        if target in state["policies"]:
+            return success("AopsPolicyGet", state["policies"][target])
+        rec = fixture_or_none("aops-get-" + str(target))
+        return rec  # None → real CLI (read-only)
+
+    if sub == "create":
+        product = flag(args, "--product-name")
+        siblings = [e.get("Priority") or 0 for e in (recorded_list(product) or [])]
+        siblings += [p.get("Priority") or 0 for p in state["policies"].values()
+                     if p["Product"]["Name"] == product]
+        record, err = policy_record(args, str(uuid.uuid4()), max(siblings, default=0) + 1)
+        if err:
+            return err
+        state["policies"][record["Identifier"]] = record
+        save_state(state)
+        return success("AopsPolicyCreate", {k: v for k, v in record.items() if k != "Description"})
+
+    if sub == "update":
+        target = flag(args, "--identifier")
+        if not target or target not in all_known_policies(state):
+            return failure(f"HTTP 404: Policy '{target}' not found", AOPS_LOGIN_INSTRUCTIONS, 404)
+        # Full replacement, as the real command: omitted fields are cleared.
+        record, err = policy_record(args, target)
+        if err:
+            return err
+        state["policies"][target] = record
+        save_state(state)
+        return success("AopsPolicyUpdate", record)
+
+    if sub == "delete":
+        target = literal[1] if len(literal) > 1 else flag(args, "--identifier")
+        if not target or target not in all_known_policies(state):
+            return failure(f"HTTP 404: Policy '{target}' not found", AOPS_LOGIN_INSTRUCTIONS, 404)
+        state["deleted"].append(target)
+        state["policies"].pop(target, None)
+        save_state(state)
+        return success("AopsPolicyDelete", {"Status": "Deleted", "Identifier": target})
+
+    if sub == "deployment" and literal[1:2] == ["tenant"] and literal[2:3] in (["get"], ["configure"]):
+        verb = literal[2]
+        target_id = literal[3] if len(literal) > 3 else ""
+        if not GUID.match(target_id):
+            return fixture("error-404")
+        base = fixture("aops-deployment-tenant")["Data"]
+        tenant_name = base["Name"]
+        if verb == "get":
+            rows = state["assignments"]
+            if rows is None:
+                rows = base["TenantPolicies"]
+            data = dict(base, Identifier=target_id,
+                        TenantPolicies=[dict(r, TenantIdentifier=target_id) for r in rows])
+            return success("AopsPolicyDeploymentTenantGet", data)
+        entries, err = read_json_file(flag(args, "--input"))
+        if err or not isinstance(entries, list):
+            return failure(err or "Input must be a JSON array of tenant assignments.")
+        known = all_known_policies(state)
+        rows = []
+        for e in entries:
+            pid = e.get("policyIdentifier")
+            if not e.get("productIdentifier") or not e.get("licenseTypeIdentifier"):
+                return failure("Each assignment needs productIdentifier and licenseTypeIdentifier.")
+            if pid is not None and pid not in known:
+                return failure(f"HTTP 400: Policy '{pid}' does not exist", AOPS_LOGIN_INSTRUCTIONS, 400)
+            rows.append({
+                "TenantIdentifier": target_id,
+                "PolicyIdentifier": pid,
+                "ProductIdentifier": e["productIdentifier"],
+                "LicenseTypeIdentifier": e["licenseTypeIdentifier"],
+                "TenantName": flag(args, "--tenant-name") or tenant_name,
+            })
+        state["assignments"] = rows  # FULL replace, as the real command
+        save_state(state)
+        return success("AopsPolicyDeploymentTenantConfigure", rows)
+
+    if AOPS_WRITE_VERBS & set(literal):
+        return failure("uip (test shim): this aops-policy write is not supported in this sandbox.")
+    return None
+
+
+def real_uip():
+    parts = [
+        p for p in os.environ.get("PATH", "").split(os.pathsep)
+        if p and os.path.abspath(p) != MOCK_DIR
+    ]
+    return shutil.which("uip", path=os.pathsep.join(parts))
+
+
+def main():
+    args = sys.argv[1:]
+    literal = positionals(args)
+
+    payload = None
+    if "--help" in args or "-h" in args:
+        pass
+    elif literal == ["login", "status"]:
+        payload = fixture("login-status")
+    elif literal[:3] == ["login", "tenant", "list"]:
+        payload = fixture("tenant-list")
+    elif literal[:3] == ["gov", "compliance-packs", "catalog"] and len(literal) > 3:
+        payload = handle_catalog(literal[3], literal[4:])
+    elif literal[:3] == ["gov", "compliance-packs", "state"] and len(literal) > 3:
+        payload = handle_state(literal[3], literal[4:])
+    elif literal[:2] == ["gov", "aops-policy"] and len(literal) > 2:
+        payload = handle_aops(literal[2], args)
+    if payload is not None:
+        return emit(args, payload)
+
+    real = real_uip()
+    if not real:
+        sys.stderr.write("uip (shim): real uip CLI not found on PATH\n")
+        return 127
+    os.execv(real, [real] + args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

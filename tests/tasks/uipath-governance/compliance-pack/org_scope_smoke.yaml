@@ -7,22 +7,19 @@ description: >
 
 tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:compliance]
 
+# Compliance-pack and AOps state is tenant-global, so live runs collided with
+# concurrent tasks (CI run 36674826204). The `uip` shim serves those calls from
+# recorded fixtures and keeps state in the sandbox — see mock_template/mocks/uip.
+# Scenario `inactive`: ISO 42001 never applied on any of the 4 tenants.
 sandbox:
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
-    - type: template_dir
-      path: _setup
-      mount_point: _setup
+    - {type: template_dir, path: mock_template}
 
-# CI passes live tenant auth into every smoke sandbox, so `state enable` here
-# REALLY enables the pack on the login tenant. Clean up compliance-pack debris before and after.
 pre_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
-
-post_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
+  - command: 'printf inactive > .compliance-mock-scenario'
+    timeout: 10
 
 initial_prompt: |
   Apply ISO 42001 recommended settings organization-wide to all tenants.
@@ -57,16 +54,28 @@ success_criteria:
     pass_threshold: 0
 
   - type: command_executed
-    description: "Agent called state enable at tenant scope (advisory — codex stops after auth errors)"
+    description: "Agent called state enable at tenant scope"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable[\s\S]*tenant'
     min_count: 1
     weight: 2.0
-    pass_threshold: 0
+    pass_threshold: 1.0
 
   - type: command_not_executed
     description: "Agent did NOT use organization scope for state enable (backend not implemented)"
     command_pattern: 'uip\s+gov\s+compliance-packs\s+state\s+enable[\s\S]*organization'
     weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The pack was enabled on every tenant in the org, one tenant at a time (shim state)"
+    command: >-
+      python3 -c "import json, os, sys;
+      p = '.compliance-mock-state.json';
+      s = json.load(open(p)) if os.path.exists(p) else {};
+      sys.exit(0 if len(set(s.get('enabled', []))) >= 4 else 1)"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: file_exists
