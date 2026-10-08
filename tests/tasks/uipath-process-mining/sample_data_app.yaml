@@ -1,0 +1,97 @@
+task_id: skill-pm-sample-data-app
+description: >
+  Critical Rule 11. A user who asks for a process app "with sample data" wants
+  the template's built-in sample data — the UI's "Use sample data" option —
+  which the CLI reaches with `uip pm ingestions create <app> --sample-data`.
+  Without the rule, agents could not find the option and fell back to
+  inventing a CSV and uploading it.
+
+  Pins the whole path: discover which templates ship sample data
+  (`app-types list`), create the app WITHOUT a data mapping (sample files fit
+  the template's default mapping), then ingest with `--sample-data` — and
+  never `files upload` a fabricated file.
+
+  Command-construction only — no live tenant. Commands fail;
+  what matters is which commands the agent builds.
+tags: [uipath-process-mining, integration, mode:build, lifecycle:setup, app-types]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 25
+  turn_timeout: 600
+
+initial_prompt: |
+  I want to try out UiPath Process Mining but I don't have any data of my own
+  yet. Create a process app with sample data so I can click around in it.
+
+  Use the uipath-process-mining skill and follow its workflow.
+
+  Important:
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors,
+    and do NOT install or update anything.
+  - If template discovery fails, assume the `uipath.p2p.sap` template ships
+    sample data.
+  - If a command you needed an id from fails, substitute a placeholder id
+    of the same shape and still run the remaining commands, so we can
+    verify their shape.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+
+  - type: skill_triggered
+    description: "Agent activated the uipath-process-mining skill"
+    skill_name: "uipath-process-mining"
+    expected_skill: "uipath-process-mining"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked which templates are available (and which ship sample data)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+app-types\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the process app"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent loaded the template's sample data with ingestions create --sample-data"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+ingestions\s+create\b[^\n]*--sample-data\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT upload a file — sample data needs no upload"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+files\s+upload\b'
+    weight: 2.0
+
+  - type: command_not_executed
+    description: "Agent must NOT pass a data mapping — sample data fits the template's default mapping"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+apps\s+create\b[^\n]*--data-mapping\b'
+    weight: 2.0
+
+  - type: command_not_executed
+    description: "Agent must NOT fall back to a plain ingestion (no --sample-data) when the flag is rejected — there is no uploaded data to ingest"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+ingestions\s+create\b(?![^\n]*--sample-data)(?![^\n]*--help)'
+    weight: 2.0
+
+  - type: command_not_executed
+    description: "Agent must NOT mix --sample-data with file-format flags (rejected by the CLI)"
+    tool_name: "Bash"
+    command_pattern: '--sample-data\b[^\n]*--(file-format|field-delimiter|quote-character|encoding)\b|--(file-format|field-delimiter|quote-character|encoding)\b[^\n]*--sample-data\b'
+    weight: 1.0

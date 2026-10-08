@@ -55,6 +55,65 @@ add-table is not custom-only.
    extend with custom models + add-table, develop on `dev` (subset) and publish
    the full dataset, and `query` with the `--group-by/--metric` sugar.
 
+## Sample data — a demo app without your own data
+
+Some templates ship sample data — the UI's "Use sample data" option when creating
+an app. Do not write a synthetic CSV instead.
+
+> **Sample data is NOT customer data.** It is generic demo data that UiPath ships
+> with the template. It does not describe the customer's process, and numbers mined
+> from it mean nothing for their business.
+
+| Situation | Use |
+|-----------|-----|
+| User asks for sample / demo data, or wants to try Process Mining with no data of their own | `--sample-data` |
+| User has or mentions their own data: a CSV, an extract, a source system, "our process" | Their data: mapping → `files upload` → `ingestions create`. **Never `--sample-data`.** |
+| Loading the customer's data fails | Fix the load, or report the failure. **Never fall back to sample data.** |
+| Unclear whether the user means their own data or a demo | Ask before ingesting anything |
+
+1. **Find a template that ships sample data.** `SampleDataAvailable` is per
+   template version:
+
+   ```bash
+   uip pm app-types list --output-filter "[?SampleDataAvailable].{Key:AppTypeKey,Version:Version,Name:DefaultName}"
+   ```
+
+   Empty result ⇒ no template on this tenant ships sample data. Tell the user and
+   fall back to their own data (mapping → upload → ingest).
+2. **Create the app without `--data-mapping`.** The sample files fit the
+   template's default mapping; a custom mapping can make them fail to parse.
+
+   ```bash
+   uip pm apps create "<APP_NAME>" --type <APP_TYPE_KEY> --output json
+   ```
+
+3. **Ingest the sample data.** No `files upload` first — the backend copies the
+   template's sample files into the app.
+
+   ```bash
+   uip pm ingestions create <APP_ID> --sample-data --wait --output json
+   ```
+
+   The ingestion runs the template's transformations like any other run, so the
+   app is queryable when `--wait` returns `Success`.
+
+| Outcome | Meaning | Do |
+|---------|---------|-----|
+| `Failure`, *"has no sample data"* | Template ships none (`SampleDataAvailable: false`), or the app was imported | Pick a template from step 1, or use the user's own data |
+| non-zero exit, *"cannot be used with"* | `--sample-data` combined with `--file-format` / `--field-delimiter` / `--quote-character` / `--encoding` | Drop the file-format flags — sample data needs none |
+| *"unknown option '--sample-data'"* | Installed `uip` predates the flag | `npm install -g @uipath/cli@latest`, then retry; do not call the REST API by hand. Cannot update ⇒ stop and tell the user. Never run a plain `ingestions create` in its place |
+| `--wait` ends `FAILED` | Loader/transform error, printed by `--wait` | Treat as any failed ingestion — read the printed error; `ingestions logs` for more |
+
+After loading, everything else is unchanged: transform, extend with add-table,
+publish, query.
+
+Keep demo apps and customer apps separate. When the user later wants to analyze
+their own data, create a **new** app for it (mapping → `files upload` →
+`ingestions create`). Do not load customer data into the sample-data app, and do
+not ingest sample data into an app that holds customer data: dashboards, metrics
+and transformations tuned on demo data would then be passed off as analysis of
+the customer's process.
+
 ## What is template-specific
 
 - **The `Cases.sql` optional-column gotcha** ([`transformations.md`](transformations.md))
