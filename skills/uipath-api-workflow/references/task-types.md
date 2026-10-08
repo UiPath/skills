@@ -1,13 +1,13 @@
 # Task Types Reference
 
-Detailed reference for the activity types supported in the API Workflow DSL — focused on logical/structural building blocks. Each section: required fields, state/output behavior, metadata, minimal JSON, common mistakes, and where applicable, nesting examples.
+Detailed reference for the activity types supported in the API Workflow DSL — focused on logical/structural building blocks. Each section: required fields, export pattern, metadata, minimal JSON, common mistakes, and where applicable, nesting examples.
 
 | Type | Action selector | Purpose |
 |------|-----------------|---------|
 | Sequence | `do` | Group child tasks |
 | Assign | `set` | Set or update workflow variables |
 | JavaScript (JsInvoke) | `run.script` | Run inline JavaScript |
-| Log Message (LogMessage) | `run.script` | Write an Info, Warning, or Error entry to Orchestrator logs |
+| Log Message (LogMessage) | `run.script` with one `console.*` call | Write an Info / Warning / Error job log entry |
 | If | `switch` (inside `#Wrapper`) | Conditional branching |
 | ForEach | `for.each` / `for.in` / `for.at` | Iterate over a collection |
 | DoWhile | `for.in` + `doWhile` | Repeat-until loop |
@@ -141,27 +141,25 @@ Inside the script, reference globals directly: `$context.variables.X`, `$context
 
 ## 4. Log Message (LogMessage)
 
-Writes a message to Orchestrator logs. Studio Web serializes this native activity as a JavaScript console call, but it is not a JsInvoke activity.
+Writes one job log entry. Use it for all logging — never `console.*` inside a JsInvoke. Stored as a `run.script`, but Studio Web restores the card (level + message) only from the exact script shape below.
 
-**Required fields:** numeric `Log_Message_N` activity key, `run.script.code`, `run.script.language` (`"javascript"`), `run.script.arguments`, `metadata`
+**Required fields:** `run.script.code`, `run.script.language: "javascript"`, `run.script.arguments` (standard block), `metadata.activityType: "LogMessage"`. No `export` — it has no output.
 
-Use the console method matching the selected level:
+**Script:** exactly `console.<level>(<message>)` — nothing before or after, no trailing `;`. `<message>` is a JS expression.
 
-| Level | Script call |
-|-------|-------------|
-| Info (default) | `console.log(...)` |
-| Warning | `console.warn(...)` |
-| Error | `console.error(...)` |
+| Level | Code |
+|-------|------|
+| Info (default) | `console.log(<message>)` |
+| Warning | `console.warn(<message>)` |
+| Error | `console.error(<message>)` |
 
-Keep `run.script.arguments` as the same standard designer-scaffolding block used by JsInvoke. Log Message is side-effect-only: it has no `export`, produces no `$context.outputs` bucket, and its script has no `return`.
-
-**Minimal JSON (Info):**
+**Minimal JSON:**
 ```json
 {
   "Log_Message_1": {
     "run": {
       "script": {
-        "code": "console.log(\"Workflow started\")",
+        "code": "console.log(`Order ${$workflow.input.orderId} received`)",
         "language": "javascript",
         "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
       }
@@ -171,21 +169,16 @@ Keep `run.script.arguments` as the same standard designer-scaffolding block used
 }
 ```
 
-For a dynamic message, put the expression directly inside the selected console method:
+Other messages: `console.warn('Manual review required')`, `console.error($context.outputs.Javascript_1)` — objects log as JSON, secrets redacted.
 
-```json
-"code": "console.log($workflow.input.SomeString)"
-```
-
-Use `$workflow.input.<name>` for workflow arguments, `$context.variables.<name>` for variables, and `$context.outputs.<ActivityKey>` for exported prior outputs. Do not use `$input.<name>` for a workflow argument: `$input` is only the immediate prior task's output and can be `undefined` after a Log Message because the activity has no output.
+The next activity's `$input` is `undefined`. Read data from `$workflow.input`, `$context.variables`, or `$context.outputs`.
 
 **Common mistakes:**
-- Using a semantic key such as `Log_Message_Info` — Studio Web uses a numeric instance suffix: `Log_Message_1`, `Log_Message_2`, etc.
-- Using `metadata.activityType: "CustomLog"` — the native type is `LogMessage`
-- Replacing it with a JsInvoke activity instead of preserving the native Log Message card
-- Adding `export` or `return`
-- Using `console.log` for Warning/Error instead of `console.warn`/`console.error`
-- Reading workflow input through `$input` instead of `$workflow.input`
+- Trailing `;` or code before the call — Studio Web restores it as Info with the whole script as the message; the next save is a syntax error. `validate` rejects it
+- `console.info` / `console.debug` — not a Log Message level
+- Bare text: `console.log(Order received)` — the message is an expression; quote literals
+- Adding `return` or `export`
+- `activityType: "CustomLog"` — not a Studio Web activity
 
 ---
 

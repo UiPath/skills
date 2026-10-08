@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check native API Workflow Log Message authoring and validator compatibility."""
+"""Check native API Workflow Log Message authoring and validation."""
 
 from __future__ import annotations
 
@@ -8,10 +8,10 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 
-def fail(message: str) -> None:
+def fail(message: str) -> NoReturn:
     sys.exit(f"FAIL: {message}")
 
 
@@ -19,7 +19,7 @@ def workflow_path() -> Path:
     matches = sorted(
         path
         for path in Path.cwd().rglob("Workflow.json")
-        if "node_modules" not in path.parts and path != Path("Workflow.json")
+        if "node_modules" not in path.parts and path.parent != Path.cwd()
     )
     if len(matches) != 1:
         fail(f"expected one project Workflow.json, found {len(matches)}")
@@ -50,7 +50,7 @@ def activities(value: Any) -> list[tuple[str, dict[str, Any]]]:
     return found
 
 
-def check_structure(document: dict[str, Any]) -> list[str]:
+def check_structure(document: dict[str, Any]) -> None:
     input_properties = (
         document.get("input", {})
         .get("schema", {})
@@ -79,8 +79,6 @@ def check_structure(document: dict[str, Any]) -> list[str]:
         '${{"$context":$context,"$workflow":$workflow,"$input":$input,}}',
     }
     for key, body in log_nodes:
-        if not re.fullmatch(r"Log_Message_[1-9][0-9]*", key):
-            fail(f"non-canonical Log Message key: {key}")
         metadata = body["metadata"]
         if metadata.get("fullName") != "LogMessage":
             fail(f"{key} fullName must be LogMessage")
@@ -98,11 +96,11 @@ def check_structure(document: dict[str, Any]) -> list[str]:
         code = script.get("code")
         if not isinstance(code, str):
             fail(f"{key} needs string script code")
-        if re.search(r"\breturn\b", code):
-            fail(f"{key} must not return a value")
-        match = re.fullmatch(r"\s*console\.(log|warn|error)\((.*)\)\s*;?\s*", code, re.DOTALL)
+        # Studio Web restores the level only from this exact shape: the prefix
+        # at the very start and ")" as the very last character.
+        match = re.fullmatch(r"console\.(log|warn|error)\((.+)\)", code, re.DOTALL)
         if not match:
-            fail(f"{key} must contain exactly one supported console call")
+            fail(f"{key} must be exactly console.log|warn|error(<message>)")
         scripts.append((match.group(1), code))
 
     required_static = {
@@ -128,10 +126,8 @@ def check_structure(document: dict[str, Any]) -> list[str]:
             if "console." in code:
                 fail(f"{key} substitutes JsInvoke for a native Log Message")
 
-    return [key for key, _ in log_nodes]
 
-
-def check_validation(path: Path, log_keys: list[str]) -> None:
+def check_validation(path: Path) -> None:
     result = subprocess.run(
         ["uip", "api-workflow", "validate", str(path), "--output", "json"],
         check=False,
@@ -143,29 +139,17 @@ def check_validation(path: Path, log_keys: list[str]) -> None:
     except json.JSONDecodeError as exc:
         fail(f"validator did not return JSON: {exc}")
 
-    if result.returncode == 0:
-        if payload.get("Data", {}).get("Status") != "Valid":
-            fail("validator exited successfully without Data.Status Valid")
-        return
-
-    instructions = str(payload.get("Instructions", ""))
-    errors = [line.strip() for line in instructions.splitlines() if "- [error]" in line]
-    if len(errors) != len(log_keys):
-        fail(f"expected only {len(log_keys)} LogMessage validator errors, found {len(errors)}")
-    for key in log_keys:
-        expected_path = f"/{key}/metadata/activityType]"
-        matching = [line for line in errors if expected_path in line]
-        if len(matching) != 1 or "Unknown activityType 'LogMessage'" not in matching[0]:
-            fail(f"validator returned a non-tolerated error for {key}")
+    if result.returncode != 0 or payload.get("Data", {}).get("Status") != "Valid":
+        fail(f"validate did not return Valid: {payload.get('Instructions', '')}")
 
 
 def main() -> None:
     if len(sys.argv) != 2 or sys.argv[1] not in {"structure", "validation"}:
         fail("usage: check_log_message.py structure|validation")
     path, document = load_workflow()
-    log_keys = check_structure(document)
+    check_structure(document)
     if sys.argv[1] == "validation":
-        check_validation(path, log_keys)
+        check_validation(path)
     print(f"OK: native Log Message {sys.argv[1]} check passed")
 
 
