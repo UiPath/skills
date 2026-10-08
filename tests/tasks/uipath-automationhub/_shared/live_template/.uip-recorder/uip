@@ -17,12 +17,13 @@ from the CLI's JSON envelope (`Result`, `Data.Id`) when it printed one.
 
 Two switches, both set by the harness, never by the agent:
   AH_EVAL_NO_RECORD=1   run without recording (setup and grading scripts' own calls)
-  ../.ah-tenant-home    when present, HOME for the real CLI: a login copy pointed at
-                        another tenant of the same organization (_setup/use_tenant.py)
+  ../.ah-tenant.json    when present, run the real CLI on another tenant of the same
+                        organization (_setup/use_tenant.py), through its env-var auth
 """
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
@@ -34,8 +35,62 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 CALL_LOG = SCRIPT_DIR / ".calls.jsonl"
-TENANT_HOME_MARKER = SCRIPT_DIR.parent / ".ah-tenant-home"
 _DECODER = json.JSONDecoder()
+
+# --- tenant switch: keep in sync with _setup/ah_cli.py ----------------------------
+TENANT_MARKER_NAME = ".ah-tenant.json"
+_ENV_AUTH = {
+    "UIPATH_CLI_AUTH_TOKEN": "UIPATH_ACCESS_TOKEN",
+    "UIPATH_CLI_ORGANIZATION_NAME": "UIPATH_ORGANIZATION_NAME",
+    "UIPATH_CLI_ORGANIZATION_ID": "UIPATH_ORGANIZATION_ID",
+}
+
+
+def _read_login(path: str) -> dict:
+    values = {}
+    with open(path, encoding="utf-8") as handle:
+        for line in handle:
+            key, sep, value = line.strip().partition("=")
+            if sep:
+                values[key] = value
+    return values
+
+
+def _expires_soon(token: str, margin: int = 300) -> bool:
+    try:
+        payload = token.split(".")[1]
+        claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+        return float(claims["exp"]) < time.time() + margin
+    except (IndexError, KeyError, ValueError):
+        return False
+
+
+def tenant_env(env: dict, marker: str, real_uip: str) -> dict:
+    """`env` switched to the marker's tenant through the CLI's env-var auth.
+
+    The token and organization come from the shared login file on every call, so
+    a refresh by any other CLI call is picked up; a token about to expire is
+    refreshed first with a plain file-auth `uip login status`.
+    """
+    with open(marker, encoding="utf-8") as handle:
+        target = json.load(handle)
+    login = _read_login(target["auth_file"])
+    if _expires_soon(login.get("UIPATH_ACCESS_TOKEN", "")):
+        subprocess.run([real_uip, "login", "status", "--output", "json"], env=env,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        login = _read_login(target["auth_file"])
+    switched = dict(env)
+    for env_key, file_key in _ENV_AUTH.items():
+        if not login.get(file_key):
+            raise RuntimeError(f"{file_key} missing from {target['auth_file']}")
+        switched[env_key] = login[file_key]
+    switched["UIPATH_CLI_TENANT_NAME"] = target["tenant_name"]
+    switched["UIPATH_CLI_TENANT_ID"] = target["tenant_id"]
+    switched["UIPATH_CLI_ENABLE_ENV_AUTH"] = "true"
+    return switched
+# ----------------------------------------------------------------------------------
+
+TENANT_MARKER = SCRIPT_DIR.parent / TENANT_MARKER_NAME
 
 
 def real_uip() -> str | None:
@@ -50,13 +105,9 @@ def real_uip() -> str | None:
     return shutil.which("uip", path=os.pathsep.join(others))
 
 
-def child_env() -> dict:
+def child_env(target: str) -> dict:
     env = dict(os.environ)
-    if TENANT_HOME_MARKER.is_file():
-        home = TENANT_HOME_MARKER.read_text(encoding="utf-8").strip()
-        if home:
-            env["HOME"] = env["USERPROFILE"] = home
-    return env
+    return tenant_env(env, str(TENANT_MARKER), target) if TENANT_MARKER.is_file() else env
 
 
 def flag_value(argv: list[str], name: str) -> str | None:
@@ -116,8 +167,13 @@ def main(argv: list[str]) -> int:
     if target is None:
         sys.stderr.write("uip recorder: the real uip CLI is not on PATH\n")
         return 127
+    try:
+        env = child_env(target)
+    except (OSError, ValueError, KeyError, RuntimeError) as exc:
+        sys.stderr.write(f"uip recorder: cannot switch tenant ({exc}); refusing to run on the default tenant\n")
+        return 2
     if os.environ.get("AH_EVAL_NO_RECORD") == "1":
-        return subprocess.run([target, *argv], env=child_env()).returncode
+        return subprocess.run([target, *argv], env=env).returncode
 
     record: dict = {"ts": time.time(), "args": " ".join(argv)}
     captured = capture_file(argv)
@@ -125,7 +181,7 @@ def main(argv: list[str]) -> int:
         record["captured"] = captured
     # stdin and stderr pass straight through; stdout is buffered only to read the
     # envelope, then written out unchanged.
-    proc = subprocess.run([target, *argv], env=child_env(), stdout=subprocess.PIPE)
+    proc = subprocess.run([target, *argv], env=env, stdout=subprocess.PIPE)
     sys.stdout.buffer.write(proc.stdout)
     sys.stdout.flush()
     out = proc.stdout.decode("utf-8", errors="replace")

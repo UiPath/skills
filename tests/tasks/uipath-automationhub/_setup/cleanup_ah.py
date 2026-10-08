@@ -23,13 +23,11 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ah_cli import (  # noqa: E402
     SEED_FILE,
-    TENANT_HOME_MARKER,
     archive_target,
     business_process_flow,
     describe_failure,
@@ -40,16 +38,6 @@ from ah_cli import (  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="cleanup_ah: %(message)s")
 logger = logging.getLogger(__name__)
-
-
-def drop_tenant_home() -> None:
-    """Remove use_tenant.py's login copy (it holds a token) once the run is done."""
-    if not os.path.isfile(TENANT_HOME_MARKER):
-        return
-    with open(TENANT_HOME_MARKER, encoding="utf-8") as handle:
-        home = handle.read().strip()
-    if home and os.path.basename(home).startswith("ah-tenant-"):
-        shutil.rmtree(home, ignore_errors=True)
 
 
 def archive(processes: list[dict], phase: str, status: str) -> None:
@@ -82,15 +70,12 @@ def archive_by_name(name: str) -> int:
 
 
 def main(argv: list[str]) -> int:
-    try:
-        if os.environ.get("AH_E2E_CLEANUP", "always").lower() == "never":
-            logger.info("AH_E2E_CLEANUP=never; leaving this run's processes in place")
-            return 0
-        if len(argv) == 2 and argv[0] == "--name":
-            return archive_by_name(argv[1])
-        return archive_this_run()
-    finally:
-        drop_tenant_home()
+    if os.environ.get("AH_E2E_CLEANUP", "always").lower() == "never":
+        logger.info("AH_E2E_CLEANUP=never; leaving this run's processes in place")
+        return 0
+    if len(argv) == 2 and argv[0] == "--name":
+        return archive_by_name(argv[1])
+    return archive_this_run()
 
 
 def archive_this_run() -> int:
