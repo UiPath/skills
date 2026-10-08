@@ -1,9 +1,10 @@
-# Process Design Document — Retail Account Onboarding
+# Process Design Document — Retail Account Onboarding {{RUN_TOKEN}}
 
 **Organisation:** Fjordline Savings Bank (fictional)
 **Department:** Retail Banking Operations
 **Process owner:** Retail Banking Operations lead
 **Status:** Approved for automation — v1.2
+**Process reference:** {{RUN_TOKEN}}
 
 > Fictional, reduced PDD for an evaluation fixture. Names, systems, and figures
 > are illustrative only.

@@ -5,7 +5,7 @@
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
                   id="Definitions_RetailAccountOnboarding"
                   targetNamespace="http://bpmn.io/schema/bpmn">
-  <bpmn:process id="Process_RetailAccountOnboarding" name="Retail Account Onboarding" isExecutable="false">
+  <bpmn:process id="Process_RetailAccountOnboarding" name="Retail Account Onboarding {{RUN_TOKEN}}" isExecutable="false">
     <bpmn:startEvent id="Start_ApplicationReceived" name="Application received">
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
     </bpmn:startEvent>
