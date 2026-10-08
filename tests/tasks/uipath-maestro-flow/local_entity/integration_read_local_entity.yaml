@@ -1,0 +1,93 @@
+task_id: skill-flow-integration-read-local-entity
+description: >
+  Integration test: a solution already authors its own (local) Data Fabric
+  entity, and the agent builds a flow that reads it with the native
+  core.datafabric.read node. The node must carry the entity's key from the
+  solution (`uip solution resources list --kind Entity`, Source: Local) and the
+  unassigned-folder sentinel; a flow that leaves them out fails validate with
+  INLINE_ENTITY_UNBOUND. Covers references/data-fabric.md "An entity the
+  solution authors itself" on either authoring path (.flow.ts + compile, or
+  node add). Offline: no debug, no tenant. Needs a CLI with UiPath/cli #4441
+  and #4442.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, datafabric, local-entities, bindings]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+  turn_timeout: 1200
+  task_timeout: 3600
+
+pre_run:
+  - command: "python3 _setup/local_entity.py seed InventorySol StockItem"
+    timeout: 180
+
+initial_prompt: |
+  The InventorySol solution in this directory already defines its own
+  StockItem entity (columns sku and quantity) that ships with the solution.
+
+  Add a flow named StockReport to InventorySol: a manual trigger, then read all
+  StockItem records with the native Data Fabric node, then an End node that
+  returns the records it read. Use the StockItem entity this solution defines,
+  not one from the tenant.
+
+  The flow must validate and the solution must pack. Do not run or debug the
+  flow, and do not upload or publish anything.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: run_command
+    description: "The read node is bound to the local StockItem key and the sentinel folder"
+    command: "python3 _setup/local_entity.py check StockItem"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The flow validates (includes the INLINE_ENTITY_UNBOUND rule)"
+    command: "cd InventorySol && uip maestro flow validate StockReport/StockReport.flow --output json"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The solution packs with the flow and the local entity"
+    command: "cd InventorySol && uip solution pack . ../_pack_out --output json"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT create StockItem on the tenant"
+    tool_name: "Bash"
+    command_pattern: '^(?![^\n]*(?:--local|--help|\s-h\b))[^\n]*uip\s+df\s+entities\s+create\b'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT debug or publish (offline task)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(maestro\s+)?flow\s+debug\b|uip\s+solution\s+(upload|publish|deploy)\b'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0

@@ -11,7 +11,7 @@
 
 `resultMode: 'multiple'` publishes matches under `output.results` and selects the read node's 1.4 definition; plain `dataFabricRead()` stays on 1.0 and reads one record.
 **Wrong here fails SILENTLY** — a bad column is dropped, not rejected, so `validate` passing is not evidence. Resolve columns with `uip df entities get` first.
-Delete publishes nothing; system columns (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) are never writable; `fromRead` needs a single-record read; a folder-scoped entity needs `folderKey` AND `resourceKey`.
+Delete publishes nothing; system columns (`Id`, `CreateTime`, `CreatedBy`, `UpdateTime`, `UpdatedBy`) are never writable; `fromRead` needs a single-record read; a folder-scoped entity needs `folderKey` AND `resourceKey` — for one the solution authors itself, take both from the solution, not the tenant ([below](#an-entity-the-solution-authors-itself)).
 
 **Still connector-only**: get-by-id when the whole value of a long-text field is needed (native reads return a 10,000-character preview, [see below](#long-text-queries-return-a-10000-character-preview)), file record fields, and Record Created/Updated events — `connector('uipath-uipath-dataservice', …)` + `registry prepare -f entityName=<Entity>`.
 
@@ -227,7 +227,44 @@ uip solution resources list --kind Entity --output json # the resource key
 
 Nothing mints a resource key for a hand-authored flow. If you cannot resolve one,
 keep the entity tenant-scoped and omit both — a half-authored folder scope is
-worse than none.
+worse than none. **Except for an entity the solution authors itself**, below:
+there, omitting both is the bug.
+
+### An entity the solution authors itself
+
+An entity created with `uip df entities create <Name> --local` lives only in the
+solution until it is deployed, so the tenant lookup above finds nothing for it.
+Leaving the keys out makes the node tenant-scoped, and the run fails with
+`Entity <Name> does not exist` — naming an entity that does exist. Take both keys
+from the solution instead:
+
+```bash
+uip df entities get <Name> --local --output json           # FolderId → folderKey (always 99999999-9999-9999-9999-999999999999)
+uip solution resources list --kind Entity --output json    # the Source: Local row's Key → resourceKey
+```
+
+```ts
+.step('read', dataFabricRead({ entity: 'Product', resultMode: 'multiple',
+  folderKey: '99999999-9999-9999-9999-999999999999',
+  resourceKey: '<Key of the Source: Local row>' }))
+```
+
+The `99999999-…` folder is a placeholder the platform replaces: `flow debug`
+provisions the entity into a `Debug_<project>` folder, and `solution deploy` into
+the deployment's own folder, and binds the node there. Use the entity's own
+casing for `entity`. Creating and modelling the entity belongs to
+[/uipath:uipath-platform — local-entities.md](../../uipath-platform/references/data-fabric/local-entities.md).
+
+`flow validate`, `flow pack` and `uip solution pack` refuse a node that names a
+local entity without these keys (`INLINE_ENTITY_UNBOUND`). The message suggests
+`uip maestro flow node configure`, which edits the compiled `.flow`; in a
+builder-SDK project fix the `.flow.ts` instead, or the next `compile` reverts it.
+
+**Debugging:** `uip maestro flow debug` works the first time for a solution with
+a local entity and fails from the second run on — each later run overwrites the
+same Studio Web solution, which Studio Web cannot do for one holding an Entity
+project. Tell the user up front and recommend the UiPath extension for VS Code
+for repeated debugging. `pack` / `publish` / `deploy run` are unaffected.
 
 ## A delete publishes nothing
 
