@@ -227,8 +227,11 @@ uip solution resources list --kind Entity --output json # the resource key
 
 Nothing mints a resource key for a hand-authored flow. If you cannot resolve one,
 keep the entity tenant-scoped and omit both — a half-authored folder scope is
-worse than none. **Except for an entity the solution authors itself**, below:
-there, omitting both is the bug.
+worse than none. **This fallback does not apply to an entity the solution
+authors itself** (below). With no keys the node is tenant-scoped, so at run time
+it looks for the entity on the tenant — where a local entity does not exist
+until the solution deploys — and fails with `Entity <Name> does not exist`.
+`uip maestro flow validate` flags it first as `INLINE_ENTITY_UNBOUND`.
 
 ### An entity the solution authors itself
 

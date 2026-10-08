@@ -20,15 +20,20 @@ nothing has an id until deploy.
 
 ## Which one does the request want?
 
+A local entity is part of a solution. Tenant is the default; use `--local` only
+when the user explicitly asks for the entity to live in, or ship with, a
+solution.
+
 | The user says | Use |
 |---|---|
-| "create an entity", "add a field to X" with no solution in play | tenant — [`entity-schema.md`](entity-schema.md) |
-| "add an entity to this solution", "my flow needs a table" | **`--local`**, this file |
+| "create an entity", "add a field to X" | tenant — [`entity-schema.md`](entity-schema.md) |
+| "add an entity to this solution", "the entity should ship with the solution" | **`--local`**, this file |
+| "my flow needs a table", or a solution is open but nothing says where the entity lives | ambiguous — ask |
 | "the flow reads Orders" and Orders is already in Data Fabric | tenant entity, referenced — see [Referenced entities](#referenced-entities-are-not-yours-to-edit) |
 
-When it is genuinely ambiguous, ask. Creating a live tenant entity when the
-user wanted one that ships with their solution leaves an orphan on the tenant
-that the solution will not manage.
+Ask rather than guess either way: a tenant entity the user wanted in the
+solution is an orphan the solution will not manage, and a local entity the user
+wanted on the tenant does not exist until a deploy.
 
 ---
 
@@ -116,31 +121,20 @@ before the flag was `--local`. Filter on those, not on a `Local…` prefix.
 
 ## Authorable field types
 
-Nine types. This is narrower than the tenant surface, and the limit is real —
-the authored document format has no representation for the rest.
-
-| `type` | Stored as |
-|---|---|
-| `STRING` | NVARCHAR — `lengthLimit` |
-| `MULTILINE_TEXT` | MULTILINE — `lengthLimit` |
-| `MULTILINE_MAX` | MULTILINE_MAX — `lengthLimit` is a **byte** budget |
-| `DECIMAL` | DECIMAL — `decimalPrecision`, `minValue`, `maxValue` |
-| `BOOLEAN` | BIT |
-| `DATE` | DATE |
-| `DATETIME_WITH_TZ` | DATETIMEOFFSET |
-| `AUTO_NUMBER` | DECIMAL, auto-assigned |
-| `FILE` | attachment column |
+Field types, options, and the mapping from user words ("number", "text") to a
+type are shared with tenant entities — use
+[`entity-schema.md` → Supported Field Types](entity-schema.md#supported-field-types)
+and its [UI-broken types](entity-schema.md#ui-broken-types--do-not-use) table.
+A local entity accepts that table with one difference:
 
 **Not authorable locally:** `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`,
 `RELATIONSHIP`. No authored type pair exists for them in any host, including
 Studio Web and the VS Code modeller. Model those in Data Fabric on a live
 entity instead — do not substitute `STRING` for a relationship.
 
-**Never authorable anywhere:** `INTEGER`, `BIG_INTEGER`, `FLOAT`, `DOUBLE`,
-`UUID`, `DATETIME` — the six UI-broken types from
-[Rule 12b](data-fabric.md). The command refuses them and names the
-substitution (`INTEGER` → `DECIMAL` with `decimalPrecision: 0`, `DATETIME` →
-`DATETIME_WITH_TZ`, `UUID` → `STRING`).
+The UI-broken types (`INTEGER`, `FLOAT`, `UUID`, `DATETIME`, …) that the tenant
+API accepts are **refused** by `--local`, with the substitution named in the
+error (`INTEGER` → `DECIMAL` with `decimalPrecision: 0`).
 
 The error tells the caller which case they hit and where to go, so surface it
 verbatim rather than guessing a replacement.
@@ -204,8 +198,9 @@ authored.
 `dataFabric*` factory — `folderKey` from `FolderId` in
 `uip df entities get <Name> --local`, `resourceKey` from the `Source: Local` row
 of `uip solution resources list --kind Entity`. Do not look the entity up on the
-tenant: it is not there until deploy, and the Flow skill's "omit both" fallback
-is exactly the failure. See
+tenant: it is not there until deploy. Leaving the keys out — the Flow skill's
+fallback for a tenant entity — makes the node look for a tenant entity that
+does not exist, so the run fails. See
 [/uipath:uipath-maestro-flow — data-fabric.md](../../../uipath-maestro-flow/references/data-fabric.md#an-entity-the-solution-authors-itself).
 
 <!--skill-flavor:flow-sdk-local-entity-keys:end-->
@@ -344,3 +339,6 @@ service carries extra per-field metadata that is **not** an edit. Do not
 5. **Removing a local field is not destructive** — no rows exist yet. The
    tenant's `removeFields` gate does not apply.
 6. **No `--folder-key`.** A locally authored entity has no folder until deploy.
+7. **Only on an explicit ask.** A local entity is part of a solution; create
+   one only when the user asks for the entity to live in, or ship with, the
+   solution. Otherwise the tenant path is the default.

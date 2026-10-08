@@ -16,6 +16,12 @@ tenant, and `get` / `update` / `delete` take the entity **name** instead of an
 id. Everything in this file is the tenant path unless it says otherwise; the
 local path is [`local-entities.md`](local-entities.md).
 
+**Tenant is the default; `--local` only on an explicit ask.** A local entity is
+part of a solution — it lives in the solution's files and ships with it. Use
+`--local` only when the user explicitly asks for the entity to live in, or ship
+with, a solution. An open `.uipx` or a flow that needs data is not that ask on
+its own; when the request is ambiguous, ask which one they want.
+
 ---
 
 ## Not Supported
@@ -180,4 +186,6 @@ Any error not in this table → Rule 18. Topic-specific error tables live in the
 
 ## Packaging into a Solution
 
-There are two routes. To ship an entity **authored for this solution**, author it directly with `uip df entities <verb> --local` — see [`local-entities.md`](local-entities.md); it never touches the tenant until deploy. To ship an entity that **already exists** on the tenant, use [`uipath-solution`](/uipath:uipath-solution) and import via `uip solution resources add --source remote` after creating the resource here — **never hand-write `configuration.json` from `uip df entities get`**; the SDK read shape breaks upgrade with per-field `EntityConflict`. Full flow, `--source local` caveats, and drift recovery: [`develop-solution.md` → Data Fabric kinds](../../../uipath-solution/references/develop-solution.md#data-fabric-kinds).
+To ship a folder-scoped entity or choice set in a deployable solution, use [`uipath-solution`](/uipath:uipath-solution). Import via `uip solution resources add --source remote` after creating the resource here — **never hand-write `configuration.json` from `uip df entities get`**; the SDK read shape breaks upgrade with per-field `EntityConflict`. Full flow, `--source local` caveats, and drift recovery: [`develop-solution.md` → Data Fabric kinds](../../../uipath-solution/references/develop-solution.md#data-fabric-kinds).
+
+If the entity is a **local entity** — the user explicitly asked for it to be authored inside the solution — skip the import: author it with `uip df entities <verb> --local` per [`local-entities.md`](local-entities.md). It never touches the tenant until the solution deploys.
