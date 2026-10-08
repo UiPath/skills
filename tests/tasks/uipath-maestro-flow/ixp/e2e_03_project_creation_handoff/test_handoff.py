@@ -189,6 +189,33 @@ elif argv[:3] == ["or", "folders", "delete"]:
     with open(deleted_folders_log, "a") as handle:
         handle.write(argv[3] + os.linesep)
     print(json.dumps({"Data": {"Status": "ok"}}))
+elif argv[:3] == ["or", "packages", "list"]:
+    # --search is a case-insensitive substring match, as the feed's is.
+    term = argv[argv.index("--search") + 1].lower() if "--search" in argv else ""
+    latest = {}
+    for key in payload.get("packages", {}):
+        package_id = key.rpartition(":")[0]
+        if term in package_id.lower():
+            latest[package_id] = key
+    print(json.dumps({"Data": [{"Key": key} for key in latest.values()],
+                      "Pagination": {"HasMore": False}}))
+elif argv[:3] == ["or", "packages", "versions"]:
+    rows = [{"Key": key, "Published": published}
+            for key, published in payload.get("packages", {}).items()
+            if key.rpartition(":")[0] == argv[3]]
+    print(json.dumps({"Data": rows}))
+elif argv[:3] == ["or", "packages", "delete"]:
+    if "--yes" not in argv:
+        print("Confirmation required: re-run with --yes.", file=sys.stderr)
+        sys.exit(1)
+    with open(os.path.join(here, "deleted_packages.txt"), "a") as handle:
+        handle.write(argv[3] + os.linesep)
+    print(json.dumps({"Data": {"Status": "ok"}}))
+elif argv[:3] == ["or", "processes", "list"]:
+    folder = argv[argv.index("--folder-key") + 1]
+    rows = [{"ProcessKey": key.rpartition(":")[0], "ProcessVersion": key.rpartition(":")[2]}
+            for key in payload.get("folder_processes", {}).get(folder, [])]
+    print(json.dumps({"Data": rows}))
 elif argv[:3] == ["ixp", "projects", "delete"]:
     if argv[3] in payload.get("undeletable", []):
         print("delete refused", file=sys.stderr)
@@ -1340,3 +1367,73 @@ def test_teardown_retries_a_transiently_failing_folder_delete(
     assert "folder delete attempt 1" in completed.stdout
     assert f"deleted run-scoped folder {RUN_FOLDER_KEY}" in completed.stdout
     assert "LEAKED" not in completed.stdout
+
+
+# ── tenant process feed: leaked packages (adhoc-2026-09-28_16-14-30) ─────────
+# Packages are tenant-scoped, so the run folder's delete leaves an uploaded
+# .nupkg behind. The next run that names its flow the obvious way then hits
+# `HTTP 409: Package already exists`; one agent answered by rebuilding the flow
+# under a suffixed name and left two Flow projects the graders refuse to pick
+# between.
+
+LEAKED_PACKAGE = "FalconryLicenceFlow.flow.Flow:1.0.0"
+
+
+def deleted_packages(sandbox: pathlib.Path) -> list[str]:
+    log = sandbox.parent / "bin" / "deleted_packages.txt"
+    return log.read_text().split() if log.exists() else []
+
+
+def test_seed_sweeps_a_stale_leaked_domain_package(sandbox: pathlib.Path) -> None:
+    env = install_fake_uip(sandbox, packages={LEAKED_PACKAGE: iso_ago(86400)})
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert f"swept leaked fixture package '{LEAKED_PACKAGE}'" in completed.stdout
+    assert deleted_packages(sandbox) == [LEAKED_PACKAGE]
+
+
+def test_seed_keeps_a_young_domain_package_and_ignores_other_domains(
+    sandbox: pathlib.Path,
+) -> None:
+    """Same concurrency guard as projects: a young package may be a live run's."""
+    young = "FalconryLicenceIntake.flow.Flow:1.0.5"
+    unrelated = "InvoiceProcessing.flow.Flow:1.0.0"
+    env = install_fake_uip(
+        sandbox, packages={young: iso_ago(600), unrelated: iso_ago(86400)}
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert f"KEEPING fixture package '{young}'" in completed.stdout
+    assert deleted_packages(sandbox) == []
+
+
+def test_a_failing_package_listing_does_not_fail_the_seed(sandbox: pathlib.Path) -> None:
+    """Hygiene only: an unhandled `or packages` verb exits 2 in the fake CLI."""
+    env = install_fake_uip(sandbox)
+    bin_dir = sandbox.parent / "bin"
+    fake = (bin_dir / "uip").read_text()
+    (bin_dir / "uip").write_text(
+        fake.replace('argv[:3] == ["or", "packages", "list"]', 'argv[:3] == ["never"]')
+    )
+
+    completed = run_script("seed", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "WARN: package sweep skipped" in completed.stdout
+    assert (sandbox / SNAPSHOT).exists()
+
+
+def test_teardown_deletes_the_domain_package_bound_in_the_run_folder(
+    sandbox: pathlib.Path,
+) -> None:
+    uploaded = "FalconryLicenceFlowA3170d90.flow.Flow:1.0.0"
+    foreign = "SharedUtilities.flow.Flow:2.1.0"
+    env = tenant(sandbox, folder_processes={RUN_FOLDER_KEY: [uploaded, foreign]})
+    wired_flow(sandbox)
+
+    completed = run_script("teardown", sandbox, env)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert deleted_packages(sandbox) == [uploaded]
+    assert f"NOT DELETED package '{foreign}'" in completed.stdout
+    assert RUN_FOLDER_KEY in (sandbox.parent / "bin" / "deleted_folders.txt").read_text()

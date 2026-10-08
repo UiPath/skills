@@ -438,12 +438,14 @@ Payload shapes the canvas serializes:
   Maestro internal-message events (`Maestro.ReceiveMessageEvent` /
   `Maestro.SendMessageEvent`) carry the `uipath:event` payload **and** a bare
   `<bpmn:messageEventDefinition />` (see their registry templates).
-  A mid-process wait for an inbound message is a
+  A mid-process `Maestro.ReceiveMessageEvent` wait is a
   `<bpmn:intermediateCatchEvent>` with incoming and outgoing sequence flows,
-  the registry-provided `Maestro.ReceiveMessageEvent` payload under
-  `bpmn:extensionElements`, and a sibling `<bpmn:messageEventDefinition />`.
-  Do not model a mid-process receive as `bpmn:receiveTask`, `bpmn:serviceTask`, a
-  start event, or the PascalCase `bpmn:IntermediateCatchEvent`.
+  the registry-provided payload under `bpmn:extensionElements`, and a sibling
+  `<bpmn:messageEventDefinition />`. Do not model it as `bpmn:receiveTask`,
+  `bpmn:serviceTask`, a start event, or the PascalCase
+  `bpmn:IntermediateCatchEvent`. A connector event wait is
+  `Intsvc.WaitForEvent`; hosts in
+  [registry-workflow.md](registry-workflow.md#ootb-extension-types-29-login-free).
 - **Error**: `<bpmn:errorEventDefinition errorRef="Error_1" />` with a
   `<bpmn:error id="Error_1" name="…" errorCode="…"/>` at definitions level. An
   error end event with no `errorRef` fails to parse at runtime
@@ -723,7 +725,25 @@ each with its rule code (gateway/condition, superfluous-gateway,
 error end/boundary event, timer-duration/required-field, single-blank-start,
 single-conditional-outgoing-flow, variable-reference, method-parentheses,
 input-type, event-object, and IS-connector checks). Warnings are reported but do
-not block. If `validate` is unknown or runs only deploy-readiness checks, update
+not block. Triage them by code: on pass they are in `Data.Warnings` (one
+string), on failure in `Instructions` with the errors.
+
+- **`VARIABLE_DOES_NOT_EXIST`** — a reference with no matching declaration.
+  Always a defect; fix it.
+- **`VARIABLE_NOT_SET`** on the node reading a caller-supplied input —
+  **expected by construction, not a defect**, whenever that input is correctly
+  scoped to the start event (see [Variables](#variables)). Canvas availability
+  recognizes only process-scoped variables and upstream nodes'
+  `uipath:output` mappings; a start-event input is neither, so any process
+  whose node consumes a caller value carries this warning. Scoping the input
+  to the process instead silences the warning by emptying the published input
+  contract (`entry-points.json`'s `input` becomes `[]`) — nothing can then
+  invoke the process with that value, and a `debug --inputs` run still
+  succeeds, which is exactly what hides the break. Judge correctness by the
+  published contract (`entry-points.json` declares the input and every
+  output), not by whether the warning is gone.
+
+If `validate` is unknown or runs only deploy-readiness checks, update
 the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
 
 Run the well-formed-XML parse before `validate` every time; the validator's

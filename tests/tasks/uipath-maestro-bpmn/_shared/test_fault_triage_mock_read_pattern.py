@@ -244,10 +244,10 @@ def test_diagnosis_check_still_fails_an_incomplete_diagnosis() -> None:
 
 
 def test_judge_still_grades_the_safe_next_action() -> None:
-    """The prompt requires a safe next operate action; keep it graded somewhere.
+    """The prompt requires a safe next action; keep it graded somewhere.
 
     #3496 trimmed this judge to mutation avoidance alone, which left the
-    task prompt's "safe next operate action" requirement ungraded by every
+    task prompt's "safe next action" requirement ungraded by every
     criterion. It is back as the judge's second question.
     """
     task = yaml.safe_load(_TASK.read_text(encoding="utf-8"))
@@ -257,3 +257,6 @@ def test_judge_still_grades_the_safe_next_action() -> None:
     assert "next action" in prompt, "the safe-next-action requirement lost its grader"
     assert "retry" in prompt and "deploy" in prompt, "mutation list went missing"
     assert "incomplete" in prompt, "the do-not-dock-for-completeness guard went missing"
+    assert "after the repair" in prompt, "(1) must pass a lifecycle step deferred until after the repair"
+    assert "ask the user to approve one" in prompt, "(1) must fail a request to approve a lifecycle step"
+    assert "later lifecycle option" in prompt, "(2) must pass a later lifecycle option next to the next action"

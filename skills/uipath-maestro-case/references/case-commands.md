@@ -283,11 +283,12 @@ uip maestro case splice <caseplan.json> --task-id <taskId> --spec tasks/spec-cac
 
 | Flag | Description |
 |------|-------------|
-| `--task-id <id>` | **(required)** the task's `id` from `nodes[].data.tasks[][].id` |
-| `--spec <file>` | **(required)** the `case spec` response saved verbatim — must carry `Data.CaseShape` (run spec without `--skip-case-shape`) |
+| `--task-id <id>` | **(required unless `--task-name`)** the task's `id` from `nodes[].data.tasks[][].id` |
+| `--task-name <name>` | the task's `displayName`, spelled exactly as the plan has it; pass this or `--task-id`, never both |
+| `--spec <file>` | **(required unless `--described`)** the `case spec` response saved verbatim — must carry `Data.CaseShape` (run spec without `--skip-case-shape`) |
 | `--connection-id <id>` | **(required)** the connection the spec was fetched for; root bindings are keyed on it and reused when the pair already exists |
 | `--folder-key <key>` | Omit it. Splice reads `Data.Connection.FolderKey` from the `--spec` file itself; a value that disagrees with the spec is refused (exit 1, nothing written). Never copy a folder key from another task's spec |
-| `--described <file>` | a `uip maestro case tasks describe` result saved verbatim. Merges `type` / `_jsonSchema` / `options` / `displayName` into the task's existing input and output rows by `name`, preserving `id` / `var` / `elementId` and SDD-authored values. Use for resource tasks; mutually independent of `--spec` |
+| `--described <file>` | a `uip maestro case tasks describe` result saved verbatim. Merges `type` / `_jsonSchema` / `options` / `displayName` into the task's existing input and output rows by `name`, preserving `id` / `var` / `elementId` and SDD-authored values. Use for resource tasks. Pass exactly one of `--spec` / `--described`: the CLI refuses both together |
 | `--out <file>` | write elsewhere instead of in place |
 
 Output: `Code: ConnectorShapeSpliced` with `Data.Summary` (`TaskType`, `ServiceType`, `ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and `Data.NextSteps`. Offline. Idempotent: the same arguments twice produce a byte-identical file. A spec fetched for a different connection than `--connection-id` is refused — the message names both ids and no file is written.
@@ -348,7 +349,7 @@ Returns a `ConnectorTaskSpec` with `identity`, `operation`, `connection`, `input
 
 ## uip maestro case tasks describe
 
-Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution for **non-connector tasks** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`). For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
+Read-only metadata fetch for a task type's input/output schema. Used during planning + Phase 3 execution for **non-connector tasks** (`process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `business-rule`, `case-management`). For connector tasks, use [`uip maestro case spec`](#uip-maestro-case-spec) instead.
 
 ```bash
 uip maestro case tasks describe --type <type> --id <id> --output json
@@ -359,7 +360,7 @@ uip maestro case tasks describe --type connector-trigger --id <typeId> --connect
 
 | Flag | Description |
 |------|-------------|
-| `--type <type>` | **(required)** Task type: `process`, `agent`, `rpa`, `action`, `api-workflow`, `case-management`, `connector-activity`, `connector-trigger`. Use `processOrchestration` for `AGENTIC_PROCESS`. |
+| `--type <type>` | **(required)** Task type: `process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `business-rule`, `case-management`, `connector-activity`, `connector-trigger`. Use `processOrchestration` for `AGENTIC_PROCESS`. |
 | `--id <id>` | **(required)** Unique ID of the task (entityKey or action-app id) |
 | `--connection-id <id>` | Connection UUID (required for `connector-activity` and `connector-trigger` types) |
 
@@ -371,7 +372,7 @@ Returns input/output schema with names, types, and IDs. The schema is the source
 
 Manage the local resource cache. Requires `uip login` for tenant-specific resources.
 
-> **`--force`:** confirm with the user via the `AskUserQuestion` tool before running — bypasses the 24-hour cache, is network-heavy, and may be slow.
+> **`--force`:** confirm with the user via the `AskUserQuestion` tool before running — bypasses the 24-hour cache, is network-heavy, and may be slow. **Exception:** when `uip maestro case sdd resolve` reports a stale cache in `Data.Warnings`, run it once without asking, then resolve again ([SKILL.md Rule 3](../SKILL.md)).
 
 ```bash
 # Refresh cache from all resource types

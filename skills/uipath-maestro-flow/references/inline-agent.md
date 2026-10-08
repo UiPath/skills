@@ -1,0 +1,147 @@
+# Inline Agent
+
+*Exact signatures, fields, and defaults: `inlineAgent()`.*
+
+An inline agent is defined inside this Flow project and may be connected to
+tenant context, callable tools, and human escalation resources.
+
+Signature:
+`inlineAgent({ model, systemPrompt, userPrompt, inputs?, returns?, source?, temperature?, maxTokenPerResponse?, modelMaxTokens?, maxIterations?, mode?, guardrails?, context?, tools?, escalation? })`.
+
+```ts
+.step('triage', inlineAgent({ model: 'gpt-5.4',
+  systemPrompt: 'Return a result conforming to the output schema. category: billing | technical | account.',
+  userPrompt: 'Classify {{input.body}}', inputs: { body: input('body') },
+  returns: { category: 'string' } }))
+```
+
+## At a glance
+
+Define an autonomous agent inside this Flow project, with optional resources.
+
+```ts
+.step('triage', inlineAgent({ model: 'gpt-5.4', systemPrompt: 'Return a result conforming to the output schema. category: billing | technical | account.',
+  userPrompt: 'Classify {{input.body}}', inputs: { body: input('body') },
+  returns: { category: 'string' },
+  guardrails: [{ id: 'no-pii', $guardrailType: 'custom', name: 'Block PII', selector: { scopes: ['Agent'] },
+    enabledForEvals: true, action: { $actionType: 'block', reason: 'PII detected' },
+    rules: [{ $ruleType: 'always', applyTo: 'inputAndOutput' }] }] }))
+```
+
+`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds; `memory: { name, id }` attaches an episodic memory; `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
+
+## Model and answer judgment
+
+Select a model currently available to the tenant (`uip agent model list`) and
+write prompts that make the requested decision and answer contract explicit.
+Static checks can establish wiring and output shape, never the semantic quality
+of the model's answer.
+
+`returns` is the answer contract: the agent runtime returns those fields as a
+typed object, so describe what each field holds ("Return a result conforming to
+the output schema. `<field>`: `<how to fill it>`.") and never ask for JSON text,
+which makes the model pack its whole answer into one string field.
+
+## Context grounding
+
+Context signature:
+`{ name, id, folderPath?, folderKey?, query?, retrievalMode?, resultCount?, threshold?, fileExtension? }`.
+
+Resolve the index from the tenant.
+Know the name: use `solution resources list` below.
+Discovering what exists: use the `uip context-grounding` bridge, which reports every index with its folder.
+Not `uip maestro flow registry` (node manifests), not `uip maestro registry` (the connector library), not `uip or folders list`.
+
+```bash
+uip solution resources list --kind Index --source remote --search "<index-name>" --output json
+```
+
+Maps onto the signature as `Key` → `id`, `Name` → `name`, `Folder` → `folderPath`, `FolderKey` → `folderKey`.
+Give `folderPath`: the emitted resource carries no index id, so the folder is half of how the runtime finds the index.
+
+Local execution has no semantic retrieval service, so an inline-agent answer is ungrounded even when the resource wiring is present.
+Platform evidence must establish that the intended index was used and that its retrieved knowledge influenced the answer.
+
+The `uip context-grounding` bridge runs in the project's Python environment.
+Activate the existing environment and run setup once before list/search; setup
+is the command itself, not a `setup --help` probe:
+
+```bash
+source .venv/bin/activate
+uip context-grounding setup
+uip context-grounding list --folder-path "<folder-path>" --format json
+uip context-grounding search \
+  --index-name "<index-name>" --query "<one bounded evidence query>" \
+  --folder-path "<folder-path>" --limit 5 --format json
+```
+
+Use `--folder-key` instead of `--folder-path` when that is the known identity.
+The delegated command uses `--format json`; it does not use the outer CLI's
+`--output json` spelling. One search that answers the stated grounding claim is
+enough; do not repeat paraphrases solely for confidence.
+
+## Tools
+
+Tool signatures:
+
+- `{ kind: 'builtin', tool: 'analyzefiles' | 'summarize' | 'batchtransform', ... }`
+- `{ kind: 'connector', connector, operation, connection, folder, version?, object?, name?, description? }`
+- `{ kind: 'process' | 'agent' | 'api' | 'flow' | 'maestro', key, name, folderPath, inputs?, returns? }`
+- `{ kind: 'ixp', projectId, name, description?, versionTag?, attachment? }`
+
+A connector tool needs `connection` and `folder`, `bindings.json` labels
+resolved like `connector()`'s (see [bindings.md](bindings.md)). Missing either
+is `INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` from `check`. `prepare` does not
+read a tool's labels from the source, so pass them:
+`uip maestro registry prepare <connector-key> --action <operation> --bind-connection <connection> --bind-folder <folder>`
+finds the connection and writes both entries under the tool's labels.
+`description` overrides the text the model is told the tool does; it defaults
+to the library's operation description.
+
+```ts
+tools: [{
+  kind: 'connector', connector: 'uipath-uipath-airdk', operation: 'web-search',
+  connection: 'genai', folder: 'shared',   // bindings.json labels
+}]
+```
+
+A tool is invoked by the model, not by a control-flow edge. Local execution
+skips tool resources, so it proves their wiring but not that the model called
+them. A live test needs a tool-specific side effect or returned witness.
+
+## Human escalation
+
+Escalation signature:
+`{ name, description?, app: { key, name, folderPath?, inputs?, outputs? }, recipients?, outcomes?, taskTitle?, priority?, labels? }`.
+
+Whether and when to escalate is model judgment, and completion additionally
+depends on a deployed app and a human. Local execution proves only resource and
+contract wiring; live evidence must show the task, reviewer outcome, and resumed
+agent behavior.
+
+## Live-evidence limit
+
+Headless local live mode calls a real model but substitutes a reachable model
+and remains ungrounded; it has no tenant tool loop or human escalation. Treat it
+as evidence that a real prompt produced the declared shape. Product debug is
+the evidence for the actual configured model and cloud resources.
+
+Compile emits the node plus a stable `<source>/agent.json` sidecar. Prompt variables
+use `{{input.<name>}}`; `inputs` binds those names to flow references and `returns`
+declares what the agent hands back.
+
+## Guardrails and harness mode
+
+`guardrails` is Agent Builder's own array, carried on the node and in the
+sidecar. Each rail is `$guardrailType: 'custom'` (with `rules`) or
+`'builtInValidator'` (with `validatorType` + `validatorParameters`), plus
+`id`, `name`, `selector: { scopes: ['Agent'|'Llm'|'Tool'] }`, an `action`
+(`block` with a reason, `filter` over fields, or `log` with a severity), and
+`enabledForEvals`. Custom rules are `$ruleType: 'word' | 'number' | 'boolean'`
+over a field selector, or `'always'`. A rail with no scopes or an empty rules
+array can never fire — `check` rejects both.
+
+`mode: 'standard' | 'advanced'` picks the harness; naming it selects the
+node's 1.3 definition (omitting it keeps 1.2 byte-identically) and lands on
+the sidecar's `settings.mode`. Guardrail/harness behavior is runtime-side:
+offline rungs prove the emitted shape only.

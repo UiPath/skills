@@ -137,6 +137,14 @@
       },
       "last_synced": null
     },
+    "uipath-knowledge-bundles": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-maestro-bpmn": {
       "status": "in-development",
       "confluence": {
@@ -203,6 +211,14 @@
     },
     "uipath-rpa": {
       "status": "stable",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
+    "uipath-rules": {
+      "status": "in-development",
       "confluence": {
         "page_id": null,
         "url": null

@@ -66,16 +66,27 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # Rule 8: every `uip rpa` command clears the host Studio pin, `env -u
+  # UIPATH_STUDIO_PID` in bash or `$env:UIPATH_STUDIO_PID = $null` in PowerShell.
+  # Flagged: a bare `uip rpa` at the start of a command, or after ;, &&, | or a
+  # line break, in a command that never mentions UIPATH_STUDIO_PID at all; inside
+  # Studio's terminal such a command opens the project in the user's Studio.
+  - type: command_not_executed
+    description: "No uip rpa command ran without clearing UIPATH_STUDIO_PID (Rule 8)"
+    command_pattern: '\A(?![\s\S]*UIPATH_STUDIO_PID)[\s\S]*?(?:^|[;&|(]\s*|\n\s*)(?:uip|\$UIP)\s+rpa\s+(?:build|validate|run|debug|instances|execution|activities|uia)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent ran analyze with --output-format sarif"
-    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:(?!\n|&&|\|\||;|\|).)*--output-format\s+sarif)'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--output-format\s+sarif)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent ran upgrade into a separate output path"
-    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade(?=(?:(?!\n|&&|\|\||;|\|).)*--output-path)'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--output-path)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -122,7 +133,7 @@ success_criteria:
   # Runtime guide § Run: the check uses `run`, once here.
   - type: command_executed
     description: "Agent ran the migrated workflow"
-    command_pattern: 'uip\s+rpa\s+run(?=(?:(?!\n|&&|\|\||;|\|).)*--file-path)'
+    command_pattern: 'uip\s+rpa\s+run(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--file-path)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -148,7 +159,7 @@ success_criteria:
 
   - type: command_not_executed
     description: "Agent never ran or validated the source project"
-    command_pattern: 'uip\s+rpa\s+(?:run|validate)\b(?=(?:(?!\n|&&|\|\||;|\|).)*--project-dir\s+"?[^"\s]*[\\/]StaffDirectoryAudit"?(?:\s|$))'
+    command_pattern: 'uip\s+rpa\s+(?:run|validate)\b(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--project-dir\s+"?[^"\s]*[\\/]StaffDirectoryAudit"?(?:\s|$))'
     weight: 1.0
     pass_threshold: 1.0
 

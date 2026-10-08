@@ -315,7 +315,7 @@ def task_is_skeleton(task: dict) -> bool:
 # ── Schema-aware structural helpers ─────────────────────────────────────────
 #
 # Case-level metadata lives at the top level alongside a `metadata` block — the
-# flat schema introduced in v20 and inherited through v30. Node internals are
+# flat schema introduced in v20 and inherited through v32.0.3. Node internals are
 # stable across those versions except the trigger node, which v24 rewired from
 # `case-management:Trigger` to `uipath.case.trigger` (see find_triggers), and the
 # selected-stage rules, which v29 moved from `selectedStageId` to the multi-select

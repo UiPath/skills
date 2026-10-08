@@ -21,6 +21,7 @@
   },
   "references/case-commands.md": {
     "Artifact I/O": 1,
+    "Phase 1 registry gate": 1,
     "Runnable resources and sidecars": 1,
     "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 2,
     "The build is lossless against the SDD": 1
@@ -119,6 +120,10 @@
     "Empty lookup gate": 4,
     "Resolution audit": 1
   },
+  "references/plugins/tasks/business-rule/planning.md": {
+    "Empty lookup gate": 1,
+    "Resolution audit": 1
+  },
   "references/plugins/tasks/case-management/planning.md": {
     "Resolution audit": 1
   },
@@ -141,6 +146,10 @@
   },
   "references/plugins/tasks/create-inline-common.md": {
     "Empty lookup gate": 1
+  },
+  "references/plugins/tasks/function/planning.md": {
+    "Empty lookup gate": 2,
+    "Resolution audit": 1
   },
   "references/plugins/tasks/process/planning.md": {
     "Resolution audit": 1

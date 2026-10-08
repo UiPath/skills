@@ -11,7 +11,7 @@ description: >
   registers but every query fails `UserError_TableIsDeleted`) and the re-ingest
   (a data-model edit is inert until the next ingestion).
 
-  Command-construction only — no live tenant. Commands fail with auth errors;
+  Command-construction only — no live tenant. Commands fail;
   what matters is which commands the agent chooses.
 tags: [uipath-process-mining, integration, mode:build, lifecycle:setup, data-model, add-table]
 
@@ -32,7 +32,7 @@ initial_prompt: |
   - Write any data-model table definition you need to `./table.json` (this test
     inspects that exact path).
   - The `uip` CLI is available but is not connected to a live tenant.
-    Commands WILL fail with auth errors — that is expected and acceptable.
+    Commands WILL fail — that is expected and acceptable.
     Run each command exactly once regardless of errors.
     Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
   - Do NOT prompt the user for confirmation — this is an automated test.

@@ -48,9 +48,14 @@ initial_prompt: |
   implementation. Build the complete file end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
+  # Presence by the shared locator, not a root path: the v1 skill writes `PaymentErrorHandling.bpmn`
+  # where it stands, the builder-SDK skill scaffolds `PaymentErrorHandling/PaymentErrorHandling.bpmn` — both are the
+  # task done. Same rule the grader below uses to find the file.
+  - type: run_command
     description: "BPMN source was authored"
-    path: "PaymentErrorHandling.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py PaymentErrorHandling"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
 

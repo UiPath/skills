@@ -1,0 +1,768 @@
+{
+  "folders": {
+    "personal": [
+      {
+        "Id": "2201",
+        "Title": "My Queue Watch",
+        "OwnerName": "Eval Bot",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "2202",
+        "Title": "Scratch",
+        "OwnerName": "Eval Bot",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      }
+    ],
+    "tenant": [
+      {
+        "Id": "6000",
+        "Title": "APAC Backlog",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6001",
+        "Title": "APAC Capacity",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6002",
+        "Title": "APAC Cost Savings",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6003",
+        "Title": "APAC Cycle Time",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6004",
+        "Title": "APAC Error Trends",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6005",
+        "Title": "APAC Exception Rate",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6006",
+        "Title": "APAC Faulted Jobs",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6007",
+        "Title": "APAC Handle Time",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6008",
+        "Title": "APAC Idle Time",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6009",
+        "Title": "APAC Queue Aging",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6010",
+        "Title": "APAC Retry Volume",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6011",
+        "Title": "APAC Robot Utilization",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6012",
+        "Title": "APAC Run Duration",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6013",
+        "Title": "APAC SLA Breaches",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6014",
+        "Title": "APAC Success Rate",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6015",
+        "Title": "APAC Throughput",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6016",
+        "Title": "Americas Backlog",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6017",
+        "Title": "Americas Capacity",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6018",
+        "Title": "Americas Cost Savings",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6019",
+        "Title": "Americas Cycle Time",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6020",
+        "Title": "Americas Error Trends",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6021",
+        "Title": "Americas Exception Rate",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6022",
+        "Title": "Americas Faulted Jobs",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6023",
+        "Title": "Americas Handle Time",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6024",
+        "Title": "Americas Idle Time",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6025",
+        "Title": "Americas Queue Aging",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6026",
+        "Title": "Americas Retry Volume",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6027",
+        "Title": "Americas Robot Utilization",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6028",
+        "Title": "Americas Run Duration",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6029",
+        "Title": "Americas SLA Breaches",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6030",
+        "Title": "Americas Success Rate",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6031",
+        "Title": "Americas Throughput",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6032",
+        "Title": "EMEA Backlog",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6033",
+        "Title": "EMEA Capacity",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6034",
+        "Title": "EMEA Cost Savings",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6035",
+        "Title": "EMEA Cycle Time",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6036",
+        "Title": "EMEA Error Trends",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6037",
+        "Title": "EMEA Exception Rate",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6038",
+        "Title": "EMEA Faulted Jobs",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6039",
+        "Title": "EMEA Handle Time",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6040",
+        "Title": "EMEA Idle Time",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6041",
+        "Title": "EMEA Queue Aging",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6042",
+        "Title": "EMEA Retry Volume",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6043",
+        "Title": "EMEA Robot Utilization",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6044",
+        "Title": "EMEA Run Duration",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6045",
+        "Title": "EMEA SLA Breaches",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6046",
+        "Title": "EMEA Success Rate",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6047",
+        "Title": "EMEA Throughput",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6048",
+        "Title": "LATAM Backlog",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6049",
+        "Title": "LATAM Capacity",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6050",
+        "Title": "LATAM Cost Savings",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6051",
+        "Title": "LATAM Cycle Time",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6052",
+        "Title": "LATAM Error Trends",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6053",
+        "Title": "LATAM Exception Rate",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6054",
+        "Title": "LATAM Faulted Jobs",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6055",
+        "Title": "LATAM Handle Time",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6056",
+        "Title": "LATAM Idle Time",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6057",
+        "Title": "LATAM Queue Aging",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6058",
+        "Title": "LATAM Retry Volume",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6059",
+        "Title": "LATAM Robot Utilization",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6060",
+        "Title": "LATAM Run Duration",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "6061",
+        "Title": "LATAM SLA Breaches",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      }
+    ],
+    "templates": [
+      {
+        "Id": "UiPath-LI-AIU-Insights::aiu_tenant_overview",
+        "Title": "(Preview) AI Units tenant consumption",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::attended_reporting",
+        "Title": "Attended Reporting",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Jarvis-Insights::autopilot",
+        "Title": "Autopilot",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::business_roi",
+        "Title": "Business ROI",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": true,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::business_roi_queues",
+        "Title": "Business ROI Queues",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": true,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-IS-Insights::gen_ai_activities",
+        "Title": "GenAI Activities",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Healing-Insights::healingagent",
+        "Title": "Healing Agent",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-LI-AIU-Insights::aiu_documentunderstanding",
+        "Title": "IXP AI Unit consumption dashboard",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::orchmachinesinsights",
+        "Title": "Machines (Embedded)",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-AO-Insights::agentic_orchestration",
+        "Title": "Maestro",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-LI-AIU-Insights::aiu_organization_overview_org",
+        "Title": "Organization level AI Unit consumption",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-LI-AIU-Insights::aiu_process_mining",
+        "Title": "Process Mining AI Units consumption",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::processes",
+        "Title": "Processes",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::orchjobsinsights",
+        "Title": "Processes (Embedded)",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::queues",
+        "Title": "Queues",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::orchqueuesinsights",
+        "Title": "Queues (Embedded)",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::robots",
+        "Title": "Robots and Machines",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      }
+    ],
+    "organization": [
+      {
+        "Id": "5510",
+        "Title": "Regional Throughput",
+        "OwnerName": "Sam Okafor",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": true,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "5511",
+        "Title": "Org Licence Use",
+        "OwnerName": "Sam Okafor",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": true,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "5512",
+        "Title": "Org Uptime",
+        "OwnerName": "Sam Okafor",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": true,
+        "HasUserAttrOrCustomFields": false
+      }
+    ]
+  }
+}

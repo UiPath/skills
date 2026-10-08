@@ -1,0 +1,136 @@
+task_id: skill-case-single-function
+description: >
+  Build a Case Management definition from an sdd.md whose only task is a
+  deployed Coded Function. Exercises the function plugin, registry resolution
+  via function-index.json (six same-named `acme-echo` entries, picked by
+  folder), and direct caseplan.json write of a `type: "function"` task bound
+  with `resourceSubType: "Function"`. Validates the resulting case file and
+  runs `uip maestro case debug` end-to-end, asserting the case finalStatus is
+  `Completed`.
+tags: [uipath-maestro-case, e2e, mode:operate, lifecycle:generate, shape:single-node, feature:registry]
+max_iterations: 1
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+run_limits:
+  expected_turns: 131
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "FunctionSingleCase"
+  containing a project also named "FunctionSingleCase" from the sdd.md
+  below. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — FunctionSingleCase
+
+  Single-stage, single-task case exercising the function task plugin end-to-end.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | FunctionSingleCase |
+  | Case Description | Single-node case that invokes the acme-echo Coded Function with a fixed message. |
+  | Case Identifier | Prefix: FSC, Type: constant |
+  | Case-Level SLA | 1 d |
+  | SLA Type | Static |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.5 Case Variables
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |---|---|---|---|---|---|---|
+  | message | In | string | | | hello from case | Message passed to the acme-echo Coded Function. |
+  | echoedMessage | Variable | string | | | | Message echoed back by the function; populated by Echo. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Echo (`echo`)
+  **Type:** Stage
+  **Description:** Invoke the acme-echo Coded Function on the input message.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `echo.echoMessage` | Echo message via acme-echo function | function | Yes | No | system | — |
+
+  ##### Task 1.1: Echo message via acme-echo function (`echo.echoMessage`)
+
+  **Type:** function
+  **Description:** Call the acme-echo Coded Function and return the echoed message.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  | Field | Value |
+  |---|---|
+  | Function Reference | Name "acme-echo", Folder "Shared/acme-echo" |
+  | Component Type | FUNCTION |
+
+  **Inputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | message | string | "hello from case" |
+
+  **Outputs**
+  | Variable | Type | Binding |
+  |---|---|---|
+  | echoedMessage | string | -> echoed |
+  ```
+
+  Treat all build gates as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug` yourself — the test harness runs it. Do NOT ask for approval,
+  confirmation, or feedback. Build end-to-end in a single pass and finish
+  with `uip maestro case validate` passing on the resulting caseplan.json.
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated caseplan.json"
+    command: "uip maestro case validate FunctionSingleCase/FunctionSingleCase/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Caseplan has a function task bound as Function in Shared/acme-echo and debug completes successfully"
+    command: "python3 $REFERENCE_DIR/_shared/check_function_case.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

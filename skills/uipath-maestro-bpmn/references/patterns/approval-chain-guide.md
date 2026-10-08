@@ -8,13 +8,15 @@ any point should stop the request.
 
 These four carry the shape. Change one and you are building something else.
 
-- **A gateway after every approver, and rejection exits.** Every rejection
-  routes to one shared notify-and-end pair rather than each step growing its own
-  exit, so adding an approver adds a row, not a new terminal branch. In the
-  sequential shape this also stops the chain at the first rejection, because the
-  next approver is reachable only through the approve branch. The parallel shape
-  cannot: its join waits for every approver, so all verdicts are collected and
-  one gateway rejects afterwards.
+- **A gateway after every stage, and rejection exits.** A stage is one
+  approver, or a parallel group after its join. The next stage is reachable only
+  through the gate's approve branch, so the chain stops at the first rejected
+  stage. A parallel group cannot stop early: its join waits for every approver,
+  so its gate reads all their verdicts at once. Every reject edge converges on
+  `reject_merge`, which feeds one shared notify-and-end pair, so adding an
+  approver adds a row, not a new terminal branch. Wiring the reject edges
+  straight into `notify_rejected` is a fake join (`FAKE_JOIN`) that `validate`
+  does not report; see [structural-bpmn.md](../structural-bpmn.md#gateways).
 - **Per-approver outcome variables.** Each step records its own verdict and
   rationale. A single shared `outcome` variable would let the last approver
   overwrite the audit trail of the ones before.
@@ -39,6 +41,7 @@ the row repeats for however many the policy needs.
 | `fulfill` | `bpmn:serviceTask` | Placeholder |
 | `notify` | `bpmn:sendTask` | Placeholder |
 | `end_fulfilled` | `bpmn:endEvent` | Mechanism |
+| `reject_merge` | `bpmn:exclusiveGateway` | Mechanism, joins the reject edges |
 | `notify_rejected` | `bpmn:sendTask` | Placeholder |
 | `end_rejected` | `bpmn:endEvent` | Mechanism |
 
@@ -48,7 +51,8 @@ the row repeats for however many the policy needs.
 | `approverI` → `gateI` | | |
 | `gateI` → `approverI+1` | Approve | `=vars.approvalIOutcome == "Approve"` |
 | `gateN` → `fulfill` | Approve | `=vars.approvalNOutcome == "Approve"` |
-| `gateI` → `notify_rejected` | Rejected | `=vars.approvalIOutcome == "Reject"` |
+| `gateI` → `reject_merge` | Rejected | `=vars.approvalIOutcome == "Reject"` |
+| `reject_merge` → `notify_rejected` | | |
 | `fulfill` → `notify` → `end_fulfilled` | | |
 | `notify_rejected` → `end_rejected` | | |
 
@@ -72,8 +76,9 @@ the row repeats for however many the policy needs.
 
 **Parallel.** Replace the approver rows with a `bpmn:parallelGateway` fork, one
 `bpmn:userTask` per approver, a `bpmn:parallelGateway` join, and a single
-`bpmn:exclusiveGateway` verdict. Outcome variables are suffixed `A`/`B`/`C`
-rather than numbered, since there is no order to number.
+`bpmn:exclusiveGateway` verdict. With one gate there is nothing to merge, so
+`decision` routes straight to `notify_rejected`. Outcome variables are suffixed
+`A`/`B`/`C` rather than numbered, since there is no order to number.
 
 | Sequence flow | Label | Condition |
 | --- | --- | --- |
@@ -86,17 +91,19 @@ present. All-must-approve is the shape; the verdict condition is where a quorum
 rule would go instead.
 
 **Risk-tiered.** Insert `evaluate` (`bpmn:businessRuleTask`) and `risk_gate`
-(`bpmn:exclusiveGateway`) after the start, and put the chains inside
+(`bpmn:exclusiveGateway`) after the start, `fulfill_merge`
+(`bpmn:exclusiveGateway`) before `fulfill`, and put the chains inside
 `bpmn:subProcess` nodes.
 
 | Sequence flow | Label | Condition |
 | --- | --- | --- |
-| `risk_gate` → `fulfill` | Low | `=vars.riskTier == "low"` |
+| `risk_gate` → `fulfill_merge` | Low | `=vars.riskTier == "low"` |
 | `risk_gate` → `standard_chain` | Standard | `=vars.riskTier == "standard"` |
 | `risk_gate` → `extended_chain` | High | default |
 | `standard_chain` / `extended_chain` → `approved_gate` | | |
 | `approved_gate` → `notify_rejected` | No | any `approvalIOutcome == "Reject"` |
-| `approved_gate` → `fulfill` | Yes | default |
+| `approved_gate` → `fulfill_merge` | Yes | default |
+| `fulfill_merge` → `fulfill` | | |
 
 Adds `riskTier` (string: `low` / `standard` / `high`). Low risk reaches
 `fulfill` with no human step at all — that is the point of the tier. Both chains
@@ -121,6 +128,10 @@ Fetch payloads through [registry-workflow.md](../registry-workflow.md).
 
 Change the approver count freely; the row is the unit. Two approvers is a chain,
 six is a chain.
+
+Mix the shapes per stage. A parallel group followed by a sequential approver
+gets its verdict gateway after the join and before that approver: approve to
+the approver, reject to `reject_merge`.
 
 Reuse the shape for any all-must-agree sign-off, not only approvals — a
 multi-party sign-off on a document or a release gate is the same topology.

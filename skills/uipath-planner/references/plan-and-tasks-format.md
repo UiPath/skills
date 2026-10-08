@@ -91,12 +91,14 @@ Every task — in both file types — uses this exact structure. The fields belo
 | Field | Required | Notes |
 |---|---|---|
 | `Task T<N>` | yes | Sequential within the file. Renumber on regeneration. |
+<!--skill-flavor:task-row-tool-fields:start-->
 | `<skill-name>` | yes | One of `uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, `uipath-coded-apps`, `uipath-functions`, `uipath-maestro-flow`, `uipath-maestro-bpmn`, `uipath-maestro-case`, `uipath-api-workflow`, `uipath-connector-builder`, `uipath-ixp`, `uipath-mcp-servers`, `uipath-human-in-the-loop`, `uipath-test`. The planner emits this skill in the live `TaskCreate` call. |
 | `Identity` | yes | Stable tuple `<skill>:<project>:<subject>`. Used to match tasks across regenerations. **Parsing rule:** split on the first two colons only; `<subject>` may itself contain colons (typed-resource form `<kind>:<name>` for platform resources). Examples: `rpa:VendorInvoice_Performer:Process/CalculateTotal.xaml` (file-path subject), `platform:VendorInvoice:queue:VendorQueue` (typed-resource subject = `queue:VendorQueue`), `agents:InvoiceClassifier:tools/extract_amount.py` (file-path subject), `rpa:VendorInvoice:testing` (single-token subject). |
 | `Status` | yes | One of `[ ]` pending, `[~]` in_progress, `[x]` completed, `[!]` blocked. |
 | `Completed` | only when `[x]` | `YYYY-MM-DD by agent` or `YYYY-MM-DD by human`. The planner sets `agent` when its TaskUpdate flips the checkbox; `human` only when the user manually edits the file. |
 | `Blocked by` | yes | Comma-separated task IDs, or `none`. Drives the live `addBlockedBy` calls. |
 | `Skill prompt` | yes | Imperative prompt the planner pastes into the TaskCreate `description`. Must end with the anti-hallucination rule (below). |
+<!--skill-flavor:task-row-tool-fields:end-->
 | Sub-steps | yes | Concrete, checkable actions. One clear action per checkbox. No "TBD", no "as needed". |
 | `Validate:` sub-step | yes | Every generation task ends with a build/lint/compile check. |
 
@@ -108,11 +110,13 @@ Append this exact line to every `Skill prompt` block, with the SDD path filled i
 Use values, mappings, and structure exactly as documented in the SDD at <sdd-path>. Do not infer or guess.
 ```
 
+<!--skill-flavor:non-pdd-plan-reference:start-->
 For non-PDD lane, reference the plan file **by path** — never "this plan" (prompts are copied verbatim into `TaskCreate`):
 
 ```
 Use values, mappings, and structure exactly as documented in the plan at <PLAN_FILE_PATH>. Do not infer or guess.
 ```
+<!--skill-flavor:non-pdd-plan-reference:end-->
 
 ## Testing task is mandatory
 
@@ -156,7 +160,9 @@ When the user picks "Regenerate from the SDD" on the planner's resume question, 
 5. Renumber tasks T1..TN in the new order
 6. Write the new <process>-tasks.md
 7. Show user a summary diff (preserved counts, added, archived)
+<!--skill-flavor:regenerate-emit:start-->
 8. Emit live TaskCreate calls per the new tasks.md
+<!--skill-flavor:regenerate-emit:end-->
 ```
 
 ### Archive footer format
@@ -191,6 +197,7 @@ Regenerated <process>-tasks.md from SDD.
   implementations against the current SDD before continuing.
 ```
 
+<!--skill-flavor:live-tasks-and-plan-mode:start-->
 ## TaskCreate / TaskUpdate mapping
 
 The planner emits live tasks that mirror the file. Mapping rules:
@@ -215,6 +222,7 @@ Both files are valid `EnterPlanMode` payloads.
 - **Non-PDD lane explore-first:** call `EnterPlanMode` with the full `<feature>.md` content. User approves → `ExitPlanMode` → emit live `TaskCreate` calls.
 - **PDD-driven lane interactive:** call `EnterPlanMode` with the full `<process>-tasks.md` content. User approves → `ExitPlanMode` → emit live `TaskCreate` calls.
 - **Non-PDD lane simultaneous / PDD-driven autonomous:** skip `EnterPlanMode`. Emit the file as text, then immediately emit live `TaskCreate` calls.
+<!--skill-flavor:live-tasks-and-plan-mode:end-->
 
 ## Quality rules (applied during self-review before saving)
 

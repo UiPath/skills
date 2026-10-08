@@ -227,40 +227,36 @@
       "extensionTag": "uipath:activity",
       "contextFields": [
         {
-          "name": "releaseKey",
-          "displayName": "Process",
+          "name": "name",
+          "displayName": "Business rule",
           "type": "string",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
+          "binding": true,
           "defaultValue": null,
           "bindingInfo": {
-            "resource": "process",
-            "resourceKeyPattern": "${metadata.key}",
-            "propertyAttribute": "Key"
+            "resource": "BusinessRule",
+            "resourceKeyPattern": "${metadata.folderPath}.${metadata.name}",
+            "propertyAttribute": "name"
           }
-        },
-        {
-          "name": "folderId",
-          "type": "string",
-          "required": false,
-          "hidden": true,
-          "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
         },
         {
           "name": "folderPath",
           "type": "string",
-          "required": false,
+          "required": true,
           "hidden": true,
           "isPrimaryKey": false,
-          "binding": false,
-          "defaultValue": null
+          "binding": true,
+          "defaultValue": null,
+          "bindingInfo": {
+            "resource": "BusinessRule",
+            "resourceKeyPattern": "${metadata.folderPath}.${metadata.name}",
+            "propertyAttribute": "folderPath"
+          }
         },
         {
-          "name": "name",
+          "name": "_label",
           "type": "string",
           "required": false,
           "hidden": true,
@@ -272,21 +268,24 @@
       "inputPattern": "mergedBody",
       "inputName": "JobArguments",
       "inputTarget": "bodyField",
-      "outputSource": null,
-      "outputType": "Orchestrator.BusinessRules",
-      "outputName": "Execute business rule [Preview]",
+      "outputName": "output",
+      "outputSource": "=result",
+      "outputType": "jsonSchema",
       "useRelativeSource": true,
       "bindingPattern": "businessRule",
       "bindingInfo": {
-        "resource": "process",
-        "resourceKeyPattern": "${metadata.key}",
-        "propertyAttribute": "Key",
-        "contextField": "releaseKey"
+        "resource": "BusinessRule",
+        "resourceKeyPattern": "${metadata.folderPath}.${metadata.name}",
+        "propertyAttribute": "name",
+        "contextField": "name"
       },
       "requiresDiscovery": true,
       "isDynamic": true,
-      "xmlTemplate": "<bpmn:BusinessRuleTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.BusinessRules\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"releaseKey\" type=\"string\" value=\"{releaseKey}\" />\n        <uipath:input name=\"folderId\" type=\"string\" value=\"{folderId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"{folderPath}\" />\n        <uipath:input name=\"name\" type=\"string\" value=\"{name}\" />\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Execute business rule [Preview]\" type=\"Orchestrator.BusinessRules\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:BusinessRuleTask>",
-      "discoveryNotes": "Uses getOrchestratorBusinessRules() to list available business rules"
+      "xmlTemplate": "<bpmn:BusinessRuleTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.BusinessRules\" version=\"v3\" />\n      <uipath:context>\n        <uipath:input name=\"name\" type=\"string\" value=\"=bindings.{nameBindingId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"=bindings.{folderPathBindingId}\" />\n        <uipath:input name=\"_label\" type=\"string\" value=\"{_label}\" />\n        <uipath:inputSchema type=\"jsonSchema\"><![CDATA[{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{},\"required\":[]}]]></uipath:inputSchema>\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"output\" type=\"jsonSchema\" source=\"=result\" var=\"{outputVarId}\" />\n      <uipath:output name=\"Error\" type=\"jsonSchema\" source=\"=Error\" var=\"{errorVarId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:BusinessRuleTask>",
+      "discoveryNotes": "Uses getOrchestratorBusinessRules() to list available business rules",
+      "inputNotes": "isSplitInputs=true in design schema: the canvas shows one input per rule argument and serialization merges them into the single JobArguments JSON body. The uipath:context inputSchema lists each argument with its type, and its required array names the required ones.",
+      "contextFieldNotes": "name and folderPath each point to a root binding with resource=\"BusinessRule\" and propertyAttribute name or folderPath; the engine runs the rule by these two. resourceKey is <folderPath>.<name>, or <name> alone when folderPath is empty (resourceKeyPattern reads <folderPath>.<name>; drop the . when folderPath is empty), never the catalog entity key or a release key; the engine uses it only to match deploy-time binding overwrites; bind only a deployed rule; the name and folderPath defaults are the rule name and its folder path. The folderPath binding default is an empty string when the rule lives in the running job's folder. _label holds the rule name as a plain value.",
+      "outputNotes": "One output named output (type jsonSchema, source =result) holding the whole result keyed by decision, so a decision's column reads as vars.<outputVarId>.<decision>.<column>; plus an Error output (type jsonSchema, source =Error). Each var names a process variable declared as uipath:inputOutput on this element. The task is version v3: below v3 the engine cannot read the .uirule package a BusinessRules project deploys. Only a decision-keyed rule fits this output: check that the OutputArguments from uip rules describe carry \"x-uipath-decision-keyed\": true, and if they do not, do not bind the rule; run uip rules refresh <project-path> on its project and redeploy it first."
     },
     "Intsvc.ActivityExecution": {
       "extensionType": "Intsvc.ActivityExecution",
@@ -435,7 +434,7 @@
       "xmlTemplate": "<bpmn:sendTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Intsvc.ActivityExecution\" version=\"v1\" />\n      <uipath:context>\n        <uipath:input name=\"connectorKey\" type=\"string\" value=\"{connectorKey}\" />\n        <uipath:input name=\"connection\" type=\"string\" value=\"=bindings.{connectionBindingId}\" />\n        <uipath:input name=\"folderKey\" type=\"string\" value=\"=bindings.{folderBindingId}\" />\n        <uipath:input name=\"operation\" type=\"string\" value=\"{operation}\" />\n        <uipath:input name=\"objectName\" type=\"string\" value=\"{objectName}\" />\n        <uipath:input name=\"method\" type=\"string\" value=\"{method}\" />\n        <uipath:input name=\"path\" type=\"string\" value=\"{path}\" />\n        <uipath:input name=\"activityConfigurationVersion\" type=\"string\" value=\"v1\" />\n        <uipath:input name=\"metadata\" type=\"json\"><![CDATA[{}]]></uipath:input>\n      </uipath:context>\n      <uipath:output name=\"response\" type=\"jsonSchema\" source=\"=response\" var=\"{varId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:sendTask>",
       "discoveryNotes": "Use `uip is activities list <connector-key> --output json` to select an activity. Set operation from the described Operation.Name (List, Retrieve, Create, Update, Delete or Replace -- never the activity's own Name), then describe ObjectName to get its current path, parameters, and fields.",
       "inputNotes": "Emit ONE uipath:input with target=\"body\" holding the whole request object as JSON element content, nested the way the provider nests it. Several target=\"body\" inputs do not merge -- the last one wins and the provider receives a bare scalar. Take field names from the operation's RequestFields in `uip is resources describe`, not from the provider's REST reference. Required Parameters are separate inputs targeted by their own Type (query, path, body, or multipart).",
-      "contextFieldNotes": "connection points to a root binding for a Connection resource. When folder scoping is required, folderKey points to a second binding for the same resourceKey. Use propertyAttribute ConnectionId for connection and folderKey for folderKey. Omit folderKey when the selected activity has no folder scoping, and omit both fields only when it does not use a connection.",
+      "contextFieldNotes": "connection points to a root binding for a Connection resource, and folderKey points to a second binding for the same resourceKey. Use propertyAttribute ConnectionId for connection and folderKey for folderKey. Keep folderKey whenever the activity uses a connection; without it the run faults 102010 Value cannot be null (Parameter 'Folder'). Omit both fields only when it does not use a connection.",
       "extensionTagNotes": "In isExecution array, NOT in isEvents array, so uses uipath:activity"
     },
     "Intsvc.HttpExecution": {

@@ -1,0 +1,73 @@
+task_id: skill-case-edit-add-business-rule-task
+description: >
+  Adds a business-rule task to the Review stage of an existing LinearThreeStages
+  case from a saved `tasks describe` result. Graded on the binding contract the
+  engine runs a rule by (BusinessRule `name` + `folderPath`),
+  the v3 task version and decision-keyed result (`output` from `=result`,
+  with `riskBand` extracted from `RiskDecision`), the bindings sidecar, and `validate`.
+  Offline, no debug.
+tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 900
+  max_turns: 45
+  turn_timeout: 900
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: .
+
+initial_prompt: |
+  The LinearThreeStages case solution already exists on disk under
+  LinearThreeStages/. Its Review stage runs two wait-for-timer tasks.
+
+  Add a business-rule task named "Score Credit Risk" to the Review stage. It
+  evaluates the deployed business rule "CreditRisk" in Orchestrator folder
+  "Shared" (registry entityKey `11111111-2222-3333-4444-555555555555`). Its
+  decision table "RiskDecision" takes the applicant's credit score and returns a
+  risk band. Pass a new number case variable `creditScore` in, and store the
+  risk band in a new string case variable `riskBand`. Run it when the stage is
+  entered; Review must not wait on it to complete.
+
+  The tenant is not reachable from this environment. `rule-describe.json` in the
+  current directory is the saved result of
+  `uip maestro case tasks describe --type business-rule` for this rule; use it
+  in place of calling describe.
+
+  Leave everything else exactly as it is.
+
+  Do NOT run `uip maestro case debug`. Do NOT ask for approval, confirmation, or
+  feedback. Make the edit end-to-end in a single pass and finish with
+  `uip maestro case validate` passing on the resulting caseplan.json.
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "uip maestro case validate passes on the edited caseplan.json"
+    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The business-rule task binds BusinessRule name + folderPath, is v3, maps creditScore in and output (=result) + riskBand (=result.RiskDecision.riskBand) out, and bindings_v2.json carries the rule"
+    command: "python3 $REFERENCE_DIR/check_add_business_rule_task.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

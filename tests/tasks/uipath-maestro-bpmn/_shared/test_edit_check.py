@@ -10,13 +10,14 @@ from __future__ import annotations
 import ast
 import os
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.edit_check import load_original  # noqa: E402
+from _shared.edit_check import canonical, load_original  # noqa: E402
 
 SHARED = Path(__file__).resolve().parent
 EDIT_ROOT = SHARED.parent / "edit"
@@ -54,3 +55,32 @@ def test_every_shipped_fixture_is_guarded() -> None:
 def test_pristine_fixture_loads(checker: str, args: tuple[str, ...]) -> None:
     assert len(args) == 2, f"{checker}: load_original needs literal (task_dir, basename)"
     assert load_original(*args).tag.endswith("definitions")
+
+def _el(inner: str):
+    return ET.fromstring(f'<bpmn:t xmlns:bpmn="b" xmlns:uipath="u">{inner}</bpmn:t>')
+
+
+def test_extension_children_of_different_types_compare_equal_in_any_order() -> None:
+    """Readers pick them by type, and the authoring routes disagree on order."""
+    a = _el('<bpmn:extensionElements><uipath:scriptVersion value="v3"/><uipath:mapping id="m"/></bpmn:extensionElements>')
+    b = _el('<bpmn:extensionElements><uipath:mapping id="m"/><uipath:scriptVersion value="v3"/></bpmn:extensionElements>')
+    assert canonical(a) == canonical(b)
+
+
+def test_swapping_two_children_of_the_SAME_type_still_differs() -> None:
+    """Sorting whole views would have hidden this, and it changes the runtime contract.
+
+    Readers that select by type also disagree about which of several same-type siblings
+    wins — ``ScriptReader`` takes the FIRST ``uipath:scriptVersion``, the local engine's
+    parser lets the LAST ``uipath:Mapping`` set the serviceType — so the order of two of
+    a kind is meaning, not formatting.
+    """
+    a = _el('<bpmn:extensionElements><uipath:scriptVersion value="v1"/><uipath:scriptVersion value="v3"/></bpmn:extensionElements>')
+    b = _el('<bpmn:extensionElements><uipath:scriptVersion value="v3"/><uipath:scriptVersion value="v1"/></bpmn:extensionElements>')
+    assert canonical(a) != canonical(b)
+
+
+def test_order_still_matters_outside_extension_elements() -> None:
+    a = _el('<uipath:variables><uipath:input id="a"/><uipath:input id="b"/></uipath:variables>')
+    b = _el('<uipath:variables><uipath:input id="b"/><uipath:input id="a"/></uipath:variables>')
+    assert canonical(a) != canonical(b)

@@ -288,8 +288,7 @@ The `baseUrl` in `uipath.json` **must** use the API subdomain — not the portal
 | Environment | Correct | Wrong |
 |---|---|---|
 | cloud | `https://api.uipath.com` | `https://cloud.uipath.com` |
-| staging | `https://staging.api.uipath.com` | `https://staging.uipath.com` |
-| alpha | `https://alpha.api.uipath.com` | `https://alpha.uipath.com` |
+| Other UiPath-hosted portal | `https://<PREFIX>.api.uipath.com` | `https://<PREFIX>.uipath.com` |
 
 Fix by setting `baseUrl` in `uipath.json` to the correct API-subdomain URL, then restart the dev server so the plugin re-injects the `<meta name="uipath:base-url">` tag.
 
@@ -502,7 +501,7 @@ After fixing, rebuild (`npm run build`) and re-deploy (`uip codedapp deploy`). I
 These are **CLI session** scope failures — distinct from the app's own runtime scopes in `uipath.json` (see [`invalid_scope` Error in Auth URL](#invalid_scope-error-in-auth-url) for that). The session scope comes from `--scope` on `uip login`; the fix is always to re-login requesting `OR.Default` (Orchestrator) **and** `Apps.Read Apps.Write` (Apps service) together:
 
 ```bash
-uip login --client-id <id> --client-secret <secret> \
+uip login --client-id env.UIPATH_CLIENT_ID --client-secret env.UIPATH_CLIENT_SECRET \
   --organization <org> --tenant <tenant> \
   --scope "OR.Default Apps.Read Apps.Write"
 ```

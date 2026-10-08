@@ -320,7 +320,7 @@ the exact stage display name — never the case name. -->
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
+| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
 
 ##### Task <N>.<M>: <TASK_NAME>
 
@@ -610,7 +610,9 @@ Load `uipath-planner` with this SDD path to derive the task list:
 
 > Load `uipath-planner`. SDD path: `<this-file>`.
 
+<!--skill-flavor:planner-next-step:start-->
 The planner detects the `## Planner Handoff` header, parses Section 2: Stages & Tasks and Section 4: Integrations, derives the per-skill task list, and emits live `TaskCreate` calls. If `Execution autonomy: interactive`, it enters plan mode for task review before execution.
+<!--skill-flavor:planner-next-step:end-->
 
 Implementation tasks **do not live in this SDD** — they live in the planner's output.
 

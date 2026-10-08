@@ -99,9 +99,10 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
-    description: "Advisory: agent queried the registry for Query Entity Records"
+    description: "Advisory: agent resolved the Query Entity Records operation (registry template or connection describe)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(QueryEntityRecordsCurated|QueryEntityRecords_V3)'
+    # Either arm's discovery path counts — see integration_create_get.yaml.
+    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b))(?=.*\b(QueryEntityRecordsCurated|QueryEntityRecords_V3)\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 0.0

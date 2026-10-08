@@ -22,6 +22,8 @@ xmlns:ui="http://schemas.uipath.com/workflow/activities"
 
 Entries that need additional prefixes (`xmlns:s` for `System` types, `xmlns:sc` for `System.Collections`) call them out in the "XAML prefix" line. For modern Windows-target projects use `assembly=System.Private.CoreLib`; for Legacy (.NET 4.6.1) projects use `assembly=mscorlib`.
 
+Snippets omit `sap2010:WorkflowViewState.IdRef` — add one to every activity element when inserting, per [xaml/xaml-basics-and-rules.md](xaml/xaml-basics-and-rules.md) Rule 25 (`<TypeName>_<next free N>`; never change existing IdRefs).
+
 Snippets use the property-element form with `<VisualBasicValue>` / `<VisualBasicReference>`. For C# expression projects, apply [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 
 ---

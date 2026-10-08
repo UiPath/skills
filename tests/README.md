@@ -192,7 +192,7 @@ criteria that passed.
 | `smoke-windows.yaml` | tempdir | PR-gate smoke (Windows RPA only) | 40 | 900s | 900s |
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
-| `flow-v2-preview.yaml` | docker | Flow v2 builder-SDK preview skills | 200 | 1200s | 900s |
+| `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow promoted; Case, BPMN preview) | 200 | 1200s | 900s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
 campaign runner first builds the pinned `skills-image:sg1`, prepares isolated
@@ -203,9 +203,16 @@ runner. The image build passes the package credential as
 exists only for the external nightly caller during migration. Regular nightly
 and smoke jobs continue to use `skills-image:latest`.
 
-`flow-v2-preview.yaml` runs the three `preview/skills/uipath-maestro-{flow,case,bpmn}`
-builder-SDK skills as the ONLY skill catalog, so a run measures the Flow v2
-authoring path rather than a mix of both generations. `preview/` is a Claude Code
+`flow-v2-preview.yaml` runs the three builder-SDK skills
+`uipath-maestro-{flow,case,bpmn}` as the ONLY skill catalog, so a run measures the
+Flow v2 authoring path rather than a mix of both generations. Flow has been
+promoted: its tree lives in `skills/uipath-maestro-flow` (the default catalog, so
+`nightly.yaml` runs it too), and `preview/skills/uipath-maestro-flow` is a relative
+symlink to it so this arm keeps loading all three. Case and BPMN are still
+`preview/`-only. The previous Flow generation lives in
+`classic/skills/uipath-maestro-flow` (shipped only in the Studio Web flavor). It is
+in no plugin catalog, but the read-only repo mount leaves it readable from inside
+eval containers, so a prompt must not name a v1 Flow reference file. `preview/` is a Claude Code
 **plugin root** (`preview/.claude-plugin/plugin.json` + `preview/skills/<name>/SKILL.md`),
 which is the one layout every harness loads: Claude Code requires it, the
 Delegate SDK appends `/skills` to it, Codex and Antigravity accept it. Skills load
@@ -213,8 +220,10 @@ as `uipath-preview:uipath-maestro-flow` (the repo-root catalog is `uipath:`). Ne
 point `plugins.path` at a bare directory of skill folders: Claude Code loads
 nothing from it and says so only as a per-task WARNING in task.log (every v2 run
 08-20 → 09-03 ran that way). Narrowing `plugins.path` to `preview/` drops the automatic
-repo-root bind mount, so the root is remounted explicitly; the image also needs
-runtime npm auth for the `@uipath` scope. Login state mounts at `/.uipath`,
+repo-root bind mount, so the root is remounted explicitly. The symlink needs a
+checkout with symlinks enabled (the default on Linux and macOS; on Windows,
+`git config core.symlinks true` before cloning); the arm runs in the Linux
+container. Login state mounts at `/.uipath`,
 identical to `nightly.yaml`. Confirm that mount resolves before a full run, or
 every tenant call fails as a capability problem rather than a config one:
 
@@ -275,10 +284,13 @@ checker_context:
     model: azure/gpt-5.6-luna
     params:
       api_version: "2024-05-01"
+      num_retries: 5
     env_params:
       api_base: CODEX_BASE_URL
       api_key: CODEX_API_KEY
 ```
+
+`num_retries` is mandatory, not tuning. coder_eval's litellm judge has no retry of its own — `judge_litellm.py` calls `litellm.acompletion` bare, while only `judge_bedrock.py` wraps a `RetryConfig` — so a transient provider `InternalServerError` or `Timeout` raises `JudgeInfrastructureError` (CE039) and ERRORs the whole task. Worse, `checker.py`'s `check_all_async` accumulates results in a local list and lets that exception propagate, so every criterion already scored is discarded too: nightly `2026-08-31_04-15-47` lost 20 tasks this way, one of them a 21-criterion e2e whose 18 passing deterministic checks were thrown away by a single 500 on the judge at position 19. `params` is spliced into the `acompletion` call verbatim, so retry is configurable here; `num_retries` is a litellm-level kwarg and is never forwarded to the provider, so `drop_params` does not strip it. Remove once the litellm judge retries upstream.
 
 `route: litellm` is `llm_judge`-only and safe as an experiment default even when `simulation.enabled: true`: the simulator resolves its own route independently of `checker_context.api_route` (coder_eval `_resolve_routes`/`simulator_route`), so it's unaffected by this override. It is **not** safe combined with an enabled `agent_judge` criterion — coder_eval still rejects that combination at setup, since `agent_judge` shares `eval_route` with `llm_judge`. This repo has no `agent_judge` criteria today; if one is added, override `checker_context.api_route` back to `bedrock`/`direct` on that specific task.
 

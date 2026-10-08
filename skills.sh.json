@@ -12,6 +12,7 @@
         "uipath-agents",
         "uipath-maestro-bpmn",
         "uipath-maestro-case",
+        "uipath-rules",
         "uipath-coded-apps",
         "uipath-api-workflow",
         "uipath-human-in-the-loop",
@@ -35,6 +36,7 @@
       "description": "Operate the platform via the uip CLI: Orchestrator, Integration Service, Data Fabric, Admin, source control and CI/CD pipelines, governance, testing, tasks, analytics, and MCP servers.",
       "skills": [
         "uipath-platform",
+        "uipath-knowledge-bundles",
         "uipath-admin",
         "uipath-aops",
         "uipath-test",
@@ -49,7 +51,10 @@
     {
       "title": "Diagnostics & Feedback",
       "description": "Investigate failures across any UiPath product and send bug reports or improvement suggestions to the team.",
-      "skills": ["uipath-troubleshoot", "uipath-feedback"]
+      "skills": [
+        "uipath-troubleshoot",
+        "uipath-feedback"
+      ]
     }
   ]
 }

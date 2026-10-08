@@ -40,7 +40,7 @@ Extracts data from a document and stores the results into automatically generate
 
 | Name | Display Name | Kind | Type | Description |
 |------|-------------|------|------|-------------|
-| `ExtractionResults` | Document data | OutArgument | `IDocumentData<ExtendedExtractionResultsForDocumentData>` | Extracted data in a (field-name, field-value) format. For example: ('invoice-date', '01/04/2022'). See Type Reference below. |
+| `ExtractionResults` | Document data | OutArgument | `IDocumentData<ExtendedExtractionResultsForDocumentData>` | Extracted data in a (field-name, field-value) format. For example: ('invoice-date', '<INVOICE_DATE>'). See Type Reference below. |
 
 ### Studio UI Display Properties
 

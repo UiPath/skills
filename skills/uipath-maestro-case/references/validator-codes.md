@@ -60,4 +60,16 @@ After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker
 
 `STRICT_SDD_STAGE_RENAMED` and `STRICT_SDD_TASK_RENAMED` (error under `--sdd`: a stage or task the SDD declares is present under another name — `Stage 4 - return to origin` as `Stage 4`, `Wait for timer - S7` as `User-selected routing`) replace the `STRICT_SDD_*_MISSING` / `STRICT_SDD_*_EXTRA` pair a rename used to produce. The element is not absent: rename it back to the SDD's name, which the message gives. Never author a second element with the SDD's name beside the renamed one. A CLI that predates these codes reports the rename as that MISSING error plus an EXTRA warning on the same stage — read the pair as one rename.
 
+### Binding cleanup — unreferenced root bindings
+
+`STRICT_BINDINGS_UNREFERENCED` (warning under `--strict`, at `bindings[<id>]`: no node, rule, or trigger in the plan references `=bindings.<id>`) is what a removal leaves behind: a deleted task's `name`/`folderPath` pair, a connector's `connection`/`folderKey` pair, or a pair whose task stayed a placeholder. **A `Valid` that carries this warning is not done.** `bindings_v2.json` still declares the resource, and the solution keeps its declaration, so Studio Web provisions a resource nothing uses.
+
+Repair, in order:
+
+1. First confirm the binding really is unused. If a task that should reference it lost its `=bindings.<id>` value, restore the task's reference instead of deleting the binding.
+2. Delete each reported entry from the root `bindings[]`.
+3. Run `uip maestro case bindings sync "<caseplan.json>" --output json`.
+4. Prune the solution declaration the removal orphaned: [bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources) (`resources refresh`, `resources list --source local`, `resources remove` each unmatched entry, then `refresh` once more).
+5. Re-run `validate --strict` and confirm the warning is gone.
+
 <!-- END: validator-codes.md -->
