@@ -109,7 +109,8 @@ detail a runtime-evidence bar needs.
 
 The JSON envelope has top-level `Result`; a successful validation also reports
 `Data.Status: "Valid"` and may carry `Data.Warnings`. Treat warnings as failures
-except for the reviewed shared-connection advisory. Preserve any exception's
+except for the reviewed shared-connection advisory and the expected error-envelope
+diagnostics ([`error-handling.md`](error-handling.md#reading-the-failure)). Preserve any exception's
 exact code/text and rationale instead of broadening an allowlist.
 
 ### Bounded completion
@@ -235,16 +236,13 @@ the read-back hundreds of lines. Trimming it with `tail` or `head` then drops
 (~30 s against the cloud). Name each declared output, and add a step's output
 only when the claim is about that step.
 
-**A completed run has no `incidents` in this envelope.** Its `Data` carries
-`finalStatus`, `entryPoint`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`,
-`folderKey`, `solutionId`, `variables` and `elementExecutions`, plus
-`variablesFetch` when the variables read needed a retry; `variablesError`
-replaces `variables` when that read fails. So an `incidents:incidents`
-projection yields `null`. A faulted run usually carries `Data.incidents` (absent
-when PIMS returns none or the fetch fails), and `--output-filter` projects
-failure `Data` too, so add `incidents:incidents` to the projection to keep
-them. If `Data.incidents` is missing, fetch incidents with the separate
-`debug-instance incidents` call below, keyed by the `instanceId` you just read.
+**`incidents` is filled only for a faulted run.** `Data` carries `finalStatus`,
+`instanceId`, `studioWebUrl`, `jobKey`, `runId`, `solutionId`, `variables` and
+`elementExecutions`; when the run faulted, the CLI also fetches its incidents
+into `Data.incidents` and names the first in the error `Message`. When the
+outputs could not be read, `Data.variablesError` replaces `variables`: treat the
+outputs as unknown, not empty, and read them with
+`uip maestro flow debug-instance variables <instanceId>`.
 
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
@@ -266,10 +264,8 @@ each `direction: out` global, as in the standard read-back above), and
 product-runtime path; a bare process exit code is not. Omit the filter only when
 diagnosing a field the projection did not retain.
 
-Fetch incidents by `instance` only when a failed run has no `Data.incidents`
-(`null` in a projection) or your projection dropped it.
-
-For a fault, query the backend incident payload with the returned instance id:
+For the full backend incident payload of a fault, or for a run the CLI did not
+wait on, query it by the returned instance id:
 
 ```bash
 uip maestro flow debug-instance incidents <instanceId> \
