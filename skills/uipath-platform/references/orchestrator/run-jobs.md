@@ -225,6 +225,8 @@ uip or jobs logs <job-key> --export --destination ./logs.csv  # Export to CSV fi
 
 `--export` writes a CSV file instead of terminal output. Combine with `--destination` (or `-d`) to set the file path. Logs are cross-folder -- no `--folder-path` required.
 
+> **`--export` spends a daily quota.** It calls the RobotLogs Export endpoint, which is limited to 100 requests per day per tenant and shared with everyone on the tenant. To read or diagnose logs, use `--output json` (optionally `--level Error`). Export only when the user asks for a CSV file. See [api-limits.md](api-limits.md).
+
 ## Step 7: Get Traces
 
 LLM and agentic execution traces are served by the traces tool, keyed by the job:
@@ -315,7 +317,6 @@ uip or jobs start <process-key> --folder-path "Finance" \
   --wait-for-completion --timeout 600 --output json
 
 uip or jobs logs <job-key> --level Error --output json
-uip or jobs logs <job-key> --export --destination ./invoice-logs.csv
 ```
 
 ---
