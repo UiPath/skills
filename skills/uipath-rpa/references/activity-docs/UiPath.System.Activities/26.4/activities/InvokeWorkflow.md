@@ -59,7 +59,7 @@ Synchronously invokes a specified workflow, optionally passing it a list of inpu
 - **Invoke Workflow File** is a container/scope activity in the sense that it passes arguments to and receives output from the invoked workflow file.
 - The invoked workflow runs **synchronously** — the current workflow pauses until the invoked one finishes.
 - `WorkflowFileName` must be a plain project-relative path (`Workflows\Process.xaml`), not `[&quot;Workflows\Process.xaml&quot;]` or another expression-wrapped string. See `xaml/common-pitfalls.md` for the path-resolution failure mode.
-- When manually populating `Arguments`, use direct `InArgument` / `OutArgument` / `InOutArgument` children with `x:Key` matching the callee argument name. Do **not** wrap populated arguments in `scg:Dictionary`; Studio may clear dictionary-wrapped mappings on load. The empty dictionary returned by `activities get-default-xaml` is only correct for the empty state.
+- When manually populating `Arguments`, write `InArgument` / `OutArgument` / `InOutArgument` entries with `x:Key` matching the callee argument name, as direct children (the form Studio saves) or inside the `scg:Dictionary` that `activities get-default-xaml` returns; both bind the same.
 - For C# XAML projects, replace `VisualBasicValue` / `VisualBasicReference` with `CSharpValue` / `CSharpReference` element-body bindings; do not use VB bracket shorthand for argument expressions.
 - Setting `Isolated` (`UnSafe`) to `True` runs the invoked workflow in a separate process for fault isolation; this incurs additional overhead.
 - `TargetSession` controls which robot session executes the invoked workflow (e.g. `Current`, `Main`, `PictureInPicture`).
