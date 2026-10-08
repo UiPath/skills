@@ -40,7 +40,7 @@ Failure: `Result` is `Failure`/`ValidationError` with a `Message` and usually an
 | Command | Purpose | Data shape notes |
 |---|---|---|
 | `uip ah auth-info get` | connectivity + who/where am I; the signed-in identity is the **default owner/submitter** and the authority for it | `Data.Tenant.Url`, `Data.User.Email`, `IsActive`, `Roles` |
-| `uip ah idea-flows list` | flow names → ids | entries carry `Id`, `Name`, `Phases`; pass `--all-fields` for the raw `"Idea flow type"` and every phase's `phase_variable`/`status_variable` — select flows by that type (see `api-endpoints.md` → **Idea flow types**) |
+| `uip ah idea-flows list` | flows → ids, types, phase/status pairs | entries carry `Id`, `Name`, `Type` (e.g. `business-process`; absent on older servers — then `Name` is the fallback) and `Phases`. **Select flows by `Type`** (see `api-endpoints.md` → **Idea flow types**). `Phases` map keys are PascalCased (`Documentation`) — take `--phase`/`--status` from each status entry's `PhaseVariable`/`StatusVariable`, never from the keys |
 | `uip ah automations schema get --idea-flow-id <id> --destination <file>` | write the flow's schema + `user_inputs` template to a file | same document as the raw `/idea-schema` |
 | `uip ah categories get` | category tree | `Data.Levels` + `Data.Categories` (nested `subcategories`; pick `category_is_active: 1` only) |
 | `uip ah users list` | list tenant users | entries carry `Email`, `IsActive`, `InviteStatus`; paged (default 20); filters: `--search`, `--invite-status`, `--limit` |
@@ -52,7 +52,7 @@ Failure: `Result` is `Failure`/`ValidationError` with a `Message` and usually an
 | `uip ah documents list <automation-id>` | verify attachments | entries carry `Id`, `Title`, `FileId` (file-backed) or `EmbedLink` (link-backed) |
 | `uip ah documents download <file-id> --destination <path>` | **download a document's bytes** | takes the `FileId` from `documents list`, **not** the document `Id` |
 | `uip ah automations update <id> --file <answers.json>` | edit assessment answers post-create (e.g. set the Studio Web link) | same `user_inputs` document shape as create |
-| `uip ah automations change-idea-flow <automation-id> --idea-flow <type\|id\|name> --phase <PHASE_VARIABLE> --status <STATUS_VARIABLE>` | **move an automation to another idea flow** (e.g. idea → Business Process) | slow (~20 s+), never retry blind; 403 = no Change idea flow permission — flow: `change-idea-flow-cli-guide.md` |
+| `uip ah automations change-idea-flow <automation-id> --idea-flow <type\|id\|name> --phase <PHASE_VARIABLE> --status <STATUS_VARIABLE>` | **move an automation to another idea flow** (e.g. idea → Business Process) | `Data`: `AutomationId`, `IdeaFlowId`, `IdeaFlow`, `IdeaFlowType`, `Phase`, `Status`. Exit 3 → read `Data.Candidates` / `Data.ValidPairs` and retry corrected; exit 4 timeout (`RetryWillNotFix`) → `automations get` before any retry; 403 → ask an admin — flow: `change-idea-flow-cli-guide.md` |
 | `uip ah automations list --search <text> --limit 20` | name → process id | projected records with `Id`, `Name`, `Phase` |
 | `uip ah automations get <id> [--all-fields]` | one process record | default projection has `Id`/`Name`/`Phase`/`PhaseStatus`/`SubmissionType` (the flow type it is in)/`Tags`; `--all-fields` for the raw record (needed for `process_slug`) |
 | `uip ah components list --automation-id <id>` | linked components (optional, get flow) | same record shape as the tenant-wide catalogue |

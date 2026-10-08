@@ -7,7 +7,7 @@ Creates one process from a schema-driven payload and attaches its documents (PDD
 ## Step 1: Verify connectivity (and fetch the idea flows)
 
 ```bash
-uip ah idea-flows list --all-fields --output json
+uip ah idea-flows list --output json
 ```
 
 - `Result: Success` → keep `Data` (flow names + ids) and tell the user "Connected to Automation Hub."
@@ -16,7 +16,7 @@ uip ah idea-flows list --all-fields --output json
 
 ## Step 2: Pick the idea flow
 
-Default to the Business Process flow, picked by **type**: from Step 1's raw entries take the `"Idea flow ID"` of the entry whose `"Idea flow type"` is `business-process` — names are tenant-editable and ids differ per tenant. If the caller named a different flow, use that. Several candidates → ask. None → say Business Process flows may not be enabled and stop. Only when no entry carries `"Idea flow type"` (older server), fall back to the entry whose `"Idea flow name"` contains "Business Process" (case-insensitive). Store `IDEA_FLOW_ID` and the expected type.
+Default to the Business Process flow, picked by **type**: take the `Id` of the entry whose `Type` is `business-process` — names are tenant-editable and ids differ per tenant. If the caller named a different flow, use that. Several candidates → ask. None → say Business Process flows may not be enabled and stop. Only when no entry carries `Type` (older server or CLI), fall back to the entry whose `Name` contains "Business Process" (case-insensitive). Store `IDEA_FLOW_ID` and the expected type.
 
 ## Step 3: Fetch the schema
 
