@@ -1,0 +1,60 @@
+# skip:true until a uip release ships `tm run --type package` (UiPath/cli#4845):
+# CI installs @uipath/cli@latest, which does not have the command yet, so the
+# graded report can never be written. Flip to skip:false after that release.
+task_id: skill-test-run-package-ci-smoke
+skip: true
+description: >
+  Smoke test: agent uses the uipath-test skill to run every test in a package
+  that is already uploaded to Orchestrator, the way a CI step would, with
+  `uip tm run --type package`. Grades the real outcome — a JUnit report on disk that
+  holds a `<testsuite>` — plus the single complete `tm run --type package` command, and
+  guards against the old hand-built chain (link-package → testsets create →
+  testsets run → wait → result download) that it replaces. Test
+  results themselves are not graded: the command exits 1 when a test fails,
+  and the skill teaches that this is a result to report, not a CLI error.
+  Requires a `uip` release that ships `tm run --type package`.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 25
+  turn_timeout: 1200
+
+initial_prompt: |
+  CI just published the latest version of the test package
+  "Testcases.with.parameters" to the Orchestrator folder
+  "uipath-test-folder-feed". Run all of its tests in the Test Manager project
+  HEALTH, retry failed ones once, and leave a JUnit report in a "results"
+  folder in the current directory. Tell me how many tests passed.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (`uip login status`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete tm run --type package command: package, folder, project HEALTH, one retry, report under results/"
+    tool_name: "Bash"
+    command_pattern: '(?=.*--package-name\s+["\x27]?Testcases\.with\.parameters)(?=.*--package-version\s+\S)(?=.*--folder-(path\s+["\x27]?uipath-test-folder-feed|key\s+\S))(?=.*--project-key\s+HEALTH)(?=.*--max-retries\s+1)(?=.*--result-path\s+["\x27]?(\./)?results)(?=.*--type[\s=]+package)uip\s+tm\s+run\s'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A JUnit report with a <testsuite> was written under results/"
+    command: "grep -lq '<testsuite ' results/*.xml"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not hand-build the run with testsets create / testcases link-package"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+(testsets\s+create|testcases\s+link-package)'
+    weight: 1.5
+    pass_threshold: 1.0
