@@ -50,7 +50,8 @@ No `Data.traceId` means the engine did not trace the run (tracing is off for the
 
 | Message | Fix |
 |---|---|
-| `Missing required option --folder-path or --folder-key.` | Pass the rule's folder; `uip or folders list` finds folder paths. |
+| `Missing required option --folder-path, --folder-key or --all-folders.` | Pass the rule's folder (`uip or folders list` finds folder paths), or `--all-folders` on `list`. |
+| `Option --all-folders cannot be used with --folder-path or --folder-key.` | Pass only one of them. |
 | `Options --folder-path and --folder-key cannot be used together.` | Pass one of them. |
 | `Business rule '<NAME>' was not found in folder '<FOLDER_PATH>'.` | Run `uip rules list --folder-path "<FOLDER_PATH>"` to see the rules in that folder. |
 | `Business rule '<NAME>' has no argument contract on its resource.` | The rule was deployed without `entry-points.json`; redeploy it from its solution with `uip solution publish` and `uip solution deploy run`. |
