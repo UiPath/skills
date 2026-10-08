@@ -104,7 +104,52 @@ CLEAN = [
     ("zero GUID placeholder", '"00000000-0000-0000-0000-000000000000"'),
     ("IP address", "10.20.30.40"),
     ("short error code", "Orchestrator error code `#1230`"),
+    # PR #3798 review: ordinary prose that ends in an ambiguous street suffix.
+    ("Drive is a product, not a street", "Upload 5 Google Drive files"),
+    ("step number before a product", "Step 2 Google Drive"),
+    ("Way in prose", "then 10 Second Way"),
+    ("Square in prose", "Step 2 Town Square"),
 ]
+
+# Repo-wide false positives the first cut of the block tier hit. Some still
+# surface as advisory (a 12-digit GUID tail is a numeric-identifier); none may block.
+NOT_BLOCKED = [
+    ("digits inside a hex expression id", '"expressionId":"id7ca932f7092040649018223c7de7ba78"'),
+    ("GUID segments", '"JobKey": "11aa1111-2222-3333-4444-555566667777"'),
+    ("GUID segments with Luhn-valid groups", '"Key": "aabb1088-3344-5566-7788-99aabbccdd33"'),
+    ("epoch milliseconds", "--started-after 1751328000000 --started-before 1751673600000"),
+    ("repeated-digit run", "INV-0000000000000"),
+    ("regex quantifier before epoch seconds", r"--since[\s=]+1788000000\b"),
+    ("DD.MM.YYYY sample with no expiry keyword", "Example: '16.05.2017'"),
+    ("dated build path in a stack trace that later says expired",
+     r"at Http.Send() in C:\\Apiary\\2023-06-26.09-20-33\\Src\\Http.cs:line 12 -- token expired"),
+    ("space-separated number triple", "| 100 200 3000 |"),
+    ("short signed numbers", "delta +5 10 20"),
+    ("unassignable SSN area", "build 900-12-3456"),
+]
+
+
+# Shapes the revision kept blocking, in forms the first cut did not cover.
+BLOCKED_REVISED = [
+    ("expiry keyword a few words before the date", 'pat create --expiration-date "2027-01-15"', "card-expiration-date"),
+    ("DD.MM.YYYY beside a keyword", "Card valid thru 31.12.2027", "card-expiration-date"),
+    ("NANP with dots", "Call 555.234.5678", "phone-number"),
+    ("international E.164 with spaces", "Phone: +44 20 7946 0958", "phone-number"),
+    ("street abbreviation", "Ship to 100 Market St, Suite 4", "us-street-address"),
+    ("standalone Mastercard test number", "5555555555554444", "credit-card"),
+    ("Mastercard 2-series", "2223000048400011", "credit-card"),
+]
+
+
+@pytest.mark.parametrize("source,text,rule", BLOCKED_REVISED, ids=[c[0] for c in BLOCKED_REVISED])
+def test_blocks_revised_shapes(source, text, rule):
+    assert (rule, check.BLOCK) in _rules(text), source
+
+
+def test_expiry_keyword_far_from_date_does_not_block():
+    line = "The token expired. " + "x" * 120 + " Created 2026-01-01."
+    assert ("card-expiration-date", check.BLOCK) not in _rules(line)
+    assert ("date-shaped-value", check.WARN) in _rules(line)
 
 
 @pytest.mark.parametrize("source,text,rule", BLOCKED, ids=[c[0] for c in BLOCKED])
@@ -122,6 +167,12 @@ def test_reports_inconsistently_flagged_shapes_as_advisory(source, text, rule):
 @pytest.mark.parametrize("source,text", CLEAN, ids=[c[0] for c in CLEAN])
 def test_does_not_flag_safe_content(source, text):
     assert _rules(text) == set(), source
+
+
+@pytest.mark.parametrize("source,text", NOT_BLOCKED, ids=[c[0] for c in NOT_BLOCKED])
+def test_does_not_block_repo_false_positives(source, text):
+    rules = _rules(text)
+    assert not any(sev == check.BLOCK for _, sev in rules), f"{source}: {rules}"
 
 
 def test_non_luhn_digit_run_is_not_a_card():
@@ -160,6 +211,25 @@ def test_scans_packed_tarball_members(tmp_path):
     blocking = json.loads(proc.stdout)["blocking"]
     assert blocking[0]["path"].endswith("!package/skills/uipath-x/SKILL.md")
     assert blocking[0]["rule"] == "phone-number"
+
+
+def test_scans_files_of_any_extension(tmp_path):
+    # PR #3798 review: an extension allowlist let `*.canonical` ship unscanned.
+    (tmp_path / "flow.canonical").write_text("SSN 123-45-6789\n", encoding="utf-8")
+    (tmp_path / "image.png").write_bytes(b"\x89PNG\r\n\x1a\n\0\0\0 123-45-6789")
+    proc = _run("--output", "json", str(tmp_path))
+    paths = [f["path"] for f in json.loads(proc.stdout)["blocking"]]
+    assert proc.returncode == 1
+    assert len(paths) == 1 and paths[0].endswith("flow.canonical")
+
+
+def test_reports_oversized_files_as_not_scanned(tmp_path, monkeypatch):
+    big = tmp_path / "big.md"
+    big.write_text("x" * 32, encoding="utf-8")
+    monkeypatch.setattr(check, "MAX_BYTES", 16)
+    skipped = []
+    assert list(check.iter_files(tmp_path, skipped)) == []
+    assert skipped == [big.as_posix()]
 
 
 def test_allowlist_suppresses_exact_match(tmp_path):
