@@ -1,279 +1,235 @@
 # UiPath CLI (`uip`) Reference
 
-`uip rpa` and sibling tools (`uip is`, `uip tm`, …) talk to UiPath Studio over named pipes (IPC). This file teaches **how to discover** commands, arguments, and flags — plus the non-obvious behaviors that `--help` won't tell you (auth, headless vs Desktop Studio, how to read run results, error recovery).
+`uip rpa` and sibling tools (`uip is`, `uip tm`, …) communicate with UiPath Studio over named pipes (IPC). Use this reference to discover live commands and flags and handle behaviors `--help` omits.
 
 <!--skill-flavor:host-scope:start-->
 <!--skill-flavor:host-scope:end-->
-> **Do not treat any command/flag list here as exhaustive or current.** The CLI is the source of truth and it drifts. Discover the live surface with `--help` (below); this file carries only the HOW that `--help` omits.
-
-> **Installation is automatic.** Do NOT install `uip` manually or instruct the user to install it.
+> Command and flag lists here are not exhaustive or necessarily current; the CLI is the source of truth. Discover the live surface with `--help`.
+>
+> Installation is automatic. Do NOT install `uip` manually or instruct the user to install it.
 
 ---
 
 ## Discover the live CLI with `--help`
 
-The CLI is self-documenting. Append `--help` at **any** level to drill from tools → groups → verbs → parameters. Each level lists the next.
+Append `--help` at any level to drill from tools to groups, verbs, and parameters. Run `--help` rather than guessing commands, flags, or values; guesses fail with `unknown command`/`unknown option`.
 
 ```bash
-uip --help                    # top-level commands + installed tools (rpa, is, tm, ...)
-uip tools list                # installed tools, machine-readable
-uip rpa --help                # all rpa command groups and verbs
-uip rpa packages --help       # verbs inside a group
-uip rpa validate --help       # parameters, accepted values, defaults for one verb
-uip is --help                 # Integration Service surface
-uip skills --help             # skill install/search/update
+uip --help
+uip tools list
+uip rpa --help
+uip rpa packages --help
+uip rpa validate --help
+uip is --help
+uip skills --help
 ```
 
-The same pattern works for every tool and depth (`uip rpa uia <verb> --help`, `uip login --help`, etc.). When unsure whether a verb, flag, or accepted value exists, **run `--help` rather than guessing** — guessed flags fail with `unknown command`/`unknown option`.
-
-> **Run `--help` standalone — never combine it with other flags.** `uip rpa <verb> --help --project-dir "<path>"` parses `--project-dir`'s value as a positional command and exits with `unknown command '<value>'`. Drop every other flag when probing help.
-
-> A verb may be **hidden from `--help`** yet still callable by exact name (e.g. diagnostic or UI-cue verbs). Absence from `--help` means "not part of the standard loop," not "does not exist."
+The pattern works for every tool and depth (`uip rpa uia <verb> --help`, `uip login --help`, etc.). **Run `--help` standalone; never combine it with other flags.** For example, `uip rpa <verb> --help --project-dir "<path>"` parses the value as a positional command and exits with `unknown command '<value>'`; drop every other flag when probing help. A verb may be hidden yet callable by exact name (for example diagnostic or UI-cue verbs); absence from help means it is not part of the standard loop, not that it does not exist.
 
 ---
 
 ## Output format
 
-`--output` defaults to **`json`**. Accepted: `json`, `table`, `yaml`, `plain`. Keep `json` for anything parsed programmatically — `table` pads columns and can balloon to 100 KB+.
+`--output` defaults to `json`; accepted values are `json`, `table`, `yaml`, `plain`. Use `json` for programmatic parsing; `table` pads columns and can exceed 100 KB. `--output-filter "<JMESPath>"` applies JMESPath to the response envelope's `Data`; use it to slice large responses instead of shell post-processing. Global flags: `--log-level <debug|info|warn|error>` and `--log-file <path>`. Raise log level or add `--verbose` to diagnose failures.
 
-`--output-filter "<JMESPath>"` applies a JMESPath expression to the response envelope's `Data` field — use it to slice large responses instead of post-processing in the shell.
-
-`--log-level <debug|info|warn|error>` and `--log-file <path>` are global. Raise log level or add `--verbose` when diagnosing a failure.
-
-Most response envelopes share the shape `{Result: "Success"|"Failure", Code, Data, Message?, Instructions?}`. Branch on `Result`, not on stdout text.
+Most envelopes have `{Result: "Success"|"Failure", Code, Data, Message?, Instructions?}`. Branch on `Result`, not stdout text.
 
 ---
 
 ## Authentication
 
-Cloud features (templates/packages from feeds, Integration Service, Data Service entities, publishing) need a logged-in session.
+Cloud features (feed templates/packages, Integration Service, Data Service entities, publishing) require a logged-in session:
 
 ```bash
-uip login              # interactive browser login to UiPath Cloud
-uip login status       # current session: org, tenant, expiry
-uip login which        # which auth source uip resolves for this cwd
+uip login
+uip login status
+uip login which
 ```
 
-If a command fails with `not authenticated` / `401` / `403`, run `uip login` and retry. Discover non-interactive/CI login options (credentials folder, client id/secret, authority) via `uip login --help`.
+If a command fails with `not authenticated` / `401` / `403`, run `uip login` and retry. Discover non-interactive/CI options (credentials folder, client id/secret, authority) with `uip login --help`.
 
 ---
 
 ## Project context: `--project-dir`
 
-Most `uip rpa` verbs identify the project via `--project-dir`, defaulting to the current working directory. When the project is elsewhere, pass the absolute path to the folder containing `project.json`. A few verbs deviate (e.g. `init` takes `--name` + `--location`; `build`/`pack` take the project dir as a positional) — confirm with that verb's `--help`.
+Most `uip rpa` verbs use `--project-dir`, defaulting to the current working directory. For another project, pass the absolute path to the folder containing `project.json`. Some verbs differ: `init` takes `--name` + `--location`; `build`/`pack` take the project dir positionally. Confirm with that verb's `--help`.
 
-To create a project, see [environment-setup.md](environment-setup.md); `--target-framework` and `--expression-language` are immutable after creation, so decide them per SKILL.md before running `init`.
+For project creation, see [environment-setup.md](environment-setup.md). `--target-framework` and `--expression-language` are immutable after `init`; choose them per SKILL.md first.
 
 ---
 
 ## Headless Studio (Helm) vs Studio Desktop
 
-`uip rpa` connects to one of two Studio flavors behind the same IPC contract:
+`uip rpa` uses one of two Studio flavors over the same IPC contract:
 
-- **Headless Studio (Helm) — default.** Ships as a NuGet package and auto-launches on first use. **No Studio Desktop install needed.** First call on a cold NuGet cache may sit near-silent for 30–90 s while `dotnet restore` runs — the default shell timeout covers this; raise `timeoutSeconds` only behind a slow feed.
-- **Studio Desktop.** The interactive UI. A running Studio Desktop instance that has the project open handles that project's `uip rpa` calls — `run` and `debug start` included — and `uip rpa instances list --output json` shows which instance holds which project. Verbs with **UI side effects** (open a window, highlight something in the designer; discover them via `--help`) work only here: ensure Desktop is up first (`uip rpa studio start --project-dir "<PROJECT_DIR>"`), then run them. Force Desktop for any command with `UIPATH_RPA_TOOL_USE_STUDIO=1` (not recommended for the standard authoring loop). **The two backends return different `run` / `debug start` payloads** — see [Reading run / debug results](#reading-run--debug-results).
+- **Headless Studio (Helm), default:** Ships as a NuGet package and auto-launches on first use; no Desktop install is needed. A cold NuGet cache may be nearly silent for 30–90 s during `dotnet restore`; the default shell timeout covers it. Raise `timeoutSeconds` only for a slow feed.
+- **Studio Desktop:** A running Desktop instance with the project open handles its `uip rpa` calls, including `run` and `debug start`. Run `uip rpa instances list --output json` to see instance/project ownership. UI-side-effect verbs (open a window, highlight the designer; discover via `--help`) work only here: ensure Desktop is running with `uip rpa studio start --project-dir "<PROJECT_DIR>"` first. Force Desktop for any command with `UIPATH_RPA_TOOL_USE_STUDIO=1` (not recommended for the standard authoring loop). `run` / `debug start` payloads differ by backend; see [Reading run / debug results](#reading-run--debug-results).
 
-`--studio-dir` is consulted **only when Studio Desktop is in use**; headless ignores it. When Desktop auto-detection fails, resolution falls back to `UIPATH_STUDIO_DIR`, then the default install path, then a dev build output. Errors like `"does not have interop support"` / `"Requires Studio 26.2+"` mean the detected Desktop is too old — tell the user to update it; this affects only the Desktop-only verbs.
+`--studio-dir` is consulted only for Desktop; Helm ignores it. If Desktop auto-detection fails, resolution falls back to `UIPATH_STUDIO_DIR`, default install path, then dev build output. Errors `"does not have interop support"` / `"Requires Studio 26.2+"` mean Desktop is too old: tell the user to update it. This affects only Desktop-only verbs.
 
 ---
 
 ## Installed package activity documentation
 
-When a package is installed, its activity docs land under `{PROJECT_DIR}/.local/docs/packages/{PackageId}/`. Read these directly — they carry the per-activity property surface and coded API signatures that no `--help` exposes.
+Installed package activity docs are under `{PROJECT_DIR}/.local/docs/packages/{PackageId}/`; read them for per-activity properties and coded API signatures unavailable through `--help`.
 
 | Action | How |
-|--------|-----|
-| **Read an activity doc** | `Read` `…/{PackageId}/activities/{ActivityName}.md` — preferred when you know package + class |
-| **Read coded API doc** | `Read` `…/{PackageId}/coded/coded-api.md` — service API signatures for coded workflows |
-| **Read package overview** | `Read` `…/{PackageId}/overview.md` |
-| **List documented packages / activities** | `Bash`: `ls …/.local/docs/packages/` then `ls …/{PackageId}/activities/` |
-| **Search activity docs** | `ls` the exact package directory via Bash (`…/.local/docs/packages/<PackageId>/activities/`), then `Read` the matching file by path. **NOT `Glob` or `Grep`** — both skip gitignored `.local/`; a miss from either proves nothing. |
+|---|---|
+| Read an activity doc | `Read` `…/{PackageId}/activities/{ActivityName}.md` (preferred when package + class are known) |
+| Read coded API doc | `Read` `…/{PackageId}/coded/coded-api.md` |
+| Read package overview | `Read` `…/{PackageId}/overview.md` |
+| List documented packages / activities | `Bash`: `ls …/.local/docs/packages/`, then `ls …/{PackageId}/activities/` |
+| Search activity docs | Use Bash `ls` on the exact package directory (`…/.local/docs/packages/<PackageId>/activities/`), then `Read` the matching path. Do NOT use `Glob` or `Grep`: both skip gitignored `.local/`, and a miss proves nothing. |
 
 ---
 
 ## Reading run / debug results
 
-`uip rpa run` runs a workflow with no debugging; the `debug` group drives breakpoints, stepping, and exception handling (see [debugging.md](debugging.md)). For UI automation, prefer `debug start` over `run` so the app is preserved for selector repair on error. Cancel an active run or session with `uip rpa execution cancel`. Pass workflow inputs as repeatable `--input-arguments key=value` pairs (see [Passing structured inputs](#passing-structured-inputs)); discover the remaining flags (log level, skip-build, profiling) via `--help`.
+`uip rpa run` executes without debugging; the `debug` group handles breakpoints, stepping, and exceptions (see [debugging.md](debugging.md)). For UI automation, prefer `debug start` over `run` to preserve the app for selector repair on error. Cancel active runs/sessions with `uip rpa execution cancel`. Pass inputs as repeatable `--input-arguments key=value` pairs (see [Passing structured inputs](#passing-structured-inputs)); discover other flags (log level, skip-build, profiling) with `--help`.
 
-Both wrap the result in `{Result, Code, Data}`. **`Data`'s shape is set by the backend that ran the workflow** ([§ Headless Studio (Helm) vs Studio Desktop](#headless-studio-helm-vs-studio-desktop)) — identify it by the keys present:
+Both return `{Result, Code, Data}`; identify the backend from `Data` keys ([§ Headless Studio (Helm) vs Studio Desktop](#headless-studio-helm-vs-studio-desktop)):
 
-| Backend | `Data` keys | Where the workflow's `Log Message` output is |
+| Backend | `Data` keys | Workflow `Log Message` output |
 |---|---|---|
-| **Headless Studio (Helm)** — no Studio Desktop instance has the project open | `output` (serialized output arguments, `"{}"` when none), `hasErrors`, `errorMessage`, `profiling`, `debugState`, `debugDetails` | streamed to stdout as `[<Level>] …` lines (`[Information]`, `[Error]`, …) **above** the JSON envelope; nothing inside `Data` |
-| **Studio Desktop** — the project is open in a running Studio Desktop | `output` (status string: `"Session ended"` on completion), `errors` (array), `logEntries` (array of `{source, level, message}`, `source` = `Compile` or `Debug`), `debugState` (`"Completed"` on completion; absent when the file could not be opened) | inside `Data.logEntries`; nothing streams above the envelope |
+| **Helm** (no Desktop instance has project open) | `output` (serialized output arguments; `"{}"` if none), `hasErrors`, `errorMessage`, `profiling`, `debugState`, `debugDetails` | Stdout `[<Level>] …` lines (`[Information]`, `[Error]`, …) above JSON; not in `Data` |
+| **Studio Desktop** (project open in running Desktop) | `output` (status string; `"Session ended"` on completion), `errors` (array), `logEntries` (array of `{source, level, message}`; `source` is `Compile` or `Debug`), `debugState` (`"Completed"` on completion; absent if file could not open) | `Data.logEntries`; nothing above envelope |
 
-Field-by-field meaning for both: [debugging.md § Output Format](debugging.md#output-format).
+Field meanings: [debugging.md § Output Format](debugging.md#output-format).
 
-> **Verdict, Helm shape: passed only when `hasErrors` is `false` AND `errorMessage` is `null` AND `debugState` is `null` or `"Completed"`.** A `run` that faulted, failed validation, or named a missing entry point returns outer `Result: "Failure"` with the same field set JSON-encoded in `Message` (`hasErrors: true`, `errorMessage` = the failure text). A faulted `debug start` returns `Result: "Success"` with `hasErrors: false`, `debugState: "Suspended"`, the exception in `debugDetails` and command guidance in `errorMessage` — the session is still alive; cancel or continue it.
->
-> **Verdict, Studio Desktop shape: passed only when `errors` is empty AND `output` is `"Session ended"`.** Both are required: a missing entry point returns outer `Result: "Success"` with `errors: []`, `logEntries: []` and `output: "Failed to open the file <absolute path>"`. An `--input-arguments` key the workflow does not declare is accepted silently (`"Session ended"`).
->
-> **On either backend: never read the outer `Result: "Success"` as a passing run, and never infer failure from a `Warning` / `Error` log level** — `Log Message` activities emit at any level, and treating log levels as a verdict flips green runs to "failed" and burns retries.
+- **Helm passes only if** `hasErrors` is `false`, `errorMessage` is `null`, and `debugState` is `null` or `"Completed"`. A faulted run, failed validation, or missing entry point returns outer `Result: "Failure"`, with the same fields JSON-encoded in `Message` (`hasErrors: true`, `errorMessage` = failure text). A faulted `debug start` instead returns `Result: "Success"`, `hasErrors: false`, `debugState: "Suspended"`, exception in `debugDetails`, and command guidance in `errorMessage`; the session remains alive, so cancel or continue it.
+- **Desktop passes only if** `errors` is empty and `output` is `"Session ended"`. A missing entry point returns outer `Result: "Success"`, `errors: []`, `logEntries: []`, and `output: "Failed to open the file <absolute path>"`. An undeclared `--input-arguments` key is silently accepted (`"Session ended"`).
+- **On either backend: never read the outer `Result: "Success"` as a passing run, and never infer failure from a `Warning` / `Error` log level** — `Log Message` activities emit at any level, and treating log levels as a verdict flips green runs to "failed" and burns retries.
 
 ### Capturing the verdict
 
-**Run `run` / `debug start` with no `--output-filter` and read the envelope as printed.** The two backends return different key sets, so a filter written for one names keys the other does not have; the CLI then rejects the whole call with `Filter '…' failed to evaluate: Invalid type … received type null` *after* the workflow has already run (`length(errors)` on Helm, any function on `hasErrors` on Desktop), and the retry re-drives the application and costs a turn. On Helm the filter cannot reach the log lines at all — they are outside `Data`.
+Run `run` / `debug start` **without `--output-filter`** and read the printed envelope. Backend-specific keys make cross-backend filters fail (`Filter '…' failed to evaluate: Invalid type … received type null`) after the workflow has run: for example, `length(errors)` on Helm or a function on `hasErrors` on Desktop. Retrying re-drives the application. On Helm filters cannot reach log lines outside `Data`.
 
 ```bash
 uip rpa run --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json
 ```
 
-Helm:
+On Helm, read workflow values from `[Information]` lines above the envelope; do not strip them with `grep -v '^\['`. On Desktop, use `logEntries`; `Trace` entries (`Unregistered service requested …`, `Audit: …`) may outnumber workflow lines. Helm `debug start` exposes suspended-state exceptions through `debugState` / `debugDetails` for selector recovery.
 
-```text
-[Information] Starting execution...
-[Information] <PROJECT_NAME> execution started
-[Information] Sum: 10
-[Information] <PROJECT_NAME> execution ended in: 00:00:00
-{ "Result": "Success", "Code": "ToolResult", "Data": {
-    "output": "{}", "hasErrors": false, "errorMessage": null, "profiling": null, "debugState": null, "debugDetails": null } }
-```
+Never use `| tail -N` or `| head -N`: Helm logs precede the envelope, while Desktop's `output` and `errors` precede potentially long `logEntries`; either truncation loses required information and recovery requires re-running (which may change a non-rerun-safe workflow). For a Helm `Result: "Failure"` with no `Data`, read `Message`: JSON-encoded Data fields (`hasErrors: true`) indicate a run fault, validation failure, or missing entry point; `{"success": false, "errorMessage": "…"}` indicates an unopenable project directory or busy executor.
 
-Studio Desktop (same command, project open in Studio):
+If more detail is needed (compile-phase error or stack older than visible lines), redirect all stdout with `> run.log` and read the file: Helm `[Error]` lines and envelope `errorMessage`, or Desktop `errors` and `logEntries`. `jq` is absent on a standard Windows agent host; the envelope is the file's last JSON object.
 
-```json
-{ "Result": "Success", "Code": "ToolResult", "Data": {
-    "output": "Session ended", "errors": [],
-    "logEntries": [ { "source": "Debug", "level": "Information", "message": "<PROJECT_NAME> execution started" },
-                    { "source": "Debug", "level": "Information", "message": "Sum: 10" },
-                    { "source": "Debug", "level": "Information", "message": "<PROJECT_NAME> execution ended in: 00:00:06" } ],
-    "debugState": "Completed" } }
-```
-
-Adjudicate per the two rules above. The workflow's logged values are the `[Information]` lines above the envelope on Helm — read them there and do not strip them (`grep -v '^\['`) — and the `logEntries` entries on Desktop, where `Trace`-level entries (`Unregistered service requested …`, `Audit: …`) outnumber the workflow's own lines. On `debug start` through Helm, `debugState` / `debugDetails` carry the suspended-state exception that selector recovery needs.
-
-**Never `| tail -N` or `| head -N` the payload.** On Helm the log lines precede the envelope, so either cut drops one of the two things you need; on Desktop `output` and `errors` precede a long `logEntries`, so `tail` drops the verdict. Recovering either means re-running, which re-drives the application; a workflow that is not re-run-safe behaves differently the second time. On a Helm `Result: "Failure"` envelope there is no `Data`: read `Message` — the `Data` fields JSON-encoded (`hasErrors: true`) for a `run` that faulted, failed validation, or named a missing entry point; `{"success": false, "errorMessage": "…"}` for a project directory that cannot be opened or an executor that is still busy.
-
-When a failure needs more than the envelope shows (compile-phase error, a stack older than the visible lines), redirect the whole stdout — `> run.log` — and read it from the file: on Helm the `[Error]` lines plus the envelope's `errorMessage`, on Desktop the `errors` and `logEntries` arrays. `jq` is absent on a standard Windows agent host; the envelope is the last JSON object in the file.
 ---
 
 ## Passing structured inputs
 
-`--input-arguments` and `--input-variables` may be supplied as repeatable `key=value` pairs (`key:=value` for raw JSON, `key=@file` to read a value from a file), as an inline JSON string, or from a JSON file using `'@file'` or `--<flag>-file`. `--packages` takes one item per occurrence as comma-joined fields.
+`--input-arguments` and `--input-variables` accept repeatable `key=value` pairs, `key:=value` raw JSON, `key=@file`, inline JSON, or JSON files via `'@file'` / `--<flag>-file`. `--packages` takes one item per occurrence as comma-joined fields.
 
 ```bash
 uip rpa run --file-path Main.xaml --input-arguments name=John --input-arguments retries:=3
 uip rpa run --file-path Main.xaml --input-arguments 'message=Hello, world!'
 uip rpa debug test-activity --input-variables greeting=@expression.txt
-uip rpa run --file-path Main.xaml --input-arguments '@args.json'      # or: --input-arguments-file args.json
+uip rpa run --file-path Main.xaml --input-arguments '@args.json'
+uip rpa run --file-path Main.xaml --input-arguments-file args.json
 uip rpa packages install --packages 'id=UiPath.System.Activities,version=23.10.1' --packages id=UiPath.Excel.Activities
 ```
 
-Rules:
-
-- **`=` vs `:=`**: `count=42` sends the string `"42"`; `count:=42` sends the number `42`. For `debug test-activity` / `debug start-from-here`, values are VB/C# expression **strings** — always `=`.
-- **Quoting**: single-quote any token containing spaces, commas, or a leading `@`; bare identifiers and numbers need no quotes. Values containing double quotes cannot be passed inline on Windows PowerShell 5.1 (it strips them) — write them to a UTF-8 file (`Set-Content -Encoding UTF8`) and use `key=@file`, `'@file'`, or `--<flag>-file`.
-- **Inline JSON**: a single JSON blob (`--input-arguments '{"k":"v"}'`) remains accepted for backward compatibility, but is unreliable on PowerShell 5.1 — prefer pairs or files.
-- **Empty value ≠ default**: `--input-arguments key=` passes an empty string, which OVERRIDES a coded workflow's declared default parameter value. Omit the flag entirely to use the default.
+- `=` sends a string (`count=42` → `"42"`); `:=` sends raw JSON (`count:=42` → number `42`). For `debug test-activity` / `debug start-from-here`, values are VB/C# expression strings: always use `=`.
+- Single-quote tokens containing spaces, commas, or leading `@`; bare identifiers/numbers need no quotes. Windows PowerShell 5.1 strips inline double quotes: write such values to UTF-8 with `Set-Content -Encoding UTF8` and use `key=@file`, `'@file'`, or `--<flag>-file`.
+- Inline JSON such as `--input-arguments '{"k":"v"}'` remains accepted for backward compatibility but is unreliable on PowerShell 5.1; prefer pairs or files.
+- `--input-arguments key=` passes an empty string and overrides a coded workflow's declared default. Omit the flag to use the default.
 
 ---
 
 ## validate
 
-`uip rpa validate` returns diagnostics for a file or the whole project, re-validating first by default (`--skip-validation` reads cached, possibly stale, results; `--min-severity` filters). Confirm flags via `uip rpa validate --help`.
+`uip rpa validate` returns file or project diagnostics, re-validating by default. `--skip-validation` reads cached, possibly stale, results; `--min-severity` filters. Confirm flags with `uip rpa validate --help`.
 
-`--file-path` accepts a path relative to the project directory (`--file-path "Main.xaml"`) or an absolute one, with either separator style; forward-slash, backslash, and mixed forms all resolve. Prefer the relative form — it is shorter and keeps commands portable across machines.
+`--file-path` accepts project-relative (`--file-path "Main.xaml"`) or absolute paths with forward, back, or mixed separators. Prefer relative paths for portability.
 
 ---
 
 ## build
 
-`uip rpa build` compiles the whole project — every workflow, not only the files a per-file `validate` was pointed at (§ What each phase covers). Required before returning a project to the user (see [§ Project Build Verification](#project-build-verification-required-before-returning-a-project)). Takes the project directory as a **positional** argument and runs independently of Studio IPC. Discover flags (log level, skip-analyze, governance, NuGet sources) via `uip rpa build --help`.
+`uip rpa build` compiles the whole project, not only files passed to per-file `validate`. It is required before returning a project (see [§ Project Build Verification](#project-build-verification-required-before-returning-a-project)), takes project dir positionally, and runs independently of Studio IPC. Discover log level, skip-analyze, governance, and NuGet source flags with `uip rpa build --help`.
 
-`run` and `debug start` compile internally, so a successful smoke test implies `build` would pass. When no smoke test runs (side effects, interactive workflow, no test input), `build` is the required compilability check.
+`run` and `debug start` compile internally, so a successful smoke test implies build would pass. If no smoke test runs (side effects, interactive workflow, no test input), `build` is the compilability check.
 
 ---
 
 ## analyzer-rules list
 
-`uip rpa analyzer-rules list` reports the Workflow Analyzer rules **enabled** for the project — the best-practice rules `validate` and `build` enforce. Reports rules, not violations. Do NOT run it as an authoring prerequisite — `validate`/`build` already enforce the rules and report violations with rule IDs and recommendations. Run it **only on demand**: (1) the user asks about the project's best-practice / analyzer rules, or (2) repeated violations of the same rule family across `validate`/`build` iterations suggest authoring against the full rule set. Each rule returns `severity` (`error`/`warning`/`info`), rule ID, scope, title, and (when available) `recommendation` and `docs` URL. Prefix convention: `ST-*` = built-in Studio rule, `MA-*` = package-shipped rule.
+`uip rpa analyzer-rules list` reports enabled Workflow Analyzer rules enforced by `validate` and `build`, not violations. Do NOT run as an authoring prerequisite; run only if the user asks about best-practice/analyzer rules or repeated same-family violations suggest authoring against the full set. Each rule gives `severity` (`error`/`warning`/`info`), rule ID, scope, title, and optionally `recommendation` and `docs` URL. Prefixes: `ST-*` built-in Studio; `MA-*` package-shipped.
 
-Rules with scope `Coded Workflow` run as Roslyn analyzers over the project's `.cs` files during `analyze`, `build`, and `pack` — same enforcement as the XAML-scoped rules. The four built-in ones are all Error severity; triggers and fixes: [coded/operations-guide.md § Coded Workflow Analyzer Rules](coded/operations-guide.md#coded-workflow-analyzer-rules).
+`Coded Workflow` rules run Roslyn analyzers over project `.cs` files during `analyze`, `build`, and `pack`, with the same enforcement as XAML-scoped rules. The four built-ins are all Error severity; triggers/fixes: [coded/operations-guide.md § Coded Workflow Analyzer Rules](coded/operations-guide.md#coded-workflow-analyzer-rules).
 
-> **Performance:** the unscoped call enumerates every rule across every package and can take a minute or more. Narrow with `--scope` (`Activity`, `Workflow`, `Project`, or `Coded Workflow`) — scoped calls return in seconds. See `--help` for accepted scope values.
+The unscoped command enumerates every rule across every package and can take a minute or more. Narrow using `--scope` (`Activity`, `Workflow`, `Project`, or `Coded Workflow`) for results in seconds; confirm accepted values with `--help`.
 
 ---
 
 ## packages install
 
-`uip rpa packages install` installs or updates NuGet packages (canonical way to add dependencies — **do not hand-edit `project.json`**; there is no `add-dependency` verb). Repeat `--packages` once per package with comma-joined `key=value` fields — `--packages 'id=<PackageId>,version=<Version>'` or just `--packages id=<PackageId>` (see [Passing structured inputs](#passing-structured-inputs)); discover the remaining flags via `uip rpa packages install --help`.
+`uip rpa packages install` is the canonical way to add/update NuGet dependencies; do not hand-edit `project.json` (there is no `add-dependency` verb). Repeat `--packages` per package with comma-joined `key=value` fields, such as `--packages 'id=<PackageId>,version=<Version>'` or `--packages id=<PackageId>` (see [Passing structured inputs](#passing-structured-inputs)); discover other flags with `uip rpa packages install --help`.
 
-- **Omit the version** to resolve the latest compatible automatically (preferred). Pin only for a known compatibility constraint.
-- **Discover available versions** with `uip rpa packages versions --package-id <Id> --include-prerelease`. **Default to `--include-prerelease`** — activity packages frequently ship `-preview` between stable releases, carrying the freshest activity surface and `.local/docs`. When a newer stable or preview exists over the installed version, inform the user and offer the upgrade — never force.
-- **Package not found** → verify the exact ID (use `activities find` or the package's `.local/docs`). **Feed/network error** → check NuGet feed config in Studio settings.
+- Omit version to resolve latest compatible automatically (preferred); pin only for known compatibility constraints.
+- Discover versions with `uip rpa packages versions --package-id <Id> --include-prerelease`. Default to `--include-prerelease`: activity packages often ship `-preview` versions between stable releases with the freshest activity surface and `.local/docs`. If a newer stable or preview exists, inform the user and offer the upgrade; never force it.
+- For package not found, verify exact ID using `activities find` or package `.local/docs`. For feed/network errors, check NuGet feed config in Studio settings.
 
 ---
 
 ## object-repository
 
-Read the project's UI **Object Repository** — the saved hierarchy of applications, screens, and elements (selectors/targets) that UI Automation activities bind to. Two read commands cover the project's own entries and those exposed by referenced libraries; both require an open project.
+The project's UI Object Repository stores applications, screens, and elements (selectors/targets) used by UI Automation activities. Both read commands require an open project.
 
-> **Both verbs are top-level and hyphenated.** There is no `uip rpa object-repository` group — it returns `Unknown command: object-repository`, Studio running or not. Distinct from the UIA OR CLI, which writes entries and has no `get`.
+> Both verbs are top-level and hyphenated; `uip rpa object-repository` returns `Unknown command: object-repository`, whether Studio is running or not. This differs from the UIA OR CLI, which writes entries and has no `get`.
 
-- **Project Object Repository** — `uip rpa get-object-repository` returns the project's *own* Object Repository as a JSON tree of applications → screens → elements, each entry carrying `name`, `description`, `type`, and `reference`. Entries inherited from referenced libraries are **excluded** (use the library command below for those). Takes no arguments beyond the standard `--project-dir`.
+- **Project repository:** `uip rpa get-object-repository` returns the project's own JSON tree (applications → screens → elements), with each entry's `name`, `description`, `type`, `reference`; referenced-library entries are excluded. It takes only standard `--project-dir`:
 
   ```bash
   uip rpa get-object-repository --project-dir "<PROJECT_DIR>" --output json
   ```
 
-  The `name` values are **Object Repository names, not C# members** — `Result Display` here is `Result_Display` in `Descriptors.*`. Convert per the coded authoring guide's § Descriptor Naming, routed from `ui-automation-guide.md` § Documentation.
+  `name` values are Object Repository names, not C# members: `Result Display` becomes `Result_Display` in `Descriptors.*`. Convert per coded authoring guide § Descriptor Naming, routed from `ui-automation-guide.md` § Documentation.
 
-- **Library Object Repository** — `uip rpa get-library-object-repository` reads the Object Repository out of one or more library `.nupkg` files and returns the applications, screens, and elements grouped by library. Pass the absolute path(s) to the library packages; packages without an Object Repository are omitted from the result.
-
-  | Parameter | Required | Description |
-  |-----------|----------|-------------|
-  | `--library-paths` | yes | Absolute path(s) to the library `.nupkg` file(s) to read. Pass a single flag with the paths **comma-separated** (e.g. `"a.nupkg,b.nupkg"`) — it is not a repeatable flag. Avoid paths containing commas. |
+- **Library repository:** `uip rpa get-library-object-repository` reads repositories in library `.nupkg` files, grouped by library; packages without one are omitted. Required `--library-paths` takes absolute path(s) as one comma-separated flag (not repeatable; avoid paths containing commas):
 
   ```bash
-  # multiple libraries: one --library-paths flag, comma-separated
-  uip rpa get-library-object-repository \
-    --project-dir "<PROJECT_DIR>" \
-    --library-paths "C:\libs\Acme.UiLib.1.2.0.nupkg,C:\libs\Other.UiLib.2.0.0.nupkg" \
-    --output json
+  uip rpa get-library-object-repository --project-dir "<PROJECT_DIR>" --library-paths "C:\\libs\\Acme.UiLib.1.2.0.nupkg,C:\\libs\\Other.UiLib.2.0.0.nupkg" --output json
   ```
 
-Read the project repository before authoring UI Automation activities to discover existing screens/elements to reuse instead of re-indicating them; read the library repository to discover targets a referenced UI library already exposes. Confirm the live flags with `uip rpa get-object-repository --help` / `uip rpa get-library-object-repository --help`.
+Before authoring UI Automation activities, read the project repository to reuse existing screens/elements rather than re-indicating them; read the library repository for targets exposed by referenced UI libraries. Confirm flags with `uip rpa get-object-repository --help` / `uip rpa get-library-object-repository --help`.
 
 ---
 
 ## Commands -- Data Fabric Entities
 
-UiPath Data Fabric entities live in the Orchestrator tenant's Data Service. To use them in an RPA project — as typed arguments (`UiPath.DataService.Activities`, test-data bindings) or any generated entity type — they must first be **installed** into the project, which writes a manifest under `.entities/` and compiles a strongly-typed assembly.
+Data Fabric entities live in the Orchestrator tenant's Data Service. To use them in an RPA project (typed arguments with `UiPath.DataService.Activities`, test-data bindings, or generated entity types), install them first; installation writes `.entities/` manifest and compiles a strongly-typed assembly. Discover exact flags with `uip rpa data-fabric-entities --help`.
 
-Typical flow, all under `uip rpa data-fabric-entities` (discover exact flags via `--help`):
+1. **List:** Shows entities installed in the project and available in the connected tenant, with an `installed` flag. Run before installing to select names or verify bindings.
+2. **Install:** Applies an add/remove delta; dependency expansion automatically adds referenced entities and server-deleted entities are silently dropped. Final selection is `(installed ∪ add) − remove`; an empty result uninstalls all entities in that manifest.
 
-1. **List** — returns a unified view of entities installed in the project **and** available in the connected tenant, each with an `installed` flag. Run before installing to pick names or verify bindings.
-2. **Install** — applies an add/remove delta to the installed set. Dependency expansion is automatic (adding an entity pulls in everything it references); server-deleted entities are silently dropped. Final selection = `(installed ∪ add) − remove`; an empty result uninstalls everything for that manifest.
-
-**Install entities before** invoking any workflow or test case that references their generated types, and before any test-data command that binds to an entity.
+Install entities before invoking workflows/test cases referencing generated types and before test-data commands binding to an entity.
 
 ---
 
 ## Integration Service (`uip is`)
 
-`uip is` manages connectors, connections, resources, triggers, and webhooks. Discover the full surface via `uip is --help`, then drill in (`uip is connections --help`, `uip is resources describe --help`, …). All verbs support `--output json`.
-
-The verbs you'll reach for: list/describe **connectors** and their **activities**/**resources**, list/create/ping/edit **connections** (OAuth opens a browser; `--no-browser` prints the URL), and run CRUD **resource** operations. For RPA-specific connector workflow patterns (activity/resource discovery, connection management, schema inspection), see [is-connector-xaml-guide.md](is-connector-xaml-guide.md).
+`uip is` manages connectors, connections, resources, triggers, and webhooks. Discover `uip is` with `uip is --help`, then drill down (for example, `uip is connections --help`, `uip is resources describe --help`). All verbs support `--output json`. The surface covers connector/activity/resource listing and description, connection list/create/ping/edit (OAuth opens a browser; `--no-browser` prints URL), and resource CRUD. For RPA connector activity/resource discovery, connections, and schema inspection, see [is-connector-xaml-guide.md](is-connector-xaml-guide.md).
 
 ---
 
 ## Test Manager
 
-Two distinct surfaces — pick by intent:
+Choose by intent:
 
-- **`uip tm` (dedicated tool)** — *runtime* Test Manager operations: browsing manual test cases, runs, results. `uip tm --help`. Do **not** invoke these runtime verbs from `uip rpa`.
-- **`uip rpa tm` (project configuration)** — *authoring/setup*: wire an RPA project to Test Manager by editing its `.tmh/config.json`. Pure file I/O — no Studio or Helm process is needed, so it works with everything closed.
+- **`uip tm` dedicated tool:** Runtime Test Manager operations (manual test cases, runs, results); discover with `uip tm --help`. Do not invoke runtime verbs from `uip rpa`.
+- **`uip rpa tm`:** Project authoring/setup, editing `.tmh/config.json`; pure file I/O, no Studio or Helm process required.
 
 ### `uip rpa tm` verbs
 
 | Verb | Purpose |
 |---|---|
-| `uip rpa tm connect --url <url>` | Set the Test Manager **server URL** (`testManagerBasePath`). Switching to a **different** server (different host/org/tenant) also **clears the default project**, since it belonged to the old server. |
-| `uip rpa tm set-default-project --id <guid> [--name <name>] [--key <key>]` | Link the **default Test Manager project** (`defaultProject`). **Requires a connected server** — run `connect` first or it is rejected. |
-| `uip rpa tm clear-default-project` | Unlink the default project; the server URL is kept. |
-| `uip rpa tm status` | Show the current configuration — server URL and linked default project. |
+| `uip rpa tm connect --url <url>` | Set server URL (`testManagerBasePath`). Switching host/org/tenant clears the old server's default project. |
+| `uip rpa tm set-default-project --id <guid> [--name <name>] [--key <key>]` | Set default project (`defaultProject`); requires `connect` first. |
+| `uip rpa tm clear-default-project` | Clear default project; keep server URL. |
+| `uip rpa tm status` | Show server URL and linked default project. |
 
-Typical setup flow (all verbs take the standard `--project-dir` and `--output json`):
+All verbs take standard `--project-dir` and `--output json`. Typical setup:
 
 ```
 uip rpa tm connect --url "https://cloud.uipath.com/<org>/<tenant>/testmanager_" --project-dir "<PROJECT_DIR>" --output json
@@ -281,25 +237,21 @@ uip rpa tm set-default-project --id <project-guid> --name "<project-name>" --key
 uip rpa tm status --project-dir "<PROJECT_DIR>" --output json
 ```
 
-`set-default-project` does **not** call the server to validate the id (there is no server round-trip) — pass a real Test Manager project id (and optional name/key). Listing projects from the server is not available here; obtain the id from Test Manager itself. Confirm exact flags via `uip rpa tm --help`.
+`set-default-project` does not validate the id with a server round-trip; supply a real project id and optional name/key. Project listing is unavailable here; get the id from Test Manager. Confirm flags with `uip rpa tm --help`.
 
 #### Acting on `reloadHint` in the output
 
-A `connect` / `set-default-project` / `clear-default-project` response may include a **`reloadHint`** field. It appears only when the project is currently **open in a Studio older than 26.0.197**, which reads `.tmh/config.json` *only on project open*. When you see it, tell the user to **close and reopen the project in Studio** for the change to take effect — the CLI cannot do this for them. No `reloadHint` means nothing to do: either the project isn't open in Studio, or it's open in Studio 26.0.197+, which applies the change live.
+`connect` / `set-default-project` / `clear-default-project` may return `reloadHint` only if the project is open in Studio older than 26.0.197, which reads `.tmh/config.json` only at project open. If present, tell the user to close and reopen the project; CLI cannot do this. If absent, no action is needed: the project is not open in Studio or Studio 26.0.197+ applies changes live.
 
 ---
 
 ## Fix One Thing at a Time
 
-When an error occurs, identify the root cause, fix **only** that one thing, and re-run.
-
-- Never bundle a speculative improvement with the actual fix.
-- Changing two things at once makes it impossible to verify which change resolved the issue or whether the extra change introduced a new one.
-- One fix per iteration, re-run, verify.
+When an error occurs, identify its root cause, fix only that issue, then rerun. Never bundle speculative improvements with the actual fix: multiple changes prevent identifying what resolved or introduced the issue. Verify one fix per iteration.
 
 ## Validation Iteration Loop
 
-Phase 1 — per-file `validate` after every edit. Phase 2 — one project-level `build` per edit session.
+Phase 1: per-file `validate` after every edit. Phase 2: one project-level `build` per edit session.
 
 ```
 PHASE 1 — validate-clean (per-file):
@@ -313,94 +265,81 @@ PHASE 2 — build-clean (per-project, once per edit session):
   REPEAT:
     1. uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
     2. IF build has errors -> identify offending file from build output
-       a. uip rpa validate --file-path "<OFFENDER>" --project-dir "<PROJECT_DIR>" --output json   # cheap targeted re-check
+       a. uip rpa validate --file-path "<OFFENDER>" --project-dir "<PROJECT_DIR>" --output json
        b. fix one root cause, GOTO 1
     3. EXIT to Smoke Test
 ```
 
-**Why both phases.** Per-file `validate` covers one file deeply — structural XAML, missing references, analyzer rules, schema violations, unknown members, invalid enums, and expression compilation. `build` covers the project broadly — every workflow including untouched ones, project-scope analyzer rules, and packaging. Validating each edited file does not establish that the project compiles, and building does not tell you which file to fix without re-running `validate` on the offender. Neither replaces the other, and neither detects an attribute-form expression that silently resolves to a literal (§ What each phase covers).
+Both phases are required: per-file `validate` covers the target deeply (structural XAML, missing references, analyzer rules, schema violations, unknown members, invalid enums, expression compilation); project-wide `build` covers every workflow, project-scope rules, and packaging. Build output identifies the offender; re-run targeted `validate` to locate its issue. Neither phase detects an attribute-form expression that silently resolves to a literal (see § What each phase covers).
 
-**Target the specific file:** `validate --file-path` validates only the file you changed (faster than whole-project). `build` is project-scoped (no `--file-path`); when it errors, the output names the offending file — re-run `validate --file-path` on it as part of Phase 2's fix loop.
+Target changed files with `validate --file-path` (faster than whole-project); `build` has no `--file-path` and is project-scoped.
 
-**5-attempt cap per loop** — 5 attempts for each file's Phase 1 `validate` loop; a separate 5 attempts for the Phase 2 `build` loop. After a loop exhausts its budget, present the remaining errors to the user. They may require domain knowledge or environment-specific fixes. Each loop's counter resets when you start a new loop (e.g., new file, new user prompt, or resuming after user input).
+**5-attempt cap per loop:** allow 5 attempts for each Phase 1 file loop and a separate 5 for Phase 2 build loop. When exhausted, present remaining errors; they may require domain knowledge or environment-specific fixes. Reset each loop's counter when starting a new loop (new file, new user prompt, or resuming after user input).
 
 ### Rules
 
-1. DO NOT stop until all errors are resolved (or cannot be resolved automatically).
-2. DO NOT obsess on one error -- if it cannot be resolved, skip it, continue, and defer to the user through an informative, step-by-step message at the end.
+1. DO NOT stop until all errors are resolved or cannot be resolved automatically.
+2. DO NOT obsess over one error: skip an unresolvable one, continue, and defer it to the user with an informative, step-by-step message at the end.
 3. DO NOT skip validation steps.
 4. DO NOT assume edits worked without checking.
-5. DO NOT bundle multiple fixes in one iteration. Fix the root cause, re-run, verify. Never add a speculative change alongside the actual fix -- changing two things at once makes it impossible to tell which one resolved the issue or whether the extra change introduced a new problem.
-6. Warnings are non-blocking. Once `validate`/`build` (and, where the task requires, `pack`/`run`) are clean of errors, deliver — do not investigate warnings unless the user asked or one blocks an acceptance criterion.
+5. DO NOT bundle fixes: fix one root cause, rerun, and verify; never add speculative changes alongside the actual fix.
+6. Warnings are non-blocking. When `validate`/`build` (and, if required, `pack`/`run`) have no errors, deliver; investigate warnings only if requested or blocking an acceptance criterion.
 
-Full `validate` and `run` command documentation: [§ validate](#validate) and [§ Reading run / debug results](#reading-run--debug-results).
+Full command docs: [§ validate](#validate) and [§ Reading run / debug results](#reading-run--debug-results).
 
 ## Project Build Verification (Required Before Returning a Project)
 
-Every project returned to the user must compile. Phase 2 of the iteration loop above is this gate — when Phase 2 exits clean, the gate is satisfied. The standalone command below also satisfies it (for example, when re-verifying after a small fix outside an iteration loop):
+Every returned project must compile. A clean Phase 2 build satisfies this gate; otherwise run the standalone command (for example, to reverify after a small fix outside the loop):
 
 ```bash
 uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
 ```
 
-If `build` fails, apply the Phase 2 fix loop (fix one root cause, re-run, cap at 5 attempts). A successful `run` smoke test substitutes for `build` — `run` compiles internally.
+If build fails, use the Phase 2 fix loop (one root cause per iteration, rerun, cap 5 attempts). A successful `run` smoke test substitutes for build because `run` compiles internally.
 
 ### What each phase covers
 
-Per-file `validate` loads the target file through the workflow designer **and** compiles its expressions, so it reports these on the file it was pointed at:
+Per-file `validate` loads the target through the workflow designer and compiles its expressions, reporting:
 
 | Error class | Example | Reported as |
-|-------------|---------|-------------|
+|---|---|---|
 | Unknown member name | `<uix:NGetText Value="[x]" />` (correct: `TextString`) | `Could not load <file>: 'Cannot set unknown member '<Class>.<Prop>''` |
 | Invalid enum value | `ClickType="BogusValue"` | `Could not load <file>: 'Failed to create a '<Prop>' from the text '<value>''` |
 | Broken expression | `undefinedSymbol + 1` inside a `CSharpValue` | `CS0103: The name '<symbol>' does not exist in the current context` |
 
-**`build` is still required, because its scope is the whole project, not the file you validated.** It compiles every workflow — including ones you never touched or never validated — and applies project-scope analyzer rules and packaging. A project whose every edited file validates clean still fails `build` when an unrelated file is broken, which is exactly the state a partial edit session leaves behind.
+Build remains required because it compiles every workflow (including untouched/unvalidated files), enforces project-scope rules, and packages. Edited files can validate clean while another file makes build fail.
 
-**Neither phase catches an attribute-form expression on an `InArgument<Object>`.** `Message="calcResult"` deserializes as a literal string, so `validate` reports no diagnostics, `build` succeeds, the run succeeds — and the activity logs the text `calcResult` instead of the variable's value. There is no error anywhere; the only signal is wrong output. This is why the gate ends with a smoke test whose **output is inspected**, not merely a run that exits clean — see [§ Smoke Test](#smoke-test) and [xaml/csharp-activity-binding-guide.md § C# Expression Pitfalls](xaml/csharp-activity-binding-guide.md#c-expression-pitfalls).
+Neither phase catches an attribute-form expression on an `InArgument<Object>`: `Message="calcResult"` deserializes as a literal, so validate/build/run can all succeed while logging `calcResult` instead of the variable value. The signal is wrong output; inspect the smoke-test output (see [§ Smoke Test](#smoke-test) and [xaml/csharp-activity-binding-guide.md § C# Expression Pitfalls](xaml/csharp-activity-binding-guide.md#c-expression-pitfalls)).
 
 ### Expected non-defect warnings
 
-`build` prints `[WARN]` lines for enabled analyzer rules. These are **not** build failures and do not gate delivery (§ Validation Iteration Loop, Rule 6). Recurring ones that are correct-by-design and must not be "fixed":
+`build` `[WARN]` lines for enabled analyzer rules are not failures and do not gate delivery (§ Validation Iteration Loop, Rule 6). Do not “fix” these expected warnings:
 
-| Warning | Rule | Why it is expected |
+| Warning | Rule | Why expected |
 |---|---|---|
-| `<activity> does not have the verification feature enabled` | — (matches no rule in the enabled `analyzer-rules list` output) | `VerifyOptions` is deliberately off by default; add only when the user asks. Observed once per `NClick` on a clean UIA build. Policy: the UIA package guide's § Execution Verification Policy. |
-| `Your organization requires your project to have an Automation Hub URL defined` | `ST-USG-034` | Org governance setting, not a workflow property. Resolved in Project Settings by the project owner. |
-| `<name> display name is defined many times. Current allowed threshold is 1` | `ST-NMG-004` | Real but cosmetic. Fix only while authoring the activity — repeated identical steps (two clicks on the same button) need disambiguating names anyway. |
+| `<activity> does not have the verification feature enabled` | — (matches no rule in enabled `analyzer-rules list`) | `VerifyOptions` deliberately defaults off; add only if user asks. Observed once per `NClick` on a clean UIA build. Policy: UIA package guide § Execution Verification Policy. |
+| `Your organization requires your project to have an Automation Hub URL defined` | `ST-USG-034` | Organization governance setting, not workflow property; project owner resolves in Project Settings. |
+| `<name> display name is defined many times. Current allowed threshold is 1` | `ST-NMG-004` | Real but cosmetic; fix only while authoring the activity. Repeated identical steps (for example, two clicks on same button) need distinct names. |
 
-Warnings naming a rule ID you do not recognize: look it up with `analyzer-rules list --scope <scope>` (§ analyzer-rules list) rather than guessing, and only when a warning actually blocks an acceptance criterion.
+For an unknown rule ID, look it up with `analyzer-rules list --scope <scope>` (§ analyzer-rules list) rather than guessing, and only when the warning blocks an acceptance criterion.
 
 ## Smoke Test
 
-A clean `validate` + `build` gate is not runtime proof. Some defects produce no diagnostic in either phase — an attribute-form expression that silently became a literal (§ What each phase covers), activity CacheMetadata failures that surface only when the runtime instantiates the activity, and plain logic bugs. Always treat the smoke test as a critical validation step whose output is inspected, not just an optional extra.
-
-After reaching 0 validation errors AND a clean project-level build (Phase 2), run the workflow to catch runtime errors (wrong credentials, missing files, logic bugs) that static validation cannot detect. Use `--skip-build` because the project has just been built clean — default `run` re-validates and re-builds internally, repeating ~10s of compilation:
+Clean validate + build is not runtime proof: attribute-form expressions can silently become literals (§ What each phase covers), CacheMetadata failures appear only when runtime instantiates an activity, and logic bugs may remain. After zero validation errors and clean project build (Phase 2), run a workflow to detect runtime issues (credentials, missing files, logic). Always treat the smoke test as a critical validation step whose output is inspected, not just an optional extra. Use `--skip-build` after the clean build to avoid redundant ~10s compilation:
 
 ```bash
-# Run with default arguments (post-build, skip the redundant rebuild):
 uip rpa run --file-path "<FILE>" --skip-build --output json
-# Run with input arguments (repeat --input-arguments per key; = string, := raw JSON):
 uip rpa run --file-path "<FILE>" --skip-build --input-arguments key=value --output json
-# Run with verbose logging for debugging:
 uip rpa run --file-path "<FILE>" --skip-build --log-level Verbose --output json
 ```
 
-`--skip-build` executes the existing compiled artifact — any edit since the last successful `build` is silently ignored. Use bare `run` after edits.
+`--skip-build` runs the existing compiled artifact, silently ignoring edits since the last successful build. Use bare `run` after edits.
 
-**[Coded] Don't pair `build` with a default `run`/`debug start`.** `build` deletes `.local/.codedworkflows/WorkflowRunnerService.cs`, so a default `run`/`debug start` afterward re-validates the now-inconsistent generated set and fails `CS0246 'WorkflowRunnerService' does not exist in the namespace`. Use either **`build` → `run`/`debug start --skip-build`** (runs the built artifact) or a **bare `run`/`debug start`** (builds internally).
+**[Coded] Do not pair `build` with default `run`/`debug start`.** `build` deletes `.local/.codedworkflows/WorkflowRunnerService.cs`; a default `run`/`debug start` then re-validates the inconsistent generated set and fails `CS0246 'WorkflowRunnerService' does not exist in the namespace`. Choose `build` → `run`/`debug start --skip-build` (built artifact), or bare `run`/`debug start` (builds internally).
 
-**When to run:**
-1. Workflow has no compilation errors but you want to verify runtime behavior
-2. Workflow involves file I/O, API calls, or data transformations that could fail at runtime
-3. User specifically asks to test the workflow
+Run when: (1) compilation is clean and runtime behavior needs verification; (2) workflow has file I/O, API calls, or transformations; (3) user asks for a test. Do not run when: (1) side effects (email, database changes, external APIs) exist—warn user first; (2) interactive input is required (UI automation, attended triggers); (3) compilation errors remain.
 
-**When NOT to run:**
-1. Workflow has side effects (sends emails, modifies databases, calls external APIs) -- warn the user first
-2. Workflow requires interactive input (UI automation, attended triggers)
-3. Compilation errors still exist (fix those first)
-
-**If runtime errors occur:** Analyze the output, apply the fix-one-thing rule, and loop back to fix. Stop after 2 failed runtime retry attempts and present the user with error details, a suggested fix, and options:
+For runtime errors, analyze output, apply the fix-one-thing rule, and retry. Stop after 2 failed runtime retry attempts; present error details, a suggested fix, and options:
 
 ```
 Workflow execution failed after 2 retry attempts.
@@ -419,7 +358,7 @@ C) <user-driven approach>
 
 ### Resolving Dynamic Activity Custom Types
 
-Dynamic activities (e.g., Integration Service connectors) retrieved via `uip rpa activities get-default-xaml` (with `--activity-type-id`) may use **JIT-compiled custom types** for their input/output properties. After the activity is added to the workflow, when you need to discover the property names and CLR types of these custom entities (e.g., to populate an `Assign` activity targeting a custom type property, or to create a variable of a custom type), read the JIT custom types schema:
+Dynamic activities (for example Integration Service connectors) retrieved through `uip rpa activities get-default-xaml` with `--activity-type-id` may use JIT-compiled custom input/output types. After adding the activity, read the schema to discover custom entity property names and CLR types (for Assign targets or custom-type variables):
 
 ```
 Read: file_path="{projectRoot}/.project/JitCustomTypesSchema.json"
@@ -427,9 +366,9 @@ Read: file_path="{projectRoot}/.project/JitCustomTypesSchema.json"
 
 ### Focus Activity for Debugging
 
-When `validate` returns an error referencing a specific activity (by IdRef or DisplayName), use `focus-activity` to highlight it in the Studio Desktop designer. This helps the user see the problematic activity in context and verify fixes visually.
+When `validate` identifies an activity by IdRef or DisplayName, use `focus-activity` to highlight it in the Studio Desktop designer so the user can inspect context or verify a fix.
 
-> **Studio Desktop required.** `focus-activity` does not run against headless Studio — it manipulates the Studio Desktop designer UI. Before invoking it, ensure Studio Desktop is up via `uip rpa studio start --project-dir "<PROJECT_DIR>"` (see [environment-setup.md § Edge case: requiring Studio Desktop](environment-setup.md#edge-case-requiring-studio-desktop)). Skip this step entirely on headless-only setups — `validate` already includes the IdRef and file:line in its output, which is enough to locate the activity.
+> **Studio Desktop required.** This manipulates the Desktop UI and does not run on Helm. Before invoking, ensure Desktop is up with `uip rpa studio start --project-dir "<PROJECT_DIR>"` (see [environment-setup.md § Edge case: requiring Studio Desktop](environment-setup.md#edge-case-requiring-studio-desktop)). Skip on headless-only setups; `validate`'s IdRef and file:line locate the activity.
 
 ```bash
 # Focus a specific activity by its IdRef (from the error output):
@@ -438,30 +377,27 @@ uip rpa focus-activity --activity-id "Assign_1"
 uip rpa focus-activity
 ```
 
-This is especially useful when:
-- An error references an activity and you want the user to confirm the context
-- You've made a fix and want to show the user which activity was modified
-- The error is ambiguous and you need to verify which activity instance is affected
+Use it when an error needs visual context, after a fix to show the modified activity, or to disambiguate an activity instance.
 
 ---
 
 ## Pack & Publish to Orchestrator
 
-How to take a built `.nupkg` from `uip rpa pack` and get it onto Orchestrator or Studio Web. Covers the standalone-project paths only — solution publish (`.uipx` solutions and `solution publish` deploy lifecycle) lives in the `uipath-solution` skill.
+This covers standalone-project packaging/upload only. Solution publish (`.uipx` and `solution publish` deploy lifecycle) belongs to `uipath-solution`.
 
 ### Pick a path
 
 | Goal | Path | Reference |
 |---|---|---|
-| Run the project as an Orchestrator process / link as a Test Manager automation | **Pack → Orchestrator package upload** | This section § Pack → Upload |
-| Edit / visualize in Studio Web | **Solution upload** | the `uipath-solution` skill (solution upload) |
-| Deploy a packed solution (`.uipx`) to Orchestrator with the deployment lifecycle | **Solution publish** | the `uipath-solution` skill (pack-and-deploy lifecycle) |
+| Run as Orchestrator process / link as Test Manager automation | **Pack → Orchestrator package upload** | This section § Pack → Upload |
+| Edit / visualize in Studio Web | **Solution upload** | `uipath-solution` skill (solution upload) |
+| Deploy packed `.uipx` solution through Orchestrator lifecycle | **Solution publish** | `uipath-solution` skill (pack-and-deploy lifecycle) |
 
-This section documents the first row only — the legacy Orchestrator package feed flow that `uip tm testcases link-automation` requires.
+Only the first row is documented here: the legacy Orchestrator package feed flow required by `uip tm testcases link-automation`.
 
 ### Pack → Upload (Orchestrator process flow)
 
-The end-to-end is two CLI calls.
+Two CLI calls:
 
 #### Step 1 — Pack the project
 
@@ -469,19 +405,9 @@ The end-to-end is two CLI calls.
 uip rpa pack "<PROJECT_DIR>" "<OUTPUT_DIR>" --output json
 ```
 
-| Argument | Position | Notes |
-|---|---|---|
-| `<PROJECT_DIR>` | Positional 1 | Path to the project (folder containing `project.json`). |
-| `<OUTPUT_DIR>` | Positional 2 | Directory the `.nupkg` is written to. Must exist and be OUTSIDE the project directory tree — `pack` refuses an output path inside the project. Use a sibling directory (e.g. `dist/`). |
+`<PROJECT_DIR>` is positional 1 (folder containing `project.json`); `<OUTPUT_DIR>` is positional 2, must already exist and be outside the project tree (pack refuses paths inside it; use a sibling such as `dist/`). Optional flags (confirm full list with `uip rpa pack --help`): `--package-version <SEMVER>` (defaults to project version), `--skip-analyze` (only for known-clean builds), `--governance-file-path <PATH>` (governance policy). JSON `OutputPath` is the full `.nupkg` path; capture it for upload.
 
-Common optional flags (run `uip rpa pack --help` for the full set):
-- `--package-version <SEMVER>` — pin the version. Defaults to the project version.
-- `--skip-analyze` — skip the workflow-analyzer pass. Use only for known-clean builds.
-- `--governance-file-path <PATH>` — apply a governance policy during pack.
-
-Output (JSON) emits `OutputPath` — the full `.nupkg` path. Capture it for Step 2.
-
-> **`uip rpa pack` does NOT accept `--project-path` or `--project-dir`.** Both arguments are positional. The `--project-dir` flag exists on most other `uip rpa` subcommands but not here.
+`uip rpa pack` accepts neither `--project-path` nor `--project-dir`; both arguments are positional.
 
 #### Step 2 — Upload to Orchestrator
 
@@ -489,27 +415,19 @@ Output (JSON) emits `OutputPath` — the full `.nupkg` path. Capture it for Step
 uip or packages upload "<NUPKG_PATH>" --output json
 ```
 
-| Argument / Flag | Required | Notes |
-|---|---|---|
-| `<NUPKG_PATH>` | Yes (positional) | Path to the `.nupkg` produced by `pack`. |
-| `--feed-id <UUID>` | No | Target a non-default feed. Defaults to the tenant feed. |
-| `--folder-path <PATH>` / `--folder-key <UUID>` | No | Target a specific folder feed. |
+`<NUPKG_PATH>` is the required positional `.nupkg` from pack. Optional `--feed-id <UUID>` targets a non-default feed (default is tenant feed); `--folder-path <PATH>` / `--folder-key <UUID>` targets a folder feed. Output JSON gives package `Id` (Orchestrator package name) and `Version`: use `Id` as `uip tm testcases link-automation --package-name` or `uip or processes create --package-key` (pass `--package-version` separately).
 
-Output JSON includes the package `Id` (the package name Orchestrator stores) and `Version`. Hold on to the `Id` — `uip tm testcases link-automation` takes it as `--package-name`; `uip or processes create` takes it as `--package-key` (with `--package-version` separately).
-
-> **There is no `uip or packages publish` or `uip rpa publish`.** Agents that try those names get "unknown command". Pack writes a file; upload pushes that file. Two commands, two domains (`rpa`, `or`).
+There is no `uip or packages publish` or `uip rpa publish`: pack writes a file; upload pushes it. Use the `rpa` and `or` domains respectively.
 
 ### Discovery cheatsheet
 
-Folder key (UUID — required by `processes create`, `link-automation`, etc.):
+Discover folder UUIDs (required by `processes create`, `link-automation`, etc.):
 
 ```bash
 uip or folders list --output json
 ```
 
-The returned `Key` is the UUID; the `FullyQualifiedName` is the human path. Either is accepted by `--folder-path` / `--folder-key` — most other CLI calls require the UUID.
-
-After upload, list the new package version:
+`Key` is UUID; `FullyQualifiedName` is the human path. Both work with `--folder-path` / `--folder-key`; most other CLI calls require UUID. List uploaded package versions with:
 
 ```bash
 uip or packages list --output json
@@ -517,47 +435,47 @@ uip or packages list --output json
 
 ### End-to-end: link a coded test case to Test Manager
 
-For the full Pack → Upload → Link → Execute pipeline targeted at Test Manager (folder-key discovery, picking the right `--test-name`, etc.), delegate to the `uipath-test` skill (its publish-and-link guide).
+For Pack → Upload → Link → Execute targeted at Test Manager (folder-key discovery, choosing `--test-name`, etc.), delegate to `uipath-test` skill's publish-and-link guide.
 
 ### Common pitfalls
 
-- **`uip solution publish` expects a packed `.zip`, not a project directory.** Solutions: run `uip solution pack` first, then `uip solution publish "<ZIP_PATH>"`. Single projects: use `uip or packages upload` instead.
-- **Confusing `solution upload` and `solution publish`.** `upload` pushes to Studio Web (browser editing). `publish` pushes a packed solution `.zip` to the Orchestrator solution feed for `solution deploy`. They are NOT interchangeable. The `uipath-solution` skill owns the decision tree.
-- **Re-uploading the same version.** Orchestrator rejects duplicate `<id>:<version>` uploads. Bump `--package-version` (or `project.json` `projectVersion`) before re-packing.
-- **`pack` succeeds but `analyze` ran with errors.** A successful pack with errors in the analyzer log usually means warnings only. Re-run `uip rpa analyze "<PROJECT_DIR>"` (project dir is positional) if you need a clean failure / pass signal.
+- `uip solution publish` requires a packed `.zip`, not a project directory. Run `uip solution pack` first, then `uip solution publish "<ZIP_PATH>"`; for single projects use `uip or packages upload`.
+- `solution upload` edits in Studio Web; `solution publish` sends a packed solution `.zip` to Orchestrator's solution feed for `solution deploy`. They are not interchangeable; `uipath-solution` owns the decision tree.
+- Orchestrator rejects duplicate `<id>:<version>` uploads. Bump `--package-version` or `project.json` `projectVersion` before repacking.
+- A successful pack with errors in the analyzer log usually means warnings only. If a clean pass/fail signal is needed, run `uip rpa analyze "<PROJECT_DIR>"` (project dir positional).
 
 ---
 
 ## CLI Error Recovery
 
-Diagnose by error category, apply the recovery, retry **once** — do not loop the same failing command.
+Identify the error category, apply recovery, and retry **once**; do not loop the same failing command.
 
 | Error pattern | Cause | Recovery |
-|---------------|-------|----------|
-| `connection refused`, `EPIPE`, `pipe not found` | Studio IPC unavailable. Headless: NuGet restore failed or process exited. Desktop: not running. | Re-run — headless relaunches automatically. If persistent, raise `--timeout` and check Helm restore output for NuGet errors. Run `uip rpa studio start` only for Desktop-only verbs or when `UIPATH_RPA_TOOL_USE_STUDIO=1`. |
-| `timeout`, `ETIMEDOUT` | Cold Helm NuGet restore (30–90 s) or long operation. | Raise both limits together: shell `timeoutSeconds` toward its documented max, and `uip rpa --timeout <timeoutSeconds − 30> <command>` — the shell timeout must exceed `--timeout` by ≥ 30 s or the shell kills the CLI before it can cancel cleanly. For `validate`, also try `--skip-validation`. |
-| `not authenticated`, `401`, `403` | Auth required for cloud features. | `uip login`, then retry. |
-| `package not found`, `version not available` | Wrong package ID or version. | Verify via `uip rpa activities find`; omit `version` to auto-resolve latest. |
-| `project not found`, `no project open` | Wrong `--project-dir` or project not open. | Verify the path points at the `project.json` folder; if it persists, `uip rpa project open --project-dir "<PROJECT_DIR>"`. For Desktop-only verbs, check instances with the hidden `uip rpa instances list --output json` and run `uip rpa studio start` if none is up. |
-| `not in the project folder` (in `validate`) | Absolute `--file-path` + separator mismatch. | Pass `--file-path` relative to the project root (see [validate](#validate)). |
-| `Studio is busy`, `operation in progress` | Studio processing a prior request. | Wait a few seconds, retry. |
-| Unrecognized error | Unknown | Re-run with `--verbose` for debug detail, then inform the user. |
+|---|---|---|
+| `connection refused`, `EPIPE`, `pipe not found` | Studio IPC unavailable: Helm restore failed/process exited, or Desktop not running. | Rerun; Helm relaunches automatically. If persistent, raise `--timeout` and inspect Helm restore output for NuGet errors. Run `uip rpa studio start` only for Desktop-only verbs or `UIPATH_RPA_TOOL_USE_STUDIO=1`. |
+| `timeout`, `ETIMEDOUT` | Cold Helm restore (30–90 s) or long operation. | Raise both limits: shell `timeoutSeconds` toward documented max and `uip rpa --timeout <timeoutSeconds − 30> <command>`. Shell timeout must exceed `--timeout` by ≥ 30 s so it does not kill CLI before clean cancellation. For `validate`, also try `--skip-validation`. |
+| `not authenticated`, `401`, `403` | Cloud authentication required. | Run `uip login`, then retry. |
+| `package not found`, `version not available` | Wrong package ID/version. | Verify with `uip rpa activities find`; omit version to resolve latest. |
+| `project not found`, `no project open` | Wrong `--project-dir` or project not open. | Verify path is the `project.json` folder; if persistent run `uip rpa project open --project-dir "<PROJECT_DIR>"`. For Desktop-only verbs, check hidden `uip rpa instances list --output json`; run `uip rpa studio start` if none is up. |
+| `not in the project folder` (`validate`) | Absolute `--file-path` separator mismatch. | Use project-relative `--file-path` (see [validate](#validate)). |
+| `Studio is busy`, `operation in progress` | Studio handling prior request. | Wait a few seconds, retry. |
+| Unrecognized | Unknown. | Rerun with `--verbose` for details, then inform the user. |
 
 ---
 
 ## RPA discovery tools (non-CLI)
 
 | Action | How |
-|--------|-----|
-| **Explore project files** | `Glob` `**/*.xaml` |
-| **Search XAML content** | `Grep` regex across `.xaml` |
-| **Explore Object Repository** | `uip rpa get-object-repository` for the project's apps/screens/elements as JSON, `uip rpa get-library-object-repository` for a referenced library's (see [object-repository](#object-repository)); or `Glob` `**/*` under `{PROJECT_DIR}/.objects/` + `Read` metadata for raw files |
-| **Get JIT type definitions** | `Read` `{PROJECT_DIR}/.project/JitCustomTypesSchema.json` |
-| **Activity docs** | See [Installed package activity documentation](#installed-package-activity-documentation) above |
-| **Inspect a NuGet package's API** | `uip rpa packages inspect` — see [coded/codedworkflow-reference.md § Inspect NuGet Package Tool](coded/codedworkflow-reference.md) |
+|---|---|
+| Explore project files | `Glob` `**/*.xaml` |
+| Search XAML | `Grep` regex across `.xaml` |
+| Explore Object Repository | `uip rpa get-object-repository` for project apps/screens/elements; `uip rpa get-library-object-repository` for a referenced library (see [object-repository](#object-repository)); or `Glob` `**/*` under `{PROJECT_DIR}/.objects/` and `Read` metadata. |
+| Get JIT type definitions | `Read` `{PROJECT_DIR}/.project/JitCustomTypesSchema.json` |
+| Activity docs | See [Installed package activity documentation](#installed-package-activity-documentation). |
+| Inspect NuGet package API | `uip rpa packages inspect`; see [coded/codedworkflow-reference.md § Inspect NuGet Package Tool](coded/codedworkflow-reference.md). |
 
 ---
 
 ## UI Automation (`uip rpa uia ...`)
 
-`uip rpa uia --help` deliberately exposes no standard subcommands — the UIA CLI surface is owned and co-versioned by the `UiPath.UIAutomation.Activities` package. Start from `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md` (Rule 7): its CLI-discovery section routes to the package's task guides and command inventory. Per-command flags: `<discovered command> --help`.
+`uip rpa uia --help` deliberately lists no standard subcommands: the UIA CLI is owned and co-versioned by `UiPath.UIAutomation.Activities`. Start at `{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md` (Rule 7), whose CLI-discovery section routes to task guides and command inventory. Discover each command's flags with `<discovered command> --help`.

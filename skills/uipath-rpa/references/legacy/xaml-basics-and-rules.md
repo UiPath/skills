@@ -1,8 +1,6 @@
 # XAML Basics and Rules (Legacy)
 
-Core concepts for legacy UiPath workflow XAML files and rules for generating and editing XAML content. Legacy projects use .NET Framework 4.6.1 (WF4) and primarily VB.NET expressions.
-
-For the full XAML internals guide with detailed templates, see [activity-docs/_XAML-GUIDE.md](./activity-docs/_XAML-GUIDE.md).
+Core rules for legacy UiPath workflow XAML: .NET Framework 4.6.1 (WF4), primarily VB.NET. See [activity-docs/_XAML-GUIDE.md](./activity-docs/_XAML-GUIDE.md) for detailed templates and internals.
 
 ---
 
@@ -100,7 +98,7 @@ Every legacy UiPath XAML workflow is a WF4 Activity serialized as XAML:
 ### Key Differences from Modern XAML
 
 | Aspect | Legacy | Modern |
-|--------|--------|--------|
+|---|---|---|
 | Root marker | `mva:VisualBasic.Settings="{x:Null}"` | No `mva:` marker; may have expression editor attribute |
 | Assembly xmlns | `assembly=mscorlib` | `assembly=System.Private.CoreLib` |
 | Expression types | `mva:VisualBasicValue` / `mva:VisualBasicReference` | Brackets `[expr]` or `CSharpValue` |
@@ -112,155 +110,56 @@ Every legacy UiPath XAML workflow is a WF4 Activity serialized as XAML:
 ## VB.NET vs C# Expression Detection
 
 | Marker | VB.NET (Primary) | C# (Rare in Legacy) |
-|--------|-------------------|---------------------|
-| **Root attribute** | `mva:VisualBasic.Settings="{x:Null}"` | `sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#"` |
-| **Expression type** | `mva:VisualBasicValue<T>` / `mva:VisualBasicReference<T>` | `mca:CSharpValue<T>` / `mca:CSharpReference<T>` |
-| **Namespace xmlns** | `xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"` | `xmlns:mca="clr-namespace:Microsoft.CSharp.Activities;assembly=System.Activities"` |
-| **project.json** | `"expressionLanguage": "VisualBasic"` | `"expressionLanguage": "CSharp"` |
+|---|---|---|
+| Root attribute | `mva:VisualBasic.Settings="{x:Null}"` | `sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#"` |
+| Expression type | `mva:VisualBasicValue<T>` / `mva:VisualBasicReference<T>` | `mca:CSharpValue<T>` / `mca:CSharpReference<T>` |
+| Namespace xmlns | `xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"` | `xmlns:mca="clr-namespace:Microsoft.CSharp.Activities;assembly=System.Activities"` |
+| `project.json` | `"expressionLanguage": "VisualBasic"` | `"expressionLanguage": "CSharp"` |
 
-**Always check `project.json` `expressionLanguage` field before writing any expressions.**
+Always check `project.json` `expressionLanguage` before writing expressions; never mix expression languages.
 
 ---
 
 ## VB.NET Expression Syntax (Primary)
 
-VB.NET expressions use bracket notation `[expression]` inline in attributes:
+VB.NET expressions use `[expression]` inline in attributes or typed arguments; explicit `mva:VisualBasicValue` is also valid (for example, a Boolean condition uses `ExpressionText`). XML-escape `<` as `&lt;`, `>` as `&gt;`, `"` as `&quot;`, and `&` as `&amp;`.
 
-```xml
-<!-- Simple variable reference -->
-<ui:LogMessage Message="[myVariable]" />
+For `Throw.Exception`, use short-form class names and assign complex messages to a variable before throwing; see [§ VB.NET Quote Escaping in Throw.Exception](#vbnet-quote-escaping-in-throwexception-critical-for-xaml-generation).
 
-<!-- String concatenation -->
-<ui:LogMessage Message="[&quot;Hello &quot; + userName]" />
-
-<!-- Typed expression in InArgument -->
-<Assign.Value>
-  <InArgument x:TypeArguments="x:Int32">[counter + 1]</InArgument>
-</Assign.Value>
-
-<!-- Boolean condition -->
-<If Condition="[age >= 18]">
-
-<!-- FlowDecision with explicit VisualBasicValue -->
-<FlowDecision.Condition>
-  <mva:VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="counter &lt; 10" />
-</FlowDecision.Condition>
-```
-
-**XML escaping required inside expressions:** `<` → `&lt;`, `>` → `&gt;`, `"` → `&quot;`, `&` → `&amp;`
-
-**Throw.Exception quote escaping gotcha:** Fully-qualified class names + complex string expressions with multiple `&quot;` in `Throw.Exception` can cause compiler errors. Use short-form class names (`BusinessRuleException` not `UiPath.Core.Activities.BusinessRuleException`) and for complex messages, assign to a variable first then throw with the variable. See [§ VB.NET Quote Escaping in Throw.Exception](#vbnet-quote-escaping-in-throwexception-critical-for-xaml-generation) for the full pattern.
-
-For comprehensive VB.NET expression patterns (strings, dates, collections, DataTables), see [activity-docs/_PATTERNS.md](./activity-docs/_PATTERNS.md).
+For strings, dates, collections, DataTables, and other VB.NET patterns, see [activity-docs/_PATTERNS.md](./activity-docs/_PATTERNS.md).
 
 ---
 
 ## C# Expression Syntax (Secondary)
 
-C# expressions use `<mca:CSharpValue>` / `<mca:CSharpReference>` wrappers:
-
-```xml
-<!-- String value -->
-<ui:LogMessage.Message>
-  <InArgument x:TypeArguments="x:Object">
-    <mca:CSharpValue x:TypeArguments="x:Object">"Hello " + userName</mca:CSharpValue>
-  </InArgument>
-</ui:LogMessage.Message>
-
-<!-- Assign with CSharpReference (lvalue) and CSharpValue (rvalue) -->
-<Assign DisplayName="Set Name">
-  <Assign.To>
-    <OutArgument x:TypeArguments="x:String">
-      <mca:CSharpReference x:TypeArguments="x:String">fullName</mca:CSharpReference>
-    </OutArgument>
-  </Assign.To>
-  <Assign.Value>
-    <InArgument x:TypeArguments="x:String">
-      <mca:CSharpValue x:TypeArguments="x:String">firstName + " " + lastName</mca:CSharpValue>
-    </InArgument>
-  </Assign.Value>
-</Assign>
-```
-
-**Do NOT use `[bracket]` notation in C# projects** — brackets create `VisualBasicValue` nodes, causing validation failures for C#-only syntax.
+Use `<mca:CSharpValue>` / `<mca:CSharpReference>` wrappers for C# values and lvalues. Do NOT use `[bracket]` notation in C# projects: it creates `VisualBasicValue` nodes and causes validation failures for C#-only syntax.
 
 ---
 
 ## Workflow Types
 
 ### Sequence
-Linear, top-to-bottom execution. **Most common** for legacy workflows.
-```xml
-<Sequence DisplayName="My Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
-  <Sequence.Variables>
-    <Variable x:TypeArguments="x:String" Name="result" />
-  </Sequence.Variables>
-  <!-- Activities execute top to bottom -->
-</Sequence>
-```
+
+Linear, top-to-bottom execution; most common for legacy workflows. Declare variables in `Sequence.Variables`.
 
 ### Flowchart
-Visual branching with FlowStep, FlowDecision, and FlowSwitch nodes.
-```xml
-<Flowchart DisplayName="My Flowchart" sap2010:WorkflowViewState.IdRef="Flowchart_1">
-  <Flowchart.StartNode>
-    <x:Reference>__ReferenceID0</x:Reference>
-  </Flowchart.StartNode>
-  <FlowStep x:Name="__ReferenceID0">
-    <!-- Activity + FlowStep.Next -->
-  </FlowStep>
-  <FlowDecision x:Name="__ReferenceID1">
-    <FlowDecision.Condition>
-      <mva:VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="condition" />
-    </FlowDecision.Condition>
-    <FlowDecision.True>
-      <x:Reference>__ReferenceID0</x:Reference>
-    </FlowDecision.True>
-  </FlowDecision>
-</Flowchart>
-```
+
+Visual branching with `FlowStep`, `FlowDecision`, and `FlowSwitch`. Set `Flowchart.StartNode` using an `x:Reference` to a defined node; use references in node properties for cross-links.
 
 ### State Machine
-State-based workflow with transitions. Used in REFramework pattern.
-```xml
-<StateMachine InitialState="{x:Reference __ReferenceID_Init}" DisplayName="Process">
-  <State x:Name="__ReferenceID_Init" DisplayName="Init">
-    <State.Entry>
-      <Sequence><!-- Init activities --></Sequence>
-    </State.Entry>
-    <State.Transitions>
-      <Transition DisplayName="Success">
-        <Transition.Condition>[initSuccess]</Transition.Condition>
-        <Transition.To>
-          <x:Reference>__ReferenceID_Process</x:Reference>
-        </Transition.To>
-      </Transition>
-    </State.Transitions>
-  </State>
-  <State x:Name="__ReferenceID_End" DisplayName="End" IsFinal="True" />
-</StateMachine>
-```
 
-For complete workflow type templates with ViewState, see [activity-docs/_XAML-GUIDE.md](./activity-docs/_XAML-GUIDE.md).
+State-based workflow, used in REFramework. Set the initial state reference and transition destinations; a State Machine needs exactly one `IsFinal="True"` state for proper termination.
+
+For complete templates including ViewState, see [activity-docs/_XAML-GUIDE.md](./activity-docs/_XAML-GUIDE.md).
 
 ---
 
 ## Arguments (In/Out/InOut)
 
-Arguments are declared in `<x:Members>` and define the workflow's public interface:
-
-```xml
-<x:Members>
-  <x:Property Name="in_CustomerName" Type="InArgument(x:String)" />
-  <x:Property Name="out_ProcessedCount" Type="OutArgument(x:Int32)" />
-  <x:Property Name="io_DataTable" Type="InOutArgument(sd:DataTable)" />
-</x:Members>
-```
-
-### Common Type Mappings
+Declare public-interface arguments in `<x:Members>` as `InArgument(...)`, `OutArgument(...)`, or `InOutArgument(...)` (for example, `x:String`, `x:Int32`, `sd:DataTable`).
 
 | XAML Type | .NET Type | Notes |
-|-----------|-----------|-------|
+|---|---|---|
 | `x:String` | System.String | |
 | `x:Int32` | System.Int32 | |
 | `x:Int64` | System.Int64 | |
@@ -269,29 +168,18 @@ Arguments are declared in `<x:Members>` and define the workflow's public interfa
 | `x:Object` | System.Object | |
 | `x:Decimal` | System.Decimal | |
 | `sd:DataTable` | System.Data.DataTable | Requires `xmlns:sd="clr-namespace:System.Data;assembly=System.Data"` |
-| `s:DateTime` | System.DateTime | **Cannot** use `x:DateTime` — it's not in the XAML schema |
-| `ss:SecureString` | System.Security.SecureString | Requires `xmlns:ss="clr-namespace:System.Security;assembly=mscorlib"` (NOT `xmlns:s` — SecureString is in `System.Security`, not `System`) |
-| `scg:Dictionary(x:String, x:Object)` | Dictionary\<String, Object\> | |
-| `scg:List(x:String)` | List\<String\> | |
+| `s:DateTime` | System.DateTime | `x:DateTime` is not in the XAML schema |
+| `ss:SecureString` | System.Security.SecureString | Requires `xmlns:ss="clr-namespace:System.Security;assembly=mscorlib"` (NOT `xmlns:s`; SecureString is in `System.Security`, not `System`) |
+| `scg:Dictionary(x:String, x:Object)` | Dictionary<String, Object> | |
+| `scg:List(x:String)` | List<String> | |
 
-**IMPORTANT:** The `x:` schema only supports: String, Int32, Int64, Double, Boolean, Byte, Single, Decimal, Char, Object, TimeSpan. Any other CLR type must use the appropriate namespace prefix (e.g., `s:DateTime`, `sd:DataTable`).
+The `x:` schema supports only String, Int32, Int64, Double, Boolean, Byte, Single, Decimal, Char, Object, and TimeSpan. Other CLR types need the appropriate namespace prefix (for example, `s:DateTime`, `sd:DataTable`).
 
 ---
 
 ## Variables
 
-Variables are scoped to their containing activity:
-
-```xml
-<Sequence.Variables>
-  <Variable x:TypeArguments="x:String" Name="filePath" />
-  <Variable x:TypeArguments="x:Int32" Name="counter" Default="0" />
-  <Variable x:TypeArguments="x:Boolean" Name="isValid" Default="True" />
-  <Variable x:TypeArguments="sd:DataTable" Name="dtResults" />
-</Sequence.Variables>
-```
-
-Variables declared in an outer container are accessible in nested containers but not across invoked workflows (use Arguments for that).
+Variables belong to their containing activity; outer-container variables are accessible in nested containers, but not across invoked workflows (use Arguments there). Declare them in the containing activity's `Variables` collection with appropriate `x:TypeArguments`.
 
 ---
 
@@ -299,72 +187,44 @@ Variables declared in an outer container are accessible in nested containers but
 
 ### ViewState Rules (Editing vs Generating)
 
-ViewState controls how activities appear in the designer. The rules differ for editing vs generating:
+ViewState controls designer layout.
 
-**Editing existing workflows:**
-- Do NOT modify the global `<sap2010:WorkflowViewState.ViewStateManager>` section
-- Do NOT modify existing ViewState on nodes you're not changing
-- When **adding new nodes** to an existing Flowchart/StateMachine, **DO generate ViewState** (ShapeLocation, ShapeSize, ConnectorLocation) for the new nodes — read existing node positions first to avoid overlap
+- **Editing existing workflows:** Do NOT modify the global `<sap2010:WorkflowViewState.ViewStateManager>` or ViewState on unchanged nodes. For new Flowchart/StateMachine nodes, generate `ShapeLocation`, `ShapeSize`, and `ConnectorLocation`; first read existing positions to avoid overlap.
+- **Generating new workflows:** Sequence ViewState is optional; Studio auto-manages `IsExpanded`. Flowchart ViewState is **MANDATORY**: generate `ShapeLocation`, `ShapeSize`, and `ConnectorLocation` for every `FlowStep` and `FlowDecision`, plus the Flowchart container's start-node position. StateMachine ViewState is **MANDATORY**: generate `ShapeLocation` and `ShapeSize` for every `State`, plus `StateContainerWidth/Height` on the container.
 
-**Generating new workflows:**
-- **Sequence workflows:** ViewState is optional — Studio auto-manages `IsExpanded`
-- **Flowchart workflows:** ViewState is **MANDATORY** — generate ShapeLocation, ShapeSize, ConnectorLocation for every FlowStep and FlowDecision, plus the Flowchart container's start node position
-- **StateMachine workflows:** ViewState is **MANDATORY** — generate ShapeLocation, ShapeSize for every State, plus StateContainerWidth/Height on the container
-
-**Without ViewState on Flowchart/StateMachine nodes, Studio stacks everything at (0,0) — producing an unusable jumbled pile.**
-
-See the Flowchart and StateMachine ViewState Layout Guides in [activity-docs/_XAML-GUIDE.md](./activity-docs/_XAML-GUIDE.md) for coordinate systems, standard sizes, layout algorithms, and complete examples.
+Without Flowchart/StateMachine node ViewState, Studio stacks nodes at (0,0), producing an unusable jumbled pile. See the Flowchart and StateMachine ViewState Layout Guides in [activity-docs/_XAML-GUIDE.md](./activity-docs/_XAML-GUIDE.md) for coordinate systems, standard sizes, layout algorithms, and examples.
 
 ### Preserve xmlns Declarations
-Never remove existing `xmlns` attributes from the root `<Activity>` element. Only add new ones as needed.
+
+Never remove existing root `<Activity>` `xmlns` attributes; only add declarations as needed.
 
 ### Respect Expression Language
-Always check `project.json` `expressionLanguage` before writing expressions. Mixing VB.NET and C# expression syntax causes build failures.
+
+Always check `project.json` `expressionLanguage` before writing expressions; mixing VB.NET and C# causes build failures.
 
 ### Preserve Existing Structure
-When editing XAML:
-- Do not reformat or re-indent the entire file
-- Only modify the specific section you need to change
-- Use the `Edit` tool for targeted replacements (match exact `old_string`, replace with `new_string`)
+
+When editing, do not reformat or re-indent the whole file; change only the needed section. Use the `Edit` tool for targeted replacements, matching exact `old_string` and replacing with `new_string`.
 
 ### Validate After Every Change
-Run `uip rpa-legacy validate` after every XAML modification. Do not batch multiple edits without validation.
+
+Run `uip rpa-legacy validate` after every XAML modification. Do not batch edits without validation.
 
 ### Unique Identifiers
-- Every `x:Name` must be unique within the file
-- Every `sap2010:WorkflowViewState.IdRef` must be unique
-- `x:Reference` must match an existing `x:Name`
+
+Every `x:Name` and `sap2010:WorkflowViewState.IdRef` must be unique. Every `x:Reference` must match an existing `x:Name`.
 
 ---
 
 ## Property Binding: Attributes vs Child Elements
 
-### Attribute Syntax (Inline)
-```xml
-<ui:LogMessage Message="[myVar]" Level="Info" />
-```
-
-### Child Element Syntax (Property Element)
-```xml
-<Assign DisplayName="Set Result">
-  <Assign.To>
-    <OutArgument x:TypeArguments="x:String">[resultVar]</OutArgument>
-  </Assign.To>
-  <Assign.Value>
-    <InArgument x:TypeArguments="x:String">["processed"]</InArgument>
-  </Assign.Value>
-</Assign>
-```
-
-**Simple values** (strings, enums, booleans, VB expressions) work as attributes. **Output properties** and **complex objects** typically require child element syntax.
+Simple strings, enums, booleans, and VB expressions may be attributes. Output properties and complex objects typically require child property-element syntax (for example, `Assign.To` with `OutArgument` and `Assign.Value` with `InArgument`).
 
 ---
 
 ## Managing References When Adding Packages (CRITICAL)
 
-**Every package you use in a XAML file MUST have its assembly references and namespace imports added to that file.** Missing a single assembly reference causes all expressions using types from that assembly to fail validation.
-
-This replicates what Studio does automatically when you drag an activity onto the canvas or add an import via the Imports panel. When generating XAML programmatically, you must do this manually.
+Every package used in XAML MUST have its assembly references and namespace imports added; missing references cause expressions using its types to fail validation. Studio normally adds these when activities are dragged onto the canvas or imports are added; programmatic XAML generation must add them manually.
 
 ### UiPath Activity Packages
 
@@ -403,19 +263,7 @@ When you add a NuGet package (e.g., `CsvHelper`, `HtmlAgilityPack`) and use its 
 
 ### C# Projects — Additional Baseline References
 
-C# legacy projects need these **in addition** to the 16 VB.NET baseline refs:
-
-```xml
-<AssemblyReference>Microsoft.CSharp</AssemblyReference>
-<AssemblyReference>System.Runtime.Serialization</AssemblyReference>
-<AssemblyReference>System.ServiceModel</AssemblyReference>
-<AssemblyReference>System.ServiceModel.Activities</AssemblyReference>
-```
-
-And this additional namespace import:
-```xml
-<x:String>System.Text</x:String>
-```
+In addition to the 16 VB.NET baseline references, C# legacy projects need assembly references `Microsoft.CSharp`, `System.Runtime.Serialization`, `System.ServiceModel`, and `System.ServiceModel.Activities`, plus the `System.Text` namespace import.
 
 ---
 
@@ -439,65 +287,52 @@ xmlns:uca="clr-namespace:UiPath.Core.Activities;assembly=UiPath.System.Activitie
 xmlns:ucsvact="clr-namespace:UiPath.CSV.Activities;assembly=UiPath.Excel.Activities"
 ```
 
-**Tip:** The `ui` schema prefix (`xmlns:ui="http://schemas.uipath.com/workflow/activities"`) covers most `UiPath.Core.Activities` — prefer it over CLR-based prefixes for core activities like LogMessage, InvokeCode, etc.
+The `ui` schema prefix (`xmlns:ui="http://schemas.uipath.com/workflow/activities"`) covers most `UiPath.Core.Activities`; prefer it over CLR-based prefixes for core activities such as LogMessage and InvokeCode.
 
 ---
 
 ## XAML Generation Gotchas
 
-1. **Every `x:Name` must be unique** — FlowSteps use `__ReferenceID0`, `__ReferenceID1`, etc.
-2. **`x:Reference` must match an `x:Name`** — broken references crash the designer
-3. **Bracket expressions `[expr]` are VB.NET only** — C# must use `<mca:CSharpValue>` elements
-4. **XML escaping required**: `<` → `&lt;`, `>` → `&gt;`, `"` → `&quot;`, `&` → `&amp;`
-5. **Assembly references must include all dependencies** — missing refs cause compilation errors
-6. **`expressionLanguage` must match XAML expression style** — VB project with C# expressions crashes
-7. **Never add trailing `<x:Reference>` for Flowchart child nodes** — FlowStep/FlowDecision/FlowSwitch nodes defined inline as direct children of `<Flowchart>` must NOT be re-listed with `<x:Reference>` at the end. Only use `<x:Reference>` inside property elements (`Flowchart.StartNode`, `FlowStep.Next`, `FlowDecision.True/False`, etc.) to create cross-references
-8. **State Machine needs exactly one `IsFinal="True"` state** for proper termination
-9. **Legacy uses `assembly=mscorlib`** — not `assembly=System.Private.CoreLib` (which is .NET 6+)
-10. **Scope activities require `ActivityAction<T>` body** — `ExcelApplicationScope`, `ExcelProcessScopeX`, `ExcelApplicationCard`, `WordApplicationScope`, etc. do NOT accept direct children. They require a `.Body` property with `ActivityAction<T>` and `DelegateInArgument`. See [§ Scope Activities Require ActivityAction Body](#scope-activities-require-activityaction-body-critical-for-xaml-generation) for the complete template.
+1. Keep every `x:Name` unique; FlowSteps commonly use `__ReferenceID0`, `__ReferenceID1`, etc. Keep every `x:Reference` matched to an `x:Name`; broken references crash the designer. See [Unique Identifiers](#unique-identifiers).
+2. `[expr]` is VB.NET only; C# uses `<mca:CSharpValue>`. Check `expressionLanguage` and never mix languages (see [VB.NET vs C# Expression Detection](#vbnet-vs-c-expression-detection)).
+3. XML-escape `<` as `&lt;`, `>` as `&gt;`, `"` as `&quot;`, and `&` as `&amp;`.
+4. Include all dependency assembly references; missing references cause compilation errors.
+5. Never add trailing `<x:Reference>` entries for Flowchart child nodes. Nodes defined inline as direct `<Flowchart>` children must not be re-listed at the end; use `<x:Reference>` only inside property elements (`Flowchart.StartNode`, `FlowStep.Next`, `FlowDecision.True/False`, etc.) for cross-references.
+6. A State Machine needs exactly one `IsFinal="True"` state.
+7. Legacy uses `assembly=mscorlib`, not `assembly=System.Private.CoreLib` (.NET 6+).
+8. Scope activities require an `ActivityAction<T>` body; `ExcelApplicationScope`, `ExcelProcessScopeX`, `ExcelApplicationCard`, `WordApplicationScope`, etc. do not accept direct children. Use `.Body` with `ActivityAction<T>` and `DelegateInArgument`. See [§ Scope Activities Require ActivityAction Body](#scope-activities-require-activityaction-body-critical-for-xaml-generation).
 
 ---
 
 ## Common Pitfalls & Quick Reference
 
-Essential gotchas, required scopes, and VB.NET patterns for legacy UiPath RPA workflows.
-
-For the complete gotchas list, see [activity-docs/_COMMON-PITFALLS.md](./activity-docs/_COMMON-PITFALLS.md).
-For the complete VB.NET cheat sheet, see [activity-docs/_PATTERNS.md](./activity-docs/_PATTERNS.md).
-
----
+Essential legacy UiPath gotchas, required scopes, and VB.NET patterns. Full gotchas: [activity-docs/_COMMON-PITFALLS.md](./activity-docs/_COMMON-PITFALLS.md). Full VB.NET cheat sheet: [activity-docs/_PATTERNS.md](./activity-docs/_PATTERNS.md).
 
 ### Flowcharts/StateMachines Without ViewState
 
-**Severity: HIGH.** Missing ViewState causes Studio to stack all nodes at (0,0) — unusable. Every Flowchart/StateMachine node needs `ShapeLocation` + `ShapeSize`. **Required xmlns:** `xmlns:av="http://schemas.microsoft.com/winfx/2006/xaml/presentation"`
-
-See [activity-docs/_XAML-GUIDE.md](./activity-docs/_XAML-GUIDE.md) for coordinate systems, standard sizes, layout algorithms, connector formulas, and complete examples.
-
----
+**Severity: HIGH.** Missing ViewState stacks nodes at (0,0), making the designer unusable. Every Flowchart/StateMachine node needs `ShapeLocation` + `ShapeSize`. Required: `xmlns:av="http://schemas.microsoft.com/winfx/2006/xaml/presentation"`. See [activity-docs/_XAML-GUIDE.md](./activity-docs/_XAML-GUIDE.md) for coordinate systems, standard sizes, layout algorithms, connector formulas, and examples.
 
 ### Required Parent Scopes
 
 These classic activities **must** be placed inside a specific parent scope:
 
 | Activities | Required Parent Scope |
-|-----------|----------------------|
-| Excel Interop (ExcelReadRange, ExcelWriteCell, etc.) | `Excel Application Scope` |
-| Excel Modern (ReadRangeX, WriteRangeX, etc.) | `ExcelApplicationCard` inside `ExcelProcessScopeX` |
-| PowerPoint Interop (InsertSlide, InsertText, etc.) | `PowerPoint Application Scope` |
-| Word Interop (AppendText, ReplaceText, etc.) | `Word Application Scope` |
-| FTP activities (Download, Upload, Delete, etc.) | `FTP Session` (WithFtpSession) |
-| Java activities (InvokeJavaMethod, LoadJar, etc.) | `Java Scope` |
-| Python activities (RunScript, InvokeMethod, etc.) | `Python Scope` |
-| Terminal activities (GetField, SetField, SendKeys, etc.) | `Terminal Session` |
-| Office 365 activities (SendMail, CreateEvent, etc.) | `Microsoft Office 365 Scope` |
-| SAP BAPI activities (InvokeSapBapi) | `SAP Application Scope` |
-| SharePoint activities (GetListItems, UploadFile, etc.) | `SharePoint Application Scope` |
-
----
+|---|---|
+| Excel Interop (`ExcelReadRange`, `ExcelWriteCell`, etc.) | `Excel Application Scope` |
+| Excel Modern (`ReadRangeX`, `WriteRangeX`, etc.) | `ExcelApplicationCard` inside `ExcelProcessScopeX` |
+| PowerPoint Interop (`InsertSlide`, `InsertText`, etc.) | `PowerPoint Application Scope` |
+| Word Interop (`AppendText`, `ReplaceText`, etc.) | `Word Application Scope` |
+| FTP (`Download`, `Upload`, `Delete`, etc.) | `FTP Session` (`WithFtpSession`) |
+| Java (`InvokeJavaMethod`, `LoadJar`, etc.) | `Java Scope` |
+| Python (`RunScript`, `InvokeMethod`, etc.) | `Python Scope` |
+| Terminal (`GetField`, `SetField`, `SendKeys`, etc.) | `Terminal Session` |
+| Office 365 (`SendMail`, `CreateEvent`, etc.) | `Microsoft Office 365 Scope` |
+| SAP BAPI (`InvokeSapBapi`) | `SAP Application Scope` |
+| SharePoint (`GetListItems`, `UploadFile`, etc.) | `SharePoint Application Scope` |
 
 ### Scope Activities Require ActivityAction Body (CRITICAL for XAML Generation)
 
-Scope activities (Excel Application Scope, ExcelProcessScopeX, ExcelApplicationCard, Word Application Scope, etc.) do **NOT** accept direct children. They require an `ActivityAction<T>` body wrapper with a `DelegateInArgument`. `RetryScope` follows the same wrap-the-body rule but uses a bare `ActivityAction` (no `x:TypeArguments`, no `DelegateInArgument`) — see the per-activity table below. Placing activities directly inside the scope element will fail validation.
+Scope activities (Excel Application Scope, ExcelProcessScopeX, ExcelApplicationCard, Word Application Scope, etc.) do NOT accept direct children: use an `ActivityAction<T>` body with a `DelegateInArgument`, or validation fails. `RetryScope` also wraps its body, but uses a bare `ActivityAction` (no `x:TypeArguments` or `DelegateInArgument`); see table.
 
 **Wrong — direct children (fails validation):**
 ```xml
@@ -523,67 +358,37 @@ Scope activities (Excel Application Scope, ExcelProcessScopeX, ExcelApplicationC
 </ueab:ExcelApplicationCard>
 ```
 
-#### Common Scope Body Patterns
-
 | Activity | Body TypeArgument | DelegateInArgument Name | Notes |
-|----------|-------------------|------------------------|-------|
+|---|---|---|---|
 | `ExcelProcessScopeX` | `ui:IExcelProcess` | `ExcelProcessScopeTag` | Outer Excel scope |
-| `ExcelApplicationCard` | `ue:IWorkbookQuickHandle` | `Excel` | Inner Excel scope (inside ExcelProcessScopeX) |
+| `ExcelApplicationCard` | `ue:IWorkbookQuickHandle` | `Excel` | Inner Excel scope inside ExcelProcessScopeX |
 | `ExcelApplicationScope` | `ue:WorkbookApplication` | `ExcelWorkbookScope` | Classic Interop scope |
 | `ForEachRow` | `ActivityAction(sd:DataRow)` | `row` | Iterates DataTable rows |
 | `WordApplicationScope` | (Word handle type) | `WordApplicationScope` | Word COM scope |
 | `PowerPointApplicationScope` | (PowerPoint handle type) | `PowerPointApplication` | PowerPoint COM scope |
-| `TryCatch` | (special — `Catches` collection) | — | Not ActivityAction, but has nested body structure |
+| `TryCatch` | (special — `Catches` collection) | — | Not ActivityAction; nested body structure |
 | `Parallel` | (multiple `Branches`) | — | Each branch is a separate Sequence |
-| `RetryScope` | _(none — bare `<ActivityAction>`)_ | — | Body property is `.ActivityBody` (not `.Body`); `ActivityAction` takes no type argument or `DelegateInArgument` |
+| `RetryScope` | _(none — bare `<ActivityAction>`)_ | — | Property is `.ActivityBody`, not `.Body`; no type argument or `DelegateInArgument` |
 
-**`find-activities` now returns `Body` info** when an activity requires an `ActivityAction<T>` body — check the output before writing XAML for scope activities.
-
-**Key xmlns required:**
+Check `find-activities` output for `Body` info when an activity requires `ActivityAction<T>`. Required key xmlns declarations:
 - `xmlns:ue="clr-namespace:UiPath.Excel;assembly=UiPath.Excel.Activities"`
 - `xmlns:ueab="clr-namespace:UiPath.Excel.Activities.Business;assembly=UiPath.Excel.Activities"`
 - `xmlns:ui="http://schemas.uipath.com/workflow/activities"`
-- `xmlns:sd="clr-namespace:System.Data;assembly=System.Data"` (for ForEachRow DataRow type)
+- `xmlns:sd="clr-namespace:System.Data;assembly=System.Data"` for `ForEachRow` DataRow.
 
-**Nested scopes:** Modern Excel requires TWO levels: `ExcelProcessScopeX` → `ExcelApplicationCard` → activities. Each level has its own `ActivityAction` body.
-
-**Always check `find-activities` output** for body pattern info before using scope activities.
-
----
+Modern Excel requires two nested levels, `ExcelProcessScopeX` → `ExcelApplicationCard` → activities; each level has its own `ActivityAction` body. Always check `find-activities` output for scope body patterns.
 
 ### Dangerous Defaults (Source Code Verified)
 
-#### ContinueOnError Defaults to TRUE
-These activities **silently swallow all errors** by default:
-
-| Activity | Package | Impact |
-|----------|---------|--------|
-| `NetHttpRequest` / `HttpClient` (HTTP Request) | Web | HTTP 500/timeout → empty response, no error |
-| `Data Scraping` wizard output | UIAutomation | Extraction failure → empty DataTable |
-
-**Always** set `ContinueOnError=False` on HTTP Request activities.
-
-#### ContinueOnError in Library Workflows
-**NEVER** use `ContinueOnError=True` in Library workflows. Library consumers cannot know which errors are silently swallowed. Always let exceptions propagate from libraries — the consuming process decides how to handle them.
-
-#### Excel AutoSave Causes Performance Disasters
-`AutoSave=true` (default) on `ExcelApplicationScope` means every Write Cell triggers a disk write. In loops with 1000 operations, that's 1000 saves.
-
-**Fix:** Set `AutoSave=false`, add a single `Save Workbook` at the end.
-
-#### OpenBrowser Defaults to Internet Explorer
-`BrowserType` defaults to `IE` in source code. **Always explicitly set** BrowserType to Chrome, Firefox, or Edge.
-
-#### HTTP Request Very Short Timeout
-Legacy `HttpClient` (also called `NetHttpRequest` internally) timeout is only 6,000-10,000ms. Both are often too low for production APIs.
-
-**Fix:** Set `TimeoutMS` to 30,000-60,000ms.
-
----
+- **`ContinueOnError` defaults to TRUE:** `NetHttpRequest` / `HttpClient` (HTTP Request, Web package) silently returns an empty response on HTTP 500/timeout; Data Scraping wizard output (UIAutomation) silently returns an empty DataTable on extraction failure. Always set `ContinueOnError=False` on HTTP Request activities.
+- **Library workflows:** NEVER use `ContinueOnError=True`; consumers cannot know which errors were swallowed. Let exceptions propagate so the consuming process decides how to handle them.
+- **Excel AutoSave:** `AutoSave=true` (default) on `ExcelApplicationScope` writes to disk on every Write Cell; 1000 loop operations cause 1000 saves. Set `AutoSave=false` and add one `Save Workbook` at the end.
+- **OpenBrowser:** source default `BrowserType` is `IE`; always explicitly set it to Chrome, Firefox, or Edge.
+- **HTTP timeout:** legacy `HttpClient` (also internally `NetHttpRequest`) has a 6,000-10,000ms timeout, often too low for production APIs. Set `TimeoutMS` to 30,000-60,000ms.
 
 ### VB.NET Quote Escaping in Throw.Exception (CRITICAL for XAML Generation)
 
-The `Throw.Exception` attribute wraps the bracket expression in `VisualBasicValue<Exception>`. When fully-qualified class names are combined with complex string expressions containing multiple `&quot;`, the VB.NET compiler can reject the expression — even though the same `&quot;` escaping works fine in simpler attributes like `LogMessage.Message`.
+`Throw.Exception` wraps bracket expressions in `VisualBasicValue<Exception>`. Fully-qualified class names combined with complex strings containing multiple `&quot;` can fail VB.NET compilation, even if the same escaping works in simpler attributes such as `LogMessage.Message`.
 
 #### What fails
 
@@ -599,13 +404,11 @@ The `Throw.Exception` attribute wraps the bracket expression in `VisualBasicValu
 
 **Approach 1: Short-form class name + simple expression (recommended for simple messages)**
 ```xml
-<!-- Works: Short name (namespace already imported) + simple concatenation -->
 <Throw Exception="[New BusinessRuleException(&quot;Invalid amount for &quot; &amp; txId)]" />
 ```
 
 **Approach 2: Variable for message, then Throw (recommended for complex messages)**
 ```xml
-<!-- Best practice from codebase: construct message in a variable, then throw -->
 <Assign DisplayName="Build Error Message">
   <Assign.To>
     <OutArgument x:TypeArguments="x:String">[errorMessage]</OutArgument>
@@ -619,62 +422,29 @@ The `Throw.Exception` attribute wraps the bracket expression in `VisualBasicValu
 
 #### Rules
 
-1. **Always use short-form class names** in `Throw.Exception` — `BusinessRuleException` not `UiPath.Core.Activities.BusinessRuleException`. Ensure `UiPath.Core.Activities` is in the namespace imports.
-2. **For complex messages, use the variable approach** — Assign the message string to a variable first, then pass the variable to the exception constructor.
-3. **For simple messages, inline is fine** — `[New BusinessRuleException(&quot;simple message&quot;)]` works.
-4. **Same rules apply to all exception types** — `Exception`, `BusinessRuleException`, `ArgumentException`, etc.
+1. Always use short-form class names in `Throw.Exception` (`BusinessRuleException`, not `UiPath.Core.Activities.BusinessRuleException`); ensure `UiPath.Core.Activities` is imported.
+2. For complex messages, assign the message string to a variable first and throw using that variable.
+3. Simple inline messages work: `[New BusinessRuleException(&quot;simple message&quot;)]`.
+4. Apply the same rules to `Exception`, `BusinessRuleException`, `ArgumentException`, and other exception types.
 
-#### Why this happens
-
-`Throw.Exception` compiles the bracket expression via `VisualBasicValue<Exception>`. The combination of a long fully-qualified type path + embedded `&quot;` string literals with concatenation operators creates ambiguity for the VB.NET expression compiler. Shorter expressions or variable references avoid this.
-
----
+A long fully-qualified type path plus embedded `&quot;` literals and concatenation can confuse the `VisualBasicValue<Exception>` expression compiler; shorter expressions or variable references avoid this.
 
 ### Top Gotchas by Package
 
-#### Excel
-- **Zombie EXCEL.EXE processes** after workflow crashes — use Kill Process in Finally block
-- **Dates read as serial numbers** — set `PreserveFormat=true` or convert with `DateTime.FromOADate()`
-- **Empty DataTable from Read Range** — verify sheet name, use `""` for entire used range
-- **Write Range strips formatting** — use Write Cell in loops for small updates
-
-#### UIAutomation
-- **TypeInto missing/wrong characters** — escape `{`, `}`, `[`, `]`, `+`, `^`, `%`, `~` with `{{}`, `{+}` etc.
-- **EmptyField ignored with SimulateType** — only works with hardware events or SendWindowMessages
-- **Selectors work in Studio, fail on Robot** — use SimulateClick/SimulateType, avoid `idx` attribute
-- **Dynamic selectors break** — use wildcards `*` for dynamic parts, prefer `AutomationId`
-
-#### Mail
-- **SMTP auth fails with Gmail/M365** — use App Passwords or OAuth2, not "Less Secure Apps"
-- **SSL/TLS port mismatch** — Port 587 = STARTTLS, Port 465 = implicit SSL, Port 25 = unencrypted
-- **Multiple recipients** — use semicolons `;` not commas
-
-#### Web
-- **HTTP Request ContinueOnError=TRUE by default** — errors silently swallowed
-- **Legacy HttpClient 6-second timeout** — increase to 30-60 seconds
-
-#### PDF
-- **ReadPDFText returns empty** — PDF is scanned images, use Read PDF With OCR instead
-- **Text out of order** — set `PreserveFormatting=true`
-
-#### GenericValue
-- **String comparison instead of numeric** — `"10" > "9"` returns False. Use `CInt()` explicitly.
-- **Boolean conversion trap** — ANY non-null, non-empty string converts to `True`
-- **Null converts to 0** — `GenericValue(null)` → int returns `0`, → DateTime returns `DateTime.MinValue`
-
-**Recommendation:** Avoid GenericValue entirely. Use strongly-typed variables.
-
----
+- **Excel:** crashes can leave zombie `EXCEL.EXE` processes—use Kill Process in Finally; dates may read as serials—set `PreserveFormat=true` or convert using `DateTime.FromOADate()`; empty Read Range DataTable—verify sheet name and use `""` for entire used range; Write Range strips formatting—use Write Cell in loops for small updates.
+- **UIAutomation:** TypeInto requires escaping `{`, `}`, `[`, `]`, `+`, `^`, `%`, `~` with forms such as `{{}`, `{+}`; `EmptyField` is ignored with SimulateType and works only with hardware events or SendWindowMessages; selectors that work in Studio may fail on Robot—use SimulateClick/SimulateType and avoid `idx`; dynamic selectors—use `*` wildcards and prefer `AutomationId`.
+- **Mail:** Gmail/M365 SMTP auth—use App Passwords or OAuth2, not “Less Secure Apps”; port 587 = STARTTLS, 465 = implicit SSL, 25 = unencrypted; separate multiple recipients with semicolons `;`, not commas.
+- **Web:** HTTP Request `ContinueOnError=TRUE` by default silently swallows errors; legacy HttpClient timeout is 6 seconds—raise to 30-60 seconds.
+- **PDF:** empty `ReadPDFText` may mean scanned images—use Read PDF With OCR; text out of order—set `PreserveFormatting=true`.
+- **GenericValue:** comparisons are string-based (`"10" > "9"` returns False)—use `CInt()`; any non-null, non-empty string converts to `True`; `GenericValue(null)` converts to int `0` and DateTime `DateTime.MinValue`. Avoid GenericValue; use strongly typed variables.
 
 ### VB.NET Quick Reference
 
-Complete VB.NET cheat sheet — string/type/DateTime/collection/DataTable operations, file paths, Orchestrator patterns: [activity-docs/_PATTERNS.md](./activity-docs/_PATTERNS.md).
-
----
+For the complete cheat sheet (string/type/DateTime/collection/DataTable operations, file paths, Orchestrator patterns), see [activity-docs/_PATTERNS.md](./activity-docs/_PATTERNS.md).
 
 ### Common XAML Generation Mistakes
 
-These are patterns the agent is likely to produce incorrectly. Check for them after generating XAML.
+Check generated XAML for these errors:
 
 #### Hallucination-Prone Activity Names
 
@@ -686,37 +456,35 @@ These are patterns the agent is likely to produce incorrectly. Check for them af
 | `ReadPdf` | `ReadPDFText`, `ReadPDFWithOCR` | PDF |
 | `HttpRequest` | `HttpClient` (also known as `NetHttpRequest`) | Web |
 
-**Rule:** NEVER guess activity names. Run `find-activities` to get the exact class name.
+NEVER guess activity names; run `find-activities` for the exact class name.
 
 #### Nesting Errors
 
 | Mistake | Fix |
 |---|---|
-| Multiple children directly inside `If.Then` or `If.Else` | Wrap in a single `Sequence` |
-| Activities directly inside `ForEach` body | Use `ActivityAction` wrapper (see Scope Activities section above) |
-| Activities directly inside scope activities (Excel, Word, etc.) | Use `ActivityAction<T>` body pattern |
-| ViewState referencing nodes that don't exist in the workflow | Remove orphaned ViewState entries, or add the missing nodes |
+| Multiple children directly inside `If.Then` or `If.Else` | Wrap them in one `Sequence` |
+| Activities directly inside `ForEach` body | Use an `ActivityAction` wrapper (see Scope Activities section above) |
+| Activities directly inside scope activities (Excel, Word, etc.) | Use the `ActivityAction<T>` body pattern |
+| ViewState references nonexistent workflow nodes | Remove orphaned ViewState entries or add the missing nodes |
 
 #### Expression Language Mismatches
 
 | Mistake | Symptom | Fix |
 |---|---|---|
-| C# operators (`!=`, `&&`, `\|\|`) in VB.NET project | Compilation error | Use `<>`, `AndAlso`, `OrElse` |
-| C# string interpolation `$"..."` in VB.NET project | Compilation error | Use `String.Format` or `&` concatenation |
-| VB.NET `[bracket]` expressions in C# project | Compilation error | Use `<mca:CSharpValue>` or `<mca:CSharpReference>` |
+| C# operators (`!=`, `&&`, `\|\|`) in VB.NET | Compilation error | Use `<>`, `AndAlso`, `OrElse` |
+| C# interpolation `$"..."` in VB.NET | Compilation error | Use `String.Format` or `&` concatenation |
+| VB.NET `[bracket]` expressions in C# | Compilation error | Use `<mca:CSharpValue>` or `<mca:CSharpReference>` |
 
 #### Security Anti-Patterns
 
 | Anti-Pattern | Risk | Fix |
 |---|---|---|
-| Password stored in `String` variable | Visible in logs and memory dumps | Use `SecureString` type |
+| Password in `String` variable | Visible in logs and memory dumps | Use `SecureString` |
 | Hardcoded API keys or JWT tokens in XAML | Credentials in source control | Use Orchestrator Credential assets |
 | Hardcoded URLs in activity properties | Breaks across environments | Use Config.xlsx Settings or Orchestrator Text assets |
-| Empty Catch blocks (`Catch ex As Exception` with no body) | Silent failures, impossible to debug | At minimum, add `Log Message` with `ex.Message` |
-| Timeout values as magic numbers (`30000`) | Unclear intent, hard to tune | Use Config.xlsx Constants with descriptive names |
-
----
+| Empty `Catch ex As Exception` body | Silent failures, impossible to debug | At minimum, log `ex.Message` with `Log Message` |
+| Timeout magic numbers (for example, `30000`) | Unclear intent, hard to tune | Use Config.xlsx Constants with descriptive names |
 
 ### Deprecated Activity → Replacement
 
-Full mapping table: [activity-docs/_PATTERNS.md § Deprecated Activities](./activity-docs/_PATTERNS.md).
+Full mapping: [activity-docs/_PATTERNS.md § Deprecated Activities](./activity-docs/_PATTERNS.md).
