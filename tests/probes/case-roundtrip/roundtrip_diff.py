@@ -55,12 +55,12 @@ def files(root: str) -> dict[str, str]:
 def load(path: str):
     with open(path, "rb") as fh:
         raw = fh.read()
-    if path.endswith((".json", ".uiproj", ".uipx")):
-        try:
-            return json.loads(raw.decode("utf-8-sig"))
-        except (ValueError, UnicodeDecodeError):
-            pass
-    return raw
+    # Any file that parses as JSON is compared as JSON: Studio Web saves the plan as
+    # `caseplan.case`, which is JSON under another extension.
+    try:
+        return json.loads(raw.decode("utf-8-sig"))
+    except (ValueError, UnicodeDecodeError):
+        return raw
 
 
 def diff(before_dir: str, after_dir: str) -> list[dict]:
