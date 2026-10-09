@@ -396,7 +396,7 @@ The Http kind has a fixed shape: `with.method` is always `"POST"` (the outer wra
 ```javascript
 ${$context.outputs.http_request_1.statusCode}              // 200
 ${$context.outputs.http_request_1.content}                 // parsed JSON body
-${$context.outputs.http_request_1.content.fact}            // catfact field
+${$context.outputs.http_request_1.content.fact}            // a field in the response body
 ```
 
 ### IntSvc kind — `call: "UiPath.IntSvc"` (vendor curated activity)
@@ -677,7 +677,7 @@ uip api-workflow registry resolve "http request" --output json
 
 # 3. Stub the activity — pass the URL via --inputs to skip placeholder replacement
 uip api-workflow registry stub 5c4cc855-b42a-37e6-b910-de8588998fce \
-  --inputs '{"method":"GET","url":"https://catfact.ninja/fact"}' \
+  --inputs '{"method":"GET","url":"https://api.example.com/facts/random"}' \
   --output json
 # → Data.Activity with the HttpRequest_1 key, ready to drop in
 ```
@@ -697,7 +697,7 @@ The resulting workflow activity (drop into the root sequence):
       "bodyParameters": {
         "authentication": "manual",
         "method": "GET",
-        "url": "https://catfact.ninja/fact",
+        "url": "https://api.example.com/facts/random",
         "headers": {}
       }
     },
@@ -716,7 +716,7 @@ The resulting workflow activity (drop into the root sequence):
 The `unifiedTypesCompatible: true` + `savedJitInputFieldId: "in_http-request"` flags inside `essentialConfiguration` are what tell StudioWeb to render the unified HTTP card.
 
 <!--skill-flavor:http-example-execution-proof:start-->
-Verified end-to-end: `uip api-workflow run --no-auth` on the resulting workflow returns `statusCode: 200`, `content.fact: "..."`. StudioWeb's designer renders the activity as the unified HTTP Request card. See [../assets/templates/connector-call-example.json](../assets/templates/connector-call-example.json) for a complete stub-generated workflow.
+Against a live endpoint, `uip api-workflow run --no-auth` on the resulting workflow returns `statusCode: 200` with the parsed response body under `content`. StudioWeb's designer renders the activity as the unified HTTP Request card. See [../assets/templates/connector-call-example.json](../assets/templates/connector-call-example.json) for a complete stub-generated workflow.
 <!--skill-flavor:http-example-execution-proof:end-->
 
 ## Worked example — Outlook Get Newest Email (IntSvc kind)
