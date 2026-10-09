@@ -248,7 +248,7 @@ Traces are cross-folder -- no `--folder-path` required.
 Download Autopilot recovery data (screenshots + UI element data) as a ZIP:
 
 ```bash
-uip or jobs healing-data <job-key> -o ./healing-data.zip
+uip or jobs healing-data <job-key> -d ./healing-data.zip
 ```
 
 The ZIP contains screenshots and UI metadata from Autopilot self-healing attempts.
