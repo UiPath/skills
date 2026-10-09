@@ -20,6 +20,7 @@ Build compiles every workflow, applies project-scope analyzer rules, and restore
 |---|---|
 | Success, no errors | Verified. Continue to Step 6 |
 | Success with `[WARN]` lines | Verified. Apply the two rules under Build warnings below |
+| Fails in `Restoring nuget packages` with `SharedAppConfiguration` and `String '<value>' was not recognized as a valid Boolean` | The CLI's headless Studio host crashes on the user's `UIPATH_TELEMETRY_DISABLED` value; the project is not at fault. Rerun this build, and every later `uip rpa` command, with `UIPATH_TELEMETRY_DISABLED=true` after Rule 8's prefix (`env -u UIPATH_STUDIO_PID UIPATH_TELEMETRY_DISABLED=true uip rpa ...`), or `=false` when the value was `0`, `no` or `off`. Never unset it. Not a fix-loop iteration |
 | Errors | Enter the fix loop |
 
 ## Build warnings
