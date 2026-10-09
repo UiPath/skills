@@ -11,13 +11,17 @@ description: >
   ground truth, not trusted. `uip maestro case processes diagnose` fails on
   every call until UiPath/cli#5038 ships, so the task accepts it but does not
   require it. Precondition: the faulted instance
-  still exists; the grader exits 2 and says so when it does not.
+  still exists; the grader exits 2 and says so when it does not. The prompt
+  may route to uipath-troubleshoot instead (codex did, 2026-10-09), which is a
+  legitimate path, so the skill check stays advisory. `processes incidents`
+  returns [] for this process although the instance has an open incident;
+  agents that trust it lose turns, hence the 80-turn budget.
 tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:discover]
 max_iterations: 1
 
 run_limits:
-  task_timeout: 900
-  max_turns: 40
+  task_timeout: 1200
+  max_turns: 80
   turn_timeout: 600
 
 reference:
