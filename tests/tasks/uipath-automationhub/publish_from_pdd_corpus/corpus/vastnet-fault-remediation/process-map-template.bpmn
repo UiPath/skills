@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_AutomatedFaultRemediation" targetNamespace="https://vastnet.example/process/automated-fault-remediation">
+  <bpmn:collaboration id="Collaboration_AutomatedFaultRemediation">
+    <bpmn:participant id="Participant_FaultRemediation" name="Automated Network Fault Detection and Remediation" processRef="Process_AutomatedFaultRemediation" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_AutomatedFaultRemediation" name="Automated Network Fault Detection and Remediation {{RUN_TOKEN}}" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_Future">
+      <bpmn:lane id="Lane_Orchestrator" name="Fault Remediation Orchestrator">
+        <bpmn:flowNodeRef>Start_AlertReceived</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NormalizeAlert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_OpenIncident</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ClassifyFault</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_NotifyCustomers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_CommunicationsMerge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_DiagnosticSplit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RunDiagnostics</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_DiagnosticJoin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_SelectResponse</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_PageP1IfRequired</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_AutomatedAllowed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ConfigChange</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CreateChange</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ChangeReady</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ExecutePlaybook</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_VerifyRecovery</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_VerificationPass</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ResolveIncident</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_AutoResolved</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_CustomerSuccess" name="Customer Success Systems">
+        <bpmn:flowNodeRef>Task_StartCustomerComms</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Engineer" name="On-Call Engineer">
+        <bpmn:flowNodeRef>Task_EscalateEngineer</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Escalated</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_AlertReceived" name="Alert received" />
+    <bpmn:serviceTask id="Task_NormalizeAlert" name="Normalize and enrich alert" />
+    <bpmn:serviceTask id="Task_OpenIncident" name="Open or update incident" />
+    <bpmn:businessRuleTask id="Task_ClassifyFault" name="Classify fault and impact" />
+    <bpmn:exclusiveGateway id="Gateway_NotifyCustomers" name="100 or more accounts?" />
+    <bpmn:sendTask id="Task_StartCustomerComms" name="Start customer communications" />
+    <bpmn:exclusiveGateway id="Gateway_CommunicationsMerge" name="Communications complete" />
+    <bpmn:parallelGateway id="Gateway_DiagnosticSplit" name="Start parallel diagnostics" />
+    <bpmn:subProcess id="Task_RunDiagnostics" name="Run five diagnostics" />
+    <bpmn:parallelGateway id="Gateway_DiagnosticJoin" name="Diagnostics complete" />
+    <bpmn:businessRuleTask id="Task_SelectResponse" name="Select response playbook" />
+    <bpmn:serviceTask id="Task_PageP1IfRequired" name="Page on-call if P1" />
+    <bpmn:exclusiveGateway id="Gateway_AutomatedAllowed" name="Automated response allowed?" />
+    <bpmn:exclusiveGateway id="Gateway_ConfigChange" name="Configuration change required?" />
+    <bpmn:serviceTask id="Task_CreateChange" name="Create pre-execution change" />
+    <bpmn:exclusiveGateway id="Gateway_ChangeReady" name="CHG in Implement status?" />
+    <bpmn:serviceTask id="Task_ExecutePlaybook" name="Execute remediation playbook" />
+    <bpmn:serviceTask id="Task_VerifyRecovery" name="Verify remediation" />
+    <bpmn:exclusiveGateway id="Gateway_VerificationPass" name="Verification passed?" />
+    <bpmn:serviceTask id="Task_ResolveIncident" name="Resolve incident and log evidence" />
+    <bpmn:sendTask id="Task_EscalateEngineer" name="Escalate with evidence package" />
+    <bpmn:endEvent id="End_AutoResolved" name="Resolved auto-closed" />
+    <bpmn:endEvent id="End_Escalated" name="Escalated to on-call engineer" />
+    <bpmn:sequenceFlow id="Flow_01" sourceRef="Start_AlertReceived" targetRef="Task_NormalizeAlert" />
+    <bpmn:sequenceFlow id="Flow_02" sourceRef="Task_NormalizeAlert" targetRef="Task_OpenIncident" />
+    <bpmn:sequenceFlow id="Flow_03" sourceRef="Task_OpenIncident" targetRef="Task_ClassifyFault" />
+    <bpmn:sequenceFlow id="Flow_04" sourceRef="Task_ClassifyFault" targetRef="Gateway_NotifyCustomers" />
+    <bpmn:sequenceFlow id="Flow_05" name="Yes" sourceRef="Gateway_NotifyCustomers" targetRef="Task_StartCustomerComms" />
+    <bpmn:sequenceFlow id="Flow_06" name="No" sourceRef="Gateway_NotifyCustomers" targetRef="Gateway_CommunicationsMerge" />
+    <bpmn:sequenceFlow id="Flow_07" sourceRef="Task_StartCustomerComms" targetRef="Gateway_CommunicationsMerge" />
+    <bpmn:sequenceFlow id="Flow_08" sourceRef="Gateway_CommunicationsMerge" targetRef="Gateway_DiagnosticSplit" />
+    <bpmn:sequenceFlow id="Flow_09" sourceRef="Gateway_DiagnosticSplit" targetRef="Task_RunDiagnostics" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_RunDiagnostics" targetRef="Gateway_DiagnosticJoin" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Gateway_DiagnosticJoin" targetRef="Task_SelectResponse" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_SelectResponse" targetRef="Task_PageP1IfRequired" />
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="Task_PageP1IfRequired" targetRef="Gateway_AutomatedAllowed" />
+    <bpmn:sequenceFlow id="Flow_14" name="No: peak, hardware, or unsupported" sourceRef="Gateway_AutomatedAllowed" targetRef="Task_EscalateEngineer" />
+    <bpmn:sequenceFlow id="Flow_15" name="Yes" sourceRef="Gateway_AutomatedAllowed" targetRef="Gateway_ConfigChange" />
+    <bpmn:sequenceFlow id="Flow_16" name="Yes" sourceRef="Gateway_ConfigChange" targetRef="Task_CreateChange" />
+    <bpmn:sequenceFlow id="Flow_17" name="No" sourceRef="Gateway_ConfigChange" targetRef="Task_ExecutePlaybook" />
+    <bpmn:sequenceFlow id="Flow_18" sourceRef="Task_CreateChange" targetRef="Gateway_ChangeReady" />
+    <bpmn:sequenceFlow id="Flow_19" name="Yes" sourceRef="Gateway_ChangeReady" targetRef="Task_ExecutePlaybook" />
+    <bpmn:sequenceFlow id="Flow_20" name="No" sourceRef="Gateway_ChangeReady" targetRef="Task_EscalateEngineer" />
+    <bpmn:sequenceFlow id="Flow_21" sourceRef="Task_ExecutePlaybook" targetRef="Task_VerifyRecovery" />
+    <bpmn:sequenceFlow id="Flow_22" sourceRef="Task_VerifyRecovery" targetRef="Gateway_VerificationPass" />
+    <bpmn:sequenceFlow id="Flow_23" name="Pass" sourceRef="Gateway_VerificationPass" targetRef="Task_ResolveIncident" />
+    <bpmn:sequenceFlow id="Flow_24" name="Fail" sourceRef="Gateway_VerificationPass" targetRef="Task_EscalateEngineer" />
+    <bpmn:sequenceFlow id="Flow_25" sourceRef="Task_ResolveIncident" targetRef="End_AutoResolved" />
+    <bpmn:sequenceFlow id="Flow_26" sourceRef="Task_EscalateEngineer" targetRef="End_Escalated" />
+  </bpmn:process>
+</bpmn:definitions>

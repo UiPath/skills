@@ -1,0 +1,24 @@
+{
+ "name_contains": "AML Suspicious Activity Alert Triage and Investigation Case Management",
+ "documents": {
+  "pdd": "corpus/madriltrust-aml-investigation/pdd.md"
+ },
+ "systems": {
+  "Featurespace ARIC": [
+   "featurespace",
+   "aric"
+  ],
+  "SharePoint": [
+   "sharepoint"
+  ],
+  "SEPBLAC PEC": [
+   "sepblac"
+  ]
+ },
+ "optional_systems": {
+  "UiPath Case Management": [
+   "case management"
+  ]
+ },
+ "allow_other_category": true
+}

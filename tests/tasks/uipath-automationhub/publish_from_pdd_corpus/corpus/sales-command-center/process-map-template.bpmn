@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_OrvaneSalesCommandCenter" targetNamespace="https://uipath.com/business-analysis/orvane-sales-command-center">
+  <bpmn:collaboration id="Collaboration_OrvaneSalesCommandCenter">
+    <bpmn:participant id="Participant_OrvaneSalesCommandCenter" name="Orvane Sales Command Center" processRef="Process_OrvaneSalesCommandCenter" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_OrvaneSalesCommandCenter" name="Orvane Sales Command Center governed action {{RUN_TOKEN}}" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_OrvaneSalesCommandCenter">
+      <bpmn:lane id="Lane_Requester" name="Requester or alert source">
+        <bpmn:flowNodeRef>Start_UserQuestion</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Start_PriorityAlert</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReceiveResult</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_CommandCenter" name="Orvane Sales Command Center">
+        <bpmn:flowNodeRef>Task_CaptureRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ValidateAccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Authorized</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RetrieveData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_DataUsable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_AssessRisk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_HardStop</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ActionNeeded</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ProposeAction</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ApprovalRequired</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ApprovalGranted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_MfaRequired</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_MfaSucceeded</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ExecuteAction</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_ExecutionSucceeded</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ArchiveSuccess</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ArchiveDenied</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ArchiveException</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Completed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_Denied</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>End_ExceptionClosed</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Approver" name="Authorized approver">
+        <bpmn:flowNodeRef>Task_RequestApproval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReviewApproval</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Boundary_ApprovalDeadline</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Security" name="Identity and access service">
+        <bpmn:flowNodeRef>Task_ValidateMfa</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_UserQuestion" name="User question" />
+    <bpmn:startEvent id="Start_PriorityAlert" name="Priority alert" />
+    <bpmn:serviceTask id="Task_CaptureRequest" name="Capture request context" />
+    <bpmn:serviceTask id="Task_ValidateAccess" name="Validate role and access" />
+    <bpmn:exclusiveGateway id="Gateway_Authorized" name="Access authorized?" default="Flow_Authorized_No" />
+    <bpmn:serviceTask id="Task_RetrieveData" name="Retrieve authorized data" />
+    <bpmn:exclusiveGateway id="Gateway_DataUsable" name="Data usable?" default="Flow_DataUsable_No" />
+    <bpmn:businessRuleTask id="Task_AssessRisk" name="Assess policy and risk" />
+    <bpmn:exclusiveGateway id="Gateway_HardStop" name="Hard stop required?" default="Flow_HardStop_No" />
+    <bpmn:exclusiveGateway id="Gateway_ActionNeeded" name="Action needed?" default="Flow_ActionNeeded_No" />
+    <bpmn:serviceTask id="Task_ProposeAction" name="Propose governed action" />
+    <bpmn:exclusiveGateway id="Gateway_ApprovalRequired" name="Approval required?" default="Flow_ApprovalRequired_No" />
+    <bpmn:sendTask id="Task_RequestApproval" name="Request approval" />
+    <bpmn:userTask id="Task_ReviewApproval" name="Review proposed action" />
+    <bpmn:boundaryEvent id="Boundary_ApprovalDeadline" name="Approval deadline" attachedToRef="Task_ReviewApproval">
+      <bpmn:timerEventDefinition><bpmn:timeDuration>PT24H</bpmn:timeDuration></bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:exclusiveGateway id="Gateway_ApprovalGranted" name="Approval granted?" default="Flow_ApprovalGranted_No" />
+    <bpmn:exclusiveGateway id="Gateway_MfaRequired" name="MFA required?" default="Flow_MfaRequired_No" />
+    <bpmn:serviceTask id="Task_ValidateMfa" name="Validate MFA evidence" />
+    <bpmn:exclusiveGateway id="Gateway_MfaSucceeded" name="MFA successful?" default="Flow_MfaSucceeded_No" />
+    <bpmn:serviceTask id="Task_ExecuteAction" name="Execute approved action" />
+    <bpmn:exclusiveGateway id="Gateway_ExecutionSucceeded" name="Execution successful?" default="Flow_ExecutionSucceeded_No" />
+    <bpmn:serviceTask id="Task_ReceiveResult" name="Deliver result and confirmation" />
+    <bpmn:serviceTask id="Task_ArchiveSuccess" name="Archive completion evidence" />
+    <bpmn:serviceTask id="Task_ArchiveDenied" name="Archive denied action evidence" />
+    <bpmn:serviceTask id="Task_ArchiveException" name="Archive exception evidence" />
+    <bpmn:endEvent id="End_Completed" name="Completed and confirmed" />
+    <bpmn:endEvent id="End_Denied" name="Denied or blocked" />
+    <bpmn:endEvent id="End_ExceptionClosed" name="Exception closed" />
+    <bpmn:sequenceFlow id="Flow_UserQuestion_Capture" sourceRef="Start_UserQuestion" targetRef="Task_CaptureRequest" />
+    <bpmn:sequenceFlow id="Flow_PriorityAlert_Capture" sourceRef="Start_PriorityAlert" targetRef="Task_CaptureRequest" />
+    <bpmn:sequenceFlow id="Flow_Capture_ValidateAccess" sourceRef="Task_CaptureRequest" targetRef="Task_ValidateAccess" />
+    <bpmn:sequenceFlow id="Flow_ValidateAccess_Authorized" sourceRef="Task_ValidateAccess" targetRef="Gateway_Authorized" />
+    <bpmn:sequenceFlow id="Flow_Authorized_Yes" sourceRef="Gateway_Authorized" targetRef="Task_RetrieveData"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">authorized</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Authorized_No" sourceRef="Gateway_Authorized" targetRef="Task_ArchiveDenied" />
+    <bpmn:sequenceFlow id="Flow_RetrieveData_DataUsable" sourceRef="Task_RetrieveData" targetRef="Gateway_DataUsable" />
+    <bpmn:sequenceFlow id="Flow_DataUsable_Yes" sourceRef="Gateway_DataUsable" targetRef="Task_AssessRisk"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">sufficient and current</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_DataUsable_No" sourceRef="Gateway_DataUsable" targetRef="Task_ArchiveException" />
+    <bpmn:sequenceFlow id="Flow_AssessRisk_HardStop" sourceRef="Task_AssessRisk" targetRef="Gateway_HardStop" />
+    <bpmn:sequenceFlow id="Flow_HardStop_Yes" sourceRef="Gateway_HardStop" targetRef="Task_ArchiveDenied"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">prohibited or non-compliant</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_HardStop_No" sourceRef="Gateway_HardStop" targetRef="Gateway_ActionNeeded" />
+    <bpmn:sequenceFlow id="Flow_ActionNeeded_Yes" sourceRef="Gateway_ActionNeeded" targetRef="Task_ProposeAction"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">governed action available</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ActionNeeded_No" sourceRef="Gateway_ActionNeeded" targetRef="Task_ReceiveResult" />
+    <bpmn:sequenceFlow id="Flow_ProposeAction_ApprovalRequired" sourceRef="Task_ProposeAction" targetRef="Gateway_ApprovalRequired" />
+    <bpmn:sequenceFlow id="Flow_ApprovalRequired_Yes" sourceRef="Gateway_ApprovalRequired" targetRef="Task_RequestApproval"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">approval matrix requires review</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ApprovalRequired_No" sourceRef="Gateway_ApprovalRequired" targetRef="Gateway_MfaRequired" />
+    <bpmn:sequenceFlow id="Flow_RequestApproval_Review" sourceRef="Task_RequestApproval" targetRef="Task_ReviewApproval" />
+    <bpmn:sequenceFlow id="Flow_Review_ApprovalGranted" sourceRef="Task_ReviewApproval" targetRef="Gateway_ApprovalGranted" />
+    <bpmn:sequenceFlow id="Flow_ApprovalDeadline_Exception" sourceRef="Boundary_ApprovalDeadline" targetRef="Task_ArchiveException" />
+    <bpmn:sequenceFlow id="Flow_ApprovalGranted_Yes" sourceRef="Gateway_ApprovalGranted" targetRef="Gateway_MfaRequired"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">approved</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ApprovalGranted_No" sourceRef="Gateway_ApprovalGranted" targetRef="Task_ArchiveDenied" />
+    <bpmn:sequenceFlow id="Flow_MfaRequired_Yes" sourceRef="Gateway_MfaRequired" targetRef="Task_ValidateMfa"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">high-value action</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_MfaRequired_No" sourceRef="Gateway_MfaRequired" targetRef="Task_ExecuteAction" />
+    <bpmn:sequenceFlow id="Flow_ValidateMfa_MfaSucceeded" sourceRef="Task_ValidateMfa" targetRef="Gateway_MfaSucceeded" />
+    <bpmn:sequenceFlow id="Flow_MfaSucceeded_Yes" sourceRef="Gateway_MfaSucceeded" targetRef="Task_ExecuteAction"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">MFA evidence valid</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_MfaSucceeded_No" sourceRef="Gateway_MfaSucceeded" targetRef="Task_ArchiveDenied" />
+    <bpmn:sequenceFlow id="Flow_ExecuteAction_ExecutionSucceeded" sourceRef="Task_ExecuteAction" targetRef="Gateway_ExecutionSucceeded" />
+    <bpmn:sequenceFlow id="Flow_ExecutionSucceeded_Yes" sourceRef="Gateway_ExecutionSucceeded" targetRef="Task_ReceiveResult"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">executed</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ExecutionSucceeded_No" sourceRef="Gateway_ExecutionSucceeded" targetRef="Task_ArchiveException" />
+    <bpmn:sequenceFlow id="Flow_ReceiveResult_ArchiveSuccess" sourceRef="Task_ReceiveResult" targetRef="Task_ArchiveSuccess" />
+    <bpmn:sequenceFlow id="Flow_ArchiveSuccess_EndCompleted" sourceRef="Task_ArchiveSuccess" targetRef="End_Completed" />
+    <bpmn:sequenceFlow id="Flow_ArchiveDenied_EndDenied" sourceRef="Task_ArchiveDenied" targetRef="End_Denied" />
+    <bpmn:sequenceFlow id="Flow_ArchiveException_EndException" sourceRef="Task_ArchiveException" targetRef="End_ExceptionClosed" />
+  </bpmn:process>
+</bpmn:definitions>

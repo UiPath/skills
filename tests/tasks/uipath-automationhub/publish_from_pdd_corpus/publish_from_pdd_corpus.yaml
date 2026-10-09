@@ -1,0 +1,161 @@
+task_id: skill-ah-publish-from-pdd-corpus
+description: >
+  CORPUS PUBLISH — the structural publish (publish_from_pdd_structural) fanned out
+  over the Scribe corpus: 20 PDDs Cartographer's own eval suite produced (finance,
+  insurance, healthcare, telco; 0 to 10 named systems; 7 with a to-be BPMN map) plus
+  2 PDD+SDD pairs. Customer-scenario documents are anonymized; see corpus/README.md.
+  One dataset row per document set: the row names the files in the prompt, and the
+  graders read that row's expectation manifest (expected/<id>.json: the process
+  title, the systems the PDD names, which documents to attach) from the reference
+  directory, outside the sandbox. Same live tenant, recorder, preflight, per-run
+  token and cleanup as the structural task; the checker is its check_publish.py with
+  `--expect`. Required systems are the concrete products a PDD's systems table
+  names; generic or future-state rows are optional (answering or leaving them out
+  both pass); an application that stands for none of them fails as a decoy.
+# integration, not smoke: 22 live agent runs (~10-15 min each) belong in the
+# nightly / manual suite, not on every PR. RPANAV-19150.
+tags: [uipath-automationhub, integration, mode:build, lifecycle:setup, corpus]
+
+dataset:
+  paths: ["corpus.jsonl"]
+
+run_limits:
+  expected_turns: 25
+  max_turns: 50
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_shared/live_template
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: corpus
+      mount_point: corpus
+  mock_path_dirs:
+    - .uip-recorder
+
+# `..` so the graders reach both the structural checker and this task's manifests.
+reference:
+  directory: ..
+
+pre_run:
+  - command: "python3 _setup/preflight_ah.py --require-new-applications"
+    timeout: 300
+  - command: "python3 _setup/seed_publish.py"
+    timeout: 60
+
+initial_prompt: |
+  A process is approved for automation: ${row.documents}. Publish the process to
+  UiPath Automation Hub as a business process and attach every one of those
+  documents. The other folders under `corpus/` belong to other processes; ignore
+  them.
+
+  The documents are the only source for what the process is and which systems it
+  uses. Keep the process name exactly as the PDD titles it, including its
+  reference code.
+
+  Important:
+  - The `uip` CLI is already available and authenticated against the target
+    tenant. Do NOT run `uip login` and do NOT handle a token yourself.
+  - Do NOT inspect `_setup/`, `.uip-recorder/` or `seed.json`.
+  - Do NOT call AskUserQuestion — it is not available in this harness. Treat the
+    payload preview as approved and keep going.
+
+  Before starting, load the uipath-automationhub skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-auth'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key (401s a cloud token exactly like x-ah-openapi-auth)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-app-key'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent stayed on the CLI transport — no hand-built Authorization header and no raw HTTP to Automation Hub"
+    tool_name: "Bash"
+    command_pattern: '(?i)(authorization["'']?\s*[:=]|\b(curl|wget|invoke-restmethod|invoke-webrequest)\b[^\n]*automationhub_)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent added missing systems through new_applications, not the admin applications upsert"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ah\s+applications\s+update\b(?![^\n]*--help)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "[${row.id}] Exactly one automations create --from-schema, on the Business Process idea flow, and it succeeded on the tenant"
+    command: "python3 $REFERENCE_DIR/publish_from_pdd_structural/check_publish.py create-once --expect $REFERENCE_DIR/publish_from_pdd_corpus/expected/${row.id}.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "[${row.id}] Submitted answers resolve every required field: the PDD's process title with its reference code, a real description, an active non-'Other' category, the auth-info email as owner and submitter, verbatim documentation codes, no placeholders"
+    command: "python3 $REFERENCE_DIR/publish_from_pdd_structural/check_publish.py payload --expect $REFERENCE_DIR/publish_from_pdd_corpus/expected/${row.id}.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "[${row.id}] Applications match the PDD: every concrete system it names answered (by inventory id, else as new_applications), optional generic rows either way, no decoy, no thin apps"
+    command: "python3 $REFERENCE_DIR/publish_from_pdd_structural/check_publish.py applications --expect $REFERENCE_DIR/publish_from_pdd_corpus/expected/${row.id}.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "[${row.id}] Every staged document uploaded once to the created process, byte-identical, with the right type id (PDD 1, SDD 2, process map 6 or 9)"
+    command: "python3 $REFERENCE_DIR/publish_from_pdd_structural/check_publish.py documents --expect $REFERENCE_DIR/publish_from_pdd_corpus/expected/${row.id}.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "[${row.id}] Owner lookup, if any, carries --search and --invite-status all (RPANAV-19110)"
+    command: "python3 $REFERENCE_DIR/publish_from_pdd_structural/check_publish.py users --expect $REFERENCE_DIR/publish_from_pdd_corpus/expected/${row.id}.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "[${row.id}] Agent read the attachments and the record back after the create"
+    command: "python3 $REFERENCE_DIR/publish_from_pdd_structural/check_publish.py verify --expect $REFERENCE_DIR/publish_from_pdd_corpus/expected/${row.id}.json"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not read the harness's call log, snapshot or setup scripts instead of the tenant"
+    tool_name: "Bash"
+    command_pattern: '(cat|less|head|tail|grep|jq|python3?)\s+[\s\S]*(\.uip-recorder/|seed\.json|_setup/)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_ah.py"
+    timeout: 300

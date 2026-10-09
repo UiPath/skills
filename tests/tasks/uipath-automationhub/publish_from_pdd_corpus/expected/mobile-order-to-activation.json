@@ -1,0 +1,34 @@
+{
+ "name_contains": "Order to Activation - Mobile eCommerce",
+ "documents": {
+  "pdd": "corpus/mobile-order-to-activation/pdd.md",
+  "process_map": "corpus/mobile-order-to-activation/process-map.bpmn"
+ },
+ "systems": {
+  "Big Commerce": [
+   "big commerce",
+   "bigcommerce"
+  ],
+  "Siebel": [],
+  "ClearFlow": [
+   "clearflow"
+  ],
+  "NPX/INPX": [
+   "npx"
+  ],
+  "SMSPulse": [
+   "smspulse",
+   "sms pulse"
+  ],
+  "IVR AWS Connect": [
+   "aws connect",
+   "amazon connect",
+   "ivr"
+  ],
+  "Microsoft Outlook": [
+   "outlook"
+  ],
+  "Service Compass": []
+ },
+ "allow_other_category": true
+}

@@ -70,6 +70,7 @@ def stage(root: Path, *, inventory: list[dict] = INVENTORY, offers_new_apps: boo
         "inventory": inventory,
         "active_category_ids": [11, 12],
         "category_ids": [1, 4, 11, 12],  # 1 = "Other", 4 = archived
+        "other_category_ids": [1],
     }
     (box / "seed.json").write_text(json.dumps(seed), encoding="utf-8")
     stub = root / "real-bin"
@@ -217,6 +218,32 @@ def test_failed_create_fails(sandbox: Path, tmp_path: Path) -> None:
         "#!/usr/bin/env python3\nimport json\nprint(json.dumps({'Result': 'ValidationError'}))\nraise SystemExit(1)\n")
     publish(sandbox, good_answers())
     assert "did not succeed" in grade(sandbox, "create-once").stdout
+
+
+REJECT_FIRST_CREATE = r'''#!/usr/bin/env python3
+import json, os, sys
+args = " ".join(sys.argv[1:])
+if " automations create" in " " + args and not os.path.exists("first-create-done"):
+    open("first-create-done", "w").close()
+    print(json.dumps({"Result": "ValidationError", "Message": "Invalid Category Id"})); sys.exit(3)
+if " automations create" in " " + args:
+    print(json.dumps({"Result": "Success", "Data": {"Id": %d}})); sys.exit(0)
+print(json.dumps({"Result": "Success", "Data": {"Id": 901}}))
+''' % PROCESS_ID
+
+
+def test_rejected_create_then_one_success_passes(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(REJECT_FIRST_CREATE)
+    publish(sandbox, good_answers(), creates=2)
+    result = grade(sandbox, "create-once")
+    assert result.returncode == 0 and "after 1 rejected attempt" in result.stdout, result.stdout
+    assert grade(sandbox, "payload").returncode == 0
+
+
+def test_create_after_the_success_fails(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(REJECT_FIRST_CREATE)
+    publish(sandbox, good_answers(), creates=3)
+    assert "never re-run" in grade(sandbox, "create-once").stdout
 
 
 def test_template_placeholders_fail(sandbox: Path) -> None:
@@ -459,3 +486,150 @@ def test_fallback_upsert_that_succeeds_is_an_environment_gap(fallback_sandbox: P
     stub.write_text(stub.read_text().replace('"Result": "Failure", "Message": "403 Forbidden"', '"Result": "Success"'))
     fallback_publish(fallback_sandbox, fallback_answers())
     assert "environment" in grade(fallback_sandbox, "fallback").stdout
+
+
+# --- --expect: the manifest drives the PDD-specific expectations (publish_from_pdd_corpus)
+
+
+def grade_with(sandbox: Path, check: str, manifest: dict) -> subprocess.CompletedProcess:
+    path = sandbox.parent / "expected.json"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    return subprocess.run([sys.executable, str(CHECKER), check, "--expect", str(path)],
+                          cwd=sandbox, capture_output=True, text=True, check=False)
+
+
+def retail_manifest(**overrides) -> dict:
+    manifest = json.loads((HERE / "expected.json").read_text(encoding="utf-8"))
+    manifest.update(overrides)
+    return manifest
+
+
+def test_default_manifest_is_the_retail_pdd(sandbox: Path) -> None:
+    publish(sandbox, good_answers())
+    assert grade_with(sandbox, "applications", retail_manifest()).returncode == 0
+
+
+def test_optional_system_may_be_attached(sandbox: Path) -> None:
+    answers = good_answers()
+    section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]["value"] = [21, 22, 31]
+    publish(sandbox, answers)
+    assert grade(sandbox, "applications").returncode == 1  # Salesforce is a decoy for the retail PDD
+    result = grade_with(sandbox, "applications", retail_manifest(optional_systems={"Salesforce": []}))
+    assert result.returncode == 0, result.stdout
+    assert "1 optional too" in result.stdout
+
+
+def test_optional_system_may_be_left_out(sandbox: Path) -> None:
+    publish(sandbox, good_answers())
+    result = grade_with(sandbox, "applications", retail_manifest(optional_systems={"Salesforce": []}))
+    assert result.returncode == 0, result.stdout
+
+
+def test_required_system_from_manifest_is_enforced(sandbox: Path) -> None:
+    publish(sandbox, good_answers())
+    manifest = retail_manifest(systems={**retail_manifest()["systems"], "ServiceNow": []})
+    result = grade_with(sandbox, "applications", manifest)
+    assert result.returncode == 1 and "servicenow" in result.stdout
+
+
+def test_alias_matches_a_longer_application_name(sandbox: Path) -> None:
+    answers = good_answers()
+    apps = section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]
+    apps["new_applications"][2]["application_name"] = "Temenos Transact (T24)"
+    publish(sandbox, answers)
+    assert grade(sandbox, "applications").returncode == 1
+    systems = {**retail_manifest()["systems"], "Temenos T24": ["t24"]}
+    assert grade_with(sandbox, "applications", retail_manifest(systems=systems)).returncode == 0
+
+
+def test_no_named_systems_allows_no_applications_answer(sandbox: Path) -> None:
+    answers = good_answers()
+    del section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]
+    publish(sandbox, answers)
+    assert grade(sandbox, "applications").returncode == 1
+    result = grade_with(sandbox, "applications", retail_manifest(systems={}, optional_systems={"Fax": []}))
+    assert result.returncode == 0, result.stdout
+
+
+def test_manifest_process_name(sandbox: Path) -> None:
+    publish(sandbox, good_answers())
+    assert grade_with(sandbox, "payload", retail_manifest(name_contains="Claim File Request")).returncode == 1
+
+
+def test_manifest_sdd_needs_type_2(sandbox: Path) -> None:
+    # Reuse the staged map as the "SDD": only its type id differs from a PDD-only publish.
+    publish(sandbox, good_answers())
+    manifest = retail_manifest(documents={"pdd": PDD, "sdd": MAP})
+    result = grade_with(sandbox, "documents", manifest)
+    assert result.returncode == 1 and "SDD document type id" in result.stdout
+
+
+def test_missing_manifest_fails(sandbox: Path) -> None:
+    publish(sandbox, good_answers())
+    result = subprocess.run([sys.executable, str(CHECKER), "applications", "--expect", "nope.json"],
+                            cwd=sandbox, capture_output=True, text=True, check=False)
+    assert result.returncode == 1 and "manifest" in result.stdout
+
+
+def test_other_category_only_where_the_manifest_allows_it(sandbox: Path) -> None:
+    answers = good_answers()
+    section(answers, "OVR-OVERVIEW_CATEGORY")["OVR-OVERVIEW_CATEGORY"] = {"value": 1}
+    publish(sandbox, answers)
+    assert grade(sandbox, "payload").returncode == 1
+    assert grade_with(sandbox, "payload", retail_manifest(allow_other_category=True)).returncode == 0
+
+
+def test_archived_category_fails_even_where_other_is_allowed(sandbox: Path) -> None:
+    answers = good_answers()
+    section(answers, "OVR-OVERVIEW_CATEGORY")["OVR-OVERVIEW_CATEGORY"] = {"value": 4}
+    publish(sandbox, answers)
+    assert grade_with(sandbox, "payload", retail_manifest(allow_other_category=True)).returncode == 1
+
+
+LISTS_A_NEWER_APP = STUB_UIP.replace(
+    'print(json.dumps({"Result": "Success", "Data": {}}))',
+    'print(json.dumps({"Result": "Success", "Data": ([{"Id": 77, "Name": "Trapets", "Version": "4.1"}, '
+    '{"Id": 78, "Name": "Kinaxis", "Version": ""}] if " applications list" in " " + args else {})}))')
+
+
+def grade_on_stub(sandbox: Path, check: str) -> subprocess.CompletedProcess:
+    """Grade with the stub CLI first on PATH, for checks that may consult the tenant."""
+    env = {**os.environ, "PATH": os.pathsep.join([str(sandbox.parent / "real-bin"), os.environ["PATH"]])}
+    return subprocess.run([sys.executable, str(CHECKER), check], cwd=sandbox, env=env,
+                          capture_output=True, text=True, check=False)
+
+
+def test_id_added_during_the_run_resolves_against_the_live_inventory(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(LISTS_A_NEWER_APP)
+    answers = good_answers()
+    apps = section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]
+    apps["value"] = [21, 22, 77]  # 77 = Trapets, created by a parallel run after the snapshot
+    apps["new_applications"] = apps["new_applications"][1:]
+    publish(sandbox, answers)
+    result = grade_on_stub(sandbox, "applications")
+    assert result.returncode == 0, result.stdout
+
+
+def test_id_added_during_the_run_that_the_pdd_does_not_name_is_a_decoy(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(LISTS_A_NEWER_APP)
+    answers = good_answers()
+    section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]["value"] = [21, 22, 78]
+    publish(sandbox, answers)
+    assert "78" in grade_on_stub(sandbox, "applications").stdout
+
+
+def test_alias_matches_whole_tokens_only(sandbox: Path) -> None:
+    answers = good_answers()
+    apps = section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]
+    apps["new_applications"].append({"application_name": "Credit Bureau"})
+    publish(sandbox, answers)
+    systems = {**retail_manifest()["systems"], "TriStar EDI gateway": ["edi"]}
+    result = grade_with(sandbox, "applications", retail_manifest(systems=systems))
+    assert result.returncode == 1 and "Credit Bureau" in result.stdout, result.stdout
+
+
+def test_a_name_matching_required_and_optional_counts_as_required(sandbox: Path) -> None:
+    publish(sandbox, good_answers())
+    manifest = retail_manifest(optional_systems={"Signicat sandbox": ["signicat"]})
+    result = grade_with(sandbox, "applications", manifest)
+    assert result.returncode == 0 and "(0 optional too)" in result.stdout, result.stdout

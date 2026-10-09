@@ -1,0 +1,29 @@
+{
+ "name_contains": "Nordvik Retail Digital Account Onboarding",
+ "documents": {
+  "pdd": "corpus/nordvik-client-onboarding/pdd.md"
+ },
+ "systems": {
+  "Microsoft Dynamics CRM": [
+   "dynamics"
+  ],
+  "Signicat": [],
+  "Trapets": [],
+  "BilagCloud": [
+   "bilagcloud",
+   "bilag cloud"
+  ],
+  "Experian NO": [
+   "experian"
+  ],
+  "Scrive": [],
+  "Temenos Document Generation": [
+   "document generation"
+  ],
+  "Temenos T24": [
+   "t24"
+  ],
+  "ServiceNow": []
+ },
+ "allow_other_category": true
+}

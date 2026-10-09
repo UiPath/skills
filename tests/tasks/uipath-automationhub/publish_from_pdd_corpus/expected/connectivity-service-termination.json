@@ -1,0 +1,27 @@
+{
+ "name_contains": "Connectivity Service Termination due to Customer Request",
+ "documents": {
+  "pdd": "corpus/connectivity-service-termination/pdd.md",
+  "process_map": "corpus/connectivity-service-termination/process-map.bpmn"
+ },
+ "systems": {
+  "Smartsheet": []
+ },
+ "optional_systems": {
+  "Service Order": [
+   "service order"
+  ],
+  "Billing": [
+   "billing"
+  ],
+  "Helpdesk": [
+   "helpdesk",
+   "help desk"
+  ],
+  "Email": [
+   "email",
+   "outlook"
+  ]
+ },
+ "allow_other_category": true
+}

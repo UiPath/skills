@@ -76,6 +76,16 @@ def schema_state(flow_id) -> str:
     return "offered" if '"new_applications"' in body else "absent"
 
 
+def other_category_ids(categories: list[dict]) -> list[int]:
+    """The active "Other" nodes: the tenant's own catch-all, at any level."""
+    found: list[int] = []
+    for category in categories or []:
+        if category.get("CategoryIsActive") == 1 and category.get("CategoryIsOther"):
+            found.append(category["CategoryId"])
+        found.extend(other_category_ids(category.get("Subcategories") or []))
+    return found
+
+
 def all_category_ids(categories: list[dict]) -> list[int]:
     found: list[int] = []
     for category in categories or []:
@@ -164,6 +174,7 @@ def main(argv: list[str]) -> int:
                       for a in items(inventory)],
         "active_category_ids": sorted(c["CategoryId"] for c in active_categories(tree)),
         "category_ids": sorted(all_category_ids(tree)),
+        "other_category_ids": sorted(other_category_ids(tree)),
     }
     with open(OUTPUT, "w", encoding="utf-8") as handle:
         json.dump(summary, handle, indent=1)

@@ -1,0 +1,27 @@
+{
+ "name_contains": "KoreMed Prescription Fax Intake",
+ "documents": {
+  "pdd": "corpus/koremed-prescription-intake/pdd.md"
+ },
+ "systems": {
+  "Oracle Forms": [
+   "oracle forms"
+  ],
+  "HIRA DUR": [
+   "hira"
+  ]
+ },
+ "optional_systems": {
+  "Fax server": [
+   "fax"
+  ],
+  "In-house formulary": [
+   "formulary"
+  ],
+  "UiPath RPA runtime": [
+   "uipath",
+   "robot"
+  ]
+ },
+ "allow_other_category": true
+}

@@ -1,0 +1,21 @@
+{
+ "name_contains": "Morning Appointment Confirmation Batch",
+ "documents": {
+  "pdd": "corpus/sakura-appointment-confirmation/pdd.md"
+ },
+ "systems": {
+  "DK-Medical": [
+   "dk-medical",
+   "dk medical"
+  ],
+  "NTT Docomo Business SMS Gateway": [
+   "docomo"
+  ]
+ },
+ "optional_systems": {
+  "Reminder History Store": [
+   "reminder history"
+  ]
+ },
+ "allow_other_category": true
+}
