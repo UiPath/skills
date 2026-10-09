@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "7dac6f94-b99d-4ab4-815c-1f7a1da6b081",
+  "Projects": [
+    {
+      "Type": "CaseManagement",
+      "ProjectRelativePath": "PackReadyCase/project.uiproj",
+      "Id": "f38255b8-3ecb-4d9c-a614-1ad2a71b1e4e"
+    }
+  ]
+}
