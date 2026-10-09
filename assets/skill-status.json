@@ -178,7 +178,7 @@
       "last_synced": null
     },
     "uipath-mcp-servers": {
-      "status": "in-development",
+      "status": "preview",
       "confluence": {
         "page_id": null,
         "url": null
