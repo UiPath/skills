@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CM-Golden-Expense-Reporting-Manual.webApp.SimpleApprovalApp",
+    "kind": "appVersion",
+    "apiVersion": "apps.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "CM-Golden-Expense-Reporting-Manual.webApp.SimpleApprovalApp",
+      "description": "",
+      "appSystemName": "IDf7810a40f5e2446682758147c88e6112",
+      "version": "1.0.0",
+      "isAppPublic": false,
+      "expressionLanguage": "VB",
+      "uiappFile": "IDc95d3e9ccb4c4feda1af2e3de8221eda",
+      "uiappFileName": "CM-Golden-Expense-Reporting-Manual.webApp.SimpleApprovalApp.uiapp",
+      "isUnifiedProject": true,
+      "packageKey": "CM-Golden-Expense-Reporting-Manual.webApp.SimpleApprovalApp:1.0.6"
+    },
+    "locks": [],
+    "key": "IDc95d3e9ccb4c4feda1af2e3de8221eda",
+    "files": [
+      {
+        "key": "IDc95d3e9ccb4c4feda1af2e3de8221eda",
+        "name": "CM-Golden-Expense-Reporting-Manual.webApp.SimpleApprovalApp.uiapp",
+        "url": "https://alpha.uipath.com/311c6049-4966-4ef2-a6f3-8ceccaf38d54/apps_/default/api/v1/default/models/IDf7810a40f5e2446682758147c88e6112/publish/versions/1/package",
+        "kind": "appVersion"
+      }
+    ]
+  }
+}

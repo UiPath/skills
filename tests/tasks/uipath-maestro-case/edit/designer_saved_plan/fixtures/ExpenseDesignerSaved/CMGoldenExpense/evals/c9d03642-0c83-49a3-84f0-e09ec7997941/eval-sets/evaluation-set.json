@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "id": "eval-set-001",
+  "name": "Dataset",
+  "evaluatorRefs": [
+    "deterministic-trajectory-evaluator"
+  ],
+  "evaluations": [],
+  "fileName": "evaluation-set.json",
+  "createdAt": "2026-10-08T15:45:12.681Z",
+  "updatedAt": "2026-10-08T15:45:12.681Z",
+  "target": {
+    "kind": "flow"
+  },
+  "nodeEval": false,
+  "schemaVersion": 4
+}

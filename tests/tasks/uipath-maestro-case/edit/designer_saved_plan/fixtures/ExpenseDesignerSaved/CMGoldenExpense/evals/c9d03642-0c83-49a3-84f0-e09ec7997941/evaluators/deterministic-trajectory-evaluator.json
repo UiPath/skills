@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "id": "deterministic-trajectory-eval-001",
+  "name": "Deterministic Trajectory",
+  "description": "Grades the case run's step trajectory and terminal state against expected steps",
+  "evaluatorTypeId": "uipath-deterministic-trajectory",
+  "evaluatorConfig": {
+    "name": "Deterministic Trajectory",
+    "matchMode": "by_step_id",
+    "compareInput": false,
+    "compareOutput": true,
+    "compareDelta": false,
+    "listComparison": "sorted",
+    "compareTerminalState": true,
+    "scoreAggregation": "section-average",
+    "maxSteps": 50,
+    "maxWallClockSeconds": 600,
+    "extractorName": "case-manager",
+    "defaultEvaluationCriteria": {
+      "extractorInputs": {
+        "type": "case-manager"
+      },
+      "expectedSteps": [],
+      "terminalState": {}
+    }
+  },
+  "fileName": "deterministic-trajectory-evaluator.json",
+  "createdAt": "2026-10-08T15:45:12.403Z",
+  "updatedAt": "2026-10-08T15:45:12.403Z"
+}

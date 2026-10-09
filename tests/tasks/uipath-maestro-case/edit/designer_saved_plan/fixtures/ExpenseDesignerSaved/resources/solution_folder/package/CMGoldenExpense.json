@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CMGoldenExpense",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "1a98c4b1-528b-4020-9657-4a1365cb1a62",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "CMGoldenExpense"
+    },
+    "locks": [],
+    "key": "716c6853-a22b-4eec-8874-621dea0266ee",
+    "files": []
+  }
+}

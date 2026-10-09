@@ -1,0 +1,49 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "API Workflow",
+    "kind": "process",
+    "type": "api",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "kind": "Package",
+        "name": "CM-Golden-Expense-Reporting-Manual.api.API.Workflow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Api",
+      "name": "API Workflow",
+      "package": {
+        "name": "CM-Golden-Expense-Reporting-Manual.api.API.Workflow",
+        "key": "CM-Golden-Expense-Reporting-Manual.api.API.Workflow:1.0.6"
+      },
+      "packageName": "CM-Golden-Expense-Reporting-Manual.api.API.Workflow",
+      "packageVersion": "1.0.6",
+      "entryPointUniqueId": "12646822-4da6-4415-b45a-924178765e2c",
+      "entryPointName": "content/Workflow.json",
+      "inputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"APIInput1\": {\n      \"type\": \"string\"\n    }\n  },\n  \"title\": \"Inputs\"\n}",
+      "outputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"APIOutput1\": {\n      \"type\": \"string\"\n    }\n  },\n  \"title\": \"Outputs\"\n}",
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "entryPoints": "[{\"UniqueId\":\"12646822-4da6-4415-b45a-924178765e2c\",\"Path\":\"content/Workflow.json\",\"DisplayName\":null,\"InputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"APIInput1\\\": {\\n      \\\"type\\\": \\\"string\\\"\\n    }\\n  },\\n  \\\"title\\\": \\\"Inputs\\\"\\n}\",\"OutputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"APIOutput1\\\": {\\n      \\\"type\\\": \\\"string\\\"\\n    }\\n  },\\n  \\\"title\\\": \\\"Outputs\\\"\\n}\",\"Type\":6,\"TargetRuntime\":null,\"ContentRoot\":null,\"DataVariation\":null,\"Id\":927442}]",
+      "tags": []
+    },
+    "locks": [],
+    "key": "b9e4f81a-a2c5-4e6d-ab72-a819649c7666",
+    "files": []
+  }
+}
