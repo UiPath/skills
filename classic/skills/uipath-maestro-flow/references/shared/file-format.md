@@ -114,7 +114,7 @@ A few per-instance identity fields live on the node instance:
 | Field | Used by | Purpose |
 |-------|---------|---------|
 | `inputs.entryPointId` | All trigger nodes (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers) | Stable UUID identifying the entry point |
-| `inputs.isDefaultEntryPoint` | Trigger nodes in subflows | Boolean marking the default entry point when a subflow has multiple triggers |
+| `inputs.isDefaultEntryPoint` | Trigger nodes | Boolean marking the default entry point. `eval set add` stores it as `selectedEntrypoint` when you omit `--entry-point`; `process run` ignores it, so pass `--entry-point` there |
 | `inputs.source` | `uipath.agent.autonomous` and every attached `uipath.agent.resource.*` node (tool, escalation, context) | For `uipath.agent.autonomous`: the inline agent's `projectId`. For resource nodes: the attached resource UUID. Definitions declare `model.source: true`; flow-core hoists onto the instance — no instance `model` block. |
 | `inputs.color`, `inputs.content` | Sticky-note nodes | Visual content of the sticky note |
 

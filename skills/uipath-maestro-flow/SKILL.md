@@ -91,7 +91,7 @@ uip maestro flow format <Solution>/<Name>/<Name>.flow --output json
 # Only for a stated runtime-behavior claim:
 ( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
 ( cd <Solution> && uip maestro flow debug <Name> --log-level error \
-  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>}" \
+  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>,incidents:incidents}" \
   --output json )
 ```
 
