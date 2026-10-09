@@ -63,7 +63,7 @@ xmlns:ui="http://schemas.uipath.com/workflow/activities"
 
 ### Default Values for Test-Case Arguments
 
-A test case authored with an `<x:Property Name="in_X" Type="InArgument(x:String)" />` argument should generally bake in a default so `uip rpa run --file-path <TestCase>.xaml` is runnable without `--input-arguments`. Use the canonical root-attribute syntax — see [xaml/xaml-editing-catalog.md § Setting Default Values for Arguments](xaml/xaml-editing-catalog.md#setting-default-values-for-arguments). The wrong forms (bare attribute, `<x:Property.Value>`, `<InArgument>` child of `<x:Property>`) all produce confusing `member not supported` errors — the doc explicitly lists them so you don't waste time trying.
+A test case authored with an `<x:Property Name="in_X" Type="InArgument(x:String)" />` argument should generally bake in a default so `uip rpa run --file-path <TestCase>.xaml` is runnable without `--input-arguments`. Use the canonical root-attribute syntax — see [xaml/xaml-editing-catalog.md § Setting Default Values for Arguments](xaml/xaml-editing-catalog.md#setting-default-values-for-arguments). The wrong forms (bare attribute, `<x:Property.Value>`, `<InArgument>` child of `<x:Property>`) all produce confusing `member not supported` errors — the doc explicitly lists them so you don't waste time trying. An argument bound to a Data Service entity takes no default ([§ Data Service Entity](#data-service-entity)).
 
 ### XAML Structure — Standalone Test Case (with Placeholder)
 
@@ -125,8 +125,8 @@ Data-driven testing executes the same test case multiple times with different in
 | Source | Where Data Lives | Best For | Agent Support |
 |--------|-----------------|----------|---------------|
 | **Variations files** | `.variations/` folder in project | File-based test data committed with the project | CLI: `test-data add-variation` |
-| **Test Data Queues** | UiPath Orchestrator | Large-scale distributed testing, parallel execution | CLI: `test-data add-queue` |
-| **Data Service** | UiPath Automation Cloud | Centralized, secure, shared test data | CLI: `test-data add-entity` |
+| **Test Data Queues** | UiPath Orchestrator | Large-scale distributed testing, parallel execution. [To be deprecated](https://docs.uipath.com/overview-guide/docs/deprecation-timeline) at a later date | CLI: `test-data add-queue` |
+| **Data Service** | Data Fabric entity | Centralized, shared test data, filtered per test case; records change without a republish | Files: [§ Data Service Entity](#data-service-entity) |
 
 > For coded data-driven tests using default parameters, see [coded/operations-guide.md § Add a Test Case File](coded/operations-guide.md).
 
@@ -146,7 +146,7 @@ The `.variations/` directory is available in all project types (Process, Tests, 
 
 ### Adding Test Data via CLI
 
-Three commands attach different data source types to a test case. All three register the data source in project metadata, extract arguments from the source schema, and add them to the test case (via Studio's workflow management API for XAML, via Roslyn for coded test cases).
+Two commands attach file and queue sources to a test case. Both register the data source in project metadata, extract arguments from the source schema, and add them to the test case (via Studio's workflow management API for XAML, via Roslyn for coded test cases). A Data Service source is written as files ([§ Data Service Entity](#data-service-entity)).
 
 #### `test-data add-variation` — File-based (JSON)
 
@@ -190,28 +190,44 @@ uip rpa test-data add-queue --test-case-path "TestLoanApproval.cs" --queue-name 
 
 > **Critical:** Do NOT rename the auto-generated test data queue argument. If you change its name, data retrieval silently fails.
 
-#### `test-data add-entity` — Data Service Entity
+### Data Service Entity
+
+Every record matching the test case's filter is one variation: Test Manager runs the case once per record. Records are queried when the run starts, so records added or edited later need no republish.
 
 > **Prerequisites:**
 > 1. **Discover / verify entities** — run `uip rpa data-fabric-entities list --project-dir "<PROJECT_DIR>" --output json` to see what is installed and what is available in the connected tenant. (Alternatively, the `uipath-platform` skill can discover entities directly in Orchestrator.)
-> 2. **Install the target entity into the project** if not already installed — `uip rpa data-fabric-entities install --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`. `test-data add-entity` requires the entity's generated type to exist in the project. See [cli-reference.md § Data Fabric Entities](cli-reference.md#commands----data-fabric-entities).
+> 2. **Install the target entity into the project** if not already installed — `uip rpa data-fabric-entities install --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`. The test case uses the entity's generated type. See [cli-reference.md § Data Fabric Entities](cli-reference.md#commands----data-fabric-entities).
 
-```bash
-uip rpa test-data add-entity --test-case-path "<TEST_CASE_FILE>" --entity-name "<ENTITY_NAME>" --entity-type-name "<ENTITY_TYPE>" --project-dir "<PROJECT_DIR>" --output json
+Write the binding as the four files below. Do not use `uip rpa test-data add-entity`: it runs only in Studio Desktop, takes no filter, leaves the argument and the `project.json` entry unsaved in the open designer, and writes the entity's first record (user names and emails included) as the argument's default.
+
+`<NAMESPACE>` = `project.json` → `entitiesStores[0].namespace`. `<ARG>` = entity name in camelCase; keep it exactly, the data binds by this name.
+
+1. **`.variations/<ENTITY>_<NAME>.json`** — `<NAME>` names the filter (short: the generated setup workflow is named after the file):
+   ```json
+   {"EntityName":"<ENTITY>","TypeName":"<NAMESPACE>.<ENTITY>","Filters":"<BASE64_QUERY>","TestCaseId":"<UUID_V4>","Name":"<NAME>"}
+   ```
+   `TestCaseId` is a fresh GUID, not the case's. At pack, Studio generates from this file a setup workflow with that id (`.generated/.setup/Fetch <ENTITY>_<NAME> Test Data.xaml`); it queries the entity and passes each record to the case.
+2. **`.variations/config.json`** — append `{"filePath": ".variations\\<ENTITY>_<NAME>.json", "dataVariationType": "Entity"}` to `dataVariationFileInfo` (create `{"dataVariationFileInfo": [...]}` when absent).
+3. **`project.json`** — the case's `fileInfoCollection` entry gets `"dataVariationFilePath": ".variations\\<ENTITY>_<NAME>.json"`, after `testCaseId` (Studio's order).
+4. **Test case argument**, typed as the entity, no default:
+   - XAML: `<x:Property Name="<ARG>" Type="InArgument(local:<ENTITY>)" />` with `xmlns:local="clr-namespace:<NAMESPACE>;assembly=DataService.<NAMESPACE>"`, namespace import `UiPath.DataService.Definition` and `<NAMESPACE>`, assembly references `UiPath.DataService.Definition` and `DataService.<NAMESPACE>`.
+   - Coded: `[TestCase] public void Execute(<NAMESPACE>.<ENTITY> <ARG>)`.
+   - `UiPath.DataService.Activities` is not needed for the data source alone.
+
+**`Filters`** = Base64 of the UTF-8 JSON Studio's Query Builder saves. Written in that form, the builder opens it and saves it unchanged:
+
+```json
+{"SelectedFields":null,"Start":0,"Limit":1000,"SortOptions":null,"Expansions":null,"FilterGroup":{"LogicalOperator":0,"QueryFilters":[{"FieldName":"<FIELD>","Operator":"=","Value":"<VALUE>"}],"FilterGroups":[]}}
 ```
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `--test-case-path` | Yes | Relative path to the test case (`.xaml` or `.cs`) |
-| `--entity-name` | Yes | Name of the Data Service entity |
-| `--entity-type-name` | Yes | Full type name of the entity |
+- `LogicalOperator`: `0` = All (AND), `1` = Any (OR). `FilterGroups` nests groups of the same shape. Operators are the Data Service query API's ([query endpoint](https://docs.uipath.com/data-service/automation-cloud/latest/api-guide/query-entity-endpoint)).
+- `Limit`: 1000 is the most a run gets; a higher value returns 1000, `0` or unset returns 100. Records beyond the limit are dropped without error.
+- `SortOptions`: leave `null`. The builder neither shows nor keeps a sort, and each record runs as its own job. Unsorted records come in `Id` order.
+- `Filters` empty → every record of the entity.
 
-Creates an argument of the entity type named after the entity (camelCase). Requires UiPath Data Service (Automation Cloud) with entities managed in the project.
-
-**Example:**
-```bash
-uip rpa test-data add-entity --test-case-path "TestLoanApproval.cs" --entity-name "LoanApplication" --entity-type-name "LoanApplication" --project-dir "C:\MyProject" --output json
-```
+**Run-time behaviour:**
+- No record matches → Test Manager marks the case Failed without running it ("could not fetch any data"). It runs once a record matches.
+- A local `uip rpa run` skips the setup workflow, so the argument is null. Bind one record with `--input-arguments-file <FILE>`, the file holding `{"<ARG>": {"<FIELD>": <VALUE>, ...}}` keyed by field names.
 
 ### Data-Driven Testing Best Practices
 
@@ -231,7 +247,7 @@ The `UiPath.Testing.Activities` package provides XAML-specific test activities b
 
 | Activity | Purpose | Key Properties |
 |----------|---------|---------------|
-| **VerifyExpression** | Assert a boolean expression is true | `Expression`, `OutputMessage` |
+| **VerifyExpression** | Assert a boolean expression is true | `Expression`, `OutputMessageFormat` |
 | **VerifyExpressionWithOperator** | Assert two values with a comparison operator | `FirstExpression`, `SecondExpression`, `Operator` |
 | **VerifyControlAttribute** | Assert a UI element's attribute matches expected value | `Target`, `AttributeName`, `AttributeValue`, `Operator` |
 
@@ -268,13 +284,14 @@ Verifies a UI element's attribute (text, enabled state, visibility, etc.) agains
 - Cannot be nested inside another `VerifyControlAttribute` — causes validation error
 - Has platform restrictions — may not work in Portable (cross-platform) projects
 
-### Screenshot Capture on Assertions
+### Assertion Results
 
-All verification activities support automatic screenshot capture:
-- `TakeScreenshotInCaseOfFailingAssertion` — captures the target application window when the assertion fails
-- `TakeScreenshotInCaseOfSucceedingAssertion` — captures when the assertion passes
-- Both are `[RequiredArgument]` on assert activities — explicitly set them to `True` or `False`
-- Screenshots are attached to test execution results in Test Manager
+Each verification activity records one assertion in the test case result. Shared properties and their per-activity defaults: package overview § Shared Assertion Properties.
+
+- **Title and message** — Test Manager stores the assertion's `Message` from `AlternativeVerificationTitle` (else the `DisplayName`) and its `Payload` from `OutputMessageFormat` (else the activity's default sentence, e.g. `Verification failed. The expression '"abc"' was not containing the expression '"z"'.`). Name the check in the title; show the actual values in the format.
+- **Screenshots** — `TakeScreenshotInCaseOfFailingAssertion` / `TakeScreenshotInCaseOfSucceedingAssertion` attach a screenshot to that assertion: on Windows the whole desktop, every monitor of the robot's session with every window on it, not the target application; inside a Mobile Automation scope the device screen; on a Linux robot the application of the last UI action. Both are optional (`validate` and `analyze` stay silent when missing); set both explicitly when screenshots are wanted.
+- **Logs** — each verification logs its own `Payload`: `Info` on pass, `Error` on fail. A `Log Message` repeating a verification's result is redundant.
+- **Failure** — a check failing with `ContinueOnFailure` `True` (default) marks the case Failed without stopping it, and a local run's verdict does not show it ([debugging.md § Output Format](debugging.md#output-format)).
 
 ### Given-When-Then in XAML
 
@@ -286,7 +303,6 @@ Place verification activities (VerifyExpression, VerifyExpressionWithOperator, V
 
 - **BookmarkResumptionHelper** — assert activities require this extension. Studio adds it automatically, but manual XAML construction must include `metadata.RequireExtension<BookmarkResumptionHelper>()` in CacheMetadata
 - **VerifyControlAttribute nesting** — cannot nest one inside another
-- **Required screenshot arguments** — `TakeScreenshotInCaseOfFailingAssertion` and `TakeScreenshotInCaseOfSucceedingAssertion` are required even though they default to `False`. Omitting them causes validation warnings.
 - **Platform restrictions** — `VerifyControlAttribute` and some testing activities are Windows-only and may not work in Portable projects
 
 ---
