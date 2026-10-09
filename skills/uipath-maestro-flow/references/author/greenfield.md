@@ -77,7 +77,7 @@ If not logged in and you need tenant nodes:
 
 ```bash
 uip login                                          # interactive OAuth (opens browser)
-uip login --authority https://alpha.uipath.com     # non-production environments
+uip login --authority "<AUTHORITY_URL>"            # non-default host (Automation Suite, dedicated)
 ```
 
 When you do need it, emit `uip login status --output json` as a parallel `Bash` inside T1.

@@ -134,7 +134,7 @@ Log in interactively by running:
 
 ```bash
 uip login
-uip login --authority https://alpha.uipath.com    # non-production environments
+uip login --authority "<AUTHORITY_URL>"           # non-default host (Automation Suite, dedicated)
 ```
 
 ## 6. `--folder-key` requirement
