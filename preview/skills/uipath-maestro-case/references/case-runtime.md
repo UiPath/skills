@@ -143,6 +143,8 @@ make from syntax alone. Exact signatures remain in the generated API.
 ## Product boundary
 
 <!-- RULE:case.validation.layers -->
-- TypeScript checks call shape, `case check` checks source semantics, and
+- TypeScript checks call shape, `case check` checks source semantics
+  (including whether each connector operation and event resolves in the
+  connector library, when one is cached), and
   `uip maestro case validate` checks the compiled product contract. Run all
   applicable layers; use live debug only when execution is part of the task.
