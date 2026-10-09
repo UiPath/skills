@@ -32,7 +32,7 @@ uip conversational trunks list --direction inbound  --output json   # inbound bi
 
   ```text
   {baseUrl}/{orgName}/agents_/phone-numbers
-  # e.g. https://alpha.uipath.com/conversationalagents/agents_/phone-numbers
+  # e.g. https://cloud.uipath.com/conversationalagents/agents_/phone-numbers
   ```
 
   It is org-scoped (no tenant segment) — build it from `uip login status --output json` (`Data.BaseUrl` + `Data.Organization`). There is no `trunks create`.
