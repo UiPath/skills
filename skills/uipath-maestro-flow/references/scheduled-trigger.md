@@ -42,7 +42,8 @@ when it has none, write `?` in day-of-month when day-of-week is given
 since Quartz numbers them 1–7 from Sunday ([Quartz CronTrigger
 tutorial](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)).
 `30 9 * * 1-5` becomes `0 30 9 ? * MON-FRI`. `check` and `validate` refuse the
-five-field form, but neither refuses a missing `?`.
+five-field form, but neither refuses a missing `?`; only the deploy does, with
+`[1600] … Invalid cron expression syntax`, and installs nothing.
 
 ## Evidence boundary
 
