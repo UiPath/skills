@@ -1,6 +1,6 @@
 ---
 name: uipath-rules
-description: "UiPath Business Rules — `.dmn` decision tables (DMN 1.5, FEEL) in a BusinessRules project (`project.uiproj`), built with `uip rules` (`init`, `refresh`, `validate`, `debug`). Author, edit, review, validate, and debug a rule's decision table from a policy, spreadsheet, or description; list and describe deployed rules. For .bpmn business rule tasks->uipath-maestro-bpmn. For EvaluateBusinessRule in .xaml->uipath-rpa. For caseplan.json business rule tasks->uipath-maestro-case. For solution pack/publish/deploy->uipath-solution."
+description: "UiPath Business Rules — `.dmn` decision tables (DMN 1.5, FEEL) in a BusinessRules project (`project.uiproj`), built with `uip rules` (`init`, `refresh`, `validate`, `debug`). Author, edit, review, validate, and debug a rule's decision table from a policy, spreadsheet, or description; list and describe deployed rules. For .bpmn business rule tasks->uipath-maestro-bpmn. For EvaluateBusinessRule in .xaml->uipath-rpa. For caseplan.case/caseplan.json business rule tasks->uipath-maestro-case. For solution pack/publish/deploy->uipath-solution."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 

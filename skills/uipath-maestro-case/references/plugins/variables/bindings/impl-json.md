@@ -6,7 +6,7 @@ Top-level binding creation. Referenced by **all** task plugins — non-connector
 
 ## Destination
 
-Bindings live at top-level `bindings[]` in `caseplan.json` (no `root` wrapper, no `data.inputs`).
+Bindings live at top-level `bindings[]` in `caseplan.case` (no `root` wrapper, no `data.inputs`).
 
 ## What Bindings Are
 

@@ -1,8 +1,8 @@
 # bindings_v2.json Sync
 
-Shared procedure for keeping `bindings_v2.json` in sync after any plugin writes to the bindings array in `caseplan.json`.
+Shared procedure for keeping `bindings_v2.json` in sync after any plugin writes to the bindings array in `caseplan.case`.
 
-Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.json` shape is independent of the source.
+Bindings live at top-level `bindings[]` in `caseplan.case`. Output `bindings_v2.json` shape is independent of the source.
 
 ## When to Run
 
@@ -14,7 +14,7 @@ Run at these three points only:
 2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache for tasks
 3. **End of Phase 3 Step 10.5** (after Phase 2 connector-rule stubs are upgraded across the 4 scopes — stage-entry, stage-exit, case-exit, task-entry) — adds Connection bindings + populates IS cache for resolved rules. Phase 2 stubs add no bindings; without this sync, rule-introduced Connection/Folder bindings + IS-cache entries would be absent when `resource refresh` runs.
 
-Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (top-level `bindings[]`). The batch regeneration reads the full bindings array once and converts everything in one pass.
+Individual task / rule plugins write bindings to `caseplan.case` per-target as normal (top-level `bindings[]`). The batch regeneration reads the full bindings array once and converts everything in one pass.
 
 ---
 
@@ -23,14 +23,14 @@ Individual task / rule plugins write bindings to `caseplan.json` per-target as n
 After writing bindings to top-level `bindings[]`, run:
 
 ```bash
-uip maestro case bindings sync "<SolutionDir>/<ProjectName>/caseplan.json" --output json
+uip maestro case bindings sync "<SolutionDir>/<ProjectName>/caseplan.case" --output json
 ```
 
 It reads the root `bindings[]`, groups entries by `resourceKey`, and writes `bindings_v2.json` next to the plan (full overwrite). Response `Data`: `BindingsPath`, `ResourceCount`, `ConnectionCount`. **Never author or edit `bindings_v2.json` by hand** — a hand-written sidecar with the wrong field names is invisible to `solution resources refresh` and fails silently at deploy. If the installed CLI has no `bindings sync` command, derive the file from the shapes below as a last resort and say so in the completion report.
 
 ### What the command emits
 
-`caseplan.json` stores two entries per resource (one per property); `bindings_v2.json` stores one entry per resource with properties nested under `value`. Reference only — the shapes are here so Check 7 can be understood, not so they can be typed.
+`caseplan.case` stores two entries per resource (one per property); `bindings_v2.json` stores one entry per resource with properties nested under `value`. Reference only — the shapes are here so Check 7 can be understood, not so they can be typed.
 
 ### Non-connector resource entry
 

@@ -1,6 +1,6 @@
 # Edit Recipes — Brownfield Lookup Table
 
-Complete recipes for the most common structural edits to an existing `caseplan.json` — adding, changing, and removing tasks and stages. **A row here is sufficient on its own:** when a recipe covers the edit, follow it and read no other reference unless the recipe names one (Rule 25 exception). Anything not covered — SLA responses, conditions, triggers, variables — routes through [brownfield.md § Common edits](brownfield.md#common-edits) as before.
+Complete recipes for the most common structural edits to an existing `caseplan.case` — adding, changing, and removing tasks and stages. **A row here is sufficient on its own:** when a recipe covers the edit, follow it and read no other reference unless the recipe names one (Rule 25 exception). Anything not covered — SLA responses, conditions, triggers, variables — routes through [brownfield.md § Common edits](brownfield.md#common-edits) as before.
 
 Every recipe assumes [brownfield.md § Read this first](brownfield.md#read-this-first): mutate with Read and Edit only, keep every existing `id`, never Write the whole file, no edges.
 
@@ -62,7 +62,7 @@ Every recipe assumes [brownfield.md § Read this first](brownfield.md#read-this-
 6. **Solution resources** — only when step 5 deleted a binding. Run, in order:
 
    ```bash
-   uip maestro case bindings sync "<caseplan.json>" --output json
+   uip maestro case bindings sync "<caseplan.case>" --output json
    uip solution resources refresh --solution-folder "<SolutionDir>" --output json
    uip solution resources list --solution-folder "<SolutionDir>" --source local --output json
    ```
@@ -126,8 +126,8 @@ For `A → X → B` becoming `A → B`:
 
 ## Close — every edit
 
-1. `uip maestro case validate "<caseplan.json>" --strict --output json`. Fix what it reports; retry at most 3 times, then stop and AskUserQuestion `Retry with fix` / `Pause for manual edit` / `Abort`. A default-profile `Valid` is not completion.
-2. If the edit added, removed, or repointed a binding and R3 step 6 has not run: `uip maestro case bindings sync "<caseplan.json>" --output json`, then `uip solution resources refresh --solution-folder "<SolutionDir>" --output json`.
+1. `uip maestro case validate "<caseplan.case>" --strict --output json`. Fix what it reports; retry at most 3 times, then stop and AskUserQuestion `Retry with fix` / `Pause for manual edit` / `Abort`. A default-profile `Valid` is not completion.
+2. If the edit added, removed, or repointed a binding and R3 step 6 has not run: `uip maestro case bindings sync "<caseplan.case>" --output json`, then `uip solution resources refresh --solution-folder "<SolutionDir>" --output json`.
 3. Report per [brownfield.md § Completion Output](brownfield.md#completion-output).
 
 <!-- END: edit-recipes-guide.md -->

@@ -5,16 +5,16 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../cas
 ## Purpose
 
 <!--skill-flavor:purpose-intro:start-->
-Complete the project on disk in a single plugin invocation — whichever of the 5 scaffold files `uip maestro case init` did not seed, plus `caseplan.json`. Runs exactly once per project, as the first build step. Two sections:
+Complete the project on disk in a single plugin invocation — whichever of the 5 scaffold files `uip maestro case init` did not seed, plus `caseplan.case`. Runs exactly once per project, as the first build step. Two sections:
 <!--skill-flavor:purpose-intro:end-->
 
 <!--skill-flavor:purpose-scaffold-item:start-->
 1. **§ Scaffold** — inventory the project dir and write only the missing boilerplate files (`project.uiproj`, `operate.json`, `entry-points.json`, `bindings_v2.json`, `package-descriptor.json`) directly.
 <!--skill-flavor:purpose-scaffold-item:end-->
-2. **§ Write caseplan.json** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
+2. **§ Write caseplan.case** — write the root case skeleton (`root` + empty `nodes: []` + empty `edges: []`).
 
 <!--skill-flavor:cli-bookends:start-->
-Solution setup (`uip solution init`) and project creation (`uip maestro case init`, from inside the solution dir) are CLI — see [implementation.md Step 6](../../implementation.md). `case init` registers the project; `uip solution projects add` is the fallback when it reports `Skipped` or `Failed`. Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 7); this recipe writes all case fields directly into the initial `caseplan.json`.
+Solution setup (`uip solution init`) and project creation (`uip maestro case init`, from inside the solution dir) are CLI — see [implementation.md Step 6](../../implementation.md). `case init` registers the project; `uip solution projects add` is the fallback when it reports `Skipped` or `Failed`. Edit-after-create is out of scope (SKILL regenerates from scratch — see SKILL.md Rule 7); this recipe writes all case fields directly into the initial `caseplan.case`.
 <!--skill-flavor:cli-bookends:end-->
 
 **No trigger emitted at T01.** The primary trigger is created by the triggers plugin at T02 via direct JSON write.
@@ -23,7 +23,7 @@ Solution setup (`uip solution init`) and project creation (`uip maestro case ini
 
 | Field | Required | Notes |
 |---|---|---|
-| `file` | yes | Target path. Literal filename MUST be `caseplan.json`. |
+| `file` | yes | Target path. Literal filename MUST be `caseplan.case`. |
 | `name` | yes | Human-readable case name. |
 | `case-identifier` | no | Defaults to `name`. |
 | `identifier-type` | no | `constant` \| `external`. Defaults to `constant`. |
@@ -36,7 +36,7 @@ See [`planning.md`](planning.md) for how these fields are sourced from `sdd.md`.
 ## § Scaffold — write project boilerplate
 
 <!--skill-flavor:scaffold-intro:start-->
-Runs before § Write caseplan.json. `uip maestro case init` (Step 6.0a) seeds some or all of the 5 static JSON files; write only the ones that are missing, directly. All substitution is name-for-name — no subprocess.
+Runs before § Write caseplan.case. `uip maestro case init` (Step 6.0a) seeds some or all of the 5 static JSON files; write only the ones that are missing, directly. All substitution is name-for-name — no subprocess.
 <!--skill-flavor:scaffold-intro:end-->
 
 ### Pre-flight
@@ -48,7 +48,7 @@ Runs before § Write caseplan.json. `uip maestro case init` (Step 6.0a) seeds so
 2. **Project dir is a distinct child of the solution dir.** The target is always `<SolutionDir>/<ProjectName>/`, never `<SolutionDir>/` itself. `<ProjectName>` equal to `<SolutionName>` is normal and still nests — `Foo/Foo/`. Never collapse the two because the names match.
 <!--skill-flavor:preflight-distinct-child:end-->
 <!--skill-flavor:preflight-target-clean:start-->
-3. **Inventory the seeded scaffold.** List `<SolutionDir>/<ProjectName>/`. Every one of the 5 scaffold files already present was seeded by `case init` at Step 6.0a — keep it untouched and skip its entry under § Files to write. Write only the missing ones. Do not overwrite. Do not merge into a seeded file. `caseplan.json` is governed by § Pre-write checks, not by this item.
+3. **Inventory the seeded scaffold.** List `<SolutionDir>/<ProjectName>/`. Every one of the 5 scaffold files already present was seeded by `case init` at Step 6.0a — keep it untouched and skip its entry under § Files to write. Write only the missing ones. Do not overwrite. Do not merge into a seeded file. `caseplan.case` is governed by § Pre-write checks, not by this item.
 <!--skill-flavor:preflight-target-clean:end-->
 4. **Create directory.** `mkdir -p <SolutionDir>/<ProjectName>` via Bash.
 
@@ -122,13 +122,13 @@ Use the Write tool for each file Step 6.0a did not seed. All 5 files live direct
     "operate.json": "content/operate.json",
     "entry-points.json": "content/entry-points.json",
     "bindings.json": "content/bindings_v2.json",
-    "caseplan.json": "content/caseplan.json",
-    "caseplan.json.bpmn": "content/caseplan.json.bpmn"
+    "caseplan.case": "content/caseplan.case",
+    "caseplan.case.bpmn": "content/caseplan.case.bpmn"
   }
 }
 ```
 
-> `content/` prefix here describes the **packed** layout inside the eventual `.nupkg` — NOT the on-disk layout. On disk every file is flat under `<ProjectName>/`. `caseplan.json.bpmn` is generated by downstream tooling (debug / case pack) and need not exist at scaffold time. — Phase 7 runs `case pack` before `solution pack` for exactly this reason ([phased-execution.md § Why `case pack` is mandatory](../../phased-execution.md#why-case-pack-is-mandatory)).
+> `content/` prefix here describes the **packed** layout inside the eventual `.nupkg` — NOT the on-disk layout. On disk every file is flat under `<ProjectName>/`. `caseplan.case.bpmn` is generated by downstream tooling (debug / case pack) and need not exist at scaffold time. — Phase 7 runs `case pack` before `solution pack` for exactly this reason ([phased-execution.md § Why `case pack` is mandatory](../../phased-execution.md#why-case-pack-is-mandatory)).
 >
 > **`bindings.json` key maps to `content/bindings_v2.json`.** The packed entry's key is `bindings.json` (bare) while the on-disk file stays `bindings_v2.json`. Do not create a `bindings.json` file on disk — write only `bindings_v2.json` per the block above.
 
@@ -141,17 +141,17 @@ Hard-fail on the first write error — no rollback, no staging directory. Partia
 - `<SolutionDir>/<ProjectName>/project.uiproj` exists and parses as JSON.
 - `<SolutionDir>/<ProjectName>/operate.json` contains a non-empty `projectId` string.
 - `<SolutionDir>/<ProjectName>/entry-points.json` parses as JSON and its `entryPoints` field is `[]`.
-- **No `content/` dir on disk.** Case file is flat at `<SolutionDir>/<ProjectName>/caseplan.json`; if nested under `content/`, layout is wrong — halt. `validate`/`debug` resolve only the flat root path (an ad-hoc validate against the nested path passes, but real project-dir resolution fails).
+- **No `content/` dir on disk.** Case file is flat at `<SolutionDir>/<ProjectName>/caseplan.case`; if nested under `content/`, layout is wrong — halt. `validate`/`debug` resolve only the flat root path (an ad-hoc validate against the nested path passes, but real project-dir resolution fails).
 <!--skill-flavor:verify-not-solution-dir:start-->
-- **Project dir is not the solution dir.** `<SolutionName>.uipx` and `caseplan.json` must NOT be siblings — `<SolutionDir>/<ProjectName>/<SolutionName>.uipx` must not exist. Nothing downstream catches this: `validate` passes on any path given, and `uip solution projects add <SolutionDir> …` registers the solution directory as its own project without error. But `debug` walks up from the project dir for the enclosing `.uipx`, so a collapsed layout overshoots it and fails with `no .uipx file was found in <workingRoot>`. Halt; move the 6 project files into `<SolutionDir>/<ProjectName>/`.
+- **Project dir is not the solution dir.** `<SolutionName>.uipx` and `caseplan.case` must NOT be siblings — `<SolutionDir>/<ProjectName>/<SolutionName>.uipx` must not exist. Nothing downstream catches this: `validate` passes on any path given, and `uip solution projects add <SolutionDir> …` registers the solution directory as its own project without error. But `debug` walks up from the project dir for the enclosing `.uipx`, so a collapsed layout overshoots it and fails with `no .uipx file was found in <workingRoot>`. Halt; move the 6 project files into `<SolutionDir>/<ProjectName>/`.
 <!--skill-flavor:verify-not-solution-dir:end-->
 
 If any check fails, halt and report.
 
-## § Write caseplan.json — Pre-write checks
+## § Write caseplan.case — Pre-write checks
 
 1. **Scaffold has run.** The 5 files listed in § Scaffold must exist in `<SolutionDir>/<ProjectName>/`. They were written earlier in this same plugin invocation; if missing, halt (bug — re-run the plugin from the start).
-2. **Collision behavior: overwrite.** If `caseplan.json` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `caseplan.json` from scratch per SKILL.md Rule 7, so a collision here means a genuine re-run and overwriting is correct.
+2. **Collision behavior: overwrite.** If `caseplan.case` already exists, overwrite it. When absent, create it. Skill Phase 2 re-runs regenerate `caseplan.case` from scratch per SKILL.md Rule 7, so a collision here means a genuine re-run and overwriting is correct.
 
 ## ID generation
 
@@ -166,7 +166,7 @@ Record in `id-map.json`:
 }
 ```
 
-The `id` value mirrors the actual top-level `id` written into `caseplan.json` — debug breadcrumb of reality.
+The `id` value mirrors the actual top-level `id` written into `caseplan.case` — debug breadcrumb of reality.
 
 ## Recipe — Skeleton (no trigger)
 
@@ -254,7 +254,7 @@ Use the Write tool. File did not exist before — Edit does not apply.
 
 Cheap sanity checks only — full validation runs after all plugins are done, per SKILL.md Anti-patterns ("Do NOT validate after each command").
 
-1. **File parses.** `JSON.parse(readFile('caseplan.json'))` succeeds.
+1. **File parses.** `JSON.parse(readFile('caseplan.case'))` succeeds.
 2. **Top-level shape.**
    - `id` matches `^case-[A-Za-z0-9]{10}$`
    - `version === "32.0.3"`

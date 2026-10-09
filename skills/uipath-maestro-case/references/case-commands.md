@@ -1,12 +1,12 @@
 # uip — Surviving CLI Command Reference
 
-`caseplan.json` mutations are direct file edits, not CLI calls. The commands below are the only `uip` invocations the skill issues — read-only metadata fetches, registry discovery, validation, debug, runtime/instance management, solution scaffold/upload, and the consent-gated Phase 7 pack/publish.
+`caseplan.case` mutations are direct file edits, not CLI calls. The commands below are the only `uip` invocations the skill issues — read-only metadata fetches, registry discovery, validation, debug, runtime/instance management, solution scaffold/upload, and the consent-gated Phase 7 pack/publish.
 
 All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { ... } }`. Use `--output json` for programmatic use.
 
 ## Local vs cloud commands
 
-`caseplan.json` mutations are direct file edits (Read + Write/Edit). CLI is used only for the operations below:
+`caseplan.case` mutations are direct file edits (Read + Write/Edit). CLI is used only for the operations below:
 
 | Commands | What | Auth |
 |----------|------|------|
@@ -14,13 +14,13 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 | `solution init`, `solution projects add`, `solution resources refresh`, `solution upload` | Solution scaffold + resource sync + Studio Web upload | Yes (for `upload`) |
 <!--skill-flavor:solution-commands-row:end-->
 <!--skill-flavor:phase-seven-row:start-->
-| `maestro case pack`, `solution pack`, `solution publish` | Phase 7 Publish to Orchestrator — recompile `caseplan.json.bpmn`, pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
+| `maestro case pack`, `solution pack`, `solution publish` | Phase 7 Publish to Orchestrator — recompile `caseplan.case.bpmn`, pack the solution to `.zip`, publish to the tenant solution feed (consent-gated) | Yes (for `publish`) |
 <!--skill-flavor:phase-seven-row:end-->
 <!--skill-flavor:resources-row:start-->
 | `solution resources list [--source local]`, `solution resources add --source local\|remote`, `solution resources remove <key>`, `solution resources edit <key>` | Inventory read (`list`) + atomic single-resource mutations (local stub or remote import; delete by key; patch spec via `--patch '<json>'`) — see [uipath-solution Step 9–11](/uipath:uipath-solution) | Only `--source remote` requires auth; `remove`/`edit` are offline |
 <!--skill-flavor:resources-row:end-->
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
-| `validate` | Validate `caseplan.json` | No |
+| `validate` | Validate `caseplan.case` | No |
 | `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
 
 <!--skill-flavor:auth-column-note:start-->
@@ -131,7 +131,7 @@ uip solution upload <SolutionDir> --output json --output-filter "{Status: Status
 
 ## uip maestro case pack
 
-Pack a single Case project directory into a `.nupkg` file — **and, as a side effect, compile `caseplan.json` into `caseplan.json.bpmn` inside the project directory.** That recompile is why Phase 7 runs it. Offline.
+Pack a single Case project directory into a `.nupkg` file — **and, as a side effect, compile `caseplan.case` into `caseplan.case.bpmn` inside the project directory.** That recompile is why Phase 7 runs it. Offline.
 
 ```bash
 uip maestro case pack <project-path> <output-path> --output json
@@ -176,7 +176,7 @@ Packs each contained project into a `.nupkg` and bundles them into one `<name>_<
 
 > Run `uip solution resources refresh` first so artefact files and debug overwrites are current before they are bundled (Rule 15).
 
-> **Does NOT compile the case BPMN.** It bundles `caseplan.json.bpmn` only if that file is already on disk. Run [`uip maestro case pack`](#uip-maestro-case-pack) on the case project immediately before this command — every time — or the package ships with a missing or stale `.bpmn` while pack and publish both report success.
+> **Does NOT compile the case BPMN.** It bundles `caseplan.case.bpmn` only if that file is already on disk. Run [`uip maestro case pack`](#uip-maestro-case-pack) on the case project immediately before this command — every time — or the package ships with a missing or stale `.bpmn` while pack and publish both report success.
 
 ---
 
@@ -246,7 +246,7 @@ Fall back to plain `validate` only when the response is `invalid_argument` namin
 
 ## uip maestro case format
 
-Rewrite `caseplan.json` pretty-printed in place (2-space indentation, one key per line). Run after every write of the plan; it is the only sanctioned reformat (Rule 14).
+Rewrite `caseplan.case` pretty-printed in place (2-space indentation, one key per line). Run after every write of the plan; it is the only sanctioned reformat (Rule 14).
 
 ```bash
 uip maestro case format <file> --output json
@@ -265,7 +265,7 @@ Output: `Data.Changed` — `true` when the file was rewritten, `false` when alre
 Derive `bindings_v2.json` from the plan's root `bindings[]` and write it next to the plan. Never author or edit the sidecar by hand.
 
 ```bash
-uip maestro case bindings sync <caseplan.json> --output json
+uip maestro case bindings sync <caseplan.case> --output json
 ```
 
 Output: `Code: CaseBindingsSync` with `Data.BindingsPath`, `Data.ResourceCount`, `Data.ConnectionCount`. `ResourceCount: 0` is still `Result: Success` — an empty sidecar is a faithful derivation of a plan that binds nothing, so the gate is `validate --strict` (`STRICT_BINDINGS_ABSENT`), not the sync result. See [bindings-v2-sync.md](bindings-v2-sync.md).
@@ -277,7 +277,7 @@ Output: `Code: CaseBindingsSync` with `Data.BindingsPath`, `Data.ResourceCount`,
 Write a connector task's `data` and the connection's root bindings from a saved `case spec` envelope. The only sanctioned writer of `data.context` / `data.inputs` / `data.outputs` on `execute-connector-activity` and `wait-for-connector` tasks; never hand-author them.
 
 ```bash
-uip maestro case splice <caseplan.json> --task-id <taskId> --spec tasks/spec-cache.<elementId>.json \
+uip maestro case splice <caseplan.case> --task-id <taskId> --spec tasks/spec-cache.<elementId>.json \
   --connection-id <connection-uuid> [--out <file>] --output json
 ```
 
@@ -318,7 +318,7 @@ uip maestro case debug <project-path> --log-level debug --output json
 
 ## uip maestro case spec
 
-Read-only unified metadata + scaffold endpoint for connector activities and triggers. **The preferred command for connector tasks** — replaces the legacy `case tasks describe` + `is resources describe` two-call dance with a single normalized response (identity, connection, inputs, outputs, filter, references, and a populated `caseShape` ready for `caseplan.json`).
+Read-only unified metadata + scaffold endpoint for connector activities and triggers. **The preferred command for connector tasks** — replaces the legacy `case tasks describe` + `is resources describe` two-call dance with a single normalized response (identity, connection, inputs, outputs, filter, references, and a populated `caseShape` ready for `caseplan.case`).
 
 ```bash
 # Planning phase — lean response (no caseShape payload)
@@ -364,7 +364,7 @@ uip maestro case tasks describe --type connector-trigger --id <typeId> --connect
 | `--id <id>` | **(required)** Unique ID of the task (entityKey or action-app id) |
 | `--connection-id <id>` | Connection UUID (required for `connector-activity` and `connector-trigger` types) |
 
-Returns input/output schema with names, types, and IDs. The schema is the source of truth for `data.inputs[]` / `data.outputs[]` when writing the task into `caseplan.json`. The `connector-activity` / `connector-trigger` flags still work but `case spec` returns a richer, FE-canonical `caseShape` for connector tasks.
+Returns input/output schema with names, types, and IDs. The schema is the source of truth for `data.inputs[]` / `data.outputs[]` when writing the task into `caseplan.case`. The `connector-activity` / `connector-trigger` flags still work but `case spec` returns a richer, FE-canonical `caseShape` for connector tasks.
 
 ---
 
@@ -461,7 +461,7 @@ uip maestro case registry get-connection --type typecache-triggers --activity-ty
 | `-t, --type <type>` | **(required)** `typecache-activities` or `typecache-triggers` |
 | `--activity-type-id <id>` | **(required)** The `uiPathActivityTypeId` to look up |
 
-Output: `{ Entry, Config, Connections }` — use a `Connections[].Id` value as the `connectionId` written into a connector task's `data` in `caseplan.json`.
+Output: `{ Entry, Config, Connections }` — use a `Connections[].Id` value as the `connectionId` written into a connector task's `data` in `caseplan.case`.
 
 ---
 

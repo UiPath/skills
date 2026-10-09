@@ -1,23 +1,23 @@
 # HITL Case Action Task — Implementation Reference
 
-The agent writes an `action` task into a stage of `caseplan.json`. **Direct JSON write is the primary method on the Case surface.** Unlike the Flow surface (`uip maestro flow hitl add`), the `uipath-maestro-case` skill ships no single `hitl add` CLI subcommand for the HITL-specific parts (`context[]` entries, `.hitl.json` linkage) — edit `caseplan.json` directly per the path-specific JSON shapes below.
+The agent writes an `action` task into a stage of `caseplan.case`. **Direct JSON write is the primary method on the Case surface.** Unlike the Flow surface (`uip maestro flow hitl add`), the `uipath-maestro-case` skill ships no single `hitl add` CLI subcommand for the HITL-specific parts (`context[]` entries, `.hitl.json` linkage) — edit `caseplan.case` directly per the path-specific JSON shapes below.
 
-> If the stage or case predates required entry/exit/completion rules (see the checklist below), `uip maestro case` does have CLI mutation commands for those (`stage-entry-conditions`, `stage-exit-conditions`, `case-exit-conditions`, `task-entry-conditions` — each with an `add` subcommand). Prefer them over hand-writing that JSON when the case project already exists as a file you can pass to the CLI. If you're editing a caseplan.json given to you directly (not one you scaffolded yourself with these commands), it's simplest to just include the correct rule shapes directly per the examples below.
+> If the stage or case predates required entry/exit/completion rules (see the checklist below), `uip maestro case` does have CLI mutation commands for those (`stage-entry-conditions`, `stage-exit-conditions`, `case-exit-conditions`, `task-entry-conditions` — each with an `add` subcommand). Prefer them over hand-writing that JSON when the case project already exists as a file you can pass to the CLI. If you're editing a caseplan.case given to you directly (not one you scaffolded yourself with these commands), it's simplest to just include the correct rule shapes directly per the examples below.
 
 Two paths exist. **Never block on choosing — infer the path from the business description using the table below (§ Common business descriptions → path selection) and proceed. Do not wait for the user to pick.**
 
 | Path | When to use | Requires |
 |---|---|---|
-| **QuickForm** | Structured form fields, no deployed app needed | A separate `.hitl.json` schema file written alongside `caseplan.json` |
+| **QuickForm** | Structured form fields, no deployed app needed | A separate `.hitl.json` schema file written alongside `caseplan.case` |
 | **App-based action task** | Existing deployed Action Center app with a custom form | `task-type-id` from registry + `tasks describe` |
 
 > **If the user is unsure or says "just pick one":** Default to QuickForm. Say: "I'll use QuickForm — it's the quickest to set up and works for most approval and review tasks. You can always upgrade to a deployed Action Center app later."
 
 > **Build time vs design time.** A case action task lives in two surfaces:
-> - **Design time** — the JSON written into `caseplan.json` (what this skill produces). Studio Web's case designer round-trips this JSON; the QuickForm schema must be valid here.
+> - **Design time** — the JSON written into `caseplan.case` (what this skill produces). Studio Web's case designer round-trips this JSON; the QuickForm schema must be valid here.
 > - **Build / runtime time** — `uip maestro case validate` accepts it, `uip solution upload` packs it, and Action Center renders the form to the assignee at runtime.
 >
-> Every shape documented below is required to round-trip in both. After writing, always run `uip maestro case validate <caseplan.json> --output json`.
+> Every shape documented below is required to round-trip in both. After writing, always run `uip maestro case validate <caseplan.case> --output json`.
 
 ---
 
@@ -48,10 +48,10 @@ Two paths exist. **Never block on choosing — infer the path from the business 
 
 ## Path 1 — QuickForm (file-based schema, no deployed app)
 
-The form schema lives in a separate `.hitl.json` file that sits alongside `caseplan.json` in the case project directory. Action Center renders the fields at runtime from the schema — no deployed app required.
+The form schema lives in a separate `.hitl.json` file that sits alongside `caseplan.case` in the case project directory. Action Center renders the fields at runtime from the schema — no deployed app required.
 
 > **What makes Path 1 (QuickForm) unique — checklist before you finish:**
-> - ✅ A `<TaskLabel>.hitl.json` file is **created** alongside `caseplan.json`
+> - ✅ A `<TaskLabel>.hitl.json` file is **created** alongside `caseplan.case`
 > - ✅ `data.context[hitlType].value` is `"quick"` (not `"custom"`)
 > - ✅ `data.context[_schemaFileId].value` is a **plain UUID v4 string** — e.g. `"f1e2d3c4-b5a6-7890-abcd-ef1234567890"`. Never an `=bindings.xxx` expression.
 > - ✅ `data.context[hitlSchemaId].value` is a **plain UUID v4 string** matching `schemaId` in the `.hitl.json` file. Never an `=bindings.xxx` expression.
@@ -86,7 +86,7 @@ Generate two UUID v4 values:
 - `schemaId` — identity of the schema, stored inside the file and referenced from the action task
 - `fileId` — placeholder file system ID (Studio Web assigns the real one when it processes the project; use a fresh UUID v4 as a stable placeholder)
 
-Create a file named `<TaskLabel>.hitl.json` in the case project directory (alongside `caseplan.json`).
+Create a file named `<TaskLabel>.hitl.json` in the case project directory (alongside `caseplan.case`).
 
 The file uses a **unified `fields[]` array** — every field has a `direction` property that determines its role. This is the format the sync runtime reads (`parsed?.fields`).
 
@@ -152,7 +152,7 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
 
 > **`title` is required, top-level in the `.hitl.json` file** — the form's display title in Action Center, separate from both the task's `displayName` (canvas label) and `data.taskTitle` (the assignee-facing message). All three are independent strings and do not need to match.
 
-### Step 3 — Write the Action Task in `caseplan.json`
+### Step 3 — Write the Action Task in `caseplan.case`
 
 ```json
 {
@@ -229,14 +229,14 @@ The file uses a **unified `fields[]` array** — every field has a `direction` p
 > **Never block on this.** Write a fresh placeholder UUID v4, finish the task, validate, and move on — do not attempt the reconciliation below yourself, and do not stop to ask about it. State plainly in the final report that this task's schema won't be editable in Studio Web until the real file ID is reconciled, and offer to do it if asked:
 > 1. Upload the project once with any placeholder value in `_schemaFileId` (`uip solution upload`).
 > 2. Look up the real ID Studio Web assigned to the `.hitl.json` file via `GET /api/Project/{projectId}/FileOperations/Structure` (find the entry whose `name` matches the `.hitl.json` filename — an internal Studio Web REST endpoint, not a `uip` CLI verb).
-> 3. Patch `_schemaFileId` in `caseplan.json` to that real ID.
-> 4. Push the corrected `caseplan.json` back with a **targeted single-file update** — `PUT /api/Project/{projectId}/FileOperations/File/{fileId}` (same file's own real ID) — **not** another whole-project `uip solution upload`. A second whole-project upload re-pushes every file and mints a **new** random file ID for each one, including `.hitl.json`, immediately invalidating whatever you just patched.
+> 3. Patch `_schemaFileId` in `caseplan.case` to that real ID.
+> 4. Push the corrected `caseplan.case` back with a **targeted single-file update** — `PUT /api/Project/{projectId}/FileOperations/File/{fileId}` (same file's own real ID) — **not** another whole-project `uip solution upload`. A second whole-project upload re-pushes every file and mints a **new** random file ID for each one, including `.hitl.json`, immediately invalidating whatever you just patched.
 >
 > This is a real gap, not just a documentation gap: today there is no supported CLI path to make a freshly-authored QuickForm task's schema editable in Studio Web without dropping to this undocumented internal API. It's a follow-up the user can request, never a mid-task blocker.
 
 ### Step 4 — Discover Upstream Variables
 
-Read available case variables from the top-level `variables` field in `caseplan.json` (current schema is flat — no `root` wrapper; see [case-schema.md](../../uipath-maestro-case/references/case-schema.md#top-level-shape) in the case skill):
+Read available case variables from the top-level `variables` field in `caseplan.case` (current schema is flat — no `root` wrapper; see [case-schema.md](../../uipath-maestro-case/references/case-schema.md#top-level-shape) in the case skill):
 
 ```json
 {
@@ -252,7 +252,7 @@ For cross-task references, source values come from upstream task `outputs[].var`
 
 ### Post-Write Verification (QuickForm)
 
-Run `uip maestro case validate <caseplan.json> --output json`. Confirm:
+Run `uip maestro case validate <caseplan.case> --output json`. Confirm:
 
 - `.hitl.json` file exists in the project directory with `schemaId`, `fields[]` (unified array with `direction`), `outcomes[]`
 - Action task `type === "action"`
@@ -376,7 +376,7 @@ For the full `inputs[]`/`outputs[]` variable shapes, see [action/impl-json.md](.
 ## Post-Write Verification (all paths)
 
 ```bash
-uip maestro case validate <caseplan.json> --output json
+uip maestro case validate <caseplan.case> --output json
 ```
 
 | Path | Verify |
