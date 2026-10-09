@@ -75,6 +75,8 @@ Generated boilerplate, never a source of logic: `CodedWorkflow.cs`, `Connections
 | `project.uiproj` `ProjectType: "AppV2"` or standalone coded app markers | Coded app (Web or Action per `webAppManifest.json` `config.isActionApp`) | `uipath-coded-apps` | |
 | `element.json` + `element-metadata.json` | Custom connector | `uipath-connector-builder` | |
 
+The project folder is the part of a workflow's path the project stands for; the rest, the project-relative path the step table's Source objects cell carries (§ Provenance), is the workflow's path in the rebuild.
+
 A test project (`.uipx` Type `Test`, `[TestCase]`-only `.cs`, `designOptions.outputType: Tests`) beside the projects it tests is evidence, not a component: record "test coverage present" in the Source Map and use its assertions as acceptance-criteria evidence. When the source holds only test projects, the suite is what the genome documents: its test-case groups are test components, and its execution template with the helpers the cases share is one shared component of the same project ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1; signals: § Signals — Test projects).
 
 ## Signals — XAML

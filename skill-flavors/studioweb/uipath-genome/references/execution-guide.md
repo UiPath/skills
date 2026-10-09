@@ -4,7 +4,7 @@
 <!--skill-flavor:process-genome-solution:end-->
 
 <!--skill-flavor:process-genome-test-project:start-->
-3. **All test components share one test project** ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1). Create `<ProcessName>.Tests` once through `uipath-rpa`'s test-project creation step inside `/solution`, where the host registers it, and give every test component the same `PROJECT_DIR` with its own subfolder (`<ComponentSlug>/`) for test cases and data files, plus a shared `Config/` folder for the configuration workflow. The process genome's Project layout table names the folders; when an older genome lacks it, derive the folder names from the component names and say so.
+3. **All test components share one test project** ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1). Create `<ProcessName>.Tests` once through `uipath-rpa`'s test-project creation step inside `/solution`, where the host registers it, and give every test component the same `PROJECT_DIR`: its test cases and data files in a folder named after it (`<ComponentSlug>/`), or at their source objects' paths when the run keeps the source's shape ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md)), plus a shared `Config/` folder for the configuration workflow.
 <!--skill-flavor:process-genome-test-project:end-->
 
 <!--skill-flavor:process-genome-pack:start-->
