@@ -48,6 +48,17 @@ source. The loop is:
 3. **Check**: `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`. It names each
    gap with the exact command — `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`,
    `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
+   Three codes say the operation itself does not resolve, so no prepare
+   fixes them; edit the source and re-run `check`:
+   - `CONNECTOR_NOT_IN_LIBRARY` — the library has no such operation (or
+     connector, or version). The message lists the connector's operations and
+     a `Closest:` match. The operation is the node type's slug, not the
+     tenant's `objectName` (`send-email`, not `send-mail-v2`). If the operation
+     is newer than the library, run `uip maestro registry pull`.
+   - `CONNECTOR_OBJECT_REQUIRED` — a generic operation covers many objects;
+     add `{ object: '<name>' }`. The message lists the objects.
+   - `CONNECTOR_OBJECT_NOT_GENERIC` — `object` on a single, non-generic
+     operation; drop the `object` option.
 4. **Prepare once** — `--object`, `--resolve` and `-f` compose in a single
    invocation, and it finds the connection itself and writes `bindings.json`.
    `prepare` repoints the import itself; it only asks when two flows
