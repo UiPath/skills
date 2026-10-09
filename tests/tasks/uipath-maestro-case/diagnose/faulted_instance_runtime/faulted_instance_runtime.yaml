@@ -14,8 +14,9 @@ description: >
   still exists; the grader exits 2 and says so when it does not. The prompt
   may route to uipath-troubleshoot instead (codex did, 2026-10-09), which is a
   legitimate path, so the skill check stays advisory. `processes incidents`
-  returns [] for this process although the instance has an open incident;
-  agents that trust it lose turns, hence the 80-turn budget.
+  returns [] for this process although the instance has an open incident (the
+  CLI omits processType on that read; fixed in UiPath/cli#5038). Agents that
+  trust it lose turns, hence the 80-turn budget.
 tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:discover]
 max_iterations: 1
 
