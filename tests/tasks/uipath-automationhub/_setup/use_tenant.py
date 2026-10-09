@@ -2,7 +2,10 @@
 """pre_run: point this task's `uip` at another tenant of the same organization.
 
 Usage:
-    use_tenant.py <tenant-name>
+    use_tenant.py <tenant-name> [<tenant-id>]
+
+Pass the id when it is known (it is not a secret: it is in every tenant URL), so
+the switch does not depend on `uip login tenant list`, which has crashed in CI.
 
 Some scenarios need tenant settings that cannot coexist with the default tenant's
 (e.g. a Business Process schema without `new_applications`), so they run on a
@@ -23,6 +26,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ah_cli import (  # noqa: E402
@@ -44,8 +48,12 @@ def login_file() -> str:
 
 
 def tenant_id(name: str) -> str:
-    listing = uip_json(["login", "tenant", "list"])
-    if not succeeded(listing):
+    for attempt in range(3):
+        listing = uip_json(["login", "tenant", "list"])
+        if succeeded(listing):
+            break
+        time.sleep(5 * (attempt + 1))
+    else:
         precondition_failed(f"uip login tenant list failed: {describe_failure(listing)}")
     for tenant in items(listing):
         if str(tenant.get("TenantName", "")).lower() == name.lower():
@@ -56,22 +64,25 @@ def tenant_id(name: str) -> str:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 1:
-        print(f"usage: {sys.argv[0]} <tenant-name>", file=sys.stderr)
+    if len(argv) not in (1, 2):
+        print(f"usage: {sys.argv[0]} <tenant-name> [<tenant-id>]", file=sys.stderr)
         return 2
     name = argv[0]
     if os.path.exists(TENANT_MARKER):
         precondition_failed(f"{TENANT_MARKER} already exists; use_tenant.py must run once, first")
 
-    target = {"tenant_name": name, "tenant_id": tenant_id(name), "auth_file": login_file()}
+    target = {"tenant_name": name, "tenant_id": argv[1] if len(argv) == 2 else tenant_id(name),
+              "auth_file": login_file()}
     with open(TENANT_MARKER, "w", encoding="utf-8") as handle:
         json.dump(target, handle, indent=1)
 
-    status = uip_json(["login", "status"])
-    active = (status.get("Data") or {}).get("Tenant")
-    if not succeeded(status) or str(active).lower() != name.lower():
+    # Ask Automation Hub, not the CLI: `login status` only echoes the env vars back.
+    info = uip_json(["ah", "auth-info", "get"])
+    url = str(((info.get("Data") or {}).get("Tenant") or {}).get("Url", ""))
+    if not succeeded(info) or f"/{name.lower()}/" not in url.lower():
         os.remove(TENANT_MARKER)
-        precondition_failed(f"the switched login does not resolve to {name} (got {active!r}): {describe_failure(status)}")
+        precondition_failed(f"the switched login does not reach {name}'s Automation Hub "
+                            f"(Tenant.Url {url!r}): {describe_failure(info)}")
     print(f"use_tenant: uip now targets tenant {name} ({target['tenant_id']})")
     return 0
 
