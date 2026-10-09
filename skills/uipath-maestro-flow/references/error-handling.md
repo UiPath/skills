@@ -67,6 +67,11 @@ or compensate and rejoin. An exhausted handler ends separately; use
 `.stepToRef(...)` only when the failure path should deliberately resume shared
 success-path work.
 
+That separate End maps each flow output from its variable, like every End. So a
+handler that sets the outputs with `{ updates }` still answers with them, and
+one that leaves an output unset gets a `NO_RETURN` warning naming it: set it
+with `{ updates }`, end with `.return({ … })`, or hand back with `.stepToRef(...)`.
+
 Two limits `check` enforces on a ref, and one it only warns about. It refuses an
 unknown target, a target inside another port's path, and a target inside a LOOP
 BODY — a loop reads `currentItem` / `currentIteration` per iteration, and an edge
