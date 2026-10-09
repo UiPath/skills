@@ -40,7 +40,7 @@ reference:
   directory: ../publish_from_pdd_structural
 
 pre_run:
-  - command: "python3 _setup/use_tenant.py coderevalsAH"
+  - command: "python3 _setup/use_tenant.py coderevalsAH f2ebc735-da3c-479e-8e72-362bcb10a71e"
     timeout: 120
   - command: >-
       python3 _setup/preflight_ah.py --require-non-admin --require-no-new-applications
