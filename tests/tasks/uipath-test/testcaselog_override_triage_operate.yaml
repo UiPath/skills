@@ -1,0 +1,300 @@
+task_id: skill-test-testcaselog-override-triage-operate
+description: >
+  Operate test: a failure on a settled run is a known environment flake, not a
+  product defect, and has to be corrected without losing what the run actually
+  recorded. Exercises `uip tm testcaselog override set` and the
+  Result-versus-OriginalResult distinction, which no existing task covers.
+
+  The graded outcome is a state the fixture does not start in and that only one
+  route produces. Re-finishing the log would move `Result` to `Passed` and move
+  `OriginalResult` with it; re-running the test set would create a new log
+  entirely. Only an override leaves `Result: Passed` on a log whose
+  `OriginalResult` is still `Failed`, and the check asserts both halves plus a
+  non-empty reason. An agent that "fixes" the run instead of correcting the
+  record fails.
+
+  The prompt says the failure is environmental and that the original result
+  must stay visible. It does not name the verb, the flag, or that `--reason` is
+  required — a `set` without it is refused — and it does not say that
+  `OriginalResult` is the field carrying the run's own answer.
+tags: [uipath-test, integration, mode:operate, lifecycle:triage, feature:test-case]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 40
+  turn_timeout: 1200
+  task_timeout: 1500
+
+# Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the
+# EVFX- contract.
+#
+# The task writes an override onto a log, so the fixture cannot be reused as
+# it is left. pre_run deletes the whole execution and records a fresh one,
+# which takes its logs and their overrides with it — an override is destroyed
+# when its log is finished or re-imported anyway, so there is no separate
+# override cleanup to do. Growth is flat at one execution.
+pre_run:
+  - timeout: 320
+    command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys
+      P, SET = "CLAIM", "EVFX-TCLOG-SET"
+      CASES = ["EVFX-TCLOG-TC1", "EVFX-TCLOG-TC2", "EVFX-TCLOG-TC3"]
+      FAILING = "EVFX-TCLOG-TC2"
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:400]} err={err[:250]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def pick(d, *names):
+          for n in names:
+              if d.get(n):
+                  return d[n]
+          return None
+
+      def by_name(label, kind, name):
+          d = call(label, "tm", kind, "list", "--project-key", P, "--filter", name)
+          for x in (d.get("Data") or []):
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      def has_verb(*words):
+          r = subprocess.run(["uip", *words, "--help"],
+                             capture_output=True, text=True)
+          return r.returncode == 0
+
+      # The testcaselog read and override verbs ship across several commits in
+      # a later CLI than this fixture can assume, and `executions create` and
+      # `delete` come from a different story again. Probe each one and FAIL
+      # rather than seeding: a silent seed against a CLI missing any of them
+      # scores the agent for work it could not do.
+      for words in (["tm", "executions", "create"],
+                    ["tm", "executions", "delete"],
+                    ["tm", "testcaselog", "start"],
+                    ["tm", "testcaselog", "finish"],
+                    ["tm", "testcaselog", "get"],
+                    ["tm", "testcaselog", "override"]):
+          if not has_verb(*words):
+              fail(f"this CLI has no 'uip {' '.join(words)}' - needs the "
+                   f"release carrying the test case log verbs")
+
+      # 1. test set - create if absent, never delete
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P,
+               "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+      set_key = pick(ts, "TestSetKey", "Key", "ObjKey")
+      set_id = ts.get("Id")
+      if not set_key or not set_id:
+          fail(f"{SET} has no key or id")
+
+      # 2. cases - create if absent, then assign (assign is idempotent)
+      case_ids = {}
+      keys = []
+      for name in CASES:
+          tc = by_name(f"case.find.{name}", "testcases", name)
+          if not tc:
+              call(f"case.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"case.refind.{name}", "testcases", name)
+          if not tc:
+              fail(f"could not create or find {name}")
+          case_ids[name] = tc.get("Id")
+          keys.append(pick(tc, "TestCaseKey", "Key", "ObjKey"))
+      call("cases.assign", "tm", "testcases", "add", "--test-set-key", set_key,
+           "--test-case-keys", ",".join(keys))
+
+      d = call("cases.verify", "tm", "testsets", "list-testcases",
+               "--project-key", P, "--test-set-key", set_key)
+      assigned = {x.get("Name") for x in (d.get("Data") or [])}
+      missing = [c for c in CASES if c not in assigned]
+      if missing:
+          fail(f"cases not assigned to {SET}: {missing}")
+
+      # 3. delete what the last run left, whatever state its logs ended in.
+      #    This is also the override cleanup: an override cannot outlive its
+      #    log, so removing the execution removes any the last agent wrote.
+      d = call("execs.list", "tm", "executions", "list", "--project-key", P,
+               "--test-set-id", set_id, "--limit", "100")
+      for row in (d.get("Data") or []):
+          eid = row.get("Id")
+          if eid:
+              call(f"exec.delete.{eid[:8]}", "tm", "executions", "delete",
+                   "--execution-id", eid, "--project-key", P, "--yes")
+
+      # 4. record one settled run: TC1 and TC3 pass, TC2 fails.
+      d = call("exec.create", "tm", "executions", "create",
+               "--test-set-key", set_key, "--name", "EVFX-TCLOG-RUN")
+      eid = (d.get("Data") or {}).get("Id")
+      if not eid:
+          fail("could not open the fixture execution")
+
+      for name in CASES:
+          cid = case_ids[name]
+          if not cid:
+              fail(f"{name} has no id")
+          call(f"log.start.{name}", "tm", "testcaselog", "start",
+               "--project-key", P, "--execution-id", eid, "--test-case-id", cid)
+          failing = name == FAILING
+          # finish needs --result AND --has-error AND --executed-by; --result
+          # is what the log reports, and --executed-by is an EMAIL, not a uuid.
+          call(f"log.finish.{name}", "tm", "testcaselog", "finish",
+               "--project-key", P, "--execution-id", eid, "--test-case-id", cid,
+               "--result", "Failed" if failing else "Passed",
+               "--has-error", "true" if failing else "false",
+               "--executed-by", "evfx-tclog-fixture@uipath.com")
+
+      # Assert the shape the task reads: exactly one log reports Failed, and
+      # nothing is overridden yet. Counting logs is not enough - a log that
+      # finished Passed, or one still carrying a previous override, would both
+      # let the graded outcome pass for the wrong reason.
+      d = call("logs.verify", "tm", "executions", "testcaselogs", "list",
+               "--execution-id", eid, "--project-key", P)
+      rows = d.get("Data") or []
+      if len(rows) != len(CASES):
+          fail(f"expected {len(CASES)} logs, found {len(rows)}")
+      failed = [r for r in rows if r.get("Result") == "Failed"]
+      if len(failed) != 1:
+          fail(f"expected exactly 1 Failed log, found {len(failed)}")
+      for r in rows:
+          if r.get("OriginalResult") not in (None, "", r.get("Result")):
+              fail(f"log {r.get('Id')} starts already overridden: "
+                   f"Result={r.get('Result')!r} "
+                   f"OriginalResult={r.get('OriginalResult')!r}")
+
+      print(f"FIXTURE: ready set_key={set_key!r} execution={eid!r} "
+            f"failing={FAILING!r} log={failed[0].get('Id')!r}", flush=True)
+      EOF
+
+initial_prompt: |
+  The "EVFX-TCLOG-SET" test set in the CLAIM project (Test Manager) has one
+  failing test case in its latest run. We have traced it to a flaky test
+  environment on our side, not a defect in the product, so the release
+  dashboard should show it as passing.
+
+  Please correct that, noting the reason as "Environment flake - agent pool
+  unavailable, not a product defect". I still need to be able to see what the
+  run itself actually recorded, so do not re-run or re-close anything.
+
+  Tell me which test case it was and what the run had recorded for it. No need
+  to check back with me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    # Narrowing to the run's logs, or filtering the project's logs by result,
+    # are both legitimate routes to the one failing log. What is graded is
+    # that the log id came from the CLI rather than from thin air.
+    description: "Agent found the failing log through the CLI rather than inventing an id"
+    command_pattern: 'uip\s+tm\s+(executions?\s+testcaselogs\s+list|testcaselog\s+list)\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
+    tool_name: "Bash"
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    # Presence of both flags, not their values: `--reason` is required and a
+    # set without it is refused, so an agent that skipped the guide stops here.
+    # Whether the right result landed is decided by the outcome check below.
+    description: "Agent used `testcaselog override set` with a --result and a --reason"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+override\s+set\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--result\s)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--reason\s)'
+    tool_name: "Bash"
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # ── The outcome. Only an override produces this state: re-finishing the log
+  # moves OriginalResult with Result, and re-running makes a new log.
+  - type: run_command
+    description: "The failed log reports Passed while OriginalResult still reads Failed, with a reason"
+    command: |
+      python3 -c "
+      import json, subprocess
+
+      def uip(*a):
+          r = subprocess.run(['uip', *a, '--output', 'json'],
+                             capture_output=True, text=True)
+          t = r.stdout or ''
+          return json.loads(t[t.index('{'):]) if '{' in t else {}
+
+      sets = uip('tm','testsets','list','--project-key','CLAIM','--filter','EVFX-TCLOG-SET')
+      sid = next((x['Id'] for x in (sets.get('Data') or [])
+                  if x.get('Name') == 'EVFX-TCLOG-SET'), None)
+      assert sid, 'EVFX-TCLOG-SET not found'
+
+      runs = uip('tm','executions','list','--project-key','CLAIM',
+                 '--test-set-id',sid,'--limit','100').get('Data') or []
+      assert runs, 'no execution on EVFX-TCLOG-SET'
+      eid = max(runs, key=lambda r: r.get('Created') or '')['Id']
+
+      logs = uip('tm','executions','testcaselogs','list','--execution-id',eid,
+                 '--project-key','CLAIM').get('Data') or []
+      assert logs, 'the run has no test case logs'
+
+      # the one the run recorded as Failed, whatever it reports now
+      corrected = [l for l in logs if l.get('OriginalResult') == 'Failed']
+      assert len(corrected) == 1, (
+          f'expected 1 log with OriginalResult Failed, found {len(corrected)}; '
+          f'results={[(l.get(\"Result\"), l.get(\"OriginalResult\")) for l in logs]}')
+      log = corrected[0]
+      assert log.get('Result') == 'Passed', (
+          f'log still reports {log.get(\"Result\")!r}; it was to be shown as Passed')
+
+      ov = uip('tm','testcaselog','override','get','--project-key','CLAIM',
+               '--test-case-log-id',log['Id'])
+      reason = ((ov.get('Data') or {}).get('Reason') or '').strip()
+      assert reason, f'override carries no reason: {ov.get(\"Data\")!r}'
+      "
+    timeout: 150
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    # Re-closing the log would move Result AND OriginalResult together, which
+    # loses exactly what the prompt asked to keep. The outcome check above
+    # already fails that state; this names the mistake for the report.
+    description: "Agent did not re-close the log, which would overwrite what the run recorded"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+finish\b'
+    tool_name: "Bash"
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not re-run the test set instead of correcting the record"
+    command_pattern: 'uip\s+tm\s+(testsets?\s+run|executions?\s+(run|retry))\b'
+    tool_name: "Bash"
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not reach past the CLI to the test case log REST route"
+    command_pattern: '(?i)(curl|wget)(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*testcaselogs?\b'
+    tool_name: "Bash"
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
