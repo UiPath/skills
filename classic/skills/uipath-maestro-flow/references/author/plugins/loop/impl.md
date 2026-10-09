@@ -400,4 +400,4 @@ Loop over items, fetch data per-iteration via HTTP, process with a script. Both 
 | Downstream value is `NaN`/`undefined` after reducing `$vars.<loopId>.output` | Entries are keyed by body node id, not the body's bare return value | Read `item.<bodyNodeId>.output.<field>`, not `item.<field>` — see [Aggregated loop output](#aggregated-loop-output-varsloopidoutput) |
 | Infinite loop | Edges wired incorrectly | Ensure only the body's `continue` edge creates the cycle, not arbitrary edges |
 | No output after loop | Missing `success` edge | Wire the `success` port to the next downstream node |
-| Per-item step runs once, after the last iteration | Step wired off the outer `success` port instead of inside the body | Move it into the body: `start` → step → `continue`, with `"parentId": "<loopId>"` |
+| Per-item step runs once, after the last iteration | Step wired off the outer `success` port instead of inside the body | Set `"parentId": "<loopId>"` on the step and splice it into the body just before the edge into `continue` (empty body: `start` → step → `continue`). Wire `success` to the step's former downstream node |
