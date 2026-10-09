@@ -64,18 +64,24 @@ Only entities explicitly imported via Studio are available as CLR types in the g
 
 **Only read `EntitiesStore.json` from the current project.** Resolve the path via `project.json` → `entitiesStores[0].serviceDocument`. Do not search for `EntitiesStore.json` in sibling directories, parent folders, or other projects — even if multiple projects are open in Studio. If the entity you need does not appear with `installed: true` in `data-fabric-entities list` output, run `uip rpa data-fabric-entities install --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`. Only if the CLI fails should you ask the user to import via Studio > Data Service tab > "Import Entities". Do not search other projects' `EntitiesStore.json` files.
 
-## Unsupported Entity Types
+## Entity Kinds per Activity
 
-> **`UiPath.DataService.Activities` does not support federated entities, and reaches folder-scoped entities only through a solution's Folder scope.** Do not generate XAML for an entity it cannot reach.
+An entity's kind follows from its non-system fields in `EntitiesStore.json` (`IsSystemField` false): none with `"IsExternalField": true` → **native**; all of them → **federated**, backed by a connector or another entity (Salesforce, Azure AD, …); some → **hybrid**.
 
-- **Federated entities** (backed by external connectors — Salesforce, Azure AD, etc.) can appear in `EntitiesStore.json` alongside native entities. Before generating XAML, detect federation: an entity is federated iff at least one entry in its `Fields[]` array has `"IsExternalField": true`. If so, stop and tell the user the activity does not support it.
+```bash
+# Quick check — replace <ENTITY_NAME> and the project path
+python3 -c "import json,sys; d=json.load(open(sys.argv[1])); e=next((x for x in d['Entities'] if x['Name']==sys.argv[2]), {}); f=[x for x in e.get('Fields',[]) if not x.get('IsSystemField')]; x=[y for y in f if y.get('IsExternalField')]; print('federated' if f and len(x)==len(f) else 'hybrid' if x else 'native')"   "<PROJECT_DIR>/.entities/EntitiesStore.json" "<ENTITY_NAME>"
+```
 
-  ```bash
-  # Quick check — replace <ENTITY_NAME> and the project path
-  python3 -c "import json,sys; d=json.load(open(sys.argv[1])); e=next((x for x in d['Entities'] if x['Name']==sys.argv[2]), None); print('FEDERATED' if e and any(f.get('IsExternalField') for f in e.get('Fields',[])) else 'native')" \
-    "<PROJECT_DIR>/.entities/EntitiesStore.json" "<ENTITY_NAME>"
-  ```
-- **Folder-scoped entities** (solution resources) are addressable only from a project with a SolutionId, through `ScopeValue="Folder"` — see [Solution Context](#solution-context-folder-vs-tenant-scope). Any entity present in `EntitiesStore.json` is tenant-scoped by construction.
+| Activity | Native | Hybrid | Federated |
+|---|---|---|---|
+| `QueryEntityRecords` | Yes | Yes | Yes |
+| `GetEntityRecordById` | Yes | No | No |
+| `CreateEntityRecord`, `UpdateEntityRecord`, `DeleteEntityRecord`, the batch activities, the file activities | Yes | Yes, local fields | No |
+
+- `QueryEntityRecords` on a federated or hybrid entity filters an external field only when its `ExternalFieldMappingDetail.Searchability` marks it searchable, with the operators it lists. A federated entity's system fields are not filterable, and an external field marked `ExternalFieldMappingDetail.IsRequiredForRead` becomes a mandatory input of its own.
+- An activity the table rules out for an entity's kind: do not generate that XAML; tell the user which activity takes the entity.
+- **Folder-scoped entities** (solution resources) are addressable only from a project with a SolutionId, through `ScopeValue="Folder"` — see [Solution Context](#solution-context-folder-vs-tenant-scope). There `QueryEntityRecords` lists native and federated entities, the other activities native ones. Any entity present in `EntitiesStore.json` is tenant-scoped by construction.
 
 ## XAML Namespace Declarations
 
@@ -344,7 +350,7 @@ Do NOT check for Studio Desktop vs Studio Web to decide scope. The only factor i
 
 ## Common Pitfalls
 
-- **Federated entities are unsupported; folder-scoped entities need a solution's Folder scope** — see [Unsupported Entity Types](#unsupported-entity-types). Check before generating XAML.
+- **An entity's kind decides the activity:** federated entities only through `QueryEntityRecords`, hybrid ones write local fields only, folder-scoped ones through a solution's Folder scope — see [Entity Kinds per Activity](#entity-kinds-per-activity). Check before generating XAML.
 - `x:TypeArguments` must be a concrete entity type — `udd:IEntity` is rejected at validation
 - The `local` xmlns must include the full `assembly=DataService.<ProjectName>` qualifier
 - `EntitiesStore.json` contains all tenant entities, but only explicitly imported ones have CLR types in the generated DLL. If validation returns `Cannot create unknown type '{clr-namespace:...}EntityName'` — run `uip rpa data-fabric-entities install --add "<EntityName>" --project-dir "<PROJECT_DIR>" --output json` to install the missing entity type, then retry validation. Only if the CLI fails should you ask the user to import via Studio > Data Service tab > "Import Entities". Do not attempt to fix this by changing namespaces or assembly references.
