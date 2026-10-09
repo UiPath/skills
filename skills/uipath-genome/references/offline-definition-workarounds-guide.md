@@ -54,19 +54,40 @@ Field semantics deciding whether an offline file behaves:
 
 ## Screens — `TargetApp` definitions offline
 
-A screen's definition is a `uix:TargetApp`, obtained like an element's: write the seed below, mutate it only through `uip rpa uia target-app update-definition` (`--name`, `--description`, `--selector` — it also writes the `.metadata` sibling in the CLI's own shape, and prints nothing on success, § CLI behaviour observed offline), then register and link it in the order of § Order of commands, offline. The command exposes no launch URL or file path, so an application card linked to an offline screen can only *attach*: the launch itself is a Start Process ([source-migration-guide.md § Composite interactions](source-migration-guide.md), "actions without a control") and the live pass may move the open into the card. A window-level screen with no elements is the legitimate shape for maximise, close and "window exists" steps, and for the scope a Start Process-launched application is attached through.
+A screen's definition is a `uix:TargetApp`. Write the seed below, mutate it only through `uip rpa uia target-app update-definition` (`--name`, `--description`, `--selector`), then register and link it (§ Order of commands, offline). The command also writes the `.metadata` sibling and prints nothing on success (§ CLI behaviour observed offline).
 
-The whole seed `create-screen` accepts — `Area` zeros are fine offline, `Selector` is what `update-definition --selector` fills:
+The seed `create-screen` accepts:
 
 ```xml
-<uix:TargetApp Area="0, 0, 0, 0" Selector="&lt;html app='chrome.exe' url='https://host.example.com/*' /&gt;" Version="V3" />
+<uix:TargetApp Area="0, 0, 0, 0" BrowserType="Chrome" Url="https://host.example.com/start" Selector="&lt;html app='chrome.exe' url='https://host.example.com/*' /&gt;" Version="V3" />
 ```
+
+- `Area`: zeros are fine offline.
+- `Selector`: set with `update-definition --selector`.
+- `BrowserType` and `Url`: write them in the seed. `update-definition` has no option for them and leaves them unchanged, `create-screen` stores them, and `link-screen` copies them into every card linked to the screen.
+- `Url` can be a constant or an expression. As in a selector, every name the expression uses must be in scope in every workflow with a card linked to the screen. Where one is not, `link-screen` fails with "Failed to save the workflow after updating the activity." and leaves the card unchanged.
+
+### Opening a browser
+
+Open the browser with an application card.
+
+1. Put `BrowserType` and `Url` in the screen seed (above). After `create-screen`, check with `get-screen-xaml` that the screen holds them.
+2. The first card on the screen opens the browser: `OpenMode="IfNotOpen"` (or `Always` for a new window on every run) and `CloseMode="Never"`.
+3. Every later card on the screen attaches: `OpenMode="Never"`.
+4. The card of the last step closes the browser: `CloseMode="Always"`.
+
+Do not open the browser with Start Process: it omits the command-line flags the card adds for automation.
+
+### Desktop applications and window-level screens
+
+- A desktop application is opened by the card, or by a Start Process (executable, arguments, working directory) followed by a card that attaches to its window.
+- A screen with no elements is the right shape for maximise, close and "window exists" steps.
 
 ## Order of commands, offline
 
 The run's target tool ([source-migration-guide.md § UI targets](source-migration-guide.md)) runs these steps. A success line is not proof: a batch past the shell's length limit reports success for the part that arrived. After each `create-*` and `link-*`, count the `TargetApp` / `TargetAnchorable` entries in the file it wrote to (the Object Repository file, the workflow) and stop when the count did not move.
 
-1. Screen seed → `target-app update-definition --name --description --selector`.
+1. Screen seed (for a browser: `BrowserType` and `Url`) → `target-app update-definition --name --description --selector`.
 2. Element seeds, one copy per element → `target-anchorable update-definition --name --description --full-selector --scope-selector --semantic-selector --activity-type` per element; `--full-selector` on every element (§ Starting-point definition file, Seed leakage). `--description` is accepted and lands in the `.xaml.metadata` sibling. `--semantic-selector` adds the semantic step beside the strict one (`SearchSteps="Selector, SemanticSelector"`) and leaves the strict selector as it is, an interpolated expression included. On a registered element, the same call on its exported definition (`object-repository get-element-definition`) followed by `replace-elements` carries the semantic step and the description into the store and keeps the `referenceId` (checked).
 3. `object-repository create-app` → `create-screen` with the screen definition → `create-elements` with every new element definition of that screen in one call (`--definition-file-paths`, comma-separated). The ids the registry keeps come from what they print:
    - `create-app` prints the application's `referenceId`.
