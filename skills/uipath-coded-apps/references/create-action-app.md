@@ -157,17 +157,16 @@ If the deduction surfaces **Storage Buckets** and Q3-doc was not already asked f
 #### Q4a — Environment (only if SDK needed)
 
 Ask:
-> "Which UiPath environment are you targeting? `cloud` (production), `staging`, or `alpha`?"
+> "Which UiPath environment are you targeting? `cloud` (`cloud.uipath.com`), or paste your portal URL if you use a different host."
 
 Map the answer to the cloud host:
 
 | Environment | Cloud Host |
 |---|---|
 | cloud | `https://cloud.uipath.com` |
-| staging | `https://staging.uipath.com` |
-| alpha | `https://alpha.uipath.com` |
+| Custom | The portal URL the user gave, verbatim (origin only, no path) |
 
-Store the cloud host as `<cloud-host>`. It tells the External-App creation step (Q4b) which org/environment portal to target — **do not** skip it and default to `https://cloud.uipath.com`, or staging/alpha users will create the External App in the wrong environment. It is also passed as the redirect URI in Q4b to satisfy the create form's mandatory field. Note that this is **not** the URI the deployed app authenticates with — see Q4b below for the `.../actions_` form that has to be registered separately.
+Store the cloud host as `<cloud-host>`. It tells the External-App creation step (Q4b) which org/environment portal to target — **do not** skip it and default to `https://cloud.uipath.com`, or users on a non-default host will create the External App in the wrong environment. It is also passed as the redirect URI in Q4b to satisfy the create form's mandatory field. Note that this is **not** the URI the deployed app authenticates with — see Q4b below for the `.../actions_` form that has to be registered separately.
 
 #### Q4b — Client ID (only if SDK needed)
 

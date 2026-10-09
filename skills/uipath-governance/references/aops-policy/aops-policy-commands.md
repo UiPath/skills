@@ -407,7 +407,7 @@ Interactive OAuth — default for all commands.
 
 ```bash
 uip login                                          # production (opens browser)
-uip login --authority https://alpha.uipath.com     # non-production environments
+uip login --authority "<AUTHORITY_URL>"           # non-default host (Automation Suite, dedicated)
 uip login status --output json                     # verify logged-in state
 ```
 

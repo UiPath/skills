@@ -134,7 +134,7 @@ Authenticate before any cloud command:
 ```bash
 uip login status --output json         # check if logged in
 uip login                              # interactive OAuth (opens browser)
-uip login --authority https://alpha.uipath.com   # non-production environments
+uip login --authority "<AUTHORITY_URL>"   # non-default host (Automation Suite, dedicated)
 
 # Client-credentials (headless/CI) — scope MUST name one Orchestrator scope AND
 # the two Apps-service scopes. Neither set covers the other:
@@ -148,7 +148,7 @@ uip login \
   --organization <org> \
   --tenant <tenant> \
   --scope "OR.Default Apps.Read Apps.Write" \
-  --authority https://alpha.uipath.com   # omit --authority for production
+  --authority "<AUTHORITY_URL>"   # omit --authority for cloud.uipath.com
 ```
 
 > **The `uip login` session scope is separate from the app's runtime OAuth scopes.** The scopes in `uipath.json` are what the *deployed app* requests at runtime (see [oauth-scopes.md](references/oauth-scopes.md)). The `--scope` on `uip login` above is what the *CLI session* needs to call the Apps registration API during `uip codedapp publish`. `uip codedapp publish` does two things: uploads the package (needs `OR.Default`) **and** registers the coded app (needs `Apps.Read Apps.Write`). For what each failure looks like, see [debug.md](references/debug.md#publish--deploy-fails-under-a-client-credentials-login).
@@ -165,13 +165,13 @@ To change any of these values, edit `uipath.json`.
 |----------|---------|-------------|
 | `UIPATH_PROJECT_ID` | `uip codedapp push` / `uip codedapp pull` | Studio Web project ID |
 
-**Base URL by environment:**
+**Base URL by environment** — derive from the portal host the user signed in to (`uip login status --output json` → `Data.BaseUrl`):
 
-| Environment | Correct Base URL |
+| Portal host | Correct Base URL |
 |---|---|
-| Production (cloud) | `https://api.uipath.com` |
-| Staging | `https://staging.api.uipath.com` |
-| Alpha | `https://alpha.api.uipath.com` |
+| `https://cloud.uipath.com` (default) | `https://api.uipath.com` |
+| `https://<PREFIX>.uipath.com` (any other UiPath-hosted portal) | `https://<PREFIX>.api.uipath.com` |
+| Any other host (Automation Suite, custom) | The API URL the user supplies — use it verbatim |
 
 ## Quick Deploy (Full Pipeline)
 
