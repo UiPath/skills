@@ -1,0 +1,175 @@
+task_id: skill-test-defect-traceability-integration
+description: >
+  Integration test: agent uses the uipath-test skill to trace an existing
+  defect in CLAIM back to what it came from and what it puts at risk. The
+  seeded failed result on `EVFX-DEFTRACE-TC1` already carries a defect,
+  hand-linked to tracker issue EVFX-DEFTRACE-1, and the test case is covered
+  by requirement `EVFX-DEFTRACE-REQ`. Asserts that the agent reaches the
+  defect through the failed result's `DefectId` (or a defects list) instead
+  of guessing a UUID, then uses the `defects` trace verbs —
+  `get-related --object-type Requirement` for impact and `get-external-issue`/`get` for the
+  tracker link — and writes the answer to a file graded on the real fixture
+  values. Read-only: nothing is created or deleted by the agent.
+tags: [uipath-test, integration, mode:diagnose, lifecycle:discover, feature:test-case]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 40
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      P, SET, CASE, REQ = "CLAIM", "EVFX-DEFTRACE-SET", "EVFX-DEFTRACE-TC1", "EVFX-DEFTRACE-REQ"
+      ISSUE = "EVFX-DEFTRACE-1"
+      ZERO = "00000000-0000-0000-0000-000000000000"
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out = (r.stdout or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:200]}", flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def by_name(label, kind, name):
+          for x in call(label, "tm", kind, "list", "--project-key", P,
+                        "--filter", name).get("Data") or []:
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      def ensure(kind, name):
+          found = by_name(f"{kind}.find", kind, name)
+          if not found:
+              call(f"{kind}.create", "tm", kind, "create", "--project-key", P,
+                   "--name", name)
+              found = by_name(f"{kind}.refind", kind, name)
+          if not found:
+              fail(f"could not create or find {name}")
+          return found
+
+      ts = ensure("testsets", SET)
+      tc = ensure("testcases", CASE)
+      req = ensure("requirements", REQ)
+      call("set.add", "tm", "testcases", "add", "--test-set-key", ts["TestSetKey"],
+           "--test-case-keys", tc["TestCaseKey"])
+      linked = (call("req.ids", "tm", "requirements", "list-testcase-ids",
+                     "--project-key", P, "--requirement-id", req["Id"])
+                .get("Data") or {}).get("TestCaseIds") or []
+      if tc["Id"] not in linked:
+          call("req.link", "tm", "requirements", "testcases", "--project-key", P,
+               "--requirement-id", req["Id"], "--add-testcase-ids", tc["Id"])
+
+      def failed_logs(eid):
+          return [l for l in call(f"logs.{eid[:8]}", "tm", "executions", "testcaselogs",
+                                  "list", "--project-key", P, "--execution-id", eid,
+                                  "--only-failed").get("Data") or []
+                  if l.get("Result") == "Failed"]
+
+      # Find (or seed once) a finished run with a failed result.
+      target = None
+      for e in call("ex.list", "tm", "executions", "list", "--project-key", P,
+                    "--test-set-id", ts["Id"]).get("Data") or []:
+          if (e.get("ExecutionStatus") or e.get("Status")) == "Finished":
+              logs = failed_logs(e["Id"])
+              if logs:
+                  target = (e["Id"], logs[0])
+                  break
+      if target is None:
+          r = call("run", "tm", "testsets", "run", "--test-set-key", ts["TestSetKey"],
+                   "--execution-type", "manual")
+          eid = (r.get("Data") or {}).get("ExecutionId")
+          if not eid:
+              fail("could not start a manual execution")
+          call("finish", "tm", "testcaselog", "finish", "--project-key", P,
+               "--execution-id", eid, "--test-case-id", tc["Id"], "--result", "Failed",
+               "--has-error", "true", "--executed-by", "eval-fixture@uipath.com")
+          logs = failed_logs(eid)
+          if not logs:
+              fail(f"execution {eid} has no failed result after finish")
+          target = (eid, logs[0])
+
+      eid, log = target
+      did = log.get("DefectId")
+      if not did or did == ZERO:
+          d = call("defect.create", "tm", "defects", "create", "--project-key", P,
+                   "--execution-id", eid, "--test-case-id", tc["Id"])
+          did = (d.get("Data") or {}).get("Id")
+          if not did:
+              fail("could not raise the fixture defect")
+      # Guard on the property the task reads: the defect is linked to ISSUE.
+      issue = call("defect.issue", "tm", "defects", "get-external-issue",
+                   "--project-key", P, "--defect-id", did).get("Data") or {}
+      if issue.get("ExternalKey") != ISSUE:
+          call("defect.link", "tm", "defects", "update", "--project-key", P,
+               "--defect-id", did, "--external-reference", ISSUE, "--external-link",
+               f"https://example.atlassian.net/browse/{ISSUE}")
+      print(f"FIXTURE: defect {did} on {eid} linked to {ISSUE}", flush=True)
+      PYEOF
+    timeout: 280
+
+initial_prompt: |
+  Someone raised a defect off the last failed run of the `EVFX-DEFTRACE-SET`
+  test set in my Test Manager project CLAIM. Before I triage it I need to
+  know three things: which test case it was raised against, which
+  requirements it puts at risk, and which issue in our tracker it is linked
+  to. Write the answer to `defect-trace.md` in the current directory.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status before touching Test Manager (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0   # advisory
+
+  - type: command_executed
+    description: "Agent reached the defect from the run's results or the defect list, not a guessed UUID"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+(executions?\s+testcaselogs\s+list|defects?\s+list)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the requirements at risk with `defects get-related --object-type Requirement`"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--defect-id\s+\S)(?=[\s\S]*--object-type\s+["\x27]?Requirement\b)uip\s+tm\s+defects?\s+get-related\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the tracker link with `defects get-external-issue` or `defects get`"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--defect-id\s+\S)uip\s+tm\s+defects?\s+(get-external-issue|get)(?![\w-])'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Read-only task: the agent did not create, update or delete defects"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+defects?\s+(create|update|delete)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "defect-trace.md names the real test case, requirement and tracker issue from the fixture"
+    command: |
+      test -f defect-trace.md \
+        && grep -q 'EVFX-DEFTRACE-TC1' defect-trace.md \
+        && grep -q 'EVFX-DEFTRACE-REQ' defect-trace.md \
+        && grep -q 'EVFX-DEFTRACE-1\b' defect-trace.md
+    timeout: 5
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

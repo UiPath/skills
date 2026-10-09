@@ -48,3 +48,9 @@
 {"id": "uipath-test-048", "prompt": "I need to manage test sets and executions in UiPath", "expected_skill": "uipath-test"}
 {"id": "uipath-test-049", "prompt": "Bulk-add 20 test cases from project INV into the new ReleaseCandidate test set", "expected_skill": "uipath-test"}
 {"id": "uipath-test-050", "prompt": "After my test set finishes, download the JUnit results and attachments and write a markdown report", "expected_skill": "uipath-test"}
+{"id": "uipath-test-051", "prompt": "Raise a defect in Test Manager for the failed test case in my last regression run", "expected_skill": "uipath-test"}
+{"id": "uipath-test-052", "prompt": "Which requirements are affected by Test Manager defect 3f2a9c1e-0000-0000-0000-000000000001?", "expected_skill": "uipath-test"}
+{"id": "uipath-test-053", "prompt": "Link my Test Manager defect to the Jira issue QA-881 I filed by hand", "expected_skill": "uipath-test"}
+{"id": "uipath-test-054", "prompt": "List the defects raised in Test Manager project CLAIM this week", "expected_skill": "uipath-test"}
+{"id": "uipath-test-055", "prompt": "Set the priority of a Test Manager defect to High and its status to In Progress", "expected_skill": "uipath-test"}
+{"id": "uipath-test-056", "prompt": "Download the screenshots attached to Test Manager defect 3f2a9c1e-0000-0000-0000-000000000001 into ./evidence", "expected_skill": "uipath-test"}

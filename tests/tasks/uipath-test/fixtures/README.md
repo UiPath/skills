@@ -28,6 +28,8 @@ and therefore exact for this scheme.
 | `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `defect_lifecycle_smoke` | CLAIM | `EVFX-DEFECT-SET`, `EVFX-DEFECT-TC1` | 1 Finished execution with TC1 `Failed` and **no** defect on it. The defect the task raises is scratch: `pre_run` deletes one an earlier run left on the result, never seeds a second execution |
+| `defect_traceability_integration` | CLAIM | `EVFX-DEFTRACE-SET`, `EVFX-DEFTRACE-TC1`, `EVFX-DEFTRACE-REQ` | 1 Finished execution with TC1 `Failed`; a defect on that result linked by hand to tracker issue `EVFX-DEFTRACE-1`; the requirement covers TC1 |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the

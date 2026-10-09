@@ -1,13 +1,13 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, cases, sets, executions, defects; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
 
 # UiPath Test Assistant
 
-Manage UiPath Test Manager projects, requirements, test cases, test sets, executions, logs, attachments, results, custom fields, labels, and persona-tailored shareable test reports.
+Manage UiPath Test Manager projects, requirements, test cases, test sets, executions, logs, defects, attachments, results, custom fields, labels, and persona-tailored shareable test reports.
 
 ## Use For
 
@@ -15,7 +15,7 @@ Test Manager CRUD; execution analysis, coverage, regression trends, failure rate
 
 ## Concepts and CLI
 
-Requirements define what must be tested; test cases define scenarios and may contain **teststeps**; test sets group cases; executions are created when a test set or testcase runs. Testcase logs record a testcase in an execution and provide navigation; test-step logs record steps; testcase-log assertions are assertion steps.
+Requirements define what must be tested; test cases define scenarios and may contain **teststeps**; test sets group cases; executions are created when a test set or testcase runs. Testcase logs record a testcase in an execution and provide navigation; test-step logs record steps; testcase-log assertions are assertion steps. A **defect** is a bug raised from one testcase log and synced to the project's defect tracker (Jira, Azure DevOps, …).
 
 External Playwright packages are suites packaged and uploaded to Orchestrator. Ingestion auto-creates one testcase per Playwright test, without a link step, and labels each `PW_Tag_*`, `PW_Project_*`, `PW_Suite_*`, and `PW_File_*`. They run on serverless cloud runtimes; see [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
 
@@ -57,6 +57,10 @@ Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcom
 
 `uip tm pack --project-path <dir> --type playwright --project-key <PROJECT_KEY> --name <PackageName> --package-version <ver> -o <out-dir>` packs a Playwright suite into a `.nupkg`; a lockfile and `@playwright/test` are required. `--package-version` is NuGet/SemVer-style with three or four numeric parts and an optional prerelease/build suffix (`1.0.0`, `1.0.0.0`, `1.0.1-beta.1`); `1.0` and nonnumeric values are rejected. `--project-key` targets the Test Manager project for automatic testcase ingestion; `--no-create-test-cases` skips it; `--dry-run` previews. Upload with `uip or packages upload <nupkg>`. Packing is offline and needs no auth. The upload → ingestion → label-fill → run pipeline is in [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
 
+### Defects
+
+`uip tm defects …` raises a defect from a failed result (`create --project-key <PROJECT_KEY> --execution-id <UUID>` with `--test-case-id <UUID>` or `--test-case-key <KEY>`, exactly one), lists and gets it (`list`, `get --defect-id <UUID>`), updates status/priority/tracker link (`update --defect-id <UUID>` with `--status`, `--priority`, `--external-reference`, `--external-link`), deletes it (`delete --defect-id <UUID> --yes`), and traces it (`get-related --defect-id <UUID> --object-type <TestCase|TestExecution|TestCaseLog|Requirement>`, `get-external-issue`, `attachments list|download`). `attachments download` takes `--result-path <DIR>` or `--output-file <PATH>` and never replaces an existing file unless you pass `--overwrite`; ask first. Defects are UUID-only; find the one on a result through the `DefectId` of `executions testcaselogs list`, not by paging `defects list`. One defect per result; with no tracker connected a defect stays `InProgress` until linked by hand. Full rules: [references/defects-guide.md](references/defects-guide.md).
+
 ### Wait and user
 
 `uip tm wait --execution-id <EXECUTION_ID>` waits for terminal state; optionally `--project-key`, `--test-set-key`, `--timeout <SECONDS>`. `uip tm user get` gets the authenticated user's profile.
@@ -95,6 +99,7 @@ For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For an
 ## Navigate to a Workflow
 
 - Failed-run root cause, assertions, step logs, evidence, and flaky-versus-regression analysis: [references/failure-triage-guide.md](references/failure-triage-guide.md)
+- Raise a defect from a failed result, trace it to its test case/requirements, link it to a tracker issue (`uip tm defects`): [references/defects-guide.md](references/defects-guide.md)
 - Shareable tester or release-manager report: [references/test-result-report-guide.md](references/test-result-report-guide.md)
 - Publish a project and link it to a Test Manager testcase (Studio/RPA): [references/publish-and-link-guide.md](references/publish-and-link-guide.md)
 - Pack, ingest, label, and run Playwright on serverless: [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md)
