@@ -13,7 +13,6 @@ import re
 from pathlib import Path
 
 import pytest
-import yaml
 
 HERE = Path(__file__).resolve().parent
 ROWS = [json.loads(line) for line in (HERE / "corpus.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -41,9 +40,11 @@ def test_rows_and_manifests_match_one_to_one() -> None:
 
 
 def test_task_yaml_reads_this_dataset() -> None:
-    task = yaml.safe_load((HERE / "publish_from_pdd_corpus.yaml").read_text(encoding="utf-8"))
-    assert task["dataset"]["paths"] == ["corpus.jsonl"]
-    assert "smoke" not in task["tags"]
+    # Plain text, not a YAML parse: the CI job installs pytest only.
+    task = (HERE / "publish_from_pdd_corpus.yaml").read_text(encoding="utf-8")
+    assert re.search(r'^dataset:\n  paths: \["corpus\.jsonl"\]$', task, re.M)
+    tags = re.search(r"^tags: \[(.*)\]$", task, re.M).group(1).split(", ")
+    assert "integration" in tags and "smoke" not in tags
 
 
 @pytest.mark.parametrize("row", ROWS, ids=lambda r: r["id"])
@@ -71,4 +72,6 @@ def test_every_alias_is_in_the_documents(row: dict) -> None:
     expected = manifest(row["id"])
     for table in ("systems", "optional_systems"):
         for name, aliases in (expected.get(table) or {}).items():
-            assert any(a.lower() in text for a in (aliases or [name])), f"{table} {name!r} not in the documents"
+            # Same whole-token rule as check_publish.names_alias.
+            found = any(re.search(rf"(?<![a-z0-9]){re.escape(a.lower())}(?:e?s)?(?![a-z0-9])", text) for a in (aliases or [name]))
+            assert found, f"{table} {name!r} not in the documents"

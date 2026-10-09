@@ -616,3 +616,20 @@ def test_id_added_during_the_run_that_the_pdd_does_not_name_is_a_decoy(sandbox: 
     section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]["value"] = [21, 22, 78]
     publish(sandbox, answers)
     assert "78" in grade_on_stub(sandbox, "applications").stdout
+
+
+def test_alias_matches_whole_tokens_only(sandbox: Path) -> None:
+    answers = good_answers()
+    apps = section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]
+    apps["new_applications"].append({"application_name": "Credit Bureau"})
+    publish(sandbox, answers)
+    systems = {**retail_manifest()["systems"], "TriStar EDI gateway": ["edi"]}
+    result = grade_with(sandbox, "applications", retail_manifest(systems=systems))
+    assert result.returncode == 1 and "Credit Bureau" in result.stdout, result.stdout
+
+
+def test_a_name_matching_required_and_optional_counts_as_required(sandbox: Path) -> None:
+    publish(sandbox, good_answers())
+    manifest = retail_manifest(optional_systems={"Signicat sandbox": ["signicat"]})
+    result = grade_with(sandbox, "applications", manifest)
+    assert result.returncode == 0 and "(0 optional too)" in result.stdout, result.stdout

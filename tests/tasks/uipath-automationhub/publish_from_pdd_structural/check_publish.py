@@ -86,7 +86,8 @@ class Expectation:
 
     @property
     def allowed(self) -> dict[str, tuple[str, ...]]:
-        return {**self.optional_systems, **self.systems}
+        """Required systems first, so a name matching both counts as the required one."""
+        return {**self.systems, **{k: v for k, v in self.optional_systems.items() if k not in self.systems}}
 
 
 def load_expectation(path: Path) -> Expectation:
@@ -221,10 +222,16 @@ def normalized(name: str) -> str:
     return re.sub(r"\s+", " ", str(name)).strip().lower()
 
 
+def names_alias(text: str, alias: str) -> bool:
+    """`alias` appears in `text` as a whole token run, plural allowed: "edi" is in
+    "TriStar EDI gateway", not in "Credit Bureau"; "inbox" is in "inboxes"."""
+    return re.search(rf"(?<![a-z0-9]){re.escape(alias)}(?:e?s)?(?![a-z0-9])", text) is not None
+
+
 def system_of(name: str) -> str | None:
     """The PDD system (required or optional) an application name stands for, if any."""
     text = normalized(name)
-    return next((system for system, names in EXPECT.allowed.items() if any(a in text for a in names)), None)
+    return next((system for system, names in EXPECT.allowed.items() if any(names_alias(text, a) for a in names)), None)
 
 
 def inventory_by_system(seed: dict) -> dict[str, set[int]]:
