@@ -137,6 +137,24 @@ def elements(root: ET.Element, local_name: str) -> list[ET.Element]:
     return root.findall(f".//bpmn:{local_name}", NS)
 
 
+def tag_case_hint(root: ET.Element, local_name: str) -> str:
+    if elements(root, local_name):
+        return ""
+    prefix = f"{{{NS['bpmn']}}}"
+    wanted = local_name.casefold()
+    found = sorted(
+        {
+            el.tag[len(prefix):]
+            for el in root.iter()
+            if el.tag.startswith(prefix)
+            and el.tag[len(prefix):].casefold() == wanted
+        }
+    )
+    if not found:
+        return ""
+    return f" (found bpmn:{found[0]}; tags are case-sensitive, expected bpmn:{local_name})"
+
+
 def one_or_more(root: ET.Element, local_name: str) -> list[ET.Element]:
     found = elements(root, local_name)
     if not found:

@@ -148,11 +148,11 @@ success_criteria:
     description: "Seeded path cases: each drives its branch and produces the expected outcome; the escalation case actually posts a Slack alert (non-empty message id)"
     command: "python3 $REFERENCE_DIR/_shared/check_escalation_orchestrator_paths.py"
     # 7 x debug_budget(300) = 2100 run_debug + 7x120s variables-all
-    # (840) + 90s solution init + 180s solution import + 60s margin = 3270;
-    # rounded up to 3300. (Flow's own per-case run_debug math is identical --
+    # (840) + 90s solution init + 180s solution import + 120s incidents on a
+    # Slack miss + 60s margin = 3390; rounded up to 3400. (Flow's own per-case run_debug math is identical --
     # 2100 -- but bpmn debug needs the extra ephemeral solution
     # init/import/variables-all plumbing flow debug does not.)
-    timeout: 3300  # budget-guard: manual x7
+    timeout: 3400  # budget-guard: manual x7
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
