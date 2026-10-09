@@ -378,7 +378,6 @@ You don't pick the form — `connectorKey` does. Trying to use Http kind with a 
 
 The HTTP-passthrough variant (`UiPath.Http` with `bodyParameters.targetConnector` pointing at a vendor) is **NOT generally available** — it requires a special UiPath HTTP-connector connection that's been authorized for the vendor. Don't use it unless you know you have such a connection.
 
-<<<<<<< HEAD
 ### Http kind — `call: "UiPath.Http"` (HTTP Request curated activity)
 
 The Http kind has a fixed shape: `with.method` is always `"POST"` (the outer wrapper), `with.endpoint` is always `"/http-request"`. The actual HTTP call lives in `bodyParameters`:
@@ -397,7 +396,7 @@ The Http kind has a fixed shape: `with.method` is always `"POST"` (the outer wra
 ```javascript
 ${$context.outputs.http_request_1.statusCode}              // 200
 ${$context.outputs.http_request_1.content}                 // parsed JSON body
-${$context.outputs.http_request_1.content.fact}            // catfact field
+${$context.outputs.http_request_1.content.fact}            // a field in the response body
 ```
 
 ### IntSvc kind — `call: "UiPath.IntSvc"` (vendor curated activity)
@@ -678,7 +677,7 @@ uip api-workflow registry resolve "http request" --output json
 
 # 3. Stub the activity — pass the URL via --inputs to skip placeholder replacement
 uip api-workflow registry stub 5c4cc855-b42a-37e6-b910-de8588998fce \
-  --inputs '{"method":"GET","url":"https://catfact.ninja/fact"}' \
+  --inputs '{"method":"GET","url":"https://api.example.com/facts/random"}' \
   --output json
 # → Data.Activity with the HttpRequest_1 key, ready to drop in
 ```
@@ -698,7 +697,7 @@ The resulting workflow activity (drop into the root sequence):
       "bodyParameters": {
         "authentication": "manual",
         "method": "GET",
-        "url": "https://catfact.ninja/fact",
+        "url": "https://api.example.com/facts/random",
         "headers": {}
       }
     },
@@ -715,9 +714,6 @@ The resulting workflow activity (drop into the root sequence):
 ```
 
 The `unifiedTypesCompatible: true` + `savedJitInputFieldId: "in_http-request"` flags inside `essentialConfiguration` are what tell StudioWeb to render the unified HTTP card.
-=======
-Example: stub the HTTP Request activity with `--inputs '{"url":"https://api.example.com/facts/random","method":"GET"}'`.
->>>>>>> 85a3ffa6b (fix(skills): replace third-party public API hosts in examples with example.com)
 
 <!--skill-flavor:http-example-execution-proof:start-->
 Against a live endpoint, `uip api-workflow run --no-auth` on the resulting workflow returns `statusCode: 200` with the parsed response body under `content`. StudioWeb's designer renders the activity as the unified HTTP Request card. See [../assets/templates/connector-call-example.json](../assets/templates/connector-call-example.json) for a complete stub-generated workflow.
