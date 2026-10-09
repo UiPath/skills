@@ -324,7 +324,7 @@ CONVERSATIONAL_ENGINE = "conversational-v1"
 
 def check_agent_voice(flow_path: str, flow: dict) -> int:
     """The sidecar agent.json carries settings.voice (which `uip agent init
-    --inline-in-flow --conversational` does NOT scaffold), keeps the
+    --inline-in-flow --voice` writes and `--conversational` does not), keeps the
     conversational engine, and holds a real system prompt.
 
     `settings.engine` is graded here because `flow validate` does NOT check it
@@ -347,9 +347,9 @@ def check_agent_voice(flow_path: str, flow: dict) -> int:
     voice = settings.get("voice")
     if not isinstance(voice, dict) or not voice:
         errors.append(
-            "settings.voice is missing or empty — `uip agent init "
-            "--inline-in-flow --conversational` does not scaffold it, it must be "
-            "added by hand"
+            "settings.voice is missing or empty — scaffold with `uip agent init "
+            "--inline-in-flow --voice`, or add it by hand to a --conversational "
+            "scaffold"
         )
     elif not str(voice.get("model") or "").strip():
         errors.append("settings.voice.model is empty (the realtime speech model)")
@@ -369,7 +369,7 @@ def check_agent_voice(flow_path: str, flow: dict) -> int:
     if (agent.get("metadata") or {}).get("isConversational") is not True:
         errors.append(
             "metadata.isConversational is not true — the agent was scaffolded "
-            "without --conversational"
+            "without --voice or --conversational"
         )
     else:
         print("OK      metadata.isConversational is true")
