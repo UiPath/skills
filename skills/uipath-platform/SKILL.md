@@ -84,7 +84,7 @@ Load this skill BEFORE writing any code that talks to UiPath. Specific triggers:
   - **Files** — binary attachments stored on `FILE`-typed fields via `files upload / download / delete` (record-level writes silently strip FILE values; the dedicated verbs are mandatory).
   - **Choice sets** — shared enumerations consumed by `CHOICE_SET_SINGLE` / `CHOICE_SET_MULTIPLE` fields; values use immutable integer `NumberId`s, not labels.
   - **Folder scoping** — tenant-level OR folder-scoped via `--folder-key <GUID>` on every write, `--include-folders` on `entities list` / `choice-sets list`.
-  - **CSV bulk import** — `uip df records import <entity-id> --file <path.csv> --output json`. Basic field types only; complex fields (CHOICE_SET, RELATIONSHIP, FILE, AUTO_NUMBER) require `records insert --file <json>`.
+  - **CSV bulk import** — `uip df records import <entity-id> --file <path.csv> --output json`. Basic field types only; complex fields (CHOICE_SET, RELATIONSHIP, FILE, AUTO_NUMBER) and text holding newlines or quotes require `records insert --file <json>`.
 
   For Query / Create / Update / Delete / GetById connector nodes **inside a `.flow`**, hand off to `uipath-maestro-flow` — that skill owns the in-flow node JSON, `bindings_v2.json`, and connection-resource layout.
 

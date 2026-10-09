@@ -222,6 +222,8 @@ Single insert response: `{ Code: "RecordInserted", Data: { ...record with Id } }
 
 Batch insert response: `{ Code: "RecordsBatchInserted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`
 
+One call takes at most 1,000 records. A larger array fails whole ("Number of items provided 1500 exceeds limit 1000") and inserts nothing, so send larger loads in chunks of up to 1,000.
+
 ### Writing Choice-Set and Relationship Values
 
 | Field type | Value | Resolve via |

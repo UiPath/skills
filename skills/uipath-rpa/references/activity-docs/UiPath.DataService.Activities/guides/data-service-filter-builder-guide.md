@@ -70,23 +70,28 @@ Look up the field's `SqlType.Name` and `FieldDisplayType` in `EntitiesStore.json
 
 | SqlType.Name | Valid Operators |
 |---|---|
-| `NVARCHAR`, `MULTILINE` | `contains`, `not contains`, `=`, `!=`, `startswith`, `endswith`, `is empty`, `not empty`, `is null`, `is not null`, `in`, `not in` |
-| `INT`, `BIGINT`, `FLOAT`, `DECIMAL` | `=`, `!=`, `>`, `<`, `>=`, `<=`, `is empty`, `not empty`, `is null`, `is not null`, `in`, `not in` |
-| `DATETIMEOFFSET`, `DATE` | `=`, `!=`, `>`, `<`, `>=`, `<=`, `is empty`, `not empty`, `is null`, `is not null`, `in`, `not in` |
-| `BIT` | `Equals true`, `Equals false`, `=`, `!=`, `is empty`, `not empty`, `is null`, `is not null` |
-| `UNIQUEIDENTIFIER` | `contains`, `not contains`, `=`, `!=`, `startswith`, `endswith`, `is empty`, `not empty`, `is null`, `is not null`, `in`, `not in` |
+| `NVARCHAR`, `MULTILINE` | `contains`, `not contains`, `=`, `!=`, `startswith`, `endswith`, `>`, `<`, `>=`, `<=`, `is empty`, `not empty`, `in`, `not in` |
+| `INT`, `BIGINT`, `FLOAT`, `DECIMAL` | `=`, `!=`, `>`, `<`, `>=`, `<=`, `is empty`, `not empty`, `in`, `not in` |
+| `DATETIMEOFFSET`, `DATE` | `=`, `!=`, `>`, `<`, `>=`, `<=`, `is empty`, `not empty`, `in`, `not in` |
+| `BIT` | `Equals true`, `Equals false`, `=`, `!=`, `is empty`, `not empty` |
+| `UNIQUEIDENTIFIER` | `contains`, `not contains`, `=`, `!=`, `startswith`, `endswith`, `is empty`, `not empty`, `in`, `not in` |
+
+Text-field semantics:
+- `=`, `contains`, `startswith` and the comparisons ignore case. Comparisons follow text order, not numeric: `"10" < "2"`.
+- Null matches no comparison, `!=` or `not contains`; match it with `is empty`.
+- `contains` treats `_` and `%` in the value as wildcards.
 
 ### Non-Basic Fields
 
 | FieldDisplayType | Valid Operators |
 |---|---|
-| `ChoiceSetSingle` | `=`, `!=`, `is empty`, `not empty`, `is null`, `is not null`, `in`, `not in` |
-| `ChoiceSetMultiple` | `contains`, `not contains`, `=`, `!=`, `is empty`, `not empty`, `is null`, `is not null` |
+| `ChoiceSetSingle` | `=`, `!=`, `is empty`, `not empty`, `in`, `not in` |
+| `ChoiceSetMultiple` | `contains`, `not contains`, `=`, `!=`, `is empty`, `not empty` |
+| `AutoNumber` | `=`, `!=`, `>`, `<`, `>=`, `<=`, `is empty`, `not empty`, `in`, `not in` |
+| `Relationship` | `is empty`, `not empty` |
+| `File` | `is empty`, `not empty` |
 
 > **Choice-set filter values are numeric Ids — never the display label.** `ChoiceSetSingle` filter `InArgument` is `x:Int32` (the choice's numeric Id, e.g. `5`); `in` / `not in` use an `s:String[]` of the numeric Ids as strings. `ChoiceSetMultiple` stores values as a JSON-stringified array of numeric Ids in a single `x:String` field, so `=` / `!=` / `contains` / `not contains` compare against that string form. See [overview § Choice Set Fields](../overview.md#choice-set-fields--read--write-shape).
-| `AutoNumber` | `=`, `!=`, `>`, `<`, `>=`, `<=`, `is empty`, `not empty`, `is null`, `is not null`, `in`, `not in` |
-| `Relationship` | `is empty`, `not empty`, `is null`, `is not null` |
-| `File` | `is empty`, `not empty`, `is null`, `is not null` |
 
 ### XML Escaping
 
@@ -130,7 +135,9 @@ The `in` and `not in` operators use `s:String[]` regardless of the field's SqlTy
 
 ### Value-less Operators
 
-Operators `is empty`, `not empty`, `is null`, `is not null` take no value. They still require a `ValueIndex` and a corresponding `FilterValues` slot, but the slot contains `<x:Null />`:
+Operators `is empty` and `not empty` take no value. They still require a `ValueIndex` and a corresponding `FilterValues` slot, but the slot contains `<x:Null />`. The activity sends `is empty` as `= null`, adding `= ""` on text fields, and `not empty` as the negation of both.
+
+`is null` / `is not null` with that slot pass validation but fail every run: "Filter value null can only be used with operator = or !=". Use `is empty` / `not empty`.
 
 ```xml
 <!-- SimpleFilter -->
@@ -300,7 +307,7 @@ Logical meaning: `(FIELD_1 OP VALUE_1) AND ((FIELD_2 OP VALUE_2) OR (FIELD_3 OP 
 </uda:QueryEntityRecords.FilterValues>
 ```
 
-### Template 4 — Value-less Operators (is empty, not empty, is null, is not null)
+### Template 4 — Value-less Operators (is empty, not empty)
 
 ```xml
 <uda:QueryEntityRecords.FilterArguments>
@@ -452,7 +459,7 @@ Entity is VB project. EntityId from `EntitiesStore.json`: `cd543a02-3621-f111-9a
 
 1. **Do NOT use CLR type strings for FieldType.** `FieldType` is always `"UiPath.DataService.Core.Models.EntityField"` — never `"System.String"`, `"System.Int32"`, etc.
 2. **Do NOT use `x:DateTimeOffset` or `x:Guid`.** These are not in the `x:` schema. Use `s:DateTimeOffset` and `s:Guid` with the `s:` namespace.
-3. **Do NOT skip FilterValues slots for value-less operators.** Even `is empty` / `not empty` / `is null` / `is not null` require a `ValueIndex` pointing to an `<x:Null />` slot. Note: `Equals true` / `Equals false` are NOT value-less — they require `<InArgument x:TypeArguments="x:Boolean">True</InArgument>` or `False`.
+3. **Do NOT skip FilterValues slots for value-less operators.** Even `is empty` / `not empty` require a `ValueIndex` pointing to an `<x:Null />` slot. Note: `Equals true` / `Equals false` are NOT value-less — they require `<InArgument x:TypeArguments="x:Boolean">True</InArgument>` or `False`.
 4. **Do NOT use lowercase `and` / `or`.** GroupFilter.Operator must be uppercase `AND` or `OR`.
 5. **Do NOT forget to XML-escape comparison operators.** Write `&gt;` for `>`, `&gt;=` for `>=`, `&lt;` for `<`, `&lt;=` for `<=` in the Operator attribute.
 6. **Do NOT use brackets `[...]` for expressions in C# projects.** Brackets create `VisualBasicValue` nodes. Use `<CSharpValue>` instead.
