@@ -28,7 +28,7 @@ Define an autonomous agent inside this Flow project, with optional resources.
     rules: [{ $ruleType: 'always', applyTo: 'inputAndOutput' }] }] }))
 ```
 
-`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds; `memory: { name, id }` attaches an episodic memory; `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
+`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds; `memory` is refused ([agent-resources.md](agent-resources.md#memory)); `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
 
 ## Model and answer judgment
 

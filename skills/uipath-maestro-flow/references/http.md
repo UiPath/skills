@@ -85,6 +85,10 @@ Connection mode emits `authentication: "connector"`, targets
 `uipath-uipath-http`, and treats `url` as a path relative to the connection's
 configured base URL. Supplying only one of `connection` or `folder` is an error.
 
+A secret the call needs, such as a header token or basic credentials, belongs in
+that connection. No Flow node reads an Orchestrator asset or credential, so a
+token written into `headers` sits in the flow source as plain text.
+
 For an HTTP fallback authenticated by another connector, set its connector key
 as `targetConnector`. The node remains the managed HTTP wrapper, while the
 proxied request reuses that connector's authentication:
