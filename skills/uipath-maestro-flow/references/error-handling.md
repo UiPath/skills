@@ -51,6 +51,8 @@ Moving to the managed node is a behaviour change, not a rename: a non-2xx stops 
 
 A `.loop()` container CAN carry a handler: `.onError()` after `.loop(...)` wires the container's own error port, and a body step's failure routes to it — measured, the container's envelope carries the body's message in `detail` and the failing body step's label in `element`, and the instance completes instead of faulting. Read it the usual way, `h.err('detail')`.
 
+A sub-flow step's handler catches a failure in any step of its child the same way: measured, `detail` carries the inner step's message, `element` the failing inner step's label, `message` the family's generic text (`Error invoking script task`), and the instance completes. That is how a run gets one failure path: put its steps in one child flow, call it as the parent's single step, and attach one `.onError()` there, instead of a handler on every step.
+
 A `.doWhile()` cannot, and the reason is the handle rather than the variable: `core.logic.dowhile@1.0` declares an error variable but its handles are input, success, start, continue and break, so an edge would leave a handle the node does not have — the shape that fails product validate with "the current manifest does not declare that handle". Handle the failure inside the body, on the step that can fail. The builder refuses it by name.
 
 `.onError(...)` is the `error` port case of `.stepToList(port, handler)`, which
