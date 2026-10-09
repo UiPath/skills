@@ -131,7 +131,7 @@ Every flow has exactly one trigger, first in topology. IS connector triggers rep
 | `core.logic.merge` | [merge](plugins/merge/planning.md) | Synchronize parallel branches |
 | `core.control.end` | [end](plugins/end/planning.md) | Graceful completion; one per terminal path |
 | `core.logic.terminate` | [terminate](plugins/terminate/planning.md) | Immediate fatal abort |
-| `core.subflow` | [subflow](plugins/subflow/planning.md) | Reusable isolated-scope group |
+| `core.subflow` | [subflow](plugins/subflow/planning.md) | Isolated-scope group within one flow |
 
 ### Connector Nodes
 
