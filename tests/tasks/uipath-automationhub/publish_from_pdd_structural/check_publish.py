@@ -15,6 +15,7 @@ seed_publish.py's token and staged-file digests. Each subcommand is one criterio
     documents      PDD and process map uploaded once each, as the staged bytes, with the right type ids
     verify         attachments and the record read back after the create
     users          every owner lookup (if any) is server-side and carries --invite-status all
+    fallback       (publish_from_pdd_403_fallback) admin upsert attempted once, refused, published anyway
 
 Exit 0 = pass; non-zero prints the first failing reason.
 """
@@ -336,6 +337,51 @@ def check_users(calls: list[dict], seed: dict) -> str:
     return f"{len(lookups)} owner lookup(s), each server-side with --invite-status all"
 
 
+def check_fallback(calls: list[dict], seed: dict) -> str:
+    """RPANAV-19120: applications never block the publish.
+
+    Used by publish_from_pdd_403_fallback, on a tenant whose schema lacks
+    `new_applications` and whose identity cannot manage the inventory: the skill's
+    only route to the missing systems is the admin upsert, which the tenant refuses.
+    The expected shape is attempt -> refused -> publish anyway, gap stated.
+    """
+    if seed.get("new_applications_offered"):
+        raise CheckFailed("environment: this tenant's schema offers new_applications, so the fallback is unreachable")
+    create = the_create(calls)
+    attempts = calls_matching(calls, "ah applications update")
+    if not attempts:
+        raise CheckFailed("the admin applications upsert was never attempted, so the fallback was not exercised")
+    create_index = calls.index(create)
+    late = [a for a in attempts if calls.index(a) > create_index]
+    if late:
+        raise CheckFailed(f"applications update retried after the create ({len(late)} call(s)); a refusal is final")
+    if len(attempts) > 1:
+        raise CheckFailed(f"applications update attempted {len(attempts)} times; one attempt, then fall through")
+    if attempts[0].get("result") == "Success":
+        raise CheckFailed("environment: the applications upsert succeeded, so this identity is not the "
+                          "non-admin the scenario needs")
+    created_id(calls)
+
+    answers = submitted_answers(create)
+    apps = applications_answer(answers)
+    if "new_applications" in apps:
+        raise CheckFailed("new_applications sent although this tenant's schema does not offer it")
+    by_system = inventory_by_system(seed)
+    by_id = attached_systems(apps, by_system)
+    dropped = sorted(set(by_system) - by_id)
+    if dropped:
+        raise CheckFailed(f"PDD systems the inventory held were not attached: {dropped}")
+
+    absent = sorted(set(PDD_SYSTEMS) - set(by_system))
+    description = value_of(answers, "OVR-OVERVIEW_DESCRIPTION")
+    text = description.lower() if isinstance(description, str) else ""
+    unnamed = [system for system in absent if system not in text]
+    if unnamed:
+        raise CheckFailed(f"description does not name the systems that could not be attached: {unnamed}")
+    return (f"upsert attempted once and refused; published with {len(by_id)} inventory system(s), "
+            f"gap named: {absent}")
+
+
 CHECKS = {
     "create-once": check_create_once,
     "payload": check_payload,
@@ -343,6 +389,7 @@ CHECKS = {
     "documents": check_documents,
     "verify": check_verify,
     "users": check_users,
+    "fallback": check_fallback,
 }
 
 

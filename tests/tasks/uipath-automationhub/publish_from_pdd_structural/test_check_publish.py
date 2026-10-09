@@ -55,7 +55,7 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def stage(root: Path, *, inventory: list[dict] = INVENTORY) -> Path:
+def stage(root: Path, *, inventory: list[dict] = INVENTORY, offers_new_apps: bool = True) -> Path:
     box = root / "sandbox"
     shutil.copytree(LIVE_TEMPLATE, box)
     for template in (HERE / "fixtures").glob("*-template.*"):
@@ -64,7 +64,7 @@ def stage(root: Path, *, inventory: list[dict] = INVENTORY) -> Path:
     seed = {
         "run_token": TOKEN,
         "fixtures": {PDD: digest(box / PDD), MAP: digest(box / MAP)},
-        "new_applications_offered": True,
+        "new_applications_offered": offers_new_apps,
         "owner_email": OWNER,
         "business_process_flow_id": 8,
         "inventory": inventory,
@@ -371,3 +371,91 @@ def test_numeric_strings_are_the_same_ids(sandbox: Path) -> None:
     publish(sandbox, answers)
     assert grade(sandbox, "payload").returncode == 0
     assert grade(sandbox, "applications").returncode == 0
+
+
+# --- publish_from_pdd_403_fallback ------------------------------------------------
+
+def fallback_answers() -> dict:
+    answers = good_answers()
+    section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"] = {"value": [21, 22]}
+    section(answers, "OVR-OVERVIEW_DESCRIPTION")["OVR-OVERVIEW_DESCRIPTION"] = {"value": (
+        "Automates retail current-account onboarding from CRM intake to account provisioning. "
+        "Trapets, Scrive and Temenos T24 are not in the application inventory and could not be attached.")}
+    return answers
+
+
+@pytest.fixture
+def fallback_sandbox(tmp_path: Path) -> Path:
+    return stage(tmp_path, offers_new_apps=False)
+
+
+def fallback_publish(sandbox: Path, answers: dict, *, attempts: int = 1, after: int = 0) -> None:
+    (sandbox / "new-apps.json").write_text("[]")
+    for _ in range(attempts):
+        uip(sandbox, "ah", "applications", "update", "--file", "./new-apps.json", "--output", "json")
+    publish(sandbox, answers)
+    for _ in range(after):
+        uip(sandbox, "ah", "applications", "update", "--file", "./new-apps.json", "--output", "json")
+
+
+@pytest.mark.parametrize("check", ["create-once", "payload", "fallback", "documents", "verify", "users"])
+def test_fallback_golden_passes(fallback_sandbox: Path, check: str) -> None:
+    fallback_publish(fallback_sandbox, fallback_answers())
+    result = grade(fallback_sandbox, check)
+    assert result.returncode == 0, result.stdout
+
+
+def test_fallback_without_an_attempt_fails(fallback_sandbox: Path) -> None:
+    fallback_publish(fallback_sandbox, fallback_answers(), attempts=0)
+    assert "never attempted" in grade(fallback_sandbox, "fallback").stdout
+
+
+def test_fallback_retry_after_create_fails(fallback_sandbox: Path) -> None:
+    fallback_publish(fallback_sandbox, fallback_answers(), after=1)
+    assert "after the create" in grade(fallback_sandbox, "fallback").stdout
+
+
+def test_fallback_repeated_attempt_fails(fallback_sandbox: Path) -> None:
+    fallback_publish(fallback_sandbox, fallback_answers(), attempts=2)
+    assert "attempted 2 times" in grade(fallback_sandbox, "fallback").stdout
+
+
+def test_fallback_new_applications_key_fails(fallback_sandbox: Path) -> None:
+    answers = fallback_answers()
+    section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]["new_applications"] = [{"application_name": "Trapets"}]
+    fallback_publish(fallback_sandbox, answers)
+    assert "does not offer it" in grade(fallback_sandbox, "fallback").stdout
+
+
+def test_fallback_decoy_substitute_fails(fallback_sandbox: Path) -> None:
+    answers = fallback_answers()
+    section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]["value"] = [21, 22, 30]
+    fallback_publish(fallback_sandbox, answers)
+    assert "not systems the PDD names" in grade(fallback_sandbox, "fallback").stdout
+
+
+def test_fallback_dropped_inventory_system_fails(fallback_sandbox: Path) -> None:
+    answers = fallback_answers()
+    section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]["value"] = [21]
+    fallback_publish(fallback_sandbox, answers)
+    assert "signicat" in grade(fallback_sandbox, "fallback").stdout
+
+
+def test_fallback_unnamed_gap_fails(fallback_sandbox: Path) -> None:
+    answers = fallback_answers()
+    section(answers, "OVR-OVERVIEW_DESCRIPTION")["OVR-OVERVIEW_DESCRIPTION"] = {
+        "value": "Automates retail current-account onboarding; Trapets and Scrive could not be attached."}
+    fallback_publish(fallback_sandbox, answers)
+    assert "temenos t24" in grade(fallback_sandbox, "fallback").stdout
+
+
+def test_fallback_on_a_tenant_offering_new_applications_is_an_environment_gap(sandbox: Path) -> None:
+    fallback_publish(sandbox, fallback_answers())
+    assert "environment" in grade(sandbox, "fallback").stdout
+
+
+def test_fallback_upsert_that_succeeds_is_an_environment_gap(fallback_sandbox: Path, tmp_path: Path) -> None:
+    stub = tmp_path / "real-bin" / "uip"
+    stub.write_text(stub.read_text().replace('"Result": "Failure", "Message": "403 Forbidden"', '"Result": "Success"'))
+    fallback_publish(fallback_sandbox, fallback_answers())
+    assert "environment" in grade(fallback_sandbox, "fallback").stdout
