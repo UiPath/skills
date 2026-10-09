@@ -1,10 +1,18 @@
 task_id: skill-platform-traces-fetch
 description: >
   Smoke test: agent uses the uipath-platform skill to fetch LLM trace spans for a
-  given job key against the live tenant. Verifies the agent knows to call
+  given job key. Verifies the agent knows to call
   `uip traces spans get --job-key <guid> --output json`.
-  A 404 response (no traces for this job key) is an acceptable outcome.
+  `uip` is an offline `record_cli` mock that answers every call with a 404
+  envelope (no traces for this job key) — the graded behavior is the argv the
+  call received.
 tags: [uipath-platform, smoke, mode:operate, lifecycle:discover, traces]
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stdout: |
+        {"Result":"Failure","Message":"Resource not found (404 Not Found)"}
 
 run_limits:
   expected_turns: 6
@@ -15,10 +23,14 @@ initial_prompt: |
   Use `--output json` on all uip commands.
 
 success_criteria:
-  - type: command_executed
+  # Graded from cli_mocks/calls.jsonl: one record per real invocation, argv
+  # already split by the shell, so line continuations, quoting, and calls
+  # batched into one Bash step need no handling here.
+  - type: cli_called
     description: "Agent fetched spans using uip traces spans get with --job-key flag"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+traces\s+spans\s+get.*--job-key'
-    min_count: 1
+    tool: uip
+    verb: "traces spans get"
+    flags:
+      job-key: "11111111-2222-3333-4444-555566667777"
     weight: 2.0
     pass_threshold: 1.0

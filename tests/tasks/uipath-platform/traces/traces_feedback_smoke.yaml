@@ -3,8 +3,15 @@ description: >
   Smoke test: agent uses the uipath-platform skill to annotate a trace with
   positive feedback. Verifies the agent knows to call
   `uip traces feedback create --trace-id ... --positive --folder-key ...` with --output json.
-  Auth/404 errors are acceptable outcomes — the goal is correct command shape.
+  `uip` is an offline `record_cli` mock that answers every call with a 404
+  envelope — the graded behavior is the argv each call received.
 tags: [uipath-platform, smoke, mode:build, lifecycle:discover, traces, feedback]
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stdout: |
+        {"Result":"Failure","Message":"Resource not found (404 Not Found)"}
 
 run_limits:
   expected_turns: 7
@@ -17,18 +24,24 @@ initial_prompt: |
   Use `--output json` on all uip commands.
 
 success_criteria:
-  - type: command_executed
+  # Graded from cli_mocks/calls.jsonl: one record per real invocation, argv
+  # already split by the shell, so line continuations, quoting, and calls
+  # batched into one Bash step need no handling here.
+  - type: cli_called
     description: "Agent created feedback using uip traces feedback create with --positive and --trace-id"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+traces\s+feedback\s+create(?=.*--positive)(?=.*--trace-id)'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback create"
+    flags:
+      positive: {present: true}
+      trace-id: "4bf92f3577b34da6a3ce929d0e0e4736"
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: cli_called
     description: "Agent included --folder-key on write operations"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+traces\s+feedback\s+create.*--folder-key'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback create"
+    flags:
+      folder-key: "11111111-2222-3333-4444-555566667777"
     weight: 1.5
     pass_threshold: 1.0
