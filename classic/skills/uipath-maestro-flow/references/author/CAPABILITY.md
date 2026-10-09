@@ -187,7 +187,7 @@ If you find yourself hand-writing `inputs.detail`, a `=jsonString:` blob, or `bi
   - [batch-transform](plugins/batch-transform/) — LLM-powered row-by-row CSV enrichment (`uipath.pattern.batch-transform`)
   - [summarize](plugins/summarize/) — single-document synthesis / Q&A with optional citations (`uipath.pattern.deep-rag`)
   - [delay](plugins/delay/) — duration or date-based pause
-  - [subflow](plugins/subflow/) — reusable node groups
+  - [subflow](plugins/subflow/) — node groups within one flow
   - [scheduled-trigger](plugins/scheduled-trigger/) — recurring schedule
   - [rpa](plugins/rpa/) — published RPA processes
   - [agentic-process](plugins/agentic-process/) — published orchestration processes
