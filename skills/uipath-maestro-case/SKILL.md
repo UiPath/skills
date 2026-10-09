@@ -129,7 +129,7 @@ Read [references/planning.md](references/planning.md) to produce:
 Read [references/implementation.md](references/implementation.md) and [references/phased-execution.md](references/phased-execution.md). Follow Steps 6–11.9:
 
 <!--skill-flavor:phase-two-step-six:start-->
-1. Step 6: `uip solution init` and project registration, then **`sdd convert --out` the caseplan into that project** (Rule 4). The T01 direct-JSON recipe in [plugins/case/impl-json.md](references/plugins/case/impl-json.md) is the fallback when the installed CLI has no `sdd convert`, and the reference for the root shape either way; never `case init`.
+1. Step 6: `uip solution init`, then `uip maestro case init` from inside the solution directory (Rule 24), then **`sdd convert --out` the caseplan into the plan file `case init` seeded** (Rule 4). The T01 direct-JSON recipe in [plugins/case/impl-json.md](references/plugins/case/impl-json.md) is the fallback when the installed CLI has no `case init` or no `sdd convert`, and the reference for the root shape either way.
 <!--skill-flavor:phase-two-step-six:end-->
 2. Step 6.1: manual, timer, and event triggers, including Rule 9 placeholders; capture trigger IDs.
 3. Step 6.2: global variables and arguments; In-argument `elementId` references the trigger named by `sourceTriggers`, or the primary trigger when blank.
