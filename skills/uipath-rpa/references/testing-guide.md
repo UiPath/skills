@@ -27,7 +27,7 @@ XAML test cases use a **Given-When-Then** structure — three nested `<Sequence>
 
 ### XAML Structure — Test Case Invoking a Workflow
 
-The core pattern: a parent Sequence with three child Sequences named `"... Given"`, `"... When"`, `"... Then"`. The **When** section invokes the workflow under test. Add verification activities in **Then**.
+The core pattern: a parent Sequence with three child Sequences named `"... Given"`, `"... When"`, `"... Then"`. The **When** section invokes the workflow under test. Verification activities go in **Then**, except a check of a state that later steps change (a confirmation after a save in an end-to-end flow): it sits right after the step that produces that state, in When or in a workflow When invokes. A verification records its assertion in the test result from any depth.
 
 ```xml
 <!-- Body inside <Activity> (after namespaces/references) -->
@@ -111,7 +111,7 @@ Copy-paste JSON snippet (including `publishAsTestCase` for coded test cases and 
 
 ### What NOT to Do
 
-- Do NOT place verification activities in the **When** container — verifications go in **Then**
+- Do NOT place verification activities in the **When** container, except a mid-flow check ([§ XAML Structure — Test Case Invoking a Workflow](#xaml-structure--test-case-invoking-a-workflow))
 - Do NOT forget to add the `xmlns:ui` namespace when using `InvokeWorkflowFile`
 
 ---
@@ -249,7 +249,17 @@ The `UiPath.Testing.Activities` package provides XAML-specific test activities b
 |----------|---------|---------------|
 | **VerifyExpression** | Assert a boolean expression is true | `Expression`, `OutputMessageFormat` |
 | **VerifyExpressionWithOperator** | Assert two values with a comparison operator | `FirstExpression`, `SecondExpression`, `Operator` |
-| **VerifyControlAttribute** | Assert a UI element's attribute matches expected value | `Target`, `AttributeName`, `AttributeValue`, `Operator` |
+| **VerifyRange** | Assert a value is within (or not within) inclusive bounds | `Expression`, `LowerLimit`, `UpperLimit`, `VerificationType` |
+| **VerifyControlAttribute** | Assert an output of the one UI activity it wraps | `ActivityToTest`, `OutputArgument`, `Operator`, `Expression` |
+
+**Choose by the check**, so the assertion's default message shows the values compared:
+
+| The check | Activity |
+|---|---|
+| A UI element's value or state against an expected value | VerifyControlAttribute around the activity that reads it: Get Text, Get Attribute, or Check App State's `Exists` for "is shown" — never a read into a variable and a separate assertion |
+| Two values: equal, not equal, contains, a regex, greater or less | VerifyExpressionWithOperator |
+| A value inside or outside two bounds | VerifyRange |
+| Anything else — starts with, does not contain, case-insensitive, several conditions | VerifyExpression, with an `OutputMessageFormat` showing the values |
 
 ### VerifyExpressionWithOperator
 
@@ -267,22 +277,26 @@ Authoritative reference: `{projectRoot}/.local/docs/packages/UiPath.Testing.Acti
 
 > **No "starts with" / "ends with" / "does not contain" operators.** For substring containment, use `Contains` (asserts `FirstExpression` contains `SecondExpression`). For prefix/suffix or "does not contain" assertions, use `VerifyExpression` with a boolean C#/VB expression (e.g. `actualValue.StartsWith("foo")`, `Not actualValue.Contains("bar")`). For regex, use `RegexMatch` and pass the pattern in `SecondExpression`.
 
+> **Text operands are compared as patterns, with case.** `Equality` and `Inequality` match `SecondExpression` as a wildcard pattern against the whole text: `*` any characters, `?` one character, `#` one digit, `\` escaping each. An expected value holding `*`, `?` or `#` escapes them (`PO \#123`), or `PO #123` also matches `PO 1123` and not itself. `Equality`, `Inequality` and `Contains` are case-sensitive; `RegexMatch` is too unless the pattern starts with `(?i)`. A case-insensitive check is `RegexMatch` with `(?i)` and the escaped value, or a `VerifyExpression`. `VerifyControlAttribute` compares the same way.
+
 ### VerifyControlAttribute
 
-Verifies a UI element's attribute (text, enabled state, visibility, etc.) against an expected value.
+Wraps exactly one UI Automation activity and asserts one of its output properties against an expected value: the read and the check are one activity.
 
-> **Requires UI automation targets.** This activity inspects live UI elements at runtime. The UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). The agent must configure targets using `uia-configure-target` before using this activity. The test case must run against a live application instance.
+> **Requires UI automation targets.** The wrapped activity inspects live UI elements at runtime. The UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). The agent must configure the wrapped activity's target using `uia-configure-target`. The test case must run against a live application instance.
 
 **Properties:**
-- `Target` — the UI element to inspect (configured via `uia-configure-target`)
-- `AttributeName` — attribute to verify (e.g., `"text"`, `"enabled"`, `"visible"`)
-- `AttributeValue` — expected value
-- `Operator` — comparison operator from the same `Comparison` enum as `VerifyExpressionWithOperator`: `Equality`, `Inequality`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan`, `LessThanOrEqual`, `Contains`, `RegexMatch`. Verify against the activity's own doc (`{projectRoot}/.local/docs/packages/UiPath.Testing.Activities/activities/VerifyControlAttribute.md`) before authoring.
-- `TakeScreenshotInCaseOfFailingAssertion` / `TakeScreenshotInCaseOfSucceedingAssertion` — screenshot capture
+- `ActivityToTest` — the one UI activity whose output is asserted (`NGetText`, `NGetAttribute`, `NCheckState`), its target configured via `uia-configure-target`
+- `OutputArgument` — the name of that activity's output property (`TextString` for Get Text, `Exists` for Check App State), a plain name, not an expression
+- `Operator` — comparison operator from the same `Comparison` enum as `VerifyExpressionWithOperator`
+- `Expression` — expected value, a non-generic `InArgument` in element syntax with `x:TypeArguments`
+- `TakeScreenshotInCaseOfFailingAssertion` defaults to `True` here, `False` on the other verify activities
+
+Element syntax, validation constraints and example: the activity's own doc (`{projectRoot}/.local/docs/packages/UiPath.Testing.Activities/activities/VerifyControlAttribute.md`), read before authoring.
 
 **Constraints:**
-- Cannot be nested inside another `VerifyControlAttribute` — causes validation error
-- Has platform restrictions — may not work in Portable (cross-platform) projects
+- No verify activity may sit inside `ActivityToTest` — causes validation error
+- Windows projects only — hidden in cross-platform projects
 
 ### Assertion Results
 
@@ -290,6 +304,7 @@ Each verification activity records one assertion in the test case result. Shared
 
 - **Title and message** — Test Manager stores the assertion's `Message` from `AlternativeVerificationTitle` (else the `DisplayName`) and its `Payload` from `OutputMessageFormat` (else the activity's default sentence, e.g. `Verification failed. The expression '"abc"' was not containing the expression '"z"'.`). Name the check in the title; show the actual values in the format.
 - **Screenshots** — `TakeScreenshotInCaseOfFailingAssertion` / `TakeScreenshotInCaseOfSucceedingAssertion` attach a screenshot to that assertion: on Windows the whole desktop, every monitor of the robot's session with every window on it, not the target application; inside a Mobile Automation scope the device screen; on a Linux robot the application of the last UI action. Both are optional (`validate` and `analyze` stay silent when missing); set both explicitly when screenshots are wanted.
+- **Screenshot files** — `KeepScreenshots` `True` keeps each screenshot as a file in `ScreenshotsPath` (default: the temp folder) and logs `Screenshot available: <path>`; otherwise the file is deleted once taken. Both are on every verify activity.
 - **Logs** — each verification logs its own `Payload`: `Info` on pass, `Error` on fail. A `Log Message` repeating a verification's result is redundant.
 - **Failure** — a check failing with `ContinueOnFailure` `True` (default) marks the case Failed without stopping it, and a local run's verdict does not show it ([debugging.md § Output Format](debugging.md#output-format)).
 
@@ -297,7 +312,7 @@ Each verification activity records one assertion in the test case result. Shared
 
 The Given-When-Then structure is three nested `<Sequence>` elements — not separate activity types. See [§ XAML Test Case Structure](#xaml-test-case-structure-given-when-then) above for the full XAML patterns and agent workflow.
 
-Place verification activities (VerifyExpression, VerifyExpressionWithOperator, VerifyControlAttribute) inside the `"... Then"` Sequence.
+Place verification activities inside the `"... Then"` Sequence, mid-flow checks excepted ([§ XAML Structure — Test Case Invoking a Workflow](#xaml-structure--test-case-invoking-a-workflow)).
 
 ### XAML Test Activity Gotchas
 
