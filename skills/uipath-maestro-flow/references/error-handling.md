@@ -48,7 +48,7 @@ Plain `http({ managed: false })` publishes no envelope in any version — 1.0.0 
 That node is also gone from the tenant registry, which serves only `core.action.http.v2`; `check` says so (`HTTP_V1_RETIRED`).
 Moving to the managed node is a behaviour change, not a rename: a non-2xx stops arriving on the success path with `statusCode` and fails the step instead, so a status branch becomes a handler reading `err(step, 'status')`.
 
-A `.loop()` container CAN carry a handler: `.onError()` after `.loop(...)` wires the container's own error port, and a body step's failure routes to it — measured, the container's envelope carries the body's message in `detail` and the failing body step's canvas label in `element`, and the instance completes instead of faulting. Read it the usual way, `h.err('detail')`.
+A `.loop()` container CAN carry a handler: `.onError()` after `.loop(...)` wires the container's own error port, and a body step's failure routes to it — measured, the container's envelope carries the body's message in `detail` and the failing body step's canvas label (its id when it has no `label`) in `element`, and the instance completes instead of faulting. Read it the usual way, `h.err('detail')`.
 
 A `.doWhile()` can too. `core.logic.dowhile@1.0` lists no `error` handle, but it sets `supportsErrorHandling: true`, and the product adds the handle from that flag. Measured: `flow validate` accepts the edge, and a body step that throws routes to the handler with the same envelope (`detail` the body's message, `element` the failing body step's canvas label).
 
