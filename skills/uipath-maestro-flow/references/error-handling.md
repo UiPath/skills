@@ -3,7 +3,7 @@
 An error handler is a separate path from the immediately preceding action.
 
 Signature: `.step(name, action).onError(handler => ...)`.
-Read the failure with `h.err(field)` — or `err(step, field)` if you prefer to name the step — where field is one of `code`, `message`, `detail`, `category`, `status` (plus `response` and `element`, present at run time though undeclared).
+Read the failure with `h.err(field)` — or `err(step, field)` if you prefer to name the step — where field is one of `code`, `message`, `detail`, `category`, `status` (plus `response` and `element`, present at run time though undeclared; `element` is the failing step's canvas label, which equals its id only when the step has no `label`).
 A handler may `.return(...)`, `.terminate(...)`, or `.stepToRef(target)`.
 
 ```ts
@@ -41,11 +41,15 @@ Which variable holds the envelope is a per-node-family runtime fact, measured on
 `serialize` rewrites the read for the exception families, so authored source stays uniform and a family moving is a table edit rather than a fleet-wide rewrite.
 A bare `err(step)` is the did-this-fail test and is never rewritten: it reads truthy on every family, the envelope object included.
 
+`flow validate` warns `EXPRESSION_DIAGNOSTIC` on two kinds of `err()` read the runtime does fill: `element` and `response` on any family, which no manifest declares (`Property 'element' does not exist on type '<Step>_Error'`), and every field of a managed HTTP step's envelope, whose rewritten `<step>.output` read the validator types only as `{ error }` (`Property 'output' does not exist on type '{ error: <Step>_Error; }'`). Accept exactly these, on reads written with `err()` or `h.err()`; any other `EXPRESSION_DIAGNOSTIC` is a read that resolves to nothing.
+
+When a step with a handler fails, a script step still applies its own `{ updates }`; a sub-flow step does not, and neither does a `.loop()` container. An update that must happen only on success goes on the step after it.
+
 Plain `http({ managed: false })` publishes no envelope in any version — 1.0.0 and the 1.3 `uip maestro flow migrate` upgrades it to both leave `<step>.output` null — so `check` refuses a handler there (`HTTP_ONERROR_V1`) instead of emitting a read that resolves to nothing.
 That node is also gone from the tenant registry, which serves only `core.action.http.v2`; `check` says so (`HTTP_V1_RETIRED`).
 Moving to the managed node is a behaviour change, not a rename: a non-2xx stops arriving on the success path with `statusCode` and fails the step instead, so a status branch becomes a handler reading `err(step, 'status')`.
 
-A `.loop()` container CAN carry a handler: `.onError()` after `.loop(...)` wires the container's own error port, and a body step's failure routes to it — measured, the container's envelope carries the body's message in `detail` and the failing body step's id in `element`, and the instance completes instead of faulting. Read it the usual way, `h.err('detail')`.
+A `.loop()` container CAN carry a handler: `.onError()` after `.loop(...)` wires the container's own error port, and a body step's failure routes to it — measured, the container's envelope carries the body's message in `detail` and the failing body step's label in `element`, and the instance completes instead of faulting. Read it the usual way, `h.err('detail')`.
 
 A `.doWhile()` cannot, and the reason is the handle rather than the variable: `core.logic.dowhile@1.0` declares an error variable but its handles are input, success, start, continue and break, so an edge would leave a handle the node does not have — the shape that fails product validate with "the current manifest does not declare that handle". Handle the failure inside the body, on the step that can fail. The builder refuses it by name.
 

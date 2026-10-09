@@ -30,6 +30,10 @@ steps over required caller inputs unless the deployment supplies configured
 values. Pick the interval from the business requirement rather than from what
 is convenient to test.
 
+`every` is the trigger's only field: there is no time-zone setting. When the
+requirement ties the run to local hours, state that time zone in the final
+response.
+
 ## Evidence boundary
 
 Local execution starts the graph directly. It proves the scheduled node was
