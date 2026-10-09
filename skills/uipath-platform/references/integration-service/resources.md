@@ -153,7 +153,7 @@ Where the resource is looked up:
 | No resource of that kind has the name → `ErrorCode: "not_found"` | Check the name and kind — `uip solution resources list --kind <kind> --search "<name>"` (add `--source remote` for the tenant). |
 | You already have the resource key, or the field's `design.selection` is not `{resourceName}` (the value is not the bare name) | Bind it explicitly: `--resource-key <field>=<resource-key>`. `<field>` must also be passed with `-f`; the body is keyed by that `-f` value. |
 
-Do not drop the picker field and retry when the lookup fails: without the graph the design action fails with `400 … Value for required parameter 'body' not found`. A `GET` design action (e.g. `FetchObjectMetadataTenant` over `tenantEntityName`, or a connector whose folder action is still a `GET`) carries no body, so no lookup happens there and `--resource-key` is ignored with a warning.
+Do not drop the picker field and retry when the lookup fails: without the graph the design action fails with `400 … Value for required parameter 'body' not found`. A `GET` design action carries no body, so no graph is sent. If its URL has a `{=resourceKey(<field>)}` token (today's `CreateEntityRecord_V3` folder action does), the CLI still looks the picker up and fills in its key, so the same `-f` / `_folderKey` / `--resource-key` rules apply. A `GET` with no such token (e.g. `FetchObjectMetadataTenant` over `tenantEntityName`) needs no lookup, and `--resource-key` is ignored there with a warning.
 
 ---
 
