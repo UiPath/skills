@@ -32,6 +32,7 @@ Publish the packages first, then deploy them to the folder.
 - [ ] Publish the library **`<Library>`** version `<version>` to the `<feed>` feed. Do this before the projects that use it.
 - [ ] Deploy **`<package or solution>`** version `<version>` to the folder `<folder>`.
   - A solution deployment also creates the queues and assets the solution declares. The sections below then check their settings and fill in their values.
+- [ ] Pack **`<project>`** with the analyzer rule `<rule>` ignored, as the build did: <why the project breaches it>. A governance policy that disables the rule replaces this step. <Only when the build accepted an analyzer error.>
 
 ## Queues
 Create each queue in the folder. After a solution deployment, check that the queue the deployment created has these settings.
@@ -63,13 +64,29 @@ Create each asset in the folder `<folder>` unless the asset says otherwise. The 
 - [ ] Create the **`<Connector>`** connection in the folder `<folder>` and sign it in with the account `<account>`.
 
 ## Data Fabric
-Create each entity from its JSON definition below: save it as a file and run `uip df entities create "<Entity>" --file <file>`, or enter the same definition in Data Fabric by hand. Then give the robot accounts access to the entity.
+Create each entity from its JSON definition below: save it as a file and run `uip df entities create "<Entity>" --file <file>`, or enter the same definition in Data Fabric by hand. Then give the robot accounts access to the entity and load its records.
 
-- [ ] Create the entity **`<Entity>`** in <the folder `<folder>` | the tenant> and give `<accounts>` access to it.
+- [ ] Create the entity **`<Entity>`** in <the folder `<folder>` | the tenant> and give `<accounts>` <read | read and write> access to it.
 
   ```json
   <the entity's definition, in the JSON file format that `uip df entities create --file` accepts>
   ```
+- [ ] Load the records of `<project>/TestData/<Entity>.json` into **`<Entity>`** with `uip df records insert <entity-id> --file <file>`, in batches the command accepts.
+  - Data sets with no records yet: `<names>`. Their test cases show as failed in Test Manager until a record is added.
+
+## Test Manager
+Create the Test Manager project and its test cases, then link each test case to its automation in the published package.
+
+- [ ] Create or choose the Test Manager project **`<project>`**.
+- [ ] Link the test project to it: in `<test project folder>` connect to Test Manager and set **`<project>`** as the default project.
+- [ ] Create each test case and link it to its automation in **`<package>`** version `<version>`:
+  - **`<test case>`**
+    - Description: <what the case proves, from the source's description>
+    - Steps: <one manual step per source step: what it does and what it expects>
+    - Labels: `<labels>`
+    - `<custom field>`: `<value>`
+- [ ] Create the requirement **`<requirement>`** and add its test cases: `<names>`.
+- [ ] Create the test set **`<test set>`** in the folder `<folder>` with its test cases: `<names>`.
 
 ## <Service>
 - [ ] <What to create or configure in that service: its name, where it goes, and who uses it.>
@@ -98,11 +115,12 @@ Rules:
 1. **Write for the person who sets up the environment.** Full sentences, one step per checkbox, each detail on its own line, names in backticks, the section's opening line saying what to do. No shorthand, no symbols standing in for words, no internal vocabulary (genome section names, split options, step numbers); where the template offers alternatives in angle brackets, write only the one that applies. An agent with the proper tooling follows the same file.
 2. **Assets are one block per asset, credentials included.** The block's type is the Orchestrator asset type. A setting gives the value this build used, as a reference to set per environment. A credential gives its username; the password never appears in an open-items file. Description is the text to enter as the asset's description in Orchestrator, taken from the Configuration Question or Platform Dependencies row the asset came from.
 3. **Queues carry the settings the genome implies:** the unique-reference rule and retry count from the Transactional Shape's outcomes and the split answer. Under a solution deployment the deploy creates the declared queue, and the step checks its settings.
-4. **A Data Fabric entity is one JSON definition, in the file format `uip df entities create --file` accepts.** Take that format from the CLI (`uip df entities create --help`), never from memory, and build the definition from the entity's fields in Platform Dependencies. The engineer can then create the entity from the file as it is.
+4. **A Data Fabric entity is one JSON definition, in the file format `uip df entities create --file` accepts.** Take that format from the CLI (`uip df entities create --help`), never from memory, and build the definition from the entity's fields in Platform Dependencies. The engineer can then create the entity from the file as it is. Robot access is read, or read and write where a process writes the entity's records. An entity that holds test data ([source-migration-guide.md § Test data](source-migration-guide.md)) gets the load of its seed file, and the data sets with no records name the test cases that fail until testers add them.
 5. **Triggers come from the split and trigger answers:** type, schedule or queue, and runner count per process.
 6. **The solution file holds the steps several projects share** — the folder, packages and deployment, a queue between projects, a shared connection or asset — in the same sections, and ends with one line per project linking its file, with that project's step count. A step that spans projects is written once, in the solution file; a project file links to it instead of repeating it.
 7. **A project file holds that project's own steps** in the same sections: its assets, its process and triggers, its Others items.
 8. **Others holds every setup step outside UiPath's services.** Network access is one item listing every host the robot must reach — each target system's hosts, the identity and API endpoints behind it, the mail relay with its port — taken from the build's configuration answers and Target Applications, as values to set per environment. Robot machine setup is Others too: the applications installed and signed in (from Target Applications), the UiPath browser extension and its settings (allowed in incognito mode when the automation runs the browser incognito), accounts and permissions inside a target system, certificates.
+9. **Test Manager organises the test project as the source organised its suite.** One Test Manager test case per test case built, linked to its automation one by one ([package-doc-errata-guide.md](package-doc-errata-guide.md), Tools): its description from the source object's, its manual steps from the source's steps, its labels from the data set and the folder it ran with, the source object's id as a custom field, a requirement per source folder or business area, and one test set per test component (genome Deployment). Take each command from the CLIs (`uip tm --help`, the project-link commands of `uipath-rpa`), never from memory; the build writes nothing to Test Manager ([execution-guide.md](execution-guide.md) anti-pattern 10).
 
 ## Anti-patterns
 
