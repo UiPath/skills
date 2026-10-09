@@ -2,12 +2,27 @@
   "Result": "Success",
   "Code": "TaskDescribed",
   "Data": {
+    "Version": "v3",
     "Inputs": [
       { "name": "creditScore", "type": "number", "id": "creditScore", "required": true }
     ],
     "Outputs": [
-      { "name": "riskBand", "type": "string", "id": "riskBand" },
-      { "name": "Error", "type": "jsonSchema", "id": "error" }
+      {
+        "name": "output",
+        "type": "jsonSchema",
+        "id": "output",
+        "source": "=result",
+        "_jsonSchema": {
+          "type": "object",
+          "properties": {
+            "RiskDecision": {
+              "type": "object",
+              "properties": { "riskBand": { "type": "string" } }
+            }
+          }
+        }
+      },
+      { "name": "Error", "type": "jsonSchema", "id": "error", "source": "=Error" }
     ]
   }
 }
