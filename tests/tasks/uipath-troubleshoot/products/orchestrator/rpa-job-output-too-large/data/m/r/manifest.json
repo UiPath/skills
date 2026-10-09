@@ -7,7 +7,6 @@
     { "match": "or jobs get bbdd5566-77ee-88ff-99aa-00bb11223344", "file": "8707fcc868.json" },
     { "match": "or jobs logs bbdd5566-77ee-88ff-99aa-00bb11223344 --level Error", "file": "32627accca.json" },
     { "match": "or jobs logs bbdd5566-77ee-88ff-99aa-00bb11223344", "file": "04a0363cd0.json" },
-    { "match": "or jobs traces bbdd5566-77ee-88ff-99aa-00bb11223344", "file": "3c24c1e838.json" },
     { "match": "traces spans get --job-key bbdd5566-77ee-88ff-99aa-00bb11223344", "file": "34f4b4e050.json" },
     { "match": "docsai ask", "passthrough": true }
   ],

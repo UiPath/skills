@@ -18,7 +18,7 @@
       "exit_code": 0
     },
     {
-      "match": "or jobs traces 4e00b4ca-b35b-4457-bb12-74f270d20cb0",
+      "match": "traces spans get --job-key 4e00b4ca-b35b-4457-bb12-74f270d20cb0",
       "file": "f6b9fc4e33.json",
       "exit_code": 1
     },

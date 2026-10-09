@@ -7,7 +7,6 @@
     { "match": "or jobs get ccee6677-88ff-99aa-00bb-11cc22334455", "file": "aa692ef350.json" },
     { "match": "or jobs logs ccee6677-88ff-99aa-00bb-11cc22334455 --level Error", "file": "a812bb46c2.json" },
     { "match": "or jobs logs ccee6677-88ff-99aa-00bb-11cc22334455", "file": "0ea71af0c9.json" },
-    { "match": "or jobs traces ccee6677-88ff-99aa-00bb-11cc22334455", "file": "6d148edb25.json" },
     { "match": "traces spans get --job-key ccee6677-88ff-99aa-00bb-11cc22334455", "file": "89dd6ac5f6.json" },
     { "match": "docsai ask", "passthrough": true }
   ],

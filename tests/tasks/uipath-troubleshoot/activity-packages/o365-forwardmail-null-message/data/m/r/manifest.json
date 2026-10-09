@@ -20,10 +20,6 @@
       "file": "aa675830de.json"
     },
     {
-      "match": "or jobs traces 50bcdb33-f7a8-42d4-a52d-ebbeeb135e99",
-      "file": "4f0020f3a3.json"
-    },
-    {
       "match": "traces spans get --job-key 50bcdb33-f7a8-42d4-a52d-ebbeeb135e99",
       "file": "4f0020f3a3.json",
       "_doc": "Alternate trace-retrieval form (platform traces command). Same span payload as `or jobs traces` — without this rule the call falls through to the empty unmocked_default and the agent concludes no upstream activity existed for the wrong reason (degraded replicate observed on a sibling scenario)."

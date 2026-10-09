@@ -23,7 +23,7 @@
       "file": "a86ba118d0.json"
     },
     {
-      "match": "or jobs traces \"e4237b15-1574-4c7a-8657-fe0b0be2aa75\" --output json",
+      "match": "traces spans get --job-key e4237b15-1574-4c7a-8657-fe0b0be2aa75 --output json",
       "file": "b203483fc2.json"
     }
   ],

@@ -24,11 +24,6 @@
       "file": "9b764201dd.json"
     },
     {
-      "match": "or jobs traces 1db8bac1-ecc2-4670-843e-ff5f9a26c532",
-      "file": "d4abf1a83b.json",
-      "_doc": "Three recorded spans: RobotJob (full ConnectionHttpException stack in Attributes), the NewEmailReceived activity span (connector uipath-microsoft-outlook365, UseConnectionService=True), and the 'operation failed' error span."
-    },
-    {
       "match": "traces spans get --job-key 1db8bac1-ecc2-4670-843e-ff5f9a26c532",
       "file": "d4abf1a83b.json",
       "_doc": "Alternate trace-retrieval form (platform traces command). Same span payload as `or jobs traces` — without this rule the call falls through to the empty unmocked_default."

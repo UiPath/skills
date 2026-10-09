@@ -23,7 +23,7 @@
       "file": "2ccc0db107.json"
     },
     {
-      "match": "or jobs traces 0686cab1-35c6-4d92-aed2-c91d9c275524 --output json",
+      "match": "traces spans get --job-key 0686cab1-35c6-4d92-aed2-c91d9c275524 --output json",
       "file": "bcfa6ee3d9.json"
     },
     {

@@ -23,10 +23,6 @@
       "file": "7ef81ffd7e.json"
     },
     {
-      "match": "or jobs traces 909ed39c-08a1-48fb-921a-06d332f8f5fb",
-      "file": "bc882ab324.json"
-    },
-    {
       "match": "traces spans get --job-key 909ed39c-08a1-48fb-921a-06d332f8f5fb",
       "file": "bc882ab324.json",
       "_doc": "Alternate trace-retrieval form (platform traces command). Same span payload as `or jobs traces` — without this rule the call fell through to the empty unmocked_default and the agent concluded no upstream activity ran (observed degraded replicate, judge 0.6)."
