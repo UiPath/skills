@@ -6,16 +6,17 @@
 
 ## When to Use
 
-Use a Subflow node to group related steps into a reusable, drillable container with isolated variable scope.
+Use a Subflow node to group related steps into a drillable container with isolated variable scope. A subflow belongs to one node in one flow and cannot be called from anywhere else.
 
 ### Selection Heuristics
 
 | Situation | Use Subflow? |
 | --- | --- |
-| Group related steps into a reusable container | Yes |
+| Group related steps into a container | Yes |
 | Encapsulate logic with its own variable scope | Yes |
 | Simple sequential steps that don't need isolation | No — wire nodes directly |
 | Call a published flow as a subprocess | No — use [Flow](../flow/planning.md) |
+| Same logic needed in 2+ places or flows | No. Make it its own flow project in the solution and call it with [Flow](../flow/planning.md) |
 
 ## Ports
 

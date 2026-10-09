@@ -15,9 +15,13 @@ first one did.
 
 ## Step 0 — read the cause in the output you already have
 
-`Data.finalStatus: "Faulted"` means the response in hand holds the reason. On a
-faulted run the CLI ignores `--output-filter` and prints the whole envelope, so
-redirect it and search the file rather than re-running:
+`Data.finalStatus: "Faulted"` means the response in hand holds the reason.
+A projection can drop `Data.incidents`, but `--output-filter` never filters
+`Message` and `Instructions`: they summarize the incidents, when PIMS returned
+any, and name the `uip maestro flow debug-instance incidents <instanceId>`
+command. If `Data.incidents` is missing, or `null` in a projection, run that
+command. Do not re-run the flow. On the next run, add `incidents:incidents` to the projection,
+or redirect the unfiltered output to a file and search it:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flow-debug.json

@@ -1,19 +1,54 @@
 {
   "Result": "Success",
-  "Code": "AgentHubMcpCreateSchema",
+  "Code": "AgentHubMcpTemplate",
   "Data": {
     "type": "object",
-    "required": ["name", "slug", "description", "uri"],
+    "required": [
+      "name",
+      "slug",
+      "uri"
+    ],
     "properties": {
-      "name":        { "type": "string" },
-      "slug":        { "type": "string", "pattern": "^[a-z0-9-]+$", "minLength": 3, "maxLength": 50 },
-      "description": { "type": "string", "minLength": 1, "maxLength": 4000 },
-      "version":     { "type": "string" },
-      "uri":         { "type": "string", "format": "uri" },
-      "headers":     {
-        "type": "object",
-        "description": "HTTP headers sent with every MCP request. Values may use the form '{{asset:<asset-name>}}' to reference an Orchestrator asset, resolved at runtime via the caller's bearer token + folder context.",
-        "additionalProperties": { "type": "string" }
+      "name": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 100
+      },
+      "slug": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 50,
+        "pattern": "^[a-z0-9-]+$"
+      },
+      "description": {
+        "type": "string",
+        "maxLength": 500
+      },
+      "version": {
+        "type": "string",
+        "maxLength": 20
+      },
+      "uri": {
+        "type": "string",
+        "minLength": 5,
+        "maxLength": 2000
+      },
+      "headers": {
+        "type": "string",
+        "maxLength": 4000,
+        "description": "Newline-separated Name:Value lines. A value of exactly %ASSETS/<asset-name>% is replaced by that Orchestrator asset's value, from the server's folder, each time the header is sent."
+      },
+      "connectionId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "uuid",
+        "description": "Integration Service connection whose token authenticates the calls. Use an OAuth connection of the UiPath MCP connector (uipath-uipath-mcp), the one Agent Gateway offers: the service stores any connection Integration Service finds, and one it gets no OAuth token from fails every call."
+      },
+      "useRelay": {
+        "type": "boolean",
+        "description": "Route requests through UiPath Relay."
       }
     }
   }

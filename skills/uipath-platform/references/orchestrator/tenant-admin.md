@@ -171,14 +171,14 @@ Attachments are files associated with jobs -- screenshots, reports, data exports
 | Command | What it does |
 |---------|--------------|
 | `uip or attachments list --job-key <key>` | List attachments for a job (returns AttachmentId, Name, Category). |
-| `uip or attachments download <attachment-id>` | Download an attachment to disk. Use `-o <path>` to set the output file. |
+| `uip or attachments download <attachment-id>` | Download an attachment to disk. Use `-d, --destination <path>` to set the output file. |
 
 ```bash
 # List attachments from a completed job
 uip or attachments list --job-key "abc12345-..." --output json
 
 # Download a specific attachment
-uip or attachments download "def67890-..." -o report.pdf
+uip or attachments download "def67890-..." -d report.pdf
 ```
 
 Attachments from previous jobs can be reused as input: `uip or jobs start <process-key> --attachment-id <id>`.
@@ -204,7 +204,7 @@ uip or jobs list --state Faulted \
 uip or attachments list --job-key "<faulted-job-key>" --output json
 
 # 4. Download the attachment for investigation
-uip or attachments download "<attachment-id>" -o error-screenshot.png
+uip or attachments download "<attachment-id>" -d error-screenshot.png
 ```
 
 ---

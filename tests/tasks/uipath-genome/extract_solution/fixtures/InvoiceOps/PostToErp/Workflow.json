@@ -1,0 +1,143 @@
+{
+  "document": {
+    "dsl": "1.0.0",
+    "name": "PostToErp",
+    "version": "1.2.0",
+    "namespace": "default",
+    "metadata": {
+      "variables": {
+        "schema": {
+          "document": {
+            "type": "object",
+            "properties": {
+              "erpBaseUrl": { "type": "string", "default": "https://erp.contoso.com/api/v2" },
+              "postResponse": { "type": "object" },
+              "erpDocumentNumber": { "type": "string", "default": "" },
+              "status": { "type": "string", "default": "pending" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "input": {
+    "schema": {
+      "document": {
+        "type": "object",
+        "properties": {
+          "vendorName": { "type": "string" },
+          "invoiceNumber": { "type": "string" },
+          "amount": { "type": "number" },
+          "pdfPath": { "type": "string" }
+        },
+        "required": ["vendorName", "invoiceNumber", "amount"]
+      }
+    }
+  },
+  "output": {
+    "schema": {
+      "document": {
+        "type": "object",
+        "properties": {
+          "erpDocumentNumber": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    }
+  },
+  "do": [
+    {
+      "Sequence_1": {
+        "do": [
+          {
+            "WorkflowStart": {
+              "set": "${Object.entries($workflow.definition?.document?.metadata?.variables?.schema?.document?.properties || {}).reduce((acc, [name, def]) => ({ ...acc, [name]: def?.default }), {}) }",
+              "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+              "metadata": { "activityType": "Assign", "displayName": "Workflow start", "isTransparent": true }
+            }
+          },
+          {
+            "Validate_Input": {
+              "run": {
+                "script": {
+                  "language": "javascript",
+                  "code": "if (!$input.vendorName || !$input.invoiceNumber) { throw new Error('vendorName and invoiceNumber are required'); }\nif ($input.amount <= 0) { throw new Error('amount must be positive'); }\nreturn { ok: true };"
+                }
+              },
+              "metadata": { "activityType": "JsInvoke", "displayName": "Validate required fields" }
+            }
+          },
+          {
+            "Try_Post": {
+              "try": [
+                {
+                  "Post_Invoice": {
+                    "call": "UiPath.Http",
+                    "with": {
+                      "method": "POST",
+                      "endpoint": "/http-request",
+                      "bodyParameters": {
+                        "method": "POST",
+                        "url": "${$context.variables.erpBaseUrl}/ap/invoices",
+                        "headers": {
+                          "Content-Type": "application/json",
+                          "X-Api-Key": "${$assets.ErpApiKey}"
+                        },
+                        "body": {
+                          "vendor": "${$input.vendorName}",
+                          "externalReference": "${$input.invoiceNumber}",
+                          "grossAmount": "${$input.amount}",
+                          "currency": "EUR",
+                          "attachmentPath": "${$input.pdfPath}"
+                        }
+                      }
+                    },
+                    "export": { "as": "{ ...$context, variables: { ...$context.variables, postResponse: $output } }" },
+                    "metadata": { "activityType": "Http", "displayName": "POST invoice to ERP" }
+                  }
+                },
+                {
+                  "Read_DocNumber": {
+                    "set": {
+                      "erpDocumentNumber": "${$context.variables.postResponse.body.documentNumber}",
+                      "status": "posted"
+                    },
+                    "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                    "metadata": { "activityType": "Assign", "displayName": "Read ERP document number" }
+                  }
+                }
+              ],
+              "catch": {
+                "as": "error",
+                "do": [
+                  {
+                    "Mark_Failed": {
+                      "set": {
+                        "status": "${'failed: ' + ($error.status === 409 ? 'duplicate invoice in ERP' : $error.message)}"
+                      },
+                      "export": { "as": "{ ...$context, variables: { ...$context.variables, ...$output } }" },
+                      "metadata": { "activityType": "Assign", "displayName": "Mark as failed" }
+                    }
+                  }
+                ]
+              },
+              "metadata": { "activityType": "TryCatch", "displayName": "Post with error handling" }
+            }
+          },
+          {
+            "Return_Result": {
+              "response": {
+                "erpDocumentNumber": "${$context.variables.erpDocumentNumber}",
+                "status": "${$context.variables.status}"
+              },
+              "metadata": { "activityType": "Response", "displayName": "Return result" }
+            }
+          }
+        ],
+        "metadata": { "activityType": "Sequence", "displayName": "Sequence" }
+      }
+    }
+  ],
+  "httpRetryConfig": { "maxRetries": 2, "backoffSeconds": 5 },
+  "evaluate": { "mode": "strict", "language": "javascript" }
+}

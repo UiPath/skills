@@ -241,12 +241,14 @@ Traces exist only for processes that use UiPath Autopilot or Agent capabilities;
 
 Traces are cross-folder -- no `--folder-path` required.
 
+> **Runtime evaluations** — to evaluate a published agent's output quality, trajectory, or tool use against eval sets and evaluators, load [`uipath-agents`](/uipath:uipath-agents). Commands live under `uip eval` (formerly `uip or eval`).
+
 ## Step 8: Get Healing Data
 
 Download Autopilot recovery data (screenshots + UI element data) as a ZIP:
 
 ```bash
-uip or jobs healing-data <job-key> -o ./healing-data.zip
+uip or jobs healing-data <job-key> -d ./healing-data.zip
 ```
 
 The ZIP contains screenshots and UI metadata from Autopilot self-healing attempts.

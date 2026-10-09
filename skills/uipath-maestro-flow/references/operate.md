@@ -126,8 +126,20 @@ the input's own name:
 At run time that variable is an OBJECT, not a path — a script reads the uploaded
 name as `$vars.<triggerNodeId>.output.<inputName>.FullName`.
 
-**A conversational flow cannot be debugged headlessly.** On a flow whose trigger
-is `conversationTrigger()`, debug uploads, returns
+**A flow with more than one root starts at the default root.** That is the
+trigger marked `isDefaultEntryPoint`, else the first trigger. To run another
+root, pass its trigger node id:
+
+```bash
+uip maestro flow debug <project-dir> --output json --entry-point <triggerNodeId>
+```
+
+A wrong id exits 3 and lists the valid trigger node ids. `Data.entryPoint` names
+the trigger the run started from.
+
+**A conversational flow cannot be debugged headlessly.** When the start root is
+a `conversationTrigger()` (the default root, or the one `--entry-point` names),
+debug uploads, returns
 `Code: FlowDebugStudioWebHandoff` with `Data.studioWebUrl`, and starts no run;
 `--timeout` does nothing. Chat from Studio Web (`--open-in-browser` opens it) or
 the Maestro VS Code extension.
@@ -146,8 +158,12 @@ Instance ID: <instanceId>
 Emit the label with `<not returned by CLI>` rather than dropping a line.
 
 `Data.finalStatus: "Faulted"` means the cause is already in that same response.
-Read it there rather than re-running. On a faulted run the CLI ignores
-`--output-filter` and prints the whole envelope, so redirect and search the file:
+A projection can drop `Data.incidents`, but `--output-filter` never filters
+`Message` and `Instructions`: they summarize the incidents, when PIMS returned
+any, and name the `uip maestro flow debug-instance incidents <instanceId>`
+command. If `Data.incidents` is missing, or `null` in a projection, run that
+command. Do not re-run the flow. On the next run, add `incidents:incidents` to the projection,
+or redirect the unfiltered output to a file and search it:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <project-dir> --output json > /tmp/flow-debug.json
@@ -164,6 +180,15 @@ uip maestro flow process run <process-key> <folder-key> --output json \
 On `process run` only, `--attachment` overrides `--inputs` on a key collision,
 and `--validate` accepts pre-uploaded attachment references for file slots —
 they pass the JSON-schema check even though the slot's nominal type is `string`.
+
+`--entry-point <triggerNodeId>` starts the job at that root, and `--validate`
+then checks the inputs against that root's schema. A wrong id exits 3 and lists
+the process's trigger node ids. Without it, the job starts at the release's
+default entry point. A package from `flow pack` or `solution pack` sets that to
+the first trigger in the flow, which for an SDK-built flow is the default root;
+a package built another way can differ. Pass `--entry-point` whenever the root
+matters. You do not need `--feed-id`; the CLI
+reads the feed from the release.
 
 ## Inspect a job
 
