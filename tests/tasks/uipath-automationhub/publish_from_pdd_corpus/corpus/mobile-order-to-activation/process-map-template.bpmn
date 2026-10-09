@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_OrderToActivationToBe" targetNamespace="https://kestrel-mobile.example/order-to-activation/to-be">
+  <bpmn:collaboration id="Collaboration_OrderToActivationToBe"><bpmn:participant id="Participant_Orchestration" name="Order to Activation Orchestration" processRef="Process_OrderToActivationToBe" /><bpmn:participant id="Participant_Fulfilment" name="Fulfilment Partners" /><bpmn:participant id="Participant_CustomerToBe" name="Customer" /></bpmn:collaboration>
+  <bpmn:process id="Process_OrderToActivationToBe" name="Automated Mobile eCommerce Order to Activation {{RUN_TOKEN}}" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_Target">
+      <bpmn:lane id="Lane_Orchestrator" name="Order Orchestration"><bpmn:flowNodeRef>Start_OrderAccepted</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_ValidateCorrelate</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_OrchestrateFulfilment</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_ActivateClose</bpmn:flowNodeRef><bpmn:flowNodeRef>End_ServiceActivated</bpmn:flowNodeRef><bpmn:flowNodeRef>End_OrderCancelled</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_Automation" name="Automated Provisioning"><bpmn:flowNodeRef>Task_RunChecks</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_ChecksClear</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_SetupSubscriber</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_PortRequiredToBe</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_ManagePort</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_PortComplete</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_ActivationEligible</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_Review" name="Human Review"><bpmn:flowNodeRef>Task_ReviewException</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_ReviewApproved</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_ResolvePortException</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_ResolveDeliveryException</bpmn:flowNodeRef></bpmn:lane>
+      <bpmn:lane id="Lane_FulfilmentTarget" name="Fulfilment Partners"><bpmn:flowNodeRef>Task_RequestDispatch</bpmn:flowNodeRef><bpmn:flowNodeRef>Task_WaitDelivery</bpmn:flowNodeRef><bpmn:flowNodeRef>Gateway_DeliveryConfirmed</bpmn:flowNodeRef></bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Start_OrderAccepted" name="Order accepted" />
+    <bpmn:serviceTask id="Task_ValidateCorrelate" name="Validate and correlate order" />
+    <bpmn:serviceTask id="Task_RunChecks" name="Run fraud and credit checks" />
+    <bpmn:exclusiveGateway id="Gateway_ChecksClear" name="Checks clear?" />
+    <bpmn:userTask id="Task_ReviewException" name="Review flagged order" />
+    <bpmn:exclusiveGateway id="Gateway_ReviewApproved" name="Review approved?" />
+    <bpmn:serviceTask id="Task_SetupSubscriber" name="Set up customer and subscriber" />
+    <bpmn:exclusiveGateway id="Gateway_PortRequiredToBe" name="Port required?" />
+    <bpmn:serviceTask id="Task_ManagePort" name="Submit and monitor port" />
+    <bpmn:exclusiveGateway id="Gateway_PortComplete" name="Port complete?" />
+    <bpmn:userTask id="Task_ResolvePortException" name="Resolve port exception" />
+    <bpmn:sendTask id="Task_RequestDispatch" name="Request equipment dispatch" />
+    <bpmn:receiveTask id="Task_WaitDelivery" name="Wait for delivery status" />
+    <bpmn:exclusiveGateway id="Gateway_DeliveryConfirmed" name="Delivery confirmed?" />
+    <bpmn:userTask id="Task_ResolveDeliveryException" name="Resolve delivery exception" />
+    <bpmn:serviceTask id="Task_OrchestrateFulfilment" name="Record fulfilment completion" />
+    <bpmn:exclusiveGateway id="Gateway_ActivationEligible" name="Activation eligible?" />
+    <bpmn:serviceTask id="Task_ActivateClose" name="Activate service and close order" />
+    <bpmn:endEvent id="End_ServiceActivated" name="Service activated" />
+    <bpmn:endEvent id="End_OrderCancelled" name="Order cancelled" />
+    <bpmn:sequenceFlow id="T1" sourceRef="Start_OrderAccepted" targetRef="Task_ValidateCorrelate" /><bpmn:sequenceFlow id="T2" sourceRef="Task_ValidateCorrelate" targetRef="Task_RunChecks" /><bpmn:sequenceFlow id="T3" sourceRef="Task_RunChecks" targetRef="Gateway_ChecksClear" />
+    <bpmn:sequenceFlow id="T4" name="Clear" sourceRef="Gateway_ChecksClear" targetRef="Task_SetupSubscriber" /><bpmn:sequenceFlow id="T5" name="Flagged or referred" sourceRef="Gateway_ChecksClear" targetRef="Task_ReviewException" /><bpmn:sequenceFlow id="T6" name="Approve" sourceRef="Task_ReviewException" targetRef="Gateway_ReviewApproved" /><bpmn:sequenceFlow id="T7" name="Release" sourceRef="Gateway_ReviewApproved" targetRef="Task_SetupSubscriber" /><bpmn:sequenceFlow id="T8" name="Reject" sourceRef="Gateway_ReviewApproved" targetRef="End_OrderCancelled" />
+    <bpmn:sequenceFlow id="T9" sourceRef="Task_SetupSubscriber" targetRef="Gateway_PortRequiredToBe" /><bpmn:sequenceFlow id="T10" name="Yes" sourceRef="Gateway_PortRequiredToBe" targetRef="Task_ManagePort" /><bpmn:sequenceFlow id="T11" name="No" sourceRef="Gateway_PortRequiredToBe" targetRef="Task_RequestDispatch" /><bpmn:sequenceFlow id="T12" sourceRef="Task_ManagePort" targetRef="Gateway_PortComplete" /><bpmn:sequenceFlow id="T13" name="Yes" sourceRef="Gateway_PortComplete" targetRef="Task_RequestDispatch" /><bpmn:sequenceFlow id="T14" name="No" sourceRef="Gateway_PortComplete" targetRef="Task_ResolvePortException" /><bpmn:sequenceFlow id="T15" name="Resolved" sourceRef="Task_ResolvePortException" targetRef="Task_ManagePort" />
+    <bpmn:sequenceFlow id="T16" sourceRef="Task_RequestDispatch" targetRef="Task_WaitDelivery" /><bpmn:sequenceFlow id="T17" sourceRef="Task_WaitDelivery" targetRef="Gateway_DeliveryConfirmed" /><bpmn:sequenceFlow id="T18" name="Yes" sourceRef="Gateway_DeliveryConfirmed" targetRef="Task_OrchestrateFulfilment" /><bpmn:sequenceFlow id="T19" name="No" sourceRef="Gateway_DeliveryConfirmed" targetRef="Task_ResolveDeliveryException" /><bpmn:sequenceFlow id="T20" name="Resolved" sourceRef="Task_ResolveDeliveryException" targetRef="Task_WaitDelivery" />
+    <bpmn:sequenceFlow id="T21" sourceRef="Task_OrchestrateFulfilment" targetRef="Gateway_ActivationEligible" /><bpmn:sequenceFlow id="T22" name="Clean automated path" sourceRef="Gateway_ActivationEligible" targetRef="Task_ActivateClose" /><bpmn:sequenceFlow id="T23" name="Manual intervention recorded" sourceRef="Gateway_ActivationEligible" targetRef="Task_ReviewException" /><bpmn:sequenceFlow id="T24" sourceRef="Task_ActivateClose" targetRef="End_ServiceActivated" />
+  </bpmn:process>
+</bpmn:definitions>

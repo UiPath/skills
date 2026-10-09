@@ -1,0 +1,28 @@
+{
+ "name_contains": "TriStar Standard Prior Authorization",
+ "documents": {
+  "pdd": "corpus/tristar-prior-auth/pdd.md",
+  "process_map": "corpus/tristar-prior-auth/process-map.bpmn"
+ },
+ "systems": {
+  "TriStar EDI gateway": [
+   "edi"
+  ],
+  "MedVisor": [],
+  "InterQual / MCG": [
+   "interqual",
+   "mcg"
+  ]
+ },
+ "optional_systems": {
+  "Enrollment/member records": [
+   "enrollment",
+   "member"
+  ],
+  "Provider portal": [
+   "provider portal",
+   "provider"
+  ]
+ },
+ "allow_other_category": true
+}
