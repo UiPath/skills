@@ -1,0 +1,102 @@
+task_id: skill-ah-documents-roundtrip-smoke
+description: >
+  Smoke test: the document surface on its own — attach a PDD to an existing
+  process, then list and download what is attached. This is the Cartographer
+  hand-off in miniature: the generated PDD / process-map artefact lands on an
+  AH process through `documents create`, and is read back through
+  `documents list` / `documents download`. The tenant is a smoke fixture and
+  is NOT reachable, so every call fails; that's expected. Grades COMMAND
+  SHAPE: CLI transport, the three document verbs, an id passed straight
+  through rather than searched for, and no admin-token headers.
+tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 10
+
+initial_prompt: |
+  Using the `uipath-automationhub` skill, attach the document below to the
+  EXISTING Automation Hub process `12345`, then list the documents on that
+  process and download the one you just attached.
+
+    Document name: "PDD"
+    Link:          https://example.invalid/pdd
+
+  You already have the process id (`12345`) — use it directly; do not search
+  for the process by name.
+
+  Authentication is provided via env-auth exactly as the UiPath Delegate
+  runtime provides it (`UIPATH_CLI_AUTH_TOKEN` + org/tenant variables) — the
+  `uip` CLI consumes it automatically. Do NOT run `uip login` and do NOT
+  handle a token yourself.
+
+  This is a command-shape smoke check against a fixture tenant that is NOT
+  reachable, so EVERY call will fail (non-200 / connection error) — that is
+  expected. Issue each command exactly once, in order, and do not let a failed
+  call stop you from issuing the next one.
+
+  Important:
+  - Run each command once and move on. Do NOT retry and do NOT attempt to login.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - Do NOT create a new process — process `12345` already exists.
+  - NEVER send the `x-ah-openapi-auth` or `x-ah-openapi-app-key` header.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attached the document (uip ah documents create …)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah documents create'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed the documents back (uip ah documents list …)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah documents list'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent downloaded the document (uip ah documents download …) — best-effort: the fixture tenant is unreachable, so an agent may stop earlier"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah documents download'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The prompt supplies the id, so any create here is the agent inventing work.
+  - type: command_not_executed
+    description: "Agent did NOT create a new process — the id was given"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah automations create'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-auth'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-app-key'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "CLI transport means no hand-built auth: agent never constructed an Authorization header"
+    tool_name: "Bash"
+    command_pattern: '(?i)Authorization:\s*Bearer'
+    weight: 1.0
+    pass_threshold: 1.0
