@@ -119,6 +119,7 @@ Without `--operation`, returns a list of `availableOperations` with a hint to us
 |---|---|
 | Returns `requestFields` + `responseFields` + `parameters` | Use field metadata. Check `required` flags and `reference` sections. Proceed to Step 5. |
 | Returns `availableOperations` (no `--operation`) | Pick the operation you need, re-run with `--operation`. |
+| Fields depend on a parent value, or a parameter's `design` has `solutionResourceKind` (a solution-resource picker, e.g. a Data Fabric folder entity) | Re-run with the parent values as `-f <field>=<value>` — for a picker, the resource name (plus `--solution-folder` for a local solution). See [resources.md — Parent-Field-Driven Custom Fields](resources.md#parent-field-driven-custom-fields-api-type-objectactions) and its "Solution-resource pickers" subsection. |
 | Returns error or empty | **Metadata gap** — skip describe, proceed to Step 5 with inferred fields. See [resources.md — Describe Failures](resources.md#describe-failures). |
 
 **Always pass `--connection-id`** for connection-specific metadata including custom fields.

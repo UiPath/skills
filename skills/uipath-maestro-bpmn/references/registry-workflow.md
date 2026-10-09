@@ -176,6 +176,15 @@ uip is resources describe <connectorKey> <object> --connection-id <id> \
 query parameter it is ignored. Always set `isAscending`: omitted, the query
 sorts ascending, whatever its `DefaultValue` says.
 
+A folder entity is a solution-resource picker (its parameter's `design`
+carries `"solutionResourceKind": "entity"`, e.g. `folderEntityName`). Pass the
+entity name with `-f` as usual, plus `--solution-folder <dir>` when the entity
+is in a local solution: the CLI finds the entity by that kind and sends its
+configuration with the request. A name the tenant holds in several folders
+needs `-f <field>_folderKey=<folder-key>`. For the error cases, load the
+uipath-platform skill and read its Integration Service resources reference,
+section "Solution-resource pickers".
+
 No `uip maestro bpmn` command compiles a filter tree, so write the filter in
 `queryExpression` as a CEQL string yourself, even when the request asks for a
 FilterBuilder tree and no raw CEQL. CEQL supports `=`, `!=`, `<`, `<=`, `>`,
