@@ -147,6 +147,13 @@ Ordering a plain string is refused (`EVENT_FILTER_BAD_VALUE`): JMESPath
 compares numbers only, so the subscription would match nothing. Write the
 value as a number or an ISO-8601 date, or use a text operator.
 
+A backslash at the end of a filter or `where` value, or before another `\` or
+a `'`, is refused (`EVENT_FILTER_BACKSLASH`). JMESPath engines read `\\`
+differently (the specification as one backslash, the reference libraries as
+two), so the subscription could silently never match. A backslash before any
+other character (`C:\tmp`, `Finance\Q3`) is kept as written and reads the same
+everywhere.
+
 ## Evidence boundary
 
 A local start-trigger run injects a payload; it does not fire a subscription.
