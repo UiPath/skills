@@ -38,7 +38,25 @@ Cloud access tokens are short-lived. If any call returns **401** and the token c
 ## Endpoints used by this skill
 
 ### GET `/idea-flows`
-All idea flows (workflow types) on the tenant. Each element has `Idea flow name` (e.g. "Business Process") and `Idea flow ID` (number). Response wrapped as `{ message, statusCode, data: [...] }`. *(Used by the publish flow.)*
+All idea flows (workflow types) on the tenant. Each element has `Idea flow name` (e.g. "Business Process"), `Idea flow ID` (number), on servers with RPANAV-19226 `Idea flow type` (see **Idea flow types** below), and one key per phase whose statuses carry `phase_variable` / `status_variable`. Response wrapped as `{ message, statusCode, data: [...] }`. *(Used by the publish and change-idea-flow flows.)*
+
+#### Idea flow types
+
+Select a flow by `Idea flow type`, never by name (tenant-editable) or a remembered id (differs per tenant — Business Process is `7` on one tenant, `8` on another). An automation record's `process_submission_type` (CLI: `SubmissionType`) identifies the flow type it is in:
+
+| `Idea flow type` | `process_submission_type` |
+|---|---|
+| `idea` (Employee-driven) | `1` |
+| `top-down` (CoE-driven) | `2` |
+| `automation` (Citizen developer) | `3` |
+| `process-mining` | `4` |
+| `task-mining` | `5` |
+| `change-request` | `6` |
+| `agentic-ai-idea` | `7` |
+| `business-process` | `8` |
+| `custom` (tenant-created flow) | `-1` |
+
+Phases differ between tenants even for the same type (an older tenant's Business Process flow has `IDEA`/`ASSESSMENT`/… phases, newer ones start at `DOCUMENTATION`/`NOT_STARTED`) — always read them from the flow's own entry.
 
 ### GET `/idea-schema?idea_flow_id={id}`
 Full JSON schema for an idea flow + a ready-made `user_inputs` template. Response wrapped as `{ status: "success", data: {...} }`:
@@ -140,6 +158,13 @@ Download a file-backed document's **bytes**. `{file_id}` is the `file_id` from t
 
 ### GET `/automations/{id}/components`  *(optional)*
 Linked components for the process.
+
+### PATCH `/idea-flows/automations/{automationId}/idea-flow`  *(RPANAV-19226)*
+Move an automation into another idea flow (e.g. convert an idea into a Business Process) — the same server logic as the profile page's **Change Idea Flow** action. Body: `{ "idea_flow_id": <id>, "phase_variable": "<P>", "status_variable": "<S>" }`, all three from the target's `/idea-flows` entry. *(Used by the change-idea-flow flow.)*
+
+- **400** — a phase/status not in the target flow, or a `change-request` target (a Change Request needs a parent automation). **403** — no **Change idea flow** permission (default: account owner, system admin, program manager) or no permission to submit into the target flow; don't retry. **404** — unknown `idea_flow_id`, or (for the route itself) a server without the capability.
+- Slow (~20 s+): it re-saves the whole automation. Never retry on a slow response or timeout — re-read the automation's `process_submission_type` first.
+- Data: answers carry over for assessment types both flows share (migrated to the target flow's version); assessments the target doesn't use are not shown; a parent-automation link is cleared.
 
 ## Errors
 

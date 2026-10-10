@@ -16,7 +16,7 @@ uip ah idea-flows list --output json
 
 ## Step 2: Pick the idea flow
 
-Default to the entry whose `Name` contains "Business Process" (case-insensitive); take its `Id`. If the caller named a different flow, use that. Several candidates → ask. None → say Business Process flows may not be enabled and stop. Store `IDEA_FLOW_ID`.
+Default to the Business Process flow, picked by **type**: take the `Id` of the entry whose `Type` is `business-process` — names are tenant-editable and ids differ per tenant. If the caller named a different flow, use that. Several candidates → ask. None → say Business Process flows may not be enabled and stop. Only when no entry carries `Type` (older server or CLI), fall back to the entry whose `Name` contains "Business Process" (case-insensitive). Store `IDEA_FLOW_ID` and the expected type.
 
 ## Step 3: Fetch the schema
 
@@ -183,6 +183,8 @@ uip ah automations get $PROCESS_ID --all-fields --output json   # read process_s
 ```
 
 Every attached document id must appear in the documents list (file-backed ones with a `FileId`). Missing → report it failed; never claim an attach you didn't see in this list.
+
+**Check the process landed in the intended flow:** the `--all-fields` record's `process_submission_type` must match the flow type you chose in Step 2 (`business-process` = `8`; mapping in [`api-endpoints.md`](api-endpoints.md) → **Idea flow types**). A Business Process that came back as `1`/`2` (Employee-/CoE-driven idea) is a known failure mode — **don't re-create it**; tell the user and fix it with [`change-idea-flow-cli-guide.md`](change-idea-flow-cli-guide.md), then report the corrected flow.
 
 The report **MUST end with both View deep links** — the URL segment is `process_slug` from the `--all-fields` record.
 

@@ -26,7 +26,7 @@ Do not proceed until you have a 200.
 ## Step 2: Pick the idea flow
 
 From the saved `/idea-flows` `data` array:
-1. Default to the entry whose `Idea flow name` contains "Business Process" (case-insensitive) and take its `Idea flow ID`.
+1. Default to the entry whose `Idea flow type` is `business-process` and take its `Idea flow ID` — never match on the tenant-editable name or a remembered id. Only if no entry carries `Idea flow type` (older server), fall back to the entry whose `Idea flow name` contains "Business Process" (case-insensitive).
 2. If the caller specified a different flow, use that. If neither is found, list the available names + IDs and ask the user which to use. If none exist, tell the user Business Process flows may not be enabled and stop.
 
 Store `idea_flow_id`.
