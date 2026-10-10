@@ -56,7 +56,7 @@ At most 3 iterations. Each iteration:
    | Error inside an activity the migrator generated (Assign, Sequence, Application Card) | Migration defect | Needs attention, with the activity name; do not rewrite the generated construct blind |
    | Anything else | Unknown | Ask one yes/no question: what would change, in which file and activity, and why it should clear the error. Yes applies that one targeted fix and counts one iteration; no makes it a needs-attention item |
 
-3. Apply the fix with targeted edits only. Never rewrite a whole XAML file, never re-serialize it with a script, never reintroduce a classic activity. Mark the edited construct as SKILL.md Rule 12 says: the `Remediated by uipath-activity-migrator on <YYYY-MM-DD>: <what changed>` line replaces the matching `[PostMigration Action Required]` line or is added as a new annotation.
+3. Apply the fix with targeted edits only. Never rewrite a whole XAML file, never re-serialize it with a script, never reintroduce a classic activity. Mark the edited construct as SKILL.md Rule 12 says: the `Remediated by uipath-activity-migrator on <YYYY-MM-DD>: <what changed>` line replaces the matching `[PostMigration Action Required]` line or is added as a new annotation attribute, never an XML comment.
 4. Rebuild.
 
 When the RPA authoring skill is available in this plugin, spawn a subagent that runs it on every XAML edit of this loop and returns the changed file, then continue with its result. Brief it as the Limits sub-step of [runtime-verification-guide.md § Fix and rerun loop](runtime-verification-guide.md#fix-and-rerun-loop) says: intent and constraints, never XAML mechanics; the edited file comes back. When it is unavailable, apply the minimal fix directly under the same rules.

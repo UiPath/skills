@@ -76,7 +76,6 @@ Actions, in this order, once the Step 5 build passed:
 Report inputs:
 
 - **Left classic.** Activities the pinned package could not migrate compile and run as classic. They are the `<L>` count on the status line, and the summarizer's "UIA not migrated" section is their inventory (SKILL.md Step 6). Never name a modern equivalent for one: several classic activities (Wait Attribute, Anchor Base, Start Process among them) have no one-to-one counterpart. Never count `<ui:` elements as a cross-check: that prefix also covers classic System and Excel activities and property elements such as `<ui:Highlight.Target>`.
-- **Runtime prerequisites.** Studio 2024.10 or later to open the project. Robots at or above the minimum `<UIA_VERSION>` requires. Only when the project automates a browser: the UiPath browser extension must be installed on the robot machines.
 
 Not part of this hook: a build error that calls for a rerun with a flag is handled in Step 5 by [build-verification-guide.md](../build-verification-guide.md) with the flags of Hook 1, and package versions on the output are never edited (Rule 7).
 
