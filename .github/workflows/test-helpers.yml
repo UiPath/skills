@@ -290,6 +290,27 @@ jobs:
       - name: Run skills.sh checker tests
         run: pytest tests/scripts/test_check_skills_sh.py -v
 
+  sensitive-content-checker-tests:
+    runs-on: uipath-ubuntu-latest
+    name: sensitive-content checker unit tests
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        # No fetch-depth override: the baseline case resolves only HEAD.
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      # Replays every value the customer content-inspection gate flagged in
+      # 1.202.0/1.203.0 (block tier must fail, inconsistent shapes must warn)
+      # plus the false positives found tuning against main. A detector that
+      # loosens lets a rejected shape ship; one that tightens floods PRs.
+      - name: Run sensitive-content checker tests
+        run: pytest tests/scripts/test_check_sensitive_content.py -v
+
   telemetry-hook-tests:
     runs-on: uipath-ubuntu-latest
     name: telemetry hook contract guard

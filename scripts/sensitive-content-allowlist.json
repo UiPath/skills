@@ -1,0 +1,4 @@
+{
+  "$comment": "Exceptions for scripts/check-sensitive-content.py. Add an entry only for a value the customer content-inspection gate has NOT flagged and that must stay verbatim (e.g. a product error code). Each entry needs path (repo-relative suffix), rule, exact match, and reason. This file is outside package.json `files`, so allowlisted values never ship in it.",
+  "entries": []
+}
