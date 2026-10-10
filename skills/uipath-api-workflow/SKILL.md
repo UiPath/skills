@@ -16,7 +16,7 @@ Build, run, and publish UiPath API Workflows: JSON conforming to CNCF Serverless
 
 ## When to Use This Skill
 
-Use for API workflow JSON creation/editing and activities including Sequence, Assign, JavaScript, If, ForEach, DoWhile, Break, TryCatch, Wait, Response, HTTP Request, and connector activities. Use the connector and testing references for Studio Web connector workflows and project `evals/` layouts.
+Use for API workflow JSON creation/editing and activities including Sequence, Assign, JavaScript, Log Message, If, ForEach, DoWhile, Break, TryCatch, Wait, Response, HTTP Request, and connector activities. Use the connector and testing references for Studio Web connector workflows and project `evals/` layouts.
 
 <!--skill-flavor:surface-lifecycle-scope:start-->
 - Local runs, validation, build/packaging, publishing
@@ -47,7 +47,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 3. **Activity objects and keys.** Each activity is one single-key object in a `do` array. Keys are globally unique, including wrapper suffixes such as `#Wrapper`, `#Then`, `#Else`, and `#Body`.
 
-4. **Exports.** Every activity should export output. Assign uses `{ ...$context, variables: { ...$context.variables, ...$output } }`; all others use `{ ...$context, outputs: { ...$context?.outputs, "<ActivityKey>": $output } }`. See [references/expressions-and-context.md](references/expressions-and-context.md).
+4. **Exports.** Every activity except Log Message should export output. Assign uses `{ ...$context, variables: { ...$context.variables, ...$output } }`; all others use `{ ...$context, outputs: { ...$context?.outputs, "<ActivityKey>": $output } }`. See [references/expressions-and-context.md](references/expressions-and-context.md).
 
 <!--skill-flavor:designer-literal-runtime-comparison:start-->
 5. **Literal expressions.** In Assign `set`, Response, If `when`, and variable contexts, string literals must be expressions such as `"${'literal'}"`, because Studio Web rewrites a bare `"literal"` into `"${literal}"` on save and that fails at runtime; numbers, booleans, and references need no wrapping. Connector `bodyParameters`, `queryParameters`, and `pathParameters` instead use bare literals; references remain expressions. See [references/connector-activity-discovery.md](references/connector-activity-discovery.md) and [references/troubleshooting.md](references/troubleshooting.md#studioweb-roundtrip-pitfalls).
@@ -69,7 +69,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 
 13. **Workflow inputs.** Use `$workflow.input.<name>`, never `$input.<name>` from a non-first activity; `$input` is current task input and may be prior output.
 
-14. **JavaScript.** Scripts read `$context`, `$workflow`, and `$input` as globals and must return a value. Keep standard Studio Web `run.script.arguments` scaffolding: `"${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"`; runtime ignores it.
+14. **JavaScript.** Scripts read `$context`, `$workflow`, and `$input` as globals and must return a value. Keep standard Studio Web `run.script.arguments` scaffolding: `"${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"`; runtime ignores it. For logging, use Log Message, never `console.*` in a script; its code is exactly `console.log|warn|error(<message>)` with no `return`, `export`, or trailing `;`. See [references/task-types.md](references/task-types.md#4-log-message-logmessage).
 
 15. **Response.** `markJobAsFailed` is a sibling of `response`. Always use `then: "end"`; `then: "exit"` is for branches/loops. Object responses use one expression, e.g. `"${{ key: $context.variables.value }}"`, not independently interpolated fields. Single values may use `"${$context.outputs.Activity}"` or `"${'done'}"`. `${ { ... } }` and `${{ ... }}` are both valid; stay consistent.
 <!--skill-flavor:response-roundtrip-validation:start-->
@@ -140,7 +140,7 @@ Check the project directory for `evals/`, then read `evals/<scope>/eval-sets/*.j
 
 ### Phase 1: Plan
 
-Choose activities, unique keys, variables, inputs, outputs, and nesting. Use Assign for variables, JavaScript/JsInvoke for custom logic, If for branching, ForEach for collections, DoWhile for repetition, TryCatch for errors, Wait for pauses, Response for termination, Break inside an If, and registry-generated `UiPath.Http` or `UiPath.IntSvc` for HTTP/connectors. For files/base64, **File to Base64** encodes a file (input or downloaded) as base64 for an inline API body and **Base64 to File** turns a base64 payload back into a file (rule 23). Use generic connector activities only when registry discovery finds no curated operation. Read [references/task-types.md](references/task-types.md).
+Choose activities, unique keys, variables, inputs, outputs, and nesting. Use Assign for variables, JavaScript/JsInvoke for custom logic, Log Message for logging, If for branching, ForEach for collections, DoWhile for repetition, TryCatch for errors, Wait for pauses, Response for termination, Break inside an If, and registry-generated `UiPath.Http` or `UiPath.IntSvc` for HTTP/connectors. For files/base64, **File to Base64** encodes a file (input or downloaded) as base64 for an inline API body and **Base64 to File** turns a base64 payload back into a file (rule 23). Use generic connector activities only when registry discovery finds no curated operation. Read [references/task-types.md](references/task-types.md).
 
 ### Phase 2: Generate or Edit
 

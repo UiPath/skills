@@ -749,7 +749,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 - **Symptom:** `validate` rejects an activity — `Unknown activityType 'X'. Valid types: ...`
 <!--skill-flavor:allowlist-versioning:start-->
-- **Cause:** The authorable set is closed and mirrors the Studio Web palette. It is also versioned: `CustomLog` was added 2026-08-11, so older CLIs list 13 types and newer ones 14. **Take the list from the error message — never memorise one.**
+- **Cause:** The authorable set is closed and mirrors the Studio Web palette. It is also versioned. **Take the list from the error message — never memorise one.**
 <!--skill-flavor:allowlist-versioning:end-->
 - **Fix:** Stay inside the list. Two task types the executor runs but `validate` refuses — do not author them:
 
@@ -766,7 +766,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   2. **An unexpected field on a KNOWN task** — one stray key makes the whole task unmatchable, and the error text still says `Missing required property 'call'`. `set` on a `Break` is the documented instance: it produced **7797 errors** in this skill's own `nested-control-flow-example.json`, and deleting that one key made it Valid.
 
   So read the avalanche as "the schema cannot match this task", not "the task key is wrong". Diff the task against the shape in [task-types.md](task-types.md) field by field before concluding the type is unsupported.
-- **Logging:** `console.log` / `console.warn` inside a JavaScript activity are captured and emitted as `[Script <TaskName>]: ...`. Whether they reach Orchestrator job logs in cloud is unverified — a probe showed the Orchestrator job-log surface carrying only lifecycle lines — so put anything you must read after a run in the `Response`. `CustomLog` is on the list but no executor ships a handler for it; do not author one yet.
+- **Logging:** use Log Message ([task-types.md](task-types.md#4-log-message-logmessage)), never `console.*` inside a JavaScript activity. Each call becomes a job log entry at its level; `run` prints it as `[Script <TaskName>]: ...`.
 - **Do not** mislabel `metadata.activityType` to slip a type past the check — the validator cross-checks the label against the task's own keys (`has activityType 'DoWhile' but must contain 'for' with 'doWhile'`).
 
 ### Fixing in wrong order
