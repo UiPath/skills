@@ -139,6 +139,7 @@ else:
 - **CACHE_HIT**: read `.guardrails-catalog-cache.json` directly.
 - **CACHE_MISS**: fetch and save: `uip agent guardrails catalog --output json > .guardrails-catalog-cache.json`
   (the CLI writes both success and error JSON to stdout — do not add `2>&1`).
+- Entries are at `Data.Guardrails[]` in the saved JSON — the CLI re-cases the catalog's snake_case keys to PascalCase, so the catalog fields this guide names appear as `ValidatorId`, `WhenToUse`, `WhenNotToUse`, `UseCases`, `SecurityRiskAddressed`, `SecurityCategory`, `Examples[].Config` (with `ActionType`). `Data.guardrails` or `when_to_use` match nothing.
 
 ### Guardrails List (NEVER cached — tenant-specific)
 
@@ -190,7 +191,7 @@ inspect unrelated framework APIs, or search package internals beyond the documen
 
 ### If the catalog (or SDK docs) is unavailable
 
-Do **not** guess:
+Catalog-unavailable means the **fetch itself failed**: the output contains `"Code": "GuardrailCatalogUnavailable"`, any non-`Success` `Result` (e.g. `"Message": "Failed to fetch guardrail catalog"` from an auth or network fault), or the `uip` binary is missing — all of these MUST be declared under **Rules Skipped**. An empty parse or unexpected keys **after a successful fetch** is NOT unavailability — it means you parsed the wrong path (entries are at `Data.Guardrails[]`, PascalCase — see Step 0); re-read the raw JSON before declaring the catalog unavailable. A report claiming the catalog was unavailable when it was reachable is a defect, and so is staying silent about a failed fetch. When the fetch failed, do **not** guess:
 - **Audit Mode** (`CODED_GUARDRAIL_ACTION_INEFFECTIVE`, `CODED_GUARDRAIL_MISAPPLIED` relevance check) depends on the
   catalog → record these under the report's "Rules Skipped" subsection with reason
   `"guardrails catalog unavailable"`. (The **wiring** half of `CODED_GUARDRAIL_MISAPPLIED` — a decorator that won't
