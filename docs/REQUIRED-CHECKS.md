@@ -160,6 +160,7 @@ This table is machine-read. `scripts/parse-required-checks.py` is its only parse
 | `uipath-planner checker unit tests` | `test-helpers.yml` |
 | `uipath-coded-apps checker unit tests` | `test-helpers.yml` |
 | `uipath-ixp checker unit tests` | `test-helpers.yml` |
+| `uipath-automationhub checker unit tests` | `test-helpers.yml` |
 | `uipath-rules checker unit tests` | `test-helpers.yml` |
 | `uipath-genome checker unit tests` | `test-helpers.yml` |
 | `uipath-admin verify negative controls` | `test-helpers.yml` |

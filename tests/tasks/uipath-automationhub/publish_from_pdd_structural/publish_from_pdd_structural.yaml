@@ -1,0 +1,164 @@
+task_id: skill-ah-publish-from-pdd-structural
+description: >
+  STRUCTURAL PUBLISH — the Cartographer -> Automation Hub hand-off against the live
+  alpha tenant, graded on what the agent actually SUBMITS. A fictional, reduced PDD
+  (Retail Account Onboarding) and its laid-out BPMN process map, both carrying a
+  per-run reference token, are staged in the sandbox. The agent's `uip` is the real
+  CLI behind a call recorder (`.uip-recorder/uip`), which logs every call and
+  snapshots each `--file` as it is sent, because the tenant's read-back normalizes
+  what was submitted. pre_run snapshots the tenant (owner, Business Process flow,
+  application inventory, category tree) and fails as ERROR when it cannot take a
+  publish; the checker grades the submitted answers against that snapshot: one
+  successful create, the auth-info identity as owner/submitter, an active category,
+  verbatim enum codes, every PDD system answered (by inventory id where the
+  inventory has it, else by name) with no decoy or out-of-scope system, both
+  documents uploaded byte-identical with the right type ids, and a post-create
+  read-back. post_run archives this run's process. The outcome-graded e2e publish
+  (e2e_publish_outcome) reads the same kind of publish back from the tenant.
+# smoke: judge-free and inside the smoke budget (~3 min, ~30 calls), so it gates every
+# PR that touches the skill. Needs the CI alpha login. RPANAV-19150 AC 1-3.
+tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 40
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_shared/live_template
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - .uip-recorder
+
+reference:
+  directory: .
+
+pre_run:
+  - command: "python3 _setup/preflight_ah.py --require-new-applications"
+    timeout: 300
+  - command: "python3 _setup/seed_publish.py"
+    timeout: 60
+
+initial_prompt: |
+  Our Retail Account Onboarding process is approved. Its PDD is
+  `pdd-retail-account-onboarding.md` and its process map is
+  `process-map-retail-account-onboarding.bpmn`, both in this folder. Publish the
+  process to UiPath Automation Hub as a business process and attach both
+  documents.
+
+  The PDD is the only source for what the process is and which systems it uses.
+  Keep the process name exactly as the PDD titles it, including its reference code.
+
+  Important:
+  - The `uip` CLI is already available and authenticated against the target
+    tenant. Do NOT run `uip login` and do NOT handle a token yourself.
+  - Do NOT inspect `_setup/`, `.uip-recorder/` or `seed.json`.
+  - Do NOT call AskUserQuestion — it is not available in this harness. Treat the
+    payload preview as approved and keep going.
+
+  Before starting, load the uipath-automationhub skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-auth'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key (401s a cloud token exactly like x-ah-openapi-auth)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-app-key'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent stayed on the CLI transport — no hand-built Authorization header and no raw HTTP to Automation Hub"
+    tool_name: "Bash"
+    command_pattern: '(?i)(authorization["'']?\s*[:=]|\b(curl|wget|invoke-restmethod|invoke-webrequest)\b[^\n]*automationhub_)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The schema offers new_applications, so missing systems go in the answer. The
+  # admin upsert needs MANAGE_APP_INVENTORY (the CI identity lacks it) and must not be
+  # reached for here — applications never block the publish.
+  - type: command_not_executed
+    description: "Agent added missing systems through new_applications, not the admin applications upsert"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+ah\s+applications\s+update\b(?![^\n]*--help)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exactly one automations create --from-schema, on the Business Process idea flow, and it succeeded on the tenant (a success is never re-run)"
+    command: "python3 $REFERENCE_DIR/check_publish.py create-once"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Submitted answers resolve every required field: PDD process name and description, an active, non-'Other' category from the tenant's tree, the auth-info email as owner and submitter (bare string or value-wrapped), documentation codes verbatim from the schema enum and never 'none'/'don't know', no template placeholders"
+    command: "python3 $REFERENCE_DIR/check_publish.py payload"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Applications match the PDD exactly: every one of its five systems answered, by inventory id where the start-of-run inventory had it and as new_applications where it did not; no decoy id, no out-of-scope Avaloq, no thin apps"
+    command: "python3 $REFERENCE_DIR/check_publish.py applications"
+    timeout: 30
+    expected_exit_code: 0
+    # Primary signal of this task (the bug class behind RPANAV-19120), kept at the
+    # table's ceiling for submitted-artifact content rather than the e2e 5.0-6.0 band.
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "PDD (type 1) and the laid-out process map (type 6, or 9) each uploaded once to the created process, byte-identical to the staged files"
+    command: "python3 $REFERENCE_DIR/check_publish.py documents"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Owner lookup, if any, is server-side and does not assume the active-only filter: every users list carries --search and --invite-status all (RPANAV-19110)"
+    command: "python3 $REFERENCE_DIR/check_publish.py users"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent read the attachments and the record back after the create (documents list + automations get)"
+    command: "python3 $REFERENCE_DIR/check_publish.py verify"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not read the harness's call log, snapshot or setup scripts instead of the tenant"
+    tool_name: "Bash"
+    command_pattern: '(cat|less|head|tail|grep|jq|python3?)\s+[\s\S]*(\.uip-recorder/|seed\.json|_setup/)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_ah.py"
+    timeout: 300
