@@ -213,6 +213,8 @@ uip or jobs list --process-name "MyProcess" --folder-path "Production" --output 
 uip or jobs list --all-folders --state Faulted --output json
 ```
 
+`jobs list` reads the live job records from Orchestrator. For historical metrics over a time window (failure counts, success rate, trends), use the **uipath-insights** skill instead.
+
 `jobs list` requires `--folder-path`, `--folder-key`, or `--all-folders` — a bare `jobs list` is rejected. (Older CLI versions listed tenant-wide by default; pass `--all-folders` for that behavior.)
 
 ## Step 6: Get Logs
