@@ -1,0 +1,195 @@
+task_id: skill-test-defect-lifecycle-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to drive a defect through its
+  lifecycle on a seeded failed result in CLAIM — raise it from the failed
+  test case log, set its priority and link it by hand to a tracker issue,
+  report the tracker link, then delete it. Asserts that the agent derives
+  `--execution-id` and the test case (`--test-case-id` or `--test-case-key`)
+  from the run's failed logs rather
+  than guessing, uses `defects update --external-reference/--external-link`
+  (the only way to link a defect on a project with no tracker connected),
+  and deletes with `--yes`. The task owns the `EVFX-DEFECT-*` namespace;
+  `pre_run` seeds the failed result once and, on later runs, only deletes a
+  defect a previous run left on it, so every run starts from a result with
+  no defect.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 45
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      P, SET, CASE = "CLAIM", "EVFX-DEFECT-SET", "EVFX-DEFECT-TC1"
+      ZERO = "00000000-0000-0000-0000-000000000000"
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out = (r.stdout or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:200]}", flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def by_name(label, kind, name):
+          for x in call(label, "tm", kind, "list", "--project-key", P,
+                        "--filter", name).get("Data") or []:
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      def ensure(kind, name):
+          found = by_name(f"{kind}.find", kind, name)
+          if not found:
+              call(f"{kind}.create", "tm", kind, "create", "--project-key", P,
+                   "--name", name)
+              found = by_name(f"{kind}.refind", kind, name)
+          if not found:
+              fail(f"could not create or find {name}")
+          return found
+
+      ts = ensure("testsets", SET)
+      tc = ensure("testcases", CASE)
+      call("set.add", "tm", "testcases", "add", "--test-set-key", ts["TestSetKey"],
+           "--test-case-keys", tc["TestCaseKey"])
+
+      def failed_logs(eid):
+          return [l for l in call(f"logs.{eid[:8]}", "tm", "executions", "testcaselogs",
+                                  "list", "--project-key", P, "--execution-id", eid,
+                                  "--only-failed").get("Data") or []
+                  if l.get("Result") == "Failed"]
+
+      # Guard on the property the task reads: one finished run whose failed
+      # result carries NO defect. A defect a previous run left behind is this
+      # task's own scratch output, so delete it rather than seed another run.
+      for e in call("ex.list", "tm", "executions", "list", "--project-key", P,
+                    "--test-set-id", ts["Id"]).get("Data") or []:
+          if (e.get("ExecutionStatus") or e.get("Status")) != "Finished":
+              continue
+          logs = failed_logs(e["Id"])
+          if not logs:
+              continue
+          for l in logs:
+              did = l.get("DefectId")
+              if did and did != ZERO:
+                  call("defect.cleanup", "tm", "defects", "delete", "--project-key", P,
+                       "--defect-id", did, "--yes")
+          print(f"FIXTURE: reusing failed result in {e['Id']}", flush=True)
+          raise SystemExit(0)
+
+      r = call("run", "tm", "testsets", "run", "--test-set-key", ts["TestSetKey"],
+               "--execution-type", "manual")
+      eid = (r.get("Data") or {}).get("ExecutionId")
+      if not eid:
+          fail("could not start a manual execution")
+      call("finish", "tm", "testcaselog", "finish", "--project-key", P,
+           "--execution-id", eid, "--test-case-id", tc["Id"], "--result", "Failed",
+           "--has-error", "true", "--executed-by", "eval-fixture@uipath.com")
+      if not failed_logs(eid):
+          fail(f"execution {eid} has no failed result after finish")
+      print(f"FIXTURE: seeded failed result in {eid}", flush=True)
+      PYEOF
+    timeout: 280
+
+initial_prompt: |
+  The last run of the `EVFX-DEFECT-SET` test set in my Test Manager project
+  CLAIM failed on `EVFX-DEFECT-TC1`. Please raise a defect for that failure,
+  set its priority to High, and link it to the Jira issue CLAIM-4242
+  (https://example.atlassian.net/browse/CLAIM-4242) — we don't have Jira
+  connected, I filed it by hand. Show me the tracker link Test Manager now has
+  for it. This is a dry run, so once you've confirmed the link, delete the
+  defect again; you have my go-ahead to delete it without asking.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status before touching Test Manager (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0   # advisory
+
+  - type: command_executed
+    description: "Agent found the failed result server-side instead of guessing ids"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--execution-id\s+\S)uip\s+tm\s+executions?\s+testcaselogs\s+list\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Complete create: `uip tm defects create --project-key CLAIM --execution-id <uuid>` with `--test-case-id <uuid>` or `--test-case-key <key>`"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--project-(key\s+CLAIM|id\s+\S))(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--test-case-(id|key)\s+\S)uip\s+tm\s+defects?\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Update sets priority High (alone or together with the tracker link)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--defect-id\s+\S)(?=[\s\S]*--priority\s+["\x27]?High)uip\s+tm\s+defects?\s+update\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Update links CLAIM-4242 via --external-reference (alone or together with the priority)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--defect-id\s+\S)(?=[\s\S]*--external-reference\s+["\x27]?CLAIM-4242)uip\s+tm\s+defects?\s+update\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Advisory: the `defects update` response already returns Test Manager's
+  # Link/LinkLabel/SyncStatus, so showing the link from it is a correct answer.
+  - type: command_executed
+    description: "Agent re-read the tracker link (get-external-issue or get) — advisory; the update response also carries it"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--defect-id\s+\S)uip\s+tm\s+defects?\s+(get-external-issue|get)(?![\w-])'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0   # advisory
+
+  - type: command_executed
+    description: "Complete delete: `uip tm defects delete --defect-id <uuid> --yes`"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--defect-id\s+\S)(?=[\s\S]*(--yes|-y)\b)uip\s+tm\s+defects?\s+delete\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Outcome: the seeded failed result carries no defect after the run (the defect was really deleted)"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess
+      P, SET = "CLAIM", "EVFX-DEFECT-SET"
+      ZERO = "00000000-0000-0000-0000-000000000000"
+      def call(*a):
+          out = subprocess.run(["uip", *a, "--output", "json"],
+                               capture_output=True, text=True).stdout or ""
+          return json.loads(out[out.index("{"):])
+      ts = next(x for x in call("tm", "testsets", "list", "--project-key", P,
+                                "--filter", SET)["Data"] if x.get("Name") == SET)
+      ex = [e for e in call("tm", "executions", "list", "--project-key", P,
+                            "--test-set-id", ts["Id"])["Data"]
+            if (e.get("ExecutionStatus") or e.get("Status")) == "Finished"]
+      logs = [l for e in ex for l in call("tm", "executions", "testcaselogs", "list",
+              "--project-key", P, "--execution-id", e["Id"], "--only-failed")["Data"]]
+      assert logs, "no failed result found"
+      left = [l["DefectId"] for l in logs if l.get("DefectId") not in (None, "", ZERO)]
+      assert not left, f"defect(s) still linked: {left}"
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
