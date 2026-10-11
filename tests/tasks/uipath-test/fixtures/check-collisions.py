@@ -37,6 +37,7 @@ OWNERS = {
     "TRIAGE": "failed_run_triage_diagnose.yaml",
     "DEFECT": "defect_lifecycle_smoke.yaml",
     "DEFTRACE": "defect_traceability_integration.yaml",
+    "DEFFLOW": "defect_full_lifecycle_e2e.yaml",
 }
 
 

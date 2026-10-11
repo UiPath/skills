@@ -30,6 +30,7 @@ and therefore exact for this scheme.
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `defect_lifecycle_smoke` | CLAIM | `EVFX-DEFECT-SET`, `EVFX-DEFECT-TC1` | 1 Finished execution with TC1 `Failed` and **no** defect on it. The defect the task raises is scratch: `pre_run` deletes one an earlier run left on the result, never seeds a second execution |
 | `defect_traceability_integration` | CLAIM | `EVFX-DEFTRACE-SET`, `EVFX-DEFTRACE-TC1`, `EVFX-DEFTRACE-REQ` | 1 Finished execution with TC1 `Failed`; a defect on that result linked by hand to tracker issue `EVFX-DEFTRACE-1`; the requirement covers TC1 |
+| `defect_full_lifecycle_e2e` | its own throwaway project | the `EVFX-DEFFLOW-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks). Does not grade `defects attachments download`: a manual result gives the defect no evidence (a file uploaded to the result with `attachment upload --object-type testCaseLog` does not appear under `defects attachments list`), so there is nothing to download |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
@@ -120,8 +121,8 @@ the code under test never changed.
 ## Self-contained build tasks
 
 The three `mode:build` tasks — `project_scaffold_build`,
-`testset_curation_by_label_build`, `customfield_schema_multiscope_build` — sit
-outside the seeded-fixture model entirely. Each one **creates its own throwaway
+`testset_curation_by_label_build`, `customfield_schema_multiscope_build` — and
+the `defect_full_lifecycle_e2e` task sit outside the seeded-fixture model entirely. Each one **creates its own throwaway
 project, does all its work inside it, and deletes it as the final graded step.**
 They read and write nothing in CLAIM, HEALTH or BANK.
 
