@@ -153,13 +153,13 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "caseplan.json was created"
-    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json"
+    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.[cj][as][so][en]"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: json_check
     description: "Caseplan contains an action task"
-    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json"
+    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.[cj][as][so][en]"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
         operator: gt
@@ -169,7 +169,7 @@ success_criteria:
 
   - type: file_contains
     description: "Review stage exits via selected-tasks-completed"
-    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json"
+    path: "PurchaseApprovalCase/PurchaseApprovalCase/caseplan.[cj][as][so][en]"
     includes:
       - "selected-tasks-completed"
     weight: 3.0
@@ -177,7 +177,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json --output json"
+    command: "p=$(ls PurchaseApprovalCase/PurchaseApprovalCase/caseplan.case PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

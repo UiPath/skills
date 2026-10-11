@@ -77,7 +77,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The SDD was produced without building the case"
-    command: "test -f sdd.md && test -z \"$(find . -name caseplan.json -print -quit)\""
+    command: "test -f sdd.md && test -z \"$(find . \\( -name caseplan.json -o -name caseplan.case \\) -print -quit)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0

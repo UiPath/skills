@@ -10,6 +10,7 @@ from typing import Iterable
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import (  # noqa: E402
+    existing_caseplan,
     assert_tasks_nested,
     find_node_by_label,
     find_stages,
@@ -133,9 +134,10 @@ def assert_task_flags(task: dict, task_name: str) -> None:
 
 
 def main() -> None:
-    if not os.path.isfile(CASEPLAN_PATH):
-        fail(f"expected generated caseplan at {CASEPLAN_PATH}")
-    plan = read_caseplan(CASEPLAN_PATH)
+    path = existing_caseplan(CASEPLAN_PATH)
+    if path is None:
+        fail(f"expected generated caseplan at {CASEPLAN_PATH} (or caseplan.case beside it)")
+    plan = read_caseplan(path)
     assert_tasks_nested(plan)
 
     triggers = find_triggers(plan)

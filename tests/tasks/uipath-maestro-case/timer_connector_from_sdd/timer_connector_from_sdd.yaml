@@ -58,7 +58,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "a caseplan.json was generated"
-    command: "find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    command: "find . \\( -name caseplan.json -o -name caseplan.case \\) -not -path '*/.venv/*' | grep -q ."
     timeout: 15
     expected_exit_code: 0
     weight: 1.5
@@ -66,7 +66,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "p=$(find . -name caseplan.json -not -path '*/.venv/*' | head -1); uip maestro case validate \"$p\" --output json"
+    command: "p=$(find . \\( -name caseplan.json -o -name caseplan.case \\) -not -path '*/.venv/*' | sort | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

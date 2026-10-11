@@ -51,7 +51,7 @@ success_criteria:
 
   - type: file_contains
     description: "caseplan.json action task has hitlType: quick context entry"
-    path: "caseplan.json"
+    path: "caseplan.[cj][as][so][en]"
     includes:
       - '"hitlType"'
       - '"quick"'
@@ -84,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "QuickForm path must NOT contain =bindings. references (the app-based fingerprint)"
-    command: "! grep -q '=bindings\\.' caseplan.json"
+    command: "p=$(ls ./caseplan.case ./caseplan.json 2>/dev/null | head -1); ! grep -q '=bindings\\.' \"$p\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.5

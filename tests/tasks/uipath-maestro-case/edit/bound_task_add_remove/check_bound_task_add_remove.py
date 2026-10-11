@@ -20,6 +20,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.case_check import existing_caseplan  # noqa: E402
+
 SOLUTION = Path("LinearThreeStages")
 PROJECT = SOLUTION / "LinearThreeStages"
 RESOURCES = SOLUTION / "resources" / "solution_folder"
@@ -55,7 +58,7 @@ def load(path):
         return None
 
 
-caseplan = load(PROJECT / "caseplan.json")
+caseplan = load(Path(existing_caseplan(str(PROJECT / "caseplan.json")) or PROJECT / "caseplan.json"))
 bindings_v2 = load(PROJECT / "bindings_v2.json")
 
 if caseplan is not None:

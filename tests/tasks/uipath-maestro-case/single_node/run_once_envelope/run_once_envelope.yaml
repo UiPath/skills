@@ -127,13 +127,13 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "caseplan.json was created at the conventional path"
-    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json"
+    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.[cj][as][so][en]"
     weight: 1.5
     pass_threshold: 1.0
 
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json --output json"
+    command: "p=$(ls RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.case RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -145,7 +145,7 @@ success_criteria:
   # while re-running or not is the behavior this PR changed.
   - type: json_check
     description: "shouldRunOnlyOnce is read from the SDD: Yes stays true; No and the unspecified row are not run-once"
-    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json"
+    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.[cj][as][so][en]"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?displayName=='Freeze Snapshot' && shouldRunOnlyOnce==`true`])"
         operator: equals
@@ -169,7 +169,7 @@ success_criteria:
   # the falsy key still behaves correctly, so this is recorded, not gated.
   - type: json_check
     description: "Advisory: the non-run-once tasks emit shouldRunOnlyOnce explicitly instead of omitting it"
-    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json"
+    path: "RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.[cj][as][so][en]"
     assertions:
       - expression: "nodes[].data.tasks[][] | [?displayName=='Reminder Ping'] | [0].shouldRunOnlyOnce"
         operator: equals

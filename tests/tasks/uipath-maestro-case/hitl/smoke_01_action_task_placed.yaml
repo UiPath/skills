@@ -109,13 +109,13 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "caseplan.json was created at the conventional path"
-    path: "InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json"
+    path: "InvoiceApprovalCase/InvoiceApprovalCase/caseplan.[cj][as][so][en]"
     weight: 2.0
     pass_threshold: 1.0
 
   - type: json_check
     description: "Caseplan contains an action-typed task"
-    path: "InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json"
+    path: "InvoiceApprovalCase/InvoiceApprovalCase/caseplan.[cj][as][so][en]"
     assertions:
       - expression: "length(nodes[].data.tasks[][] | [?type=='action'])"
         operator: gt
@@ -125,7 +125,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate passes"
-    command: "uip maestro case validate InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json --output json"
+    command: "p=$(ls InvoiceApprovalCase/InvoiceApprovalCase/caseplan.case InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

@@ -24,7 +24,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.case_check import find_stages, read_caseplan, selected_stage_ids  # noqa: E402
+from _shared.case_check import existing_caseplan, find_stages, read_caseplan, selected_stage_ids  # noqa: E402
 
 EXPECTED_CASEPLAN = os.path.join("CMGoldenExpense", "CMGoldenExpense", "caseplan.json")
 # Resolved against the REFERENCE mirror (this file's own family root:
@@ -76,9 +76,7 @@ def _norm(value: str) -> str:
 def _read_plan() -> dict:
     if len(sys.argv) > 1:
         return read_caseplan(sys.argv[1])
-    if os.path.exists(EXPECTED_CASEPLAN):
-        return read_caseplan(EXPECTED_CASEPLAN)
-    return read_caseplan()
+    return read_caseplan(existing_caseplan(EXPECTED_CASEPLAN))
 
 
 def _expected_recipient() -> dict:

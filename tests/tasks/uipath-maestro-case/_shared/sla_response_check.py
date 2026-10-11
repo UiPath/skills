@@ -38,11 +38,10 @@ def fail(msg: str) -> None:
 
 
 def read_plan(path: str = CASEPLAN) -> dict:
-    """Read the battery's caseplan; falls back to a recursive search if it moved."""
-    if not os.path.isfile(path):
-        from _shared.case_check import find_caseplan
+    """Read the battery's caseplan under any plan name; falls back to a recursive search if it moved."""
+    from _shared.case_check import existing_caseplan, find_caseplan
 
-        path = find_caseplan()
+    path = existing_caseplan(path) or find_caseplan()
     with open(path) as fh:
         return json.load(fh)
 
