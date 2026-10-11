@@ -39,7 +39,7 @@ success_criteria:
   - type: command_executed
     description: "Agent described the activity's Create operation with the entity on the folderEntityName picker"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+describe[\s\S]*CreateEntityRecord_V3[\s\S]*folderEntityName=["'']?PurchaseOrder'
+    command_pattern: 'uip\s+is\s+resources\s+describe(?:(?!uip\s)[^&;|])*CreateEntityRecord_V3(?:(?!uip\s)[^&;|])*folderEntityName=["'']?PurchaseOrder'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -47,7 +47,7 @@ success_criteria:
   - type: command_executed
     description: "Agent picked the folder scope the folderEntityName picker belongs to"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+describe[\s\S]*entityScope=["'']?folder'
+    command_pattern: 'uip\s+is\s+resources\s+describe(?:(?!uip\s)[^&;|])*entityScope=["'']?folder'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -55,7 +55,7 @@ success_criteria:
   - type: command_executed
     description: "Agent pointed describe at the local solution so the picker resolves there"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+describe[\s\S]*--solution-folder\s+["'']?\.?/?orders-solution|cd\s+["'']?\.?/?orders-solution[\s\S]*uip\s+is\s+resources\s+describe'
+    command_pattern: 'uip\s+is\s+resources\s+describe(?:(?!uip\s)[^&;|])*--solution-folder[\s=]+["'']?[^\s"'']*orders-solution|cd\s+["'']?[^\s"'';&|]*orders-solution["'']?\s*(?:&&|;)\s*uip\s+is\s+resources\s+describe'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -63,7 +63,7 @@ success_criteria:
   - type: command_executed
     description: "Agent passed --operation Create and --connection-id on describe"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+describe(?=[\s\S]*--operation\s+Create)(?=[\s\S]*--connection-id)'
+    command_pattern: 'uip\s+is\s+resources\s+describe(?=(?:(?!uip\s)[^&;|])*--operation\s+Create)(?=(?:(?!uip\s)[^&;|])*--connection-id)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -71,6 +71,6 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not bypass describe with a hand-built HTTP call to the schema route"
     tool_name: "Bash"
-    command_pattern: '(curl|http-request-preview|resources\s+run\s+create)[\s\S]*standard-objects'
+    command_pattern: '(curl|http-request-preview|resources\s+run\s+create)(?:[^&;|])*standard-objects'
     weight: 1.0
     pass_threshold: 1.0
