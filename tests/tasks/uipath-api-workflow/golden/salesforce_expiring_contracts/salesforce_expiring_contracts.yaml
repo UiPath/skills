@@ -1,0 +1,72 @@
+task_id: skill-api-workflow-golden-salesforce-expiring-contracts
+description: >
+  Autopilot golden scenario: build an automation that reminds CSMs about the
+  Salesforce contracts expiring in the next 30 days. Graded on whether the API
+  workflow returns the expected expiring contracts: pre_run seeds two contracts ending
+  inside the window and two outside it (ending as ERROR before the agent starts when
+  it cannot), check_contracts.py adds one more inside it right before running the
+  workflow (so a hardcoded answer fails), and all three inside contracts must come
+  back with neither outside one. post_run deletes them. The prompt keeps the
+  scenario's wording and adds the VAT task's run consent and headless lines, plus one
+  sentence that keeps test runs from emailing real contract owners. Skipped until the
+  run tenant has one Salesforce connection whose test user can create, activate and
+  delete Accounts and Contracts; run it with --include-skipped.
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, outcome-graded, connector, feature:registry]
+
+skip: true
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+reference:
+  directory: ../..
+
+pre_run:
+  - command: "python3 _setup/sfdc_contracts.py seed"
+    timeout: 180
+
+post_run:
+  - command: "python3 _setup/sfdc_contracts.py cleanup"
+    timeout: 180
+
+initial_prompt: |
+  Build an automation that reminds  (CSMs) about contracts that are expiring soon. The
+  contracts live in Salesforce under the Contract object. It has fields like EndDate,
+  AccountId, and OwnerId. I only care about contracts expiring in the next 30 days
+
+  You have my consent to run the workflow, signed in, to test it. Do not send any emails
+  or messages while testing it.
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: run_command
+    description: "Returns every seeded contract ending in the next 30 days, one of them created at grading time, and none outside it (live Salesforce)"
+    command: "python3 $REFERENCE_DIR/golden/salesforce_expiring_contracts/check_contracts.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Informational: the project passes static validation"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | LC_ALL=C sort | head -1); test -n "$WF" && uip api-workflow validate "$WF" --output json | grep -q ''"Status": "Valid"'''
+    timeout: 30
+    expected_exit_code: 0
+    weight: 0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Informational: reads Salesforce through its Integration Service connector"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | LC_ALL=C sort | head -1); test -n "$WF" && grep -q "uipath-salesforce-sfdc" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 18
+  max_turns: 60
