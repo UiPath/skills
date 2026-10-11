@@ -26,6 +26,7 @@ Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcom
 ### Projects, folders, and requirements
 
 - Projects: `uip tm project list --filter <NAME_OR_KEY>` finds by name/key; `project create --name <PROJECT_NAME> --project-key <PROJECT_KEY>` creates; `project update --project-key <PROJECT_KEY> --name <PROJECT_NAME>` updates name/description; `project delete --project-key <PROJECT_KEY>` deletes; `project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` sets the default Orchestrator folder; `project clear-default-folder --project-key <PROJECT_KEY>` clears it; `project owners list --project-key <PROJECT_KEY> [<PROJECT_KEY> ...]` lists owners.
+- Project settings: `uip tm project settings get --project-key <PROJECT_KEY>` reads time zone, execution name format, step cap, default folder and governance; `project settings update --project-key <PROJECT_KEY> [--time-zone <IANA_NAME>] [--execution-name-format <TEMPLATE>]` writes only those first two. IANA names, placeholders, read-only fields and half-applied updates: [references/project-settings-guide.md](references/project-settings-guide.md).
 - Get folder keys with `uip or folders list -n <name> --all --output json`; it returns all folders visible to the current user.
 - Prefix with `uip tm requirements`: `list --project-key <PROJECT_KEY>`; `list-by-test-execution --project-key <PROJECT_KEY> --execution-id <uuid>`; `get --project-key <PROJECT_KEY> (--requirement-id <uuid> | --requirement-key <key>)` (mutually exclusive UUID/key); `create --project-key <PROJECT_KEY> --name <name>`; `update --project-key <PROJECT_KEY> --requirement-id <uuid>` (updates name/description and requires at least one of `--name` or `--description`); `delete --project-key <PROJECT_KEY> --requirement-ids <uuid...>` (variadic IDs); `export --project-key <PROJECT_KEY> --output-file <path>` (exports `.xlsx`); `list-testcase-ids --project-key <PROJECT_KEY> --requirement-id <uuid>`; `testcases --project-key <PROJECT_KEY> --requirement-id <uuid> (--add-testcase-ids <uuid...> | --remove-testcase-ids <uuid...>)` (mutually exclusive attach/detach selectors).
 
@@ -100,6 +101,7 @@ For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For an
 - Pack, ingest, label, and run Playwright on serverless: [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md)
 - Custom-field definitions, labels, and values (`uip tm customfield`): [references/custom-fields-guide.md](references/custom-fields-guide.md)
 - Object labels / tag metadata on test entities (`uip tm objectlabel`): [references/object-labels-guide.md](references/object-labels-guide.md)
+- Project time zone, execution name format, and what is read-only (`uip tm project settings`): [references/project-settings-guide.md](references/project-settings-guide.md)
 
 ## Anti-patterns
 
