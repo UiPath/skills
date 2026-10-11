@@ -332,7 +332,7 @@ public enum <EnumName>
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
-| <CONNECTOR_NAME> | <SYSTEM> | <ACCESS_METHOD> | <STEPS_OR_APPS> |
+| <CONNECTOR_NAME> | <SYSTEM_NAME> | <ACCESS_METHOD> | <STEPS_OR_APPS> |
 
 ### IXP / Document Understanding Models
 
