@@ -1,0 +1,49 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Task agentic case",
+    "kind": "process",
+    "type": "caseManagement",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "kind": "Package",
+        "name": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "CaseManagement",
+      "name": "Task agentic case",
+      "package": {
+        "name": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case",
+        "key": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case:1.0.6"
+      },
+      "packageName": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case",
+      "packageVersion": "1.0.6",
+      "entryPointUniqueId": "aa8d78e0-01c3-4055-89fb-3b334b2a1b72",
+      "entryPointName": "/content/caseplan.json.bpmn#trigger_1",
+      "inputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"caseInput1\": {\n      \"type\": \"string\",\n      \"title\": \"caseInput1\"\n    }\n  },\n  \"required\": []\n}",
+      "outputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {}\n}",
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "entryPoints": "[{\"UniqueId\":\"aa8d78e0-01c3-4055-89fb-3b334b2a1b72\",\"Path\":\"/content/caseplan.json.bpmn#trigger_1\",\"DisplayName\":\"Trigger 1\",\"InputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"caseInput1\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"title\\\": \\\"caseInput1\\\"\\n    }\\n  },\\n  \\\"required\\\": []\\n}\",\"OutputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {}\\n}\",\"Type\":9,\"TargetRuntime\":null,\"ContentRoot\":null,\"DataVariation\":null,\"Id\":927443}]",
+      "tags": []
+    },
+    "locks": [],
+    "key": "deecae87-ce5a-4351-b777-92348aff3226",
+    "files": []
+  }
+}

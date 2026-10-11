@@ -1,0 +1,54 @@
+task_id: skill-case-pack-only
+description: >
+  Generate mode, local only: a complete, valid case solution (PackReadyCase,
+  three linear stages, `case init` scaffold) is staged on disk, and the user asks
+  for a deployable package without publishing it. Covers the skill's packaging
+  half of Phase 7 (`uip maestro case pack` / `uip solution pack`), which no other
+  task reaches, and its Rule 13 boundary: packing is not consent to publish,
+  upload, or debug. Graded from artifacts — a solution zip whose case .nupkg
+  carries the compiled content/caseplan.*.bpmn, with the plan left unchanged —
+  plus guards that nothing reached the tenant. No tenant writes.
+tags: [uipath-maestro-case, smoke, mode:operate, lifecycle:generate]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 900
+  max_turns: 40
+  turn_timeout: 600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: .
+
+initial_prompt: |
+  The case solution in ./PackReadyCase is finished. Package it so our release
+  team can deploy it to Orchestrator later. Do not publish or upload it anywhere
+  yourself, and don't change the case. Do NOT ask for approval, confirmation, or
+  feedback.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "A solution package holds the case .nupkg with its compiled caseplan sidecar, and the plan is unchanged"
+    command: "python3 $REFERENCE_DIR/check_pack_only.py"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Nothing published, uploaded, deployed, or debugged (Rule 13: packing is not publish consent)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+(publish|upload|deploy)|maestro\s+case\s+debug)\b(?!\s+--help)'
+    weight: 3.0
+    pass_threshold: 1.0

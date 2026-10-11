@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "PackReadyCase",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "f38255b8-3ecb-4d9c-a614-1ad2a71b1e4e",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "PackReadyCase"
+    },
+    "locks": [],
+    "key": "f07a0d17-3a88-4ac6-97b0-cc0bc9335f59",
+    "files": []
+  }
+}

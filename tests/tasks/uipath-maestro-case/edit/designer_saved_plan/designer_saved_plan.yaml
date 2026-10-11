@@ -1,0 +1,112 @@
+task_id: skill-case-edit-designer-saved-plan
+description: >
+  Brownfield edit of a case exactly as Studio Web's Case Designer saves it: the
+  fixture is a real Designer pull (cm_golden_expense, MST-16423 retest, webhook
+  path and mailbox ids redacted). Studio Web renamed the plan to caseplan.case
+  with a caseplan.case.bpmn sidecar, wrote it compact, bumped the schema to
+  32.0.4, added layout and the trigger's entryPointId, and upgraded both
+  connector tasks to configuration v2. The agent must find the plan under
+  Studio Web's name, make one targeted edit there, and leave everything the
+  Designer wrote intact. Never a second plan file beside it (Studio Web reads
+  only the newest name, so an edit in a new caseplan.json is silently ignored),
+  never a lowered version, never a dropped layout or entryPointId (dropping the
+  entryPointId makes the Designer re-mint the entry point, MST-16422). Local
+  only; the prompt states the copy is current, so no pull. Needs a CLI that
+  reads 32.0.4 (UiPath/cli#5001, in @dev since 1.205.0-dev.9162). Passes on the
+  skill as it stands (2026-10-09, one run each with and without #3817's
+  brownfield commit): the guard is against regressions in edits to Designer
+  plans, not a test of that commit.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 60
+  turn_timeout: 900
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+initial_prompt: |
+  The case solution in ./ExpenseDesignerSaved was just pulled from Studio Web,
+  so the local copy is current: edit it locally and don't pull it again. It is
+  the expense-reporting case, project CMGoldenExpense.
+
+  Add one optional built-in wait-for-timer task named "Final cool-off" to the
+  stage "Stage 7 - user select". It waits 10 minutes, starts when the stage is
+  entered, and the stage must not wait on it to complete. Leave everything else
+  in the case as it is.
+
+  Do NOT run `uip maestro case debug`, and do not upload or publish. Do NOT ask
+  for approval, confirmation, or feedback. Finish with `uip maestro case
+  validate` passing on the case.
+  Before starting, load the uipath-maestro-case skill. Read and follow its
+  workflow steps exactly.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "uip maestro case validate --strict passes on the Designer's plan file"
+    command: "uip maestro case validate ExpenseDesignerSaved/CMGoldenExpense/caseplan.case --strict --output json"
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No second plan file was created beside caseplan.case"
+    command: "test ! -e ExpenseDesignerSaved/CMGoldenExpense/caseplan.json && test ! -e ExpenseDesignerSaved/CMGoldenExpense/case.stage.json && test ! -e ExpenseDesignerSaved/CMGoldenExpense/default.stage.json"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "The edit landed in caseplan.case: Stage 7 gained exactly the new optional timer task, nothing else was added or removed"
+    path: "ExpenseDesignerSaved/CMGoldenExpense/caseplan.case"
+    assertions:
+      - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && type=='wait-for-timer'])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[?data.label=='Stage 7 - user select'].data.tasks[][] | [?displayName=='Final cool-off' && isRequired==`false`])"
+        operator: equals
+        expected: 1
+      - expression: "length(nodes[].data.tasks[][])"
+        operator: equals
+        expected: 16
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "What the Designer wrote survives: schema 32.0.4, layout, the trigger's entryPointId, both connector tasks at configuration v2"
+    path: "ExpenseDesignerSaved/CMGoldenExpense/caseplan.case"
+    assertions:
+      - expression: "version"
+        operator: equals
+        expected: "32.0.4"
+      - expression: "layout != null"
+        operator: equals
+        expected: true
+      - expression: "nodes[?id=='trigger_1'].data.inputs.entryPointId | [0]"
+        operator: equals
+        expected: "aef0905a-379f-4881-bd5e-d78e4b816346"
+      - expression: "length(nodes[].data.tasks[][].data.context[] | [?name=='activityConfigurationVersion' && value=='v2'])"
+        operator: equals
+        expected: 2
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Nothing uploaded, published, or debugged"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+(solution\s+(publish|upload|deploy)|maestro\s+case\s+debug)\b(?!\s+--help)'
+    weight: 2.0
+    pass_threshold: 1.0

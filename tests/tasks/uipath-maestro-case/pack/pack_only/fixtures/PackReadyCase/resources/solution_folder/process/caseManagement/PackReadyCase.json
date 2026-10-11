@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "PackReadyCase",
+    "kind": "process",
+    "type": "caseManagement",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "f38255b8-3ecb-4d9c-a614-1ad2a71b1e4e",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "PackReadyCase"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "CaseManagement",
+      "name": "PackReadyCase",
+      "package": {
+        "key": "f07a0d17-3a88-4ac6-97b0-cc0bc9335f59"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "cc3e732b-8a63-4cb3-abc7-6c7c31096f88",
+    "files": []
+  }
+}
