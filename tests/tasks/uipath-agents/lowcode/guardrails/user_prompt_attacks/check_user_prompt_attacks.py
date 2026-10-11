@@ -38,7 +38,11 @@ def catalog_parameter_ids(validator: str) -> set | None:
             ["uip", "agent", "guardrails", "list", "--output", "json"],
             capture_output=True, text=True, timeout=20,
         )
-        data = json.loads(proc.stdout)
+        # The CLI may print an update banner before the JSON envelope.
+        start = proc.stdout.find("{")
+        if start < 0:
+            return None
+        data = json.loads(proc.stdout[start:])
         entries = [e for e in data.get("Data", []) if e.get("Validator") == validator]
         if proc.returncode != 0 or not entries:
             return None
