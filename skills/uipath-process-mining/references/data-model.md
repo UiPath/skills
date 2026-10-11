@@ -1,61 +1,42 @@
 # Data model — making tables queryable (the add-table pattern)
 
-Process Mining is **case-centric**. A table is queryable only if it is the **Cases**
-root or reaches `Cases` through a foreign key. A standalone dbt model with no link
-to `Cases` is treated as disconnected and rejected at query time
-(`UserError_TableIsDeleted`).
+Process Mining is **case-centric**: a table is queryable only if it is the `Cases` root or reaches `Cases` through a foreign key. A disconnected standalone dbt model is rejected at query time (`UserError_TableIsDeleted`).
 
 ## Two models — do not confuse them
 
 | Model | Endpoint | Shape | Role |
 |-------|----------|-------|------|
-| **Data model** (structural) | `/apps/{id}/{stage}/dataModel` | `tables[]` of `{ type, name, primaryKey, foreignKeys }` | What tables exist + how they link. **`apps data-model add-table` edits this; `apps data-model get` reads it.** |
-| **Semantic model** | `/apps/{id}/{stage}/model` | `Processes` / `Metrics` / `Tables[].Fields[]` | Field-level view `query info` (and `apps model get`) reads; edited by `apps model fields …` ([`model-editing.md`](model-editing.md)). `applyCurrentDatamodel` **reconciles** structural changes into it, preserving your semantic edits (calculated fields, metrics, data-kind overrides) — so add-table won't wipe them; just don't hand-author its per-column fields, edit the structural model. |
+| **Data model** (structural) | `/apps/{id}/{stage}/dataModel` | `tables[]` of `{ type, name, primaryKey, foreignKeys }` | Defines tables and links; edited by `apps data-model add-table`, read by `apps data-model get`. |
+| **Semantic model** | `/apps/{id}/{stage}/model` | `Processes` / `Metrics` / `Tables[].Fields[]` | Field-level view for `query info` and `apps model get`; edited with `apps model fields …` ([`model-editing.md`](model-editing.md)). |
 
-Edit the structural data model; `applyCurrentDatamodel` regenerates the semantic
-model (its per-column fields) from it. `add-table` does both.
+Don't hand-author the semantic model's per-column fields; edit the structural model. `applyCurrentDatamodel` derives semantic fields while reconciling changes and preserving semantic edits (calculated fields, metrics, data-kind overrides); `add-table` does both.
 
 ## The built-in Case-child tables — use these before adding your own
 
-The `uipath.custom` template ships four data-model tables. Two are the process
-backbone; two are ready-made Case-child extension slots. **Check whether your data
-fits Tags or Due_dates before hand-rolling a custom table** — they exist to save you
-the add-table round-trip.
+The `uipath.custom` template provides `Cases`, `Event_log`, `Tags`, and `Due_dates`. Check whether your data fits the extension tables before adding a custom one.
 
-| Table | PK / link | Fields | Use it for |
-|-------|-----------|--------|------------|
-| **Cases** | `Case_ID` (root) | case attributes | One row per process instance (the case). The root everything links to. |
-| **Event_log** | FK→Cases | activity, timestamp, resource… | The event log — one row per activity. The process itself. Not directly group-by-able (it drives the process graph). |
-| **Tags** | `Tag_ID`, FK→Cases | `Tag` (label), `Tag_type` (category) | **Multi-valued categorical labels per case.** A case can carry many tags. Use for flags/segments/attributes that don't fit one Case column — e.g. `Tag_type="Region", Tag="EU"`; `Tag_type="Flag", Tag="Escalated"`. Filter/group cases by tag. |
-| **Due_dates** | `Due_date_ID`, FK→Cases | `Due_date`/`Due_date_type` (which deadline), `Expected_date`, `Actual_date`, `On_time` (bool), `Cost` (currency), `Difference` (duration) | **Per-case SLA / deadline / milestone tracking.** A case can have many due dates (multiple SLAs/milestones). Use for on-time %, SLA-breach counts, cost-of-breach, expected-vs-actual gaps. |
+| Table | PK / link | Fields | Use |
+|-------|-----------|--------|-----|
+| **Cases** | `Case_ID` (root) | case attributes | One row per process instance; root for links. |
+| **Event_log** | FK→Cases | activity, timestamp, resource… | One row per activity; drives the process graph and is not directly group-by-able. |
+| **Tags** | `Tag_ID`, FK→Cases | `Tag` (label), `Tag_type` (category) | Many categorical labels per case; filter/group cases by tags. |
+| **Due_dates** | `Due_date_ID`, FK→Cases | `Due_date`/`Due_date_type`, `Expected_date`, `Actual_date`, `On_time` (bool), `Cost` (currency), `Difference` (duration) | Per-case deadlines/milestones; supports on-time %, breach counts/cost, and expected-vs-actual gaps. |
 
-Both `Tags` and `Due_dates` are themselves Case-child tables (FK→`Cases`) — they are
-the template's built-in example of the loose-link pattern below. Populate them by
-authoring their dbt models (`Tags.sql` / `Due_dates.sql`) to emit real rows keyed on
-`Case_ID`. This is the **intended** use — distinct from the anti-pattern of
-repurposing them to smuggle unrelated analytics through (see Anti-patterns).
+`Tags` and `Due_dates` are loose-linked Case-child tables: populate `Tags.sql` / `Due_dates.sql` with real rows keyed on `Case_ID`; do not repurpose them for unrelated analytics (see Anti-patterns).
 
 **Decision:**
-- Per-case label / category, possibly many per case → **Tags**.
-- Per-case deadline / SLA / milestone with target vs actual → **Due_dates**.
-- Per-case fact that fits one column → add a column to `Cases` (via `Event_log`).
-- Anything not one-row-per-case (a weekly aggregate, a cross-case study) → a **custom
-  Case-child table** via `add-table` (loose-linked; below).
+- Many per-case labels/categories → **Tags**.
+- Per-case deadline/SLA/milestone with target vs actual → **Due_dates**.
+- A per-case fact that fits one column → add a column to `Cases` (via `Event_log`).
+- Anything not one-row-per-case (for example, a weekly aggregate or cross-case study) → custom loose-linked Case-child table via `add-table`.
 
 ## Why a bare dbt model is not queryable
 
-`transformations create models/Workload_weekly.sql` builds a physical Snowflake
-table, but `query info` will not list it and `query run` cannot group by it. Two
-gates:
+`transformations create models/Workload_weekly.sql` creates a physical Snowflake table, but it is not queryable unless:
+1. Register it in the data model with `add-table`; dbt alone does not make it queryable.
+2. Link it to `Cases`; otherwise it is disconnected and returns `UserError_TableIsDeleted`.
 
-1. **Not in the data model.** dbt produces tables; the data model decides which
-   become queryable entities. Register it (`add-table`).
-2. **Not linked to Cases.** Even once registered, a table with no path to `Cases` is
-   disconnected → `UserError_TableIsDeleted`. Give it a foreign key to `Cases`.
-
-And one timing gate: `existingTables` (what the query layer treats as "live") is
-derived from the **last successful ingestion's** materialization — so a data-model
-edit only takes effect after a **re-ingest**.
+`existingTables` (query layer live tables) comes from the last successful ingestion's materialization. A data-model edit takes effect only after **re-ingest**.
 
 ## The data-model table entry (DataModelDto)
 
@@ -72,26 +53,18 @@ edit only takes effect after a **re-ingest**.
 |-----|---------|
 | `type` | `"Object"` (default if omitted). |
 | `name` | MUST equal the dbt model / physical table name. |
-| `primaryKey` | A column that uniquely identifies a row — add a surrogate (`{{ pm_utils.id() }}`) if the table has none. |
-| `foreignKeys` | `[{ table, column }]` links to a parent. For a standalone analytical table, link **loosely** to `Cases` on a nullable `Case_ID` column. |
+| `primaryKey` | Uniquely identifies a row; add a surrogate (`{{ pm_utils.id() }}`) if needed. |
+| `foreignKeys` | `[{ table, column }]` links to a parent. For a standalone analytical table, loosely link to `Cases` with nullable `Case_ID`. |
 
-Per-column display/kind is derived by `applyCurrentDatamodel` — you do **not**
-hand-author a `Fields[]` array.
+`applyCurrentDatamodel` derives per-column display/kind; do **not** hand-author a `Fields[]` array.
 
 ## Loose-link recipe: expose a custom analytical table
 
-The table isn't one-row-per-case, but must still reach `Cases`. Give it a **surrogate
-PK** and a **nullable `Case_ID`** carrying the FK — a null FK is enough to satisfy the
-case-centric graph; aggregate queries don't need it to resolve to real cases.
+A table that is not one-row-per-case must reach `Cases`: give it a **surrogate PK** and nullable `Case_ID` FK. Null satisfies the case-centric graph, and aggregate queries need not resolve it to real cases.
 
-**Caveat — a null `Case_ID` makes the table analytically disconnected.** Case-level
-filters/selections (how PM dashboards normally scope data) won't propagate to it, and
-it can't be joined back to real cases. Use the null-FK loose link **only** for a
-genuinely case-independent aggregate (a weekly total, a cross-case study). If its rows
-*do* correspond to real cases, populate `Case_ID` with the real key so case filtering
-flows through.
+**Caveat:** null `Case_ID` makes the table analytically disconnected: case-level filters/selections (the normal PM dashboard scope) will not propagate, and rows cannot join to real cases. Use this only for genuinely case-independent aggregates (for example, a weekly total or cross-case study). If rows correspond to real cases, populate `Case_ID` with the real key so case filtering flows through.
 
-1. Author the dbt model. First two selected columns:
+1. Author the dbt model with these as its first two selected columns:
 
    ```sql
    select
@@ -100,7 +73,7 @@ flows through.
        ...                                        -- your real columns
    ```
 
-2. Build, register, **re-ingest**, query:
+2. Run the build, registration, re-ingest, and query commands:
 
    ```bash
    uip pm transformations create <app> models/Workload_weekly.sql --file ./Workload_weekly.sql
@@ -110,21 +83,11 @@ flows through.
    uip pm query run <app> --group-by Service_Component --metric Closed_Interactions:sum --output table
    ```
 
-   Where `Workload_weekly.table.json` is the DataModelDto entry above.
+   `Workload_weekly.table.json` is the DataModelDto entry above.
 
-`add-table` GETs `/dev/dataModel` (with its ETag), **upserts** the table by name
-(replace if present, else append), PUTs it back `If-Match`-guarded, then POSTs
-`applyCurrentDatamodel`. Because it merges into exactly the document it just read,
-that ETag is a genuine compare-and-swap — so **`add-table` takes no `--etag`**, unlike
-`data-mapping update` / `model update` / `transformations update`, which replace a file
-you edited locally and therefore require it. A concurrent edit surfaces as `412`; **just
-re-run** — `add-table` re-reads and re-applies on top of the other write. (A data model
-returned without an ETag fails the command rather than writing unguarded.) It returns
-`IngestionNeeded: true` — the entity is not queryable until the re-ingest completes.
+`add-table` GETs `/dev/dataModel` with its ETag, upserts by name (replace or append), PUTs with `If-Match`, then POSTs `applyCurrentDatamodel`. It merges into the document it just read, so the ETag is a compare-and-swap: `add-table` takes no `--etag`, unlike `data-mapping update`, `model update`, and `transformations update`, which replace locally edited files and require it. On concurrent edit (`412`), re-run `add-table` to re-read and apply over the other write. If the returned data model has no ETag, the command fails rather than writing unguarded. It returns `IngestionNeeded: true`; the entity is not queryable until re-ingest completes.
 
 ## Publish vs re-ingest
 
-- **Re-ingest** (`ingestions create`) materializes the table so **dev** `query` sees
-  it. Required for add-table.
-- **Publish** (`apps publish`) pushes dev changes to the **dashboards / published**
-  stage. Separate step; not needed just to query in dev.
+- **Re-ingest** (`ingestions create`) materializes the table for dev `query`; it is required after `add-table`.
+- **Publish** (`apps publish`) pushes dev changes to dashboards / the published stage; it is separate and unnecessary just to query in dev.
