@@ -95,8 +95,11 @@ Relevant catalog-driven cases include:
 - A security-critical guardrail (`security_category` `adversarial_input` / `content_safety`) using `log` where the catalog example uses `block`.
 - `pii_detection` using `Block` / `Filter` at `Tool` scope for a tool that legitimately requires PII; match the catalog's `when_not_to_use` clause.
 - `pii_detection` using `Log` at `Agent` / `Llm` scope, which does not prevent PII entering or reaching the LLM.
+- A guardrail protecting a `job-attachment` input or output (`$ref: "#/definitions/job-attachment"` in `inputSchema` / `outputSchema`) whose `validatorParameters` omits `appliesTo` or sets it to `"Text"`, while the tenant list entry's `Parameters` offers `appliesTo` — the file contents are never inspected, so the action cannot act on them. Fix: `{"$parameterType": "enum", "id": "appliesTo", "value": "Files"}` (or `"Both"`). Cite the schema path and the catalog `when_to_use` clause for the validator. Not applicable to BYO-pinned guardrails (no file support).
 
 ### Relevance Check → `LC_GUARDRAIL_MISAPPLIED`
+
+Also emit when `appliesTo` is `"Files"` or `"Both"` on an agent with no `job-attachment` field and no file tool (`properties.toolType` `analyze-attachments` / `create-file`) — the guardrail has nothing to evaluate. Leave schema validity of `appliesTo` (unknown parameter, bad value) to the CLI format pass.
 
 Read system prompt, `inputSchema`, `outputSchema`, and tool resources to establish real context. Read catalog `when_not_to_use` / `NOT_recommended_for`. Emit when the agent matches a disqualifying condition, such as a generate-only agent with no user input carrying a PII guardrail when PII output is the intended product. Cite the matched catalog clause.
 
@@ -106,7 +109,7 @@ Reuse recommend reasoning but emit findings instead of writing configuration. Em
 
 ### R1 — Read agent context
 
-Read from `agent.json`: system prompt; `inputSchema` / `outputSchema` property names and descriptions; tool resource names and descriptions (`resources/`); and existing `guardrails[]`.
+Read from `agent.json`: system prompt; `inputSchema` / `outputSchema` property names and descriptions, including `job-attachment` fields (file surfaces); tool resource names and descriptions (`resources/`), including file tools (`analyze-attachments`, `create-file`); and existing `guardrails[]`.
 
 ### R2 — Catalog-driven analysis
 
@@ -118,7 +121,7 @@ Group matches by `security_category` + scope + stage. If a group has multiple ca
 
 ### R4 — Recommended scope (block as early as possible)
 
-Recommend the outermost PRE scope allowed by the validator's `AllowedScopes` for input protection (**Agent** > Llm > Tool), Agent · POST for output protection, and Tool scope only for a genuinely tool-specific concern.
+Recommend the outermost PRE scope allowed by the validator's `AllowedScopes` for input protection (**Agent** > Llm > Tool), Agent · POST for output protection, and Tool scope only for a genuinely tool-specific concern. For attached input files recommend Agent · PRE with `appliesTo: "Files"`; for produced output files Agent · POST with `appliesTo: "Files"` — only when the tenant list entry's `Parameters` contains `Id: "appliesTo"`; otherwise state that file inspection is not enabled for that validator. BYO-pinned guardrails never get `appliesTo` (no file support).
 
 ### R5 — Recommended action (protection vs audit)
 
