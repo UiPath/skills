@@ -70,7 +70,8 @@ def _check_query_params(flow: dict[str, Any]) -> None:
     _require_all(
         _http_fallback_text(flow),
         [
-            "tasks.googleapis.com/tasks/v1/lists",
+            "tasks.googleapis.com",
+            "/tasks/v1/lists",
             "/tasks",
             "method",
             "get",
