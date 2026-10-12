@@ -67,7 +67,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The business-rule task binds BusinessRule name + folderPath, is v3, maps creditScore in and output (=result) + riskBand (=output.RiskDecision.riskBand) out, and bindings_v2.json carries the rule"
+    description: "The business-rule task binds BusinessRule name + folderPath, is v3, maps creditScore in and output (=result) + riskBand (=RiskDecision.riskBand) out, and bindings_v2.json carries the rule"
     command: "python3 $REFERENCE_DIR/edit/add_business_rule_task/check_add_business_rule_task.py"
     timeout: 30
     expected_exit_code: 0
