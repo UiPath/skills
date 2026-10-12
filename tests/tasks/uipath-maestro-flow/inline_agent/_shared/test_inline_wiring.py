@@ -169,7 +169,7 @@ def build_is_solution(
     connection_id: object,
     *,
     with_binding: bool = True,
-    keys: tuple[str, str] = ("connector", "connectionId"),
+    keys: tuple[str, str, str] = ("connector", "connectionId", "defaultValue"),
 ) -> Path:
     project = root / "ResearchFlowSol" / "ResearchFlow"
     flow = {
@@ -193,7 +193,7 @@ def build_is_solution(
             {
                 "resource": "connection",
                 "metadata": {keys[0]: CONNECTOR},
-                "value": {keys[1]: {"defaultValue": connection_id}},
+                "value": {keys[1]: {keys[2]: connection_id}},
             }
         )
     write_json(project / "bindings_v2.json", {"version": "2.0", "resources": resources})
@@ -202,8 +202,12 @@ def build_is_solution(
 
 @pytest.mark.parametrize(
     "keys",
-    [("connector", "connectionId"), ("Connector", "ConnectionId")],
-    ids=["compile-camel", "pascal"],
+    [
+        ("connector", "connectionId", "defaultValue"),
+        ("Connector", "ConnectionId", "DefaultValue"),
+        ("cOnNeCtOr", "CONNECTIONID", "defaultvalue"),
+    ],
+    ids=["compile-camel", "pascal", "mixed"],
 )
 def test_is_connector_real_connection_passes(tmp_path, keys):
     build_is_solution(tmp_path, CONNECTION_ID, keys=keys)
