@@ -1,0 +1,171 @@
+task_id: skill-test-schedule-weekly-cadence-build
+description: >
+  Integration test: build a WEEKLY schedule from a natural-language cadence in a
+  non-UTC timezone, exercising `uip tm schedules create`. The difficulty is the
+  cadence translation, which only the skill teaches: `--cron` is six or seven
+  fields starting with SECONDS (Quartz), not five-field Unix, and the server
+  does not reject a five-field expression — it passes both validators and dies
+  in the scheduler as an opaque 500 — while `--cron-details` is a required JSON
+  recurrence object. The prompt gives "every Monday and Thursday at 09:00,
+  Europe/Bucharest" and the start day, and leaves the cron shape, the recurrence
+  JSON, the wall-clock format and --output json to the skill. Graded on the
+  stored definition: the schedule exists on the named set, in the named
+  timezone, firing at 09:00, with a valid 6/7-field cron and a JSON
+  cron-details — a daily guess or a five-field cron does not satisfy it.
+tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:trigger]
+
+run_limits:
+  expected_turns: 14
+  max_turns: 36
+  turn_timeout: 1200
+  task_timeout: 1800
+
+pre_run:
+  - timeout: 300
+    command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys
+      P, SET = "CLAIM", "EVFX-SCHEDWK-SET"
+      CASES = ["EVFX-SCHEDWK-TC1"]
+      TARGET = "EVFX-SCHEDWK-WEEKLY"
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out = (r.stdout or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:300]}", flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def pick(d, *names):
+          for n in names:
+              if d.get(n):
+                  return d[n]
+          return None
+
+      def by_name(label, kind, name):
+          d = call(label, "tm", kind, "list", "--project-key", P, "--filter", name)
+          for x in (d.get("Data") or []):
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      def has_verb(*words):
+          return subprocess.run(["uip", *words, "--help"],
+                               capture_output=True, text=True).returncode == 0
+
+      for words in (["tm", "schedules", "create"], ["tm", "schedules", "list"],
+                    ["tm", "schedules", "delete"]):
+          if not has_verb(*words):
+              fail(f"this CLI has no 'uip {' '.join(words)}' - needs the "
+                   f"release carrying the test set schedule verbs")
+
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+      set_key = pick(ts, "TestSetKey", "Key", "ObjKey")
+      set_id = ts.get("Id")
+
+      keys = []
+      for name in CASES:
+          tc = by_name(f"case.find.{name}", "testcases", name)
+          if not tc:
+              call(f"case.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"case.refind.{name}", "testcases", name)
+          if not tc:
+              fail(f"could not create or find {name}")
+          keys.append(pick(tc, "TestCaseKey", "Key", "ObjKey"))
+      call("cases.assign", "tm", "testcases", "add", "--test-set-key", set_key,
+           "--test-case-keys", ",".join(keys))
+
+      # The task CREATES the target schedule, so clear a prior run's copy and
+      # confirm it is gone — grading a create on a dirty fixture would pass for
+      # the wrong reason.
+      d = call("sched.list", "tm", "schedules", "list", "--project-key", P, "--limit", "200")
+      stale = [r["Id"] for r in (d.get("Data") or [])
+               if r.get("Name") == TARGET and r.get("Id")]
+      if stale:
+          call("sched.clear", "tm", "schedules", "delete", "--project-key", P,
+               "--schedule-ids", *stale, "--yes")
+          d = call("sched.recheck", "tm", "schedules", "list", "--project-key", P, "--limit", "200")
+          if any(r.get("Name") == TARGET for r in (d.get("Data") or [])):
+              fail(f"{TARGET} still present after delete - fixture not clean")
+
+      print(f"FIXTURE: ready set_key={set_key!r} set_id={set_id!r}", flush=True)
+      EOF
+
+initial_prompt: |
+  Set up a recurring run in my UiPath Test Manager project CLAIM. I want the
+  "EVFX-SCHEDWK-SET" test set to run every Monday and Thursday at 09:00
+  Bucharest time, starting next Monday. Call the schedule
+  "EVFX-SCHEDWK-WEEKLY". Create it for me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent created the schedule passing both --cron and --cron-details"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+schedules\s+create\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--cron\s)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--cron-details\s)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "EVFX-SCHEDWK-WEEKLY exists on the set, in Bucharest time, at 09:00, with a valid 6/7-field cron and JSON cron-details"
+    command: |
+      python3 -c "
+      import json, subprocess
+
+      def uip(*a):
+          r = subprocess.run(['uip', *a, '--output', 'json'],
+                             capture_output=True, text=True)
+          t = r.stdout or ''
+          return json.loads(t[t.index('{'):]) if '{' in t else {}
+
+      sets = uip('tm','testsets','list','--project-key','CLAIM','--filter','EVFX-SCHEDWK-SET')
+      sid = next((x['Id'] for x in (sets.get('Data') or [])
+                  if x.get('Name') == 'EVFX-SCHEDWK-SET'), None)
+      assert sid, 'EVFX-SCHEDWK-SET not found'
+
+      rows = uip('tm','schedules','list','--project-key','CLAIM','--limit','200').get('Data') or []
+      hits = [r for r in rows if r.get('Name') == 'EVFX-SCHEDWK-WEEKLY']
+      assert len(hits) == 1, f'expected exactly 1 EVFX-SCHEDWK-WEEKLY, found {len(hits)}'
+      s = hits[0]
+      assert s.get('TestSetId') == sid, f'schedule points at {s.get(\"TestSetId\")!r}, not the set'
+      cron = str(s.get('CronExpression') or '')
+      fields = cron.split()
+      assert len(fields) in (6, 7), f'cron {cron!r} has {len(fields)} fields; Quartz takes 6 or 7'
+      assert fields[2] == '9', f'hour field is {fields[2]!r}, expected 9 for 09:00'
+      assert (s.get('CronDetails') or '').strip().startswith('{'), 'CronDetails is not a JSON object'
+      tz = str(s.get('TimeZone') or s.get('Timezone') or '')
+      assert 'Bucharest' in tz, f'timezone is {tz!r}, expected Europe/Bucharest'
+      "
+    timeout: 120
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not reach past the CLI to the schedule REST route"
+    tool_name: "Bash"
+    command_pattern: '(?i)(curl|wget)(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*testsetschedules?\b'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0

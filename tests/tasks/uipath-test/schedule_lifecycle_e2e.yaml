@@ -1,0 +1,196 @@
+task_id: skill-test-schedule-lifecycle-e2e
+description: >
+  End-to-end lifecycle of one test set schedule through `uip tm schedules`:
+  create a cadence, confirm when it next fires, change its definition, pause it,
+  switch it back on, and finally remove it. Uniquely exercises `update` (a whole
+  -definition replace, not a patch — anything omitted reverts, and the enabled
+  state is the one field it cannot change) and the `enable` verb, which the other
+  schedule tasks do not cover. The prompt states the business steps and the
+  cadence in words; the cron shape (six/seven Quartz fields starting with
+  seconds), the required `--cron-details` JSON, the wall-clock format and
+  --output json are left to the skill. Graded on each lifecycle command running
+  and on the terminal state — the schedule is gone at the end.
+tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:trigger]
+
+run_limits:
+  expected_turns: 28
+  max_turns: 60
+  turn_timeout: 1200
+  task_timeout: 2400
+
+pre_run:
+  - timeout: 300
+    command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys
+      P, SET = "CLAIM", "EVFX-SCHEDE2E-SET"
+      CASES = ["EVFX-SCHEDE2E-TC1"]
+      PREFIX = "EVFX-SCHEDE2E-"
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out = (r.stdout or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:300]}", flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def pick(d, *names):
+          for n in names:
+              if d.get(n):
+                  return d[n]
+          return None
+
+      def by_name(label, kind, name):
+          d = call(label, "tm", kind, "list", "--project-key", P, "--filter", name)
+          for x in (d.get("Data") or []):
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      def has_verb(*words):
+          return subprocess.run(["uip", *words, "--help"],
+                               capture_output=True, text=True).returncode == 0
+
+      for words in (["tm", "schedules", "create"], ["tm", "schedules", "list"],
+                    ["tm", "schedules", "update"], ["tm", "schedules", "enable"],
+                    ["tm", "schedules", "disable"], ["tm", "schedules", "delete"],
+                    ["tm", "schedules", "next-runs"]):
+          if not has_verb(*words):
+              fail(f"this CLI has no 'uip {' '.join(words)}' - needs the "
+                   f"release carrying the test set schedule verbs")
+
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+      set_key = pick(ts, "TestSetKey", "Key", "ObjKey")
+
+      keys = []
+      for name in CASES:
+          tc = by_name(f"case.find.{name}", "testcases", name)
+          if not tc:
+              call(f"case.create.{name}", "tm", "testcases", "create",
+                   "--project-key", P, "--name", name)
+              tc = by_name(f"case.refind.{name}", "testcases", name)
+          if not tc:
+              fail(f"could not create or find {name}")
+          keys.append(pick(tc, "TestCaseKey", "Key", "ObjKey"))
+      call("cases.assign", "tm", "testcases", "add", "--test-set-key", set_key,
+           "--test-case-keys", ",".join(keys))
+
+      # Clear every schedule this task owns from a prior run, and confirm the
+      # sweep landed - the agent creates its own, so a leftover would make the
+      # "exactly one" and "gone at the end" checks ambiguous.
+      d = call("sched.list", "tm", "schedules", "list", "--project-key", P, "--limit", "200")
+      stale = [r["Id"] for r in (d.get("Data") or [])
+               if str(r.get("Name", "")).startswith(PREFIX) and r.get("Id")]
+      if stale:
+          call("sched.clear", "tm", "schedules", "delete", "--project-key", P,
+               "--schedule-ids", *stale, "--yes")
+          d = call("sched.recheck", "tm", "schedules", "list", "--project-key", P, "--limit", "200")
+          if any(str(r.get("Name", "")).startswith(PREFIX) for r in (d.get("Data") or [])):
+              fail("EVFX-SCHEDE2E- schedules still present after sweep")
+
+      print(f"FIXTURE: ready set_key={set_key!r}", flush=True)
+      EOF
+
+initial_prompt: |
+  Walk a scheduled run through its whole life in my UiPath Test Manager project
+  CLAIM, on the "EVFX-SCHEDE2E-SET" test set:
+
+  1. Create a schedule named "EVFX-SCHEDE2E-RUN" that runs it every day at 01:00
+     UTC, starting next week.
+  2. Tell me when it is next due to fire.
+  3. We actually want it at 03:00 UTC instead — change it.
+  4. Put it on hold for now (don't delete it).
+  5. Then switch it back on.
+  6. We're done with it — remove it.
+
+  No need to check back with me between steps.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 0.5
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Created the schedule with --cron and --cron-details"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+schedules\s+create\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--cron\s)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--cron-details\s)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Asked when the schedule next fires"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+schedules\s+next-runs\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--schedule-ids\s+\S)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Updated the schedule definition"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+schedules\s+update\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--schedule-id\s+\S)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Paused it with disable (not delete)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+schedules\s+disable\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--schedule-ids\s+\S)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Switched it back on with enable"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+schedules\s+enable\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--schedule-ids\s+\S)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "EVFX-SCHEDE2E-RUN is gone at the end of the lifecycle"
+    command: |
+      python3 -c "
+      import json, subprocess
+
+      def uip(*a):
+          r = subprocess.run(['uip', *a, '--output', 'json'],
+                             capture_output=True, text=True)
+          t = r.stdout or ''
+          return json.loads(t[t.index('{'):]) if '{' in t else {}
+
+      rows = uip('tm','schedules','list','--project-key','CLAIM','--limit','200').get('Data') or []
+      names = [r.get('Name') for r in rows]
+      assert 'EVFX-SCHEDE2E-RUN' not in names, 'EVFX-SCHEDE2E-RUN was not deleted at the end'
+      "
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not reach past the CLI to the schedule REST route"
+    tool_name: "Bash"
+    command_pattern: '(?i)(curl|wget)(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*testsetschedules?\b'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
