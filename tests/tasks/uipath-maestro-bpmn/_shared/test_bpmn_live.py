@@ -227,3 +227,10 @@ def test_run_debug_stops_retrying_when_the_deadline_cannot_fund_another(
     with pytest.raises(bpmn_live.CheckFailure, match="504 Gateway Timeout"):
         bpmn_live.run_debug(tmp_path, {}, None, timeout=30, retry=bpmn_live.DebugRetry.TRANSIENT)
     assert calls["n"] == 1
+
+
+def test_run_debug_caps_retries_on_a_persistent_poll_5xx(monkeypatch, tmp_path) -> None:
+    calls = _stub_debug(monkeypatch, [(1, _POLL_504)] * 5)
+    with pytest.raises(bpmn_live.CheckFailure, match="504 Gateway Timeout"):
+        bpmn_live.run_debug(tmp_path, {}, None, retry=bpmn_live.DebugRetry.TRANSIENT)
+    assert calls["n"] == 2

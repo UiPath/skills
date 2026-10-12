@@ -447,6 +447,7 @@ _TRANSIENT_DEBUG = re.compile(
     r'failed during poll-instance-status: 5\d\d|"retry": "retrylater"|"errorcode": "server_error"'
 )
 DEBUG_RETRY_BACKOFF_SECONDS = 5
+_DEBUG_RETRY_ATTEMPTS = 2
 _MIN_RETRY_SECONDS = 60
 
 
@@ -471,14 +472,17 @@ def run_debug(
 
     `DebugRetry.TRANSIENT` re-runs the whole debug after a transient CLI
     failure, so pass it only from a checker whose process has no side effects.
-    Every attempt shares the one `timeout` deadline, so the budget is unchanged.
+    At most `_DEBUG_RETRY_ATTEMPTS`, all sharing the one `timeout` deadline, so
+    the budget is unchanged.
     """
 
     poll_ms = poll_interval_ms(timeout)
     deadline = time.monotonic() + timeout
-    while True:
+    for attempt in range(1, _DEBUG_RETRY_ATTEMPTS + 1):
         completed = _debug_attempt(project_dir, inputs, log_file, poll_ms, timeout, deadline)
         if retry is not DebugRetry.TRANSIENT or not _is_transient_debug(completed):
+            break
+        if attempt == _DEBUG_RETRY_ATTEMPTS:
             break
         if deadline - time.monotonic() - DEBUG_RETRY_BACKOFF_SECONDS < _MIN_RETRY_SECONDS:
             break
