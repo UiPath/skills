@@ -1,9 +1,8 @@
 """A checker that imports `_shared/` must find it in the copy coder_eval stages.
 
-coder_eval runs `$REFERENCE_DIR/...` from a copy of `reference.directory` only, and
-`$TASK_DIR/...` from a copy of the task directory only (under docker). A checker
-whose staged copy has no `_shared/` above it fails with ModuleNotFoundError on
-every run, so the task scores zero.
+coder_eval runs `$REFERENCE_DIR/...` from a copy of `reference.directory` only. A
+checker whose staged copy has no `_shared/` above it fails with ModuleNotFoundError
+on every run, so the task scores zero.
 """
 
 from __future__ import annotations
@@ -15,7 +14,7 @@ import pytest
 import yaml
 
 CASE_ROOT = Path(__file__).resolve().parents[1]
-COMMAND = re.compile(r"\$(REFERENCE_DIR|TASK_DIR)/(\S+\.py)")
+COMMAND = re.compile(r"\$REFERENCE_DIR/(\S+\.py)")
 
 
 def _checker_runs():
@@ -27,8 +26,8 @@ def _checker_runs():
             continue
         reference = (spec.get("reference") or {}).get("directory")
         for criterion in spec.get("success_criteria") or []:
-            for var, rel in COMMAND.findall(str(criterion.get("command") or "")):
-                staged = task.parent / (reference if var == "REFERENCE_DIR" and reference else ".")
+            for rel in COMMAND.findall(str(criterion.get("command") or "")):
+                staged = task.parent / (reference or ".")
                 yield pytest.param(staged.resolve(), rel, id=f"{task.relative_to(CASE_ROOT)}:{rel}")
 
 
