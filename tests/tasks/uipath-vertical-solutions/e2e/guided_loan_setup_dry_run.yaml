@@ -12,9 +12,6 @@ description: >
   must still explain rather than resubmit.
 tags: [uipath-vertical-solutions, e2e, mode:operate, lifecycle:setup]
 
-agent:
-  allowed_tools: ["Skill", "Bash", "Read", "Write"]
-
 sandbox:
   driver: docker
   python: {}
@@ -22,6 +19,7 @@ sandbox:
 run_limits:
   expected_turns: 14
   max_turns: 40
+  task_timeout: 2400
   turn_timeout: 600
 
 initial_prompt: |

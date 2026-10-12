@@ -113,7 +113,7 @@ uip vss deploy --package-name <PACKAGE_NAME> --folder-path "<FOLDER_PATH>" \
 
 ### 6. Confirm and deploy
 
-Show the user a short summary: the solution, the version (the version they asked for, or "the newest one allowed": the dry run does not print it), the tenant, the folder, the deployment name (or "the solution's default name"), and which values were set. Ask for a yes. Then run the same command with `--yes`:
+Show the user a short summary: the solution, the version (the one they asked for, or "the newest one allowed"), the tenant, the folder, the deployment name (or "the solution's default name"), and which values were set. Ask for a yes. Then run the same command with `--yes`:
 
 ```bash
 uip vss deploy <SAME_FLAGS> --yes --output json

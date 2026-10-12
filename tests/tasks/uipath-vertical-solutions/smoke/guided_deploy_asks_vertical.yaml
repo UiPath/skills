@@ -75,7 +75,7 @@ success_criteria:
     verb: "vss deploy"
     tool: "uip"
     flags:
-      yes: {present: true, aliases: ["y"]}
+      "yes": {present: true, aliases: ["y"]}
     min_count: 0
     max_count: 0
     weight: 3.0
