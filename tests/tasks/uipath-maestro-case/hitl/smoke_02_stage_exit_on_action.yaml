@@ -27,7 +27,7 @@ initial_prompt: |
   required stages complete.
 
   Use the same name for solution and project so the case file lives at
-  PurchaseApprovalCase/PurchaseApprovalCase/caseplan.json.
+  PurchaseApprovalCase/PurchaseApprovalCase/.
 
   Write this sdd.md to sdd.md first, then build from it:
 
@@ -143,7 +143,7 @@ initial_prompt: |
   **REQUIRED — before finishing, write report.json at the sandbox root** with
   exactly these keys:
   {
-    "caseplan_path": "<relative path to caseplan.json>",
+    "caseplan_path": "<relative path to the case plan file>",
     "action_task_id": "<id of the action task>",
     "review_stage_id": "<id of the Review stage>",
     "exit_rule_type": "<the WHEN value used on Review's exit, e.g. selected-tasks-completed>",

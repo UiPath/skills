@@ -37,7 +37,7 @@ initial_prompt: |
   Build end-to-end in one pass and finish with `uip maestro case validate`
   passing. Bind the exact existing resources and folders written in the SDD;
   do not create an inline API workflow or add an API project to the solution.
-  Bind every SDD Outputs row into caseplan.json, including both
+  Bind every SDD Outputs row into the case plan, including both
   `estimatedAge -> estimatedAge` rows. Discover the undeclared top-level
   `APIOutput1` resource output and auto-mint it as a bare output; do not
   invent an operator-free Outputs row in sdd.md.

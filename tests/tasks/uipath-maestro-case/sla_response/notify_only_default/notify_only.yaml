@@ -35,7 +35,7 @@ initial_prompt: |
 
   Do NOT run `uip maestro case debug`, publish, or upload anything. Do NOT ask for
   approval, confirmation, or feedback — make the change end-to-end in a single pass and
-  finish with `uip maestro case validate` passing on the resulting caseplan.json.
+  finish with `uip maestro case validate` passing on the resulting case plan.
   Before starting, load the uipath-maestro-case skill and follow its workflow.
 
 success_criteria:
