@@ -25,16 +25,27 @@ import pathlib
 import re
 import sys
 
-STRATEGIES = ("AH", "AF", "CS", "SU", "PS", "EX", "BT", "NONE")
+# Share the contract with the checker rather than reimplementing it — two parsers
+# for one format will drift, and the drift shows up as a mysterious disagreement
+# between this report and the gate.
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+from check_strategy import KEY, STRATEGY_ANSWERS  # noqa: E402
+
+STRATEGIES = ("AH", "AF", "CS", "SU", "PS", "EX", "BT")
 
 
-def read_mode(path):
+def read_answer(path):
+    """The strategy from the first non-empty line, or None. Only the first line is
+    read, matching check_strategy.py."""
     try:
-        first = path.read_text(encoding="utf-8", errors="replace").strip().splitlines()[0]
-    except (OSError, IndexError):
+        lines = [l for l in path.read_text(encoding="utf-8", errors="replace").splitlines() if l.strip()]
+    except OSError:
         return None
-    token = re.sub(r"[^A-Za-z]", "", first).upper()
-    return token if token in STRATEGIES else None
+    if not lines:
+        return None
+    m = KEY.match(lines[0])
+    token = m.group(1).upper() if m else ""
+    return token if token in STRATEGY_ANSWERS else None
 
 
 REPLICATE = re.compile(r"^\d{2}$")
@@ -42,21 +53,22 @@ REPLICATE = re.compile(r"^\d{2}$")
 
 def collect(run_dir):
     """row id -> [strategy per replicate]. A replicate that produced no usable
-    strategy.txt is recorded as None rather than dropped — a row that fails to
-    answer is not the same as a row that answers wrongly.
+    artifact is recorded as None rather than dropped — a row that
+    fails to answer is not the same as a row that answers wrongly.
 
     The real layout is
-        <run>/<variant>/<task>/<row>/<NN>/artifacts/<task>/<row>/strategy.txt
-    so neither the parent nor the grandparent of strategy.txt is the row id. The
-    stable landmark is the two-digit replicate directory: its parent is the
-    row. Anchoring on that survives changes to how the sandbox is preserved
-    underneath it."""
+        <run>/<variant>/<task>/<row>/<NN>/artifacts/<task>/<row>/routing.txt
+    so neither the parent nor the grandparent of routing.txt is the row id. The
+    stable landmark is the two-digit replicate directory: its parent is the row.
+    `strategy.txt` is still read so pre-migration run directories remain
+    comparable."""
     out = collections.defaultdict(list)
-    for p in sorted(pathlib.Path(run_dir).rglob("strategy.txt")):
-        rep = next((a for a in p.parents if REPLICATE.match(a.name)), None)
-        if rep is None:
-            continue
-        out[rep.parent.name].append(read_mode(p))
+    for name in ("routing.txt", "strategy.txt"):   # strategy.txt: pre-rename runs
+        for p in sorted(pathlib.Path(run_dir).rglob(name)):
+            rep = next((a for a in p.parents if REPLICATE.match(a.name)), None)
+            if rep is None:
+                continue
+            out[rep.parent.name].append(read_answer(p))
     return out
 
 
@@ -78,10 +90,14 @@ def main():
         if line.strip():
             r = json.loads(line)
             spec[r["id"]] = r
+            # Tolerated if a row ever carries one: run directories named with an
+            # older id still match instead of dropping out of the denominator.
+            if r.get("legacy_id"):
+                spec[r["legacy_id"]] = r
 
     observed = collect(args.run_dir)
     if not observed:
-        sys.exit(f"no strategy.txt artifacts found under {args.run_dir}")
+        sys.exit(f"no routing.txt or strategy.txt artifacts found under {args.run_dir}")
 
     matched = {k: v for k, v in observed.items() if k in spec}
     if not matched:
@@ -91,7 +107,9 @@ def main():
         )
 
     reps = max(len(v) for v in matched.values())
-    print(f"{len(matched)} of {len(spec)} rows observed · up to {reps} replicate(s)\n")
+    # spec may alias a row under more than one id, so len(spec) can overcount.
+    n_rows = len({id(r) for r in spec.values()})
+    print(f"{len(matched)} of {n_rows} rows observed · up to {reps} replicate(s)\n")
 
     # ---- accuracy + stability, per row
     unstable, wrong = [], []
@@ -99,14 +117,21 @@ def main():
     for rid, seen in sorted(matched.items()):
         want = spec[rid]["expected_strategy"]
         got = modal(seen)
-        agree = sum(1 for s in seen if s == got) / len(seen) if seen else 0
+        # Agreement is computed over replicates that actually answered. Dividing by
+        # len(seen) counted unanswered replicates as agreeing with each other: when
+        # every replicate failed to produce an artifact, seen is [None, None, ...],
+        # modal returns None, None == None holds for each, and the row reported 100%
+        # agreement and never appeared as unstable — a total failure read as perfect
+        # stability.
+        answered = [t for t in seen if t is not None]
+        agree = (sum(1 for t in answered if t == got) / len(answered)) if answered else 0.0
         per_mode[want][1] += 1
         if got == want:
             per_mode[want][0] += 1
         else:
             wrong.append((rid, want, got, seen))
-        if agree < 1.0:
-            unstable.append((rid, agree, seen))
+        if agree < 1.0 or len(answered) < len(seen):
+            unstable.append((rid, agree, seen, len(answered), len(seen)))
 
     print("accuracy by strategy (modal answer vs ground truth)")
     for m in STRATEGIES:
@@ -117,22 +142,12 @@ def main():
     tot_n = sum(v[1] for v in per_mode.values())
     print(f"  {'ALL':5} {tot_ok}/{tot_n}  ({tot_ok/tot_n:.0%})\n")
 
-    if reps > 1:
-        print(f"stability — rows whose replicates disagreed: {len(unstable)}/{len(matched)}")
-        for rid, agree, seen in unstable:
-            print(f"  {rid:34} {agree:.0%} agreement  {seen}")
-        if not unstable:
-            print("  none — every row answered identically across replicates")
-        print()
-    else:
-        print("stability — not measurable at 1 replicate; rerun with --repeats N (N>=3)\n")
-
     # ---- paraphrase invariance, per pair
     pairs = collections.defaultdict(dict)
     for rid, seen in matched.items():
-        s = spec[rid]
-        if "pair" in s:
-            pairs[s["pair"]][s["variant"]] = (modal(seen), s["expected_strategy"])
+        row = spec[rid]
+        if "pair" in row:
+            pairs[row["pair"]][row["variant"]] = (modal(seen), row["expected_strategy"])
 
     complete = {k: v for k, v in pairs.items() if {"a", "b"} <= set(v)}
     flipped = [(k, v["a"][0], v["b"][0], v["a"][1]) for k, v in complete.items() if v["a"][0] != v["b"][0]]
