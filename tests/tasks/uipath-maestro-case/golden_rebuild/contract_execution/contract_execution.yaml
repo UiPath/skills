@@ -89,8 +89,8 @@ initial_prompt: |
   - Do NOT call AskUserQuestion - it is not available in this harness.
   - Do NOT publish the solution and do NOT run `uip maestro case debug`
     (the case suspends on HITL actions, SLA clocks, and two webhook events).
-  - Finish with `uip maestro case validate ContractExecution/ContractExecution/caseplan.json --output json`
-    passing on the resulting caseplan.json.
+  - Finish with `uip maestro case validate <case plan file in ContractExecution/ContractExecution/> --output json`
+    passing on the resulting case plan.
 
 success_criteria:
   - type: run_command

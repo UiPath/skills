@@ -50,7 +50,7 @@ initial_prompt: |
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between
   planning and implementation. Make the edit end-to-end in a single pass and
   finish with `uip maestro case validate` passing on the resulting
-  caseplan.json.
+  case plan.
   Before starting, load the uipath-maestro-case skill. Read and follow its
   workflow steps exactly.
 
