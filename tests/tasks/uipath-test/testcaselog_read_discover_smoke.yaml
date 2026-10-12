@@ -139,8 +139,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
+    # Only mutations are forbidden. `override get` is a READ (it reports whether
+    # a result was overridden — a valid way to answer "was it changed?"), so it
+    # must not trip this guard; only override create/update/delete, finish and
+    # assign change state.
     description: "Agent did not change the log it was asked only to read"
-    command_pattern: 'uip\s+tm\s+testcaselog\s+(finish|override|assign)\b'
+    command_pattern: 'uip\s+tm\s+testcaselog\s+(finish|assign|override\s+(create|update|delete))\b'
     tool_name: "Bash"
     max_count: 0
     weight: 1.0
