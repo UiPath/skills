@@ -18,7 +18,7 @@ uip login status --output json
 
 | `Data.BaseUrl` host | Resolves to | Question 2 |
 |---|---|---|
-| `cloud.uipath.com` (or `alpha.uipath.com` / `staging.uipath.com`) | **Automation Cloud** — full catalog, entitlement-gated per tenant | skip (confidently resolved) |
+| `cloud.uipath.com` | **Automation Cloud** — full catalog, entitlement-gated per tenant | skip (confidently resolved) |
 | any other `*.uipath.com` host | **Automation Cloud variant** (Public Sector / Dedicated / Test Cloud / region-specific) — catalog is variant-, region-, and entitlement-gated | skip the platform question, but verify each gated product (Maestro, Agents, Coded Apps, API Workflows, Solutions) against the tenant's actual entitlements; unverifiable → `[SME REVIEW]` per product |
 | any other (customer / on-prem) host | **self-hosted — Automation Suite OR standalone Orchestrator (ambiguous)** | **do not skip** — ask the custom-host follow-up below |
 | `Status` ≠ `Logged in`, call errors, or no `BaseUrl` | unknown | ask Question 2 in full; tell the user that running `uip login` first lets the next run auto-detect |
@@ -79,6 +79,7 @@ In **Interactive** mode:
 
 ### Step 0.5: Create Progress Tasks
 
+<!--skill-flavor:progress-tasks:start-->
 Create progress-tracking tasks via `TaskCreate` so the user can see where the SDD generation stands.
 
 ```
@@ -100,6 +101,7 @@ Mark each task `in_progress` when starting and `completed` when done.
 > If Step 0.5 `TaskCreate` failed, silently skip every subsequent `Mark "X" as in_progress / as completed` instruction in this guide — the tasks do not exist to update, and a second warning to the user is noise.
 
 These tasks track SDD generation. Implementation tasks are owned by Lane A (task derivation), which runs after Phase D writes the SDD — do NOT create implementation tasks here.
+<!--skill-flavor:progress-tasks:end-->
 
 ### Step 1: Read the PDD
 
@@ -420,7 +422,9 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 - **Testing Strategy — always thorough.** Cover happy path, edge cases, error scenarios, and (for Master Projects) end-to-end pipeline tests. Do NOT ask the user about test depth — depth is non-negotiable here. Implementation specialists may scope tests down at execution time if the user wants a quick MVP.
 - **Next Steps — points at Lane A (task derivation).** Replaces the legacy "Implementation Plan" section. Lane A owns the implementation task list; Phase D does not generate one.
 
+<!--skill-flavor:phase3-output-surface:start-->
 > **What Phase 3 does NOT produce:** an Implementation Plan section, a task list, or `TaskCreate` calls for implementation work. Those are owned by Lane A (task derivation). The SDD's `## Next Steps` section marks the boundary into Lane A, and that is the entire Phase D output surface.
+<!--skill-flavor:phase3-output-surface:end-->
 
 ### Step 1.5: Resolve SME Review Items
 
@@ -603,9 +607,13 @@ Skip this step entirely when the user did not ask for Word output.
 
 > **Progress:** Mark "Finalize SDD (Status: ready)" as `completed`. All progress tasks are now done.
 
+<!--skill-flavor:phase-d-deliverable:start-->
 The SDD is the deliverable of Phase D. **Do not generate an Implementation Plan section inside the SDD. Do not create implementation `TaskCreate` calls during Phase D. Do not start executing.**
+<!--skill-flavor:phase-d-deliverable:end-->
 
+<!--skill-flavor:turn-boundary:start-->
 > **The SDD write is a turn boundary — do not begin Lane A in the same turn as Phase D.** Once the SDD is on disk, the superset check has passed, and the Step 2 item 9 summary is emitted, that is the end of the current turn. Continue into Lane A on the **next** turn. Rationale: Phase D (read PDD + guides, author §1–§18) and Lane A (parse SDD, derive tasks, emit `TaskCreate`) are each heavy; stacking both in one unbroken autonomous turn is what pushes wall-clock past the per-turn watchdog and loses the whole run. Yielding after a durable SDD write keeps each turn bounded and guarantees the SDD is graded before any further work. This is a turn checkpoint, **not** an `AskUserQuestion` — do not prompt the user; simply let the turn end after the summary.
+<!--skill-flavor:turn-boundary:end-->
 
 Then continue based on the user's intent:
 

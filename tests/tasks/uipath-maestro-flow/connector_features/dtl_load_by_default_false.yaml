@@ -5,7 +5,7 @@ task_id: skill-flow-ipe-dtl-load-by-default-false
 description: >
   Tests the DTL loadByDefault=false IS feature — configures a connector node
   where dropdown values load only on user interaction on the WooCommerce connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-automaticc-woocommerce, ipe, mode:build]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-automattic-woocommerce, ipe, mode:build]
 
 run_limits:
   expected_turns: 51
@@ -46,6 +46,17 @@ success_criteria:
   - type: run_command
     description: "Flow has a connector node referencing uipath-automattic-woocommerce"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name DTLLoadByDefaultFalseTest 'uipath-automattic-woocommerce'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # An unconfigured node (no inputs.detail) passes `flow validate` with only a
+  # warning, so without this criterion a build that never touched the feature
+  # scored 1.0. With no WooCommerce connection in the tenant, every arm must fail.
+  - type: run_command
+    description: "The WooCommerce node's attribute_term dropdown is configured (term id or expression) on a real connection"
+    command: "python3 $REFERENCE_DIR/connector_features/check_dtl_load_by_default_false.py"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

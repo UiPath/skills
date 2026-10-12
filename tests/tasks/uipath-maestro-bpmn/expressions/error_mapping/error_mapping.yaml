@@ -13,11 +13,6 @@ run_limits:
   expected_turns: 18
   max_turns: 75
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -35,16 +30,15 @@ initial_prompt: |
     `=vars.Error.code == "SERVICE_UNAVAILABLE"`).
 
   Requirements:
-  - Discover any `uipath:*` activity payload via the registry
-    (`uip maestro bpmn registry`) and author it from the served template. Do not
-    hand-author registry-owned `uipath:*` XML from prose.
+  - Resolve any activity type and its `uipath:*` payload the way your skill
+    prescribes; do not invent registry-owned `uipath:*` XML from prose.
   - The errorMapping condition must be a read-only expression that reads
     `vars.Error.code` — not a baked literal and no assignment operators.
   - Use synthetic placeholder resource names only. Do not include tenant URLs,
     folder keys, connection IDs, release keys, real process names, or real user
     names.
-  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
-    for every sequence flow.
+  - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+    every node and an edge for every sequence flow.
   - Validate locally by parsing the BPMN for well-formedness and walking the
     skill's structural checklist. Do NOT upload, publish, deploy, debug, run, or
     pack anything, and do NOT pause for approval, confirmation, or feedback —

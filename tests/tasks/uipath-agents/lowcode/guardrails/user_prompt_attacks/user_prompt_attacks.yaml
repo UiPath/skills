@@ -4,10 +4,11 @@ description: >
   scope. End-to-end test: scaffold a standalone low-code agent and add a
   builtInValidator guardrail for user_prompt_attacks that blocks adversarial
   inputs before they reach the LLM. Verifies the agent restricts scopes to
-  ["Llm"] only (not Agent or Tool — anti-pattern 3), uses an empty
-  validatorParameters array (this validator takes no parameters), and a block
-  action. Complements the coded decorator-style test by covering the low-code
-  builtInValidator path.
+  ["Llm"] only (not Agent or Tool — anti-pattern 3), uses a block action, and
+  authors validatorParameters as either empty or catalog-declared parameters
+  only (all user_prompt_attacks parameters are optional — e.g. appliesTo,
+  AL-594). Complements the coded decorator-style test by covering the
+  low-code builtInValidator path.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 reference:
   directory: .
@@ -75,7 +76,7 @@ success_criteria:
 
 
   - type: run_command
-    description: "User prompt attacks guardrail shape (Llm-only scope, no params, block action)"
+    description: "User prompt attacks guardrail shape (Llm-only scope, catalog-valid params, block action)"
     command: "python3 $REFERENCE_DIR/check_user_prompt_attacks.py"
     timeout: 30
     expected_exit_code: 0

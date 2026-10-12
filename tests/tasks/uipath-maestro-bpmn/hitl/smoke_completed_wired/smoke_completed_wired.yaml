@@ -24,8 +24,8 @@ initial_prompt: |
     skill: `.bpmn` XML with a main file named `PurchaseApprovalBpmn.bpmn`
     inside the generated project. Do NOT build a `.flow`.
   - Model the approval as a `bpmn:userTask` using the documented `Actions.HITL`
-    `uipath:activity` shell from the registry template. Show the reviewer the
-    purchase amount and vendor; outcomes are Approve and Reject.
+    activity type. Show the reviewer the purchase amount and vendor; outcomes
+    are Approve and Reject.
   - The HITL completion must be wired to a downstream step (a script or service
     task that records the approval), which then flows to the end event. Do not
     wire the HITL task directly to the end event.

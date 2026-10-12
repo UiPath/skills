@@ -24,9 +24,8 @@ All operations go through `uip tasks <verb> --output json`.
 When switching is required:
 1. Check current login: `uip login status --output json` — verify `UIPATH_URL`, `Organization`, and `Tenant`
 2. Re-login with `--authority` only if environment differs:
-   - Alpha: `uip login --authority https://alpha.uipath.com --tenant <tenant>`
-   - Staging: `uip login --authority https://staging.uipath.com --tenant <tenant>`
-   - Production: `uip login --tenant <tenant>` (default, no `--authority` needed)
+   - Non-default host (Automation Suite, dedicated, other): `uip login --authority "<AUTHORITY_URL>" --tenant <tenant>`
+   - `cloud.uipath.com`: `uip login --tenant <tenant>` (default, no `--authority` needed)
 3. If already on the right environment but wrong tenant: `uip login tenant set <tenant-name>`
 
 ```bash

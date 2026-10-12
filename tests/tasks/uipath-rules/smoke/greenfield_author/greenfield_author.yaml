@@ -1,0 +1,70 @@
+task_id: skill-rules-smoke-greenfield-author
+description: >
+  Agent creates a Business Rules project with `uip rules init`, authors a
+  credit-risk decision table from a prose policy, and regenerates and checks it
+  with `uip rules refresh` and `uip rules validate`, offline. Grades skill
+  activation, the scaffold and refresh commands, `uip rules validate` run by
+  the grader, the authoring profile and entry-point contract, and the table's
+  risk band on the policy cases.
+tags: [uipath-rules, smoke, "mode:build", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Business Rules project named RiskRules for our credit-risk
+  policy:
+
+  - Inputs: `creditScore` (number) and `income` (number).
+  - Output: `riskBand` (string), one of "High", "Medium", "Low".
+  - A credit score below 580 is High risk.
+  - A credit score from 580 up to 699 is Medium risk when income is at least
+    50000, otherwise High risk.
+  - A credit score of 700 or more is Low risk.
+  - The first matching row wins.
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-rules skill"
+    skill_name: "uipath-rules"
+    expected_skill: "uipath-rules"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent scaffolded the project with rules init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+init'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent regenerated the package files with rules refresh"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+refresh'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The rule follows the authoring profile, its entry point carries the contract, and it returns the policy's risk bands"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py policy"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

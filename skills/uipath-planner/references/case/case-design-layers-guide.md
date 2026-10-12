@@ -43,7 +43,7 @@ Reason the shape from the process — never reach for the template first. Build 
 
 <!-- named by case-sdd-conformance-checklist.md — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
-The enum is closed — exactly these nine literals, used verbatim as the SDD `Type:` value. The `type` says **how the work gets done**, not what it is about — read the verb + the actor:
+The enum is closed — exactly these ten literals, used verbatim as the SDD `Type:` value. The `type` says **how the work gets done**, not what it is about — read the verb + the actor:
 
 | Type | Pick when the work is… |
 |---|---|
@@ -52,6 +52,7 @@ The enum is closed — exactly these nine literals, used verbatim as the SDD `Ty
 | `agent` | an **AI agent** reasons over unstructured input: classify, extract, summarize, draft, score |
 | `rpa` | deterministic **UI / desktop** automation of a legacy app with no API |
 | `api-workflow` | calling a **coded / API workflow** directly (HTTP, serverless logic) |
+| `function` | invoking a **deployed Coded Function** — deterministic Python / JS/TS logic, no LLM, no UI |
 | `case-management` | the step **launches / coordinates a child case** |
 | `execute-connector-activity` | one **operation on an Integration Service connector** against a SaaS system (push) |
 | `wait-for-connector` | the case **pauses until an external system calls back** (pull) |
@@ -59,7 +60,7 @@ The enum is closed — exactly these nine literals, used verbatim as the SDD `Ty
 
 Never author: `external-agent`, `external-workflow`, `document-extraction`, `flow-process` (unsupported), and `wait-for-event` / `connector-activity` / `connector-trigger` (not schema literals). Externally-hosted AI agents (CrewAI, Einstein, Databricks, …) model as `api-workflow`, or `execute-connector-activity` when a tenant connector exists.
 
-**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. Ambiguous "approve / review / decide" verbs: named human role or implied judgment → `action`; framed as automated/AI → `agent`. **Default when truly even: `action`** — it keeps a human in the loop and one correction flips it. Decide, disclose, never ask. A compliance trigger phrase forces `action` (below).
+**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. Deterministic coded logic → `function` only when tenant evidence (tier 3) resolves a deployed Function; otherwise `api-workflow`. Ambiguous "approve / review / decide" verbs: named human role or implied judgment → `action`; framed as automated/AI → `agent`. **Default when truly even: `action`** — it keeps a human in the loop and one correction flips it. Decide, disclose, never ask. A compliance trigger phrase forces `action` (below).
 
 **Activation is a separate axis.** How a task starts (sequential, event-triggered, manually triggered, stage-started) maps to entry rules (Layer 2) and never changes the `type`.
 
@@ -69,7 +70,7 @@ Apply in order:
 
 1. **User decision pinned to a type** — honor unless schema-invalid or conflicting with tier 2.
 2. **Regulatory constraint requiring human sign-off** — the task MUST be `action`. Trigger phrases: "only a licensed X may decide / sign off / certify / approve"; "regulation requires human review"; "ECOA adverse-action notice" / "FCRA adverse action"; "NCQA UM 3 adverse determination"; "HIPAA-protected approval"; "SOC 2 attestation"; any `<role>-licensed` / `<role>-credentialed` gate; "fiduciary review", "legal sign-off", "auditor review". If the user proposes a non-`action` type AND any phrase appears anywhere in the conversation → ask to confirm; never silently accept. Ask phrasing: name the regulation and propose `action` with the LLM/agent work bound to the action's form and recipient. Example: ECOA adverse-action notice with user-stated `agent` → `action` (Compliance Officer recipient; LLM-drafted body bound to the action's form).
-3. **Tenant evidence** — the registry cache resolves a deployed Action App / process / agent / api-workflow / RPA that fits → prefer that resource's type and surface the match.
+3. **Tenant evidence** — the registry cache resolves a deployed Action App / process / agent / api-workflow / function / RPA that fits → prefer that resource's type and surface the match.
 4. **Connector availability** — an Integration Service connector matches → `execute-connector-activity` over `api-workflow`.
 5. **Verb signal** — fall through to the § Task types tie-breakers.
 6. **Fallback** — keep the user's stated value if any; otherwise a placeholder plus a `high` review item ([case-design-lane-guide.md § Review items](case-design-lane-guide.md#review-items)).

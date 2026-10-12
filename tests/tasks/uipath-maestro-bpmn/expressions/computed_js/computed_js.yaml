@@ -15,11 +15,6 @@ run_limits:
   # (also 08-11).
   turn_timeout: 1800
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -40,13 +35,12 @@ initial_prompt: |
     colon. Use it only for the computed fields; prefer plain `=vars.<id>` where no
     computation is needed.
   - Any field typed `json` must contain valid JSON.
-  - Discover the activity's `uipath:*` payload via the registry
-    (`uip maestro bpmn registry`) and author it from the served template; do not
-    hand-author registry-owned XML from prose.
+  - Resolve the activity's type and `uipath:*` payload the way your skill
+    prescribes; do not invent registry-owned XML from prose.
   - Use synthetic placeholder values only — no tenant URLs, folder keys,
     connection IDs, release keys, or real names.
-  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
-    for every sequence flow.
+  - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+    every node and an edge for every sequence flow.
   - Validate locally by parsing the BPMN and walking the skill's structural
     checklist. Do NOT upload, publish, deploy, debug, run, or pack anything, and
     do NOT pause for approval — build the complete local project in one pass.

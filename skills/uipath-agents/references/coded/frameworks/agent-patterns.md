@@ -1,6 +1,6 @@
 # Agent Patterns
 
-Common implementation patterns for building UiPath coded agents, from coded functions to multi-agent orchestrations.
+Common implementation patterns for building UiPath coded agents, from single-node graphs to multi-agent orchestrations.
 
 > **Note:** These patterns are general architectural concepts. The code examples use **LangGraph** and the **UiPath Python SDK**. The same patterns apply to LlamaIndex and OpenAI Agents — see their respective integration references.
 
@@ -117,7 +117,7 @@ async def main(input: Input) -> Output:
 
 Multi-step agent using LangGraph's `StateGraph` with nodes, edges, and conditional routing. Supports LLM-powered decisions.
 
-> **Important:** LangGraph agents require `uipath-langchain` as a dependency and use a different project structure than coded function agents. See the LangGraph integration reference for project setup, `langgraph.json` configuration, and troubleshooting.
+> **Important:** LangGraph agents require `uipath-langchain` as a dependency. See the LangGraph integration reference for project setup, `langgraph.json` configuration, and troubleshooting.
 
 **When to use:** Classification workflows, multi-step reasoning, conditional branching based on LLM output.
 

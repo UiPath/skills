@@ -159,17 +159,16 @@ If the deduction surfaces **Storage Buckets** and Q3-doc was not already asked f
 #### Q4a — Environment (only if SDK needed)
 
 Ask:
-> "Which UiPath environment are you targeting? `cloud` (production), `staging`, or `alpha`?"
+> "Which UiPath environment are you targeting? `cloud` (`cloud.uipath.com`), or paste your portal URL if you use a different host."
 
 Map the answer to the cloud host:
 
 | Environment | Cloud Host |
 |---|---|
 | cloud | `https://cloud.uipath.com` |
-| staging | `https://staging.uipath.com` |
-| alpha | `https://alpha.uipath.com` |
+| Custom | The portal URL the user gave, verbatim (origin only, no path) |
 
-Store the cloud host as `<cloud-host>`. It tells the External-App creation step (Q4b) which org/environment portal to target — **do not** skip it and default to `https://cloud.uipath.com`, or staging/alpha users will create the External App in the wrong environment. It is also passed as the redirect URI in Q4b to satisfy the create form's mandatory field. Note that this is **not** the URI the deployed app authenticates with — see Q4b below for the `.../actions_` form that has to be registered separately.
+Store the cloud host as `<cloud-host>`. It tells the External-App creation step (Q4b) which org/environment portal to target — **do not** skip it and default to `https://cloud.uipath.com`, or users on a non-default host will create the External App in the wrong environment. It is also passed as the redirect URI in Q4b to satisfy the create form's mandatory field. Note that this is **not** the URI the deployed app authenticates with — see Q4b below for the `.../actions_` form that has to be registered separately.
 
 #### Q4b — Client ID (only if SDK needed)
 
@@ -414,7 +413,7 @@ Edit `Form.css` only for **structural** Q5 changes the tokens can't express — 
 
 The document source was already settled in **Q3-doc** (direct file input → Attachments, file path (string) input → Buckets, Data Fabric attachment → Entities + Attachments). If it was not — e.g. the user only said "load a PDF from a storage bucket" — go back and ask Q3-doc first; that phrasing does not pick a path. Fetching the bytes for any of those is straightforward — get the file from the service, build a blob URL (`URL.createObjectURL(blob)`), and pass it to the viewer below as `fileUrl`. The part agents get wrong is the **rendering** inside Action Center's sandboxed iframe — that is what the example below exists to get right.
 
-> **Prefer the PDF Viewer widget when installable.** `@uipath/ui-widgets-pdf-viewer` replaces this hand-rolled DocumentTab — packaged pdf.js worker (no CDN fetch to be blocked by CSP), bucket/Data Fabric/URL/blob sources without manual byte-fetching, toolbar, password prompts. Follow [widgets/pdf-viewer.md](widgets/pdf-viewer.md), which starts with the required publish-status check. Use the DocumentTab pattern below only when the widget is not yet published/installable.
+> **Prefer the PDF Viewer widget.** `@uipath/ui-widgets-pdf-viewer` replaces this hand-rolled DocumentTab — packaged pdf.js worker (no CDN fetch to be blocked by CSP), bucket/Data Fabric/URL/blob sources without manual byte-fetching, toolbar, password prompts. Follow [widgets/pdf-viewer.md](widgets/pdf-viewer.md). Use the DocumentTab pattern below only when the app cannot take the dependency.
 
 #### Anti-pattern warning — ALWAYS enforce
 

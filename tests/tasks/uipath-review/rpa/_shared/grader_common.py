@@ -139,22 +139,3 @@ def fixture_contains(relpath: str, needle: str) -> bool:
         return p.is_file() and needle in p.read_text(encoding="utf-8", errors="replace")
     except Exception:
         return False
-
-
-def skill_references_dir(skill: str):
-    """`skills/<skill>/references/` as the AGENT could read it, or None.
-
-    A grader runs beside the agent's sandbox, where only the staged plugin root
-    is mounted — `$SKILLS_REPO_PATH` still names the host repo, which is not.
-    So try the staged root first and the repo second (host-side runs, where
-    nothing is staged). None means this run cannot see the docs: judge nothing
-    rather than judging against an empty corpus.
-    """
-    repo = os.environ.get("SKILLS_REPO_PATH")
-    if not repo:
-        return None
-    for base in (Path(repo) / ".plugin-root", Path(repo)):
-        refs = base / "skills" / skill / "references"
-        if refs.is_dir():
-            return refs
-    return None

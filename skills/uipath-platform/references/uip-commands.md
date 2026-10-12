@@ -19,6 +19,32 @@
 
 ---
 
+## Installation / bootstrap
+
+For fresh macOS/Linux/Windows machines, missing `uip`, or LLM coding-agent setup, use the official onboarding installers. They are idempotent and install Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
+
+macOS/Linux:
+```bash
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash
+```
+
+Windows PowerShell:
+```powershell
+irm https://download.uipath.com/uipath-cli/install.ps1 | iex
+```
+
+For CI/minimal CLI setup, skip agent skills and runtimes:
+```bash
+curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash -s -- --skip-skills --skip-runtimes
+```
+
+```powershell
+iwr https://download.uipath.com/uipath-cli/install.ps1 -OutFile install.ps1
+./install.ps1 -SkipSkills -SkipRuntimes
+```
+
+---
+
 ## Authentication
 
 | Command | Description |
@@ -48,6 +74,7 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [`uipa
 | **Folders** | `list [--all]`, `get`, `create`, `update`, `delete`, `move`, `runtimes` | [Setup Environment](orchestrator/setup-environment.md) |
 | **Jobs** | `list`, `get`, `start`, `stop`, `restart`, `resume`, `logs [--export]`, `traces`, `healing-data`, `history` | [Run Jobs](orchestrator/run-jobs.md) |
 | **Processes** | `list`, `get`, `resources`, `version-history`, `create`, `update`, `update-version`, `rollback`, `delete` | [Run Jobs](orchestrator/run-jobs.md) |
+| **Process ROI** | `get`, `create`, `update`, `delete` | [Business ROI](orchestrator/business-roi.md) |
 | **Packages** | `list`, `get`, `versions`, `entry-points`, `upload`, `download` | [Run Jobs](orchestrator/run-jobs.md) |
 | **Machines** | `list`, `get`, `create`, `update`, `delete`, `assign`, `unassign` | [Setup Environment](orchestrator/setup-environment.md) |
 | **Users** | `list`, `list-in-folder`, `list-available`, `get`, `create`, `update`, `delete`, `current`, `assign`, `unassign`, `assign-roles` | [Setup Environment](orchestrator/setup-environment.md) |
@@ -71,6 +98,7 @@ Manage assets, queues, triggers, buckets, libraries, and webhooks — a subset o
 |---|---|---|
 | **Assets** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `share`, `unshare`, `get-asset-value` | [Manage Assets](orchestrator/manage-assets.md) |
 | **Queues** | `list`, `get`, `create`, `update`, `delete`, `get-folders`, `get-stats`, `share`, `unshare` | [Process Queues](orchestrator/process-queues.md) |
+| **Queue ROI** | `get`, `create`, `update`, `delete` | [Business ROI](orchestrator/business-roi.md) |
 | **Queue Items** | `list`, `get`, `add`, `bulk-add`, `update`, `delete`, `delete-bulk`, `get-history`, `get-last-retry`, `has-video`, `set-review-status`, `set-reviewer`, `unset-reviewer`, `get-reviewers` | [Process Queues](orchestrator/process-queues.md) |
 | **Buckets** | `list`, `get`, `create`, `update`, `delete`, `share`, `unshare`, `list-folders` | [Work with Storage](orchestrator/work-with-storage.md) |
 | **Bucket Files** | `list`, `list-dirs`, `get`, `download`, `upload`, `delete`, `get-download-url`, `get-upload-url` | [Work with Storage](orchestrator/work-with-storage.md) |

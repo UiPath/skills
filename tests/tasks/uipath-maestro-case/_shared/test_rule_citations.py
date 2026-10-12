@@ -23,14 +23,11 @@ import rule_citations as rc  # noqa: E402
 
 TREES = rc.built_trees()
 
-# Flavor trees whose overrides still carry pre-renumbering rule numbers. The
-# override files have their own code owner, so their fix ships in its own PR
-# (branch fix/studioweb-case-rule-numbers). strict=True: once that PR lands,
-# the tree passes, the xfail turns into a failure, and this entry must go.
-STALE_FLAVORS = {
-    "studioweb": "studioweb case overrides still cite Rules 23/12/6 -- fixed in "
-    "fix/studioweb-case-rule-numbers",
-}
+# Flavor trees known to carry stale rule numbers, as {variant: reason}. Use it
+# when a flavor's fix has to ship in a separate PR (the flavor has its own
+# code owner). strict=True: once the flavor is fixed the tree passes, the
+# xfail turns into a failure, and the entry must be removed with the fix.
+STALE_FLAVORS: dict[str, str] = {}
 VARIANTS = [
     pytest.param(v, marks=pytest.mark.xfail(strict=True, reason=STALE_FLAVORS[v]))
     if v in STALE_FLAVORS else v
@@ -53,6 +50,32 @@ def test_citations_resolve_to_the_same_rules_as_the_snapshot():
         + "\nIf that is intended, regenerate: python3 tests/tasks/uipath-maestro-case/_shared/"
         "rule_citations.py > tests/tasks/uipath-maestro-case/_shared/rule_citations.json"
     )
+
+
+def test_corpus_citations_resolve_to_the_same_rules_as_the_snapshot():
+    """The eval corpus cites rules in task prompts and graders; an agent reads
+    those, so a shifted number misdirects it (27 did, through suites 7-10)."""
+    expected = json.loads(rc.CORPUS_SNAPSHOT.read_text(encoding="utf-8"))
+    actual = rc.corpus_citation_map()
+    drift = []
+    for path in sorted(set(expected) | set(actual)):
+        was, now = expected.get(path, {}), actual.get(path, {})
+        for title in sorted(set(was) | set(now)):
+            if was.get(title, 0) != now.get(title, 0):
+                drift.append(f'{path}: "{title}" cited {was.get(title, 0)}x -> {now.get(title, 0)}x')
+    assert not drift, (
+        "corpus citations now point at different rules than the snapshot records:\n  "
+        + "\n  ".join(drift)
+        + "\nIf that is intended, audit each changed citation's meaning, then regenerate: "
+        "python3 tests/tasks/uipath-maestro-case/_shared/rule_citations.py --corpus > "
+        "tests/tasks/uipath-maestro-case/_shared/corpus_rule_citations.json"
+    )
+
+
+def test_no_corpus_citation_points_past_the_rules():
+    dangling = [f"{path}: {title}" for path, titles in rc.corpus_citation_map().items()
+                for title in titles if title.startswith("<<UNRESOLVED")]
+    assert not dangling, "dangling corpus citation(s):\n  " + "\n  ".join(dangling)
 
 
 def test_there_is_a_flavor_to_check():

@@ -339,7 +339,7 @@ def simulation_sandbox(tmp_path: Path) -> Path:
                     "expectedOutput": {"greeting": "Hello, Alice!"},
                     "simulations": [
                         {
-                            "componentId": "agent-lookup",
+                            "componentId": "agentLookup",
                             "simulationStrategy": "Llm",
                             "outputSchema": {
                                 "type": "object",
@@ -381,7 +381,7 @@ def test_simulation_static_absent_rejects_retained_simulation(
     set_path = next(simulation_sandbox.rglob("sim-set.json"))
     doc = json.loads(set_path.read_text(encoding="utf-8"))
     doc["evaluations"][0]["simulations"].append(
-        {"componentId": "connector-send-email", "simulationStrategy": "Static"}
+        {"componentId": "connectorSendEmail", "simulationStrategy": "Static"}
     )
     _write_json(set_path, doc)
 

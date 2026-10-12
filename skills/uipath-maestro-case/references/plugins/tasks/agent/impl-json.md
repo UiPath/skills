@@ -30,8 +30,6 @@
 
 ```bash
 uip maestro case tasks describe --type agent --id "<entityKey>" --output json
-# multi-element agents:
-uip maestro case tasks describe --type agent --id "<entityKey>" --element-id "<elementId>" --output json
 ```
 
 

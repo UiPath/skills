@@ -95,7 +95,7 @@ The other 7 are hand-authored but structurally realistic (real Studio `project.j
 python3 scripts/check-cli-verbs.py tests/tasks/uipath-review/rpa/*/*.yaml
 
 # Run a task (Linux docker smoke):
-cd tests && make plugin-root && .venv/bin/coder-eval run \
+cd tests && .venv/bin/coder-eval run \
   tasks/uipath-review/rpa/selector-brittle/selector-brittle.yaml \
   -e experiments/smoke.yaml -v
 ```

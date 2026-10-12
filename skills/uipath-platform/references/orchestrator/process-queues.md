@@ -176,6 +176,8 @@ uip or queue-items list --all-folders --status Failed --output json
 uip or queue-items get <item-unique-key> --folder-path "Finance" --output json
 ```
 
+> `queue-items list` is a filtered `GET /odata/QueueItems`, which Orchestrator rate-limits per tenant. Do not poll it in a tight loop. Keep `--limit` at 100 or below, and keep `SpecificContent` under 256,000 characters. See [api-limits.md](api-limits.md).
+
 Filter with `--queue-name` (exact match), `--queue-definition-key` (GUID), or `--status` (New, InProgress, Failed, Successful, Abandoned, Retried, Deleted).
 
 ### Update and Delete
@@ -327,4 +329,5 @@ Curated queue-item rows expose both `Key` and `UniqueKey` (PascalCase). With `--
 
 - [resources.md](resources.md) -- Orchestrator resources overview and libraries
 - [Triggers & Webhooks](triggers-and-webhooks.md) -- Queue triggers fire automations when item count exceeds a threshold
+- [Business ROI](business-roi.md) -- `uip or queue-roi`: the manual time, volume and cost a queue saves
 - [Setup Environment](setup-environment.md) -- Folder and machine setup

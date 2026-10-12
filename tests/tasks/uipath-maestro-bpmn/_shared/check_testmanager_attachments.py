@@ -21,14 +21,22 @@ disambiguate:
 
     upload   -> objectName UploadAttachment,   method POST
     get      -> objectName GetAttachments,     method GET
-    download -> objectName DownloadAttachment, method GETBYID
+    download -> objectName DownloadAttachment, method GETBYID (or GET; see below)
     delete   -> objectName DeleteAttachment,   method DELETE
+
+Tolerance: because the skill may normalise a "get one by id" node's method
+spelling, this checker treats GETBYID and GET as equivalent for the single
+"download an attachment" operation only -- the same tolerance the sibling
+`check_testmanager_testcase_lifecycle.py` applies to its analogous "get the
+test case" operation. Nothing else is normalised -- a mismatched method on
+any other operation fails.
 
 Assertion map (Flow -> BPMN):
   F criterion 2   flow_contains 'uipath-uipath-testmanager.'            -> connector_tasks() non-empty (main(), no --all-ops)
   F criterion 4   flow_contains <4 node types>                          -> one classified node per op (main(), --all-ops)
   I               locate/parse .bpmn                                    -> parse_bpmn()
   T               objectName+method classification (no per-op node type)-> OPERATIONS / context_value()
+  T               GETBYID/GET equivalence for "download an attachment"  -> OPERATIONS methods set
   DROPPED         require_no_private_connector_values (not in Flow)
   DROPPED         require_sequence_integrity (not in Flow; Flow checked no ordering)
   DROPPED         require_di_for_visible_elements (not in Flow; validate criterion covers structure)
@@ -66,7 +74,7 @@ ACTIVITY_TYPE = "Intsvc.ActivityExecution"
 OPERATIONS = [
     ("upload an attachment", "UploadAttachment", {"post"}),
     ("get attachments", "GetAttachments", {"get"}),
-    ("download an attachment", "DownloadAttachment", {"getbyid"}),
+    ("download an attachment", "DownloadAttachment", {"getbyid", "get"}),
     ("delete an attachment", "DeleteAttachment", {"delete"}),
 ]
 

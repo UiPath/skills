@@ -41,12 +41,12 @@ case-design-layers-guide.md's; the cells own the shape.)
      and the detail block its type requires — action: `**HITL Implementation:**`; wait-for-connector:
      `**Connector:**` / `**Trigger / Event:**`; execute-connector-activity: `**Connector:**` /
      `**Resolved Resource:**`; wait-for-timer: `**Timer:**` / `**Duration:**`; case-management:
-     `**Child Case:**`; process / agent / rpa / api-workflow: `**Resolved Resource:**`.
+     `**Child Case:**`; process / agent / rpa / api-workflow / function: `**Resolved Resource:**`.
   7. No literal `\n` escape inside block content; `<UNRESOLVED>` is never backtick-wrapped; none of the
      skill-internal terms (groupOperator, savedFilterTrees, io-binding, auto-mint, originalVar,
      inputOutputs[]) appears anywhere in the body.
  Closed enums + gate-slot pairing
-  8. Every task `**Type:**` is one of the nine literals in case-design-layers-guide.md § Task types.
+  8. Every task `**Type:**` is one of the ten literals in case-design-layers-guide.md § Task types.
   9. In every table with a `Marks Stage Complete` / `Marks Case Complete` column, the WHEN rule is legal for
      that row's Yes/No per § Lifecycle gates; Stage Entry Conditions rows use only Stage-entry rules and task
      Entry Condition rows only Task-entry rules.

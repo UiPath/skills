@@ -1,4 +1,4 @@
-.PHONY: help install plugin-root all smoke smoke_rpa e2e tags
+.PHONY: help install all smoke smoke_rpa e2e tags
 
 SKILLS_REPO_PATH ?= $(shell cd .. && pwd)
 VENV := .venv
@@ -26,22 +26,19 @@ install:  ## Install coder-eval into local .venv (requires Python 3.13+; UV_INDE
 	@echo "checker_context.api_route defaults llm_judge to litellm -> gpt-5.6-luna (see tests/README.md#checker-context)."
 	@echo "Set CODEX_BASE_URL/CODEX_API_KEY in your env before running tasks locally."
 
-plugin-root:  ## Stage the agent-visible plugin root (.plugin-root) that the experiments mount
-	python3 scripts/stage_plugin_root.py --repo-root $(SKILLS_REPO_PATH)
-
-all: plugin-root  ## Run all tests in a single run (uses the full default budget)
+all:  ## Run all tests in a single run (uses the full default budget)
 	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml -j $(TASK_PARALLELISM) -v
 
-smoke: plugin-root  ## Run all smoke tests (Linux, docker)
+smoke:  ## Run all smoke tests (Linux, docker)
 	$(CODER_EVAL) run $(TASKS) -e experiments/smoke.yaml --tags smoke -j $(TASK_PARALLELISM) -v
 
-smoke_rpa: plugin-root  ## Run all Windows RPA smoke tests (tempdir)
+smoke_rpa:  ## Run all Windows RPA smoke tests (tempdir)
 	$(CODER_EVAL) run $(TASKS) -e experiments/smoke-windows.yaml --tags smoke -j $(TASK_PARALLELISM) -v
 
-e2e: plugin-root  ## Run all end-to-end tests
+e2e:  ## Run all end-to-end tests
 	$(CODER_EVAL) run $(TASKS) -e experiments/default.yaml --tags e2e -j $(TASK_PARALLELISM) -v
 
-tags: plugin-root  ## Run tests matching one or more tags: make tags TAGS="connector-feature" [EXPERIMENT=experiments/default.yaml]
+tags:  ## Run tests matching one or more tags: make tags TAGS="connector-feature" [EXPERIMENT=experiments/default.yaml]
 	@if [ -z "$(TAGS)" ]; then echo "Usage: make tags TAGS=\"tag1 tag2\" [EXPERIMENT=experiments/<file>.yaml]"; exit 2; fi
 	@TAGS="$(TAGS)" python3 -c 'import os,re,sys,glob; \
 wanted=set(os.environ["TAGS"].split()); \
@@ -54,7 +51,7 @@ sys.exit(0 if matches else 3)'
 	$(CODER_EVAL) run $(TASKS) -e $(or $(EXPERIMENT),experiments/default.yaml) $(foreach t,$(TAGS),--tags $(t)) -j $(TASK_PARALLELISM) -v
 
 # Run all tests for a specific skill: make test-uipath-maestro-flow
-test-%: plugin-root  ## Run all tests for a specific skill
+test-%:  ## Run all tests for a specific skill
 	$(CODER_EVAL) run $(shell find tasks/$* -name '*.yaml' -type f) -e experiments/default.yaml -j $(TASK_PARALLELISM) -v
 
 .DEFAULT_GOAL := help

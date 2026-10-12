@@ -7,10 +7,10 @@ actually mutated the file:
   1. An eval-set JSON exists somewhere in the sandbox with name == "Sim Set",
      carrying a data point named "hello" in `evaluations[]`.
   2. That data point has a non-empty `simulations` array.
-  3. The Llm simulation targeting `agent-lookup` is still present, carrying the
+  3. The Llm simulation targeting `agentLookup` is still present, carrying the
      output schema the CLI auto-resolved from that node's declared `result`
      output (add worked against a node that is really in the flow).
-  4. The Static simulation targeting `connector-send-email` is gone (the
+  4. The Static simulation targeting `connectorSendEmail` is gone (the
      `simulation remove` actually wrote back to disk, not just printed OK).
 
 Pass ``--check`` to grade one persisted outcome, or omit it for the original
@@ -24,8 +24,8 @@ import json
 import sys
 from pathlib import Path
 
-KEPT = "agent-lookup"
-REMOVED = "connector-send-email"
+KEPT = "agentLookup"
+REMOVED = "connectorSendEmail"
 KEPT_OUTPUT = "result"
 KEPT_OUTPUT_TYPE = "string"
 

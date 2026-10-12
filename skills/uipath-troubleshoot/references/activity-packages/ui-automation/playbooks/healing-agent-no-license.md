@@ -28,7 +28,7 @@ Consumption rates after the bundled 5K heals are exhausted: **3 Platform Units p
 
 - `AutopilotForRobots.Enabled = true` AND `AutopilotForRobots.HealingEnabled = true` on the job
 - Job log contains `"Healing agent analysis and recovery are enabled for current job."` near start of execution, but no subsequent HA recovery activity
-- HA diagnostic archive is empty — `uip or jobs healing-data <job-key> -o <out>.zip` produces a 22-byte ZIP containing zero entries (`PK\x05\x06` end-of-central-directory record only)
+- HA diagnostic archive is empty — `uip or jobs healing-data <job-key> -d <out>.zip` produces a 22-byte ZIP containing zero entries (`PK\x05\x06` end-of-central-directory record only)
 - `uip or licenses info` shows `Data.Allowed.AgentService == 0` and `Data.LicensedFeatures: []` (or HA features absent)
 - App Insights / backend: `Could not find any enabled consumption pools for [org-id]`
 - Job-level `Info` contains the underlying selector exception (`NodeNotFoundException`, `SelectorNotFoundException`, etc.) — **not** the license message. License diagnosis lives in the robot log, not in `jobs get`.
@@ -64,7 +64,7 @@ Consumption rates after the bundled 5K heals are exhausted: **3 Platform Units p
 
    `jobs get` is cross-folder; no `--folder-path` flag needed.
 
-3. **Fetch the HA diagnostic archive.** `uip or jobs healing-data <job-key> -o <out>.zip`. A **22-byte file is an empty ZIP** (zero entries) — HA produced no data. Combined with HA being enabled on the job, this confirms HA refused to run. `healing-data` takes the job key as a positional argument and `-o` for the output path; no `--folder-path` flag exists.
+3. **Fetch the HA diagnostic archive.** `uip or jobs healing-data <job-key> -d <out>.zip`. A **22-byte file is an empty ZIP** (zero entries) — HA produced no data. Combined with HA being enabled on the job, this confirms HA refused to run. `healing-data` takes the job key as a positional argument and `-d` (`--destination`) for the output path; no `--folder-path` flag exists.
 
 4. **Check the UIA package version of the failing process.** Determine which UIAutomation package version the process is pinned to. If the project is local, read `project.json`. Two thresholds matter:
    - **< 25.10.x** → likely on UIA 24.10.x preview. Preview HA is unsupported on GA tenants; upgrade is the fix regardless of license state.

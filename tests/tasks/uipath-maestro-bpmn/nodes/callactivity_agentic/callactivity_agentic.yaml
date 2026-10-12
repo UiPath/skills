@@ -10,11 +10,6 @@ run_limits:
   expected_turns: 18
   max_turns: 80
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -32,13 +27,12 @@ initial_prompt: |
     invocation with `Orchestrator.StartAgenticProcess` hosted on a
     `bpmn:callActivity` — NOT a `bpmn:serviceTask` (a serviceTask scopes work
     within the same instance).
-  - Discover the wrapper via the registry (`uip maestro bpmn registry`) and author
-    its `uipath:*` payload from the served template. Do not hand-author
-    registry-owned XML from prose.
+  - Resolve the wrapper's type and payload the way your skill prescribes; do not
+    invent registry-owned XML from prose.
   - Use synthetic placeholder resource/binding values only. Do not invent or paste
     real tenant URLs, folder keys, connection IDs, release keys, or process names.
-  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
-    for every sequence flow.
+  - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+    every node and an edge for every sequence flow.
   - Validate locally by parsing the BPMN and walking the skill's structural
     checklist. Do NOT upload, publish, deploy, debug, run, or pack anything, and
     do NOT pause for approval — build the complete local project in one pass.

@@ -1,5 +1,5 @@
 <!--skill-flavor:project-scaffold-rule:start-->
-23. **Create the case project with `uip maestro case init "<ProjectName>"` from `/solution`.** Studio Web creates it inside the open solution (there is only one — never create a solution) and seeds its scaffold. Then follow the T01 direct-JSON recipe in [implementation.md § Step 6](references/implementation.md#step-6--create-the-case-project-structure) for `caseplan.json`, writing into `/solution/<ProjectName>/`.
+24. **Create the case project with `uip maestro case init "<ProjectName>"` from `/solution`.** Studio Web creates it inside the open solution (there is only one — never create a solution) and seeds its scaffold. Then follow the T01 direct-JSON recipe in [implementation.md § Step 6](references/implementation.md#step-6--create-the-case-project-structure) for `caseplan.json`, writing into `/solution/<ProjectName>/`.
 <!--skill-flavor:project-scaffold-rule:end-->
 
 <!--skill-flavor:phase-two-step-six:start-->

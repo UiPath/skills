@@ -29,8 +29,7 @@ initial_prompt: |
     skill: `.bpmn` XML with a main file named `LeaveRequestBpmn.bpmn` inside
     the generated project. Do NOT build a `.flow`.
   - Model the review as a `bpmn:userTask` using the documented `Actions.HITL`
-    `uipath:activity` shell from the registry template. Do not hand-author the
-    uipath:* payload from prose.
+    activity type; do not invent the uipath:* payload from prose.
   - The exclusive gateway must have three outgoing branches to three distinct
     targets: two conditioned branches whose conditions reference the HITL output
     variable, plus exactly one default branch.

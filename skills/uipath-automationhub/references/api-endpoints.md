@@ -43,7 +43,7 @@ All idea flows (workflow types) on the tenant. Each element has `Idea flow name`
 ### GET `/idea-schema?idea_flow_id={id}`
 Full JSON schema for an idea flow + a ready-made `user_inputs` template. Response wrapped as `{ status: "success", data: {...} }`:
 - `data.properties.schema.properties` — field definitions, 3-level nested (Assessment Type > Section > Question); enums carry `answer_option` codes + labels in `custom_properties`.
-- `data.user_inputs` — the exact POST body template ("fill in the blanks"). Most fields wrap as `{ "value": <v> }`; owner/submitter questions take a direct string (no wrapper); questions with no example are omitted.
+- `data.user_inputs` — the exact POST body template ("fill in the blanks"). Every field wraps as `{ "value": <v> }` except **user questions**: owner, submitter, and any user picker the tenant adds (the schema marks them `format: email`). Those take the email as a **direct string**; the server also accepts `{ "value": <email> }` for them. A bare string on any other question reads as empty; questions with no example are omitted.
 
 *(Used by the publish flow.)*
 
@@ -54,7 +54,7 @@ Body:
 ```json
 { "idea_flow_id": <id>, "user_inputs": { "<AssessmentType>": { "<section-ahid>": { "<question-key>": { "value": "<v>" } } } } }
 ```
-**Do not POST `data.user_inputs` verbatim** — its example values are placeholders that the API rejects. Replace each with a real value; in particular resolve a **valid** `OVERVIEW_CATEGORY` id (the template's `1` → `Invalid Category Id`) and real `answer_option` codes (a placeholder code → backend `co_question_answer_option_value` crash).
+**Do not POST `data.user_inputs` verbatim** — its example values are placeholders that the API rejects. Replace each with a real value; in particular resolve a **valid** `OVERVIEW_CATEGORY` id (the template's `1` → `Invalid Category Id`) and real `answer_option` codes. A code not in that field's `enum` is never selected: on a `required` question the create fails with `Please fill in all the required information`, and `errorDetails` names the field (`An answer selection is required for submission`). On an optional question the create **succeeds and the answer is silently dropped**, so the preflight is the only guard.
 
 **Required fields (Business Process, `idea_flow_id`=7), verified live** — note the backend enforces owner + submitter even though the schema's `required` flags omit them:
 
@@ -68,6 +68,14 @@ Body:
 | `OVR-OVERVIEW_PROCESS_SUBMITTER` | `ah-section-ovr-0-1` | `"<email>"` (direct string) |
 
 **Studio Web link** (optional): the schema's `OVR-OVERVIEW_STUDIO_WEB_LINK` question links the process to a Studio Web solution. Its `value` is a JSON **string** — `{"url": "<{baseUrl}/{org}/studio_/designer/{projectId}?solutionId={id}>", "name": "<solution name>", "hasProcessMap": <bool>}` (`url` required; `hasProcessMap: true` only when the solution's orchestration project has a `.bpmn` — it drives AH's Maestro diagram preview). Settable at create or via the update path; empty string unlinks.
+
+**Applications used** (`<ASSESSMENT>-COUNT_APPS`; optional unless the tenant flags it `required`): `value` is an array of `/appinventory` ids. When the schema shows a **`new_applications`** property beside `value`, the same answer can also create applications the inventory lacks — any submitter, no `MANAGE_APP_INVENTORY`, no `categoryIds`:
+
+```json
+{ "value": [12], "new_applications": [ { "application_name": "…", "application_version": "…", "application_language": "…" } ] }
+```
+
+Each entry: `application_name` required (1–50), optional `application_version` (≤20), `application_language` (≤50), `application_comments` (≤512), `application_is_citrix_client` (boolean); no other keys; ≤20 entries. Matched on name + version (case/space-insensitive) — a match reuses the existing inventory row, otherwise a new row is created and linked. Either key alone is fine at create. Set a new app's thin flag and comments **inline**, on its entry (`application_is_citrix_client: true`, `application_comments`), so the create needs no follow-up update. **Updates** (`PATCH /automations/{id}` with body `{ "user_inputs": { … } }`; working example in [`publish-process.md`](publish-process.md) Step 6b): `value` and `new_applications` together **replace** the process's whole application list. Ids in `value` resolve to bare inventory rows, so any update that answers "Applications used" also clears every existing thin flag and per-application comment. Leave both application questions out of an update unless the caller asked to change applications. If they did, send the complete list and the "Thin applications used" answer in the same update, and tell the user that per-application comments were reset. An answer with an empty `value` and no `new_applications` leaves the list unchanged: the Open API can't empty it, so a `200` there is not a removal. The property is absent on builds that predate it and when the admin disabled adding applications for the section. Rejections are `400` with message `Invalid Application Data. <reason>`: `Unknown application id(s): …`, `Adding new applications is disabled for this assessment…`, `…requires a non-empty application_name`, `…exceeds 50 characters`, `…invalid version, language, comments, or citrix flag`, `…has unknown field(s): …`, `new_applications must be an array…`, `At most 20 new applications…`. "Thin applications used" (`…-COUNT_THIN_APPS`) accepts inventory ids only.
 
 When a required field is missing the API may return `errorDetails: {}` (no field named) with `"Please fill in all the required information"` — usually the un-flagged owner/submitter, but **tenant admins can mark additional questions required** (commonly "Applications used"/"Thin applications used"); diff the payload against every `required`-flagged question in the live schema.
 
@@ -116,7 +124,7 @@ The Automation Hub users on the tenant (verified live): paged envelope with the 
 **It is not the ground truth for who can own a process, and must never gate a publish.** Two defaults make it under-report: `invite` defaults to **activated users only**, so a user who has only ever used the API or CLI is missing from it while being perfectly able to own a process; and results are paged (default 20) under an ordering that is not deterministic when no search text is given, so a user can be absent from one page and present in another. Pass **`?s=<email>&invite=all`** for a scoped, server-side lookup — both parameters, since search alone still hides a not-invited user. The authority for the signed-in identity is the auth/identity call, and the authority for whether an owner is acceptable is the create response. *(Optional in the publish flow.)*
 
 ### GET `/appinventory?limit=<n>`
-The tenant's application inventory (paged; entries carry the application id, name, version, language). **This is the valid-answer set for tenant-required application questions** ("Applications used", "Thin applications used") in the publish flow. *(Used by the publish flow when the tenant requires application questions.)*
+The tenant's application inventory (paged; entries carry the application id, name, version, language). **These ids are the `value` answers for the application questions** ("Applications used", "Thin applications used"); systems not listed go in `new_applications` (see `POST /idea-from-schema`). *(Used by the publish flow whenever the material names systems.)*
 
 ### GET `/automations?search=<text>&limit=<n>&offset=<n>`
 Search/list processes. Returns a paged list (results under a resource key, e.g. `processes`, or a bare array). Use to resolve a name → `process_id`. *(Used by the get flow.)*

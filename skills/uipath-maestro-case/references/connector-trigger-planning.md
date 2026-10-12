@@ -46,7 +46,7 @@ Connection selection mechanics (`--refresh` retry, ping verification, BYOA workf
 
 > **Entity-typed Curated triggers** (e.g. UiPath Data Service `Record Created (Preview)`) carry a placeholder `objectName` in the typecache (`{tenantEntityName|folderEntityName}`). Pick a real entity via `uip is triggers objects <connector-key> <eventOperation>` and pass it as `--object-name` on the `case spec` call in Step 3.
 
-> **Generic-typed triggers** (`Config.activityType === "GenericTrigger"` in `typecache-triggers-index.json` — trigger entries use `GenericTrigger` / `CuratedTrigger`, not the activity-typecache's `Generic` / `Curated`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `Record Created`). Discover the available objects via `uip is resources list --connector-key <connector-key>` and `uip is resources describe --connector-key <connector-key> --object-name <name>`, then pass the picked name as `--object-name` on the Step 3 call. Same `--object-name` flag as the entity-typed Curated case above; different reason. Omit it and `case spec --type trigger` fails at fetch time with an opaque `unknown_error` (`Error fetching connector task spec`), cause buried in `Instructions`: `objectName … null or undefined … getInstanceEventObjectMetadata()` — resolve the object and re-run with `--object-name`.
+> **Generic-typed triggers** (`Config.activityType === "GenericTrigger"` in `typecache-triggers-index.json` — trigger entries use `GenericTrigger` / `CuratedTrigger`, not the activity-typecache's `Generic` / `Curated`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `Record Created`). Discover the available objects via `uip is resources list <connector-key>` and `uip is resources describe <connector-key> <object-name>`, then pass the picked name as `--object-name` on the Step 3 call. Same `--object-name` flag as the entity-typed Curated case above; different reason. Omit it and `case spec --type trigger` fails at fetch time with an opaque `unknown_error` (`Error fetching connector task spec`), cause buried in `Instructions`: `objectName … null or undefined … getInstanceEventObjectMetadata()` — resolve the object and re-run with `--object-name`.
 
 ### 3. Discover the trigger contract via `case spec`
 
@@ -125,6 +125,8 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 ```json
 {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
 ```
+
+A field listed under `inputs.queryParameters` / `inputs.pathParameters` (Step 3) goes in `queryParameters` / `pathParameters` instead. Scope selectors and resource pickers often sit there.
 
 **filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operator table, anti-patterns, worked examples (single / multi-AND / nested AND-OR): [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs (JMESPath instead of CEQL). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values.
 

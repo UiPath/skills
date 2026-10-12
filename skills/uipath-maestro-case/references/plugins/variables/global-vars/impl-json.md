@@ -459,6 +459,7 @@ Normalize `"octet-stream"` → `"file"` before emitting. The FE's `isFileType` a
     "required": ["ID"],
     "x-uipath-resource-kind": "JobAttachment"
   },
+  // Case-root Variable only. An In argument's companion keeps its trigger elementId and carries neither default nor custom (Loop B table).
   "default": "", "custom": true, "elementId": "root" }
 ```
 
@@ -468,6 +469,7 @@ Primitive — no body, no target. FE renders DatePicker / DateTimePicker based o
 
 ```json
 { "id": "submittedOn", "name": "submittedOn", "type": "date",
+  // Case-root Variable only. An In argument's companion keeps its trigger elementId and carries neither default nor custom (Loop B table).
   "default": "", "custom": true, "elementId": "root" }
 
 { "id": "lastSeen", "name": "lastSeen", "type": "datetime",

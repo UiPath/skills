@@ -49,7 +49,7 @@ Scan every one of these surfaces for concrete values:
 
 | Surface | What to look for | Example signals |
 |---|---|---|
-| **Screenshots of input data** | Sample IDs, names, codes, dates, free-form values shown filled into a form or list | `PRO1037`, `Jeanine Frederick`, `Romania`, `01/15/2024` |
+| **Screenshots of input data** | Sample IDs, names, codes, dates, free-form values shown filled into a form or list | `PRO1037`, `Jeanine Frederick`, `Romania`, a `MM/DD/YYYY` date |
 | **Screenshots of expected output** | Hash values, computed outputs, status fields, post-state values | `bde2c5964a3cfbc9b839aef9aa2a2764829d5497` (SHA1), `Confirmed`, `Approved` |
 | **Inline strings in step descriptions** | Quoted literals — anything inside backticks, double quotes, or single quotes that names a value rather than a column | `"the value 'WI5' in the Type column"`, `'PRO1037'` |
 | **Example tables in the Appendix** | Rows where each cell is a concrete value rather than a placeholder | `Vendor: ACME`, `Amount: 1250.00`, `Currency: EUR` |

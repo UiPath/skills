@@ -36,6 +36,20 @@ Scope is what cmd.exe can reach: every experiment hook (they run for all tasks,
 including the Windows split) plus the hooks of ``windows``-tagged tasks. A task
 without that tag never runs on Windows, so its hooks are left alone.
 
+Gate 3: no task stages a skill directory into the agent's sandbox
+-----------------------------------------------------------------
+
+``sandbox.template_sources`` is for pre_run/post_run tooling and fixtures. A
+skill arrives through the plugin catalog (``agent.plugins``), which is what
+selects the GENERATION under test — so a copy of ``skills/<name>/`` in the
+agent's working directory hands a preview-arm run the shipped v1 guidance and
+quietly destroys the comparison. Every uipath-maestro-bpmn task did this until
+2026-09-23; agents read the cwd copy and authored against the wrong generation.
+No other skill family ever did.
+
+The README invariant alone did not hold: the porting brief kept telling authors
+to add the line. This gate makes it fail instead.
+
 Usage:
     python3 scripts/check-task-driver.py                              # tests/tasks
     python3 scripts/check-task-driver.py tests/tasks tests/experiments  # both gates
@@ -127,6 +141,7 @@ def main(argv: list[str]) -> int:
     offenders: list[tuple[Path, int]] = []
     docker_pins: list[Path] = []
     multi_line: list[tuple[Path, int, str]] = []
+    staged_skills: list[tuple[Path, str]] = []
     hooks_checked = 0
 
     for path in _iter_task_yamls(argv):
@@ -153,6 +168,16 @@ def main(argv: list[str]) -> int:
         sandbox = doc.get("sandbox")
         if not isinstance(sandbox, dict):
             continue
+        # The bug is GUIDANCE in the agent's cwd: the skill root, or its
+        # references/. A data directory that merely lives inside a skill
+        # folder is legitimate staging — uipath-coded-apps stages
+        # skills/uipath-coded-apps/assets/fixtures and should keep working.
+        for src in sandbox.get("template_sources") or []:
+            if not isinstance(src, dict):
+                continue
+            src_path = str(src.get("path") or "")
+            if re.search(r"(^|/)skills/[^/]+(/references(/|$)|/?$)", src_path):
+                staged_skills.append((path, src_path))
         driver = sandbox.get("driver")
         if driver == "tempdir":
             offenders.append((path, _driver_line_number(path)))
@@ -188,6 +213,26 @@ def main(argv: list[str]) -> int:
         print()
     elif hooks_checked:
         print(f"OK — {hooks_checked} Windows-reachable hook command(s) are single-line.")
+
+    if staged_skills:
+        rc = 1
+        print(f"FAIL — {len(staged_skills)} task(s) stage a skill directory into the sandbox:\n")
+        for path, src_path in staged_skills:
+            rel = _rel(path)
+            print(f"::error file={rel}::Task stages a skill directory ({src_path}) via template_sources")
+            print(f"  {rel}  ->  {src_path}")
+        print()
+        print(
+            "template_sources is for pre_run/post_run tooling and fixtures. The skill\n"
+            "arrives through agent.plugins, which is what selects the generation under\n"
+            "test — a copy in the working directory feeds a preview-arm run the shipped\n"
+            "v1 guidance. Drop the entry (delete the `sandbox:` block if it becomes\n"
+            "empty). See \"Arm neutrality\" in tests/tasks/uipath-maestro-bpmn/README.md."
+        )
+        print()
+
+    if not staged_skills:
+        print("OK — no task stages a skill directory via template_sources.")
 
     if not offenders:
         print("OK — no task pins `sandbox.driver: tempdir`.")

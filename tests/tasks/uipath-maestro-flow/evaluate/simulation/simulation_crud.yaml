@@ -30,8 +30,8 @@ initial_prompt: |
   Declare a string input variable named `name` before adding the data point.
 
   Put both simulation targets in the flow before adding any simulation: an
-  autonomous agent node with id `agent-lookup` declaring one string output
-  variable `result`, and a node with id `connector-send-email` standing in for
+  autonomous agent node with id `agentLookup` declaring one string output
+  variable `result`, and a node with id `connectorSendEmail` standing in for
   an email connector that is not published yet. The flow does not have to pass
   `uip maestro flow validate`.
 
@@ -42,17 +42,17 @@ initial_prompt: |
   `{"name":"Alice"}` and expected `{"greeting":"Hello, Alice!"}`.
 
   Add a `Static` simulation on the `hello` data point targeting connector
-  component `connector-send-email`, with fixed mock value
+  component `connectorSendEmail`, with fixed mock value
   `{"status":"ok","messageId":"abc123"}`.
 
   Add an `Llm` simulation on the same data point targeting agent component
-  `agent-lookup`, with instructions `Return a plausible lookup result.` Its
+  `agentLookup`, with instructions `Return a plausible lookup result.` Its
   output schema is auto-resolved from the agent node's declared outputs — do
   not pass an output-schema flag.
 
   Inspect the simulations to confirm both are present.
 
-  Remove the `connector-send-email` simulation from the `hello` data point.
+  Remove the `connectorSendEmail` simulation from the `hello` data point.
 
   Keep all work local: do not authenticate, upload the solution, or start an
   evaluation run.
@@ -95,7 +95,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow artifact carries both simulation target component ids"
-    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name SimEval 'agent-lookup' 'connector-send-email'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name SimEval 'agentLookup' 'connectorSendEmail'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -126,7 +126,7 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "The Llm agent-lookup simulation persists with the auto-resolved output schema"
+    description: "The Llm agentLookup simulation persists with the auto-resolved output schema"
     command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py --check llm-simulation"
     timeout: 10
     expected_exit_code: 0
@@ -142,7 +142,7 @@ success_criteria:
     pass_threshold: 0.0
 
   - type: run_command
-    description: "Agent removed the connector-send-email simulation"
+    description: "Agent removed the connectorSendEmail simulation"
     command: "python3 $REFERENCE_DIR/evaluate/simulation/check_simulation_crud.py --check static-absent"
     timeout: 10
     expected_exit_code: 0

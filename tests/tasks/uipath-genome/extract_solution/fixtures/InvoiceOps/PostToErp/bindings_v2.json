@@ -1,0 +1,14 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "asset",
+      "key": "ErpApiKey",
+      "value": {
+        "name": { "defaultValue": "ErpApiKey", "isExpression": false, "displayName": "Asset name" },
+        "folderPath": { "defaultValue": "Finance/AP", "isExpression": false, "displayName": "Folder path" }
+      },
+      "metadata": { "bindingsVersion": "2.0" }
+    }
+  ]
+}

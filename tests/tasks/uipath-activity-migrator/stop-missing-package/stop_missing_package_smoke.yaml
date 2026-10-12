@@ -1,0 +1,157 @@
+task_id: skill-migrator-stop-missing-package
+description: >
+  Smoke: the agent uses the uipath-activity-migrator skill on VendorFeedSync, a
+  Legacy project that depends on Acme.Internal.Helpers 1.0.0, an internal
+  library no reachable feed serves. The analyze run ends with
+  RESTORE-MISSING-PACKAGE at error level, the summarizer reports `failed` with
+  one blocker, and Step 3 stops: the agent names the missing package, offers the
+  feed hand-off or ignoring missing dependencies, and the simulated user chooses
+  to stop and publish the library first. Graded on the stop: analyze ran in
+  SARIF mode and was summarized, upgrade never ran, no output folder exists,
+  missing dependencies were never ignored, nothing was built or run, and the
+  source is untouched outside the tool's .upgrade and .local folders. Windows
+  only (the migrator is a .NET 8 desktop tool); no build, so no Helm.
+tags: [uipath-activity-migrator, smoke, mode:build, lifecycle:discover, windows]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 40
+  task_timeout: 1800
+  turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: fixture
+
+initial_prompt: |
+  Migrate the UiPath project in ./VendorFeedSync with the Activity Migrator.
+  Do not run the migrated project.
+
+  The `uip` CLI is available and authenticated in this sandbox.
+
+simulation:
+  enabled: true
+  persona: |
+    You are the developer who owns VendorFeedSync and asked for the migration.
+    Acme.Internal.Helpers is your team's library, published only to your
+    Orchestrator feed. You know nothing else about the project beyond what is
+    on disk.
+  goal: |
+    Let the agent analyze the project. When it reports that a package is
+    missing, choose to stop so the library can be published first.
+  constraints:
+    - "When told that Acme.Internal.Helpers is missing and offered options (a feed command, ignoring missing dependencies, or stopping), answer: stop here, I will publish the library to the feed first."
+    - "Never ask the agent to ignore missing dependencies, and never provide a feed URL, token or secret."
+    - "When asked whether to run anything, answer No."
+    - "Never invent facts about the project, the feed or the environment."
+    - "Keep replies to one sentence or a numbered option."
+  max_turns: 4
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-activity-migrator skill"
+    skill_name: "uipath-activity-migrator"
+    expected_skill: "uipath-activity-migrator"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Rule 2: the analyze run uses SARIF output. The segment idiom keeps the
+  # lookahead inside this one command; `--help` invocations are exempt.
+  - type: command_executed
+    description: "Agent ran analyze with --output-format sarif"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--output-format\s+sarif)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent classified the SARIF with the skill's summarizer"
+    command_pattern: 'summarize-sarif\.mjs'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Analyze SARIF was written under the source's .upgrade folder"
+    path: "VendorFeedSync/.upgrade/analyze-latest.sarif"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The tool ran and hit the tested condition: the log names the rule and the package.
+  - type: file_check
+    description: "Analyze SARIF reports the missing internal package"
+    path: "VendorFeedSync/.upgrade/analyze-latest.sarif"
+    patterns:
+      - pattern: 'RESTORE-MISSING-PACKAGE'
+        must_match: true
+      - pattern: 'Acme\.Internal\.Helpers'
+        must_match: true
+    weight: 2.5
+    pass_threshold: 1.0
+
+  # Step 3 writes the summarizer's full report to analyze-latest.md; it must carry the
+  # classification the stop rests on.
+  - type: file_check
+    description: "Summarizer classified the analyze run as failed with the restore blocker"
+    path: "VendorFeedSync/.upgrade/analyze-latest.md"
+    patterns:
+      - pattern: 'Status: \*\*failed\*\*'
+        must_match: true
+      - pattern: '\*\*RESTORE-MISSING-PACKAGE\*\*'
+        must_match: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Step 3 stop table: RESTORE-MISSING-PACKAGE stops the migration before upgrade.
+  - type: command_not_executed
+    description: "Agent never ran upgrade after the restore failure"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade\b'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The ignore flag is an explicit user decision; the simulated user declined it.
+  - type: command_not_executed
+    description: "Agent never passed --ignore-missing-dependencies"
+    command_pattern: '--ignore-missing-dependencies'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Rule 6: the feed hand-off is a command with <PLACEHOLDER> credentials for the user
+  # to run. A real value after the credential flags means the agent typed a secret.
+  - type: command_not_executed
+    description: "Agent never typed a real feed credential (Rule 6: placeholders only)"
+    command_pattern: '--orchestrator-(?:pat|application-secret)(?:=|\s+)"?[^<"\s]'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No output folder was created"
+    command: |-
+      python -c "import os, sys; sys.exit(1 if os.path.exists('VendorFeedSync_Upgraded') else 0)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 5: the tool writes .upgrade/ (reports) and .local/ (restore cache) into the
+  # source; outside those two, the source must hold exactly the fixture's files, byte-identical.
+  - type: run_command
+    description: "Source holds only the fixture's files, byte-identical, besides the tool's .upgrade and .local folders"
+    command: |-
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'VendorFeedSync'); s = 'VendorFeedSync'; fs = lambda root: sorted(os.path.relpath(os.path.join(d, f), root) for d, _, files in os.walk(root) if os.path.relpath(d, root).split(os.sep)[0] not in ('.upgrade', '.local') for f in files); ref = fs(t); sys.exit(0 if fs(s) == ref and all(filecmp.cmp(os.path.join(t, f), os.path.join(s, f), shallow=False) for f in ref) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Nothing to build or run after a stop.
+  - type: command_not_executed
+    description: "Agent did not build, validate, run or debug anything"
+    command_pattern: 'uip\s+rpa\s+(build|validate|run|debug)\b'
+    weight: 1.0
+    pass_threshold: 1.0

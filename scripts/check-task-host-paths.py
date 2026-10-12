@@ -48,14 +48,6 @@ _TOKEN_RE = re.compile(r"\bTASK_DIR\b|\bSKILLS_REPO_PATH\b")
 # text" exception #3271 documented — not a host-path dependency to ratchet.
 _EXEMPT_BASENAMES = {"test_criterion_budgets.py"}
 
-# The one sanctioned reader. A grader cannot be handed the agent-readable skill
-# tree by $REFERENCE_DIR or template_sources — only the staged plugin root is
-# mounted, and its path is derivable only from the variable. This helper exists
-# to do that translation once (staged root first, repo second, None otherwise),
-# so every other grader calls it instead of naming the token. Exact path, not a
-# basename: any other grader_common.py is still gated.
-_EXEMPT_RELPATHS = {"tests/tasks/uipath-review/rpa/_shared/grader_common.py"}
-
 _ADVICE = (
     "$TASK_DIR / $SKILLS_REPO_PATH are retired host-path escape hatches (#3271) —\n"
     "sandbox drivers don't have a full host repo checkout. Stage the file the task\n"
@@ -82,7 +74,7 @@ def _full_scan(root: Path) -> list[tuple[str, int, str]]:
     for path in sorted(root.rglob("*")):
         if not path.is_file() or "__pycache__" in path.parts or path.suffix == ".pyc":
             continue
-        if path.name in _EXEMPT_BASENAMES or _rel(str(path)) in _EXEMPT_RELPATHS:
+        if path.name in _EXEMPT_BASENAMES:
             continue
         try:
             text = path.read_text(encoding="utf-8", errors="ignore")
@@ -111,7 +103,7 @@ def _diff_scan(base_ref: str, root: Path) -> list[tuple[str, int, str]]:
     for line in diff.splitlines():
         if line.startswith("+++ "):
             path = line[4:]
-            if path == "/dev/null" or Path(path[2:]).name in _EXEMPT_BASENAMES or path[2:] in _EXEMPT_RELPATHS:
+            if path == "/dev/null" or Path(path[2:]).name in _EXEMPT_BASENAMES:
                 current_file = None
             else:
                 current_file = path[2:]  # strip "b/"

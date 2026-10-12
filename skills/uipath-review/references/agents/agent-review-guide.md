@@ -2,7 +2,7 @@
 
 Steps for reviewing an agent project: low-code (`agent.json`) or coded (`main.py` plus framework config or `uipath.json`). Enter from SKILL.md once Step 1 classifies the project. Step 0 (discovery, PDD, scope), Step 1, Steps 3b–3c, Step 4, and the Step 5 report skeleton are shared and stay in SKILL.md; step numbers here match SKILL.md. In a mixed solution, apply this guide to each agent project and keep one report.
 
-> **Important:** a user's read-only or "do not modify the project" instruction covers manual edits only. It never covers `uip agent refresh` (Step 2) or `uip agent review-history add` (Step 6): the CLI owns the files they write. Run both even when the user asked for a read-only review; never move the project to a copy to avoid them.
+> **Important:** `uip agent refresh` (Step 2) and `uip agent review-history add` (Step 6) write CLI-owned files and run by default. If the user explicitly forbids any change to the project, do not run them: list both under **Rules Skipped** and state that the deterministic review ran without a refresh and the grade was not recorded. Never move the project to a copy to work around the user's instruction.
 
 ## Critical Rules
 
@@ -11,9 +11,9 @@ Steps for reviewing an agent project: low-code (`agent.json`) or coded (`main.py
 3. Never invent `rule_id` values. Each cited ID must occur verbatim in a loaded `agents-*-rules.md` catalog or review-CLI JSON. Verify every ID before reporting. A real Critical issue covered by neither source is reported without a `rule_id`; unrule'd Warnings and Infos are dropped.
 4. Grade agent projects only with `A`, `B`, `C`, `D`, or `F`, with no `+`/`-`, per agent and overall: `min(G_det, G_jud)`. Read `G_det` from review CLI `Data.Grade`; do not recompute it. Compute `G_jud` from judgment findings only. Show the binding constraint for every grade; low-code reports omit the printed derivation as required by the rubric. A security or data-integrity judgment Critical forces F. The skill grade cannot exceed `Data.Grade`; report both. Do not grade RPA, flows, or coded apps. See [agent-grading-rubric.md](agent-grading-rubric.md).
 5. `uip agent refresh` owns `.agent-builder/`, `.local/build/`, and, for low-code agents, regenerated root `entry-points.json` from `agent.json`. Do not open these contents. Exclude them from classification, authored-file selection, structural metrics, and manual checks. Report a defect only if refresh fails to fix them. Read low-code schemas from `agent.json` `.inputSchema` and `.outputSchema`.
-6. The only writes are `uip agent refresh` (Step 2) and `uip agent review-history add` (Step 6 — exactly once per low-code project, only after the report is final); both write CLI-owned files. Everything else stays read-only per SKILL.md Critical Rule 1.
+6. The only writes are `uip agent refresh` (Step 2) and `uip agent review-history add` (Step 6 — exactly once per low-code project, only after the report is final); both write CLI-owned files and are skipped when the user explicitly forbids any change to the project (see the note above). Everything else stays read-only per SKILL.md Critical Rule 1.
 7. Never execute project code, import its packages, or read installed package sources (`site-packages/…`, `inspect.getsource`, scratch `python3 -c` experiments) to verify a suspected or CLI-emitted finding. Deterministic verification is the review CLI's job (SKILL.md Anti-Pattern 4); judgment verdicts cite only the catalog and the agent's own source. One read of the flagged source lines is the maximum confirmation.
-8. The workflow converges forward, never back. Run the Step 2.5a review CLI before any deep manual source investigation, and once Steps 2–4.5 are complete, the next action is writing the report (Step 5) — verification beyond each catalog rule's `detection_method` is out of scope. The report file is the deliverable: an unwritten report scores zero regardless of analysis depth.
+8. The workflow converges forward, never back. Run the Step 2.5a review CLI before any deep manual source investigation, and once Steps 2–4.5 are complete, the next action is writing the report (Step 5) — verification beyond each catalog rule's `detection_method` is out of scope. The report file is the deliverable: an unwritten report scores zero regardless of analysis depth. For a low-code agent the report is not the last action: once its final-grade line is written, run Step 6 (`uip agent review-history add`) exactly once to record the grade. Skipping Step 6 leaves the review incomplete, unless the user explicitly forbade any change to the project.
 
 ## Step 2 — Validate
 
@@ -89,7 +89,7 @@ Low-code reports omit the sections listed in [agent-grading-rubric.md § Low-cod
 
 ## Step 6 — Record the Agent Grade
 
-Low-code agent projects only, and only after the report is final — its last line is the final-grade line (Step 5). For each low-code agent project, run the command **exactly once**, with the grade and counts read from the finished report:
+Low-code agent projects only, never when the user explicitly forbade any change to the project, and only after the report is final — its last line is the final-grade line (Step 5). For each low-code agent project, run the command **exactly once**, with the grade and counts read from the finished report:
 
 ```bash
 uip agent review-history add <GRADE> "<PROJECT_DIR>" --errors <CRITICAL_COUNT> --warnings <WARNING_COUNT> --output json

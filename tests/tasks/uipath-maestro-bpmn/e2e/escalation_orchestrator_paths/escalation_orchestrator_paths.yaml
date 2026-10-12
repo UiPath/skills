@@ -1,0 +1,158 @@
+task_id: skill-bpmn-e2e-escalation-orchestrator-paths
+description: >
+  End-to-end, outcome-based test of the customer-escalation orchestration, driven
+  down each branch by seeded inputs. The agent builds a manual-start BPMN process
+  (the Outlook email-received trigger is not reliably debug-testable — see
+  outlook_trigger_inbox / customer_escalation_triage notes) whose branching is
+  input-driven so the grader can steer any path via `bpmn debug --inputs`. The
+  grader runs seven seeded cases — Sev1/Sev2/Sev3 escalations and all four triage
+  reasons (missing_domain / unknown_customer / multiple_matches / duplicate), all
+  deterministic from the inputs — and for each verifies the OUTCOME: the run
+  completes on the expected path with the expected severity/engineering/responseMode,
+  preserves the correlationId, and a real Slack message was posted (escalation alert
+  on the escalation path, triage notice on the triage paths) — confirmed from the
+  executed Slack sendTask's own runtime response. Salesforce is not called (match
+  status is an input), so no Salesforce connection is required; the Slack node is a
+  real connector activity with an error boundary event so a Slack hiccup cannot
+  fault the run.
+
+  Ported from Flow `e2e/escalation_orchestrator_paths/escalation_orchestrator_paths.yaml`;
+  the Script/Decision/Slack-node graph becomes a scriptTask/exclusiveGateway/Slack
+  Intsvc.ActivityExecution sendTask graph, `flow debug` becomes a
+  `bpmn debug`-per-case run against one ephemeral-solution import of the exact
+  submitted project (bpmn debug addresses runtime evidence by instance id via
+  `debug-instance variables-all`, not inline variables), and the criterion timeout
+  is raised to cover that extra CLI surface (see the grader's own arithmetic
+  comment) — the graded behaviors, weights, and thresholds are unchanged.
+tags: [uipath-maestro-bpmn, e2e, mode:build, lifecycle:generate, shape:multi-node, node:decision, connector, feature:escalation, path-to-ga, outcome-graded]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+run_limits:
+  expected_turns: 80
+  max_turns: 200
+  task_timeout: 5400
+  turn_timeout: 1800
+
+pre_run:
+  - command: "python3 _setup/seed.py"
+    timeout: 30
+
+reference:
+  directory: ../..
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120
+
+initial_prompt: |
+  Build a UiPath Maestro BPMN process named "CustomerEscalationOrchestrator"
+  (inside a solution of the same name) with a MANUAL start event. It triages a
+  customer escalation and its routing is driven entirely by the process inputs
+  so it can be exercised deterministically.
+
+  Process inputs (declare as public `uipath:input` variables on the manual
+  start event): senderEmail, senderDomain, subject, body, customerTier,
+  productionDown (boolean), workaroundAvailable (boolean), hasAttachments
+  (boolean), customerMatchStatus ("single" | "none" | "multiple"), isDuplicate
+  (boolean), correlationId.
+
+  Keep the process small. Put ALL routing logic in ONE scriptTask, then use a
+  single exclusive gateway plus two Slack connector activities — do not build
+  a large graph of gateways and per-reason handler nodes.
+
+  1. A single scriptTask "classify" reads the inputs and returns:
+     - escalationPath:
+         senderDomain empty                      -> "missing_domain"
+         else customerMatchStatus == "none"      -> "unknown_customer"
+         else customerMatchStatus == "multiple"  -> "multiple_matches"
+         else isDuplicate is true                -> "duplicate"
+         else                                    -> "escalation"
+     - severity: only for "escalation" classify Sev1/Sev2/Sev3 —
+         Sev1 = productionDown AND NOT workaroundAvailable;
+         Sev2 = productionDown AND workaroundAvailable;
+         Sev3 = NOT productionDown.
+       For every non-"escalation" (triage) path, severity = "informational".
+     - engineeringNeeded: true for Sev1/Sev2, otherwise false.
+     - responseMode: "Draft" when escalationPath == "escalation", else "None".
+  2. An exclusive gateway routes on whether escalationPath == "escalation".
+  3. escalation branch -> post a Slack "Send Message to channel" alert via the
+     Slack Integration Service connector activity.
+     other (triage) branch -> post a Slack "Send Message to channel" triage
+     notice the same way.
+     For both, use the Slack connection named "is-sandboxes", channel
+     "coding-agent-testing", send as `user`, and include escalationPath +
+     correlationId in the message. Wire each Slack activity's error boundary
+     event to a small handler so a Slack failure degrades gracefully.
+  4. Use TWO end events — one the escalation branch reaches, one the triage
+     branch reaches. On EACH end event, map `slackMessageId` from THAT
+     branch's own Slack activity's output (escalation end event ← escalation
+     Slack activity; triage end event ← triage Slack activity), so
+     slackMessageId is never empty regardless of which branch runs. Map the
+     rest as public outputs on both end events:
+     - escalationPath   (from the classify scriptTask)
+     - severity
+     - engineeringNeeded (boolean)
+     - responseMode
+     - caseKey          = the incoming correlationId
+     - slackMessageId   = the id/ts of the Slack message posted on this branch
+
+  Salesforce/Jira/Drive are NOT part of this task — the match status is an
+  input.
+
+  Validate the process. Do NOT run or debug the process — the grader executes it with
+  seeded inputs. Before starting, load the uipath-maestro-bpmn skill and follow its workflow.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+success_criteria:
+  - type: command_executed
+    description: "Agent validated the generated BPMN"
+    tool_name: "Bash"
+    # `bpmn` exists only under `maestro` -- `uip bpmn validate` is an unknown
+    # command, so the `maestro` segment must not be optional.
+    command_pattern: '(uip|\$UIP|\$\{?UIP\}?)\s+maestro\s+bpmn\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # ── The delivered BPMN validates ────────────────────────────────────────
+  # Discovered, not hardcoded, mirroring the flow suite's own note: `uip
+  # maestro bpmn init` scaffolds `<Name>Sol/<Name>/<Name>.bpmn`, so a plain
+  # shell loop over every *.bpmn file is used instead of a fixed path.
+  - type: run_command
+    description: "Generated CustomerEscalationOrchestrator BPMN validates without errors, independent of solution layout"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Seeded path cases: each drives its branch and produces the expected outcome; the escalation case actually posts a Slack alert (non-empty message id)"
+    command: "python3 $REFERENCE_DIR/_shared/check_escalation_orchestrator_paths.py"
+    # 7 x debug_budget(300) = 2100 run_debug + 7x120s variables-all
+    # (840) + 90s solution init + 180s solution import + 60s margin = 3270;
+    # rounded up to 3300. (Flow's own per-case run_debug math is identical --
+    # 2100 -- but bpmn debug needs the extra ephemeral solution
+    # init/import/variables-all plumbing flow debug does not.)
+    timeout: 3300  # budget-guard: manual x7
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
