@@ -311,7 +311,9 @@ For registry-evidence-only tasks, follow the command-first recipe in
    - **Values.** A `Reference` field takes the looked-up id (Rule 2). A body
      value without a leading `=` is a literal: write `"=vars.<id>"`, and make
      text mixed with variables one `=js:` expression
-     (`"=js:'Severity: ' + vars.Var_Severity"`).
+     (`"=js:'[' + vars.Var_Severity + '] ' + vars.Var_Id + ' escalated'"`).
+     `validate` does not parse `=js:`; syntax-check each body
+     ([`=js:` rules](references/expression-authoring.md#inline-javascript-with-js)).
    For an Integration Service draft or boundary handoff the user asked for (a
    request that only says to validate is not one), emit **only** the
    `.bpmn` plus the notes file — do NOT create the four generated package files

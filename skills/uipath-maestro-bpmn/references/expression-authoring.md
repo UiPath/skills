@@ -67,6 +67,15 @@ Rules:
   manipulation, or conditional selection.
 - A `=js:` expression that returns an object or array must produce valid JSON
   for fields typed `json`.
+- `validate` does not check `=js:` syntax. An unclosed quote or a raw newline
+  in a string literal passes and faults at run time `400300 Invalid or
+  unexpected token`. Before finishing, check each body (the text after `=js:`):
+
+  ```bash
+  node -e 'new Function("vars","bindings","result","iterator","return ("+process.argv[1]+")")' "<BODY>"
+  ```
+
+  No output means it parses.
 
 Prefer JavaScript-safe variable ids such as `Var_RequestId`. If a brownfield
 file contains non-identifier ids, preserve them and let the product editor or
