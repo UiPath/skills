@@ -10,7 +10,9 @@ fields. They share the `uipath.ixp.*` node-type pattern and appear in the Flow r
 `uip login` and `uip maestro flow registry pull`, exactly like extraction models.
 
 What is missing is **documentation of the node's configuration and output shape**, not the capability.
+<!--skill-flavor:classify-ixp-impl:start-->
 [/uipath:uipath-maestro-flow — plugins/ixp/impl.md](../../uipath-maestro-flow/references/ixp.md)
+<!--skill-flavor:classify-ixp-impl:end-->
 § Classifier Variant states this directly: classifier output is classification labels rather than field
 values, and its configuration is deferred.
 
@@ -23,7 +25,9 @@ uip maestro flow registry pull --force
 uip maestro flow registry search "<model-or-doc-type>" --output json
 ```
 
+<!--skill-flavor:classify-ixp-planning:start-->
 [/uipath:uipath-maestro-flow — plugins/ixp/planning.md](../../uipath-maestro-flow/references/ixp.md)
+<!--skill-flavor:classify-ixp-planning:end-->
 § Listing Available Models / Runtime Projects covers the listing question. Model authoring, taxonomy, and
 publishing belong to [/uipath:uipath-ixp — SKILL.md](../../uipath-ixp/SKILL.md).
 

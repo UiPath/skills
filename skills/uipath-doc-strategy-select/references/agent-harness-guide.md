@@ -145,6 +145,8 @@ Once the harness and attachments are chosen, the configuration belongs to `uipat
 - [/uipath:uipath-agents — autonomous-agent-prompting-guide.md](../../uipath-agents/references/lowcode/prompting/autonomous-agent-prompting-guide.md)
 
 For an agent embedded in a Flow, the node and its artifact ports are owned by
+<!--skill-flavor:harness-inline-agent:start-->
 [/uipath:uipath-maestro-flow — plugins/inline-agent/planning.md](../../uipath-maestro-flow/references/inline-agent.md).
+<!--skill-flavor:harness-inline-agent:end-->
 
 Cases that turn on this decision: [AH1–AH3](case-library-guide.md#ah-advanced-harness).

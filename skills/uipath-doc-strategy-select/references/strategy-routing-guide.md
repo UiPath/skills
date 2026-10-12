@@ -21,24 +21,40 @@ and have pulled.
 
 | Strategy selected | Owner | Build guide |
 |---|---|---|
-| Extract, inside a Flow | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/ixp/planning.md](../../uipath-maestro-flow/references/ixp.md) |
+<!--skill-flavor:handoff-ixp:start-->
+| Extract, inside a Flow | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — ixp.md](../../uipath-maestro-flow/references/ixp.md) |
+<!--skill-flavor:handoff-ixp:end-->
 | Extract — taxonomy, labelling, model training, publishing | `uipath-ixp` | [/uipath:uipath-ixp — SKILL.md](../../uipath-ixp/SKILL.md) |
-| Summarize, as a fixed Flow step | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/summarize/planning.md](../../uipath-maestro-flow/references/summarize.md) |
+<!--skill-flavor:handoff-summarize:start-->
+| Summarize, as a fixed Flow step | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — summarize.md](../../uipath-maestro-flow/references/summarize.md) |
+<!--skill-flavor:handoff-summarize:end-->
 | Summarize, as an agent-chosen action over attachments | `uipath-agents` | [/uipath:uipath-agents — deeprag/planning.md](../../uipath-agents/references/lowcode/capabilities/built-in-tools/deeprag/planning.md) |
 | Analyze files | `uipath-agents` | [/uipath:uipath-agents — analyze-attachments.md](../../uipath-agents/references/lowcode/capabilities/built-in-tools/analyze-attachments.md) |
+<!--skill-flavor:handoff-batch-transform:start-->
 | Batch transform, per-row LLM work over a CSV | `uipath-agents` · `uipath-maestro-flow` | [/uipath:uipath-agents — batch-transform/planning.md](../../uipath-agents/references/lowcode/capabilities/built-in-tools/batch-transform/planning.md) · [/uipath:uipath-maestro-flow — plugins/batch-transform/planning.md](../../uipath-maestro-flow/references/batch-transform.md) |
+<!--skill-flavor:handoff-batch-transform:end-->
 | Persistent index, semantic search (PS) | `uipath-agents` | [/uipath:uipath-agents — context/index.md](../../uipath-agents/references/lowcode/capabilities/context/index.md) |
 | Index lifecycle from the CLI — create, ingest, search, delete | `uipath-platform` | [/uipath:uipath-platform — index-management.md](../../uipath-platform/references/context-grounding/index-management.md) |
-| Agent node referencing a published agent | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/agent/planning.md](../../uipath-maestro-flow/references/agent.md) |
-| Agent defined inside the Flow | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/inline-agent/planning.md](../../uipath-maestro-flow/references/inline-agent.md) |
+<!--skill-flavor:handoff-agent:start-->
+| Agent node referencing a published agent | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — agent.md](../../uipath-maestro-flow/references/agent.md) |
+<!--skill-flavor:handoff-agent:end-->
+<!--skill-flavor:handoff-inline-agent:start-->
+| Agent defined inside the Flow | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — inline-agent.md](../../uipath-maestro-flow/references/inline-agent.md) |
+<!--skill-flavor:handoff-inline-agent:end-->
 | Agent lifecycle — scaffold, configure, evaluate, deploy | `uipath-agents` | [/uipath:uipath-agents — SKILL.md](../../uipath-agents/SKILL.md) |
 | Classification or splitting | see [classify-split-guide.md](classify-split-guide.md) | — |
-| Deterministic transformation, branch, or calculation | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/script/planning.md](../../uipath-maestro-flow/references/script.md) · [transform](../../uipath-maestro-flow/references/transform.md) · [branch](../../uipath-maestro-flow/references/branch.md) |
-| Planned human review | `uipath-maestro-flow` · `uipath-human-in-the-loop` | [/uipath:uipath-maestro-flow — plugins/hitl/planning.md](../../uipath-maestro-flow/references/hitl.md) |
+<!--skill-flavor:handoff-deterministic:start-->
+| Deterministic transformation, branch, or calculation | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — script.md](../../uipath-maestro-flow/references/script.md) · [transform](../../uipath-maestro-flow/references/transform.md) · [branch](../../uipath-maestro-flow/references/branch.md) |
+<!--skill-flavor:handoff-deterministic:end-->
+<!--skill-flavor:handoff-hitl:start-->
+| Planned human review | `uipath-maestro-flow` · `uipath-human-in-the-loop` | [/uipath:uipath-maestro-flow — hitl.md](../../uipath-maestro-flow/references/hitl.md) |
+<!--skill-flavor:handoff-hitl:end-->
 | Which UiPath product at all, or a PDD/SDD | `uipath-planner` | [/uipath:uipath-planner — product-selection-guide.md](../../uipath-planner/references/product-selection-guide.md) |
 
 For the full node palette with real type IDs and selection heuristics, read
-[/uipath:uipath-maestro-flow — planning-arch.md](../../uipath-maestro-flow/references/author.md)
+<!--skill-flavor:node-palette-pointer:start-->
+[/uipath:uipath-maestro-flow — author.md](../../uipath-maestro-flow/references/author.md)
+<!--skill-flavor:node-palette-pointer:end-->
 § Plugin Index and § Node Selection Heuristics. That table is maintained against the registry; this one
 is only a routing index.
 
