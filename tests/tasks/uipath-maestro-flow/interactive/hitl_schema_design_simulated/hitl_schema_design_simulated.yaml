@@ -61,7 +61,7 @@ simulation:
       - The flow should start manually.
 
   constraints:
-    # Graded below: the priority must reach the agent verbatim every run.
+    # The priority criterion needs this sentence verbatim; nothing checks the opener.
     # Paraphrase drifted onto the build request or dropped it.
     - "Your opening message must contain this sentence word for word: 'The review is time-sensitive, so the review task itself must be marked High priority.' Word the rest of the message however you like."
     - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
