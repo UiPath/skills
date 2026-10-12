@@ -48,11 +48,11 @@ uip maestro case tasks describe --type business-rule --id "<entityKey>" --output
 2. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`, `data.version` = `"v3"`
 3. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`. The rule's whole result is one output, `output` with `source: "=result"`, plus `Error`; read a decision's column downstream as `vars.<output var>.<decision>.<column>`.
 
-   To store one decision column in a case variable, write an extract row `result.<decision>.<column> -> <case variable>` per the [nested extract example](../../variables/io-binding/impl-json.md). The first segment `result` matches the `output` row's source; the leaf name and type come from that row's `_jsonSchema`. Keep the `output` and `Error` rows next to the extract: Studio Web writes both on every business rule task, so rule 5's parent suppression does not apply here. Write the extract row's `type` by hand from the leaf: `splice --described` types only the rows describe returns (`output`, `Error`), and the parser drops a row without `type`:
+   To store one decision column in a case variable, write an extract row `output.<decision>.<column> -> <case variable>` per the [nested extract example](../../variables/io-binding/impl-json.md). Its `source` is `=output.<decision>.<column>`: the first segment names the declared `output` row, as every case extract names its top-level output (`=Error.Message`). Never write `=result.<decision>.<column>` — `=result.` is the BPMN and Flow form, and case `validate` rejects it with `VARIABLE_DOES_NOT_EXIST` (`Variable 'result.<decision>' does not exist`), because a case `=result.<x>` must name an output declared on the task. The leaf name and type come from the `output` row's `_jsonSchema`. Keep the `output` and `Error` rows next to the extract: Studio Web writes both on every business rule task, so rule 5's parent suppression does not apply here. Write the extract row's `type` by hand from the leaf: `splice --described` types only the rows describe returns (`output`, `Error`), and the parser drops a row without `type`:
 
    ```json
    { "name": "riskBand", "type": "string", "id": "riskBand", "var": "riskBand", "originalVar": "riskBand",
-     "value": "riskBand", "source": "=result.RiskDecision.riskBand", "target": "=riskBand",
+     "value": "riskBand", "source": "=output.RiskDecision.riskBand", "target": "=riskBand",
      "elementId": "Stage_aB3kL9-tR7kWm2Pd" }
    ```
 
@@ -63,7 +63,7 @@ uip maestro case tasks describe --type business-rule --id "<entityKey>" --output
 ## Post-Write Verification
 
 - `type: "business-rule"`, `data.version: "v3"`
-- `data.outputs` is `output` (`source: "=result"`) plus `Error`, plus any `=result.<decision>.<column>` extract rows
+- `data.outputs` is `output` (`source: "=result"`) plus `Error`, plus any `=output.<decision>.<column>` extract rows
 - the bindings array has 2 entries: `resource: "BusinessRule"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
 - `id` captured in `id-map.json`
 
