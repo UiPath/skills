@@ -1,0 +1,1938 @@
+{
+ "ontology": "wiki/to-be/ontology (customer ontology, compiled by goal1-fwd/ontology_compiler)",
+ "entities": [
+  {
+   "name": "SupplierInvoice",
+   "class": "LDO",
+   "systemOfRecord": "AP Workflow",
+   "relationshipsOut": [
+    {
+     "property": "invoiceIssuedBySupplier",
+     "to": "SupplierMasterRecord"
+    },
+    {
+     "property": "invoiceReferencesPO",
+     "to": "PurchaseOrder"
+    },
+    {
+     "property": "invoiceMatchedToGR",
+     "to": "GoodsReceipt"
+    },
+    {
+     "property": "invoiceHasException",
+     "to": "InvoiceException"
+    },
+    {
+     "property": "invoiceHasApproval",
+     "to": "ApprovalRecord"
+    },
+    {
+     "property": "invoiceHasAccountingDocument",
+     "to": "AccountingDocument"
+    },
+    {
+     "property": "invoiceHasEvidencePackage",
+     "to": "EvidencePackage"
+    }
+   ],
+   "relationshipsIn": [],
+   "provenance": [
+    {
+     "field": "invoiceId",
+     "vocabulary": "SupplierInvoice.invoiceId",
+     "role": "key"
+    },
+    {
+     "field": "invoiceNumber",
+     "vocabulary": "SupplierInvoice.invoiceNumber",
+     "role": "string"
+    },
+    {
+     "field": "supplierId",
+     "vocabulary": "SupplierInvoice.supplierId",
+     "role": "string"
+    },
+    {
+     "field": "invoiceDate",
+     "vocabulary": "SupplierInvoice.invoiceDate",
+     "role": "date"
+    },
+    {
+     "field": "dueDate",
+     "vocabulary": "SupplierInvoice.dueDate",
+     "role": "date"
+    },
+    {
+     "field": "currency",
+     "vocabulary": "SupplierInvoice.currency",
+     "role": "enum"
+    },
+    {
+     "field": "poReference",
+     "vocabulary": "SupplierInvoice.poReference",
+     "role": "string"
+    },
+    {
+     "field": "matchType",
+     "vocabulary": "SupplierInvoice.matchType",
+     "role": "enum"
+    },
+    {
+     "field": "invoiceSubtotal",
+     "vocabulary": "SupplierInvoice.invoiceSubtotal",
+     "role": "decimal"
+    },
+    {
+     "field": "taxTotal",
+     "vocabulary": "SupplierInvoice.taxTotal",
+     "role": "decimal"
+    },
+    {
+     "field": "invoiceTotal",
+     "vocabulary": "SupplierInvoice.invoiceTotal",
+     "role": "decimal"
+    },
+    {
+     "field": "invoiceStatus",
+     "vocabulary": "SupplierInvoice.invoiceStatus",
+     "role": "enum"
+    },
+    {
+     "field": "duplicateStatus",
+     "vocabulary": "SupplierInvoice.duplicateStatus",
+     "role": "enum"
+    },
+    {
+     "field": "matchStatus",
+     "vocabulary": "SupplierInvoice.matchStatus",
+     "role": "enum"
+    },
+    {
+     "field": "taxStatus",
+     "vocabulary": "SupplierInvoice.taxStatus",
+     "role": "enum"
+    },
+    {
+     "field": "approvalStatus",
+     "vocabulary": "SupplierInvoice.approvalStatus",
+     "role": "enum"
+    },
+    {
+     "field": "postingStatus",
+     "vocabulary": "SupplierInvoice.postingStatus",
+     "role": "enum"
+    },
+    {
+     "field": "paymentBlock",
+     "vocabulary": "SupplierInvoice.paymentBlock",
+     "role": "boolean"
+    },
+    {
+     "field": "paymentReadinessStatus",
+     "vocabulary": "SupplierInvoice.paymentReadinessStatus",
+     "role": "enum"
+    },
+    {
+     "field": "receiptMethod",
+     "vocabulary": "SupplierInvoice.receiptMethod",
+     "role": "enum"
+    },
+    {
+     "field": "eInvoiceFormat",
+     "vocabulary": "SupplierInvoice.eInvoiceFormat",
+     "role": "string"
+    },
+    {
+     "field": "ocrConfidenceScore",
+     "vocabulary": "SupplierInvoice.ocrConfidenceScore",
+     "role": "decimal"
+    },
+    {
+     "field": "lineItemQuantity",
+     "vocabulary": "SupplierInvoice.lineItemQuantity",
+     "role": "decimal"
+    },
+    {
+     "field": "lineItemUnitPrice",
+     "vocabulary": "SupplierInvoice.lineItemUnitPrice",
+     "role": "decimal"
+    }
+   ],
+   "body": {
+    "displayName": "Supplier Invoice",
+    "fields": [
+     {
+      "name": "invoiceId",
+      "displayName": "Invoice Id",
+      "type": "STRING",
+      "lengthLimit": 200,
+      "isRequired": true
+     },
+     {
+      "name": "invoiceNumber",
+      "displayName": "Invoice Number",
+      "type": "STRING",
+      "lengthLimit": 200,
+      "isRequired": true
+     },
+     {
+      "name": "supplierId",
+      "displayName": "Supplier Id",
+      "type": "STRING",
+      "lengthLimit": 200,
+      "isRequired": true
+     },
+     {
+      "name": "invoiceDate",
+      "displayName": "Invoice Date",
+      "type": "DATE",
+      "isRequired": true
+     },
+     {
+      "name": "dueDate",
+      "displayName": "Due Date",
+      "type": "DATE"
+     },
+     {
+      "name": "currency",
+      "displayName": "Currency",
+      "type": "STRING",
+      "lengthLimit": 200,
+      "isRequired": true
+     },
+     {
+      "name": "poReference",
+      "displayName": "Po Reference",
+      "type": "STRING",
+      "lengthLimit": 200
+     },
+     {
+      "name": "matchType",
+      "displayName": "Match Type",
+      "type": "CHOICE_SET_SINGLE",
+      "choiceSetId": "[RESOLVE AT BUILD: choice set SupplierInvoiceMatchType]",
+      "isRequired": true
+     },
+     {
+      "name": "invoiceSubtotal",
+      "displayName": "Invoice Subtotal",
+      "type": "DECIMAL",
+      "decimalPrecision": 2,
+      "isRequired": true
+     },
+     {
+      "name": "taxTotal",
+      "displayName": "Tax Total",
+      "type": "DECIMAL",
+      "decimalPrecision": 2,
+      "isRequired": true
+     },
+     {
+      "name": "invoiceTotal",
+      "displayName": "Invoice Total",
+      "type": "DECIMAL",
+      "decimalPrecision": 2,
+      "isRequired": true
+     },
+     {
+      "name": "invoiceStatus",
+      "displayName": "Invoice Status",
+      "type": "CHOICE_SET_SINGLE",
+      "choiceSetId": "[RESOLVE AT BUILD: choice set SupplierInvoiceInvoiceStatus]",
+      "isRequired": true
+     },
+     {
+      "name": "duplicateStatus",
+      "displayName": "Duplicate Status",
+      "type": "CHOICE_SET_SINGLE",
+      "choiceSetId": "[RESOLVE AT BUILD: choice set SupplierInvoiceDuplicateStatus]",
+      "isRequired": true
+     },
+     {
+      "name": "matchStatus",
+      "displayName": "Match Status",
+      "type": "CHOICE_SET_SINGLE",
+      "choiceSetId": "[RESOLVE AT BUILD: choice set SupplierInvoiceMatchStatus]",
+      "isRequired": true
+     },
+     {
+      "name": "taxStatus",
+      "displayName": "Tax Status",
+      "type": "CHOICE_SET_SINGLE",
+      "choiceSetId": "[RESOLVE AT BUILD: choice set SupplierInvoiceTaxStatus]",
+      "isRequired": true
+     },
+     {
+      "name": "approvalStatus",
+      "displayName": "Approval Status",
+      "type": "CHOICE_SET_SINGLE",
+      "choiceSetId": "[RESOLVE AT BUILD: choice set SupplierInvoiceApprovalStatus]",
+      "isRequired": true
+     },
+     {
+      "name": "postingStatus",
+      "displayName": "Posting Status",
+      "type": "CHOICE_SET_SINGLE",
+      "choiceSetId": "[RESOLVE AT BUILD: choice set SupplierInvoicePostingStatus]",
+      "isRequired": true
+     },
+     {
+      "name": "paymentBlock",
+      "displayName": "Payment Block",
+      "type": "BOOLEAN",
+      "isRequired": true
+     },
+     {
+      "name": "paymentReadinessStatus",
+      "displayName": "Payment Readiness Status",
+      "type": "CHOICE_SET_SINGLE",
+      "choiceSetId": "[RESOLVE AT BUILD: choice set SupplierInvoicePaymentReadinessStatus]",
+      "isRequired": true
+     },
+     {
+      "name": "receiptMethod",
+      "displayName": "Receipt Method",
+      "type": "STRING",
+      "lengthLimit": 200,
+      "isRequired": true
+     },
+     {
+      "name": "eInvoiceFormat",
+      "displayName": "E Invoice Format",
+      "type": "STRING",
+      "lengthLimit": 200
+     },
+     {
+      "name": "ocrConfidenceScore",
+      "displayName": "Ocr Confidence Score",
+      "type": "DECIMAL",
+      "decimalPrecision": 2
+     },
+     {
+      "name": "lineItemQuantity",
+      "displayName": "Line Item Quantity",
+      "type": "DECIMAL",
+      "decimalPrecision": 2
+     },
+     {
+      "name": "lineItemUnitPrice",
+      "displayName": "Line Item Unit Price",
+      "type": "DECIMAL",
+      "decimalPrecision": 2
+     }
+    ]
+   },
+   "choiceSets": [
+    {
+     "name": "SupplierInvoiceMatchType",
+     "forField": "SupplierInvoice.matchType",
+     "values": [
+      {
+       "name": "PO",
+       "displayName": "PO",
+       "source": "PO"
+      },
+      {
+       "name": "NonPO",
+       "displayName": "Non PO",
+       "source": "Non_PO"
+      },
+      {
+       "name": "TwoWay",
+       "displayName": "Two Way",
+       "source": "Two_Way"
+      },
+      {
+       "name": "ThreeWay",
+       "displayName": "Three Way",
+       "source": "Three_Way"
+      }
+     ]
+    },
+    {
+     "name": "SupplierInvoiceInvoiceStatus",
+     "forField": "SupplierInvoice.invoiceStatus",
+     "values": [
+      {
+       "name": "Received",
+       "displayName": "Received",
+       "source": "Received"
+      },
+      {
+       "name": "Captured",
+       "displayName": "Captured",
+       "source": "Captured"
+      },
+      {
+       "name": "Validated",
+       "displayName": "Validated",
+       "source": "Validated"
+      },
+      {
+       "name": "Exception",
+       "displayName": "Exception",
+       "source": "Exception"
+      },
+      {
+       "name": "Approved",
+       "displayName": "Approved",
+       "source": "Approved"
+      },
+      {
+       "name": "Posted",
+       "displayName": "Posted",
+       "source": "Posted"
+      },
+      {
+       "name": "Rejected",
+       "displayName": "Rejected",
+       "source": "Rejected"
+      },
+      {
+       "name": "Parked",
+       "displayName": "Parked",
+       "source": "Parked"
+      },
+      {
+       "name": "PaymentReady",
+       "displayName": "Payment Ready",
+       "source": "Payment_Ready"
+      }
+     ]
+    },
+    {
+     "name": "SupplierInvoiceDuplicateStatus",
+     "forField": "SupplierInvoice.duplicateStatus",
+     "values": [
+      {
+       "name": "NotChecked",
+       "displayName": "Not Checked",
+       "source": "Not_Checked"
+      },
+      {
+       "name": "Clear",
+       "displayName": "Clear",
+       "source": "Clear"
+      },
+      {
+       "name": "Suspected",
+       "displayName": "Suspected",
+       "source": "Suspected"
+      },
+      {
+       "name": "Confirmed",
+       "displayName": "Confirmed",
+       "source": "Confirmed"
+      }
+     ]
+    },
+    {
+     "name": "SupplierInvoiceMatchStatus",
+     "forField": "SupplierInvoice.matchStatus",
+     "values": [
+      {
+       "name": "NotChecked",
+       "displayName": "Not Checked",
+       "source": "Not_Checked"
+      },
+      {
+       "name": "Matched",
+       "displayName": "Matched",
+       "source": "Matched"
+      },
+      {
+       "name": "Partial",
+       "displayName": "Partial",
+       "source": "Partial"
+      },
+      {
+       "name": "Exception",
+       "displayName": "Exception",
+       "source": "Exception"
+      },
+      {
+       "name": "NotApplicable",
+       "displayName": "Not Applicable",
+       "source": "Not_Applicable"
+      }
+     ]
+    },
+    {
+     "name": "SupplierInvoiceTaxStatus",
+     "forField": "SupplierInvoice.taxStatus",
+     "values": [
+      {
+       "name": "NotChecked",
+       "displayName": "Not Checked",
+       "source": "Not_Checked"
+      },
+      {
+       "name": "Valid",
+       "displayName": "Valid",
+       "source": "Valid"
+      },
+      {
+       "name": "Exempt",
+       "displayName": "Exempt",
+       "source": "Exempt"
+      },
+      {
+       "name": "ReverseCharge",
+       "displayName": "Reverse Charge",
+       "source": "Reverse_Charge"
+      },
+      {
+       "name": "Withholding",
+       "displayName": "Withholding",
+       "source": "Withholding"
+      },
+      {
+       "name": "Exception",
+       "displayName": "Exception",
+       "source": "Exception"
+      }
+     ]
+    },
+    {
+     "name": "SupplierInvoiceApprovalStatus",
+     "forField": "SupplierInvoice.approvalStatus",
+     "values": [
+      {
+       "name": "NotRequired",
+       "displayName": "Not Required",
+       "source": "Not_Required"
+      },
+      {
+       "name": "Pending",
+       "displayName": "Pending",
+       "source": "Pending"
+      },
+      {
+       "name": "Approved",
+       "displayName": "Approved",
+       "source": "Approved"
+      },
+      {
+       "name": "Rejected",
+       "displayName": "Rejected",
+       "source": "Rejected"
+      },
+      {
+       "name": "InformationRequested",
+       "displayName": "Information Requested",
+       "source": "Information_Requested"
+      }
+     ]
+    },
+    {
+     "name": "SupplierInvoicePostingStatus",
+     "forField": "SupplierInvoice.postingStatus",
+     "values": [
+      {
+       "name": "NotPosted",
+       "displayName": "Not Posted",
+       "source": "Not_Posted"
+      },
+      {
+       "name": "Posted",
+       "displayName": "Posted",
+       "source": "Posted"
+      },
+      {
+       "name": "Failed",
+       "displayName": "Failed",
+       "source": "Failed"
+      },
+      {
+       "name": "Reconciled",
+       "displayName": "Reconciled",
+       "source": "Reconciled"
+      }
+     ]
+    },
+    {
+     "name": "SupplierInvoicePaymentReadinessStatus",
+     "forField": "SupplierInvoice.paymentReadinessStatus",
+     "values": [
+      {
+       "name": "NotReady",
+       "displayName": "Not Ready",
+       "source": "Not_Ready"
+      },
+      {
+       "name": "Ready",
+       "displayName": "Ready",
+       "source": "Ready"
+      },
+      {
+       "name": "Excluded",
+       "displayName": "Excluded",
+       "source": "Excluded"
+      },
+      {
+       "name": "Blocked",
+       "displayName": "Blocked",
+       "source": "Blocked"
+      }
+     ]
+    }
+   ],
+   "relationships": [
+    {
+     "field": "supplierId",
+     "referenceEntity": "SupplierMasterRecord",
+     "kind": "reference column to a VDO (plain field)",
+     "property": "invoiceIssuedBySupplier"
+    },
+    {
+     "field": null,
+     "referenceEntity": "PurchaseOrder",
+     "kind": "reference column to a VDO (plain field)",
+     "property": "invoiceReferencesPO"
+    },
+    {
+     "field": null,
+     "referenceEntity": "GoodsReceipt",
+     "kind": "reference column to a VDO (plain field)",
+     "property": "invoiceMatchedToGR"
+    },
+    {
+     "field": null,
+     "referenceEntity": "AccountingDocument",
+     "kind": "reference column to a VDO (plain field)",
+     "property": "invoiceHasAccountingDocument"
+    }
+   ],
+   "grammar": {
+    "violations": [],
+    "incomplete": 0
+   },
+   "status": "ready"
+  },
+  {
+   "name": "SupplierMasterRecord",
+   "class": "VDO",
+   "systemOfRecord": "Supplier Master",
+   "relationshipsOut": [],
+   "relationshipsIn": [
+    {
+     "property": "invoiceIssuedBySupplier",
+     "from": "SupplierInvoice"
+    }
+   ],
+   "provenance": [
+    {
+     "field": "supplierId",
+     "vocabulary": "SupplierMasterRecord.supplierId",
+     "role": "key"
+    },
+    {
+     "field": "legalName",
+     "vocabulary": "SupplierMasterRecord.legalName",
+     "role": "string"
+    },
+    {
+     "field": "supplierStatus",
+     "vocabulary": "SupplierMasterRecord.supplierStatus",
+     "role": "enum"
+    },
+    {
+     "field": "taxStatus",
+     "vocabulary": "SupplierMasterRecord.taxStatus",
+     "role": "enum"
+    },
+    {
+     "field": "backupWithholdingFlag",
+     "vocabulary": "SupplierMasterRecord.backupWithholdingFlag",
+     "role": "boolean"
+    }
+   ],
+   "body": {
+    "displayName": "Supplier Master Record",
+    "externalFields": [
+     {
+      "connectionId": "[RESOLVE AT BUILD: connection for Supplier Master]",
+      "object": "[SME REVIEW: Supplier Master object for SupplierMasterRecord]",
+      "primaryKey": "supplierId",
+      "fields": [
+       {
+        "source": "[SME REVIEW: source field for SupplierMasterRecord.supplierId]",
+        "name": "supplierId",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for SupplierMasterRecord.legalName]",
+        "name": "legalName",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for SupplierMasterRecord.supplierStatus]",
+        "name": "supplierStatus",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for SupplierMasterRecord.taxStatus]",
+        "name": "taxStatus",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for SupplierMasterRecord.backupWithholdingFlag]",
+        "name": "backupWithholdingFlag",
+        "type": "BOOLEAN"
+       }
+      ]
+     }
+    ]
+   },
+   "relationships": [],
+   "blockedReason": "source system not selected \u2014 connection, object and source fields unresolved (system of record: Supplier Master)",
+   "grammar": {
+    "violations": [],
+    "incomplete": 7
+   },
+   "status": "blocked"
+  },
+  {
+   "name": "PurchaseOrder",
+   "class": "VDO",
+   "systemOfRecord": "ERP",
+   "relationshipsOut": [
+    {
+     "property": "poReceivedVia",
+     "to": "GoodsReceipt"
+    }
+   ],
+   "relationshipsIn": [
+    {
+     "property": "invoiceReferencesPO",
+     "from": "SupplierInvoice"
+    }
+   ],
+   "provenance": [
+    {
+     "field": "poId",
+     "vocabulary": "PurchaseOrder.poId",
+     "role": "key"
+    },
+    {
+     "field": "poNumber",
+     "vocabulary": "PurchaseOrder.poNumber",
+     "role": "string"
+    },
+    {
+     "field": "supplierId",
+     "vocabulary": "PurchaseOrder.supplierId",
+     "role": "string"
+    },
+    {
+     "field": "lineItemQuantity",
+     "vocabulary": "PurchaseOrder.lineItemQuantity",
+     "role": "decimal"
+    },
+    {
+     "field": "lineItemUnitPrice",
+     "vocabulary": "PurchaseOrder.lineItemUnitPrice",
+     "role": "decimal"
+    },
+    {
+     "field": "lineItemGrQuantity",
+     "vocabulary": "PurchaseOrder.lineItemGrQuantity",
+     "role": "decimal"
+    },
+    {
+     "field": "paymentTerms",
+     "vocabulary": "PurchaseOrder.paymentTerms",
+     "role": "enum"
+    },
+    {
+     "field": "poStatus",
+     "vocabulary": "PurchaseOrder.poStatus",
+     "role": "enum"
+    },
+    {
+     "field": "purchaseOrderCreatedBy",
+     "vocabulary": "PurchaseOrder.createdBy",
+     "role": "string"
+    },
+    {
+     "field": "companyCode",
+     "vocabulary": "PurchaseOrder.companyCode",
+     "role": "string"
+    },
+    {
+     "field": "currency",
+     "vocabulary": "PurchaseOrder.currency",
+     "role": "enum"
+    }
+   ],
+   "body": {
+    "displayName": "Purchase Order",
+    "externalFields": [
+     {
+      "connectionId": "[RESOLVE AT BUILD: connection for ERP]",
+      "object": "[SME REVIEW: ERP object for PurchaseOrder]",
+      "primaryKey": "poId",
+      "fields": [
+       {
+        "source": "[SME REVIEW: source field for PurchaseOrder.poId]",
+        "name": "poId",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for PurchaseOrder.poNumber]",
+        "name": "poNumber",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for PurchaseOrder.supplierId]",
+        "name": "supplierId",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for PurchaseOrder.lineItemQuantity]",
+        "name": "lineItemQuantity",
+        "type": "DECIMAL"
+       },
+       {
+        "source": "[SME REVIEW: source field for PurchaseOrder.lineItemUnitPrice]",
+        "name": "lineItemUnitPrice",
+        "type": "DECIMAL"
+       },
+       {
+        "source": "[SME REVIEW: source field for PurchaseOrder.lineItemGrQuantity]",
+        "name": "lineItemGrQuantity",
+        "type": "DECIMAL"
+       },
+       {
+        "source": "[SME REVIEW: source field for PurchaseOrder.paymentTerms]",
+        "name": "paymentTerms",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for PurchaseOrder.poStatus]",
+        "name": "poStatus",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for PurchaseOrder.createdBy]",
+        "name": "purchaseOrderCreatedBy",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for PurchaseOrder.companyCode]",
+        "name": "companyCode",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for PurchaseOrder.currency]",
+        "name": "currency",
+        "type": "STRING"
+       }
+      ]
+     }
+    ]
+   },
+   "relationships": [
+    {
+     "field": null,
+     "referenceEntity": "GoodsReceipt",
+     "kind": "reference column to a VDO (plain field)",
+     "property": "poReceivedVia"
+    }
+   ],
+   "blockedReason": "source system not selected \u2014 connection, object and source fields unresolved (system of record: ERP)",
+   "grammar": {
+    "violations": [],
+    "incomplete": 13
+   },
+   "status": "blocked"
+  },
+  {
+   "name": "GoodsReceipt",
+   "class": "VDO",
+   "systemOfRecord": "PO and Receipt System",
+   "relationshipsOut": [],
+   "relationshipsIn": [
+    {
+     "property": "invoiceMatchedToGR",
+     "from": "SupplierInvoice"
+    },
+    {
+     "property": "poReceivedVia",
+     "from": "PurchaseOrder"
+    }
+   ],
+   "provenance": [
+    {
+     "field": "grId",
+     "vocabulary": "GoodsReceipt.grId",
+     "role": "key"
+    },
+    {
+     "field": "poId",
+     "vocabulary": "GoodsReceipt.poId",
+     "role": "string"
+    },
+    {
+     "field": "poLineNumber",
+     "vocabulary": "GoodsReceipt.poLineNumber",
+     "role": "integer"
+    },
+    {
+     "field": "receiptDate",
+     "vocabulary": "GoodsReceipt.receiptDate",
+     "role": "date"
+    },
+    {
+     "field": "postingDate",
+     "vocabulary": "GoodsReceipt.postingDate",
+     "role": "date"
+    },
+    {
+     "field": "postedBy",
+     "vocabulary": "GoodsReceipt.postedBy",
+     "role": "string"
+    },
+    {
+     "field": "grQuantity",
+     "vocabulary": "GoodsReceipt.grQuantity",
+     "role": "decimal"
+    },
+    {
+     "field": "discrepancyFlag",
+     "vocabulary": "GoodsReceipt.discrepancyFlag",
+     "role": "boolean"
+    },
+    {
+     "field": "state",
+     "vocabulary": "GoodsReceipt.state",
+     "role": "enum"
+    }
+   ],
+   "body": {
+    "displayName": "Goods Receipt or Service Evidence",
+    "externalFields": [
+     {
+      "connectionId": "[RESOLVE AT BUILD: connection for PO and Receipt System]",
+      "object": "[SME REVIEW: PO and Receipt System object for GoodsReceipt]",
+      "primaryKey": "grId",
+      "fields": [
+       {
+        "source": "[SME REVIEW: source field for GoodsReceipt.grId]",
+        "name": "grId",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for GoodsReceipt.poId]",
+        "name": "poId",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for GoodsReceipt.poLineNumber]",
+        "name": "poLineNumber",
+        "type": "DECIMAL"
+       },
+       {
+        "source": "[SME REVIEW: source field for GoodsReceipt.receiptDate]",
+        "name": "receiptDate",
+        "type": "DATE"
+       },
+       {
+        "source": "[SME REVIEW: source field for GoodsReceipt.postingDate]",
+        "name": "postingDate",
+        "type": "DATE"
+       },
+       {
+        "source": "[SME REVIEW: source field for GoodsReceipt.postedBy]",
+        "name": "postedBy",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for GoodsReceipt.grQuantity]",
+        "name": "grQuantity",
+        "type": "DECIMAL"
+       },
+       {
+        "source": "[SME REVIEW: source field for GoodsReceipt.discrepancyFlag]",
+        "name": "discrepancyFlag",
+        "type": "BOOLEAN"
+       },
+       {
+        "source": "[SME REVIEW: source field for GoodsReceipt.state]",
+        "name": "state",
+        "type": "STRING"
+       }
+      ]
+     }
+    ]
+   },
+   "relationships": [],
+   "blockedReason": "source system not selected \u2014 connection, object and source fields unresolved (system of record: PO and Receipt System)",
+   "grammar": {
+    "violations": [],
+    "incomplete": 11
+   },
+   "status": "blocked"
+  },
+  {
+   "name": "InvoiceException",
+   "class": "LDO",
+   "systemOfRecord": null,
+   "relationshipsOut": [],
+   "relationshipsIn": [
+    {
+     "property": "invoiceHasException",
+     "from": "SupplierInvoice"
+    }
+   ],
+   "provenance": [
+    {
+     "field": "exceptionId",
+     "vocabulary": "InvoiceException.exceptionId",
+     "role": "key"
+    },
+    {
+     "field": "invoiceId",
+     "vocabulary": "InvoiceException.invoiceId",
+     "role": "string"
+    },
+    {
+     "field": "exceptionType",
+     "vocabulary": "InvoiceException.exceptionType",
+     "role": "enum"
+    },
+    {
+     "field": "severity",
+     "vocabulary": "InvoiceException.severity",
+     "role": "enum"
+    },
+    {
+     "field": "ownerRole",
+     "vocabulary": "InvoiceException.ownerRole",
+     "role": "string"
+    },
+    {
+     "field": "paymentBlock",
+     "vocabulary": "InvoiceException.paymentBlock",
+     "role": "boolean"
+    },
+    {
+     "field": "status",
+     "vocabulary": "InvoiceException.status",
+     "role": "enum"
+    },
+    {
+     "field": "reason",
+     "vocabulary": "InvoiceException.reason",
+     "role": "string"
+    },
+    {
+     "field": "createdTimestamp",
+     "vocabulary": "InvoiceException.createdTimestamp",
+     "role": "datetime"
+    },
+    {
+     "field": "resolvedTimestamp",
+     "vocabulary": "InvoiceException.resolvedTimestamp",
+     "role": "datetime"
+    }
+   ],
+   "body": {
+    "displayName": "Invoice Exception",
+    "fields": [
+     {
+      "name": "exceptionId",
+      "displayName": "Exception Id",
+      "type": "STRING",
+      "lengthLimit": 200,
+      "isRequired": true
+     },
+     {
+      "name": "invoiceId",
+      "displayName": "Supplier Invoice",
+      "type": "RELATIONSHIP",
+      "referenceEntityId": "[RESOLVE AT BUILD: entity SupplierInvoice]",
+      "referenceFieldId": "[RESOLVE AT BUILD: SupplierInvoice.invoiceId]",
+      "isRequired": true
+     },
+     {
+      "name": "exceptionType",
+      "displayName": "Exception Type",
+      "type": "STRING",
+      "lengthLimit": 200,
+      "isRequired": true
+     },
+     {
+      "name": "severity",
+      "displayName": "Severity",
+      "type": "CHOICE_SET_SINGLE",
+      "choiceSetId": "[RESOLVE AT BUILD: choice set InvoiceExceptionSeverity]",
+      "isRequired": true
+     },
+     {
+      "name": "ownerRole",
+      "displayName": "Owner Role",
+      "type": "STRING",
+      "lengthLimit": 200,
+      "isRequired": true
+     },
+     {
+      "name": "paymentBlock",
+      "displayName": "Payment Block",
+      "type": "BOOLEAN",
+      "isRequired": true
+     },
+     {
+      "name": "status",
+      "displayName": "Status",
+      "type": "CHOICE_SET_SINGLE",
+      "choiceSetId": "[RESOLVE AT BUILD: choice set InvoiceExceptionStatus]",
+      "isRequired": true
+     },
+     {
+      "name": "reason",
+      "displayName": "Reason",
+      "type": "STRING",
+      "lengthLimit": 200
+     },
+     {
+      "name": "createdTimestamp",
+      "displayName": "Created Timestamp",
+      "type": "DATETIME_WITH_TZ",
+      "isRequired": true
+     },
+     {
+      "name": "resolvedTimestamp",
+      "displayName": "Resolved Timestamp",
+      "type": "DATETIME_WITH_TZ"
+     }
+    ]
+   },
+   "choiceSets": [
+    {
+     "name": "InvoiceExceptionSeverity",
+     "forField": "InvoiceException.severity",
+     "values": [
+      {
+       "name": "Low",
+       "displayName": "Low",
+       "source": "Low"
+      },
+      {
+       "name": "Medium",
+       "displayName": "Medium",
+       "source": "Medium"
+      },
+      {
+       "name": "High",
+       "displayName": "High",
+       "source": "High"
+      },
+      {
+       "name": "Critical",
+       "displayName": "Critical",
+       "source": "Critical"
+      }
+     ]
+    },
+    {
+     "name": "InvoiceExceptionStatus",
+     "forField": "InvoiceException.status",
+     "values": [
+      {
+       "name": "Open",
+       "displayName": "Open",
+       "source": "Open"
+      },
+      {
+       "name": "PendingResponse",
+       "displayName": "Pending Response",
+       "source": "Pending_Response"
+      },
+      {
+       "name": "Resolved",
+       "displayName": "Resolved",
+       "source": "Resolved"
+      },
+      {
+       "name": "Rejected",
+       "displayName": "Rejected",
+       "source": "Rejected"
+      },
+      {
+       "name": "Parked",
+       "displayName": "Parked",
+       "source": "Parked"
+      }
+     ]
+    }
+   ],
+   "blockedBy": [
+    "SupplierInvoice"
+   ],
+   "relationships": [
+    {
+     "field": "invoiceId",
+     "referenceEntity": "SupplierInvoice",
+     "kind": "relationship"
+    }
+   ],
+   "grammar": {
+    "violations": [],
+    "incomplete": 0
+   },
+   "status": "ready"
+  },
+  {
+   "name": "ApprovalRecord",
+   "class": "LDO",
+   "systemOfRecord": null,
+   "relationshipsOut": [],
+   "relationshipsIn": [
+    {
+     "property": "invoiceHasApproval",
+     "from": "SupplierInvoice"
+    }
+   ],
+   "provenance": [
+    {
+     "field": "approvalId",
+     "vocabulary": "ApprovalRecord.approvalId",
+     "role": "key"
+    },
+    {
+     "field": "invoiceId",
+     "vocabulary": "ApprovalRecord.invoiceId",
+     "role": "string"
+    },
+    {
+     "field": "approvalStatus",
+     "vocabulary": "ApprovalRecord.approvalStatus",
+     "role": "enum"
+    },
+    {
+     "field": "approverId",
+     "vocabulary": "ApprovalRecord.approverId",
+     "role": "string"
+    },
+    {
+     "field": "decisionTimestamp",
+     "vocabulary": "ApprovalRecord.decisionTimestamp",
+     "role": "datetime"
+    },
+    {
+     "field": "comments",
+     "vocabulary": "ApprovalRecord.comments",
+     "role": "string"
+    }
+   ],
+   "body": {
+    "displayName": "Approval Record",
+    "fields": [
+     {
+      "name": "approvalId",
+      "displayName": "Approval Id",
+      "type": "STRING",
+      "lengthLimit": 200,
+      "isRequired": true
+     },
+     {
+      "name": "invoiceId",
+      "displayName": "Supplier Invoice",
+      "type": "RELATIONSHIP",
+      "referenceEntityId": "[RESOLVE AT BUILD: entity SupplierInvoice]",
+      "referenceFieldId": "[RESOLVE AT BUILD: SupplierInvoice.invoiceId]",
+      "isRequired": true
+     },
+     {
+      "name": "approvalStatus",
+      "displayName": "Approval Status",
+      "type": "CHOICE_SET_SINGLE",
+      "choiceSetId": "[RESOLVE AT BUILD: choice set ApprovalRecordApprovalStatus]",
+      "isRequired": true
+     },
+     {
+      "name": "approverId",
+      "displayName": "Approver Id",
+      "type": "STRING",
+      "lengthLimit": 200,
+      "isRequired": true
+     },
+     {
+      "name": "decisionTimestamp",
+      "displayName": "Decision Timestamp",
+      "type": "DATETIME_WITH_TZ"
+     },
+     {
+      "name": "comments",
+      "displayName": "Comments",
+      "type": "STRING",
+      "lengthLimit": 200
+     }
+    ]
+   },
+   "choiceSets": [
+    {
+     "name": "ApprovalRecordApprovalStatus",
+     "forField": "ApprovalRecord.approvalStatus",
+     "values": [
+      {
+       "name": "Pending",
+       "displayName": "Pending",
+       "source": "Pending"
+      },
+      {
+       "name": "Approved",
+       "displayName": "Approved",
+       "source": "Approved"
+      },
+      {
+       "name": "Rejected",
+       "displayName": "Rejected",
+       "source": "Rejected"
+      },
+      {
+       "name": "InformationRequested",
+       "displayName": "Information Requested",
+       "source": "Information_Requested"
+      }
+     ]
+    }
+   ],
+   "blockedBy": [
+    "SupplierInvoice"
+   ],
+   "relationships": [
+    {
+     "field": "invoiceId",
+     "referenceEntity": "SupplierInvoice",
+     "kind": "relationship"
+    }
+   ],
+   "grammar": {
+    "violations": [],
+    "incomplete": 0
+   },
+   "status": "ready"
+  },
+  {
+   "name": "AccountingDocument",
+   "class": "VDO",
+   "systemOfRecord": "ERP",
+   "relationshipsOut": [],
+   "relationshipsIn": [
+    {
+     "property": "invoiceHasAccountingDocument",
+     "from": "SupplierInvoice"
+    }
+   ],
+   "provenance": [
+    {
+     "field": "accountingDocumentId",
+     "vocabulary": "AccountingDocument.accountingDocumentId",
+     "role": "key"
+    },
+    {
+     "field": "invoiceId",
+     "vocabulary": "AccountingDocument.invoiceId",
+     "role": "string"
+    },
+    {
+     "field": "postingStatus",
+     "vocabulary": "AccountingDocument.postingStatus",
+     "role": "enum"
+    },
+    {
+     "field": "postingReference",
+     "vocabulary": "AccountingDocument.postingReference",
+     "role": "string"
+    },
+    {
+     "field": "reconciliationStatus",
+     "vocabulary": "AccountingDocument.reconciliationStatus",
+     "role": "enum"
+    }
+   ],
+   "body": {
+    "displayName": "Accounting Document",
+    "externalFields": [
+     {
+      "connectionId": "[RESOLVE AT BUILD: connection for ERP]",
+      "object": "[SME REVIEW: ERP object for AccountingDocument]",
+      "primaryKey": "accountingDocumentId",
+      "fields": [
+       {
+        "source": "[SME REVIEW: source field for AccountingDocument.accountingDocumentId]",
+        "name": "accountingDocumentId",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for AccountingDocument.invoiceId]",
+        "name": "invoiceId",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for AccountingDocument.postingStatus]",
+        "name": "postingStatus",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for AccountingDocument.postingReference]",
+        "name": "postingReference",
+        "type": "STRING"
+       },
+       {
+        "source": "[SME REVIEW: source field for AccountingDocument.reconciliationStatus]",
+        "name": "reconciliationStatus",
+        "type": "STRING"
+       }
+      ]
+     }
+    ]
+   },
+   "relationships": [],
+   "blockedReason": "source system not selected \u2014 connection, object and source fields unresolved (system of record: ERP)",
+   "grammar": {
+    "violations": [],
+    "incomplete": 7
+   },
+   "status": "blocked"
+  },
+  {
+   "name": "EvidencePackage",
+   "class": "LDO",
+   "systemOfRecord": "Document Archive",
+   "relationshipsOut": [],
+   "relationshipsIn": [
+    {
+     "property": "invoiceHasEvidencePackage",
+     "from": "SupplierInvoice"
+    }
+   ],
+   "provenance": [
+    {
+     "field": "evidencePackageId",
+     "vocabulary": "EvidencePackage.evidencePackageId",
+     "role": "key"
+    },
+    {
+     "field": "invoiceId",
+     "vocabulary": "EvidencePackage.invoiceId",
+     "role": "string"
+    },
+    {
+     "field": "archiveReference",
+     "vocabulary": "EvidencePackage.archiveReference",
+     "role": "string"
+    },
+    {
+     "field": "retentionStatus",
+     "vocabulary": "EvidencePackage.retentionStatus",
+     "role": "enum"
+    }
+   ],
+   "body": {
+    "displayName": "Evidence Package",
+    "fields": [
+     {
+      "name": "evidencePackageId",
+      "displayName": "Evidence Package Id",
+      "type": "STRING",
+      "lengthLimit": 200,
+      "isRequired": true
+     },
+     {
+      "name": "invoiceId",
+      "displayName": "Supplier Invoice",
+      "type": "RELATIONSHIP",
+      "referenceEntityId": "[RESOLVE AT BUILD: entity SupplierInvoice]",
+      "referenceFieldId": "[RESOLVE AT BUILD: SupplierInvoice.invoiceId]",
+      "isRequired": true
+     },
+     {
+      "name": "archiveReference",
+      "displayName": "Archive Reference",
+      "type": "STRING",
+      "lengthLimit": 200,
+      "isRequired": true
+     },
+     {
+      "name": "retentionStatus",
+      "displayName": "Retention Status",
+      "type": "CHOICE_SET_SINGLE",
+      "choiceSetId": "[RESOLVE AT BUILD: choice set EvidencePackageRetentionStatus]",
+      "isRequired": true
+     }
+    ]
+   },
+   "choiceSets": [
+    {
+     "name": "EvidencePackageRetentionStatus",
+     "forField": "EvidencePackage.retentionStatus",
+     "values": [
+      {
+       "name": "Active",
+       "displayName": "Active",
+       "source": "Active"
+      },
+      {
+       "name": "Retained",
+       "displayName": "Retained",
+       "source": "Retained"
+      },
+      {
+       "name": "OnHold",
+       "displayName": "On Hold",
+       "source": "On_Hold"
+      }
+     ]
+    }
+   ],
+   "blockedBy": [
+    "SupplierInvoice"
+   ],
+   "relationships": [
+    {
+     "field": "invoiceId",
+     "referenceEntity": "SupplierInvoice",
+     "kind": "relationship"
+    }
+   ],
+   "grammar": {
+    "violations": [],
+    "incomplete": 0
+   },
+   "status": "ready"
+  }
+ ],
+ "choiceSets": [
+  {
+   "name": "SupplierInvoiceMatchType",
+   "forField": "SupplierInvoice.matchType",
+   "values": [
+    {
+     "name": "PO",
+     "displayName": "PO",
+     "source": "PO"
+    },
+    {
+     "name": "NonPO",
+     "displayName": "Non PO",
+     "source": "Non_PO"
+    },
+    {
+     "name": "TwoWay",
+     "displayName": "Two Way",
+     "source": "Two_Way"
+    },
+    {
+     "name": "ThreeWay",
+     "displayName": "Three Way",
+     "source": "Three_Way"
+    }
+   ]
+  },
+  {
+   "name": "SupplierInvoiceInvoiceStatus",
+   "forField": "SupplierInvoice.invoiceStatus",
+   "values": [
+    {
+     "name": "Received",
+     "displayName": "Received",
+     "source": "Received"
+    },
+    {
+     "name": "Captured",
+     "displayName": "Captured",
+     "source": "Captured"
+    },
+    {
+     "name": "Validated",
+     "displayName": "Validated",
+     "source": "Validated"
+    },
+    {
+     "name": "Exception",
+     "displayName": "Exception",
+     "source": "Exception"
+    },
+    {
+     "name": "Approved",
+     "displayName": "Approved",
+     "source": "Approved"
+    },
+    {
+     "name": "Posted",
+     "displayName": "Posted",
+     "source": "Posted"
+    },
+    {
+     "name": "Rejected",
+     "displayName": "Rejected",
+     "source": "Rejected"
+    },
+    {
+     "name": "Parked",
+     "displayName": "Parked",
+     "source": "Parked"
+    },
+    {
+     "name": "PaymentReady",
+     "displayName": "Payment Ready",
+     "source": "Payment_Ready"
+    }
+   ]
+  },
+  {
+   "name": "SupplierInvoiceDuplicateStatus",
+   "forField": "SupplierInvoice.duplicateStatus",
+   "values": [
+    {
+     "name": "NotChecked",
+     "displayName": "Not Checked",
+     "source": "Not_Checked"
+    },
+    {
+     "name": "Clear",
+     "displayName": "Clear",
+     "source": "Clear"
+    },
+    {
+     "name": "Suspected",
+     "displayName": "Suspected",
+     "source": "Suspected"
+    },
+    {
+     "name": "Confirmed",
+     "displayName": "Confirmed",
+     "source": "Confirmed"
+    }
+   ]
+  },
+  {
+   "name": "SupplierInvoiceMatchStatus",
+   "forField": "SupplierInvoice.matchStatus",
+   "values": [
+    {
+     "name": "NotChecked",
+     "displayName": "Not Checked",
+     "source": "Not_Checked"
+    },
+    {
+     "name": "Matched",
+     "displayName": "Matched",
+     "source": "Matched"
+    },
+    {
+     "name": "Partial",
+     "displayName": "Partial",
+     "source": "Partial"
+    },
+    {
+     "name": "Exception",
+     "displayName": "Exception",
+     "source": "Exception"
+    },
+    {
+     "name": "NotApplicable",
+     "displayName": "Not Applicable",
+     "source": "Not_Applicable"
+    }
+   ]
+  },
+  {
+   "name": "SupplierInvoiceTaxStatus",
+   "forField": "SupplierInvoice.taxStatus",
+   "values": [
+    {
+     "name": "NotChecked",
+     "displayName": "Not Checked",
+     "source": "Not_Checked"
+    },
+    {
+     "name": "Valid",
+     "displayName": "Valid",
+     "source": "Valid"
+    },
+    {
+     "name": "Exempt",
+     "displayName": "Exempt",
+     "source": "Exempt"
+    },
+    {
+     "name": "ReverseCharge",
+     "displayName": "Reverse Charge",
+     "source": "Reverse_Charge"
+    },
+    {
+     "name": "Withholding",
+     "displayName": "Withholding",
+     "source": "Withholding"
+    },
+    {
+     "name": "Exception",
+     "displayName": "Exception",
+     "source": "Exception"
+    }
+   ]
+  },
+  {
+   "name": "SupplierInvoiceApprovalStatus",
+   "forField": "SupplierInvoice.approvalStatus",
+   "values": [
+    {
+     "name": "NotRequired",
+     "displayName": "Not Required",
+     "source": "Not_Required"
+    },
+    {
+     "name": "Pending",
+     "displayName": "Pending",
+     "source": "Pending"
+    },
+    {
+     "name": "Approved",
+     "displayName": "Approved",
+     "source": "Approved"
+    },
+    {
+     "name": "Rejected",
+     "displayName": "Rejected",
+     "source": "Rejected"
+    },
+    {
+     "name": "InformationRequested",
+     "displayName": "Information Requested",
+     "source": "Information_Requested"
+    }
+   ]
+  },
+  {
+   "name": "SupplierInvoicePostingStatus",
+   "forField": "SupplierInvoice.postingStatus",
+   "values": [
+    {
+     "name": "NotPosted",
+     "displayName": "Not Posted",
+     "source": "Not_Posted"
+    },
+    {
+     "name": "Posted",
+     "displayName": "Posted",
+     "source": "Posted"
+    },
+    {
+     "name": "Failed",
+     "displayName": "Failed",
+     "source": "Failed"
+    },
+    {
+     "name": "Reconciled",
+     "displayName": "Reconciled",
+     "source": "Reconciled"
+    }
+   ]
+  },
+  {
+   "name": "SupplierInvoicePaymentReadinessStatus",
+   "forField": "SupplierInvoice.paymentReadinessStatus",
+   "values": [
+    {
+     "name": "NotReady",
+     "displayName": "Not Ready",
+     "source": "Not_Ready"
+    },
+    {
+     "name": "Ready",
+     "displayName": "Ready",
+     "source": "Ready"
+    },
+    {
+     "name": "Excluded",
+     "displayName": "Excluded",
+     "source": "Excluded"
+    },
+    {
+     "name": "Blocked",
+     "displayName": "Blocked",
+     "source": "Blocked"
+    }
+   ]
+  },
+  {
+   "name": "InvoiceExceptionSeverity",
+   "forField": "InvoiceException.severity",
+   "values": [
+    {
+     "name": "Low",
+     "displayName": "Low",
+     "source": "Low"
+    },
+    {
+     "name": "Medium",
+     "displayName": "Medium",
+     "source": "Medium"
+    },
+    {
+     "name": "High",
+     "displayName": "High",
+     "source": "High"
+    },
+    {
+     "name": "Critical",
+     "displayName": "Critical",
+     "source": "Critical"
+    }
+   ]
+  },
+  {
+   "name": "InvoiceExceptionStatus",
+   "forField": "InvoiceException.status",
+   "values": [
+    {
+     "name": "Open",
+     "displayName": "Open",
+     "source": "Open"
+    },
+    {
+     "name": "PendingResponse",
+     "displayName": "Pending Response",
+     "source": "Pending_Response"
+    },
+    {
+     "name": "Resolved",
+     "displayName": "Resolved",
+     "source": "Resolved"
+    },
+    {
+     "name": "Rejected",
+     "displayName": "Rejected",
+     "source": "Rejected"
+    },
+    {
+     "name": "Parked",
+     "displayName": "Parked",
+     "source": "Parked"
+    }
+   ]
+  },
+  {
+   "name": "ApprovalRecordApprovalStatus",
+   "forField": "ApprovalRecord.approvalStatus",
+   "values": [
+    {
+     "name": "Pending",
+     "displayName": "Pending",
+     "source": "Pending"
+    },
+    {
+     "name": "Approved",
+     "displayName": "Approved",
+     "source": "Approved"
+    },
+    {
+     "name": "Rejected",
+     "displayName": "Rejected",
+     "source": "Rejected"
+    },
+    {
+     "name": "InformationRequested",
+     "displayName": "Information Requested",
+     "source": "Information_Requested"
+    }
+   ]
+  },
+  {
+   "name": "EvidencePackageRetentionStatus",
+   "forField": "EvidencePackage.retentionStatus",
+   "values": [
+    {
+     "name": "Active",
+     "displayName": "Active",
+     "source": "Active"
+    },
+    {
+     "name": "Retained",
+     "displayName": "Retained",
+     "source": "Retained"
+    },
+    {
+     "name": "OnHold",
+     "displayName": "On Hold",
+     "source": "On_Hold"
+    }
+   ]
+  }
+ ],
+ "createOrder": [
+  "SupplierInvoice",
+  "InvoiceException",
+  "ApprovalRecord",
+  "EvidencePackage"
+ ],
+ "renames": [
+  {
+   "entity": "PurchaseOrder",
+   "sourceColumn": "createdBy",
+   "name": "purchaseOrderCreatedBy",
+   "reason": "reserved system name or keyword"
+  }
+ ],
+ "defaults": [
+  "SupplierInvoice.invoiceId: lengthLimit 200 [DEFAULT]",
+  "SupplierInvoice.invoiceNumber: lengthLimit 200 [DEFAULT]",
+  "SupplierInvoice.supplierId: lengthLimit 200 [DEFAULT]",
+  "SupplierInvoice.poReference: lengthLimit 200 [DEFAULT]",
+  "SupplierInvoice.invoiceSubtotal: decimalPrecision 2 [DEFAULT]",
+  "SupplierInvoice.taxTotal: decimalPrecision 2 [DEFAULT]",
+  "SupplierInvoice.invoiceTotal: decimalPrecision 2 [DEFAULT]",
+  "SupplierInvoice.eInvoiceFormat: lengthLimit 200 [DEFAULT]",
+  "SupplierInvoice.ocrConfidenceScore: decimalPrecision 2 [DEFAULT]",
+  "SupplierInvoice.lineItemQuantity: decimalPrecision 2 [DEFAULT]",
+  "SupplierInvoice.lineItemUnitPrice: decimalPrecision 2 [DEFAULT]",
+  "SupplierMasterRecord.supplierId: lengthLimit 200 [DEFAULT]",
+  "SupplierMasterRecord.legalName: lengthLimit 200 [DEFAULT]",
+  "PurchaseOrder.poId: lengthLimit 200 [DEFAULT]",
+  "PurchaseOrder.poNumber: lengthLimit 200 [DEFAULT]",
+  "PurchaseOrder.supplierId: lengthLimit 200 [DEFAULT]",
+  "PurchaseOrder.lineItemQuantity: decimalPrecision 2 [DEFAULT]",
+  "PurchaseOrder.lineItemUnitPrice: decimalPrecision 2 [DEFAULT]",
+  "PurchaseOrder.lineItemGrQuantity: decimalPrecision 2 [DEFAULT]",
+  "PurchaseOrder.purchaseOrderCreatedBy: lengthLimit 200 [DEFAULT]",
+  "PurchaseOrder.companyCode: lengthLimit 200 [DEFAULT]",
+  "GoodsReceipt.grId: lengthLimit 200 [DEFAULT]",
+  "GoodsReceipt.poId: lengthLimit 200 [DEFAULT]",
+  "GoodsReceipt.postedBy: lengthLimit 200 [DEFAULT]",
+  "GoodsReceipt.grQuantity: decimalPrecision 2 [DEFAULT]",
+  "InvoiceException.exceptionId: lengthLimit 200 [DEFAULT]",
+  "InvoiceException.invoiceId: lengthLimit 200 [DEFAULT]",
+  "InvoiceException.ownerRole: lengthLimit 200 [DEFAULT]",
+  "InvoiceException.reason: lengthLimit 200 [DEFAULT]",
+  "ApprovalRecord.approvalId: lengthLimit 200 [DEFAULT]",
+  "ApprovalRecord.invoiceId: lengthLimit 200 [DEFAULT]",
+  "ApprovalRecord.approverId: lengthLimit 200 [DEFAULT]",
+  "ApprovalRecord.comments: lengthLimit 200 [DEFAULT]",
+  "AccountingDocument.accountingDocumentId: lengthLimit 200 [DEFAULT]",
+  "AccountingDocument.invoiceId: lengthLimit 200 [DEFAULT]",
+  "AccountingDocument.postingReference: lengthLimit 200 [DEFAULT]",
+  "EvidencePackage.evidencePackageId: lengthLimit 200 [DEFAULT]",
+  "EvidencePackage.invoiceId: lengthLimit 200 [DEFAULT]",
+  "EvidencePackage.archiveReference: lengthLimit 200 [DEFAULT]"
+ ],
+ "review": [
+  "SupplierInvoice.currency: enum without a value set (sh:in) \u2014 STRING until values are given",
+  "SupplierInvoice.receiptMethod: enum without a value set (sh:in) \u2014 STRING until values are given",
+  "SupplierMasterRecord.taxStatus: enum without a value set (sh:in) \u2014 STRING until values are given",
+  "SupplierMasterRecord: 1 value sets stay STRING on the VDO (no choice sets on federated fields)",
+  "PurchaseOrder.paymentTerms: enum without a value set (sh:in) \u2014 STRING until values are given",
+  "PurchaseOrder.poStatus: enum without a value set (sh:in) \u2014 STRING until values are given",
+  "PurchaseOrder.currency: enum without a value set (sh:in) \u2014 STRING until values are given",
+  "GoodsReceipt: 1 value sets stay STRING on the VDO (no choice sets on federated fields)",
+  "InvoiceException.exceptionType: enum without a value set (sh:in) \u2014 STRING until values are given",
+  "AccountingDocument: 2 value sets stay STRING on the VDO (no choice sets on federated fields)",
+  "SupplierInvoice -> SupplierMasterRecord (invoiceIssuedBySupplier): LDO to VDO \u2014 reference column + cross-system view, no RELATIONSHIP",
+  "SupplierInvoice -> PurchaseOrder (invoiceReferencesPO): LDO to VDO \u2014 reference column + cross-system view, no RELATIONSHIP",
+  "SupplierInvoice -> GoodsReceipt (invoiceMatchedToGR): LDO to VDO \u2014 reference column + cross-system view, no RELATIONSHIP",
+  "SupplierInvoice -> AccountingDocument (invoiceHasAccountingDocument): LDO to VDO \u2014 reference column + cross-system view, no RELATIONSHIP"
+ ]
+}

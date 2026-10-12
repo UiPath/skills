@@ -1,0 +1,181 @@
+{
+ "database": "student_club (subset)",
+ "class": "Native",
+ "source": "lane B prompt-only eval: the three objects and the fields the request names",
+ "entities": [
+  {
+   "name": "Budget",
+   "table": "budget",
+   "tier": "core",
+   "fields": [
+    {
+     "name": "budget_id",
+     "sourceColumn": "budget_id",
+     "type": "STRING",
+     "role": "key",
+     "isRequired": true
+    },
+    {
+     "name": "category",
+     "sourceColumn": "category",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "spent",
+     "sourceColumn": "spent",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "remaining",
+     "sourceColumn": "remaining",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "amount",
+     "sourceColumn": "amount",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "isRequired": false
+    }
+   ],
+   "relationships": []
+  },
+  {
+   "name": "Expense",
+   "table": "expense",
+   "tier": "core",
+   "fields": [
+    {
+     "name": "expense_id",
+     "sourceColumn": "expense_id",
+     "type": "STRING",
+     "role": "key",
+     "isRequired": true
+    },
+    {
+     "name": "expense_description",
+     "sourceColumn": "expense_description",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "expense_date",
+     "sourceColumn": "expense_date",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "cost",
+     "sourceColumn": "cost",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "approved",
+     "sourceColumn": "approved",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "link_to_member",
+     "sourceColumn": "link_to_member",
+     "type": "STRING",
+     "role": "link",
+     "isRequired": false
+    },
+    {
+     "name": "link_to_budget",
+     "sourceColumn": "link_to_budget",
+     "type": "STRING",
+     "role": "link",
+     "isRequired": false
+    }
+   ],
+   "relationships": [
+    {
+     "field": "link_to_member",
+     "referenceEntity": "Member",
+     "referenceField": "member_id"
+    },
+    {
+     "field": "link_to_budget",
+     "referenceEntity": "Budget",
+     "referenceField": "budget_id"
+    }
+   ]
+  },
+  {
+   "name": "Member",
+   "table": "member",
+   "tier": "core",
+   "fields": [
+    {
+     "name": "member_id",
+     "sourceColumn": "member_id",
+     "type": "STRING",
+     "role": "key",
+     "isRequired": true
+    },
+    {
+     "name": "first_name",
+     "sourceColumn": "first_name",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "last_name",
+     "sourceColumn": "last_name",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "email",
+     "sourceColumn": "email",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "position",
+     "sourceColumn": "position",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    }
+   ],
+   "relationships": []
+  }
+ ],
+ "consumers": [
+  {
+   "project": "ExpenseApproval",
+   "skill": "uipath-maestro-flow",
+   "entities": {
+    "Expense": "read-write",
+    "Member": "read",
+    "Budget": "read"
+   },
+   "where": {
+    "Expense": "trigger \u00b7 update node",
+    "Member": "lookup node",
+    "Budget": "lookup node"
+   }
+  }
+ ],
+ "solution": {
+  "name": "ExpenseApproval",
+  "folder": "Shared"
+ }
+}

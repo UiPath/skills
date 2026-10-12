@@ -1,0 +1,319 @@
+{
+ "source": "compiled entity spec (fixtures/vocabulary/entities.json) \u2014 oracle for the bodies",
+ "entities": [
+  {
+   "name": "SupplierInvoice",
+   "tier": "core",
+   "class": "Native",
+   "fields": [
+    {
+     "name": "invoiceId",
+     "type": "STRING",
+     "isRequired": true
+    },
+    {
+     "name": "invoiceNumber",
+     "type": "STRING",
+     "isRequired": true
+    },
+    {
+     "name": "supplierId",
+     "type": "STRING",
+     "isRequired": true
+    },
+    {
+     "name": "invoiceDate",
+     "type": "DATE",
+     "isRequired": true
+    },
+    {
+     "name": "dueDate",
+     "type": "DATE",
+     "isRequired": false
+    },
+    {
+     "name": "currency",
+     "type": "STRING",
+     "isRequired": true
+    },
+    {
+     "name": "poReference",
+     "type": "STRING",
+     "isRequired": false
+    },
+    {
+     "name": "matchType",
+     "type": "CHOICE_SET_SINGLE",
+     "isRequired": true
+    },
+    {
+     "name": "invoiceSubtotal",
+     "type": "DECIMAL",
+     "isRequired": true
+    },
+    {
+     "name": "taxTotal",
+     "type": "DECIMAL",
+     "isRequired": true
+    },
+    {
+     "name": "invoiceTotal",
+     "type": "DECIMAL",
+     "isRequired": true
+    },
+    {
+     "name": "invoiceStatus",
+     "type": "CHOICE_SET_SINGLE",
+     "isRequired": true
+    },
+    {
+     "name": "duplicateStatus",
+     "type": "CHOICE_SET_SINGLE",
+     "isRequired": true
+    },
+    {
+     "name": "matchStatus",
+     "type": "CHOICE_SET_SINGLE",
+     "isRequired": true
+    },
+    {
+     "name": "taxStatus",
+     "type": "CHOICE_SET_SINGLE",
+     "isRequired": true
+    },
+    {
+     "name": "approvalStatus",
+     "type": "CHOICE_SET_SINGLE",
+     "isRequired": true
+    },
+    {
+     "name": "postingStatus",
+     "type": "CHOICE_SET_SINGLE",
+     "isRequired": true
+    },
+    {
+     "name": "paymentBlock",
+     "type": "BOOLEAN",
+     "isRequired": true
+    },
+    {
+     "name": "paymentReadinessStatus",
+     "type": "CHOICE_SET_SINGLE",
+     "isRequired": true
+    },
+    {
+     "name": "receiptMethod",
+     "type": "STRING",
+     "isRequired": true
+    },
+    {
+     "name": "eInvoiceFormat",
+     "type": "STRING",
+     "isRequired": false
+    },
+    {
+     "name": "ocrConfidenceScore",
+     "type": "DECIMAL",
+     "isRequired": false
+    },
+    {
+     "name": "lineItemQuantity",
+     "type": "DECIMAL",
+     "isRequired": false
+    },
+    {
+     "name": "lineItemUnitPrice",
+     "type": "DECIMAL",
+     "isRequired": false
+    }
+   ],
+   "relationships": []
+  },
+  {
+   "name": "SupplierMasterRecord",
+   "tier": "reference",
+   "class": "Federated",
+   "status": "blocked",
+   "fields": [],
+   "relationships": []
+  },
+  {
+   "name": "PurchaseOrder",
+   "tier": "reference",
+   "class": "Federated",
+   "status": "blocked",
+   "fields": [],
+   "relationships": []
+  },
+  {
+   "name": "GoodsReceipt",
+   "tier": "reference",
+   "class": "Federated",
+   "status": "blocked",
+   "fields": [],
+   "relationships": []
+  },
+  {
+   "name": "InvoiceException",
+   "tier": "core",
+   "class": "Native",
+   "fields": [
+    {
+     "name": "exceptionId",
+     "type": "STRING",
+     "isRequired": true
+    },
+    {
+     "name": "invoiceId",
+     "type": "RELATIONSHIP",
+     "isRequired": true
+    },
+    {
+     "name": "exceptionType",
+     "type": "STRING",
+     "isRequired": true
+    },
+    {
+     "name": "severity",
+     "type": "CHOICE_SET_SINGLE",
+     "isRequired": true
+    },
+    {
+     "name": "ownerRole",
+     "type": "STRING",
+     "isRequired": true
+    },
+    {
+     "name": "paymentBlock",
+     "type": "BOOLEAN",
+     "isRequired": true
+    },
+    {
+     "name": "status",
+     "type": "CHOICE_SET_SINGLE",
+     "isRequired": true
+    },
+    {
+     "name": "reason",
+     "type": "STRING",
+     "isRequired": false
+    },
+    {
+     "name": "createdTimestamp",
+     "type": "DATETIME_WITH_TZ",
+     "isRequired": true
+    },
+    {
+     "name": "resolvedTimestamp",
+     "type": "DATETIME_WITH_TZ",
+     "isRequired": false
+    }
+   ],
+   "relationships": [
+    {
+     "field": "invoiceId",
+     "referenceEntity": "SupplierInvoice"
+    }
+   ]
+  },
+  {
+   "name": "ApprovalRecord",
+   "tier": "core",
+   "class": "Native",
+   "fields": [
+    {
+     "name": "approvalId",
+     "type": "STRING",
+     "isRequired": true
+    },
+    {
+     "name": "invoiceId",
+     "type": "RELATIONSHIP",
+     "isRequired": true
+    },
+    {
+     "name": "approvalStatus",
+     "type": "CHOICE_SET_SINGLE",
+     "isRequired": true
+    },
+    {
+     "name": "approverId",
+     "type": "STRING",
+     "isRequired": true
+    },
+    {
+     "name": "decisionTimestamp",
+     "type": "DATETIME_WITH_TZ",
+     "isRequired": false
+    },
+    {
+     "name": "comments",
+     "type": "STRING",
+     "isRequired": false
+    }
+   ],
+   "relationships": [
+    {
+     "field": "invoiceId",
+     "referenceEntity": "SupplierInvoice"
+    }
+   ]
+  },
+  {
+   "name": "AccountingDocument",
+   "tier": "reference",
+   "class": "Federated",
+   "status": "blocked",
+   "fields": [],
+   "relationships": []
+  },
+  {
+   "name": "EvidencePackage",
+   "tier": "core",
+   "class": "Native",
+   "fields": [
+    {
+     "name": "evidencePackageId",
+     "type": "STRING",
+     "isRequired": true
+    },
+    {
+     "name": "invoiceId",
+     "type": "RELATIONSHIP",
+     "isRequired": true
+    },
+    {
+     "name": "archiveReference",
+     "type": "STRING",
+     "isRequired": true
+    },
+    {
+     "name": "retentionStatus",
+     "type": "CHOICE_SET_SINGLE",
+     "isRequired": true
+    }
+   ],
+   "relationships": [
+    {
+     "field": "invoiceId",
+     "referenceEntity": "SupplierInvoice"
+    }
+   ]
+  }
+ ],
+ "consumers": [],
+ "choiceSets": [
+  "SupplierInvoiceMatchType",
+  "SupplierInvoiceInvoiceStatus",
+  "SupplierInvoiceDuplicateStatus",
+  "SupplierInvoiceMatchStatus",
+  "SupplierInvoiceTaxStatus",
+  "SupplierInvoiceApprovalStatus",
+  "SupplierInvoicePostingStatus",
+  "SupplierInvoicePaymentReadinessStatus",
+  "InvoiceExceptionSeverity",
+  "InvoiceExceptionStatus",
+  "ApprovalRecordApprovalStatus",
+  "EvidencePackageRetentionStatus"
+ ]
+}
