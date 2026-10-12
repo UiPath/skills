@@ -49,7 +49,7 @@ the resource kind and emitted binding purpose explicit.
 ## Where both values come from
 
 **Usually you do not fill these in at all.**
-`uip maestro registry prepare <connector-key> <action>` discovers the connection and writes both entries into `bindings.json` for you — see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values).
+`uip maestro registry prepare <connector-key> --action <action>` discovers the connection and writes both entries into `bindings.json` for you — see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values).
 Reach for the manual route below only when you are authoring bindings without
 running `prepare`.
 

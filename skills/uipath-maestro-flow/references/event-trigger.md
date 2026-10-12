@@ -37,7 +37,7 @@ export default flow('mail').trigger(onEvent(mail))
   .step('reply', script({ code: 'return $vars.start.output.subject;' })).build();
 ```
 
-An id-valued `where` parameter is a `lookup()` token: `registry prepare <key> <event>` resolves it, writes bindings, and stores the vocabulary `check` validates `where`/`filters` against (a wrong-case filter field is an error — the platform drops it silently).
+An id-valued `where` parameter is a `lookup()` token: `registry prepare <key> --action <event>` resolves it, writes bindings, and stores the vocabulary `check` validates `where`/`filters` against (a wrong-case filter field is an error — the platform drops it silently).
 A generic event (`record-created`/`record-updated`) needs `object: '<Entity>'` — never put it in `where`.
 Use the reference's completion contract before debugging: an injected start payload exercises downstream wiring but is not a subscription witness.
 
@@ -60,7 +60,7 @@ pasted id — and one `prepare` discharges everything `check` names:
 ```
 
 ```bash
-uip maestro registry prepare uipath-microsoft-outlook365 email-received \
+uip maestro registry prepare uipath-microsoft-outlook365 --action email-received \
   --resolve parentFolderId:displayName=Inbox
 ```
 

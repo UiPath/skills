@@ -21,7 +21,7 @@ uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipe
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline.flow"
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited.flow"
-uip maestro flow merge "$CANONICAL" "$WORK/edited.flow" \
+uip maestro flow merge "$WORK/edited.flow" --original "$CANONICAL" \
   -o "$WORK/candidate.flow" --baseline "$WORK/baseline.flow"
 
 uip maestro flow validate "$WORK/candidate.flow" --output json
@@ -64,7 +64,7 @@ uip maestro flow decompile Deployed.flow -o .flow-sdk/Deployed.flow.ts --no-pipe
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/Deployed.baseline.flow
 # Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/Deployed.edited.flow
-uip maestro flow merge Deployed.flow .flow-sdk/Deployed.edited.flow \
+uip maestro flow merge .flow-sdk/Deployed.edited.flow --original Deployed.flow \
   -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/Deployed.baseline.flow
 ```
 

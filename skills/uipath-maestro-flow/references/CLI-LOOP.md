@@ -72,7 +72,7 @@ names it, never before the source exists:
 ```bash
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source
 # run each prepare the check names, with the exact command it prints:
-uip maestro registry prepare <key> <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
+uip maestro registry prepare <key> --action <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source    # re-check until clean
 uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow
 uip maestro flow validate <Name>.flow --output json
