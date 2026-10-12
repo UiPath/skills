@@ -18,7 +18,7 @@ sandbox:
     - {type: template_dir, path: mock_template}
 
 pre_run:
-  - command: 'printf inactive > .compliance-mock-scenario'
+  - command: 'printf inactive > mocks/scenario'
     timeout: 10
 
 initial_prompt: |
@@ -62,7 +62,7 @@ success_criteria:
     description: "A Robot policy is assigned to the tenant (shim state)"
     command: >-
       python3 -c "import json, os, sys;
-      p = '.compliance-mock-state.json';
+      p = 'mocks/state.json';
       s = json.load(open(p)) if os.path.exists(p) else {};
       sys.exit(0 if any(a['ProductIdentifier'] == 'Robot' and a['PolicyIdentifier'] for a in s.get('assignments') or []) else 1)"
     timeout: 30

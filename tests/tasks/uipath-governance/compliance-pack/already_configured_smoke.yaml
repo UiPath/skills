@@ -16,7 +16,7 @@ sandbox:
     - {type: template_dir, path: mock_template}
 
 pre_run:
-  - command: 'printf already-configured > .compliance-mock-scenario'
+  - command: 'printf already-configured > mocks/scenario'
     timeout: 10
 
 initial_prompt: |
@@ -55,7 +55,7 @@ success_criteria:
     description: "A state coverage call returned posture data (resolved tenant id)"
     command: >-
       python3 -c "import json, os, sys;
-      p = '.compliance-mock-log.jsonl';
+      p = 'mocks/calls.jsonl';
       calls = [json.loads(l) for l in open(p)] if os.path.exists(p) else [];
       sys.exit(0 if any(c['Code'] == 'CompliancePacksStateCoverage' for c in calls) else 1)"
     timeout: 30

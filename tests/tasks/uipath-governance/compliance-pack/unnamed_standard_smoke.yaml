@@ -23,7 +23,7 @@ sandbox:
     - {type: template_dir, path: mock_template}
 
 pre_run:
-  - command: 'printf inactive > .compliance-mock-scenario'
+  - command: 'printf inactive > mocks/scenario'
     timeout: 10
 
 initial_prompt: |
