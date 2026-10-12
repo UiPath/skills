@@ -12,10 +12,10 @@
 **List command flags:**
 - `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.
 - `--sort-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
-- `--all-fields` — return raw DTO instead of the curated PascalCase
-  projection. Native Orchestrator commands curate by default; the migrated
-  resource commands (assets, queues, buckets, etc.) return the full DTO by
-  default and do not expose this flag.
+- `--all-fields` — return raw DTO instead of the curated projection. `uip or`
+  get/list commands curate by default; assets, queues and buckets take the flag
+  too. Stdout keys are PascalCase in both shapes — raw keeps the API's field
+  names (`DisplayName`), curated may rename them (`Name`).
 
 ---
 

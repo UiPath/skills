@@ -312,7 +312,7 @@ None --> InReview (reviewer assigned) --> Verified | Retried
 | `Key` | Shared across retries | `get-last-retry` |
 | Queue definition key | Queue identifier | `list --queue-definition-key`, `queues get` |
 
-Curated queue-item rows expose both `Key` and `UniqueKey` (PascalCase). With `--all-fields` you get the raw DTO instead, where the same fields are `key` / `uniqueKey`.
+Curated queue-item rows expose both `Key` and `UniqueKey` (PascalCase). With `--all-fields` you get the raw DTO instead; stdout still prints these keys PascalCase (`Key` / `UniqueKey`).
 
 ### Common Pitfalls
 
