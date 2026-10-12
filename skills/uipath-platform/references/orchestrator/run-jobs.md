@@ -275,6 +275,10 @@ uip or jobs stop <job-key> --strategy SoftStop --output json
 # Force-kill a job
 uip or jobs stop <job-key> --strategy Kill --output json
 
+# Job stuck in Terminating (Kill sent, robot never confirmed): Kill and SoftStop
+# are refused with HTTP 409. ForceStop marks it Stopped without waiting for the robot
+uip or jobs stop <job-key> --strategy ForceStop --output json
+
 # Restart a finished job (any outcome -- faulted, stopped, or successful).
 # Returns the new run in the same { Jobs: [...] } shape as `jobs start`.
 uip or jobs restart <job-key> --output json
