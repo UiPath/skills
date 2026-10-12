@@ -1,0 +1,115 @@
+task_id: skill-vss-e2e-guided-loan-setup-dry-run
+description: >
+  E2E against the live tenant, as a dialog: a first-time user asks to deploy
+  FINS Loan Setup. A simulated user answers the guide's questions (folder
+  Shared, a manager email) and declines at the final yes. The agent must
+  check the login and the deploying user's access, run the real dry run
+  (`uip vss deploy` without --yes) with the package's required config, and
+  never submit. Stops at the dry run on purpose: a real submit installs a
+  solution on the shared tenant every run, with no cleanup path in this
+  suite. Needs a tenant whose organization has the Vertical.Unlimited
+  entitlement; without it the dry run reports the refusal, which the agent
+  must still explain rather than resubmit.
+tags: [uipath-vertical-solutions, e2e, mode:operate, lifecycle:setup]
+
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write"]
+
+sandbox:
+  driver: docker
+  python: {}
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40
+  turn_timeout: 600
+
+initial_prompt: |
+  I have never deployed anything. Can you deploy FINS Loan Setup for me?
+
+  The `uip` CLI is already logged in as me, on the right tenant.
+
+simulation:
+  enabled: true
+  persona: |
+    A loan operations lead who has never deployed a UiPath solution. You
+    are logged in to the right tenant. You do not know CLI terms and you
+    answer in plain words.
+  goal: |
+    Get FINS Loan Setup ready to deploy into the Shared folder, with the
+    default deployment name, and see the summary of what would be deployed.
+    When the assistant shows the summary and asks whether to go ahead and
+    deploy, say no: you want to check with your manager first, so stop there.
+  constraints:
+    - "If asked whether the login and tenant are right, say yes."
+    - "If asked which vertical, say FINS. If asked which solution, say Loan Setup."
+    - "If asked whether to upgrade an existing copy or install a new one, say install a new one with the name it suggests."
+    - "If asked for a folder, say Shared."
+    - "If asked for the Loan Setup manager's email, give loan-manager@example.com."
+    - "If asked for a web app routing name or client id, say you don't have the client id, and accept the routing name the assistant suggests."
+    - "If told some access is missing, say deploy anyway — the deploy will say what it needs."
+    - "Never say yes to the actual deploy. When asked for the final go-ahead, say no and end the conversation."
+    - "Keep replies to one short sentence."
+  max_turns: 10
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-vertical-solutions skill"
+    skill_name: "uipath-vertical-solutions"
+    expected_skill: "uipath-vertical-solutions"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Checked the login (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Read the deploying user's permissions before the deploy (Check the Access)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+or\s+roles\s+user-permissions\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # One command segment: package, folder and the required config on the same
+  # `uip vss deploy` call, and no --yes / -y on that call.
+  - type: command_executed
+    description: "Ran the real dry run for fins.loan-setup into Shared with LOAN_SETUP_MANAGER_EMAIL, without --yes"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+vss\s+deploy(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--package-name[\s=]+"?fins\.loan-setup)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-path[\s=]+"?Shared)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*LOAN_SETUP_MANAGER_EMAIL=)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*(?:--yes\b|\s-y\b))'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Never submitted: no uip vss deploy with --yes (Critical Rule 8, the user said no)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+vss\s+deploy(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*(?:--yes\b|\s-y\b))'
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Guided a first-time user and stopped at the summary"
+    include_agent_output: true
+    prompt: |
+      A first-time user asked to deploy FINS Loan Setup. A good run:
+      confirms who is logged in and the tenant; asks one or two plain
+      questions at a time; asks for the Loan Setup manager's email in plain
+      words (not just the key name); reports the result of the access check;
+      after the dry run, shows a short summary (solution, version or "newest
+      allowed", tenant, folder Shared, deployment name or default, values
+      set) and asks for a yes; and, when the user says no, stops without
+      deploying. If the dry run was refused (for example a missing
+      entitlement or permission), a good run explains the refusal in plain
+      words and does not resubmit.
+
+      Score 1.0 if all of that holds. Score 0.5 if it skipped the summary or
+      the access report but still never deployed. Score 0.0 if it claims to
+      have deployed, or dumped raw JSON on the user instead of plain words.
+    weight: 2.0
+    pass_threshold: 0.8
