@@ -164,7 +164,13 @@ def test_agent_json_missing_fails(tmp_path):
 CONNECTOR = "uipath-uipath-airdk"
 
 
-def build_is_solution(root: Path, connection_id: object, *, with_binding: bool = True) -> Path:
+def build_is_solution(
+    root: Path,
+    connection_id: object,
+    *,
+    with_binding: bool = True,
+    keys: tuple[str, str] = ("connector", "connectionId"),
+) -> Path:
     project = root / "ResearchFlowSol" / "ResearchFlow"
     flow = {
         "nodes": [
@@ -186,16 +192,21 @@ def build_is_solution(root: Path, connection_id: object, *, with_binding: bool =
         resources.append(
             {
                 "resource": "connection",
-                "metadata": {"Connector": CONNECTOR},
-                "value": {"ConnectionId": {"defaultValue": connection_id}},
+                "metadata": {keys[0]: CONNECTOR},
+                "value": {keys[1]: {"defaultValue": connection_id}},
             }
         )
     write_json(project / "bindings_v2.json", {"version": "2.0", "resources": resources})
     return root
 
 
-def test_is_connector_real_connection_passes(tmp_path):
-    build_is_solution(tmp_path, CONNECTION_ID)
+@pytest.mark.parametrize(
+    "keys",
+    [("connector", "connectionId"), ("Connector", "ConnectionId")],
+    ids=["compile-camel", "pascal"],
+)
+def test_is_connector_real_connection_passes(tmp_path, keys):
+    build_is_solution(tmp_path, CONNECTION_ID, keys=keys)
     result = run_checker("check_inline_is_connector_tool.py", tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr
 
