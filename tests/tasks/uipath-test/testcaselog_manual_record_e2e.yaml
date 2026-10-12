@@ -64,7 +64,6 @@ pre_run:
                                capture_output=True, text=True).returncode == 0
 
       for words in (["tm", "testcases", "run"],
-                    ["tm", "executions", "delete"],
                     ["tm", "testcaselog", "start"],
                     ["tm", "testcaselog", "finish"],
                     ["tm", "testcaselog", "get"]):
@@ -96,9 +95,13 @@ pre_run:
           by_exec.setdefault(eid, []).append((l.get("Updated") or "")[:10])
       stale = [eid for eid, days in by_exec.items()
                if days and all(x and x < today for x in days)]
-      for eid in stale:
-          call(f"sweep.del.{eid[:8]}", "tm", "executions", "delete",
-               "--execution-id", eid, "--project-key", P, "--yes")
+      # `executions delete` ships with the executions PR, not this one, so sweep
+      # only when present. Per-run STAMPED execution names make the sweep
+      # optional: a missing verb leaves earlier runs behind but never collides.
+      if has_verb("tm", "executions", "delete"):
+          for eid in stale:
+              call(f"sweep.del.{eid[:8]}", "tm", "executions", "delete",
+                   "--execution-id", eid, "--project-key", P, "--yes")
 
       print(f"FIXTURE: ready case={CASE!r} swept={len(stale)}", flush=True)
       EOF
