@@ -28,6 +28,9 @@ and therefore exact for this scheme.
 | `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `testcaselog_override_triage_operate` | CLAIM | `EVFX-TCLOG-TC{1,2,3}` | per-run STAMPED manual execution `EVFX-TCLOG-<STAMP>-RUN` (via `testcases run`), results `Passed, Failed, Passed`, **nothing overridden**; the task writes an override onto the failed log, so `pre_run` stamps a fresh execution and sweeps only earlier-day ones |
+| `testcaselog_read_discover_smoke` | CLAIM | `EVFX-TCLOGRD-TC1` | 1 finished manual log, result `Passed`, create-if-absent and never deleted (read-only task) |
+| `testcaselog_manual_record_e2e` | CLAIM | `EVFX-TCLOGMR-TC1` | just the test case; the agent opens its own per-run STAMPED manual execution `EVFX-TCLOGMR-<STAMP>-RUN` and records a manual result; `pre_run` sweeps only earlier-day executions |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
@@ -105,6 +108,37 @@ Four test sets and eleven test cases, fixed — `EVFX-RERUN-SET`,
 accretes: `execution_rerun` repairs one execution rather than appending,
 `junit_export` and `release_readiness` seed once, `flaky` appends only to
 restore intermittency, and `organize` sweeps its own scratch.
+
+The three `testcaselog` tasks all open executions with a manual run, because
+this CLI has **no `executions create`** — `uip tm testcases run --name <NAME>
+--execution-type manual` returns the new execution under `Data.Id` and opens a
+Pending log per case. Those executions sit on an ad-hoc test set hidden from
+`testsets list`, so they never pollute the test-set list an agent sees, and
+`executions list` cannot find them either — a sweep enumerates the task's own
+logs (`testcaselog list --search`) and groups them by `TestExecutionId`.
+
+Concurrency drove the shape of all three (two model variants share CLAIM):
+
+- `testcaselog_override_triage_operate` stamps a fresh execution
+  `EVFX-TCLOG-<STAMP>-RUN` every run and sweeps only executions whose logs were
+  all last touched **before today**, so a concurrent run's in-flight execution
+  is never deleted (an earlier fixed-name delete-and-recreate raced). The
+  graded outcome is the agent's own `override create`, not a fixed-name
+  post-state. `pre_run`'s guard is on the property, not a count (Rule 4): it
+  asserts **exactly one** log on the stamped execution reports `Failed` and that
+  **no** log starts with `OriginalResult` already differing from `Result`.
+- `testcaselog_read_discover_smoke` is a pure reader: it seeds one finished
+  `Passed` log create-if-absent and never deletes, so growth is flat at one
+  execution. `Passed` (not `Failed`) also keeps the log off the override task's
+  `--results Failed` discovery, since the three namespaces share the
+  `EVFX-TCLOG` stem.
+- `testcaselog_manual_record_e2e` seeds only the test case; the agent opens its
+  own stamped execution, so nothing fixed-name exists to collide on. `pre_run`
+  sweeps only earlier-day executions.
+
+The `-TC` in each task's `--search` prefix (`EVFX-TCLOG-TC`, `EVFX-TCLOGRD-TC`,
+`EVFX-TCLOGMR-TC`) is load-bearing: `--search` is a prefix match, and without
+the dash `EVFX-TCLOG` would also match the `TCLOGRD`/`TCLOGMR` siblings.
 
 ## Why
 
