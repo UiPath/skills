@@ -140,9 +140,9 @@ def sha256(path: Path) -> str:
 
 # Worst-case wall clock for one `run_debug` call, mirroring
 # flow_check.debug_budget so test_criterion_budgets.py can hold both suites to
-# the same arithmetic. BPMN's run_debug makes a single attempt with no backoff,
-# so the budget is the call's own timeout; the retries/backoff parameters exist
-# to keep the two signatures interchangeable if that changes.
+# the same arithmetic. BPMN's run_debug retries within its own timeout, so the
+# budget is that timeout; the retries/backoff parameters exist to keep the two
+# signatures interchangeable.
 # Headroom a criterion needs beyond the calls it makes, for process start and
 # teardown. Mirrors flow_check.CRITERION_MARGIN_SECONDS; test_criterion_budgets
 # enforces the pair.
