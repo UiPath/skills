@@ -23,9 +23,9 @@ pre_run:
     command: |
       python3 - <<'EOF'
       import json, subprocess, sys
-      P, SET = "CLAIM", "EVFX-SCHEDE2E-SET"
-      CASES = ["EVFX-SCHEDE2E-TC1"]
-      PREFIX = "EVFX-SCHEDE2E-"
+      P, SET = "CLAIM", "EVFX-SCHEDLC-SET"
+      CASES = ["EVFX-SCHEDLC-TC1"]
+      PREFIX = "EVFX-SCHEDLC-"
 
       def fail(msg):
           print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
@@ -98,16 +98,16 @@ pre_run:
                "--schedule-ids", *stale, "--yes")
           d = call("sched.recheck", "tm", "schedules", "list", "--project-key", P, "--limit", "200")
           if any(str(r.get("Name", "")).startswith(PREFIX) for r in (d.get("Data") or [])):
-              fail("EVFX-SCHEDE2E- schedules still present after sweep")
+              fail("EVFX-SCHEDLC- schedules still present after sweep")
 
       print(f"FIXTURE: ready set_key={set_key!r}", flush=True)
       EOF
 
 initial_prompt: |
   Walk a scheduled run through its whole life in my UiPath Test Manager project
-  CLAIM, on the "EVFX-SCHEDE2E-SET" test set:
+  CLAIM, on the "EVFX-SCHEDLC-SET" test set:
 
-  1. Create a schedule named "EVFX-SCHEDE2E-RUN" that runs it every day at 01:00
+  1. Create a schedule named "EVFX-SCHEDLC-RUN" that runs it every day at 01:00
      UTC, starting next week.
   2. Tell me when it is next due to fire.
   3. We actually want it at 03:00 UTC instead — change it.
@@ -167,7 +167,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "EVFX-SCHEDE2E-RUN is gone at the end of the lifecycle"
+    description: "EVFX-SCHEDLC-RUN is gone at the end of the lifecycle"
     command: |
       python3 -c "
       import json, subprocess
@@ -180,7 +180,7 @@ success_criteria:
 
       rows = uip('tm','schedules','list','--project-key','CLAIM','--limit','200').get('Data') or []
       names = [r.get('Name') for r in rows]
-      assert 'EVFX-SCHEDE2E-RUN' not in names, 'EVFX-SCHEDE2E-RUN was not deleted at the end'
+      assert 'EVFX-SCHEDLC-RUN' not in names, 'EVFX-SCHEDLC-RUN was not deleted at the end'
       "
     timeout: 120
     expected_exit_code: 0
