@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "760079cb-6bea-4781-8430-5b034d9bdbda",
+  "Projects": [
+    {
+      "Type": "CaseManagement",
+      "ProjectRelativePath": "CMGoldenExpense/project.uiproj",
+      "Id": "1a98c4b1-528b-4020-9657-4a1365cb1a62"
+    }
+  ]
+}
