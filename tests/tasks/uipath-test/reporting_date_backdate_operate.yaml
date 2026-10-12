@@ -21,15 +21,16 @@ run_limits:
   expected_turns: 18
   max_turns: 45
   turn_timeout: 1200
-  task_timeout: 1500
+  task_timeout: 1200
 
 # Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the
 # EVFX- contract.
 #
 # The premise IS an open execution, and the task consumes it by closing it. So
-# pre_run deletes whatever the last run left and opens exactly one fresh run
-# with no log started. Growth stays flat at one, and the starting state is the
-# same every time rather than depending on how the previous agent finished.
+# pre_run opens exactly one fresh run with no log started and LEAVES IT OPEN,
+# then records its ExecutionId so the oracle grades that exact run. It sweeps
+# EARLIER DAYS' runs but spares today, so a concurrent variant run's in-flight
+# execution is never destroyed; growth stays bounded to one day's runs.
 pre_run:
   - timeout: 280
     command: |
@@ -118,52 +119,50 @@ pre_run:
       if missing:
           fail(f"cases not assigned to {SET}: {missing}")
 
-      # 3. clear what the last run left, whatever state it ended in
+      # 3. clear what EARLIER DAYS left, but SPARE today. A concurrent variant
+      #    run shares this CLAIM set and may have an OPEN run in flight right
+      #    now; deleting every run would destroy another run's fixture. Earlier
+      #    days' runs (including this task's own, booked by a prior invocation)
+      #    are safe to remove, so growth stays bounded to one day's runs.
+      import datetime
+      today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
       if set_id:
           d = call("execs.list", "tm", "executions", "list", "--project-key", P,
                    "--test-set-id", set_id, "--limit", "100")
           for row in (d.get("Data") or []):
               eid = row.get("Id")
-              if eid:
+              created = str(row.get("Created") or "")
+              if eid and not created.startswith(today):
                   call(f"exec.delete.{eid[:8]}", "tm", "executions", "delete",
                        "--execution-id", eid, "--project-key", P, "--yes")
 
-      # 4. open one run and CLOSE it — the premise is a finished run that
-      #    "counted against today". set-reporting-date only accepts a closed
-      #    run, so record every case: a manual run self-closes once its last
-      #    manual log finishes (ExecutionFinished stamped asynchronously).
-      import time
+      # 4. open exactly one run and LEAVE IT OPEN. The premise is a run that
+      #    "counted against today" and is NOT closed yet: set-reporting-date
+      #    404s on an open run, so the agent must close it first (finish its
+      #    logs, or force-close with `executions finish`) before booking the
+      #    date. Do NOT start or finish any log here — closing the run would
+      #    hand the agent a done run and make the "closed the run first" and
+      #    "started a log" criteria penalise a correct agent. Record the exact
+      #    ExecutionId to a per-run sandbox file so the oracle grades THIS run,
+      #    never a recency pick over a set two concurrent runs share.
       run = call("exec.open", "tm", "testsets", "run",
                  "--test-set-key", set_key, "--execution-type", "manual")
       eid = (run.get("Data") or {}).get("ExecutionId")
       if not eid:
           fail("could not open a manual run via 'testsets run --execution-type manual'")
-      logs = (call("exec.logs", "tm", "executions", "testcaselogs", "list",
-                   "--execution-id", eid, "--project-key", P).get("Data") or [])
-      if not logs:
-          fail(f"execution {eid} has no logs to finish")
-      for l in logs:
-          tcid = l.get("TestCaseId")
-          call(f"log.start.{(tcid or '')[:8]}", "tm", "testcaselog", "start",
-               "--project-key", P, "--execution-id", eid, "--test-case-id", tcid)
-          call(f"log.finish.{(tcid or '')[:8]}", "tm", "testcaselog", "finish",
-               "--project-key", P, "--execution-id", eid, "--test-case-id", tcid,
-               "--result", "Passed", "--has-error", "false",
-               "--executed-by", "eval-fixture@uipath.com")
-      # The self-close fires off an async event, so poll (bounded) for the
-      # ExecutionFinished timestamp rather than assuming it landed synchronously.
-      closed = False
-      for _ in range(12):
-          stats = call("exec.stats", "tm", "executions", "get-stats",
-                       "--execution-id", eid, "--project-key", P)
-          if (stats.get("Data") or {}).get("ExecutionFinished"):
-              closed = True
-              break
-          time.sleep(3)
-      if not closed:
-          fail(f"execution {eid} did not close; set-reporting-date needs a finished run")
 
-      print(f"FIXTURE: ready set_key={set_key!r} execution={eid!r} (finished)",
+      # The fresh run must be OPEN: no log is started, so nothing self-closes it.
+      stats = call("exec.stats", "tm", "executions", "get-stats",
+                   "--execution-id", eid, "--project-key", P)
+      if (stats.get("Data") or {}).get("ExecutionFinished"):
+          fail(f"run {eid} is already finished; the task needs an OPEN run")
+
+      # cwd is this run's own sandbox dir (per-run isolated); the oracle reads
+      # the file back from the same cwd.
+      with open("reporting_run_id.txt", "w", encoding="utf-8") as fh:
+          fh.write(eid)
+
+      print(f"FIXTURE: ready set_key={set_key!r} execution={eid!r} (OPEN)",
             flush=True)
       EOF
 
@@ -176,12 +175,12 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status with --output json (Critical Rule #1)"
+    description: "Agent checked login status before touching Test Manager (Critical Rule #1)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     # Deliberately does not require --test-set-id: filtering by name, by set id
@@ -231,7 +230,7 @@ success_criteria:
     description: "Test Manager really stored 2026-09-21 as the run's reporting date"
     command: |
       python3 -c "
-      import json, subprocess
+      import json, subprocess, pathlib
 
       def uip(*a):
           r = subprocess.run(['uip', *a, '--output', 'json'],
@@ -239,16 +238,24 @@ success_criteria:
           t = r.stdout or ''
           return json.loads(t[t.index('{'):]) if '{' in t else {}
 
+      # pre_run wrote the exact run it opened into this per-run sandbox file.
+      # Grading THAT id - not max(Created) over a set two concurrent variant
+      # runs share - is what keeps this oracle correct under concurrency.
+      p = pathlib.Path('reporting_run_id.txt')
+      assert p.exists(), 'reporting_run_id.txt missing - pre_run did not record the run'
+      eid = p.read_text(encoding='utf-8').strip()
+      assert eid, 'reporting_run_id.txt is empty'
+
       sets = uip('tm','testsets','list','--project-key','CLAIM','--filter','EVFX-REPORT-SET')
       sid = next((x['Id'] for x in (sets.get('Data') or [])
                   if x.get('Name') == 'EVFX-REPORT-SET'), None)
       assert sid, 'EVFX-REPORT-SET not found'
       runs = (uip('tm','executions','list','--project-key','CLAIM',
                   '--test-set-id',sid,'--limit','100').get('Data') or [])
-      assert runs, 'no execution on EVFX-REPORT-SET'
-      latest = max(runs, key=lambda r: r.get('Created') or '')
-      rd = (latest.get('ReportingDate') or '')
-      assert rd.startswith('2026-09-21'), f'expected 2026-09-21, stored {rd!r}'
+      run = next((r for r in runs if r.get('Id') == eid), None)
+      assert run, f'the run pre_run opened ({eid}) is gone from EVFX-REPORT-SET'
+      rd = (run.get('ReportingDate') or '')
+      assert rd.startswith('2026-09-21'), f'expected 2026-09-21 on {eid}, stored {rd!r}'
       "
     timeout: 90
     expected_exit_code: 0

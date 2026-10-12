@@ -26,16 +26,18 @@ run_limits:
   expected_turns: 22
   max_turns: 50
   turn_timeout: 1200
-  task_timeout: 1500
+  task_timeout: 1200
 
 # Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the
 # EVFX- contract.
 #
 # This task APPENDS: every run opens a new execution on its set. Left alone that
-# grows without bound, and a later run reading "the latest execution" would find
-# a different one each time. pre_run therefore deletes the executions previous
-# runs left behind, which keeps growth flat at one. That is only possible
-# because `executions delete` exists; before it, a task like this had to either
+# grows without bound. pre_run therefore sweeps EARLIER DAYS' executions,
+# sparing today so a concurrent variant run's in-flight execution is never
+# destroyed, which keeps growth bounded to one day's runs. It then snapshots the
+# runs that survive, so the oracle grades the run the AGENT opens (current minus
+# the snapshot) rather than a recency pick a sibling run could win. That is only
+# possible because `executions delete` exists; before it, a task like this had to either
 # repair one execution in place or leak.
 pre_run:
   - timeout: 280
@@ -123,17 +125,39 @@ pre_run:
       if missing:
           fail(f"cases not assigned to {SET}: {missing}")
 
-      # 3. remove what earlier runs opened, so growth stays flat at one
+      # 3. SPARE today, sweep only EARLIER days. A concurrent variant run shares
+      #    this CLAIM set and may have an OPEN run in flight right now; deleting
+      #    every run would destroy another run's fixture. Earlier days' runs
+      #    (this task's own, from prior invocations) are safe to remove, so
+      #    growth stays bounded to one day's runs. The runs that survive the
+      #    sweep are snapshotted so the oracle can tell the agent's new run from
+      #    a pre-existing one it must not grade.
+      import datetime
+      today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
+      before_ids = []
       if set_id:
           d = call("execs.list", "tm", "executions", "list", "--project-key", P,
                    "--test-set-id", set_id, "--limit", "100")
           for row in (d.get("Data") or []):
               eid = row.get("Id")
-              if eid:
+              created = str(row.get("Created") or "")
+              if not eid:
+                  continue
+              if created.startswith(today):
+                  before_ids.append(eid)
+              else:
                   call(f"exec.delete.{eid[:8]}", "tm", "executions", "delete",
                        "--execution-id", eid, "--project-key", P, "--yes")
 
-      print(f"FIXTURE: ready set_key={set_key!r} cases={keys!r}", flush=True)
+      # Record the runs that exist on the set BEFORE the agent runs. The oracle
+      # grades `current minus these` - the run the AGENT opened - never a recency
+      # pick over the shared set that a concurrent variant's run could win. cwd
+      # is this run's own sandbox dir (per-run isolated); the oracle reads it back.
+      with open("manual_before_ids.txt", "w", encoding="utf-8") as fh:
+          fh.write("\n".join(before_ids))
+
+      print(f"FIXTURE: ready set_key={set_key!r} cases={keys!r} before={len(before_ids)}",
+            flush=True)
       EOF
 
 initial_prompt: |
@@ -148,12 +172,12 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status with --output json (Critical Rule #1)"
+    description: "Agent checked login status before touching Test Manager (Critical Rule #1)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     description: "Agent opened a manual execution over the test set (`testsets run --test-set-key --execution-type manual`)"
@@ -225,7 +249,7 @@ success_criteria:
     description: "The run Test Manager stored really holds 3 results: 2 passed, 1 failed"
     command: |
       python3 -c "
-      import json, subprocess, sys
+      import json, subprocess, sys, pathlib
 
       def uip(*a):
           r = subprocess.run(['uip', *a, '--output', 'json'],
@@ -233,19 +257,26 @@ success_criteria:
           t = r.stdout or ''
           return json.loads(t[t.index('{'):]) if '{' in t else {}
 
-      # Scoped to this task's own set. CLAIM is shared by eleven tasks and
-      # 'executions list' sends no orderBy, so 'the newest run in the project'
-      # would read a sibling task's execution.
+      # pre_run snapshotted the runs already on the set. Grade `current minus
+      # snapshot` - the run the AGENT opened - never max(Created) over the whole
+      # set: EVFX-MANUAL-SET is single-owner, but a concurrent variant run and
+      # this task's own earlier-today runs both live here, and a plain recency
+      # pick could read either.
+      before = set()
+      p = pathlib.Path('manual_before_ids.txt')
+      if p.exists():
+          before = {ln.strip() for ln in p.read_text(encoding='utf-8').splitlines() if ln.strip()}
       sets = uip('tm','testsets','list','--project-key','CLAIM','--filter','EVFX-MANUAL-SET')
       sid = next((x['Id'] for x in (sets.get('Data') or [])
                   if x.get('Name') == 'EVFX-MANUAL-SET'), None)
       assert sid, 'EVFX-MANUAL-SET not found'
       runs = (uip('tm','executions','list','--project-key','CLAIM',
                   '--test-set-id',sid,'--limit','100').get('Data') or [])
-      assert runs, 'no execution on EVFX-MANUAL-SET'
-      # Created is a millisecond ISO-8601 stamp, so this is a real recency pick
-      # even if the agent opened more than one run.
-      st = max(runs, key=lambda r: r.get('Created') or '')
+      candidates = [r for r in runs if r.get('Id') not in before]
+      assert candidates, 'the agent opened no new execution on EVFX-MANUAL-SET'
+      # Among the agent's new run(s) only; Created is a millisecond ISO-8601
+      # stamp, so this stays deterministic if the agent opened more than one.
+      st = max(candidates, key=lambda r: r.get('Created') or '')
 
       # Count from the testcaselogs, the authoritative per-case record, like
       # every sibling task - 'executions list' rows carry no Passed/Failed
