@@ -36,14 +36,21 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from case_check import CASE_PLAN_NAMES  # noqa: E402
+
 SKIP = {".venv", "node_modules", ".npm-prefix", "dist"}
 VARIABLE_ARRAYS = ("inputs", "outputs", "inputOutputs")
 
 
 def find_caseplans(root: Path):
-    for p in root.rglob("caseplan.json"):
-        if SKIP.isdisjoint(p.parts):
-            yield p
+    """Every case plan under any name; one per directory, the newest name winning."""
+    by_dir: dict[Path, Path] = {}
+    for name in CASE_PLAN_NAMES:
+        for p in root.rglob(name):
+            if SKIP.isdisjoint(p.parts):
+                by_dir.setdefault(p.parent, p)
+    yield from sorted(by_dir.values())
 
 
 def offenders(case: dict):
@@ -79,7 +86,7 @@ def main() -> int:
     plans = list(find_caseplans(root))
 
     if not plans:
-        print("PASS: no caseplan.json under the sandbox — nothing to check.")
+        print("PASS: no case plan (caseplan.case / caseplan.json) under the sandbox — nothing to check.")
         return 0
 
     total_bad = 0
