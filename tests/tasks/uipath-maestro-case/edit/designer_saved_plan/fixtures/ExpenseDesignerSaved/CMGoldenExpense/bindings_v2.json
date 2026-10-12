@@ -1,0 +1,184 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "process",
+      "key": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.Agent",
+      "id": "processShared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.Agent",
+      "value": {
+        "folderPath": {
+          "defaultValue": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106",
+          "isExpression": false,
+          "displayName": "Folder path"
+        },
+        "name": {
+          "defaultValue": "Agent",
+          "isExpression": false,
+          "displayName": "Process name"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Analyze Expense Request",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "name",
+        "SolutionsSupport": "true",
+        "subType": "Agent"
+      }
+    },
+    {
+      "resource": "process",
+      "key": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.Agentic Process",
+      "id": "processShared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.Agentic Process",
+      "value": {
+        "folderPath": {
+          "defaultValue": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106",
+          "isExpression": false,
+          "displayName": "Folder path"
+        },
+        "name": {
+          "defaultValue": "Agentic Process",
+          "isExpression": false,
+          "displayName": "Process name"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Process Expense Request",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "name",
+        "SolutionsSupport": "true",
+        "subType": "ProcessOrchestration"
+      }
+    },
+    {
+      "resource": "process",
+      "key": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.RPA Workflow",
+      "id": "processShared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.RPA Workflow",
+      "value": {
+        "folderPath": {
+          "defaultValue": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106",
+          "isExpression": false,
+          "displayName": "Folder path"
+        },
+        "name": {
+          "defaultValue": "RPA Workflow",
+          "isExpression": false,
+          "displayName": "Process name"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Record Expense via RPA",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "name",
+        "SolutionsSupport": "true"
+      }
+    },
+    {
+      "resource": "app",
+      "key": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.SimpleApprovalApp",
+      "id": "appShared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.SimpleApprovalApp",
+      "value": {
+        "folderPath": {
+          "defaultValue": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106",
+          "isExpression": false,
+          "displayName": "Folder path"
+        },
+        "name": {
+          "defaultValue": "SimpleApprovalApp",
+          "isExpression": false,
+          "displayName": "App name"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Manager Approval",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "name",
+        "SolutionsSupport": "true"
+      }
+    },
+    {
+      "resource": "process",
+      "key": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.API Workflow",
+      "id": "processShared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.API Workflow",
+      "value": {
+        "folderPath": {
+          "defaultValue": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106",
+          "isExpression": false,
+          "displayName": "Folder path"
+        },
+        "name": {
+          "defaultValue": "API Workflow",
+          "isExpression": false,
+          "displayName": "Process name"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Call Expense API",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "name",
+        "SolutionsSupport": "true",
+        "subType": "Api"
+      }
+    },
+    {
+      "resource": "Connection",
+      "key": "6a817d24-cbbd-4389-b10d-4329214ffb8d",
+      "id": "Connection6a817d24-cbbd-4389-b10d-4329214ffb8d",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "6a817d24-cbbd-4389-b10d-4329214ffb8d",
+          "isExpression": false,
+          "displayName": "connection"
+        }
+      },
+      "metadata": {
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-http-webhook"
+      }
+    },
+    {
+      "resource": "Connection",
+      "key": "dd657127-91f5-4568-a3a3-c024bc03fb0f",
+      "id": "Connectiondd657127-91f5-4568-a3a3-c024bc03fb0f",
+      "value": {
+        "ConnectionId": {
+          "defaultValue": "dd657127-91f5-4568-a3a3-c024bc03fb0f",
+          "isExpression": false,
+          "displayName": "connection"
+        }
+      },
+      "metadata": {
+        "ActivityName": "List Emails",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "connection",
+        "UseConnectionService": "true",
+        "Connector": "uipath-microsoft-outlook365"
+      }
+    },
+    {
+      "resource": "process",
+      "key": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.Task agentic case",
+      "id": "processShared/uipath-maestro-case/CM-Golden-Expense-Reporting-106.Task agentic case",
+      "value": {
+        "folderPath": {
+          "defaultValue": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106",
+          "isExpression": false,
+          "displayName": "Folder path"
+        },
+        "name": {
+          "defaultValue": "Task agentic case",
+          "isExpression": false,
+          "displayName": "Process name"
+        }
+      },
+      "metadata": {
+        "ActivityName": "Start Child Case",
+        "BindingsVersion": "2.2",
+        "DisplayLabel": "name",
+        "SolutionsSupport": "true",
+        "subType": "CaseManagement"
+      }
+    }
+  ]
+}
