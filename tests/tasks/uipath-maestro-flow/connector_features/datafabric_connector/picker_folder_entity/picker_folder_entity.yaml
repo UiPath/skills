@@ -1,0 +1,78 @@
+task_id: skill-flow-datafabric-folder-entity-picker
+description: >
+  A Flow node on the Data Service "Create Entity Record (Preview)" activity
+  whose entity is a folder entity on the folderEntityName solution-resource
+  picker. `node configure` must resolve the authored name into the solution
+  and bind it; the activity's FetchObjectMetadataFolder design action then
+  reads it by key.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-dataservice, "feature:entities"]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+run_limits:
+  max_turns: 100
+  turn_timeout: 1800
+  task_timeout: 2400
+
+reference:
+  directory: .
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+  - command: 'python3 "_setup/ensure_folder_entity.py" "_setup/skill_picker_eval_entity.entity.json"'
+    timeout: 120
+
+initial_prompt: |
+  Build a UiPath solution named "DfPickerFlowSolution" containing a Maestro
+  Flow project named "DfPickerFlow". The flow has a manual trigger followed by
+  a single Data Service connector node that creates a record in a Data Fabric
+  folder entity:
+
+  * Connector: uipath-uipath-dataservice (use the tenant's Data Fabric connection)
+  * Activity: "Create Entity Record (Preview)"
+    (node type uipath.connector.uipath-uipath-dataservice.create-entity-record-preview-)
+  * Entity scope: folder
+  * Entity: the folder entity named "SkillPickerEvalEntity" in the Shared folder
+
+  Author the .flow file with `uip maestro flow node add` and
+  `uip maestro flow node configure` (the JSON authoring path), not the
+  TypeScript SDK: `registry prepare` does not support this curated activity.
+  Leave the record's field values empty. Configure the node with the live
+  connection so the entity is resolved properly, and finish with
+  `uip maestro flow validate` passing on the .flow file. Do NOT run debug.
+  Do NOT ask for approval, confirmation, or feedback.
+
+  Before starting, load the uipath-maestro-flow skill and follow its workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent configured the connector node with node configure"
+    tool_name: "Bash"
+    command_pattern: 'maestro\s+flow\s+node\s+configure'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final .flow passes `uip maestro flow validate`"
+    command: 'for f in $(find . -maxdepth 6 -name "*.flow"); do uip maestro flow validate "$f" --output json | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin)[\"Result\"]==\"Success\" else 1)" && exit 0; done; exit 1'
+    timeout: 180
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The folderEntityName picker resolved into the solution and the node binds the entity"
+    command: "python3 $REFERENCE_DIR/check_picker_folder_entity.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
