@@ -107,8 +107,8 @@ reader pinned lower refuses the file; `SCHEMA_VERSION_BELOW_FLOOR`: every reader
 migrates it forward on open). Changing versions is `uip maestro flow migrate`'s
 job, not an edit to this call.
 
-Four findings the source cannot carry are printed on stderr as
-`flow-decompile: warning: …` (and `--strict` turns the first, third and fourth
+Five findings the source cannot carry are printed on stderr as
+`flow-decompile: warning: …` (and `--strict` turns every one but the second
 into an error):
 
 - A node **no trigger reaches** — no edge leads to it, as when a designer or
@@ -131,6 +131,12 @@ into an error):
   drops that edge, and `merge` writes the loss into the original. If your edit
   touches that part of the flow, change the `.flow` JSON there directly instead
   of round-tripping it through the source.
+- A **switch whose cases carry their own conditions** — for example `High:
+  amount > 100` and `Low: amount <= 100`. `.switch(name, on, cases)` models
+  only `on === value`, so the decompiled `on` and `value`s are placeholders
+  (with a `/* TODO: this switch's case expressions are not a uniform … */`
+  comment). Recompiling fails or picks a different case, even when your edit is
+  somewhere else in the flow, so make the change in the `.flow` JSON directly.
 
 Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
 placing it in a solution, copy it over the canonical artifact rather than next
