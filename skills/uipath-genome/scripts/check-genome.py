@@ -56,7 +56,8 @@ VALID_SKILLS = {
 OPERATE_SKILLS = {  # allowed in Platform Dependencies / Deployment, never in Build With or Components
     "uipath-platform", "uipath-tasks", "uipath-test", "uipath-admin", "uipath-insights",
     "uipath-troubleshoot", "uipath-governance", "uipath-review", "uipath-planner", "uipath-aops",
-    "uipath-automationhub", "uipath-automation-discovery", "uipath-feedback",
+    "uipath-automationhub",
+    "uipath-doc-strategy-select", "uipath-automation-discovery", "uipath-feedback",
     "uipath-activity-migrator", "uipath-knowledge-bundles",
 }
 RETIRED_SKILLS = {"uipath-rpa-workflows", "uipath-coded-workflows", "uipath-coded-agents"}
