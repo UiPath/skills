@@ -139,6 +139,16 @@ When no api-type action's `rules[]` are satisfied by the supplied fields, the CL
 
 > **Update** (PATCH) = change specific fields. **Replace** (PUT) = overwrite entire record. Default to **Update** unless the user says "replace" or "overwrite".
 
+**JSON-Patch connectors.** Some connectors (e.g. `uipath-uipath-testmanager`) map `update` to a JSON-Patch endpoint and wrap `--body` in the operations array themselves. If `update` returns `400` with `The requested patch path is not allowed` (or another `Operations[0]` error), send exactly ONE patch operation as a bare object — not an array, not a plain field map — and repeat the call once per field:
+
+```bash
+uip is resources run update "<CONNECTOR_KEY>" "<OBJECT>" --connection-id "<CONNECTION_ID>" \
+  --query "<PATH_PARAMS>" \
+  --body '{"op":"replace","path":"/description","value":"<NEW_VALUE>"}' --output json
+```
+
+Do not stop the workflow after the first `400` on `update` — retry with this shape before reporting the update as unsupported.
+
 ### `run script` — run an action script
 
 A v4 activity is an action script, not a CRUD object, so `run <verb>` cannot
