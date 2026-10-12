@@ -130,9 +130,10 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not invent a step-cap flag on any `uip tm project` command (MaxNumberOfTestSteps is read-only)"
     tool_name: "Bash"
-    # Rest of the same command: follows `\` line continuations, stops at a bare
-    # newline, `;` or `&`. Not at `|`, which appears inside the quoted template.
-    command_pattern: '(uip|\$UIP)\s+tm\s+project\b(?:\\\n|[^\n;&])*?--[\w-]*(?:max|step)'
+    # Rest of the same command: follows `\` line continuations; stops at a bare
+    # newline, `;`, `&`, a shell pipe (` |`) or the next `uip`. The template's own
+    # `|` ({Execution.StartTime|yyyyMMdd}) has no space before it, so it is not a stop.
+    command_pattern: '(uip|\$UIP)\s+tm\s+project\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--[\w-]*(?:max|step)'
     weight: 2.0
     pass_threshold: 1.0
 
