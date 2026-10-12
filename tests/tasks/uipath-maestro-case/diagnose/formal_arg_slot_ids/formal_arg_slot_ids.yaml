@@ -21,7 +21,9 @@ sandbox:
       path: fixtures
 
 reference:
-  directory: .
+  # Case root, not `.`: the grader imports `_shared/`, which a task-only
+  # staging leaves out (ModuleNotFoundError at grade time).
+  directory: ../..
 
 initial_prompt: |
   The LinearThreeStages case under LinearThreeStages/ passes
@@ -59,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "Every inputs/outputs slot id is synthetic and distinct from its name/var, and all names/vars are unchanged"
-    command: "python3 $REFERENCE_DIR/check_formal_arg_slot_ids.py"
+    command: "python3 $REFERENCE_DIR/diagnose/formal_arg_slot_ids/check_formal_arg_slot_ids.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

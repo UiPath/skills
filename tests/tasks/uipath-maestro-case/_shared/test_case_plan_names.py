@@ -36,3 +36,16 @@ def test_an_explicit_caseplan_json_path_also_accepts_the_case_name(tmp_path, mon
     write(str(tmp_path / "Sol" / "Case" / "caseplan.case"))
     monkeypatch.chdir(tmp_path)
     assert case_check.find_caseplan("Sol/Case/caseplan.json").endswith("caseplan.case")
+
+
+def test_a_bpmn_sidecar_is_never_read_as_the_plan(tmp_path, monkeypatch):
+    write(str(tmp_path / "Sol" / "Case" / "caseplan.case"))
+    write(str(tmp_path / "Sol" / "Case" / "caseplan.case.bpmn"), nodes=5)
+    monkeypatch.chdir(tmp_path)
+    assert case_check.glob_caseplans() == [os.path.join("Sol", "Case", "caseplan.case")]
+
+
+def test_existing_caseplan_is_none_when_no_plan_name_exists(tmp_path, monkeypatch):
+    write(str(tmp_path / "Sol" / "Case" / "caseplan.case.bpmn"))
+    monkeypatch.chdir(tmp_path)
+    assert case_check.existing_caseplan("Sol/Case/caseplan.json") is None

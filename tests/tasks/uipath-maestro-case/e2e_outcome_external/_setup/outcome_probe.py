@@ -140,12 +140,14 @@ def _our_stage_ids() -> set:
     a reliable fingerprint for OUR instance. Trigger ids are not: the skill often
     emits the literal ``trigger_1``, which any other case can also carry.
     """
-    # Any plan name, newest first: Studio Web saves the plan as caseplan.case.
-    hits = []
+    # Any plan name, newest first per directory (Studio Web saves the plan as
+    # caseplan.case), so an abandoned caseplan.case scaffold elsewhere cannot
+    # shadow the real build's caseplan.json. Same order as _shared/case_check.py.
+    by_dir = {}
     for name in ("caseplan.case", "caseplan.json", "case.stage.json", "default.stage.json"):
-        hits = glob.glob(f"**/{name}", recursive=True)
-        if hits:
-            break
+        for path in glob.glob(f"**/{name}", recursive=True):
+            by_dir.setdefault(os.path.dirname(path), path)
+    hits = list(by_dir.values())
     if not hits:
         return set()
     try:

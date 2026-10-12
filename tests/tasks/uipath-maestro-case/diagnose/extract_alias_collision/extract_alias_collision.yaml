@@ -25,7 +25,9 @@ sandbox:
       path: fixtures
 
 reference:
-  directory: .
+  # Case root, not `.`: the grader imports `_shared/`, which a task-only
+  # staging leaves out (ModuleNotFoundError at grade time).
+  directory: ../..
 
 initial_prompt: |
   The LinearThreeStages case under LinearThreeStages/ passes
@@ -75,7 +77,7 @@ success_criteria:
 
   - type: run_command
     description: "Gate and producer agree — Decision's gate reads a variable that is actually produced; 3 stages preserved; not silenced by declaring an orphan"
-    command: "python3 $REFERENCE_DIR/check_extract_alias_collision.py"
+    command: "python3 $REFERENCE_DIR/diagnose/extract_alias_collision/check_extract_alias_collision.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

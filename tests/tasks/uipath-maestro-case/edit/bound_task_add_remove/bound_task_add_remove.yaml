@@ -24,7 +24,9 @@ sandbox:
       path: fixtures
 
 reference:
-  directory: .
+  # Case root, not `.`: the grader imports `_shared/`, which a task-only
+  # staging leaves out (ModuleNotFoundError at grade time).
+  directory: ../..
 
 initial_prompt: |
   The LinearThreeStages case solution already exists on disk under
@@ -65,7 +67,7 @@ success_criteria:
 
   - type: run_command
     description: "Bound task removed end-to-end (caseplan + bindings + bindings_v2 + solution declarations), timer task added, case project declarations intact"
-    command: "python3 $REFERENCE_DIR/check_bound_task_add_remove.py"
+    command: "python3 $REFERENCE_DIR/edit/bound_task_add_remove/check_bound_task_add_remove.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

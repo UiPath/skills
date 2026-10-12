@@ -82,7 +82,8 @@ def check(solution_dir, quiet=False):
     # Studio Web's plan names, newest first; one plan per project, the newest present.
     names = ("caseplan.case", "caseplan.json", "case.stage.json", "default.stage.json")
     caseplans = []
-    for project in sorted(p for p in solution_dir.iterdir() if p.is_dir()):
+    projects = sorted(p for p in solution_dir.iterdir() if p.is_dir()) if solution_dir.is_dir() else []
+    for project in projects:
         found = next((project / n for n in names if (project / n).is_file()), None)
         if found:
             caseplans.append(found)
