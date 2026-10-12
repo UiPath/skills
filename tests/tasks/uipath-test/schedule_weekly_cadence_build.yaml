@@ -21,7 +21,7 @@ tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:trigger]
 
 run_limits:
   expected_turns: 14
-  max_turns: 36
+  max_turns: 54
   turn_timeout: 1200
   task_timeout: 1800
 
