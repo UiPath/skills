@@ -8,8 +8,12 @@ description: >
   schedule tasks do not cover. The prompt states the business steps and the
   cadence in words; the cron shape (six/seven Quartz fields starting with
   seconds), the required `--cron-details` JSON, the wall-clock format and
-  --output json are left to the skill. Graded on each lifecycle command running
-  and on the terminal state — the schedule is gone at the end.
+  --output json are left to the skill.
+
+  Concurrency: two model variants share the CLAIM project, so the schedule name
+  is per-run stamped and every lifecycle step is graded on the agent's own
+  emitted command (per-run isolated) — including the terminal delete — rather
+  than on a fixed-name post-state row a concurrent run would collide with.
 tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:trigger]
 
 run_limits:
@@ -22,10 +26,11 @@ pre_run:
   - timeout: 300
     command: |
       python3 - <<'EOF'
-      import json, subprocess, sys
+      import json, subprocess, sys, datetime
       P, SET = "CLAIM", "EVFX-SCHEDLC-SET"
       CASES = ["EVFX-SCHEDLC-TC1"]
       PREFIX = "EVFX-SCHEDLC-"
+      today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
 
       def fail(msg):
           print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
@@ -87,28 +92,30 @@ pre_run:
       call("cases.assign", "tm", "testcases", "add", "--test-set-key", set_key,
            "--test-case-keys", ",".join(keys))
 
-      # Clear every schedule this task owns from a prior run, and confirm the
-      # sweep landed - the agent creates its own, so a leftover would make the
-      # "exactly one" and "gone at the end" checks ambiguous.
+      # Sweep only EARLIER-DAY stamped schedules: the agent stamps today's
+      # YYYYMMDD into the name, and a concurrent variant run does too, so a
+      # whole-prefix delete would strand the other run mid-lifecycle. Spare
+      # today's.
       d = call("sched.list", "tm", "schedules", "list", "--project-key", P, "--limit", "200")
       stale = [r["Id"] for r in (d.get("Data") or [])
-               if str(r.get("Name", "")).startswith(PREFIX) and r.get("Id")]
+               if str(r.get("Name", "")).startswith(PREFIX)
+               and today not in str(r.get("Name", "")) and r.get("Id")]
       if stale:
           call("sched.clear", "tm", "schedules", "delete", "--project-key", P,
                "--schedule-ids", *stale, "--yes")
-          d = call("sched.recheck", "tm", "schedules", "list", "--project-key", P, "--limit", "200")
-          if any(str(r.get("Name", "")).startswith(PREFIX) for r in (d.get("Data") or [])):
-              fail("EVFX-SCHEDLC- schedules still present after sweep")
-
-      print(f"FIXTURE: ready set_key={set_key!r}", flush=True)
+      print(f"FIXTURE: ready set_key={set_key!r} swept={len(stale)}", flush=True)
       EOF
 
 initial_prompt: |
   Walk a scheduled run through its whole life in my UiPath Test Manager project
-  CLAIM, on the "EVFX-SCHEDLC-SET" test set:
+  CLAIM, on the "EVFX-SCHEDLC-SET" test set.
 
-  1. Create a schedule named "EVFX-SCHEDLC-RUN" that runs it every day at 01:00
-     UTC, starting next week.
+  Name the schedule "EVFX-SCHEDLC-<STAMP>", where <STAMP> is the current UTC date
+  and time as YYYYMMDD-HHMMSS plus 6 random lowercase hex characters you generate
+  once for this session — another session may run at the same moment, so the
+  random part keeps the schedule yours. Then:
+
+  1. Create it so it runs the set every day at 01:00 UTC, starting next week.
   2. Tell me when it is next due to fire.
   3. We actually want it at 03:00 UTC instead — change it.
   4. Put it on hold for now (don't delete it).
@@ -166,24 +173,14 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: run_command
-    description: "EVFX-SCHEDLC-RUN is gone at the end of the lifecycle"
-    command: |
-      python3 -c "
-      import json, subprocess
-
-      def uip(*a):
-          r = subprocess.run(['uip', *a, '--output', 'json'],
-                             capture_output=True, text=True)
-          t = r.stdout or ''
-          return json.loads(t[t.index('{'):]) if '{' in t else {}
-
-      rows = uip('tm','schedules','list','--project-key','CLAIM','--limit','200').get('Data') or []
-      names = [r.get('Name') for r in rows]
-      assert 'EVFX-SCHEDLC-RUN' not in names, 'EVFX-SCHEDLC-RUN was not deleted at the end'
-      "
-    timeout: 120
-    expected_exit_code: 0
+  - type: command_executed
+    # Terminal state graded on the agent's own delete (per-run isolated) instead
+    # of a fixed-name "gone at the end" post-state, which a concurrent variant's
+    # in-flight schedule of the same prefix would make ambiguous.
+    description: "Removed it at the end with delete --yes"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+schedules\s+delete\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--schedule-ids\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--yes\b)'
+    min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 

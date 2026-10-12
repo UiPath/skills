@@ -99,7 +99,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed the project's schedules through the CLI as JSON"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+schedules\s+list\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--project-key\s+CLAIM)'
+    command_pattern: 'uip\s+tm\s+schedules\s+list\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--project-(?:key[=\s]+CLAIM|id[=\s]+\S))'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

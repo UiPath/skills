@@ -22,6 +22,7 @@ Exactly one of day-of-month / day-of-week must be `?`.
 | Daily at 02:00 | `0 0 2 1/1 * ? *` |
 | Daily at 15:30 | `0 30 15 1/1 * ? *` |
 | Every 2 days at 02:00 | `0 0 2 1/2 * ? *` |
+| Weekly, Mon & Thu at 09:00 | `0 0 9 ? * MON,THU *` |
 | Once, 12 Oct 2030 06:30 | `0 30 6 12 10 ? 2030` |
 
 ## `--cron-details` is required, and must be a JSON object
@@ -38,9 +39,13 @@ a 500. The CLI refuses all three before the request.
 |---|---|
 | Daily at 02:00 | `{"type":4,"daily":{"atHour":2,"atMinute":0,"frequencyIndays":1}}` |
 | One-off | `{"type":1}` |
+| Weekly (Mon & Thu) | `{"type":3,"weekly":{"atHour":9,"atMinute":0,"days":["Monday","Thursday"]}}` |
 
 With `--recurrence recurrence` (the default) and `type` 4, the server requires
-`daily.frequencyIndays` to be `1`.
+`daily.frequencyIndays` to be `1`. **Weekly is `type` 3**: the `weekly.days`
+array takes full English day names (`"Monday"`, `"Thursday"`), and the cron's
+day-of-week field carries the same days as 3-letter codes (`MON,THU`) with `?`
+in day-of-month.
 
 ## Times are wall-clock, not instants
 
@@ -127,7 +132,7 @@ An empty `--all` reports `Action: NoSchedules` and calls nothing.
 
 Writes need the Test Manager automated-execution permission. `list` needs
 test-set read. Check with
-`uip tm project permissions get --project-key <PROJECT_KEY>`.
+`uip tm project-permissions get --project-key <PROJECT_KEY>`.
 
 ## What this does not tell you
 
