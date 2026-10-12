@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import glob
 import os
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -169,3 +170,60 @@ def test_graders_unpack_the_full_connector_key(script: str) -> None:
     tree = ast.parse(Path(script).read_text(encoding="utf-8"))
     bad = [line for line, arity in _connector_unpacks(tree) if arity != 3]
     assert not bad, f"{os.path.basename(script)} unpacks index_runtime_connectors keys at lines {bad}"
+
+
+# Verbatim from skill-bpmn-jira-get-issue 2026-10-09 (debug.log).
+_POLL_504 = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Failed during poll-instance-status: 504 Gateway Timeout on GET '
+    '/api/v1/debug-instances/6f191201-0305-4665-974e-41c09fd36288/element-executions",\n'
+    '  "Instructions": "Check authentication and parameters",\n'
+    '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
+)
+_COMPLETED = '{"Result": "Success", "Data": {"InstanceId": "i-1", "finalStatus": "Completed"}}'
+_BAD_INPUT = '{"Result": "Failure", "ErrorCode": "invalid_argument", "Retry": "RetryWillNotFix"}'
+
+
+def _stub_debug(monkeypatch, outputs: list[tuple[int, str]]) -> dict:
+    calls = {"n": 0}
+
+    def fake_run_cli(arguments, *, timeout, log_file=None):
+        code, out = outputs[calls["n"]]
+        calls["n"] += 1
+        return subprocess.CompletedProcess(arguments, code, out, "")
+
+    monkeypatch.setattr(bpmn_live, "run_cli", fake_run_cli)
+    monkeypatch.setattr(bpmn_live.time, "sleep", lambda _seconds: None)
+    return calls
+
+
+def test_run_debug_retries_a_poll_5xx_when_asked(monkeypatch, tmp_path) -> None:
+    calls = _stub_debug(monkeypatch, [(1, _POLL_504), (0, _COMPLETED)])
+    _, instance_id = bpmn_live.run_debug(
+        tmp_path, {}, None, retry=bpmn_live.DebugRetry.TRANSIENT
+    )
+    assert instance_id == "i-1"
+    assert calls["n"] == 2
+
+
+def test_run_debug_is_single_shot_by_default(monkeypatch, tmp_path) -> None:
+    calls = _stub_debug(monkeypatch, [(1, _POLL_504), (0, _COMPLETED)])
+    with pytest.raises(bpmn_live.CheckFailure, match="504 Gateway Timeout"):
+        bpmn_live.run_debug(tmp_path, {}, None)
+    assert calls["n"] == 1
+
+
+def test_run_debug_does_not_retry_a_real_failure(monkeypatch, tmp_path) -> None:
+    calls = _stub_debug(monkeypatch, [(1, _BAD_INPUT), (0, _COMPLETED)])
+    with pytest.raises(bpmn_live.CheckFailure):
+        bpmn_live.run_debug(tmp_path, {}, None, retry=bpmn_live.DebugRetry.TRANSIENT)
+    assert calls["n"] == 1
+
+
+def test_run_debug_stops_retrying_when_the_deadline_cannot_fund_another(
+    monkeypatch, tmp_path
+) -> None:
+    calls = _stub_debug(monkeypatch, [(1, _POLL_504), (0, _COMPLETED)])
+    with pytest.raises(bpmn_live.CheckFailure, match="504 Gateway Timeout"):
+        bpmn_live.run_debug(tmp_path, {}, None, timeout=30, retry=bpmn_live.DebugRetry.TRANSIENT)
+    assert calls["n"] == 1

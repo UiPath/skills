@@ -24,9 +24,11 @@ import json
 import math
 import re
 import subprocess
+import time
 import xml.etree.ElementTree as ET
 from collections.abc import Collection, Iterator
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -433,50 +435,55 @@ def _write_debug_log(log_file, text: str) -> None:
         pass
 
 
+class DebugRetry(Enum):
+    NONE = "none"
+    TRANSIENT = "transient"
+
+
+# A gateway 5xx while polling kills the CLI before it reports an instance id,
+# labelled RetryWillNotFix. skill-bpmn-jira-get-issue 2026-10-09:
+# "Failed during poll-instance-status: 504 Gateway Timeout".
+_TRANSIENT_DEBUG = re.compile(
+    r'failed during poll-instance-status: 5\d\d|"retry": "retrylater"|"errorcode": "server_error"'
+)
+DEBUG_RETRY_BACKOFF_SECONDS = 5
+_MIN_RETRY_SECONDS = 60
+
+
+def _is_transient_debug(completed: subprocess.CompletedProcess[str]) -> bool:
+    if completed.returncode == 0:
+        return False
+    return _TRANSIENT_DEBUG.search(f"{completed.stdout}\n{completed.stderr}".lower()) is not None
+
+
 def run_debug(
     project_dir,
     inputs: dict,
     log_file,
     *,
     timeout: int = DEBUG_BUDGET_DEFAULT_TIMEOUT,
+    retry: DebugRetry = DebugRetry.NONE,
 ) -> tuple:
-    """Run one `uip maestro bpmn debug`; return (debug_data, instance_id).
+    """Run `uip maestro bpmn debug`; return (debug_data, instance_id).
 
     Lives here rather than in a task checker so test_criterion_budgets.py can
     price it, the same way flow_check.run_debug is priced in the flow suite.
+
+    `DebugRetry.TRANSIENT` re-runs the whole debug after a transient CLI
+    failure, so pass it only from a checker whose process has no side effects.
+    Every attempt shares the one `timeout` deadline, so the budget is unchanged.
     """
 
     poll_ms = poll_interval_ms(timeout)
-    try:
-        completed = run_cli(
-            [
-                "uip",
-                "maestro",
-                "bpmn",
-                "debug",
-                str(project_dir),
-                "--poll-interval",
-                str(poll_ms),
-                "--inputs",
-                json.dumps(inputs, separators=(",", ":")),
-            ],
-            timeout=timeout,
-            # Not passed through as the CLI's own --log-file: the CLI buffers
-            # that file and a SIGKILL on timeout leaves it empty (run
-            # 35524004307). The poll log (instance id, per-poll status) is
-            # streamed to stderr instead, survives on the TimeoutExpired
-            # exception, and is written to `log_file` from here.
-            log_file=None,
-        )
-    except subprocess.TimeoutExpired as exc:
-        out, err = _as_text(exc.stdout), _as_text(exc.stderr)
-        _write_debug_log(log_file, out + err)
-        partial = err or out
-        raise CheckFailure(
-            f"bpmn debug did not reach a terminal status within the {timeout}s budget "
-            f"(the instance is still running or stuck); CLI log tail: {partial[-3000:]}"
-        ) from None
-    _write_debug_log(log_file, (completed.stdout or "") + (completed.stderr or ""))
+    deadline = time.monotonic() + timeout
+    while True:
+        completed = _debug_attempt(project_dir, inputs, log_file, poll_ms, timeout, deadline)
+        if retry is not DebugRetry.TRANSIENT or not _is_transient_debug(completed):
+            break
+        if deadline - time.monotonic() - DEBUG_RETRY_BACKOFF_SECONDS < _MIN_RETRY_SECONDS:
+            break
+        time.sleep(DEBUG_RETRY_BACKOFF_SECONDS)
+
     payload = parse_json_output(completed.stdout or completed.stderr, "debug")
     debug_data = get_ci(payload, "Data", {})
     if str(get_ci(payload, "ErrorCode", "")).casefold() == "timeout":
@@ -494,6 +501,42 @@ def run_debug(
             + f"; stderr tail: {(completed.stderr or '')[-1500:]}"
         )
     return debug_data, instance_id
+
+
+def _debug_attempt(
+    project_dir, inputs: dict, log_file, poll_ms: int, timeout: int, deadline: float
+) -> subprocess.CompletedProcess[str]:
+    try:
+        completed = run_cli(
+            [
+                "uip",
+                "maestro",
+                "bpmn",
+                "debug",
+                str(project_dir),
+                "--poll-interval",
+                str(poll_ms),
+                "--inputs",
+                json.dumps(inputs, separators=(",", ":")),
+            ],
+            timeout=max(1, math.floor(deadline - time.monotonic())),
+            # Not passed through as the CLI's own --log-file: the CLI buffers
+            # that file and a SIGKILL on timeout leaves it empty (run
+            # 35524004307). The poll log (instance id, per-poll status) is
+            # streamed to stderr instead, survives on the TimeoutExpired
+            # exception, and is written to `log_file` from here.
+            log_file=None,
+        )
+    except subprocess.TimeoutExpired as exc:
+        out, err = _as_text(exc.stdout), _as_text(exc.stderr)
+        _write_debug_log(log_file, out + err)
+        partial = err or out
+        raise CheckFailure(
+            f"bpmn debug did not reach a terminal status within the {timeout}s budget "
+            f"(the instance is still running or stuck); CLI log tail: {partial[-3000:]}"
+        ) from None
+    _write_debug_log(log_file, (completed.stdout or "") + (completed.stderr or ""))
+    return completed
 
 
 SOLUTION_INIT_TIMEOUT = 90
