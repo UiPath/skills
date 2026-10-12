@@ -243,22 +243,23 @@ Free-floating annotation node. Ignored at execution time; surfaced only in the a
 
 ```json
 {
-  "id": "<shortId>",
+  "id": "StickyNote_aBcDeF",
   "type": "case-management:StickyNote",
-  "position": { "x": 400, "y": 400 },
   "data": {
-    "label": "Note",
+    "parentElement": { "id": "root", "type": "case-management:root" },
     "color": "yellow",
     "content": "Reminder: confirm SLA with ops before publishing."
   }
 }
 ```
 
+No `position`, `style`, `width`, `height` or `measured` (Rule 19): the Case Designer places and sizes an unpositioned note when it opens the case.
+
 | Field | Type | Description |
 |-------|------|-------------|
-| `data.label` | string? | Display label |
-| `data.color` | string? | Sticky note color |
-| `data.content` | string? | Note body |
+| `data.parentElement` | object | Always the case root, `{ "id": "root", "type": "case-management:root" }` |
+| `data.color` | string? | One of `blue`, `green`, `yellow`, `pink`, `white`; omit for the designer default |
+| `data.content` | string? | Note body; inline markdown renders |
 
 ---
 
