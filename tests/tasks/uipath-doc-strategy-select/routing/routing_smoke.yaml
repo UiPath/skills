@@ -52,10 +52,16 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
-  - type: file_contains
+  # Behaviour, not vocabulary. The rule is Critical Rule 4 — retrieval never proves
+  # absence, so a completeness claim needs full-document processing or deterministic
+  # enumeration plus a coverage reconciliation. Agents state that correctly in several
+  # wordings ("enumerate every variant", "every document must be processed", "coverage
+  # reconciliation must confirm the count"), and an earlier `includes: ["enumerat"]`
+  # failed a correct answer that happened to paraphrase it.
+  - type: file_matches_regex
     description: "Applied the completeness boundary rather than treating search as exhaustive"
     path: "route.txt"
-    includes:
-      - "enumerat"
+    pattern: '(?is)(enumerat|coverage reconcil|reconcil\w*\b.{0,60}\bcount|every document\b.{0,80}\bprocess|full[-\s]document processing|processed\b.{0,40}\bcount\b.{0,30}match)'
+    must_match: true
     weight: 3.0
     pass_threshold: 1.0
