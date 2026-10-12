@@ -18,38 +18,91 @@ configuration for the other two — verify each type's own supported settings.
 
 ## Standard versus advanced harness
 
-`settings.strategy` accepts `"standard"` or `"advanced"`. The repository's configuration guidance defaults to
-`"standard"`, and no feature matrix distinguishing the two is published here.
+The harness is the `settings.mode` field on the agent, not a separate artifact — see
+[/uipath:uipath-agents — agent-definition.md](../../uipath-agents/references/lowcode/agent-definition.md)
+§ Settings, which owns the schema. The capability matrix below is published at
+https://docs.uipath.com/agents/automation-cloud/latest/user-guide/advanced-agents — advanced is in
+**preview**, Automation Cloud only, not Automation Suite. Verify availability in the target tenant
+before committing to it.
 
-Treat that as the decision rule, not as a gap to fill by guessing:
+An agent is a model plus a harness. The model reasons; the harness is the loop that drives it, the tools
+it can call, and the memory it can write to.
 
-1. **Start with standard** for bounded reasoning with known tools and a defined output contract.
-2. **Select advanced only for a concrete required behavior** that you have verified is supported there
-   and is unavailable or materially inadequate in standard, in the target environment.
-3. **Record what the requirement is.** "Complex workload" is not a requirement. "Requires <behavior X>,
-   which standard does not support in this tenant" is.
-4. When the distinction is unknown, keep the required behavior in the specification and leave the harness
-   label unresolved rather than picking advanced defensively.
+| | Standard | Advanced |
+|---|---|---|
+| Execution model | Reason and act, one pass through the tools | Act, observe and adjust, repeated until done |
+| Where intermediate work lives | The context window | A per-run file workspace — list, read, write, edit, delete, search, match |
+| Long-run behavior | Context fills and the agent loses track | Completed tool output is offloaded and older history pruned (context compaction) |
+| Delegation | None | Sub-agents run a slice of work in their own context and return only the result |
+| Tool calling | One tool call per model turn | The agent writes JavaScript calling its own tools — fan out over a list, filter and aggregate in one step |
+| Code | None | Persistent JavaScript sandbox: calculations, programmatic tool calls, dispatching sub-agents. No network, no filesystem |
+| Reading files | Needs the Analyze files tool | Input and uploaded files land in the workspace automatically |
+| Failure handling | — | Failed tool calls, schema mismatches and dead ends are detected and retried |
 
-### What does not select advanced
+### Selecting advanced
 
-None of these is a harness requirement:
+Advanced suits work showing **two or more** of these signals. One alone is not enough.
 
-- a long document, or many documents;
+1. The work runs long — dozens of tool calls rather than a handful.
+2. The agent's intermediate work matters and should persist as files that can be opened afterwards.
+3. Parts of the work are independent and benefit from being handled separately.
+4. The material is larger than fits in a single prompt — long documents or large record sets.
+
+Research, analysis and document-heavy workflows are the typical examples, as is any task where the agent
+must gather evidence, weigh it against a set of criteria, and justify a conclusion. Standard remains
+better for tasks that are short, predictable, and complete in a few tool calls.
+
+### Selecting advanced does not deselect a tool
+
+The harness is `settings.mode` on the agent; Summarize, Analyze files and Batch transform are tools that
+agent calls. They sit on different axes, so they do not trade off. An agent on either harness can call
+any of those tools, and a Flow can hold that agent as one node among deterministic ones.
+
+The Fast Routing table still asks for **one** answer, because the question it answers is which capability
+carries the workload. Answer AH when the shape is not known in advance and the agent has to plan its own
+steps — then say in the placement which tools it is given. Answer a fixed strategy when one of them
+already satisfies the contract, even if the step runs inside an autonomous agent.
+
+### Before committing to advanced
+
+- **Preview gaps.** Tool argument values cannot be configured — every parameter is supplied by the model.
+  Guardrails are not supported. Some Integration Service activities are unavailable. Custom sub-agents
+  cannot be defined; only the built-in general-purpose sub-agent exists. An advanced agent cannot be
+  cloned as a coded agent.
+- **Moving an existing agent to advanced is destructive and one-way.** It permanently discards any Static
+  and Argument values configured on its tools, and switching back does not restore them.
+- **Cost follows call count.** Billing is per LLM call against the same units as standard, but a single
+  advanced run makes more calls than a comparable standard run. Say so when you select it.
+
+### What does not select advanced on its own
+
+Each of these is either one signal (and the rule needs two), or no signal at all:
+
+- **A long document, or many documents** — this is signal 4 only. Pair it with a second signal, or keep
+  the bounded read and stay standard.
+- **A long-running *process*** — a multi-day wait on a third party is elapsed time, not tool calls.
+  Signal 1 is dozens of agent tool calls in one run. A Flow that waits is a Flow concern.
 - a persistent index;
-- many Flow nodes, or a multi-stage pipeline;
+- many Flow nodes, or a multi-stage pipeline — stages in a graph are not the agent's own tool calls;
 - a regulated industry or a high-stakes decision;
-- coded rather than low-code authoring — that is an independent axis;
+- coded rather than low-code authoring — an independent axis, decided in
+  [/uipath:uipath-agents — coded-vs-lowcode-guide.md](../../uipath-agents/references/coded-vs-lowcode-guide.md);
 - `Extract · Advanced` — an extraction strategy, unrelated to the harness.
 
-A Flow can orchestrate several standard agents and deterministic nodes. That is usually the simpler and
-cheaper design; prefer it and explain any departure.
+A Flow can orchestrate several standard agents and deterministic nodes. Where that fits, it is the
+simpler and cheaper design; prefer it and explain any departure.
 
-### What no harness setting grants
+### What the harness does not give you for free
 
-Checkpointing, retry and resume, parallelism, evaluation, and durability all require explicit
-implementation and bindings. Persist long-running job state in a suitable store and implement polling
-with a supported start/status pattern and a bounded loop. Do not assume the harness provides them.
+Advanced self-corrects *within* a run — failed tool calls, schema mismatches and dead ends are detected
+and retried. That is not the same as process durability. **Checkpointing across a run boundary, resume
+after a crash, scheduled evaluation, and durable state all still require explicit implementation and
+bindings**, on either harness. Persist long-running job state in a suitable store and implement polling
+with a supported start/status pattern and a bounded loop.
+
+The distinction that matters when routing: *"the agent needs dozens of tool calls to finish one item"*
+is signal 1 and counts toward advanced. *"a case sits for eleven days waiting on a supplier"* is
+orchestration and counts toward neither.
 
 ## Optional attachments
 
@@ -94,4 +147,4 @@ Once the harness and attachments are chosen, the configuration belongs to `uipat
 For an agent embedded in a Flow, the node and its artifact ports are owned by
 [/uipath:uipath-maestro-flow — plugins/inline-agent/planning.md](../../uipath-maestro-flow/references/author/plugins/inline-agent/planning.md).
 
-Cases that turn on this decision: [AH1–AH3](case-library-guide.md#ah-advanced-harness).
+Cases that turn on this decision: [HF1–HF3](case-library-guide.md#hf-harness-and-agent-led-fallback).

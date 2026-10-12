@@ -18,6 +18,33 @@ exist on the target branch first. Until they do, restoring the links below fails
 > reinstated, and `skills:check-links` validates every relative link in the repository. Restore
 > normal link syntax as you paste each block back.
 
+## 0. Read first — what changed while PA was withheld
+
+The seven-label vocabulary PA was removed from still exists (`AH AF CS SU PS EX BT`), but two things
+about it moved:
+
+- **AH now has a real, published selection rule.** UiPath documents the advanced-harness capability
+  matrix at https://docs.uipath.com/agents/automation-cloud/latest/user-guide/advanced-agents — select it
+  when the workload shows two or more of: dozens of tool calls in one run; intermediate work that must
+  persist as files; independent parts; material exceeding one prompt. AH is the taxonomy's fallback for
+  work whose shape is not known in advance.
+- **Dependent retrieval currently routes to AH.** PS's reject cell says "evidence must be joined across
+  dependent lookups, which is AH". That was PA's shape, and AH is holding it only because PA is absent.
+
+**When PA returns, it takes dependent retrieval back from AH.** Specifically:
+
+- `SKILL.md` Fast Routing gains a PA row; PS's reject cell points at PA again, not AH.
+- AH's row keeps the two-signal rule — PA does not displace AH, it narrows it. A dependent-lookup
+  workload over a *reusable indexed corpus* is PA; one that also needs a file workspace, sub-agents or a
+  run spanning dozens of calls over material exceeding a prompt stays AH.
+- `search-strategy-guide.md` § What one retrieval cannot reach is the other place that names this shape.
+- `agent-harness-guide.md` § Selecting advanced does **not** change — its signals are about run shape,
+  not corpus lifetime.
+
+Everything below was written against the pre-PA-withdrawal file and is still the applicable diff.
+
+---
+
 ## 1. `SKILL.md`
 
 ### 1a. Frontmatter description
@@ -387,10 +414,10 @@ known-good rows rather than speculative ones.
 
 ### 7b. `strategy_selection.yaml`
 
-- Prompt: `one of AH, AF, CS, SU, PS, EX, BT` → `one of AH, AF, CS, SU, PS, PA, EX, BT`
-- Description: `42 rows: 21 workloads` / `across all seven` → `48 rows: 24 workloads` / `across all eight`
+- Prompt: `<AF|CS|SU|PS|EX|BT|NONE>` → `<AF|CS|SU|PS|PA|EX|BT|NONE>`
+- Description: `42 rows: 21 workloads` → `48 rows: 24 workloads`, and `all seven` → `all eight`
 
-### 7c. `check_strategy.py` and `analyze_consistency.py`
+### 7c. `check_routing.py` and `analyze_consistency.py`
 
 Both carry the same tuple. Put `"PA"` back between `"PS"` and `"EX"`:
 

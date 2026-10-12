@@ -6,8 +6,10 @@ How to add, replace, or revise a case in [case-library-guide.md](case-library-gu
 
 - **Keep exactly three cases per category** (AH, AF, CS, SU, PS, EX, BT) unless the user changes
   the library size. Replace a weaker case rather than adding a twenty-second.
-- **Preserve stable IDs.** `AH1` stays `AH1`. If a case is replaced, the ID carries to the replacement and
-  every inbound link is repaired.
+- **Preserve stable IDs.** `EX1` stays `EX1`. If a case is replaced, the ID carries to the replacement and
+  every inbound link is repaired. This holds for case *replacement*. Correcting a category that was filed
+  on the wrong axis is a deliberate one-time repair that renames the IDs and updates every inbound link in
+  the same change, and every inbound link is repaired in that change.
 - **Titles describe the workload shape**, never a customer, vendor, or product name.
 - **A case must change a routing decision.** Another industry wearing the same shape is not a new case.
 
@@ -72,7 +74,8 @@ was the one used.
   context and external lookups, and does the output fit the column ceiling?
 - For PS: is the question genuinely answerable from one scoped retrieval, and is an empty result
   reported as unresolved rather than as absence?
-- For AH: is the capability need checked, rather than inferred from workload length or step count?
+- For AH: does the case name which two of the four signals it counts, rather than inferring advanced
+  from workload length or step count alone?
   For EX: are extraction strategies kept separate from harness selection?
 - Are calculations and known data operations in deterministic components? Are evidence gaps preserved?
 - Does every surviving number change the design rather than report a result?

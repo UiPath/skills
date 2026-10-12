@@ -33,8 +33,15 @@ and costs against the target environment before building.
 
 ## AH Advanced harness
 
-Candidate workloads for the advanced harness. Each still requires the capability check in
-[agent-harness-guide.md](agent-harness-guide.md) — none of these proves advanced was necessary.
+Workloads whose shape is not known in advance: the agent plans its own steps, follows evidence where it
+leads, and decides when it is done. Each case names the signals it counts against the two-or-more rule in
+[agent-harness-guide.md](agent-harness-guide.md) § Selecting advanced.
+
+| Case | Signals counted | What it teaches |
+|---|---|---|
+| **AH1** | 1 (dozens of lookups per contract) · 4 (agreement plus its amendment chain exceeds one prompt) | Precedence that can only be resolved by following the chain; a single extraction pass cannot |
+| **AH2** | 1 · 3 (each charge line is independently checkable) · 4 | A one-document-at-a-time tool cannot read a hierarchy no matter how it is configured |
+| **AH3** | none — **boundary against reaching for AH** | Most of the work is exact. The deterministic split is the design; only a residue is judgment |
 
 ### AH1 Amendment-aware contract audit
 
@@ -48,9 +55,10 @@ Working behaviour looks like this: a later amendment changes one fee and leaves 
 both effective values come back correct, each with its evidence and its comparison result; an interrupted
 run resumes without recomputing the stages that already finished.
 
-**Best-fit solution.** Autonomous agent, advanced harness only for a verified capability need; otherwise
-standard with explicit Flow orchestration. Fixed document stages as nodes, exact comparisons in script, a
-durable store plus polling for resumability.
+**Best-fit solution.** Autonomous agent on the advanced harness — signals 1 and 4. Resolving which
+amendment governs a given clause takes dozens of lookups across the agreement and its amendment chain,
+and that chain is larger than one prompt. The file workspace holds the extracted candidates between
+steps; exact comparisons still go to script, and fixed document stages still go to nodes.
 
 **Decision reasoning.** The decisive signal is that values depend on cross-section interpretation,
 effective dates, and amendment scope at once — no single extraction pass resolves them. Run it in this
@@ -76,9 +84,11 @@ with the contract chain that supports each call. Working behaviour: a charge all
 contract but disallowed by an applicable amendment is flagged, an unaffected charge alongside it is not,
 and both carry version-specific evidence and exact arithmetic.
 
-**Best-fit solution.** Advanced harness is a candidate, subject to the capability check. Extract for
-fields, script for reconciliation, Human review for the configured approval. Standard plus Flow
-orchestration remains valid when it is sufficient.
+**Best-fit solution.** Autonomous agent on the advanced harness — signals 1, 3 and 4. The governing text
+must be resolved before any charge is judged, each charge line is then independently checkable, and the
+package exceeds one prompt. Extract for fields and Human review for the configured approval stay as
+nodes. The negative example below is the reason: a one-document-at-a-time policy engine cannot read a
+hierarchy, and no configuration of it would have.
 
 **Decision reasoning.** The decisive signal is that applicability depends on a contract hierarchy that
 changes over time, so the governing text must be resolved before any charge can be judged. Establish the
@@ -91,8 +101,9 @@ and could not cleanly combine the governing agreement with its amendments. Conca
 proposed, but the resulting precedence ambiguity was never resolved — and a single-pass prompt would not
 have fixed it.
 
-**Boundary.** Length alone does not select AH: a long field-only document is EX3. Do not call a package
-compliant while required documents, amendment applicability, or unprocessed segments remain open.
+**Boundary.** Length alone reaches neither axis: a long field-only document is EX3, and a long run is not
+an advanced-harness signal. Do not call a package compliant while required documents, amendment
+applicability, or unprocessed segments remain open.
 
 ### AH3 Control testing with exact calculations
 
@@ -104,8 +115,10 @@ the work is arithmetic. Working behaviour: identical evidence yields identical c
 reruns; a missing input blocks the corresponding conclusion rather than defaulting it; and easy, medium
 and complex procedures are all exercised, not just the easiest subset.
 
-**Best-fit solution.** Script and Data operations for the exact controls; an autonomous agent only for
-the residual judgment. Advanced harness only on a demonstrated need.
+**Best-fit solution.** Script and Data operations for every control whose procedure is exact; an
+autonomous agent only for the residual judgment, on the standard harness. Count the signals and the
+answer is none of them: each control is a short, well-scoped check, not dozens of tool calls over
+material that exceeds a prompt. The deterministic split is the design.
 
 **Decision reasoning.** The decisive signal is that most of the work is deterministic and only a residue
 is judgment — so the split, not the harness, is the design. Define the procedure and evidence
@@ -123,7 +136,8 @@ what broke confidence in the solution, not any individual wrong answer.
 
 **Boundary.** Arithmetic is code, not reasoning. A small qualitative file inspection is AF2. An
 underspecified control or unread evidence produces "not evaluated", never "pass". Do not manufacture
-calibrated confidence from a model's self-rating.
+calibrated confidence from a model's self-rating. NONE is not a licence to send everything to the agent:
+the Tier 1 split comes first, and the observed failure above is what skipping it looks like.
 
 ---
 
@@ -687,7 +701,9 @@ Direct jumps when the symptom is already known. Do not scan the library.
 | A simple lookup sent through a heavy reasoning path | PS2 | SU1 when the claim is complete review |
 | One semantic hit misses related rules or identifiers | PS1 — repair ingestion and metadata first | Dependent retrieval is not covered by a strategy here |
 | "All impacted documents" or "nothing contradicts" | SU1 | A result limit is not a coverage test |
-| A long task times out or cannot resume | AH1 | EX3 when only extraction is needed |
+| A long task times out or cannot resume | Orchestration — a durable store plus polling. Not a harness feature | AH1 only if the run also needs dozens of lookups over material exceeding one prompt |
+| An agent loops until the runtime terminates it (`170002`) | AH3 — cap and stop-rule every tool and context handle | A missing cap, not a missing harness feature |
+| No fixed strategy's output contract matches the deliverable | AH — count the signals before committing | A composition of fixed strategies first; AH is the last stop, not the easy one |
 | The same control produces different computed results | AH3 | Deterministic tools before judgment |
 | A file read has grown into bulk spreadsheet processing | AF1 | EX2 when field review is required |
 | Confidence-based approval misses critical errors | CS3 | EX1 for calibrated field-review design |
