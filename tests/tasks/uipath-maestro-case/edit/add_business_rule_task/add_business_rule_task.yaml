@@ -6,7 +6,9 @@ description: >
   the v3 task version and decision-keyed result (`output` from `=result`,
   with `riskBand` extracted from `RiskDecision`), the bindings sidecar, and `validate`.
   Offline, no debug.
-tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate]
+# Out of smoke while codex writes the extract row as `=output.RiskDecision.riskBand`
+# (fails every run, main included); back to smoke once the business-rule recipe fixes it.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate]
 max_iterations: 1
 
 run_limits:
