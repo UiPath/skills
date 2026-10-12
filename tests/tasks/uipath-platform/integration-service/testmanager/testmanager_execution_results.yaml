@@ -85,13 +85,16 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # Advisory (pass_threshold 0): the eval tenant has no execution with recorded
+  # assertions, so there is no real assertion ID to download. Re-gate once a
+  # maintained fixture execution exists (see testmanager_results_grounded).
   - type: command_executed
     description: "Download Assertion (`... run get uipath-uipath-testmanager DownloadAssertion`)"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?DownloadAssertion'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_executed
     description: "Get Test Steps (`... run list uipath-uipath-testmanager GetTestSteps`)"

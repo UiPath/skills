@@ -1,6 +1,6 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Test Manager via its Integration Service connector (`uip is`)→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
@@ -18,6 +18,8 @@ Test Manager CRUD; execution analysis, coverage, regression trends, failure rate
 Requirements define what must be tested; test cases define scenarios and may contain **teststeps**; test sets group cases; executions are created when a test set or testcase runs. Testcase logs record a testcase in an execution and provide navigation; test-step logs record steps; testcase-log assertions are assertion steps.
 
 External Playwright packages are suites packaged and uploaded to Orchestrator. Ingestion auto-creates one testcase per Playwright test, without a link step, and labels each `PW_Tag_*`, `PW_Project_*`, `PW_Suite_*`, and `PW_File_*`. They run on serverless cloud runtimes; see [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
+
+Not for Integration Service connector work: when the user explicitly asks to go through the UiPath Test Manager Integration Service connector (`uipath-uipath-testmanager`), load `/uipath-platform` and use `uip is resources run`, not `uip tm` — the user asked for the connector surface.
 
 Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcommand> --help`. **Always pass `--output json` to every `uip` command; all commands below require it.**
 
