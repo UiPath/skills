@@ -74,8 +74,8 @@ find . -name "*.flow" -maxdepth 4 | head -5
 
 # Check for a Case Management project — detect by content marker, not by filename.
 # Project files are flat in the project dir (no content/ dir on disk). The generated
-# sibling caseplan.case.bpmn carries the same marker: exclude it, edit caseplan.case.
-find . -maxdepth 4 -iname "*.json*" ! -name "*.bpmn" -print0 2>/dev/null | xargs -0 grep -l '"case-management:root"' 2>/dev/null | head -3
+# sibling caseplan.case.bpmn carries the same marker; these patterns skip it. Edit caseplan.case.
+find . -maxdepth 4 \( -iname "*.json" -o -iname "*.case" \) -print0 2>/dev/null | xargs -0 grep -l '"case-management:root"' 2>/dev/null | head -3
 
 # Check for agent.json (Low-Code Agent project)
 find . -name "agent.json" -maxdepth 4 | head -3
@@ -89,7 +89,7 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 <!--skill-flavor:flow-sdk-surface-row:start-->
 | `.flow.ts` or `.flow` file | **Flow** | Author with `hitl(...)` in `<Name>.flow.ts` through the `uipath-maestro-flow` skill ([hitl.md](../uipath-maestro-flow/references/hitl.md)); never write node JSON into the compiled `.flow` — `compile` overwrites it |
 <!--skill-flavor:flow-sdk-surface-row:end-->
-| `caseplan.case` (any `*.json` whose `nodes[]` carry `data.parentElement.type: "case-management:root"` — the marker is per-node; there is no `root` node on disk) | **Case** | Write `action` task into stage — see [hitl-casetask-action.md](references/hitl-casetask-action.md) |
+| `caseplan.case` (any `*.json` or `*.case` whose `nodes[]` carry `data.parentElement.type: "case-management:root"` — the marker is per-node; there is no `root` node on disk) | **Case** | Write `action` task into stage — see [hitl-casetask-action.md](references/hitl-casetask-action.md) |
 | `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
 | `.bpmn` (Maestro) | **Maestro** | Write the `UserTask` XML directly — see Step 5 Surface: Maestro |
 
