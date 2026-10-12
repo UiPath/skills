@@ -1,0 +1,167 @@
+task_id: skill-test-testcase-parameters-bulk-add-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to add the same parameters to
+  two test cases, one of which already has one of them. There is no bulk
+  command, and `parameters add` rejects a name that already exists, so the
+  agent must add per test case and skip the existing parameter without
+  overwriting its value. The prompt does not say any already exist; the
+  skill has to teach checking first. Graded on the live parameters after the run: both
+  test cases end up with the new parameters, and the pre-existing `Username`
+  keeps its value with no `update` or `delete` used to force it. pre_run
+  seeds a throwaway `EVFX-PARAM-*` project per run (two test cases, one
+  pre-existing parameter) and post_run deletes it.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 15
+  max_turns: 40
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      PREFIX = "EVFX-PARAM-"
+      now = datetime.datetime.now(datetime.timezone.utc)
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {out}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      # Orphan sweep: delete only projects stamped more than 6 hours ago, so a
+      # concurrent run (including one started just before UTC midnight) is safe.
+      for p in call("tm", "project", "list", "--filter", PREFIX).get("Data") or []:
+          name = p.get("Name") or ""
+          key = p.get("ProjectKey")
+          if not key or not name.startswith(PREFIX):
+              continue
+          try:
+              stamp = datetime.datetime.strptime(name[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
+          except ValueError:
+              continue
+          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+              call("tm", "project", "delete", "--project-key", key, "--yes")
+
+      key = "EVPA" + secrets.token_hex(2).upper()
+      name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      need(call("tm", "project", "create", "--name", name, "--project-key", key), f"create project {name}")
+      with open("project-key.txt", "w") as f:
+          f.write(key + "\n")
+      need(call("tm", "testcases", "create", "--project-key", key, "--name", "Login in UiBank"), "create Login in UiBank")
+      tc = need(call("tm", "testcases", "create", "--project-key", key, "--name", "Transfer funds"), "create Transfer funds")
+      need(call("tm", "testcases", "parameters", "add", "--project-key", key,
+                "--test-case-key", tc["TestCaseKey"], "--name", "Username",
+                "--default-value", "keepme"), "seed Username=keepme")
+      print(f"SEEDED project {name} ({key}); Transfer funds already has Username=keepme")
+      PYEOF
+    timeout: 240
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  The key of my Test Manager project is in project-key.txt in this folder.
+
+  Add these parameters to both the "Login in UiBank" and the "Transfer funds"
+  test cases:
+
+  - Timeout -> 30
+  - Username -> admin
+
+  When you're done, give me a short summary for each test case.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added parameters with `uip tm testcases parameters add`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+add\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Login in UiBank now has Timeout=30 and Username=admin"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      key = open("project-key.txt").read().strip()
+      tc = [t for t in uip("tm", "testcases", "list", "--project-key", key) if t.get("Name") == "Login in UiBank"][0]
+      params = {p["Name"].lower(): p.get("DefaultValue") for p in
+                uip("tm", "testcases", "parameters", "list", "--project-key", key, "--test-case-key", tc["TestCaseKey"])}
+      print(params)
+      sys.exit(0 if params.get("timeout") == "30" and params.get("username") == "admin" else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Transfer funds now has Timeout=30"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      key = open("project-key.txt").read().strip()
+      tc = [t for t in uip("tm", "testcases", "list", "--project-key", key) if t.get("Name") == "Transfer funds"][0]
+      params = {p["Name"].lower(): p.get("DefaultValue") for p in
+                uip("tm", "testcases", "parameters", "list", "--project-key", key, "--test-case-key", tc["TestCaseKey"])}
+      print(params)
+      sys.exit(0 if params.get("timeout") == "30" else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The pre-existing Username on Transfer funds still has its value `keepme` (skipped, not overwritten)"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      key = open("project-key.txt").read().strip()
+      tc = [t for t in uip("tm", "testcases", "list", "--project-key", key) if t.get("Name") == "Transfer funds"][0]
+      users = [p for p in uip("tm", "testcases", "parameters", "list", "--project-key", key,
+                              "--test-case-key", tc["TestCaseKey"]) if p["Name"].lower() == "username"]
+      print(users)
+      sys.exit(0 if len(users) == 1 and users[0].get("DefaultValue") == "keepme" else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not update or delete a parameter to force the value in (`--help` lookups excluded)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+(update|delete)\b(?![^\n]*--help)'
+    weight: 2.0
+    pass_threshold: 1.0
