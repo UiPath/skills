@@ -1,5 +1,74 @@
-{"id": "negative-026", "prompt": "Summarize this PDF", "expected_skill": ""}
-{"id": "negative-039", "prompt": "Extract data from PDFs", "expected_skill": ""}
-{"id": "negative-045", "prompt": "Set up a classic Document Understanding ML extractor in Studio with a labeling session and AI Center training for scanned invoices", "expected_skill": ""}
 {"id": "negative-001", "prompt": "Compare LangChain and LlamaIndex for a RAG prototype", "expected_skill": ""}
+{"id": "negative-002", "prompt": "Add a switch-case statement in my Java code", "expected_skill": ""}
+{"id": "negative-003", "prompt": "Create a flowchart for my architecture doc", "expected_skill": ""}
 {"id": "negative-004", "prompt": "Add a node to my graph", "expected_skill": ""}
+{"id": "negative-005", "prompt": "Set up Terraform modules for my AWS infrastructure", "expected_skill": ""}
+{"id": "negative-006", "prompt": "Schedule a cron job on my Linux server every weekday at 8am", "expected_skill": ""}
+{"id": "negative-007", "prompt": "Wire two AWS Lambdas together using EventBridge", "expected_skill": ""}
+{"id": "negative-008", "prompt": "Write a Python Flask app", "expected_skill": ""}
+{"id": "negative-009", "prompt": "Fix my TypeScript compilation error", "expected_skill": ""}
+{"id": "negative-010", "prompt": "Set up a GitHub Actions workflow", "expected_skill": ""}
+{"id": "negative-011", "prompt": "Convert my Selenium tests from Java to Playwright in TypeScript", "expected_skill": ""}
+{"id": "negative-012", "prompt": "Set up an Airflow DAG that runs nightly", "expected_skill": ""}
+{"id": "negative-013", "prompt": "Show me a DAG for my Airflow jobs", "expected_skill": ""}
+{"id": "negative-014", "prompt": "Orchestrate my Temporal workflows", "expected_skill": ""}
+{"id": "negative-015", "prompt": "Create a Step Functions state machine in AWS", "expected_skill": ""}
+{"id": "negative-016", "prompt": "I need to design a BPMN diagram for our process", "expected_skill": ""}
+{"id": "negative-017", "prompt": "Add a webhook trigger to my Zapier flow", "expected_skill": ""}
+{"id": "negative-018", "prompt": "Create a connector in Power Automate", "expected_skill": ""}
+{"id": "negative-019", "prompt": "Wire up a Node-RED flow with MQTT nodes", "expected_skill": ""}
+{"id": "negative-020", "prompt": "I need to handle different cases based on a value", "expected_skill": ""}
+{"id": "negative-021", "prompt": "What's the best Python library to parse ISO 8601 timestamps?", "expected_skill": ""}
+{"id": "negative-022", "prompt": "Group records by a key and count them", "expected_skill": ""}
+{"id": "negative-023", "prompt": "What's the recipe for chocolate chip cookies?", "expected_skill": ""}
+{"id": "negative-024", "prompt": "Translate this French text to English", "expected_skill": ""}
+{"id": "negative-025", "prompt": "Convert 50 miles to kilometers", "expected_skill": ""}
+{"id": "negative-026", "prompt": "Summarize this PDF", "expected_skill": ""}
+{"id": "negative-027", "prompt": "Run npm install", "expected_skill": ""}
+{"id": "negative-028", "prompt": "Create a new PostgreSQL table", "expected_skill": ""}
+{"id": "negative-029", "prompt": "Write a Dockerfile for a Node app", "expected_skill": ""}
+{"id": "negative-030", "prompt": "Configure Nginx reverse proxy", "expected_skill": ""}
+{"id": "negative-032", "prompt": "Set up Cypress for end-to-end testing of my React app", "expected_skill": ""}
+{"id": "negative-033", "prompt": "Set up distributed tracing with OpenTelemetry, Jaeger, and Prometheus", "expected_skill": ""}
+{"id": "negative-034", "prompt": "Plan the rollout of an SAP S/4HANA upgrade across our regional offices", "expected_skill": ""}
+{"id": "negative-035", "prompt": "Recommend a good ergonomic keyboard for long coding sessions", "expected_skill": ""}
+{"id": "negative-036", "prompt": "What is the capital of Australia?", "expected_skill": ""}
+{"id": "negative-037", "prompt": "Automate the hiring pipeline", "expected_skill": ""}
+{"id": "negative-038", "prompt": "Send a Slack notification from my Python script using the slack-sdk library", "expected_skill": ""}
+{"id": "negative-039", "prompt": "Extract data from PDFs", "expected_skill": ""}
+{"id": "negative-040", "prompt": "Compare ChatGPT, Gemini, and Claude for general writing tasks", "expected_skill": ""}
+{"id": "negative-041", "prompt": "Orchestrate containers with Docker Swarm", "expected_skill": ""}
+{"id": "negative-042", "prompt": "Create a Camunda BPMN process", "expected_skill": ""}
+{"id": "negative-043", "prompt": "Design a Process Maker workflow", "expected_skill": ""}
+{"id": "negative-044", "prompt": "Set up UiPath AI Center to deploy my fraud detection ML model", "expected_skill": ""}
+{"id": "negative-045", "prompt": "Set up a classic Document Understanding ML extractor in Studio with a labeling session and AI Center training for scanned invoices", "expected_skill": ""}
+{"id": "negative-046", "prompt": "Build a UiPath Insights dashboard to visualize bot performance over the last quarter", "expected_skill": ""}
+{"id": "negative-047", "prompt": "Migrate my Automation Anywhere bots to a new environment", "expected_skill": ""}
+{"id": "negative-048", "prompt": "Refactor my Blue Prism object to use a work queue instead of a collection", "expected_skill": ""}
+{"id": "negative-049", "prompt": "Train a sklearn random forest classifier on my customer churn dataset", "expected_skill": ""}
+{"id": "negative-050", "prompt": "Set up Kubernetes ingress with cert-manager and Let's Encrypt", "expected_skill": ""}
+{"id": "negative-051", "prompt": "Reset a user's password in our corporate Active Directory", "expected_skill": ""}
+{"id": "negative-052", "prompt": "Configure Okta SSO for our internal Salesforce instance", "expected_skill": ""}
+{"id": "negative-053", "prompt": "Write a CNCF Serverless Workflow spec to run on my Knative cluster", "expected_skill": ""}
+{"id": "negative-054", "prompt": "Add an MCP server to my Claude Desktop config file", "expected_skill": ""}
+{"id": "negative-055", "prompt": "Build a FastMCP server in Python that exposes a calculator tool", "expected_skill": ""}
+{"id": "negative-056", "prompt": "Summarize what my team talked about in Slack this week", "expected_skill": ""}
+{"id": "negative-057", "prompt": "Run Tesseract OCR on a folder of scanned receipts", "expected_skill": ""}
+{"id": "negative-058", "prompt": "Build a custom connector in MuleSoft Anypoint for the Stripe API", "expected_skill": ""}
+{"id": "negative-059", "prompt": "Create a Workato custom connector for our internal REST API", "expected_skill": ""}
+{"id": "negative-060", "prompt": "Build a Zapier integration that connects Slack to Google Sheets", "expected_skill": ""}
+{"id": "negative-061", "prompt": "Write an OpenAPI 3.0 spec for my REST API", "expected_skill": ""}
+{"id": "negative-062", "prompt": "Generate a Postman collection for the vendor's REST endpoints", "expected_skill": ""}
+{"id": "negative-063", "prompt": "Write a Python client wrapper around the Stripe REST API", "expected_skill": ""}
+{"id": "negative-064", "prompt": "Build a Boomi connector for our billing system", "expected_skill": ""}
+{"id": "negative-065", "prompt": "Write an Azure Function in TypeScript with an HTTP trigger", "expected_skill": ""}
+{"id": "negative-066", "prompt": "Deploy a TypeScript AWS Lambda with the Serverless Framework", "expected_skill": ""}
+{"id": "negative-067", "prompt": "Upgrade UiPath Studio on my laptop from 2023.10 to 2024.10", "expected_skill": ""}
+{"id": "negative-068", "prompt": "Convert this Python 2 script to Python 3", "expected_skill": ""}
+{"id": "negative-069", "prompt": "Migrate our SVN repository to Git and keep the history", "expected_skill": ""}
+{"id": "negative-070", "prompt": "Upgrade this ASP.NET Framework 4.6 web app to .NET 8", "expected_skill": ""}
+{"id": "negative-071", "prompt": "Move our Jenkins pipelines to GitHub Actions", "expected_skill": ""}
+{"id": "negative-072", "prompt": "Model this loan approval decision table in Camunda Modeler and deploy it to Zeebe", "expected_skill": ""}
+{"id": "negative-073", "prompt": "Write a Drools DRL rule file that flags transactions over 10000 for review", "expected_skill": ""}
+{"id": "negative-074", "prompt": "Add an ESLint rule that forbids default exports in this TypeScript repo", "expected_skill": ""}
+{"id": "negative-075", "prompt": "Implement a decision table in plain Python with pandas for our discount tiers", "expected_skill": ""}
