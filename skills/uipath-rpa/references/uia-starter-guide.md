@@ -115,7 +115,7 @@ A `Log("LoginWorkflow: type username")` stub:
 
 A real `<uix:NTypeInto>` activity with placeholder selector + `TODO Indicate` marker:
 
-- Build/validate surface the unconfigured targets ("Target or Input UI Element must be set" — hard errors in current packages) — useful, since they tell the developer what is left to do. A stub-mode deliverable therefore does NOT reach a clean `build`; its acceptance bar is that the ONLY remaining validate/build errors are the expected unconfigured-target ones.
+- Build/validate surface the unconfigured targets ("Target or Input UI Element must be set" — hard errors in current packages) — useful, since they tell the developer what is left to do. A stub-mode deliverable therefore does NOT reach a clean `build`; its acceptance bar is that the ONLY remaining validate/build errors are the expected unconfigured-target ones, each traced to a `TODO Indicate` activity you wrote. The same message from any other file or activity is a real defect — report it.
 - The activity is wired into the workflow's control flow, package dependencies, scope, and Object Repository registration plumbing. The developer's only remaining work is **Indicate**.
 - The TODO marker is visible in Studio's designer pane and grep-able in the file.
 - The cost of "what does this stub actually need from the developer?" drops from "read this carefully and infer" to "click Indicate on the marked activities."
