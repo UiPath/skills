@@ -46,7 +46,7 @@ reference:
 
 initial_prompt: |
   Design a "CaseReasoningRegression" Maestro case and produce `sdd.md`. Stop
-  after the SDD — do not create caseplan.json.
+  after the SDD — do not create a case plan.
 
   The requirements below are complete and settled — do not redesign them or
   re-interview me on the stages, tasks, routing, or deadlines.
@@ -129,7 +129,7 @@ simulation:
   constraints:
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, tasks, routes, or deadlines."
     - "When shown the design confirmation, approve it and ask the assistant to stop after writing sdd.md."
-    - "Do not authorize creating caseplan.json, running, publishing, or deploying."
+    - "Do not authorize creating a case plan, running, publishing, or deploying."
   # 12, matching sdd_response_map — the closest analogue (design-only,
   # greenfield, same 4200/3600 budget), which scores 1.000. Was 35.
   max_turns: 12

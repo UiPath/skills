@@ -21,7 +21,9 @@ sandbox:
       path: fixtures
 
 reference:
-  directory: .
+  # Case root, not `.`: the grader imports `_shared/`, which a task-only
+  # staging leaves out (ModuleNotFoundError at grade time).
+  directory: ../..
 
 initial_prompt: |
   The LinearThreeStages case under LinearThreeStages/ fails
@@ -58,7 +60,7 @@ success_criteria:
 
   - type: run_command
     description: "All three gate expressions survive and every vars.X they reference is declared — including the masked riskBand"
-    command: "python3 $REFERENCE_DIR/check_undeclared_gate_vars.py"
+    command: "python3 $REFERENCE_DIR/diagnose/undeclared_gate_vars/check_undeclared_gate_vars.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

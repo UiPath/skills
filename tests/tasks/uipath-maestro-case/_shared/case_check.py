@@ -31,6 +31,10 @@ from typing import Any, Iterable, NoReturn, Sequence
 # save and reads the newest name present, so a grader accepts every name and, in
 # one directory, takes the newest the way Studio Web does.
 CASE_PLAN_NAMES = ("caseplan.case", "caseplan.json", "case.stage.json", "default.stage.json")
+# YAML globs (`caseplan.[cj][as][so][en]`) and `ls` resolvers deliberately accept
+# only the first two: the names the CLI and the skill write. Where both sit in one
+# directory, YAML refuses to guess and Python takes the newest; either way the run
+# fails, because the skill never writes two plans.
 
 
 def glob_caseplans(pattern: str = "**/caseplan.json") -> list[str]:

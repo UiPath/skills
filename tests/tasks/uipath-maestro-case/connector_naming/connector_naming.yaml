@@ -44,6 +44,11 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  # Case root: the grader imports `_shared/`, which a task-only copy
+  # ($TASK_DIR under docker) leaves out.
+  directory: ..
+
 initial_prompt: |
   I have an approved SDD staged as `sdd.md` in this folder. Build a UiPath Case
   Management solution named "ConnectorNaming" containing a project also named
@@ -71,7 +76,7 @@ success_criteria:
 
   - type: run_command
     description: "every connector field name in caseplan.json matches the live connector contract byte-for-byte (inputs, response properties, definitions/$ref, compiled trigger filter), and both connector nodes resolve complete connection + folder bindings"
-    command: "python3 $TASK_DIR/check_connector_naming.py"
+    command: "python3 $REFERENCE_DIR/connector_naming/check_connector_naming.py"
     timeout: 300
     expected_exit_code: 0
     weight: 6.0
