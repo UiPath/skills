@@ -67,12 +67,14 @@ Rules:
   manipulation, or conditional selection.
 - A `=js:` expression that returns an object or array must produce valid JSON
   for fields typed `json`.
-- `validate` does not check `=js:` syntax. An unclosed quote or a raw newline
-  in a string literal passes and faults at run time `400300 Invalid or
+- `validate` does not report `=js:` syntax errors. An unclosed quote or a raw
+  newline in a string literal passes and faults at run time `400300 Invalid or
   unexpected token`. Before finishing, check each body (the text after `=js:`):
 
   ```bash
-  node -e 'new Function("vars","bindings","result","iterator","return ("+process.argv[1]+")")' "<BODY>"
+  node -e 'new Function("vars","bindings","result","iterator","return ("+require("fs").readFileSync(0,"utf8")+")")' <<'JS'
+  <BODY>
+  JS
   ```
 
   No output means it parses.

@@ -312,7 +312,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
      value without a leading `=` is a literal: write `"=vars.<id>"`, and make
      text mixed with variables one `=js:` expression
      (`"=js:'[' + vars.Var_Severity + '] ' + vars.Var_Id + ' escalated'"`).
-     `validate` does not parse `=js:`; syntax-check each body
+     `validate` does not report `=js:` syntax errors; syntax-check each body
      ([`=js:` rules](references/expression-authoring.md#inline-javascript-with-js)).
    For an Integration Service draft or boundary handoff the user asked for (a
    request that only says to validate is not one), emit **only** the
