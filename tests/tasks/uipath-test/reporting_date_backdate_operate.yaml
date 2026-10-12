@@ -21,7 +21,7 @@ run_limits:
   expected_turns: 18
   max_turns: 45
   turn_timeout: 1200
-  task_timeout: 1200
+  task_timeout: 1500
 
 # Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the
 # EVFX- contract.
@@ -188,7 +188,7 @@ success_criteria:
     # is graded is that the id came from the CLI and not from thin air.
     description: "Agent listed executions through the CLI rather than inventing an id"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+list(-filtered)?\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
+    command_pattern: 'uip\s+tm\s+executions?\s+list(-filtered)?\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

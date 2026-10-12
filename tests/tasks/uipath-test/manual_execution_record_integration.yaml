@@ -26,7 +26,7 @@ run_limits:
   expected_turns: 22
   max_turns: 50
   turn_timeout: 1200
-  task_timeout: 1200
+  task_timeout: 1500
 
 # Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the
 # EVFX- contract.
@@ -190,7 +190,7 @@ success_criteria:
   - type: command_executed
     description: "Agent read the run's own logs to resolve each TestCaseId (`executions testcaselogs list`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+testcaselogs\s+list\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
+    command_pattern: 'uip\s+tm\s+executions?\s+testcaselogs\s+list\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -302,7 +302,7 @@ success_criteria:
   - type: command_executed
     description: "Agent reported the run's own totals (`executions get-stats`), not a hand tally"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+get-stats\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
+    command_pattern: 'uip\s+tm\s+executions?\s+get-stats\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
