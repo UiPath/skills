@@ -117,7 +117,7 @@ initial_prompt: |
   Resolve the connector activity against the Integration Service registry and a
   live Slack connection on the tenant. Leave the solution in a state that is
   ready to publish — every resource the case depends on must be declared at the
-  solution level, not only inside caseplan.json.
+  solution level, not only inside the case plan.
 
   Treat all build gates as pre-approved — do NOT block on the HARD
   STOP / AskUserQuestion approval steps. Do NOT run `uip maestro case debug` and

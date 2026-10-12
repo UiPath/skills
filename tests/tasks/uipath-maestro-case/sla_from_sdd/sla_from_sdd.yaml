@@ -46,7 +46,7 @@ initial_prompt: |
   and emit placeholders per the skill's rules. Do NOT query the tenant registry,
   connections, or users.
 
-  Not complete until `uip maestro case validate` passes on the generated caseplan.json.
+  Not complete until `uip maestro case validate` passes on the generated case plan.
   Stop there — do not publish, upload, or run a debug session.
 
   Do NOT ask for approval, confirmation, or feedback. Do NOT pause between planning and

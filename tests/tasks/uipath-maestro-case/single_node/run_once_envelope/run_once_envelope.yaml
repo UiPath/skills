@@ -16,7 +16,7 @@ run_limits:
 initial_prompt: |
   Create a UiPath Case Management solution named "RunOnceEnvelopeCase"
   containing a project also named "RunOnceEnvelopeCase", so the case file lands
-  at RunOnceEnvelopeCase/RunOnceEnvelopeCase/caseplan.json.
+  at RunOnceEnvelopeCase/RunOnceEnvelopeCase/.
 
   Use this sdd.md as the sole source of truth — write it to sdd.md first, then
   build from it. Author exactly what it states and nothing more: do not add,

@@ -25,7 +25,7 @@ initial_prompt: |
   to discover the correct varId — never fabricate).
 
   Use the same name for solution and project so the case file lives at
-  ExpenseApprovalCase/ExpenseApprovalCase/caseplan.json.
+  ExpenseApprovalCase/ExpenseApprovalCase/.
 
   Write this sdd.md to sdd.md first, then build from it:
 
@@ -167,11 +167,11 @@ initial_prompt: |
 
   **REQUIRED — before finishing, write report.json at the sandbox root**:
   {
-    "caseplan_path": "<path to caseplan.json>",
+    "caseplan_path": "<path to the case plan file>",
     "action_task_id": "<id of Review Expense>",
     "downstream_task_id": "<id of Log Decision>",
     "skeleton_action": <true|false>,
-    "result_path_used": "<actual binding string used in caseplan.json or the registry-audit wiring notes — e.g. =vars.<varId> or 'Review'.'Review Expense'.approved>",
+    "result_path_used": "<actual binding string used in the case plan or the registry-audit wiring notes — e.g. =vars.<varId> or 'Review'.'Review Expense'.approved>",
     "validation_passed": true
   }
 

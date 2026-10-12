@@ -19,7 +19,7 @@ initial_prompt: |
 
   Use this sdd.md as the sole input — write it to sdd.md first, then build
   from it. Use the same name for the solution and the project so the case
-  file lives at InvoiceApprovalCase/InvoiceApprovalCase/caseplan.json.
+  file lives in InvoiceApprovalCase/InvoiceApprovalCase/.
 
   ```
   # SDD — InvoiceApprovalCase
@@ -98,7 +98,7 @@ initial_prompt: |
   **REQUIRED — before finishing, write report.json at the sandbox root** with
   exactly these keys:
   {
-    "caseplan_path": "<relative path to the caseplan.json file>",
+    "caseplan_path": "<relative path to the case plan file>",
     "action_task_id": "<id of the action task>",
     "skeleton": <true|false — true if action-app was unresolved>,
     "validation_passed": true

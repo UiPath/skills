@@ -48,7 +48,7 @@ initial_prompt: |
 
   Get the build ready from that SDD, then stop before any tenant work: do not
   query tenant registry, connections, schemas, or users, and do not create
-  caseplan.json. Tell me in your reply what stays unresolved until the build
+  the case plan. Tell me in your reply what stays unresolved until the build
   machine is online.
 
   Work from the SDD exactly as written — do not redesign it, do not rewrite,

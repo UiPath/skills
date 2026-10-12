@@ -105,7 +105,7 @@ initial_prompt: |
   published on the tenant, so resolve it against caseManagement-index.json to
   a real taskTypeId — do NOT leave it as a skeleton or fabricate an id.
   Finish with `uip maestro case validate` passing on the resulting
-  caseplan.json.
+  case plan.
 success_criteria:
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
