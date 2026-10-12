@@ -88,6 +88,7 @@
     "SDD is the sole post-design input, across sessions": 2
   },
   "references/plugins/case/impl-json.md": {
+    "Artifact I/O": 2,
     "The build is lossless against the SDD": 2
   },
   "references/plugins/case/planning.md": {

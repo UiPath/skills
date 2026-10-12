@@ -315,7 +315,7 @@ uip maestro flow validate <file> --output json
 
 ### Surface: Case
 
-Read the `caseplan.case` to identify the target stage. Write an `action` task directly into `stage.data.tasks[lane][]`. **Direct JSON write is the only supported method** — the `uipath-maestro-case` skill ships no `hitl` CLI subcommand (unlike Flow's `uip maestro flow hitl add`).
+Read the plan file the detection above found to identify the target stage: `caseplan.case`, or `caseplan.json` in a project an older CLI scaffolded. Edit and validate that file; never create a second plan beside it. Write an `action` task directly into `stage.data.tasks[lane][]`. **Direct JSON write is the only supported method** — the `uipath-maestro-case` skill ships no `hitl` CLI subcommand (unlike Flow's `uip maestro flow hitl add`).
 
 Full reference: **[references/hitl-casetask-action.md](references/hitl-casetask-action.md)** — three task JSON shapes (QuickForm, generic, app-based), field reference, assignee handling, post-write verification, and downstream output access.
 
