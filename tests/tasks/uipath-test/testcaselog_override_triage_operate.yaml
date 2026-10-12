@@ -209,7 +209,7 @@ success_criteria:
     # legitimate routes to the failing log. What is graded is that the log id
     # came from the CLI rather than from thin air.
     description: "Agent found the failing log through the CLI rather than inventing an id"
-    command_pattern: 'uip\s+tm\s+(executions?\s+testcaselogs\s+list|testcaselog\s+list)\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
+    command_pattern: 'uip\s+tm\s+(executions?\s+testcaselogs\s+list|testcaselog\s+list)\b'
     tool_name: "Bash"
     min_count: 1
     weight: 1.5

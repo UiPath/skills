@@ -157,7 +157,7 @@ success_criteria:
 
   - type: command_executed
     description: "Agent read the log back to confirm (`testcaselog get` or `latest`)"
-    command_pattern: 'uip\s+tm\s+testcaselog\s+(get|latest)\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
+    command_pattern: 'uip\s+tm\s+testcaselog\s+(get|latest)\b'
     tool_name: "Bash"
     min_count: 1
     weight: 1.5

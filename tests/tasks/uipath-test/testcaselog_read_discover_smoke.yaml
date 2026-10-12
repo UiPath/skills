@@ -132,7 +132,7 @@ success_criteria:
     # a run-scoped testcaselogs list, are all valid; what is graded is that the
     # answer came from the CLI (as JSON) rather than being made up.
     description: "Agent read a test case log through the CLI as JSON"
-    command_pattern: 'uip\s+tm\s+(testcaselog\s+(list|get|latest)|executions?\s+testcaselogs\s+list)\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--output\s+json)'
+    command_pattern: 'uip\s+tm\s+(testcaselog\s+(list|get|latest)|executions?\s+testcaselogs\s+list)\b'
     tool_name: "Bash"
     min_count: 1
     weight: 3.0

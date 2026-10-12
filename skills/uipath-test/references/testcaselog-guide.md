@@ -70,7 +70,7 @@ uip tm testcaselog override create --project-key <KEY> --test-case-log-id <UUID>
 and `delete` need.
 
 - `override get --test-case-log-id <UUID>` — read it. A log with no override
-  returns no override row — treat that as "not overridden".
+  returns a 404 (not an empty row) — treat that 404 as "not overridden", not an error.
 - `override update --test-case-log-id <UUID> --override-id <UUID> --result … --reason …`
   — replace an existing one; both fields are required.
 - `override delete --test-case-log-id <UUID> --override-id <UUID>` — remove it,
@@ -91,12 +91,15 @@ Three things that bite:
 
 ```
 uip tm testcaselog assign --project-key <KEY> --test-case-log-ids <UUID...> \
-  --assignee-id <IDENTITY_PROVIDER_UUID> [--due-date 2026-10-01]
+  --assignee-email <EMAIL> [--due-date <DUE_DATE>]
 ```
 
-**`--assignee-id` is an identity-provider UUID, never a name or an email.**
-Get one from `uip tm user get` (`IdentityProviderId`, your own) or
-`uip tm project owners list` (`Identifier`, a project owner). Do not guess it.
+Prefer `--assignee-email <EMAIL>` — the CLI resolves it to the identity-provider
+id for you. The alternative is `--assignee-id <IDENTITY_PROVIDER_UUID>`, and
+**that flag is a UUID, never a name or an email**: get one from `uip tm user get`
+(`IdentityProviderId`, your own) or `uip tm project owners list` (`Identifier`, a
+project owner). `--due-date` is ISO 8601 `YYYY-MM-DD`; omitting it on a
+reassignment clears any existing due date.
 
 Two behaviours to plan around:
 
