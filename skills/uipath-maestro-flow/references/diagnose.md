@@ -111,13 +111,15 @@ the flag silently returns a plain Flow.
 
 **Misshapen nodes on the canvas.** `compile` writes a placeholder
 `ui.position` on each node — all of them on one row — and no top-level `layout`
-block, which is what the canvas renders from. Symptom: the flow behaves
-correctly and is unreadable, a switch's arms strung out in a line instead of
-side by side. This is not a run-time fault and no check reports it — `validate`
-passes, because layout is not an authoring concern. Fix:
-`uip maestro flow format <Name>.flow`, which is owed before an upload, a debug,
-or anyone opening the project in a designer — see
-[`operate.md`](operate.md#lay-out-the-emitted-flow-first).
+block. The canvas uses a node's `layout.nodes[<id>]` entry when there is one
+and its `node.ui` otherwise, so a greenfield file draws at the placeholders.
+Symptom: the flow behaves correctly and is unreadable, a switch's arms strung
+out in a line instead of side by side. This is not a run-time fault and no
+check reports it — `validate` passes, because layout is not an authoring
+concern. Fix, for a greenfield file only: `uip maestro flow format <Name>.flow`,
+which is owed before an upload, a debug, or anyone opening the project in a
+designer — see [`operate.md`](operate.md#lay-out-the-emitted-flow-first). Do not
+run it on a merged brownfield file; it re-lays out the author's canvas.
 
 **Green `validate`, faulted `debug`.** Structural correctness and runtime
 correctness are different claims. `validate` proves the emitted `.flow` is well
