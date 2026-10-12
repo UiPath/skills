@@ -116,7 +116,17 @@ Counter semantics — `MaxRetryNumber` (per transaction, resets per item) vs `Ma
 - Guard missing keys: check `in_Config.ContainsKey(<name>)` or set defaults before first read.
 - Never hardcode paths, URLs, credentials, or environment-specific settings in workflows. Always indirect through `in_Config(<name>)`.
 
-## Idempotency and Concurrency (Queue-Driven)
+## Idempotency and Concurrency
+
+### Init and Close Run More Than Once (All Modes)
+
+System Exception in `Process.xaml` → `SetTransactionStatus.xaml` runs `CloseAllApplications.xaml`, then Init reruns `InitAllApplications.xaml`. Fault inside `InitAllApplications.xaml` → End Process → `CloseAllApplications.xaml` on a half-initialized state.
+
+1. `InitAllApplications.xaml` must be safe to rerun: open only what is not open, never a second instance.
+2. `CloseAllApplications.xaml` must be safe on unopened resources: null-check each, close each in its own Try/Catch, null the handle after closing.
+3. Hold non-UI resources (database connections, API/mail/storage clients) in a context object `Main.xaml` creates (`Variable.Default`) and passes **In**; Init sets its fields. Never return them as `out_*` of Init — they leak when Init faults ([xaml/common-pitfalls.md § Out and InOut Arguments When the Callee Faults](xaml/common-pitfalls.md#out-and-inout-arguments-when-the-callee-faults)). `KillAllProcesses.xaml` does not release in-process handles.
+
+### Retried Transactions (Queue-Driven)
 
 Performer workflows must be safe to retry. The framework re-executes `Process.xaml` after a System Exception with the same `TransactionItem`.
 
@@ -150,8 +160,21 @@ If you migrate `TransactionItem`'s type away from `QueueItem` (tabular → `Data
 | `Framework\SetTransactionStatus.xaml` | `in_TransactionItem` |
 | `Framework\RetryCurrentTransaction.xaml` | `in_TransactionItem` (if present) |
 | `Main.xaml` `InvokeWorkflowFile` bindings | every `in_/out_/io_TransactionItem` binding |
+| `Tests\GetTransactionDataTestCase.xaml`, `Tests\ProcessTestCase.xaml` | the `out_TransactionItem` / `in_TransactionItem` bindings of their invokes |
 
 Updating one file but not the others surfaces as `InvokeWorkflowFile` argument-mismatch errors at design time.
+
+### Template test cases fall behind the framework files
+
+The template ships test cases under `Tests\`, registered as test cases in `project.json`, that invoke the framework workflows and `Main.xaml` with the template's own arguments. An argument added to a framework workflow leaves their invokes without it: build reports only a missing-argument warning, and the test case runs the workflow with that argument unset. Bind every added argument in each test case, or delete the test cases and their registration when the project does not keep framework tests. `MainTestCase.xaml` runs the whole process, so running it is a real job against the applications and data the configuration names.
+
+### Waits inside Get Transaction Data ignore the stop signal
+
+`Main.xaml` checks Should Stop once per Get Transaction Data call, before invoking `GetTransactionData.xaml`. A `GetTransactionData.xaml` that loops — polling a mailbox or folder, waiting between passes until an end time — holds the job past an Orchestrator Stop for as long as it loops. Check Should Stop before each wait inside the loop and return `Nothing` when a stop is requested.
+
+### A failure inside End Process does not fault the job
+
+End Process wraps `CloseAllApplications.xaml` in a Try Catch whose catch logs the failure and runs `KillAllProcesses.xaml`; its Finally ends the job faulted only when `SystemException` is set. Close-surface work that must fail the job when it fails — a final report or mail, a clean-up the run depends on — contains each of its steps, so a failed step still lets the others run and the workflow returns, and carries the failure out of `CloseAllApplications.xaml` as an out argument that `Main.xaml` assigns to `SystemException`.
 
 ### Advanced: one `SetTransactionStatus.xaml` for all modes
 
@@ -172,8 +195,9 @@ Before first run:
 - [ ] **Configure `GetTransactionData.xaml`** for the chosen mode. Never return `New QueueItem()` as a sentinel in non-queue modes — return `Nothing` (terminating) or a non-`QueueItem` value.
 - [ ] **For tabular / single-shot:** delete the three Set Transaction Status activities from `SetTransactionStatus.xaml`. Replace with status-column write-back or log-only.
 - [ ] **For tabular / single-shot:** migrate every `TransactionItem` argument type (see [Gotchas § type migration](#type-migration-cascade)).
-- [ ] **`InitAllApplications.xaml`** — implement app-open/login for every application the process touches.
-- [ ] **`CloseAllApplications.xaml`** + **`KillAllProcesses.xaml`** — graceful close + force-kill fallback for every app process name.
+- [ ] **`InitAllApplications.xaml`** — implement app-open/login for every application the process touches; rerun-safe ([§ Init and Close Run More Than Once](#init-and-close-run-more-than-once-all-modes)).
+- [ ] **`CloseAllApplications.xaml`** + **`KillAllProcesses.xaml`** — graceful close + force-kill fallback for every app process name; Close safe on unopened resources ([§ Init and Close Run More Than Once](#init-and-close-run-more-than-once-all-modes)).
+- [ ] **Template test cases** under `Tests\` bind every argument the framework workflows gained, or are deleted with their registration (see [Gotchas § template test cases](#template-test-cases-fall-behind-the-framework-files)).
 - [ ] **Classify exceptions in `Process.xaml`** — throw `BusinessRuleException` for data issues; let everything else propagate.
 - [ ] **Move secrets to Orchestrator Assets** — credentials, API keys, environment-specific URLs.
 - [ ] **Set `MaxRetryNumber = 0` during development** to surface failures fast; restore the production value before deployment.
