@@ -42,6 +42,7 @@ import re
 import subprocess
 import sys
 import time
+from enum import Enum
 from typing import Any, Iterable, Sequence
 
 
@@ -143,7 +144,13 @@ _DEBUG_RETRY_MARKERS = (
 # An agent step's own LLM call failing upstream. The CLI envelope says
 # `RetryWillNotFix` and has no HttpStatus; only the incident names the 5xx.
 # skill-flow-lowcode-agent 2026-10-09: "LLM provider returned HTTP 500".
+# The steps before the agent already ran, so a retry repeats their side effects.
 _LLM_PROVIDER_5XX = re.compile(r"llm provider returned http 5\d\d")
+
+
+class AgentFaultRetry(Enum):
+    NONE = "none"
+    RETRY = "retry"
 
 
 def _rglob_pruned(pattern: str) -> list[str]:
@@ -252,7 +259,10 @@ def _rotate_solution_id(project_dir: str) -> tuple[str, str] | None:
     return None
 
 
-def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
+def _is_transient_debug_error(
+    result: subprocess.CompletedProcess,
+    agent_fault: AgentFaultRetry = AgentFaultRetry.NONE,
+) -> bool:
     """True iff a failed ``flow debug`` invocation looks like a transient
     server-side error (5xx / RetryLater / poll-budget expiry) worth retrying,
     rather than a real flow fault. Case-insensitive so CLI key casing can't
@@ -262,7 +272,7 @@ def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
     blob = _output_blob(result)
     if any(marker in blob for marker in _DEBUG_RETRY_MARKERS):
         return True
-    if _LLM_PROVIDER_5XX.search(blob):
+    if agent_fault is AgentFaultRetry.RETRY and _LLM_PROVIDER_5XX.search(blob):
         return True
     # Fall back to an explicit 5xx HttpStatus in the error Context.
     data = _parse_json(result.stdout)
@@ -347,6 +357,7 @@ def run_debug(
     project_glob: str = "**/project.uiproj",
     retries: int = _DEFAULT_RETRIES,
     backoff_seconds: float = _DEFAULT_BACKOFF_SECONDS,
+    agent_fault: AgentFaultRetry = AgentFaultRetry.NONE,
 ) -> dict:
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing.
@@ -365,7 +376,9 @@ def run_debug(
     timeouts get :data:`_POLL_TIMEOUT_ATTEMPTS` and a SIGKILLed attempt gets
     :data:`_SUBPROCESS_TIMEOUT_ATTEMPTS`, and any retry is skipped once
     the remainder drops below :data:`_MIN_RETRY_BUDGET_SECONDS`. A real flow
-    fault fails immediately without burning retries.
+    fault fails immediately without burning retries. An agent step's LLM 5xx
+    retries only with ``agent_fault=AgentFaultRetry.RETRY``, which re-runs the
+    whole flow: pass it only from a checker whose flow has no side effects.
 
     ``attachments`` maps a file-typed input variable ``id`` to a local file path;
     each pair is passed as ``--attachment <id>=<path>`` (repeatable). The variable
@@ -519,7 +532,7 @@ def run_debug(
                 flush=True,
             )
             max_attempts = max(max_attempts, attempt + 2)
-        elif not _is_transient_debug_error(r):
+        elif not _is_transient_debug_error(r, agent_fault):
             break
         elif _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
             break

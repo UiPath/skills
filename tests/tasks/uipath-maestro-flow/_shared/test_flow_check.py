@@ -1029,6 +1029,20 @@ def test_run_debug_does_not_retry_nontransient_error(monkeypatch):
     assert calls["n"] == 1
 
 
+@pytest.mark.parametrize(
+    "agent_fault,attempts",
+    [(flow_check.AgentFaultRetry.NONE, 1), (flow_check.AgentFaultRetry.RETRY, 2)],
+)
+def test_run_debug_retries_agent_5xx_only_when_opted_in(monkeypatch, agent_fault, attempts):
+    calls = _stub_debug(monkeypatch, [_cp(1, _LLM_PROVIDER_500), _cp(0, _COMPLETED)])
+    if attempts == 1:
+        with pytest.raises(SystemExit):
+            run_debug(agent_fault=agent_fault)
+    else:
+        run_debug(agent_fault=agent_fault)
+    assert calls["n"] == attempts
+
+
 def test_run_debug_exhausts_retries_on_persistent_504(monkeypatch):
     calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504)] * 3)
     with pytest.raises(SystemExit):
@@ -1047,12 +1061,23 @@ def test_run_debug_exhausts_retries_on_persistent_504(monkeypatch):
         (_cp(1, '{"ErrorCode": "invalid_argument", "Retry": "RetryWillNotFix"}'), False),
         (_cp(1, '{"Context": {"HttpStatus": 404}}'), False),           # 4xx is not transient
         (_cp(1, _POLL_TIMEOUT), True),                                 # CLI poll-budget expiry
-        (_cp(1, _LLM_PROVIDER_500), True),                             # agent step's LLM 5xx
-        (_cp(1, _LLM_PROVIDER_500.replace("HTTP 500", "HTTP 400")), False),
+        (_cp(1, _LLM_PROVIDER_500), False),                            # agent 5xx: opt-in only
     ],
 )
 def test_is_transient_debug_error(cp, expected):
     assert flow_check._is_transient_debug_error(cp) is expected
+
+
+@pytest.mark.parametrize(
+    "cp,expected",
+    [
+        (_cp(1, _LLM_PROVIDER_500), True),
+        (_cp(1, _LLM_PROVIDER_500.replace("HTTP 500", "HTTP 400")), False),
+    ],
+)
+def test_agent_fault_retry_opts_into_llm_5xx(cp, expected):
+    retry = flow_check.AgentFaultRetry.RETRY
+    assert flow_check._is_transient_debug_error(cp, retry) is expected
 
 
 # ── run_debug: a faulted run carries the backend's incident details ──────────
