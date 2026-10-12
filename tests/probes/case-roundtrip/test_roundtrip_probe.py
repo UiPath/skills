@@ -30,13 +30,16 @@ EP = {"entryPoints": [{"filePath": "/content/caseplan.json.bpmn#trigger_1", "uni
 
 def project(root, plan=PLAN, ep=EP):
     os.makedirs(root, exist_ok=True)
-    json.dump(plan, open(os.path.join(root, "caseplan.json"), "w"))
-    json.dump(ep, open(os.path.join(root, "entry-points.json"), "w"))
+    with open(os.path.join(root, "caseplan.json"), "w") as fh:
+        json.dump(plan, fh)
+    with open(os.path.join(root, "entry-points.json"), "w") as fh:
+        json.dump(ep, fh)
     return root
 
 
 def rules():
-    return json.load(open(os.path.join(HERE, "PREDICTION.json")))["rules"]
+    with open(os.path.join(HERE, "PREDICTION.json")) as fh:
+        return json.load(fh)["rules"]
 
 
 def run(tmp_path, plan=PLAN, ep=EP):
@@ -90,7 +93,8 @@ def test_a_dropped_plan_file_is_not_absorbed_as_noise(tmp_path):
 
 def test_a_sidecar_missing_a_node_is_inconsistent(tmp_path):
     (_, _, _, _), before, after = run(tmp_path)
-    json.dump({"trigger_1": {"x": 0}}, open(os.path.join(after, "caseplan.layout.json"), "w"))
+    with open(os.path.join(after, "caseplan.layout.json"), "w") as fh:
+        json.dump({"trigger_1": {"x": 0}}, fh)
     assert consistency.sidecar(before, after)
 
 
@@ -102,3 +106,11 @@ def test_a_sidecar_missing_a_node_is_inconsistent(tmp_path):
 ])
 def test_path_patterns_treat_brackets_literally(path, pattern, ok):
     assert rd.path_matches(path, pattern) is ok
+
+
+def test_consistency_reads_the_plan_under_the_designers_name(tmp_path):
+    import consistency
+    (tmp_path / "caseplan.json").write_text("{}")
+    assert consistency.plan_path(str(tmp_path)).endswith("caseplan.json")
+    (tmp_path / "caseplan.case").write_text("{}")
+    assert consistency.plan_path(str(tmp_path)).endswith("caseplan.case")

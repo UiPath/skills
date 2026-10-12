@@ -29,6 +29,14 @@ def read(path):
         return json.load(fh)
 
 
+def plan_path(tree: str) -> str:
+    """The plan in ``tree``: the designer renames caseplan.json to caseplan.case on first save."""
+    for name in ("caseplan.case", "caseplan.json"):
+        if os.path.isfile(os.path.join(tree, name)):
+            return os.path.join(tree, name)
+    return os.path.join(tree, "caseplan.json")
+
+
 def entry_points(before: str, after: str) -> list[str]:
     problems = []
     a = {e["uniqueId"]: e for e in read(os.path.join(before, "entry-points.json"))["entryPoints"]}
@@ -36,7 +44,7 @@ def entry_points(before: str, after: str) -> list[str]:
     b = {e.get("uniqueId"): e for e in b_list}
     if set(a) != set(b):
         problems.append(f"uniqueIds changed: before {sorted(a)}, after {sorted(b)}")
-    plan = read(os.path.join(after, "caseplan.json"))
+    plan = read(plan_path(after))
     triggers = {n["id"]: n for n in plan.get("nodes", []) if "trigger" in str(n.get("type", "")).lower()}
     for e in b_list:
         target = e.get("filePath", "").rsplit("#", 1)[-1]
@@ -50,7 +58,7 @@ def entry_points(before: str, after: str) -> list[str]:
 
 
 def sidecar(before: str, after: str) -> list[str]:
-    plan_ids = {n["id"] for n in read(os.path.join(after, "caseplan.json")).get("nodes", [])}
+    plan_ids = {n["id"] for n in read(plan_path(after)).get("nodes", [])}
     problems = []
     for name in sorted(set(os.listdir(after)) - set(os.listdir(before))):
         try:
@@ -67,12 +75,12 @@ def sidecar(before: str, after: str) -> list[str]:
 def cli_editable(after: str, case_schema: str) -> list[str]:
     with tempfile.TemporaryDirectory() as tmp:
         out = os.path.join(tmp, "caseplan.json")
-        r = subprocess.run(["node", os.path.join(HERE, "simulate.cjs"), os.path.join(after, "caseplan.json"), out],
+        r = subprocess.run(["node", os.path.join(HERE, "simulate.cjs"), plan_path(after), out],
                            env={**os.environ, "CS": case_schema}, capture_output=True, text=True)
         if r.returncode != 0:
             return [f"converter failed: {r.stderr.strip()[-300:]}"]
-        return [] if read(out) == read(os.path.join(after, "caseplan.json")) else \
-            ["the designer's converter does not round-trip the pulled caseplan.json unchanged"]
+        return [] if read(out) == read(plan_path(after)) else \
+            ["the designer's converter does not round-trip the pulled plan unchanged"]
 
 
 def main(argv=None) -> int:
