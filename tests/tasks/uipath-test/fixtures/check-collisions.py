@@ -35,6 +35,8 @@ OWNERS = {
     "CURATE": "testset_curation_by_label_build.yaml",
     "SCHEMA": "customfield_schema_multiscope_build.yaml",
     "TRIAGE": "failed_run_triage_diagnose.yaml",
+    "PERMPRE": "project_permissions_preflight_smoke.yaml",
+    "PERMAT": "project_permissions_access_triage_integration.yaml",
 }
 
 

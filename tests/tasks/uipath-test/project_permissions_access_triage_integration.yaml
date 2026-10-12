@@ -5,10 +5,12 @@ description: >
   to raw REST. Given a 403 the user hit trying to trigger a run, the agent must
   run `project-permissions get` for that project, then answer from the returned
   Permissions array whether the identity can create executions there. Grades the
-  diagnostic behavior (skill routing, the permissions read, no REST fallback) and
-  that the live envelope is well-formed — tolerant of an empty array, which is the
-  honest answer for a service/robot token with no project RBAC.
-tags: [uipath-test, integration, mode:diagnose, lifecycle:discover, feature:test-case]
+  diagnostic behavior (skill routing, the permissions read, no REST fallback, and
+  no re-trigger of the failing run) and that the live envelope is well-formed — a
+  Success response that carries a non-empty Permissions array (the get is gated on
+  Project.Read, so a successful read always holds at least that; no read access
+  returns a 403/404, never a Success with an empty array).
+tags: [uipath-test, integration, mode:diagnose, lifecycle:discover]
 
 run_limits:
   expected_turns: 8
@@ -18,7 +20,7 @@ pre_run:
   - command: |
       python3 - <<'PYEOF'
       import json, subprocess, sys
-      NAME = "EVFX-PERM-PROJECT"
+      NAME = "EVFX-PERMAT-PROJECT"
 
       def call(label, *a):
           r = subprocess.run(["uip", *a, "--output", "json"],
@@ -37,7 +39,7 @@ pre_run:
           return None
 
       if not find():
-          call("create", "tm", "project", "create", "--name", NAME, "--project-key", "EVFXPERM")
+          call("create", "tm", "project", "create", "--name", NAME, "--project-key", "EVFXPERMAT")
       if not find():
           print("FIXTURE: PROVISIONING FAILED - could not find or create project", flush=True)
           sys.exit(1)
@@ -46,7 +48,7 @@ pre_run:
     timeout: 120
 
 initial_prompt: |
-  Triggering a test run in my UiPath Test Manager project "EVFX-PERM-PROJECT"
+  Triggering a test run in my UiPath Test Manager project "EVFX-PERMAT-PROJECT"
   just failed with a 403 Forbidden. Before I ask an admin for anything, I want to
   know what my own account is actually permitted to do in that project, and
   specifically whether I'm allowed to create/trigger executions there. Work it
@@ -64,7 +66,7 @@ success_criteria:
   - type: command_executed
     description: "Agent read its own permissions on the named project rather than retrying the failing run"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+project-permissions\s+get\b(?=(?:(?!\n|&&|\|\||;|\s(?:uip|\$UIP)\s).)*--project-(key|id)\s)'
+    command_pattern: 'uip\s+tm\s+project-permissions\s+get\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--project-(key|id)\s)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -72,18 +74,27 @@ success_criteria:
   - type: command_executed
     description: "Did not fall back to raw REST (curl/wget) against the permissions API"
     tool_name: "Bash"
-    command_pattern: '(?i)(curl|wget)(?:(?!\n|&&|\|\||;).)*permissions'
+    command_pattern: '(?i)(curl|wget)(?:(?!\n|&&|\|\||;|\|).)*permissions'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Triaged rather than blindly re-triggering: did NOT re-run the execution this turn"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+(testsets|testcases|executions)\s+run\b|uip\s+tm\s+executions\s+create\b'
     min_count: 0
     max_count: 0
     weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The live permissions response is a valid envelope (empty array allowed)"
+    description: "The live permissions response is a valid envelope with a non-empty Permissions array (Count==len, Project.Read present)"
     command: |
       python3 - <<'PYEOF'
       import json, subprocess, sys
-      NAME = "EVFX-PERM-PROJECT"
+      NAME = "EVFX-PERMAT-PROJECT"
       def call(*a):
           r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
           o = r.stdout or ""
@@ -99,6 +110,7 @@ success_criteria:
       perms = data.get("Permissions")
       ok = (d.get("Result") == "Success" and d.get("Code") == "ProjectPermissionsGet"
             and bool(data.get("ProjectId")) and isinstance(perms, list)
+            and len(perms) >= 1 and "Project.Read" in perms
             and data.get("Count") == len(perms))
       print("SHAPE_OK" if ok else "SHAPE_FAIL")
       sys.exit(0 if ok else 1)

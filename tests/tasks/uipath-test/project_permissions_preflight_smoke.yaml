@@ -4,11 +4,11 @@ description: >
   on a named project before doing work there. Asserts it routes through the skill
   and runs `project-permissions get` for that project (not a guess), and that the
   live response is a well-formed envelope — Result Success, Code
-  ProjectPermissionsGet, a Permissions string array and a Count that equals its
-  length. It deliberately does NOT require a non-empty array: the CLI commonly
-  runs on a service/robot token that holds no project-level RBAC, so an empty set
-  is a valid answer the skill must treat as "you hold none here," not a failure.
-tags: [uipath-test, smoke, mode:diagnose, lifecycle:discover]
+  ProjectPermissionsGet, a non-empty Permissions string array and a Count that
+  equals its length. The get is itself gated on Project.Read, so a successful
+  response always carries at least Project.Read (Count >= 1); no read access
+  fails with a 403/404, never a Success with an empty array.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover]
 
 run_limits:
   expected_turns: 6
@@ -18,7 +18,7 @@ pre_run:
   - command: |
       python3 - <<'PYEOF'
       import json, subprocess, sys
-      NAME = "EVFX-PERM-PROJECT"
+      NAME = "EVFX-PERMPRE-PROJECT"
 
       def call(label, *a):
           r = subprocess.run(["uip", *a, "--output", "json"],
@@ -39,7 +39,7 @@ pre_run:
       p = find()
       if not p:
           # project-key must be short; derive a stable one from the name
-          call("create", "tm", "project", "create", "--name", NAME, "--project-key", "EVFXPERM")
+          call("create", "tm", "project", "create", "--name", NAME, "--project-key", "EVFXPERMPRE")
           p = find()
       if not p:
           print("FIXTURE: PROVISIONING FAILED - could not find or create project", flush=True)
@@ -50,7 +50,7 @@ pre_run:
 
 initial_prompt: |
   I'm about to start working in my UiPath Test Manager project
-  "EVFX-PERM-PROJECT" and I want to know up front what I'm actually allowed to do
+  "EVFX-PERMPRE-PROJECT" and I want to know up front what I'm actually allowed to do
   in it with my current credentials. List the permissions I hold on that project.
   If I happen to hold none, say so plainly rather than treating it as an error.
 
@@ -65,17 +65,17 @@ success_criteria:
   - type: command_executed
     description: "Agent read the caller's permissions for the named project with project-permissions get"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+project-permissions\s+get\b(?=(?:(?!\n|&&|\|\||;|\s(?:uip|\$UIP)\s).)*--project-(key|id)\s)'
+    command_pattern: 'uip\s+tm\s+project-permissions\s+get\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--project-(key|id)\s)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The live response is a valid ProjectPermissionsGet envelope (empty array allowed)"
+    description: "The live response is a valid ProjectPermissionsGet envelope with a non-empty Permissions array (Count==len, Project.Read present)"
     command: |
       python3 - <<'PYEOF'
       import json, subprocess, sys
-      NAME = "EVFX-PERM-PROJECT"
+      NAME = "EVFX-PERMPRE-PROJECT"
       def call(*a):
           r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
           o = r.stdout or ""
@@ -91,6 +91,7 @@ success_criteria:
       perms = data.get("Permissions")
       ok = (d.get("Result") == "Success" and d.get("Code") == "ProjectPermissionsGet"
             and bool(data.get("ProjectId")) and isinstance(perms, list)
+            and len(perms) >= 1 and "Project.Read" in perms
             and data.get("Count") == len(perms))
       print("SHAPE_OK" if ok else "SHAPE_FAIL")
       sys.exit(0 if ok else 1)
