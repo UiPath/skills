@@ -130,9 +130,10 @@ An empty `--all` reports `Action: NoSchedules` and calls nothing.
 
 ## Permissions
 
-Writes need the Test Manager automated-execution permission. `list` needs
-test-set read. Check with
-`uip tm project-permissions get --project-key <PROJECT_KEY>`.
+Writes need the Test Manager automated-execution permission; `list` needs
+test-set read. A `403` on a schedule call means the caller's token lacks one of
+these — confirm the account's roles in the project's Test Manager settings
+(there is no `uip tm schedules` verb that reports them).
 
 ## What this does not tell you
 

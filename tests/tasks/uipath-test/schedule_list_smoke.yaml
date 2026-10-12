@@ -2,8 +2,7 @@ task_id: skill-test-schedule-list-smoke
 description: >
   Smoke test: the agent lists the test set schedules in a project and reports
   which are switched on. Exercises `uip tm schedules list` — the only read in
-  the domain, since there is no get-by-id — and checks the agent reaches for it
-  with --output json rather than inventing schedule state. The fixture seeds one
+  the domain, since there is no get-by-id — and checks the agent reaches for the CLI rather than inventing schedule state. The fixture seeds one
   enabled schedule so the list is never empty; the agent is graded on calling
   the list and on the login-first convention, not on any mutation.
 tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:trigger]
