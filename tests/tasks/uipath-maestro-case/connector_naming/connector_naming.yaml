@@ -45,8 +45,7 @@ sandbox:
       path: fixtures
 
 reference:
-  # Case root: the grader imports `_shared/`, which a task-only copy
-  # ($TASK_DIR under docker) leaves out.
+  # Case root: the grader imports `_shared/`, which a task-only copy leaves out.
   directory: ..
 
 initial_prompt: |
