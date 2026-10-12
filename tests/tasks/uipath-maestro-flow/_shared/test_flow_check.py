@@ -859,6 +859,17 @@ _POLL_TIMEOUT = (
     'is accessible, and Studio Web debug is available, then retry.",\n'
     '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
 )
+# Trimmed from skill-flow-lowcode-agent 2026-10-09: the agent job's LLM call
+# 500'd; the envelope says RetryWillNotFix and carries no HttpStatus.
+_LLM_PROVIDER_500 = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Debug session Faulted. [170002] Failure in the Orchestrator Job (element countRs)",\n'
+    '  "Context": {"ErrorCode": "170002"},\n'
+    '  "Data": {"finalStatus": "Faulted", "incidents": [{"errorCode": "170002",\n'
+    '    "errorDetails": "LLM provider returned HTTP 500",\n'
+    '    "dependentFaultCode": "AGENT_RUNTIME.HTTP_ERROR"}]},\n'
+    '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
+)
 
 
 # Verbatim from `uip maestro flow debug` on 2026-09-02 07:48Z: Studio Web's
@@ -1036,6 +1047,8 @@ def test_run_debug_exhausts_retries_on_persistent_504(monkeypatch):
         (_cp(1, '{"ErrorCode": "invalid_argument", "Retry": "RetryWillNotFix"}'), False),
         (_cp(1, '{"Context": {"HttpStatus": 404}}'), False),           # 4xx is not transient
         (_cp(1, _POLL_TIMEOUT), True),                                 # CLI poll-budget expiry
+        (_cp(1, _LLM_PROVIDER_500), True),                             # agent step's LLM 5xx
+        (_cp(1, _LLM_PROVIDER_500.replace("HTTP 500", "HTTP 400")), False),
     ],
 )
 def test_is_transient_debug_error(cp, expected):

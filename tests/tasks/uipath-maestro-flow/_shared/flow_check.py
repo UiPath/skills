@@ -140,6 +140,10 @@ _DEBUG_RETRY_MARKERS = (
     '"errorcode": "server_error"',
     _DEBUG_POLL_TIMEOUT_MARKER,
 )
+# An agent step's own LLM call failing upstream. The CLI envelope says
+# `RetryWillNotFix` and has no HttpStatus; only the incident names the 5xx.
+# skill-flow-lowcode-agent 2026-10-09: "LLM provider returned HTTP 500".
+_LLM_PROVIDER_5XX = re.compile(r"llm provider returned http 5\d\d")
 
 
 def _rglob_pruned(pattern: str) -> list[str]:
@@ -255,7 +259,10 @@ def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
     slip past."""
     if result.returncode == 0:
         return False
-    if any(marker in _output_blob(result) for marker in _DEBUG_RETRY_MARKERS):
+    blob = _output_blob(result)
+    if any(marker in blob for marker in _DEBUG_RETRY_MARKERS):
+        return True
+    if _LLM_PROVIDER_5XX.search(blob):
         return True
     # Fall back to an explicit 5xx HttpStatus in the error Context.
     data = _parse_json(result.stdout)
