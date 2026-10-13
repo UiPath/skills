@@ -145,7 +145,41 @@ uip rpa remote configure \
 
 ### Discovering Option Values
 
-Look up each value from Orchestrator with the uip CLI: the folder's fully-qualified path, the machines assigned to that folder, the robot accounts in that folder, and each machine's connected unattended sessions (their host machine names are the `--runtime` values). Prefer a machine whose host is connected and responsive — `configure` rejects a machine with no connected host. Then apply Rule 3: present the candidates and ask the user which to use.
+Look up each value the user has not named with these read-only commands, in order. Skip a step when the user already named that value.
+
+1. **Folder** — the `--folder-path` value is `Path` (fully qualified, e.g. `Shared/Finance`), not `Name`:
+
+   ```bash
+   uip or folders list --output json
+   ```
+
+   Lists the folders the signed-in user can access; add `--all` to list every folder in the tenant.
+
+2. **Machines in the folder** — the `--machine` value is `Name`:
+
+   ```bash
+   uip or machines list --folder-path "<FOLDER_PATH>" --output json
+   ```
+
+   Skip machines with `UnattendedSlots: 0` — they cannot host an unattended session. `Scope: Serverless` means `--runtime` does not apply.
+
+3. **Robot accounts in the folder** — the `--robot` value is `UserEntity.UserName`:
+
+   ```bash
+   uip or users list-in-folder --folder-path "<FOLDER_PATH>" --all-fields --output json
+   ```
+
+   `--all-fields` nests each entry's details under `UserEntity`. Offer only entries whose `UserEntity.MayHaveUnattended` is `true`; that excludes directory groups. `UserEntity.Type` `Robot` / `DirectoryRobot` is a robot account; `User` / `DirectoryUser` is a user account. Robots assigned to a parent folder appear only with `--include-inherited`.
+
+4. **Connected hosts** — one row per host; the `--runtime` value is `HostMachineName`:
+
+   ```bash
+   uip or sessions unattended list --folder-path "<FOLDER_PATH>" --runtime-type Unattended --output json
+   ```
+
+   Match rows to a machine from step 2 by `MachineName`. A usable host has `Status: Available` and `IsUnresponsive: false`; `Status: Disconnected` means that host's robot service is not connected to Orchestrator. The number of usable hosts per machine decides whether to pass `--runtime` (§ When to Pass `--runtime`).
+
+Then apply Rule 3: present the candidates and ask the user which to use. Offer only machines with at least one usable host — `configure` rejects a machine with no connected host. Empty results in step 2, 3, or 4 mean the folder has no usable machine, robot account, or connected host; ask the user for another folder. On `not authenticated` / `401` / `403`, sign in per Rule 6 and retry.
 
 ### Configure Errors
 
@@ -154,7 +188,7 @@ Look up each value from Orchestrator with the uip CLI: the folder's fully-qualif
 | `Folder '<FOLDER_PATH>' not found. Available folders: …` | Pick from the listed folders |
 | `Machine '<MACHINE_NAME>' not found in folder '<FOLDER_PATH>'. Available machines: …` | Pick from the listed machines, or correct `--folder-path` |
 | `Machine '<MACHINE_NAME>' has no available unattended session in folder '<FOLDER_PATH>' - last reported state: …` | No host of that machine is connected. Ask the user to start the machine and connect its robot service to Orchestrator, or pick another machine |
-| `Robot/user '<ROBOT_NAME>' not found in folder '<FOLDER_PATH>'.` | Re-check the robot accounts in that folder |
+| `Robot/user '<ROBOT_NAME>' not found in folder '<FOLDER_PATH>'.` | Re-list the robot accounts in that folder (§ Discovering Option Values, step 3) |
 | `Connected runtime '<RUNTIME_NAME>' not found for machine '<MACHINE_NAME>'. Available runtimes: …` | Pick from the listed runtimes. An empty list means no host of that machine is connected — handle as the "no available unattended session" row |
 | `--live-authoring and --remote-run-only are the two modes of one connection; pass at most one.` | Pass exactly one mode flag |
 | `Could not start remote debug session. Foreground process requires you to have an unattended robot with credentials defined` — from `configure` in Live Authoring, or from later operations in Remote Run Only | `--robot` was omitted — reconfigure with it (Rule 2) |
