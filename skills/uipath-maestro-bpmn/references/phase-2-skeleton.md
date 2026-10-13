@@ -3,12 +3,11 @@
 Author a skeleton of blank boxes, arrows and labels, upload it, and reach a link
 the user can open in about two minutes — it makes **no registry calls**.
 
-**Both draft and auto mode run this phase.** Draft mode stops afterwards and
-asks the user to agree the shape (phase 3); auto mode skips 2f and continues
-straight into phase 4 and pastes real payloads into these same boxes. Building the structure
-first means a template error is never tangled up with a structural one. Skip
-this phase only for a brownfield edit (the shape already exists) or a
-discovery-only task (nothing is authored).
+**Draft mode only.** Draft mode stops afterwards and asks the user to agree
+the shape (phase 3); phase 4 then pastes real payloads into these same boxes.
+Auto mode skips 2b–2f and phase 3 and authors real nodes directly in phase 4.
+Brownfield edits (the shape already exists) and discovery-only tasks (nothing
+is authored) skip this phase too.
 
 ## What a skeleton is
 
@@ -136,5 +135,4 @@ untouched, `refresh` stays a no-op.
 In draft mode the loop ends at an explicit approval gate, and that approval is
 what authorizes phase 4 — registry pull, element disambiguation, live
 connections, and payloads pasted into the existing boxes. Until then the
-skeleton is an unapproved draft, and saying otherwise misreports it. In auto
-mode there is no gate and no iteration: phase 2 hands straight to phase 4.
+skeleton is an unapproved draft, and saying otherwise misreports it.
