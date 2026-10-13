@@ -128,7 +128,7 @@ When no api-type action's `rules[]` are satisfied by the supplied fields, the CL
 
 Some parent fields pick a **solution resource** rather than a plain value — a Data Fabric folder entity is the common case, but any kind works the same way. Spot them in the describe output's `Method` JSON: the parameter's `design` carries `"solutionResourceKind"` (the resource kind, e.g. `"entity"`) and usually `"component": "Resources"`. The connector cannot look a picked resource up itself, so the CLI does it for the design action that reads the field.
 
-Pass the resource **name** with `-f` like any other parent value. The CLI reads the field's `solutionResourceKind` and finds the resource of that kind by name. For a `POST` design action it sends the resource's configuration graph in the body (the resource plus every resource it depends on — e.g. the choice sets behind an entity's fields); for a URL `{=resourceKey(<field>)}` token it fills in the resource's key:
+Pass the resource **name** with `-f` like any other parent value. The CLI reads the field's `solutionResourceKind` and finds the resource of that kind by name. For a design action with a body (`POST`, `PUT` or `PATCH`) it sends the resource's configuration graph in the body (the resource plus every resource it depends on — e.g. the choice sets behind an entity's fields); for a URL `{=resourceKey(<field>)}` token it fills in the resource's key:
 
 ```bash
 # Create Entity Record: folderEntityName is an entity picker
@@ -152,7 +152,7 @@ Where the resource is looked up:
 | The catalog has the name in several folders → `ErrorCode: "invalid_argument"`, `Instructions` list up to 10 `<folder> (folder key …)` | Add `-f <field>_folderKey=<folder-key>` for the folder you mean (the same companion field the activity stores). Not in the list? `uip solution resources list --source remote --kind <kind> --search "<name>"` shows every folder. This is a `-f` field, not the `--folder-key` option used for folder-scoped connections. |
 | No resource of that kind has the name → `ErrorCode: "not_found"` | Check the name and kind — `uip solution resources list --kind <kind> --search "<name>"` (add `--source remote` for the tenant). |
 
-Do not drop the picker field and retry when the lookup fails: a `POST` design action without the graph fails with `400 … Value for required parameter 'body' not found`. A `GET` design action that substitutes only the name (e.g. `FetchObjectMetadataTenant` over `tenantEntityName`) needs no lookup.
+Do not drop the picker field and retry when the lookup fails: a design action with a body, sent without the graph, fails with `400 … Value for required parameter 'body' not found`. A `GET` design action that substitutes only the name (e.g. `FetchObjectMetadataTenant` over `tenantEntityName`) needs no lookup.
 
 ---
 

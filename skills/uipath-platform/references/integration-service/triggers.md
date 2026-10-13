@@ -112,7 +112,7 @@ uip is triggers describe uipath-uipath-dataservice "<OPERATION>" "<object-name>"
 ```
 
 - The CLI runs the action the `-f` fields satisfy (`--action <name>` when several match) and merges the fields it returns. Without `-f`, such a trigger describes to its base fields only (often just `Id`) — that is not its real schema.
-- The picker is looked up by its kind and name: the local solution first (`--solution-folder`, or the current directory when it is one), then the tenant's resource catalog. A `POST` action gets the resource's configuration graph in its body; a `/metadata` action is a `GET` and gets only the resource key.
+- The picker is looked up by its kind and name: the local solution first (`--solution-folder`, or the current directory when it is one), then the tenant's resource catalog. A `POST`, `PUT` or `PATCH` action gets the resource's configuration graph in its body; a `/metadata` action is a `GET` and gets only the resource key.
 - Failures are the same as on resources describe: a name in several folders → `invalid_argument`, add `-f <picker-field>_folderKey=<folder-key>`; a name found nowhere → `not_found`, check it with `uip solution resources list --kind <kind> --search "<name>"`. Do not drop the picker and retry — the action needs it.
 - `-f` needs `--connection-id`; the result is never cached.
 
