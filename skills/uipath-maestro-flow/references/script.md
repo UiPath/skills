@@ -35,10 +35,10 @@ Use a first-class action when the scenario names one; use script for computation
 
 ## What the step publishes
 
-The node's own definition can only say `output: {type: 'object'}` — a node TYPE
-cannot know what a particular body returns — so the designer would type every
-script read as `Record<string, any>` and reject mapping one into a `string` flow
-output. The compiler therefore reads the body and declares what it plainly
+The node's own definition can only declare a generic output (`object` on
+1.0.0, `any` on 1.1) — a node TYPE cannot know what a particular body returns —
+so the designer would type every script read as `Record<string, any>` and
+reject mapping one into a `string` flow output. The compiler therefore reads the body and declares what it plainly
 returns, so this needs nothing from you:
 
 ```ts
@@ -61,5 +61,4 @@ call — declares nothing, which is where `returns` comes in:
 `returns` always wins over the body, and takes either a type
 (`'string' | 'number' | 'boolean' | 'object' | 'array' | 'any'`) or, to name the fields
 of an object return, a map — `returns: { total: 'number', currency: 'string' }`.
-`'any'` is what `core.action.script@1.1`'s own definition declares; it keeps the
-output open even when the body plainly returns one type.
+`'any'` keeps the output untyped even when the body plainly returns one type.
