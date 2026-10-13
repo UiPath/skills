@@ -1,7 +1,8 @@
 {
-  "_comment": "Snapshot of `uip maestro case tasks types --output json` Data. Do not edit by hand; refresh with: python3 tests/tasks/uipath-maestro-case/_shared/task_types.py --refresh",
+  "_comment": "Snapshot of `uip maestro case task-types list --output json` Data. Do not edit by hand; refresh with: python3 tests/tasks/uipath-maestro-case/_shared/task_types.py --refresh",
   "Data": {
-    "SchemaVersion": "32.0.4",
+    "WriteSchemaVersion": "32.0.3",
+    "ReadSchemaVersion": "32.0.4",
     "Authorable": [
       {
         "Type": "action"

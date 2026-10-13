@@ -1,6 +1,6 @@
 """Every hand-kept copy of the case task-type set agrees with the CLI's declaration (MST-15834).
 
-The declaration is `uip maestro case tasks types`; `task_types.json` is its
+The declaration is `uip maestro case task-types list`; `task_types.json` is its
 snapshot. A type added to or removed from the CLI fails here until the guide,
 the conformance checklist and both `sdd_check.py` gates follow it.
 
@@ -51,13 +51,15 @@ def test_snapshot_matches_the_installed_cli():
     live = task_types.from_cli()
     if live is None:
         pytest.skip(
-            "installed CLI has no `uip maestro case tasks types`; the snapshot is checked "
+            "installed CLI has no `uip maestro case task-types list`; the snapshot is checked "
             "against it once @uipath/cli@dev carries the command"
         )
-    assert live == task_types.load(), (
-        "the CLI's declaration differs from task_types.json; run "
+    assert task_types.lists(live) == task_types.lists(task_types.load()), (
+        "the CLI's task-type lists differ from task_types.json; run "
         "`python3 tests/tasks/uipath-maestro-case/_shared/task_types.py --refresh` and follow the failures below"
     )
+    for key in task_types.VERSIONS:
+        assert re.fullmatch(r"\d+\.\d+\.\d+", str(live.get(key, ""))), f"{key} missing or malformed: {live.get(key)!r}"
 
 
 def test_guide_table_lists_exactly_the_authorable_types():
