@@ -76,7 +76,11 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `getEffectiveHitlHandleCustomization`). A `completed` edge on a task with
   outcomes is stale: Studio Web and the converter remap it to the PRIMARY
   outcome, so every other outcome loses its path. `check` refuses it
-  (HITL_COMPLETED_PORT_GONE). `exposeError: true` additionally exposes
+  (HITL_COMPLETED_PORT_GONE). A decompiled task the designer drew may write
+  an outcome as `{ name: 'Reject', id: 'outcome-1778015958049' }`: the `id`
+  keeps the original outcome id (and its `outcome-<id>` port) so the merged
+  edges match the original node. Leave it as it is; new outcomes need no `id`.
+  `exposeError: true` additionally exposes
   `out('<step>', 'error')` and selects the 1.2 definition (default node only).
 
   **Every outcome must be wired**, and there are three ways. Prefer the first:
