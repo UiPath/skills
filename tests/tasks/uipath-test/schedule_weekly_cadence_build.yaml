@@ -129,43 +129,29 @@ success_criteria:
     pass_threshold: 0
 
   - type: command_executed
-    description: "Agent created the schedule passing both --cron and --cron-details"
+    # Advisory only (pass_threshold 0): signals the agent drove the schedules
+    # CLI. NOT gating, because an agent may build the cron-details JSON in a
+    # python3 -c wrapper (the captured Bash command is then `python3 -c ...`,
+    # not a literal `uip tm schedules create`). Correctness is graded on the
+    # STORED schedule below, which is invocation-agnostic and works for every
+    # model.
+    description: "Agent drove the schedules CLI (advisory; may be wrapped)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+schedules\s+create\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--cron\s)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--cron-details\s)'
+    command_pattern: '(?i)schedules["\s,]+create'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    # Weekly cadence, not a daily guess: the create must carry both Monday and
-    # Thursday, as `MON,THU` in the cron or `Monday`/`Thursday` in the details
-    # `days` array. A daily `1/1` guess has neither. Per-run isolated (grades the
-    # agent's own command), so it stays accurate under concurrent variant runs.
-    description: "Agent encoded the Mon+Thu weekly cadence (not a daily guess)"
-    tool_name: "Bash"
-    command_pattern: '(?i)uip\s+tm\s+schedules\s+create\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*mon)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*thu)'
-    min_count: 1
-    weight: 3.0
-    pass_threshold: 1.0
-
-  - type: command_executed
-    # Quartz shape, not five-field Unix: exactly one of day-of-month /
-    # day-of-week is `?` in a 6/7-field Quartz cron, and a five-field Unix guess
-    # never contains `?`. Grading the emitted command keeps this per-run safe.
-    description: "Agent used a Quartz cron (contains `?`), not a five-field Unix guess"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+schedules\s+create\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--cron\s)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*\?)'
-    min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0
 
   - type: run_command
-    # Tolerant, concurrency-safe confirmation that the server accepted a weekly
-    # schedule TODAY on the set (>=1, filtered to today's stamp). Correctness is
-    # carried by the create-content criteria above; this only proves a schedule
-    # landed, so a concurrent run's row cannot make a failing agent pass the
-    # weighted total.
-    description: "A stamped EVFX-SCHEDWK- schedule landed today on the set, in Bucharest time, with a 6/7-field cron and JSON cron-details"
+    # PRIMARY, model-agnostic grade: assert the full weekly cadence on the
+    # schedule actually stored in Test Manager, not on how the agent typed the
+    # command. A today-stamped EVFX-SCHEDWK- schedule must sit on the set, in
+    # Bucharest time, with a Quartz 6/7-field cron (carries `?`), hour 09, and
+    # Mon+Thu in the day-of-week field, plus a JSON cron-details object. A daily
+    # or five-field guess fails this; an agent that wrapped the call in python
+    # still passes. Today-filtered + any-match keeps it safe under concurrent
+    # per-model runs on the shared project.
+    description: "A stamped EVFX-SCHEDWK- weekly schedule (Mon+Thu 09:00 Bucharest, Quartz cron + JSON details) is stored on the set today"
     command: |
       python3 -c "
       import json, subprocess, datetime
@@ -187,14 +173,26 @@ success_criteria:
               if str(r.get('Name','')).startswith('EVFX-SCHEDWK-') and today in str(r.get('Name',''))]
       def ok(s):
           cron = str(s.get('CronExpression') or '')
+          f = cron.split()
           tz = str(s.get('TimeZone') or s.get('Timezone') or '')
-          return (s.get('TestSetId') == sid and len(cron.split()) in (6,7)
-                  and 'Bucharest' in tz and str(s.get('CronDetails') or '').strip().startswith('{'))
-      assert any(ok(s) for s in mine), f'no valid weekly schedule stamped today; found {[r.get(\"Name\") for r in mine]}'
+          if not (s.get('TestSetId') == sid and len(f) in (6, 7)
+                  and 'Bucharest' in tz
+                  and str(s.get('CronDetails') or '').strip().startswith('{')):
+              return False
+          if '?' not in cron:            # Quartz, not five-field Unix
+              return False
+          if f[2] != '9':                # 09:00
+              return False
+          dow = f[5].upper()             # Mon + Thu
+          parts = dow.replace(',', ' ').split()
+          has_mon = 'MON' in dow or '2' in parts
+          has_thu = 'THU' in dow or '5' in parts
+          return has_mon and has_thu
+      assert any(ok(s) for s in mine), f'no valid Mon+Thu 09:00 weekly schedule stamped today; found {[(r.get(\"Name\"), r.get(\"CronExpression\")) for r in mine]}'
       "
     timeout: 120
     expected_exit_code: 0
-    weight: 1.5
+    weight: 5.0
     pass_threshold: 1.0
 
   - type: command_not_executed
