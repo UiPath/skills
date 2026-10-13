@@ -1,0 +1,188 @@
+task_id: skill-hitl-e2e-decision-capture-app
+description: >
+  E2E scenario (cloud auth required): agent builds a complete Decision
+  Action App for finance to approve or deny expense claims, from scratch.
+  Given only a business goal, the agent must write the Decision preview
+  table, author action-schema.json so a completed task persists as a
+  complete Decision, build the instructional UI with Apollo Wind (no widget
+  dependency),
+  build, pack, publish with `-t Action`, and deploy to a fresh per-run
+  Orchestrator folder. Tests the full decision-app lifecycle that no
+  smoke test covers end-to-end. Deploys into an isolated
+  `decisionapp-e2e-*` folder so `post_run` can delete it cleanly.
+
+tags: [uipath-human-in-the-loop, e2e, mode:build, lifecycle:setup]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+run_limits:
+  expected_turns: 40
+  max_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a UiPath Coded Action App that finance reviewers will use to
+  approve or deny expense claims flagged by an upstream agent. Capture
+  every reviewer decision so it is recorded in the Decision Ledger.
+
+  Business requirements:
+
+  - Each claim comes with: an employee name, a claim amount, and a policy
+    reference. These are read-only context for the reviewer.
+  - The upstream agent proposes 2 to 4 reasons (evidence) for and against
+    the claim, each with a relevance and a proposed verdict, which the
+    reviewer can accept or change.
+  - The agent proposes the claim's cost center, which the reviewer can
+    change.
+  - The agent also recommends approve or deny with a confidence score,
+    shown but never pre-selected.
+  - The reviewer approves or denies, explains why, and tells the agent
+    what to do next time.
+  - The app renders its own UI (no decision widget package).
+  - When deployed, the form must bind to Action Center tasks (NOT a
+    standalone Web App).
+
+  Confirm the Decision preview table with the user before writing code —
+  for this automated test, print the table and proceed without waiting.
+
+  Use the app name `ExpenseClaimApp_<EPOCH>` (Unix epoch seconds suffix —
+  e.g. `ExpenseClaimApp_1716163200`) with version `0.1.0`.
+
+  Deploy to a FRESH per-run Orchestrator folder — do NOT reuse `Shared`:
+    1. Create a new folder named `decisionapp-e2e-claim-<EPOCH>` via
+       `uip or folders create <name> --output json`. Capture the `Key`
+       from the response.
+    2. Pass that key to `uip codedapp deploy` non-interactively — as
+       `--folder-key <key>`, or as a `UIPATH_FOLDER_KEY=<key>` env-var
+       prefix — do NOT let deploy go interactive.
+  This isolates the deployment so `post_run` cleanup can delete the
+  folder afterwards.
+
+  When you finish, write `report.json` at the sandbox root with:
+    {
+      "app_name": "<the exact app name you used>",
+      "deployment_id": "<the deploymentId from .uipath/app.config.json (or its systemName if deploymentId is absent)>",
+      "app_url": "<the appUrl from .uipath/app.config.json>",
+      "folder": "<the decisionapp-e2e-claim-<EPOCH> folder name you created>"
+    }
+  The `folder` field is REQUIRED — `post_run` reads it to clean up.
+
+  Use `--output json` on every `uip` command. Do not prompt for
+  confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before cloud commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a fresh per-run folder via `uip or folders create`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `npm run build`"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+run\s+build'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp pack` with --output json"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+pack\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp publish` with `-t Action` or `--type Action`"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+publish\b.*(?:-t\s+Action|--type\s+Action)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp deploy` with the folder key passed non-interactively"
+    tool_name: "Bash"
+    command_pattern: '(?s)(UIPATH_FOLDER_KEY=\S+.*\buip\s+codedapp\s+deploy\b|uip\s+codedapp\s+deploy\b.*--folder-key)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "action-schema.json was authored (anywhere in the project tree)"
+    command: "find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "action-schema.json persists a complete Decision: proposals (evidence, cost center) as inOuts, Approve and Deny as outcomes, rationaleText and instructionText as outputs"
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); io=d['inOuts']['properties']; o=d['outputs']['properties']; oc=[k.lower() for k in d['outcomes']['properties']]; ok='evidence' in io and any('cost' in k.lower() for k in io) and 'approve' in oc and 'deny' in oc and 'submit' not in oc and 'rationaleText' in o and 'instructionText' in o; sys.exit(0 if ok else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "no telemetry or split-proposal outputs: no signals/decision/action/selectedResolutionId output field"
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; o=[k.lower() for k in json.load(open('$F'))['outputs']['properties']]; sys.exit(1 if {'signals','decision','action','selectedresolutionid'}.intersection(o) else 0)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the app does not depend on a decision widget package (builds its own UI per Step 3)"
+    command: "F=$(find . -name 'package.json' -not -path '*/node_modules/*' -maxdepth 3 -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); deps={**d.get('dependencies',{}),**d.get('devDependencies',{})}; sys.exit(1 if any('decisions-and-reasons' in k for k in deps) else 0)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "publish wrote a .uipath/app.config.json somewhere in the project tree, with appType == Action"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if d.get('appType','').lower() == 'action' else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "app.config.json proves a tenant round-trip: deploymentId or systemName present"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if (d.get('deploymentId') or d.get('systemName')) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was written at the sandbox root so post-run cleanup can find the deployed app"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json records the decisionapp-e2e-claim-* folder name so post_run can clean it up"
+    command: "python3 -c \"import json,sys; f=str(json.load(open('report.json')).get('folder','')); sys.exit(0 if f.startswith('decisionapp-e2e-claim-') else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_decision_app_folder.py"
+    timeout: 60
