@@ -1,15 +1,15 @@
-# File and Attachment Inspection (`appliesTo`)
+# File and Attachment Inspection (`detectionScope`)
 
-Built-in validators can inspect the files a run carries — `job-attachment` inputs, files tools return, and files the agent produces — in addition to text. Base schema, selector scoping, validator discovery, and actions are in [guardrails.md](guardrails.md); read its Overview and Walkthrough first. This guide owns the `appliesTo` parameter, what each scope sees, supported types and caps, and the file recipes. Custom (deterministic) guardrails never read file contents — see § What NOT to Do.
+Built-in validators can inspect the files a run carries — `job-attachment` inputs, files tools return, and files the agent produces — in addition to text. Base schema, selector scoping, validator discovery, and actions are in [guardrails.md](guardrails.md); read its Overview and Walkthrough first. This guide owns the `detectionScope` parameter, what each scope sees, supported types and caps, and the file recipes. Custom (deterministic) guardrails never read file contents — see § What NOT to Do.
 
-> **Important: BYO (bring-your-own) guardrails have no file support.** A guardrail pinned with `byoValidatorName` sends the text payload only, whatever `appliesTo` says, and BYO entries in `uip agent guardrails list` carry no `appliesTo` parameter. File inspection applies to UiPath's built-in implementations only.
+> **Important: BYO (bring-your-own) guardrails have no file support.** A guardrail pinned with `byoValidatorName` sends the text payload only, whatever `detectionScope` says, and BYO entries in `uip agent guardrails list` carry no `detectionScope` parameter. File inspection applies to UiPath's built-in implementations only.
 
-## The `appliesTo` parameter
+## The `detectionScope` parameter
 
-Optional `validatorParameters` entry on file-capable built-in validators:
+Optional `validatorParameters` entry on file-capable built-in validators (the **Detection scope** field in Studio Web):
 
 ```json
-{ "$parameterType": "enum", "id": "appliesTo", "value": "Files" }
+{ "$parameterType": "enum", "id": "detectionScope", "value": "Files" }
 ```
 
 | `value` | Studio Web label | Provider receives |
@@ -18,10 +18,10 @@ Optional `validatorParameters` entry on file-capable built-in validators:
 | `Files` | Files only | Files only; the text payload is dropped server-side |
 | `Both` | Text and files | Text payload plus files |
 
-1. Set `appliesTo` only when the validator's entry in `uip agent guardrails list --output json` has a `Parameters[]` item with `Id: "appliesTo"`. Absent means file inspection is not enabled for that validator on this tenant (the Studio Web card reads "Text prompts only"); the runtime evaluates text only. Do not add the parameter anyway.
-2. Omitted `appliesTo` defaults to `Text` for `pii_detection`, `prompt_injection`, `harmful_content`, `intellectual_property`, `user_prompt_attacks`, and to `Both` for `llm_as_judge`. Any unrecognised value narrows to `Text`.
-3. `appliesTo` changes nothing about scopes or stages: `prompt_injection` and `user_prompt_attacks` stay Llm · Pre; `intellectual_property` stays Agent/Llm · Post; the others stay Agent/Llm/Tool · Pre+Post. There is no stage picker — the runtime decides per validator.
-4. `appliesTo` is not `applyTo`. `applyTo` (`input` | `output` | `inputAndOutput`) belongs to the custom `always` rule in [custom-rules-guide.md](custom-rules-guide.md); custom guardrails have no `validatorParameters`.
+1. Set `detectionScope` only when the validator's entry in `uip agent guardrails list --output json` has a `Parameters[]` item with `Id: "detectionScope"`. Absent means file inspection is not enabled for that validator on this tenant (the Studio Web card reads "Text prompts only"); the runtime evaluates text only. Do not add the parameter anyway.
+2. Omitted `detectionScope` defaults to `Text` for `pii_detection`, `prompt_injection`, `harmful_content`, `intellectual_property`, `user_prompt_attacks`, and to `Both` for `llm_as_judge`. Any unrecognised value narrows to `Text`.
+3. `detectionScope` changes nothing about `selector.scopes` or stages: `prompt_injection` and `user_prompt_attacks` stay Llm · Pre; `intellectual_property` stays Agent/Llm · Post; the others stay Agent/Llm/Tool · Pre+Post. There is no stage picker — the runtime decides per validator.
+4. Custom guardrails have no `validatorParameters`, so no `detectionScope`; the `always` rule's `applyTo` (`input` | `output` | `inputAndOutput`) in [custom-rules-guide.md](custom-rules-guide.md) picks input or output, not text or files.
 5. Values are exact: `Text`, `Files`, `Both` — never lowercase.
 
 ## Choosing Text, Files, or Both
@@ -36,7 +36,7 @@ Optional `validatorParameters` entry on file-capable built-in validators:
 
 ## What each scope and stage inspects
 
-Files sent to the provider when `appliesTo` is `Files` or `Both`:
+Files sent to the provider when `detectionScope` is `Files` or `Both`:
 
 | Scope · stage | Files evaluated |
 |---|---|
@@ -87,7 +87,7 @@ Shape: a `job-attachment` input field ([../../agent-definition.md](../../agent-d
   "validatorParameters": [
     { "$parameterType": "enum-list", "id": "entities", "value": ["Email", "CreditCardNumber"] },
     { "$parameterType": "map-enum", "id": "entityThresholds", "value": { "Email": 0.5, "CreditCardNumber": 0.5 } },
-    { "$parameterType": "enum", "id": "appliesTo", "value": "Files" }
+    { "$parameterType": "enum", "id": "detectionScope", "value": "Files" }
   ],
   "action": { "$actionType": "block", "reason": "An attached file contains personal data." },
   "enabledForEvals": true,
@@ -95,7 +95,7 @@ Shape: a `job-attachment` input field ([../../agent-definition.md](../../agent-d
 }
 ```
 
-1. Run `uip agent guardrails list --output json`; confirm `Status: "Available"` and an `appliesTo` entry in `Parameters` for the validator.
+1. Run `uip agent guardrails list --output json`; confirm `Status: "Available"` and a `detectionScope` entry in `Parameters` for the validator.
 2. Reference the file field in the user message — `{{input.<FILE_FIELD>}}` in `content` with the matching `variable` token in `contentTokens` (Studio Web inserts it with `@`). The token renders metadata only; an unreferenced input still reaches an Agent-scope guardrail, but the model never knows the file exists.
 3. In the system prompt, instruct the model to read files with Analyze Files and never to judge a file by its name.
 4. Add the guardrail to the `agent.json` root `guardrails[]`, then run `uip agent refresh "<AGENT_NAME>" --output json` and `uip agent validate "<AGENT_NAME>" --output json`.
@@ -114,7 +114,7 @@ Use when only the files handed to Analyze Files matter (for example the agent al
   "validatorParameters": [
     { "$parameterType": "enum", "id": "model", "value": "<MODEL_ID>" },
     { "$parameterType": "text", "id": "guardrailText", "value": "Fail if the contract in {{content}} contains a non-compete clause longer than 12 months. A summary or analysis of a contract passes." },
-    { "$parameterType": "enum", "id": "appliesTo", "value": "Files" }
+    { "$parameterType": "enum", "id": "detectionScope", "value": "Files" }
   ],
   "action": { "$actionType": "block", "reason": "Non-compete exceeds 12 months." },
   "enabledForEvals": true,
@@ -133,7 +133,7 @@ Checks the content of an output file (generated code, a report), not the agent's
 
 1. Declare an output field as `$ref: "#/definitions/job-attachment"` with the canonical block in `outputSchema.definitions` ([../../agent-definition.md](../../agent-definition.md) § File Attachments).
 2. Add the **Create File** built-in tool ([../built-in-tools/create-file.md](../built-in-tools/create-file.md)) unless another tool on the agent already returns a `job-attachment`, and name the deliverable file and its output field in the system prompt (the runtime adds the how-to-fill-a-file-field instructions itself). If `uip agent tool list` and the Studio Web tool picker offer no Create File tool, or the run fails at startup with `The Create File tool is not supported in this environment`, output files are not available on this tenant — remove the tool and guard the text output instead.
-3. Add a Post-capable validator at **Agent** scope with `appliesTo: "Files"`. Prefer Agent over Llm: at Llm scope the file is still the Create File `content` argument — plain text, not a file.
+3. Add a Post-capable validator at **Agent** scope with `detectionScope: "Files"`. Prefer Agent over Llm: at Llm scope the file is still the Create File `content` argument — plain text, not a file.
 
 ```json
 {
@@ -144,7 +144,7 @@ Checks the content of an output file (generated code, a report), not the agent's
   "validatorType": "intellectual_property",
   "validatorParameters": [
     { "$parameterType": "enum-list", "id": "ipEntities", "value": ["Code"] },
-    { "$parameterType": "enum", "id": "appliesTo", "value": "Files" }
+    { "$parameterType": "enum", "id": "detectionScope", "value": "Files" }
   ],
   "action": { "$actionType": "block", "reason": "A file the agent produced contains protected code." },
   "enabledForEvals": true,
@@ -154,11 +154,11 @@ Checks the content of an output file (generated code, a report), not the agent's
 
 ### Recipe 4 — Flow inline agents
 
-An inline agent in a Flow carries the same `guardrails[]` (its sidecar is a projected `agent.json`); `appliesTo`, the scope × stage table, and the caps apply unchanged. Author it in the Flow's `guardrails` array with the `uipath-maestro-flow` skill.
+An inline agent in a Flow carries the same `guardrails[]` (its sidecar is a projected `agent.json`); `detectionScope`, the scope × stage table, and the caps apply unchanged. Author it in the Flow's `guardrails` array with the `uipath-maestro-flow` skill.
 
 ## Testing with files
 
-1. Calibrate first with the file's text pasted as plain input (`appliesTo` omitted) to confirm the validator and thresholds fire; then switch to `Files` and run with the real file.
+1. Calibrate first with the file's text pasted as plain input (`detectionScope` omitted) to confirm the validator and thresholds fire; then switch to `Files` and run with the real file.
 2. Run with a file bound to the input field — [../../debug.md](../../debug.md) § Attachments. To reuse an already-uploaded file, pass its reference in `--inputs` (`{"<FILE_FIELD>":{"ID":"<ATTACHMENT_ID>"}}`).
 3. Read the verdict from the guardrail evaluation span (`reason`, `Flagged files:`) with `uip traces spans get <TRACE_ID> --output json`.
 4. Evaluation sets and bulk validation run without attachments — a `Files` guardrail cannot be exercised there.
@@ -167,19 +167,19 @@ An inline agent in a Flow carries the same `guardrails[]` (its sidecar is a proj
 
 | Environment | File inspection |
 |---|---|
-| Automation Cloud, Unified Runtime | Per validator, when `appliesTo` appears in the validator's `Parameters` in `uip agent guardrails list` |
+| Automation Cloud, Unified Runtime | Per validator, when `detectionScope` appears in the validator's `Parameters` in `uip agent guardrails list` |
 | Automation Suite | Not available — guardrails evaluate text only |
 | Legacy (non-Unified) agent runtime, eval runs, bulk validate | No files carried |
 | BYO (`byoValidatorName`) guardrails | **Not available** — external providers receive no attachments |
 | Advanced agents, coded agents | Not covered by this guide |
 
-A tenant-wide AI Trust Layer policy (`uip gov aops-policy`, product `AITrustLayer`) has its own per-guardrail detection scope (`Text` / `Files` / `Both`), evaluated at the LLM Gateway on files carried inline in the model request. It is independent of the agent's `appliesTo` — both layers run and either can block. Author it with the `uipath-governance` skill.
+A tenant-wide AI Trust Layer policy (`uip gov aops-policy`, product `AITrustLayer`) sets its own detection scope per guardrail (`Text` / `Files` / `Both`), evaluated at the LLM Gateway on files carried inline in the model request. It is independent of the agent guardrail's `detectionScope` — both layers run and either can block. Author it with the `uipath-governance` skill.
 
 ## What NOT to Do
 
-1. **Do not add `appliesTo` when the validator's `Parameters` lacks it** — `uip agent validate` passes, the runtime ignores it, and the guardrail silently checks text only.
-2. **Do not set `appliesTo` on `$guardrailType: "custom"` or on validators that do not list it** — invalid parameter.
-3. **Do not set `appliesTo: "Files"` or `"Both"` on a guardrail pinned with `byoValidatorName`** — BYO guardrails have no file support; the provider receives text only.
+1. **Do not add `detectionScope` when the validator's `Parameters` lacks it** — `uip agent validate` passes, the runtime ignores it, and the guardrail silently checks text only.
+2. **Do not set `detectionScope` on `$guardrailType: "custom"` or on validators that do not list it** — invalid parameter.
+3. **Do not set `detectionScope: "Files"` or `"Both"` on a guardrail pinned with `byoValidatorName`** — BYO guardrails have no file support; the provider receives text only.
 4. **Do not expect `Text` (the default outside `llm_as_judge`) to catch content inside an attachment** — file contents never reach the provider.
 5. **Do not rely on a `Files` guardrail at Llm scope to inspect a produced file** — the model emits it as text until Create File stores it; use Agent scope.
 6. **Do not put a `Files` guardrail at Tool scope on a tool whose arguments carry no files** — Tool · Pre sends only files named in the call, so it evaluates nothing.
@@ -189,7 +189,7 @@ A tenant-wide AI Trust Layer policy (`uip gov aops-policy`, product `AITrustLaye
 ## References
 
 - [guardrails.md](guardrails.md) — base schema, selector scoping, Validators Quick Reference, Example 6
-- [guardrails-recommend.md](guardrails-recommend.md) — when to recommend `appliesTo`, validate-mode checks
+- [guardrails-recommend.md](guardrails-recommend.md) — when to recommend `detectionScope`, validate-mode checks
 - [custom-rules-guide.md](custom-rules-guide.md) — `always` rule `applyTo`
 - [../../agent-definition.md](../../agent-definition.md) § File Attachments — `job-attachment` schema
 - [../built-in-tools/analyze-attachments.md](../built-in-tools/analyze-attachments.md) — Analyze Files tool resource

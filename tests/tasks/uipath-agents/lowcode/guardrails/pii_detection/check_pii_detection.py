@@ -15,7 +15,7 @@ pii_detection in agent.json with correct structure:
   - selector.scopes uses PascalCase values
   - id is UUID-shaped
   - inputSchema declares a job-attachment field (the uploaded statement)
-  - validatorParameters contains the enum parameter "appliesTo" with
+  - validatorParameters contains the enum parameter "detectionScope" with
     value "Both" — the user asked for the typed text AND the uploaded file
 """
 
@@ -187,31 +187,31 @@ def main() -> None:
             )
         print(f"OK: entityThresholds = {thresholds_value} (map-enum)")
 
-    # --- appliesTo parameter (enum, Both: text and files) ---
-    applies_to = find_param(params, "appliesTo")
-    if applies_to is None:
+    # --- detectionScope parameter (enum, Both: text and files) ---
+    detection_scope = find_param(params, "detectionScope")
+    if detection_scope is None:
         ids = [p.get("id") for p in params if isinstance(p, dict)]
         sys.exit(
-            'FAIL: validatorParameters missing parameter with id == "appliesTo" — '
+            'FAIL: validatorParameters missing parameter with id == "detectionScope" — '
             f"the uploaded file is never inspected without it. Got ids: {ids}"
         )
-    if applies_to.get("$parameterType") != "enum":
+    if detection_scope.get("$parameterType") != "enum":
         sys.exit(
-            f'FAIL: appliesTo parameter.$parameterType must be "enum", '
-            f"got {applies_to.get('$parameterType')!r}"
+            f'FAIL: detectionScope parameter.$parameterType must be "enum", '
+            f"got {detection_scope.get('$parameterType')!r}"
         )
-    value = applies_to.get("value")
+    value = detection_scope.get("value")
     if value not in {"Text", "Files", "Both"}:
         sys.exit(
-            f'FAIL: appliesTo parameter.value must be one of "Text", "Files", "Both" '
+            f'FAIL: detectionScope parameter.value must be one of "Text", "Files", "Both" '
             f"(exact case), got {value!r}"
         )
     if value != "Both":
         sys.exit(
             f'FAIL: the user asked for both the typed text and the uploaded file: '
-            f'appliesTo parameter.value must be "Both", got {value!r}'
+            f'detectionScope parameter.value must be "Both", got {value!r}'
         )
-    print('OK: appliesTo == "Both" (enum)')
+    print('OK: detectionScope == "Both" (enum)')
 
     print("OK: PII detection builtInValidator guardrail is valid")
 

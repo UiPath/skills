@@ -14,7 +14,7 @@ What this looks like:
 
 Classification table — container span type identifies scope and stage:
 
-| Container span | Stage | Data validated | Files inspected (`appliesTo` Files / Both) |
+| Container span | Stage | Data validated | Files inspected (`detectionScope` Files / Both) |
 |---|---|---|---|
 | `agentPreGuardrails` | pre (input-side) | agent invocation payload | job attachments of the run (inputs + files tools returned, max 5) |
 | `llmPreGuardrails` | pre (input-side) | LLM prompt / messages | every file registered in the run |
@@ -29,13 +29,13 @@ What can cause it:
 - Recent rule tightening or action change from Log/Escalate to Block — behavior change is immediate and silent
 - Overly broad pattern matches legitimate content (common business terms, structured JSON fields)
 - OOB validators (PII detection, harmful content, prompt injection, user prompt attacks) at agent or LLM scope — these run automatically when enabled and require no custom rules
-- A built-in validator with `appliesTo: "Files"` or `"Both"` matched content inside an attached or produced file while the text payload is clean — the Block `reason` ends with `Flagged files: <FILE_NAME>, …`
+- A built-in validator with `detectionScope: "Files"` or `"Both"` matched content inside an attached or produced file while the text payload is clean — the Block `reason` ends with `Flagged files: <FILE_NAME>, …`
 - A centralized AI Trust Layer policy whose per-guardrail detection scope is `Files` / `Both` blocked the LLM call at the gateway — independent of the agent's own guardrails; either layer can block
 - A bring-your-own (BYOG) guardrail whose tenant configuration is disabled, or whose underlying Integration Service connection is broken — behavior depends on `FallbackOnUiPath`: `true` falls back to the built-in validator, `false` fails the guardrail check outright
 
 > **Filter and Log do not fault the job.** Filter removes `excludedFields` from the payload; `updatedInput`/`updatedOutput` appear on the evaluation span; execution continues. Agent may behave unexpectedly if required fields are stripped. Log records the match; `severityLevel` appears on the evaluation span; execution continues. Neither produces `TERMINATION_GUARDRAIL_VIOLATION`.
 
-> **Distinct error shape — governance policy:** If the error is `"User is forbidden by governance policy to use: <model>"` (`StatusCode 403`, `ErrorCode 3000`), this is an Automation Ops model-restriction policy, not a guardrail rule. Check via: `uip gov aops-policy deployed-policy get <license-type> AITrustLayer <tenant-id> --output json` The same `deployed-policy get` output also shows the per-guardrail detection scope keys (`pii-detection-scope`, `prompt-injection-detection-scope`, `harmful-content-detection-scope`, `llm-as-judge-detection-scope`) — a centrally enforced `Files` / `Both` scope blocks regardless of the agent's own `appliesTo`.
+> **Distinct error shape — governance policy:** If the error is `"User is forbidden by governance policy to use: <model>"` (`StatusCode 403`, `ErrorCode 3000`), this is an Automation Ops model-restriction policy, not a guardrail rule. Check via: `uip gov aops-policy deployed-policy get <license-type> AITrustLayer <tenant-id> --output json` The same `deployed-policy get` output also shows the per-guardrail detection scope keys (`pii-detection-scope`, `prompt-injection-detection-scope`, `harmful-content-detection-scope`, `llm-as-judge-detection-scope`) — a centrally enforced `Files` / `Both` scope blocks regardless of the agent's own `detectionScope`.
 
 ## Investigation
 

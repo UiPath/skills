@@ -7,7 +7,7 @@ description: >
   $guardrailType, validatorType, $parameterType discriminators, PascalCase
   entity names, enum-list and map-enum parameter types, PascalCase scope
   values, a job-attachment input field, and the file-support parameter
-  appliesTo set to Both (text and files).
+  detectionScope set to Both (text and files).
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 reference:
   directory: .
@@ -76,7 +76,7 @@ success_criteria:
 
 
   - type: run_command
-    description: "PII detection guardrail shape (builtInValidator, pii_detection, parameters, PascalCase, file input, appliesTo Both)"
+    description: "PII detection guardrail shape (builtInValidator, pii_detection, parameters, PascalCase, file input, detectionScope Both)"
     command: "python3 $REFERENCE_DIR/check_pii_detection.py"
     timeout: 30
     expected_exit_code: 0

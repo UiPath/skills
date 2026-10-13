@@ -142,9 +142,9 @@ sidecar. Each rail is `$guardrailType: 'custom'` (with `rules`) or
 over a field selector, or `'always'`. A rail with no scopes or an empty rules
 array can never fire — `check` rejects both. File-capable built-in validators
 take an extra `validatorParameters` entry `{ $parameterType: 'enum', id:
-'appliesTo', value: 'Text' | 'Files' | 'Both' }` that decides whether the
-validator reads the text, the run's files, or both; inline agents inherit the
-standalone low-code behaviour unchanged (the sidecar is a projected
+'detectionScope', value: 'Text' | 'Files' | 'Both' }` that decides whether
+the validator reads the text, the run's files, or both; inline agents inherit
+the standalone low-code behaviour unchanged (the sidecar is a projected
 `agent.json`). Scope coverage, caps and recipes live in the low-code
 guardrails files guide of [/uipath:uipath-agents](/uipath:uipath-agents).
 

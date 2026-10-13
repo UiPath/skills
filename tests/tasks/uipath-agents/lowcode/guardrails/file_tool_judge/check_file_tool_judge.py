@@ -8,7 +8,7 @@ builtInValidator guardrail for llm_as_judge that:
   - has an `enum` model parameter with a non-empty value
   - has a `text` guardrailText parameter with a non-empty value
   - has the file-support parameter {"$parameterType": "enum",
-    "id": "appliesTo", "value": "Files"} — the user asked for the file
+    "id": "detectionScope", "value": "Files"} — the user asked for the file
     contents, not the tool's text arguments
   - uses action.$actionType == "block", PascalCase scopes, a UUID id
   - left the fixture's Analyze Files tool resource in place with an empty
@@ -24,7 +24,7 @@ ROOT = Path(os.getcwd()) / "ContractIntakeSolution" / "ContractIntakeAgent"
 AGENT = ROOT / "agent.json"
 TOOL = ROOT / "resources" / "Analyze Files" / "resource.json"
 VALID_SCOPES = {"Agent", "Llm", "Tool"}
-APPLIES_TO_VALUES = {"Text", "Files", "Both"}
+DETECTION_SCOPE_VALUES = {"Text", "Files", "Both"}
 
 
 def load(path: Path) -> dict:
@@ -102,18 +102,18 @@ def main() -> None:
         sys.exit(f'FAIL: validatorParameters needs a "text" parameter id == "guardrailText" with a non-empty value, got {rule!r}')
     print("OK: guardrailText present (text)")
 
-    applies_to = find_param(params, "appliesTo")
-    if applies_to is None:
+    detection_scope = find_param(params, "detectionScope")
+    if detection_scope is None:
         ids = [p.get("id") for p in params if isinstance(p, dict)]
-        sys.exit(f'FAIL: validatorParameters missing parameter id == "appliesTo" — the judge must be told to read the file contents. Got ids: {ids}')
-    if applies_to.get("$parameterType") != "enum":
-        sys.exit(f'FAIL: appliesTo.$parameterType must be "enum", got {applies_to.get("$parameterType")!r}')
-    value = applies_to.get("value")
-    if value not in APPLIES_TO_VALUES:
-        sys.exit(f"FAIL: appliesTo.value must be one of {sorted(APPLIES_TO_VALUES)} (exact case), got {value!r}")
+        sys.exit(f'FAIL: validatorParameters missing parameter id == "detectionScope" — the judge must be told to read the file contents. Got ids: {ids}')
+    if detection_scope.get("$parameterType") != "enum":
+        sys.exit(f'FAIL: detectionScope.$parameterType must be "enum", got {detection_scope.get("$parameterType")!r}')
+    value = detection_scope.get("value")
+    if value not in DETECTION_SCOPE_VALUES:
+        sys.exit(f"FAIL: detectionScope.value must be one of {sorted(DETECTION_SCOPE_VALUES)} (exact case), got {value!r}")
     if value != "Files":
-        sys.exit(f'FAIL: the user asked to judge the file contents, not the tool\'s text arguments: appliesTo.value must be "Files", got {value!r}')
-    print('OK: appliesTo == "Files" (enum)')
+        sys.exit(f'FAIL: the user asked to judge the file contents, not the tool\'s text arguments: detectionScope.value must be "Files", got {value!r}')
+    print('OK: detectionScope == "Files" (enum)')
 
     tool = load(TOOL)
     if tool.get("properties", {}).get("toolType") != "analyze-attachments":

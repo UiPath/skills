@@ -203,7 +203,7 @@ To accept or return a file, declare the field as `$ref: "#/definitions/job-attac
 
 Output side: declare an output field the same way; the agent emits a `job-attachment` describing a file it produced (the Create File built-in tool writes it — see [capabilities/built-in-tools/create-file.md](capabilities/built-in-tools/create-file.md)).
 
-Guardrails inspect these files independently of the prompt: a built-in validator with `appliesTo: "Files"` or `"Both"` evaluates attached input files (Agent · Pre) and produced output files (Agent · Post). See [capabilities/guardrails/files-guide.md](capabilities/guardrails/files-guide.md).
+Guardrails inspect these files independently of the prompt: a built-in validator with `detectionScope: "Files"` or `"Both"` evaluates attached input files (Agent · Pre) and produced output files (Agent · Post). See [capabilities/guardrails/files-guide.md](capabilities/guardrails/files-guide.md).
 
 ### Top-level fields (do not modify)
 

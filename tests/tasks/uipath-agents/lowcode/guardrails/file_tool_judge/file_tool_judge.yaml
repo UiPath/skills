@@ -8,7 +8,7 @@ description: >
   not the tool's text arguments. Verifies the skill scopes the judge to the
   tool (Tool scope with matchNames "Analyze Files"), discovers a model via
   `uip agent guardrails llm-as-judge-models`, and sets the file-support
-  parameter appliesTo to Files, with a block action and PascalCase shape.
+  parameter detectionScope to Files, with a block action and PascalCase shape.
 tags: [uipath-agents, e2e, mode:build, lifecycle:edit, low-code, guardrail]
 
 run_limits:
@@ -69,7 +69,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Judge guardrail on Analyze Files reads the file (Tool scope, matchNames, enum model, text rule, appliesTo Files, block)"
+    description: "Judge guardrail on Analyze Files reads the file (Tool scope, matchNames, enum model, text rule, detectionScope Files, block)"
     command: "python3 $REFERENCE_DIR/check_file_tool_judge.py"
     timeout: 30
     expected_exit_code: 0
