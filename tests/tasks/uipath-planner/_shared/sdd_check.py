@@ -82,6 +82,8 @@ TASK_DETAIL_MARKERS = {
     "agent": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "rpa": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "api-workflow": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "function": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "business-rule": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
 }
 
 
