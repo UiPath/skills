@@ -1,0 +1,49 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "Agentic Process",
+    "kind": "process",
+    "type": "processOrchestration",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "kind": "Package",
+        "name": "CM-Golden-Expense-Reporting-Manual.agentic.Agentic.Process"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "ProcessOrchestration",
+      "name": "Agentic Process",
+      "package": {
+        "name": "CM-Golden-Expense-Reporting-Manual.agentic.Agentic.Process",
+        "key": "CM-Golden-Expense-Reporting-Manual.agentic.Agentic.Process:1.0.6"
+      },
+      "packageName": "CM-Golden-Expense-Reporting-Manual.agentic.Agentic.Process",
+      "packageVersion": "1.0.6",
+      "entryPointUniqueId": "66188f3b-0889-4264-a093-fc1bccc04a09",
+      "entryPointName": "/content/Process.bpmn#Event_start",
+      "inputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"ProcessExpenseRequestIn\": {\n      \"type\": \"object\"\n    }\n  },\n  \"required\": []\n}",
+      "outputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"ProcessExpenseRequestOut\": {\n      \"type\": \"object\"\n    }\n  },\n  \"required\": []\n}",
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "entryPoints": "[{\"UniqueId\":\"66188f3b-0889-4264-a093-fc1bccc04a09\",\"Path\":\"/content/Process.bpmn#Event_start\",\"DisplayName\":\"Start event\",\"InputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"ProcessExpenseRequestIn\\\": {\\n      \\\"type\\\": \\\"object\\\"\\n    }\\n  },\\n  \\\"required\\\": []\\n}\",\"OutputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"ProcessExpenseRequestOut\\\": {\\n      \\\"type\\\": \\\"object\\\"\\n    }\\n  },\\n  \\\"required\\\": []\\n}\",\"Type\":2,\"TargetRuntime\":null,\"ContentRoot\":null,\"DataVariation\":null,\"Id\":927441}]",
+      "tags": []
+    },
+    "locks": [],
+    "key": "7d01a11a-c8a3-41b0-b30f-f65c4d7ddbb9",
+    "files": []
+  }
+}

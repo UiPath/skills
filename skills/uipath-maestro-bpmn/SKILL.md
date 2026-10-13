@@ -574,8 +574,11 @@ and honestly surfaced to the user as gaps when asked.
    asks for none of those — emit
    only the `.bpmn` plus a `.md` notes file naming the CLI-owned blockers.
 17. **Incorporating a resource delegated to a sibling skill (RPA workflow, API
-   workflow, agent) is a five-step sequence, in this order. Stopping after
-   the owning skill hands the resource back is not done.**
+   workflow, agent, business rule) is a five-step sequence, in this order.
+   Stopping after the owning skill hands the resource back is not done.**
+   (A business rule skips step 4, and step 3's release and folder keys do
+   not apply: it binds by `name` and `folderPath`, keyed `<folderPath>.<name>`, per
+   [registry-workflow.md](references/registry-workflow.md) § Business rule bindings.)
 <!--skill-flavor:delegated-resource-solution-first:start-->
    (1) Create or open the solution **first** (`uip solution init`; on
    `unknown command`, the older `uip solution new`), and
@@ -607,7 +610,8 @@ and honestly surfaced to the user as gaps when asked.
    `debug-instance variables-all`. Map `=result.<key>` to the key that output
    used; a scalar can surface under a generic key instead of the schema
    property name. Without a run, use the schema name and report the mapping
-   as unverified.
+   as unverified. A business rule maps its whole result as one `output` from
+   `=result`, never one output per decision or column.
 18. **Job-wrapper registry templates (`Orchestrator.StartJob`,
    `ExecuteApiWorkflowAsync`, `StartAgenticProcess[Async]`,
    `StartCaseMgmtProcess[Async]`) serve an unresolved `releaseKey` that

@@ -30,6 +30,22 @@ def build_seed() -> dict:
                 },
             },
             {
+                "name": "production-down-with-workaround",
+                "inputs": {
+                    "customerTier": "Enterprise",
+                    "productionDown": True,
+                    "workaroundAvailable": True,
+                    "businessImpact": "Checkout is down but orders can be taken by phone",
+                    "correlationId": f"E2E-{run_id}-SEV2",
+                },
+                "expected": {
+                    "severity": "Sev2",
+                    "engineeringNeeded": True,
+                    "responseMode": "Draft",
+                    "caseKey": f"E2E-{run_id}-SEV2",
+                },
+            },
+            {
                 "name": "informational-follow-up",
                 "inputs": {
                     "customerTier": "Standard",

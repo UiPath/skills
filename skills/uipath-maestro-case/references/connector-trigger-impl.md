@@ -25,6 +25,9 @@ Construct the input-details object literally from the trigger's `registry-resolv
 {
     // eventParameters from the resolved entry's input-values.eventParameters (or omit when no event params authored)
     "eventParameters": "<input-values.eventParameters or omit>",
+    // queryParameters / pathParameters from input-values (or omit) — scope selectors, resource pickers
+    "queryParameters": "<input-values.queryParameters or omit>",
+    "pathParameters": "<input-values.pathParameters or omit>",
     // filter — FilterTree object from the resolved entry (or omit when not authored)
     "filter": "<filter from the resolved entry or omit>"
 }
@@ -32,15 +35,21 @@ Construct the input-details object literally from the trigger's `registry-resolv
 
 Full input-details contract: [`case-spec-input-details.md`](case-spec-input-details.md).
 
+**Solution-resource pickers** work as for activities; see [connector-activity impl-json.md](plugins/tasks/connector-activity/impl-json.md) § Step 1. A trigger's picker is usually a query parameter (listed under `inputs.queryParameters`), not an event parameter: put its value in `queryParameters`.
+
 ### Step 2 — Run `case spec` with input-details
 
 ```bash
 uip maestro case spec --type trigger \
+  --trigger-kind <start|wait-for> \
   --activity-type-id "<type-id>" \
   --connection-id "<connection-id>" \
   --input-details "<json from Step 1>" \
+  --solution-folder "<SolutionDir>" \
   --output json > tasks/spec-cache.<elementId>.json
 ```
+
+`--trigger-kind start` for the case-level event trigger, `wait-for` for a connector-bound condition rule. A start trigger without `start` is typed as a wait and never fires ([`case-spec-input-details.md` § `--trigger-kind`](case-spec-input-details.md#--trigger-kind-trigger-only)).
 
 **The redirect is the only way this file is created.** It holds the CLI's raw response envelope (`Result` / `Code` / `Data`) byte-for-byte. Do NOT author it, and do NOT invent a wrapper of your own around `caseShape` — a hand-built cache is not a cache, and every downstream check compares against it.
 
@@ -70,6 +79,7 @@ Mint two prefixed IDs for the connection + folder bindings:
 |---|---|
 | Connection binding | `b` + 8 alphanumeric chars (e.g. `bA1B2C3D4`) |
 | Folder binding | `b` + 8 alphanumeric chars (different from connection binding) |
+| Resource binding rows | one per `spec.resourceBindings[].rows[]` item |
 
 These ids are **picked inline by the agent** (per SKILL.md Rule 14) — no subprocess.
 
@@ -92,6 +102,7 @@ The CLI emits placeholders the skill resolves at write-time:
 | `{{CONN_BINDING_ID}}` | `caseShape.context[name="connection"].value` (string `=bindings.{{CONN_BINDING_ID}}`) | `<connBindingId>` |
 | `{{FOLDER_BINDING_ID}}` | `caseShape.context[name="folderKey"].value` (string `=bindings.{{FOLDER_BINDING_ID}}`); entry only present when `spec.connection.folderKey !== null` | `<folderBindingId>` |
 | `{{TRIGGER_REGISTRATION_KEY}}` | `caseShape.context[name="metadata"].body.bindings[*].metadata.ParentResourceKey` (string `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`); entry only present when `caseShape.context[name="metadata"].body.bindings` exists (i.e. trigger has event parameters) | `<eventTriggerKey>` |
+| `{{RESOURCE_BINDING_ID:<field>}}` | `caseShape.inputs[name="body"].body.parameters` and `caseShape.context[name="metadata"].body.inputMetadata.triggerQueryParameters` (a query-parameter picker), or `body.queryParams` (an event-parameter one); only when `spec.resourceBindings[]` is present | the id minted for that row |
 
 #### Write `context` / `inputs` / `outputs` from the spec-cache
 
@@ -223,6 +234,8 @@ Read [bindings/impl-json.md § Full binding shape — connector tasks](plugins/v
 - `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this trigger's `registry-resolved.json` entry
 - `<connectorKey>` (drives ConnectionBinding templated `name`): from `registry-resolved.json`
 - `<folderKey>` (FolderKey binding `default`): from `spec.connection.folderKey` in Step 2 response. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
+
+**Solution-resource rows:** append them as [connector-activity impl-json.md](plugins/tasks/connector-activity/impl-json.md) § Step 5 (Solution-resource pickers) describes.
 
 Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of-truth code: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
 

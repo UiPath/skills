@@ -6,7 +6,7 @@ Core concepts for UiPath workflow XAML files, the authoring workflow (Discovery 
 <!--skill-flavor:host-scope:end-->
 **Read contract (Rule 22) — plain full Read, no prior lookup:** this file is the mandatory read in its entirety and holds nothing else — emit the Read in the same assistant turn as the other T1 reads (cards, pitfalls heading list). The per-operation and per-activity catalogs (§ Common Editing Operations, § XAML Reference Examples) live in [xaml-editing-catalog.md](xaml-editing-catalog.md) and load per entry only: Grep `^###` on that file, Read the entries matching the operation or activity at hand; unsure → read it.
 
-## Critical Rules — XAML (Rules 16–21a, 24)
+## Critical Rules — XAML (Rules 16–21a, 24, 25)
 
 Mandatory for all XAML authoring and editing. Cited as "Rule N" across this skill. Rule 22 (the read-in-full mandate that brings you to this file) and Rule 23 (`expressionLanguage`/`targetFramework` immutability) live in SKILL.md § XAML-Specific Rules; Common Rules 1–12 are also in SKILL.md.
 
@@ -23,8 +23,15 @@ Mandatory for all XAML authoring and editing. Cited as "Rule N" across this skil
     - **Skip-tax — concrete:** `activities get-default-xaml` omits any property whose value equals the type default. For `NGetText` the starter is literally `<uix:NGetText HealingAgentBehavior="SameAsCard" />` with **zero** output properties — authoring from this alone produces `NGetText.Value="..."`, which does not exist; the output member is `TextString`. The whole file then fails to deserialize (`Cannot set unknown member`), which also blocks Object Repository linking against it. For `NTypeInto` that's 2 of 20 properties hidden.
     - **Self-extending the card — "this activity feels simple, I'll add it to the card mentally" — is the failure mode.** The card is the only allowlist; for non-card activities the MD read is the only check.
     - Full procedure: § Activity Property Surface in this file.
-21a. **[XAML] Built-in workflow activities: use the card only for this allowlist.** Fast-path card activities are: `Sequence`, `If`, `Switch<T>`, `TryCatch`, `While`, `DoWhile`, `ForEach<T>`, `Assign`, `LogMessage`, `WriteLine`, `Delay`, `Throw`, `Rethrow`. If the activity is on this list, Grep [common-activity-card.md](../common-activity-card.md) for its `^### ` heading, Read that entry, and author from it (Rule 21 lookup procedure). If it is not on this list, check [common-pattern-card.md](../common-pattern-card.md) next (same lookup: Grep `^### `, Read the matching entry) — its patterns cover e.g. text-file read/append/write, file copy, CSV, DataTable→CSV, queue publish, retry wrap, `InvokeWorkflowFile`, InvokeCode rows, HTTP→JSON — and follow full Rule 21 only when BOTH cards miss. `Pick`, `Parallel`, and `ParallelForEach<T>` are intentionally on neither card; use full Rule 21. Studio's "While" / "Do While" / "For Each" toolbox items emit UiPath wraps (`UiPath.Core.Activities.InterruptibleWhile` / `InterruptibleDoWhile` / `UiPath.Core.Activities.ForEach<T>`), not the framework `System.Activities.Statements.While`/`DoWhile`/`ForEach<T>`.
+21a. **[XAML] Built-in workflow activities: use the card only for this allowlist.** Fast-path card activities are: `Sequence`, `If`, `Switch<T>`, `TryCatch`, `While`, `DoWhile`, `ForEach<T>`, `Assign`, `MultipleAssign`, `LogMessage`, `WriteLine`, `Delay`, `Throw`, `Rethrow`. If the activity is on this list, Grep [common-activity-card.md](../common-activity-card.md) for its `^### ` heading, Read that entry, and author from it (Rule 21 lookup procedure). If it is not on this list, check [common-pattern-card.md](../common-pattern-card.md) next (same lookup: Grep `^### `, Read the matching entry) — its patterns cover e.g. text-file read/append/write, file copy, CSV, DataTable→CSV, queue publish, retry wrap, `InvokeWorkflowFile`, InvokeCode rows, HTTP→JSON — and follow full Rule 21 only when BOTH cards miss. `Pick`, `Parallel`, and `ParallelForEach<T>` are intentionally on neither card; use full Rule 21. Studio's "While" / "Do While" / "For Each" toolbox items emit UiPath wraps (`UiPath.Core.Activities.InterruptibleWhile` / `InterruptibleDoWhile` / `UiPath.Core.Activities.ForEach<T>`), not the framework `System.Activities.Statements.While`/`DoWhile`/`ForEach<T>`.
 24. **[XAML] Wrap every container-activity body/branch in `<Sequence>` — even single-activity bodies.** Studio's designer expects the wrap as a drop zone; Studio's emitter produces it. `validate` and `build` accept the bare form, so neither catches missing wrappers. Applies to creation and editing alike. Slots include `If.Then`/`If.Else`, `While`/`DoWhile` body, `ForEach.Body`, `TryCatch.Try`/`Catch`/`Finally`, `Switch.Default` + each case, `PickBranch.Trigger`/`Action`, `NApplicationCard.Body`. Full table with examples: § Container Activity Bodies — Wrap in Sequence in this file.
+25. **[XAML] Every activity element carries a unique `sap2010:WorkflowViewState.IdRef`; once assigned, an IdRef is permanent.** Breakpoints (`debug start --breakpoints 'activityIdRef=...'`), `focus-activity`, and `validate` error locations all address activities by IdRef — changing one silently breaks them.
+    - **New activity:** IdRef = `<TypeName>_<N>`. `<TypeName>` is the element's local name without prefix, keeping the generic backtick-arity (`ForEach`1`, `Catch`1`, `Switch`1`). `<N>` = highest existing `N` for that `<TypeName>` in the same file + 1 — never fill gaps, never reuse a deleted activity's number. Before inserting, Grep the file for `IdRef="<TypeName>_` to find the current maximum. New file → start every type at `_1`.
+    - **Existing activity:** NEVER change its IdRef — not when editing properties, `DisplayName`, or expressions, not when moving it, not when wrapping it in a container (the wrapper gets a new IdRef; the inner activity keeps its own). NEVER renumber after deleting an activity.
+    - **Replacement or copy is a new activity:** replacing an activity with one of a different type, or duplicating an activity, assigns a new IdRef per the "New activity" rule. A copy never keeps the source's IdRef.
+    - **Which elements get one:** root `<Activity>` → `ActivityBuilder_1`; every activity including `Sequence`, `FlowStep`/`FlowDecision`/`FlowSwitch`, `State`, `Transition`, `Catch`1`, `AssignOperation`, and the C# expression elements `CSharpValue`1`/`CSharpReference`1`. Never on `Variable`, `InArgument`/`OutArgument`/`InOutArgument`, `ActivityAction`, `DelegateInArgument`, or `x:Reference`.
+    - **Format only:** `<TypeName>_<N>`, no descriptive suffixes (`Assign_OutputDir` is wrong — that is what `DisplayName` is for). The root must declare `xmlns:sap2010` and list `sap2010` in `mc:Ignorable` (§ XAML File Anatomy).
+    - Card snippets ([common-activity-card.md](../common-activity-card.md), [common-pattern-card.md](../common-pattern-card.md)) and `activities get-default-xaml` output carry no IdRefs — add them per this rule when inserting.
 
 ## XAML Task Navigation & Quick Reference
 
@@ -170,7 +177,7 @@ Find which activity implements a user-described action:
 uip rpa activities find --query "send mail" --limit 10 --output json
 ```
 
-Results are **global** — not limited to installed packages. If a useful activity is in an uninstalled package, install it immediately. Tags can narrow results.
+Results are **global** — not limited to installed packages. If a useful activity is in an uninstalled package, install it immediately. Tags can narrow results. The first result is not necessarily the activity to use, and nothing in a result marks the difference: for mail, the classic Office 365 activities (`SendMail`, `GetMail`), which run only inside an `Office365ApplicationScope`, rank among the `*Connections` activities, which need no scope, and either can come first. When the results hold several activities for the same action, read the package's `overview.md` and take the one it says to use (Office 365: the `*Connections` activities).
 
 #### Step 1.5: Disambiguate Approach and Provider
 
@@ -280,6 +287,7 @@ Every UiPath XAML workflow file has this structure:
 
 ```xml
 <Activity mc:Ignorable="sap sap2010 sads" x:Class="FolderName_FileName"
+  sap2010:WorkflowViewState.IdRef="ActivityBuilder_1"
   xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
@@ -317,19 +325,18 @@ Every UiPath XAML workflow file has this structure:
   </x:Members>
 
   <!-- Main workflow body -->
-  <Sequence DisplayName="Main Sequence">
+  <Sequence DisplayName="Main Sequence" sap2010:WorkflowViewState.IdRef="Sequence_1">
     <Sequence.Variables>
       <Variable x:TypeArguments="x:String" Name="tempVar" Default="hello" />
     </Sequence.Variables>
-    <!-- Activities go here -->
+    <!-- Activities go here, each with its own IdRef (Rule 25) -->
   </Sequence>
-
-  <!-- ViewState (designer metadata - DO NOT EDIT) -->
-  <sap2010:WorkflowViewState.ViewStateManager>
-    <!-- ... -->
-  </sap2010:WorkflowViewState.ViewStateManager>
 </Activity>
 ```
+
+Older files may end with a `<sap2010:WorkflowViewState.ViewStateManager>` block (designer metadata keyed by IdRef). Never add one to a new file; never edit an existing one (§ ViewState Rules).
+
+Fill `ReferencesForImplementation` per [common-pitfalls.md § Assembly References Studio Requires and the CLI Does Not Check](common-pitfalls.md#assembly-references-studio-requires-and-the-cli-does-not-check).
 
 ## Workflow Types
 
@@ -421,6 +428,7 @@ ViewState controls how activities appear in the visual designer. Rules differ by
 **When editing existing files:**
 - Do NOT modify the global `<sap2010:WorkflowViewState.ViewStateManager>` section — it can corrupt the designer layout
 - Do NOT modify existing ViewState on nodes you are not changing
+- Do NOT change or renumber any existing `sap2010:WorkflowViewState.IdRef` — new activities get the next free number for their type (Rule 25)
 - When adding new nodes to a Flowchart/StateMachine, read existing node positions first to avoid overlap
 
 **When generating new Flowchart/StateMachine/ProcessDiagram files:**

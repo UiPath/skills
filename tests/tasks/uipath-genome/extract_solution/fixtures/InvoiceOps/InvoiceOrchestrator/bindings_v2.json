@@ -1,0 +1,40 @@
+{
+  "version": "2.0",
+  "resources": [
+    {
+      "resource": "process",
+      "key": "InvoiceIntake",
+      "value": {
+        "name": { "defaultValue": "InvoiceIntake", "isExpression": false, "displayName": "Process name" },
+        "folderPath": { "defaultValue": "Finance/AP", "isExpression": false, "displayName": "Folder path" }
+      },
+      "metadata": { "subType": "Process", "bindingsVersion": "2.0" }
+    },
+    {
+      "resource": "process",
+      "key": "PostToErp",
+      "value": {
+        "name": { "defaultValue": "PostToErp", "isExpression": false, "displayName": "Process name" },
+        "folderPath": { "defaultValue": "Finance/AP", "isExpression": false, "displayName": "Folder path" }
+      },
+      "metadata": { "subType": "ApiWorkflow", "bindingsVersion": "2.0" }
+    },
+    {
+      "resource": "queue",
+      "key": "ERP_InvoicePosting",
+      "value": {
+        "name": { "defaultValue": "ERP_InvoicePosting", "isExpression": false, "displayName": "Queue name" },
+        "folderPath": { "defaultValue": "Finance/AP", "isExpression": false, "displayName": "Folder path" }
+      },
+      "metadata": { "bindingsVersion": "2.0" }
+    },
+    {
+      "resource": "connection",
+      "key": "5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c",
+      "value": {
+        "connectionId": { "defaultValue": "5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c", "isExpression": false, "displayName": "Connection" }
+      },
+      "metadata": { "connector": "uipath-slack", "useConnectionService": true, "bindingsVersion": "2.0" }
+    }
+  ]
+}

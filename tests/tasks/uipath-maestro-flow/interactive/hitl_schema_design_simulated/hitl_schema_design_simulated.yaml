@@ -4,10 +4,11 @@
 task_id: skill-flow-hitl-schema-design-simulated
 description: >
   Purchase-order review flow with an inline HITL quickform (trigger → script →
-  HITL → decision → approve/reject), driven by a simulated procurement officer
-  who describes the review but withholds the form details until asked. Tests
-  whether the agent elicits which fields are read-only vs fill-in, the outcomes,
-  and the priority before building the quickform schema.
+  HITL → decision → approve/reject), driven by a simulated procurement officer.
+  The opener states the read-only vs fill-in fields, the outcomes and the High
+  priority; the project name, data source and trigger are withheld until asked.
+  Tests whether the agent turns that description into the right quickform
+  schema and carries the stated priority onto the review task.
   Validate-only — inline HITL nodes block on human review and can't be flow-debugged.
 tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, mode:build, lifecycle:generate, shape:multi-node, node:hitl, simulation]
 
@@ -41,8 +42,8 @@ simulation:
 
     OPENING MESSAGE: open the way you would to a colleague — a short paragraph
     covering the outcome you want plus the details that matter to you: the
-    review is time-sensitive, so it has to be treated as urgent, high
-    priority; you need to see the PO number, the vendor name and the total
+    review is time-sensitive (use the exact priority sentence from the
+    constraints); you need to see the PO number, the vendor name and the total
     amount, and you must not be able to change any of them; what you fill in
     is your decision, Approve or Reject, plus optional notes, with Approve as
     the main button; if you approve, a step logs "PO approved", and if you
@@ -60,6 +61,9 @@ simulation:
       - The flow should start manually.
 
   constraints:
+    # Graded below: the priority must reach the agent verbatim every run.
+    # Paraphrase drifted onto the build request or dropped it.
+    - "Your opening message must contain this sentence word for word: 'The review is time-sensitive, so the review task itself must be marked High priority.' Word the rest of the message however you like."
     - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
     - "Do not mention 'HITL', 'quickform', 'schema', 'field', 'direction', 'outcome', or 'node' unless the agent brings them up first."
     - "If the agent describes its plan BEFORE building and has not treated the review as High priority, remind it then — but never after it has built."
@@ -96,12 +100,13 @@ success_criteria:
     weight: 4.0
     pass_threshold: 1.0
 
-  # Priority is a BEHAVIORAL (not cosmetic) withheld requirement — High priority
-  # changes the review's urgency/SLA. Split out of the schema check above so a
-  # missed priority dings only its own weight, but still gating (the agent is
-  # expected to elicit urgency when the persona flags the review as time-sensitive).
+  # Priority is a BEHAVIORAL (not cosmetic) requirement — High priority changes
+  # the review's urgency/SLA. The opener states it word for word (see the
+  # constraints), so this grades whether the agent applies a stated requirement,
+  # not whether it elicits one. Split out of the schema check above so a missed
+  # priority dings only its own weight, but still gating.
   - type: run_command
-    description: "HITL review priority is set to High (elicited from the user)"
+    description: "HITL review priority is set to High (stated in the opener)"
     command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py priority"
     timeout: 15
     expected_exit_code: 0
@@ -120,3 +125,19 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0
+
+  # Advisory (weight 0, pass_threshold 0): confirms the simulator kept the fixed
+  # priority sentence in its opener. A 0 here means the opener drifted, so a
+  # priority miss above may reflect the simulator, not the agent.
+  - type: llm_judge
+    description: "Advisory: the simulated user's opening message contains the fixed priority sentence"
+    weight: 0
+    pass_threshold: 0
+    include_reference: false
+    include_dialog: true
+    prompt: |
+      Look only at the USER message of Turn 1 in the dialog. Score 1.0 if it
+      contains this sentence word for word (ignore case, surrounding quotes and
+      trailing whitespace): "The review is time-sensitive, so the review task
+      itself must be marked High priority." Score 0.0 if the sentence is
+      missing, split, or reworded. Ignore every other turn and the agent's messages.

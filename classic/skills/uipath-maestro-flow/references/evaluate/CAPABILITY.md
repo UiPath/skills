@@ -45,7 +45,7 @@ uip maestro flow eval evaluator add greeting-quality \
 # 2. Create an eval set, pin the entry point, and let the CLI attach
 #    all current evaluators by generated file ref
 uip maestro flow eval set add "Smoke Tests" \
-  --entry-point /Main.bpmn#start \
+  --entry-point <triggerNodeId> \
   --path ./MySolution/MyFlow --output json
 
 # 3. Add data points (test cases)

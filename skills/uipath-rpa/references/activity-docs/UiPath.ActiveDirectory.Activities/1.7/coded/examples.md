@@ -265,7 +265,7 @@ namespace MyProject
             {
                 { "title", "Senior Engineer" },
                 { "department", "Platform Engineering" },
-                { "telephoneNumber", "+1-555-0123" }
+                { "telephoneNumber", "<PHONE_NUMBER>" }
             });
 
             Log("Properties updated.");

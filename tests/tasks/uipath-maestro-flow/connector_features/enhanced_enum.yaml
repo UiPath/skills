@@ -5,7 +5,7 @@ task_id: skill-flow-ipe-enhanced-enum
 description: >
   Tests the enhanced enum IS feature — configures a connector node with an
   enhanced enum field with display labels on the WooCommerce connector.
-tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-automaticc-woocommerce, ipe, mode:build]
+tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-automattic-woocommerce, ipe, mode:build]
 
 run_limits:
   expected_turns: 35

@@ -126,6 +126,8 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
 ```
 
+A field listed under `inputs.queryParameters` / `inputs.pathParameters` (Step 3) goes in `queryParameters` / `pathParameters` instead. Scope selectors and resource pickers often sit there.
+
 **filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operator table, anti-patterns, worked examples (single / multi-AND / nested AND-OR): [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs (JMESPath instead of CEQL). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values.
 
 `groupOperator` accepts both string (`"And"` / `"Or"`) and numeric (`0` / `1`) — the case-tool normalizes string→numeric before threading to the SDK. Use either form; the platform examples use string.

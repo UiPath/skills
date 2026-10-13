@@ -22,7 +22,8 @@ def engine_band(project: Path, inputs: dict) -> object:
     if completed.returncode != 0:
         fail(f"rules debug exited {completed.returncode} for {inputs}: {completed.stdout or completed.stderr}")
     data = json.loads(completed.stdout).get("Data") or {}
-    for result in data.get("results") or []:
+    # ponytail: old `results[]` shape kept until rules debug single-input ships in @latest; drop after
+    for result in [data["result"]] if "result" in data else data.get("results") or []:
         for decision in result.get("decisions") or []:
             outputs = decision.get("outputs")
             if isinstance(outputs, dict) and "riskBand" in outputs:

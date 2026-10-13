@@ -288,8 +288,7 @@ The `baseUrl` in `uipath.json` **must** use the API subdomain — not the portal
 | Environment | Correct | Wrong |
 |---|---|---|
 | cloud | `https://api.uipath.com` | `https://cloud.uipath.com` |
-| staging | `https://staging.api.uipath.com` | `https://staging.uipath.com` |
-| alpha | `https://alpha.api.uipath.com` | `https://alpha.uipath.com` |
+| Other UiPath-hosted portal | `https://<PREFIX>.api.uipath.com` | `https://<PREFIX>.uipath.com` |
 
 Fix by setting `baseUrl` in `uipath.json` to the correct API-subdomain URL, then restart the dev server so the plugin re-injects the `<meta name="uipath:base-url">` tag.
 

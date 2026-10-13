@@ -179,16 +179,19 @@ Look up DAP / connector activities (StudioWeb TypeCache, `projectType=Api`) and 
 
 ### `uip api-workflow registry resolve`
 
-Search the API-workflow-compatible TypeCache by keyword. Returns candidate activities with the GUID, connector key, object name, and HTTP method needed for `stub`.
+Search the API-workflow-compatible TypeCache by keyword. Returns candidate activities and triggers with the GUID, connector key, object name, and HTTP method or event needed for `stub`.
 
 ```bash
-uip api-workflow registry resolve <keyword> [--limit <n>] --output json
+uip api-workflow registry resolve <keyword> [--kind <kind>] [--limit <n>] --output json
 ```
 
 | Argument / Flag | Required | Description |
 |--|--|--|
-| `<keyword>` | yes | Whitespace-tokenized; every token must substring-match somewhere in `displayName`, `connectorKey`, `objectName`, `fullName`. Case-insensitive. Combined queries narrow: `"github list records"` matches GitHub's "List Records". |
+| `<keyword>` | yes | Whitespace-tokenized; every token must substring-match somewhere in `displayName`, `connectorKey`, `objectName`, `eventOperation`, `fullName`. Case-insensitive. Combined queries narrow: `"github list records"` matches GitHub's "List Records". |
+| `--kind <kind>` | no | `activity`, `trigger`, or `all` (default). **Activities and triggers live in separate TypeCache catalogs**; `all` queries both (one request each), `trigger` is the fast path when you know you want an event. |
 | `-l, --limit <n>` | no | Max results (default: 50). |
+
+Each match carries `Kind` (`"activity"` / `"trigger"`). Trigger matches add `EventOperation` and `EventMode` (`polling` / `webhooks`); `ActivityType` is `CuratedTrigger` or `GenericTrigger`. See [trigger-authoring-guide.md](trigger-authoring-guide.md).
 
 Success output (keys are PascalCased by the output formatter):
 ```json
@@ -225,7 +228,9 @@ Failure modes:
 
 ### `uip api-workflow registry stub`
 
-Emit a ready-to-paste activity object for a known `uiPathActivityTypeId`. Combines the TypeCache entry (GUID + `InstanceParameters`) with Integration Service Elements metadata (full path, request/response fields, multipart signal) and picks Http kind (`UiPath.Http`) or IntSvc kind (`UiPath.IntSvc`) by `connectorKey`.
+Emit a ready-to-paste activity object for a known `uiPathActivityTypeId`. Combines the TypeCache entry (GUID + `InstanceParameters`) with Integration Service Elements metadata (full path, request/response fields, multipart signal) and picks Http kind (`UiPath.Http`), IntSvc kind (`UiPath.IntSvc`), or — for `CuratedTrigger` / `GenericTrigger` — IntSvcEvent kind (`UiPath.IntSvcEvent`). `Data.Kind` reports which.
+
+For a trigger, enrichment comes from the IS **event** endpoints: no verb, path or body. `--inputs` fills the `with` parameter buckets by field location and composes the mandatory half of `filterExpression`; the result adds `Data.EventParameters` + `Data.FilterFields`. See [trigger-authoring-guide.md](trigger-authoring-guide.md).
 
 ```bash
 uip api-workflow registry stub <activity-type-id> \
@@ -241,7 +246,7 @@ uip api-workflow registry stub <activity-type-id> \
 |--|--|--|
 | `<activity-type-id>` | yes | The `uiPathActivityTypeId` GUID from `resolve`. |
 | `--connection-id <uuid>` | IntSvc kind only | Pinged vendor connection UUID. IntSvc kind leaves `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` placeholders if omitted. Ignored for Http kind (HTTP). |
-| `--object-name <name>` | Generic activities only | Target connector object for a Generic activity ("List Records" of *what*). Discover names with `uip is resources list <connector-key> --connection-id <uuid>`. Defaults to the object pinned in the activity definition, when present. Ignored (with a warning) for Curated activities — their object is fixed by the activity definition. |
+| `--object-name <name>` | Generic activities and GenericTrigger | Target connector object ("List Records" of *what*). Discover with `uip is resources list <connector-key> --connection-id <uuid>`, or `uip is triggers objects <connector-key> <EVENT>` for a GenericTrigger. Defaults to the object pinned in the definition; a `GenericTrigger` pins none. Ignored (with a warning) for Curated / CuratedTrigger. |
 | `--instance <n>` | no | Suffix for slot/export bucket key. Default `1`. `--instance 2` produces `<Name>_2` keys. |
 | `--slot-key <PascalCase>` | no | Override the auto-derived PascalCase slot key. The export bucket key always derives from `objectName + "_<n>"` (both Curated and Generic) and is not affected by this flag. |
 | `-i, --inputs <json>` | no | JSON object mapping field names to values. Field names match the IS schema (flat dotted keys — `"message.subject"`, not `{message:{subject:…}}`). Pass bare strings for literals; `${...}` for expression references. |
@@ -277,8 +282,9 @@ Success output:
 
 Failure modes:
 - `"Activity '<guid>' not found in the Api-compatible TypeCache"` — re-run `resolve` to find a valid GUID.
-- `"Activity type '<X>' is not supported"` — trigger flavors (`CuratedTrigger`, `GenericTrigger`, `GenericPersistence`, …) are event subscriptions, not callable tasks; they cannot be stubbed. Curated and Generic activities are both supported.
+- `"Activity type '<X>' is not supported"` — only `Curated`, `Generic`, `CuratedTrigger`, `GenericTrigger` stub; `CuratedWaitFor`, `GenericWaitFor`, `GenericPersistence`, … do not.
 - `"Generic activity '<name>' needs a target object"` — Generic activities require `--object-name`. Discover candidates with `uip is resources list <connector-key> --connection-id <uuid>`.
+- `"Trigger '<name>' is a GenericTrigger and needs an object name"` — same for a GenericTrigger; discover with `uip is triggers objects <connector-key> <EVENT> --connection-id <uuid> --output json`.
 - `"Could not resolve operation '<op>' on object '<name>' …"` — the object doesn't exist or doesn't support this operation (Generic stubs hard-require IS metadata; there is no fallback path/verb). Check the object with `uip is resources describe <connector-key> <object-name> --connection-id <uuid>`.
 - `"Invalid --inputs JSON"` — `--inputs` must be a JSON object (`'{"key":"value"}'`).
 
@@ -326,13 +332,15 @@ See [connector-activity-discovery.md](connector-activity-discovery.md) for the f
 <!--skill-flavor:local-solution-metadata:start-->
 ## `uip api-workflow bindings sync`
 
-Walk a `Workflow.json`, extract IntSvc-kind connector activities, and emit the canonical `bindings_v2.json` file next to it. Connection bindings are derived locally; **Solution-resource bindings** (process/queue/asset fields like Run Job's `ReleaseName`) are derived by querying IS metadata for each activity's object — when IS is unreachable, generation is skipped and any pre-existing entries of those kinds are preserved rather than dropped. This mirrors what StudioWeb computes in-memory via `computeBindings$` when a workflow is opened in the designer, and what `solution pack` writes at pack time. The output is the **required input** to `uip solution resources refresh`, which is what actually writes the Solution catalogue file AND per-user debug overwrites (the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click).
+Walk a `Workflow.json`, extract IntSvc-kind connector activities **and the `UiPath.IntSvcEvent` trigger**, and emit the canonical `bindings_v2.json` file next to it. Connection bindings are derived locally; **Solution-resource bindings** (process/queue/asset fields like Run Job's `ReleaseName`) are derived by querying IS metadata for each activity's object — when IS is unreachable, generation is skipped and any pre-existing entries of those kinds are preserved rather than dropped. This mirrors what StudioWeb computes in-memory via `computeBindings$` when a workflow is opened in the designer, and what `solution pack` writes at pack time. The output is the **required input** to `uip solution resources refresh`, which is what actually writes the Solution catalogue file AND per-user debug overwrites (the two artefacts StudioWeb's properties panel reads to resolve `connectionId` on activity click).
 
 **When to run.** After every `registry stub --connection-id <uuid>` that adds an IntSvc activity to a workflow inside a `Solution/` tree. Always paired with `uip solution resources refresh` (the next step in the typical sequence).
 
+**A `UiPath.IntSvcEvent` trigger makes this mandatory in every mode** — the `EventTrigger` entry (plus a `Property` companion for path/query event parameters) is what registers the subscription; omitting it fails silently (rule 16a). Both are regenerated on every sync, so re-run after changing the trigger's object, event, filter or connection.
+
 **When to skip:**
 - **Http-kind-only workflows** — no IntSvc activities to bind. The command will still succeed with `ResourceCount: 0`, but the empty `bindings_v2.json` it writes serves no purpose.
-- **Standalone projects** (no `Solution/` wrapper). StudioWeb doesn't consult a Solution resource tree in this mode; the downstream `solution resources refresh` has no solution to operate on.
+- **Standalone projects** (no `Solution/` wrapper) **that have no trigger**. StudioWeb doesn't consult a Solution resource tree in this mode; the downstream `solution resources refresh` has no solution to operate on.
 
 ```bash
 uip api-workflow bindings sync \
@@ -355,19 +363,20 @@ Success output:
     "ActivitiesVisited": 1,
     "IntSvcActivities": 1,
     "DuplicatesCollapsed": 0,
+    "EventTriggers": 0,
     "ResourceBindings": 1,
     "PreservedResources": 0
   }
 }
 ```
 
-`ResourceCount` is the total entries written (connections + resource bindings + preserved). `DuplicatesCollapsed` reports activities that shared a connection — two Outlook activities reading the same mailbox count as 1 binding, with `DuplicatesCollapsed: 1`. `ResourceBindings` counts Solution-resource entries generated from IS metadata (e.g. `process | RPA Workflow` for a Run Job activity); `PreservedResources` counts pre-existing non-connection entries carried over because this run did not regenerate them.
+`ResourceCount` is the total entries written (connections + trigger entries + resource bindings + preserved). `EventTriggers` is `1` for a trigger workflow, `0` otherwise; a trigger is not counted under `IntSvcActivities`. `DuplicatesCollapsed` reports activities that shared a connection — two Outlook activities reading the same mailbox count as 1 binding, with `DuplicatesCollapsed: 1`. `ResourceBindings` counts Solution-resource entries generated from IS metadata (e.g. `process | RPA Workflow` for a Run Job activity); `PreservedResources` counts pre-existing non-connection entries carried over because this run did not regenerate them.
 
 Failure modes:
 - `"Workflow file not found: <path>"` — `--workflow` does not exist. Pass an existing path.
 - `"Workflow file is not valid JSON: <error>"` — the file exists but won't parse. Fix the JSON syntax.
 
-**Idempotency.** Always overwrites the existing `bindings_v2.json`. The output is a pure function of the workflow's IntSvc activities — re-running with the same workflow produces the same file byte-for-byte (modulo trailing newline).
+**Idempotency.** Always overwrites the existing `bindings_v2.json`. The output is a pure function of the workflow's IntSvc activities and trigger — re-running with the same workflow produces the same file byte-for-byte (modulo trailing newline).
 
 ## `uip solution resources refresh`
 
