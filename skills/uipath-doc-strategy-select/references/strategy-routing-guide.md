@@ -42,7 +42,6 @@ and have pulled.
 | Agent defined inside the Flow | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — inline-agent.md](../../uipath-maestro-flow/references/inline-agent.md) |
 <!--skill-flavor:handoff-inline-agent:end-->
 | Agent lifecycle — scaffold, configure, evaluate, deploy | `uipath-agents` | [/uipath:uipath-agents — SKILL.md](../../uipath-agents/SKILL.md) |
-| Classification or splitting | see [classify-split-guide.md](classify-split-guide.md) | — |
 <!--skill-flavor:handoff-deterministic:start-->
 | Deterministic transformation, branch, or calculation | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — script.md](../../uipath-maestro-flow/references/script.md) · [transform](../../uipath-maestro-flow/references/transform.md) · [branch](../../uipath-maestro-flow/references/branch.md) |
 <!--skill-flavor:handoff-deterministic:end-->
@@ -108,9 +107,7 @@ Logical plans, not executable syntax. Resolve IDs, expressions, and bindings wit
 4. **Enumeration with a completeness boundary.** Deterministic corpus enumeration and coverage
    reconciliation whenever the deliverable claims "all" → review → End. A retrieval result is never
    a coverage test.
-5. **Segment, then extract.** Classification and boundary resolution → per-segment Extract, preserving
-   original page ranges → deterministic duplicate rules → End.
-6. **Pure data processing.** Filter → Group by → Map or Transform → script only for unsupported exact
+5. **Pure data processing.** Filter → Group by → Map or Transform → script only for unsupported exact
    operations → persist → End. No document strategy and no agent.
 
 Asynchronous work needs an explicit start/status/resume pattern and a durable store. No harness setting

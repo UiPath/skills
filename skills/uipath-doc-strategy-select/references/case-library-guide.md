@@ -1,6 +1,6 @@
 # Case Library
 
-21 cases · 7 decision categories · 3 per category.
+18 cases · 6 decision categories · 3 per category.
 
 Match on **document shape and failure mechanism**, not on industry. Read the fast-routing table in
 [../SKILL.md](../SKILL.md) first, then the nearest case here, then one boundary case only if the decisive
@@ -234,92 +234,7 @@ miscalibrations straight into the routing decision.
 **Boundary.** If the documents are scans or photographs rather than native files, the metadata forensics
 disappear and the whole load falls on the visual path — establish which you have before designing. Named
 fields are a separate Extract step, not this one. A severity band is a routing decision and never an
-investigator's conclusion. Where the question is which of several document types this is, that is CS.
-
----
-
-## CS Classify & Split
-
-Read [classify-split-guide.md](classify-split-guide.md) before these cases — classifier models exist, but
-their node configuration is not yet documented.
-
-### CS1 Locate documents in a large packet
-
-**Problem description.** Thousand-page, image-only bundles arrive at high monthly volume, and several
-named document types are buried somewhere inside each one. The job is to find them and their page ranges,
-apply a rule about which copy is authoritative when the same document appears more than once, and only
-then extract fields from what survives. Working behaviour: original page ranges come back for every
-target document, including one that straddles an input segment boundary, and the record shows which
-duplicate was retained and why.
-
-**Best-fit solution.** A published classifier model discovered from the registry, or a deterministic
-script split for known page ranges. Bind the resulting segments to Extract.
-
-**Decision reasoning.** The decisive signal is that document boundaries are unknown inside a single
-physical file — extraction cannot start until they are established. Segment the input if the
-digitization budget requires it, preserve original page numbering, and reconcile document boundaries
-across segments. Apply the duplicate rule deterministically to the candidates, then extract fields per
-retained document.
-
-**Negative example — counterexample.** Extracting the whole packet as one document merges unrelated
-headers and fields. Using top-k retrieval to locate document instances can miss additional copies and
-cannot produce a verified boundary map.
-
-**Boundary.** Repeated documents of one type still need boundary separation. Already-separated files may
-need classification only. Locating a document does not establish its validity — do not discard competing
-copies before the duplicate rule can be evaluated.
-
-### CS2 Isolate a contract before checking its signature
-
-**Problem description.** A bundle contains many documents and the first task is simply to find one
-specific contract inside it. A later, separate task asks whether the buyer actually signed that contract.
-Conflating the two is the trap: locating a document says nothing about its validity. Working behaviour:
-given a bundle containing several signed forms and an unsigned target contract, the correct contract is
-isolated and the unsigned result is returned — no signature is borrowed from a neighbouring form.
-
-**Best-fit solution.** A published classifier plus splitting. The downstream signature check is a separate
-specialist capability, not an agent tool. Preserve segment references through verification.
-
-**Decision reasoning.** The decisive signal is that one specific document must be isolated from a mixed
-bundle before any evidence question can be asked of it. Classify and split out the target contract, pass
-that segment to the signature check and, where required, an independent visual verification. Preserve
-segment-to-original-page mapping and any disagreement between the two checks.
-
-**Negative example — counterexample.** Searching the whole packet for any signature can accept a
-signature from the wrong form. A classifier's label is never proof that the right party signed the right
-field.
-
-**Boundary.** If the contract is already a separate file, skip splitting. Signature presence, identity,
-and authenticity are downstream evidence analysis; unresolved disagreement goes to review. The classifier
-must never infer "signed" from the document type.
-
-### CS3 Classify correspondence with asymmetric error cost
-
-**Problem description.** One logical correspondence document has to be routed among roughly seven
-predefined classes — authorization, denial, clinical request, pending review and similar. The classes are
-not equally costly to confuse: sending an authorization down the denial path does far more damage than an
-ordinary mix-up, so overall accuracy is the wrong thing to optimise. Working behaviour: the confusing
-class pairs are blind-tested and the critical-error confusion matrix is inspected alongside the review
-load, rather than a high aggregate score being accepted as evidence the critical class is safe.
-
-**Best-fit solution.** Classification only — a published classifier or an explicitly evaluated agent
-implementation — then a Switch node. Bind planned review to Human nodes.
-
-**Decision reasoning.** The decisive signal is the asymmetry: one confusion costs far more than the
-others, which changes the architecture and not just the threshold. Define the classes and name the
-confusing pairs. Evaluate critical errors separately from overall accuracy. Route uncertain cases to
-review. Select an architecture that meets the measured critical-error bar rather than assuming one pass
-will.
-
-**Negative example — observed failure.** A single-model classifier's confidence score failed to separate
-critical errors: driving critical errors to zero collapsed straight-through processing to a small
-fraction of volume. A more complex consensus design raised throughput substantially but still produced a
-critical error — better, but not the zero-error result the requirement demanded.
-
-**Boundary.** If a label really means "no urgency claim appears anywhere", that is an absence question —
-use SU1's complete-review pattern. A critical-error target overrides pressure for higher automation.
-
----
+investigator's conclusion.
 
 ## SU Summarize
 
@@ -526,7 +441,7 @@ the field-level evaluation and correction process the requirement actually names
 threshold without validating it creates review load and still misses errors.
 
 **Boundary.** A low-volume incidental read with no review requirement is a bounded read — AF2, not
-Extract. Packets need CS1 first. Zero observed
+Extract. Packets need their document boundaries established first. Zero observed
 errors in a small sample is not a guarantee of zero production errors — release decisions need ongoing
 validation.
 
@@ -556,7 +471,7 @@ contract. Even after the correction, overall accuracy being high did not mean ev
 — at least one lagged well behind the aggregate, which is why per-field evaluation is the requirement.
 
 **Boundary.** A narrative history belongs in SU2's synthesis pattern, not a repeated extraction field.
-Split mixed logical documents first. Do not infer a digitization option from the presence of handwriting
+Separate mixed logical documents before extracting. Do not infer a digitization option from handwriting
 — test it on the actual scans.
 
 ### EX3 Extract repeated entity groups without truncation
@@ -624,8 +539,8 @@ was given. Emit a structured multi-charge value in one column and expand it down
 **Boundary.** If the note field is absent and the charge is derivable from structured columns alone, this
 is a Transform, not BT. If a single record needs evidence gathered from several reference sources before
 it can be interpreted, that is a grounded lookup outside BT — not a column on the row. If the notes
-arrive as document images rather than a table column,
-classification and extraction come first.
+arrive as document images rather than a table column, the documents must be separated and
+extracted first.
 
 ### BT2 Classify a line item against a condensed reference matrix
 
@@ -653,10 +568,10 @@ against. Category and reference-data quality gated the outcome harder than model
 amount of prompt work substitutes for a matrix whose ownership and correctness are unsettled.
 
 **Boundary.** If the reference table cannot be condensed to fit a row, this becomes a grounded lookup —
-PS2 when one scoped retrieval answers it; when resolution depends on what an earlier lookup returned,
-no strategy here covers it yet. If the label is a routing
-decision over documents rather than a column on a row, that is CS. If categories must be assigned by
-exact keyed mapping, use a deterministic lookup and skip the model.
+PS2 when one scoped retrieval answers it; when resolution depends on what an earlier lookup returned, no
+strategy here covers it yet. If the label is a routing decision over whole documents rather than a column
+on a row, this is not BT at all and the documents must be separated first. If categories must be assigned
+by exact keyed mapping, use a deterministic lookup and skip the model.
 
 ### BT3 Independent per-row judgements feeding a case-level decision
 
@@ -706,8 +621,8 @@ Direct jumps when the symptom is already known. Do not scan the library.
 | No fixed strategy's output contract matches the deliverable | AH — count the signals before committing | A composition of fixed strategies first; AH is the last stop, not the easy one |
 | The same control produces different computed results | AH3 | Deterministic tools before judgment |
 | A file read has grown into bulk spreadsheet processing | AF1 | EX2 when field review is required |
-| Confidence-based approval misses critical errors | CS3 | EX1 for calibrated field-review design |
-| Header groups or signatures come from the wrong document | CS1 or CS2 | Extract only after boundaries are established |
+| Confidence-based approval misses critical errors | EX1 — calibrated field-level review | A looser threshold is not a fix when a critical error is unacceptable |
+| Header groups or signatures come from the wrong document | Establish the document boundaries before extracting — this release routes no strategy for that | EX3 when boundaries are already reliable and only entity density is the problem |
 | Partial results or missing repeated entities | EX3 | AH1 when precedence is also required |
 | Search misses files or source metadata | PS1 | Repair ingestion and metadata; do not loop blindly |
 | A "summary" task also requires research and external actions | SU3 | Separate collection and orchestration from synthesis |
@@ -718,5 +633,5 @@ Direct jumps when the symptom is already known. Do not scan the library.
 
 ## Maintaining the library
 
-Keep exactly three cases per category. Replace a weaker case rather than adding a twenty-second — see
+Keep exactly three cases per category. Replace a weaker case rather than adding a nineteenth — see
 [case-template.md](case-template.md).

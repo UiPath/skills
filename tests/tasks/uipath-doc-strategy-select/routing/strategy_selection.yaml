@@ -1,12 +1,16 @@
 task_id: skill-doc-strategy-select-strategy-selection
 description: >
-  Strategy-selection accuracy. 7 rows: one workload per strategy, across all seven.
+  Strategy-selection accuracy. 6 rows: one workload per strategy, across all six.
 
-  Trimmed for cost. The full set is 42 rows — 21 workloads, each written twice in
-  different words, six rows per strategy — and it is what the routing claims in the
-  scorecard were measured on. This 7-row cut keeps one row per strategy so a
-  regression in any single strategy still shows, and drops everything the larger set
-  was built to measure beyond that. Recover it with:
+  Trimmed for cost. The measured set was 42 rows — 21 workloads, each written twice
+  in different words, six rows per strategy across all seven — and it is what the
+  routing claims in the scorecard rest on. Classify & Split has since been withheld
+  from the release (skills/uipath-doc-strategy-select/CS-LOCATIONS.md), so the
+  scorecard's CS column describes a strategy this build no longer ships.
+
+  This 6-row cut keeps one row per shipped strategy so a regression in any single one
+  still shows, and drops everything the larger set was built to measure beyond that.
+  Recover it with:
 
       git checkout <ref> -- tests/tasks/uipath-doc-strategy-select/routing/strategy_selection.jsonl
 
@@ -18,7 +22,7 @@ description: >
     now invisible.
   - The AF/SU seam. `af-clinical-qa` missed in every run of this project under both
     phrasings and is the skill's one known routing defect. It is not in this cut,
-    because a permanently-red row in a 7-row gate leaves the suite never green. AF is
+    because a permanently-red row in a 6-row gate leaves the suite never green. AF is
     represented by `af-grant-eligibility-read--a`, which passes.
   - Per-strategy depth. One row per strategy cannot distinguish a genuine routing
     failure from one unlucky workload.
@@ -40,11 +44,6 @@ description: >
   not generalise past the wording of the case it was written from. Fix the routing
   copy, do not relax the row.
 
-  CS is the strategy most likely to miss. There is no published Classify & Split node
-  configuration in Flow (references/classify-split-guide.md says so outright), so an
-  agent reasoning about what it can actually build may legitimately fall back. Read a
-  CS miss as a product-gap signal.
-
   The grading command interpolates ${row.expected_strategy} into a run_command
   string. If the harness does not substitute row fields there, check_strategy.py
   fails loudly with an explicit message rather than grading against a literal
@@ -65,7 +64,7 @@ initial_prompt: |
 
   Load the applicable UiPath skill and use its strategy taxonomy. Write your answer
   to a file named `routing.txt` in the current working directory. The FIRST line
-  must be the strategy ID alone — one of AH, AF, CS, SU, PS, EX, BT — with nothing
+  must be the strategy ID alone — one of AH, AF, SU, PS, EX, BT — with nothing
   else on that line. Put your reasoning on the lines below; only the first line is
   read.
 
@@ -92,7 +91,7 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
-    # 0.78 x 7 rows = 5.46, so 6 of 7 must pass; 5 of 7 (0.714) fails.
+    # 0.78 x 6 rows = 4.68, so 5 of 6 must pass; 4 of 6 (0.667) fails.
     suite_thresholds: {mean: 0.78}
 
 run_limits:

@@ -31,7 +31,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from check_strategy import KEY, STRATEGY_ANSWERS  # noqa: E402
 
-STRATEGIES = ("AH", "AF", "CS", "SU", "PS", "EX", "BT")
+STRATEGIES = ("AH", "AF", "SU", "PS", "EX", "BT")
 
 
 def read_answer(path):

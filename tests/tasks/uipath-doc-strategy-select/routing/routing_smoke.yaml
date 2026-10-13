@@ -44,11 +44,18 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: file_contains
-    description: "Recognised the enumerative deliverable and routed the review to SU1"
+  # A matched SU case, not one specific id. The contract under test is that the
+  # agent reports `strategy | decisive signal | case ID | boundary` rather than a
+  # bare strategy label, so a bare "SU" must still fail. Which SU case fits is a
+  # judgement the agent is allowed to make: this workload is a complete-coverage
+  # list, which the Boundary Lookup routes to SU1, but SU2's cross-document
+  # assessment is defensible. Observed over four runs: SU1, SU2, SU1, bare SU —
+  # asserting SU1 alone made the task ~50% flaky on an answer that was correct.
+  - type: file_matches_regex
+    description: "Routed the review to a matched SU case, not a bare strategy label"
     path: "route.txt"
-    includes:
-      - "SU1"
+    pattern: '\bSU[123]\b'
+    must_match: true
     weight: 3.0
     pass_threshold: 1.0
 

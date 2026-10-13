@@ -4,7 +4,7 @@ How to add, replace, or revise a case in [case-library-guide.md](case-library-gu
 
 ## Rules
 
-- **Keep exactly three cases per category** (AH, AF, CS, SU, PS, EX, BT) unless the user changes
+- **Keep exactly three cases per category** (AH, AF, SU, PS, EX, BT) unless the user changes
   the library size. Replace a weaker case rather than adding a twenty-second.
 - **Preserve stable IDs.** `EX1` stays `EX1`. If a case is replaced, the ID carries to the replacement and
   every inbound link is repaired. This holds for case *replacement*. Correcting a category that was filed
@@ -80,7 +80,7 @@ was the one used.
 - Are calculations and known data operations in deterministic components? Are evidence gaps preserved?
 - Does every surviving number change the design rather than report a result?
 - Do the links, the fast-routing table in [../SKILL.md](../SKILL.md), the boundary lookup, and the
-  21-case distribution all still agree?
+  18-case distribution all still agree?
 
 After editing, run `npm run skills:check-links` from the repository root — the library is heavily
 cross-linked and anchors break easily.

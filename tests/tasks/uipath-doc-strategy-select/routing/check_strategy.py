@@ -11,11 +11,12 @@ import pathlib
 import re
 import sys
 
-STRATEGIES = ("AH", "AF", "CS", "SU", "PS", "EX", "BT")
-# NONE and PA are recognised but never expected: NONE so an agent that reaches for
+STRATEGIES = ("AH", "AF", "SU", "PS", "EX", "BT")
+# CS, NONE and PA are recognised but never expected. CS and PA are withheld from this
+# release (see the skill's CS-LOCATIONS.md and PA-LOCATIONS.md); NONE so an agent that reaches for
 # it is reported as "selected NONE" rather than "unparseable", PA because agentic
 # search is withheld from this release and a stale answer should be legible.
-STRATEGY_ANSWERS = STRATEGIES + ("NONE", "PA")
+STRATEGY_ANSWERS = STRATEGIES + ("CS", "NONE", "PA")
 
 ANSWER_FILE = pathlib.Path("routing.txt")
 KEY = re.compile(r"^\s*(?:strategy\s*[:=]\s*)?([A-Za-z]+)", re.I)

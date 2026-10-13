@@ -1,6 +1,6 @@
 ---
 name: uipath-doc-strategy-select
-description: "UiPath file handling strategy selection — choose Extract vs Classify & Split vs Summarize vs Analyze files vs batch transform vs persistent-index semantic search, and standard vs advanced autonomous-agent harness, before any node is authored. Matches a workload's output contract, corpus lifetime, evidence scope and review needs to the cheapest strategy that meets them, then hands off. For authoring or wiring the chosen node in a `.flow`→uipath-maestro-flow. For IXP project/taxonomy/model work→uipath-ixp. For building the agent or its context resource→uipath-agents. For which UiPath product to use at all, or PDD/SDD work→uipath-planner. For the context-grounding index CLI (`uip context-grounding`)→uipath-platform."
+description: "UiPath file handling strategy selection — choose Extract vs Summarize vs Analyze files vs batch transform vs persistent-index semantic search, and standard vs advanced autonomous-agent harness, before any node is authored. Matches a workload's output contract, corpus lifetime, evidence scope and review needs to the cheapest strategy that meets them, then hands off. For authoring or wiring the chosen node in a `.flow`→uipath-maestro-flow. For IXP project/taxonomy/model work→uipath-ixp. For building the agent or its context resource→uipath-agents. For which UiPath product to use at all, or PDD/SDD work→uipath-planner. For the context-grounding index CLI (`uip context-grounding`)→uipath-platform."
 ---
 
 # UiPath File Handling Strategy Selection
@@ -10,7 +10,7 @@ requirements — then hand off to the skill that owns building it. This skill se
 
 ## When to Use This Skill
 
-- A document workload needs a strategy decision: extract fields, classify and split, summarize, read a file
+- A document workload needs a strategy decision: extract fields, summarize, read a file
   inline, or search a knowledge corpus.
 - A routing choice went wrong — an agent was used for arithmetic, a retrieval result was presented as
   complete coverage, a long document was sent to the wrong processor.
@@ -65,13 +65,12 @@ Read this table first, then the one nearest case and its linked boundary. Do not
 |---|---|---|---|
 | **AH** | Advanced harness | Two or more of: the run takes dozens of tool calls; intermediate work must persist as files; parts of the work are independent; the material exceeds one prompt. The agent decides what to look at next, and when it has enough | Only one signal is present, or a fixed strategy below already satisfies the contract. **The source set is already defined and closed — that is SU, however much weighing it needs.** Elapsed waiting time, pipeline depth and a regulated industry are not signals |
 | **AF** | Analyze files | Bounded file reading inside an agent step; the input demonstrably fits the model budget. The answer is a plain read of what was handed over — no citation trail and no coverage guarantee asked for | A cited, defensible assessment of the whole set is wanted, which is SU. Or exhaustive coverage, production field extraction, exact arithmetic, or calibrated field review is required |
-| **CS** | Classify & Split | Mixed document types or several logical documents in one file, and routing or splitting depends on the label | No classifier model is published, or the label actually requires absence proof or policy reasoning |
 | **SU** | Summarize | Either deliverable: a **cited** assessment somebody will have to defend, every statement traceable to its source; or a **complete review** of the set, where the coverage itself is the claim — "all of them", "none of them". The set is defined and closed, which is what separates it from AH | Neither a citation trail nor a coverage guarantee is asked for — a plain read of what was handed over is AF. Or the set is open-ended and the agent must discover what to read next, which is AH |
 | **PS** | Persistent index — semantic search (default) | Reusable corpus; a bounded question answerable from a few passages | Evidence must be joined across dependent lookups, which is AH — or the user requires exhaustive coverage, which is SU |
-| **EX** | Extract | Repeated structured fields with a schema, field evaluation, and review requirements | Logical documents are still mixed together, or the deliverable is really a narrative or a decision |
+| **EX** | Extract | Repeated structured fields with a schema, field evaluation, and review requirements | Logical documents are still mixed together — boundary resolution is a prerequisite this release does not route — or the deliverable is really a narrative or a decision |
 | **BT** | Batch transform | Per-row LLM work over every row of a tabular file, appending columns against a fixed output contract | The row needs cross-row reasoning, an external lookup, or a per-row side effect; or the derivation is deterministic |
 
-**AH is the fallback, and it is the only one.** The other six are fixed capabilities with a known shape:
+**AH is the fallback, and it is the only one.** The other five are fixed capabilities with a known shape:
 each solves one problem class and nothing else. When a workload's shape is not known in advance — the
 agent has to plan its own steps, follow evidence where it leads, and decide when it is done — no fixed
 strategy fits, and AH is what covers it.
@@ -99,8 +98,11 @@ which two you counted. Full capability matrix, preview limits and the destructiv
    branches are Data / script / Decision — outside the seven strategies entirely. Per-row work enters BT
    only when the row genuinely needs natural-language reasoning; a formula, regex, or date reformat is a
    Transform or Script.
-3. **Check document boundaries before extraction.** Mixed logical documents need CS before EX. Route each
-   step separately, and name one primary strategy for the requested deliverable.
+3. **Check document boundaries before extraction.** Mixed logical documents must be separated before EX.
+   This release routes no strategy for that separation: resolve it deterministically (known page ranges,
+   a separator convention) or report it as an unresolved dependency. Never extract a packet as one
+   document — it merges unrelated headers and produces fields from the wrong form. Route each step
+   separately, and name one primary strategy for the requested deliverable.
 4. **Match the nearest case** in [case-library-guide.md](references/case-library-guide.md) using the table
    above. Read one boundary case only if the decisive signals conflict.
 5. **Pick the corpus lifetime.** Transient per-run files → a bounded read. Reused corpus → a persistent
@@ -121,7 +123,6 @@ For AH, name the two signals you counted: `AH → autonomous agent, advanced har
 | Which skill owns the strategy I picked, and where its build guide is | [strategy-routing-guide.md](references/strategy-routing-guide.md) |
 | The advanced-harness capability matrix, its two-signal rule, preview limits and cost | [agent-harness-guide.md](references/agent-harness-guide.md) |
 | What retrieval can and cannot establish, and the completeness boundary | [search-strategy-guide.md](references/search-strategy-guide.md) |
-| Classification and physical splitting, and what is not yet documented | [classify-split-guide.md](references/classify-split-guide.md) |
 | The 21 worked cases, with failure mechanisms and boundaries | [case-library-guide.md](references/case-library-guide.md) |
 | Adding or replacing a case | [case-template.md](references/case-template.md) |
 
