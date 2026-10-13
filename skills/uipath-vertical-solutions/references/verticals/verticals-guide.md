@@ -1,6 +1,6 @@
 # Verticals
 
-Each Vertical Solution installs different things. One file per vertical lists its packages, the values a deploy asks for, what to set up before and after, and the tenant and folder access the deploy needs.
+Each Vertical Solution installs different things. One file per vertical lists its packages, the values a deploy asks for, what must exist before the first deploy, and the tenant and folder access the deploy needs.
 
 | Vertical | File | Packages |
 |----------|------|----------|
@@ -33,7 +33,7 @@ The skill works for a vertical with no file, but it can only ask the user for th
    ```
 
    Each `Configuration for ... is required` names a `--config` value, and each `<RESOURCE>.<PROPERTY> is declared required` warning names a `deploy-config.json` value. Say in plain words what each one is.
-3. **Before and after.** List what an administrator has to set up that the deploy does not: external applications, entitlements, groups, licenses.
+3. **Before the first deploy.** List what must exist before a deploy can run that the deploy does not create: external applications, entitlements, licenses. Do not list setup after the deploy: the skill reports only what the deploy itself says.
 4. **Access.** Use the permission names `uip or roles user-permissions list` prints. Mark each line's **Source**: the vertical's own documentation, a refusal seen on a real deploy, or inferred from what the package installs.
 5. **Confirm.** Deploy once as a user who holds only the listed access. Each missing permission is refused by name: add it, and mark it *Seen*.
 6. Copy the block below to `<VERTICAL>-guide.md` in this folder, fill it in, and add a row to the table above. `SKILL.md` does not need to change.
@@ -58,8 +58,6 @@ are tenant-level or folder-level.
 Take them from a dry run (without `--yes`), and say which an upgrade asks for again.
 
 ## Before the first deploy
-
-## After the deploy
 
 ## Access
 

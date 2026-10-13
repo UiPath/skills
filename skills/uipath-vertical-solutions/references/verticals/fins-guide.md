@@ -46,15 +46,9 @@ On an upgrade, pass `LOAN_SETUP_MANAGER_EMAIL` again. The web app values are kep
 
 An administrator does these once. The deploy does not:
 
-- **The web app's external application**: non-confidential (**Admin** → **External Applications**). Its client id is `Webapp.externalClientId`. Managing external applications needs organization-level rights. It also needs the web app's URL in its Redirect URLs. This skill does not know the URL's form, so the admin can add it after the deploy, once the app shows in the portal (see [After the deploy](#after-the-deploy)).
+- **The web app's external application**: non-confidential (**Admin** → **External Applications**). Its client id is `Webapp.externalClientId`. Managing external applications needs organization-level rights.
 - **The `Vertical.Unlimited` entitlement** on the organization. The service refuses the job without it. It is a license, not a user permission.
 - **The access** in the tables below, for the person who deploys.
-
-## After the deploy
-
-- **The web app's Redirect URL**: if the admin could not add it before, they add the app's URL to the external application's Redirect URLs now. Until then, signing in to the app fails.
-- **FINS role groups**: the Identity groups and their members, and the `FINSRoleGroupMapping` rows. The FINS team's role setup guide has the details.
-- **Seed data**: fill in the CSVs in `./seeding/<PACKAGE_NAME>`, then run `uip vss deploy seed`.
 
 ## Access
 

@@ -147,7 +147,8 @@ Tell the user what happened in plain words, and what to do next:
   ```
 
   A seed is safe to run again: rows it already inserted are matched, not inserted twice. `--refresh` downloads fresh templates and replaces the CSVs.
-- **The vertical's own setup.** Tell the user what the vertical's file lists under "After the deploy", such as role groups. The deploy does not do it.
+
+Report only what the job output says and the seed step above. Do not add setup steps of your own: no activation checks, redirect URLs, role groups, folder accounts, robots, machines or asset values. A deploy that reports `succeeded` did what it reports. When the job needs something more, it pauses and names it (step 7).
 
 ## Check the Access
 
@@ -197,7 +198,7 @@ Follow [access-troubleshooting-guide.md](references/access-troubleshooting-guide
 | File | Read when |
 |------|-----------|
 | [references/verticals/verticals-guide.md](references/verticals/verticals-guide.md) | Picking a vertical, checking a user against a vertical's access list, or adding a vertical |
-| [references/verticals/fins-guide.md](references/verticals/fins-guide.md) | FINS packages, the values they ask for, setup before and after, and their access lists |
+| [references/verticals/fins-guide.md](references/verticals/fins-guide.md) | FINS packages, the values they ask for, what must exist before the first deploy, and their access lists |
 | [references/upgrade-guide.md](references/upgrade-guide.md) | Upgrading or downgrading an installed deployment |
 | [references/access-troubleshooting-guide.md](references/access-troubleshooting-guide.md) | A deploy step is refused, a role read returns `403`, or granting access after the user agrees |
 
@@ -211,3 +212,4 @@ Follow [access-troubleshooting-guide.md](references/access-troubleshooting-guide
 6. **Do not treat `cancel` as an undo.** Steps already applied stay applied.
 7. **Do not read the CLI source, call the service's REST API, or search the disk for solution zips.** The service deploys from its own feed.
 8. **Do not redeploy, upgrade, resume or run `seed --refresh` before the user copies filled-in CSVs out of `./seeding/<PACKAGE_NAME>`.** A successful deploy or resume, and `--refresh`, replace them. A plain `seed` reads them and leaves them in place.
+9. **Do not invent post-deploy setup.** After a successful deploy, report the job result and offer seeding. Do not list activation checks, redirect URLs, role groups, folder accounts, robots, machines or asset values: the job output names anything it still needs.
