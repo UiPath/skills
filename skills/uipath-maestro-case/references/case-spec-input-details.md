@@ -171,7 +171,7 @@ Some triggers are scoped by query or path parameters that are not event paramete
 }
 ```
 
-A solution-resource picker among them is resolved into the solution as for activities ([connector-activity impl-json.md § Step 1](plugins/tasks/connector-activity/impl-json.md)): both copies become `=bindings.{{RESOURCE_BINDING_ID:<field>}}` and `resourceBindings` lists the rows to mint.
+A solution-resource picker among them is resolved into the solution as for activities ([connector-activity impl-json.md § Step 1](plugins/tasks/connector-activity/impl-json.md)): both copies become `=bindings.{{RESOURCE_BINDING_ID:<field>}}` and `resourceBindings` lists the rows to mint. When the trigger's fields load from a design action that reads the picker (e.g. a Data Fabric entity trigger), the spec runs it and lists those fields in `outputs.responseFields` — use them for downstream outputs. If the picker did not resolve, `diagnostics.fallbacks` names the action and the trigger lists only its base fields: run inside the solution or pass `--solution-folder`.
 
 > **What NOT to do:** don't duplicate a connector-mandated event-param value in the freeform `filter` tree. The CLI AND-joins the mandatory expression automatically; duplicating the clause would double-apply it (e.g. `(parentFolderId == 'Inbox') && (parentFolderId == 'Inbox' && ...)`). Set required event-param values via `eventParameters` ONLY.
 

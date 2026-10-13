@@ -1,0 +1,69 @@
+task_id: skill-platform-is-trigger-describe-solution-picker
+description: >
+  Integration test: agent uses the uipath-platform skill to get the event
+  fields of a Data Fabric "Record Updated" trigger for a folder entity that
+  exists only in a local solution. Tests that the skill teaches the
+  solution-resource picker flow on `is triggers describe` — the entity goes in
+  as its name on the picker field (folderEntityName, with entityScope=folder)
+  together with --solution-folder, so the CLI runs the trigger's design action
+  with the entity's configuration — and that the agent does not stop at the
+  base describe or reach for a raw HTTP call.
+tags: [uipath-platform, integration, mode:operate, lifecycle:discover, integration-service, connector, trigger, "feature:entities", ipe]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup/df_local_solution
+      mount_point: orders-solution
+
+run_limits:
+  expected_turns: 25
+
+initial_prompt: |
+  I have a local UiPath solution at ./orders-solution. It declares a Data
+  Fabric folder entity called PurchaseOrder that I have not deployed yet.
+
+  I want a Data Fabric "Record Updated" trigger (connector
+  uipath-uipath-dataservice, operation UPDATED_V3, trigger object
+  EntityTriggers_V3) on that entity. Find out which fields its events carry.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands WILL fail with auth errors — that is expected.
+    Run each command once and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+  - Use "placeholder-connection-id" as the Data Fabric connection id.
+  - Load the uipath-platform skill first and follow its Integration Service
+    workflow.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent described the trigger with the entity on the folderEntityName picker"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+triggers\s+describe(?:(?!uip\s)[^&;|])*EntityTriggers_V3(?:(?!uip\s)[^&;|])*folderEntityName=["'']?PurchaseOrder'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent pointed describe at the local solution so the picker resolves there"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+triggers\s+describe(?:(?!uip\s)[^&;|])*--solution-folder[\s=]+["'']?[^\s"'']*orders-solution|cd\s+["'']?[^\s"'';&|]*orders-solution["'']?\s*(?:&&|;)\s*uip\s+is\s+triggers\s+describe'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent passed --connection-id on the field-driven describe"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+triggers\s+describe(?=(?:(?!uip\s)[^&;|])*folderEntityName=)(?=(?:(?!uip\s)[^&;|])*--connection-id)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not bypass describe with a hand-built HTTP call to the schema route"
+    tool_name: "Bash"
+    command_pattern: '(curl|http-request-preview|resources\s+run\s+create)(?:[^&;|])*standard-objects'
+    weight: 1.0
+    pass_threshold: 1.0
