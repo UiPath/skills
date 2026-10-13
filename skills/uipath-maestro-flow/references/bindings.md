@@ -80,7 +80,7 @@ binding's**. Never fill either with a made-up GUID or with the binding's own
 name. `compile` refuses two shapes, and `check` reports both first: a binding
 whose `resourceKey` is its own name (`BINDING_SELF_NAME`), and a `connection:` /
 `folder:` label that a `bindings.json` with entries does not declare
-(`BINDING_UNDECLARED` — for example the source says `is-sandboxes` while the file
+(`BINDING_UNDECLARED` — for example the source says `mySlack` while the file
 declares `slack` and `shared`). It warns `CONNECTION_STUB` on an all-zero GUID,
 an `<angle-bracket>` placeholder or any other non-GUID value, and on a label when
 no `bindings.json` is loaded or it declares no entries (the run would fault at
@@ -140,6 +140,13 @@ with values from the connection listing above:
 
 Use unique `id` and `name` values. The resolver takes the first entry whose
 `name` or `id` matches the authored symbol.
+
+Give `connection:` and `folder:` different labels (`slack` / `shared`). With one
+label for both, `prepare` writes one `FolderKey` entry, the connection resolves
+to the folder key, and the run faults `401 Invalid Organization or User
+secret`, although `check`, `compile` and `validate` pass. An emitted node whose
+`connectionId` equals its `connectionFolderKey` is this collision: rename the
+`folder:` label in the source and re-run `prepare`.
 
 ## Resolution and precedence
 
