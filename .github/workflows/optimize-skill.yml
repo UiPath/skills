@@ -1,22 +1,35 @@
 name: Optimize skill
 
-run-name: Optimize skill · ${{ inputs.skill }} · @${{ github.actor }}
+run-name: Optimize skill · ${{ inputs.skill }} · @${{ github.triggering_actor }}
 
 # Self-serve token optimization for skill owners. Queues the skill-trimming optimizer's
 # ADO pipeline (UiPath/skill-trimming-optimizer, .azure-pipelines/optimize-bundle.yml),
 # which shortens the description, body and references, gates every cut on this repo's
 # eval tasks (dev runs + a full-suite final verdict), and opens a DRAFT PR here with the
 # report. The heavy run stays on ADO (a 16 vCPU / 64 GB BYOS agent — Linux, or Windows for
-# skills whose tasks need it, picked by the pipeline — multi-hour, Key Vault secrets);
-# this workflow only checks who is asking and queues it.
+# skills with `windows`-tagged tasks, picked by the pipeline — multi-hour, Key Vault
+# secrets); this workflow only checks who is asking and queues it.
 #
-# Who can run it: a CODEOWNER of skills/<skill>/ (a listed user, or an active member of a
-# listed team when the token can read it), or one of OPTIMIZER_MAINTAINERS below.
+# Who can run it: a user listed as a CODEOWNER of skills/<skill>/, or one of
+# OPTIMIZER_MAINTAINERS below. Team owners (@org/team) are NOT self-serve: github.token cannot
+# read team membership, so the check cannot verify them and fails closed, naming whom to ask
+# (the skill's user owners or a maintainer). The check is the person who STARTED this run
+# (github.triggering_actor), so a re-run is checked against whoever re-runs it.
 #
 # Credential: no stored secret. The job's GitHub OIDC token is exchanged for an Entra token
 # of an app registration whose federated credential trusts ONLY this repo's main branch
 # (subject repo:UiPath/skills:ref:refs/heads/main), and whose service principal may only
 # queue that one ADO pipeline. The tenant and client ids below are identifiers, not secrets.
+# Changes that alter the OIDC subject break the exchange until the Entra federated credential
+# is updated in step: adding `environment:` to the job, moving it into a reusable workflow, or
+# changing the org's OIDC subject template. Moving the ADO pipeline changes ADO_PIPELINE_ID
+# and the service principal's queue grant. To stop the workflow: gh workflow disable optimize-skill.yml
+#
+# Contract: the template parameters queued below (skill, effort, optimizeDescription,
+# optimizeBody, optimizeReferences, finalGate, budgetUsd, openPR, requestedBy) and the
+# final_gate choices are owned by optimize-bundle.yml in UiPath/skill-trimming-optimizer; a
+# rename there needs the matching edit here (tests/scripts/optimize-skill-workflow.test.mjs
+# pins this side).
 
 on:
   workflow_dispatch:
@@ -38,7 +51,7 @@ on:
         type: boolean
         default: true
       final_gate:
-        description: 'Final verdict: luna (always) · opus / terra add a 1-seed arm on that model (Linux skills only for now — Windows skills such as uipath-rpa need luna).'
+        description: 'Final verdict: luna (always) · opus / terra add a 1-seed arm on that model (Linux only for now — skills with windows-tagged tasks need luna).'
         type: choice
         options: [luna, opus, terra, opus+terra]
         default: luna
@@ -59,7 +72,7 @@ env:
   OPEN_PR: 'true'
   AZURE_TENANT_ID: d8353d2a-b153-4d17-8827-902c51f72357   # Entra tenant of the app registration
   AZURE_CLIENT_ID: ca18c791-e99c-4ccd-9c40-760e849b78a3   # app registration skill-trimming-optimizer-github
-  # may run it for any skill (the optimizer's maintainers); space-separated handles
+  # may run it for any skill (the optimizer's maintainers); space- or comma-separated handles, @ optional
   OPTIMIZER_MAINTAINERS: CarlesUIPath
 
 jobs:
@@ -67,12 +80,15 @@ jobs:
     name: Queue the optimizer
     runs-on: uipath-ubuntu-latest
     timeout-minutes: 10
-    # one queue job per skill at a time (the ADO run itself refuses while a PR for the skill is open)
+    # Serializes only this seconds-long queue job. Duplicate multi-hour runs are refused below
+    # (an unfinished ADO run or an open optimizer PR for the skill), and the ADO run itself
+    # refuses to start while a skillreducer-<skill> PR is open.
     concurrency:
       group: optimize-skill-${{ inputs.skill }}
       cancel-in-progress: false
     permissions:
       contents: read                 # CODEOWNERS + the skill folder
+      pull-requests: read            # refuse while an optimizer PR for the skill is open
       id-token: write                # the OIDC token exchanged for the Entra token
     steps:
       # The federated credential only trusts main; refuse early with a clear message rather
@@ -83,19 +99,7 @@ jobs:
           echo "::error::Run this workflow from the main branch (it was started from ${GITHUB_REF})."
           exit 1
 
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
-        with:
-          sparse-checkout: |
-            CODEOWNERS
-            .github/workflows/scripts/codeowners-check.mjs
-            skills/${{ inputs.skill }}/SKILL.md
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
-        with:
-          node-version: '22.x'
-
+      # Before anything uses inputs.skill (the checkout below puts it in a sparse pattern).
       - name: Validate the run form
         env:
           SKILL: ${{ inputs.skill }}
@@ -106,17 +110,54 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$SKILL" =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "::error::'$SKILL' is not a skill folder name"; exit 1; }
-          [ -f "skills/$SKILL/SKILL.md" ] || { echo "::error::no skills/$SKILL/SKILL.md on main"; exit 1; }
           [[ "$BUDGET" =~ ^[0-9]+(\.[0-9]+)?$ ]] || { echo "::error::budget_usd must be a number, got '$BUDGET'"; exit 1; }
           [ "$DESC$BODY$REFS" != falsefalsefalse ] || { echo "::error::nothing to optimize: tick at least one of description / body / references"; exit 1; }
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          sparse-checkout: |
+            CODEOWNERS
+            .github/workflows/scripts/codeowners-check.mjs
+            skills/${{ inputs.skill }}/SKILL.md
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Check the skill exists on main
+        env:
+          SKILL: ${{ inputs.skill }}
+        run: '[ -f "skills/$SKILL/SKILL.md" ] || { echo "::error::no skills/$SKILL/SKILL.md on main"; exit 1; }'
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: '22.x'
 
       - name: Check that you own the skill
         env:
           SKILL: ${{ inputs.skill }}
-          ACTOR: ${{ github.actor }}
+          ACTOR: ${{ github.triggering_actor }}
           GH_TOKEN: ${{ github.token }}
           ALSO_ALLOWED: ${{ env.OPTIMIZER_MAINTAINERS }}
         run: node .github/workflows/scripts/codeowners-check.mjs CODEOWNERS "$SKILL" "$ACTOR"
+
+      # The ADO run refuses too, but only hours later in its own log; say it here.
+      - name: Refuse while an optimizer PR for the skill is open
+        env:
+          SKILL: ${{ inputs.skill }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          resp=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+                   "https://api.github.com/repos/$REPO/pulls?state=open&per_page=100")
+          code=${resp##*$'\n'}; resp=${resp%$'\n'*}
+          if [ "$code" != 200 ]; then
+            echo "::warning::could not list open PRs (HTTP $code); the ADO run will still refuse if one is open"; exit 0
+          fi
+          open=$(jq -r --arg p "skillreducer-$SKILL" \
+                   '[.[] | select(.head.ref == $p or (.head.ref | startswith($p + "-"))) | .html_url] | first // empty' <<<"$resp")
+          if [ -n "$open" ]; then
+            echo "::error::an optimization PR for $SKILL is already open ($open) — merge or close it first"; exit 1
+          fi
 
       - name: Queue the ADO pipeline
         id: queue
@@ -129,24 +170,48 @@ jobs:
           REFS: ${{ inputs.optimize_references }}
           FINAL_GATE: ${{ inputs.final_gate }}
           BUDGET: ${{ inputs.budget_usd }}
-          ACTOR: ${{ github.actor }}
+          ACTOR: ${{ github.triggering_actor }}
         run: |
           set -euo pipefail
-          case "$TENANT_ID$CLIENT_ID" in *TODO*|'')
-            echo "::error::AZURE_TENANT_ID / AZURE_CLIENT_ID are not filled in at the top of this workflow"; exit 1 ;; esac
+          # one line of a failed response for the annotation: .message/.error_description, else the raw text
+          detail(){ { jq -r '.message // .error_description // .error // tojson' <<<"$1" 2>/dev/null || printf '%s' "$1"; } | tr '\n' ' ' | head -c 400; }
+
           # 1. GitHub OIDC token for the Entra token exchange
-          oidc=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-                   "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange" | jq -r .value)
+          resp=$(curl -sS -w '\n%{http_code}' -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                   "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange")
+          code=${resp##*$'\n'}; resp=${resp%$'\n'*}
+          oidc=$(jq -er .value <<<"$resp" 2>/dev/null) && [ "$code" = 200 ] || {
+            echo "::error::could not get the GitHub OIDC token (HTTP $code; is id-token: write granted?)"; exit 1; }
           echo "::add-mask::$oidc"
+
           # 2. Entra token for Azure DevOps (resource 499b84ac-…: the Azure DevOps app id)
-          ado=$(curl -fsS -X POST "https://login.microsoftonline.com/$TENANT_ID/oauth2/v2.0/token" \
-                  -d client_id="$CLIENT_ID" -d grant_type=client_credentials \
-                  -d client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer \
-                  --data-urlencode client_assertion="$oidc" \
-                  --data-urlencode scope=499b84ac-1321-427f-aa17-267ca6975798/.default | jq -r .access_token)
+          resp=$(curl -sS -w '\n%{http_code}' -X POST "https://login.microsoftonline.com/$TENANT_ID/oauth2/v2.0/token" \
+                   -d client_id="$CLIENT_ID" -d grant_type=client_credentials \
+                   -d client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer \
+                   --data-urlencode client_assertion="$oidc" \
+                   --data-urlencode scope=499b84ac-1321-427f-aa17-267ca6975798/.default)
+          code=${resp##*$'\n'}; resp=${resp%$'\n'*}
+          ado=$(jq -er .access_token <<<"$resp" 2>/dev/null) && [ "$code" = 200 ] || {
+            echo "::error::Entra token exchange failed (HTTP $code): $(detail "$resp")"; exit 1; }
           echo "::add-mask::$ado"
-          [ -n "$ado" ] && [ "$ado" != null ] || { echo "::error::Entra token exchange failed"; exit 1; }
-          # 3. queue the run; every template parameter is a string
+          api="https://dev.azure.com/$ADO_ORG/$ADO_PROJECT/_apis"
+
+          # 3. refuse a duplicate: an unfinished run of this pipeline for the same skill. Reading
+          #    the queue is best effort — the guard protects budget, not access.
+          resp=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $ado" \
+                   "$api/build/builds?definitions=$ADO_PIPELINE_ID&statusFilter=inProgress,notStarted&api-version=7.1")
+          code=${resp##*$'\n'}; resp=${resp%$'\n'*}
+          if [ "$code" = 200 ]; then
+            dup=$(jq -r --arg s "$SKILL" \
+                    '[.value[]? | select((.templateParameters.skill // "") == $s) | ._links.web.href] | first // empty' <<<"$resp" 2>/dev/null || true)
+            if [ -n "$dup" ]; then
+              echo "::error::an optimizer run for $SKILL is already queued or running: $dup"; exit 1
+            fi
+          else
+            echo "::warning::could not read the ADO queue (HTTP $code); skipping the duplicate-run check"
+          fi
+
+          # 4. queue the run; every template parameter is a string
           body=$(jq -n --arg skill "$SKILL" --arg effort "$EFFORT" --arg desc "$DESC" --arg bodyp "$BODY" \
                    --arg refs "$REFS" --arg gate "$FINAL_GATE" --arg budget "$BUDGET" --arg pr "$OPEN_PR" \
                    --arg who "$ACTOR" \
@@ -155,14 +220,13 @@ jobs:
                openPR: $pr, requestedBy: $who},
               resources: {repositories: {self: {refName: "refs/heads/main"}}}}')
           run=$(curl -sS -w '\n%{http_code}' -X POST -H "Authorization: Bearer $ado" -H "Content-Type: application/json" \
-                  "https://dev.azure.com/$ADO_ORG/$ADO_PROJECT/_apis/pipelines/$ADO_PIPELINE_ID/runs?api-version=7.1" \
-                  -d "$body")
+                  "$api/pipelines/$ADO_PIPELINE_ID/runs?api-version=7.1" -d "$body")
           code=${run##*$'\n'}; run=${run%$'\n'*}
           if [ "$code" != 200 ]; then
-            echo "::error::ADO refused the run (HTTP $code): $(printf '%s' "$run" | jq -r '.message // .' | head -c 400)"; exit 1
+            echo "::error::ADO refused the run (HTTP $code): $(detail "$run")"; exit 1
           fi
-          echo "url=$(printf '%s' "$run" | jq -r '._links.web.href')" >> "$GITHUB_OUTPUT"
-          echo "id=$(printf '%s' "$run" | jq -r '.id')" >> "$GITHUB_OUTPUT"
+          echo "url=$(jq -r '._links.web.href' <<<"$run")" >> "$GITHUB_OUTPUT"
+          echo "id=$(jq -r '.id' <<<"$run")" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         env:
@@ -174,7 +238,7 @@ jobs:
             echo
             echo "ADO run: $URL"
             echo
-            echo "It runs for several hours; skills whose tasks need Windows (uipath-rpa, uipath-activity-migrator) run on a Windows agent and can take up to a day. When every gate passes, a **draft PR** opens on this repo with the report, and you are requested as its reviewer."
+            echo "It runs for several hours; skills with \`windows\`-tagged tasks run on a Windows agent and can take up to a day. When every gate passes, a **draft PR** opens on this repo with the report, and you are requested as its reviewer."
             echo "No PR opens if the final verdict finds a regression, the budget cap is hit, or a HIGH faithfulness finding remains; the ADO run's summary says why."
           } >> "$GITHUB_STEP_SUMMARY"
           echo "Queued: $URL"
