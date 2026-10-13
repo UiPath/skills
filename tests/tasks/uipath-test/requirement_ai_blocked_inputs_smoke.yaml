@@ -27,6 +27,7 @@ reference:
 
 pre_run:
   - command: |
+      set -e
       python3 _setup/req_ai_fixture.py seed --project HEALTH \
         --requirement EVFX-AIBLOCK-NODESC --no-description
       python3 _setup/req_ai_fixture.py seed --project HEALTH \

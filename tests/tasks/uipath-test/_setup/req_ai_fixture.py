@@ -9,6 +9,10 @@ YAML where fixtures/check-collisions.py sees them; this file knows no names.
              reset its description, and remove what an earlier run of the task
              produced (test cases the AI created and linked, extra links).
     check  — exit 0 when the requirement / test cases are in the asserted state.
+    check-titles — exit 0 when a titles file lists a finished job's result.
+
+`seed` first checks that the CLI has the AI verbs and, if not, exits with
+TENANT NOT READY so smoke excludes the task instead of failing it.
 
 `uip` is the CLI on PATH; set UIP_CMD (for example "node /path/to/index.js")
 to run against another build.
@@ -47,6 +51,33 @@ def call(label, *args, timeout=180, check=True):
     if check and (r.returncode != 0 or env.get("Result") != "Success"):
         fail(f"{label} failed (rc={r.returncode})")
     return r.returncode, env
+
+
+AI_VERBS = ("generate-testcases", "evaluate", "find-obsolete-testcases")
+
+
+def require_ai_commands():
+    """Exclude the task, not fail it, when this CLI build lacks the AI verbs.
+
+    Smoke installs the Test Manager tool from cli/main's dev train, so the
+    verbs exist only once UiPath/cli#5060 is merged there. With no arguments a
+    known verb fails its own flag check before any request (no job, no AI
+    units); an unknown one answers `unknown command`. The pass-rate gate in
+    smoke-skills.yml drops a task whose pre_run fails with TENANT NOT READY on
+    stderr.
+    """
+    missing = []
+    for verb in AI_VERBS:
+        r = subprocess.run([*UIP, "tm", "requirements", verb, "--output", "json"],
+                           capture_output=True, text=True, timeout=60)
+        if "unknown command" in (r.stdout or "") + (r.stderr or ""):
+            missing.append(verb)
+    if missing:
+        print("TENANT NOT READY — this is an environment failure, not an agent "
+              f"failure: the installed CLI has no `uip tm requirements "
+              f"{' / '.join(missing)}` (UiPath/cli#5060 is not on the dev train "
+              "yet).", file=sys.stderr, flush=True)
+        sys.exit(1)
 
 
 def data(label, *args, **kw):
@@ -137,6 +168,7 @@ def ensure_testcase(project, name, description):
 
 
 def cmd_seed(a):
+    require_ai_commands()
     req = ensure_requirement(a.project, a.requirement,
                              None if a.no_description else a.description)
     rid = req["Id"]

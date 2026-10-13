@@ -29,6 +29,7 @@ reference:
 
 pre_run:
   - command: |
+      set -e
       mkdir -p _fixture
       cat > _fixture/EVFX-AIATT-spec.txt <<'EOF'
       Discharge summary

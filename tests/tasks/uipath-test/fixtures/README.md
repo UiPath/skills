@@ -41,8 +41,13 @@ and therefore exact for this scheme.
 The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
 (`seed`, `check`, `check-titles`). It knows no names: each task passes its own
 `EVFX-` names on the command line, so they stay in the task YAML where
-`check-collisions.py` sees them. `requirement_ai_outcomes_triage_diagnose`
-owns no fixture: it grades six synthetic CLI outputs written to the sandbox.
+`check-collisions.py` sees them. `seed` first checks that the installed CLI
+has the three AI verbs. Smoke installs the Test Manager tool from `cli/main`'s
+dev train, so before UiPath/cli#5060 is merged there `seed` exits with
+`TENANT NOT READY` and smoke excludes the task from the pass rate instead of
+failing it; once the verbs ship, the check passes and the task runs.
+`requirement_ai_outcomes_triage_diagnose` owns no fixture and needs none of
+the verbs: it grades six synthetic CLI outputs written to the sandbox.
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the

@@ -126,12 +126,12 @@ initial_prompt: |
 
 success_criteria:
   - type: json_check
-    description: "run_a — nothing found (CannotGenerateAdditionalAIArtifacts) is a result: no-action (rule 5)"
+    description: "run_a — nothing found (CannotGenerateAdditionalAIArtifacts) is a result, never an immediate or later re-run as is: no-action, or change-inputs since the CLI's note says only new --instructions/--attachment-ids can change it (rule 5)"
     path: "ai-runs/triage.json"
     assertions:
-      - expression: "run_a"
+      - expression: "contains(['no-action', 'change-inputs'], run_a)"
         operator: "equals"
-        expected: "no-action"
+        expected: true
     weight: 1.5
     pass_threshold: 1.0
 
