@@ -40,7 +40,7 @@ The same pattern works for every tool and depth (`uip rpa uia <verb> --help`, `u
 
 `--log-level <debug|info|warn|error>` and `--log-file <path>` are global. Raise log level or add `--verbose` when diagnosing a failure.
 
-Most response envelopes share the shape `{Result: "Success"|"Failure", Code, Data, Message?, Instructions?}`. Branch on `Result`, not on stdout text.
+Most response envelopes share the shape `{Result: "Success"|"Failure", Code, Data, Message?, Instructions?}`. Branch on `Result`, not on stdout text: it says whether the command ran; what the command found is in `Data` (`validate`'s diagnostics: § validate).
 
 ---
 
@@ -173,6 +173,12 @@ Rules:
 `uip rpa validate` returns diagnostics for a file or the whole project, re-validating first by default (`--skip-validation` reads cached, possibly stale, results; `--min-severity` filters). Confirm flags via `uip rpa validate --help`.
 
 `--file-path` accepts a path relative to the project directory (`--file-path "Main.xaml"`) or an absolute one, with either separator style; forward-slash, backslash, and mixed forms all resolve. Prefer the relative form — it is shorter and keeps commands portable across machines.
+
+`Result: Success` and exit code 0 mean validate ran, with or without findings. The diagnostics are the text of `Data.message`: `No diagnostics found.`, or `Found N error(s)[, M warning(s)]:` followed by one `[error]` or `[warning]` line per finding (file, message, activity).
+
+An activity that can run without a target reports no unset target: Type Into and Keyboard Shortcuts act on the focused element by design, so validate's "Target or Input UI Element must be set" errors are not a count of a file's target slots.
+
+Validate reads the entity types the project last generated. After a Data Fabric entity install changes the project's entities, run `build`: a workflow whose entity type the install removed still validates with no diagnostics, and build fails with `Cannot create unknown type`.
 
 ---
 
@@ -314,16 +320,16 @@ PHASE 1 — validate-clean (per-file):
 
 PHASE 2 — build-clean (per-project, once per edit session):
   REPEAT:
-    1. uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
-    2. IF build has errors -> identify offending file from build output
-       a. uip rpa validate --file-path "<OFFENDER>" --project-dir "<PROJECT_DIR>" --output json   # cheap targeted re-check
+    1. uip rpa build "<PROJECT_DIR>" --log-level Warn --detailed-log-path "<LOG_FILE>" --output json
+    2. IF build has errors -> the offending file and activity are each error's FilePath and ActivityId.IdRef in <LOG_FILE>
+       a. uip rpa validate --file-path "<OFFENDER>" --project-dir "<PROJECT_DIR>" --output json   # compile errors only; an analyzer error is re-checked by the next build
        b. fix one root cause, GOTO 1
     3. EXIT to Smoke Test
 ```
 
-**Why both phases.** Per-file `validate` covers one file deeply — structural XAML, missing references, schema violations, unknown members, invalid enums, and expression compilation. `build` covers the project broadly — every workflow including untouched ones, the Workflow Analyzer rules (§ Analyzer errors), and packaging. Validating each edited file does not establish that the project compiles, and building does not tell you which file to fix without re-running `validate` on the offender. Neither replaces the other, and neither detects an attribute-form expression that silently resolves to a literal (§ What each phase covers).
+**Why both phases.** Per-file `validate` covers one file deeply — structural XAML, missing references, schema violations, unknown members, invalid enums, and expression compilation. `build` covers the project broadly — every workflow including untouched ones, the Workflow Analyzer rules (§ Analyzer errors), and packaging. Validating each edited file does not establish that the project compiles, and building names the file to fix only in its detailed log. Neither replaces the other, and neither detects an attribute-form expression that silently resolves to a literal (§ What each phase covers).
 
-**Target the specific file:** `validate --file-path` validates only the file you changed (faster than whole-project). `build` is project-scoped (no `--file-path`); when it errors, the output names the offending file — re-run `validate --file-path` on it as part of Phase 2's fix loop.
+**Target the specific file:** `validate --file-path` validates only the file you changed (faster than whole-project). `build` is project-scoped (no `--file-path`); when it errors, its stdout names an analyzer error by its activity only, and the detailed log (`--detailed-log-path`) gives every error's `FilePath` and `ActivityId` — re-run `validate --file-path` on that file for a compile error as part of Phase 2's fix loop.
 
 **5-attempt cap per loop** — 5 attempts for each file's Phase 1 `validate` loop; a separate 5 attempts for the Phase 2 `build` loop. After a loop exhausts its budget, present the remaining errors to the user. They may require domain knowledge or environment-specific fixes. Each loop's counter resets when you start a new loop (e.g., new file, new user prompt, or resuming after user input).
 
