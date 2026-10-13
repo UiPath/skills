@@ -5,6 +5,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.case_check import existing_caseplan  # noqa: E402
+
 PROJECT = Path("LinearThreeStages") / "LinearThreeStages"
 REVIEW_STAGE = "Stage_Qn7tBz"
 RULE_NAME = "CreditRisk"
@@ -20,7 +23,8 @@ def check(ok, message):
 
 
 def main():
-    plan = json.loads((PROJECT / "caseplan.json").read_text())
+    plan_path = existing_caseplan(str(PROJECT / "caseplan.json")) or PROJECT / "caseplan.json"
+    plan = json.loads(Path(plan_path).read_text())
     tasks = [
         (node["id"], task)
         for node in plan.get("nodes", [])

@@ -7,6 +7,7 @@
 // Env:   UIPATH_ACTIVITY_MIGRATOR_DIR      install/cache root (default %LOCALAPPDATA%\UiPath\ActivityMigrator)
 //        UIPATH_ACTIVITY_MIGRATOR_URL      archive URL (default https://download.uipath.com/upgrade/UiPath.Upgrade.Cli.zip)
 //        UIPATH_ACTIVITY_MIGRATOR_OFFLINE  set to 1 to never touch the network
+//        UIPATH_TELEMETRY_DISABLED         read only: a value other than true/false that crashes the tool is reported
 // Output: the last stdout line is one JSON object; see references/acquisition-guide.md § Script output contract.
 // Exit:  0 ok, 1 error, 3 missing (check-only). No dependencies. Node 18+.
 //
@@ -215,7 +216,19 @@ if (!runtime) {
 // The tool's own stderr names why it could not start, such as a runtime it cannot resolve; a re-download never fixes
 // that. .NET launch errors lead with the cause and end with links, so the start of the text is kept.
 const ver = run(exe, ['version'], { timeout: 60000 });
-const version = ver.out.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).pop() || '';
+const lastLine = (s) => s.split(/\r?\n/).map((l) => l.trim()).findLast(Boolean) || '';
+const version = lastLine(ver.out);
+// The 25.10 builds parse UIPATH_TELEMETRY_DISABLED with bool.Parse and crash at startup on any value but true or
+// false, such as the documented 1. Prove it with a retry under the strict spelling of the user's choice; never unset
+// the variable, which would turn the user's telemetry back on.
+const telemetry = process.env.UIPATH_TELEMETRY_DISABLED;
+if ((!ver.ok || !version) && telemetry !== undefined && !/^\s*(true|false)\s*$/i.test(telemetry)) {
+  const strict = /^\s*(0|no|off)\s*$/i.test(telemetry) ? 'false' : 'true';
+  const retry = run(exe, ['version'], { timeout: 60000, env: { ...process.env, UIPATH_TELEMETRY_DISABLED: strict } });
+  if (retry.ok && lastLine(retry.out)) {
+    emit({ status: 'error', code: 'telemetry-flag', env: `UIPATH_TELEMETRY_DISABLED=${strict}`, message: `${exe} crashes at startup while UIPATH_TELEMETRY_DISABLED is ${JSON.stringify(telemetry)}: this build accepts only true or false. It starts with UIPATH_TELEMETRY_DISABLED=${strict}, the same choice. Prefix this script and every UiPath.Upgrade.exe command with it; never unset the variable.` }, 1);
+  }
+}
 if (!ver.ok || !version) {
   const detail = head(ver.err, 400) || (ver.status == null ? 'no output' : `exit code ${ver.status}, no output`);
   fail('verify-failed', `${exe} did not print a version (${detail}). When that names a missing runtime or framework, fix it as it says; otherwise the install may be incomplete: rerun with --force.`);

@@ -1,0 +1,40 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CMGoldenExpense",
+    "kind": "process",
+    "type": "caseManagement",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "1a98c4b1-528b-4020-9657-4a1365cb1a62",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "CMGoldenExpense"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "CaseManagement",
+      "name": "CMGoldenExpense",
+      "package": {
+        "key": "716c6853-a22b-4eec-8874-621dea0266ee"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "entryPoints": "{\n  \"$schema\": \"https://cloud.uipath.com/draft/2024-12/entry-point\",\n  \"$id\": \"entry-points.json\",\n  \"entryPoints\": [\n    {\n      \"filePath\": \"/content/caseplan.json.bpmn#trigger_1\",\n      \"uniqueId\": \"b6842084-3ca5-460d-87f0-44bc8d6e4bb3\",\n      \"type\": \"CaseManagement\",\n      \"input\": {\n        \"type\": \"object\",\n        \"properties\": {}\n      },\n      \"output\": {\n        \"type\": \"object\",\n        \"properties\": {}\n      },\n      \"displayName\": \"Trigger 1\"\n    }\n  ]\n}\n",
+      "entryPointName": "/content/caseplan.json.bpmn#trigger_1",
+      "entryPointUniqueId": "b6842084-3ca5-460d-87f0-44bc8d6e4bb3"
+    },
+    "locks": [],
+    "key": "e8f24e03-3818-4ef4-8f66-2c2be5238c69",
+    "files": []
+  }
+}

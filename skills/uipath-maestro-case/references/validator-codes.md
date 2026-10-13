@@ -72,4 +72,8 @@ Repair, in order:
 4. Prune the solution declaration the removal orphaned: [bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources) (`resources refresh`, `resources list --source local`, `resources remove` each unmatched entry, then `refresh` once more).
 5. Re-run `validate --strict` and confirm the warning is gone.
 
+### Brownfield — schema newer than the CLI
+
+`CASE_MGMT_VERSION_NEWER_THAN_SCHEMA` (the plan's `version` is newer than the case schema the installed CLI carries — typical of a plan Studio Web saved) belongs to no Step 12 check. Stop and report it per [brownfield.md](brownfield.md) item 6. Never lower `version` to pass validation.
+
 <!-- END: validator-codes.md -->

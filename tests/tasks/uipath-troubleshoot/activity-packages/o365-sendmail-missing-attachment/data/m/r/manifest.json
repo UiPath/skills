@@ -23,10 +23,6 @@
       "file": "4d787a213d.json"
     },
     {
-      "match": "or jobs traces 74db8e32-8535-40b2-9b40-62540456adab",
-      "file": "9daf4a08fe.json"
-    },
-    {
       "match": "traces spans get --job-key 74db8e32-8535-40b2-9b40-62540456adab",
       "file": "9daf4a08fe.json",
       "_doc": "Alternate trace-retrieval form (platform traces command). Same span payload as `or jobs traces` — without this rule the call falls through to the empty unmocked_default and the agent loses the scope-opened-cleanly / attachment-property evidence."

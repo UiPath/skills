@@ -38,6 +38,7 @@ OWNERS = {
     "DEFECT": "defect_lifecycle_smoke.yaml",
     "DEFTRACE": "defect_traceability_integration.yaml",
     "DEFFLOW": "defect_full_lifecycle_e2e.yaml",
+    "PSET": "project_settings_smoke.yaml",
 }
 
 
