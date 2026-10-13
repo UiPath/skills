@@ -83,7 +83,7 @@ Use this, not a raw `DELETE odata/Processes(...)` call. It deletes one version; 
 
 Orchestrator refuses (`Context.httpStatus` 409) to delete a version that is still the current version of a process:
 
-1. Read `Data.HeldBy` — each entry names a process (`ProcessKey`, `ProcessName`, `FolderPath`). Move it to another version with `uip or processes update-version <process-key> --package-version <version>`, or remove it with `uip or processes delete <process-key> --yes`. A process that a solution deployment created belongs to that deployment, so uninstall the deployment instead. Then retry the delete.
+1. Read `Data.HeldBy` — each entry is a process, with the same fields as a `processes list` row (`Key`, `Name`, `FolderPath`, `FolderKey`). Move it to another version with `uip or processes update-version <Key> --package-version <version> --folder-key <FolderKey> --output json`, or remove it with `uip or processes delete <Key> --yes --output json`. A process that a solution deployment created belongs to that deployment, so uninstall the deployment instead. Then retry the delete.
 2. No `HeldBy` (an older CLI, or the process is in a folder you cannot read tenant-wide): run `uip or processes list --folder-path <folder> --output json` in the folders that use this feed and look for `ProcessKey` = the package id with `ProcessVersion` = the version. Rerunning the delete with `--folder-path <that folder>` also lets the CLI look there.
 3. If no process has it as its current version, a pending or running job still uses it: let the job finish or stop it with `uip or jobs stop`, then retry.
 
