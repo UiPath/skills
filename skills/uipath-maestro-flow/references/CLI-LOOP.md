@@ -249,8 +249,8 @@ when PIMS returns none or the fetch fails), and `--output-filter` projects
 failure `Data` too, so add `incidents:incidents` to the projection to keep
 them. If `Data.incidents` is missing, fetch incidents with the separate
 `debug-instance incidents` call below, keyed by the `instanceId` you just read.
-With `variablesError`, the outputs are unknown, not empty: read them with
-`uip maestro flow debug-instance variables <instanceId>`.
+With `variablesError`, the outputs are unknown, not empty: run the re-read
+command its `Instructions` give.
 
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
