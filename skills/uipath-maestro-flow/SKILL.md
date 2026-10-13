@@ -87,7 +87,7 @@ The `uip maestro flow` commands delegate their semantics to the installed `@uipa
 ```bash
 ( cd <Solution>/<Name> && uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow )
 uip maestro flow validate <Solution>/<Name>/<Name>.flow --output json
-# Before anything opens the emitted file (upload, debug, a designer):
+# Greenfield only (never a merged brownfield file), before upload/debug/a designer:
 uip maestro flow format <Solution>/<Name>/<Name>.flow --output json
 # Only for a stated runtime-behavior claim:
 ( cd <Solution> && uip solution resources refresh --solution-folder . --output json )

@@ -159,6 +159,8 @@ Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
 placing it in a solution, copy it over the canonical artifact rather than next
 to it, then validate the canonical project path again.
 
+Do not run `uip maestro flow format` on the merged file; it discards the author's layout.
+
 ## Split (`$ref`) artifacts
 
 A deployed `.flow` may be SPLIT across sibling files with JSON Reference —
