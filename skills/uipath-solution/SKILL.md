@@ -1,7 +1,7 @@
 ---
 name: uipath-solution
-description: "Always invoke for `.uipx` files. UiPath Solution lifecycle via `uip solution`: init/restore/pack/publish/deploy/activate/upgrade/upload, projects add|import|remove, resources refresh|add|remove|edit, feeds list, `--feed` / `--personal-workspace`. DIAGNOSE lifecycle failures: pack/publish/deploy/activate errors, stale or missing bindings, unimported or unresolved resources, deploy error codes, publish name+version/processKey collisions, redeploy blocked by an existing deployment (`deploy upgrade`), feed 'not an available publish location', package missing from `packages list`, 'unknown command' after the new→init rename. Bundles RPA/Flow/Case/Agents/API Workflow/AppV2 coded and coded-action projects into one `.uipx`. Routing: PDD→SDD design & task derivation→uipath-planner; non-solution Orchestrator/IS/resources/auth/traces→uipath-platform; .xaml/.cs→uipath-rpa; .flow→uipath-maestro-flow; .bpmn→uipath-maestro-bpmn; agent.json/.py agents→uipath-agents; standalone coded-app deploy→uipath-coded-apps."
-when_to_use: "User mentions .uipx / 'uip solution' / 'pack the solution' / 'publish the solution' / 'deploy the solution' / 'activate' / multi-project / Solution scope / Solution Folder. Fires for 'create a new solution', 'add project/resource to solution', 'add a queue/asset/bucket/connection to the solution', 'import a cloud queue/asset', 'edit/remove a resource', 'change a queue/asset field', 'set an asset value in the solution', 'upgrade a deployment to another version', 'change the deployed version without losing my configuration', 'publish/deploy to a folder feed or Personal Workspace', 'which feeds can I publish to'. Also fires to DIAGNOSE solution problems: 'why did my solution pack/publish/deploy fail', 'pack ships stale/old bindings', 'my resource edit didn't take effect', 'refresh imported 0 bindings', deploy fails '[1009] Invalid argument Value', publish 'name+version / processKey collision', 'uip solution new: unknown command', 'coded app missing from the .uipx / not packed'. (Solution build-time/CLI faults belong here; faulted Orchestrator JOBS at runtime → uipath-troubleshoot.) Load BEFORE editing .uipx or running uip solution commands. For PDD→SDD design→uipath-planner; for an 'architect then deploy' two-phase request, run uipath-planner first, then return here to pack/deploy."
+description: "Always invoke for `.uipx` files. UiPath Solution lifecycle via `uip solution`: init/download/restore/pack/publish/deploy/activate/upgrade/upload, projects add|import|remove, resources refresh|add|remove|edit, feeds list, `--feed` / `--personal-workspace`. DIAGNOSE lifecycle failures: pack/publish/deploy/activate errors, stale or missing bindings, unimported or unresolved resources, deploy error codes, publish name+version/processKey collisions, redeploy blocked by an existing deployment (`deploy upgrade`), feed 'not an available publish location', package missing from `packages list`, 'unknown command' after the new→init rename. Bundles RPA/Flow/Case/Agents/API Workflow/AppV2 projects into one `.uipx`. Routing: PDD→SDD design & task derivation→uipath-planner; non-solution Orchestrator/IS/resources/auth/traces→uipath-platform; .xaml/.cs→uipath-rpa; .flow→uipath-maestro-flow; .bpmn→uipath-maestro-bpmn; agent.json/.py agents→uipath-agents; standalone coded-app deploy→uipath-coded-apps."
+when_to_use: "User mentions .uipx / 'uip solution' / 'pack the solution' / 'publish the solution' / 'deploy the solution' / 'activate' / multi-project / Solution scope / Solution Folder. Fires for 'download/export a solution from Studio Web', 'work on an existing solution', 'migrate a solution to another org/tenant', 'create a new solution', 'add project/resource to solution', 'add a queue/asset/bucket/connection to the solution', 'import a cloud queue/asset', 'edit/remove a resource', 'change a queue/asset field', 'set an asset value in the solution', 'upgrade a deployment to another version', 'change the deployed version without losing my configuration', 'publish/deploy to a folder feed or Personal Workspace', 'which feeds can I publish to'. Also fires to DIAGNOSE solution problems: 'why did my solution pack/publish/deploy fail', 'pack ships stale/old bindings', 'my resource edit didn't take effect', 'refresh imported 0 bindings', deploy fails '[1009] Invalid argument Value', publish 'name+version / processKey collision', 'uip solution new: unknown command', 'coded app missing from the .uipx / not packed'. (Solution build-time/CLI faults belong here; faulted Orchestrator JOBS at runtime → uipath-troubleshoot.) Load BEFORE editing .uipx or running uip solution commands. For PDD→SDD design→uipath-planner; for an 'architect then deploy' two-phase request, run uipath-planner first, then return here to pack/deploy."
 ---
 
 # UiPath Solution — `uip solution` lifecycle
@@ -20,6 +20,9 @@ Create, pack, publish, deploy, and manage UiPath Solution packages (`.uipx`) via
 <!--skill-flavor:when-to-use-create:start-->
 - User wants to create a new solution (`uip solution init`), add or remove projects, or refresh solution resources
 <!--skill-flavor:when-to-use-create:end-->
+<!--skill-flavor:when-to-use-existing:start-->
+- User wants to work on a solution that already exists in Studio Web, or move one to another org or tenant — start with `uip solution download` ([Start From an Existing Solution](#start-from-an-existing-solution))
+<!--skill-flavor:when-to-use-existing:end-->
 - User asks to set up a CI/CD pipeline that builds, publishes, and deploys a UiPath solution
 - User mentions deploy configs, environment promotion, or activating a deployed solution
 <!--skill-flavor:when-to-use-detected-uipx:start-->
@@ -103,6 +106,20 @@ Two distinct distribution paths from the same source:
 Authentication is a prerequisite. Check `uip login status --output json` before any work; if not logged in, ask the user to run `uip login` (interactive browser flow). See `uipath-platform` for full auth options (interactive OAuth, client credentials, tenant switching).
 
 This skill is the terminal step of an SDD-driven build: after `uipath-planner` produces the SDD and derives the task list, and implementation specialists build the projects, the `.uipx` is packed and shipped here.
+
+<!--skill-flavor:existing-solution:start-->
+## Start From an Existing Solution
+
+When the solution already exists in Studio Web, download its source instead of recreating it:
+
+```bash
+uip solution download <solution-id> --destination <dir> --extract --output json
+```
+
+- `<solution-id>` is the Studio Web solution GUID. Ask the user for it when they have not given it.
+- Work inside `Data.ExtractedTo`. It holds the `.uipx` and the project folders. Read the `AGENTS.md` / `CLAUDE.md` there first; `--extract` adds them when the archive has none.
+- The extracted `.uipx` keeps the Studio Web `SolutionId`, so `uip solution upload` updates that same solution. To move the solution to another org or tenant, log in there and `upload` it (it imports as new, see [Develop a Solution § upload](references/develop-solution.md#upload-decides-import-or-overwrite-from-what-the-cloud-holds)), or `pack` → `publish` → `deploy run` there.
+<!--skill-flavor:existing-solution:end-->
 
 ## Reference Navigation
 
