@@ -95,7 +95,7 @@ Schema is canonical — copy verbatim. Only `id` (fresh UUID), optionally `descr
 - `properties.toolType` MUST be exactly `"create-file"`. Anything else is silently ignored.
 - If `uip agent tool list` on an existing agent and the Studio Web tool picker offer no Create File tool, output files are not available on that tenant — return the content as text instead. If the tool is already on the agent and the tenant has it disabled, the run **fails at startup** with `INVALID_TOOL_CONFIG` (`The Create File tool is not supported in this environment. Remove it from the agent to run it.`): remove the `resources/CreateFile` resource, do not just stop adding it.
 - The tool writes text content only (`filePath` is reserved for advanced agents with a workspace); binary deliverables are out of scope unless there is no tool that produces that binary output.
-- A guardrail that must check the produced file goes at **Agent** scope with `appliesTo: "Files"`, not Llm scope: at Llm scope the file is still the plain-text `content` argument. See [../guardrails/files-guide.md](../guardrails/files-guide.md) § Recipe 3.
+- A guardrail that must check the produced file goes at **Agent** scope with `detectionScope: "Files"`, not Llm scope: at Llm scope the file is still the plain-text `content` argument. See [../guardrails/files-guide.md](../guardrails/files-guide.md) § Recipe 3.
 
 ## References
 

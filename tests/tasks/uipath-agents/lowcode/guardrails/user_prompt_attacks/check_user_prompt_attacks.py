@@ -11,7 +11,7 @@ user_prompt_attacks in agent.json with correct scope constraints:
     (user_prompt_attacks is Llm-only, PreExecution-only — anti-pattern 3)
   - validatorParameters is empty OR contains only parameters the live
     guardrail catalog declares for user_prompt_attacks (all its parameters
-    are optional today — e.g. appliesTo, added by AL-594 — and a future
+    are optional today — e.g. detectionScope, added by AL-594 — and a future
     non-breaking catalog addition must not break this test)
   - action.$actionType == "block"
   - id is UUID-shaped
@@ -130,7 +130,7 @@ def main() -> None:
     print('OK: action.$actionType == "block"')
 
     # --- validatorParameters: empty, or only catalog-declared parameters ---
-    # All user_prompt_attacks parameters are optional (appliesTo since AL-594),
+    # All user_prompt_attacks parameters are optional (detectionScope since AL-594),
     # so both shapes are correct. Validating against the live catalog instead
     # of a hardcoded list keeps future non-breaking catalog additions from
     # failing this test.

@@ -111,7 +111,7 @@ Schema is canonical — copy verbatim. Only `id` (fresh UUID) and optionally `de
 - The `definitions.job-attachment` block belongs inside the tool's `inputSchema`, not at the agent root. Each schema (agent input, agent output, tool input) carries its own copy.
 - `{{input.<field>}}` only surfaces metadata; without this tool the agent has no way to read file contents. See [../../critical-rules/critical-rules.md](../../critical-rules/critical-rules.md) Critical Rule 17.
 - Agents can return a `job-attachment` from `outputSchema` (e.g. a generated file), but `analyze-attachments` itself only reads — it does not produce attachments (see [create-file.md](create-file.md)).
-- Guardrails on this tool: a built-in validator with `selector: { "scopes": ["Tool"], "matchNames": ["Analyze Files"] }` and `appliesTo: "Files"` evaluates the `attachments[]` files at PreExecution and only the prose `analysis` at PostExecution. Keep it in the agent.json root `guardrails[]`; `guardrail.policies` here stays `[]`. See [../guardrails/files-guide.md](../guardrails/files-guide.md) § Recipe 2.
+- Guardrails on this tool: a built-in validator with `selector: { "scopes": ["Tool"], "matchNames": ["Analyze Files"] }` and `detectionScope: "Files"` evaluates the `attachments[]` files at PreExecution and only the prose `analysis` at PostExecution. Keep it in the agent.json root `guardrails[]`; `guardrail.policies` here stays `[]`. See [../guardrails/files-guide.md](../guardrails/files-guide.md) § Recipe 2.
 
 ## References
 

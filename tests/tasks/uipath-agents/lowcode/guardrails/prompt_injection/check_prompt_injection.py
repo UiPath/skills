@@ -13,7 +13,7 @@ prompt_injection in agent.json with correct scope constraints:
   - action.$actionType == "block"
   - id is UUID-shaped
   - inputSchema declares a job-attachment field (the uploaded document)
-  - validatorParameters contains the enum parameter "appliesTo" with
+  - validatorParameters contains the enum parameter "detectionScope" with
     value "Both" — the user asked for the text AND the uploaded document
 
 This test specifically validates the most dangerous anti-pattern:
@@ -169,35 +169,35 @@ def main() -> None:
         )
     print(f"OK: threshold parameter = {val} (number, in range)")
 
-    # --- appliesTo parameter (enum, Both: text and files) ---
-    applies_to = None
+    # --- detectionScope parameter (enum, Both: text and files) ---
+    detection_scope = None
     for p in params:
-        if isinstance(p, dict) and p.get("id") == "appliesTo":
-            applies_to = p
+        if isinstance(p, dict) and p.get("id") == "detectionScope":
+            detection_scope = p
             break
-    if applies_to is None:
+    if detection_scope is None:
         ids = [p.get("id") for p in params if isinstance(p, dict)]
         sys.exit(
-            'FAIL: validatorParameters missing parameter with id == "appliesTo" — '
+            'FAIL: validatorParameters missing parameter with id == "detectionScope" — '
             f"the uploaded document is never inspected without it. Got ids: {ids}"
         )
-    if applies_to.get("$parameterType") != "enum":
+    if detection_scope.get("$parameterType") != "enum":
         sys.exit(
-            f'FAIL: appliesTo parameter.$parameterType must be "enum", '
-            f"got {applies_to.get('$parameterType')!r}"
+            f'FAIL: detectionScope parameter.$parameterType must be "enum", '
+            f"got {detection_scope.get('$parameterType')!r}"
         )
-    value = applies_to.get("value")
+    value = detection_scope.get("value")
     if value not in {"Text", "Files", "Both"}:
         sys.exit(
-            f'FAIL: appliesTo parameter.value must be one of "Text", "Files", "Both" '
+            f'FAIL: detectionScope parameter.value must be one of "Text", "Files", "Both" '
             f"(exact case), got {value!r}"
         )
     if value != "Both":
         sys.exit(
             f'FAIL: the user asked for both the text and the uploaded document: '
-            f'appliesTo parameter.value must be "Both", got {value!r}'
+            f'detectionScope parameter.value must be "Both", got {value!r}'
         )
-    print('OK: appliesTo == "Both" (enum)')
+    print('OK: detectionScope == "Both" (enum)')
 
     print("OK: prompt injection guardrail is valid with Llm-only scope")
 

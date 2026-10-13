@@ -189,7 +189,7 @@ uip guardrails byo-configurations probe --connection-id <guid> --validator-type 
 uip guardrails byo-configurations list-validators --connection-id <guid> --output json
 ```
 
-> **Important: no file support for BYO guardrails.** A BYO validator receives the text payload only — attachments are never forwarded to the external provider, and BYO entries in `uip agent guardrails list` carry no `appliesTo` parameter. A guardrail pinned with `byoValidatorName` and `appliesTo: "Files"` / `"Both"` evaluates no file content.
+> **Important: no file support for BYO guardrails.** A BYO validator receives the text payload only — attachments are never forwarded to the external provider, and BYO entries in `uip agent guardrails list` carry no `detectionScope` parameter. A guardrail pinned with `byoValidatorName` and `detectionScope: "Files"` / `"Both"` evaluates no file content.
 
 `probe` exits 1 when the pair is unavailable. `list-validators` is the fastest way to fix a `VALIDATOR_NOT_SUPPORTED` failure — it returns the exact ids the connector accepts, along with each one's `AllowedScopes` and `Parameters` schema.
 
