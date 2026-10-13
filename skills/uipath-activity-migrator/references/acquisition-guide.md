@@ -58,7 +58,8 @@ The last stdout line is one JSON object.
 |---|---|
 | `status` | `ok`, `missing` (check-only), `error` |
 | `source` | `env` (override dir), `cached`, `downloaded` (first install), `updated` (newer archive replaced the cache) |
-| `code` (errors) | `not-windows`, `runtime-missing`, `download-failed`, `extract-failed`, `verify-failed`, `offline-missing` |
+| `code` (errors) | `not-windows`, `runtime-missing`, `download-failed`, `extract-failed`, `verify-failed`, `offline-missing`, `telemetry-flag` |
+| `env` (`telemetry-flag` only) | The assignment the tool starts with, `UIPATH_TELEMETRY_DISABLED=true` or `=false` |
 | `message` | Human-readable detail, including the manual steps for the failing stage |
 
 Exit codes: `0` ok, `1` error, `3` missing (check-only).
@@ -78,6 +79,17 @@ Runtime missing: install the .NET Desktop Runtime 8 (x64) from `https://dotnet.m
 ```bash
 node "<SKILL_DIR>/scripts/ensure-migrator.mjs" --check-only
 ```
+
+## Telemetry flag crash
+
+The `25.10.x` builds read `UIPATH_TELEMETRY_DISABLED` with a strict boolean parse. Any value other than `true` or `false`, the documented `1` included, makes every command die at startup with `The type initializer for 'UiPath.Service.Api.Communication' threw an exception.` A re-download does not help. When `version` fails while the variable holds such a value, the script retries with the strict spelling of the same choice (`0`, `no`, `off` → `false`; anything else → `true`) and, when that starts, reports `telemetry-flag` with the assignment in `env`. Prefix it to the script and to every `UiPath.Upgrade.exe` command:
+
+```bash
+UIPATH_TELEMETRY_DISABLED=true node "<SKILL_DIR>/scripts/ensure-migrator.mjs"
+UIPATH_TELEMETRY_DISABLED=true "<MIGRATOR_EXE>" analyze --help
+```
+
+Never unset the variable instead: that turns telemetry on for a user who disabled it. A build that accepts `1` and `0` starts on the first try, and the script then never reports this code. Older `uip` CLIs crash the same way in `uip rpa build`; [build-verification-guide.md](build-verification-guide.md) covers that.
 
 ## Updating
 

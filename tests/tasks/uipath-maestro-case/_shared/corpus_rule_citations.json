@@ -47,6 +47,9 @@
   "hitl/quality_04_skeleton_completion_report.yaml": {
     "The build is lossless against the SDD": 1
   },
+  "pack/pack_only/pack_only.yaml": {
+    "Never auto-debug or publish to Orchestrator": 2
+  },
   "publish/publish_upload/publish_upload.yaml": {
     "Runnable resources and sidecars": 1
   },

@@ -67,7 +67,7 @@ If either value is missing from the response, emit the label with `<not returned
 
 ### When the run faults
 
-`Data.finalStatus: "Faulted"` means the run failed, and the cause is already in that same response — read it there. Redirect stdout to a file and extract the cause from the file; on a faulted run the CLI ignores `--output-filter` and prints the whole envelope, so the filter is not a way to shrink it:
+`Data.finalStatus: "Faulted"` means the run failed, and the cause is already in that same response — read it there. `--output-filter` also projects a faulted run's `Data`, so a projection that omits `incidents` or `variables` drops them; `Message` and `Instructions` stay whole and name `uip maestro flow debug-instance incidents <instanceId>`. If you projected them away, run that command for incidents and `uip maestro flow debug-instance variables <instanceId> --output json` for variables — do not re-run the flow. Next time, run debug unfiltered and redirect it to a file:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json > /tmp/flow-debug.json
@@ -98,6 +98,8 @@ uip maestro flow process run <process-key> <folder-key> --output json \
 ```
 
 > **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"` — see [shared/cli-commands.md — Pre-flight](../shared/cli-commands.md#pre-flight---attachment-binding). On `process run` only: `--attachment` overrides `--inputs` on key collisions; `--validate` accepts pre-uploaded attachment references for file-typed slots (passes the JSON-schema check even though the slot's nominal type is `string`).
+
+To start the job at a specific trigger, see [shared/cli-commands.md — uip maestro flow process](../shared/cli-commands.md#uip-maestro-flow-process).
 
 Run `uip maestro flow process --help` for all subcommands and options.
 

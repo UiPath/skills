@@ -4,6 +4,9 @@ An error handler is a separate path from the immediately preceding action.
 
 Signature: `.step(name, action).onError(handler => ...)`.
 Read the failure with `h.err(field)` — or `err(step, field)` if you prefer to name the step — where field is one of `code`, `message`, `detail`, `category`, `status` (plus `response` and `element`, present at run time though undeclared).
+
+`element` is the failing step's canvas **label** (`display.label`), not its id. The two are equal only when the step sets no `label`: `.step('failA', script(…), { label: 'Fail A' })` fails with `element: "Fail A"`, not `"failA"`. A label is display text anyone editing the canvas can change, so route on `code` or `message`, never on `element`.
+
 A handler may `.return(...)`, `.terminate(...)`, or `.stepToRef(target)`.
 
 ```ts
@@ -45,7 +48,7 @@ Plain `http({ managed: false })` publishes no envelope in any version — 1.0.0 
 That node is also gone from the tenant registry, which serves only `core.action.http.v2`; `check` says so (`HTTP_V1_RETIRED`).
 Moving to the managed node is a behaviour change, not a rename: a non-2xx stops arriving on the success path with `statusCode` and fails the step instead, so a status branch becomes a handler reading `err(step, 'status')`.
 
-A `.loop()` container CAN carry a handler: `.onError()` after `.loop(...)` wires the container's own error port, and a body step's failure routes to it — measured, the container's envelope carries the body's message in `detail` and the failing body step's id in `element`, and the instance completes instead of faulting. Read it the usual way, `h.err('detail')`.
+A `.loop()` container CAN carry a handler: `.onError()` after `.loop(...)` wires the container's own error port, and a body step's failure routes to it — measured, the container's envelope carries the body's message in `detail` and the failing body step's canvas label in `element`, and the instance completes instead of faulting. Read it the usual way, `h.err('detail')`.
 
 A `.doWhile()` cannot, and the reason is the handle rather than the variable: `core.logic.dowhile@1.0` declares an error variable but its handles are input, success, start, continue and break, so an edge would leave a handle the node does not have — the shape that fails product validate with "the current manifest does not declare that handle". Handle the failure inside the body, on the step that can fail. The builder refuses it by name.
 
