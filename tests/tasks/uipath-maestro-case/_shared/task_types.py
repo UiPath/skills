@@ -73,7 +73,10 @@ def from_cli() -> dict | None:
     start = text.find("{")
     if result.returncode != 0 or start < 0:
         return None
-    payload = json.loads(text[start:])
+    try:
+        payload = json.loads(text[start:])
+    except json.JSONDecodeError:
+        return None
     if payload.get("Code") != "TaskTypeList":
         return None
     return payload["Data"]

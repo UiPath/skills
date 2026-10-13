@@ -27,13 +27,21 @@ GATES = [
 ]
 COUNT_WORDS = {
     9: "nine", 10: "ten", 11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen", 15: "fifteen",
+    16: "sixteen", 17: "seventeen", 18: "eighteen", 19: "nineteen", 20: "twenty",
 }
 
 
+def _count_word() -> str:
+    count = len(task_types.authorable())
+    assert count in COUNT_WORDS, f"{count} authorable types: add the word for it to COUNT_WORDS"
+    return COUNT_WORDS[count]
+
+
 def _task_types_section(text: str) -> str:
-    start = text.index("### Task types")
-    end = text.index("\n### ", start + 1)
-    return text[start:end]
+    start = text.find("### Task types")
+    assert start >= 0, f"{task_types.GUIDE.relative_to(REPO)} has no '### Task types' heading"
+    end = text.find("\n### ", start + 1)
+    return text[start:] if end < 0 else text[start:end]
 
 
 def test_snapshot_lists_are_disjoint_and_point_at_authorable_types():
@@ -74,8 +82,7 @@ def test_guide_table_lists_exactly_the_authorable_types():
 
 def test_guide_states_the_authorable_count():
     section = _task_types_section(task_types.GUIDE.read_text())
-    word = COUNT_WORDS[len(task_types.authorable())]
-    assert f"exactly these {word} literals" in section
+    assert f"exactly these {_count_word()} literals" in section
 
 
 def test_guide_not_authorable_block_is_written_from_the_declaration():
@@ -88,15 +95,33 @@ def test_guide_not_authorable_block_is_written_from_the_declaration():
 
 
 def test_conformance_checklist_states_the_authorable_count():
-    word = COUNT_WORDS[len(task_types.authorable())]
-    assert f"one of the {word} literals" in CHECKLIST.read_text()
+    assert f"one of the {_count_word()} literals" in CHECKLIST.read_text()
+
+
+def _load_gate(gate: Path):
+    spec = importlib.util.spec_from_file_location(f"sdd_check_{gate.parts[-3]}", gate)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_conformance_checklist_names_a_detail_block_for_every_authorable_type():
+    item = re.search(r"and the detail block its type requires(.*?)\n  \d+\.", CHECKLIST.read_text(), re.S)
+    assert item, "the checklist's detail-block item moved; update this test"
+    named = set(re.findall(r"[a-z]+(?:-[a-z]+)*", item.group(1)))
+    missing = sorted(set(task_types.authorable()) - named)
+    assert not missing, f"{CHECKLIST.relative_to(REPO)} names no detail block for {missing}"
+
+
+@pytest.mark.parametrize("gate", GATES, ids=lambda p: p.parts[-3])
+def test_sdd_check_gate_checks_a_detail_block_for_every_authorable_type(gate: Path):
+    missing = sorted(set(task_types.authorable()) - set(_load_gate(gate).TASK_DETAIL_MARKERS))
+    assert not missing, f"{gate.relative_to(REPO)} TASK_DETAIL_MARKERS has no entry for {missing}"
 
 
 @pytest.mark.parametrize("gate", GATES, ids=lambda p: p.parts[-3])
 def test_sdd_check_gate_accepts_exactly_the_authorable_types(gate: Path):
-    spec = importlib.util.spec_from_file_location(f"sdd_check_{gate.parts[-3]}", gate)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    module = _load_gate(gate)
     assert sorted(module.TASK_TYPES) == sorted(task_types.authorable()), (
         f"{gate.relative_to(REPO)} TASK_TYPES: missing "
         f"{sorted(set(task_types.authorable()) - set(module.TASK_TYPES))}, extra "
