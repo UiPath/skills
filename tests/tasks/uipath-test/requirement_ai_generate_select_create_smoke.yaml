@@ -1,0 +1,100 @@
+task_id: skill-test-requirement-ai-generate-select-create-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to have Test Manager's AI
+  propose test cases for a seeded requirement, shows them, then creates only
+  the first two from THE SAME job. Asserts the costly-mistake guards from
+  references/requirement-ai-guide.md: exactly one generation job is started
+  (rule 1), the waiting call is bounded with --timeout (rule 2), and the
+  create runs on that job's --activity-id with --select 1 2 instead of a
+  second generation (rule 4). Graded on tenant state: the requirement ends
+  with exactly two linked test cases, both labelled autopilot-generated.
+  The task owns the EVFX-AIGEN-* namespace; pre_run resets the requirement
+  and deletes the test cases an earlier run created, so every run starts
+  from a requirement with no linked test cases. Spends one AI job per run;
+  a generation job takes 1–5 min, hence the longer turn limit.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 40
+  turn_timeout: 1500
+  task_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+reference:
+  directory: _setup
+
+pre_run:
+  - command: >-
+      python3 _setup/req_ai_fixture.py seed --project HEALTH
+      --requirement EVFX-AIGEN-REQ
+      --description "A signed-in customer can transfer money between their own accounts. The amount must be greater than zero and no more than the source account's available balance. Transfers above 10,000 need a one-time code sent by SMS. A completed transfer shows a confirmation with a reference number."
+    timeout: 280
+
+initial_prompt: |
+  In our Test Manager project HEALTH, have Test Manager's AI propose test
+  cases for the requirement EVFX-AIGEN-REQ, with a focus on negative and
+  boundary cases. Show me what it proposes, then create just the first two
+  of them, linked to the requirement.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status before touching Test Manager (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0   # advisory
+
+  - type: command_executed
+    description: "Agent started one generation job for the requirement (`generate-testcases --requirement-id|--requirement-key`, no --activity-id)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "The start passed the user's focus as `--instructions`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--activity-id)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--instructions\s+\S)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "The wait for the result was bounded with --timeout (rule 2)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--wait\b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--timeout\s+["\x27]?\d)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created test cases 1 and 2 from the same job: `generate-testcases --activity-id <id> --create --select 1 2`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--activity-id\s+\S)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--create\b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--select\s+["\x27]?(?:1\s+2|2\s+1)(?![\s"\x27]*\d))'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No second generation job: showing and creating reused the first job's --activity-id (rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    max_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Outcome: EVFX-AIGEN-REQ has exactly two linked test cases, both created by the AI (label autopilot-generated)"
+    command: "python3 $REFERENCE_DIR/req_ai_fixture.py check --project HEALTH --requirement EVFX-AIGEN-REQ --links 2 --links-ai-created"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

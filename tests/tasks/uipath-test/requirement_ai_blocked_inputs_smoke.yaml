@@ -1,0 +1,97 @@
+task_id: skill-test-requirement-ai-blocked-inputs-smoke
+description: >
+  Smoke test (negative): agent uses the uipath-test skill on two requirements
+  Test Manager's AI cannot work on. EVFX-AIBLOCK-NODESC has no description
+  and no attachments, so generate-testcases fails with HTTP 400 before any
+  job starts. EVFX-AIBLOCK-NOLINKS has a description but no linked test
+  cases, so find-obsolete-testcases fails the same way. Asserts rule 7 of
+  references/requirement-ai-guide.md: report the cause, do not write a
+  description or link test cases to make the call pass, and do not retry
+  a 400. Graded on tenant state: both requirements are unchanged. The task
+  owns the EVFX-AIBLOCK-* namespace; pre_run restores both every run. Spends
+  no AI units.
+tags: [uipath-test, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+reference:
+  directory: _setup
+
+pre_run:
+  - command: |
+      python3 _setup/req_ai_fixture.py seed --project HEALTH \
+        --requirement EVFX-AIBLOCK-NODESC --no-description
+      python3 _setup/req_ai_fixture.py seed --project HEALTH \
+        --requirement EVFX-AIBLOCK-NOLINKS \
+        --description "A doctor can sign a lab order electronically. A signed order cannot be edited, only cancelled with a reason."
+    timeout: 280
+
+initial_prompt: |
+  In project HEALTH, have Test Manager's AI propose test cases for
+  requirement EVFX-AIBLOCK-NODESC, and have it check requirement
+  EVFX-AIBLOCK-NOLINKS for obsolete linked test cases.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent tried generation on EVFX-AIBLOCK-NODESC"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent tried the obsolete search on EVFX-AIBLOCK-NOLINKS"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+find-obsolete-testcases(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked NODESC for attachments before giving up (rule 7: attachments are the other input) — advisory"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+attachments?\s+list\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0   # advisory
+
+  - type: command_not_executed
+    description: "Agent did not write a description itself (rule 7)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+update\b'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not link test cases just to make the search run (rule 7)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+testcases\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--add-testcase-ids)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No retry loop on the 400s: at most one generation start and one search start"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+(?:generate-testcases|find-obsolete-testcases)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    max_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Outcome: EVFX-AIBLOCK-NODESC still has no description, and neither requirement gained linked test cases"
+    command: >-
+      python3 $REFERENCE_DIR/req_ai_fixture.py check --project HEALTH --requirement EVFX-AIBLOCK-NODESC --description-empty --links 0
+      && python3 $REFERENCE_DIR/req_ai_fixture.py check --project HEALTH --requirement EVFX-AIBLOCK-NOLINKS --links 0
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

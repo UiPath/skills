@@ -36,6 +36,14 @@ OWNERS = {
     "SCHEMA": "customfield_schema_multiscope_build.yaml",
     "TRIAGE": "failed_run_triage_diagnose.yaml",
     "PSET": "project_settings_smoke.yaml",
+    "AIGEN": "requirement_ai_generate_select_create_smoke.yaml",
+    "AIASYNC": "requirement_ai_generate_async_create_smoke.yaml",
+    "AIRESUME": "requirement_ai_resume_jobs_diagnose.yaml",
+    "AIEVAL": "requirement_ai_evaluate_apply_smoke.yaml",
+    "AIOBS": "requirement_ai_obsolete_unlink_smoke.yaml",
+    "AIDEL": "requirement_ai_obsolete_delete_smoke.yaml",
+    "AIATT": "requirement_ai_attachment_input_smoke.yaml",
+    "AIBLOCK": "requirement_ai_blocked_inputs_smoke.yaml",
 }
 
 

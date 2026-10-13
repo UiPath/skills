@@ -1,0 +1,97 @@
+task_id: skill-test-requirement-ai-attachment-input-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to start Test Manager's AI test
+  case generation from a spec ATTACHED to a requirement whose description is
+  empty. Asserts from references/requirement-ai-guide.md that the agent looks
+  the attachment up with `uip tm attachment list --object-type requirement`,
+  passes its id with `--attachment-ids` (rule 7: attachments are the other
+  input the AI accepts), and does not write a description itself. The job
+  is started without waiting and only its id is reported: on alpha a
+  generation from an attachment ran ~11 min, longer than a smoke turn, so
+  the job's result is not graded. Graded on tenant state: the description
+  is still empty and nothing was created. The task owns the EVFX-AIATT-*
+  namespace; pre_run writes the spec file and attaches it once. Spends one
+  AI job per run.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+reference:
+  directory: _setup
+
+pre_run:
+  - command: |
+      mkdir -p _fixture
+      cat > _fixture/EVFX-AIATT-spec.txt <<'EOF'
+      Discharge summary
+      When a patient is discharged, the attending doctor writes a discharge summary.
+      The summary lists diagnoses, medication changes and follow-up appointments.
+      It must be signed within 24 hours of discharge and is then sent to the patient's family doctor.
+      An unsigned summary older than 24 hours shows on the ward's overdue list.
+      EOF
+      python3 _setup/req_ai_fixture.py seed --project HEALTH \
+        --requirement EVFX-AIATT-REQ --no-description \
+        --attach _fixture/EVFX-AIATT-spec.txt
+    timeout: 280
+
+initial_prompt: |
+  The spec for requirement EVFX-AIATT-REQ in project HEALTH lives in the
+  file attached to it; its description is empty. Kick off Test Manager's AI
+  test case generation from that attached spec. Don't wait for it to
+  finish, just give me the job id.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status before touching Test Manager (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0   # advisory
+
+  - type: command_executed
+    description: "Agent looked up the requirement's attachments (`uip tm attachment list` for the requirement)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+attachments?\s+list(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*(?:--object-type\s+["\x27]?requirement\b|--requirement-keys\s+\S))'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent started generation from the attachment: `generate-testcases --requirement-id|--requirement-key … --attachment-ids <uuid>`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--activity-id)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--attachment-ids\s+["\x27]?[0-9a-fA-F]{8}-)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not write a description to get around the empty one (rule 7)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+update\b'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "At most one start that reaches a job: a first try without --attachment-ids fails with HTTP 400 and starts nothing, so two starts are allowed, three are a loop"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    max_count: 2
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Outcome: EVFX-AIATT-REQ still has no description and no linked test cases"
+    command: "python3 $REFERENCE_DIR/req_ai_fixture.py check --project HEALTH --requirement EVFX-AIATT-REQ --description-empty --links 0"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

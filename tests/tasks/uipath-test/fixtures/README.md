@@ -29,6 +29,20 @@ and therefore exact for this scheme.
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `project_settings_smoke` | its own throwaway project | the `EVFX-PSET-*` namespace | `pre_run` creates one `EVFX-PSET-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago (so a concurrent run's project is never touched); `post_run` deletes it. The deliverable is a settings change, not the project, so the project is scratch (Rule 2). Unlike the self-contained build tasks, project create/delete is not under test here, so the hooks own the project's lifecycle and the agent never deletes it |
+| `requirement_ai_generate_select_create_smoke` | HEALTH | `EVFX-AIGEN-REQ` | Requirement with a fixed description and **no** linked test cases. The test cases the task's AI job creates are scratch: `pre_run` deletes every linked test case labelled `autopilot-generated` and unlinks the rest |
+| `requirement_ai_generate_async_create_smoke` | HEALTH | `EVFX-AIASYNC-REQ` | Same shape and cleanup as `AIGEN` |
+| `requirement_ai_resume_jobs_diagnose` | HEALTH | `EVFX-AIRESUME-REQ` | Requirement with a fixed description; `pre_run` also starts one generate job (3 s wait, times out) and one evaluate job, saving both outputs under `nightly/` in the sandbox. Two AI jobs per run, none persist as test cases |
+| `requirement_ai_evaluate_apply_smoke` | HEALTH | `EVFX-AIEVAL-REQ` | Requirement whose description `pre_run` resets to the one-line `Users can reset their password.` every run (the task appends to it) |
+| `requirement_ai_obsolete_unlink_smoke` | HEALTH | `EVFX-AIOBS-REQ`, `EVFX-AIOBS-TC{1,2,3}` | All three test cases linked; TC3 is off-topic on purpose. `pre_run` relinks whatever the task unlinked |
+| `requirement_ai_obsolete_delete_smoke` | HEALTH | `EVFX-AIDEL-REQ`, `EVFX-AIDEL-TC{1,2,3,4}` | All four linked; TC3 and TC4 off-topic on purpose. `pre_run` recreates the one the task deleted and relinks it |
+| `requirement_ai_attachment_input_smoke` | HEALTH | `EVFX-AIATT-REQ` | Requirement with **no** description and the attachment `EVFX-AIATT-spec.txt`, uploaded once. A description written by a run is reset by deleting and recreating the requirement |
+| `requirement_ai_blocked_inputs_smoke` | HEALTH | `EVFX-AIBLOCK-NODESC`, `EVFX-AIBLOCK-NOLINKS` | NODESC: no description, no attachments. NOLINKS: a description, no linked test cases. Both calls fail with HTTP 400 before a job starts, so the task spends no AI units |
+
+The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
+(`seed`, `check`, `check-titles`). It knows no names: each task passes its own
+`EVFX-` names on the command line, so they stay in the task YAML where
+`check-collisions.py` sees them. `requirement_ai_outcomes_triage_diagnose`
+owns no fixture: it grades six synthetic CLI outputs written to the sandbox.
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
