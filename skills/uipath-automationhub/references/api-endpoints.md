@@ -105,12 +105,16 @@ Attach a document to a process — **by uploaded bytes (`file`) or by link (`emb
   | 5 | DWI (Detailed Work Instructions) | 11 | ASC (Automation Source Code) |
   | 6 | PM (Process Map) | | |
 
-  Pick by the document's kind: PDD → `1`, SDD → `2`; when unsure, default to `9` (MISC).
+  Pick by the document's kind: PDD → `1`, SDD → `2`, a `.bpmn` process map → `6`; when unsure, default to `9` (MISC).
+- **A `.bpmn` file is always `6` (PM) — this overrides the MISC fallback.** AH opens a document in its process-model editor (the canvas) only when it is type `6` **and** its `file_name` ends in `.bpmn`; the same file under `9` or any other type is download-only, with no Edit (verified on alpha, 2026-10-13). The AH web UI pre-selects Process Map for a `.bpmn`; the API does not infer it — send `6` yourself. Keep the `.bpmn` extension on `file_name`: the editor keys on it, not on `mimetype`.
+- **A Maestro case plan (`caseplan.json` / `.case`) is not BPMN.** The API accepts it under any type, but AH has no viewer or editor for it — it is download-only (and the web UI does not allow `.json` uploads at all). Upload it as `6` only when the caller asks for it as the process model, and tell them it will be a download, not an editable map.
 - Plus **exactly one** of `file` or `embed_link` — an XOR enforced in the handler, not the schema. Sending both, or neither, 400s with `"One and only one of embed_link or file need to be specified."`
 - **`file` — byte upload, the default.** Validated by `EncodedFileValidator`: `file_name`, `mimetype`, `file_content`, `file_encoding` are all required and must be non-empty, and `file_encoding` must be `base64` — the only accepted value. No mimetype allowlist. The JSON body limit is **300mb**, so a PDD-sized `.docx` or `.md` fits with room to spare.
 - **`embed_link`** — use only when the document already lives at a URL and the bytes are not available.
 
 Returns the standard envelope with the created id **nested under `data`** — read **`data.document_id`**. *(Used by the publish flow.)*
+
+A **409 `Duplicate document with title found`** can come back even for a title the process does not have yet — observed when a document with the same **file name** was already attached (the exact server rule is unconfirmed). Surface it to the caller with the existing document from the documents list; never silently rename the file or retitle and retry.
 
 ### POST `/automations/{process_id}/media`  *(not needed for documents)*
 A separate byte-upload route taking the same `EncodedFileValidator` shape. Documents do **not** need it — `/documents` accepts `file` directly.
@@ -149,7 +153,7 @@ Linked components for the process.
 | 401 | Unauthorized — token missing/expired, or `x-ah-openapi-auth` was wrongly sent |
 | 403 | Forbidden — the user lacks the AH permission (authorization = the user's real AH role) |
 | 404 | Wrong URL, or AH not available on the tenant — see **Automation Hub not available on this tenant** below |
-| 409 | Duplicate process name |
+| 409 | Duplicate process name; on a document attach, a duplicate document (see `POST /automations/{process_id}/documents`) |
 
 ### Automation Hub not available on this tenant
 

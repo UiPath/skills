@@ -164,7 +164,8 @@ Build `$DOC_PAYLOAD` per `ProcessDocumentValidator`:
 ```
 
 - `document_title`, `document_description`, `document_type_id` are all required (the field is `document_title`, **not** `document_name`).
-- **`document_type_id` comes from the fixed platform table in [`api-endpoints.md`](api-endpoints.md)** — PDD → `1`, SDD → `2`, otherwise `9` (MISC). Never guess other ids.
+- **`document_type_id` comes from the fixed platform table in [`api-endpoints.md`](api-endpoints.md)** — PDD → `1`, SDD → `2`, a `.bpmn` process map → `6` (under any other type AH shows it download-only, with no editor), otherwise `9` (MISC). Never guess other ids. A case plan (`caseplan.json`) is download-only whatever its type — see the same table.
+- **409 `Duplicate document with title found`** → a matching document is already attached (see [`api-endpoints.md`](api-endpoints.md)); report it, never rename or retitle and retry on your own.
 - Supply **exactly one** of `file` or `embed_link` — an XOR enforced in the handler, not the JSON schema. Both, or neither, 400s with `"One and only one of embed_link or file need to be specified."`
 - **`file` (default).** Base64-encode the file and send `file_name`, `mimetype`, `file_content`, `file_encoding`. `file_encoding` must be the literal `base64` — any other value fails with `"Invalid file."`, as does an empty `file_name`, `mimetype`, or `file_content`. Body limit is 300mb.
 - Common mimetypes: `.docx` → `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `.md` → `text/markdown`, `.pdf` → `application/pdf`.

@@ -162,9 +162,9 @@ uip ah documents create $PROCESS_ID \
   --document-type-id <n> --file "<path>" --output json
 ```
 
-- `--document-type-id` from the fixed platform table in [`api-endpoints.md`](api-endpoints.md) — read it there; do not guess ids.
+- `--document-type-id` from the fixed platform table in [`api-endpoints.md`](api-endpoints.md) — read it there; do not guess ids. **A `.bpmn` process map is always `6`**: under any other type AH shows it download-only, with no editor. The CLI does not infer the type from the extension, so pass it every time. A case plan (`caseplan.json`) is download-only whatever its type — the same table entry says how to handle it.
 - `--file` uploads the bytes (the CLI base64s it; any file type; 200 MB cap). Use `--embed-link <url>` *instead* only when the caller has a URL and no bytes — exactly one of the two, and never invent a URL.
-- Record `Data.Id` (document id) and `Data.FileId` from each response. On a validation error, surface the message and continue with the remaining documents.
+- Record `Data.Id` (document id) and `Data.FileId` from each response. On a validation error, surface the message and continue with the remaining documents. A `409 Duplicate document with title found` means a matching document is already attached (see [`api-endpoints.md`](api-endpoints.md)) — report it with that document; never rename or retitle and retry on your own.
 
 ## Step 6b (optional): Link a Studio Web solution
 
