@@ -117,8 +117,8 @@ uip solution download <solution-id> --destination <dir> --extract --output json
 ```
 
 - `<solution-id>` is the Studio Web solution GUID. Ask the user for it when they have not given it.
-- Work inside `Data.ExtractedTo`. It holds the `.uipx` and the project folders. Read the `AGENTS.md` / `CLAUDE.md` there first; `--extract` adds them when the archive has none.
-- The extracted `.uipx` keeps the Studio Web `SolutionId`, so `uip solution upload` updates that same solution. To move the solution to another org or tenant, log in there and `upload` it (it imports as new, see [Develop a Solution § upload](references/develop-solution.md#upload-decides-import-or-overwrite-from-what-the-cloud-holds)), or `pack` → `publish` → `deploy run` there.
+- Work inside `Data.ExtractedTo`. It holds the `.uipx` and the project folders. Read the `AGENTS.md` / `CLAUDE.md` there first; `--extract` adds them when the archive has none. Extract into a new or empty folder: `--extract` writes over existing files, so re-running it on a copy you have edited loses those edits. Confirm with the user first.
+- The extracted `.uipx` keeps the Studio Web `SolutionId`, and `uip solution upload` overwrites the solution that has that id in the org you are logged into, or imports a new one when there is none ([Develop a Solution § upload](references/develop-solution.md#upload-decides-import-or-overwrite-from-what-the-cloud-holds)). To move the solution to another org or tenant, log in there and `upload` it, or `pack` → `publish` → `deploy run` there.
 <!--skill-flavor:existing-solution:end-->
 
 ## Reference Navigation
