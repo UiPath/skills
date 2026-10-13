@@ -129,7 +129,7 @@ Tell the user what happened in plain words, and what to do next:
 |---------|------|-----------------------|
 | `Status: succeeded` | `0` | It is installed. Offer step 8 |
 | `Deployment succeeded — with warnings:` | `0` | Installed. One optional step failed: the output names it and why |
-| Paused for a setup page (activation, connection authorization, configuration wizard) | `1` | The deploy needs them to finish one thing in the browser, on the page the CLI prints. When they are done, you run `uip vss deploy resume <JOB_ID>` |
+| Paused for a setup page (activation, connection authorization, configuration wizard) | `1` | The deploy needs them to finish one thing in the browser, on the page the CLI prints. For an activation pause, the pause text also lists the setup to do there (after "Setup listed:"): tell them each item. When they are done, you run `uip vss deploy resume <JOB_ID>` |
 | Paused because the login expired | `1`, `ErrorCode: authentication_required` | They run `uip login` again in their terminal, then you resume the job |
 | A step failed (`Code: job-failed`) | `1` | Explain the step's message. Fix the cause (for a permission, see [When a Deploy Is Refused](#when-a-deploy-is-refused)), then resume |
 | The service refuses the name as taken | `1` | Pick another name: `uip vss deploy resume <JOB_ID> --deployment-name <OTHER_NAME>` |
@@ -148,7 +148,7 @@ Tell the user what happened in plain words, and what to do next:
 
   A seed is safe to run again: rows it already inserted are matched, not inserted twice. `--refresh` downloads fresh templates and replaces the CSVs.
 
-Report only what the job output says and the seed step above. Do not add setup steps of your own: no activation checks, redirect URLs, role groups, folder accounts, robots, machines or asset values. A deploy that reports `succeeded` did what it reports. When the job needs something more, it pauses and names it (step 7).
+On `succeeded` (with or without warnings), report the result (the solution folder, and that it is active) and the seed step above, nothing else. The job log prints a "Setup the platform lists for this deployment" block before it activates: it is the platform's generic checklist (activate apps, add accounts and roles, add machines, account-machine mappings, per-robot asset values). Do not pass it on: the deploy activated, so it no longer applies. Do not add setup steps of your own either: no activation checks, redirect URLs, role groups, folder accounts, robots, machines or asset values. When the job needs something more, it pauses and names it (step 7).
 
 ## Check the Access
 
@@ -212,4 +212,4 @@ Follow [access-troubleshooting-guide.md](references/access-troubleshooting-guide
 6. **Do not treat `cancel` as an undo.** Steps already applied stay applied.
 7. **Do not read the CLI source, call the service's REST API, or search the disk for solution zips.** The service deploys from its own feed.
 8. **Do not redeploy, upgrade, resume or run `seed --refresh` before the user copies filled-in CSVs out of `./seeding/<PACKAGE_NAME>`.** A successful deploy or resume, and `--refresh`, replace them. A plain `seed` reads them and leaves them in place.
-9. **Do not invent post-deploy setup.** After a successful deploy, report the job result and offer seeding. Do not list activation checks, redirect URLs, role groups, folder accounts, robots, machines or asset values: the job output names anything it still needs.
+9. **Do not list post-deploy setup.** After a successful deploy, report the job result and offer seeding. Do not list activation checks, redirect URLs, role groups, folder accounts, robots, machines or asset values, whether you made them up or read them in the job log's "Setup the platform lists" block of a deploy that succeeded. When the job pauses because activation failed, the pause names the setup still needed: pass that on (step 7).
