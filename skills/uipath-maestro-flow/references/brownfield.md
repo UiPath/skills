@@ -413,6 +413,21 @@ Inside a subflow the source's entries land only when the edit changed that subfl
 A step the edit removes must lose its entry, or compile fails on the unknown key.
 Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim).
 
+## A path without an End stays open
+
+A flow built in the designer or with `uip maestro flow node add` often ends on
+a step with no End node after it. `decompile` emits `.implicitEnd(false)` near
+the top of the chain for such a flow. Every End the file does have comes back
+as an explicit `.return(...)`, so with that call in place, a path that runs out of
+steps compiles with no End node, exactly as in the original. Leave the call
+alone. Removing it makes compile add an End to every open path.
+
+When you add a step after an open tail, the new step becomes the tail and is
+left open too. To make that path return the flow's outputs, end it with
+`.return({ ... })`. An open path maps no outputs. A human task's exit is
+always capped with an End, because a task with nothing after it never
+finishes.
+
 ## Split (`$ref`) artifacts
 
 A deployed `.flow` may be SPLIT across sibling files with JSON Reference —
