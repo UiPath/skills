@@ -132,7 +132,7 @@ Use when only the files handed to Analyze Files matter (for example the agent al
 Checks the content of an output file (generated code, a report), not the agent's text answer.
 
 1. Declare an output field as `$ref: "#/definitions/job-attachment"` with the canonical block in `outputSchema.definitions` ([../../agent-definition.md](../../agent-definition.md) § File Attachments).
-2. Add the **Create File** built-in tool ([../built-in-tools/create-file.md](../built-in-tools/create-file.md)) and instruct the model to save its deliverable with it and return the result in that output field. If `uip agent tool list` and the Studio Web tool picker offer no Create File tool, output files are not available on this tenant yet — guard the text output instead.
+2. Add the **Create File** built-in tool ([../built-in-tools/create-file.md](../built-in-tools/create-file.md)) unless another tool on the agent already returns a `job-attachment`, and name the deliverable file and its output field in the system prompt (the runtime adds the how-to-fill-a-file-field instructions itself). If `uip agent tool list` and the Studio Web tool picker offer no Create File tool, or the run fails at startup with `The Create File tool is not supported in this environment`, output files are not available on this tenant — remove the tool and guard the text output instead.
 3. Add a Post-capable validator at **Agent** scope with `appliesTo: "Files"`. Prefer Agent over Llm: at Llm scope the file is still the Create File `content` argument — plain text, not a file.
 
 ```json
