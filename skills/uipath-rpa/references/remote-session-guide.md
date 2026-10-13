@@ -2,6 +2,8 @@
 
 The `uip rpa remote` group connects the local project to a remote robot — an Orchestrator unattended robot — and operates on it: configure the target, open and close the remote session, execute shell commands, transfer files both ways. Every remote operation acts on the **configured remote target**, stored per project by `remote configure`.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 ## When to Use
 
 - **Design a workflow on a remote machine** — the target application exists only on the remote machine, or UI-heavy design should run there so the user's own machine stays free → **Live Authoring**. Live Authoring is a superset of Remote Run Only: in the same session, also debug/run the workflow on the remote machine — do NOT switch to Remote Run Only for that.
