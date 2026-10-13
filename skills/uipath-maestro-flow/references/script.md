@@ -61,4 +61,6 @@ call — declares nothing, which is where `returns` comes in:
 `returns` always wins over the body, and takes either a type
 (`'string' | 'number' | 'boolean' | 'object' | 'array' | 'any'`) or, to name the fields
 of an object return, a map — `returns: { total: 'number', currency: 'string' }`.
-`'any'` keeps the output untyped even when the body plainly returns one type.
+`'any'` is valid only as the top-level `returns` of a `script@1.1` step — not
+on 1.0.0 and never as a field type (`check` reports `SCRIPT_RETURNS_UNKNOWN_TYPE`).
+It keeps the output untyped even when the body plainly returns one type.
