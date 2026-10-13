@@ -62,6 +62,7 @@ Once you have the answers (app name, environment, org, tenant, styling), execute
 
 Map the `<environment>` answer from Step 1 to a base URL using the table in [SKILL.md](../SKILL.md) (`cloud` → `https://api.uipath.com`; a custom portal URL → its API host per that table). If the user gave a custom API URL, use that verbatim. Store as `<base-url>`.
 
+<!--skill-flavor:scaffold-commands:start-->
 ### 3.2 — Create the Vite project
 
 ```bash
@@ -121,6 +122,7 @@ npm install -D tailwindcss@4 @tailwindcss/postcss postcss autoprefixer
   ```bash
   rm -f vite.config.ts src/App.tsx src/index.css
   ```
+<!--skill-flavor:scaffold-commands:end-->
 
 ---
 
@@ -179,6 +181,7 @@ All file content lives in [../assets/templates/web-app-template.md](../assets/te
 
 Neither path writes a `.env`, and `uipath.json` is committed (it holds the SDK config — a public OAuth client ID plus org/tenant/base-URL/redirect-URI, no secrets), so no `.gitignore` change is needed for OAuth config. The project `.uipath/` directory created by `codedapp` commands must stay gitignored. Verify with `grep -i uipath .gitignore` and add `.uipath/` if absent — `create-vite` does not add it.
 
+<!--skill-flavor:scaffold-verify:start-->
 ### 5.3 — Verify the scaffold
 
 First, confirm all expected files for your Q6 branch exist. If any are missing, re-run the corresponding row from Step 5.1.
@@ -193,6 +196,7 @@ npm run build
 ```
 
 If the build fails, parse the error, fix the offending file (most likely the template row you just wrote), and re-run. Cap at 5 fix attempts before asking the user for guidance.
+<!--skill-flavor:scaffold-verify:end-->
 
 ---
 
