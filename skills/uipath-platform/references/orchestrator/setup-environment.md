@@ -112,7 +112,7 @@ uip or roles update <role-key> \
   --output json
 ```
 
-Use `uip or roles permissions list` to discover all grantable permission names. Use `uip or roles get <key>` to inspect a role's current grants.
+Use `uip or roles permissions list --limit 1000` to discover all grantable permission names (the default `--limit` of 50 returns only part of them). Use `uip or roles get <key>` to inspect a role's current grants.
 
 Role types:
 
@@ -125,10 +125,11 @@ Role types:
 
 ```bash
 # List all roles in the tenant
-uip or roles list --output json
+uip or roles list --limit 1000 --output json
 
-# Full grantable-permissions catalogue (large — use --output-filter)
-uip or roles permissions list --output json
+# Full grantable-permissions catalogue. The default --limit of 50 returns only part of it,
+# and --output-filter refuses to run without an explicit --limit
+uip or roles permissions list --limit 1000 --output json
 
 # Effective permissions for one user (tenant + folder roles merged)
 uip or roles user-permissions list <username> --folder-path "Finance" --output json
