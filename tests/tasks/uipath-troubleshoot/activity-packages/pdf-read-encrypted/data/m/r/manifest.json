@@ -31,10 +31,6 @@
       "file": "3427f5d6e4.json"
     },
     {
-      "match": "or jobs traces 8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40",
-      "file": "2d930e2440.json"
-    },
-    {
       "match": "traces spans get --job-key 8b6d2f04-1a7c-4e93-b5d8-2c9f0a1b3e40",
       "file": "56a91ad33d.json"
     },
