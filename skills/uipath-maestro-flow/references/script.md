@@ -59,5 +59,7 @@ call — declares nothing, which is where `returns` comes in:
 ```
 
 `returns` always wins over the body, and takes either a type
-(`'string' | 'number' | 'boolean' | 'object' | 'array'`) or, to name the fields
+(`'string' | 'number' | 'boolean' | 'object' | 'array' | 'any'`) or, to name the fields
 of an object return, a map — `returns: { total: 'number', currency: 'string' }`.
+`'any'` is what `core.action.script@1.1`'s own definition declares; it keeps the
+output open even when the body plainly returns one type.
