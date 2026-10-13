@@ -190,6 +190,8 @@ Using `udd:IEntity` produces: `Selected Entity type (UiPath.DataService.Definiti
 | `ContinueOnError` | `InArgument<bool>` | `false` | Common | Continue workflow on activity error |
 | `TimeoutInMs` | `InArgument<int>` | `30000` | Common | Timeout in milliseconds |
 
+At run time a record activity addresses its entity by name — the solution binding's, otherwise the entity type's — in the tenant the robot is connected to; `EntityId`, the field ids and `EntitiesStore.json` serve the designer. A package runs against any tenant that holds entities of the same names and fields.
+
 ### Solution Scope Properties (Conditional)
 
 > **These properties only apply when the project has a SolutionId** (i.e., is part of a Data Service solution). For standalone projects without a SolutionId, **omit these properties entirely** — they have no effect and setting them on a standalone project may cause unexpected behavior. See [Solution Context](#solution-context-folder-vs-tenant-scope) for how to determine scope.
@@ -346,14 +348,14 @@ When scope is **Tenant** or the project is standalone, set `SolutionEntityKey` a
 
 ### Key rule
 
-Do NOT check for Studio Desktop vs Studio Web to decide scope. The only factor is whether `SolutionId` exists in the project context. If the project is in a solution, default to Folder scope. If standalone, use Tenant scope.
+Do NOT check for Studio Desktop vs Studio Web to decide scope. The only factor is whether `SolutionId` exists in the project context. If the project is in a solution, default to Folder scope — except a Tests project, which uses Tenant: its test cases' data sources and its testing process reach tenant entities only. If standalone, use Tenant scope.
 
 ## Common Pitfalls
 
 - **An entity's kind decides the activity:** federated entities only through `QueryEntityRecords`, hybrid ones write local fields only, folder-scoped ones through a solution's Folder scope — see [Entity Kinds per Activity](#entity-kinds-per-activity). Check before generating XAML.
 - `x:TypeArguments` must be a concrete entity type — `udd:IEntity` is rejected at validation
 - The `local` xmlns must include the full `assembly=DataService.<ProjectName>` qualifier
-- `EntitiesStore.json` contains all tenant entities, but only explicitly imported ones have CLR types in the generated DLL. If validation returns `Cannot create unknown type '{clr-namespace:...}EntityName'` — run `uip rpa data-fabric-entities install --add "<EntityName>" --project-dir "<PROJECT_DIR>" --output json` to install the missing entity type, then retry validation. Only if the CLI fails should you ask the user to import via Studio > Data Service tab > "Import Entities". Do not attempt to fix this by changing namespaces or assembly references.
+- `EntitiesStore.json` contains all tenant entities, but only explicitly imported ones have CLR types in the generated DLL. If build returns `Cannot create unknown type '{clr-namespace:...}EntityName'` (per-file validate reports nothing for it, [cli-reference.md § validate](../../cli-reference.md#validate)) — run `uip rpa data-fabric-entities install --add "<EntityName>" --project-dir "<PROJECT_DIR>" --output json` to install the missing entity type, then build again. Only if the CLI fails should you ask the user to import via Studio > Data Service tab > "Import Entities". Do not attempt to fix this by changing namespaces or assembly references.
 - For Create/Update activities, set `IsInRecordView="[False]"` and populate two things:
   1. **`InputEntityInFieldView`** — object-initializer expression (runtime reads this)
   2. **`RecordState.SelectedFields`** — field GUIDs and values (Studio card UI reads this)
