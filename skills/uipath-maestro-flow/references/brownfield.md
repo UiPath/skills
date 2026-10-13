@@ -107,9 +107,8 @@ reader pinned lower refuses the file; `SCHEMA_VERSION_BELOW_FLOOR`: every reader
 migrates it forward on open). Changing versions is `uip maestro flow migrate`'s
 job, not an edit to this call.
 
-Three findings the source cannot carry are printed on stderr as
-`flow-decompile: warning: …` (and `--strict` turns each of them into an
-error):
+These findings the source cannot carry are printed on stderr as
+`flow-decompile: warning: …`, and `--strict` turns each into an error:
 
 - A node **no trigger reaches** — no edge leads to it, as when a designer or
   `node add` left it unconnected. The builder has no detached-node construct,
@@ -122,10 +121,13 @@ error):
   exactly, so the source **omits** that `{ version }` and the node compiles at
   the SDK's default. `merge --baseline` keeps the node at the file's version,
   with the file's definition, as long as you leave it untouched; a node you
-  edit moves to the SDK's version. A type the SDK bundles at no version (a
-  connector, a published process or agent) keeps its pin.
-  A pin like that written back by hand is still refused: `check` reports it as
-  `NODE_VERSION_UNREGISTERED` (an error naming the versions the SDK has).
+  edit moves to the SDK's version. If it is your edit target, edit that
+  node's JSON in the `.flow` directly, or tell the user the edit moves it from
+  the file's version (here `1.6`) to the SDK's default. A type the SDK bundles
+  at no version (a connector, a published process or agent) keeps its pin.
+  A pin like that written back by hand is still refused by `compile`, which
+  names the bundled versions; for a registered family `check` reports it first
+  as `NODE_VERSION_UNREGISTERED`.
 - A **file-format version outside the writable band** (below `1.6`) — the source
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and
