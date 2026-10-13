@@ -27,6 +27,9 @@ pre_run:
 run_limits:
   expected_turns: 10
 
+reference:
+  directory: .
+
 initial_prompt: |
   Two feedback records in folder key `2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2`
   need the review payload from this quarter's sweep attached to them. Both
@@ -48,20 +51,18 @@ success_criteria:
   # Graded from cli_mocks/calls.jsonl: one record per real invocation, argv
   # already split by the shell, so line continuations, quoting, and calls
   # batched into one Bash step need no handling here.
-  # value_flags lists every value-bearing `update` flag so a value never shifts
-  # the positional record ID (e.g. `update --folder-key <key> <id>`).
-  - type: cli_called
-    description: "Agent serialized the prose payload as JSON on --metadata, with the required --folder-key"
-    tool: uip
-    verb: "traces feedback update"
-    positional: ["9b41c7e0-5d38-4a62-b1f7-2c8e5a0d94f3"]
-    value_flags: [output, folder-key, comment, comment-file, metadata, metadata-file, category, profile]
-    flags:
-      metadata: {matches_regex: '^\s*\{\s*"'}
-      folder-key: "2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2"
+  # The skill teaches three metadata routes (inline, file, stdin), so the
+  # script reads the payload back from whichever route the call used.
+  - type: run_command
+    description: "Agent serialized the prose payload as a JSON object (inline, from a file, or on stdin), with the required --folder-key"
+    command: "python3 $REFERENCE_DIR/check_traces_feedback_metadata.py"
+    timeout: 15
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
+  # value_flags lists every value-bearing `update` flag so a value never shifts
+  # the positional record ID (e.g. `update --folder-key <key> <id>`).
   - type: cli_called
     description: "Agent sent metadata alone (inline or from a file) — omitted comment and categories are preserved by the read-before-write, so re-passing them is wrong"
     tool: uip
