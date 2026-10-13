@@ -95,7 +95,7 @@ which two you counted. Full capability matrix, preview limits and the destructiv
    choices and state the assumptions you made. A signal that decides between two strategies is not a
    routine choice — if it is missing, rule 2 applies and you ask for it.
 2. **Move deterministic work out first.** Exact arithmetic, keyed lookups, row iteration, and known
-   branches are Data / script / Decision — outside the seven strategies entirely. Per-row work enters BT
+   branches are Data / script / Decision — outside the six strategies entirely. Per-row work enters BT
    only when the row genuinely needs natural-language reasoning; a formula, regex, or date reformat is a
    Transform or Script.
 3. **Check document boundaries before extraction.** Mixed logical documents must be separated before EX.
