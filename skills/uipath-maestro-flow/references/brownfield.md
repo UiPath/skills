@@ -128,11 +128,7 @@ Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
 placing it in a solution, copy it over the canonical artifact rather than next
 to it, then validate the canonical project path again.
 
-Do not run `uip maestro flow format` on the merged file. The original's
-`layout` holds the positions the canvas author chose, and `merge` keeps them;
-`format` re-lays out every node and discards them. The `format` step in
-[`operate.md`](operate.md#lay-out-the-emitted-flow-first) is for greenfield
-files only.
+Do not run `uip maestro flow format` on the merged file; it discards the author's layout.
 
 ## Split (`$ref`) artifacts
 

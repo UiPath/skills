@@ -30,11 +30,9 @@ its canvas shape, and reports `NodesRepositioned`. Skipping it on a greenfield
 file is the most common cause of misshapen nodes in Studio Web.
 
 **Never format a merged brownfield file.** The original's `layout` already
-holds the canvas author's positions, and `merge` keeps them. `format` has one
-mode — re-lay out every node — so it moves nodes the author arranged by hand,
-while sticky notes stay where they were and no longer frame their sections. For
-example, on a 25-node canvas flow it moved 24 of the 25 nodes. Upload or debug
-the merged file as `merge` wrote it.
+holds the canvas author's positions, and `merge` keeps them. `format` re-lays
+out every node and discards them. Upload or debug the merged file as `merge`
+wrote it.
 
 ## Refresh solution resources first
 
