@@ -29,7 +29,7 @@ def _require_all(haystack: str, needles: list[str], label: str) -> None:
         _fail(f"{label} missing expected evidence: {missing}")
 
 
-def _http_fallback_text(flow: dict[str, Any]) -> str:
+def _http_fallback_nodes(flow: dict[str, Any]) -> list[dict[str, Any]]:
     http_nodes = [
         node
         for node in flow.get("nodes", [])
@@ -37,7 +37,21 @@ def _http_fallback_text(flow: dict[str, Any]) -> str:
     ]
     if not http_nodes:
         _fail("Neither native connector nor managed HTTP fallback found")
-    return json.dumps(http_nodes, sort_keys=True).lower()
+    return http_nodes
+
+
+def _http_fallback_text(flow: dict[str, Any]) -> str:
+    return json.dumps(_http_fallback_nodes(flow), sort_keys=True).lower()
+
+
+def _require_all_on_one_node(flow: dict[str, Any], needles: list[str], label: str) -> None:
+    blobs = [json.dumps(node, sort_keys=True).lower() for node in _http_fallback_nodes(flow)]
+    missing = min(
+        ([needle for needle in needles if needle.lower() not in blob] for blob in blobs),
+        key=len,
+    )
+    if missing:
+        _fail(f"{label} missing expected evidence on any one HTTP node: {missing}")
 
 
 def _check_generate_schema(flow: dict[str, Any]) -> None:
@@ -67,10 +81,11 @@ def _check_path_params(flow: dict[str, Any]) -> None:
 
 
 def _check_query_params(flow: dict[str, Any]) -> None:
-    _require_all(
-        _http_fallback_text(flow),
+    _require_all_on_one_node(
+        flow,
         [
-            "tasks.googleapis.com/tasks/v1/lists",
+            "tasks.googleapis.com",
+            "/tasks/v1/lists",
             "/tasks",
             "method",
             "get",
