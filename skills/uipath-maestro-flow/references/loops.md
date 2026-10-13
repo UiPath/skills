@@ -58,8 +58,9 @@ Every `.loop()` emits `core.logic.loop` 2.4: the body reads
 `$vars.<loop>.currentItem` and `$vars.<loop>.currentIteration` (not the legacy
 1.0.0 `currentIndex`, which `check` refuses). Options: `parallel: true`,
 `completionCondition` (checked after each iteration, stops early), and
-`body.break()` exits the whole loop from inside an arm. The option details and
-examples are below.
+`body.break()` exits the whole loop from inside an arm; `body.continue()` goes
+on to the next item, from an arm or an `.onError()` handler. The option details
+and examples are below.
 
 ## Loop options
 
@@ -80,7 +81,8 @@ options below.
   path. A handler inside the body otherwise ends the whole run on an End of
   its own, so "log the failure and skip this item" needs it. Do not write
   `.stepToRef('<the loop>')` for this: that enters the loop from its outer
-  input and restarts it, and `check` refuses it (`REF_TO_OWN_LOOP`).
+  input and restarts it, and `check` refuses it (`REF_TO_OWN_LOOP`). Works on
+  a 1.0.0 loop too (via `loopBack`).
 
 ```ts
 .loop('each', input('items'), (body) => body

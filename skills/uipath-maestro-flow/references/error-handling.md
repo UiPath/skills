@@ -49,6 +49,7 @@ That node is also gone from the tenant registry, which serves only `core.action.
 Moving to the managed node is a behaviour change, not a rename: a non-2xx stops arriving on the success path with `statusCode` and fails the step instead, so a status branch becomes a handler reading `err(step, 'status')`.
 
 A `.loop()` container CAN carry a handler: `.onError()` after `.loop(...)` wires the container's own error port, and a body step's failure routes to it — measured, the container's envelope carries the body's message in `detail` and the failing body step's canvas label in `element`, and the instance completes instead of faulting. Read it the usual way, `h.err('detail')`.
+Inside a loop body, end a step's handler with `.continue()` to skip the item and go on to the next one ([`loops.md`](loops.md#loop-options)).
 
 A `.doWhile()` cannot, and the reason is the handle rather than the variable: `core.logic.dowhile@1.0` declares an error variable but its handles are input, success, start, continue and break, so an edge would leave a handle the node does not have — the shape that fails product validate with "the current manifest does not declare that handle". Handle the failure inside the body, on the step that can fail. The builder refuses it by name.
 
