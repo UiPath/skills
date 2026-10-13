@@ -78,8 +78,10 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   outcome, so every other outcome loses its path. `check` refuses it
   (HITL_COMPLETED_PORT_GONE). A decompiled task the designer drew may write
   an outcome as `{ name: 'Reject', id: 'outcome-1778015958049' }`: the `id`
-  keeps the original outcome id (and its `outcome-<id>` port) so the merged
-  edges match the original node. Leave it as it is; new outcomes need no `id`.
+  keeps the original outcome id, so its port is `outcome-outcome-1778015958049`
+  (route it with `.stepToList` by that port; `.stepSwitch` arms still match the
+  name), and the merged edges match the original node. Leave it as it is; new
+  outcomes need no `id`.
   `exposeError: true` additionally exposes
   `out('<step>', 'error')` and selects the 1.2 definition (default node only).
 
