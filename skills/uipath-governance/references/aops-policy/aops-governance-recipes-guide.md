@@ -206,7 +206,7 @@ Field names below reflect the doc's example JSON; the live `form-template.json` 
   1. Values are case-sensitive: `files` or `both` is not recognised and behaves as `Text`.
   2. Only keys present in the tenant's bootstrapped `form-data.json` exist. A template that predates per-guardrail scopes carries only `pii-detection-scope` — do not add the other three keys by hand (Cloud template only; other deployment types keep PII only).
   3. "Also cover files" means `Both`, not `Files`: `Files` turns the text evaluation off for that guardrail.
-  4. The policy governs the centralized LLM Gateway evaluation only. An agent's own guardrails keep their own `appliesTo` (authored with the `uipath-agents` skill) — both layers run and either can block; neither narrows the other.
+  4. The policy governs the centralized LLM Gateway evaluation only. An agent's own guardrails keep their own `detectionScope` (authored with the `uipath-agents` skill) — both layers run and either can block; neither narrows the other.
   5. The gateway inspects files carried inline in the model request (5 files, 5 MB per text file, 10 MB of binaries in total) and downloads nothing from URLs or storage references; a `Files` scope with no inline file evaluates nothing. Intellectual property and sentiment stay text-only, and BYO guardrails have no file support.
   6. `update` is a full replacement — pass every field again.
   7. Verify: `uip gov aops-policy deployed-policy get <LICENSE_TYPE> AITrustLayer <TENANT_ID> --output json` and read the four keys.

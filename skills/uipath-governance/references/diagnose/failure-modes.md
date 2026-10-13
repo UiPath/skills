@@ -71,7 +71,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
    ```
 3. Check how the agent sends the file: the UiPath agent runtime inlines attachments; a custom caller passing URLs or file ids is not covered.
 
-**Fix:** Cause 1 → rewrite the value as `Text` / `Files` / `Both` and `update` (full replacement). Cause 2 → the per-guardrail scope is not available on this template; only PII can be scoped. Cause 3 → have the caller inline the file, or rely on the agent's own `appliesTo` guardrail (`uipath-agents` skill), which reads Orchestrator attachments directly. Cause 4/5/6 → expected behaviour; the agent-side guardrail is the independent second layer.
+**Fix:** Cause 1 → rewrite the value as `Text` / `Files` / `Both` and `update` (full replacement). Cause 2 → the per-guardrail scope is not available on this template; only PII can be scoped. Cause 3 → have the caller inline the file, or rely on an agent-side guardrail with its own `detectionScope` (`uipath-agents` skill), which reads Orchestrator attachments directly. Cause 4/5/6 → expected behaviour; the agent-side guardrail is the independent second layer.
 
 ---
 
