@@ -1,6 +1,6 @@
 # Updating Agent Gateway MCP Servers
 
-Detail behind [Updating Servers](../SKILL.md#updating-servers). Read it before an `mcp update` with `--file` / `--body`, before changing a `uipath` server's fields, and whenever an update is refused.
+Detail behind [Updating Servers](../SKILL.md#updating-servers). Read it before an `mcp update` with `--file` / `--body`, before sending a `uipath` server's `tools`, and whenever an update is refused.
 
 `uip agenthub mcp update <SLUG> --folder-path <FOLDER_PATH> --print-schema --output json` prints the update fields for the server's type, in camelCase. Only some fields say what leaving them out does (`name`, `version`, `isActive`, `selectedToolNames` and `useAllTools` do not); the table below covers every type. No update payload takes `slug` or `type`.
 
@@ -10,7 +10,7 @@ In every payload an omitted `name`, `version` or `isActive` is kept, and an omit
 
 | Type | `--file` / `--body` |
 |------|---------------------|
-| `uipath` | `{"server": {...}, "tools": [...]}`, both required ([below](#uipath-servers)). |
+| `uipath` | `{"server": {...}}`, required. An omitted `tools` keeps every tool ([below](#uipath-servers)). |
 | `coded` | `processKey` and `folderKey` are required; `folderKey` must be the server's own folder (`mcp get` shows it). |
 | `command` | `command` and `arguments` are required. An omitted `environmentVariables` is cleared. |
 | `remote` | `uri` is required. Omitted `headers` are cleared. An omitted, null or stored `connectionId` keeps the connection; `"clearConnectionId": true` removes it (not together with `connectionId`). An omitted `useRelay` turns Relay off. |
@@ -21,13 +21,9 @@ Scalar flags cannot remove every header of a `remote` or `swagger` server, or ev
 
 ## `uipath` servers
 
-The CLI refuses every `uipath` update without a `tools` list, scalar flags and `--dry-run` included (`An update of the uipath server '<SLUG>' must carry its tools: …`), because a payload's `tools` replaces the server's tools. To change the server's own fields:
+`--name`, `--description` and `--version` change only the server, and so does a payload without `tools`: `{"server": {"name": …, "description": …, "version": …}}`. Every tool is kept, with its id and guardrails. Change tools with `mcp-tools`: `update` for one tool's fields, `create-resource` to add one, `delete` to remove one.
 
-1. Read every tool: `uip agenthub mcp-tools list --mcp <SLUG> --folder-path <FOLDER_PATH> --limit 1000 --output json`, and check that `Total` equals `Count`.
-2. Write `{"server": {"name": …, "description": …, "version": …}, "tools": [...]}`, each tool with its values copied exactly from the list under the camelCase names. The CLI cannot re-case them for you: `Type`→`type`, `Name`→`name`, `McpName`→`mcpName`, `ProcessType`→`processType`, `Description`→`description`, `TargetIdentifier`→`targetIdentifier`, `TargetFolderKey`→`targetFolderKey`, `InputSchema`→`inputSchema`, `OutputSchema`→`outputSchema`, `Metadata`→`metadata`. Leave out `Id`, `ServerId`, `CreatedAt` and `UpdatedAt`. `"tools": []` removes every tool. `--print-schema` names only six of these fields: send every one of the ten that the list prints (it leaves out null ones), because a missing `mcpName`, `inputSchema`, `outputSchema` or `metadata` can make the list differ from the stored one.
-3. `uip agenthub mcp update <SLUG> --folder-path <FOLDER_PATH> --file <PAYLOAD_FILE> --output json`, then confirm with `mcp-tools list`.
-
-A `tools` list that differs from the stored one in any field recreates every tool with a new id and deletes the tools' guardrails. A key in any other casing is dropped without an error, which makes the list differ; `--dry-run` cannot show this, because its `Resolved` body is PascalCased too. To change one tool, use `mcp-tools update` instead.
+A payload that sends `tools` replaces every tool, and `"tools": []` removes them all. A list that differs from the stored one in any field recreates every tool with a new id and deletes the tools' guardrails, so send `tools` only to replace the tools on purpose. To build it, read every tool with `uip agenthub mcp-tools list --mcp <SLUG> --folder-path <FOLDER_PATH> --limit 1000 --output json` (check that `Total` equals `Count`) and write each under its camelCase name: `Type`→`type`, `Name`→`name`, `McpName`→`mcpName`, `ProcessType`→`processType`, `Description`→`description`, `TargetIdentifier`→`targetIdentifier`, `TargetFolderKey`→`targetFolderKey`, `InputSchema`→`inputSchema`, `OutputSchema`→`outputSchema`, `Metadata`→`metadata`. Leave out `Id`, `ServerId`, `CreatedAt` and `UpdatedAt`. A key left PascalCase is refused ([Rule 3](../SKILL.md#critical-rules)).
 
 ## Masked values
 

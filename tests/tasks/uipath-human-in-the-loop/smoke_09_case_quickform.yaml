@@ -42,7 +42,7 @@ initial_prompt: |
 success_criteria:
   - type: file_exists
     description: "caseplan.json exists"
-    path: "caseplan.json"
+    path: "caseplan.[cj][as][so][en]"
     weight: 1.0
     pass_threshold: 1.0
 
@@ -56,7 +56,7 @@ success_criteria:
 
   - type: file_contains
     description: "Action task uses QuickForm path — context entry hitlType: quick"
-    path: "caseplan.json"
+    path: "caseplan.[cj][as][so][en]"
     includes:
       - '"type": "action"'
       - '"hitlType"'
@@ -66,7 +66,7 @@ success_criteria:
 
   - type: file_contains
     description: "Action task context has _schemaFileId and hitlSchemaId entries"
-    path: "caseplan.json"
+    path: "caseplan.[cj][as][so][en]"
     includes:
       - '"_schemaFileId"'
       - '"hitlSchemaId"'
@@ -107,7 +107,7 @@ success_criteria:
 
   - type: file_contains
     description: "Recipient is the requested user email"
-    path: "caseplan.json"
+    path: "caseplan.[cj][as][so][en]"
     includes:
       - "approver@company.com"
     weight: 1.0
@@ -115,7 +115,7 @@ success_criteria:
 
   - type: run_command
     description: "QuickForm path must NOT contain =bindings. references (the app-based fingerprint)"
-    command: "! grep -q '=bindings\\.' caseplan.json"
+    command: "p=$(ls ./caseplan.case ./caseplan.json 2>/dev/null | head -1); ! grep -q '=bindings\\.' \"$p\""
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
