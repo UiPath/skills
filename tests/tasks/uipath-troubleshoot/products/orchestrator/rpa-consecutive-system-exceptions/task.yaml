@@ -47,7 +47,7 @@ reference:
 
 initial_prompt: |
   My OrderReconciliation process in the OpsAutomation folder aborted
-  this morning with a "maximum number of consecutive system
+  with a "maximum number of consecutive system
   exceptions was reached" error. What actually caused it and how do I
   stop it happening again?
 
