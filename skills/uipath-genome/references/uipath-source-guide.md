@@ -44,7 +44,7 @@ A UiPath project is its own raw form. No inventory script renders it: extraction
 | `*.cs.json` | Coded workflow argument metadata | read with the `.cs` |
 | `*.flow` | Maestro Flow | § Signals — Flow |
 | `*.bpmn` | Maestro BPMN process | § Signals — BPMN |
-| `caseplan.json` | Maestro Case plan | § Signals — Case |
+| `caseplan.case` / `caseplan.json` | Maestro Case plan | § Signals — Case |
 | `agent.json` (`"type": "lowCode"`) + `resources/*/resource.json` | Low-code agent | § Signals — Low-code Agent |
 | `langgraph.json` / `llama_index.json` / `openai_agents.json` + `*.py` | Coded agent | § Signals — Coded Agent |
 | `Workflow.json` (`document.dsl`) | API workflow | § Signals — API Workflow |
@@ -67,7 +67,7 @@ Generated boilerplate, never a source of logic: `CodedWorkflow.cs`, `Connections
 | `project.json` with `.xaml` and/or `[Workflow]` `.cs` (`.uipx` Type `Process`, `Library`, `Test`) | RPA process / library | `uipath-rpa` | Owns both XAML and coded workflows |
 | `project.uiproj` + `.flow` (`.uipx` Type `Flow`) | Flow | `uipath-maestro-flow` | |
 | `project.uiproj` + `.bpmn` (`.uipx` Type `ProcessOrchestration`) | BPMN process | `uipath-maestro-bpmn` | |
-| `caseplan.json` | Case plan | `uipath-maestro-case` | |
+| `caseplan.case` / `caseplan.json` | Case plan | `uipath-maestro-case` | |
 | `agent.json` lowCode (`.uipx` Type `Agent`) | Low-code agent | `uipath-agents` | |
 | `pyproject.toml` + framework json | Coded agent | `uipath-agents` | |
 | `Workflow.json` (`.uipx` Type `Api`) | API workflow | `uipath-api-workflow` | |
