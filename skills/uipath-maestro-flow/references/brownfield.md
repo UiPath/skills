@@ -138,9 +138,8 @@ reader pinned lower refuses the file; `SCHEMA_VERSION_BELOW_FLOOR`: every reader
 migrates it forward on open). Changing versions is `uip maestro flow migrate`'s
 job, not an edit to this call.
 
-Three findings the source cannot carry are printed on stderr as
-`flow-decompile: warning: …` (and `--strict` turns the first and third into an
-error):
+These findings the source cannot carry are printed on stderr as
+`flow-decompile: warning: …`, and `--strict` turns each into an error:
 
 - A node **no trigger reaches** — no edge leads to it, as when a designer or
   `node add` left it unconnected. The builder has no detached-node construct,
@@ -154,6 +153,20 @@ error):
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and
   merge into it: `merge` preserves the original's declared version.
+- An **edge the builder cannot spell** — for example a second edge leaving a
+  decision's `true` port, which no builder construct produces. The
+  warning names it as `<source>@<port> -> <target>@<port>`, and the source marks
+  the spot with a `/* TODO: edge(s) … are NOT in this source */` comment (or a
+  `// TODO: edge …` line near the top when no step leads to it). Recompiling
+  drops that edge, and `merge` writes the loss into the original. If your edit
+  touches that part of the flow, change the `.flow` JSON there directly instead
+  of round-tripping it through the source.
+- A **switch whose cases carry their own conditions** — for example `High:
+  amount > 100` and `Low: amount <= 100`. `.switch(name, on, cases)` models
+  only `on === value`, so the decompiled `on` and `value`s are placeholders
+  (with a `/* TODO: this switch's case expressions are not a uniform … */`
+  comment). Recompiling fails or picks a different case, even when your edit is
+  somewhere else in the flow, so make the change in the `.flow` JSON directly.
 
 Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
 placing it in a solution, copy it over the canonical artifact rather than next
