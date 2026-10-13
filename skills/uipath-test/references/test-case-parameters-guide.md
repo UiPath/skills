@@ -11,13 +11,15 @@ uip tm testcases parameters delete --project-key <KEY> --test-case-key <KEY:N> -
 
 The value flag is `--default-value` (not `--value`); `""` stores an empty value. `--type Asset` stores an Orchestrator asset name the robot resolves at run time. `update` changes only the fields you pass. `get --parameter-name|--parameter-id` reads one.
 
+**Never turn a request into a different change.** "Add X" when X already exists is not "set X": change nothing, say it exists with its current value, and ask for another name or whether to overwrite. "Change X" when X is missing is not "add X": ask first. A near-miss name on a delete: confirm the exact parameter first.
+
 **Find the test case first.** Use the key, or `uip tm testcases list --project-key <KEY> --filter <name> --output json` (prefix match) and prefer the row whose name matches exactly. Nothing found after Critical Rule 8's prefix fallback, or `TestCase does not exist`: tell the user and stop. Several matches: ask.
 
 **Names are unique per test case, ignoring case, and matched exactly — never fuzzily.** `User name` does not find `Username`. To check whether one exists, run `list --search <name>` and look for an exact (case-insensitive) `Name`; an empty list means "not there", not a Rule 4/10 stop. Do not probe with `get`, which fails when it's missing. For a near miss, list all of the test case's parameters (≤250; comparing them yourself is expected here, `--search` is prefix-only) and ask the user to confirm the closest one before changing anything.
 
 | Request | Do |
 |---|---|
-| Add, name already exists | Say so and ask for another name; don't update it instead |
+| Add, name already exists | Change nothing; say so and ask for another name |
 | Change value or hint, parameter missing | Ask whether to create it |
 | Rename or delete, parameter missing | Tell the user and stop |
 | Rename onto a name in use | Report the CLI's refusal; never remove the other parameter |

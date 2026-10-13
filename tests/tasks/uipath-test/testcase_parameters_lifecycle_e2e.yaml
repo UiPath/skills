@@ -1,0 +1,108 @@
+task_id: skill-test-testcase-parameters-lifecycle-e2e
+description: >
+  E2E test (Parameters scenarios 3, 8, 14 and 18): agent uses the uipath-test
+  skill to drive a parameter through its whole life on one test case — add it
+  with a hint, change its default value, rename it, add a second parameter,
+  then delete the renamed one under the approval the prompt grants. Graded on
+  the rename and delete commands and on the final live state: exactly one
+  parameter, `Timeout` with default `30`. pre_run makes sure the owned
+  `EVFX-PARAMLIFE-Login` test case exists in HEALTH and clears its parameters.
+tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 45
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      projects = call("tm", "project", "list", "--filter", "HEALTH").get("Data") or []
+      if not any(p.get("ProjectKey") == "HEALTH" for p in projects):
+          need(call("tm", "project", "create", "--name", "HEALTH", "--project-key", "HEALTH"), "create HEALTH")
+
+      name = "EVFX-PARAMLIFE-Login"
+      rows = call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+      exact = [r for r in rows if r.get("Name") == name]
+      case = exact[0] if exact else need(
+          call("tm", "testcases", "create", "--project-key", "HEALTH", "--name", name), f"create {name}")
+      key = case["TestCaseKey"]
+      rows = call("tm", "testcases", "parameters", "list", "--project-key", "HEALTH",
+                  "--test-case-key", key, "--limit", "100").get("Data") or []
+      if rows:
+          need(call("tm", "testcases", "parameters", "delete", "--project-key", "HEALTH", "--test-case-key", key,
+                    "--parameter-ids", *[r["Id"] for r in rows], "--yes"), f"clear {key}")
+      print(f"SEEDED {name} ({key}) with no parameters")
+      PYEOF
+    timeout: 240
+
+initial_prompt: |
+  In the HEALTH project in Test Manager, on the test case
+  "EVFX-PARAMLIFE-Login":
+
+  1. Add a parameter "Username" with default value "admin" and the hint
+     "User name for UiBank".
+  2. Change its default value to "demo".
+  3. Rename it to "userid".
+  4. Add a second parameter "Timeout" with default value 30.
+  5. Delete the "userid" parameter. You have my approval for this delete;
+     don't ask again.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent renamed the parameter with `parameters update ... --new-name userid`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+update\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--new-name[\s\\=]+["\x27]?userid\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted with `parameters delete ... --yes` (approval given in the prompt)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+delete\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?(--yes|-y)\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final state: exactly one parameter, Timeout with default value 30"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      name = "EVFX-PARAMLIFE-Login"
+      case = [t for t in uip("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name) if t.get("Name") == name][0]
+      params = [(p["Name"], p.get("DefaultValue")) for p in
+                uip("tm", "testcases", "parameters", "list", "--project-key", "HEALTH", "--test-case-key", case["TestCaseKey"])]
+      print(params)
+      sys.exit(0 if params == [("Timeout", "30")] else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
