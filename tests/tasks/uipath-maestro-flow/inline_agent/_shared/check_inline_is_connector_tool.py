@@ -19,8 +19,9 @@ the F2 (inline agent) flow-wiring assertions. Specifically:
      under-asserted until the canonical shape locks in.
   5. A `bindings_v2.json` under the flow project (outside
      `.agent-builder/`) carries a `connection` binding for the connector
-     the tool node uses, whose `ConnectionId` is a real connection UUID
-     (not a placeholder string or the SDK's all-zero stub). That binding is
+     the tool node uses, whose `connectionId` is a real connection UUID
+     (not a placeholder string or the SDK's all-zero stub). Keys match in
+     any case: compile writes `connector`/`connectionId`. That binding is
      what `uip solution pack` and `uip maestro flow debug` read the
      connection from.
 
@@ -153,6 +154,15 @@ def assert_integration_tool_resource(agent_dir: Path) -> None:
     )
 
 
+def get_ci(mapping: object, key: str) -> object:
+    if not isinstance(mapping, dict):
+        return None
+    for k, v in mapping.items():
+        if isinstance(k, str) and k.lower() == key.lower():
+            return v
+    return None
+
+
 def assert_connection_binding(connector_node: dict) -> None:
     candidates = sorted(FLOW_PROJECT.rglob("bindings_v2.json"))
     authored = [p for p in candidates if ".agent-builder" not in p.parts]
@@ -171,8 +181,8 @@ def assert_connection_binding(connector_node: dict) -> None:
         for r in resources or []:
             if not isinstance(r, dict) or r.get("resource") != "connection":
                 continue
-            connector = (r.get("metadata") or {}).get("Connector") or ""
-            conn_id = ((r.get("value") or {}).get("ConnectionId") or {}).get("defaultValue")
+            connector = get_ci(r.get("metadata"), "connector") or ""
+            conn_id = get_ci(get_ci(r.get("value"), "connectionId"), "defaultValue")
             if connector and f".{connector}." in f"{node_type}." and is_real_uuid(conn_id):
                 print(
                     f"OK: {path.relative_to(SOLUTION.parent)} binds connector "
@@ -181,8 +191,8 @@ def assert_connection_binding(connector_node: dict) -> None:
                 return
     sys.exit(
         f"FAIL: no bindings_v2.json connection binding matches the tool node "
-        f"{node_type!r} (need resource=connection, metadata.Connector = the "
-        "node's connector key, value.ConnectionId.defaultValue = a real connection "
+        f"{node_type!r} (need resource=connection, metadata.connector = the "
+        "node's connector key, value.connectionId.defaultValue = a real connection "
         "UUID, not a placeholder or the 00000000-...-0000000000xx stub)"
     )
 
