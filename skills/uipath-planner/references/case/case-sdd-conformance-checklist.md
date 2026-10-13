@@ -46,7 +46,7 @@ case-design-layers-guide.md's; the cells own the shape.)
      skill-internal terms (groupOperator, savedFilterTrees, io-binding, auto-mint, originalVar,
      inputOutputs[]) appears anywhere in the body.
  Closed enums + gate-slot pairing
-  8. Every task `**Type:**` is one of the ten literals in case-design-layers-guide.md § Task types.
+  8. Every task `**Type:**` is one of the eleven literals in case-design-layers-guide.md § Task types.
   9. In every table with a `Marks Stage Complete` / `Marks Case Complete` column, the WHEN rule is legal for
      that row's Yes/No per § Lifecycle gates; Stage Entry Conditions rows use only Stage-entry rules and task
      Entry Condition rows only Task-entry rules.

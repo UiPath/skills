@@ -19,7 +19,7 @@ Checks (domain-agnostic):
   1. Mapping integrity — every ``=vars.<name>`` resolves to a §Case Variables row.
   2. Lineage closure  — every consumed variable is produced before use (In /
      Default / sourceTriggers / task Output ``-> name`` / button ``name = ...``).
-  3. Task-type enum   — every task ``Type`` is one of the 9 legal types.
+  3. Task-type enum   — every task ``Type`` is one of the 11 legal types.
   4. Per-gate rule legality — each Entry / Completion / Exit / Case-exit rule is
      legal **for its gate**, with the correct Marks-Complete pairing.
   5. Conditions present — each stage section has Entry + Exit conditions, and the
@@ -42,9 +42,9 @@ import re
 import sys
 
 TASK_TYPES = {
-    "action", "agent", "rpa", "process", "api-workflow",
-    "execute-connector-activity", "wait-for-connector", "wait-for-timer",
-    "case-management",
+    "action", "agent", "rpa", "process", "api-workflow", "function",
+    "business-rule", "execute-connector-activity", "wait-for-connector",
+    "wait-for-timer", "case-management",
 }
 
 # Legal rule types per gate (mirrors case-tool schema-helpers VALID_*_RULE_TYPES).
@@ -389,7 +389,7 @@ def main() -> None:
     # 3. task-type enum
     # Per-stage **Type:** is always "Stage" post-consolidation; "ExceptionStage"
     # stays whitelisted for back-compat with un-migrated SDDs. Task rows carry the
-    # 9 legal task types. The new **Stage Kind:** field is matched separately below.
+    # 11 legal task types. The new **Stage Kind:** field is matched separately below.
     bad_types = sorted(
         {t for t in re.findall(r"^\*\*Type:\*\*\s*(\S+)", text, re.M)
          if t not in ("Stage", "ExceptionStage") and t not in TASK_TYPES}
