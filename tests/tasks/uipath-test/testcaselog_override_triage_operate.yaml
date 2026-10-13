@@ -224,17 +224,25 @@ success_criteria:
     # a --result: `--reason` is required and a create without it is refused, so
     # an agent that skipped the guide stops here. Re-finishing or re-running
     # emits no `override create` and fails this.
-    description: "Agent used `testcaselog override create` with a --result and a non-empty --reason"
-    command_pattern: 'uip\s+tm\s+testcaselog\s+override\s+create\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--result\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--reason\s+\S)'
+    # Accept create OR update: both set Result + a --reason through the override
+    # surface and leave OriginalResult untouched. A model that corrects an
+    # existing override (update, by --override-id) achieves the same outcome as
+    # one that creates it, so grading only `create` wrongly fails a valid path.
+    # Advisory (pass_threshold 0): the outcome is graded on stored state below,
+    # which also covers a model that wraps the call in a python3 -c subprocess.
+    description: "Agent used `testcaselog override create`/`update` with a --result and a non-empty --reason (advisory)"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+override\s+(create|update)\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--result\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--reason\s+\S)'
     tool_name: "Bash"
     min_count: 1
-    weight: 3.0
-    pass_threshold: 1.0
+    weight: 1.0
+    pass_threshold: 0
 
-  # Tolerant, low-weight confirmation only: an override leaves Result Passed on
-  # a log whose OriginalResult is still Failed. Satisfiable by any run's work
-  # under concurrency, so it confirms the state exists without carrying the
-  # grade — the per-run `override create` above does that.
+  # PRIMARY, model-agnostic grade: an override leaves Result Passed on a log
+  # whose OriginalResult is still Failed. Graded on stored Test Manager state,
+  # so it holds however the agent invoked the CLI (create or update, direct or
+  # wrapped in a python3 -c subprocess). Any-match keeps it safe under
+  # concurrent per-model runs; the advisory command check above still
+  # differentiates per model in the weighted score.
   - type: run_command
     description: "At least one EVFX-TCLOG log reports Passed while OriginalResult still reads Failed"
     command: |
@@ -257,7 +265,7 @@ success_criteria:
       "
     timeout: 150
     expected_exit_code: 0
-    weight: 1.0
+    weight: 3.0
     pass_threshold: 1.0
 
   - type: command_not_executed
