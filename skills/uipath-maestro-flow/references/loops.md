@@ -75,6 +75,20 @@ options below.
 - `body.break()` — exit the whole loop from inside an arm. Terminal on its
   path, like `.terminate()` but scoped to the loop; using it shows the loop's
   break handle automatically (`breakEnabled`).
+- `body.continue()` — go on to the next iteration from inside an arm or an
+  `.onError()` handler, through the loop's continue handle. Terminal on its
+  path. A handler inside the body otherwise ends the whole run on an End of
+  its own, so "log the failure and skip this item" needs it. Do not write
+  `.stepToRef('<the loop>')` for this: that enters the loop from its outer
+  input and restarts it, and `check` refuses it (`REF_TO_OWN_LOOP`).
+
+```ts
+.loop('each', input('items'), (body) => body
+  .step('call', http({ url: 'https://api.example.test/items', method: 'POST', managed: true }))
+  .onError((h) => h
+    .step('logFailure', script({ code: 'return "logged";' }))
+    .continue()))
+```
 
 ```ts
 .var('found', types.string, '')
@@ -94,8 +108,8 @@ Run a body, then repeat **while a condition is true** — checked AFTER each
 pass, so the body always runs at least once (`core.logic.dowhile`). The
 container publishes no data output: write results to a `.var()` from inside
 the body with `{ updates }`. `limit` caps iterations (1–10,000; blank means
-the platform default of 10,000), and `body.break()` works exactly as in
-`.loop()`.
+the platform default of 10,000), and `body.break()` and `body.continue()`
+work exactly as in `.loop()`.
 
 Signature: `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })`.
 
