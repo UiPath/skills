@@ -213,11 +213,12 @@ The table is the authoritative router. Before writing a node, read its `Referenc
 ## Authoring a flow
 
 Choose each node from a registry search, never a brand name; ask when the
-request leaves a finite decision open; bind every declared output on every
-path (`check` misses a missing one, and the run returns `undefined`); handle an
-error only when the request says what should happen. The journeys, the
-scope gate for a request that names no steps, when to plan first, and the
-completion report are in
+request leaves a finite decision open, including an input no stated rule
+covers (ask; never fold it into a stated value or a default the user did not
+give); bind every declared output on every path (`check` misses a missing one,
+and the run returns `undefined`); handle an error only when the request says
+what should happen. The journeys, the scope gate for a request that names no
+steps, when to plan first, and the completion report are in
 **[`references/author.md`](references/author.md)**.
 
 ## Operating a deployed flow

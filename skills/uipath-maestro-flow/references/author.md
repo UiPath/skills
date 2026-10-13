@@ -59,7 +59,12 @@ cannot make: which node, which topology, what an output means, and what to ask.
    request names an output (`caseKey`, `severity`, `ticketId`) without saying
    how to derive it, whether it passes through or is reformatted is the
    user's rule. Ask, or state the assumption and confirm it. A guessed format
-   compiles and validates and returns the wrong value.
+   compiles and validates and returns the wrong value. Rules that cover only
+   some inputs leave the rest open: `High` for refunds over $500 and `Low`
+   under $50 leave $50 to $500 unassigned. List each uncovered case and ask;
+   never fold it into a stated value or a default the user did not give. With
+   nobody to ask, choose the most defensible value for each, rather than
+   stopping, and list it in the final report.
 9. **Present a finite decision as a list of options, with "Something else"
    last.** Which solution, which connector, which trigger, which resource to
    bind: ask with the enumerated choices, never as an open question. Without a
