@@ -146,9 +146,19 @@ These findings the source cannot carry are printed on stderr as
   so the source omits it and marks the spot with `// TODO: node "<id>" … is not
   reachable`; recompiling drops that node. If it is your edit target, connect
   it in the `.flow` first or edit that node's JSON directly.
-- A `(type, typeVersion)` **this SDK does not ship** — the platform registry serves `core.trigger.manual@1.0`, the SDK ships `1.0.0`, and versions resolve exactly.
-  The source keeps the file's pair, so `compile` refuses it until you drop that `{ version }`; the node then takes the SDK's pinned version.
-  `check` may flag the same pin before `compile` does, as `NODE_VERSION_UNREGISTERED` (an error naming the versions the SDK has); the fix is the same.
+- A `(type, typeVersion)` **this SDK does not bundle**, for a type it bundles
+  at other versions — for example `uipath.human-in-the-loop.quick-form@1.6`
+  (written by `node add`) when the SDK ships `1.0` and `1.1`. Versions resolve
+  exactly, so the source **omits** that `{ version }` and the node compiles at
+  the SDK's default. `merge --baseline` keeps the node at the file's version,
+  with the file's definition, as long as you leave it untouched; a node you
+  edit moves to the SDK's version. If it is your edit target, edit that
+  node's JSON in the `.flow` directly, or tell the user the edit moves it from
+  the file's version (here `1.6`) to the SDK's default. A type the SDK bundles
+  at no version (a connector, a published process or agent) keeps its pin.
+  A pin like that written back by hand is still refused by `compile`, which
+  names the bundled versions; for a registered family `check` reports it first
+  as `NODE_VERSION_UNREGISTERED`.
 - A **file-format version outside the writable band** (below `1.6`) — the source
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and
