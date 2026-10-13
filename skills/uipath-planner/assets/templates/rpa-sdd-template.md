@@ -200,33 +200,33 @@ flowchart TD
 >    - **Allowed values** (enum-shaped) when the PDD lists a closed set (e.g., `{ "Approved", "Rejected", "Pending" }`)
 > 4. **Tie BR rows to test oracles.** Every validation BR with a concrete example in §17 Canonical Test Case becomes a test assertion. Use the canonical input/output values from Phase 1 extraction — do NOT invent.
 > 5. **Embedded rules count.** A PDD that says "the hash must be 40 lowercase hex chars" is a BR even though the PDD has no dedicated Business Rules section.
-> 6. **Deterministic rules that decide an outcome are decision tables; rules that need reasoning are listed with who applies them.** Classify every rule, then fill the Decision Tables and Rules That Need Reasoning subsections below per the [Business Rules Guide](../../references/business-rules-guide.md). Each BR lands in exactly one place: this validation table, a decision table, or the reasoning list.
+> 6. **Classify every rule before tabling it.** This table holds validation rules only; decision rules and reasoning rules fill the two subsections below. Classification, homes and the coverage check: [Business Rules Guide](../../references/business-rules-guide.md).
 
 | ID | Rule Name | Description | Trigger Condition | Validation (regex / range / type / allowed values) | Affected Steps |
 |---|---|---|---|---|---|
-| BR-01 | <RULE_NAME> | <DESCRIPTION> | <WHEN_DOES_IT_APPLY> | <REGEX_OR_RANGE_OR_TYPE_OR_ENUM_— `n/a` ONLY if the rule is purely behavioural> | <STEP_NUMBERS> |
+| BR-01 | <RULE_NAME> | <DESCRIPTION> | <WHEN_DOES_IT_APPLY> | <REGEX_OR_RANGE_OR_TYPE_OR_ENUM> | <STEP_NUMBERS> |
 
 ### Decision Tables
 
-<!-- Deterministic rules that decide an outcome, DMN-style: one table per decision (D1, D2, …), one row per rule or tier, each row citing its BR. Cell syntax, hit policy and completeness: references/business-rules-guide.md § 2. `None. No rule decides an outcome.` when there are none. -->
+<!-- references/business-rules-guide.md → Decision tables. Runs in: the step and its coded logic or lookup. Empty: `None. No rule decides an outcome.` -->
 
 #### D1 — <DECISION_NAME>
 **Hit policy:** <UNIQUE / FIRST / COLLECT>
-**Inputs:** `<inputName>` (<string / number / boolean / date>), …
-**Output:** `<outputName>` (<type, with allowed values for a string>)
-**Runs in:** <STEP_NUMBER — WORKFLOW_OR_LOOKUP>
+**Inputs:** `<INPUT_NAME>` (<string / number / boolean / date>), …
+**Output:** `<OUTPUT_NAME>` (<TYPE_AND_ALLOWED_VALUES>)
+**Runs in:** <STEP_NUMBER_AND_LOGIC>
 
-| # | <inputName> | <inputName> | → <outputName> | Rule |
+| # | <INPUT_NAME> | <INPUT_NAME> | → <OUTPUT_NAME> | Rule |
 |---|---|---|---|---|
-| 1 | <ENTRY> | <ENTRY> | <OUTPUT> | BR-<NN> |
+| 1 | <ENTRY> | <ENTRY> | <OUTPUT> | <BR_ID> |
 
 ### Rules That Need Reasoning
 
-<!-- Every rule a decision table can't implement: an agent or a person (Action Center) applies it. references/business-rules-guide.md § 3. `None. Every rule is deterministic.` when there are none. -->
+<!-- references/business-rules-guide.md → Rules that need reasoning. A person applies it through Action Center. Empty: `None. Every rule is deterministic.` -->
 
 | ID | Rule | Applied by | Inputs → Output | Where it runs |
 |---|---|---|---|---|
-| BR-<NN> | <RULE> | <Agent / Person> | <INPUTS> → <OUTPUT> | <AGENT_OR_ACTION_CENTER_TASK, STEP_NUMBER> |
+| <BR_ID> | <RULE> | <Agent / Person> | <INPUTS> → <OUTPUT> | <WHERE_IT_RUNS> |
 
 ---
 

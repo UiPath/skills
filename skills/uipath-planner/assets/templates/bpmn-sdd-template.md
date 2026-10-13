@@ -193,25 +193,25 @@ flowchart LR
 
 ### Decision Tables
 
-<!-- Deterministic business rules, DMN-style: one table per decision (D1, D2, …), one row per rule or tier, each row citing its BR. Each is evaluated by a businessRuleTask in §4, and gateways route on its output. Cell syntax, hit policy and completeness: references/business-rules-guide.md § 2. `None. Every gateway condition is a single comparison.` when there are none. -->
+<!-- references/business-rules-guide.md → Decision tables. Each decision runs in a businessRuleTask (§4); gateways route on its output. Validation rules go in §7. Empty: `None. No rule decides an outcome.` -->
 
 #### D1 — <DECISION_NAME>
 **Hit policy:** <UNIQUE / FIRST / COLLECT>
-**Inputs:** `<inputName>` (<string / number / boolean / date>), …
-**Output:** `<outputName>` (<type, with allowed values for a string>)
+**Inputs:** `<INPUT_NAME>` (<string / number / boolean / date>), …
+**Output:** `<OUTPUT_NAME>` (<TYPE_AND_ALLOWED_VALUES>)
 **Runs in:** `<BUSINESS_RULE_TASK_NODE_KEY>`
 
-| # | <inputName> | <inputName> | → <outputName> | Rule |
+| # | <INPUT_NAME> | <INPUT_NAME> | → <OUTPUT_NAME> | Rule |
 |---|---|---|---|---|
-| 1 | <ENTRY> | <ENTRY> | <OUTPUT> | BR-<NN> |
+| 1 | <ENTRY> | <ENTRY> | <OUTPUT> | <BR_ID> |
 
 ### Rules That Need Reasoning
 
-<!-- Every business rule a decision table can't implement: an agent (serviceTask hosting the agent) or a person (userTask, also in §9 HITL Touchpoints) applies it. references/business-rules-guide.md § 3. `None. Every rule is deterministic.` when there are none. -->
+<!-- references/business-rules-guide.md → Rules that need reasoning. Agent: a serviceTask hosting the agent. Person: a userTask, also in §9 HITL Touchpoints. Empty: `None. Every rule is deterministic.` -->
 
 | ID | Rule | Applied by | Inputs → Output | Where it runs |
 |---|---|---|---|---|
-| BR-<NN> | <RULE> | <Agent / Person> | <INPUTS> → <OUTPUT> | `<NODE_KEY>` |
+| <BR_ID> | <RULE> | <Agent / Person> | <INPUTS> → <OUTPUT> | `<NODE_KEY>` |
 
 ---
 
@@ -229,7 +229,7 @@ flowchart LR
 
 ## 7. Data Objects & Variables
 
-<!-- Process variables and data objects passed between nodes. -->
+<!-- Process variables and data objects passed between nodes. A validation business rule (regex / range / type / allowed values) goes in Description, prefixed with its BR ID. -->
 
 | Name | Direction | Type | Scope | Default | Description |
 |---|---|---|---|---|---|
