@@ -53,7 +53,9 @@ implementation and dispatches on the name. Nothing local runs it.
 ## Escalation
 
 The default variant is app-backed: `app: { key, name, folderPath }` names a
-deployed Action Center app that owns the form. `variant: 'quick-form'` puts the
+deployed Action Center app that owns the form. `folderPath` is the app's
+Orchestrator folder (`'Shared/Approvals'`); omit it for an app that ships in this
+solution, and compile writes `'solution_folder'`. `variant: 'quick-form'` puts the
 form INLINE instead — `fields` (the same rows a human task takes) and no `app`.
 `check` refuses the two mixed, in either direction.
 

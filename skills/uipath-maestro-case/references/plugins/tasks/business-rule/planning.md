@@ -15,7 +15,7 @@ Pick this plugin when the sdd.md labels a task `business-rule` — a deployed ru
 | `folder-path` | Resolved registry `folders[0].fullyQualifiedName` (NOT the sdd.md "Folder") | Binds to `data.folderPath`; the engine runs the rule from this folder. See [§ Registry Resolution](#registry-resolution). |
 | `task-type-id` | Registry resolution (below) | Enables enrichment via `tasks describe` |
 | `inputs` | sdd.md task data mapping | Names come from `tasks describe`; see [bindings-and-expressions.md](../../../bindings-and-expressions.md) |
-| `outputs` | sdd.md task Outputs + resolved schema | Follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list). |
+| `outputs` | sdd.md task Outputs + resolved schema | One output, `output`, holding the whole result keyed by decision; downstream reads `vars.<output var>.<decision>.<column>`. To store one column in a case variable, write the extract row `result.<decision>.<column> -> <case variable>`. Otherwise follow the shared [I/O-binding output-list contract](../../variables/io-binding/planning.md#canonical-output-list). |
 | `runOnlyOnce` | sdd.md (default `false`) | Re-entry behavior comes from the SDD, not the task type. |
 | `isRequired` | sdd.md (default `true`) |  |
 

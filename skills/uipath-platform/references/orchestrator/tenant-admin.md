@@ -171,14 +171,14 @@ Attachments are files associated with jobs -- screenshots, reports, data exports
 | Command | What it does |
 |---------|--------------|
 | `uip or attachments list --job-key <key>` | List attachments for a job (returns AttachmentId, Name, Category). |
-| `uip or attachments download <attachment-id>` | Download an attachment to disk. Use `-o <path>` to set the output file. |
+| `uip or attachments download <attachment-id>` | Download an attachment to disk. Use `-d, --destination <path>` to set the output file. |
 
 ```bash
 # List attachments from a completed job
 uip or attachments list --job-key "abc12345-..." --output json
 
 # Download a specific attachment
-uip or attachments download "def67890-..." -o report.pdf
+uip or attachments download "def67890-..." -d report.pdf
 ```
 
 Attachments from previous jobs can be reused as input: `uip or jobs start <process-key> --attachment-id <id>`.
@@ -204,7 +204,7 @@ uip or jobs list --state Faulted \
 uip or attachments list --job-key "<faulted-job-key>" --output json
 
 # 4. Download the attachment for investigation
-uip or attachments download "<attachment-id>" -o error-screenshot.png
+uip or attachments download "<attachment-id>" -d error-screenshot.png
 ```
 
 ---
@@ -214,6 +214,7 @@ uip or attachments download "<attachment-id>" -o error-screenshot.png
 - **Settings keys are dot-notation.** Use `settings list` to discover valid keys -- do not guess. Example: `Abp.Timing.TimeZone`, not `timezone` or `TimeZone`.
 - **Calendar timezone affects trigger scheduling.** A trigger using a calendar will skip dates according to the calendar's timezone, which may differ from the trigger's own timezone. Keep them aligned.
 - **Audit log export is async.** The `--export` flag triggers a server-side export job. The CLI polls until the CSV is ready, then downloads it. Large exports may take a few seconds.
+- **Audit log export spends a daily quota.** The AuditLogs Export endpoint is limited to 100 requests per day per tenant. Use `audit-logs list --output json` with `--limit` / `--offset` for reads, and export only when the user asks for a CSV file. See [api-limits.md](api-limits.md).
 - **Credential store keys are numeric**, not GUIDs. This is an exception to the usual GUID convention in the Orchestrator CLI.
 - **Feed IDs apply to `packages` only.** `uip or packages` commands accept `--feed-id` for multi-feed tenants; `uip or libraries` commands do NOT — they always target the default tenant feed.
 - **Attachments are tenant-scoped.** You do not need `--folder-path` or `--folder-key` -- the `list` command resolves the folder from the job key automatically.

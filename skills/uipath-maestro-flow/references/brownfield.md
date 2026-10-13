@@ -116,10 +116,9 @@ error):
   so the source omits it and marks the spot with `// TODO: node "<id>" … is not
   reachable`; recompiling drops that node. If it is your edit target, connect
   it in the `.flow` first or edit that node's JSON directly.
-- A core `(type, typeVersion)` **this SDK does not bundle** — the registry
-  serves `core.trigger.manual@1.0`, the SDK ships `1.0.0`, and versions resolve
-  exactly. The source keeps the file's pair, so `compile` refuses it until you
-  drop that `{ version }`; the node then takes the SDK's pinned version.
+- A `(type, typeVersion)` **this SDK does not ship** — the platform registry serves `core.trigger.manual@1.0`, the SDK ships `1.0.0`, and versions resolve exactly.
+  The source keeps the file's pair, so `compile` refuses it until you drop that `{ version }`; the node then takes the SDK's pinned version.
+  `check` may flag the same pin before `compile` does, as `NODE_VERSION_UNREGISTERED` (an error naming the versions the SDK has); the fix is the same.
 - A **file-format version outside the writable band** (below `1.6`) — the source
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and

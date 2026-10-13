@@ -1,0 +1,87 @@
+task_id: skill-agent-inline-in-flow
+description: >
+  End-to-end test: given a goal-only prompt to build a flow that uses
+  a low-code agent, the agent must derive from the skill that the
+  right architecture is the inline-in-flow pattern. Grades the outcome,
+  not the authoring path (builder-SDK compile or CLI scaffolding): the
+  flow validates and produces the UUID-named
+  subdirectory layout (no entry-points.json, no project.uiproj,
+  empty flow-layout.json) wired into the flow with the correct
+  `uipath.agent.autonomous` node and edges.
+tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, low-code, inline-flow, resource]
+
+run_limits:
+  expected_turns: 31
+  turn_timeout: 1200
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Create a UiPath Flow project "GreetingFlow" that uses a single low-code agent
+  embedded inside the flow project to generate a greeting. The solution
+  should be named "GreetingSol".
+
+  Do NOT publish, upload, or deploy.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent created the solution with uip solution init"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+init'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0.0  # advisory: init auto-scaffolds the parent solution (CLI #2470)
+
+  # Outcome-based check (auto-registration via `uip <kind> init` OR explicit
+  # `uip solution project add` both populate Projects[] in the .uipx).
+  - type: json_check
+    description: "Project is registered in the parent solution .uipx"
+    path: "GreetingSol/GreetingSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow file was created"
+    path: "GreetingSol/GreetingFlow/GreetingFlow.flow"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Flow project descriptor was created"
+    path: "GreetingSol/GreetingFlow/project.uiproj"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Outcome gate: the authored flow validates, whichever route wrote it.
+  - type: run_command
+    description: "uip maestro flow validate passes on the flow file"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py GreetingSol/GreetingFlow/GreetingFlow.flow"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Inline agent layout + flow wiring (autonomous node, source dir, edges)"
+    command: "python3 $REFERENCE_DIR/inline_agent/_shared/check_inline_in_flow.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

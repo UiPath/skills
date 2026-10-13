@@ -23,10 +23,6 @@
       "file": "88a9723f86.json"
     },
     {
-      "match": "or jobs traces 64580780-4aa1-4ec2-b5f2-abd5439ea200",
-      "file": "cba960786e.json"
-    },
-    {
       "match": "traces spans get --job-key 64580780-4aa1-4ec2-b5f2-abd5439ea200",
       "file": "cba960786e.json",
       "_doc": "Alternate trace-retrieval form (platform traces command). Same span payload as `or jobs traces` — without this rule the call falls through to the empty unmocked_default and the agent loses the FindFilesAndFolders -> DownloadFile binding-chain evidence."

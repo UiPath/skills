@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""A business-rule task bound by name + folderPath, mapping the rule's flat v2 outputs."""
+"""A v3 business-rule task bound by name + folderPath, storing one decision column in a case variable."""
 
 import json
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.case_check import existing_caseplan  # noqa: E402
 
 PROJECT = Path("LinearThreeStages") / "LinearThreeStages"
 REVIEW_STAGE = "Stage_Qn7tBz"
@@ -20,7 +23,8 @@ def check(ok, message):
 
 
 def main():
-    plan = json.loads((PROJECT / "caseplan.json").read_text())
+    plan_path = existing_caseplan(str(PROJECT / "caseplan.json")) or PROJECT / "caseplan.json"
+    plan = json.loads(Path(plan_path).read_text())
     tasks = [
         (node["id"], task)
         for node in plan.get("nodes", [])
@@ -51,11 +55,20 @@ def main():
         "plan declares a BusinessRule Key binding",
     )
 
+    check(data.get("version") == "v3", f"data.version is {data.get('version')!r}, not 'v3'")
     inputs = {i.get("name") for i in data.get("inputs", [])}
-    outputs = {o.get("name") for o in data.get("outputs", [])}
+    outputs = data.get("outputs", [])
+    sources = {o.get("name"): o.get("source") for o in outputs}
     check("creditScore" in inputs, f"input creditScore missing, inputs are {sorted(inputs)}")
-    check("riskBand" in outputs, f"output riskBand missing, outputs are {sorted(outputs)}")
-    check(not any("." in str(name) for name in outputs), f"decision-keyed output names: {sorted(outputs)}")
+    check(sources.get("output") == "=result", f"no output row 'output' with source =result, outputs are {sources}")
+    check("Error" in sources, f"output Error missing, outputs are {sorted(sources)}")
+    check(
+        any(
+            o.get("var") == "riskBand" and o.get("source") == "=result.RiskDecision.riskBand" and o.get("type") == "string"
+            for o in outputs
+        ),
+        f"no string output writes =result.RiskDecision.riskBand into riskBand, outputs are {sources}",
+    )
 
     sidecar = json.loads((PROJECT / "bindings_v2.json").read_text())
     check(
@@ -65,7 +78,7 @@ def main():
 
     if failures:
         sys.exit("FAIL: " + "; ".join(failures))
-    print("OK: business-rule task bound by name + folderPath with flat outputs")
+    print("OK: v3 business-rule task bound by name + folderPath, riskBand read from the decision-keyed result")
 
 
 if __name__ == "__main__":

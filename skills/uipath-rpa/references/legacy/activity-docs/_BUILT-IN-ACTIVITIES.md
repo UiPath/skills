@@ -362,7 +362,7 @@ See `_INVOKE-CODE.md` for full reference (generated code structure, compilation 
 <ui:AddDataRow DisplayName="Add Data Row" sap2010:WorkflowViewState.IdRef="AddDataRow_1"
   DataTable="[dtTable]">
   <ui:AddDataRow.ArrayRow>
-    <InArgument x:TypeArguments="x:Object[]">[New Object() {"Value1", 123, True}]</InArgument>
+    <InArgument x:TypeArguments="s:Object[]">[New Object() {"Value1", 123, True}]</InArgument>
   </ui:AddDataRow.ArrayRow>
 </ui:AddDataRow>
 ```
@@ -420,6 +420,6 @@ These xmlns are needed beyond the baseline when using activities above:
 |-------|-----------|
 | `xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"` | While/DoWhile conditions (VisualBasicValue) |
 | `xmlns:sd="clr-namespace:System.Data;assembly=System.Data"` | ForEachRow (DataRow), DataTable variables |
-| `xmlns:s="clr-namespace:System;assembly=mscorlib"` | TryCatch (System.Exception), DateTime |
+| `xmlns:s="clr-namespace:System;assembly=mscorlib"` | TryCatch (System.Exception), DateTime, arrays (AddDataRow `s:Object[]`) |
 | `xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"` | ForEach (IEnumerable), InvokeCode Arguments |
 | `xmlns:uic="clr-namespace:UiPath.Core.Activities;assembly=UiPath.System.Activities"` | TryCatch (BusinessRuleException) |

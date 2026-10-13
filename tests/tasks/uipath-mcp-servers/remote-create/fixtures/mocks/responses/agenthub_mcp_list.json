@@ -2,8 +2,8 @@
   "Result": "Success",
   "Code": "AgentHubMcpList",
   "Data": {
-    "items": [],
-    "total": 0,
-    "count": 0
+    "Items": [],
+    "Total": 0,
+    "Count": 0
   }
 }
