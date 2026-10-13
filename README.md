@@ -216,6 +216,10 @@ For questions, ideas, or feedback, please [open an issue](https://github.com/UiP
 
 [**Run Coder Eval**](https://github.com/UiPath/skills/actions/workflows/run-coder-eval.yml) — GH-hosted workflow that runs `coder-eval` against the skills task tree (`tests/tasks/...`). Use for ad-hoc single-task verification or a folder-scoped sweep on the same infra as the nightly cron. Trigger from the Actions tab → "Run workflow" → fill in `task_globs`. Definition: [`.github/workflows/run-coder-eval.yml`](.github/workflows/run-coder-eval.yml).
 
+### Optimizing a skill's token use
+
+[**Optimize skill**](https://github.com/UiPath/skills/actions/workflows/optimize-skill.yml) — queues the [skill-trimming optimizer](https://github.com/UiPath/skill-trimming-optimizer), which shortens a skill's description, body and references, gates every cut on the skill's eval tasks, and opens a **draft PR** with the report (no PR if a cut regresses a task or the budget runs out). Trigger from the Actions tab → "Run workflow" **on `main`** → enter the skill folder name. You must be listed as a user in the skill's CODEOWNERS rule; team-only owners ask a listed user or an optimizer maintainer. Runs take several hours (up to a day for skills with `windows`-tagged tasks). Definition: [`.github/workflows/optimize-skill.yml`](.github/workflows/optimize-skill.yml).
+
 ## Resources
 
 - [UiPath Documentation](https://docs.uipath.com/)
