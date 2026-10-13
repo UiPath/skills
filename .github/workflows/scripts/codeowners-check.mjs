@@ -10,8 +10,8 @@
 //
 // CODEOWNERS semantics (the LAST matching rule wins) are applied to skills/<skill>/SKILL.md.
 // A team owner counts only when the actor is an ACTIVE member, which needs a token that can
-// read org membership: optimize-skill.yml passes one from the membership GitHub App (Members:
-// read) when it is configured. github.token cannot read teams — GitHub answers 404 for "not a
+// read org membership: optimize-skill.yml passes one from the skill-trimming-optimizer GitHub
+// App, narrowed to Members: read, when its key is configured. github.token cannot read teams — GitHub answers 404 for "not a
 // member" and for "may not look" alike — so without the App team owners fail closed, and the
 // refusal says whom to ask (a listed user owner or an optimizer maintainer).
 import { readFileSync } from "node:fs";

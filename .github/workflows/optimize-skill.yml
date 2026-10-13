@@ -14,11 +14,13 @@ run-name: Optimize skill · ${{ inputs.skill }} · @${{ github.triggering_actor 
 # listed team — or one of OPTIMIZER_MAINTAINERS below. The check is the person who STARTED
 # this run (github.triggering_actor), so a re-run is checked against whoever re-runs it.
 # github.token cannot read team membership (GitHub answers 404 for "not a member" and for
-# "may not look"), so team owners are verified with a short-lived token of the membership
-# GitHub App (org permission Members: read, nothing else), minted below from the
-# `optimize-skill` environment's OPTIMIZER_TEAM_APP_PRIVATE_KEY secret and the
-# OPTIMIZER_TEAM_APP_CLIENT_ID variable. Without them the check falls back to github.token:
-# listed users and maintainers still pass; team owners fail closed, naming whom to ask.
+# "may not look"), so team owners are verified with a short-lived token of the
+# skill-trimming-optimizer GitHub App (the optimizer's PR bot, which also has the org
+# permission Members: read), minted below from the `optimize-skill` environment's
+# OPTIMIZER_TEAM_APP_PRIVATE_KEY secret and narrowed to `permission-members: read`. The key
+# could mint broader tokens (the App can push branches here), which is why it lives only in
+# the main-only environment. Without the secret the check falls back to github.token: listed
+# users and maintainers still pass; team owners fail closed, naming whom to ask.
 #
 # Credential: the job runs in the `optimize-skill` environment (deployment branches: main
 # only). Its GitHub OIDC token is exchanged for an Entra token of an app registration whose
@@ -78,6 +80,7 @@ env:
   OPEN_PR: 'true'
   AZURE_TENANT_ID: d8353d2a-b153-4d17-8827-902c51f72357   # Entra tenant of the app registration
   AZURE_CLIENT_ID: ca18c791-e99c-4ccd-9c40-760e849b78a3   # app registration skill-trimming-optimizer-github
+  OPTIMIZER_APP_CLIENT_ID: Iv23liSOlyfwxe4g8sJO           # GitHub App skill-trimming-optimizer (an identifier, not a secret)
   # may run it for any skill (the optimizer's maintainers); space- or comma-separated handles, @ optional
   OPTIMIZER_MAINTAINERS: CarlesUIPath
 
@@ -90,7 +93,7 @@ jobs:
     # the Entra federated credential trusts; the environment's branch policy admits main only.
     environment: optimize-skill
     env:
-      HAS_TEAM_APP: ${{ secrets.OPTIMIZER_TEAM_APP_PRIVATE_KEY != '' && vars.OPTIMIZER_TEAM_APP_CLIENT_ID != '' }}
+      HAS_TEAM_APP: ${{ secrets.OPTIMIZER_TEAM_APP_PRIVATE_KEY != '' }}
     # Serializes only this seconds-long queue job. Duplicate multi-hour runs are refused below
     # (an unfinished ADO run or an open optimizer PR for the skill), and the ADO run itself
     # refuses to start while a skillreducer-<skill> PR is open.
@@ -148,7 +151,7 @@ jobs:
         if: env.HAS_TEAM_APP == 'true'
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510  # v3.3.0
         with:
-          client-id: ${{ vars.OPTIMIZER_TEAM_APP_CLIENT_ID }}
+          client-id: ${{ env.OPTIMIZER_APP_CLIENT_ID }}
           private-key: ${{ secrets.OPTIMIZER_TEAM_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           permission-members: read

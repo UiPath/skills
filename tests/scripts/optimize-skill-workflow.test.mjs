@@ -152,6 +152,8 @@ test("the membership token is pinned, optional, and can only read org members", 
   assert.match(app.text, /if: env\.HAS_TEAM_APP == 'true'/);
   const perms = [...app.text.matchAll(/^\s+(permission-[a-z-]+): (\S+)/gm)].map((m) => `${m[1]}: ${m[2]}`);
   assert.deepEqual(perms, ["permission-members: read"]);
+  assert.match(app.text, /client-id: \$\{\{ env\.OPTIMIZER_APP_CLIENT_ID \}\}/);
+  assert.match(YML, /^ {2}OPTIMIZER_APP_CLIENT_ID: Iv23li[A-Za-z0-9]+\s/m, "the App client id is an inline identifier");
 });
 
 test("the membership token reaches only the ownership check, which falls back to github.token", () => {
