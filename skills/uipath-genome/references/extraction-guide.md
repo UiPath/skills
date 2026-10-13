@@ -155,7 +155,7 @@ Write the **process genome first** (when applicable), then each **component geno
 
 ### Step 6b — Complete the Source Map as the migration contract
 
-Fill every row [genome-format-guide.md § Source Map](genome-format-guide.md) lists: framework, export root path and identity, the step table of every component genome (each step's source objects, the data sets its own objects read, its captures), checkpoints per step of a test component (source guide's § Evidence says which step kinds count), inventory counts. The call graph of Step 4 gives the source objects; a caller, and a callee that is a step of its own, go to the step's Notes. Nothing is written beside the genome.
+Fill every row [genome-format-guide.md § Source Map](genome-format-guide.md) lists: framework, export root path and identity, the step table of every component genome (each step's source objects, the data sets its own objects read, its captures), checkpoints per step of a test component and of every library step a test component calls (source guide's § Evidence says which step kinds count), inventory counts. The call graph of Step 4 gives the source objects; a caller, and a callee that is a step of its own, go to the step's Notes. Nothing is written beside the genome.
 
 Check the genome before offering edits. Run the source guide's inventory into a scratch folder **outside the genome's folder** (a temp directory, or one deleted after the check), then:
 
