@@ -10,19 +10,25 @@ run-name: Optimize skill · ${{ inputs.skill }} · @${{ github.triggering_actor 
 # skills with `windows`-tagged tasks, picked by the pipeline — multi-hour, Key Vault
 # secrets); this workflow only checks who is asking and queues it.
 #
-# Who can run it: a user listed as a CODEOWNER of skills/<skill>/, or one of
-# OPTIMIZER_MAINTAINERS below. Team owners (@org/team) are NOT self-serve: github.token cannot
-# read team membership, so the check cannot verify them and fails closed, naming whom to ask
-# (the skill's user owners or a maintainer). The check is the person who STARTED this run
-# (github.triggering_actor), so a re-run is checked against whoever re-runs it.
+# Who can run it: a CODEOWNER of skills/<skill>/ — a listed user, or an active member of a
+# listed team — or one of OPTIMIZER_MAINTAINERS below. The check is the person who STARTED
+# this run (github.triggering_actor), so a re-run is checked against whoever re-runs it.
+# github.token cannot read team membership (GitHub answers 404 for "not a member" and for
+# "may not look"), so team owners are verified with a short-lived token of the membership
+# GitHub App (org permission Members: read, nothing else), minted below from the
+# `optimize-skill` environment's OPTIMIZER_TEAM_APP_PRIVATE_KEY secret and the
+# OPTIMIZER_TEAM_APP_CLIENT_ID variable. Without them the check falls back to github.token:
+# listed users and maintainers still pass; team owners fail closed, naming whom to ask.
 #
-# Credential: no stored secret. The job's GitHub OIDC token is exchanged for an Entra token
-# of an app registration whose federated credential trusts ONLY this repo's main branch
-# (subject repo:UiPath/skills:ref:refs/heads/main), and whose service principal may only
-# queue that one ADO pipeline. The tenant and client ids below are identifiers, not secrets.
-# Changes that alter the OIDC subject break the exchange until the Entra federated credential
-# is updated in step: adding `environment:` to the job, moving it into a reusable workflow, or
-# changing the org's OIDC subject template. Moving the ADO pipeline changes ADO_PIPELINE_ID
+# Credential: the job runs in the `optimize-skill` environment (deployment branches: main
+# only). Its GitHub OIDC token is exchanged for an Entra token of an app registration whose
+# federated credential trusts ONLY that environment (subject
+# repo:UiPath/skills:environment:optimize-skill), so no other job — on main or elsewhere —
+# can redeem it; its service principal may only queue that one ADO pipeline. The tenant and
+# client ids below are identifiers, not secrets. Changes that alter the OIDC subject break
+# the exchange until the Entra federated credential is updated in step: renaming or removing
+# the environment, moving the job into a reusable workflow, or changing the org's OIDC
+# subject template. Moving the ADO pipeline changes ADO_PIPELINE_ID
 # and the service principal's queue grant. To stop the workflow: gh workflow disable optimize-skill.yml
 #
 # Contract: the template parameters queued below (skill, effort, optimizeDescription,
@@ -80,6 +86,11 @@ jobs:
     name: Queue the optimizer
     runs-on: uipath-ubuntu-latest
     timeout-minutes: 10
+    # Pins the OIDC subject to repo:UiPath/skills:environment:optimize-skill, the only subject
+    # the Entra federated credential trusts; the environment's branch policy admits main only.
+    environment: optimize-skill
+    env:
+      HAS_TEAM_APP: ${{ secrets.OPTIMIZER_TEAM_APP_PRIVATE_KEY != '' && vars.OPTIMIZER_TEAM_APP_CLIENT_ID != '' }}
     # Serializes only this seconds-long queue job. Duplicate multi-hour runs are refused below
     # (an unfinished ADO run or an open optimizer PR for the skill), and the ADO run itself
     # refuses to start while a skillreducer-<skill> PR is open.
@@ -131,11 +142,22 @@ jobs:
         with:
           node-version: '22.x'
 
+      # Read-only, org-members-only token so team owners can be verified; never used elsewhere.
+      - name: Team-membership token
+        id: team-app
+        if: env.HAS_TEAM_APP == 'true'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510  # v3.3.0
+        with:
+          client-id: ${{ vars.OPTIMIZER_TEAM_APP_CLIENT_ID }}
+          private-key: ${{ secrets.OPTIMIZER_TEAM_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          permission-members: read
+
       - name: Check that you own the skill
         env:
           SKILL: ${{ inputs.skill }}
           ACTOR: ${{ github.triggering_actor }}
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.team-app.outputs.token || github.token }}
           ALSO_ALLOWED: ${{ env.OPTIMIZER_MAINTAINERS }}
         run: node .github/workflows/scripts/codeowners-check.mjs CODEOWNERS "$SKILL" "$ACTOR"
 
@@ -147,14 +169,19 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          resp=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
-                   "https://api.github.com/repos/$REPO/pulls?state=open&per_page=100")
-          code=${resp##*$'\n'}; resp=${resp%$'\n'*}
-          if [ "$code" != 200 ]; then
-            echo "::warning::could not list open PRs (HTTP $code); the ADO run will still refuse if one is open"; exit 0
-          fi
-          open=$(jq -r --arg p "skillreducer-$SKILL" \
-                   '[.[] | select(.head.ref == $p or (.head.ref | startswith($p + "-"))) | .html_url] | first // empty' <<<"$resp")
+          # every page: the repo has more open PRs than one page of 100 holds
+          open=""
+          for page in $(seq 1 20); do
+            resp=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+                     "https://api.github.com/repos/$REPO/pulls?state=open&per_page=100&page=$page")
+            code=${resp##*$'\n'}; resp=${resp%$'\n'*}
+            if [ "$code" != 200 ]; then
+              echo "::warning::could not list open PRs (HTTP $code); the ADO run will still refuse if one is open"; exit 0
+            fi
+            open=$(jq -r --arg p "skillreducer-$SKILL" \
+                     '[.[] | select(.head.ref == $p or (.head.ref | startswith($p + "-"))) | .html_url] | first // empty' <<<"$resp")
+            [ -z "$open" ] && [ "$(jq length <<<"$resp")" = 100 ] || break
+          done
           if [ -n "$open" ]; then
             echo "::error::an optimization PR for $SKILL is already open ($open) — merge or close it first"; exit 1
           fi

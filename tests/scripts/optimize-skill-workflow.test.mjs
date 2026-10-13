@@ -138,3 +138,32 @@ test("the workflow names no Windows skill (the `windows` task tag decides, not a
 test("README points skill owners at the workflow", () => {
   assert.match(README, /actions\/workflows\/optimize-skill\.yml/);
 });
+
+// ---- the environment and the team-membership token ----
+
+test("the queue job runs in the optimize-skill environment (the OIDC subject Entra trusts)", () => {
+  assert.match(YML.slice(YML.indexOf("\n  queue:\n")), /^ {4}environment: optimize-skill$/m);
+});
+
+test("the membership token is pinned, optional, and can only read org members", () => {
+  const app = steps().find((s) => s.name === "Team-membership token");
+  assert.ok(app, "no 'Team-membership token' step");
+  assert.match(app.text, /uses: actions\/create-github-app-token@[0-9a-f]{40}\s/);
+  assert.match(app.text, /if: env\.HAS_TEAM_APP == 'true'/);
+  const perms = [...app.text.matchAll(/^\s+(permission-[a-z-]+): (\S+)/gm)].map((m) => `${m[1]}: ${m[2]}`);
+  assert.deepEqual(perms, ["permission-members: read"]);
+});
+
+test("the membership token reaches only the ownership check, which falls back to github.token", () => {
+  const own = indexOf((s) => s.name === "Check that you own the skill", "'Check that you own the skill'");
+  const app = indexOf((s) => s.name === "Team-membership token", "'Team-membership token'");
+  assert.ok(app < own);
+  assert.match(steps()[own].text, /GH_TOKEN: \$\{\{ steps\.team-app\.outputs\.token \|\| github\.token \}\}/);
+  assert.equal(YML.match(/steps\.team-app\.outputs\.token/g)?.length, 1, "the membership token is used outside the ownership check");
+});
+
+test("the open-PR guard reads every page of open PRs, not just the first 100", () => {
+  const guard = steps().find((s) => s.name === "Refuse while an optimizer PR for the skill is open").text;
+  assert.match(guard, /per_page=100&page=\$page/);
+  assert.match(guard, /for page in /);
+});
