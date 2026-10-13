@@ -33,6 +33,7 @@ Publish the packages first, then deploy them to the folder.
 - [ ] Deploy **`<package or solution>`** version `<version>` to the folder `<folder>`.
   - A solution deployment also creates the queues and assets the solution declares. The sections below then check their settings and fill in their values.
 - [ ] Pack **`<project>`** with the analyzer rule `<rule>` ignored, as the build did: <why the project breaches it>. A governance policy that disables the rule replaces this step. <Only when the build accepted an analyzer error.>
+- [ ] Mark the test cases of **`<project>`** Publishable in Studio, then pack it: a test package carries only Publishable test cases. <Only when the build left them in progress.>
 
 ## Queues
 Create each queue in the folder. After a solution deployment, check that the queue the deployment created has these settings.
@@ -73,6 +74,7 @@ Create each entity from its JSON definition below: save it as a file and run `ui
   ```
 - [ ] Load the records of `<project>/TestData/<Entity>.json` into **`<Entity>`** with `uip df records insert <entity-id> --file <file>`, in batches the command accepts.
   - Data sets with no records yet: `<names>`. Their test cases show as failed in Test Manager until a record is added.
+- [ ] Create every entity with exactly the name and fields of its definition above: the package reaches its entities by name in the tenant it runs in, so it needs no change. To edit the project in Studio against this tenant, first update its Data Fabric entities from this tenant, keeping the namespace **`<namespace>`**. <Only when this tenant is not the build tenant `<build tenant>`.>
 
 ## Test Manager
 Create the Test Manager project and its test cases, then link each test case to its automation in the published package.
@@ -98,6 +100,8 @@ Setup outside UiPath that the robot machines and the network need.
   - `<host>`: <what the automation uses it for>
   - `<host>:<port>`: <what the automation uses it for>
 - [ ] Install `<application>` on the robot machines and sign it in with `<account>`.
+- [ ] Use robots that can run this project: <Windows unattended or testing robots on a machine template in the folder; a Windows project does not run on serverless robots>, with a Robot that supports `dotNetVersion` `<version>`. <Only for a Windows project, or a target whose robots are older than the build's Studio.>
+- [ ] Make sure the package feeds of this tenant carry the project's dependencies: `<package>` `<version>`, …. <Only for a dependency outside the official feed, or newer than the target's feeds carry.>
 - [ ] Install the UiPath extension in `<browser>` on the robot machines and allow it to run in incognito mode. <Only when the automation opens the browser in incognito.>
 
 ## Triggers
@@ -113,7 +117,7 @@ Create the triggers last: once a trigger is on, the automation starts running.
 Rules:
 
 1. **Write for the person who sets up the environment.** Full sentences, one step per checkbox, each detail on its own line, names in backticks, the section's opening line saying what to do. No shorthand, no symbols standing in for words, no internal vocabulary (genome section names, split options, step numbers); where the template offers alternatives in angle brackets, write only the one that applies. An agent with the proper tooling follows the same file.
-2. **Assets are one block per asset, credentials included.** The block's type is the Orchestrator asset type. A setting gives the value this build used, as a reference to set per environment. A credential gives its username; the password never appears in an open-items file. Description is the text to enter as the asset's description in Orchestrator, taken from the Configuration Question or Platform Dependencies row the asset came from.
+2. **Assets are one block per asset, credentials included.** The block's type is the Orchestrator asset type. A setting gives the value this build used, as a reference to set per environment. A credential gives its username exactly as the source or the configuration answers spell it, never built from the asset's name or from a domain other accounts share; an account the source does not spell out in full is written as far as it is known and listed as a question. The password never appears in an open-items file. Description is the text to enter as the asset's description in Orchestrator, taken from the Configuration Question or Platform Dependencies row the asset came from.
 3. **Queues carry the settings the genome implies:** the unique-reference rule and retry count from the Transactional Shape's outcomes and the split answer. Under a solution deployment the deploy creates the declared queue, and the step checks its settings.
 4. **A Data Fabric entity is one JSON definition, in the file format `uip df entities create --file` accepts.** Take that format from the CLI (`uip df entities create --help`), never from memory, and build the definition from the entity's fields in Platform Dependencies. The engineer can then create the entity from the file as it is. Robot access is read, or read and write where a process writes the entity's records. An entity that holds test data ([source-migration-guide.md § Test data](source-migration-guide.md)) gets the load of its seed file, and the data sets with no records name the test cases that fail until testers add them.
 5. **Triggers come from the split and trigger answers:** type, schedule or queue, and runner count per process.
