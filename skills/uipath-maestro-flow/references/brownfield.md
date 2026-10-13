@@ -107,9 +107,8 @@ reader pinned lower refuses the file; `SCHEMA_VERSION_BELOW_FLOOR`: every reader
 migrates it forward on open). Changing versions is `uip maestro flow migrate`'s
 job, not an edit to this call.
 
-Five findings the source cannot carry are printed on stderr as
-`flow-decompile: warning: …` (and `--strict` turns every one but the second
-into an error):
+These findings the source cannot carry are printed on stderr as
+`flow-decompile: warning: …`, and `--strict` turns each into an error:
 
 - A node **no trigger reaches** — no edge leads to it, as when a designer or
   `node add` left it unconnected. The builder has no detached-node construct,
