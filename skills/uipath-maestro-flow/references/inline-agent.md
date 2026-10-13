@@ -57,7 +57,8 @@ uip solution resources list --kind Index --source remote --search "<index-name>"
 ```
 
 Maps onto the signature as `Key` → `id`, `Name` → `name`, `Folder` → `folderPath`, `FolderKey` → `folderKey`.
-Give `folderPath`: the emitted resource carries no index id, so the folder is half of how the runtime finds the index.
+`id` is the index's GUID (`Key`): it is the tail of the resource node's type. `check` reports `AGENT_CONTEXT_NO_ID` for a blank or non-GUID `id`, and compile refuses it even with `--no-check`.
+Give `folderPath`: the resource file carries no index id, so the type and the folder together locate the index.
 
 Local execution has no semantic retrieval service, so an inline-agent answer is ungrounded even when the resource wiring is present.
 Platform evidence must establish that the intended index was used and that its retrieved knowledge influenced the answer.
