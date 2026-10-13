@@ -72,7 +72,7 @@ names it, never before the source exists:
 ```bash
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source
 # run each prepare the check names, with the exact command it prints:
-uip maestro registry prepare <key> <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
+uip maestro registry prepare <key> --action <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source    # re-check until clean
 uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow
 uip maestro flow validate <Name>.flow --output json
@@ -112,7 +112,8 @@ detail a runtime-evidence bar needs.
 
 The JSON envelope has top-level `Result`; a successful validation also reports
 `Data.Status: "Valid"` and may carry `Data.Warnings`. Treat warnings as failures
-except for the reviewed shared-connection advisory. Preserve any exception's
+except for the reviewed shared-connection advisory and the `err()` read
+diagnostics in [`error-handling.md`](error-handling.md#reading-the-failure). Preserve any exception's
 exact code/text and rationale instead of broadening an allowlist.
 
 ### Bounded completion
@@ -248,13 +249,15 @@ when PIMS returns none or the fetch fails), and `--output-filter` projects
 failure `Data` too, so add `incidents:incidents` to the projection to keep
 them. If `Data.incidents` is missing, fetch incidents with the separate
 `debug-instance incidents` call below, keyed by the `instanceId` you just read.
+With `variablesError`, the outputs are unknown, not empty: read them with
+`uip maestro flow debug-instance variables <instanceId>`.
 
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
 
 ```bash
-( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
-( cd <Solution> && uip maestro flow debug <Name> --log-level error \
+( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
+( cd "<Solution>" && uip maestro flow debug <Name> --log-level error \
   --inputs @inputs.json \
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>,incidents:incidents}" \
   --output json )
