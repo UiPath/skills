@@ -159,7 +159,7 @@ success_criteria:
 
   - type: command_not_executed
     description: "Agent never ran or validated the source project"
-    command_pattern: 'uip\s+rpa\s+(?:run|validate)\b(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--project-dir\s+"?[^"\s]*[\\/]StaffDirectoryAudit"?(?:\s|$))'
+    command_pattern: 'uip\s+rpa\s+(?:run|validate)\b(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--project-dir\s+["'']?[^"''\s]*[\\/]StaffDirectoryAudit["'']?(?:\s|$))'
     weight: 1.0
     pass_threshold: 1.0
 
