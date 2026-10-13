@@ -76,30 +76,6 @@ edit. It lets merge distinguish authored changes from reconstructed content;
 without it, merge falls back to taking the compiled graph wholesale, including
 layout.
 
-## Merge warnings: what the round trip changed
-
-With `--baseline`, merge also compares the baseline (the round trip with no
-edit) against the original. Each place they differ is a change the merged file
-gets although you did not make it, and merge prints it as
-`flow-merge: warning: the round trip …`. For example:
-
-```
-flow-merge: warning: the round trip rewires logFailure1@success from forEachItem1@continue to callApi1ErrorEnd@input; merge will write the new target.
-flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves handle "case-case_1", which node "route1" (core.logic.switch) does not declare …
-```
-
-- Each warning names a change you did not author: a node or edge added,
-  dropped or rewired, a switch case id or human-task outcome id renamed, or a
-  binding row added or duplicated. Check the candidate's behaviour at that spot
-  before it replaces the canonical file. A warning about a merged edge's handle
-  means `validate` will refuse the candidate.
-- `the round trip appends End "<id>" after …` is the one benign line: compile
-  adds an End where the original path just stops. It does not change behaviour.
-- Pass `--strict` to make merge refuse (exit 1, no file written) instead of
-  warning. The benign End line never refuses. `--strict` needs `--baseline`.
-  Through `uip`, the flag needs a CLI release that forwards it; `npx flow-sdk
-  flow merge … --strict` works with any SDK that has it.
-
 Decompile reconstructs branch, switch, loop, parallel, error/ref, and
 subflow structure. It preserves original node ids so merge can reattach them.
 Every family the SDK can AUTHOR is reconstructed through its own factory —
@@ -119,6 +95,37 @@ placeholder node (`core.logic.mock`). The one case that still degrades is a node
 whose definition is MISSING from the file — nothing can carry it, so it lowers
 to `mock() /* TODO: unsupported node type … */`; leave that node untouched and
 merge restores the original.
+
+## Merge warnings: what the round trip changed
+
+Merge prints `flow-merge: warning: …` for each change the merged file gets
+although you did not make it. With `--baseline` it also compares the baseline
+(the round trip with no edit) with the original. For example:
+
+```
+flow-merge: warning: the round trip rewires logFailure1@success from forEachItem1@continue to callApi1ErrorEnd@input; merge will write the new target.
+flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves handle "case-case_1", which node "route1" (core.logic.switch) does not declare …
+```
+
+- Each warning names a change you did not author: a node or edge added,
+  dropped or rewired, a node's type changed, a switch case id or human-task
+  outcome id renamed, or a binding row added, dropped or duplicated. If the
+  spot is one you did not mean to change, do not copy the candidate over the
+  canonical file; fix the `.flow.ts` there and merge again. A warning about a
+  merged edge's handle means `validate` will refuse the candidate.
+- `the round trip appends End "<id>" after …` is the one benign line: compile
+  adds an End where the original path just stops. It does not change behaviour.
+- Pass `--strict` to make merge refuse (exit 1, no file written) instead of
+  warning. The benign End line never refuses. `--strict` needs `--baseline`,
+  so use it in [the hand loop](#the-same-loop-by-hand); the generated
+  pipeline does not pass it. If `uip maestro flow merge` rejects `--strict`,
+  your CLI does not forward it yet; run the same merge through the globally
+  installed SDK's `flow-sdk` bin instead:
+
+  ```bash
+  flow-sdk flow merge .flow-sdk/Deployed.edited.flow --original Deployed.flow \
+    -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/Deployed.baseline.flow --strict
+  ```
 
 ## The file's schema version comes back out
 
