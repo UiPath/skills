@@ -169,8 +169,8 @@ Require y. Halt on anything else.
      --output json
    ```
 
-   The CLI flag is `--product-name`, NOT `--product` — `--product` belongs to `synthesize-formdata.mjs` (Step 1) and the CLI rejects it (`required option '--product-name <product-name>' not specified`). The policy data goes in `--input`; there is no `--form-data` flag. The new policy UUID is `Data.Identifier` in the response.
-7. On failure or skip → log product as `skipped`, continue to next product. A product whose `create` failed has no policy UUID: never report it as configured.
+   Use `--product-name`, not `--product` (that is `synthesize-formdata.mjs`'s flag). No `--form-data`: data goes in `--input`. New policy UUID: `Data.Identifier`.
+7. On a `create` 4xx → halt per [Error handling](#error-handling): report the error verbatim, do not retry, and never report the product as configured. On skip → log the product as `skipped` and continue to the next product.
 
 **Collect all policy UUIDs** from successful creates before proceeding to Step 5.
 
