@@ -43,17 +43,17 @@ The runtime caps every TTL at 48 h.
 |---|---|
 | `ttl` | seconds; required |
 | `key` | names the entry instead of the request, so two different calls share it. Up to 512 characters |
-| `varyHeaders` | request header names whose values change the answer (at most 16). Ignored with `key` |
+| `keyHeaders` | request header names whose values change the answer (at most 16). Ignored with `key` |
 | `refresh` | `true` skips the read, calls the vendor, and replaces the entry |
 
 The runtime builds the key, scoped to the tenant and the connection. Without `key`,
 the entry is the request itself: method, full URL with its query, the named
-`varyHeaders`, and for a POST the `Content-Type` and body. So:
+`keyHeaders`, and for a POST the `Content-Type` and body. So:
 
 - **a list's cursor or offset belongs in `query`**: each page is its own entry,
   which is what one-page-per-invocation wants;
 - **a header that changes the answer** (`Accept-Language`, an API-version header)
-  goes in `varyHeaders`, or two variants share one entry.
+  goes in `keyHeaders`, or two variants share one entry.
 
 Not stored: a non-2xx answer, a `Set-Cookie` or `Cache-Control: no-store`
 response, a streamed download, a body over 8 MiB. A POST body over 64 KiB, or one

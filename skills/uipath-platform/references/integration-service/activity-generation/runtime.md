@@ -64,7 +64,7 @@ intsvc.http({ method, url, query?, headers?, body?, cache? })   // → { status,
 | `query` | `{ k: v }` — serialized for you; prefer it over hand-encoding |
 | `headers` | `{ name: value }` or `[{ name, value }]` (ordered, duplicates preserved) |
 | `body` | an object is sent as JSON; a string is sent as its UTF-8 bytes |
-| `cache` | `{ ttl, key?, varyHeaders?, refresh? }` — serve this call from the runtime's vendor-call cache. Reads only; ignored where there is no cache. See [caching.md](caching.md) |
+| `cache` | `{ ttl, key?, keyHeaders?, refresh? }` — serve this call from the runtime's vendor-call cache. Reads only; ignored where there is no cache. See [caching.md](caching.md) |
 
 | response field | rule |
 |---|---|
