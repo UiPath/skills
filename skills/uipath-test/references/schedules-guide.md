@@ -3,42 +3,32 @@
 A test set can run on a cadence. The surface is `create`, `update`, `list`,
 `next-runs`, `enable`, `disable`, `delete` — run each with `--help` for its
 flags. Everything is project-scoped (`--project-key`/`--project-id`) and takes
-`--output json` (Critical Rule 2). This guide covers only what `--help` cannot:
-the cron/recurrence translation and the cross-call gotchas.
+`--output json` (Critical Rule 2). You already know how to write cron; this
+guide covers only what `--help` cannot and what Unix-cron instinct gets wrong.
 
-## The cron is not Unix cron — translate it
+## The cron is Quartz, not Unix
 
-`--cron` is **6 or 7 fields starting with seconds**, and exactly one of
-day-of-month / day-of-week must be `?`. A five-field Unix expression is not a
-cadence Test Manager can run: the server accepts it (its validators only
-int-parse the first field) and then fails inside the scheduler as an opaque
-500, so the CLI refuses it first.
+`--cron` is **6 or 7 fields starting with SECONDS**, and exactly one of
+day-of-month / day-of-week must be `?` (the other carries the value). A
+five-field Unix expression is not a cadence Test Manager can run: the server
+accepts it (its validators only int-parse the first field) and then fails
+inside the scheduler as an opaque 500, so the CLI refuses it first. So a daily
+run is `… 1/1 * ? *` and a weekly run puts the days in day-of-week with `?` in
+day-of-month (e.g. `0 0 9 ? * MON,THU *`).
 
-| Cadence | `--cron` |
-|---|---|
-| Daily at 02:00 | `0 0 2 1/1 * ? *` |
-| Daily at 15:30 | `0 30 15 1/1 * ? *` |
-| Every 2 days at 02:00 | `0 0 2 1/2 * ? *` |
-| Weekly, Mon & Thu at 09:00 | `0 0 9 ? * MON,THU *` |
-| Once, 12 Oct 2030 06:30 | `0 30 6 12 10 ? 2030` |
+## `--cron-details` is a required JSON object, matched to the cron
 
-## `--cron-details` is a JSON object, matched to the cron
+Not a label — a JSON **object** ≤255 chars, required for **every** recurrence
+type (the column is `NOT NULL`; omitting it is a 500). The UI rehydrates it with
+an unguarded `JSON.parse`, so a scalar or empty string stores a schedule nobody
+can open in the product. The object's `type` enum must agree with the cron:
 
-Required for **every** recurrence type (the column is `NOT NULL`; omitting it is
-a 500). It must be a JSON object ≤255 chars — the UI rehydrates it with an
-unguarded `JSON.parse`, so a scalar or empty string stores a schedule nobody can
-open in the product.
-
-| Cadence | `--cron-details` |
-|---|---|
-| Daily at 02:00 | `{"type":4,"daily":{"atHour":2,"atMinute":0,"frequencyIndays":1}}` |
-| One-off | `{"type":1}` |
-| Weekly (Mon & Thu) | `{"type":3,"weekly":{"atHour":9,"atMinute":0,"days":["Monday","Thursday"]}}` |
-
-`type` 4 (daily) requires `daily.frequencyIndays` to be `1`. **Weekly is
-`type` 3**: `weekly.days` takes full English day names, and the cron's
-day-of-week field carries the same days as 3-letter codes (`MON,THU`) with `?`
-in day-of-month.
+- **`type` 1** — one-off: `{"type":1}`.
+- **`type` 3** — weekly: `weekly.days` takes full English day names
+  (`["Monday","Thursday"]`), and those same days appear in the cron's
+  day-of-week field as 3-letter codes.
+- **`type` 4** — daily: `daily.frequencyIndays` must be `1`
+  (`{"type":4,"daily":{"atHour":2,"atMinute":0,"frequencyIndays":1}}`).
 
 ## Times are wall-clock, not instants
 

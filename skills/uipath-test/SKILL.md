@@ -49,7 +49,7 @@ Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcom
 ### Test set schedules
 
 - Verbs (`--help` for flags): `uip tm schedules create|update|list|next-runs|enable|disable|delete`. `list` is the only read — no get by id — so recover values there before `update`, which replaces the **whole** definition (pass every flag you want kept; it cannot change the enabled state — use `enable`/`disable`). `delete` and `--all` need `--yes`.
-- `--cron` is **6 or 7 fields starting with seconds**, not Unix cron (daily at 02:00 is `0 0 2 1/1 * ? *`; the CLI refuses a five-field expression client-side). `--cron-details` is the recurrence JSON and is **required for every recurrence type**. `--start-time`/`--disable-time` are wall-clock `YYYY-MM-DDTHH:mm` read in `--timezone` — seconds or a `Z` are refused. Pass `next-runs` the ids `list` prints — the endpoint underneath is keyed by a different GUID and answers `200` with an empty list for a bad id. Cron/recurrence tables and gotchas: [references/schedules-guide.md](references/schedules-guide.md).
+- `--cron` is **6 or 7 fields starting with seconds**, not Unix cron (daily at 02:00 is `0 0 2 1/1 * ? *`; the CLI refuses a five-field expression client-side). `--cron-details` is the recurrence JSON and is **required for every recurrence type**. `--start-time`/`--disable-time` are wall-clock `YYYY-MM-DDTHH:mm` read in `--timezone` — seconds or a `Z` are refused. Pass `next-runs` the ids `list` prints — the endpoint underneath is keyed by a different GUID and answers `200` with an empty list for a bad id. Cron/recurrence rules and gotchas: [references/schedules-guide.md](references/schedules-guide.md).
 
 ### Logs, reports, attachments, and results
 

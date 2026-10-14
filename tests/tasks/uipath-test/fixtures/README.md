@@ -28,7 +28,7 @@ and therefore exact for this scheme.
 | `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
-| `schedule_freeze_window_integration` | CLAIM | `EVFX-SCHED-SET`, `EVFX-SCHED-TC{1,2}`, and the `EVFX-SCHED-*` **schedule** namespace | Set and cases only — **no schedules seeded**. The agent creates three per-run stamped schedules `EVFX-SCHED-<STAMP>-{NIGHTLY,KEEP,TEMP}`, leaves NIGHTLY live, pauses KEEP, deletes TEMP; `pre_run` sweeps only earlier-day `EVFX-SCHED-` rows |
+| `schedule_lifecycle_e2e` | CLAIM | `EVFX-SCHEDLC-SET`, `EVFX-SCHEDLC-TC1`, and the `EVFX-SCHEDLC-*` **schedule** namespace | Set and one case only — **no schedules seeded**. The agent creates ONE per-run stamped schedule `EVFX-SCHEDLC-<STAMP>` and walks its whole life (create weekly Mon+Thu → next-runs → update to 03:00 → disable → enable → delete); `pre_run` sweeps only earlier-day `EVFX-SCHEDLC-` rows and writes the fixture set id to `.schedlc_setid` for the stored-state graders |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
@@ -107,14 +107,21 @@ accretes: `execution_rerun` repairs one execution rather than appending,
 `junit_export` and `release_readiness` seed once, `flaky` appends only to
 restore intermittency, and `organize` sweeps its own scratch.
 
-`schedule_freeze_window_integration` adds `EVFX-SCHED-SET` and its two cases.
-It seeds **no schedules**: the agent creates all three itself, each stamped with
-the run's date and role (`EVFX-SCHED-<STAMP>-{NIGHTLY,KEEP,TEMP}`), so there is
-no fixed-name schedule for a concurrent variant run to collide on. `pre_run`
-sweeps only *earlier-day* `EVFX-SCHED-` schedules — the trailing dash keeps it
-off the WK/LC/SMOKE siblings, and sparing today's stamp lets two models run the
-nightly at once. Each outcome is graded on the agent's own emitted command, so a
-per-run-isolated grade needs no reseeded pre-state.
+`schedule_lifecycle_e2e` adds `EVFX-SCHEDLC-SET` and its one case. It seeds **no
+schedules**: the agent creates one itself, stamped with the run's date
+(`EVFX-SCHEDLC-<STAMP>`), so there is no fixed-name schedule for a concurrent
+variant run to collide on. `pre_run` sweeps only *earlier-day* `EVFX-SCHEDLC-`
+schedules — sparing today's stamp lets two models run the nightly at once — and
+writes the fixture set id to `.schedlc_setid` in the sandbox cwd. Correctness is
+graded on the **stored state** of the agent's own schedule: it snapshots its real
+server-side row to `schedule-paused.json` (after disable) and `schedule-live.json`
+(after enable), and the graders read those back plus live Test Manager to assert
+the Mon+Thu 03:00 cadence, the disabled→enabled transition, and final deletion —
+each scoped to the agent's stamp/id, so the grade is per-run isolated without a
+reseeded pre-state. The `command_executed` checks are advisory only.
+
+`schedule_list_smoke` is the one remaining read-only smoke; it seeds and asserts
+a single enabled `EVFX-SCHEDSMOKE-DAILY` schedule so the list is never empty.
 
 ## Why
 

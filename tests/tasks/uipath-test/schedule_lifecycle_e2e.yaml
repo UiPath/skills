@@ -1,19 +1,33 @@
 task_id: skill-test-schedule-lifecycle-e2e
 description: >
-  End-to-end lifecycle of one test set schedule through `uip tm schedules`:
-  create a cadence, confirm when it next fires, change its definition, pause it,
-  switch it back on, and finally remove it. Uniquely exercises `update` (a whole
-  -definition replace, not a patch — anything omitted reverts, and the enabled
-  state is the one field it cannot change) and the `enable` verb, which the other
-  schedule tasks do not cover. The prompt states the business steps and the
-  cadence in words; the cron shape (six/seven Quartz fields starting with
-  seconds), the required `--cron-details` JSON, the wall-clock format and
-  --output json are left to the skill.
+  The one comprehensive end-to-end for `uip tm schedules`: a single schedule
+  walked through its whole life, exercising most of the command surface in one
+  realistic flow — create, list, next-runs, update, disable, enable, delete.
+
+  The hard parts, all in one run:
+  - the HARDEST cron (a weekly Mon+Thu cadence in a non-UTC timezone): `--cron`
+    is six/seven Quartz fields STARTING WITH SECONDS, with `?` in day-of-month,
+    and weekly is `--cron-details` `type` 3 — a five-field Unix guess or a daily
+    guess fails the stored-state check below;
+  - `update` as a WHOLE-DEFINITION replace (change the hour to 03:00 and the
+    whole weekly definition must be re-sent, or Mon+Thu reverts), and the rule
+    that `update` CANNOT change the enabled state (only `enable`/`disable` can);
+  - the `enable` verb and the disable→enable transition.
+
+  Correctness is graded on the STORED state of the agent's OWN schedule, not on
+  verb presence. In `pre_run` the fixture set id is written to `.schedlc_setid`
+  in the sandbox cwd; the agent snapshots its schedule's real server-side row to
+  `schedule-paused.json` (after disable) and `schedule-live.json` (after enable),
+  and the graders read those back plus live Test Manager to assert the specific
+  cadence (Mon+Thu, 03:00), the disabled→enabled transition, and final deletion
+  — all scoped to the agent's today-stamped schedule and its own id, so a
+  concurrent variant's row can never satisfy them. The `command_executed` checks
+  are advisory only (`pass_threshold` 0): an agent that wraps the calls in python
+  or uses a valid alternate still passes on stored state.
 
   Concurrency: two model variants share the CLAIM project, so the schedule name
-  is per-run stamped and every lifecycle step is graded on the agent's own
-  emitted command (per-run isolated) — including the terminal delete — rather
-  than on a fixed-name post-state row a concurrent run would collide with.
+  is per-run stamped and every stored-state assertion keys off the agent's own
+  stamp/id rather than a fixed-name row.
 tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:trigger]
 
 run_limits:
@@ -78,6 +92,9 @@ pre_run:
       if not ts:
           fail(f"could not create or find {SET}")
       set_key = pick(ts, "TestSetKey", "Key", "ObjKey")
+      set_id = ts.get("Id")
+      if not set_key or not set_id:
+          fail(f"{SET} has no key or id")
 
       keys = []
       for name in CASES:
@@ -103,26 +120,40 @@ pre_run:
       if stale:
           call("sched.clear", "tm", "schedules", "delete", "--project-key", P,
                "--schedule-ids", *stale, "--yes")
-      print(f"FIXTURE: ready set_key={set_key!r} swept={len(stale)}", flush=True)
+
+      # Per-run isolation (codex): hand the graders the exact fixture-set id by
+      # writing it into the sandbox cwd. pre_run and run_command criteria share
+      # this cwd, so the graders read it back without re-resolving the set, and
+      # scope every stored-state assertion to this set.
+      with open(".schedlc_setid", "w", encoding="utf-8") as fh:
+          fh.write(str(set_id))
+      print(f"FIXTURE: ready set_key={set_key!r} set_id={set_id!r} swept={len(stale)}", flush=True)
       EOF
 
 initial_prompt: |
   Walk a scheduled run through its whole life in my UiPath Test Manager project
-  CLAIM, on the "EVFX-SCHEDLC-SET" test set.
+  CLAIM, on the "EVFX-SCHEDLC-SET" test set. It runs in Bucharest time
+  (Europe/Bucharest).
 
   Name the schedule "EVFX-SCHEDLC-<STAMP>", where <STAMP> is the current UTC date
   and time as YYYYMMDD-HHMMSS plus 6 random lowercase hex characters you generate
   once for this session — another session may run at the same moment, so the
   random part keeps the schedule yours. Then:
 
-  1. Create it so it runs the set every day at 01:00 UTC, starting next week.
+  1. Create it so it runs that test set every Monday and Thursday at 01:00
+     Bucharest time, starting next Monday.
   2. Tell me when it is next due to fire.
-  3. We actually want it at 03:00 UTC instead — change it.
-  4. Put it on hold for now (don't delete it).
-  5. Then switch it back on.
-  6. We're done with it — remove it.
+  3. We actually want it at 03:00 Bucharest instead — change it. Keep it running
+     on Mondays and Thursdays; only the time moves.
+  4. Put it on hold for now (don't delete it). Right after you pause it, save a
+     record of the schedule's current server-side details — the exact JSON row
+     the CLI shows for that one schedule — to ./schedule-paused.json.
+  5. Then switch it back on. Right after you re-enable it, save its details again,
+     the same way, to ./schedule-live.json.
+  6. We're done with it — remove it. You have my approval to delete this schedule.
 
-  No need to check back with me between steps.
+  Those two JSON files are part of what I need, so don't skip them. No need to
+  check back with me between steps.
 
 success_criteria:
   - type: command_executed
@@ -133,54 +164,162 @@ success_criteria:
     weight: 0.5
     pass_threshold: 0
 
+  # --- Advisory command traces (pass_threshold 0): they signal the agent drove
+  # the surface, but correctness is graded on the STORED state below, so an agent
+  # that wraps a call in python or uses a valid alternate is not penalised here.
   - type: command_executed
-    description: "Created the schedule with --cron and --cron-details"
+    description: "Advisory: created the schedule with --cron and --cron-details"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+schedules\s+create\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--cron\s)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--cron-details\s)'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0
 
   - type: command_executed
-    description: "Asked when the schedule next fires"
+    description: "Advisory: asked when the schedule next fires"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+schedules\s+next-runs\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--schedule-ids\s+\S)'
     min_count: 1
-    weight: 1.0
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0
 
   - type: command_executed
-    description: "Updated the schedule definition"
+    description: "Advisory: updated the schedule definition"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+schedules\s+update\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--schedule-id\s+\S)'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0
 
   - type: command_executed
-    description: "Paused it with disable (not delete)"
+    description: "Advisory: paused it with disable (not delete)"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+schedules\s+disable\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--schedule-ids\s+\S)'
     min_count: 1
-    weight: 1.5
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0
 
   - type: command_executed
-    description: "Switched it back on with enable"
+    description: "Advisory: switched it back on with enable"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+schedules\s+enable\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--schedule-ids\s+\S)'
     min_count: 1
-    weight: 2.0
-    pass_threshold: 1.0
+    weight: 0.5
+    pass_threshold: 0
 
   - type: command_executed
-    # Terminal state graded on the agent's own delete (per-run isolated) instead
-    # of a fixed-name "gone at the end" post-state, which a concurrent variant's
-    # in-flight schedule of the same prefix would make ambiguous.
-    description: "Removed it at the end with delete --yes"
+    description: "Advisory: removed it at the end with delete --yes"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+schedules\s+delete\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--schedule-ids\s+\S)(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--yes\b)'
     min_count: 1
+    weight: 0.5
+    pass_threshold: 0
+
+  # --- PRIMARY, model-agnostic grade: the REAL stored row of the agent's OWN
+  # schedule, captured off live Test Manager at two points in its life. Asserts
+  # the hard cron got the weekly Mon+Thu cadence, that the whole-definition
+  # update moved it to 03:00 while KEEPING Mon+Thu (a patch mindset reverts the
+  # days), and the disabled→enabled transition — all scoped to the agent's
+  # today-stamped EVFX-SCHEDLC- schedule on the fixture set.
+  - type: run_command
+    description: "Stored state: the agent's today-stamped schedule carries the Mon+Thu 03:00 Bucharest weekly cadence and shows the disabled (paused) then enabled (live) transition"
+    command: |
+      python3 -c "
+      import json, datetime, sys
+      today = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d')
+      try:
+          setid = open('.schedlc_setid', encoding='utf-8').read().strip()
+      except Exception:
+          setid = ''
+
+      def load_row(path):
+          obj = json.load(open(path, encoding='utf-8'))
+          # Accept a bare row, a Data-wrapped list, or a bare list.
+          if isinstance(obj, dict) and 'Data' in obj:
+              obj = obj['Data']
+          cands = obj if isinstance(obj, list) else [obj]
+          for s in cands:
+              if not isinstance(s, dict):
+                  continue
+              nm = str(s.get('Name', ''))
+              if nm.startswith('EVFX-SCHEDLC-') and today in nm:
+                  return s
+          # single-object snapshot without a matching name still returned
+          return cands[0] if len(cands) == 1 and isinstance(cands[0], dict) else None
+
+      def cadence_ok(s):
+          cron = str(s.get('CronExpression') or '')
+          f = cron.split()
+          tz = str(s.get('Timezone') or s.get('TimeZone') or '')
+          if setid and str(s.get('TestSetId') or '') != setid:
+              return False, 'wrong test set'
+          if len(f) not in (6, 7) or '?' not in cron:
+              return False, f'not a 6/7-field Quartz cron: {cron!r}'
+          if 'Bucharest' not in tz:
+              return False, f'timezone not Bucharest: {tz!r}'
+          if f[2] != '3':
+              return False, f'hour is not 03:00: {cron!r}'
+          dow = f[5].upper()
+          parts = dow.replace(',', ' ').split()
+          has_mon = 'MON' in dow or '2' in parts
+          has_thu = 'THU' in dow or '5' in parts
+          if not (has_mon and has_thu):
+              return False, f'day-of-week is not Mon+Thu: {cron!r}'
+          if not str(s.get('CronDetails') or '').strip().startswith('{'):
+              return False, 'CronDetails is not a JSON object'
+          return True, 'ok'
+
+      def truthy(v):
+          return v in (True, 'true', 'True', 1, '1')
+
+      paused = load_row('schedule-paused.json')
+      live = load_row('schedule-live.json')
+      assert paused, 'no today-stamped EVFX-SCHEDLC- row in schedule-paused.json'
+      assert live, 'no today-stamped EVFX-SCHEDLC- row in schedule-live.json'
+
+      ok, why = cadence_ok(paused)
+      assert ok, f'paused snapshot cadence wrong: {why}'
+      ok, why = cadence_ok(live)
+      assert ok, f'live snapshot cadence wrong: {why}'
+
+      assert not truthy(paused.get('IsEnabled')), 'paused snapshot is not disabled (disable step did not take)'
+      assert truthy(live.get('IsEnabled')), 'live snapshot is not enabled (enable step did not take)'
+
+      pid, lid = str(paused.get('Id') or ''), str(live.get('Id') or '')
+      assert pid and pid == lid, f'the two snapshots are not the same schedule: {pid!r} vs {lid!r}'
+      "
+    timeout: 120
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  # --- Final deletion graded on live stored state, scoped to the agent's OWN
+  # schedule id (read from its own snapshot) — per-run isolated, so a concurrent
+  # variant's in-flight schedule of the same prefix cannot make this ambiguous.
+  - type: run_command
+    description: "Stored state: the agent's own schedule (by the id in schedule-live.json) is gone from Test Manager at the end"
+    command: |
+      python3 -c "
+      import json, subprocess, sys
+      obj = json.load(open('schedule-live.json', encoding='utf-8'))
+      if isinstance(obj, dict) and 'Data' in obj:
+          obj = obj['Data']
+      cands = obj if isinstance(obj, list) else [obj]
+      mine = next((s for s in cands if isinstance(s, dict)
+                   and str(s.get('Name','')).startswith('EVFX-SCHEDLC-')), cands[0] if cands else {})
+      sid = str(mine.get('Id') or '')
+      assert sid, 'no schedule id captured in schedule-live.json'
+
+      r = subprocess.run(['uip','tm','schedules','list','--project-key','CLAIM',
+                          '--limit','200','--output','json'],
+                         capture_output=True, text=True)
+      t = r.stdout or ''
+      data = json.loads(t[t.index('{'):]).get('Data') or [] if '{' in t else []
+      live_ids = {str(x.get('Id') or '') for x in data}
+      assert sid not in live_ids, f'schedule {sid} still exists; it was not deleted'
+      "
+    timeout: 120
+    expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
