@@ -9,9 +9,11 @@ preflight_ah.py and travel in `seed.json`.
 Scope is deliberately narrow: only processes whose NAME carries this run's token
 are touched, found through the CLI's own tenant-scoped search — never by id
 ranges, never on another tenant. Tasks with a fixed prompt and no seed (the
-command-shape smoke tasks) pass `--name "<exact process name>"` instead, which
-archives every not-yet-archived process with exactly that name; the flow's archive
-target is then read from the tenant. The policy mirrors uipath-maestro-case:
+command-shape smoke tasks) pass `--created` instead, which archives exactly the
+process ids that this run's successful `automations create` calls returned, read
+from the call recorder's log. A fixed name is shared by every concurrent run on
+the tenant, so it is never used to pick processes; the flow's archive target is
+then read from the tenant. The policy mirrors uipath-maestro-case:
 
 * ``AH_E2E_CLEANUP=always`` (default) — archive regardless of outcome. Use in CI.
 * ``AH_E2E_CLEANUP=never`` — leave everything for inspection in the AH UI.
@@ -21,6 +23,7 @@ Best-effort: post_run results are informational, so this always exits 0.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import sys
@@ -39,6 +42,8 @@ from ah_cli import (  # noqa: E402
 logging.basicConfig(level=logging.INFO, format="cleanup_ah: %(message)s")
 logger = logging.getLogger(__name__)
 
+CALL_LOG = os.path.join(".uip-recorder", ".calls.jsonl")
+
 
 def archive(processes: list[dict], phase: str, status: str) -> None:
     for process in processes:
@@ -49,23 +54,33 @@ def archive(processes: list[dict], phase: str, status: str) -> None:
             logger.warning("could not archive %s: %s", process["Id"], describe_failure(result))
 
 
-def archive_by_name(name: str) -> int:
+def created_ids(call_log: str = CALL_LOG) -> list[int]:
+    """Process ids returned by this run's successful `automations create` calls."""
+    if not os.path.exists(call_log):
+        return []
+    ids: list[int] = []
+    with open(call_log, encoding="utf-8") as handle:
+        for line in handle:
+            call = json.loads(line) if line.strip() else {}
+            args = call.get("args") or []
+            is_create = any(args[i:i + 2] == ["automations", "create"] for i in range(len(args) - 1))
+            if is_create and call.get("result") == "Success" and call.get("data_id") is not None:
+                ids.append(int(call["data_id"]))
+    return sorted(set(ids))
+
+
+def archive_created() -> int:
+    ids = created_ids()
+    if not ids:
+        logger.info("no successful create in %s; nothing to clean", CALL_LOG)
+        return 0
     flows = uip_json(["ah", "idea-flows", "list"])
     flow = business_process_flow(items(flows)) if succeeded(flows) else None
     target = archive_target(flow) if flow else None
     if not target:
-        logger.warning("no Business Process flow with an Archived status; cannot archive %r", name)
+        logger.warning("no Business Process flow with an Archived status; cannot archive %s", ids)
         return 0
-    listing = uip_json(["ah", "automations", "list", "--search", name, "--limit", "50"])
-    if not succeeded(listing):
-        logger.warning("search failed: %s", describe_failure(listing))
-        return 0
-    ours = [p for p in items(listing)
-            if str(p.get("Name", "")).strip() == name and str(p.get("PhaseStatus", "")).strip().lower() != "archived"]
-    if not ours:
-        logger.info("no live process named %r; nothing to clean", name)
-        return 0
-    archive(ours, *target)
+    archive([{"Id": process_id} for process_id in ids], *target)
     return 0
 
 
@@ -73,8 +88,8 @@ def main(argv: list[str]) -> int:
     if os.environ.get("AH_E2E_CLEANUP", "always").lower() == "never":
         logger.info("AH_E2E_CLEANUP=never; leaving this run's processes in place")
         return 0
-    if len(argv) == 2 and argv[0] == "--name":
-        return archive_by_name(argv[1])
+    if argv == ["--created"]:
+        return archive_created()
     return archive_this_run()
 
 
@@ -83,7 +98,6 @@ def archive_this_run() -> int:
         logger.info("no %s; nothing to clean", SEED_FILE)
         return 0
 
-    import json
     with open(SEED_FILE, encoding="utf-8") as handle:
         seed = json.load(handle) or {}
     token = seed.get("run_token")
