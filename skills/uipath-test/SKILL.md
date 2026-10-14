@@ -1,6 +1,6 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, cases, sets, executions; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, cases, sets, executions; performance (load) test scenarios; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
@@ -70,6 +70,15 @@ Project-scoped custom-field **definitions** (attach to Requirement/TestCase/Test
 ### Object labels
 
 Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet`, `TestExecution`, or `TestCaseLog`. Full list/get/add/remove surface, `--label-types`, and authoritative-set (`--remove-other-labels`) semantics: [references/object-labels-guide.md](references/object-labels-guide.md).
+
+### Performance (load) testing
+
+`uip tm perf-scenario` manages load-test scenarios; `uip tm perf-scenario --help` lists every verb. Flow: `create --project-key <PROJECT_KEY> --name <NAME>` → `load-groups add --scenario-key <SCENARIO_KEY> …` → `execute --scenario-key <SCENARIO_KEY>` (dry run by default; a full run needs `--execution-type performanceTesting` and a passing dry run from `list-dry-run-reports`) → `results get` / `report generate`.
+
+- Two different load-group ids. `load-groups update` / `remove` take the scenario's load-group id (from `get` or `load-groups add`). `load-groups get`, `jobs list`, `robot-logs list`, `http-errors`, `automation-errors` and `transaction-metrics` take the load group **execution** id from `load-groups list --execution-id <EXECUTION_ID>`. The wrong one returns 404 `not_found`.
+- Before a full run, check `licenses get --project-key <PROJECT_KEY>`. `RemainingVirtualUserUnits` is tenant-wide and can lag up to 4 hours. A full run needs virtual users × 1 (API), 10 (Chrome/Edge) or 100 (other targets); dry runs need none. If units are short, stop and tell the user.
+- Triage a failed load group with `robot-logs list --load-group-id <ID> --level Error` (levels `Trace|Info|Warn|Error|Fatal`; `--limit` max 500, page with `--offset`) and `jobs list --load-group-id <ID>` for job keys and machines. A 403 means the tenant's perf feature or permission is off: stop under Rule 10.
+- `delete --scenario-key <SCENARIO_KEY> --yes` removes the scenario and its load groups for good (Rule 5) and keeps past executions, unlinked. It does not stop a running execution; run `stop` first.
 
 ## Critical Rules
 

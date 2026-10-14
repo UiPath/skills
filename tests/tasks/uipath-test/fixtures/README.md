@@ -29,6 +29,7 @@ and therefore exact for this scheme.
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `project_settings_smoke` | its own throwaway project | the `EVFX-PSET-*` namespace | `pre_run` creates one `EVFX-PSET-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago (so a concurrent run's project is never touched); `post_run` deletes it. The deliverable is a settings change, not the project, so the project is scratch (Rule 2). Unlike the self-contained build tasks, project create/delete is not under test here, so the hooks own the project's lifecycle and the agent never deletes it |
+| `perf_scenario_cleanup_smoke` | its own throwaway project | the `EVFX-PERF-*` namespace | `pre_run` creates one `EVFX-PERF-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) with scenarios `EVFX-PERF-OLD` (the agent deletes it) and `EVFX-PERF-KEEP` (must survive), and sweeps orphans older than 6 hours; `post_run` deletes the project |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the

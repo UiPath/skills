@@ -1,0 +1,140 @@
+task_id: skill-test-perf-scenario-cleanup-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to delete one performance
+  (load-test) scenario by name and to read the tenant's remaining
+  virtual-user units with `uip tm perf-scenario licenses get`. pre_run seeds a
+  throwaway `EVFX-PERF-*` project holding two scenarios, EVFX-PERF-OLD (to
+  delete) and EVFX-PERF-KEEP (must survive); post_run deletes the project.
+  Graded on the tenant, not the reply: OLD is gone and KEEP is still there,
+  and the number the agent writes to units.txt equals the live
+  RemainingVirtualUserUnits.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, outcome-graded]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 20
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      PREFIX = "EVFX-PERF-"
+      now = datetime.datetime.now(datetime.timezone.utc)
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      # Orphan sweep: a run that died before post_run strands its project.
+      # Only delete projects stamped more than 6 hours ago, so a concurrent
+      # run keeps its own.
+      for p in call("tm", "project", "list", "--filter", PREFIX).get("Data") or []:
+          name = p.get("Name") or ""
+          key = p.get("ProjectKey")
+          if not key or not name.startswith(PREFIX):
+              continue
+          try:
+              stamp = datetime.datetime.strptime(name[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
+          except ValueError:
+              continue
+          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+              call("tm", "project", "delete", "--project-key", key, "--yes")
+
+      key = "EVPF" + secrets.token_hex(2).upper()
+      name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      out = call("tm", "project", "create", "--name", name, "--project-key", key)
+      if out.get("Result") != "Success":
+          print(f"SEED FAILED: could not create {name} ({key}): {out}")
+          sys.exit(1)
+      with open("project-key.txt", "w") as f:
+          f.write(key + "\n")
+      for scenario in ("EVFX-PERF-OLD", "EVFX-PERF-KEEP"):
+          out = call("tm", "perf-scenario", "create", "--project-key", key, "--name", scenario)
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: could not create scenario {scenario}: {out}")
+              sys.exit(1)
+      print(f"SEEDED project {name} with key {key} and 2 scenarios")
+      PYEOF
+    timeout: 180
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  The key of my Test Manager project is in project-key.txt in this folder.
+
+  Delete its old load-test scenario "EVFX-PERF-OLD"; I approve deleting it.
+  Leave every other scenario alone.
+
+  Then find out how many virtual-user units our performance testing licence
+  has left and write just that number to units.txt.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted with `perf-scenario delete --scenario-key … --yes`"
+    tool_name: "Bash"
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--scenario-key\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*(?:--yes|-y)\b)uip\s+tm\s+perf-scenario\s+delete\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "EVFX-PERF-OLD is gone and EVFX-PERF-KEEP is still in the project"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      r = subprocess.run(["uip", "tm", "perf-scenario", "list", "--project-key", key,
+                          "--output", "json"], capture_output=True, text=True)
+      out = json.loads(r.stdout[r.stdout.index("{"):])
+      if out.get("Result") != "Success":
+          print("list failed:", out); sys.exit(1)
+      names = [s.get("Name") for s in (out.get("Data") or {}).get("Scenarios") or []]
+      print("scenarios left:", names)
+      sys.exit(0 if "EVFX-PERF-OLD" not in names and "EVFX-PERF-KEEP" in names else 1)
+      PYEOF
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the units with `perf-scenario licenses get`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+licenses\s+get\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "units.txt holds the live RemainingVirtualUserUnits"
+    command: |
+      python3 - <<'PYEOF'
+      import json, re, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      got = re.sub(r"[,\s]", "", open("units.txt").read())
+      r = subprocess.run(["uip", "tm", "perf-scenario", "licenses", "get", "--project-key", key,
+                          "--output", "json"], capture_output=True, text=True)
+      want = (json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or {}).get("RemainingVirtualUserUnits")
+      print("units.txt:", got, "live:", want)
+      sys.exit(0 if want is not None and got == str(want) else 1)
+      PYEOF
+    timeout: 60
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
