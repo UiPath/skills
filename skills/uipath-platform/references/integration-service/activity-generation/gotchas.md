@@ -64,3 +64,8 @@
 - **No Node globals in the sandbox**: `Buffer`, `btoa`/`atob`,
   `TextEncoder`/`TextDecoder` are absent (`JSON` and `Uint8Array` are present).
   Anything needing base64 cannot be written in a script.
+- **Cache reads, never writes, and test caching with `--script-ref`.** `cache` on
+  `intsvc.http` serves a repeat call from the runtime's cache; on a write, the
+  second call never reaches the vendor. An `--inline-script` run never touches the
+  cache, and a hit still counts against the 4-call budget
+  ([caching.md](caching.md)).
