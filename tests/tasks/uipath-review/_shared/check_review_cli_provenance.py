@@ -51,6 +51,13 @@ REVIEW_CLI_SUBJECT = r"review\s+CLI|uip\s+agent\s+review|uip\s+codedagent\s+revi
 CLI_MENTION = re.compile(r"(uip\s+agent\s+review|uip\s+codedagent\s+review|review\s+CLI|deterministic)", re.IGNORECASE)
 GRADE_PROXIMITY = 240
 
+# A validation-table row (review-workflow-guide.md, Automated Validation section)
+# that reports the review CLI with all-zero counts.
+CLEAN_CLI_ROW = re.compile(
+    r"^\s*\|.*`?uip\s+(?:agent|codedagent)\s+review`?\s*\|(?:\s*0\s*\|){3}\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
 
 def _derivable_from_skill(rule_ids: list[str]) -> list[str] | None:
     """Which `rule_ids` the agent could have read out of the skill tree.
@@ -165,7 +172,11 @@ def main() -> None:
     else:
         # Nothing deterministic to carry, so fall back to the other CLI-only
         # facts. Keep this branch: sibling fixtures can legitimately be clean.
-        if not (grade and _grade_evidenced(text, grade)) and not (score is not None and str(score) in text):
+        if (
+            not (grade and _grade_evidenced(text, grade))
+            and not (score is not None and str(score) in text)
+            and not CLEAN_CLI_ROW.search(text)
+        ):
             sys.exit(
                 f"FAIL: the review CLI returned no findings, and the report evidences neither its "
                 f"grade ({grade!r}) nor its score ({score!r}) -- no trace that Step 2.5a ran."
