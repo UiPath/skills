@@ -22,6 +22,14 @@ stages:
         steps:
           - checkout: self
             fetchDepth: 0  # Sonar's new-code detection reads SCM blame
+          # sonar-project.properties reads the key from the environment. Secret
+          # variables are not mapped to env, so it must be a plain variable.
+          - bash: |
+              if [ -z "${SONAR_PROJECT_KEY:-}" ]; then
+                echo "##vso[task.logissue type=error]Pipeline variable SONAR_PROJECT_KEY is not set (or is marked secret). Add it under Pipelines > UiPath.skills > Edit > Variables."
+                exit 1
+              fi
+            displayName: Check SONAR_PROJECT_KEY is set
           - task: UseNode@1
             displayName: Use Node 22.x
             inputs:
