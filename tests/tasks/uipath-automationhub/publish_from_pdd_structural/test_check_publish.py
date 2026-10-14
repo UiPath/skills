@@ -688,15 +688,22 @@ print(json.dumps({"Result": "Success", "Data": {}}))
 '''
 
 
-def clean_created(sandbox: Path) -> list[str]:
+def run_cleanup(sandbox: Path, *args: str) -> tuple[subprocess.CompletedProcess, list[str]]:
     stub = sandbox.parent / "cleanup-bin"
-    stub.mkdir()
+    stub.mkdir(exist_ok=True)
     (stub / "uip").write_text(CLEANUP_UIP)
     (stub / "uip").chmod(0o755)
     env = {**os.environ, "PATH": f"{stub}{os.pathsep}{os.environ['PATH']}"}
-    subprocess.run([sys.executable, str(CLEANUP), "--created"], cwd=sandbox, env=env, check=True)
+    result = subprocess.run([sys.executable, str(CLEANUP), *args], cwd=sandbox, env=env,
+                            capture_output=True, text=True, check=False)
     archived = stub / "archived.txt"
-    return archived.read_text().split() if archived.is_file() else []
+    return result, archived.read_text().split() if archived.is_file() else []
+
+
+def clean_created(sandbox: Path) -> list[str]:
+    result, archived = run_cleanup(sandbox, "--created")
+    assert result.returncode == 0
+    return archived
 
 
 def test_cleanup_archives_only_the_processes_this_run_created(sandbox: Path) -> None:
@@ -710,3 +717,72 @@ def test_cleanup_skips_a_create_that_failed(sandbox: Path) -> None:
     rejected = {"ts": 0, "args": ["ah", "automations", "create", "--from-schema"], "exit_code": 1, "result": "Failure"}
     log.write_text(log.read_text() + json.dumps(rejected) + "\n")
     assert clean_created(sandbox) == []
+
+
+def test_cleanup_archives_a_recorded_create_whose_name_dropped_the_token(sandbox: Path) -> None:
+    seed = json.loads((sandbox / "seed.json").read_text())
+    seed.update(archive_phase="QUALIFICATION", archive_status="QUALIFICATION_ARCHIVED")
+    (sandbox / "seed.json").write_text(json.dumps(seed))
+    publish(sandbox, good_answers())  # the stub's token search finds nothing
+    result, archived = run_cleanup(sandbox)
+    assert result.returncode == 0 and archived == [str(PROCESS_ID)]
+
+
+def test_cleanup_exits_zero_when_it_cannot_run(sandbox: Path) -> None:
+    (sandbox / "seed.json").write_text("{")  # unreadable seed
+    result, archived = run_cleanup(sandbox)
+    assert result.returncode == 0 and "cleanup aborted" in result.stderr and archived == []
+
+
+@pytest.mark.parametrize("value", ["12", 12])
+def test_non_list_applications_value_fails_cleanly(sandbox: Path, value: object) -> None:
+    answers = good_answers()
+    section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"] = {"value": value}
+    publish(sandbox, answers)
+    result = grade(sandbox, "applications")
+    assert result.returncode == 1 and "must be a list" in result.stdout and "Traceback" not in result.stderr
+
+
+def test_non_map_user_inputs_fails_cleanly(sandbox: Path) -> None:
+    publish(sandbox, {"user_inputs": []})
+    result = grade(sandbox, "payload")
+    assert result.returncode == 1 and "assessment map" in result.stdout and "Traceback" not in result.stderr
+
+
+# --- harness plumbing -------------------------------------------------------------
+
+SETUP = HERE.parent / "_setup"
+
+
+def test_uip_json_turns_a_hang_or_a_missing_cli_into_an_envelope(tmp_path: Path, monkeypatch) -> None:
+    sys.path.insert(0, str(SETUP))
+    import ah_cli
+    monkeypatch.chdir(tmp_path)
+    slow = tmp_path / "slow-bin"
+    slow.mkdir()
+    (slow / "uip").write_text("#!/bin/sh\nsleep 5\n")
+    (slow / "uip").chmod(0o755)
+    monkeypatch.setenv("PATH", f"{slow}{os.pathsep}{os.environ['PATH']}")
+    assert ah_cli.uip_json(["ah", "auth-info", "get"], timeout=1)["Result"] == "Timeout"
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+    assert ah_cli.uip_json(["ah", "auth-info", "get"])["Result"] == "ExecError"
+
+
+def test_seed_digest_is_the_bytes_on_disk(tmp_path: Path) -> None:
+    (tmp_path / "pdd-template.md").write_bytes(b"# PDD {{RUN_TOKEN}}\nline two\n")
+    subprocess.run([sys.executable, str(SETUP / "seed_publish.py")], cwd=tmp_path, check=True, capture_output=True)
+    seed = json.loads((tmp_path / "seed.json").read_text())
+    assert seed["fixtures"]["pdd.md"] == digest(tmp_path / "pdd.md")
+
+
+def tenant_switch_block(path: Path) -> list[str]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    start = next(i for i, line in enumerate(lines) if line.startswith("# --- tenant switch"))
+    end = next(i for i in range(start + 1, len(lines)) if lines[i].startswith("# -----"))
+    return lines[start + 1:end]
+
+
+def test_tenant_switch_copies_stay_identical() -> None:
+    """The recorder can't import `_setup` (the smoke tasks mount it without the recorder), so it keeps a copy."""
+    recorder = LIVE_TEMPLATE / ".uip-recorder" / "uip"
+    assert tenant_switch_block(recorder) == tenant_switch_block(SETUP / "ah_cli.py")

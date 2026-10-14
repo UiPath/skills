@@ -6,9 +6,10 @@ of the way: it is set to the Business Process flow's Archived status via
 `uip ah phases set`. The flow's archive phase/status were resolved by
 preflight_ah.py and travel in `seed.json`.
 
-Scope is deliberately narrow: only processes whose NAME carries this run's token
-are touched, found through the CLI's own tenant-scoped search — never by id
-ranges, never on another tenant. Tasks with a fixed prompt and no seed (the
+Scope is deliberately narrow: only this run's processes are touched — those whose
+NAME carries the run token (the CLI's own tenant-scoped search), plus the ids the
+call recorder saw this run's successful creates return — never by id ranges, never
+on another tenant. Tasks with a fixed prompt and no seed (the
 command-shape smoke tasks) pass `--created` instead, which archives exactly the
 process ids that this run's successful `automations create` calls returned, read
 from the call recorder's log. A fixed name is shared by every concurrent run on
@@ -47,7 +48,11 @@ CALL_LOG = os.path.join(".uip-recorder", ".calls.jsonl")
 
 def archive(processes: list[dict], phase: str, status: str) -> None:
     for process in processes:
-        result = uip_json(["ah", "phases", "set", str(process["Id"]), "--phase", phase, "--status", status])
+        try:
+            result = uip_json(["ah", "phases", "set", str(process["Id"]), "--phase", phase, "--status", status])
+        except (OSError, RuntimeError, KeyError, ValueError) as exc:  # the tenant switch can raise
+            logger.warning("could not archive %s: %s", process["Id"], exc)
+            continue
         if succeeded(result):
             logger.info("archived %s (%s)", process["Id"], process.get("Name"))
         else:
@@ -85,6 +90,14 @@ def archive_created() -> int:
 
 
 def main(argv: list[str]) -> int:
+    try:
+        return clean(argv)
+    except Exception as exc:  # noqa: BLE001 — post_run is best-effort and must exit 0
+        logger.warning("cleanup aborted: %s", exc)
+        return 0
+
+
+def clean(argv: list[str]) -> int:
     if os.environ.get("AH_E2E_CLEANUP", "always").lower() == "never":
         logger.info("AH_E2E_CLEANUP=never; leaving this run's processes in place")
         return 0
@@ -109,16 +122,19 @@ def archive_this_run() -> int:
         logger.warning("flow has no Archived status recorded; cannot archive %s processes", token)
         return 0
 
+    # Token search, plus the ids the recorder saw created: a create whose name dropped
+    # the token is still this run's process and must not stay live on the shared tenant.
+    ours = {process_id: {"Id": process_id} for process_id in created_ids()}
     listing = uip_json(["ah", "automations", "list", "--search", token, "--limit", "50"])
-    if not succeeded(listing):
+    if succeeded(listing):
+        ours.update({p["Id"]: p for p in items(listing) if token in str(p.get("Name", ""))})
+    else:
         logger.warning("search failed: %s", describe_failure(listing))
-        return 0
-    ours = [p for p in items(listing) if token in str(p.get("Name", ""))]
     if not ours:
-        logger.info("no processes named with %s; nothing to clean", token)
+        logger.info("no processes named with %s and no recorded create; nothing to clean", token)
         return 0
 
-    archive(ours, phase, status)
+    archive(list(ours.values()), phase, status)
     return 0
 
 

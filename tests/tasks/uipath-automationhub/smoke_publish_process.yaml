@@ -28,6 +28,12 @@ sandbox:
   mock_path_dirs:
     - .uip-recorder
 
+# A tenant outage or revoked login fails here as TENANT NOT READY, which the smoke
+# gate leaves out of the pass rate, instead of being scored against the skill.
+pre_run:
+  - command: "python3 _setup/preflight_ah.py"
+    timeout: 300
+
 initial_prompt: |
   Publish the approved business process below to UiPath Automation Hub using
   the `uipath-automationhub` skill, and attach its PDD document.
