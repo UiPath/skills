@@ -61,6 +61,7 @@ success_criteria:
       `messages` without flagging it, or claims OpenAI Agents can produce a
       messages-free schema), or identifies it but proceeds without asking — e.g.
       silently switches to another framework and builds.
+    include_reference: false
     weight: 3.0
     # 0.5 passes: the gating invariants are "identifies the limitation" and
     # "asks and stops". Attribution is graded but not gating — it varies run to

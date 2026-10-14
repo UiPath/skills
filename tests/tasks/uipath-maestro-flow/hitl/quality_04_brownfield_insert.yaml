@@ -11,6 +11,9 @@ tags: [uipath-maestro-flow, uipath-human-in-the-loop, integration, lifecycle:gen
 run_limits:
   expected_turns: 34
   max_turns: 150
+reference:
+  directory: ..
+
 initial_prompt: |
   You are working on an existing UiPath Flow named "ContractReview".
 
@@ -26,10 +29,11 @@ initial_prompt: |
     - Outcomes: Approve (primary), Reject
 
   After insertion the wiring must be:
-    Trigger → extractMeta →|output| HITL →|completed| End
+    Trigger → extractMeta →|output| HITL → End, with both outcomes
+    (Approve and Reject) wired to End — every outcome needs its own port.
 
   The original extractMeta → End edge must be removed.
-  The extractMeta → HITL edge and HITL → End edge must be added.
+  The extractMeta → HITL edge and both HITL outcome → End edges must be added.
 
   Validate the flow after building.
 
@@ -47,7 +51,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes after brownfield insert"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -55,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow contains the original script node"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"extractMeta\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview '\"extractMeta\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -63,15 +67,15 @@ success_criteria:
 
   - type: run_command
     description: "Flow contains the inserted HITL node"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_simulated_hitl.py quick-form"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py quick-form"
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "HITL completed handle is wired"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview 'completed'"
+    description: "Both HITL outcome ports (Approve and Reject) are wired, not the outcome-completed placeholder"
+    command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py outcome-wiring"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -79,7 +83,7 @@ success_criteria:
 
   - type: run_command
     description: "HITL has a boolean output field for the approval decision"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name ContractReview '\"boolean\"'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview '\"boolean\"'"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

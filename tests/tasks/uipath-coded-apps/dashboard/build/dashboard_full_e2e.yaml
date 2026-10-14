@@ -15,6 +15,13 @@ run_limits:
 
 sandbox:
   node: {}
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+reference:
+  directory: ..
 
 # Cleanup: the dashboard build mints a fresh OAuth external app per run
 # (build/impl.md Phase 3 — `uip admin external-apps create`). Left behind it
@@ -24,7 +31,7 @@ sandbox:
 # preservation (the experiment-default prune's 30s can time out on it and bloat
 # the preserved sandbox). Task post_run runs before experiment defaults.
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/_shared/cleanup_external_app.py"
+  - command: "python3 _setup/cleanup_external_app.py"
     timeout: 60
   - command: 'find . -maxdepth 5 -type d \( -name node_modules -o -name .npm-prefix \) -prune -exec rm -rf {} +'
     timeout: 180
@@ -59,7 +66,7 @@ success_criteria:
   - type: run_command
     description: "Metric modules author real SDK calls: Agents.getAll, an errors query, and a consumption route"
     command: >
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      python3 $REFERENCE_DIR/_shared/check_dashboard.py
       --min-metrics 4 --min-widgets 4
       --require-substr "getAll" --require-substr "Consumption" --require-substr "getErrors"
     timeout: 30
@@ -73,7 +80,7 @@ success_criteria:
   - type: run_command
     description: "Compiler-model gold gate: pure-metadata intent, state.json, named time constants, no legacy tokens, tsc --noEmit passes"
     command: >
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-coded-apps/dashboard/_shared/check_dashboard.py
+      python3 $REFERENCE_DIR/_shared/check_dashboard.py
       --min-metrics 4 --min-widgets 4 --require-starttime --require-state
       --forbid-substr fnBody --forbid-substr useInsights --forbid-substr "as unknown as"
       --tsc

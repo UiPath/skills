@@ -18,6 +18,10 @@ run_limits:
   max_turns: 120
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
+# The channel is named so a headless agent does not invent one (skills#3572).
 initial_prompt: |
   Build a Maestro Flow called "CustomerEscalation" that triggers on new
   Outlook inbox emails and routes each one based on two signals: whether
@@ -29,8 +33,10 @@ initial_prompt: |
   classification, then branch with a decision node on the combined
   result.
 
-  - High-touch branch (urgent AND VIP): notify on Slack and reply to
-    the sender via Outlook with a fast-response acknowledgment.
+  - High-touch branch (urgent AND VIP): post to the Slack channel
+    `support-escalations` (the Slack connection in the top-level Shared
+    folder) and reply to the sender via Outlook with a fast-response
+    acknowledgment.
   - Standard branch: generate a support ticket in a script node and
     reply to the sender via Outlook with the ticket details.
 
@@ -51,7 +57,7 @@ success_criteria:
   # ── Flow file validity ────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 5.0
@@ -64,7 +70,7 @@ success_criteria:
   # node with two branches, and Slack + Outlook-reply references.
   - type: run_command
     description: "Flow has Outlook trigger, classifier scripts, decision with two branches, Slack DM and Outlook reply references"
-    command: "python3 $TASK_DIR/check_customer_escalation_flow.py"
+    command: "python3 $REFERENCE_DIR/multi_node/customer_escalation/check_customer_escalation_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 10.0

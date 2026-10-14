@@ -1,9 +1,13 @@
 # HITL AppTask Node — Direct JSON Reference
 
-The AppTask variant uses a deployed coded app (Studio Web) as the task form. Node type: `uipath.human-in-the-loop.coded-action-app`. Same three handles (`input`, `completed`) as QuickForm. Difference from QuickForm: `inputs.app` points to the deployed app (no inline schema).
+The AppTask variant uses a deployed coded app (Studio Web) as the task form. Node type: `uipath.human-in-the-loop.coded-action-app`. Handles: `input`, `completed` — static, unlike QuickForm's outcome-derived `outcome-<outcome.id>` ports. Difference from QuickForm: `inputs.app` points to the deployed app (no inline schema) — do not add an `inputs.schema` block here, which would wrongly switch the port to an outcome-derived one.
 
 ---
 
+<!--skill-flavor:flow-sdk-apptask-gate:start-->
+**Builder-SDK Flow projects (`.flow.ts`) — the default:** author a human task with `hitl({...})` in `<Name>.flow.ts` through the `uipath-maestro-flow` skill — see [hitl.md](../../uipath-maestro-flow/references/hitl.md). `compile` emits the node and overwrites the compiled `.flow`, so never write the JSON below into it by hand; it applies to a JSON-authored `.flow`.
+
+<!--skill-flavor:flow-sdk-apptask-gate:end-->
 ## App Lookup and Solution Registration
 
 Before writing the node JSON, resolve the app and register it with the solution. All API calls use auth from the stored login session (`uip login`).
@@ -418,7 +422,7 @@ AppTask uses a **separate** definition entry — `nodeType` is `"uipath.human-in
 
 ## Edge Wiring
 
-Identical to QuickForm. Only the `completed` handle is available — there are no `cancelled` or `timeout` handles in v1.0:
+Unlike QuickForm, this node's port stays a static `completed` regardless of the app's own outcomes — there are no `cancelled` or `timeout` handles in v1.0:
 
 ```json
 { "id": "invoiceReview1-completed-nextNode1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "completed", "targetNodeId": "nextNode1", "targetPort": "input" }

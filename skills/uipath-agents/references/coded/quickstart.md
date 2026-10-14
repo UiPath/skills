@@ -34,8 +34,9 @@ Use `uip codedagent <cmd>`, not `uv run uipath <cmd>`. The wrapper injects sessi
 ## Critical Rules
 
 - **NEVER add a `[build-system]` section to `pyproject.toml`**. No `hatchling`, no `setuptools`, no build backend. UiPath agents do not use a build system. Only include `[project]`, `[dependency-groups]`, and `[tool.*]` sections.
+- **Install the framework package before `uip codedagent new`.** The package installed in the active venv selects the agent template; with none installed, `new` fails with an error naming what to install. With several installed, pass `--agent-framework <FRAMEWORK_PACKAGE>`. After `new`, confirm `<framework>.json` exists — do not hand-write it; recovery is in [lifecycle/setup.md](lifecycle/setup.md) § Verify the Scaffold.
 - **Always create a smoke evaluation set.** Every agent must include `evaluations/eval-sets/smoke-test.json` with 2-3 test cases covering the primary happy path (not exhaustive error-case coverage — the smoke set exists to catch regressions, not to fully validate behavior). Create it in the Evaluate step, not during Build.
-- **Select a framework before writing any code.** If the prompt clearly implies a framework (e.g., mentions tools, RAG, multi-step orchestration, or a specific SDK), pick the best match. If the prompt is ambiguous, ask the user to choose from: Coded Function, LangGraph, LlamaIndex, or OpenAI Agents.
+- **Select a framework before writing any code.** If the prompt clearly implies a framework (e.g., mentions tools, RAG, multi-step orchestration, or a specific SDK), pick the best match. If the prompt is ambiguous, ask the user to choose from: LangGraph, LlamaIndex, or OpenAI Agents.
 - **Never switch an existing project's framework.** When `framework != none` (a `<framework>.json` is already present), the framework is fixed: do not migrate to another framework, swap the `<framework>.json`, or change framework dependencies in `pyproject.toml`. Work within the existing framework's capabilities; if a request cannot be met within them, tell the user the limitation and let them decide.
 - **Correct SDK import: `from uipath.platform import UiPath`** — not `from uipath import UiPath` (that path does not exist and will cause `ImportError`). Always instantiate `UiPath()` inside functions/nodes, never at module level.
 - **Refresh the CLI's Python executable path after venv changes.** If `uip codedagent` reports that the UiPath CLI/Python executable is not recognized, or any error indicates a stale `uipathExePath`, activate the project venv and run `uip codedagent setup --force`. This rewrites the CLI configuration to point at the current `.venv` executable.
@@ -44,10 +45,10 @@ Use `uip codedagent <cmd>`, not `uv run uipath <cmd>`. The wrapper injects sessi
 - **Runtime captures only the last node's delta as output.** `Annotated[list, operator.add]` reducers accumulate inside the graph but vanish from `--output-file` JSON and eval trajectories. Carry aggregate fields forward in each node's return (`{"items": [*state.get("items", []), x]}`) — see [frameworks/langgraph-integration.md](frameworks/langgraph-integration.md) § Runtime Output Quirk.
 - **Verify the JSON, not the streamed display.** After `uip codedagent run --output-file out.json`, inspect `out.json` — the streamed view shows per-node deltas; the JSON is the runtime's actual final result. Mismatches expose the runtime quirk above.
 - **Use `uip codedagent deploy` for packaging/publishing.** `uip codedagent pack` and `uip codedagent publish` are filtered by the wrapper.
-- **NEVER run `uip login` without `--tenant`.** The interactive tenant picker does not work from Claude's Bash tool. Use the one-shot form `uip login --organization "<ORG>" --tenant "<TENANT>"`, mapping staging/alpha to `--authority` (see [../authentication.md](../authentication.md)).
+- **NEVER run `uip login` without `--tenant`.** The interactive tenant picker does not work from Claude's Bash tool. Use the one-shot form `uip login --organization "<ORG>" --tenant "<TENANT>"`, adding `--authority` for a non-default host (see [../authentication.md](../authentication.md)).
 - **Auth MUST be an interactive question only when needed and values are missing.** If the session check fails and the user did not provide all of environment / organization / tenant, your ENTIRE response must be a single direct question. Do NOT wrap it in bullet points, "Next Steps" headers, or status summaries. Just ask and stop:
 
-  > What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
+  > What is your UiPath **environment** (cloud, or your custom host URL), **organization name**, and **tenant name**?
 - **In a flow, coded agents are referenced via the `agent` plugin (uipath-maestro-flow skill)** — node type `uipath.core.agent.{key}`, `Orchestrator.StartAgentJob`. See [flow-integration.md](flow-integration.md) for the three patterns: in-solution sibling folder, Orchestrator-published, tool resource.
 
 ## Lifecycle Stages
@@ -57,7 +58,7 @@ Each stage has a reference file with detailed instructions. Read **only** the re
 | Stage | Reference | CLI Commands |
 |-------|-----------|-------------|
 | **Auth** | [../authentication.md](../authentication.md) | `uip login` |
-| **Setup** | [lifecycle/setup.md](lifecycle/setup.md) | `uv venv --python 3.13`, `source .venv/bin/activate`, `uip codedagent setup --force`, `uip codedagent new <name>`, `uv add <framework-package>`, `uv add uipath-dev --dev`, `uv sync`, `uip codedagent init` |
+| **Setup** | [lifecycle/setup.md](lifecycle/setup.md) | `uv venv --python 3.13`, `source .venv/bin/activate`, `uv pip install <framework-package>`, `uip codedagent setup --force`, `uip codedagent new <name>`, `uv add uipath-dev --dev`, `uv sync`, `uip codedagent init` |
 | **Build** | [lifecycle/build.md](lifecycle/build.md) | Code agent logic with framework patterns |
 | **Bindings** | [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md) | Sync resource overrides in `bindings.json` |
 | **Env vars** | [lifecycle/environment-variables.md](lifecycle/environment-variables.md) | Which store the cloud runtime reads (not `.env`); `%ASSETS/<ASSET_NAME>%` to pull a value from an Orchestrator asset |
@@ -109,7 +110,7 @@ Steps 8 and 9 are mandatory stops **for greenfield**: always ask the user, even 
 4. **Bindings** — Sync `bindings.json` with the code using [lifecycle/bindings-reference.md](lifecycle/bindings-reference.md).
 5. **Auth (one-shot)** — Run `uip login status --output json` once. If the user supplied environment + organization + tenant, have them run the matching one-shot login command from [../authentication.md](../authentication.md) in their own terminal, using both `--organization` and `--tenant` in the same `uip login` command (a browser sign-in — if you run it yourself, first tell the user a browser window is about to open). Do this even when `Status: Logged in`, because the existing session may be for a different tenant. If no credentials were supplied and `Status: Logged in`, trust the wrapper for the rest of the run (it auto-refreshes tokens). Otherwise ask for credentials — output ONLY this question as your entire response:
 
-> What is your UiPath **environment** (cloud/staging/alpha), **organization name**, and **tenant name**?
+> What is your UiPath **environment** (cloud, or your custom host URL), **organization name**, and **tenant name**?
 
 Then STOP and wait. On reply, hand the user the matching one-shot login from [../authentication.md](../authentication.md) to run in their own terminal (maps environment → `--authority`), then confirm with `uip login status --output json`. Never run `uip login` without `--tenant`.
 6. **Run** — Re-run `uip codedagent init` first whenever any of these changed since the last init, **or** when `has_entry_points == false`:
@@ -167,7 +168,9 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
    **Finally**, run `uip codedagent eval <ENTRYPOINT> evaluations/eval-sets/smoke-test.json --no-report` (use the entrypoint name from `entry-points.json`).
 8. **Delivery target.** Single branch point. **Evaluate branches in order — Local Workspace projects also have `UIPATH_PROJECT_ID` set in `.env`, so the `local-workspace` check MUST come before the `has_project_id` check, or Local Workspace will incorrectly fall into the push branch:**
 
+<!--skill-flavor:local-workspace-delivery:start-->
    - **(1) `project_state == local-workspace`** → Studio Web auto-syncs saves to the remote SW project, so options A and B (manual push / solution upload) are skipped — they would be redundant or break sync identity. The user may still want a local dev console. Stop and ask the user (single choice, "Delivery"):
+<!--skill-flavor:local-workspace-delivery:end-->
 
      **Question:** *Studio Web is auto-syncing this workspace. Do you want a local dev console too?*
 
@@ -189,12 +192,15 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
      | # | Label (≤5 words) | Description |
      |---|---|---|
      | A | Studio Web — you set it up | You open Studio Web, create a Coded Agent project inside a solution, paste the project ID. I'll write `UIPATH_PROJECT_ID` to `.env` and run `uip codedagent push`. |
+<!--skill-flavor:delivery-option-b-row:start-->
      | B | Studio Web — I package & upload | I run `uip solution init`, import the agent, strip `.venv`, and run `uip solution upload`. No Studio Web setup needed from you. |
+<!--skill-flavor:delivery-option-b-row:end-->
      | C | Local dev web server | I start `uip codedagent dev` (default `http://localhost:8080`) so you can interact with the agent in the browser. Nothing is published. |
      | — | Skip — I'm done | Stop here. The agent is built and evaluated. |
 
      On reply:
      - **A** → wait for the project ID, write `UIPATH_PROJECT_ID=<id>` to `.env`, then run `uip codedagent push`.
+<!--skill-flavor:delivery-option-b:start-->
      - **B** → run the local-solution flow. `uip solution init "<SOLUTION_NAME>"` creates `<cwd>/<SOLUTION_NAME>/<SOLUTION_NAME>.uipx` (sibling, not ancestor). `uip solution upload` archives verbatim and does NOT honor `packOptions.directoriesExcluded` — strip `.venv` from the imported copy or upload fails with `code 20001: solution archive is corrupt`. From the parent directory of the agent:
 
        ```bash
@@ -205,10 +211,13 @@ Then STOP and wait. On reply, hand the user the matching one-shot login from [..
               "<AGENT_PROJECT_DIR>/__uipath" "<AGENT_PROJECT_DIR>/eval-results.json"
        uip solution upload . --output json
        ```
+<!--skill-flavor:delivery-option-b:end-->
      - **C** → run `uip codedagent dev` in the background; surface the URL (default `http://localhost:8080`). Prereq: `uipath-dev` (added during scaffold). **STOP — do NOT proceed to step 9.** Local dev is a terminal choice.
      - **Skip** → continue to step 9.
 
+<!--skill-flavor:deploy-reachability:start-->
 9. **Deploy.** Reachable from any `project_state` after option **Skip** at step 8 (greenfield or local-workspace), after the auto-push in branch (2), or after options **A** / **B** in greenfield. After option **C** at step 8, the run ends — do not ask. Stop and ask the user (single choice, "Deploy target").
+<!--skill-flavor:deploy-reachability:end-->
 
    **Question:** *Do you want to deploy the agent? If yes, which target?*
 
@@ -272,7 +281,7 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
    uv sync
    ```
 
-   `uv add` requires the `pyproject.toml` that `codedagent new` generates — run it only after `new`, never at the solution root.
+   `uv add` requires the `pyproject.toml` that `codedagent new` generates — run it only after `new`, never at the solution root. Confirm `<framework>.json` exists before continuing (see [lifecycle/setup.md](lifecycle/setup.md) § Verify the Scaffold).
 
 <!--skill-flavor:agent-scaffold-result-paths:start-->
    Result: `<SolutionName>/<AgentName>/` sibling to `<SolutionName>/<FlowName>/`.
@@ -307,6 +316,10 @@ Execute the following in order, end-to-end, in one pass — do not pause for con
 
    The second command's `Data.Node` object is what gets pasted verbatim into the flow's top-level `definitions[]` array.
 
+<!--skill-flavor:flow-sdk-coded-agent-gate:start-->
+   **Builder-SDK Flow projects (`.flow.ts`) — the default:** replace step 7 with one `agent({ key, name, ... })` step in `<Name>.flow.ts` and a `compile` — see [agent.md](../../../uipath-maestro-flow/references/agent.md). Step 7's JSON edits apply to a JSON-authored `.flow`.
+
+<!--skill-flavor:flow-sdk-coded-agent-gate:end-->
 7. **Wire the agent node into the `.flow` file.** Edit `<FlowName>.flow` directly:
    - Add a `uipath.core.agent.<resourceKey>` node to `nodes[]` with one `inputs.<field>` entry per property in the agent's input schema (see step 6's `Data.Node.inputDefinition`) and `model.section: "In this solution"`.
    - For input field values, see [embedding-in-flows.md § Wiring the Agent's Inputs](embedding-in-flows.md#wiring-the-agents-inputs).

@@ -11,6 +11,9 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/WebResearchBriefingSolutionMisconfigured
 
+reference:
+  directory: .
+
 initial_prompt: |
   I added a harmful-content guardrail to my web research agent at
   WebResearchBriefingSolution/WebResearchBriefingAgent, but I'm not sure I got
@@ -56,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "harmful_content guardrail threshold keys match entities list (no extra key)"
-    command: "python3 $TASK_DIR/check_validate.py"
+    command: "python3 $REFERENCE_DIR/check_validate.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

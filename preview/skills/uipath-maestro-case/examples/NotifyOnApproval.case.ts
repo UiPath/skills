@@ -12,7 +12,7 @@
  * real connection + folder. Compile with the connector library on
  * `$FLOW_SDK_LIBRARY_JSON` or `uip maestro case compile --library` supplies it.
  */
-import { casePlan, rule } from '@uipath/flow-sdk/case';
+import { casePlan, rule } from '@uipath/maestro-builder-sdk/case';
 
 export default casePlan('notify-on-approval')
   .name('NotifyOnApproval')

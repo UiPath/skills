@@ -4,16 +4,25 @@ description: >
   Final state: a deploy with the expected name exists on the tenant, and a
   folder containing a process has been provisioned.
 tags: [uipath-solution, e2e, mode:build, lifecycle:setup]
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../uipath-platform/_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../../fixtures/packages
+      mount_point: .
+reference:
+  directory: .
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+  - command: "python3 _setup/cleanup.py"
     timeout: 60
 
 initial_prompt: |
@@ -22,19 +31,17 @@ initial_prompt: |
   collide) and `parent_folder_path` — that's where I want the deploy's
   folder to land.
 
-  The source .zip lives at
-  `$SKILLS_REPO_PATH/tests/fixtures/packages/e2e-stub-1.0.0.zip`.
+  The source .zip is `e2e-stub-1.0.0.zip`.
   Publish it, then deploy it under the name `e2e-deploy-<prefix>`. The
   deployment should provision a folder named `e2e-deploy-folder-<prefix>`
   under `parent_folder_path`, and that folder should end up with a
   process from the package inside it.
 
   Do NOT ask for approval. Do NOT pause.
-
 success_criteria:
   - type: run_command
     description: "Tenant state: deploy present in list; folder + process exist"
-    command: "python3 $TASK_DIR/check_deploy_round_trip.py"
+    command: "python3 $REFERENCE_DIR/check_deploy_round_trip.py"
     timeout: 60
     expected_exit_code: 0
     weight: 5.0

@@ -4,10 +4,16 @@
 from __future__ import annotations
 
 import glob
+import json
 import os
 import re
 import sys
 import xml.etree.ElementTree as ET
+from collections.abc import Iterable
+from pathlib import Path
+from typing import TypeVar
+
+_PathLike = TypeVar("_PathLike", str, Path)
 
 NS = {
     "bpmn": "http://www.omg.org/spec/BPMN/20100524/MODEL",
@@ -20,6 +26,44 @@ def fail(message: str) -> None:
     sys.exit(f"FAIL: {message}")
 
 
+def _project_files(paths: Iterable[_PathLike]) -> list[_PathLike]:
+    """The subset of ``paths`` that sit beside a ``project.uiproj``.
+
+    The single definition of "this is the real project file, not a stray draft
+    copy or fixture", shared by :func:`find_bpmn_file` and
+    :func:`resolve_project`. Items are returned as they were passed in, so a
+    caller working in ``str`` keeps its ``str``.
+    """
+    return [p for p in paths if (Path(p).parent / "project.uiproj").is_file()]
+
+
+def entry_point_files(project_dir: Path) -> list[Path] | None:
+    """The ``.bpmn`` files ``entry-points.json`` names in ``project_dir``.
+
+    ``filePath`` is written as ``/content/<file>.bpmn#<start-event-id>``;
+    the ``/content/`` prefix and the ``#…`` suffix are stripped. Returns
+    ``None`` when the project has no ``entry-points.json`` yet (``refresh``
+    has not run), so a caller can fall back to every project file. A BPMN
+    project can hold several ``.bpmn`` files and only the entry points run:
+    smoke run 36357685718 left the graded shape in a non-entry file beside an
+    empty scaffold that was the only entry point.
+    """
+    manifest = Path(project_dir) / "entry-points.json"
+    if not manifest.is_file():
+        return None
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    out: list[Path] = []
+    for ep in data.get("entryPoints") or []:
+        file_path = str(ep.get("filePath") or "").split("#", 1)[0]
+        name = Path(file_path.removeprefix("/content/")).name
+        if name:
+            out.append(Path(project_dir) / name)
+    return out
+
+
 def find_bpmn_file(name_hint: str | None = None) -> str:
     paths = sorted(glob.glob("**/*.bpmn", recursive=True))
     if not paths:
@@ -27,11 +71,58 @@ def find_bpmn_file(name_hint: str | None = None) -> str:
     if name_hint:
         matches = [p for p in paths if name_hint.lower() in os.path.basename(p).lower()]
         if matches:
-            return matches[0]
+            # A hint narrows to a basename, not to a project: `Foo-old.bpmn`
+            # left beside `Foo.bpmn` matches too, and sorts first. Apply
+            # resolve_project's rule here as well so the draft is never graded.
+            hinted = _project_files(matches)
+            return hinted[0] if len(hinted) == 1 else matches[0]
         fail(f"no BPMN file found with basename matching {name_hint!r}; found: {paths}")
     if len(paths) == 1:
         return paths[0]
+    projects = _project_files(paths)
+    if len(projects) == 1:
+        return projects[0]
+    # Byte-identical copies (the agent copied its scaffold into the solution
+    # wrapper; CI run 35538279757, testmanager_crud_grounded) are one artifact.
+    if len({_sha256(p) for p in paths}) == 1:
+        return paths[0]
     fail(f"multiple BPMN files found; expected one or hint match: {paths}")
+
+
+def _sha256(path: str | Path) -> str:
+    import hashlib
+
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def resolve_project(bpmn_name: str, exclude_under: Iterable[Path] = ()) -> Path:
+    """Locate the project directory containing ``bpmn_name``.
+
+    Grades the project wherever the agent placed it (top level or nested under
+    a ``<Name>Solution/`` wrapper -- ``uip maestro bpmn init`` creates the
+    wrapper unless --skip-solution-registration is passed), but picks the real
+    project unambiguously: exactly one ``bpmn_name`` with project.uiproj beside
+    it, so a stray draft copy is never graded (``find_bpmn_file`` would
+    silently return the alphabetically-first match).
+
+    ``exclude_under``: directories whose contents are not candidates. A live
+    grader's own ephemeral solution (``uip solution projects import``) leaves a
+    second, byte-identical project under its run directory; a later criterion
+    in the same task must not read that copy as ambiguity (CI run 35538279757,
+    billing_invoice_lookup ``bindings``).
+    """
+    excluded = [Path(d).resolve() for d in exclude_under]
+    candidates = [
+        p
+        for p in _project_files(Path.cwd().rglob(bpmn_name))
+        if not any(p.resolve().is_relative_to(d) for d in excluded)
+    ]
+    if len(candidates) != 1:
+        fail(
+            f"expected exactly one {bpmn_name} with project.uiproj beside it, "
+            f"found {[str(p) for p in candidates]}"
+        )
+    return candidates[0].parent
 
 
 def parse_bpmn(name_hint: str | None = None) -> tuple[str, ET.Element]:
@@ -67,6 +158,113 @@ def text_content(element: ET.Element) -> str:
         if child.tail:
             parts.append(child.tail)
     return "\n".join(parts)
+
+
+def context_inputs(element: ET.Element) -> list[ET.Element]:
+    """Every ``uipath:input`` under ``element``, at any depth.
+
+    ``.//`` rather than a fixed path because both layouts occur in practice:
+    context/body/query/path inputs as direct children of ``uipath:activity``,
+    or nested inside ``uipath:context``.
+    """
+    return element.findall(".//uipath:input", NS)
+
+
+def context_value(element: ET.Element, name: str) -> str:
+    """The value of ``element``'s ``uipath:input`` named ``name``, else ``""``.
+
+    Reads the ``value`` attribute and falls back to the element text (agents
+    write either), then strips surrounding whitespace so one artifact reads the
+    same way in every grader. Name matching is exact.
+    """
+    for inp in context_inputs(element):
+        if inp.attrib.get("name") == name:
+            return (inp.attrib.get("value") or inp.text or "").strip()
+    return ""
+
+
+def all_node_values(element: ET.Element) -> list[str]:
+    """Every populated input value under ``element`` (attribute, then text)."""
+    values: list[str] = []
+    for inp in context_inputs(element):
+        value = inp.attrib.get("value")
+        if value:
+            values.append(value)
+        if inp.text and inp.text.strip():
+            values.append(inp.text.strip())
+    return values
+
+
+def body_fields(element: ET.Element) -> list[ET.Element]:
+    """Every ``uipath:input`` under ``element`` carrying ``target="body"``.
+
+    The raw elements, for a grader that needs to assert on the inputs
+    themselves (presence, count) rather than on the request body they encode.
+    Use :func:`body_object` for the body.
+    """
+    return [inp for inp in context_inputs(element) if inp.attrib.get("target") == "body"]
+
+
+def _input_payload(inp: ET.Element) -> str:
+    """One input's literal payload: CDATA/text first, then ``value``.
+
+    Agents write the same field either way -- a CDATA body blob, or a
+    ``value`` attribute for a short scalar -- and the two never both carry
+    content on one input.
+    """
+    text = (inp.text or "").strip()
+    if text:
+        return text
+    return (inp.attrib.get("value") or "").strip()
+
+
+class BodyShapeError(ValueError):
+    """The node's ``target="body"`` inputs are not one JSON object."""
+
+
+def body_object(element: ET.Element) -> dict:
+    """The request body ``element``'s ``target="body"`` input encodes.
+
+    The runtime reads exactly one ``target="body"`` input as the whole body;
+    several do not merge (skills/uipath-maestro-bpmn/references/registry-workflow.md,
+    "Body shape"). So the only gradeable shape is::
+
+        <uipath:input name="body" type="json" target="body"><![CDATA[{...}]]></uipath:input>
+
+    Returns ``{}`` when there is no ``target="body"`` input or it is empty. Raises
+    :class:`BodyShapeError` for several inputs, or one whose payload is an
+    expression or anything but a JSON object. A ``=vars.X`` value inside the
+    object stays the string it is.
+    """
+    fields = body_fields(element)
+    if not fields:
+        return {}
+    if len(fields) > 1:
+        names = [inp.attrib.get("name") or "" for inp in fields]
+        raise BodyShapeError(
+            f'{len(fields)} target="body" inputs {names}; the runtime does not '
+            f"merge them, so the request carries only the last one"
+        )
+
+    raw = _input_payload(fields[0])
+    if not raw:
+        return {}
+    if raw.startswith("="):
+        raise BodyShapeError(f'target="body" input is an expression, not a literal object: {raw!r}')
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, ValueError):
+        raise BodyShapeError(f'target="body" input is not valid JSON: raw={raw!r}') from None
+    if not isinstance(parsed, dict):
+        raise BodyShapeError(
+            f'target="body" JSON must be an object, got {type(parsed).__name__}: raw={raw!r}'
+        )
+    return parsed
+
+
+def has_type(element: ET.Element, token: str) -> bool:
+    """True when ``token`` appears anywhere in ``element``'s serialised XML."""
+    return token in ET.tostring(element, encoding="unicode")
 
 
 def has_uipath_extension(element: ET.Element, token: str) -> bool:
@@ -163,3 +361,118 @@ def require_no_private_connector_values(root: ET.Element) -> None:
     leaked = [value[:80] for value in values(root) if tenant_host.search(value)]
     if leaked:
         fail(f"connector boundary leaked a real tenant/cloud endpoint: {leaked}")
+
+
+# A sort can ride inside a CEQL-like query string ("... ORDER BY score DESC")
+# rather than a flat sort input. The CLI quotes the identifier -- the artifact
+# on CI run 35538478362 emits `ORDER BY 'score' ASC` -- and agents also write
+# it bare, double-quoted, backticked, or bracketed. One definition, so both
+# Data Fabric query graders read the same artifact the same way.
+ORDER_BY_RE = re.compile(
+    r"\border\s+by\s+['\"`\[]?([a-z0-9_]+)['\"`\]]?(?:\s+(asc|desc))?", re.IGNORECASE
+)
+
+
+GENERATED_PACKAGE_FILES = (
+    "bindings_v2.json",
+    "entry-points.json",
+    "operate.json",
+    "package-descriptor.json",
+)
+
+
+def require_no_hand_authored_package_files() -> None:
+    """Draft boundary: package metadata is CLI-owned, so it is either absent or CLI-shaped.
+
+    The rule used to be "none of these files may exist", which described only the v1
+    workflow (raw XML, one file). The builder-SDK skill scaffolds every project with
+    `uip maestro bpmn init`, which writes all four — and those files ARE the CLI-owned
+    boundary the task is about, so their presence is compliance, not a leak
+    (skill-bpmn-event-trigger-start and skill-bpmn-integration-service-boundary both
+    failed on exactly this, run 2026-09-25). What the boundary forbids is an agent
+    INVENTING that metadata by hand, or baking a tenant binding into a draft. So each
+    present file must carry the shape `init` / `update-metadata` write — the same
+    shape `assert_generated_project_scaffold` asserts — and bindings must stay
+    unresolved.
+    """
+    import json
+
+    hand_authored: list[str] = []
+    bound: list[str] = []
+    content_path = re.compile(r"^/content/[^#]+\.bpmn#\S+$")
+    guid = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE)
+
+    for name in GENERATED_PACKAGE_FILES:
+        for path in sorted(glob.glob(f"**/{name}", recursive=True)):
+            if "node_modules" in Path(path).parts:
+                continue
+            try:
+                data = json.loads(Path(path).read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                hand_authored.append(path)
+                continue
+            if not isinstance(data, dict):
+                hand_authored.append(path)
+                continue
+            if name == "package-descriptor.json":
+                # `init`/`update-metadata` write a `files` name->path map; a top-level
+                # `content` array is the hand-written synthetic shape.
+                if not isinstance(data.get("files"), dict):
+                    hand_authored.append(path)
+            elif name == "operate.json":
+                if not content_path.match(str(data.get("main") or "")) or data.get("contentType") != "ProcessOrchestration":
+                    hand_authored.append(path)
+            elif name == "entry-points.json":
+                points = data.get("entryPoints")
+                if not isinstance(points, list) or not all(
+                    isinstance(ep, dict) and content_path.match(str(ep.get("filePath") or "")) for ep in points
+                ):
+                    hand_authored.append(path)
+            elif name == "bindings_v2.json":
+                resources = data.get("resources")
+                if data.get("version") is None or not isinstance(resources, list):
+                    hand_authored.append(path)
+                    continue
+                # A draft has no tenant: a resolved connection id here is the leak the
+                # boundary exists to catch, whichever arm wrote it.
+                for resource in resources:
+                    if not isinstance(resource, dict):
+                        continue
+                    for value in (resource.get("value"), resource.get("connectionId"), resource.get("defaultValue")):
+                        if isinstance(value, str) and guid.match(value):
+                            bound.append(f"{path}: {value}")
+    if hand_authored:
+        fail(
+            "draft must not hand-author generated package files (leave them to "
+            f"`uip maestro bpmn init` / `update-metadata`): {hand_authored}"
+        )
+    if bound:
+        fail(f"draft bindings must stay unresolved — connection ids found: {bound}")
+
+
+def order_by(text: str) -> tuple[str, str]:
+    """``(field, direction)`` from the first ORDER BY clause in ``text``.
+
+    Both lowercased; ``("", "")`` when there is no ORDER BY, and the direction
+    is ``""`` when the clause omits ASC/DESC.
+    """
+    match = ORDER_BY_RE.search(text or "")
+    if not match:
+        return "", ""
+    return match.group(1).lower(), (match.group(2) or "").lower()
+
+
+def declared_variable_elements(root: ET.Element) -> list[ET.Element]:
+    """Every declared variable the canvas actually reads.
+
+    ``uipath:variables`` is honoured only on ``bpmn:process`` and
+    ``bpmn:subProcess``. A block hung off any other element (a ``bpmn:userTask``,
+    say) is dropped at runtime, so a document-wide ``.//uipath:variables/*``
+    would credit a declaration the product rejects.
+    """
+    scopes = elements(root, "process") + elements(root, "subProcess")
+    return [
+        var
+        for scope in scopes
+        for var in scope.findall("bpmn:extensionElements/uipath:variables/*", NS)
+    ]

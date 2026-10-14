@@ -19,19 +19,23 @@ tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:complian
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
 # Same precondition as restore_smoke: drift can only exist on an active pack,
 # and the shared-tenant cleanup disables it between runs. Enable first so a
 # correct agent isn't stopped at "enable it first" through no fault of its own.
 pre_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''setup_enable_compliance_pack.py''))"'
+  - command: 'python3 _setup/setup_enable_compliance_pack.py'
     timeout: 120
 
 # Safety net: smoke sandboxes have live tenant auth in CI. Coverage is read-only,
 # but a wrong-direction run (aops-policy update / state disable) really mutates
 # the tenant. Clean up after.
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+  - command: 'python3 _setup/cleanup_compliance_pack.py'
     timeout: 120
 
 initial_prompt: |

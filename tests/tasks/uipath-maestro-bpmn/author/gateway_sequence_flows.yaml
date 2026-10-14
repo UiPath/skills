@@ -9,6 +9,9 @@ run_limits:
   turn_timeout: 1800
   expected_turns: 21
   max_turns: 80
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a local BPMN project named "InvoiceTriageBpmn" for this process:
   - Manual start with input variables `invoiceId` and `amount`
@@ -38,7 +41,7 @@ success_criteria:
 
   - type: run_command
     description: "Gateway and sequence-flow structure is valid"
-    command: "python3 $TASK_DIR/check_gateway_sequence_flows.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_gateway_sequence_flows.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

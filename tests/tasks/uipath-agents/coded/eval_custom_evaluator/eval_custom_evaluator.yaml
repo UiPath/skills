@@ -20,6 +20,9 @@ run_limits:
   task_timeout: 1800
   max_turns: 90
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   I want a small UiPath coded agent called `topic-detector`. Give it a
   short conversation — a few lines back and forth between two people —
@@ -64,7 +67,7 @@ success_criteria:
 
   - type: run_command
     description: "Custom evaluator file, JSON spec, eval set, and results shape"
-    command: "python3 $TASK_DIR/check_eval_custom_evaluator.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_eval_custom_evaluator.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

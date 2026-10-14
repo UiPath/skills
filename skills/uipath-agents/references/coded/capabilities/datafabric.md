@@ -4,7 +4,9 @@ How to query and manage UiPath Data Fabric entities from coded agents. Two integ
 
 ## Step 1: Discover Available Entities
 
-Before choosing a path, discover what entities exist. Start with folder-scoped listing — most entities live in a specific folder (commonly `Shared`):
+Before choosing a path, discover what entities exist. Discovery is auth-gated (`uip login status --output json` first; if not logged in, do the quickstart's step-5 auth one-shot now). **Coded consequence:** `DataFabricEntityItem.id` / `folder_key` are tenant-minted UUIDs that only this listing returns, so for Data Fabric agents do auth + discovery *before* Build, not after — the same ordering the Integration Service capability uses. "Scaffold only" / "don't run or deploy" does not skip this step: listing entities is read-only discovery, not running the agent.
+
+Start with folder-scoped listing — most entities live in a specific folder (commonly `Shared`):
 
 ```bash
 # List entities in the default Shared folder
@@ -51,7 +53,11 @@ Both paths can coexist in a single agent — use SDK for known operations and `c
 
 Use the Python SDK's `EntitiesService` for deterministic CRUD operations. No LLM intermediary — the agent code specifies exactly what to fetch or write.
 
-**Fixed-shape does not mean inline.** Even when the query is always the same, expose each SDK call as a `@tool`-decorated function and hand it to the agent (see § Wiring into a LangGraph Agent). Do NOT call `sdk.entities.*` directly inside a plain graph node — a tool keeps the SDK call bindable, testable, and invocable by the agent.
+> **MANDATORY: every `sdk.entities.*` call MUST be inside a `@tool`-decorated function, registered with `create_agent(..., tools=[...])`.**
+>
+> This is NOT optional, even when the query is always the same shape. A plain `StateGraph` node that calls `sdk.entities.*` directly is **wrong** — it is not invocable by the agent, not bindable, and not testable. The correct architecture is always: `@tool` function wrapping the SDK call → `create_agent(llm, tools=[...])`.
+>
+> "Fixed-shape" describes the tool's *body* (same filter every time), not a reason to skip the tool pattern. Do NOT rationalize a simpler graph architecture — the tool pattern is mandatory regardless of query complexity.
 
 ### Setup
 
@@ -195,9 +201,9 @@ content: bytes = await sdk.entities.download_attachment_async(
 )
 ```
 
-### Wiring into a LangGraph Agent
+### Wiring into a LangGraph Agent (MANDATORY)
 
-Wrap every SDK call as a LangChain `@tool` so the agent can invoke it. This applies to fixed-shape queries too — the deterministic query lives inside the tool body; the agent decides when to call it. Never place `sdk.entities.*` calls in a plain graph node.
+Every SDK call MUST be a `@tool`-decorated async function passed to `create_agent(llm, tools=[...])`. No exceptions — not for single-query agents, not for "simple" graphs, not for fixed-shape operations. A `StateGraph` node that calls `sdk.entities.*` inline is the most common and most expensive mistake on this path.
 
 ```python
 from langchain_core.tools import tool
@@ -290,7 +296,7 @@ from uipath_langchain.agent.tools import create_datafabric_tool
 
 ### Setup
 
-Use the entity ID, name, and folder key from Step 1 discovery.
+Use the entity ID, name, and folder key from Step 1 discovery. Never ship `<ENTITY_ID>`-style placeholders for the user to fill in later — if Step 1 has not been run yet, run it now and wire the real `Id` / `Name` / `FolderId` values.
 
 ### Usage
 
@@ -436,7 +442,7 @@ graph = create_agent(llm, tools=[query_tool, close_order], messages=[SystemMessa
 
 2. **For freeform queries, use `create_datafabric_tool` — not a custom solution.** Import it from `uipath_langchain.agent.tools`. Do NOT use `create_datafabric_query_tool` or any other internal function — those are implementation details and may change without notice.
 
-3. **SDK-direct calls are always `@tool`-wrapped — even fixed-shape ones.** "Same query every time" describes the tool's body, not a reason to skip the tool. An `sdk.entities.*` call inline in a graph node is not invocable by the agent and is the most common shape mistake on this path.
+3. **SDK-direct calls are ALWAYS `@tool`-wrapped — no exceptions.** "Same query every time" describes the tool's body, not a reason to skip the tool. An `sdk.entities.*` call inline in a `StateGraph` node is **wrong** — it is not invocable by the agent. Use `@tool` + `create_agent(llm, tools=[...])`. This is the #1 shape failure on this path; agents that build a "simpler" plain graph without `@tool` always fail validation.
 
 4. **Single vs. batch trigger behavior** — `insert_record` / `update_record` / `delete_record` fire entity triggers. Batch variants (`insert_records`, `update_records`, `delete_records`) do **not**.
 
@@ -445,6 +451,8 @@ graph = create_agent(llm, tools=[query_tool, close_order], messages=[SystemMessa
 6. **Entity schemas resolve lazily** in `create_datafabric_tool` — the first invocation fetches schemas from Data Fabric and caches them. Subsequent calls reuse the cache.
 
 7. **Reserved field names** — `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime` are system fields and cannot be used as user field names.
+
+8. **Placeholder entity IDs are a build failure, not a deferral.** `create_datafabric_tool` cannot resolve `<ENTITY_ID>` / `<FOLDER_ID>`, and `uip codedagent init` does not validate them, so the gap surfaces only at first invocation. Run Step 1 before Build and paste the discovered UUIDs.
 
 ## Comparison with Low-Code DataFabric Context
 

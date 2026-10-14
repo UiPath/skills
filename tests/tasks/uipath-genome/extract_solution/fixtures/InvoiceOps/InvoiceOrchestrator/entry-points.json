@@ -1,0 +1,13 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "content/InvoiceOrchestrator.flow",
+      "uniqueId": "f0e1d2c3-aaaa-4bbb-8ccc-dddddddddddd",
+      "type": "Flow",
+      "input": { "type": "object", "properties": { "mailboxFolder": { "type": "string", "default": "Inbox/AP" } } },
+      "output": { "type": "object", "properties": { "postedCount": { "type": "number" }, "failedCount": { "type": "number" } } }
+    }
+  ]
+}

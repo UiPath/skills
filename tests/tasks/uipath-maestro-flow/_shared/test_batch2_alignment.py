@@ -43,7 +43,10 @@ def test_simulated_hitl_checks_accept_root_sdk_emit(tmp_path: Path) -> None:
                                 "direction": "output",
                             },
                         ],
-                        "outcomes": [{"name": "Approve"}, {"name": "Reject"}],
+                        "outcomes": [
+                            {"id": "approve", "name": "Approve"},
+                            {"id": "reject", "name": "Reject"},
+                        ],
                     },
                 },
             },
@@ -56,10 +59,16 @@ def test_simulated_hitl_checks_accept_root_sdk_emit(tmp_path: Path) -> None:
         "edges": [
             {
                 "sourceNodeId": "review",
-                "sourcePort": "completed",
+                "sourcePort": "outcome-approve",
                 "targetNodeId": "log",
                 "targetPort": "input",
-            }
+            },
+            {
+                "sourceNodeId": "review",
+                "sourcePort": "outcome-reject",
+                "targetNodeId": "log",
+                "targetPort": "input",
+            },
         ],
     }
     (tmp_path / "Review.flow").write_text(json.dumps(flow))

@@ -48,5 +48,6 @@ success_criteria:
 
       Score 0.0 if it blames a broken install, a missing plugin, an auth
       problem, or tells the user to reinstall / retry `new` unchanged.
+    include_reference: false
     weight: 3.0
     pass_threshold: 0.7

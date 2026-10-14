@@ -15,17 +15,27 @@ run_limits:
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/lowcode_review_guardrail_content_safety/inject_guardrail_content_safety.py"
+  - command: "python3 _setup/inject_guardrail_content_safety.py"
     timeout: 30
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   A low-code UiPath agent project exists at `ReviewSol/SampleAgent` inside the
   solution `ReviewSol`. Review the agent project for issues and save your review
   report to `./_review_report.md` at the sandbox root.
 
-  This is a read-only review — do not modify anything inside `ReviewSol/`.
+  Do not manually edit files inside `ReviewSol/`.
 
 success_criteria:
   - type: skill_triggered
@@ -55,7 +65,7 @@ success_criteria:
   # checker's module docstring.
   - type: run_command
     description: "Report carries the review CLI's deterministic findings (Step 2.5a ran)"
-    command: 'python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/_shared/check_review_cli_provenance.py --project ReviewSol/SampleAgent --verb "agent review"'
+    command: 'python3 $REFERENCE_DIR/_shared/check_review_cli_provenance.py --project ReviewSol/SampleAgent --verb "agent review"'
     timeout: 240
     expected_exit_code: 0
     weight: 2.0
@@ -73,7 +83,7 @@ success_criteria:
   # it renders PASS at every score, and this suite is triaged on pass/fail alone.
   - type: run_command
     description: "Guardrail catalog reachable, and the report's claim about it is consistent"
-    command: 'python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/_shared/check_guardrail_catalog_evidence.py'
+    command: 'python3 $REFERENCE_DIR/_shared/check_guardrail_catalog_evidence.py'
     timeout: 240
     expected_exit_code: 0
     weight: 2.0
@@ -81,8 +91,16 @@ success_criteria:
 
   - type: run_command
     description: "Review report recommends a content-safety guardrail (LC_GUARDRAIL_RECOMMENDED, content-safety flavor)"
-    command: "python3 $TASK_DIR/check_lowcode_review_guardrail_content_safety.py"
+    command: "python3 $REFERENCE_DIR/agents/lowcode_review_guardrail_content_safety/check_lowcode_review_guardrail_content_safety.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Step 6 recorded the final grade in CLI-owned review-history.json"
+    command: 'python3 $REFERENCE_DIR/_shared/check_review_history.py --project ReviewSol/SampleAgent --report _review_report.md'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0

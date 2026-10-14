@@ -49,6 +49,8 @@ Inspect the saved JSON. If the output contains `"Code": "GuardrailCatalogUnavail
 
 The cache file is `.guardrails-catalog-cache.json` in the current working directory. Add it to `.gitignore` if one exists.
 
+> **Parsing the cached JSON:** entries are at `Data.Guardrails[]` — the CLI re-cases every key under `Data` to PascalCase, so the snake_case catalog fields named in this file appear re-cased in the output: `validator_id` → `ValidatorId`, `when_to_use` → `WhenToUse`, `when_not_to_use` → `WhenNotToUse`, `use_cases` → `UseCases`, `security_risk_addressed` → `SecurityRiskAddressed`, `security_category` → `SecurityCategory`, `status` → `Status`, `examples[].config` → `Examples[].Config` (with `ActionType`, `ValidatorParameters`). Values keep their authored form (`"adversarial_input"`, `"Available"`). Keys named `Data.guardrails` or `when_to_use` match nothing — if a parse returns empty, read the raw file (`head -40 .guardrails-catalog-cache.json`) instead of guessing key names.
+
 ### Guardrails List (NEVER cached — tenant-specific)
 
 This returns only guardrails available to the current tenant (filtered by entitlements and feature flags). Run it fresh every time:
@@ -239,6 +241,8 @@ Report to the user:
 Use when the agent already has guardrails and the user asks whether they are correctly configured or appropriate.
 
 **Fetch the SDK docs first (WebFetch) — they are the authoritative source** for which Python class corresponds to which `validator_id` and which scopes/stages each class supports; a scope/placement diagnosis is grounded there. Also run the `catalog` and `list` fetches to support the Relevance (`when_not_to_use`) and entitlement checks below — recommended, but not a hard prerequisite once the SDK docs settle the scope question.
+
+**Do NOT use `uip codedagent review --checks guardrails` as the verdict.** It checks structure and presence, not scope/stage placement or entity/threshold correctness — a misplaced or misconfigured guardrail can score `PASS` / `A+` (see [guardrails.md § Critical Rules](guardrails.md#critical-rules) Rule 19). The three checks below are the authority for validate mode.
 
 For each existing guardrail discovered in the Python file (Step 1 from Recommend Mode):
 

@@ -1,0 +1,12 @@
+{
+  "displayName": "ContractRegistry",
+  "description": "Shared coder-eval fixture entity used by the Maestro Flow and Maestro BPMN suites — created by pre_run for the Data Fabric connector e2e",
+  "fields": [
+    {"name": "contractTitle", "type": "STRING",  "lengthLimit": 200},
+    {"name": "status",        "type": "STRING",  "lengthLimit": 100},
+    {"name": "priority",      "type": "INTEGER"},
+    {"name": "dueDate",       "type": "DATE"},
+    {"name": "value",         "type": "DECIMAL"},
+    {"name": "isUrgent",      "type": "BOOLEAN"}
+  ]
+}

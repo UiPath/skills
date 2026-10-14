@@ -4,16 +4,22 @@ description: >
   hierarchy under parent_folder_path, with a specific ParentID chain after
   a folder move. Check queries tenant directly.
 tags: [uipath-platform, e2e, mode:build, lifecycle:setup]
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+  - command: "python3 _setup/cleanup.py"
     timeout: 60
 
 run_limits:
@@ -35,11 +41,10 @@ initial_prompt: |
   as siblings.
 
   Do NOT ask for approval. Do NOT pause.
-
 success_criteria:
   - type: run_command
     description: "Tenant state: 3-level hierarchy with B re-parented to top"
-    command: "python3 $TASK_DIR/check_folders_hierarchy.py"
+    command: "python3 $REFERENCE_DIR/check_folders_hierarchy.py"
     timeout: 60
     expected_exit_code: 0
     weight: 5.0

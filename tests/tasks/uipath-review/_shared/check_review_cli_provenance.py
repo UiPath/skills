@@ -44,7 +44,7 @@ from pathlib import Path
 from report_evidence import cli_identity, declares_unavailable
 
 # Names the report may use for the review CLI, for the shared
-# `declares_unavailable` contract check (SKILL.md Critical Rule 11).
+# `declares_unavailable` contract check (agent-review-guide.md Critical Rule 3).
 REVIEW_CLI_SUBJECT = r"review\s+CLI|uip\s+agent\s+review|uip\s+codedagent\s+review"
 
 # Anchors that attribute a nearby grade letter to the CLI rather than to the

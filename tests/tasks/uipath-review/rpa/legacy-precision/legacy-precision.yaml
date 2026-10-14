@@ -24,6 +24,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: .
+
 initial_prompt: |
   A UiPath RPA project exists at `LegacyBot` in the current directory.
   Review it and produce a structured review report with Critical / Warning /
@@ -73,7 +76,7 @@ success_criteria:
 
   - type: run_command
     description: "Report does NOT flag Legacy as Critical and gives tailored migration guidance"
-    command: "python3 $TASK_DIR/check_legacy_precision.py"
+    command: "python3 $REFERENCE_DIR/check_legacy_precision.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

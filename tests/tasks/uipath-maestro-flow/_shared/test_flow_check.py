@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import flow_check  # noqa: E402
 from flow_check import (  # noqa: E402
+    ENTITY_QUERY_HINTS,
     assert_flow_has_any_node_type,
     assert_flow_has_api_node_targeting,
     assert_flow_has_exact_node_type,
@@ -181,6 +182,57 @@ def test_assert_flow_has_any_node_type_fails_when_none_present(tmp_path, monkeyp
 def test_assert_flow_has_any_node_type_empty_hints_is_noop(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)  # no project needed when hints are empty
     assert_flow_has_any_node_type([])
+
+
+# ── ENTITY_QUERY_HINTS (native Data Fabric node, 2026-09-10) ───────────────
+
+
+def test_entity_query_hints_accept_the_dataservice_connector(tmp_path, monkeypatch):
+    """The Integration Service activity remains acceptable wherever the native
+    tenant flag is off."""
+    root = _write_flow(
+        tmp_path, ["uipath.connector.uipath-uipath-dataservice.query-entity-records"]
+    )
+    monkeypatch.chdir(root)
+    assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
+
+
+def test_entity_query_hints_accept_the_native_node(tmp_path, monkeypatch):
+    """Regression lock for the 2026-09-10 billing failures: with
+    `canvas.nodes.read-entity` on, the skill steers the agent to the native node
+    (#3041), which the connector-only gate rejected before run_debug."""
+    root = _write_flow(tmp_path, ["core.datafabric.read"])
+    monkeypatch.chdir(root)
+    assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
+
+
+def test_entity_query_hints_reject_a_script_only_flow(tmp_path, monkeypatch):
+    """The anti-hardcode guard survives: a flow that queries nothing still fails,
+    and the message names both shapes."""
+    root = _write_flow(tmp_path, ["core.action.script"])
+    monkeypatch.chdir(root)
+    with pytest.raises(SystemExit) as exc:
+        assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
+    msg = str(exc.value)
+    assert "uipath-dataservice.query" in msg
+    assert "core.datafabric.read" in msg
+
+
+def test_billing_gates_use_the_shared_entity_hints():
+    """The tests above exercise the constant, not the call sites. Without this,
+    reverting either gate to the connector-only hint keeps the suite green and
+    silently restores the 2026-09-10 failure."""
+    suite = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    gates = (
+        "multi_node/billing_invoice_lookup/check_billing_invoice_lookup.py",
+        "multi_node/billing_discrepancy_detector/check_billing_discrepancy_detector.py",
+        "multi_node/billing_dispute_resolution/"
+        "check_structure_billing_dispute_resolution.py",
+    )
+    for relative in gates:
+        with open(os.path.join(suite, relative), encoding="utf-8") as handle:
+            source = handle.read()
+        assert "assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)" in source, relative
 
 
 # ── assert_flow_has_api_node_targeting (slack-weather gate, PR #1301) ───────
@@ -604,7 +656,7 @@ def test_find_project_ignores_the_staged_node_modules_symlink(tmp_path, monkeypa
     solution = tmp_path / "Real"
     solution.mkdir()
     _make_proj(solution, "Real", "Flow")
-    sdk = tmp_path.parent / f"{tmp_path.name}-sdk" / "node_modules" / "@uipath" / "flow-sdk" / "fixtures"
+    sdk = tmp_path.parent / f"{tmp_path.name}-sdk" / "node_modules" / "@uipath" / "maestro-builder-sdk" / "fixtures"
     sdk.mkdir(parents=True)
     (sdk / "project.uiproj").write_text('{"ProjectType": "Flow"}')
     (sdk / "Fixture.flow").write_text("{}")
@@ -807,6 +859,17 @@ _POLL_TIMEOUT = (
     'is accessible, and Studio Web debug is available, then retry.",\n'
     '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
 )
+# Trimmed from skill-flow-lowcode-agent 2026-10-09: the agent job's LLM call
+# 500'd; the envelope says RetryWillNotFix and carries no HttpStatus.
+_LLM_PROVIDER_500 = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Debug session Faulted. [170002] Failure in the Orchestrator Job (element countRs)",\n'
+    '  "Context": {"ErrorCode": "170002"},\n'
+    '  "Data": {"finalStatus": "Faulted", "incidents": [{"errorCode": "170002",\n'
+    '    "errorDetails": "LLM provider returned HTTP 500",\n'
+    '    "dependentFaultCode": "AGENT_RUNTIME.HTTP_ERROR"}]},\n'
+    '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
+)
 
 
 # Verbatim from `uip maestro flow debug` on 2026-09-02 07:48Z: Studio Web's
@@ -909,6 +972,53 @@ def test_run_debug_does_not_retry_real_fault(monkeypatch):
     assert calls["n"] == 1
 
 
+def test_run_debug_names_a_studio_web_handoff(monkeypatch):
+    """A chat-driven flow is uploaded and handed off, never run, so it returns
+    Success with no finalStatus. Reporting that as "did not complete" reads as a
+    broken flow; it is a task-shape problem (skill-flow-cli-dice-roller-simulated,
+    2026-09-17). One attempt only — a Success envelope is not transient."""
+    handoff = (
+        '{\n  "Result": "Success",\n  "Code": "FlowDebugStudioWebHandoff",\n'
+        '  "Data": {"solutionId": "bcb9354a", "studioWebUrl": "https://example/designer/609b",\n'
+        '           "handedOff": true},\n'
+        '  "Instructions": "This flow can only be driven from a chat UI"\n}'
+    )
+    calls = _stub_debug(monkeypatch, [_cp(0, handoff)])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug()
+    assert calls["n"] == 1
+    assert "chat-driven" in str(excinfo.value)
+    assert "did not complete" not in str(excinfo.value)
+
+
+def test_run_debug_names_a_handoff_without_the_code_label(monkeypatch):
+    """`handedOff` is the semantic signal; the `Code` label is a string that can
+    be renamed. The observed envelope carries both, which short-circuits the
+    `Code` arm, so this covers the payload-only arm on its own."""
+    handoff = (
+        '{\n  "Result": "Success",\n  "Code": "FlowDebugSomeFutureName",\n'
+        '  "Data": {"solutionId": "bcb9354a", "handedOff": true}\n}'
+    )
+    _stub_debug(monkeypatch, [_cp(0, handoff)])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug()
+    assert "chat-driven" in str(excinfo.value)
+
+
+def test_run_debug_keeps_the_generic_message_for_a_real_fault(monkeypatch):
+    """Neither handoff signal present: the pre-existing wording must survive, so
+    a faulted run is not misreported as a chat-driven design."""
+    faulted = (
+        '{\n  "Result": "Success",\n  "Code": "FlowDebug",\n'
+        '  "Data": {"finalStatus": "Faulted", "handedOff": false}\n}'
+    )
+    _stub_debug(monkeypatch, [_cp(0, faulted)])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug()
+    assert "did not complete" in str(excinfo.value)
+    assert "chat-driven" not in str(excinfo.value)
+
+
 def test_run_debug_does_not_retry_nontransient_error(monkeypatch):
     """A non-5xx / non-RetryLater failure (e.g. bad input) is returned on the
     first attempt."""
@@ -917,6 +1027,20 @@ def test_run_debug_does_not_retry_nontransient_error(monkeypatch):
     with pytest.raises(SystemExit):
         run_debug()
     assert calls["n"] == 1
+
+
+@pytest.mark.parametrize(
+    "agent_fault,attempts",
+    [(flow_check.AgentFaultRetry.NONE, 1), (flow_check.AgentFaultRetry.RETRY, 2)],
+)
+def test_run_debug_retries_agent_5xx_only_when_opted_in(monkeypatch, agent_fault, attempts):
+    calls = _stub_debug(monkeypatch, [_cp(1, _LLM_PROVIDER_500), _cp(0, _COMPLETED)])
+    if attempts == 1:
+        with pytest.raises(SystemExit):
+            run_debug(agent_fault=agent_fault)
+    else:
+        run_debug(agent_fault=agent_fault)
+    assert calls["n"] == attempts
 
 
 def test_run_debug_exhausts_retries_on_persistent_504(monkeypatch):
@@ -937,10 +1061,23 @@ def test_run_debug_exhausts_retries_on_persistent_504(monkeypatch):
         (_cp(1, '{"ErrorCode": "invalid_argument", "Retry": "RetryWillNotFix"}'), False),
         (_cp(1, '{"Context": {"HttpStatus": 404}}'), False),           # 4xx is not transient
         (_cp(1, _POLL_TIMEOUT), True),                                 # CLI poll-budget expiry
+        (_cp(1, _LLM_PROVIDER_500), False),                            # agent 5xx: opt-in only
     ],
 )
 def test_is_transient_debug_error(cp, expected):
     assert flow_check._is_transient_debug_error(cp) is expected
+
+
+@pytest.mark.parametrize(
+    "cp,expected",
+    [
+        (_cp(1, _LLM_PROVIDER_500), True),
+        (_cp(1, _LLM_PROVIDER_500.replace("HTTP 500", "HTTP 400")), False),
+    ],
+)
+def test_agent_fault_retry_opts_into_llm_5xx(cp, expected):
+    retry = flow_check.AgentFaultRetry.RETRY
+    assert flow_check._is_transient_debug_error(cp, retry) is expected
 
 
 # ── run_debug: a faulted run carries the backend's incident details ──────────
@@ -1131,7 +1268,8 @@ def test_cleanup_solutions_deletes_rotated_ids_from_the_sidecar(monkeypatch, tmp
         "22222222-2222-4222-8222-222222222222\n\n11111111-1111-4111-8111-111111111111\n"
     )
     spec = importlib.util.spec_from_file_location(
-        "cleanup_solutions", os.path.join(os.path.dirname(flow_check.__file__), "cleanup_solutions.py")
+        "cleanup_solutions",
+        os.path.join(os.path.dirname(flow_check.__file__), "..", "_setup", "cleanup_solutions.py"),
     )
     cleanup = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cleanup)
@@ -1396,22 +1534,74 @@ def test_run_debug_retry_floor_matches_the_cli_minimum():
     )
 
 
-def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch):
-    """A stall upstream of polling exits as a graded FAIL carrying the partial
-    output, not as an uncaught TimeoutExpired traceback."""
-    exc = subprocess.TimeoutExpired(
+def _subprocess_timeout(instance_id="abc-123"):
+    return subprocess.TimeoutExpired(
         cmd=["uip", "maestro", "flow", "debug"],
         timeout=240,
         output=b'{"partial": true}',
-        stderr=b"Debug instance created - instanceId: abc-123\n",
+        stderr=f"Debug instance created - instanceId: {instance_id}\n".encode(),
     )
-    calls = _stub_debug(monkeypatch, [exc])
+
+
+def test_run_debug_retries_subprocess_timeout_then_completes(monkeypatch):
+    """A SIGKILLed first attempt is flaky, not terminal: the second one grades."""
+    calls = _stub_debug(monkeypatch, [_subprocess_timeout(), _cp(0, _COMPLETED)])
+    payload = run_debug(timeout=240)
+    assert calls["n"] == 2
+    assert flow_check._get_ci(payload, "finalStatus") == "Completed"
+
+
+def test_run_debug_keeps_the_richest_timeout_capture(monkeypatch):
+    """A later timeout that printed nothing must not erase the instanceId an
+    earlier one exposed — it is the only handle on the remote run."""
+    first = _subprocess_timeout("inst-from-attempt-1")
+    second = subprocess.TimeoutExpired(
+        cmd=["uip", "maestro", "flow", "debug"], timeout=240, output=b"", stderr=b""
+    )
+    _stub_debug(monkeypatch, [first, second])
     with pytest.raises(SystemExit) as excinfo:
         run_debug(timeout=240)
-    assert calls["n"] == 1
+    assert "inst-from-attempt-1" in str(excinfo.value)
+    assert flow_check._LAST_DEBUG_RAW == '{"partial": true}'
+
+
+def test_run_debug_timeout_message_counts_all_attempts(monkeypatch):
+    """The two counters are distinct: a transient failure ahead of the timeouts
+    raises the attempt total without spending the timeout allowance."""
+    calls = _stub_debug(
+        monkeypatch,
+        [_cp(1, _TRANSIENT_504), _subprocess_timeout(), _subprocess_timeout()],
+    )
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug(timeout=240)
+    assert calls["n"] == 3
+    assert "2 subprocess timeout(s) across 3 attempt(s)" in str(excinfo.value)
+
+
+def test_run_debug_refuses_a_subprocess_timeout_retry_it_cannot_fund(monkeypatch):
+    """The allowance never outruns the deadline. Asserting the allowance has
+    room first is what makes the budget the thing under test."""
+    assert flow_check._SUBPROCESS_TIMEOUT_ATTEMPTS > 1
+    calls = _stub_debug(monkeypatch, [_subprocess_timeout()] * 2, attempt_seconds=180)
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug(timeout=180, budget=240, backoff_seconds=5)
+    assert calls["n"] == 1  # 240 - 180 - 5 = 55, under the 90s retry floor
+    assert "could not fund another" in str(excinfo.value)
+
+
+def test_run_debug_subprocess_timeout_fails_cleanly(monkeypatch):
+    """A SIGKILLed run exits as a graded FAIL carrying the partial output, not
+    as an uncaught TimeoutExpired traceback — after its own allowance."""
+    calls = _stub_debug(monkeypatch, [_subprocess_timeout(), _subprocess_timeout()])
+    with pytest.raises(SystemExit) as excinfo:
+        run_debug(timeout=240)
+    assert calls["n"] == flow_check._SUBPROCESS_TIMEOUT_ATTEMPTS
     message = str(excinfo.value)
     assert "240s subprocess cap" in message
+    assert "on 2 subprocess timeout(s) across 2 attempt(s)" in message
     assert "abc-123" in message  # without the instanceId the run is unrecoverable
+    # The stall phase is not knowable from a SIGKILL; the tail is the evidence.
+    assert "upstream of" not in message
     assert flow_check._LAST_DEBUG_RAW == '{"partial": true}'
 
 
@@ -1503,3 +1693,81 @@ def test_run_debug_invariants_under_random_schedules(seed, monkeypatch):
     for cap, cli in caps:
         assert cap > 0, f"non-positive subprocess cap {cap}"
         assert cli < cap, f"CLI timeout {cli} does not fit inside the {cap}s cap"
+
+
+# ── assert_output_not_serialized_object ──────────────────────────────────────
+# The 2026-09-23 v2 debug (skill-flow-devcon-billing-resolution-writer, cmd 23):
+# the inline agent packed its whole answer into `body`.
+_PACKED_BODY = (
+    '{"subject":"Resolution for Invoice INV-2026-0042","body":"Dear Acme Industries,'
+    '\\n\\nThank you for your patience while we reviewed your billing dispute. We have '
+    'completed our review of invoice INV-2026-0042 and approved a credit in the amount '
+    'of $125.50.\\n\\nBest regards,\\nBilling Support"}'
+)
+# The 2026-08-31_06 mirror image: the JSON landed in `subject`.
+_PACKED_SUBJECT = (
+    '{"subject":"Resolution for Invoice MCS-2026-04872","body":"Dear Northwind Traders,'
+    '\\n\\nWe approved a credit of $1,610."}'
+)
+_PLAIN_BODY = (
+    "Dear Acme Industries,\n\nWe have completed our review of invoice INV-2026-0042 "
+    "and approved a credit of $125.50.\n\nBest regards,\nBilling Support"
+)
+
+
+def _named_globals(**globals_):
+    return {"variables": {"globals": dict(globals_)}}
+
+
+def test_assert_output_not_serialized_object_packed_body():
+    payload = _named_globals(emailSubject="Billing dispute resolution email drafted", emailBody=_PACKED_BODY)
+    with pytest.raises(SystemExit) as exc:
+        flow_check.assert_output_not_serialized_object(payload, "emailBody")
+    assert "emailBody is a serialized JSON object (keys: subject, body)" in str(exc.value)
+
+
+def test_assert_output_not_serialized_object_packed_subject():
+    payload = _named_globals(emailSubject=_PACKED_SUBJECT, emailBody="Completed drafting the email as JSON.")
+    with pytest.raises(SystemExit) as exc:
+        flow_check.assert_output_not_serialized_object(payload, "emailSubject")
+    assert "emailSubject is a serialized JSON object" in str(exc.value)
+
+
+def test_assert_output_not_serialized_object_fenced_and_array():
+    fenced = _named_globals(emailBody="```json\n" + _PACKED_BODY + "\n```")
+    with pytest.raises(SystemExit, match="serialized JSON object"):
+        flow_check.assert_output_not_serialized_object(fenced, "emailBody")
+    array = _named_globals(emailBody='[{"subject":"x","body":"y"}]')
+    with pytest.raises(SystemExit, match="serialized JSON array"):
+        flow_check.assert_output_not_serialized_object(array, "emailBody")
+
+
+def test_assert_output_not_serialized_object_reads_the_typed_array_shape():
+    payload = {"variables": {"globalVariables": [{"id": "emailBody", "value": _PACKED_BODY}]}}
+    with pytest.raises(SystemExit, match="serialized JSON object"):
+        flow_check.assert_output_not_serialized_object(payload, "emailBody")
+
+
+def test_assert_output_not_serialized_object_plain_prose():
+    payload = _named_globals(emailSubject="Resolution for Invoice INV-2026-0042", emailBody=_PLAIN_BODY)
+    flow_check.assert_output_not_serialized_object(payload, "emailSubject")
+    flow_check.assert_output_not_serialized_object(payload, "emailBody")
+
+
+def test_assert_output_not_serialized_object_structured_value():
+    """A whole agent-output object (or array) mapped into the text field fails too."""
+    for value in ({"subject": "Resolution", "body": "Dear Acme"}, [{"body": "Dear Acme"}]):
+        with pytest.raises(SystemExit):
+            flow_check.assert_output_not_serialized_object(_named_globals(emailBody=value), "emailBody")
+
+
+def test_named_global_reads_globals_then_global_variables():
+    assert flow_check._named_global(_named_globals(emailBody="x"), "EMAILBODY")[0] == "x"
+    payload = {"variables": {"globals": {}, "globalVariables": [{"id": "emailBody", "value": "y"}]}}
+    assert flow_check._named_global(payload, "emailBody")[0] == "y"
+    assert flow_check._named_global({}, "emailBody") == (None, {})
+
+
+def test_assert_output_not_serialized_object_braces_in_prose():
+    for text in ("Credit {INV-1} issued.", "{Dear customer} we approved it", '"just a quoted string"', "42"):
+        flow_check.assert_output_not_serialized_object(_named_globals(emailBody=text), "emailBody")

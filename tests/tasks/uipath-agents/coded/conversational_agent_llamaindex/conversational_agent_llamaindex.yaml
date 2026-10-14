@@ -10,6 +10,9 @@ tags: [uipath-agents, smoke, mode:build, coded, lifecycle:generate, feature:conv
 run_limits:
   expected_turns: 22
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   hey, can you set up a tiny LlamaIndex chat agent here called
   `chat-agent`? it should just take a message and reply with the same
@@ -61,7 +64,7 @@ success_criteria:
 
   - type: run_command
     description: "Two distinct local chat turns produced echoed replies"
-    command: "python3 $TASK_DIR/check_two_local_turns.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_two_local_turns_llamaindex.py"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -69,7 +72,7 @@ success_criteria:
 
   - type: run_command
     description: "isConversational flag, llama_index.json, lazy init"
-    command: "python3 $TASK_DIR/check_conversational_agent_llamaindex.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_conversational_agent_llamaindex.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

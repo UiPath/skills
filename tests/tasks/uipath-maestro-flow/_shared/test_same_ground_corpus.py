@@ -42,6 +42,36 @@ FORBIDDEN_PROMPT_EXCEPTIONS = {
 
 DEBUG_SOLUTION_ALLOWLIST = set()
 
+# Commands whose JOB the other route does differently or internally, so a
+# `command_executed` on one of them measures which route ran rather than what
+# the run produced. See `test_route_specific_command_telemetry_is_weightless`
+# for the evidence behind each family, and for what is deliberately NOT here.
+ROUTE_SPECIFIC_COMMANDS = (
+    # v1 mutates the graph a node at a time; the SDK loop writes `.flow.ts`.
+    r"flow node \(?(add|configure|remove|update)|flow edge ",
+    # v1 scaffolds the inline agent's sidecar with the CLI; the SDK's
+    # `conversationalAgent()` / `agent()` emit `agent.json` themselves.
+    r"agent (init|refresh) (?=.*(inline-in-flow|--conversational))",
+    # v1 walks the tenant by hand; `registry prepare` picks the connection,
+    # pages the collection and writes `bindings.json` in one call.
+    r"is connections list|is resources run list|is triggers \(?(objects|describe)",
+    # v1 refreshes the node manifest before searching it.
+    r"flow registry \(?pull",
+)
+
+# The two billing lookups name only a "Data Service entity", which since #3041
+# denotes two node families. Their prompts pin the connector so the graded
+# structure is deterministic; the sibling dispute-resolution task pins it in the
+# same way. Native Data Fabric authoring is covered by its own task, not these.
+CONNECTOR_PINNED_LOOKUPS = {
+    "multi_node/billing_invoice_lookup/billing_invoice_lookup.yaml",
+    "multi_node/billing_discrepancy_detector/billing_discrepancy_detector.yaml",
+}
+CONNECTOR_PIN = (
+    "on the data service `query-entity-records` activity, "
+    "not the native data fabric nodes"
+)
+
 # F1 freezes the #2557 task even though its prompt predates the exact phrase.
 DEBUG_PROJECT_LAYOUT_EXCEPTIONS = {"single_node/coded_agent/coded_agent.yaml"}
 
@@ -84,13 +114,24 @@ def _task_text(relative: str) -> str:
     return (FLOW_TASKS / relative).read_text()
 
 
+_REFERENCE_BLOCK = re.compile(r"^reference:\s*\n\s*directory:\s*(\S+)", re.M)
+
+
 def _referenced_python_files(task_path: Path, criterion: str) -> list[Path]:
     paths = []
+    reference_root: Path | None = None
     for token in re.findall(
-        r"(?:\$TASK_DIR/|\$SKILLS_REPO_PATH/)?[A-Za-z0-9_./-]+\.py", criterion
+        r"(?:\$TASK_DIR/|\$REFERENCE_DIR/|\$SKILLS_REPO_PATH/)?[A-Za-z0-9_./-]+\.py", criterion
     ):
         if token.startswith("$TASK_DIR/"):
             path = task_path.parent / token.removeprefix("$TASK_DIR/")
+        elif token.startswith("$REFERENCE_DIR/"):
+            if reference_root is None:
+                match = _REFERENCE_BLOCK.search(task_path.read_text())
+                if not match:
+                    continue
+                reference_root = task_path.parent / match.group(1)
+            path = reference_root / token.removeprefix("$REFERENCE_DIR/")
         elif token.startswith("$SKILLS_REPO_PATH/"):
             path = FLOW_TASKS.parents[2] / token.removeprefix("$SKILLS_REPO_PATH/")
         else:
@@ -160,6 +201,76 @@ def test_v1_only_authoring_commands_match_the_temporary_allowlist() -> None:
     assert offenders == V1_AUTHORING_ALLOWLIST
 
 
+def _command_pattern(criterion: str) -> str:
+    """A `command_pattern` with its regex escaping flattened to plain words.
+
+    The corpus spells the same command several ways — `\\s+` in a single-quoted
+    scalar, `\\\\s+` in a double-quoted one — so matching families against the
+    raw text would miss half of them.
+    """
+    match = re.search(r"(?m)^\s+command_pattern:\s*(.*)$", criterion)
+    if match is None:
+        return ""
+    pattern = match.group(1).replace("\\\\", "\\")
+    pattern = re.sub(r"\\s\+?", " ", pattern)
+    return re.sub(r"\s+", " ", pattern.replace("\\", ""))
+
+
+def test_route_specific_command_telemetry_is_weightless() -> None:
+    """A criterion that grades WHICH ROUTE ran must not move the score.
+
+    THE GAP THIS EXISTS FOR. `pass_threshold: 0` was read as "this criterion is
+    advisory", and the sibling test above enforces only that. It is half the
+    idiom; coder_eval's own field docs carry the other half: "weight=0 excludes
+    from the score but NOT from the pass/fail gate ... To make a criterion truly
+    non-gating, also set pass_threshold=0." So `pass_threshold: 0` with
+    `weight: 1.5` never fails a task and always moves its score.
+
+    That only matters where the command itself is route-specific. In the
+    2026-09-23 same-ground run those criteria scored 1.0 for v1 and 0.0 for v2,
+    dragging tasks that passed every graded check down with them —
+    `datafabric_integration_create_get` returned SUCCESS at 0.55 on three
+    `flow node add` advisories weighing 5.0 against two graded criteria at 3.0.
+
+    WHAT IS NOT IN `ROUTE_SPECIFIC_COMMANDS`, and why. An earlier revision of
+    this test keyed on criterion TYPE — every non-gating `command_executed` —
+    and that was wrong. It swept in `solution init`, `flow init`,
+    `flow validate`, `flow debug` and `flow eval ...`, which both routes run on
+    the same artifact and which the run shows both routes passing (31 of the 54
+    observed criteria were BOTH PASS). Zeroing those removes real, satisfiable
+    signal and buys no neutrality. `flow registry get|search|list` is out for
+    the same measured reason: the SDK arm passes those in the IxP tasks, so the
+    registry is not a v1-only surface — only `pull` is listed, as the refresh
+    step the SDK loop has no need of.
+
+    A criterion is therefore in scope only when its COMMAND has no counterpart
+    in the other route. Where an arm then fails one of the survivors, that is a
+    finding about the arm, which is the point.
+
+    `stop_early` criteria are exempt: there `weight` is load-bearing for the
+    pass-stop floor, not just for the score (see `ixp/routing.yaml`, whose
+    sentinel says so).
+    """
+    offenders = set()
+    for relative, _, text in _tagged_tasks():
+        for criterion_type, criterion in _criterion_blocks(text):
+            if criterion_type != "command_executed":
+                continue
+            threshold = re.search(r"(?m)^\s+pass_threshold:\s*([0-9.]+)", criterion)
+            if threshold is None or float(threshold.group(1)) > 0:
+                continue
+            if re.search(r"(?m)^\s+stop_early:", criterion):
+                continue
+            pattern = _command_pattern(criterion)
+            if not any(re.search(family, pattern) for family in ROUTE_SPECIFIC_COMMANDS):
+                continue
+            weight = re.search(r"(?m)^\s+weight:\s*([0-9.]+)", criterion)
+            # An absent `weight` defaults to 1.0, so silence is not compliance.
+            if weight is None or float(weight.group(1)) != 0:
+                offenders.add(relative)
+    assert offenders == set()
+
+
 def test_gating_skill_telemetry_matches_the_temporary_allowlist() -> None:
     offenders = set()
     for relative, _, text in _tagged_tasks():
@@ -192,14 +303,31 @@ def test_debug_graded_prompts_name_a_same_name_solution() -> None:
     assert offenders == DEBUG_SOLUTION_ALLOWLIST | DEBUG_PROJECT_LAYOUT_EXCEPTIONS
 
 
+def test_billing_lookup_prompts_pin_the_data_service_connector() -> None:
+    offenders = {
+        relative
+        for relative in CONNECTOR_PINNED_LOOKUPS
+        if CONNECTOR_PIN not in " ".join(_prompt_text(_task_text(relative)).lower().split())
+    }
+    assert offenders == set()
+
+
 def test_external_graders_use_package_qualified_shared_imports() -> None:
+    """Outside `_shared/`, no grader may resolve a same-named `_shared/` module
+    via a bare/ambiguous import. `_setup/` is exempt by design: it is staged
+    into the agent's sandbox (never reaches `_shared/`, which is not staged),
+    and a `_setup/<name>.py` legitimately shares a stem with a `_shared/<name>.py`
+    when pre_run/post_run tooling and its grader need their own separate copies
+    of the same helper (see jira_is.py: `_setup/jira_is.py` per Jira task,
+    `_shared/jira_is.py` for the graders — intentionally two copies, never one
+    importing the other)."""
     shared_modules = {
         path.stem for path in (FLOW_TASKS / "_shared").glob("*.py")
     }
     offenders = set()
     for path in FLOW_TASKS.rglob("*.py"):
         relative = path.relative_to(FLOW_TASKS)
-        if relative.parts[0] == "_shared":
+        if relative.parts[0] == "_shared" or "_setup" in relative.parts:
             continue
         for module in re.findall(
             r"(?m)^(?:from|import)\s+([A-Za-z_][A-Za-z0-9_]*)", path.read_text()

@@ -1,7 +1,8 @@
 task_id: skill-ixp-create-project-blank-smoke
 description: >
-  Smoke: agent creates a blank IXP project with `--skip-taxonomy` — no
-  taxonomy, no docs, so it doesn't stall waiting for files or a suggestion.
+  Smoke: agent creates an empty IXP project by omitting `<folder-path>` — no
+  taxonomy, no docs, so it doesn't stall waiting for files or a suggestion,
+  and doesn't redirect in-product (the CLI supports this directly).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -11,9 +12,11 @@ run_limits:
   expected_turns: 5
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   Create a blank IXP project named "test project".
@@ -25,10 +28,12 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  - type: file_matches_regex
-    description: "Agent created a blank project via `projects create \"test project\" … --skip-taxonomy`"
-    path: "mocks/calls.log"
-    pattern: >-
-      (?m)^(?:uip\s+ixp\s+projects\s+create\b(?=.*test project)(?=.*--skip-taxonomy).*)[^\r\n]*$
+  # `positional` is a prefix match, so a folder after the name is not graded —
+  # the sandbox has no documents to pass.
+  - type: cli_called
+    description: "Agent created the project with `projects create \"test project\"`"
+    verb: "ixp projects create"
+    tool: "uip"
+    positional: ["test project"]
     weight: 3.0
     pass_threshold: 1.0

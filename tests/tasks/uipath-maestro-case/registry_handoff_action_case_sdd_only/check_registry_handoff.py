@@ -1,5 +1,10 @@
 import json
+import os
+import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _shared.case_check import registry_audit_entries  # noqa: E402
 
 
 ACTION_RESOURCE = "PortableReviewActionProbeQ91"
@@ -50,8 +55,8 @@ EXPECTED = {
 
 registry_path = Path("tasks/registry-resolved.json")
 
-entries = json.loads(registry_path.read_text(encoding="utf-8"))
-assert isinstance(entries, list), "registry-resolved.json must be a list"
+# Every legal ledger shape — hand-written list or `sdd resolve` output — read as one.
+entries = registry_audit_entries(json.loads(registry_path.read_text(encoding="utf-8")))
 assert len(entries) == len(EXPECTED), (
     f"expected one corrected audit entry per SDD task, got {len(entries)}"
 )
@@ -138,7 +143,7 @@ for display_name in DISPLAY_NAMES:
         f"registry lookup incorrectly substituted task display name {display_name}"
     )
 
-# Rule 8: an empty lookup stays visibly unresolved in the audit rather than being
+# Rule 9: an empty lookup stays visibly unresolved in the audit rather than being
 # silently dropped or fabricated. The marker may sit on any field of the entry.
 audit_text = registry_path.read_text(encoding="utf-8")
 for resource_name in (ACTION_RESOURCE, CASE_RESOURCE):

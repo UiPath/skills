@@ -136,13 +136,13 @@ uip aops execution logs "$EXECUTION_ID" --follow --output json 2> build.log
 `--output-filter` is a lighter alternative when only one field is needed — and `save-and-run` has no defaulted `--limit`, so no explicit `--limit` is required:
 
 ```bash
-uip aops pipeline save-and-run --file ./pipeline.json --output json --output-filter "Data.ExecutionId"
+uip aops pipeline save-and-run --file ./pipeline.json --output json --output-filter "ExecutionId"
 ```
 
 The same shortcut on `pipeline executions` DOES need an explicit `--limit`, because that verb's `--limit` has a declared default:
 
 ```bash
-uip aops pipeline executions "$PIPELINE_ID" --limit 1 --output json --output-filter "Data[0].ExecutionId"
+uip aops pipeline executions "$PIPELINE_ID" --limit 1 --output json --output-filter "[0].ExecutionId"
 ```
 
 ## Stop conditions

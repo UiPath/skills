@@ -12,7 +12,14 @@ description: >
   actually posted (it returned a non-empty message id surfaced as a flow
   output). Grades the delivered Slack side effect, not "did it run".
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, shape:multi-node, connector, feature:escalation, path-to-ga, outcome-graded]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 55
   max_turns: 120
@@ -20,11 +27,14 @@ run_limits:
   turn_timeout: 1200
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/e2e/escalation_slack_alert/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 30
 
+reference:
+  directory: ../..
+
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120
 
 initial_prompt: |
@@ -83,7 +93,7 @@ success_criteria:
   # ── The delivered flow validates ────────────────────────────────────────
   - type: run_command
     description: "Generated EscalationSlackAlert Flow validates without errors, independent of solution layout"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -92,7 +102,7 @@ success_criteria:
   # ── OUTCOME: seeded Sev1 run posts to Slack and returns the right outputs ─
   - type: run_command
     description: "Seeded Sev1 debug run completes, classifies Sev1 + engineering, preserves correlationId, and the Slack alert was actually posted (non-empty message id)"
-    command: "python3 $TASK_DIR/check_escalation_slack_alert.py"
+    command: "python3 $REFERENCE_DIR/e2e/escalation_slack_alert/check_escalation_slack_alert.py"
     timeout: 1000
     expected_exit_code: 0
     weight: 5.0

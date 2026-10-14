@@ -17,6 +17,9 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/SimpleCodedAgent
 
+reference:
+  directory: ../../..
+
 initial_prompt: |
   I have a coded LangGraph agent in graph.py. I'm worried that the
   lookup_account_info tool could leak customer PII back to the user. What
@@ -54,7 +57,7 @@ success_criteria:
 
   - type: run_command
     description: "Tool-scoped guardrail targets lookup_account_info; graph.py parses; exactly one representation used"
-    command: "python3 $TASK_DIR/check_recommend_scoped.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_recommend_scoped.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

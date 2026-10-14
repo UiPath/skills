@@ -2,6 +2,8 @@
 
 Pack → publish → release update → live HTTP endpoint. Covers package anatomy, the production cold-start model (the top source of deployed-only failures), publish credentials, invoke URL discovery, Studio Web push, and solution registration.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 ## Pack
 
 ```bash

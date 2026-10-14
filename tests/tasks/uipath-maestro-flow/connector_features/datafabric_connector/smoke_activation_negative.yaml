@@ -4,6 +4,9 @@ description: >
   NOT route to uipath-maestro-flow — it should reach uipath-rpa instead.
 tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:discover, negative, connector, uipath-uipath-dataservice]
 
+run_limits:
+  max_turns: 15
+
 initial_prompt: |
   In my RPA Studio (.xaml) workflow, add a Data Fabric activity to read
   customer records from the CustomerDirectory entity.
@@ -21,8 +24,15 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: skill_triggered
-    description: "Advisory: uipath-rpa handles the RPA-Studio Data Fabric prompt"
+    description: "Advisory: uipath-maestro-flow does NOT take the RPA-Studio Data Fabric prompt"
     skill_name: uipath-maestro-flow
     expected_skill: ""
+    weight: 3.0
+    pass_threshold: 0.0
+
+  - type: skill_triggered
+    description: "Advisory: uipath-rpa handles the RPA-Studio Data Fabric prompt"
+    skill_name: uipath-rpa
+    expected_skill: uipath-rpa
     weight: 3.0
     pass_threshold: 0.0

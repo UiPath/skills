@@ -3,7 +3,7 @@
 // message reflects what actually happened. Emojis match Studio's Sprint Release
 // Bot (#dev-studio-robot): :checkbox_ticked: succeeded · :warning: failed/skipped.
 
-const SLACK_URL = "https://slack.com/api/chat.postMessage";
+import { postMessage, requireEnv } from "./slack.mjs";
 
 const token = requireEnv("SLACK_BOT_TOKEN");
 const channel = requireEnv("CHANNEL_ID");
@@ -69,23 +69,5 @@ const text = [
   bumpLine,
 ].join("\n");
 
-const res = await fetch(SLACK_URL, {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json; charset=utf-8",
-  },
-  body: JSON.stringify({ channel, text, unfurl_links: false }),
-});
-const data = await res.json();
-// Slack returns HTTP 200 even on logical failure — check the ok field.
-if (!res.ok || data.ok !== true) {
-  throw new Error(`Slack post failed: ${data.error || `${res.status} ${res.statusText}`}`);
-}
+const data = await postMessage(token, { channel, text });
 console.log(`Posted sprint-cut announcement to ${channel} (ts=${data.ts}).`);
-
-function requireEnv(name) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing ${name} environment variable.`);
-  return v;
-}

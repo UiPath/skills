@@ -21,7 +21,7 @@ If the user has not named one, your ENTIRE response must be a question that list
 
 **Task vs Escalation is decided by the request's wording, not by preference — for both the create pair and the wait pair.** "Escalate" / "escalation" / must act on the approve-reject decision → `CreateEscalation` / `WaitEscalation`. "Review task" / "sign-off" / "not an escalation" / only carry the reviewer's input forward → `CreateTask` / `WaitTask`. Never substitute one for the other: they resume with different payloads (see § Escalation Variant).
 
-OpenAI Agents has no first-class HITL support. Coded Function (no framework) has no checkpoint/resume — call `sdk.tasks.create()` then `sdk.tasks.retrieve()` synchronously if a synchronous human step is needed.
+OpenAI Agents has no first-class HITL support — call `sdk.tasks.create()` then `sdk.tasks.retrieve()` synchronously if a synchronous human step is needed.
 
 LangGraph models live in `uipath.platform.common`; LlamaIndex events live in `uipath_llamaindex.models.events`.
 

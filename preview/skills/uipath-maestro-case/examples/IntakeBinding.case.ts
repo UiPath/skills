@@ -15,7 +15,7 @@
  * connector library — compile with `uip maestro case compile` and check source
  * with `uip maestro case check`.
  */
-import { casePlan, rule, manualTrigger, timerTrigger } from '@uipath/flow-sdk/case';
+import { casePlan, rule, manualTrigger, timerTrigger } from '@uipath/maestro-builder-sdk/case';
 
 const manual = manualTrigger({ name: 'Manual start' });
 const hourly = timerTrigger({ every: 'R/PT1H', name: 'Hourly sweep' });

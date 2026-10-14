@@ -18,7 +18,42 @@
 
 > **To ship a later version of a deployed solution, upgrade it — do not `deploy run` again.** Publish the new version, then `uip solution deploy upgrade <deployment-key>` moves the existing deployment in place, keeping its folder and configured values. It defaults to the newest published version; `--version` selects another, and `--personal-workspace` targets a personal-workspace deployment. A second `deploy run` would instead create yet another folder.
 
-> **Pass the deployment's `Key`, not its `InstallDeploymentKey`.** Read the key from `uip solution deploy list` at the time you upgrade: after any version change the record's `Key` changes while `InstallDeploymentKey` keeps pointing at the original install. Reusing a key cached from an earlier `deploy run` fails with `HTTP 400` / errorCode `4005` "Another upgrade has already started for this deployment" — which reads like a stuck upgrade but really means the wrong key.
+> **Any key of the deployment reaches it.** `uip solution deploy upgrade <key>` resolves the key through the Pipelines by-key lookup to the deployment's current generation, so the `Key` from `uip solution deploy list` and a stored `InstallDeploymentKey` both work; store `InstallDeploymentKey`, the one that never changes across upgrades. `uip solution deploy status <key>` answers `Superseded: true` and names the current key when the one you hold is stale.
 
-> **Deploy is asynchronous in two phases.** `deploy run` installs, polls to a terminal status, then activates unless `--skip-activate`; success is `Status: DeploymentSucceeded` with `ActivationStatus: SuccessfulActivate`. If activation fails the deployment still exists — fix the config and run `uip solution deploy activate <name>` rather than redeploying. Check state with `uip solution deploy status` / `deploy list`.
+> **Deploy is asynchronous in two phases.** `deploy run` installs, polls to a terminal status, then activates unless `--skip-activate`; success is `Status: DeploymentSucceeded` with `ActivationStatus: SuccessfulActivate`. Read `ActivationStatus` when it is anything else: `NeedsSetupToActivate` means a resource needs "Setup activation" in Orchestrator first and `deploy activate` is refused with `4007` until then (the run is still a success; `PendingResources` names the resource and why); `ReadyToActivate` or a failed activation means fix the cause and run `uip solution deploy activate <name>`. The deployment exists either way — never redeploy. Check state with `uip solution deploy status` / `deploy list`.
 <!--skill-flavor:solution-lifecycle-steps:end-->
+
+<!--skill-flavor:when-to-use-uipx:start-->
+- User wants to publish the open Studio Web solution (`uip solution publish`; `pack`/`upload`/`deploy` are unavailable in the browser — publishing to the personal workspace auto-deploys)
+<!--skill-flavor:when-to-use-uipx:end-->
+
+<!--skill-flavor:when-to-use-detected-uipx:start-->
+<!--skill-flavor:when-to-use-detected-uipx:end-->
+
+<!--skill-flavor:when-to-use-create:start-->
+- User wants to inspect or edit the open Studio Web solution's resources (`uip solution resources list / get / add / edit`). Studio Web works on one open solution — projects are created inside it with `uip <family> init <Name>` (families: flow, case, agent, api-workflow, bpmn, rpa — Studio Web cannot create function or coded-app projects), never with `solution init` or `projects add`
+<!--skill-flavor:when-to-use-create:end-->
+
+<!--skill-flavor:cli-surface-probe:start-->
+Studio Web runs the post-rename CLI — use the commands and flags as documented in the references, with no probe.
+<!--skill-flavor:cli-surface-probe:end-->
+<!--skill-flavor:cli-unavailable:start-->
+- `unknown command` / `command not found` on a documented verb → the host did not expose it. Do NOT `npm install` (the CLI is bundled by the host, not globally installed) and do not fall back to a pre-rename spelling. Report the exact command and error to the user and stop.
+<!--skill-flavor:cli-unavailable:end-->
+
+<!--skill-flavor:rename-table:start-->
+<!--skill-flavor:rename-table:end-->
+
+<!--skill-flavor:probe-rule:start-->
+1. **Studio Web runs the post-rename CLI.** Use the documented commands directly; there is no pre-rename fallback.
+<!--skill-flavor:probe-rule:end-->
+
+<!--skill-flavor:develop-solution-row:start-->
+| [Develop a Solution](references/develop-solution.md) | `uip solution resources list / get / add / edit` on the open solution (projects are created with `uip <family> init` — flow, case, agent, api-workflow, bpmn, rpa only; `projects add/import/remove` and `resources refresh/remove` are Node-CLI-only); field-tested gotchas |
+<!--skill-flavor:develop-solution-row:end-->
+
+<!--skill-flavor:when-to-use-existing:start-->
+<!--skill-flavor:when-to-use-existing:end-->
+
+<!--skill-flavor:existing-solution:start-->
+<!--skill-flavor:existing-solution:end-->

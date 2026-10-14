@@ -16,7 +16,7 @@
  * `uip maestro case compile`, check source with `uip maestro case check`, and validate
  * the artifact with `uip maestro case validate`.
  */
-import { casePlan, rule, escalation, toUser, toGroup } from '@uipath/flow-sdk/case';
+import { casePlan, rule, escalation, toUser, toGroup } from '@uipath/maestro-builder-sdk/case';
 
 export default casePlan('claim-review-sla')
   .name('ClaimReviewSLA')

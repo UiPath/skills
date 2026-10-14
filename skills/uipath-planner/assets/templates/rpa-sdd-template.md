@@ -855,7 +855,9 @@ The planner will:
 1. Detect the `## Planner Handoff` header and read the 6 fields above.
 2. Parse the project list section (per the `Project list section` field) and derive a per-skill task list.
 3. Write `<PROCESS_NAME_KEBAB>-tasks.md` alongside this SDD with the task list and dependencies.
+<!--skill-flavor:planner-live-tasks:start-->
 4. Emit live `TaskCreate` calls that route each task to the correct specialist (`uipath-rpa`, `uipath-platform`, `uipath-solution`, `uipath-agents`, etc.).
+<!--skill-flavor:planner-live-tasks:end-->
 5. If `Execution autonomy: interactive`, enter plan mode for task review before execution.
 
 Implementation tasks **do not live in this SDD** — they live in the planner's output. The planner is the single source of truth for skill routing and task ordering.
@@ -869,6 +871,7 @@ Implementation tasks **do not live in this SDD** — they live in the planner's 
 
 The build is not finished when the project folder compiles — a bare `MyProject/` folder is not the deliverable. The terminal artefact follows the **Packaging** column of §11 Project Mode Decision:
 
+<!--skill-flavor:packaging-solution:start-->
 **Packaging = Solution (`.uipx`)** — required for multi-project (Master Project) builds and cross-product compositions. After the implementation specialist reports its tasks complete, load the **`uipath-solution`** skill and run:
 
 ```bash
@@ -877,8 +880,11 @@ uip solution projects add <PROJECT_PATH> [--solution-file <SOLUTION_FILE>]    # 
 uip solution resources refresh
 uip solution pack <SOLUTION_DIR> <OUTPUT_DIR>
 ```
+<!--skill-flavor:packaging-solution:end-->
 
+<!--skill-flavor:packaging-solution-promote:start-->
 The `.uipx` promotes via `uip solution publish` / `uip solution deploy run`. Full lifecycle: `uipath-solution` skill.
+<!--skill-flavor:packaging-solution-promote:end-->
 
 **Packaging = Standalone package** — a single independently-published RPA project (`.nupkg` to an Orchestrator feed) is a valid terminal artefact; UiPath supports development with and without Solutions. Package/publish routes to `uipath-rpa` (build) + `uipath-platform` (feed publish, process creation). `[DEFAULT for a single-project scope]` — pick Solution instead only when cross-product composition or team standardization on Solutions applies.
 

@@ -16,10 +16,8 @@ run_limits:
   expected_turns: 28
   max_turns: 90
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
+reference:
+  directory: ../..
 
 initial_prompt: |
   Create a new local Maestro BPMN Process Orchestration project named
@@ -77,7 +75,7 @@ success_criteria:
 
   - type: run_command
     description: "Generated BPMN project has a fetch script, an error-routing gateway, distinct filter and aggregate scripts, and package references"
-    command: "python3 $TASK_DIR/check_wiki_pageviews.py"
+    command: "python3 $REFERENCE_DIR/multi_node/wiki_pageviews/check_wiki_pageviews.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
@@ -89,11 +87,17 @@ success_criteria:
     pass_threshold: 0.7
     include_agent_output: true
     include_tool_calls: true
+    include_reference: false
     prompt: >
       Pass if the agent created only local project files and did not run or
       request approval for BPMN debug, process run, upload, publish, deploy, or
-      any live HTTP call. Exactly these commands are always acceptable and
-      must NOT fail this check: `uip maestro bpmn validate` (offline
-      validation of local files) and `--help` invocations. Fail only if tool
-      calls or the final answer show a cloud-side lifecycle mutation, live
-      network fetch, or a request to perform one.
+      a live HTTP fetch of the modeled pageview data. These commands are always
+      acceptable and must NOT fail this check: `uip maestro bpmn validate`
+      (offline validation of local files), `uip maestro bpmn format` (local
+      diagram layout), `uip maestro bpmn init` and `uip maestro bpmn refresh`
+      (local scaffold and metadata files), read-only registry discovery
+      (`uip maestro bpmn registry` list/search/get/pull — the documented way to
+      author `uipath:*` payloads), and `--help` invocations. Fail only if tool
+      calls or the final answer show a cloud-side lifecycle mutation (upload,
+      publish, deploy, run, debug), a live HTTP data fetch to the modeled
+      endpoint, or a request to perform one.

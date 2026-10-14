@@ -7,11 +7,18 @@ description: >
   assert_record_count + verify_field_binding + inline UUID check on a
   live record + llm_judge on the aggregate walk-through.
 tags: [uipath-platform, data-fabric, e2e, expense-tracker, complex-fields, mode:build, lifecycle:setup]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 60
   max_turns: 100
   turn_timeout: 900
+
+reference:
+  directory: .
 
 initial_prompt: |
   Build an expense tracker for Finance in UiPath Data Fabric — two linked entities.
@@ -59,7 +66,6 @@ initial_prompt: |
 
   We'll wire receipt uploads up later — just get the column in place.
   Don't author or change any dropdowns.
-
 success_criteria:
   - type: command_executed
     description: "Agent listed choice sets to discover available picklists"
@@ -87,7 +93,7 @@ success_criteria:
 
   - type: run_command
     description: "End state: Employee and Expense field constraints match the requested schemas"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EEmployee --ignore-field-case --assertions 'name.lengthLimit=200,email.lengthLimit=255,department.lengthLimit=100' && python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --ignore-field-case --assertions 'description.lengthLimit=2000,amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=100000,Receipt.Name=FILE'"
+    command: "python3 $REFERENCE_DIR/_shared/verify_field_constraints.py --entity-name CE_E2EEmployee --ignore-field-case --assertions 'name.lengthLimit=200,email.lengthLimit=255,department.lengthLimit=100' && python3 $REFERENCE_DIR/_shared/verify_field_constraints.py --entity-name CE_E2EExpense --ignore-field-case --assertions 'description.lengthLimit=2000,amount.decimalPrecision=2,amount.minValue=0,amount.maxValue=100000,Receipt.Name=FILE'"
     timeout: 180
     expected_exit_code: 0
     weight: 9.0
@@ -163,7 +169,7 @@ success_criteria:
 
   - type: run_command
     description: "End state (deterministic): 6 Employee records landed"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_E2EEmployee --expected 6"
+    command: "python3 $REFERENCE_DIR/_shared/assert_record_count.py --entity-name CE_E2EEmployee --expected 6"
     timeout: 240
     expected_exit_code: 0
     weight: 2.5
@@ -171,7 +177,7 @@ success_criteria:
 
   - type: run_command
     description: "End state (deterministic): 12 Expense records landed"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_E2EExpense --expected 12"
+    command: "python3 $REFERENCE_DIR/_shared/assert_record_count.py --entity-name CE_E2EExpense --expected 12"
     timeout: 240
     expected_exit_code: 0
     weight: 2.5
@@ -179,7 +185,7 @@ success_criteria:
 
   - type: run_command
     description: "Schema (deterministic): `submitter` RELATIONSHIP field on CE_E2EExpense is correctly bound to CE_E2EEmployee"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_field_binding.py --entity-name CE_E2EExpense --field-name submitter --target-entity-name CE_E2EEmployee"
+    command: "python3 $REFERENCE_DIR/_shared/verify_field_binding.py --entity-name CE_E2EExpense --field-name submitter --target-entity-name CE_E2EEmployee"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -187,7 +193,7 @@ success_criteria:
 
   - type: run_command
     description: "Stored form (deterministic): a live Expense record's `submitter` value is a UUID (not an email / name)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_record_field.py --entity-name CE_E2EExpense --field-name submitter --value-regex '^[0-9a-fA-F-]{8,}'"
+    command: "python3 $REFERENCE_DIR/_shared/verify_record_field.py --entity-name CE_E2EExpense --field-name submitter --value-regex '^[0-9a-fA-F-]{8,}'"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -195,7 +201,7 @@ success_criteria:
 
   - type: run_command
     description: "The category dropdown has the expected values and is bound to the expense schema"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_choice_set_values.py --name CE_E2EExpenseCategories --required travel,meals,lodging --bound-entity-name CE_E2EExpense"
+    command: "python3 $REFERENCE_DIR/_shared/verify_choice_set_values.py --name CE_E2EExpenseCategories --required travel,meals,lodging --bound-entity-name CE_E2EExpense"
     timeout: 180
     expected_exit_code: 0
     weight: 2.0
@@ -203,7 +209,7 @@ success_criteria:
 
   - type: run_command
     description: "The tags dropdown has the expected values and is bound to the expense schema"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/verify_choice_set_values.py --name CE_E2EExpenseTags --required urgent,billable,reimbursable --bound-entity-name CE_E2EExpense"
+    command: "python3 $REFERENCE_DIR/_shared/verify_choice_set_values.py --name CE_E2EExpenseTags --required urgent,billable,reimbursable --bound-entity-name CE_E2EExpense"
     timeout: 180
     expected_exit_code: 0
     weight: 2.0
@@ -212,6 +218,7 @@ success_criteria:
   - type: llm_judge
     description: "Agent's walk-through covers the per-employee count, per-category breakdown, and Engineering total (3 employees + summed amount) accurately"
     include_agent_output: true
+    include_reference: false
     prompt: |
       The agent built two linked entities (CE_E2EEmployee with 6 rows —
       3 Engineering, 3 Sales — and CE_E2EExpense with 12 rows, 2 per
@@ -259,16 +266,16 @@ success_criteria:
 
 pre_run:
   # Sweep leftover state from prior crashed runs. Child first, then parent.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EExpense --include-folders"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_E2EExpense --include-folders"
     timeout: 60
     fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee --include-folders"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee --include-folders"
     timeout: 60
     fail_on_error: false
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_choice_set.py --name CE_E2EExpenseCategories --display-name 'E2E Expense Categories' --values travel,meals,lodging"
+  - command: "python3 _setup/seed_choice_set.py --name CE_E2EExpenseCategories --display-name 'E2E Expense Categories' --values travel,meals,lodging"
     timeout: 180
     fail_on_error: true
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_choice_set.py --name CE_E2EExpenseTags --display-name 'E2E Expense Tags' --values urgent,billable,reimbursable"
+  - command: "python3 _setup/seed_choice_set.py --name CE_E2EExpenseTags --display-name 'E2E Expense Tags' --values urgent,billable,reimbursable"
     timeout: 180
     fail_on_error: true
 
@@ -277,7 +284,7 @@ post_run:
   # parent (CE_E2EEmployee) because Expense has a RELATIONSHIP FK pointing
   # at Employee. CLI delete on Employee would otherwise fail with an FK
   # constraint.
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EExpense --include-folders"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_E2EExpense --include-folders"
     timeout: 60
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee --include-folders"
+  - command: "python3 _setup/cleanup_entities_by_name.py --name-prefix CE_E2EEmployee --include-folders"
     timeout: 60

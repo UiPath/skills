@@ -10,15 +10,25 @@ description: >
   authz_assignment_lifecycle_org_e2e (which grants a built-in role and also
   covers revoke).
 tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, authz, role-assignment, grant]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
 
 pre_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-grantsmoke-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-grantsmoke-role" python3 _setup/cleanup_authz_marker.py'
     timeout: 90
-  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-grantsmoke-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Access policy reader for the grant scenario" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-grantsmoke-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Access policy reader for the grant scenario" python3 _setup/setup_authz_role.py'
     timeout: 90
 
 post_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-grantsmoke-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-grantsmoke-role" python3 _setup/cleanup_authz_marker.py'
     timeout: 90
 
 run_limits:
@@ -33,7 +43,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The role is assigned to the login identity at the organization scope on the tenant"
-    command: 'AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_assignment_created.py''))"'
+    command: 'AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''authz'',''verify_authz_assignment_created.py''))"'
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

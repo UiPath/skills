@@ -1,5 +1,5 @@
 {"id": "uipath-mcp-servers-001", "prompt": "Register a new AgentHub MCP server of type uipath", "expected_skill": "uipath-mcp-servers"}
-{"id": "uipath-mcp-servers-002", "prompt": "Create a coded MCP server that wraps my published coded-agent process", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-002", "prompt": "Register my published uipath-mcp server process as a coded MCP server", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-003", "prompt": "Register a remote MCP server pointing at an external HTTP MCP endpoint", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-004", "prompt": "Create a swagger MCP server from this OpenAPI spec URL", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-005", "prompt": "Register a platform MCP server bound to the orchestrator service", "expected_skill": "uipath-mcp-servers"}
@@ -32,3 +32,9 @@
 {"id": "uipath-mcp-servers-038", "prompt": "Create a swagger MCP server and refresh its tools from the spec", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-039", "prompt": "Which folder context flag do I pass for refresh-tools on a coded MCP server?", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-041", "prompt": "Register an AgentHub MCP server that points at my company's internal HTTP MCP service", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-042", "prompt": "Expose Test Manager operations as MCP tools in Agent Gateway", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-043", "prompt": "Wrap my published uipath-mcp Python server package as an MCP server in Agent Gateway", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-044", "prompt": "Add our OpenAPI spec to Agent Gateway so agents can call its endpoints as MCP tools", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-045", "prompt": "What URL do I give my MCP client to connect to the invoice-tools server in Agent Gateway?", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-046", "prompt": "Turn a few Orchestrator processes and an agent into tools on one Agent Gateway MCP server", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-047", "prompt": "List every MCP server in Agent Gateway across all my folders", "expected_skill": "uipath-mcp-servers"}

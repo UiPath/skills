@@ -71,7 +71,7 @@ When a connector/registry search returns multiple results for the same user inte
    - `custom-entity-*` = **custom** — tenant-built via Connector Builder. Use only when no catalog match exists, or the user explicitly names one.
    - `uipath-mock-*` = **mock** — internal dev artifact. Filter from results, treat as if absent.
 
-   Connector keys typically appear inside richer activity / node-type strings such as `uipath.connector.<key>.<op>`, `uipath.connector.trigger.<key>.<op>`, or `uipath.agent.resource.tool.connector.<key>.<op>` — extract the `<key>` segment for classification.
+   Connector keys typically appear inside richer activity / node-type strings such as `uipath.connector.<key>.<op>`, `uipath.connector.trigger.<key>.<op>`, or `uipath.agent.resource.tool.connector.<key>.<op>` — extract the `<key>` segment for classification. A `custom` **segment** in a flow node type — `uipath.connector.custom.<key>.<slug>` — is not a connector key: it marks a non-catalog activity generated for the catalog connector `<key>`. Classify by `<key>`, not by the segment.
 
 2. **Intent-match by reading each result's `Description`.** Drop catalog candidates whose described operation does not match the user's intent. Example: a "pull user data from Databricks" prompt drops `uipath-databricks-databricks.query-a-serving-endpoint` (AI inference) and keeps `uipath-uipath-jdbc.execute-query-synchronously` (SQL).
 

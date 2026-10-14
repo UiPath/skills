@@ -18,6 +18,9 @@ description: >
 tags: [uipath-agents, e2e, mode:build, coded, lifecycle:generate, feature:framework-langgraph, feature:hitl-coded]
 max_iterations: 1
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Can you build me a uipath coded agent in LangGraph for handling refunds?
 
@@ -63,7 +66,7 @@ success_criteria:
 
   - type: run_command
     description: "LangGraph config, interrupt(CreateTask) shape (not CreateEscalation), correct app targeting, RefundReviewApp app binding in Shared/uipath-agents/RefundReviewSol"
-    command: "python3 $TASK_DIR/check_hitl_create_task_with_app.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_hitl_create_task_with_app.py"
     timeout: 30
     expected_exit_code: 0
     weight: 7.0

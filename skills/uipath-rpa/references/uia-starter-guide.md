@@ -48,9 +48,9 @@ Omit `,version=<MIN_VERSION>` to resolve the latest compatible build (at or abov
 **Every debug run** must follow this procedure to prevent stale windows from accumulating or being reused in a dirty state:
 
 1. **Record the window baseline** — list top-level windows via the UIA snapshot CLI and note which w-refs and titles are already present. Procedure: the package guide's § Window Baseline (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`).
-2. **Run the workflow** — always with `--output-filter`, so one call returns the verdict and the workflow's own log instead of hundreds of trace lines (filter expression and the `| tail` trap: [cli-reference.md § Capturing the verdict](cli-reference.md#capturing-the-verdict)):
+2. **Run the workflow** — no `--output-filter`; the envelope is the verdict, and the workflow's own `Log Message` output streams above it (Helm) or sits in `Data.logEntries` (Studio Desktop) — shapes and verdict rules in [cli-reference.md § Capturing the verdict](cli-reference.md#capturing-the-verdict):
    ```bash
-   uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --output-filter "<verdict filter>"
+   uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json
    ```
    If the run fails, follow [Runtime Selector Failure Recovery](#runtime-selector-failure-recovery) — this is the **only** correct recovery path. Do not hand-edit selectors in the XAML file.
 3. **When done** (success or failure) — **cancel the debug session:**
@@ -67,7 +67,7 @@ Skipping steps 4-5 causes the next run's open-if-not-open behavior to reuse a st
 For advanced debugging, add `--profiling` to collect insightful per-activity execution data, timings, and before- and after-execution screenshots:
 
 ```bash
-uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --output json --profiling
+uip rpa debug start --file-path "<FILE>" --project-dir "<PROJECT_DIR>" --skip-build --output json --profiling
 ```
 
 Use the before-execution screenshot to confirm the application/element started in the correct state, and the after-execution one to validate the expected outcome. Each screenshot's filename is recorded in the run's `.uistat` file; the image sits in the `Screenshots` folder in the same directory as that `.uistat` file. See [debugging.md § Profiling Workflow Performance](debugging.md#profiling-workflow-performance) for details.
@@ -96,7 +96,7 @@ Repeat until the workflow completes successfully. Each failure advances the app 
 
 ## Placeholder-Selector Stub Pattern
 
-Sometimes you must generate a UI automation workflow without live app access — the app is not installed on the build machine, the agent has no GUI, the user has explicitly deferred target capture to a developer who will run Indicate later, or the UIA package cannot be installed (Rule 7a). In that case, the workflow ships with placeholder selectors. The pattern below is the **only** acceptable shape. It requires no UIA package or CLI — that is the point.
+Sometimes you must generate a UI automation workflow without live app access — the app is not installed on the build machine, the agent has no GUI, the user has explicitly deferred target capture to a developer who will run Indicate later, or the UIA package cannot be installed (Rule 7a). In that case, the workflow ships with placeholder selectors. The pattern below is the **only** acceptable shape, except in a migration (§ When the rule does NOT apply). It requires no UIA package or CLI — that is the point.
 
 ### Rule
 
@@ -210,6 +210,7 @@ This compiles, validates, runs, and does nothing. It is the most expensive kind 
 ### When the rule does NOT apply
 
 - **Live capture is available.** Run `uia-configure-target` / Indicate first; the workflow ships with real descriptors. No stub pattern needed.
+- **A migration translates the source's recorded targets.**
 - **The activity is not UI.** Logging is fine for actual logging steps (e.g., "Log the transaction ID before processing"). The rule applies only to UI-interaction steps that, in a finished workflow, would be `NTypeInto` / `NClick` / `NGetText` / etc.
 
 ### Acceptance check
@@ -239,7 +240,7 @@ Application (InvoicePortal)
 Precondition: the source project has captured descriptors (`.objects/` content). If it has none, capture targets first (the package guide's § Configuring Targets) — there is nothing to promote, and hand-writing descriptors is forbidden.
 
 1. Develop the first process against its **local** Object Repository, configuring targets as usual (§ Configuring Targets in the package guide).
-2. Promote the reusable descriptors into a dedicated UI Library project — a library project ([library-authoring-guide.md](library-authoring-guide.md)) holding the shared Object Repository; pack and upload per [library-authoring-guide.md § Pack & Publish](library-authoring-guide.md). Concrete Object Repository manipulation steps: the package's Object Repository reference (routed from the package guide § Documentation).
+2. Promote the reusable descriptors into a dedicated UI Library project — a library project ([library-authoring-guide.md](library-authoring-guide.md)) holding the shared Object Repository; pack and publish per [library-authoring-guide.md § Pack & Publish](library-authoring-guide.md). Concrete Object Repository manipulation steps: the package's Object Repository reference (routed from the package guide § Documentation).
 3. **One UI Library per corporate application** (SAP, Salesforce, Workday) — an update to one app's selectors must not force re-deployment of another's.
 4. New automations against that application consume the UI Library from the start. Process-specific one-off descriptors stay in the local Object Repository.
 

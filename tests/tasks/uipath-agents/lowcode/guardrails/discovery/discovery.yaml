@@ -9,6 +9,9 @@ description: >
 # (currently 0.9.0 on public npm). Re-enable smoke tag once CLI >= 1.0.0
 # is published.
 tags: [uipath-agents, smoke-blocked, mode:build, lifecycle:generate, low-code, guardrail]
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "DiscoverAgent". Discover what guardrail
   validators are available using the CLI and add any built-in validator
@@ -69,7 +72,7 @@ success_criteria:
 
   - type: run_command
     description: "Agent.json contains at least one builtInValidator guardrail"
-    command: "python3 $TASK_DIR/check_discovery.py"
+    command: "python3 $REFERENCE_DIR/check_discovery.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

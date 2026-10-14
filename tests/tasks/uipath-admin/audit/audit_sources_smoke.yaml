@@ -16,6 +16,8 @@ description: >
   loudly if the run's principal cannot read the catalog itself, so a missing
   Audit.Read scope surfaces as an explicit message rather than a silent pass.
 tags: [uipath-admin, smoke, mode:diagnose, lifecycle:discover, audit]
+reference:
+  directory: ..
 
 run_limits:
   expected_turns: 6
@@ -31,7 +33,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Both saved catalogs hold real audit sources whose ids are corroborated against the live tenant, each matching its own scope"
-    command: 'AUDIT_SOURCES_ORG_FILE=sources-org.json AUDIT_SOURCES_TENANT_FILE=sources-tenant.json python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_sources.py''))"'
+    command: 'AUDIT_SOURCES_ORG_FILE=sources-org.json AUDIT_SOURCES_TENANT_FILE=sources-tenant.json python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_sources.py''))"'
     timeout: 320
     expected_exit_code: 0
     weight: 3.0

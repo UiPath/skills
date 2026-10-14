@@ -2,7 +2,7 @@
 """Validation helpers for uipath-platform Integration Service smoke tests.
 
 Usage from a task YAML (run_command criterion):
-    python3 $TASK_DIR/_shared/is_check.py <check_name>
+    python3 $REFERENCE_DIR/_shared/is_check.py <check_name>
 
 These smoke tests run WITHOUT a live UiPath tenant. CLI commands fail with
 auth errors — that is expected. The check scripts validate that the agent:

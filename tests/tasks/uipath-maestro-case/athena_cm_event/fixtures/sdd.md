@@ -93,7 +93,7 @@
 ###### Process / Agent / RPA / API Workflow Task Detail
 
 **Resolved Resource:** StageATask1
-**Folder Path:** Shared
+**Folder Path:** Shared/CM-Golden-CaseManager
 
 ##### Task 1.2: StageATask2
 
@@ -113,7 +113,7 @@
 ###### Process / Agent / RPA / API Workflow Task Detail
 
 **Resolved Resource:** StageATask2
-**Folder Path:** Shared
+**Folder Path:** Shared/CM-Golden-CaseManager
 
 ### Stage 2: StageB
 
@@ -158,7 +158,7 @@
 ###### Process / Agent / RPA / API Workflow Task Detail
 
 **Resolved Resource:** StageBTask1
-**Folder Path:** Shared
+**Folder Path:** Shared/CM-Golden-CaseManager
 
 ##### Task 2.2: StageBTask2
 
@@ -178,7 +178,7 @@
 ###### Process / Agent / RPA / API Workflow Task Detail
 
 **Resolved Resource:** StageBTask2
-**Folder Path:** Shared
+**Folder Path:** Shared/CM-Golden-CaseManager
 
 ### Stage 3: StageC
 
@@ -224,7 +224,7 @@
 ###### Process / Agent / RPA / API Workflow Task Detail
 
 **Resolved Resource:** StageCTask1
-**Folder Path:** Shared
+**Folder Path:** Shared/CM-Golden-CaseManager
 
 ##### Task 3.2: StageCTask2
 
@@ -244,7 +244,7 @@
 ###### Process / Agent / RPA / API Workflow Task Detail
 
 **Resolved Resource:** StageCTask2
-**Folder Path:** Shared
+**Folder Path:** Shared/CM-Golden-CaseManager
 
 ##### Task 3.3: StageCTask3
 
@@ -264,4 +264,4 @@
 ###### Process / Agent / RPA / API Workflow Task Detail
 
 **Resolved Resource:** StageCTask3
-**Folder Path:** Shared
+**Folder Path:** Shared/CM-Golden-CaseManager

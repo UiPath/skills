@@ -7,7 +7,7 @@ description: >
   (`core.trigger.scheduled`) that REPLACES the default manual trigger and
   carries a valid recurring schedule. Exercises the previously-untested
   scheduled-trigger plugin: the manual->scheduled replacement procedure, the
-  `timeCycle`/`timerPreset` input shape, and the `bpmn:TimerEventDefinition`
+  cycle-expression input shape, and the `bpmn:TimerEventDefinition`
   that the node definition must carry. Validate-only and pure-OOTB — no tenant,
   no `flow debug` (a scheduled BPMN timer fires only inside a live engine the
   test sandbox cannot provision).
@@ -15,6 +15,9 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-
 
 run_limits:
   turn_timeout: 1200
+
+reference:
+  directory: ..
 
 initial_prompt: |
   Create a UiPath Flow project named "ScheduledReport" whose flow is started by
@@ -26,8 +29,8 @@ initial_prompt: |
     - The start node `type` must be `core.trigger.scheduled`.
     - Keep the existing `entryPointId` from the manual trigger's `inputs`.
     - `inputs.timerType` must be `"timeCycle"`.
-    - `inputs.timerPreset` must be `"R/PT1H"` (every hour — an ISO 8601
-      repeating interval). Do NOT use `"custom"` for this smoke test.
+    - The schedule is every hour, expressed as `R/PT1H`. Take the input field
+      that carries it from the node's own definition — do not guess.
     - Set the node `typeVersion` from its authoritative node definition.
     - Remove the `core.trigger.manual` node AND its `definitions[]` entry, and
     include the authoritative `core.trigger.scheduled` definition
@@ -51,7 +54,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -60,7 +63,7 @@ success_criteria:
   # ── Structural checks (scheduled trigger replaced manual; valid schedule) ─
   - type: run_command
     description: "Start node is core.trigger.scheduled, manual trigger removed, valid timeCycle schedule + bpmn:TimerEventDefinition"
-    command: "python3 $TASK_DIR/check_scheduled_trigger_flow.py"
+    command: "python3 $REFERENCE_DIR/smoke/check_scheduled_trigger_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

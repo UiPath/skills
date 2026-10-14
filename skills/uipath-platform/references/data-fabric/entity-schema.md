@@ -32,7 +32,7 @@ Pass the exact `EntityFieldDataType` UPPERCASE string — CLI is case-sensitive.
 |---|---|---|
 | `STRING` | NVARCHAR | Short text (≤4000 chars via `lengthLimit`) |
 | `MULTILINE_TEXT` | NVARCHAR(MAX) | Long text (≤10000 chars via `lengthLimit`) |
-| `MULTILINE_MAX` | NVARCHAR(MAX) | Very large text (`lengthLimit` = UTF-16 byte budget, 1–131072; default 128 KB ≈ 65,536 chars max). No filter/sort; list/query reads return a size marker — see [MULTILINE_MAX fields](#multiline_max-fields) |
+| `MULTILINE_MAX` | NVARCHAR(MAX) | Very large text (`lengthLimit` = UTF-16 byte budget, 1–131072; default 128 KB ≈ 65,536 chars max). No filter/sort; list/query reads return a preview, not the guaranteed full value — see [MULTILINE_MAX fields](#multiline_max-fields) |
 | `DECIMAL` | DECIMAL | All numbers — `decimalPrecision: 0` for whole; `2` for money |
 | `BOOLEAN` | BIT | true/false |
 | `DATE` | DATE | Date only |
@@ -80,7 +80,7 @@ If the CLI rejects a `--body` with *"Cannot read properties of undefined (readin
 Very large text. Contract differs from `MULTILINE_TEXT`:
 
 1. **Not filterable, not sortable.** Any `queryFilters` or `sortOptions` entry naming a `MULTILINE_MAX` field → 400: *"Field '<name>' is of type MULTILINE_MAX and cannot be used in filters."* / *"Sort field '<name>' is of type MULTILINE_MAX and cannot be used for sorting."* Never offer the field in filter/sort predicates. See [filter contract](filter-platform-contract.md#operator-support-by-field-type).
-2. **List/query reads return a size marker, not content.** `records list` / `records query` return a string starting `HasValue=true Length=N` (live form: `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`); only `records get <entity-id> <record-id>` returns the full value. Read + write-back rules in [records-query.md → MULTILINE_MAX fields](records-query.md#multiline_max-fields--marker-vs-full-content).
+2. **List/query reads return a preview, not the guaranteed full value.** Depending on the tenant, `records list` / `records query` return either the value truncated to 10,000 characters with a `...[Truncated]` suffix, or a size marker starting `HasValue=true Length=N` (sometimes with a trailing hint). Encrypted fields always read back `HasValue=true Encrypted=true`. Only `records get <entity-id> <record-id>` returns the full value. Read + write-back rules in [records-query.md → MULTILINE_MAX fields](records-query.md#multiline_max-fields--preview-vs-full-content).
 3. **On a 400 from `entities create` / `addFields` naming the type**, surface the error verbatim — do NOT retry or silently substitute `MULTILINE_TEXT` (Rule 18).
 
 ```bash
@@ -307,7 +307,7 @@ uip df entities update <entity-id> \
   --output json
 ```
 
-> A metadata update (`description`, `isRbacEnabled`, `isAnalyticsEnabled`) must also include the current `displayName` — the backend requires it, so the CLI rejects a metadata body without it. Read it from `entities get` and pass it even when only the description changes (as the metadata-only example above does). Field-only updates (`addFields` / `updateFields` / `removeFields`) don't need it.
+> A metadata update (`description`, `isRbacEnabled`) must also include the current `displayName` — the backend requires it, so the CLI rejects a metadata body without it. Read it from `entities get` and pass it even when only the description changes (as the metadata-only example above does). Field-only updates (`addFields` / `updateFields` / `removeFields`) don't need it.
 
 ### Updating Existing Field Metadata (`updateFields`)
 
@@ -366,7 +366,8 @@ uip df entities get <entity-id> --output json
 | `Id` | Entity UUID — required for all `uip df` record and entity commands |
 | `Name` | System name (e.g. `BankDetails`) |
 | `DisplayName` | Human-readable label shown in the UiPath Data Fabric UI |
-| `EntityType` | Row class — observed values: `Entity` (native, read/write), `SystemEntity` (e.g. `SystemUser`; hidden by `--native-only`). Federated rows surface here too. There is **no** `Source` field. |
+| `EntityType` | Object **kind** — observed values: `Entity`, `SystemEntity` (e.g. `SystemUser`; hidden by `--native-only`), `ChoiceSet`, `InternalEntity`. **Both native and federated entities are `Entity`** — `EntityType` does NOT distinguish them. There is **no** `Source` field. |
+| `EntityClass` | Native-vs-federated **classification** — `Native`, `Federated`, or `Case`. This is the field that tells them apart (a federated entity is `EntityType: "Entity"` + `EntityClass: "Federated"`). |
 | `EntityTypeId` | Numeric type code paralleling `EntityType` |
 | `FolderId` | Folder GUID, or all-zeros UUID for tenant level |
 | `RecordCount`, `StorageSizeInMB`, `UsedStorageSizeInMB` | Storage metrics |
@@ -392,12 +393,12 @@ Before writing records, identify complex fields by `FieldDataType.Name` and reso
 
 ## Native vs Federated Entities
 
-Each `entities list` row carries an `EntityType` field (no `Source` field exists):
+Each `entities list`/`get` row carries `EntityType` (object kind) and `EntityClass` (native-vs-federated) — no `Source` field exists:
 
-- `Entity` — native, data stored in Data Fabric, full read/write access
-- `SystemEntity` — internal entity (e.g. `SystemUser`); hidden by `--native-only`, not writable
-- Federated rows (backed by external connectors like Salesforce, Azure AD) surface here as well — read-only. The exact `EntityType` value for federated rows depends on the connector; verify by listing the tenant. `--native-only` filters them out alongside `SystemEntity`.
+- `EntityType` is the **kind**: `Entity` (a normal entity — both native AND federated), `SystemEntity` (internal, e.g. `SystemUser`; hidden by `--native-only`), `ChoiceSet`, `InternalEntity`.
+- `EntityClass` is the **classification** that separates native from federated: `Native` (data stored in Data Fabric, full read/write), `Federated` (read-only unified view over external/other sources), `Case`. A federated entity is `EntityType: "Entity"` + `EntityClass: "Federated"` — **do not rely on `EntityType` to detect federated**, it's `"Entity"` for both.
+- Filter by class with `--federated-only` / `--native-only` (omit both for all); `--native-only` also drops `SystemEntity`.
 
-**Only native entities support record creation, update, delete, and import.**
+**Only native entities support record creation, update, delete, and import.** Federated entities are read-only for records — read via `records list` or `records query` (query supports filter/sort/projection, but not aggregates or multi-entity joins; see federated-entity-creation.md Rule 9).
 
-> Creating federated entities or linking entities to external connectors is **not currently supported**. This cannot be done via the CLI or the UiPath portal.
+> **Creating** a federated entity from an Integration Service connector on the tenant's federated allow-list (`uip df connectors list`) or from another DF entity **is supported** — see [`federated-entity-creation.md`](federated-entity-creation.md) for the create payload, field mapping, `EntityClass: "Federated"`, and `--federated-only` listing. Only **record writes** to a federated entity are unsupported (data lives in the source, so writes happen there).

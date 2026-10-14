@@ -68,14 +68,16 @@ Results are cached locally. Use `--refresh` to bypass cache after re-auth or sch
 
 ### `--activity-version`
 
-Pass `--activity-version 4.0.0` only when the activity's `configuration` JSON reports `"version":"4.0.0"`. Otherwise do not pass the flag at all. Any value other than `1.0.0` (the default) or `4.0.0` fails with `Invalid --activity-version value`. `4.0.0` responses cache under a separate key (`<activity-name>.v4.schema.json`), so switching never serves the other version's metadata.
+Pass `--activity-version 4.0.0` only when the activity's `configuration` JSON reports `"version":"4.0.0"`. Otherwise do not pass the flag at all. Any value other than `1.0.0` (the default) or `4.0.0` fails with `Invalid --activity-version value`. `4.0.0` responses cache under a separate key (`<object-name>.v4.schema.json`), so switching never serves the other version's metadata.
 
-The resource argument follows the same rule: `4.0.0` activities are addressed by **activity name** — pass the `activityName` from the `configuration` JSON (`4.0.0` metadata has no `objectName`). Everything else uses the object name.
+The resource argument follows the same rule: `4.0.0` activities are addressed by **object name** — pass the `objectName` from the `configuration` JSON.
 
 ```bash
 uip is resources describe <connector-key> <object-name> --output json
-uip is resources describe <connector-key> <activity-name> --activity-version 4.0.0 --output json
+uip is resources describe <connector-key> <object-name> --activity-version 4.0.0 --operation <METHOD> --output json
 ```
+
+Pass `--operation` with the HTTP verb for `4.0.0` describes — without it the response is an operation summary with no `requestFields`. `4.0.0` reference fields carry `reference.scriptRef` instead of `objectName`; resolve them with `uip is resources run script --script-ref`, not `run list` — see [reference-resolution.md — 4.0.0 Activities — Script References](reference-resolution.md#400-activities--script-references-scriptref).
 
 ---
 
@@ -137,33 +139,132 @@ When no api-type action's `rules[]` are satisfied by the supplied fields, the CL
 
 > **Update** (PATCH) = change specific fields. **Replace** (PUT) = overwrite entire record. Default to **Update** unless the user says "replace" or "overwrite".
 
+### `run script` — run an action script
+
+A v4 activity is an action script, not a CRUD object, so `run <verb>` cannot
+run it. `uip is resources run script` runs the script with the connection's
+credential. Two script sources, exactly one per call:
+
+| flag | runs |
+|---|---|
+| `--script-ref <name>` | a published script; needs `--connector-key` |
+| `--inline-script <source>` | a local script — the source text, or a path ending in `.js` that is read from disk (no `@` prefix, no stdin) |
+
+A **published** script is how `4.0.0` reference fields (`reference.scriptRef`)
+are resolved:
+
+```bash
+uip is resources run script --connection-id "<CONNECTION_ID>" \
+  --connector-key "<CONNECTOR_KEY>" --script-ref "<SCRIPT_REF>" --output json
+```
+
+Parsing rules and the full lookup workflow: [reference-resolution.md — 4.0.0 Activities — Script References](reference-resolution.md#400-activities--script-references-scriptref).
+
+A **local** script is how a generated activity is run before it is published
+(see [activity-generation.md](activity-generation.md)):
+
+```bash
+uip is resources run script --connection-id "<CONNECTION_ID>" \
+  --inline-script <path-to-script>.js \
+  --body '{"field": "value"}' --output json
+```
+
+There is no script-less passthrough: the command never points the connection's
+credential at an arbitrary vendor URL. To probe a vendor endpoint, write the call
+into a script and run that.
+
+`--body` is the script's inbound request (`context.request.body`); `--query` and
+`--header` fill the rest of it. Giving both sources, or neither, is a
+`ValidationError` (exit `3`), as is `--script-ref` without `--connector-key`.
+
+#### Reading the result
+
+```jsonc
+{ "Result": "Success", "Code": "ScriptExecuted",
+  "Data": { "Status": 200,              // the VENDOR's status, verbatim
+            "Headers": { ... },
+            "Body": [ ... ] } }         // the vendor's JSON, parsed
+```
+
+`Data.Body` is the vendor's response, parsed — an array for a `list_*` script.
+Pull a value out with `--output-filter`, or with `jq '.Data.Body'`. A runtime
+refusal (the script did not compile, the connection could not mint a token, the
+budget was exceeded) is relayed the same way, with the runtime's own status and
+its raw body as a string.
+
+**The command exits 0 for any vendor answer, whatever the status.** A vendor 400
+is a normal result, not a command failure — it exits 1 only when the request never
+got an answer (network, login), and 3 on a bad argument. So `set -e` will not stop
+a loop on a vendor rejection; branch on `Data.Status` and `Data.Body` yourself.
+
+#### Reference fields on a generated activity
+
+Same discipline as [reference-resolution.md](reference-resolution.md#400-activities--script-references-scriptref),
+same mechanism. A v4 reference is **`scriptRef`-only** — it carries no `objectName`,
+`path` or `childPath` — so you do not list a referenced object, you run its lookup
+script and filter the output:
+
+```jsonc
+"reference": { "scriptRef": "ListChannels", "lookupValue": "id",
+               "lookupNames": ["name", "id"] }
+```
+
+Reference IDs stay connection-scoped, you match on `lookupNames` and pass
+`lookupValue`, and dependency chains still run in order. There is no
+`filterPattern` equivalent, so a search-style reference against an object too
+large to list has no v4 form — the lookup script must take a filter as an input
+instead.
+
 ### Filtering Results with `--output-filter`
 
 Use the global `--output-filter` flag with a JMESPath expression to extract specific fields from large responses if possible via JMESPath.
+
+Expressions are evaluated against `Data`, so they start at `Data` and never carry a `Data.` prefix; a `Data`-prefixed path resolves to null. `run list` returns `Data` as an object (`items`, `Pagination`), while `resources list` returns a flat array. Probe once with `--output-filter "type(@)"`, then `"keys(@)"` on an object, before writing a projection.
 
 ```bash
 # Extract only id, name, and email from a user list
 uip is resources run list "<CONNECTOR_KEY>" "<OBJECT_NAME>" \
   --connection-id "<CONNECTION_ID>" \
   --output json \
-  --output-filter "Data[].{id: id, name: name, email: profile.email}"
+  --output-filter "items[].{id: id, name: name, email: profile.email}"
 ```
 
-Common JMESPath patterns:
+Common JMESPath patterns for `run list`; drop the `items` prefix where `Data` is already an array:
 
 | Pattern | Effect |
 |---|---|
-| `Data[]` | Return all records (unwrap the Data envelope) |
-| `Data[].name` | Return just the `name` field from each record |
-| `Data[].{id: id, name: name}` | Return selected fields as objects |
-| `Data[?status=='active']` | Filter records by field value |
-| `Data[0]` | Return only the first record |
+| `items[]` | Return every record on this page |
+| `items[].name` | Return just the `name` field from each record |
+| `items[].{id: id, name: name}` | Return selected fields as objects |
+| `items[?status=='active']` | Filter records by field value |
+| `items[0]` | Return only the first record |
+
+> **A filter sees one page.** The filter runs after a page is fetched, so a predicate matching nothing yields `Data: []`, which means "not on this page" and never "not in the collection". Project `Pagination` alongside the predicate (`"{hit: items[?<match-field>=='<target>'], next: Pagination}"`) so one call answers both questions.
 
 ---
 
 ## Pagination
 
 `uip is resources run list` may not return all results in a single call. **Always check for pagination** when searching for a specific item or listing all items.
+
+### Narrow before you page
+
+A tenant directory (Slack channels, Teams users, Drive files) runs to thousands of rows, many pages deep. Work down this ladder and stop at the first rung that applies; only the last one walks the collection.
+
+1. **A by-key resource, when you already hold the exact key.** Connectors often expose a dedicated lookup beside the collection — Slack `users_lookupByEmail` next to `users`, Teams `user-by-email/{email}`. `uip is resources list "<key>"` shows them, and the naming (`*_lookupBy*`, `*-by-*`) is the tell. One call, no walk:
+
+   ```bash
+   uip is resources run list "uipath-salesforce-slack" "users_lookupByEmail" \
+     --connection-id "<id>" --query "email=<address>" --output json --output-filter "items.id"
+   ```
+
+   Its `Data.items` is a single object rather than an array, so project `items.<field>`, not `items[?…]`. A miss arrives as a vendor 4xx instead of an empty list (Slack returns `400` with `"message":"users_not_found"` in `Instructions`), so read `Instructions` per [Execute Error Handling](#execute-error-handling) to tell a genuine miss from a broken call before reporting either.
+
+2. **`reference.filterPattern`**, if the field declares one. Substitute the search term and pass the whole string as `--query`. This narrows server-side but does not promise a single page — a `startswith(...)` pattern can still match more rows than fit — so keep honouring `Pagination`. See [reference-resolution.md — Search References](reference-resolution.md#search-references-filterpattern).
+
+3. **The operation's own query parameters.** `uip is resources describe "<key>" "<resource>" --operation List`, against the *referenced* resource rather than the activity you are configuring, lists every accepted `--query` key under `parameters`. Most are not a `filterPattern` and so are easy to miss: Slack `conversations` takes `exclude_archived`, `types` and `team_id`. Keys the operation does not declare (`searchTerm=`, `where=`, `filter=`) are silently ignored.
+
+4. **Then page**, carrying every narrowing key from rungs 2 and 3 on each request alongside `nextPage`. The page token encodes position only, so dropping them widens page 2 back to the whole collection.
 
 ### Pagination rules
 
@@ -207,6 +308,25 @@ Example response:
   }
 }
 ```
+
+**Chain the pages into one call, rather than a turn per page.** Put the successive `run list` calls in a single shell invocation, and project the predicate and `Pagination` together so each page answers "is it here" and "is there more" at once. `--output-filter` expresses this whole projection, so it needs no external parser.
+
+Build the predicate from the reference, not from the shape of the first row you see. Match against **every** entry in `lookupNames`, one clause per entry (`items[?<f1>=='<target>' || <f2>=='<target>']`), take the value you write from `lookupValue`, and resolve dotted entries as paths (`profile.email`). A predicate on the wrong field matches nothing on every page, which reads as absence for a row that is there. Escape an apostrophe in the target as `\'`, or the filter is a lexer error.
+
+**Stop on the first hit only when the field is unique.** A by-key resource or an exact `lookupValue` is. A display name is not: `run list` can return a global row and a project-scoped row carrying the same name, on different pages, and taking the first silently picks a scope ([Scope Filtering](reference-resolution.md#scope-filtering-critical)). For a name match, collect every hit before deciding, paging until `HasMore: "false"` or a page stops adding rows you have not seen — otherwise "one match" is only ever "the first match I happened to see".
+
+How the walk ends decides what you do next, and only the first ending below is a resolved value:
+
+| Ending | What to do |
+|---|---|
+| exactly one match, walk complete | write its `lookupValue` |
+| several matches | ask the user with the candidates; never take the first |
+| `HasMore: "false"` and no match | re-check the predicate against `lookupNames`, then re-run against this connector's other Enabled connections, then ask |
+| a page adds no rows you have not already seen, or `HasMore` never reaches `"false"` | first re-check the page param: it is `nextPage`, and an undeclared name like `pageToken` is silently ignored, so every call re-serves page one. If the name is right, the collection is exhausted and the connector is re-serving it: keep the distinct rows and stop. Do not wait for `HasMore` or for a repeated page token — some resources advance the token forever (Slack `curated_users`: 5984 users exhausted by page 6, `HasMore` still `"true"` at page 12) |
+| you bounded the walk yourself and stopped before `HasMore: "false"` | not a not-found; narrow the query and walk again |
+| the call errored | stop and report per [When the Lookup Call Fails](reference-resolution.md#when-the-lookup-call-fails-critical) |
+
+Never collapse the last three into "not found". Writing a display name or a remembered id after any of them passes `flow validate` and faults at runtime. These endings read `Data.Pagination`; resources that page by `offset`/`limit` have their own section below.
 
 ### Anti-patterns
 

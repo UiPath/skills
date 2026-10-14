@@ -7,13 +7,21 @@ description: >
   The command_not_executed guard also keeps the diagnosis from "fixing" it by
   deploying, which would change governance for every subject on the tenant.
 tags: [uipath-governance, smoke, mode:diagnose, lifecycle:discover, aops-policy, deployed-policy, troubleshoot]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 
 pre_run:
-  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-undeployed" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Registered but never deployed" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-undeployed" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Registered but never deployed" python3 _setup/setup_aops_policy.py'
     timeout: 120
 
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+  - command: 'python3 _setup/cleanup_aops_policy.py'
     timeout: 120
 
 run_limits:
@@ -94,6 +102,7 @@ success_criteria:
       and says the fix is to deploy it. Fail it if it claims the policy does not
       exist, blames the policy's contents or priority, or asserts it is deployed
       but overridden.
+    include_reference: false
     weight: 2.5
     pass_threshold: 1.0
 

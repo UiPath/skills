@@ -1,6 +1,6 @@
 """Shared helpers for uipath-maestro-case single-node e2e checks.
 
-Locates the generated `caseplan.json`, runs ``uip maestro case validate``,
+Locates the generated case plan (`caseplan.case` or `caseplan.json`), runs ``uip maestro case validate``,
 and asserts that a task of the expected ``type`` exists somewhere in the
 case definition. ``case-management`` tasks are allowed to land as skeletons
 (empty ``data``) when the referenced sub-case isn't published on the tenant
@@ -22,15 +22,59 @@ import os
 import re
 import subprocess
 import sys
+import time
 from typing import Any, Iterable, NoReturn, Sequence
 
 
-def find_caseplan(pattern: str = "**/caseplan.json") -> str:
-    matches = sorted(
-        p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
+# The names Studio Web gives a case plan on disk, newest first (the CLI's
+# CasePlanFileNames). Studio Web renames the plan to `caseplan.case` on its first
+# save and reads the newest name present, so a grader accepts every name and, in
+# one directory, takes the newest the way Studio Web does.
+CASE_PLAN_NAMES = ("caseplan.case", "caseplan.json", "case.stage.json", "default.stage.json")
+# YAML globs (`caseplan.[cj][as][so][en]`) and `ls` resolvers deliberately accept
+# only the first two: the names the CLI and the skill write. Where both sit in one
+# directory, YAML refuses to guess and Python takes the newest; either way the run
+# fails, because the skill never writes two plans.
+
+
+def glob_caseplans(pattern: str = "**/caseplan.json") -> list[str]:
+    """Plans matching ``pattern``, with ``caseplan.json`` in it read as any plan name.
+
+    One plan per directory: where a directory holds several names, the newest wins.
+    """
+    patterns = (
+        [pattern.replace("caseplan.json", name) for name in CASE_PLAN_NAMES]
+        if "caseplan.json" in pattern
+        else [pattern]
     )
+    by_dir: dict[str, str] = {}
+    for rank_pattern in patterns:
+        for path in glob.glob(rank_pattern, recursive=True):
+            if "/.venv/" not in path:
+                by_dir.setdefault(os.path.dirname(path), path)
+    return sorted(by_dir.values())
+
+
+def existing_caseplan(path: str) -> str | None:
+    """The plan in ``path``'s directory under any plan name, newest first; None if absent.
+
+    ``path`` names the expected plan, e.g. ``Sol/Case/caseplan.json``. A path whose
+    file name is not a plan name is returned as is when it exists.
+    """
+    if os.path.basename(path) not in CASE_PLAN_NAMES:
+        return path if os.path.isfile(path) else None
+    directory = os.path.dirname(path)
+    for name in CASE_PLAN_NAMES:
+        candidate = os.path.join(directory, name)
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def find_caseplan(pattern: str = "**/caseplan.json") -> str:
+    matches = glob_caseplans(pattern)
     if not matches:
-        _fail(f"No caseplan.json found matching {pattern}")
+        _fail(f"No case plan ({' / '.join(CASE_PLAN_NAMES)}) found matching {pattern}")
     if len(matches) == 1:
         return matches[0]
 
@@ -78,33 +122,117 @@ def read_caseplan(path: str | None = None) -> dict:
         return json.load(f)
 
 
+def exit_type(condition: dict) -> str:
+    """A stage exit condition's type, reading an absent `type` as `exit-only`.
+
+    `type` is optional on exit conditions, and the runtime treats a condition
+    without one as exit-only: the case-schema converter only branches on
+    `wait-for-user` and `return-to-origin`. `validate --strict --sdd` reads it the
+    same way. A grader that compares `condition.get("type")` to "exit-only"
+    instead fails a correct plan the runtime and the audit both accept — so read
+    it through here. A declared routing type is still only ever the declared one.
+    """
+    return condition.get("type") or "exit-only"
+
+
 def is_non_required(item: dict) -> bool:
     """Accept the Case SDK's omitted default and the explicit false form."""
     value = item.get("isRequired")
     return value is None or value is False
 
 
+def _expand_resolved_resource(resource: object) -> object:
+    """Give a `sdd resolve` resource the legacy cache-entry fields graders read.
+
+    `uip maestro case sdd resolve` records each match normalized to
+    `{name, identifierField, identifier, folder}` rather than copying the raw
+    cache object through. The saving is not size — its ledger is about as large
+    as a hand-written one — but who writes it: the CLI in well under a second,
+    where the model spent ~49s generating the same file. So the graders adapt
+    to the CLI's spelling rather than making the agent re-copy cache objects.
+    Identity is preserved exactly; only its spelling changes. A raw cache entry
+    (no `identifierField`) passes through untouched.
+    """
+    if not isinstance(resource, dict) or "identifierField" not in resource:
+        return resource
+    out = dict(resource)
+    field = str(resource.get("identifierField") or "")
+    ident = resource.get("identifier")
+    name = resource.get("name")
+    folder = resource.get("folder")
+    if field:
+        out.setdefault(field, ident)
+    if field == "id":  # action apps: deploymentTitle / deploymentFolder
+        out.setdefault("deploymentTitle", name)
+        if folder:
+            out.setdefault("deploymentFolder", {"fullyQualifiedName": folder})
+    elif folder:
+        out.setdefault("folders", [{"fullyQualifiedName": folder}])
+    return out
+
+
+def normalize_audit_entry(entry: dict) -> dict:
+    """Map one `sdd resolve` ledger entry onto the shape graders assert on.
+
+    Returns a copy; legacy hand-written entries come back unchanged.
+
+    Three spellings differ, identity does not:
+      * `searchQuery` is `{name, folder}`; graders compare the portable name.
+        Collapsing it also matters for correctness, not just spelling: the SDD's
+        own `folder: "<UNRESOLVED>"` rides along inside it, so the substring
+        `<UNRESOLVED` appears in every entry whose SDD left the folder open —
+        resolved ones included (6 of 7 across the registry_handoff fixtures,
+        four of them successfully selected). As a miss signal it would mean
+        nothing, and a miss the agent never marked would pass. The marker has
+        to come from the entry's identity slot, which is what Rule 10 requires.
+      * `cacheFile` is the index name (`agent`); graders expect the file
+        basename (`agent-index.json`).
+      * `selected` / `matches[]` are normalized resources — see
+        `_expand_resolved_resource`.
+    """
+    out = dict(entry)
+    query = out.get("searchQuery")
+    if isinstance(query, dict):
+        out["searchQuery"] = query.get("name") or query.get("Name") or ""
+    cache = out.get("cacheFile")
+    if isinstance(cache, str) and cache and not cache.endswith(".json"):
+        out["cacheFile"] = f"{cache}-index.json"
+    # Touch only keys that are present: a hand-written entry that omits
+    # `selected` must not come back claiming `selected: null`.
+    if "selected" in out:
+        out["selected"] = _expand_resolved_resource(out["selected"])
+    if isinstance(out.get("matches"), list):
+        out["matches"] = [_expand_resolved_resource(m) for m in out["matches"]]
+    return out
+
+
 def registry_audit_entries(payload: object) -> list[dict]:
-    """Read equivalent flat and enveloped registry-audit representations."""
+    """Read every legal registry-audit representation as one list of entries.
+
+    Accepts a bare list (hand-written, and the planner lane's verbatim ledger),
+    a `resolutions` / `resources` envelope, and `uip maestro case sdd resolve`'s
+    own `{resolved, unresolved, scope}` object. Entries come back normalized by
+    `normalize_audit_entry`, so a grader asserts one shape whichever wrote it.
+    """
     if isinstance(payload, list):
         entries = payload
     elif isinstance(payload, dict):
         entries = next(
             (
                 payload[key]
-                for key in ("resolutions", "resources")
+                for key in ("resolved", "resolutions", "resources")
                 if isinstance(payload.get(key), list)
             ),
             None,
         )
         if entries is None:
-            _fail("registry-resolved.json has no resolutions/resources list")
+            _fail("registry-resolved.json has no resolutions/resources list (nor an `sdd resolve` resolved list)")
     else:
         _fail("registry-resolved.json must be a list or object envelope")
 
     if not all(isinstance(entry, dict) for entry in entries):
         _fail("registry-resolved.json entries must be objects")
-    return entries
+    return [normalize_audit_entry(entry) for entry in entries]
 
 
 def iter_tasks(plan: dict):
@@ -196,7 +324,19 @@ def task_is_skeleton(task: dict) -> bool:
         from ``case spec``; always has ≥1 entry when the connector resolved)
     - ``action``: ``data.inputs`` present (bare ``taskTitle`` / ``priority`` is still skeleton-equivalent)
     - everything else (``process`` / ``agent`` / ``rpa`` / ``api-workflow`` / ``case-management``):
-      ``data.name`` AND ``data.folderPath`` (both as ``=bindings.<id>`` refs)
+      ``data.name`` AND ``data.folderPath``, both non-empty.
+
+    Only presence is checked, not spelling. ``uip maestro case tasks add``
+    writes these as ``=bindings.<id>`` references and registers the matching
+    entries in ``plan.bindings[]``; a literal name/path also passes here. If
+    the runtime turns out to require the binding indirection, this predicate is
+    too weak — but tightening it is a behavioural claim to verify against the
+    product first, not a spelling preference to assert here.
+
+    Note this says nothing about ``taskTypeId``. That is an argument to
+    ``tasks add --task-type-id``, used to look the resource up and enrich the
+    task; the id itself is never persisted to the document, so no caseplan
+    assertion should reference it.
     """
     data = task.get("data") or {}
     if not data:
@@ -218,9 +358,11 @@ def task_is_skeleton(task: dict) -> bool:
 # ── Schema-aware structural helpers ─────────────────────────────────────────
 #
 # Case-level metadata lives at the top level alongside a `metadata` block — the
-# flat schema introduced in v20 and inherited through v27. Node internals are
+# flat schema introduced in v20 and inherited through v32.0.3. Node internals are
 # stable across those versions except the trigger node, which v24 rewired from
-# `case-management:Trigger` to `uipath.case.trigger` (see find_triggers).
+# `case-management:Trigger` to `uipath.case.trigger` (see find_triggers), and the
+# selected-stage rules, which v29 moved from `selectedStageId` to the multi-select
+# `selectedStageIds` (see selected_stage_ids).
 
 
 def assert_count(actual: int, expected: int, what: str) -> None:
@@ -438,6 +580,40 @@ def _fail(msg: str) -> NoReturn:
     sys.exit(f"FAIL: {msg}")
 
 
+# `uip maestro case debug` drives a live tenant, and three of its faults are the
+# service's, not the plan's: the poll returning 403/5xx mid-run, and the debug
+# instance being cancelled out from under the poll. All three exit non-zero with
+# the plan intact, and none survived a re-run — measured 2026-09-11 on
+# skill-case-single-api-workflow (403 Forbidden on poll-instance-status),
+# skill-case-multi-linear-three-stages (finalStatus Cancelled, and a 504 on the
+# same poll in CI run 34510099349), each of which then passed 4/4 on re-run
+# across both harnesses. One retry is therefore the difference between grading
+# the build and grading the tenant's afternoon. A fault that is NOT in this set
+# still fails on the first attempt: a plan defect must never be retried into a
+# pass, and a real platform regression must still turn the suite red — which is
+# why the retry announces itself on stdout instead of absorbing the fault.
+_TRANSIENT_DEBUG_HTTP = frozenset({"403", "408", "409", "425", "429", "500", "502", "503", "504"})
+_DEBUG_PHASE_FAULT = re.compile(r"Failed during [\w-]+:\s*(\d{3})\b")
+_DEBUG_CANCELLED = re.compile(r'"finalStatus"\s*:\s*"Cancelled"', re.IGNORECASE)
+_DEBUG_RETRY_SLEEP_S = 15
+
+
+def debug_fault_is_transient(output: str) -> str | None:
+    """Name the tenant-side fault in a failed ``case debug`` output, else None.
+
+    Matches only the two observed shapes: an HTTP status from the debug
+    service's own phase report, and a cancelled instance. Anything else —
+    validation errors, unresolved resources, a plan that cannot start — returns
+    None and fails on the first attempt.
+    """
+    match = _DEBUG_PHASE_FAULT.search(output)
+    if match and match.group(1) in _TRANSIENT_DEBUG_HTTP:
+        return f"HTTP {match.group(1)} from the debug service"
+    if _DEBUG_CANCELLED.search(output):
+        return "the debug instance was cancelled mid-run"
+    return None
+
+
 def _run(cmd: Sequence[str], *, timeout: int, what: str) -> subprocess.CompletedProcess[str]:
     """``subprocess.run`` that reports a timeout as a FAIL, not a traceback.
 
@@ -579,11 +755,7 @@ def _split_case_husks(
 
 def _caseplan_node_count(root: str) -> int | None:
     """Return the node count for one unambiguous Case plan under ``root``."""
-    plans = sorted(
-        path
-        for path in glob.glob(os.path.join(root, "**/caseplan.json"), recursive=True)
-        if "/.venv/" not in path
-    )
+    plans = glob_caseplans(os.path.join(root, "**/caseplan.json"))
     if len(plans) != 1:
         return None
     try:
@@ -618,6 +790,22 @@ def run_debug(
         refresh_timeout=refresh_timeout,
     )
     status = _get_ci(payload or {}, "finalStatus", "FinalStatus", "status", "Status")
+    if status == "Cancelled":
+        # Same tenant-side fault as the non-zero-exit path, reported through a
+        # clean exit. One retry, announced, then it counts.
+        print(
+            "NOTE: retrying `uip maestro case debug` once — the debug instance "
+            "was cancelled mid-run, which is the tenant's fault and not the plan's.",
+            flush=True,
+        )
+        time.sleep(_DEBUG_RETRY_SLEEP_S)
+        payload = start_debug(
+            timeout=timeout,
+            project_glob=project_glob,
+            solution_glob=solution_glob,
+            refresh_timeout=refresh_timeout,
+        )
+        status = _get_ci(payload or {}, "finalStatus", "FinalStatus", "status", "Status")
     if status != "Completed" and status != "Successful":
         _fail(f"Case did not complete (finalStatus={status})\nPayload: {json.dumps(payload, default=str)[:2000]}")
     return payload
@@ -666,11 +854,23 @@ def start_debug(
         "uip", "maestro", "case", "debug", project_dir,
         "--log-level", "debug", "--output", "json",
     ]
-    r = _run(debug_cmd, timeout=timeout, what="uip maestro case debug")
-    if r.returncode != 0:
-        _fail(
-            f"case debug exit {r.returncode}\nstdout: {r.stdout}\nstderr: {r.stderr}"
+    for attempt in (1, 2):
+        r = _run(debug_cmd, timeout=timeout, what="uip maestro case debug")
+        if r.returncode == 0:
+            break
+        fault = debug_fault_is_transient(f"{r.stdout}\n{r.stderr}")
+        if fault is None or attempt == 2:
+            retried = " (after one retry)" if attempt == 2 else ""
+            _fail(
+                f"case debug exit {r.returncode}{retried}\n"
+                f"stdout: {r.stdout}\nstderr: {r.stderr}"
+            )
+        print(
+            f"NOTE: retrying `uip maestro case debug` once — {fault}, "
+            f"which is the tenant's fault and not the plan's.",
+            flush=True,
         )
+        time.sleep(_DEBUG_RETRY_SLEEP_S)
     data = _parse_json(r.stdout)
     if data is None:
         _fail(f"Could not parse JSON from case debug\n{r.stdout}")

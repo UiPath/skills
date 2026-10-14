@@ -3,10 +3,13 @@ import os
 import subprocess
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 STAGE_SCRIPT = REPO_ROOT / "tests/scripts/stage-preview-sdk-workspace.sh"
 REQUIRED_CONNECTOR = "uipath.connector.uipath-uipath-dataservice.query-entity-records"
+DEFAULT_PACKAGE = "@uipath/maestro-builder-sdk"
 
 
 def _write_executable(path: Path, body: str) -> None:
@@ -14,14 +17,29 @@ def _write_executable(path: Path, body: str) -> None:
     path.chmod(0o755)
 
 
-def test_stages_credential_free_sdk_workspace(tmp_path: Path) -> None:
+# The stager reads the package name from FLOW_SDK_PKG_NAME and falls back to the
+# post-rename default. Both halves of that knob are covered: the unset case pins
+# the default, and the old name proves the value is actually threaded through
+# every place the name appears (install probe, devDependency, provenance) rather
+# than hard-coded.
+@pytest.mark.parametrize(
+    ("sdk_package", "set_env"),
+    [
+        pytest.param(DEFAULT_PACKAGE, False, id="default-when-unset"),
+        pytest.param(DEFAULT_PACKAGE, True, id="new-name-explicit"),
+        pytest.param("@uipath/flow-sdk", True, id="old-name-via-env"),
+    ],
+)
+def test_stages_credential_free_sdk_workspace(
+    tmp_path: Path, sdk_package: str, set_env: bool
+) -> None:
     sdk_root = tmp_path / "sdk"
-    package_dir = sdk_root / "node_modules/@uipath/flow-sdk"
+    package_dir = sdk_root / "node_modules" / sdk_package
     package_dir.mkdir(parents=True)
     (package_dir / "package.json").write_text(
         json.dumps(
             {
-                "name": "@uipath/flow-sdk",
+                "name": sdk_package,
                 "version": "3.20.0",
                 "gitref": "efd27ce4c90ad76fc7f3c9b67f4920997b2cf0a8",
                 "type": "module",
@@ -63,6 +81,9 @@ def test_stages_credential_free_sdk_workspace(tmp_path: Path) -> None:
         "UIP_MAESTRO_REGISTRY_HOME": str(registry_root),
         "FLOW_SDK_LIBRARY_JSON": str(library_json),
     }
+    env.pop("FLOW_SDK_PKG_NAME", None)
+    if set_env:
+        env["FLOW_SDK_PKG_NAME"] = sdk_package
 
     completed = subprocess.run(
         ["bash", str(STAGE_SCRIPT)],
@@ -73,15 +94,15 @@ def test_stages_credential_free_sdk_workspace(tmp_path: Path) -> None:
         text=True,
     )
 
-    assert "@uipath/flow-sdk@3.20.0" in completed.stdout
+    assert f"{sdk_package}@3.20.0" in completed.stdout
     assert (workspace / "node_modules").is_symlink()
     assert (workspace / "node_modules").resolve() == sdk_root / "node_modules"
     package_json = json.loads((workspace / "package.json").read_text())
     assert package_json["scripts"] == {"keep": "true"}
-    assert package_json["devDependencies"] == {"@uipath/flow-sdk": "3.20.0"}
+    assert package_json["devDependencies"] == {sdk_package: "3.20.0"}
     assert "flowSdk" not in package_json
     assert json.loads((workspace / "preview-sdk-provenance.json").read_text()) == {
-        "package": "@uipath/flow-sdk",
+        "package": sdk_package,
         "version": "3.20.0",
         "gitref": "efd27ce4c90ad76fc7f3c9b67f4920997b2cf0a8",
         "connector_library": True,

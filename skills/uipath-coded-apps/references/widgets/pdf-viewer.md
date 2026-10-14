@@ -4,7 +4,7 @@ React PDF viewer for coded apps. Renders PDFs from **Orchestrator Storage Bucket
 
 Package: [`@uipath/ui-widgets-pdf-viewer`](https://www.npmjs.com/package/@uipath/ui-widgets-pdf-viewer). Full prop/API surface lives in the package README — this file covers only the integration steps that are easy to get wrong inside a Coded App.
 
-> **Publish status:** this package is newer than the other widgets. Before recommending it, verify it resolves: `npm view @uipath/ui-widgets-pdf-viewer version`. On a 404 the package is not yet on the public registry — tell the user and fall back to the hand-rolled react-pdf pattern in [create-action-app.md § PDF viewer](../create-action-app.md#pdf-viewer-when-displaying-pdf-documents) rather than inventing an install path. Do **not** fall back to `<iframe>`/`<embed>`/`<object>` PDF tags — Action Center loads coded apps in a sandboxed iframe whose CSP blocks browser-native PDF rendering, and the react-pdf pattern works in web apps too.
+> **Never fall back to `<iframe>`/`<embed>`/`<object>` PDF tags** — Action Center loads coded apps in a sandboxed iframe whose CSP blocks browser-native PDF rendering. If this widget cannot be used, the fallback is the hand-rolled react-pdf pattern in [create-action-app.md § PDF viewer](../create-action-app.md#pdf-viewer-when-displaying-pdf-documents), which works in web apps too.
 
 ## When to Use
 
@@ -77,7 +77,7 @@ Designed for a narrow split pane beside an approval form — fills its container
 ```typescript
 import { PdfViewer } from '@uipath/ui-widgets-pdf-viewer';
 import '@uipath/ui-widgets-pdf-viewer/PdfViewer.css';
-import { sdk } from '../uipath'; // action app: new UiPath() with host-injected session
+import { sdk } from '../uipath'; // action app: the shared instance (web app: useAuth())
 
 function DocumentPane({ folderKey, path }: { folderKey: string; path: string }) {
   return (

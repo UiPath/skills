@@ -1,0 +1,41 @@
+task_id: skill-datafabric-smoke-federated-scope-ask
+description: >
+  Smoke test for the mandatory scope-prompt flow (data-fabric Rule 16/19) applied to a
+  FEDERATED entity create. When the user asks for a federated entity over a connector but
+  does NOT state tenant vs folder scope, the agent MUST raise an AskUserQuestion-style scope
+  prompt BEFORE invoking `uip df entities create`. Silently defaulting to tenant (or a
+  folder) is a violation. None of the bypass clauses apply — the prompt does not say
+  "do not ask", does not name a folder, does not state tenant, and does not derive a folder GUID.
+tags: [uipath-platform, data-fabric, federated, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 12
+
+initial_prompt: |
+  Set up a live, read-only Data Fabric entity that reads our users straight from
+  the ServiceNow connection (the `sys_user` object) — don't copy the data in. Call it
+  `UserDirectory`.
+
+  I haven't decided whether it should live at tenant level or inside a folder.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent must NOT invoke a real `entities create` before scope is confirmed (--help lookups OK)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+df\s+entities\s+create\s+(?!--help)\S'
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent paused and asked the user to choose tenant or folder scope before creating"
+    include_agent_output: true
+    prompt: |
+      The user asked to create a federated (live, read-only) Data Fabric entity over a
+      ServiceNow connection but said its scope was undecided. Score 1.0 if the response
+      pauses without creating anything and asks the user to choose tenant-level vs
+      folder scope. Score 0.0 if it creates the entity or silently picks a scope.
+    weight: 3.0
+    pass_threshold: 1.0

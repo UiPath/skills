@@ -2,7 +2,7 @@
 
 Ready-to-use templates for UiPath coded files — workflows, test cases, helper/utility classes, and Before/After hooks. Replace placeholders in `{{PLACEHOLDER}}` format.
 
-> **Using statements:** These templates include only the minimal required usings. Add service-specific usings based on actual usage — see [operations-guide.md § Coding Guidelines](../references/coded/operations-guide.md#coding-guidelines) for the full mapping.
+> **Using statements:** These templates include only the minimal required usings — keep them even when an editor flags them as unnecessary; only `uip rpa validate` / `build` decide. Add service-specific usings based on actual usage — see [operations-guide.md § Coding Guidelines](../references/coded/operations-guide.md#coding-guidelines) for the full mapping.
 
 ---
 
@@ -357,7 +357,8 @@ using UiPath.CodedWorkflows;
 
 namespace {{PROJECT_NAME}}
 {
-    public partial class CodedWorkflow : IBeforeAfterRun
+    // Name CodedWorkflowBase on every partial part, or build compiles CodedWorkflow without a base
+    public partial class CodedWorkflow : CodedWorkflowBase, IBeforeAfterRun
     {
         public void Before(BeforeRunContext context)
         {
@@ -393,7 +394,8 @@ using UiPath.CodedWorkflows;
 
 namespace {{PROJECT_NAME}}
 {
-    public partial class CodedWorkflow
+    // Name CodedWorkflowBase on every partial part, or build compiles CodedWorkflow without a base
+    public partial class CodedWorkflow : CodedWorkflowBase
     {
         // Shared helper available in all workflows and test cases
         protected string GetEnvironmentUrl()

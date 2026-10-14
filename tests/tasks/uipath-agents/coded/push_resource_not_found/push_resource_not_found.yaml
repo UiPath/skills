@@ -22,14 +22,18 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
+      path: _fixtures/slack-triage
+      mount_point: slack-triage
+    - type: template_dir
       path: mocks
       mount_point: mocks
   mock_path_dirs:
     - mocks
 
+reference:
+  directory: ../..
+
 pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/push_resource_not_found/_fixtures/slack-triage ."
-    timeout: 10
   - command: "printf 'UIPATH_PROJECT_ID=89852b5d-8559-4c57-b752-0e2b500902fc\\n' > slack-triage/.env"
     timeout: 10
 
@@ -58,7 +62,7 @@ success_criteria:
 
   - type: run_command
     description: "Connection binding ConnectionId corrected to the real connection"
-    command: "python3 $TASK_DIR/check_push_resource_not_found.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_push_resource_not_found.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

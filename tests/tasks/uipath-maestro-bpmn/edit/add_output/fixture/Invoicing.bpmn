@@ -12,8 +12,8 @@
       <uipath:migrationVersion version="11.5" />
       <uipath:caseManagement version="v1"><![CDATA[{"owner":"billing","opaque":"preserve-only-do-not-touch"}]]></uipath:caseManagement>
       <uipath:variables version="v1">
-        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" />
-        <uipath:inputOutput id="Var_Total" name="Total" type="number" />
+        <uipath:inputOutput id="Var_Amount" name="Amount" type="number" elementId="Process_Invoicing" />
+        <uipath:inputOutput id="Var_Total" name="Total" type="number" elementId="Process_Invoicing" />
       </uipath:variables>
     </bpmn:extensionElements>
     <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_SC</bpmn:outgoing></bpmn:startEvent>
@@ -21,13 +21,13 @@
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"amount":"=vars.Var_Amount"}]]></uipath:input>
           <uipath:output name="total" type="number" var="Var_Total" source="=result.response.total" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_SC</bpmn:incoming><bpmn:outgoing>Flow_CE</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: { total: amount * 1.2 } };]]></bpmn:script>
+      <bpmn:script><![CDATA[return { total: amount * 1.2 };]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:endEvent id="End_1" name="Done"><bpmn:incoming>Flow_CE</bpmn:incoming></bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_SC" sourceRef="Start_1" targetRef="Task_Calc" />

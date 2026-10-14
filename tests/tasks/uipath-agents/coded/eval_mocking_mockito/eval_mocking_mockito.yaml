@@ -12,9 +12,16 @@ description: >
 tags: [uipath-agents, e2e, coded, mode:build, feature:eval, feature:eval-mocking, feature:framework-langgraph]
 max_iterations: 1
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/asset-retriever
+      mount_point: asset-retriever
+
+reference:
+  directory: ../..
+
 pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/coded/eval_mocking_mockito/_fixtures/asset-retriever ."
-    timeout: 10
   - command: "bash -c 'cd asset-retriever && uv sync && source .venv/bin/activate && uip codedagent setup --force'"
     timeout: 300
 
@@ -57,7 +64,7 @@ success_criteria:
 
   - type: run_command
     description: "Declarative mockito mocking wired + JsonSimilarity evaluator + offline eval results"
-    command: "python3 $TASK_DIR/check_eval_mocking_mockito.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_eval_mocking_mockito.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

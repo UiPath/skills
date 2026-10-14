@@ -4,14 +4,20 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import bpmn_check  # noqa: E402
+import pytest  # noqa: E402
 from bpmn_check import (  # noqa: E402
     NS,
+    all_node_values,
+    context_value,
+    has_type,
     has_typed_uipath_extension,
     has_uipath_extension,
 )
@@ -75,6 +81,37 @@ def test_bundled_start_agent_contract_matches_runtime_registry() -> None:
     assert "releaseKey" not in start_agent["xmlTemplate"]
 
 
+def test_bundled_context_inputs_declare_a_type() -> None:
+    """The canvas parser rejects a uipath:context input with no `type`, so a
+    template pasted verbatim from the bundle would fail `validate`/`refresh`."""
+    repo_root = Path(__file__).parents[4]
+    spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+
+    untyped = []
+    for name, extension in spec["extensionTypes"].items():
+        template = extension.get("xmlTemplate") or ""
+        if "<uipath:context>" not in template:
+            continue
+        context = template.split("<uipath:context>")[1].split("</uipath:context>")[0]
+        declared = {field["name"]: field["type"] for field in extension["contextFields"]}
+        # Opening tag only: a context input is self-closing or, for metadata,
+        # wraps CDATA. The count guards the pattern against silently skipping one.
+        tags = re.findall(r"<uipath:input\b[^>]*>", context)
+        assert len(tags) == len(re.findall(r"<uipath:input\b", context)), (
+            f"{name}: the input pattern skipped a context input"
+        )
+        for tag in tags:
+            field = re.search(r'name="([^"]+)"', tag).group(1)
+            match = re.search(r'type="([^"]+)"', tag)
+            if match is None:
+                untyped.append(f"{name}.{field}")
+            elif field in declared:
+                assert match.group(1) == declared[field], f"{name}.{field} type mismatch"
+
+    assert not untyped, f"context inputs missing type=: {untyped}"
+
+
 def test_bundled_intsvc_activity_contract_matches_cli_manifest() -> None:
     repo_root = Path(__file__).parents[4]
     spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
@@ -116,3 +153,462 @@ def test_bundled_intsvc_event_contracts_match_cli_manifest() -> None:
         }
         assert "<uipath:context>" in event["xmlTemplate"]
         assert "=bindings.{connectionBindingId}" in event["xmlTemplate"]
+
+
+def test_find_bpmn_file_without_hint_prefers_the_project_file(tmp_path, monkeypatch) -> None:
+    """Two .bpmn files and no hint: the one beside project.uiproj wins.
+
+    Flow graders aggregated over every ``*.flow``; BPMN graders that pass no
+    name hint must not die on a stray draft or fixture copy.
+    """
+    project = tmp_path / "Proj"
+    project.mkdir()
+    (project / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
+    (project / "project.uiproj").write_text("{}", encoding="utf-8")
+    (tmp_path / "draft.bpmn").write_text("<draft/>", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file().endswith("Proj/Proj.bpmn")
+
+    (tmp_path / "project.uiproj").write_text("{}", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        bpmn_check.find_bpmn_file()
+
+
+def test_find_bpmn_file_with_hint_prefers_the_project_file(tmp_path, monkeypatch) -> None:
+    """A hint narrows to a basename, not to a project.
+
+    ``Proj-old.bpmn`` matches the hint ``Proj`` and sorts before ``Proj.bpmn``
+    (``-`` is 0x2D, ``.`` is 0x2E), so returning the first match graded the
+    stray draft -- the hazard resolve_project's docstring names.
+    """
+    project = tmp_path / "Proj"
+    project.mkdir()
+    (project / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
+    (project / "project.uiproj").write_text("{}", encoding="utf-8")
+    (tmp_path / "Proj-old.bpmn").write_text("<x/>", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file("Proj").endswith("Proj/Proj.bpmn")
+
+    # Two hint matches beside a project.uiproj: the rule cannot pick, so the
+    # pre-existing first-match behaviour stands rather than a spurious FAIL.
+    (tmp_path / "project.uiproj").write_text("{}", encoding="utf-8")
+    assert bpmn_check.find_bpmn_file("Proj") == "Proj-old.bpmn"
+
+
+def test_context_value_strips_and_falls_back_to_element_text() -> None:
+    """One canonical reading of an input, so one artifact gets one verdict.
+
+    The copies this replaced disagreed on whitespace: some stripped, some did
+    not, so the same file read as two different values depending on which
+    grader opened it.
+    """
+    task = _service_task(
+        """
+        <bpmn:extensionElements>
+          <uipath:activity type="Intsvc.ActivityExecution">
+            <uipath:context>
+              <uipath:input name="objectName" value="  send_files_to_channel  " />
+              <uipath:input name="path">
+                /v1/messages
+              </uipath:input>
+              <uipath:input name="empty" value="" />
+            </uipath:context>
+          </uipath:activity>
+        </bpmn:extensionElements>
+        """
+    )
+
+    assert context_value(task, "objectName") == "send_files_to_channel"
+    # No value attribute: the element text carries it, stripped the same way.
+    assert context_value(task, "path") == "/v1/messages"
+    # An empty value attribute falls through to the (absent) text, not to the
+    # literal "" of the attribute -- either way the caller sees "".
+    assert context_value(task, "empty") == ""
+    assert context_value(task, "notThere") == ""
+    # Exact name matching: a re-cased name is a miss, not a loose hit.
+    assert context_value(task, "objectname") == ""
+    # all_node_values is the raw sweep: it keeps the attribute verbatim and
+    # strips only the text form, which is why callers substring-match on it.
+    assert sorted(all_node_values(task)) == [
+        "  send_files_to_channel  ",
+        "/v1/messages",
+    ]
+
+
+def test_has_type_matches_any_token_in_the_serialised_node() -> None:
+    task = _service_task(
+        '<uipath:activity type="Intsvc.ActivityExecution" version="v1" />'
+    )
+
+    assert has_type(task, "Intsvc.ActivityExecution")
+    assert not has_type(task, "Orchestrator.StartJob")
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        # The CLI quotes the identifier; this is the artifact that made CI run
+        # 35538478362 fail with `found 0` score-sorted nodes.
+        ("ORDER BY 'score' ASC", ("score", "asc")),
+        ("ORDER BY score DESC", ("score", "desc")),
+        ("order by [score]", ("score", "")),
+        ('ORDER BY "score"', ("score", "")),
+        ("`score`", ("", "")),
+        ("('active' = true)", ("", "")),
+        ("", ("", "")),
+    ],
+)
+def test_order_by_reads_every_identifier_quoting(text: str, expected: tuple) -> None:
+    assert bpmn_check.order_by(text) == expected
+
+
+def test_order_by_accepts_backticked_identifier() -> None:
+    assert bpmn_check.order_by("... ORDER BY `score` desc") == ("score", "desc")
+
+
+def test_query_filter_text_excludes_binding_values() -> None:
+    """The filter blob must not inherit an `=` from a binding reference.
+
+    With every input value in the blob, `=bindings.Binding_DataFabricFolder`
+    satisfied the `string` row's `equals|=` operator half for free, so the
+    operator assertion could not fail.
+    """
+    import importlib.util
+
+    here = Path(__file__).parent
+    spec = importlib.util.spec_from_file_location(
+        "_check_df_smoke_query_filter", here / "check_df_smoke_query_filter.py"
+    )
+    grader = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(grader)
+
+    task = ET.fromstring(
+        f'<bpmn:sendTask xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}" id="Q">'
+        "<bpmn:extensionElements><uipath:activity type=\"Intsvc.ActivityExecution\">"
+        '<uipath:input name="folderKey" value="=bindings.Binding_DataFabricFolder" />'
+        '<uipath:input name="queryExpression" target="query" '
+        "value=\"'title' LIKE 'FilterFixture-Matrix'\" />"
+        "</uipath:activity></bpmn:extensionElements></bpmn:sendTask>"
+    )
+    _pairs, text = grader.node_representation(task)
+
+    assert "=bindings" not in text
+    assert "folderkey" not in text
+    field, tokens, operators = grader.EXPECTED["string"]
+    assert not grader.has_expected_filter(text, field, tokens, operators)
+    # The same node with a real equality operator still passes.
+    assert grader.has_expected_filter(
+        text + " 'title' = 'filterfixture-matrix'", field, tokens, operators
+    )
+
+
+def _load(name: str):
+    import importlib.util
+
+    path = Path(__file__).parent / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(f"_{name}", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _outlook_receive_task(payload: str) -> ET.Element:
+    return ET.fromstring(
+        f'<bpmn:receiveTask xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}" '
+        f'id="Wait_1"><bpmn:extensionElements><uipath:event '
+        f'type="Intsvc.WaitForEvent">{payload}'
+        "</uipath:event></bpmn:extensionElements></bpmn:receiveTask>"
+    )
+
+
+def test_waitfor_reads_only_the_runtime_body_filter() -> None:
+    grader = _load("check_outlook_waitfor_email")
+
+    untargeted = _outlook_receive_task(
+        '<uipath:input name="filter" type="json"><![CDATA['
+        '{"expression":"(contains(subject, \'TestWaitFor\'))",'
+        '"tree":{"filters":[{"id":"subject","operator":"Contains","value":"TestWaitFor"}]}}'
+        "]]></uipath:input>"
+    )
+    assert not grader.has_subject_contains_filter(untargeted)
+
+    tree_only = _outlook_receive_task(
+        '<uipath:input name="metadata" type="json"><![CDATA['
+        '{"essentialConfiguration":{"filter":{"filters":['
+        '{"id":"subject","operator":"Contains","value":"TestWaitFor"}]}}}'
+        "]]></uipath:input>"
+    )
+    assert not grader.has_subject_contains_filter(tree_only)
+
+    body = _outlook_receive_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA['
+        '{"filters":{"expression":"(parentFolderId == \'X\') && '
+        '(contains(subject, \'TestWaitFor\'))"},"queryParams":{"parentFolderId":"X"}}'
+        "]]></uipath:input>"
+    )
+    assert grader.has_subject_contains_filter(body)
+
+
+def _waitfor_body(expression: str, query_params: str = '{"parentFolderId":"X"}') -> ET.Element:
+    return _outlook_receive_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA['
+        f'{{"filters":{{"expression":"{expression}"}},"queryParams":{query_params}}}'
+        "]]></uipath:input>"
+    )
+
+
+def test_waitfor_rejects_negated_subject_clause() -> None:
+    grader = _load("check_outlook_waitfor_email")
+    scope = "(parentFolderId == 'X') && "
+    for negated in (
+        "!contains(subject, 'TestWaitFor')",
+        "!(contains(subject, 'TestWaitFor'))",
+        "not contains(subject, 'TestWaitFor')",
+        "(contains(subject, 'TestWaitFor')) == false",
+    ):
+        assert not grader.has_subject_contains_filter(_waitfor_body(scope + negated)), negated
+
+
+def test_waitfor_requires_inbox_scope() -> None:
+    grader = _load("check_outlook_waitfor_email")
+    subject = "(contains(subject, 'TestWaitFor'))"
+
+    assert not grader.has_subject_contains_filter(_waitfor_body(subject))
+    assert not grader.has_subject_contains_filter(
+        _waitfor_body("(parentFolderId == 'X') && " + subject, "{}")
+    )
+    assert not grader.has_subject_contains_filter(
+        _waitfor_body("(parentFolderId == 'Y') && " + subject)
+    )
+
+
+_WAIT_EVENT = (
+    '<bpmn:extensionElements><uipath:event version="v1">'
+    '<uipath:type value="Intsvc.WaitForEvent" version="v1" /><uipath:context>'
+    '<uipath:input name="connectorKey" value="uipath-microsoft-outlook365" />'
+    '<uipath:input name="operation" value="EMAIL_RECEIVED" />'
+    "</uipath:context>"
+    '<uipath:input name="body" type="json" target="body"><![CDATA['
+    '{"filters":{"expression":"(parentFolderId == \'X\') && '
+    '(contains(subject, \'TestWaitFor\'))"},"queryParams":{"parentFolderId":"X"}}'
+    "]]></uipath:input></uipath:event></bpmn:extensionElements>"
+)
+
+
+def _waitfor_process(
+    host: str, event_definition: str = "", payload: str = _WAIT_EVENT
+) -> ET.Element:
+    return ET.fromstring(
+        f'<bpmn:definitions xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}">'
+        f'<bpmn:process id="P"><bpmn:{host} id="Wait_1">{payload}{event_definition}'
+        f"</bpmn:{host}></bpmn:process></bpmn:definitions>"
+    )
+
+
+def test_waitfor_hosts() -> None:
+    grader = _load("check_outlook_waitfor_email")
+    message = "<bpmn:messageEventDefinition />"
+    timer = "<bpmn:timerEventDefinition />"
+
+    for host, definition in (("receiveTask", ""), ("intermediateCatchEvent", message)):
+        nodes = grader.wait_for_event_nodes(_waitfor_process(host, definition))
+        assert nodes and grader.has_subject_contains_filter(nodes[0]), host
+    assert not grader.wait_for_event_nodes(_waitfor_process("intermediateCatchEvent"))
+    assert not grader.wait_for_event_nodes(_waitfor_process("intermediateCatchEvent", timer))
+    assert not grader.wait_for_event_nodes(
+        _waitfor_process("intermediateCatchEvent", message + timer)
+    )
+    assert not grader.wait_for_event_nodes(_waitfor_process("boundaryEvent", message))
+
+    for other in (
+        _WAIT_EVENT.replace("Intsvc.WaitForEvent", "Maestro.ReceiveMessageEvent"),
+        _WAIT_EVENT.replace("uipath-microsoft-outlook365", "uipath-google-gmail"),
+    ):
+        catch = _waitfor_process("intermediateCatchEvent", message, other)
+        assert not grader.wait_for_event_nodes(catch)
+
+
+def test_trigger_inbox_reads_parent_folder_from_body_query_params() -> None:
+    grader = _load("check_outlook_trigger_inbox")
+
+    trigger = ET.fromstring(
+        f'<bpmn:startEvent xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}" '
+        'id="Start_1"><bpmn:extensionElements><uipath:event version="v1">'
+        '<uipath:input name="body" type="json" target="body"><![CDATA['
+        '{"filters":{"expression":"(parentFolderId == \'X\')"},"queryParams":{"parentFolderId":"X"}}'
+        "]]></uipath:input></uipath:event></bpmn:extensionElements></bpmn:startEvent>"
+    )
+
+    assert grader.find_parent_folder_id(trigger) == "X"
+
+
+def test_trigger_inbox_ignores_body_outside_the_runtime_contract() -> None:
+    grader = _load("check_outlook_trigger_inbox")
+
+    def trigger(body_input: str) -> ET.Element:
+        return ET.fromstring(
+            f'<bpmn:startEvent xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}" '
+            'id="Start_1"><bpmn:extensionElements><uipath:event version="v1">'
+            f"{body_input}</uipath:event></bpmn:extensionElements></bpmn:startEvent>"
+        )
+
+    untargeted = trigger(
+        '<uipath:input name="body" type="json"><![CDATA['
+        '{"queryParams":{"parentFolderId":"X"}}]]></uipath:input>'
+    )
+    top_level = trigger(
+        '<uipath:input name="body" type="json" target="body"><![CDATA['
+        '{"parentFolderId":"X"}]]></uipath:input>'
+    )
+
+    assert grader.find_parent_folder_id(untargeted) == ""
+    assert grader.find_parent_folder_id(top_level) == ""
+
+
+def test_validate_bpmn_fails_malformed_xml_without_calling_the_cli(tmp_path, monkeypatch) -> None:
+    """`validate` tokenizes tolerantly, so the CLI cannot carry this criterion.
+
+    An unbound namespace prefix is the case the skill calls out: the CLI
+    reports Valid, a real parser does not.
+    """
+    validate_bpmn = _load("validate_bpmn")
+
+    (tmp_path / "Broken.bpmn").write_text(
+        '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">'
+        '<bpmn:process id="p"><ghost:task id="t"/></bpmn:process></bpmn:definitions>',
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    def _no_cli(*args, **kwargs):
+        raise AssertionError("CLI must not run on a file that does not parse")
+
+    monkeypatch.setattr(validate_bpmn.subprocess, "run", _no_cli)
+
+    assert validate_bpmn.main([]) == 1
+
+
+def test_find_bpmn_file_without_hint_accepts_identical_copies(tmp_path, monkeypatch) -> None:
+    """Two byte-identical .bpmn files, both beside a project.uiproj: one
+    artifact, not ambiguity (the agent copied its scaffold into the solution
+    wrapper on CI run 35538279757). Differing content still fails."""
+    for d in ("Proj", "ProjSolution/Proj"):
+        (tmp_path / d).mkdir(parents=True)
+        (tmp_path / d / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
+        (tmp_path / d / "project.uiproj").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert bpmn_check.find_bpmn_file().endswith("Proj.bpmn")
+
+    (tmp_path / "Proj" / "Proj.bpmn").write_text("<y/>", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        bpmn_check.find_bpmn_file()
+
+
+def test_resolve_project_excludes_the_live_run_copy(tmp_path, monkeypatch) -> None:
+    """A live grader's ephemeral solution holds an imported copy of the
+    project; ``exclude_under`` keeps it out of the candidate set."""
+    for d in ("ProjSolution/Proj", "proj-live/ProjLiveEval/Proj"):
+        (tmp_path / d).mkdir(parents=True)
+        (tmp_path / d / "Proj.bpmn").write_text("<x/>", encoding="utf-8")
+        (tmp_path / d / "project.uiproj").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit):
+        bpmn_check.resolve_project("Proj.bpmn")
+    resolved = bpmn_check.resolve_project("Proj.bpmn", exclude_under=[Path("proj-live")])
+    assert resolved == tmp_path / "ProjSolution" / "Proj"
+
+
+def _send_task(payload: str) -> ET.Element:
+    return ET.fromstring(
+        f'<bpmn:sendTask xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}" '
+        f'id="Send_1"><bpmn:extensionElements><uipath:activity version="v1">'
+        f"{payload}</uipath:activity></bpmn:extensionElements></bpmn:sendTask>"
+    )
+
+
+def test_body_object_reads_a_single_json_blob() -> None:
+    task = _send_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA['
+        '{"title": "T", "score": 7.25, "active": true, "viewCount": 3}'
+        "]]></uipath:input>"
+    )
+    assert bpmn_check.body_object(task) == {
+        "title": "T",
+        "score": 7.25,
+        "active": True,
+        "viewCount": 3,
+    }
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '<uipath:input name="body" type="json" target="body"><![CDATA[{"a": 1}]]></uipath:input>'
+        '<uipath:input name="extra" type="json" target="body"><![CDATA[{"b": 2}]]></uipath:input>',
+        '<uipath:input name="score" type="number" target="body" value="7" />'
+        '<uipath:input name="title" type="string" target="body" value="T" />',
+    ],
+)
+def test_body_object_rejects_several_body_inputs(payload: str) -> None:
+    with pytest.raises(bpmn_check.BodyShapeError, match="does not merge"):
+        bpmn_check.body_object(_send_task(payload))
+
+
+def test_body_object_rejects_a_per_field_scalar() -> None:
+    task = _send_task('<uipath:input name="score" type="number" target="body" value="7" />')
+    with pytest.raises(bpmn_check.BodyShapeError, match="must be an object"):
+        bpmn_check.body_object(task)
+
+
+def test_body_object_ignores_non_body_inputs() -> None:
+    task = _send_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA[{"title": "T"}]]></uipath:input>'
+        '<uipath:input name="entityName" type="string" target="path" value="FlowCodeEvalEntity" />'
+    )
+    assert bpmn_check.body_object(task) == {"title": "T"}
+
+
+def test_body_object_leaves_expressions_as_strings() -> None:
+    task = _send_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA['
+        '{"score": "=vars.Score", "active": "=js:vars.flag"}]]></uipath:input>'
+    )
+    assert bpmn_check.body_object(task) == {
+        "score": "=vars.Score",
+        "active": "=js:vars.flag",
+    }
+
+
+def test_body_object_rejects_a_whole_body_expression() -> None:
+    task = _send_task('<uipath:input name="body" type="json" target="body" value="=vars.payload" />')
+    with pytest.raises(bpmn_check.BodyShapeError, match="expression"):
+        bpmn_check.body_object(task)
+
+
+def test_body_object_is_empty_without_body_inputs() -> None:
+    task = _send_task('<uipath:input name="limit" type="number" target="query" value="100" />')
+    assert bpmn_check.body_object(task) == {}
+    assert bpmn_check.body_fields(task) == []
+
+
+def test_body_object_is_empty_for_an_empty_body_input() -> None:
+    task = _send_task('<uipath:input name="body" type="json" target="body" />')
+    assert bpmn_check.body_object(task) == {}
+
+
+def test_body_object_fails_a_malformed_body_blob() -> None:
+    bad_json = _send_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA[{"a": ]]></uipath:input>'
+    )
+    with pytest.raises(bpmn_check.BodyShapeError, match="not valid JSON"):
+        bpmn_check.body_object(bad_json)
+
+    not_object = _send_task(
+        '<uipath:input name="body" type="json" target="body"><![CDATA[[1, 2]]]></uipath:input>'
+    )
+    with pytest.raises(bpmn_check.BodyShapeError, match="must be an object"):
+        bpmn_check.body_object(not_object)

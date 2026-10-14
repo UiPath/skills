@@ -21,6 +21,9 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/WebResearchBriefingSolution
 
+reference:
+  directory: .
+
 initial_prompt: |
   I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
   It posts briefings to Slack with the "Send message to channel" tool. That tool
@@ -53,7 +56,7 @@ success_criteria:
 
   - type: run_command
     description: "Custom boolean-rule guardrail with filter action on Send message to channel"
-    command: "python3 $TASK_DIR/check_custom_boolean_filter.py"
+    command: "python3 $REFERENCE_DIR/check_custom_boolean_filter.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

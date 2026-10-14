@@ -10,6 +10,9 @@ description: >
 tags: [uipath-agents, e2e, coded, lifecycle:generate, context-grounding, mode:build]
 max_iterations: 1
 
+reference:
+  directory: .
+
 initial_prompt: |
   I want a coded agent named `deep-rag-agent` that takes a PDF file
   uploaded as an attachment and returns a grounded summary with
@@ -30,7 +33,7 @@ success_criteria:
 
   - type: run_command
     description: "Graph imports CreateDeepRag / WaitEphemeralIndex / EphemeralIndexUsage; uses interrupt(); passes is_ephemeral_index=True; no module-level UiPath()"
-    command: "python3 $TASK_DIR/check_deep_rag_graph.py"
+    command: "python3 $REFERENCE_DIR/check_deep_rag_graph.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

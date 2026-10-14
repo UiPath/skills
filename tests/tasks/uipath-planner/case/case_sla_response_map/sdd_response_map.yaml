@@ -15,9 +15,21 @@ run_limits:
   max_turns: 90
   turn_timeout: 3600
 
+# Inherit agent from the experiment; override only allowed_tools. The lane's
+# Template conformance gate runs its 35-item walk in ONE subagent when the
+# Agent tool is present. Run 35267119510 measured the alternative: every task
+# without Agent was killed at exactly its turn wall (picker 1500.0s,
+# response-map 3600.0s, regressions 2700.0s) with 4-6 tool calls, while both
+# tasks with it scored 1.000 under wall. The walk is generation, not tooling.
+agent:
+  allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
+
+reference:
+  directory: ../..
+
 initial_prompt: |
   Design an "OrderExceptionReview" Maestro case and write the design document to `sdd.md`.
-  Design only: stop before creating caseplan.json, and do not scaffold a solution.
+  Design only: stop before creating a case plan, and do not scaffold a solution.
 
   The design is settled — do not redesign it or re-interview me on the timing rules below.
   Do not query the tenant registry, connections, schemas, or users; use concrete intended
@@ -40,9 +52,53 @@ initial_prompt: |
   Preserve why each SLA response was chosen.
 
 success_criteria:
+  # No validator archaeology before the write. The § Validation gate is a checklist the
+  # agent ANSWERS in the transcript — there is no script, so every call that goes looking
+  # for one is pure loss. Reading the old `audit_sdd.py` source instead of running it is
+  # what burned three full turn walls in run 2026-09-08_05-15-45 with zero bytes written;
+  # the script is gone, and these four rows now watch the same behaviour on its remains
+  # (`audit_sdd`, `scripts/case/`) so a relapse fails in minutes instead of timing out.
+  #
+  # One criterion per file-reading tool: `tool_name` is a per-criterion filter, and run
+  # 34310755247 measured each escape route separately. Coverage gaps that run proved:
+  # `wc -l audit_sdd.py` scored clean on reject-route — kept in the verb list, because it is
+  # the FIRST rung of the ladder and not a harmless line count: in both the loan and sla
+  # runs that same `wc` is immediately followed by `sed` range reads of the whole file.
+  # The Grep and Glob rows close the tool surface rather than a measured escape: no run had
+  # yet reached the validator through them, but nothing stopped it, and Grep is this lane's
+  # heaviest reader (10 calls in the original skill-case-phase-0-finalize-draft failure,
+  # all aimed at the guides and template rather than the validator).
+  - type: command_not_executed
+    description: "Advisory: no gate script is read — the § Validation gate is a checklist, not a file"
+    tool_name: "Read"
+    command_pattern: '(audit[_-]sdd|scripts/case/)'
+    weight: 0.25
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Advisory: no gate script is paged, counted, or hunted for from the shell"
+    tool_name: "Bash"
+    command_pattern: '(grep|rg|sed|awk|cat|head|tail|less|wc|find|ls)\b[^\n]*(audit[_-]sdd|scripts/case/)'
+    weight: 0.25
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Advisory: no gate script is searched with the Grep tool"
+    tool_name: "Grep"
+    command_pattern: '(audit[_-]sdd|scripts/case/)'
+    weight: 0.25
+    pass_threshold: 0.0
+
+  - type: command_not_executed
+    description: "Advisory: no gate script is located with the Glob tool — reference paths resolve against the skill base dir"
+    tool_name: "Glob"
+    command_pattern: '(audit[_-]sdd|scripts/case/)'
+    weight: 0.25
+    pass_threshold: 0.0
+
   - type: run_command
-    description: "sdd.md was produced and no caseplan.json was built"
-    command: "test -f sdd.md && test -z \"$(find . -name caseplan.json -print -quit)\""
+    description: "sdd.md was produced and no case plan was built"
+    command: "test -f sdd.md && test -z \"$(find . \\( -name caseplan.json -o -name caseplan.case \\) -print -quit)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -50,7 +106,7 @@ success_criteria:
 
   - type: run_command
     description: "The SLA Response Map is present, closed both ways, consistent with the Stage Entry Conditions Interrupting cells, and assigns notify-only / start-task (targets the follow-up task, Interrupting —) / enter-stage (interrupting) to the three stated SLAs"
-    command: "python3 $TASK_DIR/check_sdd_response_map.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_sdd_response_map.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -72,6 +128,6 @@ simulation:
   constraints:
     - "Answer concisely and accept reasonable defaults that do not change the stated stages, SLA targets, or the three SLA responses."
     - "When shown the design confirmation, approve it on the first pass and ask the assistant to stop at the approved sdd.md."
-    - "Do not authorize creating caseplan.json, scaffolding a solution, running, publishing, or deploying."
+    - "Do not authorize creating a case plan, scaffolding a solution, running, publishing, or deploying."
     - "Decline any optional HTML-preview offer."
   max_turns: 12

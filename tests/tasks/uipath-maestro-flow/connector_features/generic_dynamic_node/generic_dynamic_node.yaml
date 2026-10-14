@@ -1,6 +1,3 @@
-# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
-# v1-base prompt, outcome-graded criteria at preserved weights, and
-# arm-agnostic artifact discovery.
 task_id: skill-flow-generic-dynamic-node
 description: >
   Connector feature: validate a generic (dynamic) connector node end-to-end. A
@@ -20,16 +17,22 @@ description: >
   If a run fails with a connection error, log into the ServiceNow account to
   wake the instance, then re-run.
 tags: [uipath-maestro-flow, e2e, mode:operate, lifecycle:generate, shape:single-node, connector, uipath-servicenow-servicenow, ipe]
-
 agent:
   type: claude-code
   permission_mode: acceptEdits
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep"]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   task_timeout: 1500
   max_turns: 120
   turn_timeout: 1200
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Create a UiPath Flow project named "AcrUserList" inside a solution of the
@@ -57,14 +60,14 @@ initial_prompt: |
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
 pre_run:
-  - command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/preflight_connections.py" uipath-servicenow-servicenow'
+  - command: 'python3 "_setup/preflight_connections.py" uipath-servicenow-servicenow'
     timeout: 120
 
 success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -82,12 +85,12 @@ success_criteria:
   # ── Execution: connector calls ServiceNow and surfaces an array output ──
   - type: run_command
     description: "ServiceNow list-all-records node on acr_user executes and surfaces an array output"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/connector_features/generic_dynamic_node/check_generic_dynamic_node.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_generic_dynamic_node.py"
     timeout: 720
     expected_exit_code: 0
     weight: 6.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

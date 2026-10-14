@@ -8,6 +8,8 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 Atomic, deterministic units of business logic — no LLM reasoning, no agent loop — written in **Python** or **TypeScript/JavaScript** and shipped as first-class UiPath artifacts. One `uip function` CLI drives both languages. A Coded Function takes typed input, executes deterministic code, and returns typed output; use one when generic activities don't cover the required logic (custom-auth API calls, domain rules, ERP queries via Integration Service, data transforms).
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 ## When to Use This Skill
 
 - Scaffold, author, or modify a coded function in either language (`uip function new <NAME> -l py|ts|js`)
@@ -54,7 +56,7 @@ Job-startable functions are invoked from Maestro BPMN/Flow (Service Task), coded
 3. **`uip function init` must run before `pack` or `push`** — it generates `entry-points.json`, `bindings.json`, `project.uiproj`; re-run after any schema or entrypoint change.
 4. **Typed I/O is mandatory** — Pydantic `BaseModel`, `pydantic.dataclasses.dataclass`, stdlib `@dataclass`, or a thin typed class; apply `@traced(name=..., run_type="uipath")` to the entrypoint for LLM Ops Traces.
 5. **`pyproject.toml` needs `authors`** (else `pack` rejects: `Project authors cannot be empty`) and no `[build-system]` section.
-6. **The scaffold follows installed packages**: with an agent framework present, `uip function new -l py` emits an agent scaffold — reshape it (see [references/python/workflow-guide.md](references/python/workflow-guide.md) Step 1), don't re-run `new`.
+6. **`uip function new -l py` produces a function scaffold** — `uipath.json` with a `functions` map, no `langgraph.json` — regardless of any agent framework package (`uipath-langchain`, `uipath-llamaindex`, `uipath-openai-agents`) installed in the venv.
 
 ### JS/TS
 
@@ -77,7 +79,7 @@ Job-startable functions are invoked from Maestro BPMN/Flow (Service Task), coded
 ### Python
 
 ```bash
-uip function new <NAME> -l py    # scaffold (agent-framework packages hijack the scaffold — see workflow guide Step 1)
+uip function new <NAME> -l py    # scaffold a Python function project
 # author: Pydantic Input/Output + @traced entrypoint, lazy UiPath() singleton, errors returned not raised
 uip function init                # generate entry-points.json / bindings.json / project.uiproj
 uip function run <ENTRYPOINT> '{"document_id": "42"}'

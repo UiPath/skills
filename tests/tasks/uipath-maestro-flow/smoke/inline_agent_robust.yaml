@@ -14,6 +14,9 @@ run_limits:
   expected_turns: 32
   max_turns: 90
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a new UiPath Flow project called "EmailTriage" and
   add an inline agent node that classifies an inbound support email into a
@@ -41,7 +44,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Inline agent sidecar was created"
-    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_inline_agent.py" --check exists "**/agent.json"'
+    command: 'python3 "$REFERENCE_DIR/_shared/check_inline_agent.py" --check exists "**/agent.json"'
     timeout: 15
     expected_exit_code: 0
     weight: 1.5
@@ -49,7 +52,7 @@ success_criteria:
 
   - type: run_command
     description: "Inline agent uses an explicitly selected current model"
-    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_inline_agent.py" --check model "**/agent.json"'
+    command: 'python3 "$REFERENCE_DIR/_shared/check_inline_agent.py" --check model "**/agent.json"'
     timeout: 15
     expected_exit_code: 0
     weight: 1.0
@@ -57,7 +60,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow file was created in a supported authoring layout"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name EmailTriage"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name EmailTriage"
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -65,7 +68,7 @@ success_criteria:
 
   - type: run_command
     description: "Flow contains the inline agent node type"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name EmailTriage 'uipath.agent.autonomous'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name EmailTriage 'uipath.agent.autonomous'"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -79,7 +82,7 @@ success_criteria:
   # because preview freezes only this task directory at $TASK_DIR.
   - type: run_command
     description: "Inline agent.json: model overridden, real system prompt, typed outputSchema"
-    command: 'python3 "$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/check_inline_agent.py" "**/agent.json"'
+    command: 'python3 "$REFERENCE_DIR/_shared/check_inline_agent.py" "**/agent.json"'
     timeout: 15
     expected_exit_code: 0
     weight: 3.0

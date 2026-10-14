@@ -16,6 +16,12 @@ sandbox:
     - type: template_dir
       path: ../templates/initial_flow
 
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+reference:
+  directory: ../..
+
 initial_prompt: |
   Rearrange the flow so the decision happens right after the HTTP call. Both the true and false branches should merge back into formatSummary, which then goes to a single end node. formatSummary should pick the message ('nice day' or 'bring a jacket') based on which branch the decision took.
 
@@ -37,7 +43,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -45,12 +51,12 @@ success_criteria:
 
   - type: run_command
     description: "Flow debug runs with merged branches, output contains branch message"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/edit/move_node/check_move_node.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_move_node.py"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

@@ -23,6 +23,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ..
+
 initial_prompt: |
   A UiPath RPA project exists at `HardcodedBot` in the current directory.
   Review it for quality and best-practice issues, focusing on configuration
@@ -72,7 +75,7 @@ success_criteria:
 
   - type: run_command
     description: "Report flags hardcoded values and recommends Config/Assets"
-    command: "python3 $TASK_DIR/check_hardcoded_config.py"
+    command: "python3 $REFERENCE_DIR/hardcoded-config/check_hardcoded_config.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

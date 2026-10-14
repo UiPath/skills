@@ -10,6 +10,10 @@ tags: [uipath-governance, smoke, mode:operate, lifecycle:setup, feature:complian
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
 # Precondition: the shared tenant is mutable and the compliance-pack cleanup
 # DISABLES the pack, so ISO 42001 is often already inactive when this task runs.
@@ -19,7 +23,7 @@ sandbox:
 # 30455293977). Enable the pack first, same as disable_smoke. Tolerant of
 # no-auth (always exits 0), so local runs are unaffected.
 pre_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''setup_enable_compliance_pack.py''))"'
+  - command: 'python3 _setup/setup_enable_compliance_pack.py'
     timeout: 120
 
 # Safety net: smoke sandboxes have live tenant auth in CI — the agent's
@@ -27,7 +31,7 @@ pre_run:
 # wrong-direction run (state disable / aops-policy create) really mutates the
 # tenant. Clean up after.
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''compliance-pack'',''cleanup_compliance_pack.py''))"'
+  - command: 'python3 _setup/cleanup_compliance_pack.py'
     timeout: 120
 
 initial_prompt: |

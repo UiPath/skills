@@ -29,6 +29,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: .
+
 initial_prompt: |
   I've saved the Process Design Document for our Employee Onboarding Data Entry
   process as `pdd.md` in the current directory (staged from the task fixtures).
@@ -65,7 +68,7 @@ success_criteria:
   # ── Structural completeness ────────────────────────────────────────────
   - type: run_command
     description: "Python check validates SDD structure, sections, and content quality"
-    command: "python3 $TASK_DIR/check_sdd.py"
+    command: "python3 $REFERENCE_DIR/check_sdd.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

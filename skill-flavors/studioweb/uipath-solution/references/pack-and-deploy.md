@@ -37,3 +37,6 @@ non-answer from it says nothing about where you can publish. Use the bare
 <!--skill-flavor:publish-feed-scope-row:start-->
 | `uip solution publish --location` | Which destination the package is published to. Studio Web intercepts publish, so `--feed` does not apply to it |
 <!--skill-flavor:publish-feed-scope-row:end-->
+
+<!--skill-flavor:upload-tabs:start-->
+<!--skill-flavor:upload-tabs:end-->

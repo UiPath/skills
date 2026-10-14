@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 
 ADMIN_DIR = Path(__file__).resolve().parent.parent
-SHARED_DIR = Path(__file__).resolve().parent
+SETUP_DIR = ADMIN_DIR / "_setup"
 
 
 def _load_verify(module_name, responder, state, tmp_path, monkeypatch):
@@ -38,7 +38,7 @@ def _load_verify(module_name, responder, state, tmp_path, monkeypatch):
     monkeypatch.setenv("TEMP", str(tmp_path))
     monkeypatch.setenv("TMP", str(tmp_path))
 
-    real_helpers_path = SHARED_DIR / "admin_helpers.py"
+    real_helpers_path = SETUP_DIR / "admin_helpers.py"
     spec = importlib.util.spec_from_file_location("admin_helpers", real_helpers_path)
     helpers = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(helpers)

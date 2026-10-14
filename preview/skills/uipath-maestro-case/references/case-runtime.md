@@ -1,7 +1,7 @@
 # Case runtime decisions
 
 This reference contains only choices that types and static validation cannot
-make from syntax alone. Exact signatures remain in [the generated API](api.md).
+make from syntax alone. Exact signatures remain in the generated API.
 
 ## Triggers and live payloads
 

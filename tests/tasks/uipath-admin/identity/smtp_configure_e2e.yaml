@@ -10,6 +10,9 @@ run_limits:
   max_turns: 40
   turn_timeout: 600
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Configure SMTP email settings for my organization: host
   smtp.example.com, port 587, SSL enabled, sender address
@@ -36,12 +39,20 @@ success_criteria:
 
   - type: run_command
     description: "SMTP settings were applied (host is non-empty)"
-    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''TASK_DIR''],''check_smtp_settings.py''))"'
+    command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''identity'',''check_smtp_settings.py''))"'
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''cleanup_smtp.py''))"'
+  - command: 'python3 _setup/cleanup_smtp.py'
     timeout: 30

@@ -44,7 +44,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Leg 1 — sources-tenant.json is the real tenant catalog, corroborated against a live read-back"
-    command: 'AUDIT_SOURCES_TENANT_FILE=sources-tenant.json python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_sources.py''))"'
+    command: 'AUDIT_SOURCES_TENANT_FILE=sources-tenant.json python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_sources.py''))"'
     timeout: 260
     expected_exit_code: 0
     weight: 1.5
@@ -52,7 +52,7 @@ success_criteria:
 
   - type: run_command
     description: "Leg 2 — events.json holds this tenant's tenant-scope events, all inside the 7d window"
-    command: 'AUDIT_FILE=events.json AUDIT_SCOPE=tenant AUDIT_WINDOW_DAYS=7 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_events.py''))"'
+    command: 'AUDIT_FILE=events.json AUDIT_SCOPE=tenant AUDIT_WINDOW_DAYS=7 python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_events.py''))"'
     timeout: 320
     expected_exit_code: 0
     weight: 1.5
@@ -60,12 +60,14 @@ success_criteria:
 
   - type: run_command
     description: "Leg 3 — ./audit-last-7d holds a CLI-generated day-wise JSON export of tenant-scope events"
-    command: 'AUDIT_BASE_DIR=audit-last-7d AUDIT_FORMAT=json AUDIT_MIN_DAYS=5 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_export.py''))"'
+    command: 'AUDIT_BASE_DIR=audit-last-7d AUDIT_FORMAT=json AUDIT_MIN_DAYS=5 AUDIT_EXPECT_SCOPE=tenant python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_export.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
+reference:
+  directory: ..
 run_limits:
   expected_turns: 8
   max_turns: 40

@@ -5,16 +5,22 @@ description: >
   enabled, with a specific cron expression. The check script queries the
   tenant directly to verify state; the agent's choice of commands is irrelevant.
 tags: [uipath-platform, e2e, mode:operate, lifecycle:setup]
-
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write"]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/seed.py"
+  - command: "E2E_PROCESS_KEY=$E2E_PROCESS_KEY python3 _setup/seed.py"
     timeout: 60
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/cleanup.py"
+  - command: "python3 _setup/cleanup.py"
     timeout: 60
 
 initial_prompt: |
@@ -31,11 +37,10 @@ initial_prompt: |
   the final state lands on enabled.
 
   Do NOT ask for approval. Do NOT pause.
-
 success_criteria:
   - type: run_command
     description: "Tenant state: trigger with expected name/cron/enabled exists in folder"
-    command: "python3 $TASK_DIR/check_trigger_time.py"
+    command: "python3 $REFERENCE_DIR/check_trigger_time.py"
     timeout: 60
     expected_exit_code: 0
     weight: 5.0

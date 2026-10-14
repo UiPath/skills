@@ -1,4 +1,4 @@
-import { flow, out, script, types } from '@uipath/flow-sdk';
+import { flow, out, script, types } from '@uipath/maestro-builder-sdk';
 
 export default flow('sdk-smoke')
   .name('SdkSmoke')

@@ -14,14 +14,21 @@ tags: [uipath-platform, integration, test-manager, resources, execute]
 sandbox:
   python: {}
   node: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
 run_limits:
   expected_turns: 28
   max_turns: 45
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/testmanager/_tm_shared/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 30
+
+reference:
+  directory: _tm_shared
 
 initial_prompt: |
   Using the UiPath Test Manager Integration Service connector, work with a test case end to end and confirm the data round-trips.
@@ -41,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Create Test Case"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -49,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Get Test Case"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -57,7 +64,7 @@ success_criteria:
   - type: command_executed
     description: "Update Test Case"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -65,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Delete Test Case"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCase'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCase'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -73,14 +80,14 @@ success_criteria:
   - type: command_executed
     description: "Execute Test Cases"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?ExecuteTestCases'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?ExecuteTestCases'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
 
   - type: run_command
     description: "Data-grounded: retrieved name == created (seeded) name — real round-trip through the connector"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/integration-service/testmanager/_tm_shared/check.py"
+    command: "python3 $REFERENCE_DIR/check.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

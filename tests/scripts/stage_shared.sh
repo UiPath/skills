@@ -17,6 +17,16 @@
 #
 # Run on the CI checkout BEFORE `coder-eval run`. Idempotent. Ephemeral: it
 # mutates the checked-out tree, not the committed repo.
+#
+# Still load-bearing after the 2026-09 host-path-removal migration (test:
+# d61fa9d52): that migration moved most graders to $REFERENCE_DIR (whose
+# staged root already contains _shared/, so those graders no longer need this
+# script), but ~70 graders still do `from _shared import ...` / `import _shared`
+# by walking up out of their own task dir rather than through $REFERENCE_DIR —
+# this script is what makes that resolve in CI. It is CI-only: `tests/Makefile`
+# never calls it, so those same graders resolve `_shared` in CI (this script
+# ran first) but NOT under a local `make all`/`make smoke` run. Retiring this
+# script requires repointing all ~70 to $REFERENCE_DIR-relative imports first.
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

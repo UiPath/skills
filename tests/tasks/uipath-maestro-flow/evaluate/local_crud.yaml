@@ -14,6 +14,9 @@ run_limits:
   expected_turns: 20
   max_turns: 60
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Scaffold a UiPath Flow project called "SmokeEval" inside a solution of the
   same name, then build the eval scaffolding for it — purely local, no Studio
@@ -68,7 +71,7 @@ success_criteria:
 
   - type: run_command
     description: "SmokeEval Flow artifact exists"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --flow-name SmokeEval"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name SmokeEval"
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -76,7 +79,7 @@ success_criteria:
 
   - type: run_command
     description: "Exact-match evaluator artifact exists"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_local_crud.py --check evaluator"
+    command: "python3 $REFERENCE_DIR/evaluate/check_local_crud.py --check evaluator"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -84,7 +87,7 @@ success_criteria:
 
   - type: run_command
     description: "Smoke Set eval-set artifact exists"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_local_crud.py --check eval-set"
+    command: "python3 $REFERENCE_DIR/evaluate/check_local_crud.py --check eval-set"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -92,7 +95,7 @@ success_criteria:
 
   - type: run_command
     description: "Smoke Set contains the hello data point with inputs and expected output"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_local_crud.py --check data-point"
+    command: "python3 $REFERENCE_DIR/evaluate/check_local_crud.py --check data-point"
     timeout: 10
     expected_exit_code: 0
     weight: 2.0
@@ -108,7 +111,7 @@ success_criteria:
 
   - type: run_command
     description: "Evaluator + eval-set JSON files exist on disk with correct shape"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/evaluate/check_local_crud.py"
+    command: "python3 $REFERENCE_DIR/evaluate/check_local_crud.py"
     timeout: 10
     expected_exit_code: 0
     weight: 3.0

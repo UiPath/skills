@@ -24,6 +24,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ..
+
 initial_prompt: |
   A UiPath RPA project exists at `BrittleBot` in the current directory.
   Review it for quality and best-practice issues, focusing on the UI
@@ -73,7 +76,7 @@ success_criteria:
 
   - type: run_command
     description: "Review report identifies the brittle/position-based selector + hardcoded URL"
-    command: "python3 $TASK_DIR/check_selector_brittle.py"
+    command: "python3 $REFERENCE_DIR/selector-brittle/check_selector_brittle.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

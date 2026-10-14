@@ -18,6 +18,9 @@ description: >
   agent stop and ask which to bind — correct behaviour, but it builds nothing.
 
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, node:ixp]
+reference:
+  directory: ..
+
 initial_prompt: |
   Create a new Maestro Flow project called "Smoke" with a manual trigger, an
   extract node, and a script node that just logs "ok". Wire the extracted
@@ -68,7 +71,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro flow validate passes on Smoke.flow"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -76,7 +79,7 @@ success_criteria:
 
   - type: run_command
     description: "Generated flow contains an IxP extraction node or core.logic.mock fallback (per references/plugins/ixp/impl.md)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"(uipath\\.ixp|core\\.logic\\.mock)'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"(uipath\\.ixp|core\\.logic\\.mock)'"
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -85,7 +88,7 @@ success_criteria:
   # integration_handle_routing.yaml for the `<Name>Solution/` wrapper rationale.
   - type: run_command
     description: "Script node consumes the extraction output via $vars expression"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py '$vars.'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py '$vars.'"
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0

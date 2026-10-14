@@ -7,6 +7,7 @@ Detailed reference for the activity types supported in the API Workflow DSL — 
 | Sequence | `do` | Group child tasks |
 | Assign | `set` | Set or update workflow variables |
 | JavaScript (JsInvoke) | `run.script` | Run inline JavaScript |
+| Log Message (LogMessage) | `run.script` with one `console.*` call | Write an Info / Warning / Error job log entry |
 | If | `switch` (inside `#Wrapper`) | Conditional branching |
 | ForEach | `for.each` / `for.in` / `for.at` | Iterate over a collection |
 | DoWhile | `for.in` + `doWhile` | Repeat-until loop |
@@ -138,7 +139,50 @@ Inside the script, reference globals directly: `$context.variables.X`, `$context
 
 ---
 
-## 4. If (Switch Wrapper)
+## 4. Log Message (LogMessage)
+
+Writes one job log entry. Use it for all logging — never `console.*` inside a JsInvoke. Stored as a `run.script`, but Studio Web restores the card (level + message) only from the exact script shape below.
+
+**Required fields:** `run.script.code`, `run.script.language: "javascript"`, `run.script.arguments` (standard block), `metadata.activityType: "LogMessage"`. No `export` — it has no output.
+
+**Script:** exactly `console.<level>(<message>)` — nothing before or after, no trailing `;`. `<message>` is a JS expression.
+
+| Level | Code |
+|-------|------|
+| Info (default) | `console.log(<message>)` |
+| Warning | `console.warn(<message>)` |
+| Error | `console.error(<message>)` |
+
+**Minimal JSON:**
+```json
+{
+  "Log_Message_1": {
+    "run": {
+      "script": {
+        "code": "console.log(`Order ${$workflow.input.orderId} received`)",
+        "language": "javascript",
+        "arguments": "${{ \"$context\": $context, \"$workflow\": $workflow, \"$input\": $input }}"
+      }
+    },
+    "metadata": { "activityType": "LogMessage", "displayName": "Log Message", "fullName": "LogMessage" }
+  }
+}
+```
+
+Other messages: `console.warn('Manual review required')`, `console.error($context.outputs.Javascript_1)` — objects log as JSON, secrets redacted.
+
+The next activity's `$input` is `undefined`. Read data from `$workflow.input`, `$context.variables`, or `$context.outputs`.
+
+**Common mistakes:**
+- Trailing `;` or code before the call — Studio Web restores it as Info with the whole script as the message; the next save is a syntax error. `validate` rejects it
+- `console.info` / `console.debug` — not a Log Message level
+- Bare text: `console.log(Order received)` — the message is an expression; quote literals
+- Adding `return` or `export`
+- `activityType: "CustomLog"` — not a Studio Web activity
+
+---
+
+## 5. If (Switch Wrapper)
 
 Conditional branching. Requires a `#Wrapper` container with `#Then` and `#Else` branches.
 
@@ -208,7 +252,7 @@ Conditional branching. Requires a `#Wrapper` container with `#Then` and `#Else` 
 
 ---
 
-## 5. ForEach
+## 6. ForEach
 
 Iterates over a collection. Requires `#Body` inside `do`.
 
@@ -219,7 +263,7 @@ Iterates over a collection. Requires `#Body` inside `do`.
 { ...$context, outputs: { ...$context?.outputs, "For_Each_N": { ...$context?.outputs?.For_Each_N, results: [ ...($currentItemIndex == 0 ? [] : ($context?.outputs?.For_Each_N?.results ?? [])), ...([$output] ?? []) ] } } }
 ```
 
-**Output pattern:** `${$context.outputs.For_Each_N}`
+**Output pattern:** `${$context?.outputs?.For_Each_N}` — optional chaining is REQUIRED. With zero iterations the body never runs, so `$context.outputs` is undefined and a bare `$context.outputs.For_Each_N` throws. A trailing `?? { results: [] }` does NOT save it: the throw happens before `??` is reached.
 
 **Minimal JSON:**
 ```json
@@ -240,7 +284,7 @@ Iterates over a collection. Requires `#Body` inside `do`.
         }
       }
     ],
-    "output": { "as": "${$context.outputs.For_Each_1}" },
+    "output": { "as": "${$context?.outputs?.For_Each_1}" },
     "metadata": { "activityType": "ForEach", "displayName": "For Each", "fullName": "ForEach" }
   }
 }
@@ -253,6 +297,7 @@ Inside the body, the iterator and index are accessible as globals **with a `$` p
 - Wrapping `each` or `at` in `${...}` — they are plain variable names, not expressions
 - Missing `for.at`
 - Wrong body export pattern (must use the index-aware reset shown above, not the simpler DoWhile pattern)
+- Dropping the `?.` in `output.as` — a bare `$context.outputs.For_Each_N` throws when the loop runs zero times
 
 **Nesting:**
 - Each ForEach activity's iterator and index variable names are scoped to that loop. Inner loops MUST use distinct names — e.g. outer `for.each: "outerItem"` / inner `for.each: "innerItem"`. Reusing `currentItem` in both loops shadows the outer one.
@@ -261,7 +306,7 @@ Inside the body, the iterator and index are accessible as globals **with a `$` p
 
 ---
 
-## 6. DoWhile
+## 7. DoWhile
 
 Repeat-until loop. Body always executes at least once.
 
@@ -288,7 +333,7 @@ Repeat-until loop. Body always executes at least once.
         }
       }
     ],
-    "output": { "as": "${$context.outputs.Do_While_1}" },
+    "output": { "as": "${$context?.outputs?.Do_While_1}" },
     "metadata": { "activityType": "DoWhile", "displayName": "Do While", "fullName": "DoWhile" }
   }
 }
@@ -298,6 +343,7 @@ The body MUST update the condition variable, otherwise the loop runs forever.
 
 **Common mistakes:**
 - Using a real collection for `for.in` instead of `"${ [1] }"`
+- Dropping the `?.` in `output.as` — write `${$context?.outputs?.Do_While_N}`, never `${$context.outputs.Do_While_N}`
 - Missing `#Body` suffix
 - Body does not update the `doWhile` condition variable → infinite loop
 - Missing `output.as` on the loop itself
@@ -309,7 +355,7 @@ The body MUST update the condition variable, otherwise the loop runs forever.
 
 ---
 
-## 7. Break
+## 8. Break
 
 Exits a loop early. Only valid inside `For_Each_N#Body` or `Do_While_N#Body`.
 
@@ -352,7 +398,7 @@ Typically wrapped in an `If` inside the body — break only when a condition is 
 
 ---
 
-## 8. TryCatch
+## 9. TryCatch
 
 Wraps activities in error handling.
 
@@ -415,7 +461,7 @@ There is **no** `.message` / `.name` / `.stack` property — those would return 
 
 ---
 
-## 9. Wait
+## 10. Wait
 
 Pauses execution.
 
@@ -441,7 +487,7 @@ Provide all three time fields — set unused ones to `0`.
 
 ---
 
-## 10. Response
+## 11. Response
 
 Returns a result and ends the workflow execution path.
 

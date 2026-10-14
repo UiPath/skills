@@ -16,6 +16,9 @@ tags: [uipath-maestro-flow, smoke, mode:build, lifecycle:generate, shape:single-
 run_limits:
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Create a UiPath Flow project named "TransformGroupByDemo" that uses a single
   Group By transform node (`core.action.transform.group-by`) to group a small
@@ -58,7 +61,7 @@ success_criteria:
   # -- Flow file validity --
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -67,7 +70,7 @@ success_criteria:
   # -- Structural checks (node type, collection path, groupBy op shape, ports) --
   - type: run_command
     description: "Flow has exactly one core.action.transform.group-by node with a plain $vars collection, a non-empty groupBy operation, and the standard output/error ports"
-    command: "python3 $TASK_DIR/check_transform_group_by_flow.py"
+    command: "python3 $REFERENCE_DIR/single_node/transform_group_by/check_transform_group_by_flow.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

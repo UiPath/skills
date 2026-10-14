@@ -123,46 +123,50 @@ def test_smoke_query_rejects_runtime_text_without_contains_operator(tmp_path: Pa
     assert "multiline" in result.stderr
 
 
-def _lifecycle_flow(representation: str, *, query_entity: str = "ContractRegistry") -> dict:
-    def entity_detail(name: str, extra: dict | None = None) -> dict:
-        value = ({"entityName": name} if representation == "sdk"
-                 else {"pathParameters": {"entityName": name}})
-        value.update(extra or {})
-        return value
+def _entity_detail(representation: str, name: str, extra: dict | None = None) -> dict:
+    value = ({"entityName": name} if representation == "sdk"
+             else {"pathParameters": {"entityName": name}})
+    value.update(extra or {})
+    return value
 
+
+def _contract_poll_flow(representation: str, *, query_entity: str = "ContractRegistry") -> dict:
     return {
         "nodes": [
-            {
-                "id": "created",
-                "type": "uipath.connector.trigger.uipath-uipath-dataservice.record-created",
-                "inputs": {"detail": {
-                    "objectName": "ContractRegistry",
-                    "filterExpression": "dueDate < '2026-08-04'",
-                }},
-            },
+            {"id": "schedule1", "type": "core.trigger.scheduled"},
             {
                 "id": "query",
                 "type": "uipath.connector.uipath-uipath-dataservice.query-entity-records",
-                "inputs": {"detail": entity_detail(query_entity, {"queryParameters": {
+                "inputs": {"detail": _entity_detail(representation, query_entity, {"queryParameters": {
                     "queryExpression": "dueDate < '2026-08-04'", "limit": 100,
                 }})},
             },
+        ]
+    }
+
+
+def _file_poll_flow(representation: str) -> dict:
+    return {
+        "nodes": [
+            {"id": "schedule2", "type": "core.trigger.scheduled"},
             {
-                "id": "updated",
-                "type": "uipath.connector.trigger.uipath-uipath-dataservice.record-updated",
-                "inputs": {"detail": {"objectName": "FileUploadVerify_20260618"}},
+                "id": "filequery",
+                "type": "uipath.connector.uipath-uipath-dataservice.query-entity-records",
+                "inputs": {"detail": _entity_detail(representation, "FileUploadVerify_20260618", {
+                    "queryParameters": {"limit": 1},
+                })},
             },
             {
                 "id": "get",
                 "type": "uipath.connector.uipath-uipath-dataservice.get-entity-record-by-id",
-                "inputs": {"detail": entity_detail("FileUploadVerify_20260618", {
-                    "queryParameters": {"recordId": "=js:$vars.updated.output.Id"},
+                "inputs": {"detail": _entity_detail(representation, "FileUploadVerify_20260618", {
+                    "queryParameters": {"recordId": "=js:$vars.filequery.output.value[0].Id"},
                 })},
             },
             {
                 "id": "delete",
                 "type": "uipath.connector.uipath-uipath-dataservice.delete-entity-record",
-                "inputs": {"detail": entity_detail("FileUploadVerify_20260618", {
+                "inputs": {"detail": _entity_detail(representation, "FileUploadVerify_20260618", {
                     "queryParameters": {"recordId": "=js:$vars.get.output.Id"},
                 })},
             },
@@ -170,24 +174,111 @@ def _lifecycle_flow(representation: str, *, query_entity: str = "ContractRegistr
     }
 
 
+def _write_poll_solution(tmp_path: Path, representation: str, **kwargs) -> None:
+    _write_json(tmp_path / "contract.flow", _contract_poll_flow(representation, **kwargs))
+    _write_json(tmp_path / "file.flow", _file_poll_flow(representation))
+
+
+CHECK_POLL = "connector_features/datafabric_connector/check_scheduled_poll_lifecycle.py"
+
+
 @pytest.mark.parametrize("representation", ["live", "sdk"])
-def test_trigger_lifecycle_accepts_both_entity_locations(
+def test_scheduled_poll_lifecycle_accepts_both_entity_locations(
     tmp_path: Path, representation: str
 ) -> None:
-    _write_json(tmp_path / "lifecycle.flow", _lifecycle_flow(representation))
+    _write_poll_solution(tmp_path, representation)
 
-    result = _run("connector_features/datafabric_connector/check_trigger_lifecycle.py", tmp_path)
+    result = _run(CHECK_POLL, tmp_path)
 
     assert result.returncode == 0, result.stderr or result.stdout
 
 
-def test_trigger_lifecycle_rejects_wrong_query_entity(tmp_path: Path) -> None:
-    _write_json(tmp_path / "lifecycle.flow", _lifecycle_flow("sdk", query_entity="Other"))
+def test_scheduled_poll_lifecycle_rejects_wrong_query_entity(tmp_path: Path) -> None:
+    _write_poll_solution(tmp_path, "sdk", query_entity="Other")
 
-    result = _run("connector_features/datafabric_connector/check_trigger_lifecycle.py", tmp_path)
+    result = _run(CHECK_POLL, tmp_path)
 
     assert result.returncode != 0
     assert "Query Entity Records" in result.stderr
+
+
+def test_scheduled_poll_lifecycle_rejects_both_entities_in_one_flow(tmp_path: Path) -> None:
+    merged = _contract_poll_flow("sdk")
+    merged["nodes"].extend(_file_poll_flow("sdk")["nodes"][1:])
+    _write_json(tmp_path / "merged.flow", merged)
+    _write_json(tmp_path / "spare.flow", {"nodes": [{"id": "schedule3", "type": "core.trigger.scheduled"}]})
+
+    result = _run(CHECK_POLL, tmp_path)
+
+    assert result.returncode != 0
+    assert "separate flows" in result.stderr
+
+
+def test_scheduled_poll_lifecycle_rejects_merged_flow_beside_duplicate_file_query(tmp_path: Path) -> None:
+    merged = _contract_poll_flow("sdk")
+    merged["nodes"].extend(_file_poll_flow("sdk")["nodes"][1:])
+    _write_json(tmp_path / "merged.flow", merged)
+    duplicate = _file_poll_flow("sdk")
+    duplicate["nodes"] = duplicate["nodes"][:2]
+    duplicate["nodes"][1]["id"] = "filequery2"
+    _write_json(tmp_path / "duplicate.flow", duplicate)
+
+    result = _run(CHECK_POLL, tmp_path)
+
+    assert result.returncode != 0
+    assert "separate flows" in result.stderr
+
+
+def test_scheduled_poll_lifecycle_rejects_file_chain_split_across_flows(tmp_path: Path) -> None:
+    second = _file_poll_flow("sdk")
+    second["nodes"] = second["nodes"][:2]
+    second["nodes"][1]["id"] = "filequery2"
+    _write_poll_solution(tmp_path, "sdk")
+    _write_json(tmp_path / "file2.flow", second)
+
+    result = _run(CHECK_POLL, tmp_path)
+
+    assert result.returncode != 0
+    assert "must live in exactly one flow" in result.stderr
+
+
+def test_scheduled_poll_lifecycle_rejects_get_delete_in_the_contract_flow(tmp_path: Path) -> None:
+    file_nodes = _file_poll_flow("sdk")["nodes"]
+    contract = _contract_poll_flow("sdk")
+    contract["nodes"].extend(file_nodes[2:])
+    _write_json(tmp_path / "contract.flow", contract)
+    _write_json(tmp_path / "file.flow", {"nodes": file_nodes[:2]})
+
+    result = _run(CHECK_POLL, tmp_path)
+
+    assert result.returncode != 0
+    assert "same flow as the query they bind to" in result.stderr
+
+
+def test_scheduled_poll_lifecycle_rejects_delete_bound_to_query(tmp_path: Path) -> None:
+    file_flow = _file_poll_flow("sdk")
+    file_flow["nodes"][3]["inputs"]["detail"]["queryParameters"]["recordId"] = (
+        "=js:$vars.filequery.output.value[0].Id"
+    )
+    _write_json(tmp_path / "contract.flow", _contract_poll_flow("sdk"))
+    _write_json(tmp_path / "file.flow", file_flow)
+
+    result = _run(CHECK_POLL, tmp_path)
+
+    assert result.returncode != 0
+    assert "Delete recordId is not bound to the Get output" in result.stderr
+
+
+def test_scheduled_poll_lifecycle_rejects_manual_trigger(tmp_path: Path) -> None:
+    flow = _contract_poll_flow("sdk")
+    flow["nodes"][0] = {"id": "manual", "type": "core.trigger.manual"}
+    _write_json(tmp_path / "contract.flow", flow)
+    _write_json(tmp_path / "file.flow", _file_poll_flow("sdk"))
+
+    result = _run(CHECK_POLL, tmp_path)
+
+    assert result.returncode != 0
+    assert "core.trigger.manual" in result.stderr
 
 
 def _where_plan() -> dict:

@@ -24,9 +24,19 @@ tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+reference:
+  directory: ..
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/gate_edit/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 120
 
 initial_prompt: |
@@ -36,7 +46,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Rule 22: nothing edited yet — Workflow.json, the eval set and the evaluator are the seeded files"
-    command: python3 $TASK_DIR/check_gate.py
+    command: python3 $REFERENCE_DIR/gate_edit/check_gate.py
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -62,6 +72,7 @@ success_criteria:
   - type: llm_judge
     description: "Final response flags the tests the change would break and asks whether to update them, plus loop mode"
     include_agent_output: true
+    include_reference: false
     prompt: |
       The user asked to lower a grading threshold from 60 to 50 in a project that has
       an evaluation dataset (4 test cases, one of which — score 55 expecting FAIL —

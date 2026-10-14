@@ -16,10 +16,20 @@ run_limits:
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/coded_review_guardrail_action_ineffective/inject_guardrail_action_ineffective.py"
+  - command: "python3 _setup/inject_guardrail_action_ineffective.py"
     timeout: 30
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   A coded UiPath agent project (LangChain) exists at `CodedAgent`. Review it for
@@ -66,7 +76,7 @@ success_criteria:
   # it renders PASS at every score, and this suite is triaged on pass/fail alone.
   - type: run_command
     description: "Guardrail catalog reachable, and the report's claim about it is consistent"
-    command: 'python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/_shared/check_guardrail_catalog_evidence.py'
+    command: 'python3 $REFERENCE_DIR/_shared/check_guardrail_catalog_evidence.py'
     timeout: 240
     expected_exit_code: 0
     weight: 2.0
@@ -74,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "Review report cites CODED_GUARDRAIL_ACTION_INEFFECTIVE for the log-not-block PII guardrail"
-    command: "python3 $TASK_DIR/check_coded_review_guardrail_action_ineffective.py"
+    command: "python3 $REFERENCE_DIR/agents/coded_review_guardrail_action_ineffective/check_coded_review_guardrail_action_ineffective.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

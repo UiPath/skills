@@ -24,6 +24,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ..
+
 initial_prompt: |
   A UiPath REFramework project exists at `TxnShapeBot` in the current
   directory. Review it for quality and reliability, paying particular
@@ -74,7 +77,7 @@ success_criteria:
 
   - type: run_command
     description: "Report classifies one-to-many shape AND flags missing idempotency"
-    command: "python3 $TASK_DIR/check_transaction_shape.py"
+    command: "python3 $REFERENCE_DIR/transaction-shape/check_transaction_shape.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

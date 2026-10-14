@@ -12,8 +12,8 @@
       <uipath:migrationVersion version="11.5" />
       <uipath:caseManagement version="v1"><![CDATA[{"owner":"order-ops","opaque":"preserve-only-do-not-touch"}]]></uipath:caseManagement>
       <uipath:variables version="v1">
-        <uipath:inputOutput id="Var_OrderId" name="OrderId" type="string" />
-        <uipath:inputOutput id="Var_Qty" name="Qty" type="number" />
+        <uipath:inputOutput id="Var_OrderId" name="OrderId" type="string" elementId="Process_OrderIntake" />
+        <uipath:inputOutput id="Var_Qty" name="Qty" type="number" elementId="Process_OrderIntake" />
       </uipath:variables>
     </bpmn:extensionElements>
     <bpmn:startEvent id="Start_1" name="Start"><bpmn:outgoing>Flow_S1</bpmn:outgoing></bpmn:startEvent>
@@ -21,24 +21,24 @@
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"orderId":"=vars.Var_OrderId"}]]></uipath:input>
           <uipath:output name="qty" type="number" var="Var_Qty" source="=result.response" />
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_S1</bpmn:incoming><bpmn:outgoing>Flow_VN</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: orderId ? 1 : 0 };]]></bpmn:script>
+      <bpmn:script><![CDATA[return orderId ? 1 : 0;]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:scriptTask id="Task_Notify" name="Notify Customer" scriptFormat="JavaScript">
       <bpmn:extensionElements>
         <uipath:scriptVersion value="v3" />
         <uipath:mapping version="v1">
-          <uipath:type value="BPMN.ScriptTask" version="v1" />
-          <uipath:input name="args"><![CDATA[{"qty":"=vars.Var_Qty"}]]></uipath:input>
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:input name="args" type="json" target="bodyField"><![CDATA[{"qty":"=vars.Var_Qty"}]]></uipath:input>
         </uipath:mapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_VN</bpmn:incoming><bpmn:outgoing>Flow_NE</bpmn:outgoing>
-      <bpmn:script><![CDATA[return { response: "notified" };]]></bpmn:script>
+      <bpmn:script><![CDATA[return "notified";]]></bpmn:script>
     </bpmn:scriptTask>
     <bpmn:endEvent id="End_1" name="Done"><bpmn:incoming>Flow_NE</bpmn:incoming></bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_S1" sourceRef="Start_1" targetRef="Task_Validate" />

@@ -1,6 +1,6 @@
 # Guardrail Review — LLM-as-judge (audit + recommend)
 
-The read-only **review** counterpart of the `uipath-agents` guardrail recommend/validate capability. It powers [`../agents-lowcode-rules.md`](../agents-lowcode-rules.md) §GuardrailsChecker and runs during low-code agent review (SKILL.md Step 2.5b), **after** `uip agent review` (Step 2.5a).
+The read-only **review** counterpart of the `uipath-agents` guardrail recommend/validate capability. It powers [`../agents-lowcode-rules.md`](../agents-lowcode-rules.md) §GuardrailsChecker and runs during low-code agent review (agent-review-guide.md Step 2.5b), **after** `uip agent review` (Step 2.5a).
 
 Modes:
 - **Audit Mode:** existing guardrails → effective and appropriate? Emit **defects**.
@@ -20,11 +20,11 @@ When a format-valid guardrail and its selected source conclusively match a catal
 2. Read the guardrail's exact source path, `id`, `name`, `validatorType`, action, scopes, and `matchNames`, plus only its selected source or resource.
 3. Fetch the catalog and tenant validator list once, as specified in Step 0.
 4. Compare configured action and scope with the exact `when_not_to_use` clause and relevant `examples[].config`.
-5. If the clause directly matches the selected source, establish `LC_GUARDRAIL_ACTION_INEFFECTIVE` and immediately save the requested report.
+5. If the clause directly matches the selected source, establish the matching Audit Mode rule ID and immediately save the requested report: `LC_GUARDRAIL_ACTION_INEFFECTIVE` when the clause faults the configured action or scope of a guardrail that belongs on this agent; `LC_GUARDRAIL_MISAPPLIED` when the clause disqualifies the guardrail for this agent's context or data flow (the guardrail should not be present at all).
 
 The completed checkpoint must include retained CLI findings, letter-grade derivation, and the Audit Mode finding with exact guardrail source path and identifiers, selected resource path and identifiers, matched catalog clause, configured scope/action, and catalog-supported fix. If the user explicitly requests additional exhaustive review, save this checkpoint first and update the same report afterward; otherwise return it and end the review turn. Do not delay it for solution packing, eval inspection, repeated validation or catalog calls, general architecture analysis, or unrelated project introspection.
 
-Require a direct source-to-catalog contradiction, not a plausible concern. For example, `pii_detection` with `Block` or `Filter` at `Tool` scope selecting `SendCustomerEmail`, whose input schema requires `recipient_email`, directly matches a catalog clause saying that action breaks a tool requiring PII. If the input is optional or the clause does not directly match, continue normal Audit Mode.
+Require a direct source-to-catalog contradiction, not a plausible concern. For example, `pii_detection` with `Block` or `Filter` at `Tool` scope selecting `SendCustomerEmail`, whose input schema requires `recipient_email`, directly matches a catalog clause saying that action breaks a tool requiring PII → `LC_GUARDRAIL_ACTION_INEFFECTIVE`. By contrast, `pii_detection` at `Llm` scope on a generate-only agent whose LLM never receives real PII matches a clause disqualifying the guardrail for that data flow → `LC_GUARDRAIL_MISAPPLIED` (see [Relevance Check](#relevance-check--lc_guardrail_misapplied)). If the input is optional or the clause does not directly match, continue normal Audit Mode.
 
 ## Missing-guardrail fast path — completed deliverable
 
@@ -60,6 +60,7 @@ else:
 - On **CACHE_HIT**, read `.guardrails-catalog-cache.json` directly.
 - On **CACHE_MISS**, run `uip agent guardrails catalog --output json > .guardrails-catalog-cache.json` and save its output. The CLI writes success and error JSON to stdout; do not add `2>&1`.
 - Never invoke `uip agent guardrails catalog` a second time in the same review. Read `.guardrails-catalog-cache.json` for every later look, parse, or re-check.
+- Entries are at `Data.Guardrails[]` in the saved JSON — the CLI re-cases the catalog's snake_case keys to PascalCase, so the catalog fields this guide names appear as `ValidatorId`, `WhenToUse`, `WhenNotToUse`, `UseCases`, `SecurityRiskAddressed`, `SecurityCategory`, `Examples[].Config` (with `ActionType`). `Data.guardrails` or `when_to_use` match nothing.
 
 ### Guardrails List (NEVER cached — tenant-specific)
 
@@ -75,9 +76,9 @@ Build `{ validatorId: status }` from the `Data` array, using only `Status == "Av
 
 ### If the catalog is unavailable
 
-If output contains `"Code": "GuardrailCatalogUnavailable"` or the CLI is unavailable, do not guess:
+Unavailable means the **fetch itself failed**: the output contains `"Code": "GuardrailCatalogUnavailable"`, any non-`Success` `Result` (e.g. `"Message": "Failed to fetch guardrail catalog"` from an auth or network fault), or the `uip` binary is missing — all of these MUST be declared under **Rules Skipped**. An empty parse or unexpected keys **after a successful fetch** is NOT unavailability — it means you parsed the wrong path (see the PascalCase/`Data.Guardrails[]` note in Step 0); re-read the raw JSON before declaring the catalog unavailable. A report claiming the catalog was unavailable when it was reachable is a defect, and so is staying silent about a failed fetch. When the fetch failed, do not guess:
 
-- **Audit Mode:** put catalog-dependent `LC_GUARDRAIL_ACTION_INEFFECTIVE` and `LC_GUARDRAIL_MISAPPLIED` under the report's **Rules Skipped** subsection with reason `"guardrails catalog unavailable"` (SKILL.md Critical Rule 10 — Rules Skipped). Emit no catalog-grounded effectiveness/relevance verdict.
+- **Audit Mode:** put catalog-dependent `LC_GUARDRAIL_ACTION_INEFFECTIVE` and `LC_GUARDRAIL_MISAPPLIED` under the report's **Rules Skipped** subsection with reason `"guardrails catalog unavailable"` (SKILL.md Critical Rule 9 — Rules Skipped). Emit no catalog-grounded effectiveness/relevance verdict.
 - **Recommend Mode:** continue `agent.json`-only schema/prompt/tool inference; use generic scope/action wording and note `catalog-limited`.
 
 ## Audit Mode — existing guardrails (defects)
@@ -133,7 +134,7 @@ Do not name platform-documented validators (`harmful_content`, `intellectual_pro
 
 ## Report
 
-Merge findings into the Step 5 Critical / Warning / Info findings tables (SKILL.md Step 2.5b), one row per finding:
+Merge findings into the Step 5 Critical / Warning / Info findings tables (agent-review-guide.md Step 2.5b), one row per finding:
 
 ```text
 | <id> | `<rule_id>` | `<file>`: <message>. <suggested_fix>. |

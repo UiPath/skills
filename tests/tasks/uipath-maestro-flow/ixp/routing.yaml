@@ -50,6 +50,9 @@ dataset:
         Build a Maestro flow with an IxP node that classifies incoming PDF
         forms and extracts their fields before the next step.
 
+reference:
+  directory: ..
+
 initial_prompt: |
   ${row.prompt}
 
@@ -101,7 +104,7 @@ success_criteria:
   # `uipath.ixp.*` node or a `core.logic.mock` placeholder.
   - type: run_command
     description: "Agent added an IxP or core.logic.mock placeholder node to a .flow file (per references/plugins/ixp/impl.md)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"(uipath\\.ixp|core\\.logic\\.mock)'"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --regex '\"type\"\\s*:\\s*\"(uipath\\.ixp|core\\.logic\\.mock)'"
     expected_exit_code: 0
     suite_thresholds: {mean: 0.85}
 

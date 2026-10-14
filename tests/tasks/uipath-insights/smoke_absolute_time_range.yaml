@@ -28,7 +28,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used --started-after with epoch milliseconds"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s+.*--started-after\s+\d{13}'
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--started-after[\s=]+\d{13}'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -36,7 +36,7 @@ success_criteria:
   - type: command_executed
     description: "Agent used --started-before with epoch milliseconds"
     tool_name: "Bash"
-    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s+.*--started-before\s+\d{13}'
+    command_pattern: 'uip\s+insights\s+jobs\s+\S+\s(?:(?!uip\s)(?:[^&;|\n]|\\\n))*--started-before[\s=]+\d{13}'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0

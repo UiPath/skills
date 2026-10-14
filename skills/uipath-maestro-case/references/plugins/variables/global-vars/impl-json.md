@@ -1,6 +1,6 @@
 # Variables — Implementation
 
-No CLI command exists for variable declaration. Edit `caseplan.json` directly (Read → reason → Write/Edit).
+No CLI command exists for variable declaration. Edit `caseplan.case` directly (Read → reason → Write/Edit).
 
 ## § Terminology + Resolution Semantics (read this first)
 
@@ -17,7 +17,7 @@ return allVariables.find(v => v.id === variableId);
 | `id` | The resolver match key | YES — sole match key |
 | `name` | Human-readable label / FE display | No — never matched |
 | `var` | Pointer field. On wires (Out-arg formal, trigger output, reassigned task output): points OUTWARD to the target slot. On bare self-declarations and trigger spec auto-emits: mirrors `id`. | Only when `id` is absent (FE fallback: synthesizes `Variable.id = "=vars.<var>"` — partial form, non-resolvable) |
-| `elementId` | FE picker scope only. Controls which panel displays the variable. **Not used by the resolver.** | No |
+| `elementId` | FE picker scope only. Controls which panel displays the variable. **Not used by the runtime resolver** — but `validate` rejects a declaration that omits it (see § Validator contract). | No — though `validate` requires it non-empty |
 | `source` | Runtime extraction expression (e.g., `=Decision`, `=response.subject`) | No — read by BPMN engine at runtime |
 | `target` | Runtime write expression (rarely matters) | No |
 | `value` | Currently-bound input value (task inputs) or mirror of var (task outputs) | No |
@@ -36,6 +36,22 @@ return allVariables.find(v => v.id === variableId);
 | `triggerNode.data.inputs.outputs[]` | YES if `id` present; **NO if only `var` (no `id`)** | Pattern A entries (`id === var`) self-resolve; Pattern C entries (`var` only) require a companion in `root.inputOutputs[]` |
 
 **"Companion" = the paired `inputOutputs[]` entry whose `id` matches the lookup name.** Required for trigger outputs that lack `id`; load-bearing for Out-args with a `Default` value; optional when the producer (task output) already self-declares.
+
+### Validator contract — `validate` is stricter than the resolver
+
+Everything above describes `VariablesService.findVariableByVariableId`, which runs at run time. `uip maestro case validate` applies its own reference checks, and they are not the same rule:
+
+| Check | Match rule | Reported at |
+|---|---|---|
+| `CASE_MGMT_REFERENCE_UNBOUND` | Lenient — `id` **or** `name` **or** `var` | The referencing expression path |
+| `VARIABLE_DOES_NOT_EXIST` | Strict — requires `id` **and** a non-empty `elementId` | The owning node (`nodes[<stageId>]`) |
+
+`VARIABLE_DOES_NOT_EXIST` fails the default profile and `--strict` identically — `--strict` adds nothing for this defect, and only the skeleton profiles miss it. A declaration whose `id` matches the `=vars.X` lookup still fails `validate` when `elementId` is absent or `""`. The field is tested for truthiness, not for scope: `"root"`, a stage id, and a trigger id all satisfy it; only missing or empty fails. Write `elementId` on every `inputOutputs[]` entry — `"root"` for case state.
+
+Two traps when `VARIABLE_DOES_NOT_EXIST` fires:
+
+1. `--skeleton-v2` does not catch it when the only consumers are task-scoped (task entry conditions, `skipCondition`), because that profile skips task-content checks. A green `--skeleton-v2` is silent on this defect, not evidence that the declarations are correct.
+2. `validate` emits at most one `VARIABLE_DOES_NOT_EXIST` per node, so several undeclared variables in a single expression surface as one error. Audit every declaration rather than iterating on what `validate` prints.
 
 ## Scope of this plugin
 
@@ -77,7 +93,7 @@ The `source` and `name` fields keep the original value. Independently minted `va
 
 ### Pool composition (what to scan)
 
-Build the uniqueness pool from EVERY `var` / `id` currently in `caseplan.json`. The pool is global — minting in any one location must consult ALL of the following:
+Build the uniqueness pool from EVERY `var` / `id` currently in `caseplan.case`. The pool is global — minting in any one location must consult ALL of the following:
 
 | Source | JSON path | Notes |
 |---|---|---|
@@ -98,6 +114,18 @@ In/Out-arg formal slots (`variables.inputs[].id`, `variables.outputs[].id`) MUST
 
 Rationale: the formal In-arg slot id surfaces in the case BPMN as `<uipath:input id="...">` and is dot-referenced via `=vars.<id>` (the bridge, § In argument). A prefix-less random id can lead with a digit → BPMN parser rejects it (`illegal ID <5AinMKBDm>`); C# identifier + XML NCName rules require a leading letter/underscore. Companion ids (`inputOutputs[].id`) keep the human-readable name (`applicantName`) and are already letter-leading — only the random formal-slot id needs the `v` prefix.
 
+**The formal slot's `var` carries that readable name instead.** Minting the synthetic `id` does not discard the name — it moves it: `variables.outputs[]` / `variables.inputs[]` entries carry `name` and `var` both equal to the variable's readable name, with `id` the synthetic slot. The matching `inputOutputs[]` companion carries that same name as its **`id`**. So one variable appears under three keys:
+
+```json
+// formal slot                                  // inputOutputs companion
+{ "name": "literalResult",                      { "id":   "literalResult",
+  "var":  "literalResult",                        "name": "literalResult",
+  "id":   "vK3mNp9Qx",                            "type": "string",
+  "type": "string", "default": "" }               "default": "" }
+```
+
+Leaving `var` unset is the common miss when re-minting a converted plan: `sdd convert` emits the formal entry with `id` equal to the name and no `var` at all, so Check 10's re-mint must **set `var` to the name in the same edit that replaces `id`**. An entry with a synthetic `id` and a null `var` has lost the only field naming what it binds.
+
 **Anti-pattern:** do not copy the companion's readable name into the formal slot id (e.g. `variables.inputs[].id: "applicantName"`). That satisfies the companion's naming convention but violates the formal slot's mint-as-`v`+8-chars requirement — the two ids are deliberately different values, not the same value written twice.
 
 ## Inputs the plugin reads at Phase 3 Step 6.2
@@ -105,7 +133,7 @@ Rationale: the formal In-arg slot id surfaces in the case BPMN as `<uipath:input
 1. **`sdd.md` Case Variables rows** — for category, type, default, sourceTrigger(s), sourceField(s). On `Category=In` rows, `sourceTriggers` is a single T-number selecting the bound trigger (blank → primary trigger)
 2. **`tasks/trigger-spec-cache.json`** — for each trigger's `caseShape.outputs[]` (un-minted), keyed by T-number. Written by trigger plugin at Step 6.1; see [`../../triggers/event/impl-json.md` § Step 8](../../triggers/event/impl-json.md) for the writer-side schema. Top-level keys are T-numbers (e.g., `T02`, `T03`); values have `context`, `inputs`, `outputs` from the trigger's `caseShape`, un-minted (no `var` / `id` / `elementId` synthesized).
 3. **`id-map.json`** — for `T<N> → trigger_xxxxxx` lookup when writing trigger.outputs[] and resolving an `In`-arg's bound trigger node (row's `sourceTriggers`; blank → `id-map["T02"].id`, the primary trigger)
-4. **`caseplan.json`** — to locate trigger nodes (by triggerId from id-map) and existing root variable arrays
+4. **`caseplan.case`** — to locate trigger nodes (by triggerId from id-map) and existing root variable arrays
 
 ## Dispatcher — two loops
 
@@ -115,7 +143,7 @@ The plugin runs **two iterations** at Phase 3 Step 6.2. Both write into the same
 
 For each trigger in `trigger-spec-cache.json`:
 1. Look up triggerId from `id-map.json[T<N>].id`
-2. Find the trigger node in `caseplan.json` by id
+2. Find the trigger node in `caseplan.case` by id
 3. For each spec output in cache's `outputs[]`:
 
 | Spec output state | SDD reference | `triggerNode.outputs[]` write | `root.inputs[]` | `root.outputs[]` | `root.inputOutputs[]` |
@@ -133,7 +161,7 @@ For each trigger in `trigger-spec-cache.json`:
 
 **Top-level match semantics:** matching is by **top-level spec output name only** (i.e., the `name` field of an entry in `caseShape.outputs[]` — `response`, `Error`, etc.). When an SDD row's Name equals the top-level spec name, the SDD-named entry **replaces** the would-be plain-name auto-emit for that exact entry; do not write both.
 
-**Name matching is case-sensitive.** Preserve the spec's name verbatim in the emitted `name`/`var`/`id` fields. Connector specs typically return PascalCase top-level keys (`response`, `Error`, `Title`); SDDs may use camelCase. If an SDD row's Name is `subject` and the spec returns `Subject`, **the match does NOT fire** — they are different identifiers per the runtime resolver (`VariablesService.findVariableByVariableId` performs direct case-sensitive string equality). To match, the SDD Name must equal the spec's name byte-for-byte. The skill never re-cases or aliases.
+**Name matching is case-sensitive.** Preserve the spec's name verbatim in the emitted `name`/`var`/`id` fields. A connector declares its own output names in whatever case it uses (`response`, `Error`, `Title`); SDDs may differ. If an SDD row's Name is `subject` and the spec returns `Subject`, **the match does NOT fire** — they are different identifiers per the runtime resolver (`VariablesService.findVariableByVariableId` performs direct case-sensitive string equality). To match, the SDD Name must equal the spec's name byte-for-byte. The skill never re-cases or aliases.
 
 **Sub-field references DO NOT trigger replacement.** When SDD references a sub-field path (e.g., `sourceField: response.Title`), the Pattern C entry is in ADDITION to — not in place of — the top-level `response` auto-emit. Worked example for SDD `calendarTitle ← response.Title` (Variable, type=string) on a trigger whose spec returns two top-level `jsonSchema` outputs `response` and `Error`:
 
@@ -185,7 +213,7 @@ SDD row: `Category=Variable`, no `sourceTriggers`, optional `Default`.
   "custom": true, "elementId": "root", "default": "Open" }
 ```
 
-No trigger.outputs[] write, no root.inputs[] / outputs[] writes.
+No trigger.outputs[] write, no root.inputs[] / outputs[] writes. A `jsonSchema`-typed pure-state Variable additionally carries `body` and `_jsonSchema` — see [`## jsonSchema type`](#jsonschema-type).
 
 ### `default` encoding — EVERY type, MANDATORY
 
@@ -262,7 +290,7 @@ SDD row: `Category=In`, optional `sourceTriggers: T<N>` (a single T-number selec
 
 **Trigger resolution.** `<triggerId>` in the entries below = `id-map.json[T<N>].id` for the trigger named by `sourceTriggers`; blank `sourceTriggers` → `id-map["T02"].id` (the primary trigger). Entries 1 (formal slot) and 2 (companion) carry it as `elementId`; entry 3 (bridge) is written on that same trigger node's `data.inputs.outputs[]`. `sourceFields` is not consulted for In.
 
-> **Bare manual bound trigger:** a manual trigger has no `data.inputs` key (its signature — see [`../../triggers/manual/impl-json.md`](../../triggers/manual/impl-json.md)). When the bound trigger is manual (the common case — the primary trigger is usually manual), create `data.inputs = { "outputs": [] }` on that node before appending the bridge. Do NOT add a `serviceType` — its absence is what keeps the trigger manual.
+> **Manual bound trigger:** a manual trigger is spelled `data.inputs.serviceType: "None"` — `"None"` is a named arm in the product's own `getTriggerType` switch, and 503 of 542 corpus trigger nodes carry it (see [`../../triggers/manual/impl-json.md`](../../triggers/manual/impl-json.md)). Older plans may omit `inputs` entirely; both forms read as manual, so **never assume `data.inputs` is absent**. When the bound trigger is manual (the common case — the primary trigger is usually manual), append the bridge to the existing `data.inputs.outputs`, creating `outputs: []` on the node's existing `data.inputs` if that array is missing. Do not change or remove a `serviceType: "None"` that is already there.
 
 Three entries — formal slot + companion + bridge:
 
@@ -280,9 +308,11 @@ Three entries — formal slot + companion + bridge:
 // No `id`, no `elementId` on bridge — FE convention. `type` matches the SDD row's Type column.
 ```
 
+> **An In-arg bridge carries `source`, never `value`.** The two Pattern C shapes immediately above this section (§ Trigger-sourced Variable, § Trigger-sourced Variable — multi-trigger) carry `value: "<companionName>"`; an In-arg bridge MUST NOT. Do not merge the two shapes. The In-arg bridge's only copy instruction is `source: "=vars.<formal-slot-id>"` — the formal slot's `id` from entry 1, not the argument's name. Emitting `{name, var, type, value}` with no `source` produces a bridge that copies nothing: `uip maestro case validate` still returns `Valid`, and `=vars.<name>` is undefined at runtime. Step 12 Check 17 is the backstop.
+
 **Why three entries instead of one?** The runtime resolver (`VariablesService.findVariableByVariableId`) is a single string-equality find on `Variable.id`. The caller (or trigger fire for event triggers) writes the formal-arg's value into `vars.v<random8>` at trigger fire (because `inputs[].id` is `v<random8>`); downstream code wants to read it as `=vars.applicantName` (because that's the readable name). There is no automatic forwarding between the two slots — the bridge entry on `triggerNode.outputs[]` executes the copy at fire time: `source: "=vars.v<random8>"` reads the formal slot, `var: "applicantName"` writes to the companion's slot. Without the bridge, `=vars.applicantName` resolves to undefined. The companion's `inputOutputs[]` entry alone declares the *name* in the namespace, but holds no *value* because nobody writes to it.
 
-> **Placeholder trigger interaction:** if the **bound trigger** (the one named by `sourceTriggers`, or the primary trigger when blank) is a placeholder (any type), write entries 1 + 2 only; skip the bridge (entry 3) — the placeholder has no `data.inputs.outputs` array. The placeholder trigger never fires, so the bridge would never execute anyway. **Consequence:** at runtime `vars.<name>` (the companion slot) is undefined — the `default` on the `inputs[]` formal slot does NOT propagate to the companion without the bridge. This is expected: a placeholder case is structurally incomplete and not meant to run until the trigger is resolved. Re-generate from scratch (Rule 6) after the trigger resolves to get the working bridge.
+> **Placeholder trigger interaction:** if the **bound trigger** (the one named by `sourceTriggers`, or the primary trigger when blank) is a placeholder (any type), write entries 1 + 2 only; skip the bridge (entry 3) — the placeholder has no `data.inputs.outputs` array. The placeholder trigger never fires, so the bridge would never execute anyway. **Consequence:** at runtime `vars.<name>` (the companion slot) is undefined — the `default` on the `inputs[]` formal slot does NOT propagate to the companion without the bridge. This is expected: a placeholder case is structurally incomplete and not meant to run until the trigger is resolved. Re-generate from scratch (Rule 7) after the trigger resolves to get the working bridge.
 
 **File-type In-arg carve-out:** when `type === "file"`:
 - Formal slot (entry 1) MUST add `body: <FILE_TYPE_JSON_SCHEMA>` (see [`## file type`](#file-type)) — drives entry-points.json `$ref: "#/definitions/job-attachment"` at packaging
@@ -389,6 +419,10 @@ Custom outputs are an existing task-plugin concept, unchanged by B's redesign. T
 
 ## jsonSchema type
 
+**A `jsonSchema` variable MUST carry `body` and `_jsonSchema`.** Both hold the same schema object, taken from the schema the SDD row declares (the variable table's Description carries it, e.g. `Body schema: {"type": "object"}`). `body: null` leaves the variable untyped: the FE picker cannot discover sub-fields, `=vars.<id>.<field>` cannot be selected in connector-task inputs, and `validate` reports `Valid` on either spelling.
+
+> **`sdd convert` emits `jsonSchema` companions with `body: null` and does not list them in `Data.Unresolved[]`.** Fill `body` and `_jsonSchema` after conversion from the SDD row. This is a named exception to SKILL.md Rule 4's settled-shape clause — the companion arrived in the converted plan and is still incomplete.
+
 Note the string-encoded `default`. `body` and `_jsonSchema` are objects — those are correct as objects
 and survive serialization via a separate CDATA path; only `default` is string-encoded.
 
@@ -399,7 +433,7 @@ and survive serialization via a separate CDATA path; only `default` is string-en
   "_jsonSchema": { "type": "object", "properties": { "status": { "type": "string" } } } }
 ```
 
-An empty jsonSchema default is `"{}"` (a two-character string), never `{}`.
+An empty jsonSchema default is a **string** — `""` or `"{}"`, both accepted; `sdd convert` writes `""`. Never the object `{}`: an object `default` is silently deleted by the caseplan → BPMN converter (Step 12 Check 14).
 
 ## file type
 
@@ -425,6 +459,7 @@ Normalize `"octet-stream"` → `"file"` before emitting. The FE's `isFileType` a
     "required": ["ID"],
     "x-uipath-resource-kind": "JobAttachment"
   },
+  // Case-root Variable only. An In argument's companion keeps its trigger elementId and carries neither default nor custom (Loop B table).
   "default": "", "custom": true, "elementId": "root" }
 ```
 
@@ -434,6 +469,7 @@ Primitive — no body, no target. FE renders DatePicker / DateTimePicker based o
 
 ```json
 { "id": "submittedOn", "name": "submittedOn", "type": "date",
+  // Case-root Variable only. An In argument's companion keeps its trigger elementId and carries neither default nor custom (Loop B table).
   "default": "", "custom": true, "elementId": "root" }
 
 { "id": "lastSeen", "name": "lastSeen", "type": "datetime",

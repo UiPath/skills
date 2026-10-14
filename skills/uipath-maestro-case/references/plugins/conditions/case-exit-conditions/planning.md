@@ -16,7 +16,7 @@ Every case-exit condition declared in sdd.md gets its own caseplan element — *
 
 | Field | Source | Notes |
 |-------|--------|-------|
-| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim, e.g. "Case resolved", "Closed — escalation path". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Complete Rule {N}` (marks-case-complete `true`) / `Exit Rule {N}` (`false`). A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
+| `display-name` | sdd.md Display Name column (optional) | Carry a semantic SDD value verbatim, e.g. "Case resolved", "Closed — escalation path". Omit when the cell is blank / `—` — do NOT invent one; impl defaults it to `Completion rule {N}` (marks-case-complete `true`) / `Exit rule {N}` (`false`). A cell already holding that default pattern is the SDD echoing the default, so impl renumbers it case-wide ([case-schema.md § Condition name uniqueness](../../../case-schema.md#condition-name-uniqueness)). |
 | `marks-case-complete` | sdd.md | `true` for normal completion, `false` for non-completing exits |
 | `rule-type` | From catalog below | See §Rule-type catalog |
 | `selected-stage-id` | Required for `selected-stage-*` rule-types | Resolved from stage capture map |
@@ -39,8 +39,8 @@ Allowed `ruleType` values depend on `marks-case-complete`:
 
 | Rule type | Meaning | Extra fields |
 |-----------|---------|--------------|
-| `selected-stage-completed` | Exit triggered by a specific stage completing. | `selectedStageId` |
-| `selected-stage-exited` | Exit triggered by a specific stage being exited (even without completing). | `selectedStageId` |
+| `selected-stage-completed` | Exit triggered by the named stage(s) completing. | `selectedStageIds` |
+| `selected-stage-exited` | Exit triggered by the named stage(s) being exited (even without completing). | `selectedStageIds` |
 | `wait-for-connector` | Wait for an external connector event (fills `uipath`). | connector fields; `conditionExpression` optional |
 
 ## Preferred Pattern
@@ -49,11 +49,19 @@ For most cases, define a single completion condition with `required-stages-compl
 
 This is the case-close contract: at least one root `caseExitRules[]` entry must have `marksCaseComplete: true`, otherwise the case can never close. Stage completion is separate — a stage exit with `marksStageComplete: true` advances the case but does not mark the case complete. Add `marks-case-complete: false` rules only for explicit non-completing exits such as rejection, withdrawal, or cancellation; they do not replace the positive completion rule.
 
-Add non-completing exit conditions only when the sdd.md explicitly describes an exit path that does NOT close the case (rare).
+**Decide `marksCaseComplete` by whether the work was done, not by whether the case ended.** Every case-exit rule ends the case; the flag records whether it ended *successfully*. Ask of each outcome: did the case achieve what it exists to achieve?
+
+| Outcome in the SDD | `marksCaseComplete` |
+|---|---|
+| The work finished — approved, fulfilled, paid, resolved | `true` |
+| The case stopped without the work being done — rejected, withdrawn, cancelled, abandoned, timed out | `false` |
+| The case was handed off, escalated out, or closed by exception | `false` |
+
+**A word like "closed", "ends", or "complete" in the prose is not the signal — the signal is whether the objective was met.** An SDD that says an outcome is *not the same as* normal completion, or names it alongside a separate completion path, is describing a non-completing exit however it phrases the ending: "closed as escalated" ends the case and does not complete it. These are not rare — any case with a rejection or escalation path has one.
 
 ## Ordering
 
-Case exit conditions are created **after** all stages exist (so `selectedStageId` can resolve via the stage capture map). In execution order, place these between stage conditions and SLA.
+Case exit conditions are created **after** all stages exist (so `selectedStageIds` can resolve via the stage capture map). In execution order, place these between stage conditions and SLA.
 
 ## Fields to Resolve
 
@@ -61,7 +69,7 @@ A condition produces **no `tasks/registry-resolved.json` entry** unless its `rul
 
 ```text
 case-exit condition — <summary>
-- display-name: "<name>"                 # optional — omit when blank; impl defaults to "Complete Rule {N}"/"Exit Rule {N}" per marks-case-complete
+- display-name: "<name>"                 # optional — omit when blank; impl defaults to "Completion rule {N}"/"Exit rule {N}" per marks-case-complete
 - marks-case-complete: true
 - rule-type: required-stages-completed
 - selected-stage: "<stage-name>"        # only for selected-stage-* rule-types

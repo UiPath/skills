@@ -15,6 +15,9 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/WebResearchBriefingSolution
 
+reference:
+  directory: .
+
 initial_prompt: |
   I have a web research agent at WebResearchBriefingSolution/WebResearchBriefingAgent.
   It uses a "Count Sources" tool that returns a numeric total in its `sum` output
@@ -46,7 +49,7 @@ success_criteria:
 
   - type: run_command
     description: "Custom number-rule guardrail with log action on Count Sources"
-    command: "python3 $TASK_DIR/check_custom_number_log.py"
+    command: "python3 $REFERENCE_DIR/check_custom_number_log.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

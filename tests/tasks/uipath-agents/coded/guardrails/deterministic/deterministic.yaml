@@ -16,6 +16,9 @@ sandbox:
     - type: template_dir
       path: ../_fixtures/SimpleCodedAgent
 
+reference:
+  directory: .
+
 initial_prompt: |
   I have a coded LangGraph agent in graph.py with a lookup_account_info tool.
   I want to add a deterministic guardrail that blocks the lookup_account_info tool
@@ -28,7 +31,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "Deterministic guardrail with 'secret' rule correctly added to graph.py"
-    command: "python3 $TASK_DIR/check_deterministic.py"
+    command: "python3 $REFERENCE_DIR/check_deterministic.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

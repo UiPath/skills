@@ -15,7 +15,7 @@ If the data doesn't match: **discard it.** Do not use unrelated data as a proxy.
 ## Domain-Specific Data Gathering
 
 1. **Job logs and stack** — `uip or jobs get <job-key> --output json` → `Info` and `JobError` carry the exception class, message, faulted activity name, and `WorkflowFilePath`. `uip or jobs logs <job-key> --level Error --output json` carries the activity-level error line.
-2. **Execution traces** — `uip or jobs traces <job-key> --output json` AND `uip traces spans get --job-key <job-key> --output json`. Activity spans expose the request URL, HTTP status, and timing — they narrow whether an HTTP failure was a non-success status, a transport error, or a timeout, and whether a deserialize failure followed a prior HTTP activity in the same run.
+2. **Execution traces** — `uip traces spans get --job-key <job-key> --output json`. Activity spans expose the request URL, HTTP status, and timing — they narrow whether an HTTP failure was a non-success status, a transport error, or a timeout, and whether a deserialize failure followed a prior HTTP activity in the same run.
 3. **Workflow source** — open the faulted `.xaml`/`.cs` to read how the failing input is supplied (literal vs variable, and which upstream activity produced that variable).
 
 ## Testing Prerequisites

@@ -26,6 +26,9 @@ sandbox:
     - type: template_dir
       path: fixture
 
+reference:
+  directory: ..
+
 initial_prompt: |
   A UiPath solution exists at `RetailSolution` in the current directory. It
   contains more than one automation project. Perform a full quality review:
@@ -76,7 +79,7 @@ success_criteria:
 
   - type: run_command
     description: "Solution-wide review: both projects named, issues caught in each, severities used"
-    command: "python3 $TASK_DIR/check_e2e_multi_project_solution.py"
+    command: "python3 $REFERENCE_DIR/e2e-multi-project-solution/check_e2e_multi_project_solution.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

@@ -3,7 +3,7 @@ description: >
   Smoke: agent reviews predictions and picks the right verdict per
   field — correct → `confirm --fields`; OCR-mangled → `confirm
   --corrections` (Rule 8); wrong-field prediction → left
-  unannotated (Rule 11 — agent reviews, doesn't extract).
+  unannotated (Rule 10 — agent reviews, doesn't extract).
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -50,9 +50,9 @@ initial_prompt: |
 success_criteria:
   # The version lookahead rides on the confirm criteria themselves, not a
   # criterion of its own: a standalone pin assertion passes on one pinned
-  # call while the others go out bare (Rule 19).
+  # call while the others go out bare (Rule 18).
   - type: file_matches_regex
-    description: "Agent invoked `uip ixp labellings confirm <project> <document>` with --fields and the reviewed -m/--model-version (Critical Rule 19)"
+    description: "Agent invoked `uip ixp labellings confirm <project> <document>` with --fields and the reviewed -m/--model-version (Critical Rule 18)"
     path: "mocks/calls.log"
     pattern: >-
       (?m)^(?:uip\s+ixp\s+labellings\s+confirm\s+["']?my_invoices-f1afa9ef-ixp["']?\s+["']?doc-abc-123["']?(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$))\s+.*--fields)[^\r\n]*$

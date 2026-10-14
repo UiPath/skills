@@ -102,6 +102,7 @@ success_criteria:
         a wrong permission makes the remediation unactionable.
       Score 0.0 if it misdiagnoses (blames licensing, network, or the user's
         password), reports nothing about the group's access, or never concludes.
+    include_reference: false
     weight: 2.0
     pass_threshold: 1.0
 

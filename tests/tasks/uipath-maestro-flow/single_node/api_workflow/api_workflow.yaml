@@ -12,6 +12,9 @@ run_limits:
   expected_turns: 25
   turn_timeout: 1200
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build the flow inside a solution of the same name.
 
@@ -35,7 +38,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -44,7 +47,7 @@ success_criteria:
   # ── Execution checks ──────────────────────────────────────────────────
   - type: run_command
     description: "Flow has an API workflow node and debug returns an age"
-    command: "python3 $TASK_DIR/check_api_workflow_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_api_workflow_flow.py"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0

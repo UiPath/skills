@@ -52,12 +52,14 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "./audit-org-window holds exactly one CLI-generated day-wise JSON export whose events carry the LTS schema and are ORG-scope (no TenantId)"
-    command: 'AUDIT_BASE_DIR=audit-org-window AUDIT_FORMAT=json AUDIT_DEEP=1 AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''audit'',''verify_audit_export.py''))"'
+    command: 'AUDIT_BASE_DIR=audit-org-window AUDIT_FORMAT=json AUDIT_DEEP=1 AUDIT_EXPECT_SCOPE=org python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''audit'',''verify_audit_export.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 4.0
     pass_threshold: 1.0
 
+reference:
+  directory: ..
 run_limits:
   expected_turns: 7
   max_turns: 40

@@ -32,6 +32,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import flow_check  # noqa: E402
+import validate_flow  # noqa: E402
 
 _SUITE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Split on ANY criterion so a block ends at its neighbour, and stop at the next
@@ -45,23 +46,36 @@ _TOP_LEVEL_KEY = re.compile(r"^[A-Za-z_][\w-]*:", re.M)
 _COMMAND = re.compile(r"command:\s*(.*)", re.S)
 _TIMEOUT = re.compile(r"^\s*timeout:\s*(\d+)", re.M)
 _TASK_DIR_SCRIPT = re.compile(r"\$TASK_DIR/(\S+\.py)")
+# $REFERENCE_DIR replaced $TASK_DIR for every checker script (2026-09); the
+# token resolves against the task's own `reference: {directory: ...}` block,
+# not the yaml's own directory.
+_REFERENCE_DIR_SCRIPT = re.compile(r"\$REFERENCE_DIR/(\S+\.py)")
+_REFERENCE_BLOCK = re.compile(r"^reference:\s*\n\s*directory:\s*(\S+)", re.M)
 # The same-ground campaign addresses checkers through the mounted repo instead of
 # the task dir (`python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/<rel>/check_x.py`);
 # both forms name one script under this suite, and both are priced.
 _SUITE_SCRIPT = re.compile(r"\$SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/(\S+\.py)")
 
 
-def _script_path(root: str, command_text: str) -> str | None:
+def _script_path(root: str, command_text: str, yaml_text: str = "") -> str | None:
     """The checker script a run_command criterion executes, resolved on disk, or
-    None when the command is not one of the two forms this guard prices."""
+    None when the command is not one of the forms this guard prices."""
     m = _TASK_DIR_SCRIPT.search(command_text)
     if m:
         resolved = os.path.join(root, m.group(1))
     else:
-        m = _SUITE_SCRIPT.search(command_text)
-        if not m:
-            return None
-        resolved = os.path.join(_SUITE_ROOT, m.group(1))
+        m = _REFERENCE_DIR_SCRIPT.search(command_text)
+        if m:
+            ref_match = _REFERENCE_BLOCK.search(yaml_text)
+            if not ref_match:
+                return None
+            ref_root = os.path.normpath(os.path.join(root, ref_match.group(1)))
+            resolved = os.path.join(ref_root, m.group(1))
+        else:
+            m = _SUITE_SCRIPT.search(command_text)
+            if not m:
+                return None
+            resolved = os.path.join(_SUITE_ROOT, m.group(1))
     return resolved if os.path.exists(resolved) else None
 _TASK_TIMEOUT = re.compile(r"^\s*task_timeout:\s*(\d+)", re.M)
 # Only these timeouts run inside the watchdog.
@@ -492,6 +506,10 @@ def _seed_case_count(script: str) -> int | None:
     cross-check than a wrong one."""
     seed = os.path.join(os.path.dirname(script), "seed.py")
     if not os.path.exists(seed):
+        # pre_run scripts moved into a sibling _setup/ (2026-09) so they can be
+        # staged via sandbox.template_sources without $SKILLS_REPO_PATH.
+        seed = os.path.join(os.path.dirname(script), "_setup", "seed.py")
+    if not os.path.exists(seed):
         return None
     counts = set()
     for node in ast.walk(ast.parse(open(seed).read())):
@@ -580,7 +598,7 @@ def _criteria():
                 command = _COMMAND.search(block)
                 if not command:
                     continue
-                resolved = _script_path(root, command.group(1))
+                resolved = _script_path(root, command.group(1), text)
                 if not resolved:
                     continue
                 first_line = command.group(1).split("\n")[0].strip().strip("'\"")
@@ -669,7 +687,7 @@ def _eligible():
                 tasks += 1
             for block in _criterion_blocks(text, "run_command"):
                 command = _COMMAND.search(block)
-                if command and _script_path(root, command.group(1)):
+                if command and _script_path(root, command.group(1), text):
                     criteria += 1
     return criteria, tasks
 
@@ -1352,3 +1370,69 @@ def test_while_condition_runs_once_more_than_the_body(tmp_path):
     it. Charging N left the criterion short by a whole debug_budget."""
     src = f"def main():\n    while {_ONE}:\n        {_ONE}\n"
     assert _price(src, tmp=str(tmp_path)) == 485 * 2 + 485 * 1
+
+
+# ── validate_flow.py budget ─────────────────────────────────────────────────
+#
+# `flow validate` refetches the tenant node manifest on every call: 8-14s
+# typical, 60-67s on the tail. validate_flow.py budgets itself at
+# `_DEFAULT_BUDGET_SECONDS` because the harness exports no criterion timeout,
+# so a criterion granting less is SIGKILLed on a tail hit (exit -1, empty
+# stdout) before the script can retry or name the file that stalled.
+#
+#     criterion timeout >= validate_flow._DEFAULT_BUDGET_SECONDS
+#
+# Every suite that runs the script is held to it. uipath-human-in-the-loop
+# reaches it through `reference: {directory: ../uipath-maestro-flow}`.
+
+_TASKS_ROOT = os.path.dirname(_SUITE_ROOT)
+_VALIDATE_SCRIPT = os.path.join(_SUITE_ROOT, "_shared", "validate_flow.py")
+
+
+def _validate_criteria():
+    """(yaml, timeout) per run_command criterion, in any suite, whose script
+    resolves to validate_flow.py."""
+    for root, _dirs, files in os.walk(_TASKS_ROOT):
+        for name in files:
+            if not name.endswith((".yaml", ".yml")):
+                continue
+            path = os.path.join(root, name)
+            text = open(path).read()
+            for block in _criterion_blocks(text, "run_command"):
+                command = _COMMAND.search(block)
+                if not command:
+                    continue
+                resolved = _script_path(root, command.group(1), text)
+                if resolved and os.path.samefile(resolved, _VALIDATE_SCRIPT):
+                    yield os.path.relpath(path, _TASKS_ROOT), _criterion_seconds(block)
+
+
+_VALIDATE_CASES = sorted(_validate_criteria())
+
+
+def test_every_validate_criterion_is_discovered():
+    """Counted a second way so a parser regression cannot quietly shrink the set."""
+    mentions = 0
+    for root, _dirs, files in os.walk(_TASKS_ROOT):
+        for name in files:
+            if not name.endswith((".yaml", ".yml")):
+                continue
+            with open(os.path.join(root, name)) as f:
+                mentions += sum(1 for ln in f if "command:" in ln and "validate_flow.py" in ln)
+    assert len(_VALIDATE_CASES) == mentions, (
+        f"{mentions - len(_VALIDATE_CASES)} validate_flow.py criteria went undiscovered"
+    )
+    assert len(_VALIDATE_CASES) > 40, f"only {len(_VALIDATE_CASES)} validate_flow.py criteria found"
+
+
+@pytest.mark.parametrize(
+    "yaml_path,criterion", _VALIDATE_CASES, ids=[y for y, _t in _VALIDATE_CASES]
+)
+def test_validate_criterion_funds_the_manifest_budget(yaml_path, criterion):
+    required = validate_flow._DEFAULT_BUDGET_SECONDS
+    assert criterion >= required, (
+        f"{yaml_path} grants {criterion}s to validate_flow.py, which budgets itself at "
+        f"{required}s. `flow validate` refetches the tenant manifest on every call "
+        "(8-14s typical, 60-67s tail), so a tail hit is SIGKILLed with exit -1 and an "
+        f"empty stdout. Raise the criterion to {required}s."
+    )

@@ -36,6 +36,14 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''identity'',''cleanup_pat.py''))"'
+  - command: 'python3 _setup/cleanup_pat.py'
     timeout: 30

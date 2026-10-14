@@ -1,0 +1,6 @@
+{
+  "name": "CE_CodedOrderStatus",
+  "displayName": "Coded Order Status",
+  "description": "Order lifecycle statuses for coded-agent evaluation",
+  "values": ["Open", "Processing", "Shipped", "Delivered", "Closed"]
+}

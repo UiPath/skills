@@ -42,6 +42,7 @@ import re
 import subprocess
 import sys
 import time
+from enum import Enum
 from typing import Any, Iterable, Sequence
 
 
@@ -102,6 +103,12 @@ _DEBUG_POLL_TIMEOUT_MARKER = "debug polling timed out"
 # the `retries` default.
 _POLL_TIMEOUT_ATTEMPTS = 2
 
+# A SIGKILLed attempt returns no envelope, so `_is_transient_debug_error` can
+# neither classify nor reach it. Its own allowance, like the poll-timeout path;
+# the deadline still bounds every attempt. Flaky in practice: dice-roller
+# 2026-09-08 polled to 492s of a 540s CLI budget, then went silent to the cap.
+_SUBPROCESS_TIMEOUT_ATTEMPTS = 2
+
 # Named so `debug_budget` and the criterion guard cannot drift from the
 # function they price. `_DEFAULT_RETRIES` was 3 until the budget started funding
 # every attempt it promises; 2 is a deliberate narrowing (one retry for a fast
@@ -134,6 +141,16 @@ _DEBUG_RETRY_MARKERS = (
     '"errorcode": "server_error"',
     _DEBUG_POLL_TIMEOUT_MARKER,
 )
+# An agent step's own LLM call failing upstream. The CLI envelope says
+# `RetryWillNotFix` and has no HttpStatus; only the incident names the 5xx.
+# skill-flow-lowcode-agent 2026-10-09: "LLM provider returned HTTP 500".
+# The steps before the agent already ran, so a retry repeats their side effects.
+_LLM_PROVIDER_5XX = re.compile(r"llm provider returned http 5\d\d")
+
+
+class AgentFaultRetry(Enum):
+    NONE = "none"
+    RETRY = "retry"
 
 
 def _rglob_pruned(pattern: str) -> list[str]:
@@ -242,14 +259,20 @@ def _rotate_solution_id(project_dir: str) -> tuple[str, str] | None:
     return None
 
 
-def _is_transient_debug_error(result: subprocess.CompletedProcess) -> bool:
+def _is_transient_debug_error(
+    result: subprocess.CompletedProcess,
+    agent_fault: AgentFaultRetry = AgentFaultRetry.NONE,
+) -> bool:
     """True iff a failed ``flow debug`` invocation looks like a transient
     server-side error (5xx / RetryLater / poll-budget expiry) worth retrying,
     rather than a real flow fault. Case-insensitive so CLI key casing can't
     slip past."""
     if result.returncode == 0:
         return False
-    if any(marker in _output_blob(result) for marker in _DEBUG_RETRY_MARKERS):
+    blob = _output_blob(result)
+    if any(marker in blob for marker in _DEBUG_RETRY_MARKERS):
+        return True
+    if agent_fault is AgentFaultRetry.RETRY and _LLM_PROVIDER_5XX.search(blob):
         return True
     # Fall back to an explicit 5xx HttpStatus in the error Context.
     data = _parse_json(result.stdout)
@@ -334,6 +357,7 @@ def run_debug(
     project_glob: str = "**/project.uiproj",
     retries: int = _DEFAULT_RETRIES,
     backoff_seconds: float = _DEFAULT_BACKOFF_SECONDS,
+    agent_fault: AgentFaultRetry = AgentFaultRetry.NONE,
 ) -> dict:
     """Locate the project, run ``uip maestro flow debug --output json``, and return the
     parsed ``Data`` payload. Exits on any step failing.
@@ -349,9 +373,12 @@ def run_debug(
     Transient server-side errors (5xx / ``RetryLater``, or the CLI's own
     poll-budget expiry — see :func:`_is_transient_debug_error`) are retried up
     to ``retries`` times with ``backoff_seconds`` between attempts; poll
-    timeouts get :data:`_POLL_TIMEOUT_ATTEMPTS`, and any retry is skipped once
+    timeouts get :data:`_POLL_TIMEOUT_ATTEMPTS` and a SIGKILLed attempt gets
+    :data:`_SUBPROCESS_TIMEOUT_ATTEMPTS`, and any retry is skipped once
     the remainder drops below :data:`_MIN_RETRY_BUDGET_SECONDS`. A real flow
-    fault fails immediately without burning retries.
+    fault fails immediately without burning retries. An agent step's LLM 5xx
+    retries only with ``agent_fault=AgentFaultRetry.RETRY``, which re-runs the
+    whole flow: pass it only from a checker whose flow has no side effects.
 
     ``attachments`` maps a file-typed input variable ``id`` to a local file path;
     each pair is passed as ``--attachment <id>=<path>`` (repeatable). The variable
@@ -420,6 +447,11 @@ def run_debug(
 
     unreadable: str | None = None
     unreadable_attempts = 0
+    subprocess_timeouts = 0
+    # Call-scoped: the globals persist across run_debug calls, and
+    # _LAST_DEBUG_STDERR starts as None, so reading them back resurrects or crashes.
+    timeout_stdout = ""
+    timeout_stderr = ""
     overwrite_rotations = 0
     rotated_solution_ids: list[str] = []
     # `max_attempts` starts at the transient allowance and is extended by one
@@ -442,16 +474,33 @@ def run_debug(
                 env=env,
             )
         except subprocess.TimeoutExpired as exc:
-            # The CLI's own --timeout never fired, so the stall is upstream of
-            # polling. Keep the partial output rather than dying on a traceback.
-            _LAST_DEBUG_RAW = _as_text(exc.stdout)
-            _LAST_DEBUG_STDERR = _as_text(exc.stderr)
+            # Richest, not newest: a later attempt can die before printing, and
+            # the earlier one may hold the only instanceId for the remote run.
+            timeout_stdout = _as_text(exc.stdout) or timeout_stdout
+            timeout_stderr = _as_text(exc.stderr) or timeout_stderr
+            _LAST_DEBUG_RAW = timeout_stdout
+            _LAST_DEBUG_STDERR = timeout_stderr
+            subprocess_timeouts += 1
+            fundable = (
+                deadline - time.monotonic() - backoff_seconds >= _MIN_RETRY_BUDGET_SECONDS
+            )
+            if subprocess_timeouts < _SUBPROCESS_TIMEOUT_ATTEMPTS and fundable:
+                time.sleep(backoff_seconds)
+                attempt += 1
+                # Extend, not assign: a retries=1 caller has no attempt left
+                # here, and exiting the loop reads `r.returncode` with `r` unbound.
+                max_attempts = max(max_attempts, attempt + 1)
+                continue
             _fail_with_capture(
                 f"flow debug exceeded the {attempt_cap}s subprocess cap without returning "
-                f"(CLI --timeout was {cli_timeout}s, so the stall is upstream of "
-                "polling: solution upload, Studio Web debug provisioning, "
-                "begin-session, or create-instance).\n"
-                f"stdout: {_as_text(exc.stdout)}\nstderr: {_as_text(exc.stderr)}"
+                f"on {subprocess_timeouts} subprocess timeout(s) across {attempt + 1} "
+                f"attempt(s); the CLI's own --timeout of {cli_timeout}s produced no envelope"
+                + ("" if fundable else " and the remaining budget could not fund another")
+                + ". The stderr tail below is the last phase any attempt reported.\n"
+                f"stdout: {timeout_stdout}\n"
+                # Tail only: the grader truncates `details` from the front and a
+                # polling run fills it, so the whole stream drops what this names.
+                f"stderr: {timeout_stderr[-_STDERR_CAPTURE_TAIL_CHARS:]}"
             )
         _LAST_DEBUG_RAW = r.stdout
         # Keep the CLI's stderr too: it is where `flow debug` reports what it
@@ -483,7 +532,7 @@ def run_debug(
                 flush=True,
             )
             max_attempts = max(max_attempts, attempt + 2)
-        elif not _is_transient_debug_error(r):
+        elif not _is_transient_debug_error(r, agent_fault):
             break
         elif _is_poll_timeout(r) and attempt + 1 >= _POLL_TIMEOUT_ATTEMPTS:
             break
@@ -521,6 +570,19 @@ def run_debug(
         )
     status = _get_ci(payload, "finalStatus", "FinalStatus")
     if status != "Completed":
+        # A chat-driven flow reports Success with no finalStatus: `flow debug`
+        # uploads it and hands off to Studio Web rather than running it. Naming
+        # that is the difference between "the flow is broken" and "no headless
+        # run is possible for this design", which is a task-shape problem.
+        if _get_ci(data, "Code") == "FlowDebugStudioWebHandoff" or _get_ci(
+            payload, "handedOff", "HandedOff"
+        ):
+            _fail(
+                "Flow is chat-driven, so `flow debug` handed off to Studio Web "
+                "instead of running it: a headless run cannot verify this design. "
+                "Either the flow should not be conversational, or this criterion "
+                f"is the wrong check for it.\n{r.stdout}"
+            )
         _fail(f"Flow did not complete (finalStatus={status})\n{r.stdout}" + _incident_details(data))
     if unreadable is not None:
         # Every attempt completed, and every attempt's outputs were unreadable.
@@ -533,6 +595,13 @@ def run_debug(
             "elements all ran. See the captured STDERR for the CLI's own account."
         )
     return payload
+
+
+# Two node shapes read entity records and tenant availability decides which:
+# the `uipath-uipath-dataservice` connector activity, or the native
+# `core.datafabric.read` node, the better build where `canvas.nodes.read-entity`
+# is on (#3041). Pass to `assert_flow_has_any_node_type`; keep both entries.
+ENTITY_QUERY_HINTS = ("uipath-dataservice.query", "core.datafabric.read")
 
 
 def assert_flow_has_node_type(
@@ -997,14 +1066,12 @@ def get_last_debug_raw() -> str | None:
     return _LAST_DEBUG_RAW
 
 
-def assert_output_nonempty(payload: dict, name: str) -> Any:
-    """Assert a named output global (e.g. an End-node-mapped ``out`` variable)
-    is present and non-empty, and return its value.
+def _named_global(payload: dict, name: str) -> tuple[Any, dict]:
+    """A named output global's value, and the ``variables.globals`` dict it was
+    looked up in (for error messages).
 
-    Looks the variable up by name in the runtime payload's ``variables.globals``
-    dict and ``variables.globalVariables`` array (both casings). "Non-empty"
-    means: present, not ``None``, and — once stringified — not whitespace-only
-    (so ``""``, ``"   "``, ``{}``, ``[]`` all fail)."""
+    Reads ``variables.globals`` first, then the ``variables.globalVariables``
+    array; keys and ids match case-insensitively, in both casings of each field."""
     variables = _get_ci(payload, "variables", "Variables") or {}
     globals_dict = _get_ci(variables, "globals", "Globals") or {}
     value = _get_ci(globals_dict, name)
@@ -1013,6 +1080,18 @@ def assert_output_nonempty(payload: dict, name: str) -> Any:
             if str(_get_ci(v, "id", "Id", "name", "Name") or "").lower() == name.lower():
                 value = _get_ci(v, "value", "Value")
                 break
+    return value, globals_dict
+
+
+def assert_output_nonempty(payload: dict, name: str) -> Any:
+    """Assert a named output global (e.g. an End-node-mapped ``out`` variable)
+    is present and non-empty, and return its value.
+
+    Looks the variable up by name in the runtime payload's ``variables.globals``
+    dict and ``variables.globalVariables`` array (both casings). "Non-empty"
+    means: present, not ``None``, and — once stringified — not whitespace-only
+    (so ``""``, ``"   "``, ``{}``, ``[]`` all fail)."""
+    value, globals_dict = _named_global(payload, name)
     text = "".join(str(v) for v in _leaves(value) if v is not None).strip()
     if not text:
         present = list(globals_dict.keys())
@@ -1688,6 +1767,65 @@ def completed_connector_node_ids(
     }
 
 
+def reads_flow_variable(text: str, name: str) -> bool:
+    """True when ``text`` reads ``$vars.<name>`` as a whole identifier.
+
+    ``$vars.decision`` matches ``$vars.decision`` and ``$vars.decision.x`` but
+    not ``$vars.decisionOld``.
+    """
+    return re.search(rf"\$vars\.{re.escape(name)}(?![A-Za-z0-9_$])", text) is not None
+
+
+def downstream_read_expressions(nodes: list[dict[str, Any]]) -> list[str]:
+    """Expressions in a ``.flow`` that consume flow data: script bodies and
+    end-node output mappings (``outputs.<name>.source.expression``)."""
+    reads: list[str] = []
+    for node in nodes:
+        if node.get("type") == "core.action.script":
+            reads.append(str((node.get("inputs") or {}).get("script", "")))
+        elif node.get("type") == "core.control.end":
+            for output in (node.get("outputs") or {}).values():
+                source = output.get("source") if isinstance(output, dict) else None
+                if isinstance(source, dict):
+                    reads.append(str(source.get("expression", "")))
+    return reads
+
+
+def hitl_output_read_downstream(
+    flow: dict[str, Any], nodes: list[dict[str, Any]], hitl_id: Any
+) -> bool:
+    """True when the HITL node's answer reaches downstream logic.
+
+    Two accepted shapes (both pass ``uip maestro flow validate``):
+
+    1. Direct: a script body reads ``$vars.<hitl>.output``.
+    2. Captured: a ``variables.variableUpdates`` entry (on the HITL node or a
+       downstream arm step, as the SDK emits for ``{ updates }``) assigns a
+       flow variable from ``$vars.<hitl>.output``, and that variable is then
+       read by a script body or an end-node output mapping.
+    """
+    expected = f"$vars.{hitl_id}.output"
+    scripts = [
+        str((node.get("inputs") or {}).get("script", ""))
+        for node in nodes
+        if node.get("type") == "core.action.script"
+    ]
+    if any(expected in script for script in scripts):
+        return True
+    updates = (flow.get("variables") or {}).get("variableUpdates") or {}
+    captured = {
+        str(entry.get("variableId"))
+        for entries in (updates.values() if isinstance(updates, dict) else [])
+        if isinstance(entries, list)
+        for entry in entries
+        if isinstance(entry, dict)
+        and entry.get("variableId")
+        and expected in str((entry.get("expression") or {}).get("expression", ""))
+    }
+    reads = downstream_read_expressions(nodes)
+    return any(reads_flow_variable(text, var) for var in captured for text in reads)
+
+
 def read_flow_input_vars(project_dir: str) -> list[str]:
     """Return the ordered list of input variable IDs declared on the first
     ``.flow`` file in ``project_dir``."""
@@ -2155,3 +2293,59 @@ def _fail_with_capture(msg: str):
 
 def _fail(msg: str):
     sys.exit(f"FAIL: {msg}")
+
+
+_JSON_FENCE = re.compile(r"^```[A-Za-z]*[ \t]*\n?(.*?)\n?```$", re.S)
+
+
+def assert_output_not_serialized_object(payload: dict, name: str) -> None:
+    """Fail when a named output global holds a SERIALIZED JSON object or array
+    instead of the text itself.
+
+    The shape this catches: an inline agent whose prompt asks for JSON text while
+    its ``returns`` already declares the fields packs its whole answer into ONE
+    string field. skill-flow-devcon-billing-resolution-writer, 2026-09-23 (v2, 3
+    of 3 debug runs): ``body`` = ``'{"subject":"Resolution for Invoice …","body":
+    "Dear …"}'``. The platform accepts it (validate Valid, debug Completed, the
+    Slack post succeeds), and every substring and provenance check passes on it,
+    because the invoice number is inside the JSON and the blob IS a leaf of the
+    agent's output. The customer still gets JSON instead of an email.
+
+    Reads the global with :func:`_named_global`, like :func:`assert_output_nonempty`.
+    A value that is already a dict or list fails too (a whole structured answer
+    mapped into a text field). A Markdown code fence and surrounding whitespace are
+    stripped before decoding. Prose passes, including prose with braces (``"Credit
+    {INV-1} issued"``), and so does JSON that decodes to a scalar.
+    """
+    value, _globals = _named_global(payload, name)
+    if isinstance(value, (dict, list)):
+        # The same defect one step later: the whole structured answer mapped
+        # into a field that should hold text (an agent's output object wired to
+        # ``emailBody``). A downstream send stringifies it.
+        what = "object" if isinstance(value, dict) else "array"
+        _fail_with_capture(
+            f"{name} is a structured {what}, not the text itself — a whole structured "
+            f"answer was mapped into one text field\n{name}={json.dumps(value)[:500]}"
+        )
+    if not isinstance(value, str):
+        return
+    text = value.strip()
+    fenced = _JSON_FENCE.match(text)
+    if fenced:
+        text = fenced.group(1).strip()
+    if not text.startswith(("{", "[")):
+        return
+    try:
+        decoded = json.loads(text)
+    except ValueError:
+        return
+    if isinstance(decoded, dict):
+        what = f"object (keys: {', '.join(map(str, decoded.keys())) or 'none'})"
+    elif isinstance(decoded, list):
+        what = f"array ({len(decoded)} item(s))"
+    else:
+        return
+    _fail_with_capture(
+        f"{name} is a serialized JSON {what}, not the text itself — the agent packed "
+        f"its structured answer into one field\n{name}={value[:500]!r}"
+    )

@@ -24,6 +24,12 @@ Different task types route to different API endpoints and have different require
 | `DocumentClassificationTask` | Optional | Optional | `POST /tasks/GenericTasks/CompleteTask` |
 | `DataLabelingTask` | Optional | Optional | `POST /tasks/GenericTasks/CompleteTask` |
 
+> **`--data` replaces the task's data; it does not merge.** Any key you omit is
+> dropped. If the robot stored data on the task (for example a per-line audit
+> array) that a reject or reallocate path does not resend, that data is lost on
+> completion. Read the current data first with `tasks data get` and resend
+> everything you need to keep.
+
 ## Completing a Form Task
 
 Form tasks require both `--action` (the button/outcome name) and `--data` (form field values):

@@ -3,8 +3,8 @@
   <bpmn:process id="Process_ExpenseApproval" name="Expense Approval" isExecutable="true">
     <bpmn:extensionElements>
       <uipath:variables version="v1">
-        <uipath:input id="Var_Amount" name="amount" type="number" />
-        <uipath:input id="Var_Region" name="region" type="string" />
+        <uipath:input id="Var_Amount" name="amount" type="number" elementId="Start" />
+        <uipath:input id="Var_Region" name="region" type="string" elementId="Start" />
       </uipath:variables>
     </bpmn:extensionElements>
     <bpmn:startEvent id="Start" name="Start">

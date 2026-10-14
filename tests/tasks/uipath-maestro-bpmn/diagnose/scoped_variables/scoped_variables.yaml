@@ -14,8 +14,6 @@ run_limits:
 sandbox:
   template_sources:
     - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-    - type: template_dir
       path: ../../_shared/mock_template
     - type: template_dir
       path: fixtures
@@ -41,9 +39,10 @@ initial_prompt: |
   Then add a short prose note on why a Completed run can still be semantically
   wrong.
 
-  Use `uip maestro bpmn ...` reads with folder context; do not read `mocks/`,
-  `fixtures/`, or any response JSON files directly. Do NOT retry, cancel,
-  migrate, move a cursor, debug, run, upload, publish, or deploy anything.
+  Use `uip maestro bpmn ...` reads with folder context; do not read `mocks/` or
+  `fixtures/` directly. Capturing a CLI response to your own file and reading it
+  back is fine. Do NOT retry, cancel, migrate, move a cursor, debug, run,
+  upload, publish, or deploy anything.
 
 success_criteria:
   - type: command_executed

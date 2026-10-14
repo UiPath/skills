@@ -27,9 +27,16 @@ tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/_shared/seed_fixture.py unsupported_activity_type"
+  - command: "python3 _setup/seed_fixture.py"
     timeout: 30
 
 run_limits:
@@ -53,8 +60,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Advisory: agent used the local diagnose loop (not gated — a fix reached by
-      reading the file is equally valid, and agents legitimately do that)"
+    description: "Advisory: agent used the local diagnose loop (not gated — a fix reached by reading the file is equally valid, and agents legitimately do that)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+api-workflow\s+(validate|run)'
     min_count: 1
@@ -81,8 +87,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "A real loop survives the fix — the count is computed by iterating, not echoed
-      straight from the input (a workflow with the loop deleted passes every other criterion)"
+    description: "A real loop survives the fix — the count is computed by iterating, not echoed straight from the input (a workflow with the loop deleted passes every other criterion)"
     command: >-
       python3 -c "import json,sys; t=json.dumps(json.load(open('Workflow.json')));
       sys.exit(0 if ('\"activityType\": \"DoWhile\"' in t or '\"activityType\": \"ForEach\"' in t)

@@ -4,12 +4,10 @@ Provider-agnostic React **sign-in screen**: renders one "Continue with {Provider
 
 Package: [`@uipath/ui-widgets-external-auth`](https://www.npmjs.com/package/@uipath/ui-widgets-external-auth). Full prop/API surface lives in the package README — this file covers only the integration steps that are easy to get wrong inside a Coded App.
 
-> **Publish status:** this package is newer than the other widgets. Before recommending it, verify it resolves: `npm view @uipath/ui-widgets-external-auth version`. On a 404 the package is not yet on the public registry — tell the user instead of inventing an install path.
-
 ## When to Use
 
 - The coded app is a **user-facing portal whose end users sign in with external identity providers** (Google, UAE PASS, a corporate SAML IdP) — the widget is the front-door sign-in screen.
-- **NOT for signing in to UiPath.** Coded web apps authenticate to UiPath Cloud via the built-in OAuth-PKCE flow (`useAuth()` / `sdk.initialize()` — see [../create-web-app.md](../create-web-app.md)); action apps use the host-injected session. Never replace those with this widget.
+- **NOT for signing in to UiPath.** Coded web apps authenticate to UiPath Cloud via the built-in OAuth-PKCE flow (`useAuth()` / `sdk.initialize()` — see [../create-web-app.md](../create-web-app.md)); action apps authenticate silently against their registered redirect URI. Never replace those with this widget.
 
 ## Critical Rules
 

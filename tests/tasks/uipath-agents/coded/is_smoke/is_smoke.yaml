@@ -19,6 +19,9 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  directory: ../..
+
 initial_prompt: |
   Build a UiPath coded Python agent under `./slack-notifier/` that posts
   a message to a Slack channel through Integration Service — use Slack's
@@ -63,7 +66,7 @@ success_criteria:
 
   - type: run_command
     description: "Project shape: bindings.json connection envelope + ActivityMetadata mapped from describe fixture + lazy SDK init + no lowcode sidecar"
-    command: "python3 $TASK_DIR/check_is_smoke.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_is_smoke.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

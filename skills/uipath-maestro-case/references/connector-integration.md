@@ -20,13 +20,13 @@ Connection selection mechanics (`--refresh` retry, ping verification, BYOA workf
 
 ## Resolution Pipeline
 
-For every connector task or event trigger, run these CLI metadata fetches in order. Each call feeds the next; the populated `caseShape` from `case spec` is written directly into `caseplan.json` per the plugin's `impl-json.md` — there is no `tasks add-connector` mutation step.
+For every connector task or event trigger, run these CLI metadata fetches in order. Each call feeds the next; the populated `caseShape` from `case spec` is written directly into `caseplan.case` per the plugin's `impl-json.md` — there is no `tasks add-connector` mutation step.
 
 > **Empty `Connections[]` is not terminal.** When `get-connection` returns no connections, Step 2 offers to create one (`uip is connections create`) before falling back to `<UNRESOLVED>` — see [§ Creating a Connection](#creating-a-connection).
 
 ### Step 1 — Find the activity-type-id
 
-Read the relevant TypeCache index file directly (CLI `registry search` has known gaps — see [registry-discovery.md](registry-discovery.md)).
+Read the relevant TypeCache index file directly, or search it with `uip maestro case registry search` (see [registry-discovery.md](registry-discovery.md)).
 
 | Target | Cache file | Identifier field |
 |--------|-----------|------------------|
@@ -47,7 +47,7 @@ Output: `{ Entry, Config, Connections }` where:
 - `Entry` — the raw TypeCache entry, including `displayName`, `configuration`.
 - `Config.connectorKey` — the Integration Service connector identifier (e.g., `gmail`, `uipath-atlassian-jira`).
 - `Config.objectName` — the specific operation (e.g., `message`, `issue`).
-- `Connections[]` — array of `{ id, name }` objects.
+- `Connections[]` — array of `{ Id, Name }` (not a verbatim subtree, so PascalCase) objects.
 
 **Selection rules (in priority order):**
 
@@ -111,12 +111,12 @@ Spec output carries the full operation contract:
 | `outputs.pagination` | `null` for non-list; `{ maxPageSize: N }` for list ops |
 | `filter` | Structured FilterBuilder contract (`ceql` activity / `jmes` trigger); `undefined` means no structured authoring. Plain filter fields remain native-syntax query/body inputs |
 | `references[]` | Cross-references with pre-built `discoverCommand` runnable strings |
-| `caseShape` | FE-canonical `inputs[]` / `outputs[]` / `context[]` ready to drop into `caseplan.json` (after binding-id substitution); only present when `--skip-case-shape` is NOT set |
+| `caseShape` | FE-canonical `inputs[]` / `outputs[]` / `context[]` ready to drop into `caseplan.case` (after binding-id substitution); only present when `--skip-case-shape` is NOT set |
 | `diagnostics` | Per-endpoint `fetched` / `fallbacks` |
 
 Full input-details contract (the `--input-details` JSON shape): [`case-spec-input-details.md`](case-spec-input-details.md).
 
-> **Generic-typed activities** (`Config.activityType === "Generic"`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord`). The CLI fails fast on `case spec --type activity` without `--object-name`. Discover the available objects via `uip is resources list --connector-key <connector-key>` and `uip is resources describe --connector-key <connector-key> --object-name <name>`, then pass the picked name as `--object-name` on the Phase 3 call.
+> **Generic-typed activities** (`Config.activityType === "Generic"`) carry an empty/templated `objectName` in the typecache because one definition is shared across every object the connector exposes (e.g. Salesforce `InsertRecord`). The CLI fails fast on `case spec --type activity` without `--object-name`. Discover the available objects via `uip is resources list <connector-key>` and `uip is resources describe <connector-key> <object-name>`, then pass the picked name as `--object-name` on the Phase 3 call.
 
 ### Step 4 — Resolve reference fields
 
@@ -141,7 +141,7 @@ If a reference cannot be resolved, **AskUserQuestion** with the candidates (drop
 
 ---
 
-## Applying Results to caseplan.json
+## Applying Results to caseplan.case
 
 In Phase 3, the populated `caseShape` from `case spec --input-details` is dropped into the task's `data` after binding-id substitution. Per-class wiring lives in each plugin's `impl-json.md` — the table below is a quick reference.
 
@@ -153,7 +153,7 @@ In Phase 3, the populated `caseShape` from `case spec --input-details` is droppe
 | Filter (activity, CEQL) | `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` → `essentialConfiguration.savedFilterTrees.<filterParamName>` (tree); `data.inputs[name="queryParameters"].body.<filterParamName>` (compiled CEQL string) |
 | Filter (trigger, JMESPath) | `data.context[name="metadata"].body.activityPropertyConfiguration.{configuration → essentialConfiguration.filter, filterExpression}` AND `data.inputs[name="body"].body.filters.expression` |
 
-The skill substitutes `{{CONN_BINDING_ID}}` and `{{FOLDER_BINDING_ID}}` placeholders in `caseShape.context[*].value` with minted binding ids before writing.
+For connector tasks `uip maestro case splice` resolves the `{{CONN_BINDING_ID}}` and `{{FOLDER_BINDING_ID}}` placeholders; for the event-trigger node and connector-bound rules the skill substitutes them in `caseShape.context[*].value` with minted binding ids before writing.
 
 ---
 
@@ -169,7 +169,7 @@ Tree shape, operator table, anti-patterns, "How to build" guide, worked examples
 
 ## Output Contract to `registry-resolved.json`
 
-Record the resolved values on the task's ledger entry, alongside Rule 9's keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`):
+Record the resolved values on the task's ledger entry, alongside Rule 10's keys (`stage`, `task`, `taskType`, `cacheFile`, `searchQuery`, `matches`, `selected`, `rationale`):
 
 ```json
 {

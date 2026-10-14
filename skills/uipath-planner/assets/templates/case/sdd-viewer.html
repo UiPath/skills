@@ -4,10 +4,11 @@
 
   Generation contract (Phase 0 / Approve mode):
     1. Read this file.
-    2. Replace the sentinel token in the <script id="sdd-data"> block
+    2. Replace the sentinel token inside the element with id="sdd-data"
        with a JSON object matching the schema documented in the JS section below.
-       The token appears exactly once — inside that script tag only — so any
-       string-replace or Edit-tool swap is unambiguous.
+       The token appears TWICE in this file: once as that element's content (the
+       one to replace) and once inside the error message further down. Swap only
+       the first — a replace-all corrupts the error text.
     3. Write the populated file to ./sdd-viewer.html in the working directory.
     4. Tell the user: "Generated ./sdd-viewer.html — open it in a browser to review."
 
@@ -59,6 +60,7 @@
       --t-process:                    #2563eb;
       --t-rpa:                        #f59e0b;
       --t-api-workflow:               #10b981;
+      --t-function:                   #84cc16;
       --t-execute-connector-activity: #ec4899;
       --t-wait-for-connector:         #6366f1;
       --t-wait-for-timer:             #6b7280;
@@ -296,6 +298,7 @@
     .task[data-type="process"]                    { border-left-color: var(--t-process); }
     .task[data-type="rpa"]                        { border-left-color: var(--t-rpa); }
     .task[data-type="api-workflow"]               { border-left-color: var(--t-api-workflow); }
+    .task[data-type="function"]                   { border-left-color: var(--t-function); }
     .task[data-type="execute-connector-activity"] { border-left-color: var(--t-execute-connector-activity); }
     .task[data-type="wait-for-connector"]         { border-left-color: var(--t-wait-for-connector); }
     .task[data-type="wait-for-timer"]             { border-left-color: var(--t-wait-for-timer); }
@@ -315,6 +318,7 @@
     .badge.type-process                    { background: color-mix(in srgb, var(--t-process) 12%, white); color: var(--t-process); border-color: color-mix(in srgb, var(--t-process) 25%, transparent); }
     .badge.type-rpa                        { background: color-mix(in srgb, var(--t-rpa) 12%, white); color: var(--t-rpa); border-color: color-mix(in srgb, var(--t-rpa) 25%, transparent); }
     .badge.type-api-workflow               { background: color-mix(in srgb, var(--t-api-workflow) 12%, white); color: var(--t-api-workflow); border-color: color-mix(in srgb, var(--t-api-workflow) 25%, transparent); }
+    .badge.type-function                   { background: color-mix(in srgb, var(--t-function) 12%, white); color: var(--t-function); border-color: color-mix(in srgb, var(--t-function) 25%, transparent); }
     .badge.type-execute-connector-activity { background: color-mix(in srgb, var(--t-execute-connector-activity) 12%, white); color: var(--t-execute-connector-activity); border-color: color-mix(in srgb, var(--t-execute-connector-activity) 25%, transparent); }
     .badge.type-wait-for-connector         { background: color-mix(in srgb, var(--t-wait-for-connector) 12%, white); color: var(--t-wait-for-connector); border-color: color-mix(in srgb, var(--t-wait-for-connector) 25%, transparent); }
     .badge.type-wait-for-timer             { background: color-mix(in srgb, var(--t-wait-for-timer) 15%, white); color: var(--t-wait-for-timer); border-color: color-mix(in srgb, var(--t-wait-for-timer) 30%, transparent); }
@@ -521,7 +525,7 @@
           "tasks": [
             {
               "name": string,
-              "type": "action"|"agent"|"process"|"rpa"|"api-workflow"|"wait-for-timer"|"wait-for-connector"|"execute-connector-activity"|"case-management",
+              "type": "action"|"agent"|"process"|"rpa"|"api-workflow"|"function"|"wait-for-timer"|"wait-for-connector"|"execute-connector-activity"|"case-management",
               "required": boolean,
               "runOnlyOnce": boolean,
               "persona": string | null,
@@ -1413,7 +1417,7 @@
           }
           break;
         default:
-          // process / agent / rpa / api-workflow
+          // process / agent / rpa / api-workflow / function
           ioTable("Inputs", d.inputs);
           ioTable("Outputs", d.outputs, "out");
       }

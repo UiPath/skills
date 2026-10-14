@@ -7,7 +7,7 @@ description: >
   caseplan.json write of a resolved `type: "execute-connector-activity"` node
   (real `data.typeId` + `data.connectionId`, no fabricated IDs). Stops at
   validate + resolution assertions — NOT debug: executing a connector activity
-  has real side effects (Rule 12), so this task verifies the BUILD, not runtime.
+  has real side effects (Rule 13), so this task verifies the BUILD, not runtime.
   Requires cloud auth + a healthy Integration Service connection for the named
   connector on the test tenant.
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, connector, feature:connector-activity]
@@ -17,6 +17,9 @@ run_limits:
   task_timeout: 2100
   max_turns: 150
   turn_timeout: 2100
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Build a UiPath Case Management solution named "ConnectorActivityCase"
@@ -113,7 +116,7 @@ initial_prompt: |
   Do NOT run `uip maestro case debug` (a connector activity executes for real).
   Do NOT ask for approval, confirmation, or feedback. Build end-to-end in a
   single pass and finish with `uip maestro case validate` passing on the
-  resulting caseplan.json.
+  resulting case plan.
 
   Before starting, load the uipath-maestro-case skill and follow its workflow.
 
@@ -143,7 +146,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
-    command: "uip maestro case validate ConnectorActivityCase/ConnectorActivityCase/caseplan.json --output json"
+    command: "p=$(ls ConnectorActivityCase/ConnectorActivityCase/caseplan.case ConnectorActivityCase/ConnectorActivityCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0
@@ -151,7 +154,7 @@ success_criteria:
 
   - type: run_command
     description: "Caseplan has a RESOLVED execute-connector-activity task (real typeId + connectionId, not a skeleton)"
-    command: "python3 $TASK_DIR/check_connector_activity.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_connector_activity.py"
     timeout: 60
     expected_exit_code: 0
     weight: 3.0

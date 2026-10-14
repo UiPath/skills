@@ -2,7 +2,7 @@
 
 Judgment rules for **low-code** agents (`agent.json`). Each rule requires reading source and reasoning; regex/count/schema-walk checks are insufficient. Use the row schema in [`../rule-format.md`](../rule-format.md).
 
-> **Judgment-only catalog.** Run `uip agent review "<PROJECT_DIR>" --output json` **first** (SKILL.md Step 2.5). It returns deterministic low-code findings—structural gates, schema-property presence, placeholder cross-refs, eval-set structure and schema cross-refs, and guardrail configuration validity—in the same rule format. Then apply these rules.
+> **Judgment-only catalog.** Run `uip agent review "<PROJECT_DIR>" --output json` **first** (agent-review-guide.md Step 2.5). It returns deterministic low-code findings—structural gates, schema-property presence, placeholder cross-refs, eval-set structure and schema cross-refs, and guardrail configuration validity—in the same rule format. Then apply these rules.
 
 Read [`../rule-format.md`](../rule-format.md) and [`../rule-catalog-workflow.md`](../rule-catalog-workflow.md) first.
 

@@ -16,9 +16,19 @@ run_limits:
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+reference:
+  directory: .
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-review/agents/coded_review_pii_in_traces/inject_pii_in_traces.py"
+  - command: "python3 _setup/inject_pii_in_traces.py"
     timeout: 30
 
 initial_prompt: |
@@ -61,7 +71,7 @@ success_criteria:
 
   - type: run_command
     description: "Review report applies the judgment catalog: cites CODED_PII_IN_TRACES for the email_body param"
-    command: "python3 $TASK_DIR/check_coded_review_pii_in_traces.py"
+    command: "python3 $REFERENCE_DIR/check_coded_review_pii_in_traces.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

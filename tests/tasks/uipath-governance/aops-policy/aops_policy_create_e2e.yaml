@@ -8,13 +8,23 @@ description: >
   deliberately left undeployed: registering changes nothing about which policy
   governs a subject, while deploying would change it for everyone on the tenant.
 tags: [uipath-governance, e2e, mode:build, lifecycle:setup, aops-policy, create]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
 
 pre_run:
-  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-create" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Guardrails for the E2E product" AOPS_PLAN_ONLY="1" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''setup_aops_policy.py''))"'
+  - command: 'AOPS_SEED_KEY="policy" AOPS_POLICY_BASE="ce-gov-aops-create" AOPS_PRODUCT="E2E" AOPS_DESCRIPTION="Guardrails for the E2E product" AOPS_PLAN_ONLY="1" python3 _setup/setup_aops_policy.py'
     timeout: 90
 
 post_run:
-  - command: 'python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''cleanup_aops_policy.py''))"'
+  - command: 'python3 _setup/cleanup_aops_policy.py'
     timeout: 120
 
 run_limits:
@@ -36,7 +46,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "the policy is registered under E2E with a service identifier, the requested 365-day availability and a form-data payload"
-    command: 'AOPS_SEED_KEY="policy" AOPS_CHECK="present" AOPS_EXPECT_DESCRIPTION="Guardrails for the E2E product" AOPS_EXPECT_AVAILABILITY="365" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-governance'',''aops-policy'',''verify_aops_policy.py''))"'
+    command: 'AOPS_SEED_KEY="policy" AOPS_CHECK="present" AOPS_EXPECT_DESCRIPTION="Guardrails for the E2E product" AOPS_EXPECT_AVAILABILITY="365" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''aops-policy'',''verify_aops_policy.py''))"'
     timeout: 120
     expected_exit_code: 0
     weight: 5.0

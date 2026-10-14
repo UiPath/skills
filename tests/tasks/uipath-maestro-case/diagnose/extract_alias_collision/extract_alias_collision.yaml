@@ -2,11 +2,13 @@ task_id: skill-case-diagnose-extract-alias-collision
 description: >
   Diagnose mode — the staged case PASSES `uip maestro case validate` with zero
   findings, but the Decision stage never enters at runtime: its gate reads
-  `vars.route`, which is declared but produced by nothing, while the value the
-  case actually produces lands in `route2` (Review's task element). That is the
-  signature of an extract alias that auto-suffixed on an id collision — the
-  declared companion and the written variable drift apart and the validator
-  cannot see it, because both names exist. Grades the trap: re-declaring or
+  `vars.route`, which is declared but written by nothing, while the value the
+  case actually produces is written to `route2` by Review's task output. That is
+  the signature of an alias that auto-suffixed on an id collision — the declared
+  companion and the written variable drift apart and the validator cannot see
+  it, because both names exist and both are declared identically at case level
+  (`elementId: "root"`, `custom: true`). The only discriminator is which name a
+  task's `data.outputs[]` actually writes. Grades the trap: re-declaring or
   defaulting `route` keeps validate green and leaves the gate dead. The fix must
   make the gate and the producer name the same variable.
 tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:edit, shape:multi-node, feature:conditions]
@@ -21,6 +23,11 @@ sandbox:
   template_sources:
     - type: template_dir
       path: fixtures
+
+reference:
+  # Case root, not `.`: the grader imports `_shared/`, which a task-only
+  # staging leaves out (ModuleNotFoundError at grade time).
+  directory: ../..
 
 initial_prompt: |
   The LinearThreeStages case under LinearThreeStages/ passes
@@ -62,7 +69,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate still passes after the repair"
-    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    command: "p=$(ls LinearThreeStages/LinearThreeStages/caseplan.case LinearThreeStages/LinearThreeStages/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 2.0
@@ -70,7 +77,7 @@ success_criteria:
 
   - type: run_command
     description: "Gate and producer agree — Decision's gate reads a variable that is actually produced; 3 stages preserved; not silenced by declaring an orphan"
-    command: "python3 $TASK_DIR/check_extract_alias_collision.py"
+    command: "python3 $REFERENCE_DIR/diagnose/extract_alias_collision/check_extract_alias_collision.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

@@ -14,16 +14,32 @@ trigger and carries a valid recurring schedule:
          *replaced* the manual trigger rather than being added alongside).
   3. It is the start node: no edge targets it (a trigger has no input port, so
      `edges[]` must contain no entry whose `targetNodeId` is the trigger id).
-  4. Valid schedule config on the node `inputs`:
+  4. Valid schedule config on the node `inputs`, read through the contract of
+     the definition the flow carries (the prompt says to take the field "from
+     the node's own definition"):
        - `timerType == "timeCycle"`;
-       - `timerPreset` present and non-empty;
-       - the effective cycle expression — `timerValue` when
-         `timerPreset == "custom"`, otherwise `timerPreset` — is a valid ISO
-         8601 repeating interval (`R/...`), matching the registry's own
-         pattern. `custom` without a non-empty `timerValue` fails.
-  5. `typeVersion` present and non-empty (the agent-under-test copies the
-     `version` field from the registry, so we do NOT pin a specific value —
-     this node has already advanced past 1.0).
+       - the cycle expression, from the field that definition declares:
+           * 1.2 and later (`inputDefinition` has no `timerPreset`): `timerValue`
+             alone. A cycle written only to `timerPreset` there fails
+             `validate` with `REQUIRED_FIELD timerValue` (#3148).
+           * 1.1 (`inputDefinition` declares `timerPreset`, required): the
+             designer's preset/custom split — `timerPreset` holds the
+             interval when it is a dropdown preset, else `"custom"` with the
+             interval in `timerValue`. flow-v1's timer serializer collapses it
+             the same way: `timerPreset !== 'custom' ? timerPreset : timerValue`.
+             The SDK's `scheduled()` emits this pinned contract for ISO
+             intervals, so both authoring loops produce a valid flow.
+       - the cycle matches the registry's own `timerValue` pattern — an ISO
+         8601 repeating interval (`R/PT1H`) or a Quartz cron expression
+         (`0 0 9 ? * MON-FRI`);
+       - the cycle `== REQUESTED_CYCLE`. The grammar check alone would award
+         full credit to a daily flow when the task asked for an hourly one, so
+         the cadence the prompt names is graded too. CYCLE_RE still runs first
+         so a malformed value reports as bad syntax rather than wrong cadence.
+  5. `typeVersion` present, non-empty, and equal to the carried definition's
+     `version` (we do NOT pin a specific value — this node has already
+     advanced past 1.0 — but a node and definition from different versions
+     describe two different input contracts).
   6. The scheduled-trigger *definition* is present and correct, and the manual
      definition is gone:
        - exactly one `definitions[]` entry with
@@ -47,14 +63,29 @@ SCHEDULED = "core.trigger.scheduled"
 MANUAL = "core.trigger.manual"
 TRIGGER_PREFIX = "core.trigger."
 
-# ISO 8601 repeating-interval pattern, copied verbatim from the
-# `core.trigger.scheduled` registry definition (inputDefinition.then for
-# timerValue). Accepts R/PT1H, R/P1D, R/P1W, R/PT45M, R/2026-05-14T09:00:00Z/P1W, ...
+# The cadence scheduled_trigger.yaml asks for ("every hour, expressed as
+# R/PT1H"). Grammar validity is necessary but not sufficient: R/P1D is a
+# well-formed cycle expression and the wrong answer to this task.
+REQUESTED_CYCLE = "R/PT1H"
+
+# `timerValue` pattern, copied verbatim from the `core.trigger.scheduled`
+# registry definition (inputDefinition.properties.timerValue.pattern) so this
+# checker accepts exactly what `uip maestro flow validate` accepts. Two shapes:
+# an ISO 8601 repeating interval with exactly ONE non-zero duration unit
+# (R/PT1H, R/P1D, R/2026-05-14T09:00:00Z/P1W — but NOT R/PT2H30M or R/PT24H),
+# or a 6-7 field Quartz cron (0 0 */1 * * ? *). Refresh with:
+#   uip maestro flow registry get core.trigger.scheduled --output json
 CYCLE_RE = re.compile(
-    r"^R\d*\/(P(?=\d|T)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?"
-    r"(\/\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?)?"
-    r"|\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?"
-    r"\/P(?=\d|T)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?)$"
+    r"^(?:R\d*\/(?:P(?:[1-9][0-9]{0,3}Y|(?:[1-9]|1[0-2])M|(?:[1-9]|[1-4][0-9]|5[0-2])W"
+    r"|(?:[1-9]|[12][0-9]|3[01])D|T(?:(?:[1-9]|1[0-9]|2[0-3])H|(?:[1-9]|[1-5][0-9])M"
+    r"|(?:[1-9]|[1-5][0-9])S))(?:\/\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?"
+    r"(?:Z|[+-]\d{2}:\d{2})?)?)?|\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?"
+    r"(?:Z|[+-]\d{2}:\d{2})?)?\/P(?:[1-9][0-9]{0,3}Y|(?:[1-9]|1[0-2])M"
+    r"|(?:[1-9]|[1-4][0-9]|5[0-2])W|(?:[1-9]|[12][0-9]|3[01])D"
+    r"|T(?:(?:[1-9]|1[0-9]|2[0-3])H|(?:[1-9]|[1-5][0-9])M|(?:[1-9]|[1-5][0-9])S)))"
+    r"|(?:\d+[LW]?|[A-Z]{3}|LW|L|W|\?|\*)(?:[,/#-](?:\d+[LW]?|[A-Z]{3}|LW|L|W|\?|\*))*"
+    r"(?:\s+(?:\d+[LW]?|[A-Z]{3}|LW|L|W|\?|\*)"
+    r"(?:[,/#-](?:\d+[LW]?|[A-Z]{3}|LW|L|W|\?|\*))*){5,6})$"
 )
 
 
@@ -102,7 +133,25 @@ def _check_start_node(flow: dict, node_id: str) -> None:
         )
 
 
-def _check_schedule_config(inputs: dict) -> None:
+def _declares_timer_preset(definition: dict) -> bool:
+    """True for the 1.1 contract, whose inputDefinition declares `timerPreset`."""
+    props = ((definition.get("inputDefinition") or {}).get("properties")) or {}
+    if props:
+        return "timerPreset" in props
+    # A definition copied without its inputDefinition: fall back to the version.
+    return str(definition.get("version", "")).strip() == "1.1"
+
+
+def _cycle_of(inputs: dict, definition: dict) -> object:
+    if not _declares_timer_preset(definition):
+        return inputs.get("timerValue")
+    preset = inputs.get("timerPreset")
+    if preset == "custom":
+        return inputs.get("timerValue")
+    return preset
+
+
+def _check_schedule_config(inputs: dict, definition: dict) -> None:
     timer_type = inputs.get("timerType")
     if timer_type != "timeCycle":
         _fail(
@@ -110,47 +159,53 @@ def _check_schedule_config(inputs: dict) -> None:
             '"timeCycle".'
         )
 
-    timer_preset = inputs.get("timerPreset")
-    if not isinstance(timer_preset, str) or not timer_preset.strip():
-        _fail("inputs.timerPreset missing or empty — required for a scheduled trigger.")
-
-    if timer_preset == "custom":
-        cycle = inputs.get("timerValue")
-        if not isinstance(cycle, str) or not cycle.strip():
+    cycle = _cycle_of(inputs, definition)
+    if not isinstance(cycle, str) or not cycle.strip():
+        if _declares_timer_preset(definition):
             _fail(
-                "inputs.timerPreset is 'custom' but inputs.timerValue is missing or "
-                "empty — add an ISO 8601 repeating interval (e.g. R/PT45M)."
+                f"no cycle expression: the carried {SCHEDULED} "
+                f"{definition.get('version')!r} definition reads it from "
+                "`timerPreset` (a preset interval) or, when `timerPreset` is "
+                '"custom", from `timerValue`.'
             )
-        label = "inputs.timerValue"
-    else:
-        cycle = timer_preset
-        label = "inputs.timerPreset"
-
-    if not CYCLE_RE.match(cycle):
         _fail(
-            f"{label}={cycle!r} is not a valid ISO 8601 repeating interval "
-            "(e.g. R/PT1H, R/P1D, R/PT45M)."
-        )
-    # A grammatically-valid but all-zero duration (e.g. R/PT0H) is a
-    # never-firing schedule. Every real recurring interval has a non-zero
-    # component, so require at least one.
-    if not re.search(r"[1-9]", cycle):
-        _fail(
-            f"{label}={cycle!r} is an all-zero, never-firing schedule — "
-            "use a non-zero recurring interval such as R/PT1H."
+            "inputs.timerValue missing or empty — it carries the cycle expression. "
+            f"The carried {SCHEDULED} {definition.get('version')!r} definition has no "
+            "`timerPreset`; a cycle expression written there fails validate with "
+            'REQUIRED_FIELD "timerValue".'
         )
 
+    if not CYCLE_RE.fullmatch(cycle):
+        _fail(
+            f"cycle expression {cycle!r} is neither an ISO 8601 repeating interval "
+            "with a single non-zero duration unit (e.g. R/PT1H, R/P1D) nor a Quartz "
+            "cron expression (e.g. 0 0 9 ? * MON-FRI)."
+        )
 
-def _check_type_version(node: dict) -> None:
+    if cycle != REQUESTED_CYCLE:
+        _fail(
+            f"cycle expression {cycle!r} is a valid cycle expression but not the "
+            f"one the task asked for ({REQUESTED_CYCLE!r}, every hour)."
+        )
+
+
+def _check_type_version(node: dict, definition: dict) -> None:
     tv = node.get("typeVersion")
     if not isinstance(tv, str) or not tv.strip():
         _fail(
             "typeVersion missing or empty — copy the `version` field from "
             "`uip maestro flow registry get core.trigger.scheduled --output json`."
         )
+    dv = definition.get("version")
+    if isinstance(dv, str) and dv.strip() and dv.strip() != tv.strip():
+        _fail(
+            f"node typeVersion={tv!r} but the carried {SCHEDULED} definition is "
+            f"version {dv!r}; the node's inputs follow the contract of the "
+            "definition it names, so the two must match."
+        )
 
 
-def _check_definition(flow: dict) -> None:
+def _check_definition(flow: dict) -> dict:
     defs = flow.get("definitions") or []
     if any(d.get("nodeType") == MANUAL for d in defs):
         _fail(
@@ -176,6 +231,7 @@ def _check_definition(flow: dict) -> None:
             f"scheduled definition model.eventDefinition={model.get('eventDefinition')!r}; "
             'must be "bpmn:TimerEventDefinition" — without it the BPMN timer never fires.'
         )
+    return sched_defs[0]
 
 
 def main():
@@ -184,13 +240,14 @@ def main():
     inputs = node.get("inputs") or {}
 
     _check_start_node(flow, node.get("id"))
-    _check_schedule_config(inputs)
-    _check_type_version(node)
-    _check_definition(flow)
+    definition = _check_definition(flow)
+    _check_schedule_config(inputs, definition)
+    _check_type_version(node, definition)
 
     print(
         f"OK: start node is {SCHEDULED} (manual trigger replaced); "
-        f"timerType={inputs.get('timerType')!r}, timerPreset={inputs.get('timerPreset')!r}; "
+        f"timerType={inputs.get('timerType')!r}, cycle={_cycle_of(inputs, definition)!r} "
+        f"(definition {definition.get('version')!r}); "
         f"typeVersion set; definition carries bpmn:StartEvent + bpmn:TimerEventDefinition"
     )
 

@@ -8,17 +8,27 @@ description: >
   Read-back uses the verbatim scope path — the composed scope form also pins the
   service name and hides grants of roles owned by another service.
 tags: [uipath-admin, e2e, mode:operate, lifecycle:setup, authz, role-assignment]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+reference:
+  directory: ..
 
 pre_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-revoke-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-revoke-role" python3 _setup/cleanup_authz_marker.py'
     timeout: 90
-  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-revoke-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Grant to be revoked by the revoke scenario" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-revoke-role" AUTHZ_ROLE_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" AUTHZ_ROLE_SCOPE="Organization" AUTHZ_ROLE_DESCRIPTION="Grant to be revoked by the revoke scenario" python3 _setup/setup_authz_role.py'
     timeout: 90
-  - command: 'AUTHZ_SEED_KEY="grant" AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_assignment.py''))"'
+  - command: 'AUTHZ_SEED_KEY="grant" AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/" python3 _setup/setup_authz_assignment.py'
     timeout: 90
 
 post_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-revoke-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-revoke-role" python3 _setup/cleanup_authz_marker.py'
     timeout: 90
 
 run_limits:
@@ -36,7 +46,7 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "The seeded grant is gone from the organization scope for the caller"
-    command: 'AUTHZ_SEED_KEY="grant" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_assignment_deleted.py''))"'
+    command: 'AUTHZ_SEED_KEY="grant" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''authz'',''verify_authz_assignment_deleted.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 3.0
@@ -44,7 +54,7 @@ success_criteria:
 
   - type: run_command
     description: "The role definition itself still exists — only the grant was removed"
-    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_SCOPE="Organization" AUTHZ_EXPECT_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''verify_authz_role_created.py''))"'
+    command: 'AUTHZ_SEED_KEY="role" AUTHZ_EXPECT_SCOPE="Organization" AUTHZ_EXPECT_PERMISSION="AUTHZ.CONDITIONALACCESSPOLICY.READ" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''REFERENCE_DIR''],''authz'',''verify_authz_role_created.py''))"'
     timeout: 90
     expected_exit_code: 0
     weight: 2.0

@@ -26,9 +26,7 @@ import os
 import sys
 from pathlib import Path
 
-_shared = (Path(os.environ["SKILLS_REPO_PATH"]) / "tests" / "tasks" / "uipath-insights" / "_shared"
-           if os.environ.get("SKILLS_REPO_PATH")
-           else Path(__file__).resolve().parent.parent / "_shared")
+_shared = Path(__file__).resolve().parent.parent / "_shared"
 sys.path.insert(0, str(_shared))
 from envelope_check import (
     CODES,

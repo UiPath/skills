@@ -2,6 +2,8 @@
 
 Complete reference for all `uip codedapp` subcommands.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 ## Prerequisites
 
 - **Authentication**: Run `uip login` before using cloud commands (auth is handled by the `uip` CLI, not the codedapp tool)
@@ -110,8 +112,8 @@ uip codedapp pack <dist> [options]
 | `-n, --name <name>` | Package name | Prompted interactively |
 | `-v, --version <version>` | Package version | `1.0.0` |
 | `-o, --output <dir>` | Output directory for `.nupkg` | `./.uipath` |
-| `-a, --author <author>` | Package author | `UiPath Developer` |
-| `--description <desc>` | Package description | Prompted |
+| `--author <author>` | Package author | `UiPath Developer` |
+| `--description <text>` | Package description | Prompted |
 | `--main-file <file>` | Main entry file | `index.html` |
 | `--content-type <type>` | Content type: `webapp`, `library`, `process` | `webapp` |
 | `--dry-run` | Preview packaging without creating the file | `false` |
@@ -250,7 +252,12 @@ uip codedapp deploy -n my-webapp
 
 # Deploy with folder key
 uip codedapp deploy -n my-webapp --folder-key my-folder-key
+
+# Same deploy, key via env var — skips the --folder-key pre-check (incomplete folder lookup on accounts with very many folders)
+UIPATH_FOLDER_KEY=my-folder-key uip codedapp deploy -n my-webapp
 ```
+
+> `--folder-key` pre-checks the key against one unpaged copy of the account's folder list, which is incomplete on accounts with very many folders. If it reports an existing folder as `not found among folders accessible to your account`, use the env-var form — see [pack-publish-deploy.md](pack-publish-deploy.md#deploy-rejects-a-valid-folder-key-as-not-found-among-folders-accessible).
 
 **Fresh deploy output:**
 ```

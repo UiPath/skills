@@ -1,8 +1,8 @@
 # Filter Discovery Commands
 
-The `filter-*` commands list folders, processes, queues, and machines with recent Insights activity. Use them to resolve an exact scope before a Jobs request. They do not filter Jobs output.
+The `filter-*` commands list folders, processes, queues, and machines with recent Insights activity. Use them to resolve an exact scope before a `jobs` or `queues` request. They do not filter the output of either.
 
-Pass the returned values to `jobs` commands: `FolderKey` to `--folder-key`, `ProcessName` to `--process-name`, `MachineName` to `--machine-name`. There is no key-based flag for processes or machines, and `jobs` has no queue filter at all. Every `jobs` command also needs a time range, which these commands do not supply; see [`jobs-commands-guide.md`](jobs-commands-guide.md).
+Pass the returned values to `jobs` commands: `FolderKey` to `--folder-key`, `ProcessName` to `--process-name`, `MachineName` to `--machine-name`. There is no key-based flag for processes or machines, and `jobs` has no queue filter at all. `QueueName` goes to `--queue-name` on the `queues` commands, which is where queue item reporting lives; see [`queue-monitoring-guide.md`](queue-monitoring-guide.md). Every `jobs` command also needs a time range, which these commands do not supply; see [`jobs-commands-guide.md`](jobs-commands-guide.md).
 
 Keys inside `Data` are PascalCase in the CLI's JSON output. Read `FolderKey`, not `folderKey`.
 
@@ -11,7 +11,7 @@ Keys inside `Data` are PascalCase in the CLI's JSON output. Read `FolderKey`, no
 ```text
 --limit <number>     Rows to return, 1 to 10000 (default 50)
 --offset <number>    Rows to skip before returning results (default 0)
---output <format>    Output format: table, json, yaml, plain (always use json)
+--output <format>    table, json, yaml, plain, markdown (always use json)
 ```
 
 ## Rules
@@ -73,7 +73,7 @@ uip insights filter-queues list --output json
 
 **Key Data fields:** `QueueName`, `FolderKey`
 
-**Use when:** User needs an exact queue and folder pairing for scope discovery. Do not present the output as queue item metrics.
+**Use when:** User needs an exact queue and folder pairing for scope discovery, or the exact queue name to pass to a `queues` command. Do not present the output as queue item metrics; those come from the `queues` commands in [`queue-monitoring-guide.md`](queue-monitoring-guide.md).
 
 ### filter-machines list
 

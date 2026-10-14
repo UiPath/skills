@@ -2,7 +2,7 @@
 """Locate the Flow project's ``.flow`` file dynamically and assert its content.
 
 Usage (from a task's run_command, cwd = sandbox root):
-    python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py
+    python3 $REFERENCE_DIR/flow_contains.py
     python3 .../flow_contains.py '"uipath.human-in-the-loop.quick-form"' '"end"'
     python3 .../flow_contains.py --flow-name VendorApproval '"boolean"'
     python3 .../flow_contains.py --regex '\\$vars\\.[A-Za-z0-9_-]+\\.output'

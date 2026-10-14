@@ -1,6 +1,8 @@
 # HITL QuickForm Node — Direct JSON Reference
 
-The agent writes the `uipath.human-in-the-loop.quick-form` node directly into the `.flow` file as JSON. **Direct JSON is the default.** A CLI opt-in is available when the user explicitly requests it, or as a fallback if direct JSON writing fails — see [CLI reference: uip maestro flow hitl add](../../uipath-maestro-flow/references/shared/cli-commands.md#uip-maestro-flow-hitl-add).
+<!--skill-flavor:flow-sdk-quickform:start-->
+In a builder-SDK (`.flow.ts`) project, author the quick form with `hitl({ variant: 'quick-form', ... })` through the `uipath-maestro-flow` skill — see [hitl.md](../../uipath-maestro-flow/references/hitl.md). `compile` emits the node; never write it into the compiled `.flow`, because the next `compile` overwrites the file. The JSON below describes that compiled node, and is how a JSON-authored `.flow` is built.
+<!--skill-flavor:flow-sdk-quickform:end-->
 
 ---
 
@@ -71,7 +73,9 @@ Also read `workflow.variables.globals`. Each entry has an `id` that maps directl
 
 > **`binding` vs `variable` prefix rule:** `binding` (input/inOut fields) uses the full path starting with `vars.` because it references an existing variable path. `variable` (output/inOut fields) uses `vars.<name>` — the `vars.` prefix is required; it declares the global variable name.
 
-For the full variable system, see → [How $vars paths are constructed in Flow](../../uipath-maestro-flow/references/shared/variables-and-expressions.md)
+<!--skill-flavor:flow-sdk-vars:start-->
+For the full variable system in a builder-SDK project, see the expression table in [uipath-maestro-flow SKILL.md § Builder frame](../../uipath-maestro-flow/SKILL.md#builder-frame)
+<!--skill-flavor:flow-sdk-vars:end-->
 
 ---
 
@@ -243,13 +247,14 @@ Every `.flow` file must have one definition entry for `uipath.human-in-the-loop.
 
 ## Edge Wiring
 
-Wire the `completed` output handle to the downstream node. Edge ID format: `{sourceNodeId}-{sourcePort}-{targetNodeId}-{targetPort}` (append `-2`, `-3` on collision).
+Wire one output handle per outcome to its downstream node — port `outcome-<outcome.id>` for each entry in `inputs.schema.outcomes[]`, using the outcome's own `id` verbatim (never a lowercased or otherwise derived value). Edge ID format: `{sourceNodeId}-{sourcePort}-{targetNodeId}-{targetPort}` (append `-2`, `-3` on collision).
 
 ```json
-{ "id": "invoiceReview1-completed-processApproval1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "completed", "targetNodeId": "processApproval1", "targetPort": "input" }
+{ "id": "invoiceReview1-outcome-approve-processApproval1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "outcome-approve", "targetNodeId": "processApproval1", "targetPort": "input" }
+{ "id": "invoiceReview1-outcome-reject-end1-input", "sourceNodeId": "invoiceReview1", "sourcePort": "outcome-reject", "targetNodeId": "end1", "targetPort": "input" }
 ```
 
-**Always wire `completed`.** A HITL node with no edge on `completed` blocks the flow forever.
+**Wire every outcome's port.** A HITL node with any outcome port left unwired blocks the flow forever on that branch. `outcome-completed` (or bare `completed`) is a placeholder that exists only on a schema with zero outcomes — it disappears the instant `inputs.schema.outcomes` has any entry, including the shipped default `Submit` (id `submit`, port `outcome-submit`). Never wire it once outcomes exist.
 
 ---
 
@@ -352,6 +357,7 @@ The agent translates the user's business description into the `fields[]` and `ou
 | `binding` | **Input / inOut fields only.** Format: `"vars.<nodeId>.output.<field>"` for node outputs; `"vars.<globalId>"` for flow globals. **No `=js:$` prefix** — HITL binding is a raw path, not an expression. |
 | `variable` | **Output / inOut fields only** — absent on input fields. Format: `"vars.<name>"` (always include the `vars.` prefix). Defaults to `"vars.<camelCase id>"` if not specified. |
 | `required` | omit if false; set `true` for mandatory outputs |
+| outcome `id` | Same conversion as field `id`: lowercase name, spaces→`-`, strip non-alphanumeric. `"Approve"` → `"approve"`, `"Needs Info"` → `"needs-info"`. Required and non-empty — an outcome with no `id` renders no wiring handle at all, so an edge drawn to a guessed port name is a no-op. This `id` is also the wiring port verbatim: `outcome-<id>` (see this file's Edge Wiring section below — never lowercase or otherwise transform it again after this conversion). |
 | `outcomes[0]` | `isPrimary: true`, `action: "Continue"` |
 | `outcomes[1+]` | `isPrimary: false`, `action: "End"` |
 | `schema.schemaId` | Generate a fresh UUID (e.g. `crypto.randomUUID()` or any UUID v4) |

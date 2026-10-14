@@ -2,6 +2,8 @@
 
 Detailed step-by-step procedures for all operations on UiPath coded workflow projects.
 
+<!--skill-flavor:host-scope:start-->
+<!--skill-flavor:host-scope:end-->
 ## Initialize a New Coded Project
 
 Use this procedure ONLY when the user explicitly asked for a coded project ("coded", ".cs", "C# workflow"). For ambiguous "create a workflow" / "automate X" requests, default to XAML — see [../coded-vs-xaml-guide.md](../coded-vs-xaml-guide.md).
@@ -33,7 +35,7 @@ Read: <PROJECT_DIR>/Main.xaml          # or TestCase.xaml for test projects
 - Generate `.cs` files (workflows, test cases, source files) — respect the four Error-severity coded analyzer rules while authoring: [§ Coded Workflow Analyzer Rules](#coded-workflow-analyzer-rules)
 - For each `.cs` **workflow** file, add an entry to `entryPoints` in `project.json` (**Process projects only** — Tests and Library projects do NOT use `entryPoints`). The existing scaffolded XAML entry can stay alongside.
 - For each `.cs` **test case** file, add an entry to `designOptions.fileInfoCollection` in `project.json` with `editingStatus: "InProgress"`, `testCaseType: "TestCase"`, `publishAsTestCase: true`. Test cases do NOT go in `entryPoints` regardless of project type.
-- If test project and shared setup is needed, create a `partial class CodedWorkflow` source file that implements `IBeforeAfterRun` (see [codedworkflow-template.md § Before/After Hooks Templates](../../assets/codedworkflow-template.md))
+- If test project and shared setup is needed, create a `partial class CodedWorkflow : CodedWorkflowBase, IBeforeAfterRun` source file (see [codedworkflow-template.md § Before/After Hooks Templates](../../assets/codedworkflow-template.md))
 
 **6. Validate each file** (Critical Rule #14) — run the validation loop on every `.cs` file until it compiles cleanly
 
@@ -181,7 +183,7 @@ public void Execute()
 ```
 
 **Shared Before/After hooks for all test cases:**
-Create a Coded Source File (e.g. `CodedWorkflowHooks.cs`) with `public partial class CodedWorkflow : IBeforeAfterRun` — the compiler merges it with the auto-generated CodedWorkflow partial, so all workflows and test cases get the hooks automatically. See [codedworkflow-template.md § Before/After Hooks Templates](../../assets/codedworkflow-template.md) for the full template.
+Create a Coded Source File (e.g. `CodedWorkflowHooks.cs`) with `public partial class CodedWorkflow : CodedWorkflowBase, IBeforeAfterRun` — the compiler merges it with the auto-generated CodedWorkflow partial, so all workflows and test cases get the hooks automatically. The base is required ([codedworkflow-reference.md § Extending CodedWorkflow with Partial Classes](codedworkflow-reference.md#extending-codedworkflow-with-partial-classes)). See [codedworkflow-template.md § Before/After Hooks Templates](../../assets/codedworkflow-template.md) for the full template.
 
 ## Add a Coded Source File (Helper Class / Model / Utility)
 
@@ -393,6 +395,9 @@ The UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.A
 **Key reminders:**
 - Add `using <ProjectNamespace>.ObjectRepository;` to any file referencing `Descriptors.*`
 - After target configuration, re-read `ObjectRepository.cs` — Studio regenerates it. Search for the reference IDs returned by `uia-configure-target` to find the exact `Descriptors.<App>.<Screen>.<Element>` paths.
+- **Regenerating `ObjectRepository.cs`.** Write the coded stub before the first `uip rpa` command of the session (SKILL.md § Capture-First Fast Path step 2), so the host loads the project with a `.cs` present. Per-file `validate` then regenerates the file: after capture run `uip rpa validate --file-path "<FILE>.cs" --project-dir "<PROJECT_DIR>" --output json` once, then read it. `uip rpa get-object-repository --project-dir "<PROJECT_DIR>" --output json` lists what the OR holds, as OR names, not C# members.
+- **The coded base partials are a first-load snapshot.** `CodedWorkflow.cs` (service accessors — `uiAutomation`, `excel`, …) and `WorkflowRunnerService.cs` (`workflows.X` cross-calls) are generated from the packages and workflow files present when the host first loads the project, and do NOT refresh in-session (only `ObjectRepository.cs` does). So install every activity package **and** write the stub before that first `uip rpa` command. A package installed afterward leaves its accessor missing (`CS0103 'excel'`): delete `.local/.codedworkflows/`, run `uip rpa project close --project-dir "<PROJECT_DIR>"`, then `validate`. A workflow added afterward stays missing from `workflows` (`CS1061`) until `uip rpa project close`.
+- **Every Object Repository target is `Descriptors.<App>.<Screen>.<Element>`.** Do not substitute the `string target` overloads (`app.TypeInto("First Name Input", …)`) or a constants class of OR names when `ObjectRepository.cs` is missing — regenerate it. String overloads are for target names computed at runtime only. Projects with no Object Repository by design (test suites, runtime-computed selectors) use the selector-only path — package coded authoring guide § Selector-Only Targets — with selectors captured by the UIA CLI, never typed.
 
 ---
 
@@ -432,6 +437,8 @@ Detailed coding rules, best practices, anti-patterns, and troubleshooting for co
 
 **CRITICAL: Only include `using` statements for namespaces actually used in the file.** Adding usings for packages not in `project.json` will cause compile errors.
 
+**Ignore editor "unnecessary using" hints.** A UiPath project has no `.csproj`, so IDE diagnostics on a `.cs` (`Using directive is unnecessary` / IDE0005) run without the project's references. `uip rpa validate` / `build` is the only compile verdict. There are no implicit or global usings: `System` supplies `Exception`, `TimeSpan`; `System.Collections.Generic` → `List<T>`, `IDictionary`; `UiPath.CodedWorkflows` → `[Workflow]`, `[TestCase]`, `LogLevel`, `IBeforeAfterRun`, `CodedWorkflowBase`.
+
 **Minimal using statements** (always safe in any workflow/test case file):
 ```csharp
 using System;
@@ -452,9 +459,13 @@ using UiPath.Testing.Enums;                 // only if using testing enums
 using UiPath.Testing.Activities.TestData;   // only if using test data queues
 
 // If using uiAutomation.* service (UiPath.UIAutomation.Activities package):
-using UiPath.UIAutomationNext.API.Contracts;
-using UiPath.UIAutomationNext.API.Models;
-using UiPath.UIAutomationNext.Enums;
+using UiPath.UIAutomationNext.API.Contracts; // IUiAutomationAppService
+using UiPath.UIAutomationNext.API.Models;    // UiTargetApp, TargetAppOptions, TypeIntoOptions and other *Options, TargetAnchorableModel, TargetAppModel, RuntimeTarget
+using UiPath.UIAutomationNext.Enums;         // NAppOpenMode, NAppCloseMode, NInteractionMode, NCheckStateMode, NEmptyFieldMode — the N* option enums (trigger enums: UiPath.UIAutomationNext.Triggers)
+// `using var app = uiAutomation.Open(...)` needs only the Models/Enums usings above.
+
+// If a field, property, or parameter is declared as IElementDescriptor / IScreenDescriptor:
+using UiPath.CodedWorkflows.DescriptorIntegration;
 
 // If using Object Repository descriptors (Descriptors.App.Screen.Element):
 using <ProjectNamespace>.ObjectRepository;  // e.g. using RoboticEnterpriseFramework.ObjectRepository;
@@ -512,8 +523,8 @@ UiPath ships first-class types for the patterns coded workflows most commonly ne
 | **`UiPath.Robot.Activities.BusinessException`** | `UiPath.Robot.Activities` | Same role as `BusinessRuleException` in robot-side custom activity packages. | Same — do not define your own. |
 | **`UiPath.Core.Activities.Storage.IResource` / `ILocalResource`** | `UiPath.Core.Activities.Storage` (in `UiPath.System.Activities`) | File / folder handles passed to activities that need an `IResource`. | Pass raw `string` paths or hand-roll a `LocalResource` constructor (the constructor is internal — see § IResource / ILocalResource below). |
 | **`UiPath.Orchestrator.Client.Models.QueueItemDto`** and related | `UiPath.Orchestrator.Client.Models` (in `UiPath.System.Activities`) | Queue-item shape returned by `GetTransactionItem` / pushed via `AddQueueItem`. | Define a project-local queue-item record that diverges from Orchestrator's schema. |
-| **OR descriptors `Descriptors.<App>.<Screen>.<Element>`** | Generated into `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs` | UI element targeting in coded UI automation. | Hand-roll selector strings or `TargetAppModel` instances; bypass the Object Repository. |
-| **`UiPath.CodedWorkflows.CodedWorkflow`** | `UiPath.CodedWorkflows` (built into the runtime) | Base class for `[Workflow]` and `[TestCase]` classes. | Inherit from a custom base; the Studio wrapper generation depends on this exact type. |
+| **OR descriptors `Descriptors.<App>.<Screen>.<Element>`** | Generated into `<PROJECT_DIR>/.local/.codedworkflows/ObjectRepository.cs` | UI element targeting in coded UI automation. | Type selector strings from memory; pass OR element names as strings (`app.Click("Submit Button")`) or through a constants class. Selector-only path (CLI-captured selectors into `TargetAppModel` / `Target.FromSelector`): package coded authoring guide § Selector-Only Targets. |
+| **`CodedWorkflow`** | Generated partial in the project namespace (`.local/.codedworkflows/CodedWorkflow.cs`), deriving from `UiPath.CodedWorkflows.CodedWorkflowBase` | Base class for `[Workflow]` and `[TestCase]` classes. | Inherit from a custom base; the Studio wrapper generation depends on this exact type. |
 
 #### Throwing `BusinessRuleException` correctly
 
@@ -552,11 +563,11 @@ Four built-in Workflow Analyzer rules with scope `Coded Workflow` run as Roslyn 
 - **ALWAYS search for existing .cs files BEFORE generating new code** — Learn from existing patterns
 - Read at least 5 existing workflow files (or all if fewer) to understand project conventions
 - **When writing UI automation code** — the UIA package guide (`{PROJECT_DIR}/.local/docs/packages/UiPath.UIAutomation.Activities/ui-automation-guide.md`) MUST be read IN FULL first (SKILL.md Rule 7). Follow its **Finding Descriptors** hierarchy in strict order. Do NOT write any UI code until descriptors are resolved:
-  1. Read `ObjectRepository.cs` — use existing descriptors if present. An empty `public static class Descriptors { }` does NOT mean "nothing registered"; it means Studio has not generated yet. Generation fires on an Object Repository write, and only when a Studio Desktop **window** is open on the project and a `[Workflow]`/`[TestCase]` `.cs` is already on disk; `validate`/`build` never trigger it. Write the coded stub before capture to avoid this; if already stuck, re-issue any write via the OR CLI. Member names are not the OR names verbatim, and the app segment is not always the app name — re-read the file before concluding a descriptor is missing or guessing its identifier. Preconditions, recovery, and naming transforms: the package guide's § Step 1 and § Descriptor Naming
+  1. Read `ObjectRepository.cs` — use existing descriptors if present. A missing file or an empty `public static class Descriptors { }` does NOT mean "nothing registered"; it means Studio has not generated yet — regenerate per [§ Configure UI Targets](#configure-ui-targets-object-repository) before concluding anything, and never author against string target names meanwhile. Member names are not the OR names verbatim, and the app segment is not always the app name — re-read the file before concluding a descriptor is missing or guessing its identifier. Naming transforms: the package guide's § Descriptor Naming
   2. Inspect UILibrary/descriptor NuGet packages in `project.json` (e.g. `*.Descriptors`, `*.UILibrary`) using `uip rpa packages inspect`. The tool checks the local NuGet cache automatically. If the package is still not found, read `.metadata` files manually at `~/.nuget/packages/<package-name>/<version>/contentFiles/any/any/.objects/` to discover App/Screen/Element hierarchy
   3. If descriptors are still missing — use the `uia-configure-target` skill flow (found in the UIA activity-docs) to create targets. This handles capturing the application, discovering elements, generating selectors, improving them, and registering them in the OR. Do NOT manually call the internal `uip rpa uia` CLIs outside of the skill flow. Fallback: the indication commands (see UIA docs) when elements appear only after user interaction (e.g., a compose form that opens after clicking a button)
   4. UITask (ScreenPlay) is ONLY for when selectors are genuinely brittle/unreliable — NEVER as a first approach
-  5. NEVER bypass Object Repository by constructing `TargetAppModel` with raw URL/BrowserType
+  5. Selector-only targets (`TargetAppModel` + `Target.FromSelector`, selectors captured by the UIA CLI) replace descriptors only in the cases the package's coded authoring guide § Selector-Only Targets lists — no Object Repository by design, or runtime-computed selectors. Never as a shortcut around capture, never with hand-typed selectors or a raw URL/BrowserType `TargetAppModel`
 - Use `uip rpa packages inspect` for API discovery when documentation is unclear
 
 ### IResource / ILocalResource — Converting File Paths
@@ -635,13 +646,14 @@ C) <user-driven approach>
 
 ### UI Automation
 
-- Never hardcode UI selectors — use Object Repository descriptors
+- Never type selectors from memory — Object Repository descriptors by default; CLI-captured selector strings only on the selector-only path (package coded authoring guide § Selector-Only Targets)
+- Never pass Object Repository targets by string name or through a constants class of OR names because `ObjectRepository.cs` is missing or empty — regenerate it (§ Configure UI Targets) and use `Descriptors.*`
 - Never write UI code referencing descriptors without first reading `ObjectRepository.cs`
 - Never manually craft UI selectors by calling the internal `uip rpa uia` CLIs outside of the `uia-configure-target` skill flow — this skips selector improvement and OR registration
 - Never skip the target configuration step when a descriptor is missing — use the `uia-configure-target` skill flow (fallback: indication commands per the UIA docs)
 - Never use UITask (ScreenPlay) as the primary approach — resolve descriptors via Finding Descriptors hierarchy first (Critical Rule #15)
 - Never skip configuring targets because it "seems tedious" — configure ALL missing elements
-- Never construct `TargetAppModel` with raw URL/BrowserType to bypass Object Repository
+- Never construct `TargetAppModel` from a raw URL/BrowserType or a hand-typed selector — its `Selector` comes from the UIA CLI's app resolution, and only on the selector-only path
 - Never skip checking UILibrary/descriptor NuGet packages in `project.json`
 - Never use an element descriptor on the wrong screen handle — each `UiTargetApp` is bound to its screen. Wrong handle gives `"Target name 'X' is not part of the current screen."`
 - Never use `SelectItem` on web dropdowns without a `TypeInto` fallback — web `<select>` elements often fail with `"Cannot select item"`
@@ -682,7 +694,11 @@ C) <user-driven approach>
 | **`packages inspect` cannot find UILibrary package** | Package is on a private/local NuGet feed | Use `--nupkg-path` to inspect the local `.nupkg` directly, or read `.metadata` files manually from `~/.nuget/packages/<name>/<version>/contentFiles/any/any/.objects/` |
 | **Studio rejects manually created project** | Missing metadata dirs, wrong schema/version | Always use `uip rpa init` instead of writing `project.json` manually |
 | **`CS0103` on an Execute default parameter value** | Default values are copied verbatim into the generated `*+Activity.cs` wrapper, where class consts/fields are out of scope | Use self-contained compile-time literals as defaults (`"output"`, `2`, `null`) — never a reference to a const, static, or member |
+| **Editor / IDE hint `Using directive is unnecessary` (IDE0005) on a `.cs`** | No `.csproj` — the editor analyzes the file without the project's references | Keep the usings; only `uip rpa validate` / `build` decide (§ Using Statements Rules) |
+| **`ObjectRepository.cs` missing, empty, or stale after target capture** | Regenerated by per-file `validate`, once a `[Workflow]`/`[TestCase]` `.cs` is on disk | Write the coded stub before the first `uip rpa` command, run per-file `validate` once, re-read. Never switch to string target names (§ Configure UI Targets) |
 | **Argument default ignored — empty string arrives instead** | `--input-arguments key=` (empty value) passes `""`, which OVERRIDES the declared default | Omit the flag entirely to use the method's default value |
-| **Runs invoke stale code after a signature change** | Generated wrapper (`*+Activity.cs` / WorkflowRunnerService) not regenerated | Re-run `uip rpa build` after changing an Execute signature; never hand-patch generated files under `.local/` |
-| **First `validate` on a never-built project fails: `CodedWorkflow` / `WorkflowRunnerService` types missing** | The generated partials under `.local\.codedworkflows\` are created by `build`, not by `validate` — before the first build they do not exist | Benign cold-start order, not a project defect: run `uip rpa build` once, then re-run `validate` — both pass. Do NOT investigate the SDK or package layout, hunt the base class in NuGet caches, or compare against other projects. On a project that has never been built, run `build` before the first `validate`. |
-| **Nondeterministic errors confined to `.local/` generated files** (`WorkflowRunnerService.cs` missing/stale, CS errors in `.local/install/<Class>+<Method>Activity.cs`; project `validate` or `run` flips between clean and failing with unchanged sources) | CLI codegen destroys/regenerates the coded-workflow wrappers unreliably; a cached headless Studio instance holds stale state | Errors that live only under `.local/` are cache corruption, NOT source defects — judge project health by `build` + per-file `validate` on authored sources. Recover surgically, in order: (1) delete only the stale generated wrappers under `.local/install/` (and a corrupt `WorkflowRunnerService.cs` if present); (2) kill the headless Studio host process — it relaunches on the next command; (3) run `uip rpa build` ONCE to regenerate; (4) execute with `uip rpa run --skip-build` per workflow/test from then on. Do NOT `rm -rf .local/` wholesale — a full cold restore destabilizes codegen further and re-pays the 30–90 s NuGet restore per run. Do NOT add `[TestCase]` files to `entryPoints` while debugging this (Rule 15 forbids it regardless). Resilience option when tests keep tripping the flaky proxy: keep pure logic in a Coded Source File (Rule 19) and assert on the shared function directly — the trade-off is losing integration coverage of the workflow proxy itself. |
+| **Runs invoke stale code after a signature change**, or `run` fails in `.local/install/<Class>+<Class>Activity.cs` with `There is no argument given that corresponds to the required parameter` | Generated wrapper (`*+Activity.cs` / WorkflowRunnerService) not regenerated | Re-run `uip rpa build` after changing an Execute signature; never hand-patch generated files under `.local/` |
+| **`validate` (or the pre-validation in `run` / `debug start`) fails with `CS0246 'CodedWorkflow' could not be found` plus `CS0103` on `uiAutomation` / `Log`, while `build` is green** | `.local\.codedworkflows\CodedWorkflow.cs` is missing. The host generates it only while loading a project that already has a `[Workflow]`/`[TestCase]` `.cs`; a host that loaded stub-less (e.g. the window baseline ran before the stub) never emits it — `build` stays green, `validate`/`run` stay CS0246. Not a source or using defect | **Prevent:** write the coded stub before the first `uip rpa` command (SKILL.md § Capture-First Fast Path step 2). **Already stale:** run `uip rpa project close --project-dir "<PROJECT_DIR>"`, then re-run `validate`. |
+| **`build` fails with `CS0103 'Log'`, `CS0103 'serviceContainer'` in `.generated/CodedWorkflow.g.cs` and `CS1503 cannot convert … to 'UiPath.CodedWorkflows.CodedWorkflowBase'`, while `validate` is clean** | A project file declares `partial class CodedWorkflow` without naming `CodedWorkflowBase` | Add `: CodedWorkflowBase` to that declaration ([codedworkflow-reference.md § Extending CodedWorkflow with Partial Classes](codedworkflow-reference.md#extending-codedworkflow-with-partial-classes)) |
+| **`CS0103 'uiAutomation'` (or `CS1061` on `workflows.<Workflow>`), `CodedWorkflow.cs` present and `build` green** | The coded base partials are a first-load snapshot; a package or cross-called workflow was added after they generated | Reload per § Configure UI Targets. |
+| **Nondeterministic errors confined to `.local/` generated files** (`WorkflowRunnerService.cs` missing/stale, CS errors in `.local/install/<Class>+<Method>Activity.cs`; project `validate` or `run` flips between clean and failing with unchanged sources) | CLI codegen destroys/regenerates the coded-workflow wrappers unreliably; a cached headless Studio instance holds stale state | Errors that live only under `.local/` are cache corruption, NOT source defects — judge project health by `build` + per-file `validate` on authored sources. Recover surgically, in order: (1) delete only the stale generated wrappers under `.local/install/` (and a corrupt `WorkflowRunnerService.cs` if present); (2) run `uip rpa project close --project-dir "<PROJECT_DIR>"` — the next command reloads the project; (3) run per-file `validate` on one coded file (after the reload it rewrites `.local/.codedworkflows/`), then `uip rpa build` ONCE (rewrites `.local/install/`; `build` alone does not restore `.codedworkflows/`); (4) execute with `uip rpa run --skip-build` per workflow/test from then on. Do NOT `rm -rf .local/` wholesale — a full cold restore destabilizes codegen further and re-pays the 30–90 s NuGet restore per run. Do NOT add `[TestCase]` files to `entryPoints` while debugging this (Rule 15 forbids it regardless). Resilience option when tests keep tripping the flaky proxy: keep pure logic in a Coded Source File (Rule 19) and assert on the shared function directly — the trade-off is losing integration coverage of the workflow proxy itself. |

@@ -6,6 +6,9 @@ description: >
   scopes to ["Llm"] only (not Agent or Tool), uses $parameterType "number"
   for the threshold parameter, and does not add it to PostExecution stage.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "InjSafeAgent" that answers user questions. Add
   a guardrail that catches prompt-injection attempts (use a 0.5 threshold) and
@@ -70,7 +73,7 @@ success_criteria:
 
   - type: run_command
     description: "Prompt injection guardrail shape (Llm-only scope, number threshold, block action)"
-    command: "python3 $TASK_DIR/check_prompt_injection.py"
+    command: "python3 $REFERENCE_DIR/check_prompt_injection.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

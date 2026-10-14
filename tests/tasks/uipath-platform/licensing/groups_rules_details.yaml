@@ -23,6 +23,8 @@ initial_prompt: |
   Save the full CLI response envelope as `details.json` in the current
   directory.
 
+  Use the `uipath-platform` skill and its licensing workflow for this request.
+
   Important:
   - The `uip` CLI is available but is NOT connected to a live tenant in this
     environment. Commands may fail with auth errors — that is expected.

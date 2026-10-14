@@ -16,6 +16,9 @@ description: >
 tags: [uipath-functions, e2e, mode:build, feature:deploy]
 max_iterations: 1
 
+reference:
+  directory: ..
+
 initial_prompt: |
   Build a UiPath Coded Function named `tenant-echo`,
   implemented in Python, that takes a `message` (string) and
@@ -58,7 +61,7 @@ success_criteria:
 
   - type: run_command
     description: "pyproject.toml + packOptions excludes data/ + .nupkg artifact present"
-    command: "python3 $TASK_DIR/check_deploy_tenant.py"
+    command: "python3 $REFERENCE_DIR/_shared/check_deploy_tenant.py"
     timeout: 30
     expected_exit_code: 0
     weight: 4.0

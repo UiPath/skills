@@ -17,9 +17,16 @@ tags: [uipath-api-workflow, integration, mode:diagnose, lifecycle:discover]
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/diagnose/_shared/seed_fixture.py base64_helper_namespace"
+  - command: "python3 _setup/seed_fixture.py"
     timeout: 30
 
 run_limits:

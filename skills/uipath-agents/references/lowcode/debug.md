@@ -20,17 +20,32 @@ Run a low-code autonomous agent end-to-end on Studio Web and stream the result �
 ## Debug — controlled end-to-end run
 
 ```bash
-uip agent debug <AGENT_PROJECT_DIR> --inputs '<json>' --output json
+uip agent debug <AGENT_PROJECT_DIR> --inputs '<json>' [--attachment <FIELD>=<FILE_PATH>] --output json
 ```
 
 The argument is the agent **project directory** (the folder with `agent.json` / `project.uiproj`), inside its solution. The command uploads the enclosing solution and runs it — there is **no separate `uip solution upload` step**.
 
 - `--inputs '<json>'` — the agent's input object, matching its `inputSchema` (e.g. `'{"input":"What is 2+2?"}'`). Omit for empty input.
+- `--attachment <FIELD>=<FILE_PATH>` — upload a local file into a `job-attachment` input field (repeatable). See § Attachments.
 - `--timeout <seconds>` / `--poll-interval <ms>` — wait budget and polling cadence; the command polls until a terminal state.
 
 State changes (`Pending → Running → Successful`) stream to stderr while it waits.
 
 Every debug run re-uploads the local solution, so the debugged copy always reflects your local edits — there is no "debug the cloud version" mode (if you don't have it locally, `uip solution download` first).
+
+## Attachments
+
+Bind a local file to a `job-attachment` input with `--attachment <FIELD>=<FILE_PATH>`. The CLI uploads the file to Orchestrator and binds the full reference `{ ID, FullName, MimeType, Metadata }` into the job input under `<FIELD>` — never build that object by hand.
+
+```bash
+uip agent debug <AGENT_PROJECT_DIR> --attachment fileIn=<FILE_PATH> --inputs '{"question":"..."}' --output json
+```
+
+1. `<FIELD>` must be declared in `agent.json` → `inputSchema` as a job-attachment (`$ref: "#/definitions/job-attachment"`, or a schema carrying `x-uipath-resource-kind: "JobAttachment"`) — see [agent-definition.md](agent-definition.md) § File Attachments. Repeat the flag for an array of job-attachments. A field of any other type fails with `ErrorCode: invalid_argument`.
+2. Local checks run first, with zero network calls. A spec without `=`, an undeclared or non-attachment field, or a missing file exits 1 (`ErrorCode: invalid_argument` or `not_found`) with `Instructions` ending "Nothing was uploaded." Fix the flag and re-run; nothing needs cleanup.
+3. The upload runs after the Studio Web solution import and before the job starts. A refused upload (for example 403 → `ErrorCode: permission_denied`) fails the command before any debug job is started.
+4. `MimeType` is inferred from the file extension (`.pdf` → `application/pdf`). An unknown or missing extension falls back to `application/octet-stream`, which the model provider behind `analyze-attachments` rejects — keep the real extension on the file.
+5. To reuse an attachment the CLI already uploaded, pass its reference in `--inputs` instead of re-uploading: `--inputs '{"<FIELD>":{"ID":"<ATTACHMENT_ID>"}}'`. Take the ID from `Data.Attachments` of the earlier run.
 
 ## Report the result
 
@@ -42,8 +57,9 @@ On success the envelope is `Code: "AgentDebug"` with `Data`:
 | `Output` | the agent's output object |
 | `TraceId` | execution trace id — use to inspect the run |
 | `JobKey` | the debug job key |
+| `Attachments` | one row per `--attachment`: `Field`, `AttachmentId`, `FileName`, `MimeType`, `Size` — also present on a `Faulted` run |
 
-Show the user the `Output` and the `TraceId`.
+Show the user the `Output` and the `TraceId`. When `--attachment` was used, also show `Attachments` so the IDs can be reused.
 
 A run that ends `Faulted` / `Stopped` returns `Result: "Failure"` (exit 1). The terminal state alone often lacks a reason — inspect the trace:
 

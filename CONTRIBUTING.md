@@ -34,8 +34,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 │   └── *.md                   # Each file becomes /uipath:<filename>
 ├── hooks/                     # Session-initialization hooks
 │   ├── hooks.json             # Hook definitions (SessionStart, etc.) — polyglot dispatch
-│   ├── send-telemetry.sh      # Telemetry hook (bash twin)
-│   └── send-telemetry.ps1     # Telemetry hook (PowerShell twin — keep in sync)
+│   └── set-session-env.mjs    # Session-env hook (Node.js; telemetry has no script — hooks.json pipes to `uip track --hook`)
 ├── references/                # Shared documentation and activity references
 │   └── activity-docs/         # Per-package, per-version activity API docs
 ├── skills/                    # Individual skill implementations
@@ -46,6 +45,7 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 ├── skill-flavors/             # Sparse build-time exceptions for custom hosts
 │   └── <flavor>/
 │       └── uipath-<name>/     # Sparse overrides mirroring skills/uipath-<name>/
+├── classic/skills/            # Previous skill generations a flavor pins (not shipped by default)
 ├── tests/                     # Skill evaluation tests (coder_eval)
 │   ├── experiments/           # Experiment configs (smoke, integration, e2e)
 │   ├── tasks/                 # Test tasks organized by skill
@@ -79,6 +79,8 @@ Tool wiring lives outside `skills/`:
 | OpenAI Codex CLI | `AGENTS.md` (symlink → `CLAUDE.md`), `.agents/skills/` (symlink → `skills/`) | Codex scans `.agents/skills/` for `SKILL.md` files, reads `AGENTS.md` as project instructions |
 | Cursor IDE | `.cursor/rules/*.mdc` | Scoped MDC rules: `token-optimization` (always-apply), `skill-structure` + `content-quality` (glob-scoped), `skill-review` + `pr-review` (agent-requested) |
 | GitHub Copilot coding agent | `AGENTS.md` (symlink → `CLAUDE.md`) | Copilot reads `AGENTS.md` natively (since Aug 2025) |
+
+The repo relies on symlinks: `AGENTS.md`, `.agents/skills/`, and `preview/skills/uipath-maestro-flow` (→ the promoted `skills/uipath-maestro-flow`). On Windows, enable them before cloning (`git config --global core.symlinks true`, with Developer Mode or an elevated shell); otherwise each link checks out as a small text file.
 
 When adding a skill, put its canonical files under `skills/uipath-<name>/`.
 Every custom flavor includes that canonical skill automatically. Review the
@@ -286,7 +288,8 @@ Create the project with the host capability exposed in this environment.
 - An override must contain complete marked blocks and no unmarked prose.
 - Mirror the canonical relative path, including nested `references/` paths.
 - Every flavor contains every canonical skill. If no override exists for a file, its canonical content is intentionally reused unchanged.
-- A new flavor directory must contain at least one real sparse override. If a host needs no exceptions, consume the default package rather than creating an identical empty flavor.
+- A new flavor directory must contain at least one real sparse override or a `.canonical` pin. If a host needs no exceptions, consume the default package rather than creating an identical empty flavor.
+- A host that cannot run a skill's current generation at all can pin the previous one: `skill-flavors/<flavor>/<skill>/.canonical` containing `classic` composes that skill from `classic/skills/<skill>/`. See the manage-skill-flavors skill before adding one.
 - Do not check generated flavor trees into source control; build them into the ignored `build/` directory for validation and package staging.
 
 Validate the source contract, then build the final Markdown trees:
@@ -349,22 +352,41 @@ Static files like code templates go in `assets/`:
 
 Hooks are defined in `hooks/hooks.json` and run during plugin lifecycle events (e.g., `SessionStart`).
 
-- **Every session hook ships as twin scripts**: `hooks/<name>.sh` (bash — macOS, Linux, Windows with Git Bash) and `hooks/<name>.ps1` (PowerShell — Windows without Git Bash, or pwsh where installed). No shell ships by default on both Windows and macOS, so both twins are required for zero-install coverage
-- **The twins MUST stay behaviorally identical** — any change to one requires the equivalent change to the other in the same PR. The telemetry contract guards in `tests/scripts/` run both twins against the same assertions
-- `hooks.json` registers one **bash/PowerShell polyglot command** per event: sh-family shells execute the `.sh` branch and see the PowerShell branch only as heredoc data; PowerShell block-comments the sh branch via `<# … #>` and executes the `.ps1` branch. Canonical shape (replace `<name>`):
+- **Telemetry ships no script.** Its `hooks.json` entries pipe the RAW hook payload to `uip track --hook` (UiPath/cli#4444); the field derivation, sanitization, and contract tests live in the CLI repo (`packages/cli/src/commands/track-hook.ts` / `.spec.ts`). The plugin-side guard (`tests/scripts/test_send_telemetry_hook.py`) pins only the wrapper: stdin passthrough, fail-soft exit 0, registration shape
+- **Every other session hook is one Node.js script**: `hooks/<name>.mjs`, run by `node` (>= 20) on every platform. `node` is present wherever the skills were installed through the Node-based `uip` CLI, and it is a native executable — PowerShell execution policy (including Group-Policy-enforced `AllSigned`/`Restricted`) does not apply to it, unlike the retired `.ps1` twins. The contract guards in `tests/scripts/` run the `.mjs` scripts directly
+- **Do NOT reintroduce `.sh`/`.ps1` hook implementations.** The retired twins had to be kept behaviorally identical by hand, required an Authenticode signing gate at publish (`.ps1` only), and still failed on machines whose Group Policy blocks PowerShell script files
+- `hooks.json` registers one **bash/PowerShell polyglot command** per event: sh-family shells execute the sh branch and see the PowerShell branch only as heredoc data; PowerShell block-comments the sh branch via `<# … #>` and executes its own branch. Both branches guard for the missing binary (silent `exit 0` — a machine without it has nothing to hand off to). Canonical shape for a `.mjs` hook (replace `<name>`):
 
   ```
   echo `# <#` >/dev/null
-  bash "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.sh"
+  command -v node >/dev/null 2>&1 || exit 0
+  node "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.mjs"
   exit $?
   : <<'POLYEOF' #> > $null
-  & "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.ps1"
+  if (-not (Get-Command node -ErrorAction SilentlyContinue)) { exit 0 }
+  & node "${CLAUDE_PLUGIN_ROOT}/hooks/<name>.mjs"
   if ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }
   POLYEOF
   ```
 
-  Constraints: do not add a `shell` field; never put the sequence `#>` in the sh branch; keep the PowerShell branch inside the `: <<'POLYEOF' … POLYEOF` heredoc — shells that parse the whole command up front (zsh, used by Codex on macOS via `$SHELL -lc`) otherwise fail on PowerShell syntax. Verified under bash, dash (`sh -c`), zsh, and Windows PowerShell 5.1
-- `.ps1` scripts must stay compatible with **both** Windows PowerShell 5.1 and PowerShell 7+ — no `&&`/`||` pipeline chains, no ternary/null-conditional operators
+  Canonical shape for the telemetry ingestion (always `exit 0` — best-effort by contract, including against a CLI that predates `--hook`):
+
+  ```
+  echo `# <#` >/dev/null
+  command -v uip >/dev/null 2>&1 || exit 0
+  uip track --hook >/dev/null 2>&1
+  exit 0
+  : <<'POLYEOF' #> > $null
+  $c = Get-Command uip.cmd -ErrorAction SilentlyContinue
+  if ($null -eq $c) { exit 0 }
+  & $c.Source track --hook *> $null
+  exit 0
+  POLYEOF
+  ```
+
+  The PowerShell branch resolves `uip.cmd` explicitly, never the bare `uip`: PowerShell prefers npm's `uip.ps1` shim, a script file that execution policy can block, while a `.cmd` batch file is not governed by it.
+
+  Constraints: do not add a `shell` field; never put the sequence `#>` in the sh branch; keep the PowerShell branch inside the `: <<'POLYEOF' … POLYEOF` heredoc — shells that parse the whole command up front (zsh, used by Codex on macOS via `$SHELL -lc`) otherwise fail on PowerShell syntax. The sh branch is verified under bash, dash (`sh -c`), and zsh
 - Keep hooks idempotent — safe to run multiple times
 - Set appropriate timeouts (default: 180 seconds)
 
@@ -449,6 +471,7 @@ Before submitting your PR, verify:
 - [ ] Anti-patterns / "What NOT to Do" section is included for non-trivial skills
 - [ ] No references to other skills (skills must be self-contained)
 - [ ] All links to reference files use relative paths and point to existing files
+- [ ] The skill router table fits within the first 220 lines of the skill so agents can see the whole table in the first read. Enforced only for the builder-SDK skills: `skills/uipath-maestro-flow/SKILL.md` and `preview/skills/*/SKILL.md`.
 - [ ] Lifecycle status registered in `assets/skill-status.json` and README table regenerated (run `python3 scripts/check-skill-status.py`)
 - [ ] Grouped in `skills.sh.json` (run `python3 scripts/check-skills-sh.py`) — and on a rename or removal, the old name is gone from it too
 
@@ -480,7 +503,9 @@ Before submitting your PR, verify:
 
 ### General
 - [ ] CODEOWNERS updated with your GitHub handle
+  (a user listed for `skills/<skill>/` can also run the [Optimize skill](.github/workflows/optimize-skill.yml) workflow on it, which spends model budget)
 - [ ] No secrets, tokens, or personal paths in any file
+- [ ] Command examples and sample output use `<UPPER_SNAKE_CASE>` placeholders — no literal dates, street addresses, phone numbers, or identifier-shaped digit runs ([Style Guide](#cli-commands))
 - [ ] No auto-generated or binary files committed (check `.gitignore`)
 - [ ] Markdown is well-formed (no broken links, proper heading hierarchy)
 
@@ -512,6 +537,27 @@ Before submitting your PR, verify:
 - You may be asked to make changes — this is normal and collaborative
 - Once approved, a maintainer will merge your PR
 
+### Required Status Checks
+
+Some PR checks gate the merge. Two edits break them in a way that blocks **every**
+open PR, not just yours:
+
+- **Renaming a job** whose name is a required context — the context never
+  reports again.
+- **Narrowing a producing workflow's PR trigger** — `paths:`, `paths-ignore:`,
+  `branches:`, `branches-ignore:`, or a `types:` list without `synchronize`.
+  When the trigger excludes a PR the workflow doesn't run, so no check is
+  reported and the PR stays pending forever. Always trigger, and short-circuit
+  inside the job instead: a *skipped* job counts as a pass.
+
+A third breaks them loudly: **cancelling a run on a SHA that also has a passing
+one**. A cancelled run still reports its jobs, and `cancelled` is not a pass, so
+required workflows only cancel on `synchronize` — the one event that moves the
+head SHA. Keep that expression when editing a `concurrency:` block.
+
+`required-check contract guard` (in `test-helpers.yml`) fails on the first two. The
+current set, the rationale, and how to change it: [docs/REQUIRED-CHECKS.md](docs/REQUIRED-CHECKS.md).
+
 ## Style Guide
 
 ### Markdown
@@ -528,6 +574,43 @@ Before submitting your PR, verify:
 - Use `--output json` when the output needs to be parsed
 - Use placeholders in angle brackets for user-provided values: `<PROJECT_DIR>`, `<FILE_PATH>`
 - Show expected output format when it helps understanding
+
+#### Use placeholders for example values, not literals
+
+Command examples, sample payloads, and sample output MUST use `<UPPER_SNAKE_CASE>` placeholders wherever
+a literal would carry the shape of a date, an identifier, or personal data. Two reasons, and the first is
+the one that blocks releases: customers run content-inspection gates over the published package, and those
+gates match on shape alone — an example does not have to contain real data to fail one and block the whole
+artifact. Literal dates are also the most common source of examples that go stale.
+
+| Do not write | Write instead |
+|---|---|
+| `--expiration "2027-01-15"` | `--expiration "<EXPIRATION_DATE>"` |
+| `--from-date 2026-01-01 --to-date 2026-01-31` | `--from-date <FROM_DATE> --to-date <TO_DATE>` |
+| `audit_2026-01-01_2026-01-31_<generatedAt>` | `audit_<from>_<to>_<generatedAt>` |
+| `SetBookmarkContent("Address", "123 Main Street")` | `SetBookmarkContent("Address", "<STREET_ADDRESS>")` |
+| `SetBookmarkContent("Phone", "+1 (555) 123-4567")` | `SetBookmarkContent("Phone", "<PHONE_NUMBER>")` |
+| `123-45-6789` | `NNN-NN-NNNN` — mask each digit position with `N` |
+| `"ffffffff-1111-2222-3333-444444444444"` | `"ffffffff-aaaa-bbbb-cccc-dddddddddddd"` — no long digit run |
+| `--from-date <FROM_DATE>T00:00:00Z` | `--from-date <FROM_TIMESTAMP>` — one placeholder per value |
+
+> The left column above deliberately spells out the literals it forbids: this file is not part of the
+> published npm package (see `files` in `package.json`), so the anti-examples never reach a customer scan.
+> Exclude `CONTRIBUTING.md` if you ever add a repository-wide content scanner.
+
+Give each value **one** placeholder covering the whole value. Gluing a placeholder to a literal fragment
+(`<FROM_DATE>T00:00:00Z`) keeps the literal in the file and reads worse than either form alone — use
+`<FROM_TIMESTAMP>` and state the expected precision in prose.
+
+State a required format in prose or in the flags table rather than demonstrating it with a literal. Write
+``--expiration <date>``, ISO 8601 `YYYY-MM-DD` — not a made-up date that shows the format by example.
+
+Two narrow exceptions:
+
+- **Product identifiers the reader needs verbatim** — error codes, support-forum thread IDs inside URLs,
+  vendor documentation URLs. These are the content itself, not an example of it. Keep them.
+- **Regex reference tables**, where the example column has to match the pattern it documents. Mask the
+  digits (`NNN-NN-NNNN`) instead of deleting the row, and note the masking convention under the table.
 
 ### Naming Conventions Summary
 

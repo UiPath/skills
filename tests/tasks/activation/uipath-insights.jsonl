@@ -31,3 +31,31 @@
 {"id": "uipath-insights-031", "prompt": "Is this tenant entitled to Insights real-time alerting?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-032", "prompt": "Did any Insights alert fire in the last 24 hours?", "expected_skill": "uipath-insights"}
 {"id": "uipath-insights-033", "prompt": "Which delivery is attached to my Insights alert?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-034", "prompt": "Who has access to Insights on this tenant?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-035", "prompt": "Which Insights roles exist and what do they permit?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-036", "prompt": "Which groups have been given Insights roles?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-037", "prompt": "Which Insights roles is this user assigned?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-038", "prompt": "How many queue items did we process yesterday and how many succeeded?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-039", "prompt": "Which queues are at risk of breaching their SLA?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-040", "prompt": "Why are items failing in the Invoices queue?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-041", "prompt": "Of the queue items we retried this month, how many went on to succeed?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-042", "prompt": "Show me the queue backlog over the past week", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-043", "prompt": "Break down queue item counts by queue and folder for yesterday", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-044", "prompt": "How much runtime did our unattended robots log versus attended this week?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-045", "prompt": "Which of our machines are currently in use and which are idle?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-046", "prompt": "Was the FinanceVM machine available overnight or did it drop?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-047", "prompt": "Show me runtime minutes per machine for the last 30 days.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-048", "prompt": "Does this Maestro process have its own Insights dashboard or is it still showing the default one?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-049", "prompt": "Can you show me our Insights dashboard definition so I can change a chart?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-050", "prompt": "Create an Insights dashboard from this definition file.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-051", "prompt": "Build me an Insights dashboard for this Maestro process that shows which of its runs are failing.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-052", "prompt": "Change the charts on Insights dashboard 644 to use the file I edited.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-053", "prompt": "Rename my Insights dashboard and put the failures chart first.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-054", "prompt": "Delete the test Insights dashboard I made yesterday, but keep a copy of it.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-055", "prompt": "Give the new order process the same Insights dashboard the old one has.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-056", "prompt": "Our Azure Event Hub export went quiet yesterday. Is Insights still able to reach it?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-057", "prompt": "Which export destinations has our organization configured in Insights?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-058", "prompt": "Do we already have an Insights export pointed at an SQS queue?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-059", "prompt": "Give me an embed link for the Attended Reporting dashboard so I can drop it into our internal page.", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-060", "prompt": "Our embedded Insights dashboard shows an unauthorized message for one user. Why?", "expected_skill": "uipath-insights"}
+{"id": "uipath-insights-061", "prompt": "Export the Business ROI Looker dashboard from Insights so we can move it to another tenant.", "expected_skill": "uipath-insights"}

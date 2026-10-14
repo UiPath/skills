@@ -10,7 +10,7 @@ You act as a **reviewer** — IXP generates predictions, you validate them field
 ## Step 1 — Get Documents and Taxonomy
 
 ```bash
-mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
+mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,prompts}
 uip ixp documents list <project-name> --output json
 uip ixp projects get-taxonomy <project-name> --output json
 ```
@@ -21,7 +21,7 @@ From the taxonomy (raw snake_case: field groups/fields under `Data.dataset.label
 
 ## Step 2 — Process Each Document
 
-For each document from the list, process one at a time: get predictions, download image/text, review, confirm.
+For each document from the list, process one at a time: get predictions, download the file, review, confirm.
 
 ### 2a. Get predictions for this document
 
@@ -42,7 +42,7 @@ The response also carries `ModelVersion` — the model version that produced the
 uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id> --output json
 ```
 
-Use the document ID as the filename. Pass `-o` **without an extension** — the CLI detects the actual format (PDF, PNG, JPG, …) from the file content and appends the correct extension. Read the resolved `Path` from the response and use that for the next step. Files persist across sessions — check for existing files before downloading.
+Use the document ID as the filename. Pass `-o` **without an extension** — the CLI appends the extension that matches the server's content type (PDF, PNG, JPG, …). Read the resolved `Path` from the response and use that for the next step; a `Path` with no extension means the content type was unknown (see [CLI Reference § Documents](cli-reference.md#documents)). Files persist across sessions — check for existing files before downloading.
 
 ### 2c. Review predictions field-by-field
 
@@ -52,7 +52,7 @@ Use the **Read tool** to view the document file (read the whole document in one 
 2. **For each predicted field**, assign one of four verdicts:
    - **CONFIRMED** — the predicted value matches what is in the document, literally or in its data type's normalized form. Minor OCR-level differences (capitalization, whitespace) are acceptable, as is any difference that is purely the type's normalization — a `Date` reads back as `2022-06-21T00:00:00Z` for a page showing `21-JUN-22`, a `Monetary Quantity` as `114.91 AUD` for a page showing `114.91`. Compare the values by reading them; do not write a script to convert or check formats. See [CLI Reference § Normalized output formats](cli-reference.md#normalized-output-formats).
    - **CORRECTED** — **OCR-mangled values only.** The prediction found the right field in the right location, the bytes-on-page are correct, but the text was garbled in transcription (e.g., `MSIÓÓÓ601020/` instead of `MSI0601020`, `lNGRAM` instead of `INGRAM`, or a misread digit in a number — page `£7,300.00` predicted as `£730.00`). The reference is correct, only the literal characters need fixing. **A number whose magnitude differs from the page is OCR garble, never type normalization** (Rule 8). Do NOT use CORRECTED to restore a page's date or amount formatting, for booleans that came back with the wrong answer, inferred/computed values that came back wrong, or any case where IXP picked the wrong source on the page — those are NOT CONFIRMED.
-   - **MISSING** — IXP predicted **no value** (empty `FormattedValue`) AND the field is genuinely absent from the document. Both conditions must hold. If IXP predicted a value but the field isn't actually in the document, that's NOT CONFIRMED, not MISSING — Critical Rule 12 forbids overriding a non-empty prediction with "missing".
+   - **MISSING** — IXP predicted **no value** (empty `FormattedValue`) AND the field is genuinely absent from the document. Both conditions must hold. If IXP predicted a value but the field isn't actually in the document, that's NOT CONFIRMED, not MISSING — Critical Rule 11 forbids overriding a non-empty prediction with "missing".
    - **NOT CONFIRMED** — the prediction is wrong for any reason other than OCR mangling. Covers: wrong literal value on the right field, wrong-source extraction, hallucinated value, boolean came back with the wrong answer, inferred/computed value came back wrong, predicted a value the document doesn't contain. Left unannotated. Do NOT try to "fix" these with `--corrections` — `--corrections` is OCR-only (see Critical Rule 8). Improve the prompt instead.
 3. **Report your verdict for every field.** Print a table per document:
 
@@ -62,8 +62,8 @@ Document: <document-id>
 Field                    | Verdict       | Reason
 -------------------------|---------------|-----------------------------------------------
 Invoice Number           | CORRECTED     | OCR mangled "MSIÓÓÓ601020/" → "MSI0601020", top-right of page 1
-Invoice Date             | CONFIRMED     | Predicted "2018-02-28" matches document
-Vendor Address           | NOT CONFIRMED | Predicted "123 Main St" but actual is "456 Oak Ave", top-left of page 1
+Invoice Date             | CONFIRMED     | Predicted "2018-02-28T00:00:00Z" matches "28-Feb-2018" (normalized Date)
+Vendor Address           | NOT CONFIRMED | Predicted "<ADDRESS_A>" but actual is "<ADDRESS_B>", top-left of page 1
 Has Signature            | NOT CONFIRMED | Predicted "false" but signature visible bottom-right (boolean came back wrong — NOT CORRECTED)
 Total After Tax          | NOT CONFIRMED | Predicted "$1100.00" but Subtotal+Tax = "$1210.00" (inferred value wrong — NOT CORRECTED)
 Terms of Payment         | MISSING       | IXP predicted no value AND field not visible in document
@@ -130,7 +130,7 @@ uip ixp labellings confirm <project-name> <document-id> \
   --output json
 ```
 
-**Only include a field in the `--fields` list for the MISSING case when IXP itself predicted nothing for it** — see Critical Rule 12. If IXP predicted a wrong value, omit the field entirely (don't list it).
+**Only include a field in the `--fields` list for the MISSING case when IXP itself predicted nothing for it** — see Critical Rule 11. If IXP predicted a wrong value, omit the field entirely (don't list it).
 
 Use `labellings mark-missing <project-name> <document-id> --fields <ids>` to record a genuinely-missing field. It marks the listed fields directly, so it also handles the case where `confirm --fields` no-ops — a field with a prior annotation that the current prediction no longer includes (e.g., model behavior changed after a retrain), which `confirm` can't reach. Either records the missing marker; only do so when `get-predictions` shows IXP predicted no value for the field — never to override a wrong prediction.
 
@@ -157,9 +157,9 @@ uip ixp labellings confirm <project-name> <document-id> \
   --output json
 ```
 
-See [CLI Reference § Labellings](cli-reference.md#labellings) and Critical Rule 13.
+See [CLI Reference § Labellings](cli-reference.md#labellings) and Critical Rule 12.
 
-**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates '[…]'`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 14.
+**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates '[…]'`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 13.
 
 ```bash
 # Roll back only occurrence 2 of Line Items (every field in that line):
@@ -175,7 +175,7 @@ Repeat steps 2a–2d for all documents in the list.
 
 ### Occurrence numbers are read-scoped
 
-`get-predictions` does not return a repeatable group's rows in a fixed order. The server pairs each annotation with its prediction and lists the **matched pairs first**, then the still-unmatched predictions. So on a partly-confirmed group:
+`get-predictions` does not return a repeatable group's rows in a fixed order. It lists **annotated occurrences first**, then the still-unannotated ones. So on a partly-confirmed group:
 
 - confirmed rows sort to the front — confirm the third row of four and it reads back as `Occurrence` 0, with the other three shifted to 1, 2, 3;
 - the same holds in the IXP UI, which shows the confirmed row first;
@@ -203,7 +203,7 @@ uip ixp documents delete <project-name> <document-id> -y --output json
 
 | You have | How to get the DocumentId |
 |----------|---------------------------|
-| Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --output json --output-filter "Documents[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` (rows are under `Documents` — the list is a paged envelope) |
+| Filename (e.g., `invoice-001.pdf`) | `uip ixp documents list <project-name> --limit 10000 --output-filter "Documents[?Filename=='invoice-001.pdf'].DocumentId \| [0]" --output plain` (rows are under `Documents` — the list is a paged envelope; `--output-filter` needs an explicit `--limit`) |
 | A distinctive predicted field value (e.g., Invoice Number `MSI0601020`) | `uip ixp documents list <project-name> --output json` for the ids, then `uip ixp labellings get-predictions <project-name> <document-id> --output json` per id until a `Labels[].Fields[].FormattedValue` matches. One call per document, so stop at the first match. |
 | Nothing — need to find by content | `uip ixp documents list <project-name> --output json`, then `documents download` candidates and read with the Read tool |
 
@@ -216,8 +216,8 @@ Deletion is irreversible and triggers a model retrain. Do NOT use deletion to sk
 After processing all documents, track progress and errors:
 
 - Do NOT stop on the first error — continue with remaining documents
-- If a download or text fetch fails, skip the document and note the failure
-- If confirmation fails, log the error and UID, then continue
+- If a download fails, skip the document and note the failure
+- If confirmation fails, log the error and the document ID, then continue
 
 At the end, report a full summary:
 
@@ -230,7 +230,7 @@ Fields: X confirmed, Y corrected, W marked missing, Z not confirmed
 OCR Corrections Applied:
   Doc <uid-1>: Invoice Number "MSIÓÓÓ601020/" → "MSI0601020"
   Doc <uid-1>: Vendor Name "INGRAM NTCRO INC" → "INGRAM MICRO INC"
-  Doc <uid-3>: Bill-To Address "123 Mam St" → "123 Main St"
+  Doc <uid-3>: Bill-To Address "<ADDRESS_A_OCR_TYPO>" → "<ADDRESS_A>"
 
 Marked Missing (IXP predicted empty AND field absent from document):
   Doc <uid-2>: Terms of Payment
@@ -238,5 +238,5 @@ Marked Missing (IXP predicted empty AND field absent from document):
 
 Not Confirmed (skipped):
   Doc <uid-3>: Total Amount — predicted "500.00" but actual is "5000.00" (bottom-right, page 1)
-  Doc <uid-5>: Vendor Address — predicted "123 Main St" but actual is "456 Oak Ave"
+  Doc <uid-5>: Vendor Address — predicted "<ADDRESS_A>" but actual is "<ADDRESS_B>"
 ```

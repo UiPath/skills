@@ -21,10 +21,20 @@ tags: [uipath-api-workflow, integration, mode:build, lifecycle:generate, feature
 
 sandbox:
   python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 
 pre_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/author_eval_set/seed.py"
+  - command: "python3 _setup/seed.py"
     timeout: 120
+
+reference:
+  directory: ..
 
 initial_prompt: |
   The API workflow project in ./GradeCheck grades a numeric `score`: it returns
@@ -39,9 +49,9 @@ initial_prompt: |
 success_criteria:
   - type: run_command
     description: "evals/ files follow the Unified Eval contract the Evaluations panel reads (layout, file-name refs, exact-match evaluator, criteria placement)"
-    # $SKILLS_REPO_PATH, not $TASK_DIR/..: the sandbox only mounts the task's own
-    # leaf directory, so ../_shared does not exist there and the check exits 2.
-    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/_shared/check_eval_contract.py GradeCheck --min-rows 3
+    # reference: points one level up (this dir's parent) so the mount covers
+    # both _shared/ and this task's own directory.
+    command: python3 $REFERENCE_DIR/_shared/check_eval_contract.py GradeCheck --min-rows 3
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -49,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "Rows for 85/40/60 carry expectations that strict-deep-equal the workflow's RAW output (lowercase `grade`, not the CLI's `Grade`)"
-    command: python3 $TASK_DIR/check_author_rows.py rows
+    command: python3 $REFERENCE_DIR/author_eval_set/check_author_rows.py rows
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -57,7 +67,7 @@ success_criteria:
 
   - type: run_command
     description: "Behavioral: every authored row passes when run and scored as the panel scores it"
-    command: python3 $SKILLS_REPO_PATH/tests/tasks/uipath-api-workflow/evals/_shared/check_rows_pass.py GradeCheck --min-rows 3
+    command: python3 $REFERENCE_DIR/_shared/check_rows_pass.py GradeCheck --min-rows 3
     timeout: 300
     expected_exit_code: 0
     weight: 3.0
@@ -65,7 +75,7 @@ success_criteria:
 
   - type: run_command
     description: "The seeded workflow was not modified"
-    command: python3 $TASK_DIR/check_author_rows.py workflow
+    command: python3 $REFERENCE_DIR/author_eval_set/check_author_rows.py workflow
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

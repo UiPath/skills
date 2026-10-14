@@ -20,6 +20,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.case_check import existing_caseplan  # noqa: E402
+
 SOLUTION = Path("LinearThreeStages")
 PROJECT = SOLUTION / "LinearThreeStages"
 RESOURCES = SOLUTION / "resources" / "solution_folder"
@@ -28,12 +31,12 @@ REMOVED_TASK = "Estimate Age"
 ADDED_TASK = "Final Hold"
 DECISION_STAGE = "Stage_Vw2hJc"
 
+# Globs relative to RESOURCES: the fixture ships the process declaration under
+# `process/Api/`, but `resources refresh` regenerates it under `process/api/`.
+# Either casing is an unpruned orphan.
 ORPHANED = [
-    (RESOURCES / "process" / "Api" / "NameToAgeFixed.json", "api-workflow declaration"),
-    (
-        RESOURCES / "package" / "NameToAgeFixed.api.NameToAgeFixed.json",
-        "its package declaration",
-    ),
+    ("process/*/NameToAgeFixed.json", "api-workflow declaration"),
+    ("package/NameToAgeFixed.api.NameToAgeFixed.json", "its package declaration"),
 ]
 
 MUST_SURVIVE = [
@@ -55,7 +58,7 @@ def load(path):
         return None
 
 
-caseplan = load(PROJECT / "caseplan.json")
+caseplan = load(Path(existing_caseplan(str(PROJECT / "caseplan.json")) or PROJECT / "caseplan.json"))
 bindings_v2 = load(PROJECT / "bindings_v2.json")
 
 if caseplan is not None:
@@ -95,8 +98,8 @@ if bindings_v2 is not None and bindings_v2.get("resources"):
     keys = [r.get("key") for r in bindings_v2["resources"]]
     failures.append(f"bindings_v2.json still declares resources {keys} - expected none")
 
-for path, label in ORPHANED:
-    if path.exists():
+for pattern, label in ORPHANED:
+    for path in sorted(RESOURCES.glob(pattern)):
         failures.append(f"orphaned {label} was NOT pruned - {path} still exists")
 
 for path, label in MUST_SURVIVE:

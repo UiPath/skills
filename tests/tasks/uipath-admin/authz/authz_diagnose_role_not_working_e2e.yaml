@@ -11,17 +11,25 @@ description: >
   segment) of the unified Access Denied (HTTP 403) scenario in
   skills/uipath-admin/references/diagnose/failure-modes.md.
 tags: [uipath-admin, e2e, mode:diagnose, lifecycle:discover, troubleshoot, authz, role-assignment]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
 
 pre_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-misscoped-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-misscoped-role" python3 _setup/cleanup_authz_marker.py'
     timeout: 90
-  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-misscoped-role" AUTHZ_ROLE_PERMISSION="DOCUMENTUNDERSTANDING.PROJECTS.READ" AUTHZ_ROLE_SERVICE="documentunderstanding" AUTHZ_ROLE_DESCRIPTION="Seeded DU project reader" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_role.py''))"'
+  - command: 'AUTHZ_SEED_KEY="role" AUTHZ_ROLE_BASE="ce-authz-misscoped-role" AUTHZ_ROLE_PERMISSION="DOCUMENTUNDERSTANDING.PROJECTS.READ" AUTHZ_ROLE_SERVICE="documentunderstanding" AUTHZ_ROLE_DESCRIPTION="Seeded DU project reader" python3 _setup/setup_authz_role.py'
     timeout: 90
-  - command: 'AUTHZ_SEED_KEY="grant" AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/tenant/<TID>" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''setup_authz_assignment.py''))"'
+  - command: 'AUTHZ_SEED_KEY="grant" AUTHZ_ASSIGNMENT_ROLE_KEY="role" AUTHZ_ASSIGNMENT_SCOPE_PATH="/tenant/<TID>" python3 _setup/setup_authz_assignment.py'
     timeout: 90
 
 post_run:
-  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-misscoped-role" python3 -c "import os,runpy;runpy.run_path(os.path.join(os.environ[''SKILLS_REPO_PATH''],''tests'',''tasks'',''uipath-admin'',''authz'',''cleanup_authz_marker.py''))"'
+  - command: 'AUTHZ_CLEANUP_MARKER="ce-authz-misscoped-role" python3 _setup/cleanup_authz_marker.py'
     timeout: 90
 
 max_iterations: 2
@@ -156,6 +164,7 @@ success_criteria:
         binding matters, but does not connect the two or gives no fix.
       Score 0.0 if it blames something else (permission missing from the role,
         licensing, caching, propagation delay) or gives no root cause.
+    include_reference: false
     weight: 3.0
     pass_threshold: 1.0
 

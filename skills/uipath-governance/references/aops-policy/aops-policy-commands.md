@@ -128,7 +128,7 @@ uip gov aops-policy product list --output json
 
 ## uip gov aops-policy product get
 
-Fetch a single product record to confirm a product name exists before using it.
+Fetch one product's catalog record — its `name`, display `label`, and its cloud/restricted/remote flags. This is the single-product catalog lookup, not the product's policy template.
 
 ```bash
 uip gov aops-policy product get <PRODUCT_NAME_OR_GUID> --output json
@@ -136,7 +136,7 @@ uip gov aops-policy product get <PRODUCT_NAME_OR_GUID> --output json
 
 The positional argument accepts either the product `name` (e.g. `StudioX`) or its GUID.
 
-**Output:** `Data` has `identifier`, `name`, `label`.
+**Output:** `Data` has `identifier`, `name`, `label`, and the `isCloud` / `isRestricted` / `isRemote` flags.
 
 > In the create flow, prefer the bootstrap from `template list` over `product list`. The bootstrap materializes every product's full schema plus catalog metadata in one call — see [configure-aops-policy-data-guide.md — Step 1](./configure-aops-policy-data-guide.md#step-1--bootstrap-load-all-products-and-their-templates-create-flow-only).
 
@@ -185,7 +185,7 @@ uip gov aops-policy template list --output-dir "<SESSION_DIR>/products" --output
 | File | Purpose |
 |------|---------|
 | `form-template.json` | Raw form.io DTO returned by the governance API. Top-level `.product` object `{name, label}` is the catalog entry. |
-| `form-data.json` | Fillable blueprint — a flat key/value object generated from the template. Display-only components (`hidden`, `button`, `submit`, `htmlelement`, `content`) are omitted. Fields without an explicit default get a type-appropriate default: `false` for checkbox, `[]` for editgrid, `{}` for selectboxes, and `null` for text/select. |
+| `form-data.json` | Fillable blueprint — a flat key/value object generated from the template. Display-only components (`button`, `submit`, `htmlelement`, `content`) are omitted; `hidden` is kept — it carries data. Fields without an explicit default get a type-appropriate default: `false` for checkbox; `null` for text, select, radio, number, currency, time, and datetime; `[]` for editgrid, datagrid, and tags; `{}` for selectboxes, survey, and container. |
 | `form-template-locale-resource.json` | Locale-resolved reference. Every product-scoped locale key is replaced with its English string; a sibling `<prop>-key` preserves the original key for traceability. `defaultData.data` is replaced with a flat, annotated per-field map `{ value, type, label, description?, tooltip? }`. Select and selectboxes option labels appear under `template.components[...].values[].label`. Cross-product keys (e.g. `AutomationOps.submit`) are left unresolved. |
 
 Per-product failures are collected and do not abort; the command exits non-zero only if every product fails. Do NOT create a separate `products.json` — enumerate products with `Glob` on `<output-dir>/*/form-template.json`.
@@ -407,7 +407,7 @@ Interactive OAuth — default for all commands.
 
 ```bash
 uip login                                          # production (opens browser)
-uip login --authority https://alpha.uipath.com     # non-production environments
+uip login --authority "<AUTHORITY_URL>"           # non-default host (Automation Suite, dedicated)
 uip login status --output json                     # verify logged-in state
 ```
 
@@ -449,7 +449,7 @@ All `uip` commands support:
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `401 Unauthorized` | User token expired or missing | Run `uip login` (or re-export `UIP_S2S_TOKEN` for S2S modes) and retry |
-| `command not found: uip` | UiPath CLI not installed | `npm install -g @uipath/uipcli` |
+| `command not found: uip` | UiPath CLI not installed | macOS/Linux: `curl -fsSL https://download.uipath.com/uipath-cli/install.sh \| bash`; Windows PowerShell: `irm https://download.uipath.com/uipath-cli/install.ps1 \| iex` |
 | `unknown productIdentifier` | Used the product label instead of the `name` | Re-fetch via [product list](#uip-gov-aops-policy-product-list) and pass the `name` field |
 | `unknown licenseTypeIdentifier` | Used the license type label instead of its `name` in a tenant assignment | Re-fetch via [license-type list](#uip-gov-aops-policy-license-type-list) and copy the `name` field |
 | `unknown policyIdentifier` (GUID) | Stale or wrong GUID | Re-run `list` and copy the `identifier` from the result |

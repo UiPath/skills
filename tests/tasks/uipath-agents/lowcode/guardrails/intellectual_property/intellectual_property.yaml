@@ -7,6 +7,9 @@ description: >
   ipEntities parameter with PascalCase values (Text, Code), restricts scopes
   to Llm/Agent (NOT Tool — anti-pattern 4), and a block action.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "IPAgent" that drafts content for users. Add a
   guardrail that detects copyrighted text and licensed source code in the
@@ -71,7 +74,7 @@ success_criteria:
 
   - type: run_command
     description: "IP guardrail shape (ipEntities enum-list, Llm/Agent scope not Tool, block action)"
-    command: "python3 $TASK_DIR/check_intellectual_property.py"
+    command: "python3 $REFERENCE_DIR/check_intellectual_property.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

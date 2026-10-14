@@ -2,11 +2,11 @@ task_id: skill-ixp-confirm-all-predictions-smoke
 description: >
   Smoke: agent confirms all predictions on a document as ground truth — the
   no-`--fields` form bulk-confirms every predicted field, licensed here by the
-  user attesting the review (Rule 15) — and pins the reviewed ModelVersion via
+  user attesting the review (Rule 14) — and pins the reviewed ModelVersion via
   `-m/--model-version` so a mid-review retrain can't stamp drifted values
-  (Rule 19).
+  (Rule 18).
 
-  The attestation covers the review, NOT the version — Rule 19 is explicit
+  The attestation covers the review, NOT the version — Rule 18 is explicit
   that a user-supplied review is no exemption from the pin. So the prompt
   still never names the version, and this task exercises the branch of Rule
   19 that production actually hits: the agent has to READ it, and
@@ -47,7 +47,7 @@ success_criteria:
   # The point of the task: `7` appears nowhere in the prompt, so a pin here can
   # only have been carried over from the read above.
   - type: file_matches_regex
-    description: "the SAME confirm call carries project + document + the model version it read, unprompted (Critical Rule 19)"
+    description: "the SAME confirm call carries project + document + the model version it read, unprompted (Critical Rule 18)"
     path: "mocks/calls.log"
     pattern: >-
       (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=[^\r\n]*my_invoices-f1afa9ef-ixp)(?=[^\r\n]*doc-abc-123)(?=[^\r\n]*(?:-m\s+|--model-version(?:\s+|=))["']?7["']?(?=\s|$)).*)[^\r\n]*$

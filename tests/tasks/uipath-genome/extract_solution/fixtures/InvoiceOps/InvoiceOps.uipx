@@ -1,0 +1,22 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "9e1d4b7a-2c3f-4a8e-b6d5-0f1e2d3c4b5a",
+  "Projects": [
+    {
+      "Type": "Flow",
+      "ProjectRelativePath": "InvoiceOrchestrator/project.uiproj",
+      "Id": "a1b2c3d4-0001-4000-8000-000000000001"
+    },
+    {
+      "Type": "Process",
+      "ProjectRelativePath": "InvoiceIntake/project.json",
+      "Id": "a1b2c3d4-0002-4000-8000-000000000002"
+    },
+    {
+      "Type": "Api",
+      "ProjectRelativePath": "PostToErp/project.uiproj",
+      "Id": "a1b2c3d4-0003-4000-8000-000000000003"
+    }
+  ]
+}

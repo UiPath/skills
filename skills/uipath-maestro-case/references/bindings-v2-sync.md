@@ -1,8 +1,8 @@
 # bindings_v2.json Sync
 
-Shared procedure for keeping `bindings_v2.json` in sync after any plugin writes to the bindings array in `caseplan.json`.
+Shared procedure for keeping `bindings_v2.json` in sync after any plugin writes to the bindings array in `caseplan.case`.
 
-Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.json` shape is independent of the source.
+Bindings live at top-level `bindings[]` in `caseplan.case`. Output `bindings_v2.json` shape is independent of the source.
 
 ## When to Run
 
@@ -10,24 +10,27 @@ Bindings live at top-level `bindings[]` in `caseplan.json`. Output `bindings_v2.
 
 Run at these three points only:
 
-1. **End of Phase 2 Step 9** (after all non-connector tasks written) — covers all process/agent/rpa/action/api-workflow/case-management bindings
+1. **End of Phase 2 Step 9** (after all non-connector tasks written) — covers all process/agent/rpa/action/api-workflow/function/business-rule/case-management bindings
 2. **End of Phase 3 Step 9.7** (after all connector tasks populated) — adds Connection bindings + populates IS cache for tasks
 3. **End of Phase 3 Step 10.5** (after Phase 2 connector-rule stubs are upgraded across the 4 scopes — stage-entry, stage-exit, case-exit, task-entry) — adds Connection bindings + populates IS cache for resolved rules. Phase 2 stubs add no bindings; without this sync, rule-introduced Connection/Folder bindings + IS-cache entries would be absent when `resource refresh` runs.
 
-Individual task / rule plugins write bindings to `caseplan.json` per-target as normal (top-level `bindings[]`). The batch regeneration reads the full bindings array once and converts everything in one pass.
+Individual task / rule plugins write bindings to `caseplan.case` per-target as normal (top-level `bindings[]`). The batch regeneration reads the full bindings array once and converts everything in one pass.
 
 ---
 
 ## § Regenerate bindings_v2.json
 
-After writing bindings to top-level `bindings[]`, regenerate `bindings_v2.json`. This file uses a **different format**: `caseplan.json` stores two entries per resource (one per property), `bindings_v2.json` stores one entry per resource with properties nested under `value`.
+After writing bindings to top-level `bindings[]`, run:
 
-### Procedure
+```bash
+uip maestro case bindings sync "<SolutionDir>/<ProjectName>/caseplan.case" --output json
+```
 
-1. Read top-level `bindings[]` from `caseplan.json`
-2. Group bindings by `resourceKey` — entries sharing the same key belong to one resource
-3. For each group, produce one resource entry using the shapes below
-4. Write the full file (always overwrite, never append) to `<SolutionDir>/<ProjectName>/bindings_v2.json`
+It reads the root `bindings[]`, groups entries by `resourceKey`, and writes `bindings_v2.json` next to the plan (full overwrite). Response `Data`: `BindingsPath`, `ResourceCount`, `ConnectionCount`. **Never author or edit `bindings_v2.json` by hand** — a hand-written sidecar with the wrong field names is invisible to `solution resources refresh` and fails silently at deploy. If the installed CLI has no `bindings sync` command, derive the file from the shapes below as a last resort and say so in the completion report.
+
+### What the command emits
+
+`caseplan.case` stores two entries per resource (one per property); `bindings_v2.json` stores one entry per resource with properties nested under `value`. Reference only — the shapes are here so Check 7 can be understood, not so they can be typed.
 
 ### Non-connector resource entry
 
@@ -91,11 +94,11 @@ File envelope: `{ "version": "2.0", "resources": [ /* one entry per resource */ 
 | Field | Source | Plugin step |
 |---|---|---|
 | `id` | `connection-id` from `registry-resolved.json` | Planning |
-| `name` | `.Data.Connections[selected].name` from `get-connection` | Step 1 |
+| `name` | `.Data.Connections[selected].Name` from `get-connection` | Step 1 |
 | `connectorKey` | `connector-key` from `registry-resolved.json` | Planning |
-| `connectorName` | `.Data.Connections[selected].connector.name` from `get-connection` | Step 1 |
-| `folderKey` | `.Data.Connections[selected].folder.key` from `get-connection` | Step 1 |
-| `folderName` | `.Data.Connections[selected].folder.name` from `get-connection` | Step 1 |
+| `connectorName` | `.Data.Connections[selected].Connector.Name` from `get-connection` | Step 1 |
+| `folderKey` | `.Data.Connections[selected].Folder.Key` from `get-connection` | Step 1 |
+| `folderName` | `.Data.Connections[selected].Folder.Name` from `get-connection` | Step 1 |
 
 ### Procedure
 

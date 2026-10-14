@@ -22,6 +22,9 @@ run_limits:
 sandbox:
   python: {}
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code conversational agent "DocGuardBot" that lets
   users upload documents and ask questions about their content. For
@@ -81,7 +84,7 @@ success_criteria:
 
   - type: run_command
     description: "Custom word Tool-guardrail in agent.json root guardrails[] (authoritative), no built-in validator (conversational Critical Rule 1)"
-    command: "python3 $TASK_DIR/check_conversational_custom_guardrail.py"
+    command: "python3 $REFERENCE_DIR/check_conversational_custom_guardrail.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

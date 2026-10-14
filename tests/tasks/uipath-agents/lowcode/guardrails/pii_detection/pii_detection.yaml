@@ -7,6 +7,9 @@ description: >
   PascalCase entity names, enum-list and map-enum parameter types, and
   PascalCase scope values.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code agent "PiiSafeAgent" that answers user questions about
   their accounts. Add a guardrail that blocks email addresses and phone numbers
@@ -71,7 +74,7 @@ success_criteria:
 
   - type: run_command
     description: "PII detection guardrail shape (builtInValidator, pii_detection, parameters, PascalCase)"
-    command: "python3 $TASK_DIR/check_pii_detection.py"
+    command: "python3 $REFERENCE_DIR/check_pii_detection.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

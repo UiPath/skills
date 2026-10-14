@@ -16,9 +16,14 @@ run_limits:
   expected_turns: 30
   turn_timeout: 1200
 
-pre_run:
-  - command: "cp -r $SKILLS_REPO_PATH/tests/tasks/uipath-agents/lowcode/solution_agent_tool/_fixtures/OrchestratorSol ."
-    timeout: 10
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/OrchestratorSol
+      mount_point: OrchestratorSol
+
+reference:
+  directory: .
 
 initial_prompt: |
   Create a new UiPath low-code agent named "ParentAgent" inside the existing
@@ -126,7 +131,7 @@ success_criteria:
 
   - type: run_command
     description: "resource.json wires ToolAgent correctly (type, location, properties, schemas) and UUIDs are distinct"
-    command: "python3 $TASK_DIR/check_solution_agent_tool.py"
+    command: "python3 $REFERENCE_DIR/check_solution_agent_tool.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

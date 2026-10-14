@@ -3,7 +3,7 @@
 
 Validates that the agent authored a builtInValidator guardrail for
 pii_detection in agent.json that is pinned to the BYO configuration the
-mocked discovery served (see mock_template/mocks/uip):
+mocked discovery served (see ../../../_fixtures/ByogMockCli/mocks/uip):
 
   - guardrails array exists and is non-empty
   - At least one guardrail has $guardrailType == "builtInValidator"

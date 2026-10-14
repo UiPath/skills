@@ -41,9 +41,9 @@ Reason the shape from the process — never reach for the template first. Build 
 
 ### Task types
 
-<!-- parsed at runtime by scripts/case/audit_sdd.py — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit_sdd.py will report "model checks disarmed" -->
+<!-- named by case-sdd-conformance-checklist.md — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
-The enum is closed — exactly these nine literals, used verbatim as the SDD `Type:` value. The `type` says **how the work gets done**, not what it is about — read the verb + the actor:
+The enum is closed — exactly these ten literals, used verbatim as the SDD `Type:` value. The `type` says **how the work gets done**, not what it is about — read the verb + the actor:
 
 | Type | Pick when the work is… |
 |---|---|
@@ -52,6 +52,7 @@ The enum is closed — exactly these nine literals, used verbatim as the SDD `Ty
 | `agent` | an **AI agent** reasons over unstructured input: classify, extract, summarize, draft, score |
 | `rpa` | deterministic **UI / desktop** automation of a legacy app with no API |
 | `api-workflow` | calling a **coded / API workflow** directly (HTTP, serverless logic) |
+| `function` | invoking a **deployed Coded Function** — deterministic Python / JS/TS logic, no LLM, no UI |
 | `case-management` | the step **launches / coordinates a child case** |
 | `execute-connector-activity` | one **operation on an Integration Service connector** against a SaaS system (push) |
 | `wait-for-connector` | the case **pauses until an external system calls back** (pull) |
@@ -59,7 +60,7 @@ The enum is closed — exactly these nine literals, used verbatim as the SDD `Ty
 
 Never author: `external-agent`, `external-workflow`, `document-extraction`, `flow-process` (unsupported), and `wait-for-event` / `connector-activity` / `connector-trigger` (not schema literals). Externally-hosted AI agents (CrewAI, Einstein, Databricks, …) model as `api-workflow`, or `execute-connector-activity` when a tenant connector exists.
 
-**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. Ambiguous "approve / review / decide" verbs: named human role or implied judgment → `action`; framed as automated/AI → `agent`. **Default when truly even: `action`** — it keeps a human in the loop and one correction flips it. Decide, disclose, never ask. A compliance trigger phrase forces `action` (below).
+**Tie-breakers:** SaaS integration with a tenant connector → `execute-connector-activity` over `api-workflow`. Deterministic coded logic → `function` only when tenant evidence (tier 3) resolves a deployed Function; otherwise `api-workflow`. Ambiguous "approve / review / decide" verbs: named human role or implied judgment → `action`; framed as automated/AI → `agent`. **Default when truly even: `action`** — it keeps a human in the loop and one correction flips it. Decide, disclose, never ask. A compliance trigger phrase forces `action` (below).
 
 **Activation is a separate axis.** How a task starts (sequential, event-triggered, manually triggered, stage-started) maps to entry rules (Layer 2) and never changes the `type`.
 
@@ -69,7 +70,7 @@ Apply in order:
 
 1. **User decision pinned to a type** — honor unless schema-invalid or conflicting with tier 2.
 2. **Regulatory constraint requiring human sign-off** — the task MUST be `action`. Trigger phrases: "only a licensed X may decide / sign off / certify / approve"; "regulation requires human review"; "ECOA adverse-action notice" / "FCRA adverse action"; "NCQA UM 3 adverse determination"; "HIPAA-protected approval"; "SOC 2 attestation"; any `<role>-licensed` / `<role>-credentialed` gate; "fiduciary review", "legal sign-off", "auditor review". If the user proposes a non-`action` type AND any phrase appears anywhere in the conversation → ask to confirm; never silently accept. Ask phrasing: name the regulation and propose `action` with the LLM/agent work bound to the action's form and recipient. Example: ECOA adverse-action notice with user-stated `agent` → `action` (Compliance Officer recipient; LLM-drafted body bound to the action's form).
-3. **Tenant evidence** — the registry cache resolves a deployed Action App / process / agent / api-workflow / RPA that fits → prefer that resource's type and surface the match.
+3. **Tenant evidence** — the registry cache resolves a deployed Action App / process / agent / api-workflow / function / RPA that fits → prefer that resource's type and surface the match.
 4. **Connector availability** — an Integration Service connector matches → `execute-connector-activity` over `api-workflow`.
 5. **Verb signal** — fall through to the § Task types tie-breakers.
 6. **Fallback** — keep the user's stated value if any; otherwise a placeholder plus a `high` review item ([case-design-lane-guide.md § Review items](case-design-lane-guide.md#review-items)).
@@ -112,7 +113,7 @@ The case, each stage, and each task move through gates driven by **rules** in di
 
 ### Lifecycle gates
 
-<!-- parsed at runtime by scripts/case/audit_sdd.py — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit_sdd.py will report "model checks disarmed" -->
+<!-- named by case-sdd-conformance-checklist.md — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
 | Gate | Marks complete | Legal WHEN rules |
 |---|---|---|
@@ -143,6 +144,25 @@ The case, each stage, and each task move through gates driven by **rules** in di
 - `return-to-origin` is completion-only, and its lane is always interrupting.
 
 **`wait-for-user` ↔ `user-selected-stage` pairing.** Validate enforces the pair both ways: a `wait-for-user` exit with no `user-selected-stage` entry anywhere fails with `Stage rule '<name>' has no possible stage options.`; a `user-selected-stage` entry with no `wait-for-user` exit fails with `Stage entry rule '<name>' will never be met.`. `user-selected-stage` is picker exposure — a user choosing the next stage — never deterministic routing. Deterministic rejection, approval, send-back, and SLA routing use decision facts plus guarded entries instead.
+
+**Repairing a `user-selected-stage` lane — diagnose first; the two repairs are opposites.**
+
+| The source says | Defect | Repair |
+|---|---|---|
+| Pulled aside by hand, picked from the stage picker, nothing triggers it | The lane is correct; its other half is missing | Person-launched |
+| Entry is automatic from a decision, event, or SLA | The picker rule itself | Decision-routed |
+| Nothing either way | Assume person-launched — re-keying on an unstated fact invents a business rule | Person-launched |
+
+**Person-launched.** Give every eligible upstream primary stage a completing `required-tasks-completed` / `wait-for-user` / `Marks Stage Complete: Yes` exit ("any active case" means every primary stage). This REPLACES that stage's existing `required-tasks-completed | exit-only | Yes` row — never a second completion row, never a `Marks Stage Complete: No` row. Add no event, SLA, or decision trigger.
+
+**Decision-routed.** All four edits, or the branch dual-fires or deadlocks:
+
+1. **Lane entry** — REPLACE the `user-selected-stage` row (never keep it alongside) with `selected-stage-completed("<origin stage>")` (or `selected-stage-exited(...)`), `IF` the affirmative guard on the deciding variable — `=js:(vars.<decisionVar> === "<Value>")` — and `Interrupting: Yes`.
+2. **Origin diverting exit** — ADD a row carrying that same affirmative guard with `Marks Stage Complete: No`, so taking the branch does not also complete the stage. Its WHEN is `selected-tasks-completed("<deciding task>")` or `wait-for-connector`: `Marks Complete: No` pairs with nothing else, and `required-tasks-completed | No` is a schema error (§ Lifecycle gates). Stage exit evaluates before stage completion, so an UNguarded diverting row would fire first and the stage would never complete.
+3. **Origin completion exit** — its guard becomes the COMPLEMENT, `=js:(vars.<decisionVar> !== "<Value>")`. Unguarded, it fires on the diverted case too; repeating the affirmative guard on both rows fires both. With more than one diverted outcome the complement excludes every diverted value.
+4. **Orphaned picker exposure** — once no `user-selected-stage` entry remains anywhere, DROP any upstream `wait-for-user` exit that existed only to expose this lane; the pairing above fails a `wait-for-user` with no picker entry.
+
+Copy a sibling outcome of the same decision already keyed this way verbatim — usually the approve branch.
 
 ### Secondary-lane entry shapes
 
@@ -371,16 +391,21 @@ Pick from the source's words — WHERE the work lives, never whether it interrup
 |---|---|---|---|
 | `notify-only` | notify / alert / page someone, nothing more | An escalation on the target's SLA rules — no stage, task, or condition | `n/a` |
 | `start-task` | Follow-up work inside the SAME breached stage ("as part of the review", a named task for a manager or peer) | One task in the breached stage carrying `sla-status-change` as its OWN task-entry row, against that stage's (or the case's) SLA | `—` — a task entry interrupts nothing; never `Yes`/`No` |
-| `enter-stage` | A separate lane owns it ("hand it to", "escalate into <Lane>") | A separate stage carrying the `sla-status-change` entry row | `Yes` when the response pauses, takes over, or reroutes active work; `No` for parallel oversight |
+| `enter-stage` | A separate lane owns it ("hand it to", "escalate into <Lane>") | A separate stage carrying the `sla-status-change` entry row | `Yes` when the source says **interrupt**, **global interrupt**, **take over**, **stop** or **pause** the work, or when the lane must be cleared **before the case or stage can close**; `No` ONLY for parallel oversight that leaves the work running |
 | `exit-stage` | The breached stage should end or route away | A stage-exit row | Per exit semantics |
 | `exit-case` | The case should close, cancel, or reach an alternate terminal | A case-exit row | Per exit semantics |
 
 Never author `start-task` as a stage-entry row on the breached stage: it validates, but stage re-entry re-runs every task whose `Run Only Once` is `No` — a breach meant to add one manager check silently re-runs the whole stage.
 
+Read the Interrupting cell off the SOURCE's words, exactly like the Response cell — it is not a judgement call you make after choosing the lane. A source that says "globally interrupt into <Lane>" has already said `Yes`; treating it as parallel oversight contradicts the sentence you are modelling. A case-scope breach that must be resolved before the case can close is a takeover, never oversight.
+
 ### Defaults when the source is silent
 
 - SLA exists only where the source mentions timing, read literally ("about a day" → 1 day). No timing → `—`, no SLA rule. Scope, status, and response are chosen separately (§ Choosing the response).
-- No stated response → both statuses `notify-only`. Never invent a stage, task, or routing change.
+- Every (scope, SLA) authors BOTH statuses, always. The rule is per status, not per SLA: a stated
+  response for one status never removes the other status's row, and a status the source is silent on is
+  `notify-only` with Target and Interrupting `—` — an omitted row is an unauthored response, not a way to
+  write "nothing happens". Never invent a stage, task, or routing change.
 - At-risk threshold: SLA ≤ 3 days → 75%; 3–10 days → 70%; > 10 days → 80%.
 - Recipients: at-risk → the owner persona's user group; breached → the leadership tier (Compliance for regulation-driven cases). Record substituted defaults with provenance.
 
@@ -400,7 +425,7 @@ Never author `start-task` as a stage-entry row on the breached stage: it validat
 
 ### Naming rules
 
-<!-- parsed at runtime by scripts/case/audit_sdd.py — do not rename this heading or reshape this table/fence; a rename disarms the checks and audit_sdd.py will report "model checks disarmed" -->
+<!-- named by case-sdd-conformance-checklist.md — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
 Safe display characters for stage labels, task display names, and condition/SLA/escalation titles:
 
@@ -408,7 +433,7 @@ Safe display characters for stage labels, task display names, and condition/SLA/
 ^[A-Za-z0-9 _-]+$
 ```
 
-**`:` is the hard ban** — case-execution events are colon-delimited, so a colon in a name breaks routing. It is the one character `audit_sdd.py` gates on, in every mode, including names read from a draft: surface and ask, never silently keep or repair.
+**`:` is the hard ban** — case-execution events are colon-delimited, so a colon in a name breaks routing. It is the one character the conformance checklist (item 11) gates on, in every mode, including names read from a draft: surface and ask, never silently keep or repair.
 
 Everything else in that set is a **minting preference, not a platform limit** — the auditor reports it as an advisory that does not gate. Apply it to names YOU mint: replace disallowed runs with one space, collapse, trim; on an empty result or a collision add a safe qualifier and disclose. **A name the user, the source document, or a draft supplied is kept verbatim, punctuation included** (`Credit & Document Verification` stays). Rewriting one to fit the charset is the domain-fidelity defect the lane's authoring policy forbids, and it costs repair rounds for a display preference.
 
@@ -427,7 +452,7 @@ Comparison exact — case-sensitive, untrimmed. Never normalize external lookup 
 
 ## Layer closure — the design checklist
 
-ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm — and when the request is save-a-draft-and-stop there IS no Confirm, so re-walk it immediately BEFORE the write instead; a draft skips the confirmation, never the closure walk (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — `scripts/case/audit_sdd.py` owns them (enforcement list: template § Validation); run it on the written file.
+ONE checklist. Settle every item by assumption during Sketch; re-walk at Confirm — and when the request is save-a-draft-and-stop there IS no Confirm, so re-walk it immediately BEFORE the write instead; a draft skips the confirmation, never the closure walk (fix failures silently — authoring defects, not user decisions; unfixable → Review Flags). Mechanical shape/contract checks are NOT here — [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md) owns them; walk it against the written file.
 
 **Blocking — the design is unbuildable or unreviewable until fixed:**
 

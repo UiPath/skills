@@ -1,17 +1,21 @@
-# Same-ground alignment expansion plan (Tao, 2026-08-21): loop-neutral
-# v1-base prompt, outcome-graded criteria at preserved weights, and
-# arm-agnostic artifact discovery.
 task_id: skill-flow-feet-inches
 description: >
   Create a UiPath Flow that converts a value between feet and inches based on
   a direction input, using a Switch node to pick the conversion. Exercises
   switch branching, multi-case wiring, and branch convergence on End.
 tags: [uipath-maestro-flow, e2e, lifecycle:generate, shape:multi-node, node:switch]
-
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
 run_limits:
   expected_turns: 23
   turn_timeout: 1200
   task_timeout: 2700  # 1380s grading + a turn; inherited 1200 could not fit grading
+
+reference:
+  directory: ../..
 
 initial_prompt: |
   Build the flow inside a solution of the same name.
@@ -40,7 +44,7 @@ success_criteria:
   # ── Flow file validity ─────────────────────────────────────────────────
   - type: run_command
     description: "uip maestro flow validate passes on the flow file"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/validate_flow.py"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0
@@ -49,7 +53,7 @@ success_criteria:
   # ── Execution checks — one debug call per direction ───────────────────
   - type: run_command
     description: "Debug with (23, \"f2i\") returns 276 via a Switch node"
-    command: "python3 $TASK_DIR/check_feet_inches_flow.py f2i"
+    command: "python3 $REFERENCE_DIR/_shared/check_feet_inches_flow.py f2i"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
@@ -57,12 +61,12 @@ success_criteria:
 
   - type: run_command
     description: "Debug with (276, \"i2f\") returns 23 via a Switch node"
-    command: "python3 $TASK_DIR/check_feet_inches_flow.py i2f"
+    command: "python3 $REFERENCE_DIR/_shared/check_feet_inches_flow.py i2f"
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
     pass_threshold: 1.0
 
 post_run:
-  - command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/cleanup_solutions.py"
+  - command: "python3 _setup/cleanup_solutions.py"
     timeout: 120

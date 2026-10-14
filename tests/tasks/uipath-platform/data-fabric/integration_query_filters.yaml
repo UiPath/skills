@@ -7,9 +7,17 @@ description: >
   scenarios, then deletes the test records. Tests the full query body schema
   and the no-body pagination path end-to-end.
 tags: [uipath-platform, data-fabric, integration, records, mode:operate, lifecycle:discover]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
 run_limits:
   expected_turns: 25
   turn_timeout: 600
+
+reference:
+  directory: .
 
 initial_prompt: |
   We have an Orders UiPath Data Fabric entity called `CE_IntegrationOrders` already loaded
@@ -32,8 +40,6 @@ initial_prompt: |
       pages. Any duplicate IDs across pages? How many unique IDs total?
     - Orders whose status is one of {Pending, Active} — how many?
     - Count of orders grouped by status — one count per status.
-
-
 success_criteria:
   - type: command_executed
     description: "Agent verified login status"
@@ -61,7 +67,7 @@ success_criteria:
 
   - type: run_command
     description: "End state: CE_IntegrationOrders has exactly 4 records (agent did not mutate the seed)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/assert_record_count.py --entity-name CE_IntegrationOrders --expected 4"
+    command: "python3 $REFERENCE_DIR/_shared/assert_record_count.py --entity-name CE_IntegrationOrders --expected 4"
     timeout: 240
     expected_exit_code: 0
     weight: 2.5
@@ -168,6 +174,7 @@ success_criteria:
   - type: llm_judge
     description: "Agent's reported answers match the expected counts / values for each of the 8 query scenarios"
     include_agent_output: true
+    include_reference: false
     prompt: |
       The agent ran 8 queries against a seeded 4-row `CE_IntegrationOrders`
       entity (records ORD-001..ORD-004, statuses: 1x Pending, 2x Active,
@@ -209,18 +216,11 @@ success_criteria:
 
 pre_run:
   - command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seed_entity.py
-      --entity-name CE_IntegrationOrders
-      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.schema.json
-      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.records.json
-      --reset
+      python3 _setup/seed_entity.py --entity-name CE_IntegrationOrders --schema-file _setup/seeds/integration_orders.schema.json --records-file _setup/seeds/integration_orders.records.json --reset
     timeout: 60
     fail_on_error: true
 
 post_run:
   - command: >-
-      python3 $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/revert_entity_to_seed.py
-      --entity-name CE_IntegrationOrders
-      --schema-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.schema.json
-      --records-file $SKILLS_REPO_PATH/tests/tasks/uipath-platform/data-fabric/_shared/seeds/integration_orders.records.json
+      python3 _setup/revert_entity_to_seed.py --entity-name CE_IntegrationOrders --schema-file _setup/seeds/integration_orders.schema.json --records-file _setup/seeds/integration_orders.records.json
     timeout: 120

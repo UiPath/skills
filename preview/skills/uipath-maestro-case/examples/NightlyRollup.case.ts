@@ -13,7 +13,7 @@
  * No bindings or connector library — compile with `uip maestro case compile`,
  * check source with `uip maestro case check`, then run `uip maestro case validate`.
  */
-import { casePlan, rule, manualTrigger, timerTrigger } from '@uipath/flow-sdk/case';
+import { casePlan, rule, manualTrigger, timerTrigger } from '@uipath/maestro-builder-sdk/case';
 
 export default casePlan('nightly-rollup')
   .name('NightlyRollup')

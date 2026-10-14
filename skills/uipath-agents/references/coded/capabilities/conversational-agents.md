@@ -4,7 +4,7 @@
 
 Chat-style coded agents where the UiPath runtime feeds **one message per turn** and threads history across turns.
 
-Supported on **LangGraph** and **LlamaIndex**. Coded Function and OpenAI Agents are not conversational.
+Supported on **LangGraph** and **LlamaIndex**. OpenAI Agents is not conversational.
 
 ## Contract (framework-agnostic)
 

@@ -23,6 +23,9 @@ run_limits:
 sandbox:
   python: {}
 
+reference:
+  directory: .
+
 initial_prompt: |
   Create a UiPath low-code conversational agent "MemoryAgent" that
   helps users plan trips. The agent should remember user preferences
@@ -76,7 +79,7 @@ success_criteria:
 
   - type: run_command
     description: "No autonomous memory patterns enabled anywhere in the agent project (Not Yet Available for conversational)"
-    command: "python3 $TASK_DIR/check_no_memory_artifacts.py"
+    command: "python3 $REFERENCE_DIR/check_no_memory_artifacts.py"
     timeout: 30
     expected_exit_code: 0
     weight: 6.0

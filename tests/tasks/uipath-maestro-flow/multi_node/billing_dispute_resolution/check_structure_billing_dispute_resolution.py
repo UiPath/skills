@@ -10,7 +10,10 @@ actual directed topology against the reference flow's shape:
   Required nodes (anti-hardcode — each targets a tenant resource a Script node
   cannot fake):
     - IxP extraction              (uipath.ixp.*)                 invoice parsing
-    - Data Service query          (…dataservice.query-entity-records)  ERP/CRM lookup
+    - entity read                 (`flow_check.ENTITY_QUERY_HINTS`)   ERP/CRM lookup
+      Either shape counts: the `uipath-uipath-dataservice` connector activity
+      or the native `core.datafabric.read` node. Tenant availability decides
+      which one the agent can build, so pinning one rejects a correct flow.
     - inline autonomous agent     (uipath.agent.autonomous)      analyst + writer
     - context index               (uipath.agent.resource.context.index.*)  SOP grounding
     - API-workflow function       (uipath.core.api-workflow.*)   financial posting
@@ -18,7 +21,7 @@ actual directed topology against the reference flow's shape:
     - end                         (core.control.end)             RETURNS the outcome
 
   Topology the reference flow pins (each is wiring, not mere presence):
-    1. trigger → IxP → 2× Data Service → analyst agent   (the ingest pipeline is
+    1. trigger → IxP → 2× entity read → analyst agent    (the ingest pipeline is
        connected end-to-end; no orphaned resource nodes).
     2. the SOP context index is ATTACHED to an agent      (a `[context]` edge),
        not present-but-dangling.
@@ -43,6 +46,8 @@ while _d != os.path.dirname(_d) and not os.path.isdir(os.path.join(_d, "_shared"
     _d = os.path.dirname(_d)
 sys.path.insert(0, _d)
 from _shared.flow_check import (  # noqa: E402
+    ENTITY_QUERY_HINTS,
+    assert_flow_has_any_node_type,
     assert_flow_has_node_type,
     find_project_dir,
 )
@@ -103,7 +108,7 @@ def assert_topology(nodes_by_id, edges):
 
     triggers = of("core.trigger")
     ixp = of("uipath.ixp")
-    ds = of("dataservice.query-entity-records")
+    ds = {i for hint in ENTITY_QUERY_HINTS for i in of(hint)}
     agents = of("uipath.agent.autonomous")
     ctx = of("uipath.agent.resource.context.index")
     switch = of("core.logic.switch")
@@ -112,24 +117,24 @@ def assert_topology(nodes_by_id, edges):
     ends = of("core.control.end")
 
     need(triggers, "no trigger node (core.trigger.*) — flow has no entry point")
-    need(len(ds) >= 2, f"expected ≥2 Data Service query nodes (ERP+CRM), found {len(ds)}")
+    need(len(ds) >= 2, f"expected ≥2 entity-read nodes (ERP+CRM), found {len(ds)}")
     need(len(agents) >= 2, f"expected ≥2 inline agents (analyst+writer), found {len(agents)}")
 
     from_trigger = reach(triggers)
 
-    # 1. Ingest pipeline is connected: IxP and both Data Service lookups are
+    # 1. Ingest pipeline is connected: IxP and both entity-read lookups are
     #    reachable from the trigger (not orphaned islands).
     need(ixp & from_trigger, "IxP node not reachable from the trigger")
-    need(ds <= from_trigger, "a Data Service query node is not reachable from the trigger")
+    need(ds <= from_trigger, "an entity-read node is not reachable from the trigger")
 
     # analyst = an agent the switch is reachable FROM (it routes on the agent's output)
     need(switch, "no switch node (core.logic.switch)")
     analysts = {a for a in agents if switch & reach({a})}
     need(analysts, "no agent flows into the switch — analyst agent is not wired before routing")
 
-    # ingest → analyst: the analyst is downstream of BOTH Data Service lookups.
+    # ingest → analyst: the analyst is downstream of BOTH entity-read lookups.
     for q in ds:
-        need(analysts & reach({q}), "analyst agent is not downstream of a Data Service lookup")
+        need(analysts & reach({q}), "analyst agent is not downstream of an entity-read lookup")
 
     # 2. SOP context index is attached to an agent (a context edge), not dangling.
     need(ctx, "no context-index node (SOP grounding)")
@@ -187,14 +192,14 @@ def main():
     # Positive: the full orchestration is present. Each hint targets a resource
     # node that a hardcoded Script cannot substitute for.
     assert_flow_has_node_type(["uipath.ixp"])
-    assert_flow_has_node_type(["dataservice.query-entity-records"])
+    assert_flow_has_any_node_type(ENTITY_QUERY_HINTS)
     assert_flow_has_node_type(["uipath.agent.autonomous"])
     assert_flow_has_node_type(["uipath.agent.resource.context.index"])
     assert_flow_has_node_type(["uipath.core.api-workflow"])
     assert_flow_has_node_type(["core.logic.switch"])
     assert_flow_has_node_type(["core.logic.decision"])
     assert_flow_has_node_type(["core.control.end"])
-    print("OK: full orchestration present (IxP, Data Service, 2 inline agents, "
+    print("OK: full orchestration present (IxP, entity read, 2 inline agents, "
           "SOP context index, API-workflow, switch, decision, end)")
 
     project_dir = find_project_dir()
@@ -202,7 +207,7 @@ def main():
 
     # Wiring — the orchestration is connected in the right order, not just present.
     assert_topology(nodes_by_id, edges)
-    print("OK: topology wired correctly (trigger→IxP→Data Service→analyst→switch→"
+    print("OK: topology wired correctly (trigger→IxP→entity read→analyst→switch→"
           "decision→API-workflow→writer→end; SOP index attached to an agent)")
 
     # Edit 1 — HITL removed.

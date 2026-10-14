@@ -314,8 +314,8 @@ namespace MyProject
         [TestCase]
         public void Execute()
         {
-            string baseline = "The order total is $150.00.\nShipped on 01/15/2024.";
-            string actual = "The order total is $150.00.\nShipped on 02/20/2024.";
+            string baseline = "The order total is $150.00.\nShipped on <SHIP_DATE>.";
+            string actual = "The order total is $150.00.\nShipped on <OTHER_SHIP_DATE>.";
 
             // Simple text comparison
             ComparisonResult result = testing.CompareText(baseline, actual);

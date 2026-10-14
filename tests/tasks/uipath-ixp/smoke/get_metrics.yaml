@@ -2,7 +2,7 @@ task_id: skill-ixp-get-metrics-smoke
 description: >
   Smoke: asked for an improvement loop's BASELINE scores, the agent reads
   the latest trained version — the model instruction edits retrain
-  (Critical Rule 21, guide 1a) — not the live one.
+  (Critical Rule 20, guide 1a) — not the live one.
 
   Mirror of metrics_live_version on the same fixture: an agent that
   resolves the live version regardless of intent answers 9/0.98 and fails

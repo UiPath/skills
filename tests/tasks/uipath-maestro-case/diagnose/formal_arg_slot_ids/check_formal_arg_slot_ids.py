@@ -1,5 +1,8 @@
 import json,os,re,sys
-CP = "LinearThreeStages/LinearThreeStages/caseplan.json"
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from _shared.case_check import existing_caseplan
+# Any plan name (caseplan.case / caseplan.json / ...), newest first; the json name when none exists.
+CP = existing_caseplan("LinearThreeStages/LinearThreeStages/caseplan.json") or "LinearThreeStages/LinearThreeStages/caseplan.json"
 def fail(m): sys.exit(f"FAIL: {m}")
 def load():
     if not os.path.isfile(CP): fail(f"{CP} not found")
@@ -39,6 +42,6 @@ for kind in ("inputs","outputs"):
         elif sid==name or (var and sid==var):
             bad.append(f"{kind}['{name}'] id={sid!r} still copies its companion name")
 if renamed: fail("variables were renamed or removed instead of re-minting ids:\n  - "+"\n  - ".join(renamed))
-if bad: fail("Rule 22 / Check 10 violations remain (CLI validate does not catch these):\n  - "+"\n  - ".join(bad))
+if bad: fail("Rule 23 / Check 10 violations remain (CLI validate does not catch these):\n  - "+"\n  - ".join(bad))
 n=len((v.get("inputs") or []))+len((v.get("outputs") or []))
 print(f"PASS: all {n} formal-arg slot ids are distinct from their companion names; names/vars unchanged")

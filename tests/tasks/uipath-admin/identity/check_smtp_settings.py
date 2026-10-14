@@ -5,11 +5,7 @@ import logging
 import os
 import sys
 
-_shared = (os.path.join(os.environ['SKILLS_REPO_PATH'],
-                        'tests', 'tasks', 'uipath-admin', '_shared')
-           if os.environ.get('SKILLS_REPO_PATH')
-           else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_shared'))
-sys.path.insert(0, _shared)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '_setup'))
 from admin_helpers import run_cli, poll, fail, ok
 
 logging.basicConfig(level=logging.INFO, format="check_smtp: %(message)s")

@@ -9,7 +9,7 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "_setup"))
 from eval_scoring import print_results, score_project  # noqa: E402
 
 parser = argparse.ArgumentParser()

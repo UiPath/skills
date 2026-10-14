@@ -40,6 +40,9 @@ dataset:
     - id: r10
       prompt: "What published IxP extractors can a flow node reference?"
 
+reference:
+  directory: ..
+
 initial_prompt: |
   ${row.prompt}
   Answer the question without creating a flow.
@@ -67,7 +70,7 @@ success_criteria:
   # A listing/Q&A task should not create a Flow artifact.
   - type: run_command
     description: "No .flow file was created (listing is read-only Q&A, not a build task)"
-    command: "python3 $SKILLS_REPO_PATH/tests/tasks/uipath-maestro-flow/_shared/flow_contains.py --expect-none"
+    command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --expect-none"
     expected_exit_code: 0
     suite_thresholds: {mean: 0.85}
 
