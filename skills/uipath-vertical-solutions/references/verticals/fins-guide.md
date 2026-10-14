@@ -1,6 +1,6 @@
 # FINS (Financial Services)
 
-What a first deploy of a FINS package needs, and the access a **user login** needs to deploy and seed it with `uip vss deploy`.
+What a first deploy of a FINS package needs, the access a **user login** needs to deploy and seed it with `uip vss deploy`, and how to set up who may use a deployed solution.
 
 ## Packages
 
@@ -50,13 +50,25 @@ An administrator does these once. The deploy does not:
 - **The `Vertical.Unlimited` entitlement** on the organization. The service refuses the job without it. It is a license, not a user permission.
 - **The access** in the tables below, for the person who deploys.
 
-## After the deploy
+## Set up a deployed solution
 
-The deploy does not set up who may use the web app. Until this is done, **Lending QA/QC shows every user an access-denied screen**: it only lets in members of the groups below. Loan Setup limits only its admin portal, settings pages, feedback dashboard and solution tests to them. Source: the FINS team's role setup guide (`public_docs/rbac_setup.md` in the FINS solution repository).
+A separate task from the deploy, run when the user asks ("help me set up QA/QC", "who can use Loan Setup"), on any deployed copy. The deploy does not need it, and it does not need a new deploy.
 
-Walk the user through it in this order, one step at a time.
+It decides who may use the web app. Until it is done, **Lending QA/QC shows every user an access-denied screen**: it only lets in members of the groups below. Loan Setup limits only its admin portal, settings pages, feedback dashboard and solution tests to them. Source: the FINS team's role setup guide (`public_docs/rbac_setup.md` in the FINS solution repository).
 
-**1. Create the Identity groups.** An organization administrator creates them in the Identity admin pages (**Admin**, then **Accounts & Groups**, then **Groups**, then **Add group**): give each group a name and add its members. One group per role:
+**Who can do it.** Creating groups and adding members needs an organization administrator. Adding the role rows needs record access in the solution folder (the same as a seed, see [Seed](#seed-uip-vss-deploy-seed-on-the-solution-folder)). When the logged-in user cannot do a step, give them that step for an administrator, with the portal path, and go on with the rest.
+
+Read first, then change. Show what is already there and what is missing, and ask for a yes before each change (Critical Rule 6).
+
+**1. Find the deployment and its solution folder.**
+
+```bash
+uip solution deploy list --output json --output-filter "[].{Name:Name,PackageName:PackageName,Version:PackageVersion,FolderPath:FolderPath,FolderKey:FolderKey,Operation:Operation,OperationStatus:OperationStatus}"
+```
+
+Skip rows whose `Operation` is `Uninstall` or whose `OperationStatus` is `Failed`. `FolderKey` is the solution folder's key (`<SOLUTION_FOLDER_KEY>`). When several copies are installed, list them and ask which.
+
+**2. The Identity groups.** One group per role:
 
 | Role | Suggested group name | Who goes in it |
 |------|----------------------|----------------|
@@ -64,9 +76,19 @@ Walk the user through it in this order, one step at a time.
 | `BUSINESS_USER` | `FINS-BusinessUser` | Everyone who uses the solution day to day. Leaving it empty locks them all out of Lending QA/QC |
 | `SOLUTION_TEST_ADMIN` | `FINS-SolutionTestAdmin` | Who may create and run solution tests. For now it also opens the admin portal and settings pages |
 
-The names are the user's choice. They are case-sensitive and cannot contain a comma. A user may be in more than one group.
+The names are the user's choice. They are case-sensitive and cannot contain a comma. A user may be in more than one group, and the groups are shared by every copy on the organization.
 
-**2. Link each role to its group** in the `FINSRoleGroupMapping` entity, one row per role, in the solution folder:
+```bash
+uip admin groups list --output json                                   # which groups exist
+uip admin groups create "<GROUP_NAME>" --output json                  # a missing group
+uip admin users list --search "<NAME_OR_EMAIL>" --limit 10 --output json   # a member's user id
+uip admin groups members add <GROUP_ID> --user-ids "<USER_ID_1>,<USER_ID_2>" --output json
+uip admin groups members list <GROUP_ID> --output json                # check
+```
+
+In the portal: **Admin**, then **Accounts & Groups**, then **Groups**, then **Add group**.
+
+**3. Link each role to its group** in the `FINSRoleGroupMapping` entity in the solution folder, one row per role:
 
 | Role | GroupName |
 |------|-----------|
@@ -74,14 +96,21 @@ The names are the user's choice. They are case-sensitive and cannot contain a co
 | `BUSINESS_USER` | `FINS-BusinessUser` |
 | `SOLUTION_TEST_ADMIN` | `FINS-SolutionTestAdmin` |
 
-- `Role` must be exactly one of the three values. Every role needs a row: a missing row is an error, not "no access needed".
-- `GroupName` must match the group's name in step 1 exactly. To give a role to several groups, list them comma-separated in that one row (`FINS-Admin,RPA-Ops`). A mistyped name in such a list is skipped without a warning, so access can seem to work while one group is left out: check each name.
-- **Loan Setup:** the seed templates include `FINSRoleGroupMapping.csv`, already filled with the suggested names. Change it if the groups have other names. The rows exist only after the seed runs (step 8 in SKILL.md), so the seed is part of this step.
-- **Lending QA/QC:** its seed templates do not include this entity. Add the rows in **Data Fabric**: open the `FINSRoleGroupMapping` entity in the solution folder and add a record per role. This needs the same record access as a seed (see [Seed](#seed-uip-vss-deploy-seed-on-the-solution-folder)).
+```bash
+uip df entities list --folder-key <SOLUTION_FOLDER_KEY> --output-filter "[?Name=='FINSRoleGroupMapping'].{Id:Id}" --output json
+uip df records list <ENTITY_ID> --folder-key <SOLUTION_FOLDER_KEY> --output json
+uip df records insert <ENTITY_ID> --folder-key <SOLUTION_FOLDER_KEY> --body '[{"Role":"ADMIN","GroupName":"FINS-Admin"}]' --output json
+uip df records update <ENTITY_ID> --folder-key <SOLUTION_FOLDER_KEY> --body '{"Id":"<RECORD_ID>","GroupName":"<GROUP_NAME>"}' --output json
+```
 
-A wrong name is fixed in the entity and takes effect when the app reloads, with no redeploy. An administrator who is locked out of the app can still edit the entity in Data Fabric.
+- `Role` must be exactly one of the three values, and is unique: insert only the roles that have no row, and fix a wrong name with `update`. Every role needs a row: a missing row is an error, not "no access needed".
+- `GroupName` must match the group's name exactly. To give a role to several groups, list them comma-separated in that one row (`FINS-Admin,RPA-Ops`). A mistyped name in such a list is skipped without a warning, so access can seem to work while one group is left out: check each name against step 2.
+- **Loan Setup:** its seed templates include `FINSRoleGroupMapping.csv` with the suggested names, so a seeded copy may already have the rows. Check them against the real group names. When the rows are set up here before a seed, tell the user to make the CSV match them first (or remove its rows), so the seed does not clash with them.
+- **Lending QA/QC:** its seed templates do not include this entity, so the rows are added here.
 
-**3. Solution tests (Loan Setup):** set each trigger that starts a solution test to run as a robot account, not "Run as HTTP Caller". That robot account needs a scope that reads group membership, such as `PM.Group.Read`, or whichever scope the tenant requires.
+A fixed row takes effect when the app reloads, with no redeploy. An administrator who is locked out of the app can still fix the rows.
+
+**4. Solution tests (Loan Setup).** No command does this: an administrator sets each trigger that starts a solution test to run as a robot account, not "Run as HTTP Caller". That robot account needs a scope that reads group membership, such as `PM.Group.Read`, or whichever scope the tenant requires.
 
 ## Access
 

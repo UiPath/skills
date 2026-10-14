@@ -1,7 +1,7 @@
 ---
 name: uipath-vertical-solutions
-description: "UiPath Vertical Solutions via `uip vss deploy` — guided deploy of an industry solution package such as FINS (Financial Services) Loan Setup (`fins.loan-setup`) or Lending QA/QC (`fins.qaqc-uipath`): fresh install, upgrade/downgrade, deploy job status/resume/cancel, Data Fabric seeding (`uip vss deploy seed`), and checking the deploying user's tenant and folder access. Diagnoses refused or paused deploy jobs. For packing/deploying your own `.uipx` with `uip solution`→uipath-solution; Orchestrator folders/queues/roles or Data Fabric records outside a deploy→uipath-platform; Identity users/groups/external apps→uipath-admin; faulted runtime jobs→uipath-troubleshoot."
-when_to_use: "User says 'deploy a vertical solution', 'deploy FINS Loan Setup', 'deploy LoanQAQC', 'uip vss deploy', 'upgrade the vertical solution', 'deploy job paused', 'resume the deploy', 'cancel the deploy job', 'seed the deployed solution', 'what access do I need to deploy FINS', or shows a deploy error such as 'User doesn't have permissions SolutionDeployments.Create granted' or 'Seems like you don't have access on Orchestrator'."
+description: "UiPath Vertical Solutions via `uip vss deploy` — guided deploy of an industry solution package such as FINS (Financial Services) Loan Setup (`fins.loan-setup`) or Lending QA/QC (`fins.qaqc-uipath`): fresh install, upgrade/downgrade, deploy job status/resume/cancel, Data Fabric seeding (`uip vss deploy seed`), setting up a deployed solution (such as the FINS role groups), and checking the deploying user's tenant and folder access. Diagnoses refused or paused deploy jobs. For packing/deploying your own `.uipx` with `uip solution`→uipath-solution; Orchestrator folders/queues/roles or Data Fabric records outside a deploy→uipath-platform; other Identity users/groups/external apps→uipath-admin; faulted runtime jobs→uipath-troubleshoot."
+when_to_use: "User says 'deploy a vertical solution', 'deploy FINS Loan Setup', 'deploy LoanQAQC', 'uip vss deploy', 'upgrade the vertical solution', 'deploy job paused', 'resume the deploy', 'cancel the deploy job', 'seed the deployed solution', 'help me set up QA/QC', 'set up Loan Setup roles', 'what access do I need to deploy FINS', or shows a deploy error such as 'User doesn't have permissions SolutionDeployments.Create granted' or 'Seems like you don't have access on Orchestrator'."
 ---
 
 # UiPath Vertical Solutions Deploy
@@ -22,6 +22,7 @@ Assume the user has never deployed a solution. You do the work: run the commands
 - User wants to upgrade or downgrade an installed Vertical Solution
 - User asks for the status of a deploy job, or wants to resume or cancel one ("deploy job paused", "resume the deploy")
 - User wants to seed a deployed solution's Data Fabric data with `uip vss deploy seed`
+- User wants to set up a deployed solution, such as who may use its app ("help me set up QA/QC", "set up Loan Setup roles")
 - User asks what access a deploy needs, or whether a user can deploy a package into a folder
 - User shows a deploy refusal, such as `User doesn't have permissions SolutionDeployments.Create granted` or `Seems like you don't have access on Orchestrator`
 
@@ -140,7 +141,6 @@ Tell the user what happened in plain words, and what to do next:
 
 ### 8. After the deploy
 
-- **The vertical's own setup.** When the vertical's file has an "After the deploy" section, walk the user through it, one step at a time, in its order, with its names and paths. It often decides who may use the solution's app at all, so do not skip it.
 - **Seed data.** The deploy wrote CSV templates to `./seeding/<PACKAGE_NAME>`. Explain that these are the solution's starting data (its records in Data Fabric). The user fills in the CSVs. Seeding writes records, so ask for a yes, then run:
 
   ```bash
@@ -149,7 +149,16 @@ Tell the user what happened in plain words, and what to do next:
 
   A seed is safe to run again: rows it already inserted are matched, not inserted twice. `--refresh` downloads fresh templates and replaces the CSVs.
 
-On `succeeded` (with or without warnings), report the result (the solution folder, and that it is active) and the steps above, nothing else. The job log prints a "Setup the platform lists for this deployment" block before it activates: it is the platform's generic checklist (activate apps, add accounts and roles, add machines, account-machine mappings, per-robot asset values). Do not pass it on: the deploy activated, so it no longer applies. Do not add setup steps of your own either: nothing the vertical's file does not list (no activation checks, redirect URLs, folder accounts, robots, machines or asset values). When the job needs something more, it pauses and names it (step 7).
+On `succeeded` (with or without warnings), report the result (the solution folder, and that it is active) and the seed step above, nothing else. When the vertical's file has a "Set up a deployed solution" section, add one sentence: they can ask later to set up who may use the solution. When that file says the app turns everyone away until then, say so in the same sentence. Do not start it, and do not list its steps: it is a separate task ([Set Up a Deployed Solution](#set-up-a-deployed-solution)). The job log prints a "Setup the platform lists for this deployment" block before it activates: it is the platform's generic checklist (activate apps, add accounts and roles, add machines, account-machine mappings, per-robot asset values). Do not pass it on: the deploy activated, so it no longer applies. Do not add setup steps of your own either: nothing the vertical's file does not list (no activation checks, redirect URLs, folder accounts, robots, machines or asset values). When the job needs something more, it pauses and names it (step 7).
+
+## Set Up a Deployed Solution
+
+A separate task from the deploy: the user asks for it later ("help me set up QA/QC", "set up who can use Loan Setup"). It needs no deploy job, and a deploy does not need it.
+
+1. Run `uip login status --output json` and check it is a user logged in to the right tenant. The `uip vss deploy --help` check is not needed here.
+2. Pick the vertical and the solution (step 2), skipping what the user already said.
+3. Open the vertical's file and follow its "Set up a deployed solution" section. When it has none, say the skill has no setup steps for that vertical, and stop. Do not make some up.
+4. Read before you change: show what exists and what is missing. Each change (a group, a member, a row) changes the tenant, so ask for a yes first (rule 6).
 
 ## Check the Access
 
@@ -199,7 +208,7 @@ Follow [access-troubleshooting-guide.md](references/access-troubleshooting-guide
 | File | Read when |
 |------|-----------|
 | [references/verticals/verticals-guide.md](references/verticals/verticals-guide.md) | Picking a vertical, checking a user against a vertical's access list, or adding a vertical |
-| [references/verticals/fins-guide.md](references/verticals/fins-guide.md) | FINS packages, the values they ask for, what must exist before the first deploy, the role setup after it, and their access lists |
+| [references/verticals/fins-guide.md](references/verticals/fins-guide.md) | FINS packages, the values they ask for, what must exist before the first deploy, how to set up a deployed solution, and their access lists |
 | [references/upgrade-guide.md](references/upgrade-guide.md) | Upgrading or downgrading an installed deployment |
 | [references/access-troubleshooting-guide.md](references/access-troubleshooting-guide.md) | A deploy step is refused, a role read returns `403`, or granting access after the user agrees |
 
@@ -213,4 +222,4 @@ Follow [access-troubleshooting-guide.md](references/access-troubleshooting-guide
 6. **Do not treat `cancel` as an undo.** Steps already applied stay applied.
 7. **Do not read the CLI source, call the service's REST API, or search the disk for solution zips.** The service deploys from its own feed.
 8. **Do not redeploy, upgrade, resume or run `seed --refresh` before the user copies filled-in CSVs out of `./seeding/<PACKAGE_NAME>`.** A successful deploy or resume, and `--refresh`, replace them. A plain `seed` reads them and leaves them in place.
-9. **Do not add post-deploy setup the vertical's file does not list.** After a successful deploy, report the job result, walk through the vertical file's "After the deploy" section, and offer seeding. List nothing else: no activation checks, redirect URLs, folder accounts, robots, machines or asset values, whether you made them up or read them in the job log's "Setup the platform lists" block of a deploy that succeeded. When the job pauses because activation failed, the pause names the setup still needed: pass that on (step 7).
+9. **Do not add setup to the deploy.** After a successful deploy, report the job result and offer seeding. Setting up the solution is a separate task the user asks for (see [Set Up a Deployed Solution](#set-up-a-deployed-solution)). List nothing else: no activation checks, redirect URLs, folder accounts, robots, machines or asset values, whether you made them up or read them in the job log's "Setup the platform lists" block of a deploy that succeeded. When the job pauses because activation failed, the pause names the setup still needed: pass that on (step 7).
