@@ -253,6 +253,11 @@
 /skills/uipath-aops/ @AndreiRR24 @UiPath/xworks
 /tests/tasks/uipath-aops/ @AndreiRR24 @UiPath/xworks
 
-# Document-processing mode selection (Extract / Classify & Split / Summarize / search mode / harness)
+# Vertical Solutions skill (uip vss deploy)
+/skills/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
+/tests/tasks/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
+/skill-flavors/studioweb/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
+
+# File handling strategy selection (Extract / Summarize / Analyze files / batch transform / search / harness)
 /skills/uipath-doc-strategy-select/ @SummerWangUiPath
 /tests/tasks/uipath-doc-strategy-select/ @SummerWangUiPath

@@ -272,6 +272,14 @@
         "url": null
       },
       "last_synced": null
+    },
+    "uipath-vertical-solutions": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
     }
   }
 }

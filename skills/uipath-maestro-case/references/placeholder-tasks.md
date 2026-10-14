@@ -10,7 +10,7 @@ Registry pulls are often incomplete during early authoring:
 - Custom Integration Service connectors have not been registered.
 - IS connections for registered connectors are not yet provisioned.
 
-If the skill halted on every unresolved resource, the generated `caseplan.json` would be a small fragment — not reviewable, not validatable, not useful. Placeholders solve that: the full **workflow structure** (stages, conditions, SLA, ordering, task names + types) lands in `caseplan.json`, and only the parts that strictly require a registry lookup (task-type-id, connection-id, input/output schemas) are deferred.
+If the skill halted on every unresolved resource, the generated `caseplan.case` would be a small fragment — not reviewable, not validatable, not useful. Placeholders solve that: the full **workflow structure** (stages, conditions, SLA, ordering, task names + types) lands in `caseplan.case`, and only the parts that strictly require a registry lookup (task-type-id, connection-id, input/output schemas) are deferred.
 
 The user reviews structure first, then attaches real resources once they exist.
 
@@ -32,7 +32,9 @@ The user reviews structure first, then attaches real resources once they exist.
 
 ## When a Placeholder Is Created
 
-During **execution** (Phase 2, Step 9), for any `registry-resolved.json` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`:
+During **execution** (Phase 2, Step 9), for any `registry-resolved.json` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`, or that carries `gateDecision: "resolve-at-build"`:
+
+**`sdd convert --resolved` usually writes it for you.** A CLI that reports the `placeholder` kind in `Data.Unresolved[]` has already emitted every such task in the JSON Shape below ([phased-execution.md § Convert first](phased-execution.md#convert-first--emit-from-the-document-before-authoring)); leave those tasks as they are. Apply the steps below only to a deferred task convert emitted with `data` anyway, which happens on an older CLI or when the ledger entry lacks both markers, and to everything when the version guard sent Phase 2 to hand-authoring.
 
 1. Skip the schema fetch (`uip maestro case spec` / `uip maestro case tasks describe`).
 2. Write the task JSON node with structural fields only — no `taskTypeId` / `connectionId` / `inputs` / `outputs` keys (see JSON Shape below).
@@ -43,7 +45,7 @@ During **execution** (Phase 2, Step 9), for any `registry-resolved.json` entry w
 
 Placeholders occupy a position in `stageNode.data.tasks`, the same way full tasks do. Preserve their order and retain any `runs-sequentially` entry condition from the task plan. A strict sequential placeholder chain still uses consecutive single-task sets; same-set grouping is only for explicitly parallel placeholder siblings.
 
-A placeholder task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
+A placeholder task in `caseplan.case.nodes[<stage>].data.tasks[<lane>][]`:
 
 ```json
 {
@@ -151,7 +153,7 @@ For non-connector tasks, run `uip maestro case tasks describe --type <type> --id
 
 ### 4. Edit the placeholder in place
 
-Read `caseplan.json`, locate the placeholder task by `id`, and mutate its `data` field in place. Keep the task's `id` and `elementId` unchanged — any conditions or `selected-tasks-completed` rules referencing the TaskId stay valid.
+Read `caseplan.case`, locate the placeholder task by `id`, and mutate its `data` field in place. Keep the task's `id` and `elementId` unchanged — any conditions or `selected-tasks-completed` rules referencing the TaskId stay valid.
 
 | Task class | `data` mutation |
 |---|---|
@@ -167,10 +169,10 @@ Per-class JSON shape lives in `plugins/tasks/<type>/impl-json.md` — match thos
 
 Wire each input per the `io-binding` plugin — see [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). In short:
 
-1. Read `caseplan.json`; locate the task's `data.inputs[]` by input `name`.
+1. Read `caseplan.case`; locate the task's `data.inputs[]` by input `name`.
 2. For literals/expressions from the `wiring notes` code block (`foo = =metadata.x`) — write the RHS string to `input.value`.
 3. For cross-task references (`foo <- "Stage"."Task".output`) — resolve the source output reference ID using [`io-binding/impl-json.md` § Output reference ID](plugins/variables/io-binding/impl-json.md#output-reference-id-authoritative), then write `=vars.<outputReferenceId>` to the target input's `value`.
-4. Write `caseplan.json` back.
+4. Write `caseplan.case` back.
 
 ### 6. Re-validate
 

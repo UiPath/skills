@@ -76,7 +76,13 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `getEffectiveHitlHandleCustomization`). A `completed` edge on a task with
   outcomes is stale: Studio Web and the converter remap it to the PRIMARY
   outcome, so every other outcome loses its path. `check` refuses it
-  (HITL_COMPLETED_PORT_GONE). `exposeError: true` additionally exposes
+  (HITL_COMPLETED_PORT_GONE). A decompiled task the designer drew may write
+  an outcome as `{ name: 'Reject', id: 'outcome-1778015958049' }`: the `id`
+  keeps the original outcome id, so its port is `outcome-outcome-1778015958049`
+  (route it with `.stepToList` by that port; `.stepSwitch` arms still match the
+  name), and the merged edges match the original node. Leave it as it is; new
+  outcomes need no `id`.
+  `exposeError: true` additionally exposes
   `out('<step>', 'error')` and selects the 1.2 definition (default node only).
 
   **Every outcome must be wired**, and there are three ways. Prefer the first:
@@ -84,7 +90,7 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   | | |
   | --- | --- |
   | `.stepSwitch(name, hitl({…}), arms)` | one arm per outcome, `value` naming the outcome. No tacit exit, arms converge, and a missing arm is a warning (STEP_SWITCH_EXIT_UNROUTED) rather than a port with no edge. |
-  | `.step()` + `.stepToList('outcome-<slug>', …)`, on a task that routes per outcome | the FIRST outcome continues the main path and the rest are side arms. Those arms do NOT converge — each gets an End of its own. |
+  | `.step()` + `.stepToList('outcome-<slug>', …)`, on a task that routes per outcome | the FIRST outcome continues the main path and the rest are side arms. Those arms do NOT converge — each gets an End of its own, which maps every output from its variable (NO_RETURN warns when the arm leaves one unset). |
   | `.step()`, on a task that does not route per outcome | every outcome continues to the next step, each on its own edge. The decision reaches the flow as data: `out('<step>', 'Action')`. |
 
   Do not route the FIRST outcome with `.stepToList`: its port is already taken by
@@ -148,8 +154,9 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   **Route EVERY outcome.** With `.stepToList`, an unrouted one deploys and then
   stalls the run when the reviewer picks it (`check` warns
   HITL_OUTCOME_UNROUTED). With `.stepSwitch` it compiles to an End instead, so
-  the run finishes rather than hanging — but finishes without the flow's declared
-  outputs, which STEP_SWITCH_EXIT_UNROUTED says out loud. Inside a `.parallel()`
+  the run finishes rather than hanging — but the End only maps each declared
+  output from its variable, and nothing on that path set them, which
+  STEP_SWITCH_EXIT_UNROUTED says out loud. Inside a `.parallel()`
   arm that End would hang the join instead, so there it is refused
   (HITL_END_OUTCOME_IN_PARALLEL). `action: 'End'` changes
   what happens on that outcome (the run ends instead of stalling), not whether

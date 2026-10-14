@@ -40,7 +40,7 @@ First **enumerate the tenant's actual required set from the schema file**: every
 |---|---|
 | Process **name** | Ask. Non-empty; duplicates fail with a 409-style error. |
 | **Description** | Ask, or derive from the material and confirm. |
-| **Category id** | `uip ah categories get` → pick from `Data.Categories` (**`category_is_active: 1` only**); several plausible → ask with names. Never the template's `1`. |
+| **Category id** | `uip ah categories get` → pick from `Data.Categories` (**`category_is_active: 1` only**): the most specific one that fits the material, and **"Other" only when nothing fits**. "Other" is any node with `CategoryIsOther: 1`, and each branch can carry its own (e.g. *Finance & Accounting › Other*), so skip those too; several plausible → ask with names. Never the template's `1`. |
 | **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by label, send its `answer_option` code. |
 | **Owner email** | **`uip ah auth-info get`** → `Data.User.Email` is the signed-in identity and the default owner. That call is the authority; do not substitute an address from any list. |
 | **Submitter email** | Same as owner; usually the same person. |
@@ -141,6 +141,8 @@ Fix anything found locally, then create. This costs nothing on a correct payload
 uip ah automations create --from-schema --idea-flow-id $IDEA_FLOW_ID --file ./ah-answers.json --output json
 ```
 
+The create can take 20–30 s. Run it as its own command, not chained behind the preflight checks, and wait for its envelope. If your shell hands back before the command finishes, wait on that same command; never start a second create and never read the silence as a failure.
+
 - `Result: Success` → **`Data.Id`** is the new process id. A success means it WAS created — never re-run on a confusing field read (that duplicates).
 - `ValidationError`/`Failure` → the `Message`/`Instructions` carry the service's validation text; the same causes as the API flow apply (unnamed `Please fill in all the required information` → re-run the preflight: a missing required answer or an enum code that is not verbatim from the schema; `Invalid Category Id`; `Automation name cannot be empty.` → `OVR-OVERVIEW_NAME` is missing, empty, or a bare string instead of `{ "value": … }`; `errorDetails` with `An answer selection is required for submission` on a field → that field's enum code isn't copied verbatim from its `enum`). Fix and retry **once**.
 - `Cannot set properties of undefined (setting 'co_question_answer_option_value')`, or `Question "<key>" can't be answered on this tenant: it has no answer slot to hold a value…` → **a server-side defect: this tenant has nowhere to store one of your free-text answers** (an answer whose schema `value` is a plain `string` or `number` with no `enum`). Your values aren't wrong, so don't rewrite them. Newer builds return `Question "<key>" can't be answered on this tenant: it has no answer slot to hold a value…` instead, naming the question: drop exactly that key. The older message names nothing: drop every **optional** free-text answer. In both cases keep every `required` answer and owner/submitter, retry **once**, and tell the user which answers were left out. If it still fails, or the named question is `required`, stop and report it with the tenant and `--idea-flow-id`.
@@ -162,9 +164,9 @@ uip ah documents create $PROCESS_ID \
   --document-type-id <n> --file "<path>" --output json
 ```
 
-- `--document-type-id` from the fixed platform table in [`api-endpoints.md`](api-endpoints.md) — read it there; do not guess ids.
+- `--document-type-id` from the fixed platform table in [`api-endpoints.md`](api-endpoints.md) — read it there; do not guess ids. **A `.bpmn` process map is always `6`**: under any other type AH shows it download-only, with no editor. The CLI does not infer the type from the extension, so pass it every time. A case plan (`caseplan.json`) is download-only whatever its type — the same table entry says how to handle it.
 - `--file` uploads the bytes (the CLI base64s it; any file type; 200 MB cap). Use `--embed-link <url>` *instead* only when the caller has a URL and no bytes — exactly one of the two, and never invent a URL.
-- Record `Data.Id` (document id) and `Data.FileId` from each response. On a validation error, surface the message and continue with the remaining documents.
+- Record `Data.Id` (document id) and `Data.FileId` from each response. On a validation error, surface the message and continue with the remaining documents. A `409 Duplicate document with title found` means a document with the same type **and file name** is already attached; the title is not checked (see [`api-endpoints.md`](api-endpoints.md)). Report it with that document and continue with the remaining documents. Never rename or retitle and retry on your own. Re-uploading a `.bpmn` that is already attached as `9` with `--document-type-id 6` succeeds and leaves both copies. Tell the caller the old download-only copy should be deleted in the AH web UI.
 
 ## Step 6b (optional): Link a Studio Web solution
 
