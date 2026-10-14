@@ -51,8 +51,11 @@ Cells (FEEL unary-test subset):
 - **Types** are `string`, `number`, `boolean` or `date`. Name inputs and outputs in camelCase, as the solution's variables or arguments name them. A string input or output lists its allowed values.
 - **Outputs** are literals, or a simple expression over the inputs (`invoiceAmount * 0.02`).
 - **Hit policy.** `UNIQUE` (default): exactly one row matches any input, so rows must not overlap. `FIRST`: rows are checked in order and the first match wins; use it only when the order is the rule. `COLLECT`: every matching row applies, for example a list of checks.
-- **Complete.** Every combination of inputs matches a row. Under `UNIQUE`, cover the remaining combinations with rows of their own (`not(...)`, open ranges), because an all-`-` row would overlap every other row. A last all-`-` default row is valid only under `FIRST`, where order makes it the fallback.
-- **Traceable.** Every row cites its BR in `Rule`; a row that only completes the table cites `[DEFAULT]` or `[SME REVIEW]` instead. Every decision BR appears in at least one row. Each row is a test oracle: one test case per row in the Testing Strategy (RPA §17; BPMN §13 Gateway / Branch Coverage).
+- **Complete.** Aim for every combination of inputs to match a row. Under `UNIQUE`, cover the remaining combinations with rows of their own (`not(...)`, open ranges), because an all-`-` row would overlap every other row. A last all-`-` default row is valid only under `FIRST`, where order makes it the fallback.
+- **Design intent, not proof.** Hit policy and completeness describe what the table must do. Do not certify a table overlap-free or complete by reading it: the build proves it (see Proof).
+- **Traceable.** Every row cites its BR in `Rule`; a row that only completes the table cites `[DEFAULT]` or `[SME REVIEW]` instead. Every decision BR appears in at least one row.
+- **Independent test cases.** Write one test case per row in the Testing Strategy (RPA §17; BPMN §13 Gateway / Branch Coverage). Take its inputs and expected output from a PDD example or an SME-confirmed value, never from the row itself: a case derived from the row passes even when the row is wrong. When neither source gives one, write the case with `[SME REVIEW]` in place of the expected output.
+- **Proof.** The implementation task that hosts the decision (the BPMN or RPA task) lists its test cases in its `Validate` sub-step ([Plan and Tasks Format](plan-and-tasks-format.md)) and proves the table with tools. For a `.dmn` business rule: `uip rules validate <PROJECT_DIR> --output json`, then `uip rules debug <PROJECT_DIR> --inputs '<INPUTS_JSON>' --output json` once per test case. For coded logic in an RPA process: one unit test per test case. A failing case is a defect in the row or in the test case's source; resolve it with the SME, never by editing the expected output to match.
 - **Runs in.** BPMN: the `businessRuleTask` node key; gateways route on its output. RPA: the step, and the coded logic or lookup that evaluates it. Placement: [Product Selection Guide → Per-task component placement](product-selection-guide.md#per-task-component-placement-the-to-be-per-step).
 - **No decision rules:** write `None. No rule decides an outcome.`
 
@@ -75,4 +78,7 @@ List every `Reasoning` rule. Example:
 
 Number BRs `BR-01`, `BR-02`, … across every home. A decision-table row or reasoning row is the rule's definition; no separate register repeats it. In BPMN, a validation rule goes in the variable's `Description` in §7, prefixed with its BR ID.
 
-Before closing the section, check that each BR lands in exactly one home from the [§1 table](#1-classify-every-rule). Several rows of decision tables count as one home.
+Before closing the section, run this mechanical check:
+1. List the BR IDs extracted from the PDD.
+2. List the BR IDs cited in each home from the [§1 table](#1-classify-every-rule). All decision-table rows together count as one home.
+3. Every extracted ID appears in exactly one home list, and no home cites an ID the extraction lacks.
