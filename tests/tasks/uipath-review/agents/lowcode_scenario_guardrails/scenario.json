@@ -1,0 +1,25 @@
+{
+  "project": "ReviewSol/SampleAgent",
+  "inject": "inject_guardrails.py",
+  "expected": [
+    {"ids": ["LC_GUARDRAIL_ACTION_INEFFECTIVE"], "category": "guardrails", "pattern": "PII block on email tool|send_customer_email"},
+    {"ids": ["LC_GUARDRAIL_MISAPPLIED"], "category": "guardrails", "pattern": "Prompt injection|prompt_injection"},
+    {"ids": ["LC_GUARDRAIL_RECOMMENDED"], "category": "guardrails", "pattern": "audit|\\blog\\b"}
+  ],
+  "min_recall": 0.66,
+  "decoys": [
+    {"id": "LC_GUARDRAIL_MISAPPLIED", "element": "Made-up validator", "reason": "CLI owns format findings"},
+    {"id": "LC_GUARDRAIL_ACTION_INEFFECTIVE", "element": "Made-up validator", "reason": "CLI owns format findings"},
+    {"id": "LC_GUARDRAIL_MISAPPLIED", "element": "Custom bad operator", "reason": "CLI owns format findings"},
+    {"id": "LC_GUARDRAIL_ACTION_INEFFECTIVE", "element": "Custom bad operator", "reason": "CLI owns format findings"}
+  ],
+  "min_categories": 1,
+  "min_severity_bands": 1,
+  "max_findings": null,
+  "forbidden_bands": [],
+  "allowed_grades": ["C", "D", "F"],
+  "grade_not_above_cli": true,
+  "cli_expected": ["GUARDRAIL_UNKNOWN_VALIDATOR", "GUARDRAIL_CUSTOM_BAD_OPERATOR"],
+  "cli_only_expected": false,
+  "validate_must_pass": false
+}
