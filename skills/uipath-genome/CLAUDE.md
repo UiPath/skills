@@ -8,7 +8,7 @@ Every subject is stated in full in exactly one file; every other mention is a on
 |---|---|
 | Genome levels (component / process), test-components-are-one-test-project exception, section rules, stubs, population matrix, `*[Inferred]*`, write-then-offer-edits, complexity inference | `references/genome-format-guide.md` |
 | Composite UI interaction **contract** (what a substep must carry) | `genome-format-guide.md` § Workflow |
-| Credential asset per login account; secrets never in genome, data file or report | `genome-format-guide.md` § Platform Dependencies |
+| Credential asset per login account; secrets never in genome, data file or report | `genome-format-guide.md` § Platform Dependencies; at build: `execution-guide.md` § 2.2, credentials |
 | Source Map contract rows and the step table (its columns and rules); "genome files are the only output" (locators and rows stay in export) | `references/extracted-genome-guide.md` § Source Map |
 | The kinds of source fact read from the source, never from its rendering (literals and case rules, counts, lengths, waits and budgets, set or typed, control-flow flags, formats, built-ins, parameter documentation, log texts) | `extracted-genome-guide.md` § Source values |
 | The source-defect marker, the evident intent, which behaviour the rebuild follows, user rulings, the defect index | `extracted-genome-guide.md` § Source Defects |
@@ -25,7 +25,10 @@ Every subject is stated in full in exactly one file; every other mention is a on
 | What extraction's parts add: one part per component, who writes, the shared-decision list, the extraction fork's shared reads, the part's read plan, own defect verification, the return contract, reconciliation | `references/extraction-parts-guide.md` |
 | What a build's parts add: the project owner and its shared operations, the project ledger contract and progress file, planning parts, per-activity discovery in the read plan, one host per project, linking order, solution mutations, the run brief's contents, the part report and its mechanical checks | `references/execution-parts-guide.md` |
 | Open-items files: target-environment setup steps for the engineer (per project and per solution) | `references/open-items-guide.md` |
-| Migration preflight (including the secret scrub and what the build follows when the genome and the source disagree), what each **kind** of source step becomes at build time, link ordering and idempotency, Object Repository identity, composite **patterns** (build), verification on acting activity, Element Scope, the three verification verdicts per family, result parity, the source's names and shape kept in the rebuild and the correspondence table, test-data pipeline, executor records | `references/source-migration-guide.md` |
+| Migration preflight (including the secret scrub and what the build follows when the genome and the source disagree), credentials from the source's accounts, what each **kind** of source step becomes at build time, the source's names and shape kept in the rebuild and the correspondence table, executor records | `references/source-migration-guide.md` |
+| UI target migration: the migrated-target rules, the target spec, link ordering and idempotency, Object Repository identity, composite **patterns** (build), Element Scope, the three verification verdicts per family | `references/ui-target-migration-guide.md` |
+| Where a UI check goes in every build (`VerifyOptions` on the acting activity, a Check activity only for a branch, a test project's checkpoints), failure handling and logging once | `references/ui-verification-guide.md` |
+| Test components at build: test-case shape, the test-data rules and pipeline (store → entity, files → variations), result parity | `references/test-execution-guide.md` |
 | Every UiPath-side selector fact: tag chain per technology, attribute catalog and tiers, matching semantics, rules 1–16 (criteria, purpose, `aaname`, captions and `<nav>` paths, position, tables, scope, identifiers, description, confidence, no-selector, one tag one node, driver verification, widget anatomy), § Checking a definition | `references/selector-translation-guide.md` |
 | Definition shapes when no application reachable; the workaround for a number attribute bound to a selector variable, reachable or not (temporary: the file is deleted once the UIA CLI creates a first definition offline and registers a number attribute bound to a selector variable) | `references/offline-definition-workarounds-guide.md` |
 | Corrections to an installed package's per-activity docs until the corrected package ships, and tool defects met in builds with what the build does instead, until fixed (temporary: a package's section is deleted once that package's shipped docs carry the corrected text, a tool's row once the tool behaves as its docs say, the file once no section is left) | `references/package-doc-errata-guide.md` |
@@ -60,7 +63,9 @@ Every subject is stated in full in exactly one file; every other mention is a on
 | New content | Home |
 |---|---|
 | UiPath selector fact (new attribute, tier, matching quirk, node rule) | selector-translation-guide — a new driver tag or attribute family with its tier source (package reference, or *derived*) — then reference from framework guide |
-| New build pattern for a composite interaction that holds across technologies | source-migration-guide § Composite interactions (+ source guide's wording row) |
+| New build pattern for a composite interaction that holds across technologies | ui-target-migration-guide § Composite interactions (+ source guide's wording row) |
+| A rule for where a UI check goes, in any build | ui-verification-guide |
+| A rule for building test components or migrating their data | test-execution-guide |
 | A build or selector fact for one technology (SAP GUI tables, a Java grid) | that technology's section of selector-translation-guide, read only when the technology is in play; a pointer where a package doc owns the detail |
 | Framework's new action, locator format or pitfall | that framework's source or selectors guide |
 | New genome section or content rule | genome-format-guide (+ templates); a Transactional Shape rule: transactional-shape-guide; a Source Map, source-value or source-defect rule: extracted-genome-guide |
