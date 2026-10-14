@@ -413,7 +413,7 @@ activity schema. Operation Configuration carries through as =jsonString: only he
 ###### HTTP Request Task Detail (type: `http-request`)
 
 **Method:** <GET \| POST \| PUT \| PATCH \| DELETE>
-**URL:** <absolute URL; a path relative to the connector's base URL when Connector Key is set>
+**URL:** <absolute URL; a path relative to the connector's base URL when Connector Key and Connection ID are set (convert stores it as the request path)>
 **Headers:** <JSON object in backticks, e.g. `{"Accept": "application/json"}`, or —; never a credential — authenticate with Connector Key + Connection ID>
 **Query:** <JSON object in backticks, or —>
 **Body:** <JSON literal in backticks, an `=` expression, or —>
