@@ -15,7 +15,7 @@ from pathlib import Path
 
 from report_evidence import run_review_cli
 
-TABLE_ROW = re.compile(r"^\s*\|\s*([CWI])-(?:D-)?\d+\s*\|(.*)$", re.MULTILINE)
+TABLE_ROW = re.compile(r"^\s*\|\s*([CWI])-(?:[A-Z]-)?\d+\s*\|(.*)$", re.MULTILINE)
 VALIDATION_ROW = re.compile(r"^\s*-\s*\[V-([EW])-\d+\](.*)$", re.MULTILINE)
 RULE_ID = re.compile(r"(?<![A-Za-z0-9_])[A-Z][A-Z0-9]+(?:_[A-Z0-9]+)+(?![A-Za-z0-9_])")
 FINAL_GRADE = re.compile(r"\*\*Final grade: ([ABCDF])\*\*\s*\Z")
