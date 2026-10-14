@@ -1,18 +1,20 @@
-# skip:true until a uip release ships `tm run --type package` (UiPath/cli#4845):
-# CI installs @uipath/cli@latest, which does not have the command yet, so the
-# graded report can never be written. Flip to skip:false after that release.
+# skip:true until UiPath/cli#4845 (`uip tm run --type package`) merges to cli
+# main: smoke installs `@uipath/cli@dev`, which only has the command after that
+# merge. Flip to skip:false once the catalog refresh lists `tm run`.
 task_id: skill-test-run-package-ci-smoke
 skip: true
 description: >
   Smoke test: agent uses the uipath-test skill to run every test in a package
-  that is already uploaded to Orchestrator, the way a CI step would, with
-  `uip tm run --type package`. Grades the real outcome — a JUnit report on disk that
-  holds a `<testsuite>` — plus the single complete `tm run --type package` command, and
-  guards against the old hand-built chain (link-package → testsets create →
-  testsets run → wait → result download) that it replaces. Test
-  results themselves are not graded: the command exits 1 when a test fails,
-  and the skill teaches that this is a result to report, not a CLI error.
-  Requires a `uip` release that ships `tm run --type package`.
+  already uploaded to Orchestrator, the way a CI step would, with
+  `uip tm run --type package`. pre_run seeds a throwaway `EVFX-RUNPKG-*`
+  project per run and post_run deletes it, which also removes the execution
+  and the hidden test set the command creates. Graded on the JUnit report on
+  disk and on the tenant: the report's execution id must be a real execution
+  in that project, so a hand-written report fails. Also grades the single
+  complete command and guards against the hand-built chain (link-package →
+  testsets create → testsets run → wait → result download) it replaces. Test
+  results are not graded: the command exits 1 when a test fails, and the
+  skill teaches that this is a result to report, not a CLI error.
 tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
 
 run_limits:
@@ -20,16 +22,64 @@ run_limits:
   max_turns: 25
   turn_timeout: 1200
 
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      PREFIX = "EVFX-RUNPKG-"
+      now = datetime.datetime.now(datetime.timezone.utc)
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      # Orphan sweep: a run that died before post_run strands its project.
+      # Only delete projects stamped more than 6 hours ago, so a concurrent
+      # run keeps its own.
+      for p in call("tm", "project", "list", "--filter", PREFIX).get("Data") or []:
+          name = p.get("Name") or ""
+          key = p.get("ProjectKey")
+          if not key or not name.startswith(PREFIX):
+              continue
+          try:
+              stamp = datetime.datetime.strptime(name[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
+          except ValueError:
+              continue
+          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+              call("tm", "project", "delete", "--project-key", key, "--yes")
+
+      key = "EVRP" + secrets.token_hex(2).upper()
+      name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      out = call("tm", "project", "create", "--name", name, "--project-key", key)
+      if out.get("Result") != "Success":
+          print(f"SEED FAILED: could not create {name} ({key}): {out}")
+          sys.exit(1)
+      with open("project-key.txt", "w") as f:
+          f.write(key + "\n")
+      print(f"SEEDED project {name} with key {key}")
+      PYEOF
+    timeout: 180
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
 initial_prompt: |
   CI just published the latest version of the test package
   "Testcases.with.parameters" to the Orchestrator folder
-  "uipath-test-folder-feed". Run all of its tests in the Test Manager project
-  HEALTH, retry failed ones once, and leave a JUnit report in a "results"
-  folder in the current directory. Tell me how many tests passed.
+  "uipath-test-folder-feed". Run all of its tests in my Test Manager project
+  (its key is in project-key.txt in this folder), retry failed ones once, and
+  write the JUnit report to results/junit.xml. Tell me how many tests passed.
 
 success_criteria:
   - type: command_executed
-    description: "Agent checked login status (`uip login status`)"
+    description: "Agent checked login status (Critical Rule 1)"
     tool_name: "Bash"
     command_pattern: 'uip\s+login\s+status'
     min_count: 1
@@ -37,17 +87,39 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete tm run --type package command: package, folder, project HEALTH, one retry, report under results/"
+    description: "One complete `tm run --type package` command: package, folder, project, one retry"
     tool_name: "Bash"
-    command_pattern: '(?=.*--package-name\s+["\x27]?Testcases\.with\.parameters)(?=.*--package-version\s+\S)(?=.*--folder-(path\s+["\x27]?uipath-test-folder-feed|key\s+\S))(?=.*--project-key\s+HEALTH)(?=.*--max-retries\s+1)(?=.*--result-path\s+["\x27]?(\./)?results)(?=.*--type[\s=]+package)uip\s+tm\s+run\s'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--type[\s=]+package\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-name\s+["\x27]?Testcases\.with\.parameters)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-version\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--folder-(?:path\s+["\x27]?uipath-test-folder-feed|key\s+\S))(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-(?:key|id)\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--max-retries[\s=]+1\b)uip\s+tm\s+run\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
+  - type: file_contains
+    description: "A JUnit report with a <testsuite> is at results/junit.xml"
+    path: "results/junit.xml"
+    includes:
+      - "<testsuite "
+      - "<testcase "
+    weight: 2.0
+    pass_threshold: 1.0
+
   - type: run_command
-    description: "A JUnit report with a <testsuite> was written under results/"
-    command: "grep -lq '<testsuite ' results/*.xml"
-    timeout: 10
+    description: "The report's execution id is a Finished execution in the seeded project (a hand-written report fails)"
+    command: |
+      python3 - <<'PYEOF'
+      import json, re, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      m = re.search(r'<testsuite\b[^>]*\bid="([0-9a-fA-F-]{36})"', open("results/junit.xml").read())
+      if not m:
+          print("no <testsuite id> in results/junit.xml"); sys.exit(1)
+      r = subprocess.run(["uip", "tm", "executions", "list", "--project-key", key,
+                          "--output", "json"], capture_output=True, text=True)
+      rows = json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      hit = [e for e in rows if (e.get("Id") or "").lower() == m.group(1).lower()]
+      print("report execution:", m.group(1), "->", hit[0].get("Status") if hit else "not in project")
+      sys.exit(0 if hit and hit[0].get("Status") == "Finished" else 1)
+      PYEOF
+    timeout: 60
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0

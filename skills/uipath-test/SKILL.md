@@ -50,7 +50,11 @@ Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcom
 
 ### Run an uploaded package (CI)
 
-`uip tm run --type package --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-path <FOLDER_PATH> --project-key <PROJECT_KEY> --output json` runs every test in a package already uploaded to Orchestrator in one step: it builds a hidden test set, runs it, waits, re-runs failures (`--max-retries <n>`), applies inputs (`--input-path <FILE>`), and writes a JUnit or UiPath JSON report (`--format`, `--result-path`). `--package-version 1.0` runs the latest `1.0.x` patch; an exact version must be the latest patch. Exit 0 all passed; 1 with `Code: RunPackageTestsFailed` (tests failed) or `RunPackageCancelled` (run cancelled), a result to report, not a CLI error; 2 login or permission problem; 3 bad option or input; 4 timeout. Use it instead of chaining `link-package`, `testsets create`, `run`, `wait` and `result download` for a whole package. Options, exit codes and errors: [references/run-package-guide.md](references/run-package-guide.md).
+`uip tm run --type package --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-path <FOLDER_PATH> --project-key <PROJECT_KEY> --output json` runs every test in a package already uploaded to Orchestrator: hidden one-off test set, run, wait, re-run failures (`--max-retries <n>`), report (`--format junit|uipath`, `--result-path <FILE_OR_DIR>`). Pack and upload first with `uip rpa pack` / `uip or packages upload`.
+
+- `--package-version 1.0` runs the latest `1.0.x` patch. An exact version must be the latest patch; an older one exits 3.
+- Exit 0: all passed. Exit 1 with `RunPackageTestsFailed` or `RunPackageCancelled`: a test result, see Rule 10(c); any other exit-1 `Code` is a real failure. Exit 2: login or permission. Exit 3: bad option or input, nothing created. Exit 4: timeout; the execution may still be running and `Data.OutputPath` holds a partial report with unfinished tests marked skipped. Report the timeout; never count skipped tests as passed.
+- `--input-path` names that no test declares are listed in `Data.IgnoredInputs`; tell the user (usually a typo).
 
 ### Logs, reports, attachments, and results
 
@@ -102,7 +106,6 @@ For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For an
 
 - Failed-run root cause, assertions, step logs, evidence, and flaky-versus-regression analysis: [references/failure-triage-guide.md](references/failure-triage-guide.md)
 - Shareable tester or release-manager report: [references/test-result-report-guide.md](references/test-result-report-guide.md)
-- Run every test in an uploaded package for CI (`uip tm run --type package`): [references/run-package-guide.md](references/run-package-guide.md)
 - Publish a project and link it to a Test Manager testcase (Studio/RPA): [references/publish-and-link-guide.md](references/publish-and-link-guide.md)
 - Pack, ingest, label, and run Playwright on serverless: [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md)
 - Custom-field definitions, labels, and values (`uip tm customfield`): [references/custom-fields-guide.md](references/custom-fields-guide.md)
