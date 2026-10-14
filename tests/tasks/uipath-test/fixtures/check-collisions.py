@@ -26,9 +26,9 @@ EVFX = re.compile(r"EVFX-[A-Z]+(?:-[A-Za-z0-9]+)*")
 # Namespace segment -> the single task file allowed to own it.
 OWNERS = {
     "SCHEDSMOKE": "schedule_list_smoke.yaml",
-    "SCHEDWK": "schedule_weekly_cadence_build.yaml",
+    "SCHEDWK": "schedule_weekly_cadence_integration.yaml",
     "SCHEDLC": "schedule_lifecycle_e2e.yaml",
-    "SCHED": "schedule_freeze_window_operate.yaml",
+    "SCHED": "schedule_freeze_window_integration.yaml",
     "RERUN": "execution_rerun_failed_integration.yaml",
     "FLAKY": "flaky_tests_analysis.yaml",
     "SIGNOFF": "release_signoff_wait_report_e2e.yaml",

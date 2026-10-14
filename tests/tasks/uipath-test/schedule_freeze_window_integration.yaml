@@ -1,4 +1,4 @@
-task_id: skill-test-schedule-freeze-window-operate
+task_id: skill-test-schedule-freeze-window-integration
 description: >
   Operate test: a release freeze over one test set, exercising the schedule
   surface `uip tm schedules` — create, disable, delete and next-runs — which no

@@ -28,7 +28,7 @@ and therefore exact for this scheme.
 | `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
-| `schedule_freeze_window_operate` | CLAIM | `EVFX-SCHED-SET`, `EVFX-SCHED-TC{1,2}`, and the `EVFX-SCHED-*` **schedule** namespace | Set, cases, and two **enabled** schedules `EVFX-SCHED-PAUSE` and `EVFX-SCHED-STALE`; the task pauses one, deletes the other and creates `EVFX-SCHED-NIGHTLY` |
+| `schedule_freeze_window_integration` | CLAIM | `EVFX-SCHED-SET`, `EVFX-SCHED-TC{1,2}`, and the `EVFX-SCHED-*` **schedule** namespace | Set and cases only — **no schedules seeded**. The agent creates three per-run stamped schedules `EVFX-SCHED-<STAMP>-{NIGHTLY,KEEP,TEMP}`, leaves NIGHTLY live, pauses KEEP, deletes TEMP; `pre_run` sweeps only earlier-day `EVFX-SCHED-` rows |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
@@ -107,18 +107,14 @@ accretes: `execution_rerun` repairs one execution rather than appending,
 `junit_export` and `release_readiness` seed once, `flaky` appends only to
 restore intermittency, and `organize` sweeps its own scratch.
 
-`schedule_freeze_window_operate` adds `EVFX-SCHED-SET` and its two cases, plus
-two *schedules* held flat at two rather than zero. The task consumes both of
-the ones it is handed — one gets paused, one gets deleted — and creates a
-third, so `pre_run` deletes every `EVFX-SCHED-` schedule and reseeds the pair.
-That restores the starting state exactly instead of topping up from wherever
-the last agent left it, and it is only possible because `schedules delete`
-exists.
-
-It also asserts the reseeded pair came back **enabled**. An already-paused
-`EVFX-SCHED-PAUSE` would let the pause outcome pass for the wrong reason, which
-is Rule 4's "guard on the property, not a count" applied to state rather than
-to counts.
+`schedule_freeze_window_integration` adds `EVFX-SCHED-SET` and its two cases.
+It seeds **no schedules**: the agent creates all three itself, each stamped with
+the run's date and role (`EVFX-SCHED-<STAMP>-{NIGHTLY,KEEP,TEMP}`), so there is
+no fixed-name schedule for a concurrent variant run to collide on. `pre_run`
+sweeps only *earlier-day* `EVFX-SCHED-` schedules — the trailing dash keeps it
+off the WK/LC/SMOKE siblings, and sparing today's stamp lets two models run the
+nightly at once. Each outcome is graded on the agent's own emitted command, so a
+per-run-isolated grade needs no reseeded pre-state.
 
 ## Why
 

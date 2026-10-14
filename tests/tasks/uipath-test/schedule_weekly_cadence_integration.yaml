@@ -1,4 +1,4 @@
-task_id: skill-test-schedule-weekly-cadence-build
+task_id: skill-test-schedule-weekly-cadence-integration
 description: >
   Integration test: build a WEEKLY schedule from a natural-language cadence in a
   non-UTC timezone, exercising `uip tm schedules create`. The difficulty is the
