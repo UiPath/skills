@@ -57,13 +57,13 @@ Final is the latest run after the review fixes; each row's earlier result is kep
 | `connector_features/complex_array.yaml` | `connector_features/complex_array/` | PASS 0.875 (run 36056004092) | earlier PASS 0.875 (run 35789221753); only the advisory resolved-user-id check missed; Flow fully passes 3/12 |
 | `connector_features/path_params.yaml` | `connector_features/path_params/` | PASS (run 36056004092) | earlier PASS it.2 (run 35790934047); it.1 agent left the issue key as an unbound variable |
 | `connector_features/paginated_reference_lookup.yaml` | `connector_features/paginated_reference_lookup/` | FAIL (runs 36053143338, 36056004092) | after the review fixes the agent never resolved the channel id in either run; earlier PASS it.3 (run 35791969905); it.1 channel by name, no pagination; it.2 channel id with its last character dropped |
+| `multi_node/bellevue_weather/…` | same | PASS (run 36672715908) | earlier FAIL (runs 35523787101, 35525387843): script read `temperature_2m` off an undefined `Intsvc.HttpExecution` response; the skill now teaches the `.body` envelope and the agent read `vars.Var_HttpResponse.body.current` |
+| `interactive/bellevue_weather_simulated/…` | same | PASS (run 36673353550) | earlier FAIL (run 35785806030): same fault; run 36672715908 failed once because the agent faked the weather in a script task and built no HTTP node, and passed on rerun |
 
 ### Parked (branch `test/bpmn-port-parked`, all `skip: true`)
 
 | Flow task | BPMN port | Evidence |
 |---|---|---|
-| `multi_node/bellevue_weather/…` | same | runs 35523787101, 35525387843: script reads `temperature_2m` off an undefined `Intsvc.HttpExecution` response; response shape not taught |
-| `interactive/bellevue_weather_simulated/…` | same | run 35785806030: same fault; run 35783045540 was a harness stop on turn 1 |
 | `e2e/jira_search_triage/…` | same | run 35525387843: 400008, multi-instance over a connector response does not evaluate |
 | `e2e/jira_lifecycle/…` | same | three different runtime failures (runs 35503094182, 35524004307, 35525387843); Flow flaky (0.82 typical) |
 | `multi_node/billing_discrepancy_detector/…` | same | runs 35538279757, 35783045540: two different malformed Data Service where clauses built from a process variable |
