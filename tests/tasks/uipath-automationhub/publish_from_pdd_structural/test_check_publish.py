@@ -155,9 +155,17 @@ def test_recorder_passes_output_and_exit_code_through(sandbox: Path) -> None:
 def test_recorder_logs_result_and_created_id(sandbox: Path) -> None:
     publish(sandbox, good_answers())
     calls = [json.loads(line) for line in (sandbox / ".uip-recorder" / ".calls.jsonl").read_text().splitlines()]
-    create = next(c for c in calls if "automations create" in c["args"])
+    create = next(c for c in calls if "automations create" in " ".join(c["args"]))
     assert create["result"] == "Success" and create["data_id"] == PROCESS_ID
     assert create["captured"]["json"]["OVR"]
+
+
+def test_recorder_keeps_a_multi_word_argument_whole(sandbox: Path) -> None:
+    uip(sandbox, "ah", "users", "list", "--search", "Dana Reyes", "--invite-status", "all")
+    calls = [json.loads(line) for line in (sandbox / ".uip-recorder" / ".calls.jsonl").read_text().splitlines()]
+    assert calls[-1]["args"] == ["ah", "users", "list", "--search", "Dana Reyes", "--invite-status", "all"]
+    publish(sandbox, good_answers())
+    assert grade(sandbox, "users").returncode == 0
 
 
 def test_recorder_skips_harness_calls(sandbox: Path) -> None:

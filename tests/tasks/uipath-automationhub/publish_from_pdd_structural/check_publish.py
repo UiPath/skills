@@ -70,31 +70,40 @@ def load_seed() -> dict:
     return json.loads(SEED_FILE.read_text(encoding="utf-8"))
 
 
+def command_line(call: dict) -> str:
+    return " ".join(call["args"])
+
+
 def is_help(call: dict) -> bool:
-    return any(token in ("--help", "-h") for token in call["args"].split())
+    return any(token in ("--help", "-h") for token in call["args"])
 
 
 def calls_matching(calls: list[dict], verb: str) -> list[dict]:
     """Calls whose argv carries `verb` as a contiguous token run (help lookups excluded)."""
-    return [c for c in calls if f" {verb} " in f" {c['args']} " and not is_help(c)]
+    words = verb.split()
+    return [c for c in calls if has_run(c["args"], words) and not is_help(c)]
+
+
+def has_run(tokens: list[str], words: list[str]) -> bool:
+    return any(tokens[i:i + len(words)] == words for i in range(len(tokens) - len(words) + 1))
 
 
 def flag(call: dict, name: str) -> str | None:
-    tokens = call["args"].split()
+    tokens = call["args"]
     for i, token in enumerate(tokens):
         if token == name and i + 1 < len(tokens):
-            return tokens[i + 1].strip("\"'")
+            return tokens[i + 1]
         if token.startswith(name + "="):
-            return token[len(name) + 1:].strip("\"'")
+            return token[len(name) + 1:]
     return None
 
 
 def positional_after(call: dict, verb: str) -> str | None:
-    tokens = call["args"].split()
+    tokens = call["args"]
     if verb in tokens:
         index = tokens.index(verb)
         if index + 1 < len(tokens):
-            return tokens[index + 1].strip("\"'")
+            return tokens[index + 1]
     return None
 
 
@@ -170,7 +179,7 @@ def inventory_by_system(seed: dict) -> dict[str, set[int]]:
 
 def check_create_once(calls: list[dict], seed: dict) -> str:
     create = the_create(calls)
-    if "--from-schema" not in create["args"].split():
+    if "--from-schema" not in create["args"]:
         raise CheckFailed("create did not use --from-schema")
     flow_id = str(seed.get("business_process_flow_id"))
     if flag(create, "--idea-flow-id") != flow_id:
@@ -330,9 +339,9 @@ def check_users(calls: list[dict], seed: dict) -> str:
         return "no owner lookup — the auth-info email was used directly"
     for call in lookups:
         if flag(call, "--invite-status") != "all":
-            raise CheckFailed(f"users list without --invite-status all hides eligible owners: {call['args']}")
+            raise CheckFailed(f"users list without --invite-status all hides eligible owners: {command_line(call)}")
         if flag(call, "--search") is None:
-            raise CheckFailed(f"users list without --search pages the whole directory client-side: {call['args']}")
+            raise CheckFailed(f"users list without --search pages the whole directory client-side: {command_line(call)}")
     return f"{len(lookups)} owner lookup(s), each server-side with --invite-status all"
 
 

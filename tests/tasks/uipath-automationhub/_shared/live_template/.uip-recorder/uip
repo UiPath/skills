@@ -7,7 +7,7 @@ the agent unchanged. Alongside, one JSON line per call goes to `.calls.jsonl`
 next to this script, so a grader can read what the agent SUBMITTED, which the
 tenant's normalized read-back cannot show:
 
-    {"ts": ..., "args": "ah automations create --from-schema ...",
+    {"ts": ..., "args": ["ah", "automations", "create", "--from-schema", ...],
      "exit_code": 0, "result": "Success", "data_id": 4815,
      "captured": {"path": "./ah-answers.json", "sha256": ..., "json": {...}}}
 
@@ -175,7 +175,7 @@ def main(argv: list[str]) -> int:
     if os.environ.get("AH_EVAL_NO_RECORD") == "1":
         return subprocess.run([target, *argv], env=env).returncode
 
-    record: dict = {"ts": time.time(), "args": " ".join(argv)}
+    record: dict = {"ts": time.time(), "args": list(argv)}
     captured = capture_file(argv)
     if captured is not None:
         record["captured"] = captured
