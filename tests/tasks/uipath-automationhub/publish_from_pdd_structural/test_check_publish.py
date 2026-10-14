@@ -379,3 +379,29 @@ def test_numeric_strings_are_the_same_ids(sandbox: Path) -> None:
     publish(sandbox, answers)
     assert grade(sandbox, "payload").returncode == 0
     assert grade(sandbox, "applications").returncode == 0
+
+
+PREFLIGHT = HERE.parent / "_setup" / "preflight_ah.py"
+# Every verb fails like the tenant's transient 500, except auth-info when asked to succeed.
+FAILING_UIP = r'''#!/usr/bin/env python3
+import json, os, sys
+if "auth-info" in sys.argv and os.environ.get("STUB_AUTH_OK") == "1":
+    user = {"IsActive": 1, "Roles": ["Standard User"], "Email": "bot@example.com"}
+    print(json.dumps({"Result": "Success", "Data": {"User": user, "Tenant": {"Url": "https://t"}}}))
+    sys.exit(0)
+print(json.dumps({"Result": "Failure", "Message": "Request failed with status code 500"}))
+sys.exit(1)
+'''
+
+
+@pytest.mark.parametrize("auth_ok", ["0", "1"])
+def test_preflight_marks_a_tenant_gap_for_the_smoke_gate(tmp_path: Path, auth_ok: str) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "uip").write_text(FAILING_UIP)
+    (bin_dir / "uip").chmod(0o755)
+    env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}", "STUB_AUTH_OK": auth_ok}
+    result = subprocess.run([sys.executable, str(PREFLIGHT)], cwd=tmp_path, env=env,
+                            capture_output=True, text=True)
+    assert result.returncode != 0
+    assert "TENANT NOT READY" in result.stderr

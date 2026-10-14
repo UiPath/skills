@@ -44,6 +44,7 @@ from ah_cli import (  # noqa: E402
     describe_failure,
     items,
     precondition_failed,
+    TENANT_NOT_READY,
     succeeded,
     uip_json,
 )
@@ -146,7 +147,7 @@ def main(argv: list[str]) -> int:
                         "the section's 'add new applications' control turned off")
 
     if problems:
-        print("preflight_ah: ENVIRONMENT gap — this tenant/identity cannot take a publish:", file=sys.stderr)
+        print(f"preflight_ah: {TENANT_NOT_READY} — this tenant/identity cannot take a publish:", file=sys.stderr)
         for problem in problems:
             print(f"  - {problem}", file=sys.stderr)
         return 1

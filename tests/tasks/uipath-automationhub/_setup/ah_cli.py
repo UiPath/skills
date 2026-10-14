@@ -46,6 +46,11 @@ def parse_envelope(stdout: str) -> dict | None:
     return None
 
 
+# The smoke gate (.github/workflows/smoke-skills.yml) leaves a pre_run ERROR out of the
+# pass rate only when its stderr carries this marker, as the maestro preflights do.
+TENANT_NOT_READY = "TENANT NOT READY"
+
+
 def precondition_failed(message: str) -> None:
     """Exit labelling the cause as environmental, so triage never blames the skill.
 
@@ -53,8 +58,8 @@ def precondition_failed(message: str) -> None:
     ERROR (what we want); in a criterion it is still scored as FAILURE, so the real
     guard is running these checks in `pre_run` before an agent run is spent.
     """
-    sys.exit(f"test precondition failed: {message} — this is an ENVIRONMENT gap "
-             "(tenant / identity / fixture), NOT a skill regression")
+    sys.exit(f"{TENANT_NOT_READY} — test precondition failed: {message}. This is an ENVIRONMENT "
+             "gap (tenant / identity / fixture), NOT a skill regression")
 
 
 # --- tenant switch: keep in sync with _shared/live_template/.uip-recorder/uip ------
