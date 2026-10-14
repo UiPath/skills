@@ -262,12 +262,6 @@ These findings the source cannot carry are printed on stderr as
   drops that edge, and `merge` writes the loss into the original. If your edit
   touches that part of the flow, change the `.flow` JSON there directly instead
   of round-tripping it through the source.
-- A **switch whose cases carry their own conditions** — for example `High:
-  amount > 100` and `Low: amount <= 100`. `.switch(name, on, cases)` models
-  only `on === value`, so the decompiled `on` and `value`s are placeholders
-  (with a `/* TODO: this switch's case expressions are not a uniform … */`
-  comment). Recompiling fails or picks a different case, even when your edit is
-  somewhere else in the flow, so make the change in the `.flow` JSON directly.
 - A **context-index setting `context: [...]` cannot express**. Decompile reads
   an index's retrieval settings (mode, query, threshold, result count, file
   extension) from `<agent source>/resources/<source>/resource.json`, so keep the
