@@ -40,7 +40,7 @@ First **enumerate the tenant's actual required set from the schema file**: every
 |---|---|
 | Process **name** | Ask. Non-empty; duplicates fail with a 409-style error. |
 | **Description** | Ask, or derive from the material and confirm. |
-| **Category id** | `uip ah categories get` → pick from `Data.Categories` (**`category_is_active: 1` only**); several plausible → ask with names. Never the template's `1`. |
+| **Category id** | `uip ah categories get` → pick from `Data.Categories` (**`category_is_active: 1` only**): the most specific one that fits the material, and **"Other" only when nothing fits**; several plausible → ask with names. Never the template's `1`. |
 | **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by label, send its `answer_option` code. |
 | **Owner email** | **`uip ah auth-info get`** → `Data.User.Email` is the signed-in identity and the default owner. That call is the authority; do not substitute an address from any list. |
 | **Submitter email** | Same as owner; usually the same person. |
