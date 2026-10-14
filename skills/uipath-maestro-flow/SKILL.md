@@ -148,7 +148,13 @@ The quick start above shows the shape — `flow(id)`, declarations, nodes, `.ret
 | a field or method — `outcomePorts`, `stepToList` (the usual case) | `dist/api-members.md` | the shape that declares it, and the lines that do |
 | an exported symbol — `HitlInputs`, `hitl`, `FlowBuilder` | `dist/api-index.md` | its kind, area, and the lines that declare it |
 
-**Match one name; do not read either file end to end.** Then read the span (e.g. `dist/core/actions.d.ts:583-597`): the whole declaration with its doc comment, so one read answers the question. Read the `.d.ts`, never `dist/*.js` (no types, no comments). A name in neither index is probably a RUNTIME output key, which the node references carry. Why the index ships in the package, and more lookup rules: [`references/author.md`](references/author.md#api-index-lookups).
+**Look names up with the bundled script — every name you need in ONE call, before writing the source:**
+
+```bash
+node "<SKILL_DIR>/scripts/sdk-api.mjs" inlineAgent InlineAgentInputs HitlInputs.outcomePorts
+```
+
+It matches each name (or `Owner.member`) in both indexes and prints every matching declaration span with its doc comment, then the exported types those declarations reference, three hops deep (`inlineAgent` brings `InlineAgentInputs`, `ToolRef` and every `*ToolRef` variant). One call answers the questions you batched into it and the follow-ups they lead to. It finds the SDK the way `uip` does (workspace `node_modules` first, then global); exit 2 with `SDK_NOT_FOUND` means install the SDK and rerun. A name with no match prints similar names; a name in neither index is probably a RUNTIME output key, which the node references carry. Do not grep the indexes, `sed` the `.d.ts` spans, or search `dist/*.js` yourself — the script already returns the whole declaration. Why the index ships in the package, and more lookup rules: [`references/author.md`](references/author.md#api-index-lookups).
 
 ## Supported node types
 
