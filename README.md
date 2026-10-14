@@ -132,7 +132,20 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 
 ## Multi-Tool Support
 
-This repository works with **Claude Code**, **Google Gemini CLI**, **OpenAI Codex CLI**, and **Cursor IDE**.
+`uip skills install` supports these coding agents. It detects the installed ones automatically; pass `--agent <name>` to target one.
+
+| Agent | `--agent` |
+|-------|-----------|
+| Claude Code | `claude` |
+| Cursor | `cursor` |
+| GitHub Copilot | `copilot` |
+| Codex | `codex` |
+| OpenCode | `opencode` |
+| UiPath Autopilot | `autopilot` |
+| Kiro | `kiro` |
+| Windsurf | `windsurf` |
+| Antigravity CLI | `antigravity` |
+| Devin | `devin` |
 
 ### Claude Code
 
@@ -152,13 +165,9 @@ By default, Claude Code prompts for approval on every `uip` command, and a reali
 
 The command prints the recommended JSON and offers to merge it into your settings (`~/.claude/settings.json` for global, or project-local `.claude/settings.local.json`). You will also see a one-line nudge at session start until an allowlist is installed.
 
-### Google Gemini CLI
-
-Gemini CLI is supported by `uip skills install`. If the Gemini CLI is on your PATH, it's detected automatically and skills are wired up. If no agent is detected, pick **Gemini CLI** when prompted.
-
 ### OpenAI Codex CLI
 
-This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
+`uip skills install --agent codex` is the recommended install. Alternatively, this repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
 
 This repository also includes Codex plugin metadata under `.codex-plugin/`. The Codex plugin manifest exposes the same `skills/` directory and shared session hooks.
 
