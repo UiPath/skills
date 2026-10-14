@@ -23,6 +23,8 @@ There is **no `executions create`** — open a manual run with
 ## Manual-execution lifecycle
 
 1. `testsets run --test-set-key <KEY> --execution-type manual` → `Data.ExecutionId`.
+   Every log the run creates is Manual even for automated cases; the default
+   `--execution-type automated` instead dispatches the automations.
 2. `executions testcaselogs list --execution-id <ID>` → one row per case with
    `TestCaseId` + `TestCase.Name`; resolves every id in one call.
 3. `testcaselog start` then `testcaselog finish --result <...> --has-error <...>` per case.

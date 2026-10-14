@@ -122,7 +122,9 @@ than zero. That is deliberate, because both tasks consume the execution they are
 given, and it is only possible because `executions delete` exists. Neither
 grades a recency pick over the shared set: `reporting_date_backdate` records the
 exact run its `pre_run` opened, and `manual_execution_record` snapshots the set
-before the agent runs and grades the run the agent then opens.
+before the agent runs and grades the single new run the agent then opens —
+failing safe if a concurrent variant leaks a second new run in, rather than
+picking a winner by recency.
 
 ## Why
 

@@ -150,9 +150,14 @@ pre_run:
                        "--execution-id", eid, "--project-key", P, "--yes")
 
       # Record the runs that exist on the set BEFORE the agent runs. The oracle
-      # grades `current minus these` - the run the AGENT opened - never a recency
-      # pick over the shared set that a concurrent variant's run could win. cwd
-      # is this run's own sandbox dir (per-run isolated); the oracle reads it back.
+      # grades the UNIQUE run the agent then opens (current minus these) - never
+      # a recency pick over the shared set that a concurrent variant's run could
+      # win. The agent, not pre_run, opens the run, so its exact id cannot be
+      # written here the way reporting_date records its own pre-opened run; the
+      # snapshot is this task's equivalent id-handoff file. If a concurrent
+      # variant leaks a second new run in, the oracle cannot tell them apart and
+      # fails safe rather than grading the sibling's run. cwd is this run's own
+      # sandbox dir (per-run isolated); the oracle reads the file back from it.
       with open("manual_before_ids.txt", "w", encoding="utf-8") as fh:
           fh.write("\n".join(before_ids))
 
@@ -257,11 +262,13 @@ success_criteria:
           t = r.stdout or ''
           return json.loads(t[t.index('{'):]) if '{' in t else {}
 
-      # pre_run snapshotted the runs already on the set. Grade `current minus
-      # snapshot` - the run the AGENT opened - never max(Created) over the whole
-      # set: EVFX-MANUAL-SET is single-owner, but a concurrent variant run and
-      # this task's own earlier-today runs both live here, and a plain recency
-      # pick could read either.
+      # pre_run snapshotted the runs already on the set into
+      # manual_before_ids.txt (same pre_run->oracle file handoff, same per-run
+      # sandbox cwd, as reporting_date's id file). Grade the UNIQUE run that is
+      # not in the snapshot - the one the AGENT opened - never max(Created) or
+      # 'any' over the shared set: EVFX-MANUAL-SET is single-owner, but a
+      # concurrent variant run and this task's own earlier-today runs can also
+      # live here, and a recency pick could grade a sibling's run (false pass).
       before = set()
       p = pathlib.Path('manual_before_ids.txt')
       if p.exists():
@@ -274,9 +281,15 @@ success_criteria:
                   '--test-set-id',sid,'--limit','100').get('Data') or [])
       candidates = [r for r in runs if r.get('Id') not in before]
       assert candidates, 'the agent opened no new execution on EVFX-MANUAL-SET'
-      # Among the agent's new run(s) only; Created is a millisecond ISO-8601
-      # stamp, so this stays deterministic if the agent opened more than one.
-      st = max(candidates, key=lambda r: r.get('Created') or '')
+      # Exactly one new run == the agent's. More than one means a concurrent
+      # variant (or an agent that opened several) leaked a run in and the
+      # agent's cannot be told apart: fail safe rather than risk grading the
+      # sibling's run. That residual false-fail is the safe direction - a
+      # concurrent/historical run can never make this oracle pass.
+      assert len(candidates) == 1, (
+          f'{len(candidates)} new runs on EVFX-MANUAL-SET - cannot attribute the '
+          f'agent run under a concurrent variant; failing safe')
+      st = candidates[0]
 
       # Count from the testcaselogs, the authoritative per-case record, like
       # every sibling task - 'executions list' rows carry no Passed/Failed
