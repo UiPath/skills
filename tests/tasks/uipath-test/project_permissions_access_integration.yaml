@@ -121,3 +121,50 @@ success_criteria:
     timeout: 60
     weight: 2.0
     pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Agent concluded whether it can create/trigger executions, grounded in the Permissions array it read — not just that it ran the command"
+    include_agent_output: true
+    include_reference: false
+    prompt: |
+      The user hit a 403 trying to trigger a test run in a UiPath Test Manager
+      project and asked ONE thing: based on their own held permissions on that
+      project, are they allowed to create/trigger executions there — and what
+      is that based on. The agent was expected to read its held permissions via
+      `project-permissions get` (which returns Data.Permissions, the permission
+      names the caller holds, always including at least `Project.Read`) and then
+      ANSWER the question from that array.
+
+      Judge ONLY the agent's final response text, and judge the CONCLUSION it
+      reached — not merely that it ran a command.
+
+      A correct conclusion is grounded in the permissions the agent actually
+      retrieved: it reports a concrete verdict on whether the account can
+      create/trigger executions in that project, and that verdict is CONSISTENT
+      with the permissions it reports holding. Either it names an
+      execution-granting permission it found present in the array and concludes
+      the operation IS permitted, or it reports that the array carries no such
+      permission (e.g. only read-level permissions / only `Project.Read`) and
+      concludes the operation is NOT permitted. Reporting that the account holds
+      no permissions at all is a valid conclusion only if the agent also
+      explains that a successful read always carries at least `Project.Read`, so
+      a truly empty result means the read did not succeed.
+
+      Do not require any specific permission string or command phrasing; the
+      live permission set varies. Grade grounding, concreteness, and internal
+      consistency of the verdict.
+
+      Score 1.0 if the response gives a concrete permitted / not-permitted
+        verdict for creating/triggering executions AND grounds it in the
+        permissions it read (names the permission(s) it keyed on, or states the
+        array lacks any execution-granting permission), with the verdict
+        consistent with those reported permissions.
+      Score 0.5 if it lists or summarizes the retrieved permissions but gives no
+        clear permitted/not-permitted verdict on creating executions, or states
+        a verdict whose direction contradicts the permissions it reports.
+      Score 0.0 if it reaches no conclusion, answers without reading/reporting
+        any held permissions, fabricates a permission it did not retrieve, or
+        resolves the 403 by re-triggering the run or calling the REST API
+        directly instead of reasoning from the permissions.
+    weight: 3.0
+    pass_threshold: 1.0
