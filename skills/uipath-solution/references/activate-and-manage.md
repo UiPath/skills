@@ -165,6 +165,8 @@ The service offers one action per state, and `deploy list` reports which in `Act
 
 So a full clean-up is two commands, and the two are never interchangeable. `deploy delete` reads the action list first: when the record lists actions but not `Delete` it refuses locally and names the command to run instead, so it cannot remove a live deployment's resources. A record that lists no actions at all is the exception — nothing is known about it, so the request goes to the server and the server decides.
 
+**It works from CI/CD.** On a server with the Pipelines delete route, an external app (client-credentials) login can delete tenant-feed records, so a pipeline can clean up after its own uninstalls and failed installs. On an older server, a user session falls back to the previous route, and an external app is refused (`ErrorCode: permission_denied`, `Retry: RetryWillNotFix`) with nothing deleted: run that delete with a user session. A draft that is still being validated cannot be deleted yet (`Retry: RetryLater`); wait for its run to finish, then retry.
+
 The leftover record does not block a redeploy of the same package, so the delete is housekeeping. Do it when a tenant is shared, where uninstalled and failed deployments otherwise accumulate in every `deploy list`.
 
 ## Step 4: List Published Packages
