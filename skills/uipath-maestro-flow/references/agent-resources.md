@@ -2,7 +2,7 @@
 
 *Exact signatures, fields, and defaults: `inlineAgent()`. Prompting, inputs and the sidecar: [inline-agent.md](inline-agent.md).*
 
-An inline agent's capabilities are ARTIFACT nodes hanging off its own handles — tools on `tool`, a context index on `context`, an escalation on `escalation`, a memory on `memory` — not steps in the control flow.
+An inline agent's capabilities are ARTIFACT nodes hanging off its own handles — tools on `tool`, a context index on `context`, an escalation on `escalation` — not steps in the control flow.
 Each is authored as an entry on `inlineAgent`, and the compiler emits the node and the edge.
 Context index: [inline-agent.md](inline-agent.md#context-grounding).
 
@@ -16,7 +16,6 @@ Context index: [inline-agent.md](inline-agent.md#context-grounding).
     { kind: 'httpRequest', url: 'https://api.example.test/items', method: 'GET' },
     { kind: 'function', key: '<guid>', name: 'acme-echo', folderPath: 'Shared/acme-echo' },
   ],
-  memory: { name: 'Support History', id: '<guid>' },
   escalation: [{ variant: 'quick-form', name: 'Confirm', outcomes: ['Approve', 'Reject'],
     fields: [{ id: 'approved', type: 'boolean', direction: 'output' }] }],
 }))
@@ -35,7 +34,7 @@ Context index: [inline-agent.md](inline-agent.md#context-grounding).
 | `clientside` | The CALLING application runs it | `name`, plus the `inputs`/`returns` contract |
 | `httpRequest` | The built-in HTTP tool | nothing — see below |
 
-For `mcp`, `a2a`, `memory` and the per-instance resource kinds, the node TYPE is
+For `mcp`, `a2a` and the per-instance resource kinds, the node TYPE is
 minted from the identity you give (`…tool.mcp.<name-slug>.<key-slug>`), so a
 wrong key emits a node the tenant cannot resolve. Read them from the tenant.
 
@@ -61,11 +60,19 @@ form INLINE instead — `fields` (the same rows a human task takes) and no `app`
 
 ## Memory
 
-`memory: { name, id }` attaches an episodic memory so the agent learns from past
-runs, with optional retrieval tuning (`dynamicFewShotLearning`,
-`semanticSimilarity`, `kValue`, `searchMode`). Naming one selects the agent's
-**1.4** definition — the version that declares the `memory` handle. Omitting it
-leaves the agent on 1.2 exactly as before.
+Do not give `inlineAgent` a `memory`; `check` refuses it (`AGENT_MEMORY_NOT_AUTHORABLE`).
+Attach the memory space to the sidecar with the CLI, after the last `compile`.
+`--field` takes a sidecar `inputSchema` key, e.g. `start__output__userQuestion`:
+
+```bash
+uip agent memory add <FeatureName> --memory-space "<space>" --folder-path "<folder>" \
+  --field <inputSchema-key>=1 --path "<FlowProjectDir>/<source>" --output json
+uip agent refresh "<FlowProjectDir>/<source>" --inline-in-flow \
+  --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
+```
+
+Discovery, retrieval flags and seed items:
+[/uipath:uipath-agents — memory.md](../../uipath-agents/references/lowcode/capabilities/memory/memory.md).
 
 ## Evidence boundary
 
