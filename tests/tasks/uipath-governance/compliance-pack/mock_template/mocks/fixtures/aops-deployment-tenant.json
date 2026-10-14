@@ -4,7 +4,7 @@
  "Data": {
   "Name": "DefaultTenant",
   "Identifier": "5f0c2a8e-3b1d-4e7a-9c64-2d8b7e1f4a90",
-  "Url": "http://istio-egressgateway.istio-system.svc.cluster.local/codereval/DefaultTenant/orchestrator_/",
+  "Url": "https://example.invalid/codereval/DefaultTenant/orchestrator_/",
   "Status": "Enabled",
   "TenantPolicies": [
    {

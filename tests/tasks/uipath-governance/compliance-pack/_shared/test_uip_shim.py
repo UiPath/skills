@@ -27,7 +27,7 @@ PACK = "iso-42001-2023"
 TENANT = "5f0c2a8e-3b1d-4e7a-9c64-2d8b7e1f4a90"
 TENANT_2 = "b3e81f06-2c4d-4a97-8e15-6d9a0c7f2b43"
 ORG = "8e1d4b27-6a3f-4c90-b5e2-7f04c9a1d3b6"
-RECORDED_ROBOT_POLICY = "3e39c661-54be-445b-b4b8-f1d4299cd50f"
+RECORDED_ROBOT_POLICY = "00000000-0000-4000-8000-000000000001"  # placeholder (build_fixtures.scrub_internal)
 OFFLINE = "offline smoke mock"
 
 
@@ -90,14 +90,25 @@ def test_shim_files_are_not_dot_prefixed_and_log_is_seeded():
         assert f'"{name}"' in (TEMPLATE / "mocks" / "uip").read_text()
 
 
+SYNTHETIC_IDS = {TENANT, TENANT_2, ORG, "71d4c9a2-5e08-4b6f-93c1-a2f6e8d04b17",
+                 "e9a27b5c-4f13-4d80-b6a9-3c5e1f7d8a02", "2c7e9f14-8b05-4d3a-a6e1-90f3b5d27c48"}
+PUBLIC_HOSTS = {"cloud.uipath.com", "gallery.uipath.com", "form.io", "portal.form.io",
+                "pkgs.dev.azure.com", "example.invalid"}
+
+
 def test_fixtures_carry_only_synthetic_identities():
     login = json.loads((FIXTURES / "login-status.json").read_text())["Data"]
     assert login["TenantId"] == TENANT and login["OrganizationId"] == ORG
     assert login["UserEmail"].endswith("@codereval.local")
     tenants = json.loads((FIXTURES / "tenant-list.json").read_text())["Data"]
     assert tenants[0]["TenantId"] == TENANT
-    blob = "".join(p.read_text() for p in FIXTURES.glob("*.json"))
-    assert "@uipath" not in blob
+    for path in sorted(FIXTURES.glob("*.json")):
+        text = path.name + path.read_text()
+        assert "@uipath" not in text and "svc.cluster.local" not in text, path.name
+        for g in re.findall(r"[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}", text):
+            assert g.lower() in SYNTHETIC_IDS or g.lower().startswith("00000000-0000-4000-8000-"), (path.name, g)
+        for host in re.findall(r"https?://([A-Za-z0-9.-]+)", text):
+            assert host in PUBLIC_HOSTS, (path.name, host)
 
 
 # --- compliance-pack state ---------------------------------------------------

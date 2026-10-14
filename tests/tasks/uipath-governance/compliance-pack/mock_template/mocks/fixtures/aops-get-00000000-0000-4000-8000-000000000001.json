@@ -3,7 +3,7 @@
  "Code": "AopsPolicyGet",
  "Data": {
   "Name": "ISO 42001 A.9.4 - Robot URL and Application Restrictions",
-  "Identifier": "3e39c661-54be-445b-b4b8-f1d4299cd50f",
+  "Identifier": "00000000-0000-4000-8000-000000000001",
   "Description": "Restricts which URLs and applications robots (Runtime Analyzer RT-UIA-001, Healing Agent HA-UIA-001/002) are allowed to automate, per ISO/IEC 42001:2023 clause A.9.4. Allow/block list values pending org input.",
   "Priority": 13,
   "Availability": 30,

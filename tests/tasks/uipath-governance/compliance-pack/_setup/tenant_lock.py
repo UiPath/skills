@@ -108,6 +108,17 @@ def acquire():
         log.info("Already held by this run — nothing to do")
         return
     owner = f"{os.environ.get('GITHUB_RUN_ID', 'local')}-{uuid.uuid4().hex[:12]}"
+    created_keys = []  # every lock entry this run created, for cleanup if it gives up
+
+    def give_up(reason):
+        # Never leave an entry behind when proceeding unlocked: an orphan would
+        # block every other run's create until it goes stale.
+        keys = set(created_keys) | {key for _, o, key in lock_entries() or [] if o == owner}
+        for key in keys:
+            if not delete(key):
+                log.warning("Could not delete own lock entry %s — it will go stale", key)
+        log.warning("%s — proceeding UNLOCKED", reason)
+
     deadline = time.time() + WAIT_SECONDS
     while time.time() < deadline:
         now = time.time()
@@ -116,9 +127,13 @@ def acquire():
             "--folder-path", LOCK_FOLDER, "--type", "Text",
             "--description", "Held by a coder-eval compliance-pack e2e run; safe to delete if stale.",
         ])
+        if created and isinstance(created.get("Data"), dict):
+            key = field(created["Data"], "Key", "Id")
+            if key is not None:
+                created_keys.append(key)
         entries = lock_entries()
         if entries is None:
-            log.warning("Cannot list %s/%s — proceeding UNLOCKED", LOCK_FOLDER, LOCK_NAME)
+            give_up(f"Cannot list {LOCK_FOLDER}/{LOCK_NAME}")
             return
         # Held = the oldest entry is ours, whichever attempt created it (an
         # earlier create may only now be visible to list).
@@ -131,25 +146,27 @@ def acquire():
         if ours:
             # A duplicate slipped through and an older holder wins: back off.
             for key in ours:
-                delete(key)
+                if delete(key) and key in created_keys:
+                    created_keys.remove(key)
             log.info("Lost tie-break to %s — waiting", entries[0][1])
         elif entries:
             epoch, holder, key = entries[0]
             age = now - epoch
             if age > STALE_SECONDS:
                 log.warning("Breaking stale lock held by %s (%.0fs old)", holder, age)
-                delete(key)
-                continue
+                if delete(key):
+                    continue
+                log.warning("Could not delete the stale lock — backing off")
             log.info("Held by %s for %.0fs — waiting", holder, age)
         elif created:
             log.info("Created but not listed yet — rechecking")
             time.sleep(3)
             continue
         else:
-            log.warning("Create failed and no lock exists — lock unusable, proceeding UNLOCKED")
+            give_up("Create failed and no lock exists — lock unusable")
             return
         time.sleep(POLL_SECONDS + random.uniform(0, 5))
-    log.warning("Waited %ss without the lock — proceeding UNLOCKED", WAIT_SECONDS)
+    give_up(f"Waited {WAIT_SECONDS:.0f}s without the lock")
 
 
 def release():

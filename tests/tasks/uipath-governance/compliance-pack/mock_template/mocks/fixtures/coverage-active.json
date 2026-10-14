@@ -24,35 +24,35 @@
     "Status": "needs-manual-config",
     "DriftedControlCount": 0,
     "DriftedControls": [],
-    "PolicyId": "e97a2cbc-8963-4c53-a94a-cd5675bcf281"
+    "PolicyId": "00000000-0000-4000-8000-000000000004"
    },
    {
     "ProductIdentifier": "Assistant",
     "Status": "in-place",
     "DriftedControlCount": 0,
     "DriftedControls": [],
-    "PolicyId": "73334717-0720-46f7-9a74-2c1352da00ce"
+    "PolicyId": "00000000-0000-4000-8000-000000000022"
    },
    {
     "ProductIdentifier": "Development",
     "Status": "needs-manual-config",
     "DriftedControlCount": 0,
     "DriftedControls": [],
-    "PolicyId": "879337c1-650d-4850-acc2-38c395a8c636"
+    "PolicyId": "00000000-0000-4000-8000-000000000023"
    },
    {
     "ProductIdentifier": "Robot",
     "Status": "needs-manual-config",
     "DriftedControlCount": 0,
     "DriftedControls": [],
-    "PolicyId": "21bc52aa-333d-451f-b06c-7ba2ce010579"
+    "PolicyId": "00000000-0000-4000-8000-000000000012"
    },
    {
     "ProductIdentifier": "StudioWeb",
     "Status": "needs-manual-config",
     "DriftedControlCount": 0,
     "DriftedControls": [],
-    "PolicyId": "08dcb56b-078f-4bba-85ed-5e82b1097082"
+    "PolicyId": "00000000-0000-4000-8000-000000000024"
    }
   ],
   "Clauses": [

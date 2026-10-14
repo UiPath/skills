@@ -17,8 +17,13 @@ nothing is written.
 
 Recorded bot identifiers (tenant / org / user ids, email, user name) are
 read from the run's own `login status` and `tenant list` responses and
-replaced with the fixed values in SYNTHETIC, so no real identifier is
-written — and none lives in this script.
+replaced with the fixed values in SYNTHETIC — none lives in this script.
+Every other GUID (pack-state, AOps policy and template ids) becomes a
+numbered placeholder, one per distinct id so cross-fixture references still
+line up, and every URL host outside PUBLIC_HOSTS becomes `example.invalid`
+(internal gateways, alpha origins, internal doc links). After a scrub-rule
+change, `--rescrub` applies the rules to the committed fixtures without a
+live run.
 
 One fixture is derived, not recorded: `coverage-all-applied` is the
 post-enable capture with every manual control set — the live tenant never
@@ -30,6 +35,7 @@ import copy
 import glob
 import json
 import os
+import re
 import sys
 
 PACK_ID = "iso-42001-2023"
@@ -48,6 +54,14 @@ SYNTHETIC = {
     "email": "admin@codereval.local",
     "user_name": "admin",
 }
+
+
+# URL hosts a fixture may keep; any other host is internal and is replaced.
+PUBLIC_HOSTS = {"cloud.uipath.com", "gallery.uipath.com", "form.io", "portal.form.io", "pkgs.dev.azure.com"}
+PLACEHOLDER_HOST = "example.invalid"
+PLACEHOLDER_GUID = "00000000-0000-4000-8000-{:012x}"
+GUID = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+URL_HOST = re.compile(r"https?://([A-Za-z0-9.-]+)")
 
 
 def responses(run_dirs):
@@ -102,6 +116,38 @@ def scrubber(login, tenants):
         return json.loads(text)
 
     return scrub
+
+
+def scrub_internal(fixtures):
+    """Placeholder every non-SYNTHETIC GUID and every non-public URL host, names included."""
+    keep = {g.lower() for g in SYNTHETIC["tenants"] + [SYNTHETIC["org"], SYNTHETIC["user"]]}
+    ids = {}
+
+    def guid(m):
+        g = m.group(0)
+        if g.lower() in keep or g.lower().startswith(PLACEHOLDER_GUID[:24]):
+            return g
+        new = ids.setdefault(g.lower(), PLACEHOLDER_GUID.format(len(ids) + 1))
+        return new.upper() if g.isupper() else new
+
+    def url(m):
+        return m.group(0) if m.group(1) in PUBLIC_HOSTS else f"https://{PLACEHOLDER_HOST}"
+
+    out = {}
+    for name in sorted(fixtures):  # sorted → the same placeholder for the same id every rebuild
+        text = URL_HOST.sub(url, GUID.sub(guid, json.dumps(fixtures[name], ensure_ascii=False)))
+        out[GUID.sub(guid, name)] = json.loads(text)
+    return out
+
+
+def write_fixtures(out_dir, fixtures):
+    os.makedirs(out_dir, exist_ok=True)
+    for name, value in sorted(fixtures.items()):
+        with open(os.path.join(out_dir, name + ".json"), "w", encoding="utf-8") as fh:
+            if name.startswith("aops-template-"):
+                json.dump(value, fh, ensure_ascii=False, separators=(",", ":"))  # large, machine-only
+            else:
+                json.dump(value, fh, indent=1, ensure_ascii=False)
 
 
 def pick(items, test, what):
@@ -211,23 +257,28 @@ def build(run_dirs):
     if missing:
         sys.exit("build_fixtures: not found in the run(s): " + "; ".join(missing))
     scrub = scrubber(out["login-status"]["Data"], out["tenant-list"]["Data"])
-    return {name: scrub(value) for name, value in out.items()}
+    return scrub_internal({name: scrub(value) for name, value in out.items()})
 
 
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("run_dirs", nargs="+")
+    ap.add_argument("run_dirs", nargs="*")
     ap.add_argument("--out", default=os.path.join(here, "..", "mock_template", "mocks", "fixtures"))
+    ap.add_argument("--rescrub", action="store_true",
+                    help="re-apply scrub_internal to the fixtures already in --out (no live run needed)")
     args = ap.parse_args()
-    fixtures = build(args.run_dirs)
-    os.makedirs(args.out, exist_ok=True)
-    for name, value in sorted(fixtures.items()):
-        with open(os.path.join(args.out, name + ".json"), "w", encoding="utf-8") as fh:
-            if name.startswith("aops-template-"):
-                json.dump(value, fh, ensure_ascii=False, separators=(",", ":"))  # large, machine-only
-            else:
-                json.dump(value, fh, indent=1, ensure_ascii=False)
+    if args.rescrub:
+        old = {os.path.basename(f)[:-5]: json.load(open(f, encoding="utf-8"))
+               for f in glob.glob(os.path.join(args.out, "*.json"))}
+        fixtures = scrub_internal(old)
+        for name in set(old) - set(fixtures):
+            os.remove(os.path.join(args.out, name + ".json"))  # renamed: its id was scrubbed
+    elif args.run_dirs:
+        fixtures = build(args.run_dirs)
+    else:
+        ap.error("give run dir(s) to rebuild from, or --rescrub")
+    write_fixtures(args.out, fixtures)
     print(f"build_fixtures: wrote {len(fixtures)} fixtures to {os.path.normpath(args.out)}")
 
 

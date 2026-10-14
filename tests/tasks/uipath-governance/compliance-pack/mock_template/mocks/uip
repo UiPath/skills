@@ -147,11 +147,13 @@ def load_state():
 
 
 def save_state(state):
+    # Non-fatal so the command still answers, but loud: graders read this file,
+    # and a silent failure would score a correct run as a skill regression.
     try:
         with open(STATE_PATH, "w") as fh:
             json.dump(state, fh)
-    except OSError:
-        pass
+    except OSError as exc:
+        sys.stderr.write(f"uip (mock): could not save {STATE_PATH}: {exc}\n")
 
 
 def tenant_state(state, target_id):
