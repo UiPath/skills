@@ -40,7 +40,7 @@ First **enumerate the tenant's actual required set from the schema file**: every
 |---|---|
 | Process **name** | Ask. Non-empty; duplicates fail with a 409-style error. |
 | **Description** | Ask, or derive from the material and confirm. |
-| **Category id** | `uip ah categories get` → pick from `Data.Categories` (**`category_is_active: 1` only**); several plausible → ask with names. Never the template's `1`. |
+| **Category id** | `uip ah categories get` → pick from `Data.Categories` (**`category_is_active: 1` only**): the most specific one that fits the material, and **"Other" only when nothing fits**; several plausible → ask with names. Never the template's `1`. |
 | **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by label, send its `answer_option` code. |
 | **Owner email** | **`uip ah auth-info get`** → `Data.User.Email` is the signed-in identity and the default owner. That call is the authority; do not substitute an address from any list. |
 | **Submitter email** | Same as owner; usually the same person. |
@@ -140,6 +140,8 @@ Fix anything found locally, then create. This costs nothing on a correct payload
 ```bash
 uip ah automations create --from-schema --idea-flow-id $IDEA_FLOW_ID --file ./ah-answers.json --output json
 ```
+
+The create can take 20–30 s. Run it as its own command, not chained behind the preflight checks, and wait for its envelope. If your shell hands back before the command finishes, wait on that same command; never start a second create and never read the silence as a failure.
 
 - `Result: Success` → **`Data.Id`** is the new process id. A success means it WAS created — never re-run on a confusing field read (that duplicates).
 - `ValidationError`/`Failure` → the `Message`/`Instructions` carry the service's validation text; the same causes as the API flow apply (unnamed `Please fill in all the required information` → re-run the preflight: a missing required answer or an enum code that is not verbatim from the schema; `Invalid Category Id`; `Automation name cannot be empty.` → `OVR-OVERVIEW_NAME` is missing, empty, or a bare string instead of `{ "value": … }`; `errorDetails` with `An answer selection is required for submission` on a field → that field's enum code isn't copied verbatim from its `enum`). Fix and retry **once**.
