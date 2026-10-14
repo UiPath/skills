@@ -176,6 +176,7 @@ This is the most important section. For each step, extract:
 
 Watch for:
 - **Embedded business rules** — rules are often buried in the "Remarks" column or in step descriptions rather than in a dedicated section. Extract and number them (BR-01, BR-02, etc.).
+- **Typed business rules** — a PDD Business Rules table may give each rule a type (`Deterministic`, `Reasoning: agent`, `Reasoning: person`, possibly in the document's language) and its `inputs → output`. Carry both into the SDD: they decide whether the rule becomes a decision table or a reasoning-list row ([Business Rules Guide](business-rules-guide.md)).
 - **Data field references** — step descriptions mention specific field names, variable names, or data values. Collect these for the data model definitions.
 - **Value mappings** — when a step says "map X to Y" or shows a conversion table, capture the full mapping.
 - **Implicit ordering constraints** — some steps must happen before others but the PDD doesn't explicitly say so. Note these for the workflow decomposition.
