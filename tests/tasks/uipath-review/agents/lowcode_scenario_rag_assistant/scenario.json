@@ -1,0 +1,28 @@
+{
+  "project": "ReviewSol/SampleAgent",
+  "inject": "inject_rag_assistant.py",
+  "expected": [
+    {"ids": ["LC_TOOL_RESPONSE_NOT_GROUNDED"], "category": "tools"},
+    {"ids": ["LC_CONTEXT_SOURCE_OVERLAP"], "category": "tools"},
+    {"ids": ["LC_CONTEXT_RETRIEVAL_SETTINGS_FIT"], "category": "tools"},
+    {"ids": ["LC_UNGROUNDED_DOMAIN_KNOWLEDGE"], "category": "tools", "pattern": "threshold|manager tier|expense"},
+    {"ids": ["LC_PLACEHOLDER_VALUE"], "category": "general"},
+    {"ids": ["LC_PROMPT_STOPPING_CRITERIA"], "category": "general"},
+    {"ids": ["LC_EVAL_AGENT_DEFINITION_DRIFT"], "category": "evals", "pattern": "PayrollIndex"}
+  ],
+  "min_recall": 0.7,
+  "decoys": [
+    {"id": "LC_FAILURE_IRREVERSIBLE_ACTION", "reason": "the only tool is read-only"},
+    {"id": "LC_MULTI_TOOL_NO_SEQUENCING", "reason": "single tool"},
+    {"id": "LC_OUTPUT_CLASSIFIER_NO_ENUM", "reason": "free-text answer, not classifier-shaped"},
+    {"id": "LC_UNGROUNDED_DOMAIN_KNOWLEDGE", "element": "Gold", "reason": "Gold tier rule is stated inline"}
+  ],
+  "min_categories": 3,
+  "min_severity_bands": 1,
+  "max_findings": null,
+  "forbidden_bands": [],
+  "allowed_grades": ["B", "C", "D", "F"],
+  "grade_not_above_cli": true,
+  "cli_expected": ["LOWCODE_CONTEXT_NO_DESCRIPTION"],
+  "cli_only_expected": false
+}
