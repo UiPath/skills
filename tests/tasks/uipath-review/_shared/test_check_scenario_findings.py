@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import subprocess
 import sys
 import textwrap
@@ -239,3 +240,11 @@ def test_any_single_letter_source_infix_is_parsed(tmp_path):
     """
     r = run(tmp_path, _report(rows), _spec(tmp_path), _cli(tmp_path))
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_scenario_patterns_do_not_match_catalog_citations():
+    for spec_path in sorted((HERE.parent / "agents").glob("lowcode_scenario_*/scenario.json")):
+        for item in json.loads(spec_path.read_text(encoding="utf-8"))["expected"]:
+            if item.get("pattern"):
+                text = "Catalog `WhenNotToUse` for this validator; see the guardrail catalog."
+                assert not re.search(item["pattern"], text, re.IGNORECASE), (spec_path.parent.name, item)
