@@ -1,4 +1,4 @@
-task_id: skill-test-testcaselog-override-triage-operate
+task_id: skill-test-testcaselog-override-integration
 description: >
   Operate test: a failure on a settled run is a known environment flake, not a
   product defect, and has to be corrected without losing what the run actually

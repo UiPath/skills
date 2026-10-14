@@ -1,146 +1,87 @@
 # Test case logs (`uip tm testcaselog`)
 
-One test case log is one test case's outcome inside one execution. This is the
-surface for reading them, reading their evidence, correcting a result, and
-giving a failure an owner.
+One test case log is one test case's outcome inside one execution — the surface
+for reading logs and their evidence, correcting a result, and giving a failure
+an owner. Every verb is project-scoped (`--project-key` or `--project-id`) and
+takes `--output json`. Discover flags with `--help`; only the non-obvious rules
+are below.
 
-Every verb is project-scoped — pass `--project-key <PROJECT_KEY>` (or
-`--project-id <UUID>`) — and takes `--output json` per Critical Rule 2.
+## Reading (`list`, `get`, `latest`)
 
-## Reading
-
-- `uip tm testcaselog list --project-key <PROJECT_KEY>` — every log the filter
-  matches across the project. Filters: `--results`, `--statuses`, `--labels`,
-  `--assignees`, `--search`, `--sort-by`, `--limit` / `--offset`.
-- `uip tm testcaselog get --project-key <PROJECT_KEY> --test-case-log-id <UUID>`
-  — one log; add `--include-assertions` to get its assertions in the same call.
-- `uip tm testcaselog latest --project-key <PROJECT_KEY> --test-case-ids <UUID...>`
-  — the newest log for each of several test cases, in one call.
-
-**There is no date or execution filter on `list`.** To narrow by run use
-`uip tm executions testcaselogs list --execution-id <UUID>`; to narrow by
-period use `uip tm executions list-filtered --execution-finished-interval`.
-
-**`--search` is a prefix match** on the test case name or objKey: `checkout`
-does not match `Guest checkout flow`.
-
-**`--labels` is an any-match on whole names**, not all-of and not a prefix.
-
-**`latest` and `assign` take at most 100 ids per call.** Split larger sets.
-
-**`--results Restricted` is applied after the query**, not by the server, so a
-row asked for as `Passed` can come back reading `Restricted`.
-
-**`--statuses` is asymmetric:** the accepted input tokens are lowercase, and
-rows come back with `Status` in PascalCase (`Finished`, `Running`).
+- **No date or execution filter on `list`.** Narrow by run with
+  `uip tm executions testcaselogs list --execution-id`; by period with
+  `uip tm executions list-filtered --execution-finished-interval`.
+- **`--search` is a prefix match** on name/objKey: `checkout` misses
+  `Guest checkout flow`. **`--labels` is any-match on whole names** — not
+  all-of, not a prefix.
+- **`latest` and `assign` take at most 100 ids per call.** Split larger sets.
+- **`--statuses` is asymmetric:** input tokens lowercase, rows return `Status`
+  in PascalCase (`Finished`). **`--results Restricted` is filtered
+  client-side**, so a row asked as `Passed` can come back `Restricted`.
+- `get --include-assertions` returns no assertions when `Result` is
+  `Restricted` (the caller isn't entitled).
 
 ## `Result` vs `OriginalResult`
 
-`Result` is what the log reports **now**. `OriginalResult` is what the run
-recorded. **The two differing is exactly what "this result was overridden"
-means** — there is no separate flag to read. Never report `Result` as the
-outcome of a run without checking `OriginalResult` first.
-
-`--include-assertions` returns nothing when `Result` is `Restricted`: the
-server drops assertions for a caller not entitled to the result.
+`Result` is what the log reports **now**; `OriginalResult` is what the run
+recorded. A result is **overridden only when both are populated and they
+differ** — there is no separate flag. A null/empty `OriginalResult` means the
+log was **not** overridden, whatever `Result` says. Never report `Result` as a
+run's outcome without this check.
 
 ## Evidence
 
-- `uip tm testcaselog list-assertions --project-key <PROJECT_KEY> --test-case-log-id <UUID>`
-  — the structured assertion rows.
-- `uip tm testcaselog render-assertions --project-key <PROJECT_KEY> --test-case-log-id <UUID>`
-  — the same assertions rendered as markdown, ready to paste into a defect.
-- `uip tm testcaselog get-robot-logs --project-key <PROJECT_KEY> --test-case-log-id <UUID>`
-  — an expiring download link and its size, or with `--output-file <PATH>` the
-  downloaded file.
-
-A log with no robot logs is **not an error**: both forms answer
-`Action: "NoLogs"` and write nothing. Do not retry it. The returned link is a
-Test Manager API path, so fetching it yourself needs a bearer token carrying
-the `TM.Attachments` scope, which the command itself does not require.
+`list-assertions` (structured rows), `render-assertions` (markdown for a
+defect), and `get-robot-logs` (expiring link, or `--output-file` to save) read
+a log's evidence. A log with no robot logs is **not an error** —
+`get-robot-logs` answers `Action: "NoLogs"` and writes nothing; do not retry.
+That link is a TM API path, so fetching it yourself needs a token with the
+`TM.Attachments` scope (the command itself does not).
 
 ## Overriding a result
 
-```
-uip tm testcaselog override create --project-key <KEY> --test-case-log-id <UUID> \
-  --result <Passed|Failed|...> --reason "<why>"
-```
-
-`--reason` is required. The output carries the override id (`Id`) that `update`
-and `delete` need.
-
-- `override get --test-case-log-id <UUID>` — read it. A log with no override
-  returns a 404 (not an empty row) — treat that 404 as "not overridden", not an error.
-- `override update --test-case-log-id <UUID> --override-id <UUID> --result … --reason …`
-  — replace an existing one; both fields are required.
-- `override delete --test-case-log-id <UUID> --override-id <UUID>` — remove it,
-  so the log reports what the run recorded again.
+`override create --test-case-log-id <UUID> --result <...> --reason "<why>"` —
+**both `--result` and `--reason` are required.** The output carries the override
+`Id` that `update`/`delete` need. `override get` reads it (and returns a **404
+when there is none — treat as "not overridden"**, not an error).
 
 Three things that bite:
 
 1. **A log carries at most one override.** A second `create` fails on a unique
-   constraint. Use `override update` to change one that already exists.
-2. **`create` is not atomic.** The log's reported result is written *before* the
-   override row, so a failed second `create` can still have moved the result. If
-   a `create` errors, re-read the log before deciding what happened.
-3. **An override is destroyed** whenever the log is finished, re-imported, or
-   updated by an Orchestrator job event. It is a correction on a settled run,
-   not a durable property — re-running the test wipes it.
+   constraint; use `override update` instead.
+2. **`create` is not atomic.** `Result` is written *before* the override row, so
+   a failed `create` can still have moved it. Re-read after any `create` error.
+3. **An override is destroyed** when the log is finished, re-imported, or
+   touched by an Orchestrator job event — a correction on a settled run, not
+   durable.
 
 ## Assigning an owner
 
-```
-uip tm testcaselog assign --project-key <KEY> --test-case-log-ids <UUID...> \
-  --assignee-email <EMAIL> [--due-date <DUE_DATE>]
-```
+`assign --test-case-log-ids <UUID...> --assignee-email <EMAIL>` — prefer
+`--assignee-email`, which the CLI resolves to the identity-provider id. The
+alternative `--assignee-id` is a **UUID, never a name or email** (from
+`uip tm user get` → `IdentityProviderId`, or `project owners list` →
+`Identifier`). `--due-date` is ISO `YYYY-MM-DD`; omitting it on a reassignment
+clears any existing due date.
 
-Prefer `--assignee-email <EMAIL>` — the CLI resolves it to the identity-provider
-id for you. The alternative is `--assignee-id <IDENTITY_PROVIDER_UUID>`, and
-**that flag is a UUID, never a name or an email**: get one from `uip tm user get`
-(`IdentityProviderId`, your own) or `uip tm project owners list` (`Identifier`, a
-project owner). `--due-date` is ISO 8601 `YYYY-MM-DD`; omitting it on a
-reassignment clears any existing due date.
-
-Two behaviours to plan around:
-
-- **Assignment is stored per test case per execution, not per log.** Passing
-  one variation's log id reassigns every variation and run of that test case in
-  that execution.
+- **Assignment is stored per test case per execution, not per log.** One
+  variation's log id reassigns every variation and run of that case in that
+  execution.
 - **An id that resolves to nothing is dropped silently.** `Assigned` means the
-  request was accepted, not that every id was written — re-read a log to
-  confirm.
+  request was accepted, not that every id was written — re-read to confirm.
 
 ## Recording a manual result
 
-`testcaselog start` opens a log on an execution and `finish` closes it:
+`start` opens a log on an execution, `finish` closes it. **`start` needs an
+existing `--execution-id`** — there is no `executions create`; open one with
+`uip tm testcases run ... --execution-type manual` (execution under `Data.Id`)
+or `uip tm testsets run ... --execution-type manual`. A manual run already opens
+each case log, so `start` returns that same log, not a duplicate.
 
-```
-uip tm testcaselog start  --project-key <KEY> --execution-id <UUID> --test-case-id <UUID>
-uip tm testcaselog finish --project-key <KEY> --execution-id <UUID> --test-case-id <UUID> \
-  --result <None|Passed|Failed|Restricted> --has-error <true|false> \
-  --executed-by <EMAIL>
-```
+`finish` requires **all three** of `--result`, `--has-error`, and
+`--executed-by`, and **`--executed-by` is an email** — not a user/IdP UUID
+(unlike `assign --assignee-id`). Wrong type is a `ValidationError`/exit 3, not a
+400. `finish` destroys any override on the log.
 
-**`start` needs an `--execution-id`, so an execution has to exist first.** There
-is no `executions create`; open one with a run. For a brand-new manual
-execution, `uip tm testcases run --project-key <KEY> --test-case-id <UUID...>
---name "<EXECUTION_NAME>" --execution-type manual` returns the new execution
-under `Data.Id` and opens a Pending log for each case; `uip tm testsets run
---test-set-key <KEY> --execution-type manual` does the same for a whole set.
-A manual run already opens the case log, so `start` on that case returns the
-same open log rather than a duplicate — `finish` then records the result.
-
-`finish` requires **all three** of `--result`, `--has-error` and
-`--executed-by`, and `--executed-by` is an **email address**, not a user id or
-an identity-provider UUID — unlike `assign --assignee-id`, which is the UUID.
-Getting that one wrong is a `ValidationError` and exit 3, not a 400.
-
-Optionally `--run-id`, `--detail-link`, `--is-post-condition-met`,
-`--step-logs` / `--step-logs-file` (mutually exclusive). Remember that
-`finish` destroys any override on the log.
-
-## Permissions
-
-Reads need test-case-log read; overriding and assigning need the matching write
-permissions. Check with
-`uip tm project permissions get --project-key <PROJECT_KEY>`.
+Reads need test-case-log read permission; override and assign need the matching
+write permissions (`uip tm project permissions get --project-key`).

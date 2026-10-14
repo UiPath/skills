@@ -1,4 +1,4 @@
-task_id: skill-test-testcaselog-read-discover-smoke
+task_id: skill-test-testcaselog-read-smoke
 description: >
   Smoke test: the agent reads one test case's log and reports what result the
   run reports and whether it was later changed. Exercises the read side of
