@@ -54,7 +54,7 @@ uip login status --output json
 - `uip vss deploy --help` fails or does not list `cancel`, `resume`, `seed` and `status` → the CLI is too old. Tell the user to run the installer again to update it, and stop.
 - `Status` is not logged in, or has expired → ask the user to run `uip login` in their terminal. It opens a browser. They log in as the person who should own the deployment, and pick the organization and tenant.
 <!--skill-flavor:cli-ready:end-->
-- Tell the user, in one line, who they are logged in as and which tenant the deploy will go to, and ask if that is right. `uip login tenant set <TENANT_NAME>` switches tenant.
+- Tell the user, in one line, who they are logged in as and which tenant the deploy will go to, and that they can say so if it is wrong (`uip login tenant set <TENANT_NAME>` switches tenant). Do not stop to wait for a yes: in the same message, go on to step 2 and ask the first question there.
 
 ### 2. Pick the vertical, then the solution
 
