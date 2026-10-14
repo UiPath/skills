@@ -1,0 +1,28 @@
+{
+ "name_contains": "Alder Lease Termination",
+ "documents": {
+  "pdd": "corpus/lease-termination/pdd.md"
+ },
+ "systems": {
+  "Automotive Finance": [
+   "automotive finance"
+  ],
+  "CondiTrack": [
+   "conditrack"
+  ],
+  "OpenLane": [
+   "openlane",
+   "open lane"
+  ],
+  "eTrail/Salesforce": [
+   "etrail",
+   "salesforce"
+  ]
+ },
+ "optional_systems": {
+  "UiPath Case Management": [
+   "case management"
+  ]
+ },
+ "allow_other_category": true
+}
