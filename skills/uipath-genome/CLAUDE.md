@@ -9,11 +9,15 @@ Every subject is stated in full in exactly one file; every other mention is a on
 | Genome levels (component / process), test-components-are-one-test-project exception, section rules, stubs, population matrix, `*[Inferred]*`, write-then-offer-edits, complexity inference | `references/genome-format-guide.md` |
 | Composite UI interaction **contract** (what a substep must carry) | `genome-format-guide.md` § Workflow |
 | Credential asset per login account; secrets never in genome, data file or report | `genome-format-guide.md` § Platform Dependencies |
-| Source Map contract rows and the step table (its columns and rules); "genome files are the only output" (locators and rows stay in export) | `genome-format-guide.md` § Source Map |
-| What `scripts/check-genome.py` checks (its docstring), which the genome tasks also grade with; when each mode runs it | the script; the extraction guide Step 6b, the authoring guide Step 8, the source-migration guide § Migration preflight |
-| Transactional Shape: the unit-of-work test and its granularity (alternative unit of work), flows versus nested levels (the two tests of rule 12), producer and consumer roles and the Type-cell role word, queue-vs-direct choice, the three outcomes and the conditional Postponed row, step groups, two-level sources folded into one unit of work, configuration split, traceability, one Recommendation verdict, stub | `genome-format-guide.md` § Transactional Shape |
-| Extraction pipeline, related-resources question, sizing and the reading plan, extraction in parts (shared decisions, brief, ledgers, return contract, reconciliation, a part as a fork of the parent and its shared reads), partial re-extraction, evidence policy for blanket screen captures, completing and checking Source Map | `references/extraction-guide.md` |
-| Authoring steps, scenario proposals for a goal, platform-capability suggestions, bounded follow-ups, authored edit table | `references/authoring-guide.md` |
+| Source Map contract rows and the step table (its columns and rules); "genome files are the only output" (locators and rows stay in export) | `references/extracted-genome-guide.md` § Source Map |
+| The kinds of source fact read from the source, never from its rendering (literals and case rules, counts, lengths, waits and budgets, set or typed, control-flow flags, formats, built-ins, parameter documentation, log texts) | `extracted-genome-guide.md` § Source values |
+| The source-defect marker, the evident intent, which behaviour the rebuild follows, user rulings, the defect index | `extracted-genome-guide.md` § Source Defects |
+| What `scripts/check-genome.py` checks (its docstring), which the genome tasks also grade with; when each mode runs it | the script; the extraction guide Step 6b, the authoring guide Step 8, the editing guide § Check after every edit, the source-migration guide § Migration preflight |
+| Transactional Shape: the unit-of-work test and its granularity (alternative unit of work), flows versus nested levels (the two tests of rule 12), producer and consumer roles and the Type-cell role word, queue-vs-direct choice, the three outcomes and the conditional Postponed row, step groups, two-level sources folded into one unit of work, configuration split, traceability, one Recommendation verdict, stub | `references/transactional-shape-guide.md` |
+| Extraction pipeline, related-resources question, sizing and the reading plan, extraction in parts (shared decisions, brief, ledgers, return contract, reconciliation, a part as a fork of the parent and its shared reads), evidence policy for blanket screen captures, completing and checking Source Map | `references/extraction-guide.md` |
+| Verifying a suspected source defect: the two passes, the classification table, vendor-settled semantics, verdicts from subagents, writing while verdicts are out | `references/defect-verification-guide.md` |
+| Authoring steps, scenario proposals for a goal, platform-capability suggestions, bounded follow-ups | `references/authoring-guide.md` |
+| Edit requests and what each updates, for any genome and for extracted genomes; the check after every edit; partial re-extraction | `references/editing-guide.md` |
 | Build With skill names, decision tree, operate-only skills, common combinations by shape | `references/skill-mapping-guide.md` |
 | Configuration and scaffolding questions (the subagent model and parallel-parts question and the source-fidelity question among them), project/solution resolution, library gating, skill groups, owning-skill contract, acceptance verdicts, completion report and its split line | `references/execution-guide.md` |
 | Applying or declining the transactional shape at build: split questions and their answer line, autonomous split defaults, projects a split materialises, REFramework template creation, groups and surfaces, the REFramework build items, alternative unit of work, four-exit verification | `references/transactional-execution-guide.md` |
@@ -26,7 +30,7 @@ Every subject is stated in full in exactly one file; every other mention is a on
 | UiPath source facts: reading order and designer-noise filter (no inventory script), detection, inventory, signals per artifact type (project settings, test projects), platform resources, provenance, pitfalls, which REFramework file feeds which Transactional Shape row | `references/uipath-source-guide.md` — the reference implementation of a source guide, with the sections the pack's `CONTRACT.md` gives every source guide |
 | What a framework pack must contain | `CONTRACT.md` in the framework migration pack — ask the user for its location |
 | Framework facts only: detection, inventory, signals, composite-action wording, locator formats, per-field translation tables, framework pitfalls, inventory scripts, worked examples | `<PACK_DIR>/<framework>/source-guide.md`, `selectors-guide.md`, `scripts/`, `examples/` in the framework migration pack — never in this skill |
-| Mode detection and the boundaries with sibling skills (planner, activity-migrator), framework pack resolution (ask for location, select row, run then read), one- or two-sentence rules naming subject and home, task navigation | `SKILL.md` § Source Frameworks |
+| Mode detection and the boundaries with sibling skills (planner, activity-migrator), framework pack resolution (ask for location, select row, run then read), one- or two-sentence rules naming subject and home | `SKILL.md` |
 | What each mode reads at each phase and the condition that opens each guide, the three-turn reading rule | `SKILL.md` § Read Plans |
 
 ## Rules
@@ -45,6 +49,10 @@ Every subject is stated in full in exactly one file; every other mention is a on
 12. **UiPath behaviour is written as the latest version shows it.** The newest package source and prerelease and the current CLI are the ground truth, with no per-version conditions; a rule that holds on every version carries the older versions' safety. `package-doc-errata-guide.md` is the labelled temporary exception: it bridges released packages until their corrected docs ship.
 13. **The skill ships no selector checker and no target tool.** A structural selector check proves shape, not that anything matches the screen, and a maintained rule set drifts from the selector guide; the registration and linking commands follow the installed UI Automation package (rule 9). A run writes its own script where it needs one, as selector-translation-guide § Checking a definition and source-migration-guide § UI targets state.
 
+14. **A file's boundary is its audience: mode × condition.** A rule sits in the file every session that needs it reads, and in no file a session reads without needing it. A file every session of a mode reads holds no conditional block above about 5 KB; a block under about 5 KB whose condition is common stays where it is.
+15. **Every reference file has its row in SKILL.md § Read Plans,** keyed by a condition decidable at that phase, written in the same change as the file. Reads are named by the plan, never discovered by following pointers; a pointer into a section of a file the plan did not open is a section read.
+16. **The framework migration pack cites these files** by name, with § names and rule numbers, in its guides and its scripts' docstrings. A move, a rename or a renumber here repoints the pack in a paired pack PR.
+
 ## Where to put new content
 
 | New content | Home |
@@ -53,7 +61,9 @@ Every subject is stated in full in exactly one file; every other mention is a on
 | New build pattern for a composite interaction that holds across technologies | source-migration-guide § Composite interactions (+ source guide's wording row) |
 | A build or selector fact for one technology (SAP GUI tables, a Java grid) | that technology's section of selector-translation-guide, read only when the technology is in play; a pointer where a package doc owns the detail |
 | Framework's new action, locator format or pitfall | that framework's source or selectors guide |
-| New genome section or content rule | genome-format-guide (+ templates) |
+| New genome section or content rule | genome-format-guide (+ templates); a Transactional Shape rule: transactional-shape-guide; a Source Map, source-value or source-defect rule: extracted-genome-guide |
+| New edit request or a rule for edits | editing-guide |
+| A rule for verifying suspected source defects | defect-verification-guide |
 | New scaffolding question or report line | execution-guide |
 | A framework's transactional construct (queue, work list, per-item loop, framework template) | UiPath: uipath-source-guide § Signals — XAML › REFramework projects; any other framework: its source guide in the framework migration pack, pointing to genome-format-guide § Transactional Shape — nothing in this skill |
 | New framework | A `<framework>/` pack in the framework migration pack (source guide, selectors guide, script, example, smoke task) plus its row in its README § Frameworks — in one change there; nothing in this skill |
