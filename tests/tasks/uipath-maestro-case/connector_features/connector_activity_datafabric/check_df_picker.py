@@ -35,7 +35,7 @@ def values_for(node, field):
 def main():
     with open("_setup/picker_entity.json") as f:
         fixture = json.load(f)
-    name, key = fixture["name"], fixture["key"]
+    name, key, folder_key = fixture["name"], fixture["key"], fixture["folderKey"]
 
     # `case init` scaffolds caseplan.case now; the shared helpers default to caseplan.json.
     task = assert_task_type_present(
@@ -60,14 +60,31 @@ def main():
             f"FAIL: the folderEntityName picker was not referenced into the solution "
             f"({name} keys found: {entities}); run case spec with --solution-folder"
         )
+    data = task.get("data") or {}
+    scopes = {v for v in values_for(data, "entityScope") if isinstance(v, str)}
+    if "folder" not in scopes:
+        sys.exit(f"FAIL: the task's entityScope is {sorted(scopes)}, not 'folder'")
+
     with open(CASEPLAN) as f:
         bindings = json.load(f).get("bindings") or []
-    bound = {b.get("id") for b in bindings if b.get("resourceKey") == key and (b.get("resource") or "").lower() == "entity"}
-    if not bound:
-        sys.exit(f"FAIL: no root entity binding with resourceKey {key}; copy spec.resourceBindings into bindings[]")
-    refs = {v for v in values_for(task.get("data") or {}, "folderEntityName") if isinstance(v, str)}
-    if not any(ref == f"=bindings.{b}" for ref in refs for b in bound):
-        sys.exit(f"FAIL: the task's folderEntityName is {sorted(refs)}, not =bindings.<id> of the {name} binding {sorted(bound)}")
+    by_id = {b.get("id"): b for b in bindings}
+
+    def bound_rows(field):
+        """The root bindings the task's `field` values point at."""
+        refs = {v for v in values_for(data, field) if isinstance(v, str)}
+        return refs, [by_id[r[len("=bindings."):]] for r in refs if r.startswith("=bindings.") and r[len("=bindings."):] in by_id]
+
+    refs, rows = bound_rows("folderEntityName")
+    picked = [b for b in rows if b.get("resourceKey") == key and (b.get("resource") or "").lower() == "entity"
+              and (b.get("default") or "").lower() == name.lower()]
+    if not picked:
+        sys.exit(f"FAIL: the task's folderEntityName is {sorted(refs)}, not =bindings.<id> of an entity binding for "
+                 f"{name} ({key}); copy spec.resourceBindings into bindings[] and the task inputs")
+
+    folder_refs, folder_rows = bound_rows("folderEntityName_folderKey")
+    if folder_refs and not any(b.get("default") == folder_key for b in folder_rows) and folder_key not in folder_refs:
+        sys.exit(f"FAIL: the task's folderEntityName_folderKey is {sorted(folder_refs)}, not the {fixture['folderPath']} "
+                 f"folder ({folder_key})")
 
     print(f"OK: Data Fabric activity resolved (typeId set, connectorKey={ck!r}); {name} referenced into the solution and bound on the task")
 
