@@ -50,6 +50,39 @@ An administrator does these once. The deploy does not:
 - **The `Vertical.Unlimited` entitlement** on the organization. The service refuses the job without it. It is a license, not a user permission.
 - **The access** in the tables below, for the person who deploys.
 
+## After the deploy
+
+The deploy does not set up who may use the web app. Until this is done, **Lending QA/QC shows every user an access-denied screen**: it only lets in members of the groups below. Loan Setup limits only its admin portal, settings pages, feedback dashboard and solution tests to them. Source: the FINS team's role setup guide (`public_docs/rbac_setup.md` in the FINS solution repository).
+
+Walk the user through it in this order, one step at a time.
+
+**1. Create the Identity groups.** An organization administrator creates them in the Identity admin pages (**Admin**, then **Accounts & Groups**, then **Groups**, then **Add group**): give each group a name and add its members. One group per role:
+
+| Role | Suggested group name | Who goes in it |
+|------|----------------------|----------------|
+| `ADMIN` | `FINS-Admin` | The solution's administrators |
+| `BUSINESS_USER` | `FINS-BusinessUser` | Everyone who uses the solution day to day. Leaving it empty locks them all out of Lending QA/QC |
+| `SOLUTION_TEST_ADMIN` | `FINS-SolutionTestAdmin` | Who may create and run solution tests. For now it also opens the admin portal and settings pages |
+
+The names are the user's choice. They are case-sensitive and cannot contain a comma. A user may be in more than one group.
+
+**2. Link each role to its group** in the `FINSRoleGroupMapping` entity, one row per role, in the solution folder:
+
+| Role | GroupName |
+|------|-----------|
+| `ADMIN` | `FINS-Admin` |
+| `BUSINESS_USER` | `FINS-BusinessUser` |
+| `SOLUTION_TEST_ADMIN` | `FINS-SolutionTestAdmin` |
+
+- `Role` must be exactly one of the three values. Every role needs a row: a missing row is an error, not "no access needed".
+- `GroupName` must match the group's name in step 1 exactly. To give a role to several groups, list them comma-separated in that one row (`FINS-Admin,RPA-Ops`). A mistyped name in such a list is skipped without a warning, so access can seem to work while one group is left out: check each name.
+- **Loan Setup:** the seed templates include `FINSRoleGroupMapping.csv`, already filled with the suggested names. Change it if the groups have other names. The rows exist only after the seed runs (step 8 in SKILL.md), so the seed is part of this step.
+- **Lending QA/QC:** its seed templates do not include this entity. Add the rows in **Data Fabric**: open the `FINSRoleGroupMapping` entity in the solution folder and add a record per role. This needs the same record access as a seed (see [Seed](#seed-uip-vss-deploy-seed-on-the-solution-folder)).
+
+A wrong name is fixed in the entity and takes effect when the app reloads, with no redeploy. An administrator who is locked out of the app can still edit the entity in Data Fabric.
+
+**3. Solution tests (Loan Setup):** set each trigger that starts a solution test to run as a robot account, not "Run as HTTP Caller". That robot account needs a scope that reads group membership, such as `PM.Group.Read`, or whichever scope the tenant requires.
+
 ## Access
 
 Permission names are the ones `uip or roles user-permissions list` prints, so the list can be compared with its output line by line. **Source** marks where each line comes from:

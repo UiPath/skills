@@ -140,6 +140,7 @@ Tell the user what happened in plain words, and what to do next:
 
 ### 8. After the deploy
 
+- **The vertical's own setup.** When the vertical's file has an "After the deploy" section, walk the user through it, one step at a time, in its order, with its names and paths. It often decides who may use the solution's app at all, so do not skip it.
 - **Seed data.** The deploy wrote CSV templates to `./seeding/<PACKAGE_NAME>`. Explain that these are the solution's starting data (its records in Data Fabric). The user fills in the CSVs. Seeding writes records, so ask for a yes, then run:
 
   ```bash
@@ -148,7 +149,7 @@ Tell the user what happened in plain words, and what to do next:
 
   A seed is safe to run again: rows it already inserted are matched, not inserted twice. `--refresh` downloads fresh templates and replaces the CSVs.
 
-On `succeeded` (with or without warnings), report the result (the solution folder, and that it is active) and the seed step above, nothing else. The job log prints a "Setup the platform lists for this deployment" block before it activates: it is the platform's generic checklist (activate apps, add accounts and roles, add machines, account-machine mappings, per-robot asset values). Do not pass it on: the deploy activated, so it no longer applies. Do not add setup steps of your own either: no activation checks, redirect URLs, role groups, folder accounts, robots, machines or asset values. When the job needs something more, it pauses and names it (step 7).
+On `succeeded` (with or without warnings), report the result (the solution folder, and that it is active) and the steps above, nothing else. The job log prints a "Setup the platform lists for this deployment" block before it activates: it is the platform's generic checklist (activate apps, add accounts and roles, add machines, account-machine mappings, per-robot asset values). Do not pass it on: the deploy activated, so it no longer applies. Do not add setup steps of your own either: nothing the vertical's file does not list (no activation checks, redirect URLs, folder accounts, robots, machines or asset values). When the job needs something more, it pauses and names it (step 7).
 
 ## Check the Access
 
@@ -198,7 +199,7 @@ Follow [access-troubleshooting-guide.md](references/access-troubleshooting-guide
 | File | Read when |
 |------|-----------|
 | [references/verticals/verticals-guide.md](references/verticals/verticals-guide.md) | Picking a vertical, checking a user against a vertical's access list, or adding a vertical |
-| [references/verticals/fins-guide.md](references/verticals/fins-guide.md) | FINS packages, the values they ask for, what must exist before the first deploy, and their access lists |
+| [references/verticals/fins-guide.md](references/verticals/fins-guide.md) | FINS packages, the values they ask for, what must exist before the first deploy, the role setup after it, and their access lists |
 | [references/upgrade-guide.md](references/upgrade-guide.md) | Upgrading or downgrading an installed deployment |
 | [references/access-troubleshooting-guide.md](references/access-troubleshooting-guide.md) | A deploy step is refused, a role read returns `403`, or granting access after the user agrees |
 
@@ -212,4 +213,4 @@ Follow [access-troubleshooting-guide.md](references/access-troubleshooting-guide
 6. **Do not treat `cancel` as an undo.** Steps already applied stay applied.
 7. **Do not read the CLI source, call the service's REST API, or search the disk for solution zips.** The service deploys from its own feed.
 8. **Do not redeploy, upgrade, resume or run `seed --refresh` before the user copies filled-in CSVs out of `./seeding/<PACKAGE_NAME>`.** A successful deploy or resume, and `--refresh`, replace them. A plain `seed` reads them and leaves them in place.
-9. **Do not list post-deploy setup.** After a successful deploy, report the job result and offer seeding. Do not list activation checks, redirect URLs, role groups, folder accounts, robots, machines or asset values, whether you made them up or read them in the job log's "Setup the platform lists" block of a deploy that succeeded. When the job pauses because activation failed, the pause names the setup still needed: pass that on (step 7).
+9. **Do not add post-deploy setup the vertical's file does not list.** After a successful deploy, report the job result, walk through the vertical file's "After the deploy" section, and offer seeding. List nothing else: no activation checks, redirect URLs, folder accounts, robots, machines or asset values, whether you made them up or read them in the job log's "Setup the platform lists" block of a deploy that succeeded. When the job pauses because activation failed, the pause names the setup still needed: pass that on (step 7).
