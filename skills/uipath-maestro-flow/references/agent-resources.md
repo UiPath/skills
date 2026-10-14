@@ -61,18 +61,20 @@ form INLINE instead — `fields` (the same rows a human task takes) and no `app`
 ## Memory
 
 Do not give `inlineAgent` a `memory`; `check` refuses it (`AGENT_MEMORY_NOT_AUTHORABLE`).
-Attach the memory space to the sidecar with the CLI, after the last `compile`.
+Find the space, then attach it to the sidecar after the last `compile`. `add` only
+attaches an existing space: an empty list means stop and report it.
 `--field` takes a sidecar `inputSchema` key, e.g. `start__output__userQuestion`:
 
 ```bash
-uip agent memory add <FeatureName> --memory-space "<space>" --folder-path "<folder>" \
+uip solution resources list --source remote --kind MemorySpace --search "<space>" --output json
+uip agent memory add <FeatureName> --memory-space "<Name>" --folder-path "<Folder>" \
   --field <inputSchema-key>=1 --path "<FlowProjectDir>/<source>" --output json
 uip agent refresh "<FlowProjectDir>/<source>" --inline-in-flow \
   --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
 ```
 
-Discovery, retrieval flags and seed items:
-[/uipath:uipath-agents — memory.md](../../uipath-agents/references/lowcode/capabilities/memory/memory.md).
+Threshold, result count, search mode: `uip agent memory add --help`. Seed items:
+`uip agent memory item add --help`.
 
 ## Evidence boundary
 
