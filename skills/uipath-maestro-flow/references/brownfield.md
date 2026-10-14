@@ -195,6 +195,8 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
   merged edge's handle means `validate` will refuse the candidate.
 - `the round trip appends End "<id>" after …` is the one benign line: compile
   adds an End where the original path just stops. It does not change behaviour.
+  A flow decompiled with `.implicitEnd(false)` does not get this line; see
+  [A path without an End stays open](#a-path-without-an-end-stays-open).
 - `agent "<id>" carries its prompts, model and settings on the node (embedded) …`
   means that agent keeps its configuration in the `.flow`, not in
   `<source>/agent.json` (some canvas and `node add` saves do this). Merge keeps
