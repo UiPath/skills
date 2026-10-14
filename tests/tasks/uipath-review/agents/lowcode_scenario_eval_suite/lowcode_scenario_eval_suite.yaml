@@ -1,0 +1,92 @@
+task_id: skill-review-agents-lowcode-scenario-eval-suite
+description: >
+  Clean triage agent (same as the clean control) with a defective eval suite. Planted:
+  four paraphrases of one VPN ticket and no edge, malformed or escalation cases; one LLM
+  judge with the rubric "Is the output good?" for a closed-class field; a tool mock
+  whose field contradicts the tool output schema; an expectation that calls an unbound
+  create_incident tool; plus CLI-detected key, duplicate-ID and empty-output defects.
+  Decoys: agent-definition rules, since the definition is clean.
+  EVAL_EMPTY_EXPECTED_OUTPUTS is not expected: it fires only when more than half the
+  datapoints are empty. LOWCODE_EVAL_NO_TOOL_SIMULATION is not expected: the planted
+  tool mock sets simulateTools.
+tags: [uipath-review, e2e, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  turn_timeout: 1800
+  task_timeout: 3000
+  max_turns: 80
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+pre_run:
+  - command: "python3 _setup/inject_eval_suite.py"
+    timeout: 30
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  A low-code UiPath agent project exists at `ReviewSol/SampleAgent` inside the
+  solution `ReviewSol`. Review the agent project for issues and save your review
+  report to `./_review_report.md` at the sandbox root.
+
+  Do not manually edit files inside `ReviewSol/`.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-review skill"
+    skill_name: "uipath-review"
+    expected_skill: "uipath-review"
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Write inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Write"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: command_not_executed
+    description: "Read-only contract: no Edit inside ReviewSol/ (Critical Rule 1)"
+    tool_name: "Edit"
+    command_pattern: '"file_path":\s*"[^"]*ReviewSol'
+    weight: 3.0
+
+  - type: run_command
+    description: "Report carries the review CLI's deterministic findings (Step 2.5a ran)"
+    command: 'python3 $REFERENCE_DIR/_shared/check_review_cli_provenance.py --project ReviewSol/SampleAgent --verb "agent review"'
+    timeout: 240
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Guardrail catalog reachable, and the report's claim about it is consistent"
+    command: 'python3 $REFERENCE_DIR/_shared/check_guardrail_catalog_evidence.py'
+    timeout: 240
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Scenario: planted rules caught, decoys not fired, grade consistent"
+    command: 'python3 $REFERENCE_DIR/_shared/check_scenario_findings.py --spec $REFERENCE_DIR/agents/lowcode_scenario_eval_suite/scenario.json'
+    timeout: 240
+    expected_exit_code: 0
+    weight: 6.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Step 6 recorded the final grade in CLI-owned review-history.json"
+    command: 'python3 $REFERENCE_DIR/_shared/check_review_history.py --project ReviewSol/SampleAgent --report _review_report.md'
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
