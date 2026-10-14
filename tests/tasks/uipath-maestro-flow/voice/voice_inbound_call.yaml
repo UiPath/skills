@@ -147,9 +147,9 @@ success_criteria:
   # Advisory (pass_threshold: 0) — records convention adherence without docking
   # an agent that reaches the same graded outcome another way.
   - type: command_executed
-    description: "Advisory: agent scaffolded the voice agent with uip agent init --inline-in-flow --conversational"
+    description: "Advisory: agent scaffolded the voice agent with uip agent init --inline-in-flow --voice (or --conversational on an older CLI)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+agent\s+init\s+.*--conversational'
+    command_pattern: '(uip|\$UIP)\s+agent\s+init\s+.*--(voice|conversational)'
     min_count: 1
     weight: 0
     pass_threshold: 0
