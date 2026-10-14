@@ -230,3 +230,12 @@ def test_fails_when_report_is_short(tmp_path):
     r = run(tmp_path, "# tiny\n**Final grade: C**", _spec(tmp_path), _cli(tmp_path))
     assert r.returncode != 0
     assert "short" in r.stderr
+
+
+def test_any_single_letter_source_infix_is_parsed(tmp_path):
+    rows = """\
+    | C-J-001 | `LC_TOOL_OVERLAP` | overlap. |
+    | W-J-002 | `LC_OUTPUT_CLASSIFIER_NO_ENUM` | no enum. |
+    """
+    r = run(tmp_path, _report(rows), _spec(tmp_path), _cli(tmp_path))
+    assert r.returncode == 0, r.stdout + r.stderr
