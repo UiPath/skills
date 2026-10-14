@@ -31,6 +31,6 @@ The task block states the request as these lines:
 
 1. **Never put a credential in `**Headers:**`.** An `Authorization`, API-key or cookie header in the SDD ships in `caseplan.case` and in every pull of it. Authenticate with `**Connector Key:**` + `**Connection ID:**` instead; if the SDD carries a credential, stop and ask the user to move it to a connection.
 2. **No registry lookup.** An http-request task produces no `tasks/registry-resolved.json` entry. Connector mode's connection comes from the SDD's `**Connection ID:**`, the same id `uip is connections list` shows.
-3. **Outputs are fixed.** The task's outputs are the response's `code`, `headers` and `body`, plus `Error`. An SDD Outputs row naming anything else is reported in `Data.Unresolved[]`. Downstream tasks read them per Rule 11, e.g. `"Stage"."Task".body`.
+3. **Outputs are fixed.** The task's outputs are the response's `code`, `headers` and `body`, plus `Error`. To store one in a case variable, write an arrow row on it, e.g. `| Body | object | -> payload |` (the name matches case-insensitively); convert writes `{name: "body", var: "payload", source: "=response.body", originalVar: "body"}`. An Outputs row naming anything else is reported in `Data.Unresolved[]` as `output-type`. Downstream tasks read them per Rule 11, e.g. `"Stage"."Task".body`.
 
 <!-- END: planning.md -->
