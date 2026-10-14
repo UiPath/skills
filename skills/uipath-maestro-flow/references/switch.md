@@ -44,7 +44,8 @@ a case you write yourself.
 
 Split runtime control among cases of one discriminant.
 
-Signature: `.switch(name, on, [{ value, label?, body }], defaultFn?)`.
+Signature: `.switch(name, on, [{ value, label?, body }], defaultFn?)`; a case may use
+`when: Expr` instead of `value`, with `on` = `undefined` when every case does.
 
 ```ts
 .switch('priority', input('priority'), [
