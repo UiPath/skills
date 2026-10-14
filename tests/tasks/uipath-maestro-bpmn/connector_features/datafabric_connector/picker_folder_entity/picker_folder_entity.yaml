@@ -62,3 +62,11 @@ success_criteria:
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: run_command
+    description: "The connector task picks the recorded entity on folderEntityName and sets title to PickerTest"
+    command: "python3 $REFERENCE_DIR/_shared/check_df_picker_folder_entity.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

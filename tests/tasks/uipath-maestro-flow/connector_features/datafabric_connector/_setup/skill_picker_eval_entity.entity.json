@@ -1,7 +1,0 @@
-{
-  "displayName": "SkillPickerEvalEntity",
-  "description": "Folder entity the solution-resource picker evals select on folderEntityName.",
-  "fields": [
-    { "name": "title", "type": "STRING" }
-  ]
-}

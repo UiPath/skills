@@ -47,9 +47,14 @@ def uip_json(*args):
     return json.loads(r.stdout)
 
 
-def entities_named(folder_key, name):
-    listed = uip_json("df", "entities", "list", "--folder-key", folder_key).get("Data") or []
+def entities_named(name):
+    """Every entity by that name the caller can see, tenant-level and in any folder."""
+    listed = uip_json("df", "entities", "list", "--include-folders").get("Data") or []
     return [e for e in listed if (e.get("Name") or "").lower() == name.lower()]
+
+
+def in_folder(entities, folder_key):
+    return [e for e in entities if (e.get("FolderId") or "").lower() == folder_key.lower()]
 
 
 def main():
@@ -67,19 +72,21 @@ def main():
     if not folder_key:
         sys.exit(f"FAIL: folder {folder_path!r} has no key")
 
-    matches = entities_named(folder_key, name)
-    if not matches:
+    named = entities_named(name)
+    if not in_folder(named, folder_key):
         create = ("df", "entities", "create", name, "--file", definition_path, "--folder-key", folder_key)
         r = uip(*create)
-        matches = entities_named(folder_key, name)
-        if r.returncode != 0 and not matches:
+        named = entities_named(name)
+        if r.returncode != 0 and not in_folder(named, folder_key):
             fail(create, r)
+        if not in_folder(named, folder_key):
+            sys.exit(f"FAIL: created entity {name!r} in {folder_path!r} but it is not listed yet; rerun")
         print(f"OK: {'created' if r.returncode == 0 else 'another run created'} entity {name!r} in {folder_path!r}")
-    if len(matches) > 1:
-        keys = ", ".join(sorted(str(e.get("Id")) for e in matches))
-        sys.exit(f"FAIL: {len(matches)} entities named {name!r} in {folder_path!r} ({keys}); delete all but one, "
-                 "since the picker resolves this name without a folder key only while it is unique")
-    key = matches[0].get("Id")
+    if len(named) > 1:
+        where = ", ".join(sorted(f"{e.get('Id')} in {e.get('FolderId') or 'the tenant'}" for e in named))
+        sys.exit(f"FAIL: {len(named)} entities named {name!r} on the tenant ({where}); delete all but the one in "
+                 f"{folder_path!r}, since the picker resolves this name without a folder key only while it is unique")
+    key = named[0].get("Id")
     print(f"OK: entity {name!r} in {folder_path!r} ({key})")
 
     os.makedirs("_setup", exist_ok=True)

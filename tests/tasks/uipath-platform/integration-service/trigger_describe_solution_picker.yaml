@@ -38,6 +38,14 @@ initial_prompt: |
 
 success_criteria:
   - type: command_executed
+    description: "Agent listed the trigger objects or described the trigger without -f first, to spot the picker instead of copying the example"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+is\s+triggers\s+objects(?:(?!uip\s)[^&;|])*UPDATED_V3|uip\s+is\s+triggers\s+describe(?!(?:(?!uip\s)[^&;|])*folderEntityName=)(?:(?!uip\s)[^&;|])*EntityTriggers_V3'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent described the trigger with the entity on the folderEntityName picker"
     tool_name: "Bash"
     command_pattern: 'uip\s+is\s+triggers\s+describe(?:(?!uip\s)[^&;|])*EntityTriggers_V3(?:(?!uip\s)[^&;|])*folderEntityName=["'']?PurchaseOrder'

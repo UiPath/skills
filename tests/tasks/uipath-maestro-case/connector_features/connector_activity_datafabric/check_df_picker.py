@@ -17,6 +17,21 @@ from _shared.case_check import (  # noqa: E402
     task_is_skeleton,
 )
 
+CASEPLAN = "DfPickerCase/DfPickerCase/caseplan.case"
+
+
+def values_for(node, field):
+    """Every value `field` holds anywhere under `node`."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if k == field:
+                yield v
+            yield from values_for(v, field)
+    elif isinstance(node, list):
+        for item in node:
+            yield from values_for(item, field)
+
+
 def main():
     with open("_setup/picker_entity.json") as f:
         fixture = json.load(f)
@@ -25,7 +40,7 @@ def main():
     # `case init` scaffolds caseplan.case now; the shared helpers default to caseplan.json.
     task = assert_task_type_present(
         "execute-connector-activity",
-        caseplan_path="DfPickerCase/DfPickerCase/caseplan.case",
+        caseplan_path=CASEPLAN,
     )
     if task_is_skeleton(task):
         sys.exit("FAIL: execute-connector-activity task is a skeleton (no typeId / connectionId)")
@@ -45,7 +60,16 @@ def main():
             f"FAIL: the folderEntityName picker was not referenced into the solution "
             f"({name} keys found: {entities}); run case spec with --solution-folder"
         )
-    print(f"OK: Data Fabric activity resolved (typeId set, connectorKey={ck!r}); {name} referenced into the solution")
+    with open(CASEPLAN) as f:
+        bindings = json.load(f).get("bindings") or []
+    bound = {b.get("id") for b in bindings if b.get("resourceKey") == key and (b.get("resource") or "").lower() == "entity"}
+    if not bound:
+        sys.exit(f"FAIL: no root entity binding with resourceKey {key}; copy spec.resourceBindings into bindings[]")
+    refs = {v for v in values_for(task.get("data") or {}, "folderEntityName") if isinstance(v, str)}
+    if not any(ref == f"=bindings.{b}" for ref in refs for b in bound):
+        sys.exit(f"FAIL: the task's folderEntityName is {sorted(refs)}, not =bindings.<id> of the {name} binding {sorted(bound)}")
+
+    print(f"OK: Data Fabric activity resolved (typeId set, connectorKey={ck!r}); {name} referenced into the solution and bound on the task")
 
 
 if __name__ == "__main__":
