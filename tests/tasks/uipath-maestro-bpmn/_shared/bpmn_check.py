@@ -281,15 +281,13 @@ def has_uipath_extension(element: ET.Element, token: str) -> bool:
 def has_typed_uipath_extension(
     element: ET.Element, extension_name: str, type_value: str
 ) -> bool:
-    """Match both registry-supported UiPath payload type declarations."""
-    payloads = list(element.findall(f"uipath:{extension_name}", NS))
+    """True when a ``uipath:<extension_name>`` inside ``bpmn:extensionElements``
+    has a ``uipath:type`` child whose value is ``type_value``."""
     ext = element.find("bpmn:extensionElements", NS)
-    if ext is not None:
-        payloads.extend(ext.findall(f"uipath:{extension_name}", NS))
+    if ext is None:
+        return False
 
-    for payload in payloads:
-        if payload.attrib.get("type") == type_value:
-            return True
+    for payload in ext.findall(f"uipath:{extension_name}", NS):
         if any(
             type_elem.attrib.get("value") == type_value
             for type_elem in payload.findall("uipath:type", NS)

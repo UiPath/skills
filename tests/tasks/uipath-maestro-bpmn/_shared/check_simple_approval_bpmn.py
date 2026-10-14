@@ -13,6 +13,7 @@ from _shared.bpmn_check import (  # noqa: E402
     attr,
     elements,
     fail,
+    has_typed_uipath_extension,
     has_uipath_extension,
     one_or_more,
     parse_bpmn,
@@ -113,7 +114,7 @@ def main() -> None:
     agent_jobs = [
         task
         for task in elements(root, "serviceTask")
-        if has_uipath_extension(task, "Orchestrator.StartAgentJob")
+        if has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
     ]
     if not agent_jobs:
         fail("missing bpmn:serviceTask with Orchestrator.StartAgentJob uipath:activity shell")
