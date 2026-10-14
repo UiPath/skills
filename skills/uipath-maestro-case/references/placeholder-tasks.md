@@ -32,7 +32,9 @@ The user reviews structure first, then attaches real resources once they exist.
 
 ## When a Placeholder Is Created
 
-During **execution** (Phase 2, Step 9), for any `registry-resolved.json` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`:
+During **execution** (Phase 2, Step 9), for any `registry-resolved.json` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`, or that carries `gateDecision: "resolve-at-build"`:
+
+**`sdd convert --resolved` usually writes it for you.** A CLI that reports the `placeholder` kind in `Data.Unresolved[]` has already emitted every such task in the JSON Shape below ([phased-execution.md § Convert first](phased-execution.md#convert-first--emit-from-the-document-before-authoring)); leave those tasks as they are. Apply the steps below only to a deferred task convert emitted with `data` anyway, which happens on an older CLI or when the ledger entry lacks both markers, and to everything when the version guard sent Phase 2 to hand-authoring.
 
 1. Skip the schema fetch (`uip maestro case spec` / `uip maestro case tasks describe`).
 2. Write the task JSON node with structural fields only — no `taskTypeId` / `connectionId` / `inputs` / `outputs` keys (see JSON Shape below).

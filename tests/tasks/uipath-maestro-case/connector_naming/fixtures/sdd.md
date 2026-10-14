@@ -60,7 +60,7 @@
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| `current-stage-entered` | — | Entry rule 1 |
+| `case-entered` | — | Entry rule 1 |
 
 #### Stage Exit Conditions
 

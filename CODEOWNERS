@@ -252,3 +252,8 @@
 # StudioAdmin AOps skill (SourceControl + CICD pipelines)
 /skills/uipath-aops/ @AndreiRR24 @UiPath/xworks
 /tests/tasks/uipath-aops/ @AndreiRR24 @UiPath/xworks
+
+# Vertical Solutions skill (uip vss deploy)
+/skills/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
+/tests/tasks/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
+/skill-flavors/studioweb/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers

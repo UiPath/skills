@@ -96,6 +96,37 @@ whose definition is MISSING from the file — nothing can carry it, so it lowers
 to `mock() /* TODO: unsupported node type … */`; leave that node untouched and
 merge restores the original.
 
+## Merge warnings: what the round trip changed
+
+Merge prints `flow-merge: warning: …` for each change the merged file gets
+although you did not make it. With `--baseline` it also compares the baseline
+(the round trip with no edit) with the original. For example:
+
+```
+flow-merge: warning: the round trip rewires logFailure1@success from forEachItem1@continue to callApi1ErrorEnd@input; merge will write the new target.
+flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves handle "case-case_1", which node "route1" (core.logic.switch) does not declare …
+```
+
+- Each warning names a change you did not author: a node or edge added,
+  dropped or rewired, a node's type changed, a switch case id or human-task
+  outcome id renamed, or a binding row added, dropped or duplicated. If the
+  spot is one you did not mean to change, do not copy the candidate over the
+  canonical file; fix the `.flow.ts` there and merge again. A warning about a
+  merged edge's handle means `validate` will refuse the candidate.
+- `the round trip appends End "<id>" after …` is the one benign line: compile
+  adds an End where the original path just stops. It does not change behaviour.
+- Pass `--strict` to make merge refuse (exit 1, no file written) instead of
+  warning. The benign End line never refuses. `--strict` needs `--baseline`,
+  so use it in [the hand loop](#the-same-loop-by-hand); the generated
+  pipeline does not pass it. If `uip maestro flow merge` rejects `--strict`,
+  your CLI does not forward it yet; run the same merge through the globally
+  installed SDK's `flow-sdk` bin instead:
+
+  ```bash
+  flow-sdk flow merge .flow-sdk/Deployed.edited.flow --original Deployed.flow \
+    -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/Deployed.baseline.flow --strict
+  ```
+
 ## The file's schema version comes back out
 
 `decompile` emits `.schemaVersion("<the file's version>")` as the first line of
@@ -107,26 +138,51 @@ reader pinned lower refuses the file; `SCHEMA_VERSION_BELOW_FLOOR`: every reader
 migrates it forward on open). Changing versions is `uip maestro flow migrate`'s
 job, not an edit to this call.
 
-Three findings the source cannot carry are printed on stderr as
-`flow-decompile: warning: …` (and `--strict` turns the first and third into an
-error):
+These findings the source cannot carry are printed on stderr as
+`flow-decompile: warning: …`, and `--strict` turns each into an error:
 
 - A node **no trigger reaches** — no edge leads to it, as when a designer or
   `node add` left it unconnected. The builder has no detached-node construct,
   so the source omits it and marks the spot with `// TODO: node "<id>" … is not
   reachable`; recompiling drops that node. If it is your edit target, connect
   it in the `.flow` first or edit that node's JSON directly.
-- A `(type, typeVersion)` **this SDK does not ship** — the platform registry serves `core.trigger.manual@1.0`, the SDK ships `1.0.0`, and versions resolve exactly.
-  The source keeps the file's pair, so `compile` refuses it until you drop that `{ version }`; the node then takes the SDK's pinned version.
-  `check` may flag the same pin before `compile` does, as `NODE_VERSION_UNREGISTERED` (an error naming the versions the SDK has); the fix is the same.
+- A `(type, typeVersion)` **this SDK does not bundle**, for a type it bundles
+  at other versions — for example `uipath.human-in-the-loop.quick-form@1.6`
+  (written by `node add`) when the SDK ships `1.0` and `1.1`. Versions resolve
+  exactly, so the source **omits** that `{ version }` and the node compiles at
+  the SDK's default. `merge --baseline` keeps the node at the file's version,
+  with the file's definition, as long as you leave it untouched; a node you
+  edit moves to the SDK's version. If it is your edit target, edit that
+  node's JSON in the `.flow` directly, or tell the user the edit moves it from
+  the file's version (here `1.6`) to the SDK's default. A type the SDK bundles
+  at no version (a connector, a published process or agent) keeps its pin.
+  A pin like that written back by hand is still refused by `compile`, which
+  names the bundled versions; for a registered family `check` reports it first
+  as `NODE_VERSION_UNREGISTERED`.
 - A **file-format version outside the writable band** (below `1.6`) — the source
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and
   merge into it: `merge` preserves the original's declared version.
+- An **edge the builder cannot spell** — for example a second edge leaving a
+  decision's `true` port, which no builder construct produces. The
+  warning names it as `<source>@<port> -> <target>@<port>`, and the source marks
+  the spot with a `/* TODO: edge(s) … are NOT in this source */` comment (or a
+  `// TODO: edge …` line near the top when no step leads to it). Recompiling
+  drops that edge, and `merge` writes the loss into the original. If your edit
+  touches that part of the flow, change the `.flow` JSON there directly instead
+  of round-tripping it through the source.
+- A **switch whose cases carry their own conditions** — for example `High:
+  amount > 100` and `Low: amount <= 100`. `.switch(name, on, cases)` models
+  only `on === value`, so the decompiled `on` and `value`s are placeholders
+  (with a `/* TODO: this switch's case expressions are not a uniform … */`
+  comment). Recompiling fails or picks a different case, even when your edit is
+  somewhere else in the flow, so make the change in the `.flow` JSON directly.
 
 Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
 placing it in a solution, copy it over the canonical artifact rather than next
 to it, then validate the canonical project path again.
+
+Do not run `uip maestro flow format` on the merged file; it discards the author's layout.
 
 ## Split (`$ref`) artifacts
 
