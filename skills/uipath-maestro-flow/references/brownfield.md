@@ -34,6 +34,35 @@ Replace the canonical artifact only after the candidate validates. Do not copy
 leave an earlier `*.merged.flow` there: the project validator treats every
 `.flow` below the project directory as a deliverable.
 
+## Flows with draft nodes: let merge compile
+
+A canvas-saved flow often holds **draft** nodes: a connector with no connection
+yet, a required input left empty, or a generic operation with no object picked.
+`compile` refuses them even with `--no-check`, so the loop above stops at the
+first compile of the untouched source. Hand the edited **source** to `merge`
+instead, and let it build the baseline from the original itself:
+
+```bash
+uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
+# Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
+flow-sdk flow merge "$PROJECT/Deployed.flow.ts" --original "$CANONICAL" \
+  --baseline-from "$CANONICAL" -o "$WORK/candidate.flow"
+```
+
+- `--baseline-from <original.flow>` decompiles and compiles the original in
+  memory, so there is no baseline to capture, and none to capture too late.
+  With a `.flow.ts` as the edited input, merge compiles that too. Both
+  compiles tolerate draft nodes, and only the merged result is written.
+- A draft node you did **not** touch is restored exactly as saved, with
+  `[DRAFT_NODE_KEPT]` on stderr.
+- A draft node you **changed** gets the refusal a normal compile gives
+  (`[BINDING_MISSING]`, `[CONNECTOR_INPUT_MISSING]` or
+  `[CONNECTOR_OBJECT_REQUIRED]`) and nothing is written. Finish that node or
+  revert the edit.
+- Pass `--library` / `--bindings` as you would to `compile`; `--strict` works
+  here too. Use the SDK's `flow-sdk` bin: `uip maestro flow merge` does not
+  forward `--baseline-from` yet (UiPath/cli#5214).
+
 ## The generated pipeline
 
 `decompile` writes `<Name>.pipeline.mjs` into the `.flow-sdk/` work directory
