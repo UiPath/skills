@@ -98,3 +98,7 @@ def test_builtin_guardrail_shape():
                             match_names=["send_email"])
     assert g["$guardrailType"] == "builtInValidator"
     assert g["selector"] == {"scopes": ["Tool"], "matchNames": ["send_email"]}
+
+
+def test_scaffold_imports_on_python_without_pep604_runtime():
+    assert isinstance(s.apply_agent.__annotations__["settings"], str)
