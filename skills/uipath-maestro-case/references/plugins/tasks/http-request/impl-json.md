@@ -8,7 +8,7 @@
 
 1. **Never hand-write the `context` or `metadata`.** They are a copy of the Designer's activity configuration; a hand-typed copy drifts from it. Fix the SDD line and re-run convert instead.
 2. **When convert cannot write the task, write a [placeholder](../../../placeholder-tasks.md).** That is a CLI whose `uip maestro case task-types list --output json` does not list `http-request` under `Authorable`, and every brownfield add, which runs no convert. Tell the user to configure the request in Studio Web, or to upgrade the CLI and rebuild; never improvise the shape.
-3. **Work the `Data.Unresolved[]` entries for the task** — a missing method, headers that are not a JSON object, a connector with no connection, and connector mode's FolderKey — by fixing the SDD and re-running convert. Report any left to the user in `build-issues.md`.
+3. **Work the `Data.Unresolved[]` entries for the task** — a missing or unsupported method, headers that are not a JSON object, a body that is neither JSON nor an `=` expression, an Outputs row other than `code`/`headers`/`body`/`Error`, a connector with no connection, and connector mode's FolderKey — by fixing the SDD and re-running convert. Report any left to the user in `build-issues.md`.
 
 ## Connector mode
 
@@ -16,11 +16,11 @@
 
 The build's normal steps bind it: the Step 9 `uip maestro case bindings sync` files the connection under its `targetConnector`, where the Designer files it, and the `uip solution resources refresh` before every upload or debug (SKILL.md Rule 15) reads that entry to add the connection to the solution. Never skip either for a case with a connector-mode task.
 
-> **Known gap.** In Studio Web Debug, a connector-mode task still shows "No debug overwrite configured" until the user re-picks the connection in the task's properties and saves. Manual mode is unaffected. Tell the user when the case has a connector-mode task.
 
 ## Post-Write Verification
 
 - `type: "http-request"`, `data.serviceType: "Intsvc.UnifiedHttpRequest"`.
+- `uip maestro case validate` reports no `CASE_MGMT_CONNECTOR_ACTIVITY_UNRESOLVED` for the task, and `--strict` no `STRICT_CONNECTOR_CONTEXT_INCOMPLETE`.
 - `data.outputs` is `code`, `headers`, `body` and `Error`, with `var` numbered apart across tasks (`code`, `code2`, …).
 - No header in the `body` input carries a credential ([planning.md § Rules](planning.md#rules), first item).
 - Connector mode: two `Connection` bindings on the task and at the root, and the connection listed in the solution after `resources refresh`.
