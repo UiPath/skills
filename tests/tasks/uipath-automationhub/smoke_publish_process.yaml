@@ -3,9 +3,10 @@ description: >
   Smoke test: agent uses the uipath-automationhub skill to publish a
   business process (and a PDD document) to Automation Hub. The eval image
   ships an `ah`-capable `uip`, so the skill's Step-0 preflight must route to
-  the CLI flows. The tenant is a smoke fixture and is NOT reachable, so every
-  call fails — that's expected. The test grades the COMMAND SHAPE, not live
-  output: the skill must (1) activate, (2) take the CLI transport (`uip ah …`
+  the CLI flows. The calls reach the live alpha tenant the CI login targets,
+  and post_run archives the process by its fixed name. The test grades the
+  COMMAND SHAPE; the content of a publish is graded by
+  publish_from_pdd_structural. The skill must (1) activate, (2) take the CLI transport (`uip ah …`
   — auth is the CLI's job; the agent never handles a token), (3) walk the
   publish sequence — `idea-flows list` → `automations create --from-schema` →
   `documents create` — and (4) NEVER send the admin-token header
@@ -16,29 +17,27 @@ tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
 run_limits:
   expected_turns: 10
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
 initial_prompt: |
   Publish the approved business process below to UiPath Automation Hub using
   the `uipath-automationhub` skill, and attach its PDD document.
 
     Process name: "Invoice Reconciliation (smoke)"
     Description:  Reconcile supplier invoices against POs.
+    Systems used: Excel
     PDD:          name "PDD", link https://example.invalid/pdd
 
-  Authentication is provided via env-auth exactly as the UiPath Delegate
-  runtime provides it (`UIPATH_CLI_AUTH_TOKEN` + org/tenant variables) — the
-  `uip` CLI consumes it automatically. Do NOT run `uip login` and do NOT
-  handle a token yourself.
-
-  This is a command-shape smoke check against a fixture tenant that is NOT
-  reachable, so EVERY call will fail (non-200 / connection error) — that is
-  expected. Do not let a failed connectivity check stop you: walk through the
-  skill's full publish sequence and issue each command exactly once, in order.
-  Because you cannot read a real idea flow id or the created process id back
-  from the failed responses, use the placeholder id `12345` wherever the
-  sequence needs one so you can still issue every command once.
+  The `uip` CLI is already available and authenticated against the target
+  tenant. Do NOT run `uip login` and do NOT handle a token yourself.
 
   Important:
-  - Run each command once and move on. Do NOT retry and do NOT attempt to login.
+  - Walk through the skill's full publish sequence and issue each command once,
+    in order. Do NOT retry a failed command.
   - Do NOT prompt the user for confirmation — this is an automated test.
   - NEVER send the `x-ah-openapi-auth` or `x-ah-openapi-app-key` header — this
     skill authenticates with the user's cloud session, not an admin OpenAPI token.
@@ -101,7 +100,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent attached the document (uip ah documents create …) — best-effort: the fixture tenant is unreachable, so an agent may stop before this step"
+    description: "Agent attached the document (uip ah documents create …)"
     tool_name: "Bash"
     command_pattern: '(?i)uip ah documents create'
     min_count: 1
@@ -114,3 +113,7 @@ success_criteria:
     command_pattern: '(?i)Authorization:\s*Bearer'
     weight: 1.0
     pass_threshold: 1.0
+
+post_run:
+  - command: 'python3 _setup/cleanup_ah.py --name "Invoice Reconciliation (smoke)"'
+    timeout: 300
