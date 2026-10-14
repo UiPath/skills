@@ -28,6 +28,7 @@ UUID = re.compile(
 STUB_UUID = re.compile(r"^0{8}-0{4}-0{4}-0{4}-")
 VAR_REF = re.compile(r"\$vars\.([A-Za-z_$][\w$]*)")
 FILTER_REF = re.compile(r"\{([A-Za-z_$][\w$]*)\}")
+WHOLE_VAR_REF = re.compile(r"(?:=js:)?\$vars\.[\w$.?]+")
 FAILED_PORTS = {"error", "failed", "failure", "faulted"}
 # Inner target handles on `core.logic.loop` that carry an edge from the last body
 # node back into the loop container. Excluding them keeps a loop from turning a
@@ -133,6 +134,20 @@ def source_depends_on(value: Any, producer: str, dependencies: dict[str, set[str
 def references_field(value: Any, field: str) -> bool:
     rendered = str(unwrap(value) or "")
     return bool(re.search(rf"(?:^|\.){re.escape(field)}(?:$|[^\w$])", rendered))
+
+
+def upstream_inputs(value: Any, nodes: Iterable[dict[str, Any]]) -> list[str]:
+    """The rendered inputs of every node a value reads, directly or transitively."""
+    nodes = list(nodes)
+    inputs_by_id = {
+        str(node.get("id")): json.dumps(node.get("inputs") or {}, sort_keys=True)
+        for node in nodes
+        if node.get("id")
+    }
+    return [
+        inputs_by_id.get(upstream, "")
+        for upstream in transitive_refs(value, node_dependencies(nodes))
+    ]
 
 
 def query_references_input(detail: dict[str, Any], field: str) -> bool:
@@ -334,12 +349,15 @@ def assert_read_filters_input(
     expression = str(query["queryExpression"])
     if not read_references_input(node, shape, field, nodes, column=column):
         fail(
-            f"the {label} queryExpression is {expression!r} and its filterVariables do not reference "
-            f"{field!r} — each lookup must filter on its own flow input. Author the filter via "
-            f"--detail.filter so the CLI compiles it: dynamic operands become {{var_...}} "
-            f"placeholders in filterVariables"
+            f"the {label} queryExpression is {expression!r} and neither it nor a node it reads "
+            f"references {field!r} — each lookup must filter on its own flow input. Build it from "
+            f"the input: queryExpression: tmpl`{column} = '${{input('{field}')}}'`, or a Script "
+            f"step that reads the input and returns the CEQL string"
         )
-    if "'" not in expression:
+    built_upstream = bool(WHOLE_VAR_REF.fullmatch(expression.strip())) and any(
+        "'" in inputs for inputs in upstream_inputs(expression, nodes)
+    )
+    if "'" not in expression and not built_upstream:
         fail(
             f"the {label} queryExpression is {expression!r} — a CEQL string literal has to be "
             f"single-quoted (an unquoted RHS parses as subtraction server-side and 400s)"
@@ -362,10 +380,16 @@ def read_references_input(
     as natural there as the connector's inline template. The same advisory
     already tolerates the hop for outputs, and for the same reason.
     """
-    if shape != NATIVE_READ:
-        return query_references_input(read_detail(node), field)
-
     nodes = list(nodes)
+    if shape != NATIVE_READ:
+        detail = read_detail(node)
+        if query_references_input(detail, field):
+            return True
+        query = (detail.get("queryParameters") or {}).get("queryExpression")
+        return "$vars." in str(unwrap(query) or "") and any(
+            references_field(inputs, field) for inputs in upstream_inputs(query, nodes)
+        )
+
     inputs_by_id = {
         str(other.get("id")): json.dumps(other.get("inputs") or {}, sort_keys=True)
         for other in nodes
