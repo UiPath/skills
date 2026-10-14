@@ -133,19 +133,37 @@ Find the deployment's key, name and package with `uip solution deploy list`. On 
 Remove a deployment, including all provisioned resources and the Orchestrator folder:
 
 ```bash
-uip solution deploy uninstall "MyDeployment" --output json
+uip solution deploy uninstall "MyDeployment" --yes --output json
 
 # With custom polling
-uip solution deploy uninstall "MyDeployment" --timeout 600 --poll-interval 10000 --output json
+uip solution deploy uninstall "MyDeployment" --yes --timeout 600 --poll-interval 10000 --output json
+
+# Past uncompleted jobs and the permanent deletion of linked resources -- only with the user's consent
+uip solution deploy uninstall "MyDeployment" --force --output json
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `<deployment-name>` | Name of the deployment to uninstall (required) | -- |
+| `-y, --yes` | Confirm the uninstall (required; the CLI never prompts) | -- |
+| `--force` | Uninstall past uncompleted jobs and the permanent deletion of resources replaced by links (sends `forceUninstall: true`); implies `--yes`. See [When the uninstall is refused](#when-the-uninstall-is-refused) | off |
 | `--timeout <seconds>` | Polling timeout | 360 |
 | `--poll-interval <ms>` | Polling interval | 5000 |
 
 This is destructive -- it removes the Orchestrator folder and all resources that were provisioned by the deployment.
+
+### When the uninstall is refused
+
+Orchestrator refuses an uninstall for two causes the caller may override. Both fail with `ErrorCode: invalid_argument` and `Retry: RetryWillNotFix` -- the consent is the flag, so retrying without it changes nothing:
+
+- **Uncompleted jobs** in the deployment's folder (`[2824] Jobs are not in final state yet.`): `Message` "Uninstall failed with status: FailedUninstall: this deployment has uncompleted jobs; --force uninstalls anyway.", `Data.JobsNotInFinalState: true`.
+- **Permanent deletion** of installed resources that were replaced by links: `Message` "...uninstalling it permanently deletes these resources and their data: Queue 'Invoices', ...", `Data.PermanentDeletionResources: [{ Key, Kind, Name }]`. On newer servers the refusal can come synchronously instead (HTTP 409, error `4026`, after an earlier attempt): `Message` "Deployment '<name>' was not uninstalled: ...", nothing ran.
+
+`Data` also carries `DeploymentName` and `InstanceId`. Show the user the cause and the listed resources and ask. Only on explicit consent re-run with `--force` (no `--yes` needed): unfinished jobs are abandoned, and the listed resources are deleted with their data. Without consent, do not uninstall; for uncompleted jobs alone, letting them finish and running the command again without `--force` also works.
+
+**Do not force a blocked uninstall.** When the validation also holds an error `--force` cannot skip, the failure does not offer `--force` and says `Retry: RetryLater`; the 409 form reads "Deployment '<name>' was not uninstalled: its Uninstall validation reports errors that --force cannot get past: [code] text"; after a `FailedUninstall` run the service's own reasons are printed instead. Resolve that error in Orchestrator, then run `deploy uninstall <name> --yes` again (it then asks for any confirmation on its own).
+
+A CLI build that predates the flag rejects `--force` as an unknown option: update the CLI, or force-uninstall from the Orchestrator Solutions UI. Older servers already accept `forceUninstall` (the UI's force uninstall uses it).
 
 ### Then Delete the Deployment Record
 
@@ -247,7 +265,7 @@ List deployments, uninstall an old one, and clean up the published package versi
 uip solution deploy list --limit 20 --output json
 
 # Uninstall the old deployment
-uip solution deploy uninstall "MySolution-v1" --output json
+uip solution deploy uninstall "MySolution-v1" --yes --output json
 
 # Remove the record it leaves behind
 uip solution deploy delete "MySolution-v1" --yes --output json
@@ -290,7 +308,7 @@ Activation is not instant. It provisions processes, queues, assets, and other re
 
 ### Uninstall is Destructive
 
-`deploy uninstall` removes the Orchestrator folder and all resources inside it. There is no undo. Verify the deployment name carefully before running this command.
+`deploy uninstall` removes the Orchestrator folder and all resources inside it. There is no undo. Verify the deployment name carefully before running this command. `--force` goes further -- it abandons unfinished jobs and deletes resources replaced by links with their data -- so pass it only with the user's consent ([When the uninstall is refused](#when-the-uninstall-is-refused)).
 
 ### Polling Units
 
