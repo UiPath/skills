@@ -60,6 +60,11 @@ response, a streamed download, a body over 8 MiB. A POST body over 64 KiB, or on
 streamed from an attachment, is not cached without a `key`. PUT, PATCH and DELETE
 never are.
 
+Concurrent calls need no handling in the script. Identical calls that miss at the
+same time make one vendor call, the others waiting for it (up to 3 s). An answer
+fetched earlier never overwrites one fetched later, so a `refresh` is not undone by
+a slower call that started before it.
+
 ## What the caller controls
 
 Two inbound query parameters, which the CLI sets with flags:
