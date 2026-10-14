@@ -633,12 +633,12 @@ The following catalog is the single actor list for the process, including human 
 | Stakeholder | Responsibility |
 |---|---|
 | Front-desk / operations staff | Perform the current manual activity, receive the report, complete manual callbacks, and use fallback handling. |
-| Clinic operations manager — Yuki Tanaka | Process owner and requirements stakeholder for Sakura Medical Shinjuku. |
+| Clinic operations manager — Hana Okabe | Process owner and requirements stakeholder for Sakura Medical Shinjuku. |
 | Clinic managers | Consume the confirmation report and operational follow-up information. |
 | Omiya-san / operations representative | Provides the unresolved Sunday scheduling decision. |
 | IT Compliance — Ishikawa-san | Confirms PIPA-aligned Japan-resident handling and certification requirements. |
 | Patient communications team | Owns approved SMS template copy. |
-| IT consultant / Adachi Systems — Kenji Adachi | Reference-process author and technical consultation role. |
+| IT consultant / Kisaragi Systems — Ren Kisaragi | Reference-process author and technical consultation role. |
 | UiPath Business Analysis Team | Produces and maintains the process definition. |
 | DK-Medical v3.2 | Appointment source of truth; provides read-only appointment and contact data. |
 | NTT Docomo business SMS gateway | Sends approved reminder messages. |
@@ -661,7 +661,7 @@ The RACI below assigns responsibility for the confirmed current and future work.
 
 **Accountable:** Clinic operations manager
 
-**Consulted:** IT Compliance; IT consultant / Adachi Systems
+**Consulted:** IT Compliance; IT consultant / Kisaragi Systems
 
 **Informed:** Front-desk / operations staff
 
@@ -685,7 +685,7 @@ The RACI below assigns responsibility for the confirmed current and future work.
 
 **Accountable:** Clinic operations manager
 
-**Consulted:** IT Compliance; IT consultant / Adachi Systems
+**Consulted:** IT Compliance; IT consultant / Kisaragi Systems
 
 **Informed:** Clinic managers
 

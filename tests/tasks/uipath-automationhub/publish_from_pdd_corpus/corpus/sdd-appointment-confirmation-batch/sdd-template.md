@@ -83,10 +83,10 @@
 
 | Role | Name | Contact |
 |---|---|---|
-| SME / Process Owner | Yuki Tanaka — Clinic operations manager | [SME REVIEW] |
+| SME / Process Owner | Hana Okabe — Clinic operations manager | [SME REVIEW] |
 | IT Compliance | Ishikawa-san | [SME REVIEW] |
 | Patient Communications | Patient communications team | [SME REVIEW] |
-| Technical Consultant | Kenji Adachi — Adachi Systems | [SME REVIEW] |
+| Technical Consultant | Ren Kisaragi — Kisaragi Systems | [SME REVIEW] |
 
 ### In Scope
 
