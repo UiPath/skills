@@ -1,0 +1,25 @@
+{
+  "project": "ReviewSol/SampleAgent",
+  "inject": "inject_public_chat.py",
+  "expected": [
+    {"ids": ["LC_FAILURE_PROMPT_INJECTION"], "category": "general", "pattern": "ignore previous|sudo|no restrictions|ChatGPT"},
+    {"ids": ["LC_PROMPT_ROLE_DEFINITION"], "category": "general"},
+    {"ids": ["LC_PROMPT_SCOPE_BOUNDARIES"], "category": "general"},
+    {"ids": ["LC_GUARDRAIL_ACTION_INEFFECTIVE"], "category": "guardrails", "pattern": "log"},
+    {"ids": ["LC_GUARDRAIL_RECOMMENDED"], "category": "guardrails", "pattern": "content.safety|harmful"}
+  ],
+  "min_recall": 0.8,
+  "decoys": [
+    {"id": "LC_GUARDRAIL_MISAPPLIED", "reason": "prompt_injection fits an agent with free-text visitor input"},
+    {"id": "LC_PROMPT_FEW_SHOT_MISSING", "reason": "one flat output field"},
+    {"id": "LC_SETTINGS_TEMPERATURE_FIT", "reason": "0.5 fits conversational generation"}
+  ],
+  "min_categories": 2,
+  "min_severity_bands": 1,
+  "max_findings": null,
+  "forbidden_bands": [],
+  "allowed_grades": ["C", "D", "F"],
+  "grade_not_above_cli": true,
+  "cli_expected": ["PROMPT_WRONG_PLATFORM"],
+  "cli_only_expected": false
+}
