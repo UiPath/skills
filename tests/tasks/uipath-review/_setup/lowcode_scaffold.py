@@ -33,6 +33,8 @@ agent-builder low-code agent inside a solution:
           evaluator-default-trajectory.json
 """
 
+from __future__ import annotations
+
 import json
 import re
 import shutil
