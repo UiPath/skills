@@ -28,7 +28,6 @@ Solution setup (`uip solution init`) and project creation (`uip maestro case ini
 | `case-identifier` | no | Defaults to `name`. |
 | `identifier-type` | no | `constant` \| `external`. Defaults to `constant`. |
 | `case-app-enabled` | no | Boolean. Defaults to `false`. |
-| `directly-pass-task-outputs` | no | Boolean. Defaults to `true`. Set `false` only when sdd.md requests it. |
 | `description` | no | Defaults to empty string. Always emitted so downstream consumers read a consistent shape. |
 
 See [`planning.md`](planning.md) for how these fields are sourced from `sdd.md`.
@@ -187,7 +186,6 @@ Pure skeleton: top-level fields + `metadata` block + empty `bindings: []` + empt
         "caseAppEnabled": <true|false — defaults to false>,
         "publishVersion": 2,
         "caseUnifiedSchemaEnabled": true,
-        "caseDirectlyPassTaskOutputs": <true|false — defaults to true>,
         "intsvcActivityConfig": "v2"
     },
     "bindings": [],
@@ -218,7 +216,6 @@ Adds top-level `description` field (NOT inside `metadata`):
         "caseAppEnabled": <true|false>,
         "publishVersion": 2,
         "caseUnifiedSchemaEnabled": true,
-        "caseDirectlyPassTaskOutputs": <true|false — defaults to true>,
         "intsvcActivityConfig": "v2"
     },
     "bindings": [],
@@ -235,7 +232,7 @@ Adds top-level `description` field (NOT inside `metadata`):
 
 > **`intsvcActivityConfig` always emitted** — set `metadata.intsvcActivityConfig: "v2"` on every caseplan.
 >
-> **`caseDirectlyPassTaskOutputs` always emitted** — write `metadata.caseDirectlyPassTaskOutputs` on every caseplan, value from the T01 `directly-pass-task-outputs` field (defaults to `true` when sdd.md is silent). When `true`, task outputs pass directly through messages instead of shared variables, fixing race conditions on task outputs in cases with parallel tasks. Emit `false` only when sdd.md explicitly requests it.
+> **`caseDirectlyPassTaskOutputs` is not emitted.** Retired: since PO.Frontend `15cd541e9` (2026-06-16) task outputs always pass directly through messages, and nothing reads this key. The Case Designer drops it on open. Do not write it; leave it in place in an existing plan, where it is harmless.
 
 ## caseIdentifier — constant vs external
 
@@ -263,7 +260,6 @@ Cheap sanity checks only — full validation runs after all plugins are done, pe
    - `metadata.caseUnifiedSchemaEnabled === true`
    - `metadata.publishVersion === 2`
    - `metadata.intsvcActivityConfig === "v2"`
-   - `typeof metadata.caseDirectlyPassTaskOutputs === "boolean"` (present; `true` unless sdd.md requested `false`)
    - `bindings` is an array of length 0
    - `variables.inputs`, `variables.outputs`, `variables.inputOutputs` are all arrays of length 0
 3. **Empty node/edge arrays + layout.**
