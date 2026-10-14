@@ -18,11 +18,11 @@ The task block states the request as these lines:
 | Line | Required | Notes |
 |---|---|---|
 | `**Method:**` | Yes | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` or `HEAD`. A missing or other method is reported in `Data.Unresolved[]`. |
-| `**URL:**` | Yes | Absolute URL, or a path relative to the connector's base URL in connector mode. |
+| `**URL:**` | Yes | Absolute URL, or a path relative to the connector's base URL in connector mode, where convert writes it as `path` only. |
 | `**Headers:**` | No | One JSON object in backticks. Anything else is reported in `Data.Unresolved[]`. |
 | `**Query:**` | No | One JSON object in backticks. |
-| `**Body:**` | No | A JSON literal in backticks, or an `=` expression. Anything else is reported in `Data.Unresolved[]`. |
-| `**Connector Key:**` | No | Connector mode: reuse that connector's authentication. |
+| `**Body:**` | No | A JSON literal in backticks, or an `=` expression. Anything else is reported in `Data.Unresolved[]`. `GET`, `HEAD`, `OPTIONS` and `DELETE` carry no body: a Body on them is left off and reported. |
+| `**Connector Key:**` | No | With a Connection ID, connector mode: reuse that connector's authentication (`uipath-uipath-http` included). `—` for a direct request. |
 | `**Connection ID:**` | With Connector Key | Without it the task is written as a direct request and reported in `Data.Unresolved[]`. |
 
 `isRequired`, `runOnlyOnce`, activation mode and entry rule come from the SDD task envelope, as for every task.
