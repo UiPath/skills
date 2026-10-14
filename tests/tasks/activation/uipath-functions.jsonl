@@ -48,3 +48,5 @@
 {"id": "uipath-functions-048", "prompt": "How does uip function serve discover handlers in functions/*.ts and sync the uipath.json map?", "expected_skill": "uipath-functions"}
 {"id": "uipath-functions-049", "prompt": "TypeScript function or Python function — which should back my coded app's REST endpoints?", "expected_skill": "uipath-functions"}
 {"id": "uipath-functions-050", "prompt": "Call a Coupa connection through Integration Service from inside my TypeScript coded function", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-051", "prompt": "I already have a React coded app in ./quote-app — scaffold a TypeScript function backend project next to it with uip function new and expose a POST /quote endpoint the app will call", "expected_skill": "uipath-functions"}
+{"id": "uipath-functions-052", "prompt": "I put my functions/ folder inside my coded app project and now uip function publish rejects the package — how should the function backend be laid out?", "expected_skill": "uipath-functions"}
