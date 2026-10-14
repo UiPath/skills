@@ -13,6 +13,8 @@ wheels/
 .coverage
 .coverage/
 .coverage/*
+# Reports written by scripts/run-coverage.mjs for SonarCloud
+/coverage/
 
 # Virtual environments
 .venv

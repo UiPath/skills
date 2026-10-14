@@ -1,0 +1,49 @@
+parameters:
+  sonarServiceConnection: ''
+  # Empty = Microsoft-hosted ubuntu-latest (ships Node, Python and JDK 21).
+  poolName: ''
+  # Advisory like the nightly FOSSA scan: a failed quality gate does not fail the run.
+  blockOnQualityGate: false
+
+# Kept out of ci.security.fossa.yml on purpose: release-gate.yml reuses that
+# template, and a publish must not wait on Sonar.
+stages:
+  - stage: Quality_Sonar
+    displayName: SonarCloud
+    dependsOn: []
+    jobs:
+      - job: Coverage
+        displayName: Tests with coverage + SonarCloud analysis
+        pool:
+          ${{ if eq(parameters.poolName, '') }}:
+            vmImage: ubuntu-latest
+          ${{ else }}:
+            name: ${{ parameters.poolName }}
+        steps:
+          - checkout: self
+            fetchDepth: 0  # Sonar's new-code detection reads SCM blame
+          - task: UseNode@1
+            displayName: Use Node 22.x
+            inputs:
+              version: '22.x'
+          - task: UsePythonVersion@0
+            displayName: Use Python 3.13
+            inputs:
+              versionSpec: '3.13'
+          - script: python -m pip install --disable-pip-version-check coverage pytest pyyaml
+            displayName: Install coverage, pytest, pyyaml
+          - template: Sonar/prepare-sonar-coverage.yml@sonar
+            parameters:
+              configFile: sonar-project.properties
+              serviceConnectionName: ${{ parameters.sonarServiceConnection }}
+          # A failing suite still leaves both reports behind; keep going so the
+          # analysis uploads what was measured.
+          - script: node scripts/run-coverage.mjs
+            displayName: Run tests with coverage
+            continueOnError: true
+            env:
+              PYTHON: python
+          - template: Sonar/analyze-sonar-coverage.yml@sonar
+          - template: Sonar/publish-sonar-coverage.yml@sonar
+            parameters:
+              continueOnError: ${{ not(parameters.blockOnQualityGate) }}

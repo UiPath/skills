@@ -1,0 +1,22 @@
+# Python coverage for the SonarCloud analysis (.pipelines/jobs/ci.quality.sonar.yml).
+# Driven by scripts/run-coverage.mjs, which sets COVERAGE_FILE / COVERAGE_RCFILE
+# to absolute paths so child processes started from a temp cwd still report here.
+#
+# `source` is the code SonarCloud counts (see sonar-project.properties). The eval
+# grader Python under tests/ is test code and deliberately not measured.
+
+[run]
+source =
+    scripts
+    skills
+    hooks
+omit =
+    */tests/*
+# Many tests/scripts suites run the checker as `python3 <script>`; without this
+# those scripts would read 0% while being exercised end to end.
+patch = subprocess
+parallel = true
+relative_files = true
+
+[report]
+skip_empty = true
