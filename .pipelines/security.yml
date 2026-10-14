@@ -34,9 +34,9 @@ parameters:
     type: boolean
     default: true
   - name: sonarServiceConnection
-    displayName: SonarCloud service connection (shared to skills from the Autopilot project)
+    displayName: SonarCloud service connection (Autopilot's SonarCloud, as shared into skills)
     type: string
-    default: 'SonarCloud'
+    default: 'SonarCloud-skills'
   # A single space, trimmed below: an empty string default makes the queue
   # dialog demand a value.
   - name: sonarPoolName
