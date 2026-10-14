@@ -169,7 +169,7 @@ dropping and merging items while summarizing, then building from the summary.
 
 ## Workflow
 
-Authoring runs six phases in order. The **mode** decides which steps run; it
+Authoring runs five phases in order. The **mode** decides which steps run; it
 never changes what a step does.
 
 | Phase | Steps | What happens | Reference |
@@ -179,7 +179,6 @@ never changes what a step does.
 | **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no registry calls**. Draft mode only, except 2a. | [references/phase-2-skeleton.md](references/phase-2-skeleton.md) |
 | **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, hold the approval gate. Draft mode only. | [references/phase-2-skeleton.md](references/phase-2-skeleton.md#iterating) |
 | **4 — Wire it up** | 4a–4g | Discover, fetch templates, paste real payloads into the existing boxes, lay out, validate, refresh, show. | Below |
-| **5 — Ship** | 5a–5b | Pack and publish, then report the link. Package-ready deliverables only. | [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md) |
 
 The skeleton (2b–2f) and iteration (phase 3) exist to show the user a shape
 before it is wired. **Auto mode skips both**: it runs 2a to scaffold the
@@ -193,7 +192,7 @@ request:
 
 | Mode | Detect it when | Phases |
 | --- | --- | --- |
-| **Brownfield** | A `.bpmn` the request targets already exists. Do not run `init`; if the file is bare (no `project.uiproj`), bootstrap it with the two-key `project.uiproj` + `refresh` path in 4c. Pre-empts the inference below — the shape is already on disk. | 0–1, then 3–5 |
+| **Brownfield** | A `.bpmn` the request targets already exists. Do not run `init`; if the file is bare (no `project.uiproj`), bootstrap it with the two-key `project.uiproj` + `refresh` path in 4c. Pre-empts the inference below — the shape is already on disk. | 0–1, then 3–4 |
 | **Discovery-only** | The request asks to discover before authoring, save raw registry JSON/evidence, or explicitly "do not author yet", even if it describes an eventual BPMN. Immediately create `registry-evidence/`, save `registry pull --output json`, `registry list --output json` or `registry search ... --output json`, and `registry get <type> --output json` for each requested type. Do not scaffold a project and do not read deep authoring references. Recipe: [references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks). | 0–1, then terminate |
 
 Otherwise infer the mode from the request before anything runs. **Never ask**
@@ -202,7 +201,7 @@ Otherwise infer the mode from the request before anything runs. **Never ask**
 | Mode | Take it when | Phases |
 | --- | --- | --- |
 | **Draft** | The session is in plan mode, or the request asks for the shape first — *plan mode*, *draft*, *design*, *sketch*, *what would it look like*, *show me first*. | 0–3, stop at the gate |
-| **Auto** | Anything else. This is the default. | 0–1, 2a, 4–5, no stop |
+| **Auto** | Anything else. This is the default. | 0–1, 2a, 4, no stop |
 
 Auto is the default precisely because it is the only mode that completes
 unattended: draft's gate at 3c needs a user to satisfy it, so a non-interactive
@@ -559,12 +558,6 @@ Draft mode only.
   canvas the tab has already repainted, and in a terminal
   `uip solution upload <SolutionDir> --output json` returns the
   `Data.DesignerUrl` to report.
-
-### Phase 5 — Ship
-
-- **5a Pack and publish.** Package-ready deliverables only. See
-  [references/operate/CAPABILITY.md](references/operate/CAPABILITY.md).
-- **5b Report the link** returned by the publish, alongside the notes file.
 
 ## Operate and diagnose
 
