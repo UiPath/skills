@@ -1,6 +1,6 @@
 ---
 name: uipath-mcp-servers
-description: "UiPath Agent Gateway MCP servers (`uip agenthub mcp` / `uip agenthub mcp-tools`). Register, update, refresh tools, list, get, delete MCP servers: uipath (Orchestrator processes, agents, agentic processes, API workflows as tools), coded (published uipath-mcp Python server package), command (npx/uvx), remote (HTTP MCP URL, Relay), swagger (OpenAPI spec), platform (UiPath service operations, e.g. Test Manager); get the MCP URL a client connects to. For an agent that calls MCP tools→uipath-agents. For `uip mcp serve` (the uip CLI as an MCP server)→uipath-platform."
+description: "UiPath Agent Gateway MCP servers (`uip agenthub mcp` / `uip agenthub mcp-tools`). Register, update, refresh tools, list, get, delete MCP servers: uipath (Orchestrator processes, agents, agentic processes, API workflows as tools), coded (published uipath-mcp Python server package), command (npx/uvx), remote (HTTP MCP URL, Relay), swagger (OpenAPI spec), platform (UiPath service operations, e.g. Test Manager); set users' own connections on a remote server; get the MCP URL a client connects to. For an agent that calls MCP tools→uipath-agents. For `uip mcp serve` (the uip CLI as an MCP server)→uipath-platform."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -14,6 +14,7 @@ Agent Gateway is Orchestrator's hub for MCP servers and A2A agents: [about](http
 
 - Create, update, delete, list or get an MCP server of any type ([Server Types](#server-types) says when to use each), and refresh its tools.
 - Get the `McpUrl` an MCP client connects to.
+- List, set or delete a user's own Integration Service connection on a `remote` server ([Per-User Connections](#per-user-connections)).
 - Find the UiPath services and tool names a `platform` server can expose.
 
 **Tools — `uip agenthub mcp-tools`:**
@@ -57,7 +58,7 @@ These are the things the CLI does not advertise in `--help`.
 | Command | Folder input |
 |---------|--------------|
 | `mcp list` | one of `--folder-key`, `--folder-path`, `--all-folders`, required |
-| `mcp get`, `mcp create <TYPE>`, `mcp update` (incl. `--print-schema`, `--dry-run`), `mcp delete`, `mcp refresh-tools` | `--folder-key` or `--folder-path`, required |
+| `mcp get`, `mcp create <TYPE>`, `mcp update` (incl. `--print-schema`, `--dry-run`), `mcp delete`, `mcp refresh-tools`, `mcp-user-connections list` / `set` / `delete` (with `--mcp <SLUG>`) | `--folder-key` or `--folder-path`, required |
 | every `mcp-tools` verb that takes `--mcp` | the server's folder, required; `create-resource`, `create-raw` and `update` also take `--target-folder-key` / `--target-folder-path` for a target in another folder |
 | `mcp-tools candidates` | optional: tenant-wide without one |
 | `mcp create <TYPE> --print-schema` | none (folder flags are ignored) |
@@ -125,6 +126,17 @@ These are the things the CLI does not advertise in `--help`.
 
 Payload fields per type, the `uipath` tools list, masked values and moving a server to another host: [references/updating-servers-guide.md](references/updating-servers-guide.md).
 
+## Per-User Connections
+
+A `remote` server calls with its own Integration Service connection (`--connection-id`), except for a user who has a per-user connection on it: that user's calls use their own. Only `remote` servers have them, `mcp get` does not show them, and each command needs the server's folder.
+
+- `uip agenthub mcp-user-connections list --mcp <SLUG> --folder-path <FOLDER_PATH> --output json` — one row per user: `UserId`, `UserName`, `ConnectionId`, `ConnectionName`, `Status`. Needs McpServers.Edit.
+- `uip agenthub mcp-user-connections set --mcp <SLUG> --me --connection-name "<CONNECTION_NAME>" --folder-path <FOLDER_PATH> --output json` — sets or replaces one. Give the user as `--me` (the login), `--user-email <EMAIL>` or `--user-id <USER_ID>`, and the connection as `--connection-name` or `--connection-id`: exactly one of each, the form the user gave you. `--connection-name` looks among the UiPath MCP connector's connections you can see, exact name ignoring case. Your own needs Connections.Edit in the server's folder; another user's also McpServers.Edit. The connection must be Enabled.
+- `uip agenthub mcp-user-connections delete --mcp <SLUG> --user-email <EMAIL> --folder-path <FOLDER_PATH> --yes --output json` — removes one, so that user's calls use the server's connection again. Confirm with the user before passing `--yes`, as for deletes (Rule 8).
+- `set` and `delete` take `--dry-run`: it looks up the name and email and prints the plan. Confirm a real `set` or `delete` with `list` (Rule 5).
+
+`Status`: `Active` — the connection is Enabled. `RequiresAuth` — it expired or failed, or Integration Service no longer finds it for you: its owner re-authenticates it (`uip is connections edit <CONNECTION_ID>`, which hands back a link to finish in a browser), or `set` another. `Inactive` — the server or the connection is disabled. `Unavailable` — Agent Gateway could not reach Integration Service: list again. Errors: [troubleshooting](references/troubleshooting-guide.md#per-user-connections).
+
 ## Tools (`uip agenthub mcp-tools`)
 
 | Verb | Works on |
@@ -155,7 +167,7 @@ Flags, defaults, target folders, `update`, `delete`, `get` and paging: [referenc
 
 - [references/updating-servers-guide.md](references/updating-servers-guide.md) — payload fields per type, `uipath` server updates, masked values, moving a server to another host.
 - [references/tools-guide.md](references/tools-guide.md) — `mcp-tools` on `uipath` servers (bind, update, delete, target folders) and `platform` servers (selection); listing and reading tools on any type.
-- [references/troubleshooting-guide.md](references/troubleshooting-guide.md) — every other `uip agenthub` message, with its fix.
+- [references/troubleshooting-guide.md](references/troubleshooting-guide.md) — every other `uip agenthub` message, with its fix, including per-user connections.
 
 ## What NOT to Do
 
