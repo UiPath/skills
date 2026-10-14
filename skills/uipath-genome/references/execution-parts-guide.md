@@ -17,7 +17,7 @@ A large group is built in parts (item 1a), under [parts-guide.md](parts-guide.md
                         offline guide
               headings: source-fact table; selector-translation-guide; pack source and selectors guides; owning skill's catalogs
       Turn 2  sections: source facts § Configuration, § Step 10, § Step 11, § shared, § Deviations;
-                        selector-translation rules and the `sap`, `wnd` catalog sections; pack § Composite actions,
+                        selector-translation-guide and its SAP GUI guide; pack § Composite actions,
                         § Realised at execution, selectors § SAP GUI; catalog sections matching the part's activity kinds
               discovery for the part's activity kinds (skeleton)
       Turn 3  per-activity docs, the docs they link, and shapes; references the turn-2 reads route to
