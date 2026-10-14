@@ -57,14 +57,18 @@ pre_run:
     timeout: 240
 
 initial_prompt: |
-  In the HEALTH project in Test Manager, on the test case
-  "EVFX-PARAMASK-Login":
-
-  - Add a parameter "Username" with default value "guest".
-  - Change the default value of "Password" to "secret".
-  - Delete the parameter "user name".
+  on my EVFX-PARAMASK-Login test case in the HEALTH project, can you add a
+  Username param with default guest, change Password's default to secret, and
+  delete the "user name" param?
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent checked login status (Critical Rule 1)"
     tool_name: "Bash"

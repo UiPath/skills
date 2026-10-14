@@ -51,18 +51,19 @@ pre_run:
     timeout: 240
 
 initial_prompt: |
-  In the HEALTH project in Test Manager, on the test case
-  "EVFX-PARAMLIFE-Login":
-
-  1. Add a parameter "Username" with default value "admin" and the hint
-     "User name for UiBank".
-  2. Change its default value to "demo".
-  3. Rename it to "userid".
-  4. Add a second parameter "Timeout" with default value 30.
-  5. Delete the "userid" parameter. You have my approval for this delete;
-     don't ask again.
+  hey, on my EVFX-PARAMLIFE-Login test case in the HEALTH project, can you add a
+  Username param (default admin, hint "User name for UiBank")? then switch its
+  default to demo, rename it to userid, add a Timeout param of 30, and finally
+  drop userid. you've got my ok for that delete, no need to ask again.
 
 success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: command_executed
     description: "Agent checked login status (Critical Rule 1)"
     tool_name: "Bash"
