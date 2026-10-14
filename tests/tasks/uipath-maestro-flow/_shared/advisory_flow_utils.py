@@ -29,7 +29,18 @@ STUB_UUID = re.compile(r"^0{8}-0{4}-0{4}-0{4}-")
 VAR_REF = re.compile(r"\$vars\.([A-Za-z_$][\w$]*)")
 FILTER_REF = re.compile(r"\{([A-Za-z_$][\w$]*)\}")
 REGEX_PRECEDERS = set("(,=:[!&|?{};") | {""}
-WHOLE_VAR_REF = re.compile(r"(?:=js:)?\$vars\.[\w$.?]+")
+REGEX_KEYWORDS = {"return", "typeof", "case"}
+VAR_PATH = r"\$vars\.[\w$]+(?:\??\.[\w$]+|(?:\?\.)?\[(?:\"[^\"]*\"|'[^']*')\])*"
+VAR_PATHS = re.compile(VAR_PATH)
+WHOLE_VAR_REF = re.compile(rf"(?:=js:)?{VAR_PATH}")
+OUTPUT_REF = re.compile(
+    r"\$vars\.([\w$]+)\??\.output(?:\??\.([\w$]+)|(?:\?\.)?\[[\"']([^\"']+)[\"']\])?"
+)
+JS_BINDING = re.compile(r"\b(?:const|let|var)\s+(\{[^}]*\}|\[[^\]]*\]|[A-Za-z_$][\w$]*)\s*=")
+JS_IDENTIFIER = re.compile(r"(?<![\w$.])[A-Za-z_$][\w$]*")
+JS_RETURN_OBJECT = re.compile(r"\breturn\s*\{")
+JS_ENTRY_KEY = re.compile(r"\s*(?:([A-Za-z_$][\w$]*)|\"([^\"]*)\"|'([^']*)')\s*(:)?")
+JS_INTERPOLATION = re.compile(r"\$\{[^}]*\}")
 FAILED_PORTS = {"error", "failed", "failure", "faulted"}
 # Inner target handles on `core.logic.loop` that carry an edge from the last body
 # node back into the loop container. Excluding them keeps a loop from turning a
@@ -160,25 +171,46 @@ def upstream_sources(value: Any, nodes: Iterable[dict[str, Any]]) -> list[str]:
     ]
 
 
-def js_string_literals(source: str) -> list[str]:
-    """The unescaped contents of the string and template literals in JS ``source``."""
-    literals: list[str] = []
+def starts_regex(source: str, index: int, previous: str) -> bool:
+    if previous in REGEX_PRECEDERS:
+        return True
+    word = re.search(r"[\w$]+$", source[:index].rstrip())
+    return bool(word) and word.group() in REGEX_KEYWORDS
+
+
+def js_tokens(source: str) -> list[tuple[int, int, str, str]]:
+    """``(start, end, kind, body)`` of each comment, regex, string and template in JS ``source``.
+
+    ``kind`` is the opening quote for a string or template; ``body`` is its unescaped contents.
+    """
+    tokens: list[tuple[int, int, str, str]] = []
     index, previous = 0, ""
     while index < len(source):
-        char = source[index]
+        char, start = source[index], index
         if source.startswith("//", index):
             index = source.find("\n", index)
             index = len(source) if index < 0 else index
+            tokens.append((start, index, "comment", ""))
             continue
         if source.startswith("/*", index):
             index = source.find("*/", index + 2)
             index = len(source) if index < 0 else index + 2
+            tokens.append((start, index, "comment", ""))
             continue
-        if char == "/" and previous in REGEX_PRECEDERS:
+        if char == "/" and starts_regex(source, index, previous):
             index += 1
-            while index < len(source) and source[index] not in "/\n":
-                index += 2 if source[index] == "\\" else 1
-            index += 1
+            in_class = False
+            while index < len(source) and source[index] != "\n":
+                current = source[index]
+                if current == "\\":
+                    index += 2
+                    continue
+                if current == "/" and not in_class:
+                    break
+                in_class = (in_class or current == "[") and current != "]"
+                index += 1
+            index = min(index + 1, len(source))
+            tokens.append((start, index, "regex", ""))
             previous = "/"
             continue
         if char in "\"'`":
@@ -189,24 +221,154 @@ def js_string_literals(source: str) -> list[str]:
                     index += 1
                 body.append(source[index])
                 index += 1
-            literals.append("".join(body))
-            index += 1
+            index = min(index + 1, len(source))
+            tokens.append((start, index, char, "".join(body)))
             previous = char
             continue
         if not char.isspace():
             previous = char
         index += 1
-    return literals
+    return tokens
+
+
+def js_string_literals(source: str) -> list[str]:
+    """The unescaped contents of the string and template literals in JS ``source``."""
+    return [body for _, _, kind, body in js_tokens(source) if kind in "\"'`"]
+
+
+def js_code(source: str) -> str:
+    """``source`` with comments and literals blanked, offsets kept; `${…}` stays."""
+    chars = list(source)
+    for start, end, kind, _ in js_tokens(source):
+        chars[start:end] = " " * (end - start)
+        if kind != "`":
+            continue
+        for interpolation in JS_INTERPOLATION.finditer(source, start, end):
+            chars[interpolation.start():interpolation.end()] = interpolation.group()
+    return "".join(chars)
 
 
 def quotes_column_value(source: str, column: str) -> bool:
-    """True when a JS literal in ``source`` opens a quoted CEQL value on ``column``.
+    """True when the JS literals in ``source`` build a quoted CEQL value on ``column``.
 
-    `"invoiceNumber = '" + n` and `` `invoiceNumber = '${n}'` `` pass;
-    `'invoiceNumber = ' + n` does not: that quote closes the JS string.
+    `"invoiceNumber = '" + n + "'"` and `` `invoiceNumber = '${n}'` `` pass;
+    `'invoiceNumber = ' + n` and `"invoiceNumber = '" + n` do not.
     """
     pattern = re.compile(rf"\b{re.escape(column)}\s*=\s*'")
-    return any(pattern.search(literal) for literal in js_string_literals(source))
+    literals = js_string_literals(source)
+    for index, literal in enumerate(literals):
+        opened = pattern.search(literal)
+        if opened and (
+            "'" in literal[opened.end():] or any(later.startswith("'") for later in literals[index + 1:])
+        ):
+            return True
+    return False
+
+
+def object_entries(code: str, open_brace: int) -> list[tuple[int, int]]:
+    """``(start, end)`` of each top-level entry of the object literal opening at ``open_brace``."""
+    entries: list[tuple[int, int]] = []
+    depth, start = 0, open_brace + 1
+    for index in range(open_brace + 1, len(code)):
+        char = code[index]
+        if char in "([{":
+            depth += 1
+            continue
+        if char not in ")]},":
+            continue
+        if depth:
+            depth -= char != ","
+            continue
+        entries.append((start, index))
+        if char != ",":
+            break
+        start = index + 1
+    return entries
+
+
+def with_bindings(value: str, script: str, code: str) -> str:
+    """``value`` plus the right-hand side of every local binding it reads, transitively."""
+    bindings: dict[str, str] = {}
+    for binding in JS_BINDING.finditer(code):
+        end = code.find(";", binding.end())
+        rhs = script[binding.end(): len(code) if end < 0 else end]
+        for name in JS_IDENTIFIER.findall(binding.group(1)):
+            bindings[name] = f"{bindings.get(name, '')}\n{rhs}"
+
+    parts, pending, seen = [value], [value], set()
+    while pending:
+        for name in JS_IDENTIFIER.findall(js_code(pending.pop())):
+            if name in bindings and name not in seen:
+                seen.add(name)
+                parts.append(bindings[name])
+                pending.append(bindings[name])
+    return "\n".join(parts)
+
+
+def script_output(node: dict[str, Any] | None, key: str | None) -> str | None:
+    """The source of ``key`` in a Script's last `return { … }`, with the local bindings it reads.
+
+    None when the node is no Script or names no such entry; callers then fall
+    back to every string the node reads.
+    """
+    script = ((node or {}).get("inputs") or {}).get("script")
+    if not key or not isinstance(script, str):
+        return None
+    code = js_code(script)
+    returns = list(JS_RETURN_OBJECT.finditer(code))
+    if not returns:
+        return None
+
+    for start, end in object_entries(code, returns[-1].end() - 1):
+        entry = JS_ENTRY_KEY.match(script, start, end)
+        if not entry or key not in entry.groups()[:3]:
+            continue
+        value = script[entry.end():end] if entry.group(4) else key
+        return with_bindings(value, script, code)
+    return None
+
+
+def reaches_field(value: Any, field: str, nodes: list[dict[str, Any]], seen: set[str] | None = None) -> bool:
+    """True when a `$vars` path in ``value`` reads ``field``, directly or through the nodes it reads.
+
+    A Script is followed through the `return` entry the path names, so a Script
+    that reads the input but returns something else does not count.
+    """
+    seen = set() if seen is None else seen
+    by_id = {str(node.get("id")): node for node in nodes}
+    for path in VAR_PATHS.findall(str(unwrap(value) or "")):
+        if path in seen:
+            continue
+        seen.add(path)
+        if references_field(path, field):
+            return True
+
+        ref = OUTPUT_REF.match(path)
+        entry = script_output(by_id.get(ref.group(1)), ref.group(2) or ref.group(3)) if ref else None
+        if entry is None:
+            if any(references_field(source, field) for source in upstream_sources(path, nodes)):
+                return True
+        elif reaches_field(entry, field, nodes, seen):
+            return True
+    return False
+
+
+def hop_quotes_column(path: str, column: str, nodes: list[dict[str, Any]], seen: set[str] | None = None) -> bool:
+    """True when the value a whole `$vars` ``path`` reads builds a quoted CEQL value on ``column``."""
+    seen = set() if seen is None else seen
+    path = path.strip().removeprefix("=js:")
+    if path in seen:
+        return False
+    seen.add(path)
+
+    ref = OUTPUT_REF.match(path)
+    by_id = {str(node.get("id")): node for node in nodes}
+    entry = script_output(by_id.get(ref.group(1)), ref.group(2) or ref.group(3)) if ref else None
+    if entry is None:
+        return any(quotes_column_value(source, column) for source in upstream_sources(path, nodes))
+    if quotes_column_value(entry, column):
+        return True
+    return bool(VAR_PATHS.fullmatch(entry.strip())) and hop_quotes_column(entry, column, nodes, seen)
 
 
 def query_references_input(detail: dict[str, Any], field: str) -> bool:
@@ -410,16 +572,21 @@ def assert_read_filters_input(
         fail(
             f"the {label} queryExpression is {expression!r} and neither it nor a node it reads "
             f"references {field!r} — each lookup must filter on its own flow input. Build it from "
-            f"the input: queryExpression: tmpl`{column} = '${{input('{field}')}}'`, or a Script "
-            f"step that reads the input and returns the CEQL string"
+            f"the input: where: tmpl`{column} = '${{input('{field}')}}'` (connector-params.md). "
+            f"This advisory also accepts a Script whose returned CEQL string reads the input"
         )
-    built_upstream = bool(WHOLE_VAR_REF.fullmatch(expression.strip())) and any(
-        quotes_column_value(source, column) for source in upstream_sources(expression, nodes)
-    )
-    if "'" not in expression and not built_upstream:
+    if "'" in VAR_PATHS.sub("", expression):
+        return
+    if not WHOLE_VAR_REF.fullmatch(expression.strip()):
         fail(
             f"the {label} queryExpression is {expression!r} — a CEQL string literal has to be "
             f"single-quoted (an unquoted RHS parses as subtraction server-side and 400s)"
+        )
+    if not hop_quotes_column(expression, column, nodes):
+        fail(
+            f"the {label} queryExpression is {expression!r}, and the value it reads does not build "
+            f"`{column} = '<value>'` — the filter has to sit on {column!r}, and a CEQL string literal "
+            f"has to be single-quoted (an unquoted RHS parses as subtraction server-side and 400s)"
         )
 
 
@@ -444,17 +611,8 @@ def read_references_input(
         detail = read_detail(node)
         if query_references_input(detail, field):
             return True
-        query = (detail.get("queryParameters") or {}).get("queryExpression")
-        return "$vars." in str(unwrap(query) or "") and any(
-            references_field(source, field) for source in upstream_sources(query, nodes)
-        )
+        return reaches_field((detail.get("queryParameters") or {}).get("queryExpression"), field, nodes)
 
-    inputs_by_id = {
-        str(other.get("id")): json.dumps(other.get("inputs") or {}, sort_keys=True)
-        for other in nodes
-        if other.get("id")
-    }
-    dependencies = node_dependencies(nodes)
     wanted = (column or "").strip().lower()
     for row in native_filter_rows(node):
         # Case-insensitive: a column whose CASE is wrong is a different defect,
@@ -465,12 +623,7 @@ def read_references_input(
         value = row.get("value")
         if "$vars." not in str(unwrap(value) or ""):
             continue
-        if references_field(value, field):
-            return True
-        if any(
-            references_field(inputs_by_id.get(upstream, ""), field)
-            for upstream in transitive_refs(value, dependencies)
-        ):
+        if references_field(value, field) or reaches_field(value, field, nodes):
             return True
     return False
 
