@@ -16,10 +16,13 @@ description: >
   required — a `create` without it is refused — and it does not say that
   `OriginalResult` is the field carrying the run's own answer.
 
-  Concurrency: two model variants share the CLAIM project, so the graded
-  outcome is the agent's own emitted `override create` (per-run isolated), not a
-  fixed-name post-state a concurrent run would collide with. The fixture seeds
-  a per-run STAMPED manual execution and sweeps only earlier-day ones, so a
+  Concurrency: two model variants share the CLAIM project and the same three
+  case names, so the fixture seeds a per-run STAMPED manual execution, writes
+  its id to `target_execution.txt` in the sandbox cwd, and the prompt scopes the
+  agent to that one run. The graded outcome is the corrected state of THAT
+  execution's failing log (per-run isolated) — not any EVFX-TCLOG log in the
+  project, which a concurrent variant's correction or a historical corrected row
+  would false-pass. The sweep removes only earlier-day executions, so a
   concurrent run's in-flight execution is never deleted.
 tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:test-case]
 
@@ -180,6 +183,16 @@ pre_run:
                    f"Result={r.get('Result')!r} "
                    f"OriginalResult={r.get('OriginalResult')!r}")
 
+      # Fixture handoff: the exact execution THIS run opened, written to the
+      # sandbox cwd that pre_run, the agent and the grader all share. The prompt
+      # points the agent at this file and the oracle grades only this
+      # execution's logs, so a concurrent variant's failed log for the same
+      # three case names (or a historical corrected row) can neither be
+      # corrected by mistake nor false-pass the grade. The agent still has to
+      # read this execution's logs over the CLI to find the failing one.
+      with open("target_execution.txt", "w", encoding="utf-8") as fh:
+          fh.write(eid)
+
       print(f"FIXTURE: ready execution={eid!r} name={runname!r} "
             f"failing={FAILING!r} log={failed[0].get('Id')!r}", flush=True)
       EOF
@@ -187,9 +200,12 @@ pre_run:
 initial_prompt: |
   Our regression test cases named "EVFX-TCLOG-TC1", "EVFX-TCLOG-TC2" and
   "EVFX-TCLOG-TC3" in the CLAIM project (Test Manager) just had a manual run,
-  and one of them failed. We have traced that failure to a flaky test
-  environment on our side, not a defect in the product, so the release
-  dashboard should show that case as passing.
+  and one of them failed. That run's execution id is saved in the file
+  "target_execution.txt" in your working directory — other runs of these same
+  three cases may be in flight, so look only at the results of that one
+  execution. We have traced that failure to a flaky test environment on our
+  side, not a defect in the product, so the release dashboard should show that
+  case as passing.
 
   Please correct that, noting the reason as "Environment flake - agent pool
   unavailable, not a product defect". I still need to be able to see what the
@@ -237,14 +253,19 @@ success_criteria:
     weight: 1.0
     pass_threshold: 0
 
-  # PRIMARY, model-agnostic grade: an override leaves Result Passed on a log
-  # whose OriginalResult is still Failed. Graded on stored Test Manager state,
-  # so it holds however the agent invoked the CLI (create or update, direct or
-  # wrapped in a python3 -c subprocess). Any-match keeps it safe under
-  # concurrent per-model runs; the advisory command check above still
-  # differentiates per model in the weighted score.
+  # PRIMARY, model-agnostic grade, per-run isolated. Reads the exact execution
+  # THIS run opened from the fixture-handoff file (pre_run, the agent and this
+  # grader share the sandbox cwd) and grades THAT execution's logs, not any
+  # EVFX-TCLOG log in the project — so a concurrent variant's correction, or a
+  # historical corrected row, cannot false-pass it. Asserts the specific
+  # requested outcome: exactly one log on this execution reports Passed over an
+  # OriginalResult still Failed, and that log carries a non-empty override
+  # reason. Graded on stored state, so it holds however the agent invoked the
+  # CLI (create or update, direct or wrapped in a python3 -c subprocess). The
+  # residual is the safe direction: an agent that corrects a sibling run's log
+  # leaves this execution unchanged and fails here.
   - type: run_command
-    description: "At least one EVFX-TCLOG log reports Passed while OriginalResult still reads Failed"
+    description: "The failing log on THIS run's execution reports Passed over an OriginalResult of Failed, with a non-empty override reason"
     command: |
       python3 -c "
       import json, subprocess
@@ -255,13 +276,25 @@ success_criteria:
           t = r.stdout or ''
           return json.loads(t[t.index('{'):]) if '{' in t else {}
 
-      logs = uip('tm','testcaselog','list','--project-key','CLAIM',
-                 '--search','EVFX-TCLOG-TC','--limit','200').get('Data') or []
+      eid = open('target_execution.txt', encoding='utf-8').read().strip()
+      assert eid, 'fixture handoff missing: target_execution.txt is empty'
+      logs = uip('tm','executions','testcaselogs','list','--execution-id',eid,
+                 '--project-key','CLAIM').get('Data') or []
       corrected = [l for l in logs
                    if l.get('Result') == 'Passed' and l.get('OriginalResult') == 'Failed']
       assert corrected, (
-          'no EVFX-TCLOG log reports Passed over an OriginalResult of Failed; '
-          f'results={[(l.get(\"Result\"), l.get(\"OriginalResult\")) for l in logs]}')
+          f'no log on execution {eid} reports Passed over an OriginalResult of '
+          f'Failed; results={[(l.get(\"Result\"), l.get(\"OriginalResult\")) for l in logs]}')
+      assert len(corrected) == 1, (
+          f'expected exactly one corrected log on execution {eid}, '
+          f'found {len(corrected)}')
+      log_id = corrected[0].get('Id')
+      ov = uip('tm','testcaselog','override','get','--test-case-log-id',log_id,
+               '--project-key','CLAIM').get('Data') or {}
+      reason = (ov.get('Reason') or '').strip()
+      assert reason, (
+          f'corrected log {log_id} carries no non-empty override reason; '
+          f'override={ov}')
       "
     timeout: 150
     expected_exit_code: 0

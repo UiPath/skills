@@ -13,7 +13,11 @@ description: >
   its OWN per-run STAMPED execution and every lifecycle step is graded on the
   agent's own emitted command (per-run isolated). pre_run seeds only the
   immutable test case and sweeps only earlier-day executions, so a concurrent
-  run's work is never touched.
+  run's work is never touched. The stored-state confirmation is isolated too:
+  pre_run snapshots the existing EVFX-TCLOGMR executions into
+  `baseline_executions.txt` (sandbox cwd) and the oracle credits only a Passed
+  log on an execution opened after that snapshot, so a historical pass in the
+  namespace cannot false-pass this run.
 tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:test-case]
 
 run_limits:
@@ -103,7 +107,25 @@ pre_run:
               call(f"sweep.del.{eid[:8]}", "tm", "executions", "delete",
                    "--execution-id", eid, "--project-key", P, "--yes")
 
-      print(f"FIXTURE: ready case={CASE!r} swept={len(stale)}", flush=True)
+      # Fixture handoff: snapshot the EVFX-TCLOGMR executions that already exist
+      # (re-read AFTER the sweep so deleted ones drop out), written to the
+      # sandbox cwd pre_run, the agent and the grader share. The agent opens its
+      # OWN stamped execution during the run, so pre_run cannot know that id in
+      # advance, and a log row carries no run name while the ad-hoc executions
+      # are invisible to `executions list` — so the oracle isolates THIS run by
+      # crediting only a Passed log on an execution NOT in this baseline. A
+      # historical pass (or a prior run's execution) is in the baseline and
+      # cannot satisfy the grade; only a result recorded THIS cycle can.
+      d2 = call("baseline", "tm", "testcaselog", "list", "--project-key", P,
+                "--search", SEARCH, "--limit", "200")
+      baseline = sorted({l.get("TestExecutionId")
+                         for l in (d2.get("Data") or [])
+                         if l.get("TestExecutionId")})
+      with open("baseline_executions.txt", "w", encoding="utf-8") as fh:
+          fh.write("\n".join(baseline))
+
+      print(f"FIXTURE: ready case={CASE!r} swept={len(stale)} "
+            f"baseline={len(baseline)}", flush=True)
       EOF
 
 initial_prompt: |
@@ -166,11 +188,15 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  # Tolerant, low-weight confirmation that a manual result actually landed:
-  # at least one EVFX-TCLOGMR log finished Passed today. Satisfiable by any run's
-  # work under concurrency, so the per-run `finish` above carries the grade.
+  # Low-weight confirmation that a manual result actually landed on THIS run,
+  # not a historical pass. Reads the fixture-handoff baseline and credits only a
+  # Passed log whose execution was opened AFTER the baseline was taken — so a
+  # pre-existing passed log in the namespace cannot satisfy it. Under
+  # concurrency a sibling variant's fresh execution also qualifies, which is the
+  # safe direction for a tolerant check; the per-run `finish`/`get` command
+  # criteria above carry the differentiating grade.
   - type: run_command
-    description: "At least one EVFX-TCLOGMR log reports a settled Passed result"
+    description: "A Passed EVFX-TCLOGMR log lands on an execution opened during THIS run, not a historical pass"
     command: |
       python3 -c "
       import json, subprocess
@@ -181,12 +207,23 @@ success_criteria:
           t = r.stdout or ''
           return json.loads(t[t.index('{'):]) if '{' in t else {}
 
+      try:
+          baseline = {x for x in open('baseline_executions.txt',
+                                      encoding='utf-8').read().split() if x}
+      except FileNotFoundError:
+          baseline = None
+      assert baseline is not None, (
+          'fixture handoff missing: baseline_executions.txt was not written')
       logs = uip('tm','testcaselog','list','--project-key','CLAIM',
                  '--search','EVFX-TCLOGMR-TC','--limit','200').get('Data') or []
-      passed = [l for l in logs if l.get('Result') == 'Passed']
-      assert passed, (
-          'no EVFX-TCLOGMR log reports a settled Passed result; '
-          f'results={[l.get(\"Result\") for l in logs]}')
+      passed_execs = sorted({l.get('TestExecutionId') for l in logs
+                             if l.get('Result') == 'Passed'})
+      fresh = [l for l in logs
+               if l.get('Result') == 'Passed'
+               and l.get('TestExecutionId') not in baseline]
+      assert fresh, (
+          'no NEW EVFX-TCLOGMR execution carries a Passed log (only historical '
+          f'passes); baseline={len(baseline)} execs, passed_execs={passed_execs}')
       "
     timeout: 150
     expected_exit_code: 0

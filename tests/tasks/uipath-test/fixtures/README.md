@@ -122,9 +122,13 @@ Concurrency drove the shape of all three (two model variants share CLAIM):
 - `testcaselog_override_integration` stamps a fresh execution
   `EVFX-TCLOG-<STAMP>-RUN` every run and sweeps only executions whose logs were
   all last touched **before today**, so a concurrent run's in-flight execution
-  is never deleted (an earlier fixed-name delete-and-recreate raced). The
-  graded outcome is the agent's own `override create`, not a fixed-name
-  post-state. `pre_run`'s guard is on the property, not a count (Rule 4): it
+  is never deleted (an earlier fixed-name delete-and-recreate raced). `pre_run`
+  writes the stamped execution's id to `target_execution.txt` in the sandbox
+  cwd; the prompt scopes the agent to that one run and the oracle grades **that
+  execution's** failing log (now `Passed` over an `OriginalResult` of `Failed`,
+  with a non-empty override reason), not any `EVFX-TCLOG` log in the project —
+  so a concurrent variant's correction or a historical corrected row cannot
+  false-pass it. `pre_run`'s guard is on the property, not a count (Rule 4): it
   asserts **exactly one** log on the stamped execution reports `Failed` and that
   **no** log starts with `OriginalResult` already differing from `Result`.
 - `testcaselog_read_smoke` is a pure reader: it seeds one finished
@@ -134,7 +138,13 @@ Concurrency drove the shape of all three (two model variants share CLAIM):
   `EVFX-TCLOG` stem.
 - `testcaselog_manual_record_e2e` seeds only the test case; the agent opens its
   own stamped execution, so nothing fixed-name exists to collide on. `pre_run`
-  sweeps only earlier-day executions.
+  sweeps only earlier-day executions, then snapshots the surviving
+  `EVFX-TCLOGMR` execution ids into `baseline_executions.txt` (sandbox cwd). The
+  agent creates its execution during the run, so `pre_run` cannot know that id,
+  and a log row carries no run name while the ad-hoc executions are invisible to
+  `executions list` — so the oracle isolates this run by crediting only a
+  `Passed` log on an execution **not** in the baseline, which rules out a
+  historical pass.
 
 The `-TC` in each task's `--search` prefix (`EVFX-TCLOG-TC`, `EVFX-TCLOGRD-TC`,
 `EVFX-TCLOGMR-TC`) is load-bearing: `--search` is a prefix match, and without
