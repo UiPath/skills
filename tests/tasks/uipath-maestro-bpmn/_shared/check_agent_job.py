@@ -29,6 +29,7 @@ from _shared.bpmn_check import (  # noqa: E402
 
 UIPATH_NS = "http://uipath.org/schema/bpmn"
 TYPE_TOKEN = "Orchestrator.StartAgentJob"
+TYPE_VERSION = "v2"
 
 
 def uipath_children(task: ET.Element, local: str) -> list[ET.Element]:
@@ -55,10 +56,13 @@ def main() -> None:
     agent_tasks = [
         t
         for t in elements(root, "serviceTask")
-        if has_typed_uipath_extension(t, "activity", TYPE_TOKEN)
+        if has_typed_uipath_extension(t, "activity", TYPE_TOKEN, version=TYPE_VERSION)
     ]
     if not agent_tasks:
-        fail(f"missing bpmn:serviceTask with a {TYPE_TOKEN} uipath:type in extensionElements")
+        fail(
+            f"missing bpmn:serviceTask with a {TYPE_TOKEN} uipath:type "
+            f"version {TYPE_VERSION} in extensionElements"
+        )
     task = agent_tasks[0]
 
     # The flow port's discipline: a low-code agent must not be modeled as a plain

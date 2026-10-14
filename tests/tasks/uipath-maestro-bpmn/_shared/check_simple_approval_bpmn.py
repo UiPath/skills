@@ -114,10 +114,10 @@ def main() -> None:
     agent_jobs = [
         task
         for task in elements(root, "serviceTask")
-        if has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
+        if has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob", version="v2")
     ]
     if not agent_jobs:
-        fail("missing bpmn:serviceTask with Orchestrator.StartAgentJob uipath:activity shell")
+        fail("missing bpmn:serviceTask with Orchestrator.StartAgentJob v2 uipath:activity shell")
 
     queue_sends = [
         task

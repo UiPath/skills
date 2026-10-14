@@ -72,6 +72,30 @@ def test_typed_extension_rejects_wrong_wrapper_or_type() -> None:
     assert not has_typed_uipath_extension(task, "event", "Orchestrator.StartJob")
 
 
+def test_typed_extension_accepts_the_requested_type_version() -> None:
+    task = _service_task(
+        '<bpmn:extensionElements><uipath:activity version="v1">'
+        '<uipath:type value="Orchestrator.StartAgentJob" version="v2" />'
+        "</uipath:activity></bpmn:extensionElements>"
+    )
+
+    assert has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob", version="v2")
+
+
+@pytest.mark.parametrize("type_attrs", ['version="v1"', ""])
+def test_typed_extension_rejects_another_type_version(type_attrs: str) -> None:
+    task = _service_task(
+        '<bpmn:extensionElements><uipath:activity version="v2">'
+        f'<uipath:type value="Orchestrator.StartAgentJob" {type_attrs} />'
+        "</uipath:activity></bpmn:extensionElements>"
+    )
+
+    assert has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
+    assert not has_typed_uipath_extension(
+        task, "activity", "Orchestrator.StartAgentJob", version="v2"
+    )
+
+
 def test_bundled_start_agent_contract_matches_runtime_registry() -> None:
     repo_root = Path(__file__).parents[4]
     spec_path = repo_root / "skills/uipath-maestro-bpmn/validator/bpmn-spec.json"
