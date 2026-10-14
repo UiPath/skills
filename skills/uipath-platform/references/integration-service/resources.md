@@ -126,9 +126,9 @@ When no api-type action's `rules[]` are satisfied by the supplied fields, the CL
 
 ### Solution-resource pickers
 
-Some parent fields pick a **solution resource** rather than a plain value — a Data Fabric folder entity is the common case, but any kind works the same way. Spot them in the describe output's `Method` JSON: the parameter's `design` carries `"solutionResourceKind"` (the resource kind, e.g. `"entity"`) and usually `"component": "Resources"`. The connector cannot look a picked resource up itself, so the CLI does it for the design action that reads the field.
+Some parent fields pick a **solution resource** rather than a plain value — a Data Fabric folder entity is the common case, but any kind works the same way. Spot them in the describe output's `Method` JSON: the parameter's `design` carries `"solutionResourceKind"` (the resource kind, e.g. `"entity"`) and usually `"component": "Resources"`.
 
-Pass the resource **name** with `-f` like any other parent value. The CLI reads the field's `solutionResourceKind` and finds the resource of that kind by name. For a design action with a body (`POST`, `PUT` or `PATCH`) it sends the resource's configuration graph in the body (the resource plus every resource it depends on — e.g. the choice sets behind an entity's fields); for a URL `{=resourceKey(<field>)}` token it fills in the resource's key:
+Pass the resource **name** with `-f` like any other parent value; the CLI resolves it by `solutionResourceKind`:
 
 ```bash
 # Create Entity Record: folderEntityName is an entity picker
@@ -145,7 +145,7 @@ uip is resources describe uipath-uipath-dataservice CreateEntityRecord_V3 \
 Where the resource is looked up:
 
 - **Local solution first** — `--solution-folder` (only with `-f`), or the current directory when it is a solution. A resource declared there (deployed or not) wins, and local edits are what the connector sees.
-- **Otherwise the tenant's resource catalog** — e.g. run from outside any solution. The graph is the one `uip solution resources get <key> --include-dependencies` returns.
+- **Otherwise the tenant's resource catalog** — e.g. run from outside any solution.
 
 | Situation | What to do |
 |-----------|-----------|

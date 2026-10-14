@@ -112,11 +112,10 @@ uip is triggers describe uipath-uipath-dataservice "<OPERATION>" "<object-name>"
 ```
 
 - The CLI runs the action the `-f` fields satisfy (`--action <name>` when several match) and merges the fields it returns. Without `-f`, such a trigger describes to its base fields only (often just `Id`) — that is not its real schema.
-- The picker is looked up by its kind and name: the local solution first (`--solution-folder`, or the current directory when it is one), then the tenant's resource catalog. A `POST`, `PUT` or `PATCH` action gets the resource's configuration graph in its body; a `/metadata` action is a `GET` and gets only the resource key.
-- Failures are the same as on resources describe: a name in several folders → `invalid_argument` with the folders in `Data.Candidates`, add `-f <picker-field>_folderKey=<FolderKey>`; a name found nowhere → `not_found`, check it with `uip solution resources list --kind <kind> --search "<name>"`. Do not drop the picker and retry — the action needs it.
+- Lookup order and failures (`invalid_argument` + `Data.Candidates`, `not_found`) are as on [resources describe](resources.md#solution-resource-pickers). Do not drop the picker and retry — the action needs it.
 - `-f` needs `--connection-id`; `--action` and `--solution-folder` need `-f`. The result is never cached.
 
-When authoring the trigger, put the same values in the `queryParameters` bucket (the picker's `type` is `query`) and run inside the solution: Maestro Flow `node configure` and `maestro case spec --type trigger --solution-folder <dir> --input-details '{"queryParameters":{...}}'` resolve the picker the same way, and `case spec` lists the loaded fields in `outputs.responseFields`.
+When authoring the trigger, put the same values in the `queryParameters` bucket (the picker's `type` is `query`) and run inside the solution: `uip maestro case spec --type trigger --solution-folder <dir> --input-details '{"queryParameters":{...}}'` resolves the picker the same way and lists the loaded fields in `outputs.responseFields`. For Flow, see `uipath-maestro-flow`.
 
 ---
 
