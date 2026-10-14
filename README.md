@@ -134,20 +134,18 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 
 `uip skills install` supports these coding agents. It detects the installed ones automatically; pass `--agent <name>` to target one.
 
-| Agent | `--agent` | How skills are installed |
-|-------|-----------|--------------------------|
-| Claude Code | `claude` | As the `uipath` plugin (skills, agents, commands, hooks); global only |
-| Cursor | `cursor` | Skill folders copied into the agent's skills directory |
-| GitHub Copilot | `copilot` | Skill folders copied into the agent's skills directory |
-| Codex | `codex` | Skill folders copied into the agent's skills directory |
-| OpenCode | `opencode` | Skill folders copied, plus a slash command per user-invocable skill |
-| UiPath Autopilot | `autopilot` | Skill folders copied, plus the `agents/` and `hooks/` folders |
-| Kiro | `kiro` | Skill folders copied into the agent's skills directory |
-| Windsurf | `windsurf` | Skill folders copied into the agent's skills directory |
-| Antigravity CLI | `antigravity` | Skill folders copied into the agent's skills directory |
-| Devin | `devin` | Skill folders copied into the agent's skills directory |
-
-Add `--local` to install into the current project instead of your home directory.
+| Agent | `--agent` |
+|-------|-----------|
+| Claude Code | `claude` |
+| Cursor | `cursor` |
+| GitHub Copilot | `copilot` |
+| Codex | `codex` |
+| OpenCode | `opencode` |
+| UiPath Autopilot | `autopilot` |
+| Kiro | `kiro` |
+| Windsurf | `windsurf` |
+| Antigravity CLI | `antigravity` |
+| Devin | `devin` |
 
 ### Claude Code
 
