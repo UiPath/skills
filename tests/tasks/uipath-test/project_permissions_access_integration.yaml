@@ -1,4 +1,4 @@
-task_id: skill-test-project-permissions-access-triage-integration
+task_id: skill-test-project-permissions-access-integration
 description: >
   Integration test: the agent triages a permission problem on a project by
   reading the caller's held permissions rather than blindly retrying or dropping
