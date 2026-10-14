@@ -1,0 +1,26 @@
+{
+  "project": "ReviewSol/SampleAgent",
+  "inject": "inject_clean_control.py",
+  "expected": [],
+  "min_recall": 1.0,
+  "decoys": [
+    {"id": "LC_PROMPT_ROLE_DEFINITION", "reason": "prompt opens with a role sentence"},
+    {"id": "LC_PROMPT_SCOPE_BOUNDARIES", "reason": "prompt has a Scope section"},
+    {"id": "LC_PROMPT_STOPPING_CRITERIA", "reason": "empty, non-IT and tool-failure cases are handled"},
+    {"id": "LC_OUTPUT_CLASSIFIER_NO_ENUM", "reason": "priority has an enum"},
+    {"id": "LC_OUTPUT_ENUM_VS_PROMPT_DRIFT", "reason": "prompt and enum list the same three values"},
+    {"id": "LC_SETTINGS_TEMPERATURE_FIT", "reason": "temperature 0 for classification"},
+    {"id": "LC_EVAL_JUDGE_FOR_CLOSED_CLASS", "reason": "equality evaluator, no LLM judge"},
+    {"id": "LC_FAILURE_PROMPT_INJECTION", "reason": "data boundary in prompt and prompt_injection guardrail at Llm"},
+    {"id": "LC_MULTI_TOOL_NO_SEQUENCING", "reason": "single tool, explicit order"},
+    {"id": "VAGUE_TOOL_DESCRIPTION", "reason": "tool description states purpose, effects and use condition"}
+  ],
+  "min_categories": 0,
+  "min_severity_bands": 0,
+  "max_findings": 3,
+  "forbidden_bands": ["C"],
+  "allowed_grades": ["A", "B"],
+  "grade_not_above_cli": true,
+  "cli_expected": [],
+  "cli_only_expected": true
+}
