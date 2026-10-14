@@ -405,3 +405,46 @@ def test_preflight_marks_a_tenant_gap_for_the_smoke_gate(tmp_path: Path, auth_ok
                             capture_output=True, text=True)
     assert result.returncode != 0
     assert "TENANT NOT READY" in result.stderr
+
+
+# --- cleanup_ah.py --created ----------------------------------------------------
+
+CLEANUP = HERE.parent / "_setup" / "cleanup_ah.py"
+# Answers cleanup's own calls and logs each `phases set` so a test can see what was archived.
+CLEANUP_UIP = r'''#!/usr/bin/env python3
+import json, sys
+from pathlib import Path
+args = sys.argv[1:]
+if args[:3] == ["ah", "idea-flows", "list"]:
+    archived = {"PhaseVariable": "QUALIFICATION", "StatusVariable": "QUALIFICATION_ARCHIVED", "StatusValue": "Archived"}
+    flow = {"Name": "Business Process", "Phases": {"QUALIFICATION": {"A": archived}}}
+    print(json.dumps({"Result": "Success", "Data": [flow]})); sys.exit(0)
+if args[:3] == ["ah", "phases", "set"]:
+    with (Path(__file__).parent / "archived.txt").open("a") as log:
+        log.write(args[3] + "\n")
+print(json.dumps({"Result": "Success", "Data": {}}))
+'''
+
+
+def clean_created(sandbox: Path) -> list[str]:
+    stub = sandbox.parent / "cleanup-bin"
+    stub.mkdir()
+    (stub / "uip").write_text(CLEANUP_UIP)
+    (stub / "uip").chmod(0o755)
+    env = {**os.environ, "PATH": f"{stub}{os.pathsep}{os.environ['PATH']}"}
+    subprocess.run([sys.executable, str(CLEANUP), "--created"], cwd=sandbox, env=env, check=True)
+    archived = stub / "archived.txt"
+    return archived.read_text().split() if archived.is_file() else []
+
+
+def test_cleanup_archives_only_the_processes_this_run_created(sandbox: Path) -> None:
+    publish(sandbox, good_answers())
+    assert clean_created(sandbox) == [str(PROCESS_ID)]
+
+
+def test_cleanup_skips_a_create_that_failed(sandbox: Path) -> None:
+    uip(sandbox, "ah", "applications", "update", "--file", "x.json")  # the stub fails this verb
+    log = sandbox / ".uip-recorder" / ".calls.jsonl"
+    rejected = {"ts": 0, "args": ["ah", "automations", "create", "--from-schema"], "exit_code": 1, "result": "Failure"}
+    log.write_text(log.read_text() + json.dumps(rejected) + "\n")
+    assert clean_created(sandbox) == []
