@@ -144,13 +144,13 @@ uip is resources describe uipath-uipath-dataservice CreateEntityRecord_V3 \
 
 Where the resource is looked up:
 
-- **Local solution first** — `--solution-folder`, or the current directory when it is a solution. A resource declared there (deployed or not) wins, and local edits are what the connector sees.
+- **Local solution first** — `--solution-folder` (only with `-f`), or the current directory when it is a solution. A resource declared there (deployed or not) wins, and local edits are what the connector sees.
 - **Otherwise the tenant's resource catalog** — e.g. run from outside any solution. The graph is the one `uip solution resources get <key> --include-dependencies` returns.
 
 | Situation | What to do |
 |-----------|-----------|
-| The catalog has the name in several folders → `ErrorCode: "invalid_argument"`, `Instructions` list up to 10 `<folder> (folder key …)` | Add `-f <field>_folderKey=<folder-key>` for the folder you mean (the same companion field the activity stores). Not in the list? `uip solution resources list --source remote --kind <kind> --search "<name>"` shows every folder. This is a `-f` field, not the `--folder-key` option used for folder-scoped connections. |
-| No resource of that kind has the name → `ErrorCode: "not_found"` | Check the name and kind — `uip solution resources list --kind <kind> --search "<name>"` (add `--source remote` for the tenant). |
+| The catalog has the name in several folders → `ErrorCode: "invalid_argument"`, `Data.Candidates` lists every folder as `{ FolderPath, FolderKey }` | Add `-f <field>_folderKey=<FolderKey>` for the folder you mean (the same companion field the activity stores); `Instructions` names the field. This is a `-f` field, not the `--folder-key` option used for folder-scoped connections. |
+| No resource of that kind has the name → `ErrorCode: "not_found"`, `Message` names the value and the field | Check the name and kind — `uip solution resources list --kind <kind> --search "<name>"` (add `--source remote` for the tenant). |
 
 Do not drop the picker field and retry when the lookup fails: a design action with a body, sent without the graph, fails with `400 … Value for required parameter 'body' not found`. A `GET` design action that substitutes only the name (e.g. `FetchObjectMetadataTenant` over `tenantEntityName`) needs no lookup.
 
