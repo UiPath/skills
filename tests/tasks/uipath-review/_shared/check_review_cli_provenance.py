@@ -34,14 +34,12 @@ Exit 0 on PASS; sys.exit(str) on failure.
 """
 
 import argparse
-import json
 import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 
-from report_evidence import cli_identity, declares_unavailable
+from report_evidence import cli_identity, declares_unavailable, run_review_cli
 
 # Names the report may use for the review CLI, for the shared
 # `declares_unavailable` contract check (agent-review-guide.md Critical Rule 3).
@@ -52,27 +50,6 @@ REVIEW_CLI_SUBJECT = r"review\s+CLI|uip\s+agent\s+review|uip\s+codedagent\s+revi
 # min(G_det, G_jud)).
 CLI_MENTION = re.compile(r"(uip\s+agent\s+review|uip\s+codedagent\s+review|review\s+CLI|deterministic)", re.IGNORECASE)
 GRADE_PROXIMITY = 240
-
-
-def _run_cli(uip: str, verb: list[str], project: str) -> tuple[bool, dict, str]:
-    """Run the review CLI on `project`; return (ok, parsed Data, diagnostic)."""
-    argv = [uip, *verb, project, "--output", "json"]
-    try:
-        proc = subprocess.run(argv, capture_output=True, text=True, timeout=180)
-    except FileNotFoundError:
-        return False, {}, f"{uip} not on PATH"
-    except subprocess.TimeoutExpired:
-        return False, {}, f"{' '.join(argv)} timed out after 180s"
-    if proc.returncode != 0:
-        tail = (proc.stderr or proc.stdout or "").strip()[-400:]
-        return False, {}, f"exit {proc.returncode}: {tail}"
-    try:
-        payload = json.loads(proc.stdout)
-    except json.JSONDecodeError as e:
-        return False, {}, f"non-JSON output ({e}): {proc.stdout.strip()[:400]}"
-    if payload.get("Result") != "Success":
-        return False, {}, f"Result={payload.get('Result')}: {payload.get('Message', '')[:400]}"
-    return True, payload.get("Data") or {}, ""
 
 
 def _derivable_from_skill(rule_ids: list[str]) -> list[str] | None:
@@ -125,7 +102,7 @@ def main() -> None:
 
     uip = os.environ.get("UIP", "uip")
     print(f"Checker resolved `{uip}` -> {cli_identity(uip)}")
-    ok, data, why = _run_cli(uip, args.verb.split(), args.project)
+    ok, data, why = run_review_cli(uip, args.verb.split(), args.project)
 
     if not ok:
         # Ground truth is unobtainable. Do not silently pass (that is the hole
