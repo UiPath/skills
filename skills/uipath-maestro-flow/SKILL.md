@@ -141,12 +141,7 @@ The quick start above shows the shape — `flow(id)`, declarations, nodes, `.ret
 
 ## API index
 
-**Every signature, option shape and field is indexed in the installed `@uipath/maestro-builder-sdk` package**, not in this guide; a row's path is relative to the package root:
-
-| you have | look in | a row gives you |
-| --- | --- | --- |
-| a field or method — `outcomePorts`, `stepToList` (the usual case) | `dist/api-members.md` | the shape that declares it, and the lines that do |
-| an exported symbol — `HitlInputs`, `hitl`, `FlowBuilder` | `dist/api-index.md` | its kind, area, and the lines that declare it |
+**Every signature, option shape and field is indexed in the installed `@uipath/maestro-builder-sdk` package** (`dist/api-members.md` for fields and methods, `dist/api-index.md` for exported symbols), not in this guide.
 
 **Look names up with the bundled script — every name you need in ONE call, before writing the source:**
 
@@ -154,7 +149,7 @@ The quick start above shows the shape — `flow(id)`, declarations, nodes, `.ret
 node "<SKILL_DIR>/scripts/sdk-api.mjs" inlineAgent InlineAgentInputs HitlInputs.outcomePorts
 ```
 
-It matches each name (or `Owner.member`) in both indexes and prints every matching declaration span with its doc comment, then the exported types those declarations reference, three hops deep (`inlineAgent` brings `InlineAgentInputs`, `ToolRef` and every `*ToolRef` variant). One call answers the questions you batched into it and the follow-ups they lead to. It finds the SDK the way `uip` does (workspace `node_modules` first, then global); exit 2 with `SDK_NOT_FOUND` means install the SDK and rerun. A name with no match prints similar names; a name in neither index is probably a RUNTIME output key, which the node references carry. Do not grep the indexes, `sed` the `.d.ts` spans, or search `dist/*.js` yourself — the script already returns the whole declaration. Why the index ships in the package, and more lookup rules: [`references/author.md`](references/author.md#api-index-lookups).
+It prints each matching declaration with its doc comment, then the exported types it references, three hops deep. Exit 2 with `SDK_NOT_FOUND` means install the SDK and rerun. A name in neither index is probably a RUNTIME output key, which the node references carry. Do not grep the indexes, `sed` the `.d.ts` spans, or search `dist/*.js` yourself. Flags and more lookup rules: [`references/author.md`](references/author.md#api-index-lookups).
 
 ## Supported node types
 
