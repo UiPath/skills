@@ -38,15 +38,16 @@ Every turn resends the whole context: a reference read early is paid again on ev
 | Author | the unit of work is assessed | the description iterates over items | [transactional-shape-guide.md](references/transactional-shape-guide.md) |
 | Extract | start | — | [extraction-guide.md](references/extraction-guide.md), genome-format-guide.md, [extracted-genome-guide.md](references/extracted-genome-guide.md) and skill-mapping-guide.md whole; the template of the level chosen; the extracted example [salesforce-accounts-and-contacts-genome.md](assets/examples/salesforce-accounts-and-contacts-genome.md) by its § Source Map only, to calibrate the step table; the source guide as § Source Frameworks states |
 | Extract | from the inventory on | the inventory or a signal shows per-item work: queue items fetched or added, a loop over rows, files or mails with a per-item catch, a work list read, a framework state machine | transactional-shape-guide.md, in the turn after the first such signal |
+| Extract | the sizing plan is stated | the extraction runs in parts | [parts-guide.md](references/parts-guide.md) and [extraction-parts-guide.md](references/extraction-parts-guide.md) |
 | Extract | the first suspected source defect | — | [defect-verification-guide.md](references/defect-verification-guide.md) |
 | Edit | start | — | [editing-guide.md](references/editing-guide.md) and genome-format-guide.md whole; extracted-genome-guide.md when the genome has a Source Map; transactional-shape-guide.md when the edit touches the Transactional Shape, or a step, rule or handler of a genome whose shape is not the stub |
-| Edit | partial re-extraction | — | extraction-guide.md, defect-verification-guide.md and the source guide, as for Extract |
+| Edit | partial re-extraction | — | extraction-guide.md, defect-verification-guide.md and the source guide, as for Extract; parts-guide.md and extraction-parts-guide.md when the list runs in parts |
 | Execute | start, before any question | — | [execution-guide.md](references/execution-guide.md); each skill named in Build With / Components, invoked once for preflight discovery and the scaffolding options — its SKILL.md only, its mandatory reads wait for the build; [transactional-execution-guide.md](references/transactional-execution-guide.md) and transactional-shape-guide.md when the Transactional Shape is not the stub, before the split questions |
 | Execute | build, once the configuration answers exist | — | the owning skill's mandatory reads, through its own journey |
 | Execute | build | the genome has a Source Map | extracted-genome-guide.md |
 | Execute | build | an export was resolved | the migration reads of § Source Frameworks |
 | Execute | build | a group builds UI activities, extracted genome or not | [source-migration-guide.md § Verification](references/source-migration-guide.md) |
-| Execute | build | a group is planned in parts, runs through subagents or forks, or resumes after a pause or a compaction | [execution-parts-guide.md](references/execution-parts-guide.md) |
+| Execute | build | a group is planned in parts, runs through subagents or forks, or resumes after a pause or a compaction | parts-guide.md and [execution-parts-guide.md](references/execution-parts-guide.md) |
 | Execute | build | no application is reachable | [offline-definition-workarounds-guide.md](references/offline-definition-workarounds-guide.md) |
 | Execute | build | a group uses a doc or a tool [package-doc-errata-guide.md](references/package-doc-errata-guide.md) corrects | that doc's row, read with the doc, and the § Tools rows for the tools a group builds with |
 | Execute | build | a Build With row names a retired skill or one the host lacks | skill-mapping-guide.md |

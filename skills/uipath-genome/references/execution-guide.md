@@ -157,7 +157,7 @@ Never stop between groups to ask whether to continue.
 
 ### 2.2a Parts, ledgers and resuming
 
-A group built in parts, a build run through subagents or forks, and a pause or a compaction mid-build follow [execution-parts-guide.md](execution-parts-guide.md): one owner per project, the ledger and its skeleton, read plans, forks, progress written through, the run brief and its rulings, and the part report checked against the disk.
+A group built in parts, a build run through subagents or forks, and a pause or a compaction mid-build follow [parts-guide.md](parts-guide.md) and [execution-parts-guide.md](execution-parts-guide.md): one owner per project, the ledger and its skeleton, read plans, forks, progress written through, the run brief and its rulings, and the part report checked against the disk.
 
 ### 2.2b Migrate UI targets (extracted genomes)
 
