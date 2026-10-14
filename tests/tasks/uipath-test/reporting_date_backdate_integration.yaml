@@ -1,4 +1,4 @@
-task_id: skill-test-reporting-date-backdate-operate
+task_id: skill-test-reporting-date-backdate-integration
 description: >
   Operate test: a run finished after the reporting cut-off and has to be booked
   to the previous day, exercising `executions set-reporting-date`, which no

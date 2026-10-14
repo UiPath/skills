@@ -27,9 +27,9 @@ and therefore exact for this scheme.
 | `project_scaffold_build` | its own throwaway project | the `EVFX-SCAFFOLD-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
-| `executions_list_discover_smoke` | CLAIM | `EVFX-EXLIST-SET`, `EVFX-EXLIST-TC{1,2}` | At least one Finished execution; a pure reader, so `pre_run` seeds one recorded run only when none finished exists and leaves a healthy fixture untouched |
+| `executions_list_smoke` | CLAIM | `EVFX-EXLIST-SET`, `EVFX-EXLIST-TC{1,2}` | At least one Finished execution; a pure reader, so `pre_run` seeds one recorded run only when none finished exists and leaves a healthy fixture untouched |
 | `manual_execution_record_integration` | CLAIM | `EVFX-MANUAL-SET`, `EVFX-MANUAL-TC{1,2,3}` | Set and cases only, no execution — the task opens one; `pre_run` sweeps earlier days' runs (sparing today's, so a concurrent run is never destroyed) and snapshots the survivors so the oracle grades the run the agent opens |
-| `reporting_date_backdate_operate` | CLAIM | `EVFX-REPORT-SET`, `EVFX-REPORT-TC{1,2}` | One **open** execution (recorded per-run by id, executions cannot be named) — the premise is that it is not closed; `pre_run` sweeps earlier days' runs (sparing today's) and opens one fresh OPEN run, recording its ExecutionId for the oracle |
+| `reporting_date_backdate_integration` | CLAIM | `EVFX-REPORT-SET`, `EVFX-REPORT-TC{1,2}` | One **open** execution (recorded per-run by id, executions cannot be named) — the premise is that it is not closed; `pre_run` sweeps earlier days' runs (sparing today's) and opens one fresh OPEN run, recording its ExecutionId for the oracle |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
@@ -112,7 +112,7 @@ are scratch, swept in its own `post_run`, and are not steady state.
 The sets and cases never accrete. Executions are the exception, and there are
 two shapes. Most tasks hold the count at zero growth by construction:
 `execution_rerun` repairs one execution rather than appending, `junit_export`
-and `release_readiness` seed once, `executions_list_discover` tops up a single
+and `release_readiness` seed once, `executions_list` tops up a single
 run only when no finished execution exists, `flaky` appends only to restore
 intermittency, and `organize` sweeps its own scratch. `manual_execution_record`
 and `reporting_date_backdate` instead open one execution per run and sweep

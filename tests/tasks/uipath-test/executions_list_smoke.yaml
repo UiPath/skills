@@ -1,4 +1,4 @@
-task_id: skill-test-executions-list-discover-smoke
+task_id: skill-test-executions-list-smoke
 description: >
   Smoke test: an agent is asked for the executions on a project's test set and
   the pass/fail totals of the most recent finished one. Exercises the read side
