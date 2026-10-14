@@ -4,7 +4,7 @@ A genome whose Transactional Shape is not the stub ([genome-format-guide.md § T
 
 ## Split questions
 
-Asked once per **flow** of the Transactional Shape (its `### Flow N` blocks, in the order of the `Flows:` line; a genome written before flows existed has one flow), after the genome questions and before any scaffolding question, because the project list depends on every flow's answers. A component that takes part in several flows is resolved once, after all its flows are answered (§ Projects from the split answers). Every option is concrete; the first is **prepared from the genome** — the As-is table, the Evidence line and the derivation table of [genome-format-guide.md § Transactional Shape](genome-format-guide.md) rule 8 — and marked "(Recommended)"; the As-is option is the recommendation when the evidence favours nothing else. Questions whose condition does not hold are not asked.
+Asked once per **flow** of the Transactional Shape (its `### Flow N` blocks, in the order of the `Flows:` line), after the genome questions and before any scaffolding question, because the project list depends on every flow's answers. A component that takes part in several flows is resolved once, after all its flows are answered (§ Projects from the split answers). Every option is concrete; the first is **prepared from the genome** — the As-is table, the Evidence line and the derivation table of [genome-format-guide.md § Transactional Shape](genome-format-guide.md) rule 8 — and marked "(Recommended)"; the As-is option is the recommendation when the evidence favours nothing else. Questions whose condition does not hold are not asked.
 
 | Topic | Question | Options (first = Recommended, prepared from the genome) |
 |---|---|---|
