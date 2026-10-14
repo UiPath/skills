@@ -28,6 +28,7 @@ UUID = re.compile(
 STUB_UUID = re.compile(r"^0{8}-0{4}-0{4}-0{4}-")
 VAR_REF = re.compile(r"\$vars\.([A-Za-z_$][\w$]*)")
 FILTER_REF = re.compile(r"\{([A-Za-z_$][\w$]*)\}")
+REGEX_PRECEDERS = set("(,=:[!&|?{};") | {""}
 WHOLE_VAR_REF = re.compile(r"(?:=js:)?\$vars\.[\w$.?]+")
 FAILED_PORTS = {"error", "failed", "failure", "faulted"}
 # Inner target handles on `core.logic.loop` that carry an edge from the last body
@@ -136,18 +137,76 @@ def references_field(value: Any, field: str) -> bool:
     return bool(re.search(rf"(?:^|\.){re.escape(field)}(?:$|[^\w$])", rendered))
 
 
-def upstream_inputs(value: Any, nodes: Iterable[dict[str, Any]]) -> list[str]:
-    """The rendered inputs of every node a value reads, directly or transitively."""
+def upstream_sources(value: Any, nodes: Iterable[dict[str, Any]]) -> list[str]:
+    """Every string in the inputs of the nodes a value reads, directly or transitively."""
     nodes = list(nodes)
-    inputs_by_id = {
-        str(node.get("id")): json.dumps(node.get("inputs") or {}, sort_keys=True)
-        for node in nodes
-        if node.get("id")
-    }
+    upstream = transitive_refs(value, node_dependencies(nodes))
+
+    def strings(item: Any) -> Iterable[str]:
+        if isinstance(item, str):
+            yield item
+        elif isinstance(item, dict):
+            for child in item.values():
+                yield from strings(child)
+        elif isinstance(item, list):
+            for child in item:
+                yield from strings(child)
+
     return [
-        inputs_by_id.get(upstream, "")
-        for upstream in transitive_refs(value, node_dependencies(nodes))
+        text
+        for node in nodes
+        if str(node.get("id")) in upstream
+        for text in strings(node.get("inputs") or {})
     ]
+
+
+def js_string_literals(source: str) -> list[str]:
+    """The unescaped contents of the string and template literals in JS ``source``."""
+    literals: list[str] = []
+    index, previous = 0, ""
+    while index < len(source):
+        char = source[index]
+        if source.startswith("//", index):
+            index = source.find("\n", index)
+            index = len(source) if index < 0 else index
+            continue
+        if source.startswith("/*", index):
+            index = source.find("*/", index + 2)
+            index = len(source) if index < 0 else index + 2
+            continue
+        if char == "/" and previous in REGEX_PRECEDERS:
+            index += 1
+            while index < len(source) and source[index] not in "/\n":
+                index += 2 if source[index] == "\\" else 1
+            index += 1
+            previous = "/"
+            continue
+        if char in "\"'`":
+            body: list[str] = []
+            index += 1
+            while index < len(source) and source[index] != char:
+                if source[index] == "\\" and index + 1 < len(source):
+                    index += 1
+                body.append(source[index])
+                index += 1
+            literals.append("".join(body))
+            index += 1
+            previous = char
+            continue
+        if not char.isspace():
+            previous = char
+        index += 1
+    return literals
+
+
+def quotes_column_value(source: str, column: str) -> bool:
+    """True when a JS literal in ``source`` opens a quoted CEQL value on ``column``.
+
+    `"invoiceNumber = '" + n` and `` `invoiceNumber = '${n}'` `` pass;
+    `'invoiceNumber = ' + n` does not: that quote closes the JS string.
+    """
+    pattern = re.compile(rf"\b{re.escape(column)}\s*=\s*'")
+    return any(pattern.search(literal) for literal in js_string_literals(source))
 
 
 def query_references_input(detail: dict[str, Any], field: str) -> bool:
@@ -355,7 +414,7 @@ def assert_read_filters_input(
             f"step that reads the input and returns the CEQL string"
         )
     built_upstream = bool(WHOLE_VAR_REF.fullmatch(expression.strip())) and any(
-        "'" in inputs for inputs in upstream_inputs(expression, nodes)
+        quotes_column_value(source, column) for source in upstream_sources(expression, nodes)
     )
     if "'" not in expression and not built_upstream:
         fail(
@@ -387,7 +446,7 @@ def read_references_input(
             return True
         query = (detail.get("queryParameters") or {}).get("queryExpression")
         return "$vars." in str(unwrap(query) or "") and any(
-            references_field(inputs, field) for inputs in upstream_inputs(query, nodes)
+            references_field(source, field) for source in upstream_sources(query, nodes)
         )
 
     inputs_by_id = {

@@ -283,6 +283,121 @@ def test_native_filter_hop_to_nothing_still_fails(tmp_path: Path) -> None:
     assert "invoiceNumber" in result.stdout + result.stderr
 
 
+def _run_invoice_connector(tmp_path: Path, mutate) -> subprocess.CompletedProcess:
+    source = FLOW_TASKS / REFERENCE_CASES["advisory_billing_invoice_lookup.py"]
+    flow = json.loads(source.read_text())
+    mutate(flow)
+    target = tmp_path / source.name.replace(".reference", "")
+    target.write_text(json.dumps(flow))
+    return run_script("advisory_billing_invoice_lookup.py", target)
+
+
+def _connector_query(flow: dict, expression: str, *producers: dict) -> None:
+    """Point the connector read's queryExpression at ``expression``, fed by ``producers``."""
+    flow["nodes"].extend(producers)
+    for node in flow["nodes"]:
+        detail = (node.get("inputs") or {}).get("detail")
+        if detail and "queryExpression" in (detail.get("queryParameters") or {}):
+            detail["queryParameters"]["queryExpression"] = expression
+
+
+def _script(node_id: str, script: str) -> dict:
+    return {"id": node_id, "type": "core.action.script", "inputs": {"script": script}}
+
+
+NORMALIZE_SCRIPT = (
+    "const n = String($vars.start.output.invoiceNumber).trim().toUpperCase(); "
+    "return { value: n.startsWith('MCS-') ? n : 'MCS-' + n };"
+)
+
+
+def test_connector_query_built_by_a_script_hop(tmp_path: Path) -> None:
+    """connector-params.md teaches a computed CEQL string, and normalising in a
+    Script that returns it is the hop the native branch already accepts."""
+
+    def mutate(flow):
+        _connector_query(
+            flow,
+            "=js:$vars.buildQuery.output.queryExpression",
+            _script(
+                "buildQuery",
+                "const n = String($vars.start.output.invoiceNumber).trim().toUpperCase(); "
+                "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" };",
+            ),
+        )
+
+    result = _run_invoice_connector(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_connector_query_built_two_hops_from_the_input(tmp_path: Path) -> None:
+    def mutate(flow):
+        _connector_query(
+            flow,
+            "=js:$vars.buildQuery.output.queryExpression",
+            _script("normalizeInvoice", NORMALIZE_SCRIPT),
+            _script(
+                "buildQuery",
+                "return { queryExpression: `invoiceNumber = '${$vars.normalizeInvoice.output.value}'` };",
+            ),
+        )
+
+    result = _run_invoice_connector(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    ("expression", "producers"),
+    [
+        pytest.param("invoiceNumber = 'MCS-9999-00000'", (), id="literal"),
+        pytest.param("=js:$vars.start.output.accountNumber", (), id="unrelated-reference"),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (_script("buildQuery", "return { queryExpression: \"invoiceNumber = 'MCS-9999-00000'\" };"),),
+            id="producer-ignores-input",
+        ),
+    ],
+)
+def test_connector_query_not_from_the_input_fails(
+    tmp_path: Path, expression: str, producers: tuple
+) -> None:
+    """Following the hop must not degrade into accepting any `$vars` reference."""
+    result = _run_invoice_connector(tmp_path, lambda flow: _connector_query(flow, expression, *producers))
+    assert result.returncode != 0
+    assert "'invoiceNumber'" in result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        pytest.param(
+            "return { queryExpression: 'invoiceNumber = ' + $vars.start.output.invoiceNumber };",
+            id="js-quotes-around-unquoted-value",
+        ),
+        pytest.param(
+            "const p = \"MCS-\"; const n = $vars.start.output.invoiceNumber; "
+            "return { queryExpression: 'invoiceNumber = ' + p + n, note: \"done\" };",
+            id="js-quotes-between-double-quoted-literals",
+        ),
+        pytest.param(
+            "const n = String($vars.start.output.invoiceNumber).replace(/'/g, \"''\"); "
+            "return { queryExpression: \"invoiceNumber = \" + n };",
+            id="unrelated-quote-literal",
+        ),
+    ],
+)
+def test_connector_hop_with_unquoted_ceql_fails(tmp_path: Path, script: str) -> None:
+    """A quote somewhere upstream is not a quoted CEQL value; unquoted, the RHS
+    parses as subtraction server-side and 400s."""
+
+    def mutate(flow):
+        _connector_query(flow, "=js:$vars.buildQuery.output.queryExpression", _script("buildQuery", script))
+
+    result = _run_invoice_connector(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "single-quoted" in result.stdout + result.stderr
+
+
 def test_native_read_beside_a_connector_write_is_not_a_mix(tmp_path: Path) -> None:
     """Each native op has its own tenant flag, so `read-entity` on with
     `create-entity` off is a real configuration, not a half-migrated flow."""
