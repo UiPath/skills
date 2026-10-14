@@ -13,8 +13,9 @@ description: >
   BPMNDiagram with shapes — the RPANAV-19062 regression ("No diagrams found in the
   BPMN file"). The token also drives post_run cleanup, which archives only this
   run's process (there is no delete verb). Deliberately NOT graded: the payload the
-  agent built — the structural sibling (publish_from_pdd_structural) covers that
-  against a mocked tenant. Needs the nightly tenant login; not a PR smoke task.
+  agent built — the structural sibling (publish_from_pdd_structural) grades that
+  from the recorded calls on the same tenant. Needs the nightly tenant login; not a
+  PR smoke task.
 tags: [uipath-automationhub, e2e, mode:build, lifecycle:setup, outcome-graded]
 
 run_limits:
