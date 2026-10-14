@@ -36,7 +36,11 @@ WHOLE_VAR_REF = re.compile(rf"(?:=js:)?{VAR_PATH}")
 OUTPUT_REF = re.compile(
     r"\$vars\.([\w$]+)\??\.output(?:\??\.([\w$]+)|(?:\?\.)?\[[\"']([^\"']+)[\"']\])?"
 )
-JS_BINDING = re.compile(r"\b(?:const|let|var)\s+(\{[^}]*\}|\[[^\]]*\]|[A-Za-z_$][\w$]*)\s*=")
+JS_DECLARATION = re.compile(r"\b(?:const|let|var)\s+")
+JS_DECLARATOR = re.compile(r"\s*(\{[^}]*\}|\[[^\]]*\]|[A-Za-z_$][\w$]*)\s*=(?!=)")
+JS_CONTINUES_AFTER = set("+-*/%?:.&|=<>,([")
+JS_CONTINUES_BEFORE = set("+-*/%?:.&|=<>,")
+JS_UNDEFINED = "undefined"
 JS_IDENTIFIER = re.compile(r"(?<![\w$.])[A-Za-z_$][\w$]*")
 JS_RETURN_OBJECT = re.compile(r"\breturn\s*\{")
 JS_ENTRY_KEY = re.compile(r"\s*(?:([A-Za-z_$][\w$]*)|\"([^\"]*)\"|'([^']*)')\s*(:)?")
@@ -237,10 +241,12 @@ def js_string_literals(source: str) -> list[str]:
 
 
 def js_code(source: str) -> str:
-    """``source`` with comments and literals blanked, offsets kept; `${…}` stays."""
+    """``source`` with comments blanked and each literal blanked to a trailing `0`, offsets kept; `${…}` stays."""
     chars = list(source)
     for start, end, kind, _ in js_tokens(source):
         chars[start:end] = " " * (end - start)
+        if kind != "comment":
+            chars[end - 1] = "0"
         if kind != "`":
             continue
         for interpolation in JS_INTERPOLATION.finditer(source, start, end):
@@ -248,20 +254,38 @@ def js_code(source: str) -> str:
     return "".join(chars)
 
 
+def js_depths(code: str) -> list[int]:
+    """The bracket depth at each offset of masked JS ``code``."""
+    depths, depth = [], 0
+    for char in code:
+        depth -= char in ")]}"
+        depths.append(depth)
+        depth += char in "([{"
+    return depths
+
+
 def quotes_column_value(source: str, column: str) -> bool:
     """True when the JS literals in ``source`` build a quoted CEQL value on ``column``.
 
     `"invoiceNumber = '" + n + "'"` and `` `invoiceNumber = '${n}'` `` pass;
-    `'invoiceNumber = ' + n` and `"invoiceNumber = '" + n` do not.
+    `'invoiceNumber = ' + n` and `"invoiceNumber = '" + n.replace(/'/g, "''")` do not:
+    the closing quote has to sit at the opening literal's own depth.
     """
     pattern = re.compile(rf"\b{re.escape(column)}\s*=\s*'")
-    literals = js_string_literals(source)
-    for index, literal in enumerate(literals):
-        opened = pattern.search(literal)
-        if opened and (
-            "'" in literal[opened.end():] or any(later.startswith("'") for later in literals[index + 1:])
-        ):
+    depths = js_depths(js_code(source))
+    literals = [token for token in js_tokens(source) if token[2] in "\"'`"]
+    for index, (start, end, _, body) in enumerate(literals):
+        opened = pattern.search(body)
+        if not opened:
+            continue
+        if "'" in body[opened.end():]:
             return True
+        depth = depths[start]
+        for later_start, _, _, later_body in literals[index + 1:]:
+            if min(depths[end:later_start] or [depth]) < depth:
+                break
+            if depths[later_start] == depth and later_body.startswith("'"):
+                return True
     return False
 
 
@@ -286,30 +310,75 @@ def object_entries(code: str, open_brace: int) -> list[tuple[int, int]]:
     return entries
 
 
-def with_bindings(value: str, script: str, code: str) -> str:
-    """``value`` plus the right-hand side of every local binding it reads, transitively."""
-    bindings: dict[str, str] = {}
-    for binding in JS_BINDING.finditer(code):
-        end = code.find(";", binding.end())
-        rhs = script[binding.end(): len(code) if end < 0 else end]
-        for name in JS_IDENTIFIER.findall(binding.group(1)):
-            bindings[name] = f"{bindings.get(name, '')}\n{rhs}"
+def statement_ends(code: str, start: int, newline: int) -> bool:
+    """True when a newline at depth 0 ends the statement, as automatic semicolon insertion would."""
+    before = code[start:newline].rstrip()
+    after = code[newline:].lstrip()
+    return bool(before) and before[-1] not in JS_CONTINUES_AFTER and (
+        not after or after[0] not in JS_CONTINUES_BEFORE
+    )
 
-    parts, pending, seen = [value], [value], set()
-    while pending:
-        for name in JS_IDENTIFIER.findall(js_code(pending.pop())):
-            if name in bindings and name not in seen:
-                seen.add(name)
-                parts.append(bindings[name])
-                pending.append(bindings[name])
-    return "\n".join(parts)
+
+def initializer_end(code: str, start: int) -> tuple[int, str]:
+    """``(offset, delimiter)`` where the initializer starting at ``start`` ends."""
+    depth = 0
+    for index in range(start, len(code)):
+        char = code[index]
+        if char in "([{":
+            depth += 1
+        elif char in ")]}":
+            if not depth:
+                return index, char
+            depth -= 1
+        elif not depth and char in ",;":
+            return index, char
+        elif not depth and char == "\n" and statement_ends(code, start, index):
+            return index, char
+    return len(code), ""
+
+
+def js_bindings(script: str, code: str) -> dict[str, str]:
+    """Each local name in ``script`` mapped to its initializer; `{ a, b: c }` binds `a` and `c`."""
+    bindings: dict[str, str] = {}
+    for declaration in JS_DECLARATION.finditer(code):
+        index = declaration.end()
+        while declarator := JS_DECLARATOR.match(code, index):
+            end, delimiter = initializer_end(code, declarator.end())
+            initializer = script[declarator.end():end].strip()
+            target = declarator.group(1)
+            if target.startswith("{"):
+                for part in target[1:-1].split(","):
+                    key, _, alias = part.split("=")[0].partition(":")
+                    if key.strip():
+                        bindings[(alias or key).strip()] = f"{initializer}.{key.strip()}"
+            else:
+                for name in JS_IDENTIFIER.findall(target):
+                    bindings[name] = initializer
+            if delimiter != ",":
+                break
+            index = end + 1
+    return bindings
+
+
+def inline_bindings(value: str, bindings: dict[str, str], active: frozenset[str] = frozenset()) -> str:
+    """``value`` with each local name it reads replaced by that name's initializer, transitively."""
+    parts, last = [], 0
+    for name in JS_IDENTIFIER.finditer(js_code(value)):
+        if name.group() not in bindings or name.group() in active:
+            continue
+        parts.append(value[last:name.start()])
+        parts.append(inline_bindings(bindings[name.group()], bindings, active | {name.group()}))
+        last = name.end()
+    parts.append(value[last:])
+    return "".join(parts)
 
 
 def script_output(node: dict[str, Any] | None, key: str | None) -> str | None:
-    """The source of ``key`` in a Script's last `return { … }`, with the local bindings it reads.
+    """The source of ``key`` in a Script's `return { … }`, with local names inlined.
 
-    None when the node is no Script or names no such entry; callers then fall
-    back to every string the node reads.
+    `undefined` when no returned object names ``key``. None when the node is no
+    Script or a returned object spreads another; callers then fall back to
+    every string the node reads.
     """
     script = ((node or {}).get("inputs") or {}).get("script")
     if not key or not isinstance(script, str):
@@ -319,13 +388,16 @@ def script_output(node: dict[str, Any] | None, key: str | None) -> str | None:
     if not returns:
         return None
 
-    for start, end in object_entries(code, returns[-1].end() - 1):
-        entry = JS_ENTRY_KEY.match(script, start, end)
-        if not entry or key not in entry.groups()[:3]:
-            continue
-        value = script[entry.end():end] if entry.group(4) else key
-        return with_bindings(value, script, code)
-    return None
+    spreads = False
+    for returned in reversed(returns):
+        for start, end in object_entries(code, returned.end() - 1):
+            spreads = spreads or code[start:end].lstrip().startswith("...")
+            entry = JS_ENTRY_KEY.match(script, start, end)
+            if not entry or key not in entry.groups()[:3]:
+                continue
+            value = script[entry.end():end] if entry.group(4) else key
+            return inline_bindings(value.strip(), js_bindings(script, code))
+    return None if spreads else JS_UNDEFINED
 
 
 def reaches_field(value: Any, field: str, nodes: list[dict[str, Any]], seen: set[str] | None = None) -> bool:

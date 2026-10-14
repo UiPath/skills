@@ -407,6 +407,39 @@ def test_connector_hop_spellings_pass(tmp_path: Path, expression: str, script: s
             ),
             id="dead-read",
         ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script(
+                    "buildQuery",
+                    "const n = \"MCS-9999-00000\", unused = $vars.start.output.invoiceNumber; "
+                    "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" };",
+                ),
+            ),
+            id="dead-read-comma-declarators",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script(
+                    "buildQuery",
+                    "const n = \"MCS-9999-00000\"\n"
+                    "const unused = $vars.start.output.invoiceNumber\n"
+                    "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" }",
+                ),
+            ),
+            id="dead-read-no-semicolons",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script(
+                    "buildQuery",
+                    "return { erp: \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+                ),
+            ),
+            id="absent-output",
+        ),
     ],
 )
 def test_connector_query_not_from_the_input_fails(
@@ -444,6 +477,11 @@ def test_connector_query_not_from_the_input_fails(
             "return { queryExpression: 'invoiceNumber = ' + n };",
             id="quote-only-in-a-log",
         ),
+        pytest.param(
+            "const n = String($vars.start.output.invoiceNumber).replace(/'/g, \"''\"); "
+            "return { queryExpression: \"invoiceNumber = '\" + n };",
+            id="escaped-value-no-closing-quote",
+        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -463,6 +501,25 @@ def test_connector_hop_with_unquoted_ceql_fails(tmp_path: Path, script: str, exp
     result = _run_invoice_connector(tmp_path, mutate)
     assert result.returncode != 0
     assert "single-quoted" in result.stdout + result.stderr
+
+
+def test_connector_hop_forwarded_through_an_alias(tmp_path: Path) -> None:
+    def mutate(flow):
+        _connector_query(
+            flow,
+            "=js:$vars.forward.output.queryExpression",
+            _script(
+                "buildQuery",
+                "return { queryExpression: \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            ),
+            _script(
+                "forward",
+                "const q = $vars.buildQuery.output.queryExpression; return { queryExpression: q };",
+            ),
+        )
+
+    result = _run_invoice_connector(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_connector_hop_on_the_wrong_column_names_the_column(tmp_path: Path) -> None:
