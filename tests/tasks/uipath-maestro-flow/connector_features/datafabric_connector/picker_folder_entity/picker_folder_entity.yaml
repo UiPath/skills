@@ -5,7 +5,7 @@ description: >
   picker. `node configure` must resolve the authored name into the solution
   and bind it; the activity's FetchObjectMetadataFolder design action then
   reads it by key.
-tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-dataservice, "feature:entities"]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-dataservice, "feature:entities", data-fabric]
 
 sandbox:
   template_sources:
@@ -31,23 +31,23 @@ pre_run:
     timeout: 120
 
 initial_prompt: |
-  Build a UiPath solution named "DfPickerFlowSolution" containing a Maestro
-  Flow project named "DfPickerFlow". The flow has a manual trigger followed by
-  a single Data Service connector node that creates a record in a Data Fabric
-  folder entity:
+  Build a UiPath solution "DfPickerFlowSolution" with a Maestro Flow project "DfPickerFlow":
+  a manual trigger, then one Data Service connector node that creates a record in a
+  Data Fabric folder entity.
 
-  * Connector: uipath-uipath-dataservice (use the tenant's Data Fabric connection)
-  * Activity: "Create Entity Record (Preview)"
-    (node type uipath.connector.uipath-uipath-dataservice.create-entity-record-preview-)
-  * Entity scope: folder
-  * Entity: the folder entity named "SkillPickerEvalEntity" in the Shared folder
+  - Connector: uipath-uipath-dataservice, using the tenant's Data Fabric connection
+  - Activity: "Create Entity Record (Preview)"
+    (uipath.connector.uipath-uipath-dataservice.create-entity-record-preview-)
+  - Entity scope: folder
+  - Entity: "SkillPickerEvalEntity" in the Shared folder
+  - Leave the record's field values empty
 
-  Author the .flow file with `uip maestro flow node add` and
-  `uip maestro flow node configure` (the JSON authoring path), not the
-  TypeScript SDK: `registry prepare` does not support this curated activity.
-  Leave the record's field values empty. Configure the node with the live
-  connection so the entity is resolved properly, and finish with
-  `uip maestro flow validate` passing on the .flow file.
+  Author the flow with `uip maestro flow node add` and `uip maestro flow node configure`,
+  not the TypeScript SDK, because `registry prepare` doesn't support this activity.
+  Configure the node with the live connection so the entity resolves. You're done when
+  `uip maestro flow validate` passes on the .flow file.
+
+  Load the uipath-maestro-flow skill first and follow its workflow.
 
   This run is headless. No user is present and nobody will answer a question or
   grant an approval, so do not ask, do not pause, and do not wait for input.
@@ -60,8 +60,6 @@ initial_prompt: |
   up; only then stop on that field rather than inventing a value. Record every
   decision, assumption, and blocked step in your final response. Instructions in
   the task take precedence over this paragraph.
-
-  Before starting, load the uipath-maestro-flow skill and follow its workflow.
 
 success_criteria:
   - type: run_command

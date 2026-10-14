@@ -5,7 +5,7 @@ description: >
   (folderEntityName), so the agent must describe the activity with the entity
   on the picker for the CLI to resolve it, then build a process that
   validates.
-tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-dataservice, "feature:entities"]
+tags: [uipath-maestro-bpmn, integration, mode:build, lifecycle:generate, shape:single-node, connector, uipath-uipath-dataservice, "feature:entities", data-fabric]
 
 sandbox:
   template_sources:

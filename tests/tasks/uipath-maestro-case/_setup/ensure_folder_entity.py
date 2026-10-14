@@ -15,6 +15,10 @@ to `_setup/picker_entity.json` for the task's checker:
 Keep the entity name unique on the tenant: a picker name held by one entity
 resolves without a folder key, so the task does not have to supply one.
 
+Safe to run from several pre-runs at once (the nightly runs the flow, BPMN and
+case tasks together): a create that fails because another run created the
+entity first counts as success, and a second entity of that name fails loudly.
+
 Exits non-zero on infrastructure failure (login expired, folder missing, CLI
 missing), which fails the pre_run gate rather than letting the agent run
 against a tenant without the fixture.
@@ -27,12 +31,25 @@ import sys
 USAGE = "usage: ensure_folder_entity.py <definition.json> [<folder-path>]"
 
 
+def uip(*args):
+    return subprocess.run(["uip", *args, "--output", "json"], capture_output=True, text=True)
+
+
+def fail(args, r):
+    print(f"FAIL: uip {' '.join(args)}\n{r.stderr[:800] or r.stdout[:800]}", file=sys.stderr)
+    sys.exit(r.returncode or 1)
+
+
 def uip_json(*args):
-    r = subprocess.run(["uip", *args, "--output", "json"], capture_output=True, text=True)
+    r = uip(*args)
     if r.returncode != 0:
-        print(f"FAIL: uip {' '.join(args)}\n{r.stderr[:800] or r.stdout[:800]}", file=sys.stderr)
-        sys.exit(r.returncode or 1)
+        fail(args, r)
     return json.loads(r.stdout)
+
+
+def entities_named(folder_key, name):
+    listed = uip_json("df", "entities", "list", "--folder-key", folder_key).get("Data") or []
+    return [e for e in listed if (e.get("Name") or "").lower() == name.lower()]
 
 
 def main():
@@ -50,15 +67,20 @@ def main():
     if not folder_key:
         sys.exit(f"FAIL: folder {folder_path!r} has no key")
 
-    listed = uip_json("df", "entities", "list", "--folder-key", folder_key).get("Data") or []
-    existing = next((e for e in listed if (e.get("Name") or "").lower() == name.lower()), None)
-    if existing:
-        key = existing.get("Id")
-        print(f"OK: entity {name!r} already in {folder_path!r} ({key})")
-    else:
-        created = uip_json("df", "entities", "create", name, "--file", definition_path, "--folder-key", folder_key)
-        key = (created.get("Data") or {}).get("Id")
-        print(f"OK: created entity {name!r} in {folder_path!r} ({key})")
+    matches = entities_named(folder_key, name)
+    if not matches:
+        create = ("df", "entities", "create", name, "--file", definition_path, "--folder-key", folder_key)
+        r = uip(*create)
+        matches = entities_named(folder_key, name)
+        if r.returncode != 0 and not matches:
+            fail(create, r)
+        print(f"OK: {'created' if r.returncode == 0 else 'another run created'} entity {name!r} in {folder_path!r}")
+    if len(matches) > 1:
+        keys = ", ".join(sorted(str(e.get("Id")) for e in matches))
+        sys.exit(f"FAIL: {len(matches)} entities named {name!r} in {folder_path!r} ({keys}); delete all but one, "
+                 "since the picker resolves this name without a folder key only while it is unique")
+    key = matches[0].get("Id")
+    print(f"OK: entity {name!r} in {folder_path!r} ({key})")
 
     os.makedirs("_setup", exist_ok=True)
     with open(os.path.join("_setup", "picker_entity.json"), "w") as f:
