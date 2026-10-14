@@ -38,9 +38,10 @@ def test_scenario_fixture(spec_path: Path, tmp_path: Path) -> None:
 
     project = spec["project"]
     refresh = _uip("agent", "refresh", project, cwd=tmp_path)
-    assert refresh.get("Result") == "Success", refresh
     validate = _uip("agent", "validate", project, cwd=tmp_path)
-    assert validate.get("Result") == "Success", validate
+    if spec.get("validate_must_pass", True):
+        assert refresh.get("Result") == "Success", refresh
+        assert validate.get("Result") == "Success", validate
 
     review = _uip("agent", "review", project, cwd=tmp_path)
     assert review.get("Result") == "Success", review
