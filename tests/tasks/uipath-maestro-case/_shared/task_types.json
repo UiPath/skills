@@ -26,6 +26,9 @@
         "Type": "function"
       },
       {
+        "Type": "http-request"
+      },
+      {
         "Type": "process"
       },
       {
@@ -50,9 +53,6 @@
       },
       {
         "Type": "flow-process"
-      },
-      {
-        "Type": "http-request"
       },
       {
         "Type": "script"
