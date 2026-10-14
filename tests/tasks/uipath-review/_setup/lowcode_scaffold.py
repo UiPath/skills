@@ -35,6 +35,8 @@ agent-builder low-code agent inside a solution:
 
 import json
 import re
+import shutil
+import uuid
 from pathlib import Path
 
 SOLUTION_ID = "11111111-1111-4111-8111-111111111111"
@@ -339,3 +341,251 @@ def write_baseline_lowcode_agent(
     )
 
     return project_dir
+
+
+def stable_id(*parts: str) -> str:
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "uipath-review-fixture/" + "/".join(parts)))
+
+
+def string_props(fields: dict[str, str]) -> dict:
+    return {
+        name: {"type": "string", **({"description": desc} if desc else {})}
+        for name, desc in fields.items()
+    }
+
+
+def apply_agent(
+    project_dir: Path,
+    *,
+    system: str,
+    user: str,
+    input_schema: dict,
+    output_schema: dict,
+    settings: dict | None = None,
+    guardrails: list[dict] | None = None,
+) -> None:
+    project_dir = Path(project_dir)
+    for base in (project_dir, project_dir / ".agent-builder"):
+        agent_path = base / "agent.json"
+        data = json.loads(agent_path.read_text(encoding="utf-8"))
+        data["inputSchema"] = json.loads(json.dumps(input_schema))
+        data["outputSchema"] = json.loads(json.dumps(output_schema))
+        data["settings"] = {**data["settings"], **(settings or {})}
+        data["guardrails"] = json.loads(json.dumps(guardrails or []))
+        set_message(data, "system", system)
+        set_message(data, "user", user)
+        _write_json(agent_path, data)
+        ep_path = base / "entry-points.json"
+        ep = json.loads(ep_path.read_text(encoding="utf-8"))
+        ep["entryPoints"][0]["input"] = json.loads(json.dumps(input_schema))
+        ep["entryPoints"][0]["output"] = json.loads(json.dumps(output_schema))
+        _write_json(ep_path, ep)
+
+
+def write_tool(
+    project_dir: Path,
+    name: str,
+    description: str,
+    inputs: dict[str, str],
+    *,
+    required: list[str] | None = None,
+    outputs: dict | None = None,
+    tool_type: str = "process",
+) -> dict:
+    if outputs is None or "type" not in outputs:
+        output_schema = {"type": "object", "properties": string_props(outputs or {})}
+    else:
+        output_schema = outputs
+    d = Path(project_dir) / "resources" / name
+    d.mkdir(parents=True, exist_ok=True)
+    _write_json(
+        d / "resource.json",
+        {
+            "$resourceType": "tool",
+            "id": stable_id("tool", name),
+            "type": tool_type,
+            "location": "external",
+            "name": name,
+            "description": description,
+            "isEnabled": True,
+            "inputSchema": {
+                "type": "object",
+                "properties": string_props(inputs),
+                "required": list(required or []),
+            },
+            "outputSchema": output_schema,
+            "settings": {},
+            "guardrail": {"policies": []},
+            "properties": {"processName": name, "folderPath": "Shared", "exampleCalls": []},
+            "referenceKey": stable_id("tool-ref", name),
+            "argumentProperties": {},
+        },
+    )
+    return process_binding(name)
+
+
+def write_context_index(
+    project_dir: Path,
+    name: str,
+    description: str,
+    index_name: str,
+    query_description: str,
+    *,
+    threshold: float,
+    result_count: int,
+) -> None:
+    d = Path(project_dir) / "resources" / name
+    d.mkdir(parents=True, exist_ok=True)
+    _write_json(
+        d / "resource.json",
+        {
+            "$resourceType": "context",
+            "id": stable_id("context", name),
+            "referenceKey": None,
+            "name": name,
+            "description": description,
+            "contextType": "index",
+            "folderPath": "Shared",
+            "indexName": index_name,
+            "settings": {
+                "retrievalMode": "semantic",
+                "query": {"variant": "dynamic", "description": query_description},
+                "folderPathPrefix": {"variant": "static"},
+                "fileExtension": {"value": "All"},
+                "threshold": threshold,
+                "resultCount": result_count,
+            },
+        },
+    )
+
+
+def write_escalation(project_dir: Path, name: str, description: str, recipient_email: str) -> None:
+    d = Path(project_dir) / "resources" / name
+    d.mkdir(parents=True, exist_ok=True)
+    _write_json(
+        d / "resource.json",
+        {
+            "$resourceType": "escalation",
+            "id": stable_id("escalation", name),
+            "name": name,
+            "description": description,
+            "escalationType": 0,
+            "isAgentMemoryEnabled": False,
+            "ixpToolId": None,
+            "storageBucketName": None,
+            "properties": {},
+            "governanceProperties": {"isEscalatedAtRuntime": False},
+            "isEnabled": True,
+            "channels": [
+                {
+                    "id": stable_id("escalation-channel", name),
+                    "name": "Channel",
+                    "description": description,
+                    "type": "actionCenter",
+                    "inputSchema": {"type": "object", "properties": string_props({"Content": "Agent output to review"})},
+                    "inputSchemaDotnetTypeMapping": {"Content": "System.String"},
+                    "outputSchema": {"type": "object", "properties": string_props({"Comment": "Reviewer comment"})},
+                    "outputSchemaDotnetTypeMapping": {"Comment": "System.String"},
+                    "outcomeMapping": {"approve": "continue", "reject": "end"},
+                    "properties": {
+                        "resourceKey": stable_id("escalation-app", name),
+                        "appName": f"{name}App",
+                        "folderName": "Shared",
+                        "appVersion": 1,
+                        "isActionableMessageEnabled": False,
+                        "actionableMessageMetaData": None,
+                    },
+                    "recipients": [{"type": 3, "value": recipient_email}],
+                    "taskTitle": f"{name} request",
+                    "taskTitleV2": {
+                        "type": "textBuilder",
+                        "tokens": [{"type": "simpleText", "rawString": f"{name} request"}],
+                    },
+                    "labels": [],
+                }
+            ],
+        },
+    )
+
+
+def _evaluator(name: str, type_: int, category: int, **extra) -> dict:
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    return {
+        "fileName": f"evaluator-{slug}.json",
+        "id": stable_id("evaluator", name),
+        "name": name,
+        "description": name,
+        "type": type_,
+        "category": category,
+        "targetOutputKey": "*",
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z",
+        **extra,
+    }
+
+
+def equality_evaluator(name: str) -> dict:
+    return _evaluator(name, 1, 0)
+
+
+def llm_judge_evaluator(name: str, prompt: str) -> dict:
+    return _evaluator(name, 5, 1, prompt=prompt, model="same-as-agent")
+
+
+def trajectory_evaluator(name: str, prompt: str) -> dict:
+    return _evaluator(name, 7, 3, prompt=prompt, model="same-as-agent")
+
+
+def write_evals(project_dir: Path, evaluators: list[dict], datapoints: list[dict]) -> None:
+    evals = Path(project_dir) / "evals"
+    ev_dir = evals / "evaluators"
+    shutil.rmtree(ev_dir, ignore_errors=True)
+    ev_dir.mkdir(parents=True)
+    for ev in evaluators:
+        _write_json(ev_dir / ev["fileName"], ev)
+    set_path = evals / "eval-sets" / "evaluation-set-default.json"
+    eval_set = json.loads(set_path.read_text(encoding="utf-8"))
+    eval_set["evaluatorRefs"] = [ev["id"] for ev in evaluators]
+    eval_set["evaluations"] = [
+        {
+            "id": dp.get("id", stable_id("datapoint", dp["name"])),
+            "name": dp["name"],
+            "inputs": dp["inputs"],
+            "expectedOutput": dp["expectedOutput"],
+            "expectedAgentBehavior": dp.get("expectedAgentBehavior", ""),
+            "simulationInstructions": dp.get("simulationInstructions", ""),
+            "simulateInput": False,
+            "simulateTools": dp.get("simulateTools", False),
+            "inputGenerationInstructions": "",
+            "evalSetId": EVAL_SET_ID,
+            "source": "manual",
+            "createdAt": "2026-01-01T00:00:00.000Z",
+            "updatedAt": "2026-01-01T00:00:00.000Z",
+        }
+        for dp in datapoints
+    ]
+    _write_json(set_path, eval_set)
+
+
+def builtin_guardrail(
+    name: str,
+    validator: str,
+    scopes: list[str],
+    action: dict,
+    parameters: list[dict] | None = None,
+    match_names: list[str] | None = None,
+) -> dict:
+    selector: dict = {"scopes": list(scopes)}
+    if match_names is not None:
+        selector["matchNames"] = list(match_names)
+    return {
+        "$guardrailType": "builtInValidator",
+        "id": stable_id("guardrail", name),
+        "name": name,
+        "description": name,
+        "validatorType": validator,
+        "validatorParameters": list(parameters or []),
+        "action": action,
+        "enabledForEvals": True,
+        "selector": selector,
+    }
