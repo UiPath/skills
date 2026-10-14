@@ -204,7 +204,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    `for t in TypeA TypeB TypeC; do uip maestro bpmn registry get "$t" --output json; done`.
    Enrich `Intsvc.*` connector nodes with `--connection-id`/`--object-name`; take
    `--object-name` from the table in
-   [references/registry-workflow.md](references/registry-workflow.md#picking-the-object-take-it-from-the-table-do-not-infer-it)
+   [references/registry-workflow.md](references/registry-workflow.md#picking-the-object-the-table-first-then-the-parameters)
    — a connector exposes several objects per operation and `describe` does not
    rank them. Do not call `registry get` for structural
    gaps the registry never owns: sequence flows, gateways, events, boundary
@@ -302,7 +302,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    - **Data Service files** use `UploadFileToRecordField`,
      `DownloadFileFromRecordField`, and `DeleteFileFromRecordField`, never the
      `V2` objects `uip is resources list` shows. See
-     [Picking the object](references/registry-workflow.md#picking-the-object-take-it-from-the-table-do-not-infer-it).
+     [Picking the object](references/registry-workflow.md#picking-the-object-the-table-first-then-the-parameters).
    - **`folderKey`** (`Intsvc.ActivityExecution` only). Keep the template's
      `folderKey` context input as `=bindings.<folderBindingId>` plus its
      folder binding on every node that binds a connection. Without it the run faults `102010` `Value cannot be

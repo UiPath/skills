@@ -15,7 +15,7 @@ Typical low-code shape: one `job-attachment` input field on the agent + one `ana
 
 ## Resource Shape
 
-**Path:** `<AgentName>/resources/AnalyzeFiles/resource.json`
+**Path:** `<AgentName>/resources/Analyze Files/resource.json` — **the folder name must exactly match the `name` field** (case- and whitespace-sensitive, space included) or the validator fails with `folder must be named after the resource name`.
 
 ```jsonc
 {
@@ -82,7 +82,7 @@ Schema is canonical — copy verbatim. Only `id` (fresh UUID) and optionally `de
 ## Walkthrough
 
 1. **Add a file input field on the agent.** See [../../agent-definition.md](../../agent-definition.md) § Add a File Input Field. Mirror in `entry-points.json`.
-2. **Author the tool resource** at `resources/AnalyzeFiles/resource.json` using the shape above. Generate a fresh UUID for `id`.
+2. **Author the tool resource** at `resources/Analyze Files/resource.json` (folder = `name`, space included) using the shape above. Generate a fresh UUID for `id`.
 3. **Reference the attachment in the user message** so the agent sees its metadata:
 
    ```jsonc
