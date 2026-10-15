@@ -95,13 +95,12 @@ generated packages to invent the missing live schema.
 
 ## 3. Connector (`Intsvc.*`) enrichment
 
-> In a workflow with `<uipath:intsvcActivityConfig version="v2" />` (every new
-> one), author connector nodes as V2 elements from `registry get
-> --input-details` instead of filling the template below — see
-> [v2-connector-nodes.md](v2-connector-nodes.md). In an existing workflow
-> without the marker, keep using the template below for every new connector
-> node. The rest of this section is how to find the connection and object for
-> either.
+> Author every new connector node as a V2 element from `registry get
+> --input-details` instead of filling the template below, in new and existing
+> workflows alike — see [v2-connector-nodes.md](v2-connector-nodes.md). The
+> template stays the reference for reading existing V1 nodes, and for an older
+> CLI without `--input-details`. The rest of this section is how to find the
+> connection and object.
 
 For connector **activity** types (`requiresDiscovery: Yes`, e.g.
 `Intsvc.ActivityExecution`), resolve a live connection and object, then enrich.
@@ -676,9 +675,9 @@ package-ready, upload, debug, publish, or deploy deliverable runs it.
   call goes through a connector's connection (`connector`). Build it with
   `uip maestro bpmn registry get Intsvc.UnifiedHttpRequest --input-details
   '<request>'` (add `--connection-id` for connector mode) — see
-  [v2-connector-nodes.md](v2-connector-nodes.md#http-requests). Studio Web
-  edits this node with its V2 component in every workflow, so it is the HTTP
-  node in V1 workflows too. Never author `Intsvc.HttpExecution` (legacy) or a
+  [v2-connector-nodes.md](v2-connector-nodes.md#http-requests). A service with
+  no connector of its own goes through a `uipath-uipath-http` connection in
+  connector mode. Never author `Intsvc.HttpExecution` (legacy) or a
   connector's own `httpRequest` object for a new node.
 
 Status vocabulary for an IS node in a summary: **executable** (activity, inputs,

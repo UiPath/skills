@@ -316,17 +316,19 @@ For registry-evidence-only tasks, follow the command-first recipe in
      value without a leading `=` is a literal: write `"=vars.<id>"`, and make
      text mixed with variables one `=js:` expression
      (`"=js:'Severity: ' + vars.Var_Severity"`).
-   **The workflow decides V1 or V2 — read its marker first.** A new workflow
-   (`uip maestro bpmn init` writes `<uipath:intsvcActivityConfig version="v2" />`)
-   gets V2 connector nodes: get each from `uip maestro bpmn registry get
-   <type> --connection-id <id> --object-name <obj> [--operation <OP>]
-   --input-details '<json>' --solution-folder <dir>` and paste `Data.V2` as it
-   is, with resource pickers (a Data Fabric folder entity) by name and any
-   value that reads a variable as `=js:<expression>`. An existing workflow
-   without the marker stays V1: author every new connector node from the
-   registry template, never with `--input-details`, and never add the marker.
-   Every HTTP request is `Intsvc.UnifiedHttpRequest` (built the same way, in
-   both kinds of workflow); never author the legacy `Intsvc.HttpExecution`.
+   **Every new connector node is V2, in every workflow.** Get each from
+   `uip maestro bpmn registry get <type> --connection-id <id> --object-name
+   <obj> [--operation <OP>] --input-details '<json>' --solution-folder <dir>`
+   and paste `Data.V2` as it is, with resource pickers (a Data Fabric folder
+   entity) by name and any value that reads a variable as `=js:<expression>`.
+   In an existing workflow without `<uipath:intsvcActivityConfig version="v2" />`
+   the V2 node works as it is: never add the marker there, and leave its
+   existing V1 nodes alone unless the task asks (a V1 trigger or wait faults
+   at run time, so rebuild one as V2 when the task touches it). After
+   `bpmn refresh`, run `uip solution resources refresh` so the connections
+   become solution resources.
+   Every HTTP request is `Intsvc.UnifiedHttpRequest` (built the same way);
+   never author the legacy `Intsvc.HttpExecution`.
    External agents and automations (`Intsvc.AsyncExecution`,
    `Intsvc.AsyncWorkflowExecution`) are V2 elements too. See
    [references/v2-connector-nodes.md](references/v2-connector-nodes.md).

@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""An existing V1 workflow stays V1 when a connector node is added to it.
+"""A connector node added to an existing V1 workflow is V2.
 
 The fixture is a workflow with configured V1 connector nodes and no
-`<uipath:intsvcActivityConfig version="v2" />`; Studio Web keeps editing such a
-workflow with the V1 component, so every node the agent adds must be V1 too.
+`<uipath:intsvcActivityConfig version="v2" />`. Studio Web opens a node that
+declares `activityConfigurationVersion` v2 with the V2 component whatever the
+workflow says, so the new node is V2, and the marker is never added (it would
+make Studio Web read the existing unversioned V1 nodes as V2).
 
 Checks performed:
   1. The process still has no V2 marker.
-  2. No connector node is V2: no `activityConfigurationVersion` v2 and no
-     design-time `activityPropertyConfiguration` in its metadata.
-  3. The original nodes (`Start_Trigger`, `Task_CreateRecord`) are still there.
-  4. A new Data Service `Intsvc.ActivityExecution` reads a record back
-     (object containing `GetEntityRecord`), wired after `Task_CreateRecord`.
+  2. The original nodes (`Start_Trigger`, `Task_CreateRecord`) are still
+     there and still V1.
+  3. A new Data Service `Intsvc.ActivityExecution` reads a record back
+     (object containing `GetEntityRecord`), is V2 (version v2 and design-time
+     `activityPropertyConfiguration`), and is wired after `Task_CreateRecord`.
 """
 
 from __future__ import annotations
@@ -47,8 +49,8 @@ def connector_nodes(root: ET.Element) -> list[ET.Element]:
 
 
 def is_v2(node: ET.Element) -> bool:
-    if context_value(node, "activityConfigurationVersion") == "v2":
-        return True
+    if context_value(node, "activityConfigurationVersion") != "v2":
+        return False
     try:
         metadata = json.loads(context_value(node, "metadata") or "{}")
     except ValueError:
@@ -67,9 +69,13 @@ def main() -> None:
     for original in ("Start_Trigger", "Task_CreateRecord"):
         if original not in ids:
             fail(f"{path}: the original connector node {original} is gone")
-    v2 = [n.attrib.get("id") for n in nodes if is_v2(n)]
-    if v2:
-        fail(f"{path}: V2 connector node(s) {v2} in a V1 workflow")
+    changed = [
+        n.attrib.get("id") for n in nodes
+        if n.attrib.get("id") in ("Start_Trigger", "Task_CreateRecord")
+        and context_value(n, "activityConfigurationVersion") == "v2"
+    ]
+    if changed:
+        fail(f"{path}: existing V1 node(s) {changed} were rewritten as V2; the task asked to keep them as they are")
 
     added = [
         n for n in nodes
@@ -80,13 +86,15 @@ def main() -> None:
         seen = sorted(context_value(n, "objectName") for n in nodes)
         fail(f"{path}: no new Data Service node reads a record back (objects: {seen})")
     new_id = added[0].attrib.get("id")
+    if not is_v2(added[0]):
+        fail(f"{path}: the new node {new_id} is not a V2 element (no activityConfigurationVersion v2 with design-time metadata)")
     flows = [
         f for f in elements(root, "sequenceFlow")
         if f.attrib.get("sourceRef") == "Task_CreateRecord" and f.attrib.get("targetRef") == new_id
     ]
     if not flows:
         fail(f"{path}: {new_id} is not wired after Task_CreateRecord")
-    print(f"OK: {path}: V1 workflow kept V1; added V1 node {new_id} after Task_CreateRecord")
+    print(f"OK: {path}: added V2 node {new_id} after Task_CreateRecord; no marker, V1 nodes kept")
 
 
 if __name__ == "__main__":
