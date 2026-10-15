@@ -69,8 +69,9 @@ def main() -> None:
         if hit:
             hits.append(item)
     recall = len(hits) / len(expected) if expected else 1.0
-    if recall < spec.get("min_recall", 1.0):
-        failures.append(f"recall {recall:.2f} < {spec['min_recall']:.2f}")
+    min_recall = spec.get("min_recall", 1.0)
+    if recall < min_recall:
+        failures.append(f"recall {recall:.2f} < {min_recall:.2f}")
 
     for decoy in spec.get("decoys", []):
         if _decoy_fired(decoy, rows):

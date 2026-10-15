@@ -107,6 +107,17 @@ def test_fails_below_min_recall_and_names_the_miss(tmp_path):
     assert "recall 0.50 < 1.00" in r.stderr
 
 
+def test_min_recall_defaults_to_one(tmp_path):
+    spec_path = _spec(tmp_path)
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    del spec["min_recall"]
+    spec_path.write_text(json.dumps(spec), encoding="utf-8")
+    rows = "| W-D-001 | `LC_TOOL_OVERLAP` | overlap. |\n"
+    r = run(tmp_path, _report(rows), spec_path, _cli(tmp_path))
+    assert r.returncode != 0
+    assert "recall 0.50 < 1.00" in r.stderr
+
+
 def test_rule_cited_only_in_prose_is_a_miss(tmp_path):
     rows = "| W-D-001 | `LC_TOOL_OVERLAP` | overlap. |\n"
     extra = "\nLC_OUTPUT_CLASSIFIER_NO_ENUM was considered.\n"
