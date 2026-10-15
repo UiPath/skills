@@ -82,7 +82,7 @@ def main():
                  f"{name} ({key}); copy spec.resourceBindings into bindings[] and the task inputs")
 
     folder_refs, folder_rows = bound_rows("folderEntityName_folderKey")
-    if folder_refs and not any(b.get("default") == folder_key for b in folder_rows) and folder_key not in folder_refs:
+    if not any(b.get("default") == folder_key for b in folder_rows) and folder_key not in folder_refs:
         sys.exit(f"FAIL: the task's folderEntityName_folderKey is {sorted(folder_refs)}, not the {fixture['folderPath']} "
                  f"folder ({folder_key})")
 

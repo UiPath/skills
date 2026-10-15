@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 CHECKER = Path(__file__).with_name("check_df_picker.py")
-NAME, KEY, FOLDER = "SkillPickerEvalEntity", "937ea830-18c6-f111-bf5b-0022482a97e9", "379fec63-shared"
+NAME, KEY, FOLDER = "SkillPickerEvalEntity", "00000000-0000-4000-8000-00000000e001", "00000000-0000-4000-8000-00000000f001"
 
 
 def binding(bid, key, default, attribute="name", resource="entity"):
@@ -66,6 +66,13 @@ def test_fails_on_another_scope(tmp_path):
     r = run(tmp_path, plan({**QUERY, "entityScope": "tenant"}, BOUND))
     assert r.returncode == 1
     assert "entityScope" in r.stderr + r.stdout
+
+
+def test_fails_without_a_folder_key(tmp_path):
+    query = {k: v for k, v in QUERY.items() if k != "folderEntityName_folderKey"}
+    r = run(tmp_path, plan(query, BOUND))
+    assert r.returncode == 1
+    assert "folderEntityName_folderKey" in r.stderr + r.stdout
 
 
 def test_fails_when_the_folder_key_names_another_folder(tmp_path):
