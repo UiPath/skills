@@ -16,11 +16,13 @@ Run `uip login status --output json`, then `uip maestro case registry pull`, bef
 
 ## Resolve with the CLI first
 
-After the pull, resolve every task in one call:
+After the pull, resolve every task in one call. When the solution exists, run it **from the solution directory** (the folder holding the `.uipx`), so resolve also reads the solution's own projects — it looks for a `.uipx` in the working directory, its parent and its grandparent, never below:
 
 ```bash
-uip maestro case sdd resolve "<SDD_PATH>" --out tasks/registry-resolved.json --output json
+cd "<SOLUTION_DIR>" && uip maestro case sdd resolve "<SDD_PATH>" --out "<PROJECT_ROOT>/tasks/registry-resolved.json" --output json
 ```
+
+`<SDD_PATH>` and `<PROJECT_ROOT>` are absolute paths, or relative to `<SOLUTION_DIR>`; the ledger still lands in `tasks/` beside `sdd.md`. With no solution yet (plan-only runs), run it from the `sdd.md` folder: there are no siblings to find.
 
 It does the part of discovery that has one right answer — which index each task type uses, the exact-name search on the task's portable name, the narrowing by the SDD's folder — and writes the whole Rule 10 ledger, creating `tasks/`. It reads caches only: no tenant, no network. Never hand-author the ledger it writes.
 
@@ -28,10 +30,11 @@ Read two fields of the response:
 
 - `Data.Counts` — `tasks`, `selected`, `ambiguous`, `absent`.
 - `Data.Unresolved[]` — one row per `(name, taskType)` it could not settle, with `reason`, `usages`, and `creatable`. This is the whole of the remaining work.
+- `Data.Scope.siblingsChecked` — `true` when resolve read the solution's projects. A sibling it found is `selected` with `source: "local"` and folder `solution_folder`, and it wins over a same-named tenant entry, which resolve lists in `matches` without selecting. `false` (no solution around the working directory, or a CLI older than `@uipath/maestro-tool` 1.205.0-dev.9328) leaves the per-type `registry search --local` check to do by hand.
 
 | `reason` | What it means | What to do |
 |---|---|---|
-| `absent` | No index entry carries the name | § Procedure step 1's cross-type fallback, then § 3's in-solution sibling check, then the [MUST Confirm gate](#must-confirm-before-placeholder-fallback) |
+| `absent` | No index entry carries the name (and, when `siblingsChecked` is `true`, no project in the solution) | § Procedure step 1's cross-type fallback, then § 3's in-solution sibling check — skipped when `siblingsChecked` is `true` — then the [MUST Confirm gate](#must-confirm-before-placeholder-fallback) |
 | `ambiguous` | Several exact-name entries, and the SDD's folder did not narrow them | Never pick by position — the [MUST Confirm gate](#must-confirm-before-placeholder-fallback), one option per candidate named by its folder; unanswered, `<UNRESOLVED>` |
 
 Edit each outcome into that task's entry in `resolved`. Never re-search a task resolve selected.
