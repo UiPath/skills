@@ -166,9 +166,7 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
     --solution-folder <solution-dir> --output json
 ```
 
-The CLI moves the file out of the body onto the multipart parameter and the
-`<uipath:input name="file" type="file" target="file">` input, as Studio Web
-saves it; the rest of `bodyParameters` stays the request body. Outlook's
+The rest of `bodyParameters` is the request body. Outlook's
 `message.toRecipients` is a comma-separated string, not a Graph array.
 
 ## 2. Paste it
