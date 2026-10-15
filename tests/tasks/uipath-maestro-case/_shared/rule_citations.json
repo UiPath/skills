@@ -157,6 +157,12 @@
     "Empty lookup gate": 2,
     "Resolution audit": 1
   },
+  "references/plugins/tasks/http-request/impl-json.md": {
+    "Runnable resources and sidecars": 1
+  },
+  "references/plugins/tasks/http-request/planning.md": {
+    "Cross-task references": 1
+  },
   "references/plugins/tasks/process/planning.md": {
     "Resolution audit": 1
   },

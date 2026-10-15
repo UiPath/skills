@@ -524,6 +524,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `business-rule` | `plugins/tasks/business-rule/` |
 | `case-management` | `plugins/tasks/case-management/` |
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
+| `http-request` | `plugins/tasks/http-request/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 
