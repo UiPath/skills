@@ -80,7 +80,7 @@ export default casePlan('loan-approval')
 ```bash
 uip maestro case check <Name>.case.ts --source
 uip maestro case compile <Name>.case.ts -o <project>/<plan>
-uip maestro case validate <project>/<plan> --output json
+uip maestro case validate <project>/<plan> --strict --sdd <sdd.md> --output json
 uip solution resources remove <orphan-key> --solution-folder <solution> --output json
 uip solution resources refresh --solution-folder <solution> --output json
 ```
@@ -88,6 +88,15 @@ uip solution resources refresh --solution-folder <solution> --output json
 `check` owns source-level invariants and emits teaching diagnostics. Product
 validation owns the compiled Case contract. Do not repair emitted JSON by hand;
 change the TypeScript source and rebuild.
+
+The build is complete only when `validate --strict` passes. When the request
+supplies an `sdd.md`, add `--sdd <path>`: it audits the plan against every
+stage, task, condition, input, output, and binding the SDD declares. Without
+an SDD, run `--strict` alone. A default-profile `Status: Valid` is not
+completion. For example, a plan missing two required tasks and seven action
+bindings returned `Valid` with `"Suppressed": { "Errors": 173 }`; its
+`Instructions` named the strict command. Run that command and close every
+finding in the source.
 
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
 API workflow, or sub-case; never fabricate a name or folder. A destination's
