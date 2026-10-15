@@ -16,7 +16,7 @@
     {"ids": ["LC_EVAL_JUDGE_FOR_CLOSED_CLASS"], "category": "evals"},
     {"ids": ["LC_EVAL_GROUND_TRUTH_SWAPPED"], "category": "evals"},
     {"ids": ["LC_GUARDRAIL_RECOMMENDED"], "category": "guardrails", "pattern": "pii|personal"},
-    {"ids": ["LC_GUARDRAIL_ACTION_INEFFECTIVE"], "category": "guardrails", "pattern": "\\blog\\b"}
+    {"ids": ["LC_GUARDRAIL_ACTION_INEFFECTIVE"], "category": "guardrails", "pattern": "\\blog(s|ged|ging)?\\b"}
   ],
   "min_recall": 0.6,
   "decoys": [

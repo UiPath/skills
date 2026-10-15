@@ -4,7 +4,7 @@
   "expected": [
     {"ids": ["LC_GUARDRAIL_ACTION_INEFFECTIVE"], "category": "guardrails", "pattern": "PII block on email tool|send_customer_email"},
     {"ids": ["LC_GUARDRAIL_MISAPPLIED"], "category": "guardrails", "pattern": "Prompt injection|prompt_injection"},
-    {"ids": ["LC_GUARDRAIL_RECOMMENDED"], "category": "guardrails", "pattern": "audit|\\blog\\b"}
+    {"ids": ["LC_GUARDRAIL_RECOMMENDED"], "category": "guardrails", "pattern": "audit|\\blog(s|ged|ging)?\\b"}
   ],
   "min_recall": 0.66,
   "decoys": [
