@@ -33,7 +33,7 @@ and therefore exact for this scheme.
 | `testcase_parameters_edit_integration` | HEALTH | `EVFX-PARAMEDIT-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) and `Userid=u1` |
 | `testcase_parameters_lifecycle_e2e` | HEALTH | `EVFX-PARAMLIFE-Login` | Created if absent; `pre_run` clears its parameters |
 | `testcase_parameters_ask_first_integration` | HEALTH | `EVFX-PARAMASK-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) |
-| `perf_scenario_cleanup_smoke` | its own throwaway project | the `EVFX-PERF-*` namespace | `pre_run` creates one `EVFX-PERF-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) with scenarios `EVFX-PERF-OLD` (the agent deletes it) and `EVFX-PERF-KEEP` (must survive), and sweeps orphans older than 6 hours; `post_run` deletes the project |
+| `perf_scenario_cleanup_smoke` | CLAIM | the `EVFX-PERF-*` namespace | `pre_run` creates two per-run scenarios, `EVFX-PERF-<YYYYMMDD-HHMMSS>-<hex>-OLD` (the agent deletes it; name in `old-scenario.txt`) and `-KEEP` (must survive; name in `keep-scenario.txt`), and sweeps `EVFX-PERF-` scenarios stamped more than 6 hours ago; `post_run` deletes whatever this run left |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the

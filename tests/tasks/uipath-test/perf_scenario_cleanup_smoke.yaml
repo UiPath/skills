@@ -2,9 +2,10 @@ task_id: skill-test-perf-scenario-cleanup-smoke
 description: >
   Smoke test: agent uses the uipath-test skill to delete one performance
   (load-test) scenario by name and to read the tenant's remaining
-  virtual-user units with `uip tm perf-scenario licenses get`. pre_run seeds a
-  throwaway `EVFX-PERF-*` project holding two scenarios, EVFX-PERF-OLD (to
-  delete) and EVFX-PERF-KEEP (must survive); post_run deletes the project.
+  virtual-user units with `uip tm perf-scenario licenses get`. pre_run seeds
+  two per-run scenarios in the shared CLAIM project,
+  EVFX-PERF-<STAMP>-OLD (to delete; its name is in old-scenario.txt) and
+  EVFX-PERF-<STAMP>-KEEP (must survive); post_run deletes whatever is left.
   Graded on the tenant, not the reply: OLD is gone and KEEP is still there,
   and the number the agent writes to units.txt equals the live
   RemainingVirtualUserUnits.
@@ -14,27 +15,31 @@ run_limits:
   expected_turns: 8
   max_turns: 20
 
+# Dedicated fixture — see tests/tasks/uipath-test/fixtures/README.md for the
+# EVFX- contract. Two model variants share CLAIM, so each run stamps its own
+# scenario names and writes them to old-scenario.txt / keep-scenario.txt; the
+# graders and post_run read those files, never a name prefix match.
 pre_run:
   - command: |
       python3 - <<'PYEOF'
       import datetime, json, secrets, subprocess, sys
-      PREFIX = "EVFX-PERF-"
+      P, PREFIX = "CLAIM", "EVFX-PERF-"
       now = datetime.datetime.now(datetime.timezone.utc)
 
       def call(*a):
           r = subprocess.run(["uip", *a, "--output", "json"],
                              capture_output=True, text=True)
           try:
-              return json.loads(r.stdout[r.stdout.index("{"):])
+              return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
           except Exception:
               return {}
 
-      # Orphan sweep: a run that died before post_run strands its project.
-      # Only delete projects stamped more than 6 hours ago, so a concurrent
-      # run keeps its own.
-      for p in call("tm", "project", "list", "--filter", PREFIX).get("Data") or []:
-          name = p.get("Name") or ""
-          key = p.get("ProjectKey")
+      # Orphan sweep: a run that died before post_run strands its scenarios.
+      # Only delete ones stamped more than 6 hours ago, so a concurrent run
+      # keeps its own.
+      out = call("tm", "perf-scenario", "list", "--project-key", P, "--search", PREFIX, "--limit", "200")
+      for s in (out.get("Data") or {}).get("Scenarios") or []:
+          name, key = s.get("Name") or "", s.get("ScenarioKey")
           if not key or not name.startswith(PREFIX):
               continue
           try:
@@ -42,39 +47,49 @@ pre_run:
           except ValueError:
               continue
           if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
-              call("tm", "project", "delete", "--project-key", key, "--yes")
+              call("tm", "perf-scenario", "delete", "--scenario-key", key, "--yes")
 
-      key = "EVPF" + secrets.token_hex(2).upper()
-      name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
-      out = call("tm", "project", "create", "--name", name, "--project-key", key)
-      if out.get("Result") != "Success":
-          print(f"SEED FAILED: could not create {name} ({key}): {out}")
-          sys.exit(1)
-      with open("project-key.txt", "w") as f:
-          f.write(key + "\n")
-      for scenario in ("EVFX-PERF-OLD", "EVFX-PERF-KEEP"):
-          out = call("tm", "perf-scenario", "create", "--project-key", key, "--name", scenario)
+      run = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      for role, path in (("OLD", "old-scenario.txt"), ("KEEP", "keep-scenario.txt")):
+          name = f"{run}-{role}"
+          out = call("tm", "perf-scenario", "create", "--project-key", P, "--name", name)
           if out.get("Result") != "Success":
-              print(f"SEED FAILED: could not create scenario {scenario}: {out}")
+              print(f"SEED FAILED: could not create scenario {name} in {P}: {out}")
               sys.exit(1)
-      print(f"SEEDED project {name} with key {key} and 2 scenarios")
+          with open(path, "w") as f:
+              f.write(name + "\n")
+      print(f"SEEDED {run}-OLD and {run}-KEEP in {P}")
       PYEOF
     timeout: 180
 
 post_run:
   - command: |
-      [ -f project-key.txt ] && uip tm project delete \
-        --project-key "$(cat project-key.txt)" --yes --output json || true
+      python3 - <<'PYEOF'
+      import json, os, subprocess
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+          except Exception:
+              return {}
+      for path in ("old-scenario.txt", "keep-scenario.txt"):
+          if not os.path.exists(path):
+              continue
+          name = open(path).read().strip()
+          out = call("tm", "perf-scenario", "list", "--project-key", "CLAIM", "--search", name)
+          for s in (out.get("Data") or {}).get("Scenarios") or []:
+              if s.get("Name") == name and s.get("ScenarioKey"):
+                  call("tm", "perf-scenario", "delete", "--scenario-key", s["ScenarioKey"], "--yes")
+      PYEOF
     timeout: 120
 
 initial_prompt: |
-  The key of my Test Manager project is in project-key.txt in this folder.
+  In my Test Manager project CLAIM there's an old load-test scenario I don't
+  need any more; its name is in old-scenario.txt. Delete it, I approve that.
+  Don't touch any other scenario.
 
-  Delete its old load-test scenario "EVFX-PERF-OLD"; I approve deleting it.
-  Leave every other scenario alone.
-
-  Then find out how many virtual-user units our performance testing licence
-  has left and write just that number to units.txt.
+  Also, how many virtual-user units does our performance testing licence have
+  left? Write just the number to units.txt.
 
 success_criteria:
   - type: command_executed
@@ -94,19 +109,21 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "EVFX-PERF-OLD is gone and EVFX-PERF-KEEP is still in the project"
+    description: "This run's OLD scenario is gone and its KEEP scenario is still in CLAIM"
     command: |
       python3 - <<'PYEOF'
       import json, subprocess, sys
-      key = open("project-key.txt").read().strip()
-      r = subprocess.run(["uip", "tm", "perf-scenario", "list", "--project-key", key,
-                          "--output", "json"], capture_output=True, text=True)
-      out = json.loads(r.stdout[r.stdout.index("{"):])
+      old = open("old-scenario.txt").read().strip()
+      keep = open("keep-scenario.txt").read().strip()
+      run = old[:-len("-OLD")]
+      r = subprocess.run(["uip", "tm", "perf-scenario", "list", "--project-key", "CLAIM",
+                          "--search", run, "--output", "json"], capture_output=True, text=True)
+      out = json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
       if out.get("Result") != "Success":
           print("list failed:", out); sys.exit(1)
       names = [s.get("Name") for s in (out.get("Data") or {}).get("Scenarios") or []]
-      print("scenarios left:", names)
-      sys.exit(0 if "EVFX-PERF-OLD" not in names and "EVFX-PERF-KEEP" in names else 1)
+      print("this run's scenarios left:", names)
+      sys.exit(0 if old not in names and keep in names else 1)
       PYEOF
     timeout: 60
     expected_exit_code: 0
@@ -126,11 +143,10 @@ success_criteria:
     command: |
       python3 - <<'PYEOF'
       import json, re, subprocess, sys
-      key = open("project-key.txt").read().strip()
       got = re.sub(r"[,\s]", "", open("units.txt").read())
-      r = subprocess.run(["uip", "tm", "perf-scenario", "licenses", "get", "--project-key", key,
+      r = subprocess.run(["uip", "tm", "perf-scenario", "licenses", "get", "--project-key", "CLAIM",
                           "--output", "json"], capture_output=True, text=True)
-      want = (json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or {}).get("RemainingVirtualUserUnits")
+      want = (json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1]).get("Data") or {}).get("RemainingVirtualUserUnits")
       print("units.txt:", got, "live:", want)
       sys.exit(0 if want is not None and got == str(want) else 1)
       PYEOF
