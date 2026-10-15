@@ -95,12 +95,13 @@ generated packages to invent the missing live schema.
 
 ## 3. Connector (`Intsvc.*`) enrichment
 
-> With a live connection, author `Intsvc.ActivityExecution`,
-> `Intsvc.EventTrigger` and `Intsvc.WaitForEvent` as V2 elements from
-> `registry get --input-details` instead of filling the template below — see
-> [v2-connector-nodes.md](v2-connector-nodes.md). The rest of this section is
-> how to find the connection and object for either, and the V1 template for an
-> offline draft.
+> In a workflow with `<uipath:intsvcActivityConfig version="v2" />` (every new
+> one), author connector nodes as V2 elements from `registry get
+> --input-details` instead of filling the template below — see
+> [v2-connector-nodes.md](v2-connector-nodes.md). In an existing workflow
+> without the marker, keep using the template below for every new connector
+> node. The rest of this section is how to find the connection and object for
+> either.
 
 For connector **activity** types (`requiresDiscovery: Yes`, e.g.
 `Intsvc.ActivityExecution`), resolve a live connection and object, then enrich.
@@ -670,11 +671,15 @@ package-ready, upload, debug, publish, or deploy deliverable runs it.
   — are **connection binding**, **dynamic schemas**, generated **package
   metadata** (`bindings_v2.json`, `entry-points.json`, `operate.json`,
   `package-descriptor.json`). Do not hand-author any of these (§3).
-- **Connectionless / manual HTTP** (`Intsvc.HttpExecution`, or
-  `Intsvc.UnifiedHttpRequest` when current tooling exposes the unified shape):
-  use when the workflow itself owns the URL, method, payload, and response
-  parsing (no connection). Author `mode="manual"`, `method`, `url`, `headers`,
-  `parameters`, `body` directly from the registry template.
+- **HTTP request** — always `Intsvc.UnifiedHttpRequest`, whether the
+  workflow owns the URL, method, payload and response parsing (`manual`) or the
+  call goes through a connector's connection (`connector`). Build it with
+  `uip maestro bpmn registry get Intsvc.UnifiedHttpRequest --input-details
+  '<request>'` (add `--connection-id` for connector mode) — see
+  [v2-connector-nodes.md](v2-connector-nodes.md#http-requests). Studio Web
+  edits this node with its V2 component in every workflow, so it is the HTTP
+  node in V1 workflows too. Never author `Intsvc.HttpExecution` (legacy) or a
+  connector's own `httpRequest` object for a new node.
 
 Status vocabulary for an IS node in a summary: **executable** (activity, inputs,
 output variable, and downstream mappings present, runtime-verified if a run was
@@ -717,7 +722,7 @@ exact template for any of them with `registry get <type>`.
 | `Orchestrator.StartAgenticProcess[Async]` | `bpmn:callActivity` | activity |
 | `Orchestrator.StartCaseMgmtProcess[Async]` | `bpmn:callActivity` | activity |
 | `Intsvc.ActivityExecution` | `bpmn:sendTask` | activity |
-| `Intsvc.HttpExecution` / `Intsvc.UnifiedHttpRequest` | `bpmn:sendTask` | activity |
+| `Intsvc.UnifiedHttpRequest` (`Intsvc.HttpExecution` is legacy) | `bpmn:sendTask` | activity |
 | `Intsvc.WaitForEvent` | `bpmn:receiveTask`; or its `uipath:event` block on a `bpmn:intermediateCatchEvent` (incoming + outgoing) or a `bpmn:boundaryEvent` (`attachedToRef`, outgoing only), with a bare `<bpmn:messageEventDefinition />` after the flows | event |
 | `Intsvc.EventTrigger` | `bpmn:startEvent` | event |
 | `Intsvc.TimerTrigger` | `bpmn:startEvent` | activity |

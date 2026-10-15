@@ -95,7 +95,9 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
+    BodyShapeError,
     NS,
+    body_object,
     context_inputs,
     fail,
     find_bpmn_file,
@@ -168,9 +170,18 @@ def is_slack_connector_node(el: ET.Element) -> bool:
     instead of matching every ancestor as well.
     """
     context = connector_context(el)
-    if context.get("connectorKey", "").strip().lower() != SLACK_KEY:
-        return False
-    return any(has_type(el, token) for token in ACTIVITY_TYPES)
+    key = context.get("connectorKey", "").strip().lower()
+    if key == SLACK_KEY:
+        return any(has_type(el, token) for token in ACTIVITY_TYPES)
+    # A managed HTTP request through the Slack connection: connector
+    # uipath-uipath-http, with the target connector in its request body.
+    if key == "uipath-uipath-http" and has_type(el, "Intsvc.UnifiedHttpRequest"):
+        try:
+            body = body_object(el)
+        except BodyShapeError:
+            return False
+        return str(body.get("targetConnector", "")).lower() == SLACK_KEY
+    return False
 
 
 def references_emoji_endpoint(el: ET.Element) -> bool:

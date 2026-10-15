@@ -1,29 +1,46 @@
 # V2 connector nodes
 
-Studio Web saves every new BPMN workflow with the V2 (Unified Build)
-connector component: the process carries
-`<uipath:intsvcActivityConfig version="v2" />` and each connector node
-`activityConfigurationVersion: v2`. The V2 properties panel reads only the V2
-shape, so a node authored from the V1 registry template opens in the designer
-with no activity selected and its instance parameters missing, even when it
-runs.
+Studio Web edits a connector node with one of two components, and the
+workflow decides which:
 
-**Author a connector node as V2 whenever a live connection is available.** The
-CLI builds the whole element from the connector's design-time configuration,
-so nothing in it is hand-written. Keep the V1 template (the rest of
-[registry-workflow.md](registry-workflow.md)) only for an offline draft that
-hands enrichment to the CLI.
+- **New workflow → V2.** A workflow Studio Web or `uip maestro bpmn init`
+  creates carries `<uipath:intsvcActivityConfig version="v2" />` in its
+  process `extensionElements`. Every connector node in it is a V2 element
+  from `registry get --input-details` (below). The V2 properties panel reads
+  only the V2 shape; a V1 template node opens with no activity selected.
+- **Existing workflow without the marker → V1, node by node.** A workflow
+  that already has configured connector nodes and no marker stays V1:
+  Studio Web never adds the marker to it, so author every new connector node
+  from the V1 registry template (the rest of
+  [registry-workflow.md](registry-workflow.md)), never with `--input-details`,
+  and do not add the marker. `uip maestro bpmn validate` fails a V2 node in a
+  V1 workflow, and fails a V1-shaped trigger or wait in a V2 workflow (the
+  runtime runs those as V2 and faults with `Value cannot be null.
+  (Parameter 'Connection')`).
+
+Read the marker before adding any connector node. A workflow with the marker
+but no connection available yet (an offline draft) keeps the node as a draft
+for the CLI to finish; do not fall back to the V1 template there.
 
 | Type | V2 element | Notes |
 | --- | --- | --- |
-| `Intsvc.ActivityExecution` | `bpmn:sendTask` | Connector activities, including a connector's own HTTP request object. |
+| `Intsvc.ActivityExecution` | `bpmn:sendTask` | Connector activities. |
+| `Intsvc.UnifiedHttpRequest` | `bpmn:sendTask` | **Every new HTTP request**, manual or through a connector's connection — see [HTTP requests](#http-requests). Studio Web edits it with the V2 component in V1 workflows too, so it is the HTTP node in both. |
 | `Intsvc.EventTrigger` | `bpmn:startEvent` | Its own entry point (`uipath:entryPointId`). |
 | `Intsvc.WaitForEvent` | `bpmn:receiveTask` | Move the `uipath:event` block onto an `intermediateCatchEvent` or `boundaryEvent` host if the process needs one, with a bare `<bpmn:messageEventDefinition />` after the flows. |
+| `Intsvc.AsyncExecution` (external agent) | `bpmn:serviceTask` | Saved as `Intsvc.SyncAgentExecution` or `Intsvc.AsyncAgentExecution`, whichever the connector reports — see [External agents and automations](#external-agents-and-automations). |
+| `Intsvc.AsyncWorkflowExecution` (external automation) | `bpmn:serviceTask` | Saved as `Intsvc.SyncWorkflowExecution` or `Intsvc.AsyncWorkflowExecution`. |
 
-Not V2 connector elements: `Intsvc.UnifiedHttpRequest` and
-`Intsvc.HttpExecution` (connectionless manual HTTP), `Intsvc.TimerTrigger` (no
-connection), and the agent and workflow execution types. `registry get`
-refuses V2 options for them (`<type> has no V2 connector element`).
+Never author `Intsvc.HttpExecution` (legacy HTTP) or a connector's own
+`httpRequest` object for a new node; keep one only where an existing workflow
+already has it. `Intsvc.TimerTrigger` binds no connection and is authored from
+its template in either workflow.
+
+**A value that reads a variable is `=js:<expression>`** — `"=js:vars.Var_Name"`,
+`"=js:'Hello ' + vars.Var_Name"`. Studio Web's V2 component shows `=vars.x` as
+plain text instead of a variable; `registry get` rewrites `=vars.x` to
+`=js:vars.x`, but write `=js:` yourself. `=bindings.<id>` references stay as
+they are.
 
 ## 1. Get the element
 
@@ -35,7 +52,7 @@ for triggers and waits). Then ask for the V2 element:
 ```bash
 uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <ObjectName> \
-    --input-details '{"bodyParameters":{"name":"=vars.Var_Name"},"queryParameters":{"entityScope":"folder","folderEntityName":"<entity>"}}' \
+    --input-details '{"bodyParameters":{"name":"=js:vars.Var_Name"},"queryParameters":{"entityScope":"folder","folderEntityName":"<entity>"}}' \
     --solution-folder <solution-dir> --output json
 
 uip maestro bpmn registry get Intsvc.EventTrigger \
@@ -44,7 +61,9 @@ uip maestro bpmn registry get Intsvc.EventTrigger \
     --solution-folder <solution-dir> --output json
 ```
 
-- `--input-details` takes the node's values, as JSON or `@file.json`:
+- `--input-details` takes the node's values, as JSON or `@file.json` — the
+  same contract as `uip maestro case spec --input-details`
+  ([shape reference](#--input-details-reference)):
   activities `{bodyParameters, queryParameters, pathParameters, filter}`,
   triggers and waits `{eventParameters, queryParameters, pathParameters,
   filter}`. Pass `{}` when there is nothing to set. The field names come from
@@ -71,24 +90,67 @@ uip maestro bpmn registry get Intsvc.EventTrigger \
 `Data.V2` carries `ActivityTypeId`, `ElementXml`, `RootBindings`,
 `Variables` and `Instructions`.
 
+### HTTP requests
+
+```bash
+# Authenticates itself: no connection
+uip maestro bpmn registry get Intsvc.UnifiedHttpRequest \
+    --input-details '{"authentication":"manual","method":"GET","url":"https://api.example.com/items","headers":{"Authorization":"=js:\'Bearer \' + vars.Var_Token"},"query":{"limit":"10"}}' \
+    --output json
+
+# Through a connector's connection: --connection-id names it, the endpoint is relative
+uip maestro bpmn registry get Intsvc.UnifiedHttpRequest --connection-id <connection-id> \
+    --input-details '{"authentication":"connector","method":"GET","url":"/conversations.list","query":{"limit":"5"}}' \
+    --output json
+```
+
+`--input-details` is the request: `authentication` (`manual` or `connector`),
+`method`, `url`, and optional `headers` and `query` objects and a `body`
+(sent for `POST`, `PUT` and `PATCH`). In connector mode the command takes the
+target connector and folder from the connection. The element binds Studio
+Web's implicit connection for a manual request and the target connection for a
+connector one. Its outputs are `code`, `headers` and `body`, plus `Error`.
+
+### External agents and automations
+
+An external agent (CrewAI, Snowflake Cortex, Azure AI Foundry, Salesforce
+Agentforce, Google Vertex, Databricks…) or automation (Power Automate,
+Salesforce flows) is an activity of its connector, listed in Studio Web's
+external-agent and external-automation catalogs:
+
+```bash
+uip maestro bpmn registry get Intsvc.AsyncExecution \
+    --connection-id <id> --object-name <ObjectName> \
+    --input-details '{"bodyParameters":{"prompt":"=js:vars.Var_Question"}}' \
+    --solution-folder <solution-dir> --output json
+```
+
+Use `Intsvc.AsyncWorkflowExecution` for an automation. `Data.V2.ExtensionType`
+is the type the node is saved as: the connector's `executionType` decides sync
+or async, and an async one also carries the event it answers with
+(`operation`, `eventMode`). Take the fields from `uip is resources describe
+<connector> <ObjectName> --connection-id <id> --operation Create`.
+
 ## 2. Paste it
 
 1. Put `ElementXml` in the process and replace its tokens: `{id}`, `{name}`,
    `{incomingEdge}`, `{outgoingEdge}` (a trigger has no incoming edge),
-   `{varId}` and `{errorVarId}`.
+   `{varId}` and `{errorVarId}`. An output other than `response` / `Error`
+   writes `{varId}_<name>` (an HTTP request's `code`, `headers`, `body`).
 2. Add each `RootBindings` line to the process's `<uipath:bindings>`. Binding
    ids are derived from what they bind, so two nodes on the same connection or
    entity return identical lines; add each line once.
 3. Add each `Variables` line to `<uipath:variables>`, with the same `{varId}`
    / `{errorVarId}` / `{id}` replacements.
-4. Add `<uipath:intsvcActivityConfig version="v2" />` once to the process's
-   `extensionElements`.
+4. The process keeps its `<uipath:intsvcActivityConfig version="v2" />`
+   (`bpmn init` writes it; add it yourself only to a new workflow that has no
+   connector nodes yet, never to an existing V1 one).
 
 Do not edit the element's `uipath:context` or its `metadata`: they are the
 connector's design-time configuration, and the designer reads them back as
 they are. To change a value, run `registry get` again with new
-`--input-details`. A body value that reads a variable (`"=vars.<id>"`) goes in
-`bodyParameters`, never into the pasted XML.
+`--input-details`. A body value that reads a variable (`"=js:vars.<id>"`) goes
+in `bodyParameters`, never into the pasted XML.
 
 V2 differs from the V1 template in ways that matter at run time, so never mix
 the two shapes in one node:
@@ -140,3 +202,25 @@ These need a CLI that has `registry get --input-details` and
 `bpmn debug --entry-point`. On an older CLI (`unknown option
 '--input-details'`), author the V1 template and say in the notes that the
 node is V1.
+
+## `--input-details` reference
+
+The contract is the CLI's (`packages/maestro-sdk/docs/connector-input-details.md`
+in the CLI repo) and is shared with `uip maestro case spec`:
+
+| Key | Activities | Triggers and waits | Lands in |
+| --- | --- | --- | --- |
+| `bodyParameters` | yes | — | the one `target="body"` input; dotted keys nest (`message.subject`) |
+| `queryParameters` | yes | yes | the `queryParameters` input (activity) or `body.parameters` (trigger, wait) |
+| `pathParameters` | yes | yes | the `pathParameters` input, or `body.parameters` |
+| `eventParameters` | — | yes | `body.queryParams` |
+| `filter` | yes | yes | a FilterTree the design-time client compiles into the connector's filter field (activity) or `body.filters.expression` (trigger, wait) |
+
+A FilterTree is `{"groupOperator":"And","filters":[{"id":"<field>","operator":"<operator>","value":{"isLiteral":true,"rawString":"\"x\"","value":"x"}}],"groups":[]}`;
+take the field names and operators from the spec's `filter.fields`, emit
+`"And"` even for one condition, and never put a raw CEQL or JMESPath string in
+`queryParameters` for a field the connector filters with (`where`,
+`queryExpression`) — the designer re-renders the filter only from the tree.
+`{}` is refused. Connection identity (`connectionId`, `folderKey`, method,
+path) never goes in `--input-details`; it comes from `--connection-id` and the
+catalog, except for an HTTP request (above).

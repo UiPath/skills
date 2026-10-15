@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" exporter="UiPath Maestro (https://uipath.com)" exporterVersion="1.205.0">
+  <bpmn:process id="Process_1" name="OrdersV1">
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <uipath:inputOutput id="Var_TriggerEvent" name="TriggerEvent" type="custom" elementId="Start_Trigger" />
+        <uipath:inputOutput id="Var_CreateResponse" name="CreateResponse" type="jsonSchema" elementId="Task_CreateRecord" />
+      </uipath:variables>
+      <uipath:bindings version="v1">
+        <uipath:binding id="Binding_DfConn" resource="Connection" propertyAttribute="ConnectionId" resourceKey="__DF_CONNECTION_ID__" default="__DF_CONNECTION_ID__" />
+        <uipath:binding id="Binding_DfConnFolder" resource="Connection" propertyAttribute="folderKey" resourceKey="__DF_CONNECTION_ID__" default="__DF_FOLDER_KEY__" />
+      </uipath:bindings>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_start" name="core.trigger.manual">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="2b69d728-f895-4510-b98c-b6e1f514a354" />
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Manual</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:startEvent id="Start_Trigger" name="Record Created (__ENTITY_NAME__)">
+      <bpmn:extensionElements>
+        <uipath:event version="v1">
+          <uipath:type value="Intsvc.EventTrigger" version="v1" />
+          <uipath:context>
+            <uipath:input name="connectorKey" type="string" value="uipath-uipath-dataservice" />
+            <uipath:input name="connectionId" type="string" value="=bindings.Binding_DfConn" />
+            <uipath:input name="folderId" type="string" value="" />
+            <uipath:input name="folderPath" type="string" value="rahul.katikineni@uipath.com&apos;s workspace" />
+            <uipath:input name="folderKey" type="string" value="__DF_FOLDER_KEY__" />
+            <uipath:input name="operation" type="string" value="CREATED_V3" />
+            <uipath:input name="objectName" type="string" value="EntityTriggers_V3" />
+          </uipath:context>
+          <uipath:input name="body" type="json" target="body"><![CDATA[{"queryParams": {"entityScope": "folder", "folderEntityName": "__ENTITY_NAME__", "folderEntityName_folderKey": "__ENTITY_FOLDER_KEY__"}}]]></uipath:input>
+          <uipath:output name="result" type="custom" source="." var="Var_TriggerEvent" />
+        </uipath:event>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_Trigger</bpmn:outgoing>
+      <bpmn:messageEventDefinition />
+    </bpmn:startEvent>
+    <bpmn:sendTask id="Task_CreateRecord" name="Create Entity Record (Preview) - __ENTITY_NAME__">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.ActivityExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="connectorKey" type="string" value="uipath-uipath-dataservice" />
+            <uipath:input name="connection" type="string" value="=bindings.Binding_DfConn" />
+            <uipath:input name="folderKey" type="string" value="=bindings.Binding_DfConnFolder" />
+            <uipath:input name="operation" type="string" value="Create" />
+            <uipath:input name="objectName" type="string" value="CreateEntityRecord_V3" />
+            <uipath:input name="method" type="string" value="POST" />
+            <uipath:input name="path" type="string" value="/v3/CreateEntityRecord/insert" />
+            <uipath:input name="activityConfigurationVersion" type="string" value="v1" />
+            <uipath:input name="metadata" type="json"><![CDATA[{}]]></uipath:input>
+          </uipath:context>
+          <uipath:input name="entityScope" type="string" target="query" value="folder" />
+          <uipath:input name="folderEntityName" type="string" target="query" value="__ENTITY_NAME__" />
+          <uipath:input name="folderEntityName_folderKey" type="string" target="query" value="__ENTITY_FOLDER_KEY__" />
+          <uipath:input name="body" type="json" target="body"><![CDATA[{"name": "Created by OrdersV1"}]]></uipath:input>
+          <uipath:output name="response" type="jsonSchema" source="=response" var="Var_CreateResponse" />
+        </uipath:activity>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_Manual</bpmn:incoming>
+      <bpmn:incoming>Flow_Trigger</bpmn:incoming>
+      <bpmn:outgoing>Flow_End</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="End_1" name="Record created">
+      <bpmn:incoming>Flow_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_Manual" sourceRef="Event_start" targetRef="Task_CreateRecord" />
+    <bpmn:sequenceFlow id="Flow_Trigger" sourceRef="Start_Trigger" targetRef="Task_CreateRecord" />
+    <bpmn:sequenceFlow id="Flow_End" sourceRef="Task_CreateRecord" targetRef="End_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="S_End_1" bpmnElement="End_1"><dc:Bounds x="488" y="214" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start"><dc:Bounds x="252" y="286.66666666666663" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Start_Trigger" bpmnElement="Start_Trigger"><dc:Bounds x="252" y="200.66666666666666" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_Task_CreateRecord" bpmnElement="Task_CreateRecord"><dc:Bounds x="338" y="192" width="100" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="E_Flow_End" bpmnElement="Flow_End"><di:waypoint x="438" y="232" /><di:waypoint x="488" y="232" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Manual" bpmnElement="Flow_Manual"><di:waypoint x="288" y="304.66666666666663" /><di:waypoint x="312" y="304.66666666666663" /><di:waypoint x="312" y="232" /><di:waypoint x="338" y="232" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="E_Flow_Trigger" bpmnElement="Flow_Trigger"><di:waypoint x="288" y="218.66666666666666" /><di:waypoint x="313" y="218.66666666666666" /><di:waypoint x="313" y="232" /><di:waypoint x="338" y="232" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

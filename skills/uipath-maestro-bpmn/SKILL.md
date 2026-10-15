@@ -573,15 +573,19 @@ Draft mode only.
      value without a leading `=` is a literal: write `"=vars.<id>"`, and make
      text mixed with variables one `=js:` expression
      (`"=js:'Severity: ' + vars.Var_Severity"`).
-   **Connector nodes are V2 when a connection is live.** For
-   `Intsvc.ActivityExecution`, `Intsvc.EventTrigger` and `Intsvc.WaitForEvent`
-   with a resolved connection, get the element from `uip maestro bpmn registry
-   get <type> --connection-id <id> --object-name <obj> [--operation <OP>]
-   --input-details '<json>' --solution-folder <dir>` and paste `Data.V2` as
-   it is, with `<uipath:intsvcActivityConfig version="v2" />` on the process;
-   resource pickers (a Data Fabric folder entity) go in `--input-details` by
-   name. Studio Web's designer reads only that shape. The V1 template and the
-   rules above are for an offline draft. See
+   **The workflow decides V1 or V2 — read its marker first.** A new workflow
+   (`uip maestro bpmn init` writes `<uipath:intsvcActivityConfig version="v2" />`)
+   gets V2 connector nodes: get each from `uip maestro bpmn registry get
+   <type> --connection-id <id> --object-name <obj> [--operation <OP>]
+   --input-details '<json>' --solution-folder <dir>` and paste `Data.V2` as it
+   is, with resource pickers (a Data Fabric folder entity) by name and any
+   value that reads a variable as `=js:<expression>`. An existing workflow
+   without the marker stays V1: author every new connector node from the
+   registry template, never with `--input-details`, and never add the marker.
+   Every HTTP request is `Intsvc.UnifiedHttpRequest` (built the same way, in
+   both kinds of workflow); never author the legacy `Intsvc.HttpExecution`.
+   External agents and automations (`Intsvc.AsyncExecution`,
+   `Intsvc.AsyncWorkflowExecution`) are V2 elements too. See
    [references/v2-connector-nodes.md](references/v2-connector-nodes.md).
    For an Integration Service draft or boundary handoff the user asked for (a
    request that only says to validate is not one), emit **only** the
