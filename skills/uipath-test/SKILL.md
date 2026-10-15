@@ -1,6 +1,6 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, cases, sets, executions; run every test in an uploaded package for CI (tm run --type package, replaces uipcli test run); generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, cases, sets, executions; run every test in an uploaded package from CI, like uipcli test run; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
@@ -11,7 +11,7 @@ Manage UiPath Test Manager projects, requirements, test cases, test sets, execut
 
 ## Use For
 
-Test Manager CRUD; execution analysis, coverage, regression trends, failure rates, go/no-go summaries; failed-run triage; flaky-versus-regression analysis; failure evidence; and shareable QA-engineer, developer, or release-manager reports.
+Test Manager CRUD; CI runs of every test in an uploaded package; execution analysis, coverage, regression trends, failure rates, go/no-go summaries; failed-run triage; flaky-versus-regression analysis; failure evidence; and shareable QA-engineer, developer, or release-manager reports.
 
 ## Concepts and CLI
 
@@ -54,10 +54,10 @@ Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcom
 
 ### Run an uploaded package (CI)
 
-`uip tm run --type package --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-path <FOLDER_PATH> --project-key <PROJECT_KEY> --output json` runs every test in a package already uploaded to Orchestrator: hidden one-off test set, run, wait, re-run failures (`--max-retries <n>`), report (`--format junit|uipath`, `--result-path <FILE_OR_DIR>`). Pack and upload first with `uip rpa pack` / `uip or packages upload`.
+`uip tm run --type package --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-path <FOLDER_PATH> --project-key <PROJECT_KEY> --output json` runs every test in a package already uploaded to Orchestrator, re-runs failures, and writes a report. Pack and upload first with `uip rpa pack` / `uip or packages upload`.
 
-- `--package-version 1.0` runs the latest `1.0.x` patch. An exact version must be the latest patch; an older one exits 3.
-- Exit 0: all passed. Exit 1 with `RunPackageTestsFailed` or `RunPackageCancelled`: a test result, see Rule 10(c); any other exit-1 `Code` is a real failure. Exit 2: login or permission. Exit 3: bad option or input, nothing created. Exit 4: timeout; the execution may still be running and `Data.OutputPath` holds a partial report with unfinished tests marked skipped. Report the timeout; never count skipped tests as passed.
+- Get `<VERSION>` from `uip or packages versions <PACKAGE_NAME> --folder-path <FOLDER_PATH> --output json`. An app version (`1.0`) runs its latest `1.0.x` patch; an exact version must be the latest patch, and an older one exits 3 with nothing created.
+- Exit 1 with `RunPackageTestsFailed` or `RunPackageCancelled` is a test result: report it, see Rule 10(c). Exit 4 is a timeout: the execution may still be running and `Data.OutputPath` holds a partial report with unfinished tests marked skipped. Report the timeout; never count skipped tests as passed. Every other non-zero exit stops (Rule 10).
 - `--input-path` names that no test declares are listed in `Data.IgnoredInputs`; tell the user (usually a typo).
 
 ### Logs, reports, attachments, and results

@@ -89,7 +89,7 @@ success_criteria:
   - type: command_executed
     description: "One complete `tm run --type package` command: package, folder, project, one retry"
     tool_name: "Bash"
-    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--type[\s=]+package\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-name\s+["\x27]?Testcases\.with\.parameters)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-version\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--folder-(?:path\s+["\x27]?uipath-test-folder-feed|key\s+\S))(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-(?:key|id)\s+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--max-retries[\s=]+1\b)uip\s+tm\s+run\b'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--type[\s=]+package\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-name[\s=]+["\x27]?Testcases\.with\.parameters)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-version[\s=]+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--folder-(?:path[\s=]+["\x27]?uipath-test-folder-feed|key[\s=]+\S))(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-(?:key|id)[\s=]+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--max-retries[\s=]+1\b)uip\s+tm\s+run\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
