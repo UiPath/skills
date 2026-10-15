@@ -43,6 +43,10 @@ OWNERS = {
     "PARAMEDIT": "testcase_parameters_edit_integration.yaml",
     "PARAMLIFE": "testcase_parameters_lifecycle_e2e.yaml",
     "PARAMASK": "testcase_parameters_ask_first_integration.yaml",
+    "AIGEN": "requirement_ai_generate_smoke.yaml",
+    "AIEVAL": "requirement_ai_evaluate_smoke.yaml",
+    "AIDEL": "requirement_ai_obsolete_smoke.yaml",
+    "AIBLOCK": "requirement_ai_blocked_inputs_smoke.yaml",
 }
 
 
