@@ -45,6 +45,36 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 
 ---
 
+## Centralized Guardrail Scope Not Inspecting Files
+
+**Symptom:** A tenant AI Trust Layer policy sets a guardrail's detection scope to `Files` or `Both`, but attachments pass through unflagged while text violations are still caught.
+
+**Causes:**
+1. Value casing — `files` / `both` is not a recognised option and behaves as `Text`
+2. The key is absent from the deployed product template (only `pii-detection-scope` exists there), so the field was dropped on save
+3. The file reached the model as a URL, storage location, or provider file id — the centralized check inspects only files carried inline in the request and logs references without reading them
+4. Caps exceeded (5 files, 5 MB per text file, 10 MB of binaries in total) or a type the service cannot read, so the file was skipped
+5. The guardrail is text-only at the centralized layer (intellectual property, sentiment, BYO rules)
+6. File inspection is not enabled for that guardrail in this environment — the centralized evaluation then degrades to text for `Both` and skips a `Files` scope
+
+**Investigation:**
+1. Read the deployed policy's scope keys:
+   ```bash
+   uip gov aops-policy deployed-policy get \
+     "$LICENSE_TYPE" AITrustLayer "$TENANT_ID" \
+     --output json
+   ```
+   Look at `pii-detection-scope`, `prompt-injection-detection-scope`, `harmful-content-detection-scope`, `llm-as-judge-detection-scope`.
+2. Confirm the key exists in the live template:
+   ```bash
+   uip gov aops-policy template get AITrustLayer --output-form-data "$SESSION_DIR/aitl-form-data.json" --output json
+   ```
+3. Check how the agent sends the file: the UiPath agent runtime inlines attachments; a custom caller passing URLs or file ids is not covered.
+
+**Fix:** Cause 1 → rewrite the value as `Text` / `Files` / `Both` and `update` (full replacement). Cause 2 → the per-guardrail scope is not available on this template; only PII can be scoped. Cause 3 → have the caller inline the file, or rely on an agent-side guardrail with its own `detectionScope` (`uipath-agents` skill), which reads Orchestrator attachments directly. Cause 4/5/6 → expected behaviour; the agent-side guardrail is the independent second layer.
+
+---
+
 ## Wrong Policy Applied (License-Type Mismatch)
 
 **Symptom:** Tenant has a policy deployed but the wrong rules are enforced — or a policy has no effect on certain users.

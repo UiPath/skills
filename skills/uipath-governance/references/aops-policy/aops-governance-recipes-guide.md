@@ -195,6 +195,24 @@ Field names below reflect the doc's example JSON; the live `form-template.json` 
 
 ---
 
+## AI Trust Layer recipes
+
+### T1 — Centralized guardrail detection scope (text vs files)
+
+- **Intent keywords:** "scan attachments with the PII guardrail for everyone", "centralized guardrails should check files", "guardrail detection scope", "Text only / Files only / Text and files", "tenant-wide guardrail on uploaded documents"
+- **Product:** `AITrustLayer`
+- **Fields:** one select per guardrail, next to that guardrail's `*-execution-stage` key — `pii-detection-scope`, `prompt-injection-detection-scope`, `harmful-content-detection-scope`, `llm-as-judge-detection-scope`. Each value is exactly `Text`, `Files`, or `Both` (default `Text`). Locale labels: "Detection scope" with options "Text only" / "Files only" / "Text and files" (the PII select may still show "Text" / "Files (Preview)" / "Both").
+- **Notes:**
+  1. Values are case-sensitive: `files` or `both` is not recognised and behaves as `Text`.
+  2. Only keys present in the tenant's bootstrapped `form-data.json` exist. A template that predates per-guardrail scopes carries only `pii-detection-scope` — do not add the other three keys by hand (Cloud template only; other deployment types keep PII only).
+  3. "Also cover files" means `Both`, not `Files`: `Files` turns the text evaluation off for that guardrail.
+  4. The policy governs the centralized LLM Gateway evaluation only. An agent's own guardrails keep their own `detectionScope` (authored with the `uipath-agents` skill) — both layers run and either can block; neither narrows the other.
+  5. The gateway inspects files carried inline in the model request (5 files, 5 MB per text file, 10 MB of binaries in total) and downloads nothing from URLs or storage references; a `Files` scope with no inline file evaluates nothing. Intellectual property and sentiment stay text-only, and BYO guardrails have no file support.
+  6. `update` is a full replacement — pass every field again.
+  7. Verify: `uip gov aops-policy deployed-policy get <LICENSE_TYPE> AITrustLayer <TENANT_ID> --output json` and read the four keys.
+
+---
+
 ## Deployment recipe — precedence and narrowest scope
 
 When the user asks for a scope-limited rule:
@@ -215,6 +233,7 @@ Order of effective resolution: **User > Group > Tenant > (no policy)**. See [aop
 - Do NOT deploy an Assistant-product policy to a license type that doesn't include Assistant (e.g. `Unattended Robot` → Robot only). See [license-type list output](./aops-policy-commands.md#uip-gov-aops-policy-license-type-list) for the product coverage per license type.
 - Do NOT pair "block Marketplace widget" with "allow these specific Marketplace items" — the toggle is all-or-nothing. Re-host vetted automations in a controlled feed instead.
 - Do NOT assume enforcing a Studio policy activates the default Workflow Analyzer rule set. Governance turns EVERY built-in rule off by default — you must enumerate each rule in `Analyzer.EmbeddedRulesConfig.Rules` with `IsEnabled: true`. An empty `Rules` array = zero analyzer enforcement.
+- Do NOT write detection-scope values in lowercase, and do NOT invent `*-detection-scope` keys the bootstrapped `form-data.json` does not contain — the template is the truth, and an unknown value behaves as `Text`.
 - Do NOT deploy a cloud policy expecting it to apply to clients that aren't Interactively Signed-In to Orchestrator. Unattended / service-account Studio or Assistant installs ignore cloud policies — the user must use Interactive Sign-In.
 
 ---
@@ -224,3 +243,4 @@ Order of effective resolution: **User > Group > Tenant > (no policy)**. See [aop
 - [configure-aops-policy-data-guide.md](./configure-aops-policy-data-guide.md) — Mode A auto-fill consumes these recipes as priors before general locale grep.
 - [aops-policy-deploy-guide.md](./aops-policy-deploy-guide.md) — user / group / tenant precedence and license-type compatibility.
 - [aops-policy-commands.md — license-type list](./aops-policy-commands.md#uip-gov-aops-policy-license-type-list) — authoritative mapping of license type `name` → products.
+- [failure-modes.md — Centralized Guardrail Scope Not Inspecting Files](../diagnose/failure-modes.md#centralized-guardrail-scope-not-inspecting-files) — when a `Files` / `Both` detection scope flags nothing.
