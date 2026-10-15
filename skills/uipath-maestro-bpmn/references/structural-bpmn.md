@@ -72,10 +72,9 @@ The `uipath:` namespace URI is exactly `http://uipath.org/schema/bpmn`. All
 (`uipath:activity`, `uipath:variables`, `uipath:loopCharacteristics`, …).
 
 Every `uipath:activity` / `uipath:event` / `uipath:mapping` carries its node
-type as a **child** element — `<uipath:type value="<Type>" version="v1" />`,
-`v2` for `Orchestrator.StartAgentJob` — never as a `type=` attribute on the
-wrapper. This holds both for templated nodes and for any shell you author or
-preserve by hand.
+type as a **child** element — `<uipath:type value="<Type>" version="<version>" />`
+(SKILL.md rule 6) — never as a `type=` attribute on the wrapper. This holds
+both for templated nodes and for any shell you author or preserve by hand.
 
 XML comments must not contain `--` (double-hyphen): it is invalid XML and the
 file will fail to parse. Never paste CLI commands or flags
@@ -614,10 +613,9 @@ unsupported for generation until current tooling confirms them.
   a file legitimately needs one, reproduce the shape (with synthetic, public-safe
   contents) rather than inventing a new one.
   - **Typed activity/event shells always use the lowercase `<uipath:activity>` /
-    `<uipath:event>` wrapper with a `<uipath:type value="<Type>" version="v1" />`
-    child** (`v2` for `Orchestrator.StartAgentJob`) — including types not
-    served by the live registry (e.g.
-    `Maestro.CasePlanScheduler`, `Maestro.CaseManagerGuardrails`,
+    `<uipath:event>` wrapper with a `<uipath:type value="<Type>" version="<version>" />`
+    child** (SKILL.md rule 6; `v1` for types the live registry does not serve,
+    e.g. `Maestro.CasePlanScheduler`, `Maestro.CaseManagerGuardrails`,
     `Maestro.CaseRulesEvaluator`). Do **not** substitute the capital-`A`
     `<uipath:Activity>` element for a typed shell.
   - The capital-`A` `<uipath:Activity>` element is a **separate** generic

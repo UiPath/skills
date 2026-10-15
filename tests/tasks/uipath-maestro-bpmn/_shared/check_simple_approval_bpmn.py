@@ -96,6 +96,14 @@ def variables_mapping(element: ET.Element) -> ET.Element:
     return mapping
 
 
+def start_agent_jobs(root: ET.Element) -> list[ET.Element]:
+    return [
+        task
+        for task in elements(root, "serviceTask")
+        if has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob", version="v2")
+    ]
+
+
 def main() -> None:
     path, root = parse_bpmn("ExpenseApprovalBpmn")
     bpmn_path = Path(path)
@@ -111,12 +119,7 @@ def main() -> None:
     if project.get("ProjectType") != "ProcessOrchestration":
         fail("project.uiproj ProjectType must be ProcessOrchestration")
 
-    agent_jobs = [
-        task
-        for task in elements(root, "serviceTask")
-        if has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob", version="v2")
-    ]
-    if not agent_jobs:
+    if not start_agent_jobs(root):
         fail("missing bpmn:serviceTask with Orchestrator.StartAgentJob v2 uipath:activity shell")
 
     queue_sends = [

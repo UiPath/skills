@@ -45,6 +45,14 @@ def variable_ids(root: ET.Element) -> set[str]:
     return ids
 
 
+def start_agent_jobs(root: ET.Element) -> list[ET.Element]:
+    return [
+        t
+        for t in elements(root, "serviceTask")
+        if has_typed_uipath_extension(t, "activity", TYPE_TOKEN, version=TYPE_VERSION)
+    ]
+
+
 def main() -> None:
     path, root = parse_bpmn("ApproverCountAgent")
 
@@ -53,11 +61,7 @@ def main() -> None:
     if not elements(root, "endEvent"):
         fail("no end event")
 
-    agent_tasks = [
-        t
-        for t in elements(root, "serviceTask")
-        if has_typed_uipath_extension(t, "activity", TYPE_TOKEN, version=TYPE_VERSION)
-    ]
+    agent_tasks = start_agent_jobs(root)
     if not agent_tasks:
         fail(
             f"missing bpmn:serviceTask with a {TYPE_TOKEN} uipath:type "

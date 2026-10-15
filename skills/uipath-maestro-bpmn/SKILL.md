@@ -58,9 +58,9 @@ do not add missing attributes (e.g. `type="json" target="bodyField"` on an
 existing `uipath:input`) to elements the edit does not target — on untouched
 neighbors only wiring (`bpmn:incoming`/`bpmn:outgoing`) may change.
 Exception: `validate` errors on a payload with a `type` attribute or outside
-`<bpmn:extensionElements>`, and on an `Orchestrator.StartAgentJob` that binds
-`name`/`folderPath` without type version `v2`. Rewrite those payloads per rule
-6 and name each in the summary.
+`<bpmn:extensionElements>`, and on an `Orchestrator.StartAgentJob` whose type
+version is not `v2` and whose `releaseKey` or `folderId` has no value. Rewrite
+those payloads per rule 6 and name each in the summary.
 
 For an existing ScriptTask, preserve its mapping discriminator and
 `uipath:scriptVersion`, and do not normalize a working brownfield node merely
@@ -528,8 +528,10 @@ and honestly surfaced to the user as gaps when asked.
    `<uipath:type value="<Type>" version="<version>" />`. For a template with
    `type` on the wrapper, remove the attribute, add the child, leave the
    wrapper's own `version`, and wrap the payload in `<bpmn:extensionElements>`
-   if it has none; this overrides paste-as-is in steps 2 and 3.
-   `Orchestrator.StartAgentJob` takes type version `v2`.
+   if it has none; this overrides paste-as-is in steps 2 and 3. Take
+   `<version>` from the template's `uipath:type`, else from
+   `uip maestro bpmn registry get <Type>`. `Orchestrator.StartAgentJob` takes
+   `v2`, binds `name`/`folderPath`, and drops `releaseKey`/`folderId`.
    Event extension types (`Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,
    `Maestro.ReceiveMessageEvent`, `Maestro.SendMessageEvent`) must use
    `<uipath:event>`, including when the BPMN host is task-like such as
