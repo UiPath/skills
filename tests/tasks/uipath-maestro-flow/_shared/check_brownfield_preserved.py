@@ -15,7 +15,7 @@ node.
 
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py \\
-        --original $TASK_DIR/fixture/<Sol>/<Project> --project <Sol>/<Project> \\
+        --original $REFERENCE_DIR/brownfield/fixture/<Sol>/<Project> --project <Sol>/<Project> \\
         [--changed-node ID ...] [--removed-edge SRC:PORT>TGT:PORT ...] \\
         [--changed-agent UUID ...] [--aspect graph|layout]
 
