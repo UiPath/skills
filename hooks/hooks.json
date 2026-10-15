@@ -34,12 +34,26 @@
         ]
       },
       {
-        "matcher": "Edit|MultiEdit|Write",
+        "matcher": "Edit|MultiEdit|Write|Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nexit $?\n: <<'POLYEOF' #> > $null\nif (Get-Command node -ErrorAction SilentlyContinue) { & node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude }\nexit 0\nPOLYEOF\n",
-            "async": true
+            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"\nexit $?\n: <<'POLYEOF' #> > $null\nif (-not (Get-Command node -ErrorAction SilentlyContinue)) { exit 0 }\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "async": true,
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"\nexit $?\n: <<'POLYEOF' #> > $null\nif (-not (Get-Command node -ErrorAction SilentlyContinue)) { exit 0 }\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "async": true,
+            "timeout": 10
           }
         ]
       }
@@ -65,8 +79,9 @@
           },
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nexit $?\n: <<'POLYEOF' #> > $null\nif (Get-Command node -ErrorAction SilentlyContinue) { & node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude }\nexit 0\nPOLYEOF\n",
-            "async": true
+            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"\nexit $?\n: <<'POLYEOF' #> > $null\nif (-not (Get-Command node -ErrorAction SilentlyContinue)) { exit 0 }\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "async": true,
+            "timeout": 10
           }
         ]
       }
@@ -81,8 +96,9 @@
           },
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nexit $?\n: <<'POLYEOF' #> > $null\nif (Get-Command node -ErrorAction SilentlyContinue) { & node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude }\nexit 0\nPOLYEOF\n",
-            "async": true
+            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"\nexit $?\n: <<'POLYEOF' #> > $null\nif (-not (Get-Command node -ErrorAction SilentlyContinue)) { exit 0 }\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "async": true,
+            "timeout": 10
           }
         ]
       }
@@ -92,8 +108,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nexit $?\n: <<'POLYEOF' #> > $null\nif (Get-Command node -ErrorAction SilentlyContinue) { & node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude }\nexit 0\nPOLYEOF\n",
-            "async": true
+            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"\nexit $?\n: <<'POLYEOF' #> > $null\nif (-not (Get-Command node -ErrorAction SilentlyContinue)) { exit 0 }\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "async": true,
+            "timeout": 10
           }
         ]
       }
@@ -104,8 +121,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude\nexit $?\n: <<'POLYEOF' #> > $null\nif (Get-Command node -ErrorAction SilentlyContinue) { & node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\" --agent claude }\nexit 0\nPOLYEOF\n",
-            "async": true
+            "command": "echo `# <#` >/dev/null\ncommand -v node >/dev/null 2>&1 || exit 0\nnode \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"\nexit $?\n: <<'POLYEOF' #> > $null\nif (-not (Get-Command node -ErrorAction SilentlyContinue)) { exit 0 }\n& node \"${CLAUDE_PLUGIN_ROOT}/hooks/flow-diff-hook.mjs\"\nif ($null -eq $LASTEXITCODE) { exit 1 } else { exit $LASTEXITCODE }\nPOLYEOF\n",
+            "async": true,
+            "timeout": 10
           }
         ]
       }
