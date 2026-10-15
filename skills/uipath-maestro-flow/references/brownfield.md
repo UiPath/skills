@@ -89,6 +89,11 @@ A node type the SDK has no factory for still round-trips: it comes back as
 file supplied, so the node keeps its type, its version and its inputs. Leave it
 alone unless the task asks you to change it — and if you do, edit its `inputs`,
 not the hoisted `…Definition` const, which is the platform's own manifest.
+When that definition declares several exits and every one is wired (for
+example `core.logic.agentic-switch`: one `case-<id>` exit per choice in
+`inputs.criteria`, plus `default`), the node comes back as
+`.stepSwitch('<id>', rawNode(…), [{ value: 'case-returns', body: … }, …])`:
+one arm per exit, each arm's `value` being its port.
 
 `mock()` in decompiled source therefore means the flow really contains a
 placeholder node (`core.logic.mock`). The one case that still degrades is a node
