@@ -171,6 +171,7 @@ Selectors are ranked by attribute stability. When reviewing, assess which tier t
 | `SecureString` used for all password variables | Critical | Workflow Analyzer rule ST-SEC-007, ST-SEC-008 |
 | No `SecureString` converted to plain `String` | Warning | Workflow Analyzer rule ST-SEC-009 |
 | Credentials retrieved from Orchestrator assets or Credential Store (not hardcoded) | Critical | Grep for `Get Credential` vs hardcoded strings |
+| Third-party systems reached through an Integration Service connection, not a hand-built authenticated call | Warning | Grep for `HttpClient` / `HTTP Request` whose target is a vendor host and whose headers carry a key or bearer token. **A `Credential` asset does not clear this** — it keeps the secret safe, not the integration managed. Passing the row above and failing this one is the common shape. Raise to **Critical** when a catalog connector exists for that vendor (`uip is connectors list`). Fix: use the connector, or build one (`uip is connectors builder`) when the catalog has none and the API is REST+JSON |
 | No sensitive data in Log Messages | Warning | Check log message content |
 | No PII in queue item specific data (or encrypted) | Warning | Check queue item creation patterns |
 

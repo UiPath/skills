@@ -9,9 +9,11 @@ Use `core.action.http.v2` for every HTTP request. `core.action.http` (v1) is dep
 | Mode | Use when | Walkthrough |
 | --- | --- | --- |
 | **Connector** | The target system has an IS connector and authentication uses an existing IS connection (OAuth/API key). | [impl-connector.md](impl-connector.md) |
-| **Manual** | No connector exists, the API is public/no-auth, or quick prototyping is required. | [impl-manual.md](impl-manual.md) |
+| **Manual** | The API is public/no-auth, the vendor is not REST+JSON, or quick prototyping is required. | [impl-manual.md](impl-manual.md) |
 
-Prefer a curated connector activity. If none exists, try connector mode. If it cannot be configured because the connector lacks HTTP request support (`HasHttpRequest` false) or no usable IS connection exists, fall through to manual mode automatically. Confirm the switch with the user before finalizing because manual mode changes authentication. See [impl-connector.md — Step 2](impl-connector.md#step-2--identify-target-connection).
+Prefer a curated connector activity. If none exists, try connector mode. If it cannot be configured because the connector lacks HTTP request support (`HasHttpRequest` false) or no usable IS connection exists, fall through to manual mode. Confirm the switch with the user before finalizing because manual mode changes authentication. See [impl-connector.md — Step 2](impl-connector.md#step-2--identify-target-connection).
+
+**Before falling through for an authenticated vendor API, consider building a connector.** Manual mode moves the credential into the flow: the integration stops being visible to `uip is connections list`, cannot be pinged, and cannot be re-pointed per environment without editing the flow. When the target is a REST+JSON API with no catalog connector, `uip is connectors builder` (the `uipath-connector-builder` skill) creates one, and the node goes back to connector mode. Use manual mode for an authenticated API only with a stated reason. Full ladder: [connector/planning.md — Decision Order](../connector/planning.md#decision-order).
 
 The `--detail` payload differs by mode only in `authentication` (`"connector"` or `"manual"`) and connector-only fields `targetConnector`, `connectionId`, and `folderKey`. Connector-mode `url` is relative to the connector base; manual-mode `url` is absolute. Node creation, dynamic values, branches, edges, and debugging are shared.
 

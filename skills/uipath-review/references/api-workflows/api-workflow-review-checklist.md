@@ -42,6 +42,7 @@ Offline static validation — no auth, no network, no side effects (safe for rev
 | TryCatch wraps vendor / HTTP calls | Warning | Check for TryCatch around connector and HTTP activities |
 | No inline secrets (tokens, API keys in headers or configuration) | Critical | Grep Workflow.json for `token`, `apiKey`, `secret`, `password`, `Bearer ` |
 | Connector activities reference connections by ID — no hardcoded credentials | Critical | Check connector `metadata.configuration` |
+| Vendor calls go through a connector activity, not a raw HTTP activity the workflow authenticates | Warning | For every HTTP activity targeting a vendor host, check whether a connector exists (`uip is connectors list`) — **Critical** if one does. If none does and the API is REST+JSON, the answer is `uip is connectors builder`, not an HTTP call with a key. Sourcing that key from an asset clears the two rows above and still leaves the integration outside every connection inventory |
 | Long-running logic not synchronous (hard timeout ~10 minutes; 5 min CPU for serverless) | Warning | Bulk processing / chained calls → flag; recommend async pattern |
 | Variables have non-empty names and types; no duplicates | Warning | Covered by `validate` — carry its findings verbatim |
 
