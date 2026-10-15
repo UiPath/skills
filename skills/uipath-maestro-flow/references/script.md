@@ -64,3 +64,19 @@ of an object return, a map — `returns: { total: 'number', currency: 'string' }
 `'any'` is valid only as the top-level `returns` of a `script@1.1` step — not
 on 1.0.0 and never as a field type (`check` reports `SCRIPT_RETURNS_UNKNOWN_TYPE`).
 It keeps the output untyped even when the body plainly returns one type.
+
+## The JavaScript runtime
+
+A script gets modern syntax (`?.`, `??`, arrow functions), the
+language's built-in objects and `console`, and nothing more. `require`,
+`fetch`, Luxon's `DateTime`, moment, lodash, `Intl`, `URL`, `TextEncoder`,
+`Buffer` and `structuredClone` all read `undefined` in a real run. A body ported
+from a runtime that has them (a Node.js script, a low-code platform's code step)
+is rewritten without them. `toLocaleDateString` returns the long English form
+whatever locale and options it is given, so build a formatted date from its
+`getUTC…` parts.
+
+`flow validate` types scripts against the ES2020 library, so it warns
+`EXPRESSION_DIAGNOSTIC` on later members such as `replaceAll`, which the run
+executes. Write `replace` with a global regular expression
+(`s.replace(/-/g, '+')`) instead.

@@ -207,3 +207,18 @@ class TestProject:
         _, root = rc.load_rule(project)
         with pytest.raises(SystemExit):
             rc.check_input_data(root, {"age": "number"})
+
+    def test_fixture_rules_are_named(self, project):
+        _, root = rc.load_rule(project)
+        rc.check_named_rules(rc.table_of(root))
+
+    @pytest.mark.parametrize("annotation", ["<annotationEntry><text>  </text></annotationEntry>", ""])
+    def test_unnamed_rule_fails(self, project, annotation):
+        path = dmn_of(project)
+        text = path.read_text(encoding="utf-8")
+        start = text.index("<annotationEntry>")
+        end = text.index("</annotationEntry>", start) + len("</annotationEntry>")
+        path.write_text(text[:start] + annotation + text[end:], encoding="utf-8")
+        _, root = rc.load_rule(project)
+        with pytest.raises(SystemExit):
+            rc.check_named_rules(rc.table_of(root))

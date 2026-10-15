@@ -1,0 +1,35 @@
+{
+ "name_contains": "Client Portfolio Reporting",
+ "documents": {
+  "pdd": "corpus/client-portfolio-reporting/pdd.md",
+  "process_map": "corpus/client-portfolio-reporting/process-map.bpmn"
+ },
+ "systems": {},
+ "optional_systems": {
+  "Portfolio accounting system": [
+   "portfolio accounting"
+  ],
+  "Market-data source": [
+   "market-data",
+   "market data"
+  ],
+  "Reporting Engine": [
+   "reporting engine"
+  ],
+  "Client portal": [
+   "client portal"
+  ],
+  "Email": [
+   "email",
+   "outlook"
+  ],
+  "CRM": [
+   "crm"
+  ],
+  "Compliance WORM archive": [
+   "worm",
+   "archive"
+  ]
+ },
+ "allow_other_category": true
+}

@@ -358,7 +358,7 @@ See [placeholder-tasks.md § Upgrade Procedure](placeholder-tasks.md). The upgra
 
 ### Re-sync a task after its source schema changed
 
-The task's source resource (action-app / agent / process / api-workflow / function / connector activity) added, removed, renamed, or retyped an input/output. The task's `taskTypeId` / `data.inputs` / `data.outputs` are now stale. Edit in place — keep `id` and `elementId` so conditions and `=vars.*` / `=bindings.*` references stay valid.
+The task's source resource (action-app / agent / process / api-workflow / function / business-rule / connector activity) added, removed, renamed, or retyped an input/output. The task's `taskTypeId` / `data.inputs` / `data.outputs` are now stale. Edit in place — keep `id` and `elementId` so conditions and `=vars.*` / `=bindings.*` references stay valid.
 
 1. **Re-fetch the current schema** (read-only CLI — never hand-author, per § Responsibilities):
    - Non-connector task: `uip maestro case registry pull --force`, then `uip maestro case tasks describe ... --output json`.
@@ -372,7 +372,7 @@ The task's source resource (action-app / agent / process / api-workflow / functi
 
 ### Repoint a non-connector task at a different resource
 
-Swap which process / agent / RPA / api-workflow / function / case-management resource a task runs. The node references its resource indirectly — `data.name` / `data.folderPath` are `=bindings.<id>` pointers into top-level `bindings[]` ([process impl-json](plugins/tasks/process/impl-json.md), [bindings impl-json](plugins/variables/bindings/impl-json.md)). The new resource almost always has a different I/O schema, so this is a **superset of § Re-sync a task after its source schema changed** plus a binding swap. Keep the task `id` / `elementId` / `entryConditions` so references stay valid.
+Swap which process / agent / RPA / api-workflow / function / business-rule / case-management resource a task runs. The node references its resource indirectly — `data.name` / `data.folderPath` are `=bindings.<id>` pointers into top-level `bindings[]` ([process impl-json](plugins/tasks/process/impl-json.md), [bindings impl-json](plugins/variables/bindings/impl-json.md)). The new resource almost always has a different I/O schema, so this is a **superset of § Re-sync a task after its source schema changed** plus a binding swap. Keep the task `id` / `elementId` / `entryConditions` so references stay valid.
 
 1. **Re-resolve the new resource** — `uip maestro case registry pull --force`, then search the cache files ([registry-discovery.md](registry-discovery.md)) for the new name + folder. Capture its `entityKey`, resolved `name`, and `folders[0].fullyQualifiedName` (the resolved folder path — never the raw SDD folder). Record the swap in `registry-resolved.json`.
 2. **Swap the resource bindings — respect dedup.** The task's two binding entries (`propertyAttribute` `name` / `folderPath`) share `resourceKey = <folderPath>.<name>`.
