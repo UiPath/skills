@@ -44,14 +44,33 @@ pre_run:
                   return d[n]
           return None
 
-      def by_name(label, kind, name):
-          for x in (call(label, "tm", kind, "list", "--project-key", P,
-                         "--filter", name).get("Data") or []):
-              if x.get("Name") == name:
-                  return x
-          return None
+      def all_named(label, kind, name):
+          return [x for x in (call(label, "tm", kind, "list", "--project-key", P,
+                                   "--filter", name).get("Data") or [])
+                  if x.get("Name") == name]
 
-      ts = by_name("set.find", "testsets", SET)
+      def by_name(label, kind, name):
+          hits = all_named(label, kind, name)
+          return hits[0] if hits else None
+
+      def has_verb(*w):
+          return subprocess.run(["uip", *w, "--help"],
+                               capture_output=True, text=True).returncode == 0
+
+      # Dedupe: the name-keyed create-if-absent races under parallel smoke load
+      # and can leave >1 set with this name; the agent then correctly stops on
+      # the ambiguity. Keep the lowest-Id canonical set, delete the extras.
+      dupes = sorted(all_named("set.all", "testsets", SET),
+                     key=lambda x: str(x.get("Id")))
+      if len(dupes) > 1 and has_verb("tm", "testsets", "delete"):
+          for extra in dupes[1:]:
+              k = pick(extra, "TestSetKey", "Key", "ObjKey")
+              if k:
+                  call(f"set.dedup.{k}", "tm", "testsets", "delete",
+                       "--test-set-key", k)
+          dupes = sorted(all_named("set.after", "testsets", SET),
+                         key=lambda x: str(x.get("Id")))
+      ts = dupes[0] if dupes else None
       if not ts:
           call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
           ts = by_name("set.refind", "testsets", SET)
