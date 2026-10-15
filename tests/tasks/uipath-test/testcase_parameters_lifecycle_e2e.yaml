@@ -73,9 +73,28 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
+    description: "Agent created Username with default admin and the requested hint (command must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+add\b(?=(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--name[\s\\=]+["\x27]?Username\b)(?=(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--default-value[\s\\=]+["\x27]?admin\b)(?=(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--hint[\s\\=]+["\x27]?User name for UiBank)'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent changed the default to demo with a separate `parameters update` (command must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+update\b(?=(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--default-value[\s\\=]+["\x27]?demo\b)'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
     description: "Agent renamed the parameter with `parameters update ... --new-name userid`"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+update\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--new-name[\s\\=]+["\x27]?userid\b'
+    require_success: true
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -84,6 +103,7 @@ success_criteria:
     description: "Agent deleted with `parameters delete ... --yes` (approval given in the prompt)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+delete\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?(--yes|-y)\b'
+    require_success: true
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

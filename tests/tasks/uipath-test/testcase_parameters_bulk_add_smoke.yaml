@@ -132,6 +132,6 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not update or delete a parameter to force the value in (`--help` lookups excluded)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+(update|delete)\b(?![^\n]*--help)'
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+(update|delete)\b(?!(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--help)'
     weight: 2.0
     pass_threshold: 1.0
