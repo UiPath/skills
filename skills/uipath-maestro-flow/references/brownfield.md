@@ -123,6 +123,11 @@ layout.
 
 Decompile reconstructs branch, switch, loop, parallel, error/ref, and
 subflow structure. It preserves original node ids so merge can reattach them.
+Every family the SDK can AUTHOR is reconstructed through its own factory —
+including human tasks, agents and their attached resources, the published
+resource families, queue items, the AI patterns, document steps, conversational
+and voice steps, and connector event subscriptions. A recovered agent keeps its
+`source` uuid, so its `agent.json` sidecar still resolves.
 
 A step's name is its node id, and compile never renames a step to make it
 unique. A new step whose name an existing step already has is refused, even
@@ -131,11 +136,6 @@ name that differs only outside letters, digits and `_` (`a b` vs `a_b`) or
 that equals the trigger's id. Give the new step a name of its own. To send a
 second path to an existing step, end that path with `.stepToRef('<name>')`
 instead of adding the step again.
-Every family the SDK can AUTHOR is reconstructed through its own factory —
-including human tasks, agents and their attached resources, the published
-resource families, queue items, the AI patterns, document steps, conversational
-and voice steps, and connector event subscriptions. A recovered agent keeps its
-`source` uuid, so its `agent.json` sidecar still resolves.
 
 An agent's context index, tool or escalation node keeps its identity the same
 way. A decompiled resource entry may carry `nodeId` (the resource node's id),
