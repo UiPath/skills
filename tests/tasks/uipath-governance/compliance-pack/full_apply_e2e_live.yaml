@@ -27,7 +27,9 @@ sandbox:
 # each) is split over two steps sharing one owner; the second is a no-op once
 # the lock is held. WAIT stays well under the step timeout, every call inside
 # is capped by the time left, and fail_on_error: false keeps even a killed
-# step from aborting the task.
+# step from aborting the task. A copy that saw another run hold the lock and
+# never got it skips both live cleanups (`may-clean`): they disable the pack,
+# which would undo the holder mid-run.
 pre_run:
   - command: 'COMPLIANCE_LOCK_WAIT=240 python3 _setup/tenant_lock.py acquire'
     timeout: 300
@@ -35,11 +37,11 @@ pre_run:
   - command: 'COMPLIANCE_LOCK_WAIT=240 python3 _setup/tenant_lock.py acquire'
     timeout: 300
     fail_on_error: false
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
+  - command: 'if python3 _setup/tenant_lock.py may-clean; then python3 _setup/cleanup_compliance_pack.py; fi'
     timeout: 120
 
 post_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
+  - command: 'if python3 _setup/tenant_lock.py may-clean; then python3 _setup/cleanup_compliance_pack.py; fi'
     timeout: 120
   - command: 'python3 _setup/tenant_lock.py release'
     timeout: 120

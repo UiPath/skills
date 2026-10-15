@@ -272,6 +272,8 @@ def test_template_get_writes_form_data(sb):
 def test_unrecorded_calls_fail_offline_and_never_reach_the_real_cli(sb, argv):
     code, _, err = sb.uip(*argv)
     assert code == 1 and OFFLINE in err
+    # neutral: nothing that reads as auth / connectivity coaching
+    assert not any(word in err.lower() for word in ("auth", "connect", "login", "tenant"))
     assert sb.real_calls() == []
     assert sb.calls()[-1]["error"] == "unmocked" and sb.calls()[-1]["argv"][: len(argv)] == argv
 

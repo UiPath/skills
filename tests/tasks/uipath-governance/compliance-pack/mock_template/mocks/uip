@@ -9,7 +9,7 @@ Serves from fixtures recorded on the live test tenant:
     products
 Only tenant-free invocations reach the REAL `uip` later on PATH: bare `uip`,
 `--version`, and `--help` (so flag questions get real answers). Anything
-else fails offline, as an unauthenticated CLI would, and is logged — no
+else fails with a neutral "no recorded response" error and is logged — no
 call ever reaches a tenant, so the tasks run without auth.
 
 Why mock: a compliance pack is tenant-global. Enable / disable / restore on
@@ -65,7 +65,9 @@ STATE_PATH = os.path.join(MOCK_DIR, "state.json")
 LOG_PATH = os.path.join(MOCK_DIR, "calls.jsonl")
 LOCK_PATH = os.path.join(MOCK_DIR, "state.lock")  # serialises concurrent calls' read-modify-write of state.json
 
-OFFLINE_MESSAGE = "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+# Neutral on purpose: wording about auth or connectivity would read as the
+# "auth errors expected" coaching these tasks no longer give.
+OFFLINE_MESSAGE = "uip (mock): no recorded response for this command in the offline smoke mock.\n"
 
 PACK_ID = "iso-42001-2023"
 

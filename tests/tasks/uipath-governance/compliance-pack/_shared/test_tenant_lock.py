@@ -222,3 +222,35 @@ def test_release_after_a_timed_out_acquire_cleans_up(env):
     lock.release()
     assert [a["StringValue"].split("|")[0] for a in store.assets] == ["other"]
     assert not (tmp / ".compliance-lock-pending").exists()
+
+
+def test_a_run_that_waited_behind_a_holder_skips_the_live_cleanup(env):
+    lock, store, clock, tmp = env
+    store.seed(lock.LOCK_NAME, f"holder|{clock[0]:.0f}")
+    lock.acquire()
+    assert not holds(tmp)
+    assert not lock.may_clean()
+
+
+def test_the_holder_cleans_up_even_after_waiting(env):
+    lock, store, clock, tmp = env
+    store.seed(lock.LOCK_NAME, f"crashed|{clock[0] - lock.STALE_SECONDS - 100:.0f}")
+    lock.acquire()  # saw a holder, broke it as stale, then got the lock
+    assert holds(tmp)
+    assert lock.may_clean()
+
+
+def test_an_unusable_lock_still_cleans_up_as_before(env):
+    lock, store, _, tmp = env
+    store.fail_list = True
+    lock.acquire()
+    assert not holds(tmp)
+    assert lock.may_clean()
+
+
+def test_release_clears_the_contended_marker(env):
+    lock, store, clock, tmp = env
+    store.seed(lock.LOCK_NAME, f"holder|{clock[0]:.0f}")
+    lock.acquire()
+    lock.release()
+    assert not (tmp / ".compliance-lock-contended").exists()

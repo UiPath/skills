@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 """Cross-run mutex for the live compliance-pack e2e task.
 
-    python3 _setup/tenant_lock.py acquire   # pre_run, before any pack change
-    python3 _setup/tenant_lock.py release   # last post_run step
+DO NOT COPY. This is a one-off for `full_apply_e2e_live`, the only task that
+still changes the real pack. Its timeouts are budgeted for that one task's
+copies across the three nightly runs; a second user (worse, under the same
+LOCK_NAME) outgrows that budget, so more copies run unlocked and timed-out
+pre_run steps become routine. A task that touches tenant-wide state should
+run against the `uip` shim (mock_template/mocks/uip) instead.
+
+    python3 _setup/tenant_lock.py acquire     # pre_run, before any pack change
+    python3 _setup/tenant_lock.py may-clean   # exit 1: skip the live cleanup
+    python3 _setup/tenant_lock.py release     # last post_run step
 
 Compliance-pack state is tenant-global, and the claude / codex / delegate
 nightly runs all start at 04:00 UTC on the same test tenant. The smoke tasks
@@ -24,6 +32,12 @@ never released) and the lock is broken.
 Never gates the task: always exits 0. If the lock cannot be used at all (no
 auth, folder missing, CLI error) or WAIT_SECONDS pass, it logs why and lets
 the task proceed unlocked — the pre-lock behaviour.
+
+The one exception is `may-clean`, which exits 1 when this run saw another
+run hold the lock and never got it itself. The task's live cleanup disables
+the pack, so running it then would undo the holder mid-run; the task skips
+it and takes the false red alone. A run that is unlocked because the lock is
+unusable still cleans up, as before the lock existed.
 """
 
 import json
@@ -42,6 +56,7 @@ LOCK_NAME = "coder-eval-compliance-pack-lock"
 LOCK_FOLDER = os.environ.get("COMPLIANCE_LOCK_FOLDER", "Shared")
 OWNER_FILE = ".compliance-lock-owner"      # written once the lock is held
 PENDING_FILE = ".compliance-lock-pending"  # this run's owner id, written before the first create
+CONTENDED_FILE = ".compliance-lock-contended"  # another run was seen holding the lock
 WAIT_SECONDS = float(os.environ.get("COMPLIANCE_LOCK_WAIT", "1200"))
 # A holder lives through the rest of pre_run (2 x 300s steps + 120s cleanup),
 # the agent (task_timeout 1200s in the nightly/default experiments), grading,
@@ -167,6 +182,9 @@ def acquire():
                 fh.write(owner)
             log.info("Acquired %s/%s as %s", LOCK_FOLDER, LOCK_NAME, owner)
             return
+        if entries:
+            # Written before any wait, so a step killed mid-wait still counts as contended.
+            open(CONTENDED_FILE, "w").close()
         ours = [key for _, o, key in entries if o == owner]
         if ours:
             # A duplicate slipped through and an older holder wins: back off.
@@ -205,11 +223,22 @@ def release():
                  "deleted" if delete(key) else "DELETE FAILED — will go stale")
     if not mine:
         log.info("No lock entry for %s at release", owner)
-    for path in (OWNER_FILE, PENDING_FILE):
+    for path in (OWNER_FILE, PENDING_FILE, CONTENDED_FILE):
         if os.path.exists(path):
             os.remove(path)
 
 
+def may_clean():
+    """False only when another run held the lock and this run never got it."""
+    if os.path.exists(CONTENDED_FILE) and not os.path.exists(OWNER_FILE):
+        log.warning("Another run holds the lock — skipping the live cleanup so it is not undone mid-run")
+        return False
+    return True
+
+
 if __name__ == "__main__":
-    {"acquire": acquire, "release": release}.get(sys.argv[1] if len(sys.argv) > 1 else "", lambda: log.error("usage: tenant_lock.py acquire|release"))()
+    command = sys.argv[1] if len(sys.argv) > 1 else ""
+    if command == "may-clean":
+        sys.exit(0 if may_clean() else 1)
+    {"acquire": acquire, "release": release}.get(command, lambda: log.error("usage: tenant_lock.py acquire|may-clean|release"))()
     sys.exit(0)
