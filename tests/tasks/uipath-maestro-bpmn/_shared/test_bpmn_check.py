@@ -52,6 +52,9 @@ def test_typed_extension_accepts_nested_type_child() -> None:
         'version="v1" /></bpmn:extensionElements>',
         '<uipath:activity version="v1">'
         '<uipath:type value="Orchestrator.StartAgentJob" version="v2" /></uipath:activity>',
+        '<bpmn:extensionElements><uipath:activity type="Orchestrator.StartAgentJob" '
+        'version="v1"><uipath:type value="Orchestrator.StartAgentJob" version="v2" />'
+        "</uipath:activity></bpmn:extensionElements>",
     ],
 )
 def test_typed_extension_rejects_shapes_the_runtime_ignores(payload: str) -> None:

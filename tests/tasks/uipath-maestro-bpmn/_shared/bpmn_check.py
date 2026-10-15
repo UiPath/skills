@@ -282,13 +282,16 @@ def has_typed_uipath_extension(
     element: ET.Element, extension_name: str, type_value: str, *, version: str | None = None
 ) -> bool:
     """True when a ``uipath:<extension_name>`` inside ``bpmn:extensionElements``
-    has a ``uipath:type`` child whose value is ``type_value`` and, when given,
-    whose version is ``version``."""
+    has no ``type`` attribute and a ``uipath:type`` child whose value is
+    ``type_value`` and, when given, whose version is ``version``."""
     ext = element.find("bpmn:extensionElements", NS)
     if ext is None:
         return False
 
     for payload in ext.findall(f"uipath:{extension_name}", NS):
+        if "type" in payload.attrib:
+            continue
+
         if any(
             type_elem.attrib.get("value") == type_value
             and (version is None or type_elem.attrib.get("version") == version)
