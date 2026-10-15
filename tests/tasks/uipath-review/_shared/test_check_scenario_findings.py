@@ -221,6 +221,13 @@ def test_final_grade_footer_allows_trailing_newline(tmp_path):
     assert r.returncode == 0, r.stdout + r.stderr
 
 
+def test_fails_when_final_grade_footer_is_mid_line(tmp_path):
+    report = _report(BOTH_HITS).replace("\n**Final grade: C**", "\nOverall **Final grade: C**")
+    r = run(tmp_path, report, _spec(tmp_path), _cli(tmp_path))
+    assert r.returncode != 0
+    assert "Final grade" in r.stderr
+
+
 def test_fails_when_report_missing(tmp_path):
     r = run(tmp_path, None, _spec(tmp_path), _cli(tmp_path))
     assert r.returncode != 0
