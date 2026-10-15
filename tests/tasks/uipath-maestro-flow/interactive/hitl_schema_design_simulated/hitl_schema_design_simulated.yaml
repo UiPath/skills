@@ -61,7 +61,7 @@ simulation:
       - The flow should start manually.
 
   constraints:
-    # Graded below: the priority must reach the agent verbatim every run.
+    # The priority criterion needs this sentence verbatim; nothing checks the opener.
     # Paraphrase drifted onto the build request or dropped it.
     - "Your opening message must contain this sentence word for word: 'The review is time-sensitive, so the review task itself must be marked High priority.' Word the rest of the message however you like."
     - "Never paste or read code. If shown code, say 'I trust you, just make it work.'"
@@ -125,19 +125,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 1.0
     pass_threshold: 0
-
-  # Advisory (weight 0, pass_threshold 0): confirms the simulator kept the fixed
-  # priority sentence in its opener. A 0 here means the opener drifted, so a
-  # priority miss above may reflect the simulator, not the agent.
-  - type: llm_judge
-    description: "Advisory: the simulated user's opening message contains the fixed priority sentence"
-    weight: 0
-    pass_threshold: 0
-    include_reference: false
-    include_dialog: true
-    prompt: |
-      Look only at the USER message of Turn 1 in the dialog. Score 1.0 if it
-      contains this sentence word for word (ignore case, surrounding quotes and
-      trailing whitespace): "The review is time-sensitive, so the review task
-      itself must be marked High priority." Score 0.0 if the sentence is
-      missing, split, or reworded. Ignore every other turn and the agent's messages.

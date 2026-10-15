@@ -1,14 +1,22 @@
 task_id: skill-platform-traces-spans-discovery
 description: >
-  Smoke test: agent works the documented two-tool trace-discovery flow — asks the
-  orchestrator tool which traces a job recorded (`uip or jobs traces <job-key>`),
-  then pulls the span tree for a log-sourced trace ID using the positional
-  `spans get <trace-id>` form with folder context. Complements traces_fetch.yaml,
-  which only ever reaches `spans get --job-key` and never touches `or jobs traces`,
-  the positional trace-id form, or the `--folder-path`/`--folder-key` context flags.
-  Auth/404 responses are acceptable outcomes — the graded behavior is which tools
-  the agent reaches for and the shape of the commands, not tenant data.
+  Smoke test: agent works both documented ways into a trace — keyed by job
+  (`uip traces spans get --job-key <job-key>`, which resolves the job's traces
+  itself; the old `uip or jobs traces` discovery step is removed from the CLI),
+  then by a log-sourced trace ID using the positional `spans get <trace-id>` form
+  with folder context. Complements traces_fetch.yaml, which only ever reaches
+  `spans get --job-key` and never touches the positional trace-id form or the
+  `--folder-path`/`--folder-key` context flags.
+  `uip` is an offline `record_cli` mock that answers every call with a 404
+  envelope — the graded behavior is which tools the agent reaches for and the
+  argv each call received, not tenant data.
 tags: [uipath-platform, smoke, mode:diagnose, lifecycle:discover, traces]
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stdout: |
+        {"Result":"Failure","Message":"Resource not found (404 Not Found)"}
 
 run_limits:
   expected_turns: 12
@@ -28,26 +36,37 @@ initial_prompt: |
   commands return; do not go searching for substitute jobs or traces.
 
 success_criteria:
-  - type: command_executed
-    description: "Agent used the orchestrator tool to discover the job's trace IDs"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+(or|orchestrator)\s+jobs\s+traces\s+(?!-)\S+'
-    min_count: 1
+  # Graded from cli_mocks/calls.jsonl: one record per real invocation, argv
+  # already split by the shell, so line continuations, quoting, and calls
+  # batched into one Bash step need no handling here.
+  # value_flags lists every value-bearing flag so a value never shifts the
+  # positional trace ID (e.g. `spans get --folder-path <p> <id>`).
+  # `uip or jobs traces` is removed (it only prints a pointer and exits
+  # non-zero); traces.md teaches `spans get --job-key` for "which traces did
+  # this job record".
+  - type: cli_called
+    description: "Agent got the job's traces by job key (spans get --job-key)"
+    tool: uip
+    verb: "traces spans get"
+    flags:
+      job-key: "9f2c1d84-77ab-4e0e-9a63-2f1b0c5e7a10"
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: cli_called
     description: "Agent fetched spans by positional trace ID (not the --job-key shortcut)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get\s+(?:\\\s+)?["'']?(?:\$\{?\w+\}?|[0-9a-fA-F][0-9a-fA-F-]{7,})'
-    min_count: 1
+    tool: uip
+    verb: "traces spans get"
+    positional: ["4bf92f3577b34da6a3ce929d0e0e4736"]
+    value_flags: [output, folder-path, folder-key, job-key, profile]
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: cli_called
     description: "Agent passed folder context on spans get (--folder-path or --folder-key)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+spans\s+get(?=[\s\S]*--folder-(path|key))'
-    min_count: 1
+    tool: uip
+    verb: "traces spans get"
+    flags:
+      folder-path: {present: true, aliases: [folder-key]}
     weight: 1.5
     pass_threshold: 1.0

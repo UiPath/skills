@@ -6,13 +6,18 @@ description: >
   (`--category` is repeatable). Mutual-exclusion rule 2 from feedback.md is
   graded structurally: both records must be filed with neither create carrying an
   inline `--comment`. None of these flags are reached by any existing traces test.
-  Auth/404 responses are acceptable outcomes — the graded behavior is command shape.
+  `uip` is an offline `record_cli` mock that answers every call with a 404
+  envelope — the graded behavior is the argv each call received.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, feedback]
 sandbox:
   template_sources:
     - type: template_dir
       path: _setup
       mount_point: _setup
+  record_cli:
+    - tool: uip
+      stdout: |
+        {"Result":"Failure","Message":"Resource not found (404 Not Found)"}
 pre_run:
   - command: "sh _setup/seed_feedback_notes.sh"
     timeout: 15
@@ -34,49 +39,57 @@ initial_prompt: |
   Both trace IDs come from a review export and may not resolve against this
   tenant — that is expected. File both records anyway and report what comes back.
 success_criteria:
-  - type: command_executed
+  # Graded from cli_mocks/calls.jsonl: one record per real invocation, argv
+  # already split by the shell, so line continuations, quoting, pipes, and calls
+  # batched into one Bash step need no handling here.
+  - type: cli_called
     description: "Agent sourced the first comment from review-note.md rather than retyping it"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--comment-file[\s=]+["'']?(?:\$?\S*/)?review-note\.md)'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback create"
+    flags:
+      comment-file: {matches_regex: '(^|/)review-note\.md$'}
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  # Both tags on ONE call. A flag predicate is satisfied by any one value of a
+  # repeated flag, so cli_called cannot require two values together; match one
+  # log line instead (MULTILINE, no DOTALL: `.` never leaves the line, so both
+  # lookaheads bind to the same invocation).
+  - type: file_matches_regex
     description: "Agent applied both category tags on one record (--category is repeatable)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--category[\s=]["'']?Output)(?=[\s\S]*--category[\s=]["'']?Agent\s+Error)'
-    min_count: 1
+    path: "cli_mocks/calls.jsonl"
+    pattern: '^(?=.*"argv": \["traces", "feedback", "create")(?=.*"--category(?:", "|=)Output")(?=.*"--category(?:", "|=)Agent Error").*$'
+    flags: 8
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: cli_called
     description: "Agent piped the generated write-up in on stdin (--comment-file -)"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--comment-file[\s=]+-(\s|$))'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback create"
+    flags:
+      comment-file: "-"
     weight: 2.0
     pass_threshold: 1.0
 
-  # min_count: 1 (not 2) x2, scoped per trace-id. command_executed counts matching
-  # Bash events, not command occurrences within an event — an agent that chains both
-  # creates into ONE Bash call registers only 1 match, so a single min_count: 2
-  # criterion caps at 0.5 for correct behavior. Mirrors the min_count:1 convention
-  # in reconfigure_different_connection.yaml.
-  - type: command_executed
+  - type: cli_called
     description: "Trace 7d3a91e0f5c24b8ea0c6d219bb47f0a3 was filed via --comment-file, never inline --comment"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--trace-id[\s=]+["'']?7d3a91e0f5c24b8ea0c6d219bb47f0a3)(?=[\s\S]*--comment-file)'
-    exclude_pattern: '--comment[\s=]'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback create"
+    flags:
+      trace-id: "7d3a91e0f5c24b8ea0c6d219bb47f0a3"
+      comment-file: {present: true}
+      comment: {absent: true}
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: cli_called
     description: "Trace a18b4c7d2e934f60b5c81d3a6f9e2077 was filed via --comment-file, never inline --comment"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--trace-id[\s=]+["'']?a18b4c7d2e934f60b5c81d3a6f9e2077)(?=[\s\S]*--comment-file)'
-    exclude_pattern: '--comment[\s=]'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback create"
+    flags:
+      trace-id: "a18b4c7d2e934f60b5c81d3a6f9e2077"
+      comment-file: {present: true}
+      comment: {absent: true}
     weight: 1.0
     pass_threshold: 1.0

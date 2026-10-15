@@ -10,7 +10,7 @@ Registry pulls are often incomplete during early authoring:
 - Custom Integration Service connectors have not been registered.
 - IS connections for registered connectors are not yet provisioned.
 
-If the skill halted on every unresolved resource, the generated `caseplan.json` would be a small fragment — not reviewable, not validatable, not useful. Placeholders solve that: the full **workflow structure** (stages, conditions, SLA, ordering, task names + types) lands in `caseplan.json`, and only the parts that strictly require a registry lookup (task-type-id, connection-id, input/output schemas) are deferred.
+If the skill halted on every unresolved resource, the generated `caseplan.case` would be a small fragment — not reviewable, not validatable, not useful. Placeholders solve that: the full **workflow structure** (stages, conditions, SLA, ordering, task names + types) lands in `caseplan.case`, and only the parts that strictly require a registry lookup (task-type-id, connection-id, input/output schemas) are deferred.
 
 The user reviews structure first, then attaches real resources once they exist.
 
@@ -32,7 +32,9 @@ The user reviews structure first, then attaches real resources once they exist.
 
 ## When a Placeholder Is Created
 
-During **execution** (Phase 2, Step 9), for any `registry-resolved.json` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`:
+During **execution** (Phase 2, Step 9), for any `registry-resolved.json` entry whose `taskTypeId`, `typeId`, or `connectionId` is `<UNRESOLVED: …>`, or that carries `gateDecision: "resolve-at-build"`:
+
+**`sdd convert --resolved` usually writes it for you.** A CLI that reports the `placeholder` kind in `Data.Unresolved[]` has already emitted every such task in the JSON Shape below ([phased-execution.md § Convert first](phased-execution.md#convert-first--emit-from-the-document-before-authoring)); leave those tasks as they are. Apply the steps below only to a deferred task convert emitted with `data` anyway, which happens on an older CLI or when the ledger entry lacks both markers, and to everything when the version guard sent Phase 2 to hand-authoring.
 
 1. Skip the schema fetch (`uip maestro case spec` / `uip maestro case tasks describe`).
 2. Write the task JSON node with structural fields only — no `taskTypeId` / `connectionId` / `inputs` / `outputs` keys (see JSON Shape below).
@@ -43,7 +45,7 @@ During **execution** (Phase 2, Step 9), for any `registry-resolved.json` entry w
 
 Placeholders occupy a position in `stageNode.data.tasks`, the same way full tasks do. Preserve their order and retain any `runs-sequentially` entry condition from the task plan. A strict sequential placeholder chain still uses consecutive single-task sets; same-set grouping is only for explicitly parallel placeholder siblings.
 
-A placeholder task in `caseplan.json.nodes[<stage>].data.tasks[<lane>][]`:
+A placeholder task in `caseplan.case.nodes[<stage>].data.tasks[<lane>][]`:
 
 ```json
 {
@@ -129,7 +131,7 @@ Warnings are **expected** and do not block the build. Other errors appear when c
 
 ## Upgrade Procedure — Placeholder → Full Task
 
-> **Built-inline agents / API workflows are not placeholders.** An `agent` or `api-workflow` the user chose to **Create** at the Rule 18 gate is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — it enters Phase 2 as a fully resolved task, never a placeholder, and skips this procedure. This procedure covers creatable resources the user **declined/skipped or whose build failed** (their recovery is the same as any other unresolved kind — register the real resource, below), plus every other unresolved kind.
+> **Built-inline agents / API workflows / business rules are not placeholders.** An `agent`, `api-workflow`, or `business-rule` the user chose to **Create** at the Rule 18 gate is built and bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — it enters Phase 2 as a fully resolved task, never a placeholder, and skips this procedure. This procedure covers creatable resources the user **declined/skipped or whose build failed** (their recovery is the same as any other unresolved kind — register the real resource, below), plus every other unresolved kind.
 
 When the user has registered the real resource:
 
@@ -143,7 +145,7 @@ uip maestro case registry pull --force
 
 ### 2. Resolve the task-type-id
 
-Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `processOrchestration-index.json` for processes, `action-apps-index.json` for action apps. For a **manually-built in-solution sibling** (agent or api-workflow), find it offline by name with `uip maestro case registry search "<name>" --type <agent|api> --local --output json` (`agent` for an agent sibling, `api` for an api-workflow sibling; select the exact-name `Data.Resources[].Resource` entry; use `search` — `get --local` matches only the opaque `entityKey`, not the name). Its `Resource.EntityKey` is an opaque derived key (not the `.uipx` `Projects[].Id`), audit-only; the node binds by name+folder. Read the sibling's I/O field names from its raw `entry-points.json` (the `--output json` keys are PascalCased). For an **api-workflow sibling**, read its I/O per the fallback chain in [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) — flat `entryPoints[0].input.properties` → `input.schema.document.properties` wrapper → `Workflow.json` root schemas when the entry-point I/O is `null`; note any fallback in the report.
+Read the relevant cache file directly per [registry-discovery.md](registry-discovery.md) — e.g., `processOrchestration-index.json` for processes, `action-apps-index.json` for action apps. For a **manually-built in-solution sibling** (agent, api-workflow, or business-rule), find it offline by name with `uip maestro case registry search "<name>" --type <agent|api|businessRule> --local --output json` (`agent` for an agent sibling, `api` for an api-workflow sibling, `businessRule` for a business-rule sibling; select the exact-name `Data.Resources[].Resource` entry; use `search` — `get --local` matches only the opaque `entityKey`, not the name). Its `Resource.EntityKey` is an opaque derived key (not the `.uipx` `Projects[].Id`), audit-only; the node binds by name+folder. Read the sibling's I/O field names from its raw `entry-points.json` (the `--output json` keys are PascalCased). For an **api-workflow sibling**, read its I/O per the fallback chain in [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) — flat `entryPoints[0].input.properties` → `input.schema.document.properties` wrapper → `Workflow.json` root schemas when the entry-point I/O is `null`; note any fallback in the report.
 
 ### 3. Fetch the schema
 
@@ -151,7 +153,7 @@ For non-connector tasks, run `uip maestro case tasks describe --type <type> --id
 
 ### 4. Edit the placeholder in place
 
-Read `caseplan.json`, locate the placeholder task by `id`, and mutate its `data` field in place. Keep the task's `id` and `elementId` unchanged — any conditions or `selected-tasks-completed` rules referencing the TaskId stay valid.
+Read `caseplan.case`, locate the placeholder task by `id`, and mutate its `data` field in place. Keep the task's `id` and `elementId` unchanged — any conditions or `selected-tasks-completed` rules referencing the TaskId stay valid.
 
 | Task class | `data` mutation |
 |---|---|
@@ -167,10 +169,10 @@ Per-class JSON shape lives in `plugins/tasks/<type>/impl-json.md` — match thos
 
 Wire each input per the `io-binding` plugin — see [`plugins/variables/io-binding/impl-json.md`](plugins/variables/io-binding/impl-json.md). In short:
 
-1. Read `caseplan.json`; locate the task's `data.inputs[]` by input `name`.
+1. Read `caseplan.case`; locate the task's `data.inputs[]` by input `name`.
 2. For literals/expressions from the `wiring notes` code block (`foo = =metadata.x`) — write the RHS string to `input.value`.
 3. For cross-task references (`foo <- "Stage"."Task".output`) — resolve the source output reference ID using [`io-binding/impl-json.md` § Output reference ID](plugins/variables/io-binding/impl-json.md#output-reference-id-authoritative), then write `=vars.<outputReferenceId>` to the target input's `value`.
-4. Write `caseplan.json` back.
+4. Write `caseplan.case` back.
 
 ### 6. Re-validate
 
@@ -201,10 +203,10 @@ When the build finishes with placeholders, the skill's completion report must li
 - **Custom IS connectors** (N): U Submit (GetSubmission), U Place (SubmitPlannedMarkets), …
 ```
 
-When agents / API workflows were **built inline** at the gate, list them separately — they are resolved, not placeholders:
+When agents / API workflows / business rules were **built inline** at the gate, list them separately — they are resolved, not placeholders:
 
 ```
-### Agents / API workflows built inline (N)
+### Agents / API workflows / business rules built inline (N)
 
 | Stage | Task | Resource | Status |
 |-------|------|----------|--------|
@@ -226,8 +228,8 @@ The user uses the placeholder/external lists to drive external resource creation
 - **Do NOT partially bind inputs on a placeholder.** A placeholder has no `data.inputs[]` to edit — the io-binding plugin logs a `SKIPPED` entry and moves on. Half-bound placeholders are harder to upgrade than bare ones.
 - **Do NOT skip task-entry conditions on placeholders.** Conditions are structural; they work on the TaskId and must be created so the workflow order is visible in review.
 - **Do NOT create placeholders for timer tasks.** Timers have no registry dependency — use the full `wait-for-timer` plugin.
-- **Do NOT create a placeholder for an agent or API workflow the user chose to build inline.** It is built + bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a resolved task, not a placeholder.
-- **Do NOT build an agent or API workflow from SDD content alone.** Inline create runs only for resources the user explicitly selected at the Rule 18 gate. The built resource is an in-solution **sibling** that co-deploys with the case — never a separate tenant publish.
-- **Invoking `uipath-agents` / `uipath-api-workflow` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (regular RPA process, action, function, case-management, connectors, agentic process) and to `uipath-planner`.
+- **Do NOT create a placeholder for an agent, API workflow, or business rule the user chose to build inline.** It is built + bound during planning ([registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery)) — a resolved task, not a placeholder.
+- **Do NOT build an agent, API workflow, or business rule from SDD content alone.** Inline create runs only for resources the user explicitly selected at the Rule 18 gate. The built resource is an in-solution **sibling** that co-deploys with the case — never a separate tenant publish.
+- **Invoking `uipath-agents` / `uipath-api-workflow` / `uipath-rules` for the inline build is sanctioned** — it is not a violation of the "don't auto-invoke other skills" anti-pattern, which still applies to every non-creatable kind (regular RPA process, action, function, case-management, connectors, agentic process) and to `uipath-planner`.
 
 <!-- END: placeholder-tasks.md -->

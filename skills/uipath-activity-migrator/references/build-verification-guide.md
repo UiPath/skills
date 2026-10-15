@@ -27,7 +27,7 @@ Build compiles every workflow, applies project-scope analyzer rules, and restore
 
 Warnings are Workflow Analyzer output: an open set that depends on the Studio version, the project's analyzer configuration, and the packages' own rules. Two rules cover all of them:
 
-1. A warning that quotes a `[PostMigration Action Required]` annotation or a "Migration not implemented" text is the migrator's own finding surfacing through the analyzer (rule `ST-AMG-001` on recent Studio versions). It is already a needs-attention item; do not report it twice.
+1. A warning that quotes a `[PostMigration Action Required]` annotation or a "Migration not implemented" text is the migrator's own finding surfacing through the analyzer (rule `ST-AMG-001` on recent Studio versions). It is already a needs-attention item; do not report it twice. Its absence means nothing, and its presence does not replace the annotation listing of each package guide's Hook 3: the build output is never the inventory.
 2. Any other warning is analyzer output on the project as it was. Mention it once, do not fix it, and never let warnings gate delivery.
 
 ## Package versions are not edited here
