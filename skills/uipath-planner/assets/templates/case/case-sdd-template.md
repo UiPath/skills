@@ -499,7 +499,10 @@ runtime metadata (agent prompts, package versions, endpoints) stays out of the S
      LogsView, TasksView, TasksCreate, TasksEdit, TasksDelete, TaskAssignmentView, TaskAssignmentCreate,
      TaskAssignmentEdit, TaskAssignmentDelete, TaskSelfAssignmentCreate, TaskSelfAssignmentEdit,
      TaskSelfAssignmentDelete. A `Stages` persona may hold only View, Assign, ManageSLA and
-     RunAdhocTasks. Names are unique, at most 64 characters, with none of < > " % ; & '. Description
+     RunAdhocTasks. Assign and the Tasks* / TaskAssignment* / TaskSelfAssignment* keys are published
+     by the Case Designer only when a tenant flag is on (off by default): convert writes them as
+     stated and reports each as a `case-role` item naming the flag, so grant them only when the
+     target tenant has the flag. Names are unique, at most 64 characters, with none of < > " % ; & '. Description
      is required (at most 500 characters) and ships as the role's description. A condition on the
      persona ("loans > $5M only") is not a permission: write it in Notes and encode it as a guarded
      cell on the owning task (checklist rule 32). A cell convert cannot map is reported as a
