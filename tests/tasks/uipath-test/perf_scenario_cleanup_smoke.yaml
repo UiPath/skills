@@ -37,8 +37,8 @@ pre_run:
       # Orphan sweep: a run that died before post_run strands its scenarios.
       # Only delete ones stamped more than 6 hours ago, so a concurrent run
       # keeps its own.
-      out = call("tm", "perf-scenario", "list", "--project-key", P, "--search", PREFIX, "--limit", "200")
-      for s in (out.get("Data") or {}).get("Scenarios") or []:
+      listed = call("tm", "perf-scenario", "list", "--project-key", P, "--search", PREFIX, "--limit", "200")
+      for s in (listed.get("Data") or {}).get("Scenarios") or []:
           name, key = s.get("Name") or "", s.get("ScenarioKey")
           if not key or not name.startswith(PREFIX):
               continue
@@ -54,7 +54,11 @@ pre_run:
           name = f"{run}-{role}"
           out = call("tm", "perf-scenario", "create", "--project-key", P, "--name", name)
           if out.get("Result") != "Success":
+              # Say whether reading scenarios works too: a 403 on both points
+              # at the tenant (performance testing licence or feature), a 403
+              # on create alone at the account's project permission.
               print(f"SEED FAILED: could not create scenario {name} in {P}: {out}")
+              print(f"perf-scenario list in {P}: {listed.get('Result')} {listed.get('ErrorCode', '')}")
               sys.exit(1)
           with open(path, "w") as f:
               f.write(name + "\n")
