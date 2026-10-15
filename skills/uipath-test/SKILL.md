@@ -66,6 +66,11 @@ Open a manual run with `uip tm testsets run --test-set-key <KEY> --execution-typ
 - `uip tm testcaselog list-assertions --project-key <PROJECT_KEY> --test-case-log-id <TEST_CASE_LOG_ID>` lists assertions; `uip tm teststeplog list --project-key <PROJECT_KEY> --test-case-log-id <TEST_CASE_LOG_ID>` lists step logs.
 - `uip tm report get --execution-id <EXECUTION_ID> (--project-key <KEY> | --test-set-key <KEY>)` summarizes a completed execution; exactly one project-identifying option is required. Passing only `--execution-id` exits with `Provide --project-key or --test-set-key`.
 - `uip tm attachment download --execution-id <EXECUTION_ID>` downloads testcase attachments; `attachment upload --object-id <UUID> --object-type <type> --file <path>` uploads to a Test Manager object, such as `--object-type testCaseLog`; `uip tm result download --execution-id <EXECUTION_ID>` downloads JUnit XML, optionally `--project-key`, `--test-set-key`, `--result-path <DIR>`.
+- Single files (`uip tm attachment`, `upload` returns `AttachmentId`): find the object first (`list --test-case-keys` / `--requirement-keys`), pick the file by `FileName`, then use its `AttachmentId`; no match or a duplicate name: ask.
+  - `list` shows only `userBased` files unless you pass `--source` (robot or Studio evidence: `orchestrator`, `studio`, `taskCapture`). Keys that don't resolve come back under `Unresolved` beside the rest — name them. An unknown `--object-ids` id also shows `AttachmentCount: 0`.
+  - `--object-type` is the parent object's type, not the file's; a wrong one can still succeed.
+  - `download --attachment-id` writes to the current folder under the server name unless `--result-path`/`--output-file`, and never replaces a file: on `already exists`, stop and ask; pass `--overwrite` only when the user asked.
+  - `update` only renames (`--file-name`). `--all` is one page per call; follow `Pagination`. Confirm deletes (Rule 5).
 
 ### Playwright pack
 
