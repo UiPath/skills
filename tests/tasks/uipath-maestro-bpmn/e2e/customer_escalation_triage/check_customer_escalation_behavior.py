@@ -487,7 +487,7 @@ def main() -> None:
             "projects",
             "import",
             str(PROJECT.resolve()),
-            "--solutionFile",
+            "--solution-file",
             str(solution_file),
         ],
         timeout=SOLUTION_IMPORT_TIMEOUT,

@@ -123,7 +123,7 @@ Common Rules are 1–12. Coded rules 13–19 are in [coded/codedworkflow-referen
 ### Destination Preflight (Both Modes)
 
 <!--skill-flavor:studio-web-destination:start-->
-**Studio Web means a Solution deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Signals: “Studio Web”, “SW”, “upload to web”, “browser editor”, “cloud workspace edit”. Build normally, then hand off to `uipath-solution`: `uip solution init <NAME>` → `uip solution projects import "<PROJECT_DIR>" --solutionFile <SOLUTION>.uipx` → `uip solution upload "<SOLUTION_DIR>"`. Deliver the Solution. Bare projects remain valid for local `uip rpa run` and Orchestrator `uip rpa pack` → `uip rpa publish`.
+**Studio Web means a Solution deliverable, not a bare project.** Studio Web ingests Solutions only; a bare project folder is invisible in both SW workspace tabs. Signals: “Studio Web”, “SW”, “upload to web”, “browser editor”, “cloud workspace edit”. Build normally, then hand off to `uipath-solution`: `uip solution init <NAME>` → `uip solution projects import "<PROJECT_DIR>" --solution-file <SOLUTION>.uipx` → `uip solution upload "<SOLUTION_DIR>"`. Deliver the Solution. Bare projects remain valid for local `uip rpa run` and Orchestrator `uip rpa pack` → `uip rpa publish`.
 <!--skill-flavor:studio-web-destination:end-->
 
 ### Execution Discipline (Both Modes)
