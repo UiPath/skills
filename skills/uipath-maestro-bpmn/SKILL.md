@@ -316,6 +316,16 @@ For registry-evidence-only tasks, follow the command-first recipe in
      value without a leading `=` is a literal: write `"=vars.<id>"`, and make
      text mixed with variables one `=js:` expression
      (`"=js:'Severity: ' + vars.Var_Severity"`).
+   **Connector nodes are V2 when a connection is live.** For
+   `Intsvc.ActivityExecution`, `Intsvc.EventTrigger` and `Intsvc.WaitForEvent`
+   with a resolved connection, get the element from `uip maestro bpmn registry
+   get <type> --connection-id <id> --object-name <obj> [--operation <OP>]
+   --input-details '<json>' --solution-folder <dir>` and paste `Data.V2` as
+   it is, with `<uipath:intsvcActivityConfig version="v2" />` on the process;
+   resource pickers (a Data Fabric folder entity) go in `--input-details` by
+   name. Studio Web's designer reads only that shape. The V1 template and the
+   rules above are for an offline draft. See
+   [references/v2-connector-nodes.md](references/v2-connector-nodes.md).
    For an Integration Service draft or boundary handoff the user asked for (a
    request that only says to validate is not one), emit **only** the
    `.bpmn` plus the notes file — do NOT create the four generated package files
@@ -365,6 +375,9 @@ For registry-evidence-only tasks, follow the command-first recipe in
    later one on such a draft, keeps the manual `Event_start`, gives the
    trigger its own start id, joins the two per
    [Gateways](references/structural-bpmn.md#gateways), and runs `refresh`.
+   A V2 connector trigger start is the exception: it carries its own
+   `uipath:entryPointId` and is an entry point, so it may be the only start
+   and `refresh` accepts it.
    A recurring timer is a `timeCycle` with an `R/` repeat (`R/P1D`), not the
    template's `timeDuration`. Clearing a stale-entry error by editing or
    deleting `entry-points.json` instead of running `refresh` passes

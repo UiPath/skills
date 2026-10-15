@@ -95,6 +95,13 @@ generated packages to invent the missing live schema.
 
 ## 3. Connector (`Intsvc.*`) enrichment
 
+> With a live connection, author `Intsvc.ActivityExecution`,
+> `Intsvc.EventTrigger` and `Intsvc.WaitForEvent` as V2 elements from
+> `registry get --input-details` instead of filling the template below — see
+> [v2-connector-nodes.md](v2-connector-nodes.md). The rest of this section is
+> how to find the connection and object for either, and the V1 template for an
+> offline draft.
+
 For connector **activity** types (`requiresDiscovery: Yes`, e.g.
 `Intsvc.ActivityExecution`), resolve a live connection and object, then enrich.
 `Intsvc.EventTrigger` and `Intsvc.WaitForEvent` also require discovery but
@@ -609,9 +616,10 @@ schema. That comes from `uip is triggers describe`: build the filter from its
 the trigger's scoping inputs, `OutputFields` the event payload.
 
 The runtime reads only a `target="body"` input; the template's `filter` and
-`parameters` fields, and any sibling input without `target`, are dropped. Write one
-`body` input as a sibling of `uipath:context`: `queryParams` holds the
-`EventParameters`; `filters.expression` AND-joins one equality clause per event
+`parameters` fields, and any sibling input without `target`, are dropped. In
+the V1 template, write one `body` input as a sibling of `uipath:context`:
+`queryParams` holds the `EventParameters` (a V2 element carries them in
+`body.parameters`; do not move them); `filters.expression` AND-joins one equality clause per event
 parameter with the `FilterFields` conditions. No filter tree; only the
 expression is evaluated.
 
@@ -636,9 +644,10 @@ Curated pairs already confirmed:
 A hand-authored connector trigger shell stays **draft** until the CLI supplies
 the concrete trigger properties, connection binding, and schemas.
 
-For `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` the connection is referenced
-from the node context as **`connectionId`** = `=bindings.<bindingId>` (activities
-use `connection`); the timer trigger binds no connection. After authoring the
+In the V1 template, `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` reference
+the connection from the node context as **`connectionId`** =
+`=bindings.<bindingId>` (activities use `connection`; a V2 element uses
+`connection` for all three, see [v2-connector-nodes.md](v2-connector-nodes.md)); the timer trigger binds no connection. After authoring the
 connection binding, lay the diagram out (`uip maestro bpmn format <file.bpmn>`)
 and then run `uip maestro bpmn refresh <project>` so the binding is
 materialized into a `Connection` resource in `bindings_v2.json` — a trigger whose

@@ -27,6 +27,10 @@ into the supported BPMN contract.
 > `connection`). `update-metadata` is **deprecated** and never materializes
 > connection bindings, so a trigger regenerated with it passes `validate` but
 > faults at runtime with a null connection (error 102010).
+> For V2 connector nodes it also writes the `EventTrigger` and `Property`
+> resources of each trigger start and the resources their pickers bound, and
+> makes each V2 trigger start an entry point — see
+> [v2-connector-nodes.md](../v2-connector-nodes.md#3-refresh-validate-debug).
 
 `uip maestro bpmn refresh <project-path>` writes the
 same shape `uip maestro bpmn init` scaffolds, and `uip maestro bpmn pack`
