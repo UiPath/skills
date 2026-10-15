@@ -221,13 +221,15 @@ def expected_caseplan() -> dict:
     }
 
 
-def run_topology_checker(plan: dict) -> subprocess.CompletedProcess[str]:
+def run_topology_checker(
+    plan: dict, name: str = "caseplan.json"
+) -> subprocess.CompletedProcess[str]:
     with tempfile.TemporaryDirectory() as temporary:
         caseplan = (
             Path(temporary)
             / "CMGoldenExpense"
             / "CMGoldenExpense"
-            / "caseplan.json"
+            / name
         )
         caseplan.parent.mkdir(parents=True)
         caseplan.write_text(json.dumps(plan), encoding="utf-8")
@@ -244,6 +246,11 @@ def run_topology_checker(plan: dict) -> subprocess.CompletedProcess[str]:
 class CMGoldenCheckerTests(unittest.TestCase):
     def test_topology_checker_accepts_expected_structure(self) -> None:
         result = run_topology_checker(copy.deepcopy(expected_caseplan()))
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_topology_checker_accepts_a_plan_saved_as_caseplan_case(self) -> None:
+        result = run_topology_checker(copy.deepcopy(expected_caseplan()), "caseplan.case")
 
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 

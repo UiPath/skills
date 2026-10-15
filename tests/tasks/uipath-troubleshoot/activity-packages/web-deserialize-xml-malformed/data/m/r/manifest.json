@@ -19,10 +19,6 @@
       "file": "123c5e2afe.json"
     },
     {
-      "match": "or jobs traces 9937b232-5a94-44ab-8aee-ce6ea52d3bb4",
-      "file": "9e4929c4d3.json"
-    },
-    {
       "match": "traces spans get --job-key 9937b232-5a94-44ab-8aee-ce6ea52d3bb4",
       "file": "bf6714348f.json",
       "exit_code": 1

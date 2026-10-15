@@ -1,0 +1,55 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SimpleApprovalApp",
+    "kind": "process",
+    "type": "webApp",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "kind": "Package",
+        "name": "CM-Golden-Expense-Reporting-Manual.webApp.SimpleApprovalApp"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "WebApp",
+      "jobPriority": "Medium",
+      "hiddenForAttendedUser": true,
+      "alwaysRunning": true,
+      "autoStartProcess": false,
+      "jobRecording": "Disabled",
+      "duration": 40,
+      "frequency": 500,
+      "quality": 100,
+      "remoteControlAccess": "None",
+      "robotSize": "Automatic",
+      "name": "SimpleApprovalApp",
+      "package": {
+        "name": "CM-Golden-Expense-Reporting-Manual.webApp.SimpleApprovalApp",
+        "key": "CM-Golden-Expense-Reporting-Manual.webApp.SimpleApprovalApp:1.0.6"
+      },
+      "packageName": "CM-Golden-Expense-Reporting-Manual.webApp.SimpleApprovalApp",
+      "packageVersion": "1.0.6",
+      "entryPointUniqueId": "0f541980-dea1-4136-b44b-05a1491725f0",
+      "entryPointName": "Main.xaml",
+      "inputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"sessionId\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": []\n}",
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "entryPoints": "[{\"UniqueId\":\"0f541980-dea1-4136-b44b-05a1491725f0\",\"Path\":\"Main.xaml\",\"DisplayName\":null,\"InputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"sessionId\\\": {\\n      \\\"type\\\": \\\"string\\\"\\n    }\\n  },\\n  \\\"required\\\": []\\n}\",\"OutputArguments\":null,\"Type\":3,\"TargetRuntime\":null,\"ContentRoot\":null,\"DataVariation\":null,\"Id\":927447}]",
+      "tags": []
+    },
+    "locks": [],
+    "key": "7ed04359-0ed6-41dc-be03-a99f91a3932b",
+    "files": []
+  }
+}

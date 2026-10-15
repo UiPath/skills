@@ -1,0 +1,28 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "content/Workflow.json",
+      "uniqueId": "c7d8e9f0-1111-4222-8333-444455556666",
+      "type": "Api",
+      "input": {
+        "type": "object",
+        "properties": {
+          "vendorName": { "type": "string" },
+          "invoiceNumber": { "type": "string" },
+          "amount": { "type": "number" },
+          "pdfPath": { "type": "string" }
+        },
+        "required": ["vendorName", "invoiceNumber", "amount"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "erpDocumentNumber": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    }
+  ]
+}

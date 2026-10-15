@@ -15,7 +15,7 @@ Typical low-code shape: one `job-attachment` input field on the agent + one `ana
 
 ## Resource Shape
 
-**Path:** `<AgentName>/resources/AnalyzeFiles/resource.json`
+**Path:** `<AgentName>/resources/Analyze Files/resource.json` — **the folder name must exactly match the `name` field** (case- and whitespace-sensitive, space included) or the validator fails with `folder must be named after the resource name`.
 
 ```jsonc
 {
@@ -82,7 +82,7 @@ Schema is canonical — copy verbatim. Only `id` (fresh UUID) and optionally `de
 ## Walkthrough
 
 1. **Add a file input field on the agent.** See [../../agent-definition.md](../../agent-definition.md) § Add a File Input Field. Mirror in `entry-points.json`.
-2. **Author the tool resource** at `resources/AnalyzeFiles/resource.json` using the shape above. Generate a fresh UUID for `id`.
+2. **Author the tool resource** at `resources/Analyze Files/resource.json` (folder = `name`, space included) using the shape above. Generate a fresh UUID for `id`.
 3. **Reference the attachment in the user message** so the agent sees its metadata:
 
    ```jsonc
@@ -99,7 +99,11 @@ Schema is canonical — copy verbatim. Only `id` (fresh UUID) and optionally `de
 4. **Refresh** with `uip agent refresh "<AGENT_NAME>" --output json`. Regenerates `entry-points.json` and `bindings_v2.json`.
 5. **Validate** with `uip agent validate "<AGENT_NAME>" --output json` (read-only). Confirm `Validated`.
 6. **Bundle and upload** with `uip solution bundle` then `uip solution upload --output json` (with user consent).
-7. **Test** from Studio Web or via Orchestrator job invocation — `uip` CLI cannot supply attachments at run time.
+7. **Test** with a local file bound to the input field (with user consent — debug re-uploads the enclosing solution and executes the agent, so step 6 is optional on this path):
+
+   ```bash
+   uip agent debug <AGENT_PROJECT_DIR> --attachment fileIn=<FILE_PATH> --output json
+   ```
 
 ## Gotchas
 

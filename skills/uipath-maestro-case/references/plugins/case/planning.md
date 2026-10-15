@@ -13,12 +13,13 @@ Always. This plugin is invoked for the very first build step (`T01`). It creates
 | Field | Source | Notes |
 |-------|--------|-------|
 | `name` | sdd.md case title | Human-readable. |
-| `file` | Derived: `<SolutionDir>/<ProjectName>/caseplan.json` | **Literal filename `caseplan.json`** — do not substitute project name. |
+| `file` | Derived: `<SolutionDir>/<ProjectName>/caseplan.case` | **Literal filename `caseplan.case`** — do not substitute project name. |
 | `case-identifier` | sdd.md (optional; defaults to `name`) | The runtime identifier. |
 | `identifier-type` | sdd.md (optional; default `constant`) | `constant` \| `external`. Use `external` when sdd.md says the identifier comes from an upstream system. |
 | `case-app-enabled` | sdd.md (default `false`) | `true` if the sdd.md says the case is exposed via the Case App UI. |
-| `directly-pass-task-outputs` | sdd.md (default `true`) | Passes task outputs through messages instead of shared variables, avoiding parallel-task race conditions. `false` only if sdd.md explicitly requests shared-variable passing. |
 | `description` | sdd.md case description |  |
+
+**Direct Task Outputs is retired.** Task outputs always pass directly through messages (PO.Frontend `15cd541e9`, 2026-06-16), so there is no T01 field for it. If sdd.md's Case Metadata asks to turn it off (`Direct Task Outputs: No`, `false`, or shared-variable passing), build anyway and tell the user in the build summary that the option no longer exists and outputs pass directly. A row that says Yes needs nothing.
 
 ## identifier-type Guidance
 
@@ -50,14 +51,13 @@ The case file has no registry lookup, so T01 produces **no `tasks/registry-resol
 
 ```text
 case file "<name>"
-- file: "<SolutionDir>/<ProjectName>/caseplan.json"
+- file: "<SolutionDir>/<ProjectName>/caseplan.case"
 - case-identifier: "<identifier>"
 - identifier-type: constant
 - case-app-enabled: false
-- directly-pass-task-outputs: true
 - description: "<one-sentence description>"
 - order: first
-- verify: Confirm caseplan.json written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "30.0.0", nodes == [], edges == []
+- verify: Confirm caseplan.case written and parses; id matches /^case-[A-Za-z0-9]{10}$/, version == "32.0.3", nodes == [], edges == []
 ```
 
 > **External variant.** Replace the two identifier lines with `identifier-type: external` + `case-identifier: "=vars.<varId>"` (or a `=js:` expression). See § External identifier value.
@@ -77,12 +77,12 @@ The case file lives inside a solution + project structure. After T01 completes, 
       entry-points.json            ← § Scaffold writes (empty entryPoints[])
       bindings_v2.json             ← § Scaffold writes
       package-descriptor.json      ← § Scaffold writes
-      caseplan.json                ← § Write caseplan.json writes
+      caseplan.case                ← § Write caseplan.case writes
 <!--skill-flavor:project-tree:end-->
 ```
 
 <!--skill-flavor:planning-contract:start-->
-Planning-phase contract: `<SolutionDir>/<ProjectName>/` ends with all 5 scaffold files + `caseplan.json`, whether `case init` seeded each file or T01 wrote it. CLI `uip solution init` (Step 6.0) and `uip maestro case init` (Step 6.0a) precede T01; `uip solution projects add` (Step 6.0b) is the registration fallback.
+Planning-phase contract: `<SolutionDir>/<ProjectName>/` ends with all 5 scaffold files + `caseplan.case`, whether `case init` seeded each file or T01 wrote it. CLI `uip solution init` (Step 6.0) and `uip maestro case init` (Step 6.0a) precede T01; `uip solution projects add` (Step 6.0b) is the registration fallback.
 <!--skill-flavor:planning-contract:end-->
 
 <!--skill-flavor:naming-canonical:start-->

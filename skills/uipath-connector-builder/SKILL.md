@@ -32,6 +32,7 @@ Author UiPath Integration Service connectors on disk with `uip is connectors bui
 10. **Prefer a built-in over a hook.** Before writing JS, consult the decision table ([references/hooks.md](references/hooks.md) §"Decide first: hook or built-in?") — a hook is only for transforms, orchestration, or derivation no declarative feature expresses. One hook file per activity+method+phase; hooks run in Denali (modern JS + `require('axios')` for secondary calls) and must end every path with `done()`.
 11. **Windows + Git Bash: disable MSYS path conversion FIRST.** In Git Bash any argument starting with `/` is rewritten to a Windows path before the CLI ever sees it — `--vendor-path /latest` lands in `element.json` as `C:/Program Files/Git/latest`, `validate` PASSES it, the connector publishes, and it only fails at request time against the vendor with no local trace. Export `MSYS_NO_PATHCONV=1` and `MSYS2_ARG_CONV_EXCL='*'` once per shell (or prefix every builder command). Affects every path option — `--vendor-path`, `--resource-path`, `--method-vendor-path`, `--reference-path`, `--validation-vendor-path`, `--path`, `--polling-url`. Quoting does NOT help (the rewrite happens after the shell strips quotes). If a connector already carries a mangled path, repair it with `state patch`.
 12. **Author the field schema for EVERY activity — `activity create` does NOT infer fields.** An activity with no fields renders in Studio Web as a single raw JSON body in and raw JSON out, with zero typed inputs/outputs — a half-built connector that still validates and publishes, so the omission is easy to miss (it's a recurring failure: "got it valid and published" while skipping the schema). After `activity create`, ALWAYS define the request/response fields from the vendor's documented schema — either pass `--fields-file <json>` on `activity create` for the whole schema at once, or add them one at a time with `activity field create`. `validate` emits a WARNING for any fieldless activity — treat it as must-fix. Never report a connector "done" with fieldless activities; if a raw-body passthrough is genuinely intended, say so explicitly.
+13. **The icon must stay visible on a dark surface.** `app/element/image.svg` is the connector's icon in Studio Web. `builder validate` does NOT check this (it only warns when the file is missing), but the periodic build fails an icon whose ink has under 1.5:1 contrast on Studio Web's dark surface (`#1F1F1F`) — a black logo, or shapes with no `fill`. When you add or replace the icon, check it against the rules in [references/icon.md](references/icon.md). Fix black ink with a `@media (prefers-color-scheme: dark)` rule or `fill="currentColor"`. Never recolour a brand logo.
 
 ## Connection design (host, region, discovered values)
 
@@ -82,11 +83,14 @@ uip is connectors builder activity create --name accounts --vendor-path /v1/acco
 uip is connectors builder activity field create --resource accounts --name email \
   --type string --method GET --method POST --response
 
-# 4. Validate — must be 0 errors AND no unresolved warnings (fieldless activity,
+# 4. Replace the placeholder app/element/image.svg with the vendor's logo, and check
+#    it stays visible on a dark surface (Rule 13). validate does not check this.
+
+# 5. Validate — must be 0 errors AND no unresolved warnings (fieldless activity,
 #    broken SR link) before import.
 uip is connectors builder validate
 
-# 5. Import (create-or-update on the tenant) then publish.
+# 6. Import (create-or-update on the tenant) then publish.
 uip login
 uip is connectors import
 uip is connectors publish --wait        # blocks until SUCCESS; live in Studio Web then
@@ -171,6 +175,7 @@ Depth lives in `references/` — each self-contained. SKILL.md owns the workflow
 | Task → read this | Reference |
 |---|---|
 | What a connector is, file layout, the CRUD/curated/HTTP activity model | [references/overview.md](references/overview.md) |
+| Connector icon (`image.svg`): how the periodic build judges dark-surface visibility, fixes | [references/icon.md](references/icon.md) |
 | element.json internals: top-level fields, resources[], parameters[], value interpolation, hook order | [references/element-json.md](references/element-json.md) |
 | Standard-resource files: linking, metadata.method, curated, fields (visibility/design/searchable) | [references/standard-resources.md](references/standard-resources.md) |
 | configuration[] entries: widget types, screen types, per-auth key sets, pagination + event keys | [references/configuration.md](references/configuration.md) |
@@ -194,3 +199,4 @@ Depth lives in `references/` — each self-contained. SKILL.md owns the workflow
 10. Reaching for a removed command — there is no `connector scaffold/inspect/validate` wrapper (use `init`/`inspect`/`validate` directly), no `global`/`metadata`/`config`/`resource*`/`event polling add`/`auth scope`/`remote*`/`describe`/`reference`.
 11. Naming a field — especially the primary key — after a URL path token or your own convention instead of the key the vendor actually returns. Response fields are resolved by name against the raw vendor JSON, so a wrong name yields an empty activity output and NO error at any layer (standard-resources.md §fields).
 12. Reporting a connector "done" with fieldless activities (Rule 12) — `activity create` writes endpoints/methods/auth but NOT the field schema; an activity with no `field create` / `--fields-file` shows only a raw JSON body in Studio and trips a `validate` WARNING. Author fields before finishing, and never treat a 0-error/has-warnings validate as a pass.
+13. Shipping a black or unfilled icon (Rule 13) — it passes `validate` and then disappears on Studio Web's dark surface, and the periodic build fails it. Add a `prefers-color-scheme: dark` rule or use `currentColor`.

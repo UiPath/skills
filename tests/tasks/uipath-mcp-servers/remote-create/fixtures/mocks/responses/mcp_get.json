@@ -2,13 +2,21 @@
   "Result": "Success",
   "Code": "AgentHubMcpGet",
   "Data": {
-    "id": "mcp-mock-remote-01",
-    "slug": "mock-remote-api",
-    "name": "Mock Remote API",
-    "type": "remote",
-    "description": "Mock remote MCP server for skill regression tests.",
-    "uri": "https://mock.api.example.com",
-    "folderKey": "folder-mock-shared",
-    "toolCount": 2
+    "Id": "mcp-mock-remote-01",
+    "Name": "Mock Remote API",
+    "Slug": "mock-remote-api",
+    "Description": "Mock remote MCP server for skill regression tests.",
+    "Version": "1.0.0",
+    "CreatedAt": "2026-05-17T00:00:00.000Z",
+    "CreatedBy": "mock.user@example.com",
+    "IsActive": true,
+    "UseRelay": false,
+    "Type": 4,
+    "Status": 1,
+    "Arguments": "https://mock.api.example.com",
+    "EnvironmentVariables": "Authorization:%ASSETS/SLACK_BOT_TOKEN%",
+    "FolderKey": "folder-mock-shared",
+    "RuntimesCount": 0,
+    "McpUrl": "https://mock.uipath.example.com/mockorg/mocktenant/agenthub_/mcp/folder-mock-shared/mock-remote-api"
   }
 }

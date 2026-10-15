@@ -20,7 +20,7 @@ What can cause it:
 - `baseUrl` in `uipath.json` (injected as the `uipath:base-url` meta tag) points at the **portal domain** (`cloud.uipath.com`) instead of the **API subdomain** (`api.uipath.com`). The portal domain does not return `Access-Control-Allow-Origin` for browser XHR/fetch, so every SDK call is blocked.
 
 What to look for:
-- The host in the blocked request URL — if it is `cloud.uipath.com` (or `staging.uipath.com` / `alpha.uipath.com`), the base URL is wrong
+- The host in the blocked request URL — if it is a portal host such as `cloud.uipath.com` (no `api.` label), the base URL is wrong
 - The `baseUrl` value in `uipath.json`
 
 ## Investigation
@@ -40,7 +40,6 @@ What to look for:
   | Environment | Correct (`baseUrl`) | Wrong |
   |-------------|---------------------|-------|
   | cloud | `https://api.uipath.com` | `https://cloud.uipath.com` |
-  | staging | `https://staging.api.uipath.com` | `https://staging.uipath.com` |
-  | alpha | `https://alpha.api.uipath.com` | `https://alpha.uipath.com` |
+  | Other UiPath-hosted portal | `https://<PREFIX>.api.uipath.com` | `https://<PREFIX>.uipath.com` |
 
 After restarting, re-test. The API subdomain returns the CORS headers the browser requires.

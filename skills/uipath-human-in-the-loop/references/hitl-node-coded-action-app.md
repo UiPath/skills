@@ -6,6 +6,10 @@ Use this path when the user selects **New Coded Action App** in Step 3.
 
 ---
 
+<!--skill-flavor:flow-sdk-coded-action-app-gate:start-->
+**Builder-SDK Flow projects (`.flow.ts`) — the default:** author the action-app task with `hitl({ variant: 'action-app', ... })` in `<Name>.flow.ts` through the `uipath-maestro-flow` skill — see [hitl.md](../../uipath-maestro-flow/references/hitl.md). `compile` emits the node and overwrites the compiled `.flow`, so skip the "write the node into the `.flow`" step below; it applies to a JSON-authored `.flow`.
+
+<!--skill-flavor:flow-sdk-coded-action-app-gate:end-->
 ## Overview
 
 | Step | Action |

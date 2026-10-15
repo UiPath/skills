@@ -1,0 +1,47 @@
+{
+  "name": "VendorFeedSync",
+  "projectId": "5e8c1a72-4b3f-4d9e-a1c6-7f2b9d0e3a55",
+  "description": "Pulls the vendor feed through the internal helper library and logs the row count.",
+  "main": "Main.xaml",
+  "dependencies": {
+    "Acme.Internal.Helpers": "[1.0.0]",
+    "UiPath.System.Activities": "[24.10.9]"
+  },
+  "webServices": [],
+  "entitiesStores": [],
+  "schemaVersion": "4.0",
+  "studioVersion": "24.10.0.0",
+  "projectVersion": "1.0.0",
+  "runtimeOptions": {
+    "autoDispose": false,
+    "netFrameworkLazyLoading": false,
+    "isPausable": true,
+    "isAttended": false,
+    "requiresUserInteraction": true,
+    "supportsPersistence": false,
+    "workflowSerialization": "DataContract",
+    "excludedLoggedData": ["Private:*", "*password*"],
+    "executionType": "Workflow",
+    "readyForPiP": false,
+    "startsInPiP": false,
+    "mustRestoreAllDependencies": false,
+    "pipType": "ChildSession"
+  },
+  "designOptions": {
+    "projectProfile": "Developement",
+    "outputType": "Process",
+    "libraryOptions": { "privateWorkflows": [] },
+    "processOptions": { "ignoredFiles": [] },
+    "fileInfoCollection": [],
+    "modernBehavior": false,
+    "saveToCloud": false
+  },
+  "expressionLanguage": "VisualBasic",
+  "entryPoints": [
+    { "filePath": "Main.xaml", "uniqueId": "b2d4f6a8-0c1e-4e35-8b90-6a3f5d2c7b19", "input": [], "output": [] }
+  ],
+  "isTemplate": false,
+  "templateProjectData": {},
+  "publishData": {},
+  "targetFramework": "Legacy"
+}

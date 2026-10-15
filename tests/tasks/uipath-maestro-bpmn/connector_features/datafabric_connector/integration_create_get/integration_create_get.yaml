@@ -91,25 +91,40 @@ initial_prompt: |
   the task take precedence over this paragraph.
 success_criteria:
   - type: command_executed
-    description: "Advisory: agent queried the registry for Create Entity Record"
+    description: "Advisory: agent resolved the Create Entity Record operation (registry template or connection describe)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(CreateEntityRecordCurated|CreateEntityRecord_V3|FlowCodeEvalEntity)'
+    # Either arm's documented discovery path counts: v1 reads the registry template
+    # (`registry get … --object-name`), the builder SDK describes the operation on the
+    # connection (`uip is resources describe uipath-uipath-dataservice <object>`), which
+    # is what `.connector()` resolves against. Grading the v1 command alone cost the SDK
+    # arm 0.45 here on a process that passed every artifact check (run 2026-09-25).
+    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b))(?=.*\b(CreateEntityRecordCurated|CreateEntityRecord_V3|FlowCodeEvalEntity)\b)'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0
 
   - type: command_executed
-    description: "Advisory: agent queried the registry for Get Entity Record By Id"
+    description: "Advisory: agent resolved the Get Entity Record By Id operation (registry template or connection describe)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(GetEntityRecordByIdCurated|GetEntityRecord_V3|FlowCodeEvalEntity)'
+    # Either arm's documented discovery path counts: v1 reads the registry template
+    # (`registry get … --object-name`), the builder SDK describes the operation on the
+    # connection (`uip is resources describe uipath-uipath-dataservice <object>`), which
+    # is what `.connector()` resolves against. Grading the v1 command alone cost the SDK
+    # arm 0.45 here on a process that passed every artifact check (run 2026-09-25).
+    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b))(?=.*\b(GetEntityRecordByIdCurated|GetEntityRecord_V3|FlowCodeEvalEntity)\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 0.0
 
   - type: command_executed
-    description: "Advisory: agent queried the registry for Delete Entity Record"
+    description: "Advisory: agent resolved the Delete Entity Record operation (registry template or connection describe)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b[^\n]*--object-name\s+"?(DeleteEntityRecordCurated|DeleteEntityRecord_V3|FlowCodeEvalEntity)'
+    # Either arm's documented discovery path counts: v1 reads the registry template
+    # (`registry get … --object-name`), the builder SDK describes the operation on the
+    # connection (`uip is resources describe uipath-uipath-dataservice <object>`), which
+    # is what `.connector()` resolves against. Grading the v1 command alone cost the SDK
+    # arm 0.45 here on a process that passed every artifact check (run 2026-09-25).
+    command_pattern: '(?s)\A(?=.*(uip|\$UIP)\s+(maestro\s+bpmn\s+registry\s+get\s+Intsvc\.ActivityExecution\b|is\s+resources\s+describe\s+uipath-uipath-dataservice\b))(?=.*\b(DeleteEntityRecordCurated|DeleteEntityRecord_V3|FlowCodeEvalEntity)\b)'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0

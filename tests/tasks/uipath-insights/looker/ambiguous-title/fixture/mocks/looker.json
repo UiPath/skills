@@ -1,0 +1,209 @@
+{
+  "folders": {
+    "personal": [],
+    "tenant": [
+      {
+        "Id": "4410",
+        "Title": "Business ROI",
+        "OwnerName": "Priya Natarajan",
+        "HasRoiExplore": true,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "3120",
+        "Title": "Automation Health Overview",
+        "OwnerName": "Morgan Ellis",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "3121",
+        "Title": "Finance Close Tracker",
+        "OwnerName": "Priya Natarajan",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      }
+    ],
+    "templates": [
+      {
+        "Id": "UiPath-LI-AIU-Insights::aiu_tenant_overview",
+        "Title": "(Preview) AI Units tenant consumption",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::attended_reporting",
+        "Title": "Attended Reporting",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Jarvis-Insights::autopilot",
+        "Title": "Autopilot",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::business_roi",
+        "Title": "Business ROI",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": true,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::business_roi_queues",
+        "Title": "Business ROI Queues",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": true,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-IS-Insights::gen_ai_activities",
+        "Title": "GenAI Activities",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Healing-Insights::healingagent",
+        "Title": "Healing Agent",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-LI-AIU-Insights::aiu_documentunderstanding",
+        "Title": "IXP AI Unit consumption dashboard",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::orchmachinesinsights",
+        "Title": "Machines (Embedded)",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-AO-Insights::agentic_orchestration",
+        "Title": "Maestro",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-LI-AIU-Insights::aiu_organization_overview_org",
+        "Title": "Organization level AI Unit consumption",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-LI-AIU-Insights::aiu_process_mining",
+        "Title": "Process Mining AI Units consumption",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::processes",
+        "Title": "Processes",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::orchjobsinsights",
+        "Title": "Processes (Embedded)",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::queues",
+        "Title": "Queues",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::orchqueuesinsights",
+        "Title": "Queues (Embedded)",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "UiPath-Insights::robots",
+        "Title": "Robots and Machines",
+        "OwnerName": "UiPath",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": false,
+        "HasUserAttrOrCustomFields": false
+      }
+    ],
+    "organization": [
+      {
+        "Id": "5520",
+        "Title": "Business ROI",
+        "OwnerName": "Sam Okafor",
+        "HasRoiExplore": true,
+        "HasIntegrationModel": false,
+        "HasOrgScope": true,
+        "HasUserAttrOrCustomFields": false
+      },
+      {
+        "Id": "5510",
+        "Title": "Regional Throughput",
+        "OwnerName": "Sam Okafor",
+        "HasRoiExplore": false,
+        "HasIntegrationModel": false,
+        "HasOrgScope": true,
+        "HasUserAttrOrCustomFields": false
+      }
+    ]
+  }
+}
