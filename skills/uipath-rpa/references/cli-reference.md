@@ -378,7 +378,7 @@ uip rpa pack "<PROJECT_DIR>" "<OUTPUT_DIR>" --output json
 uip rpa publish "<NUPKG_PATH>" --output json
 ```
 
-`<PROJECT_DIR>` is positional 1 and contains `project.json`; `<OUTPUT_DIR>` is positional 2, must exist, and must be outside the project tree. `pack` refuses an in-tree output. Common optional flags (run `uip rpa pack --help` for the full set): `--package-version <SEMVER>` pins the version (otherwise project version); `--skip-analyze` skips analysis only for known-clean builds or a user-approved skipped rule ([§ Analyzer errors](#analyzer-errors)); `--governance-file-path <PATH>` applies governance. Capture JSON `PackagePath` (not merely `OutputPath`) for publishing. `pack` accepts neither `--project-path` nor `--project-dir`.
+`<PROJECT_DIR>` is positional 1 and contains `project.json`; `<OUTPUT_DIR>` is positional 2, must exist, and must be outside the project tree. `pack` refuses an in-tree output. Common optional flags (run `uip rpa pack --help` for the full set): `--package-version <SEMVER>` pins the version (otherwise project version); `--skip-analyze` skips the workflow-analyzer pass; use it only for known-clean builds or for a rule the user chose to skip ([§ Analyzer errors](#analyzer-errors)); `--governance-file-path <PATH>` applies governance. Capture JSON `PackagePath` (not merely `OutputPath`) for publishing. `pack` accepts neither `--project-path` nor `--project-dir`.
 
 `publish` takes a package, never a project folder. Without a destination flag it uses the package type: process/test to the tenant Processes feed, library to tenant Libraries. Success returns `Data.Destination` (`TenantFeed`, `PersonalWorkspace`, `FolderFeed`, `SharedLibraries`), `Data.Feed`, and `Data.FeedId`. Pass at most one destination:
 
