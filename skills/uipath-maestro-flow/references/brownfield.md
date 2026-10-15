@@ -26,6 +26,7 @@ uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
 
 uip maestro flow validate "$WORK/candidate/Deployed.flow" --output json
 cp -r "$WORK/candidate/." "$PROJECT/"
+# Then delete each directory merge listed as `flow-merge: remove <dir> ...`.
 uip maestro flow validate "$CANONICAL" --output json
 ```
 
@@ -58,13 +59,35 @@ Merge warns, does not carry, and refuses under `--strict` when:
   overwrote the baseline's `agent.json`, so merge cannot tell your edit from the
   round trip's own changes (`the edited <source>/agent.json differs from the
   original's ... The change is NOT carried`). Use separate directories.
-- the edit adds or removes an agent's resource (a context index or a tool).
-  Make that change on the canvas.
+- the edit changes or removes an agent resource that merge cannot pair with
+  one of the project's (see below). Make that change on the canvas.
 - the agent node carries its prompts on the node itself (older canvas saves).
   The edited `agent.json` would not be what runs. Make that change on the canvas.
 
 Never copy `$WORK/edited/<source>/` into the project by hand: it carries the
 round trip's changes along with yours.
+
+### Agent resources: added, changed, removed
+
+An agent's context index or tool lives in
+`<source>/resources/<dir>/resource.json`. The canvas and compile name `<dir>`
+differently, so merge pairs them by the node that names the directory:
+
+```
+flow-merge: wrote <source-uuid>/resources/<new-dir>/resource.json (carries added resource)
+flow-merge: wrote <source-uuid>/resources/<dir>/resource.json (carries settings.resultCount)
+flow-merge: remove <project>/<source-uuid>/resources/<dir> from the project: the edit removed this agent resource, and copying the candidate cannot delete it
+flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derived as compile does)
+```
+
+- An added or changed resource is installed by `cp -r`. A changed one keeps its
+  original directory.
+- A removed one is not: delete every directory merge lists under `remove`
+  (`removed` in `--json`). Otherwise the agent keeps that resource.
+- A resource another `.flow` in the project still uses is kept
+  (`flow-merge: kept <dir>: <Other>.flow still references it`).
+- In a Flow project, merge also writes `bindings_v2.json` with the changed
+  agent's rows re-derived, so a removed index is no longer declared.
 
 ## The generated pipeline
 
