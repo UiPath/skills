@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_RetailAccountOnboarding"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_RetailAccountOnboarding" name="Retail Account Onboarding {{RUN_TOKEN}}" isExecutable="false">
+    <bpmn:startEvent id="Start_ApplicationReceived" name="Application received">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:parallelGateway id="Gateway_SplitChecks">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="Task_ValidateId" name="Validate ID (Signicat)">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_ScreenKyc" name="KYC and sanctions screening (Trapets)">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:parallelGateway id="Gateway_JoinChecks">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="Task_ESign" name="Send terms for e-signature (Scrive)">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_Provision" name="Provision account (Temenos T24)">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="End_AccountLive" name="Account live">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_ApplicationReceived" targetRef="Gateway_SplitChecks" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Gateway_SplitChecks" targetRef="Task_ValidateId" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Gateway_SplitChecks" targetRef="Task_ScreenKyc" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_ValidateId" targetRef="Gateway_JoinChecks" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_ScreenKyc" targetRef="Gateway_JoinChecks" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Gateway_JoinChecks" targetRef="Task_ESign" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_ESign" targetRef="Task_Provision" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_Provision" targetRef="End_AccountLive" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_RetailAccountOnboarding">
+    <bpmndi:BPMNPlane id="Plane_RetailAccountOnboarding" bpmnElement="Process_RetailAccountOnboarding">
+      <bpmndi:BPMNShape id="Start_ApplicationReceived_di" bpmnElement="Start_ApplicationReceived">
+        <dc:Bounds x="100" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_SplitChecks_di" bpmnElement="Gateway_SplitChecks">
+        <dc:Bounds x="185" y="175" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ValidateId_di" bpmnElement="Task_ValidateId">
+        <dc:Bounds x="290" y="100" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ScreenKyc_di" bpmnElement="Task_ScreenKyc">
+        <dc:Bounds x="290" y="220" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_JoinChecks_di" bpmnElement="Gateway_JoinChecks">
+        <dc:Bounds x="485" y="175" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ESign_di" bpmnElement="Task_ESign">
+        <dc:Bounds x="590" y="160" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Provision_di" bpmnElement="Task_Provision">
+        <dc:Bounds x="780" y="160" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_AccountLive_di" bpmnElement="End_AccountLive">
+        <dc:Bounds x="972" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="136" y="200" /><di:waypoint x="185" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="210" y="175" /><di:waypoint x="210" y="140" /><di:waypoint x="290" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="210" y="225" /><di:waypoint x="210" y="260" /><di:waypoint x="290" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="430" y="140" /><di:waypoint x="510" y="140" /><di:waypoint x="510" y="175" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="430" y="260" /><di:waypoint x="510" y="260" /><di:waypoint x="510" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="535" y="200" /><di:waypoint x="590" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="730" y="200" /><di:waypoint x="780" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="920" y="200" /><di:waypoint x="972" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

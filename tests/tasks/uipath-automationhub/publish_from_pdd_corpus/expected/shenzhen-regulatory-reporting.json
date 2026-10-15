@@ -1,0 +1,31 @@
+{
+ "name_contains": "Monthly PBOC FCIS Capital-and-Position Reporting",
+ "documents": {
+  "pdd": "corpus/shenzhen-regulatory-reporting/pdd.md"
+ },
+ "systems": {
+  "Hundsun O45": [
+   "hundsun",
+   "o45"
+  ],
+  "CSDC Custody System": [
+   "csdc"
+  ],
+  "PBOC FCIS": [
+   "fcis",
+   "pboc"
+  ]
+ },
+ "optional_systems": {
+  "Internal Risk System": [
+   "risk system"
+  ],
+  "UiPath Orchestrator": [
+   "orchestrator"
+  ],
+  "CyberArk": [
+   "cyberark"
+  ]
+ },
+ "allow_other_category": true
+}

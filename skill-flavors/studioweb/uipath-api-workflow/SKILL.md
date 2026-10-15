@@ -42,7 +42,7 @@ Authentication and tenant context are inherited from the active Studio Web sessi
 <!--skill-flavor:runtime-validation-contract:end-->
 
 <!--skill-flavor:designer-literal-runtime-comparison:start-->
-5. **String literals in `Assign.set` / `Response` / If `when` MUST be wrapped as `"${'literal'}"`** — a JS string inside an expression. Studio Web's designer normalizes unwrapped values to `"${literal}"` on save, so use single quotes inside the expression: `"set": { "tier": "${'PLATINUM'}" }`. Numbers, booleans, and references like `${$context.variables.X}` need no extra wrapping. (Response payloads have a related but distinct constraint — see rule 15.) **Scope:** this rule applies to Assign / Response / If / variable contexts. Connector `bodyParameters` / `queryParameters` / `pathParameters` use BARE literals; `${'...'}` there is read as an expression and the field is cleared on save. See rule 16 and [references/connector-activity-discovery.md#field-shape-rules-flat-keys-bare-literals-renamed-export-hub-prefix](references/connector-activity-discovery.md#field-shape-rules-flat-keys-bare-literals-renamed-export-hub-prefix). See [references/troubleshooting.md](references/troubleshooting.md#studioweb-roundtrip-pitfalls).
+5. **String literals in `Assign.set` / `Response` / If `when` MUST be wrapped as `"${'literal'}"`** — a JS string inside an expression. Studio Web's designer normalizes unwrapped values to `"${literal}"` on save, so use single quotes inside the expression: `"set": { "tier": "${'PLATINUM'}" }`. Numbers, booleans, and references like `${$context.variables.X}` need no extra wrapping. (Response payloads have a related but distinct constraint — see rule 15.) **Scope:** this rule applies to Assign / Response / If / variable contexts. Connector `bodyParameters` / `queryParameters` / `pathParameters` use BARE literals; `${'...'}` there is read as an expression and the field is cleared on save. See rule 16 and [references/connector-activity-discovery.md#response-shape-and-field-rules](references/connector-activity-discovery.md#response-shape-and-field-rules). See [references/troubleshooting.md](references/troubleshooting.md#studioweb-roundtrip-pitfalls).
 <!--skill-flavor:designer-literal-runtime-comparison:end-->
 
 <!--skill-flavor:runtime-validation-limit:start-->
@@ -123,3 +123,11 @@ Fix failures in category order — **Structure > Expression > Activity Config > 
 <!--skill-flavor:file-run-cli:start-->
     In Studio Web the run goes through the consent-gated, schema-inspected `RunProject` host operation; file arguments are supplied through the fields it declares for `JobAttachment` inputs (the host uploads them), and returned files appear as attachment references in the host result. Validation with `uip api-workflow validate` works offline as usual.
 <!--skill-flavor:file-run-cli:end-->
+
+<!--skill-flavor:trigger-binding-registration:start-->
+    - **Studio Web owns the trigger's deployment registration.** It derives the `EventTrigger` binding from the saved workflow; treat host-generated bindings and solution resources as authoritative (rule 16). Keep the trigger's `objectName` / `eventType` / `eventMode` / `filterExpression` accurate. After saving, confirm it renders as a **trigger card**; a plain connector card means wrong event metadata — re-stub.
+<!--skill-flavor:trigger-binding-registration:end-->
+
+<!--skill-flavor:trigger-debug-contract:start-->
+    - **Exercise a trigger by supplying the payload.** Pass an execution input shaped like the event's output fields through the host `RunProject` operation; the trigger passes it through. With no input the runtime fetches a recent event through the live connection (`polling` always, `webhooks` only where the connector supports debug polling) — side-effecting under rule 21.
+<!--skill-flavor:trigger-debug-contract:end-->

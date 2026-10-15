@@ -1,4 +1,7 @@
-"""The routing part of each preview Maestro SKILL.md must arrive in an agent's first read.
+"""The routing part of each builder-SDK Maestro SKILL.md must arrive in an agent's first read.
+
+Checked: the promoted `skills/uipath-maestro-flow` and every skill still under
+`preview/skills/` (Case, BPMN).
 
 Agents open SKILL.md with a line window, not the whole file. In run
 adhoc-2026-09-23_16-15-07 (codex gpt-5.6-luna, v2 arm), 121 of the 122 tasks
@@ -46,6 +49,8 @@ import pytest
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.normpath(os.path.join(_HERE, "..", "..", "..", ".."))
 _PREVIEW_SKILLS = os.path.join(_REPO, "preview", "skills")
+# Promoted out of preview/ (the SDK Flow skill); still held to the same window.
+_PROMOTED_SKILLS = [os.path.join(_REPO, "skills", "uipath-maestro-flow", "SKILL.md")]
 
 ROUTER_WINDOW = 220
 POINTER_WINDOW = 240
@@ -218,7 +223,11 @@ def window_slack(text: str) -> dict[str, int]:
 
 
 def _preview_skills() -> list[str]:
-    return sorted(glob.glob(os.path.join(_PREVIEW_SKILLS, "*", "SKILL.md")))
+    # preview/skills/uipath-maestro-flow is a symlink to the promoted tree, so the
+    # glob and _PROMOTED_SKILLS name the same file; check each real file once.
+    found = glob.glob(os.path.join(_PREVIEW_SKILLS, "*", "SKILL.md"))
+    found += [p for p in _PROMOTED_SKILLS if os.path.isfile(p)]
+    return sorted({os.path.realpath(p): p for p in sorted(found, key=len)}.values())
 
 
 def _skill_id(path: str) -> str:
@@ -229,7 +238,7 @@ def test_every_required_skill_is_present():
     # Otherwise a moved folder would leave the parametrized test below with
     # nothing to check.
     missing = sorted(set(REQUIRED) - {_skill_id(p) for p in _preview_skills()})
-    assert not missing, f"preview skills missing from {_PREVIEW_SKILLS}: {missing}"
+    assert not missing, f"SDK skills missing from {_PREVIEW_SKILLS} and {_PROMOTED_SKILLS}: {missing}"
 
 
 @pytest.mark.parametrize("path", _preview_skills(), ids=_skill_id)

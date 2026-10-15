@@ -191,6 +191,28 @@ flowchart LR
 |---|---|---|---|---|
 | `<FLOW_KEY>` | `<SOURCE_NODE>` | `<TARGET_NODE>` | <EXPRESSION_OR_—> | <NOTES> |
 
+### Decision Tables
+
+<!-- references/business-rules-guide.md → Decision tables. Each decision runs in a businessRuleTask (§4); gateways route on its output. Validation rules go in §7. Empty: `None. No rule decides an outcome.` -->
+
+#### D1 — <DECISION_NAME>
+**Hit policy:** <UNIQUE / FIRST / COLLECT>
+**Inputs:** `<INPUT_NAME>` (<string / number / boolean / date>), …
+**Output:** `<OUTPUT_NAME>` (<TYPE_AND_ALLOWED_VALUES>)
+**Runs in:** `<BUSINESS_RULE_TASK_NODE_KEY>`
+
+| # | <INPUT_NAME> | <INPUT_NAME> | → <OUTPUT_NAME> | Rule |
+|---|---|---|---|---|
+| 1 | <ENTRY> | <ENTRY> | <OUTPUT> | <BR_ID> |
+
+### Rules That Need Reasoning
+
+<!-- references/business-rules-guide.md → Rules that need reasoning. Agent: a serviceTask hosting the agent. Person: a userTask, also in §9 HITL Touchpoints. Empty: `None. Every rule is deterministic.` -->
+
+| ID | Rule | Applied by | Inputs → Output | Where it runs |
+|---|---|---|---|---|
+| <BR_ID> | <RULE> | <Agent / Person> | <INPUTS> → <OUTPUT> | `<NODE_KEY>` |
+
 ---
 
 ## 6. Events
@@ -207,7 +229,7 @@ flowchart LR
 
 ## 7. Data Objects & Variables
 
-<!-- Process variables and data objects passed between nodes. -->
+<!-- Process variables and data objects passed between nodes. A validation business rule (regex / range / type / allowed values) goes in Description, prefixed with its BR ID. -->
 
 | Name | Direction | Type | Scope | Default | Description |
 |---|---|---|---|---|---|
@@ -420,7 +442,9 @@ This SDD captures architecture and decisions. To generate the implementation tas
 
 > Load `uipath-planner`. SDD path: `<this-file>`.
 
+<!--skill-flavor:planner-next-step:start-->
 The planner detects the `## Planner Handoff` header, parses §4 Activities Inventory and §9 Integrated Components, derives the per-skill task list (routing each task to `uipath-maestro-bpmn`, `uipath-rpa`, `uipath-agents`, `uipath-api-workflow`, `uipath-platform`, etc. — userTask/HITL nodes stay inline with `uipath-maestro-bpmn`), writes `<PROCESS_NAME_KEBAB>-tasks.md` alongside this SDD, and emits live `TaskCreate` calls. If `Execution autonomy: interactive`, it enters plan mode for task review before execution.
+<!--skill-flavor:planner-next-step:end-->
 
 Implementation tasks **do not live in this SDD** — they live in the planner's output.
 

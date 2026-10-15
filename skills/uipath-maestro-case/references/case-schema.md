@@ -7,7 +7,7 @@ Structural reference for the case definition JSON. Shared across all node types.
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "30.0.0",
+  "version": "32.0.3",
   "name": "<case name>",
   "description": "<optional>",
   "metadata": {
@@ -16,7 +16,6 @@ Structural reference for the case definition JSON. Shared across all node types.
     "caseAppEnabled": false,
     "publishVersion": 2,
     "caseUnifiedSchemaEnabled": true,
-    "caseDirectlyPassTaskOutputs": true,
     "intsvcActivityConfig": "v2",
     "slaRules": [ ... ],
     "caseExitRules": [ ... ]
@@ -73,7 +72,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "30.0.0",
+  "version": "32.0.3",
   "name": "Loan Approval",
   "description": "case description",
   "metadata": {
@@ -82,7 +81,6 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
     "caseAppEnabled": false,
     "publishVersion": 2,
     "caseUnifiedSchemaEnabled": true,
-    "caseDirectlyPassTaskOutputs": true,
     "intsvcActivityConfig": "v2",
     "slaRules": [
       { "id": "slaQ4wZ1xC8", "displayName": "Default", "expression": "=js:true", "count": 5, "unit": "d" }
@@ -95,7 +93,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string | Unique ID, `case-` + 10 random chars (auto-generated) |
-| `version` | string | Schema version — `"30.0.0"`. Emitted by the `case` plugin at T01. |
+| `version` | string | Schema version — `"32.0.3"`. Emitted by the `case` plugin at T01. |
 | `name` | string | Human-readable name |
 | `description` | string? | Case description |
 | `metadata.caseIdentifier` | string | Runtime identifier. `constant` → literal prefix. `external` → `=`-prefixed expression. See § Case identifier below. |
@@ -103,7 +101,7 @@ Metadata and configuration for the case definition. Top-level fields (`id`, `ver
 | `metadata.caseAppEnabled` | boolean | Whether the Case App UI is enabled |
 | `metadata.publishVersion` | number? | Publish version — `2` for current schema |
 | `metadata.caseUnifiedSchemaEnabled` | boolean? | Unified-schema flag (`true`) |
-| `metadata.caseDirectlyPassTaskOutputs` | boolean? | Passes task outputs directly through messages instead of shared variables, fixing race conditions on task outputs in cases with parallel tasks. Schema-optional, defaults `true` when absent; skill emits the T01 `directly-pass-task-outputs` value (`true` unless sdd.md requested `false`). |
+| `metadata.caseDirectlyPassTaskOutputs` | boolean? | Retired: since PO.Frontend `15cd541e9` (2026-06-16) task outputs always pass directly through messages, and nothing reads this key. The Case Designer drops it on open. Do not write it; leave it in place in an existing plan, where it is harmless. |
 | `metadata.intsvcActivityConfig` | string? | Integration-service activity configuration payload |
 | `metadata.slaRules` | SlaRuleEntry[]? | Conditional + default SLA rules for the case. Every rule has a non-empty target-unique `displayName` without `:`; default SLA lives here as the trailing entry with `expression: "=js:true"`. Escalations attach inside each rule's `escalationRule[]`. See §6. |
 | `metadata.caseExitRules` | CaseExitCondition[]? | Conditions that mark the case as complete |
@@ -522,12 +520,14 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `agent` | `plugins/tasks/agent/` |
 | `rpa` | `plugins/tasks/rpa/` |
 | `api-workflow` | `plugins/tasks/api-workflow/` |
+| `function` | `plugins/tasks/function/` |
+| `business-rule` | `plugins/tasks/business-rule/` |
 | `case-management` | `plugins/tasks/case-management/` |
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 
-> **Not supported yet — do NOT author.** `external-agent`, `external-workflow`, `document-extraction`, `flow-process`. None of these are valid in `caseplan.json` (SKILL.md Rule 17).
+> **Not supported yet — do NOT author.** `external-agent`, `external-workflow`, `document-extraction`, `flow-process`. None of these are valid in `caseplan.case` (SKILL.md Rule 17).
 
 ---
 
@@ -536,7 +536,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "30.0.0",
+  "version": "32.0.3",
   "name": "Simple Case",
   "metadata": {
     "caseIdentifier": "Simple Case",
@@ -544,7 +544,6 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
     "caseAppEnabled": false,
     "publishVersion": 2,
     "caseUnifiedSchemaEnabled": true,
-    "caseDirectlyPassTaskOutputs": true,
     "intsvcActivityConfig": "v2"
   },
   "bindings": [],
@@ -575,7 +574,7 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 
 ## Appendix — Edge shapes (read-only — never author)
 
-> **Read-only reference (Rule 21 — edges retired).** Documented ONLY so a canvas-round-tripped file (where the FE may have materialized edges) is still readable. Never copy these into a build or write an edge object into `caseplan.json` — see §4.
+> **Read-only reference (Rule 21 — edges retired).** Documented ONLY so a canvas-round-tripped file (where the FE may have materialized edges) is still readable. Never copy these into a build or write an edge object into `caseplan.case` — see §4.
 
 ### a) TriggerEdge — `"case-management:TriggerEdge"`
 

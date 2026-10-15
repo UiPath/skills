@@ -471,6 +471,7 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
       "references/expressions-and-context.md",
       "references/operating-published-workflows.md",
       "references/task-types.md",
+      "references/trigger-authoring-guide.md",
       "references/troubleshooting.md",
       "references/workflow-file-format.md",
     ].map((relativePath) => [
@@ -665,6 +666,21 @@ test("a .canonical pin composes that skill from classic/skills for its flavor on
 
   const defaults = createDefaultPlan(repo);
   assert.ok(defaults.files.every(({ sourcePath }) => !sourcePath.includes(join("classic", "skills"))));
+  assert.doesNotThrow(() => createAllVariants(repo));
+});
+
+test("a flavor may consist of a canonical pin alone", (t) => {
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-flow", "Current generation.\n");
+  addClassicSkill(repo, "uipath-flow", "Classic generation.\n");
+  pin(repo, "studioweb", "uipath-flow");
+  const studio = join(repo, "skill-flavors", "studioweb");
+  const plan = createCompositionPlan(repo, studio);
+  assert.deepEqual(plan.pinnedSkills, ["uipath-flow"]);
+  assert.equal(plan.replacementCount, 0);
+  const output = join(repo, "out");
+  materializeComposition(plan, output);
+  assert.match(readFileSync(join(output, "uipath-flow", "SKILL.md"), "utf8"), /Classic generation/);
   assert.doesNotThrow(() => createAllVariants(repo));
 });
 

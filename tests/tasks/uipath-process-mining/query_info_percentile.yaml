@@ -9,7 +9,7 @@ description: >
   Complements query_group_by_sugar, which covers the sugar path where ids are
   resolved for the agent.
 
-  Command-construction only — no live tenant. Commands fail with auth errors;
+  Command-construction only — no live tenant. Commands fail;
   what matters is the shape of the query the agent constructs.
 tags: [uipath-process-mining, smoke, mode:diagnose, lifecycle:discover, query, percentile]
 

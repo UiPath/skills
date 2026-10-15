@@ -8,8 +8,8 @@
  *
  *   node scripts/audit-capability-port.mjs <ga-path> <preview-file>
  *   node scripts/audit-capability-port.mjs \
- *     skills/uipath-maestro-flow/references/operate \
- *     preview/skills/uipath-maestro-flow/references/operate.md
+ *     skills/uipath-maestro-bpmn/references/operate \
+ *     preview/skills/uipath-maestro-bpmn/references/bpmn-runtime.md
  *
  * `<ga-path>` is a file or a directory; a directory reads its `*.md`. Advisory:
  * it always exits 0. A missing item can be a deliberate omission — the point is

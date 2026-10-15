@@ -37,6 +37,11 @@ OWNERS = {
     "TRIAGE": "failed_run_triage_diagnose.yaml",
     "PERMPRE": "project_permissions_preflight_smoke.yaml",
     "PERMAT": "project_permissions_access_integration.yaml",
+    "PSET": "project_settings_smoke.yaml",
+    "PARAM": "testcase_parameters_bulk_add_smoke.yaml",
+    "PARAMEDIT": "testcase_parameters_edit_integration.yaml",
+    "PARAMLIFE": "testcase_parameters_lifecycle_e2e.yaml",
+    "PARAMASK": "testcase_parameters_ask_first_integration.yaml",
 }
 
 

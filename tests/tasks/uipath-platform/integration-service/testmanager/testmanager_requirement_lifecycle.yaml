@@ -49,7 +49,7 @@ success_criteria:
   - type: command_executed
     description: "Create Requirement"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?Requirement'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+create\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?Requirement'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -57,7 +57,7 @@ success_criteria:
   - type: command_executed
     description: "Get Requirement"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?Requirement'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?Requirement'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -65,7 +65,7 @@ success_criteria:
   - type: command_executed
     description: "Update Requirement"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?Requirement'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+update\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?Requirement'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -73,7 +73,7 @@ success_criteria:
   - type: command_executed
     description: "Delete Requirement"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?Requirement'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?Requirement'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -81,14 +81,14 @@ success_criteria:
   - type: command_executed
     description: "Assign Test Cases to Requirement"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?AssignTestCasesToRequirement'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?AssignTestCasesToRequirement'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
   - type: command_executed
     description: "Get Assigned Test Cases for Requirement"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetAssignedTestCasesForRequirement'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?GetAssignedTestCasesForRequirement'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
