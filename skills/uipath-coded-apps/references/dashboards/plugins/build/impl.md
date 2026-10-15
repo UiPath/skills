@@ -27,9 +27,8 @@ Verify `Data.Status === "Logged in"` — if not, stop and tell the user to run `
 
 | cloudUrl | apiUrl |
 |----------|--------|
-| `https://alpha.uipath.com` | `https://alpha.api.uipath.com` |
-| `https://staging.uipath.com` | `https://staging.api.uipath.com` |
 | `https://cloud.uipath.com` | `https://api.uipath.com` |
+| `https://<PREFIX>.uipath.com` | `https://<PREFIX>.api.uipath.com` |
 
 Rule: insert `api.` before `uipath.com`. Exception: `cloud.uipath.com` → `api.uipath.com`.
 

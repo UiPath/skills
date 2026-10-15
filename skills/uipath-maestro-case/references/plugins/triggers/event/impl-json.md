@@ -1,6 +1,6 @@
 # event trigger — Implementation (Direct JSON Write)
 
-Configure the case-level event trigger by writing directly into the trigger node in `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md). Phase 3 calls `uip maestro case spec --type trigger --input-details` once and consumes the populated `caseShape`.
+Configure the case-level event trigger by writing directly into the trigger node in `caseplan.case`. Field discovery and reference resolution are done during [planning](planning.md). Phase 3 calls `uip maestro case spec --type trigger --input-details` once and consumes the populated `caseShape`.
 
 For shared CLI invocation, placeholder substitution, anti-patterns, and the canonical form for filter expressions with variable references, see [connector-trigger-impl.md](../../../connector-trigger-impl.md). For the per-sink canonical-form table covering all expression-syntax decisions in this skill, see [bindings-and-expressions.md § Canonical form per sink](../../../bindings-and-expressions.md#canonical-form-per-sink). This doc covers only the **trigger-node-specific** parts.
 
@@ -55,7 +55,7 @@ For each entry in `caseShape.inputs[]` (these are trigger configuration: `eventP
 
 > **`caseShape.outputs[]` are NOT minted here.** Under B's redesign, all writes to `triggerNode.data.inputs.outputs[]` are owned by the variables plugin (see [`../../variables/global-vars/impl-json.md` § Dispatcher Loop](../../variables/global-vars/impl-json.md)). This plugin captures the un-minted `caseShape.outputs[]` into `tasks/trigger-spec-cache.json` (Step 8) for the variables plugin to consume.
 
-## Step 7 — Build trigger node and write to caseplan.json
+## Step 7 — Build trigger node and write to caseplan.case
 
 ### 7a. Identify or create the trigger node
 

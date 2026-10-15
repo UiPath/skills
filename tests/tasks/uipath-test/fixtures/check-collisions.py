@@ -38,6 +38,11 @@ OWNERS = {
     "TCLOG": "testcaselog_override_integration.yaml",
     "TCLOGRD": "testcaselog_read_smoke.yaml",
     "TCLOGMR": "testcaselog_manual_record_e2e.yaml",
+    "PSET": "project_settings_smoke.yaml",
+    "PARAM": "testcase_parameters_bulk_add_smoke.yaml",
+    "PARAMEDIT": "testcase_parameters_edit_integration.yaml",
+    "PARAMLIFE": "testcase_parameters_lifecycle_e2e.yaml",
+    "PARAMASK": "testcase_parameters_ask_first_integration.yaml",
 }
 
 

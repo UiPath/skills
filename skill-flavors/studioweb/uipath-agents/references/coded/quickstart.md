@@ -36,3 +36,6 @@ Use when the coded agent is tightly coupled to one flow and lives as a sibling f
 <!--skill-flavor:local-workspace-delivery:start-->
    - **(1) `project_state == local-workspace`** → Studio Web auto-syncs saves to the remote SW project, so option A (manual push) is skipped — it would be redundant or break sync identity. The user may still want a local dev console. Stop and ask the user (single choice, "Delivery"):
 <!--skill-flavor:local-workspace-delivery:end-->
+
+<!--skill-flavor:flow-sdk-coded-agent-gate:start-->
+<!--skill-flavor:flow-sdk-coded-agent-gate:end-->

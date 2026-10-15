@@ -1,0 +1,42 @@
+{
+ "name_contains": "Automated Network Fault Detection and Remediation",
+ "documents": {
+  "pdd": "corpus/vastnet-fault-remediation/pdd.md",
+  "process_map": "corpus/vastnet-fault-remediation/process-map.bpmn"
+ },
+ "systems": {
+  "SolarWinds NPM": [
+   "solarwinds"
+  ],
+  "Dynatrace": [],
+  "Infosim StableNet": [
+   "stablenet",
+   "infosim"
+  ],
+  "ServiceNow": [],
+  "AWX / Ansible Tower": [
+   "awx",
+   "ansible"
+  ],
+  "Kubernetes": [
+   "kubernetes",
+   "k8s"
+  ],
+  "GitLab": [],
+  "Splunk Enterprise": [
+   "splunk"
+  ]
+ },
+ "optional_systems": {
+  "VastNet Integration Bus": [
+   "integration bus"
+  ],
+  "VastNet Path Controller": [
+   "path controller"
+  ],
+  "PagerDuty": [
+   "pagerduty"
+  ]
+ },
+ "allow_other_category": true
+}

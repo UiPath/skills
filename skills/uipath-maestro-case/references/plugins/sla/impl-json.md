@@ -65,7 +65,7 @@ After grouping elements by target, compose the `slaRules` array and write it int
 ```json
 {
   "id": "case-aBcDeFgHiJ",
-  "version": "30.0.0",
+  "version": "32.0.3",
   "metadata": {
     "caseIdentifier": "<...>",
     "caseUnifiedSchemaEnabled": true,

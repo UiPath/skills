@@ -33,7 +33,7 @@ Reference for comparing **coded** (Python) and **low-code** (agent.json) agents.
 | Language | Python | Declarative JSON (`agent.json`) |
 | CLI | `uip codedagent` | `uip agent` + `uip solution` |
 | Project marker | `pyproject.toml` + `.py` files | `agent.json` + `project.uiproj` |
-| Frameworks | LangGraph, LlamaIndex, OpenAI Agents, Coded Function | None (prompt + tools config) |
+| Frameworks | LangGraph, LlamaIndex, OpenAI Agents | None (prompt + tools config) |
 | Deployment | `uip codedagent deploy` | `uip solution pack/publish/deploy` |
 | Local testing | `uip codedagent run` | Studio Web only |
 | Evaluations | `uip codedagent eval` (13 evaluator types) | Not available |

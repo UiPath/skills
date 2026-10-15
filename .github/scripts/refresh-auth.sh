@@ -25,7 +25,7 @@ set -euo pipefail
 : "${CE_USERNAME:?CE_USERNAME not set}"
 : "${CE_PASSWORD:?CE_PASSWORD not set}"
 
-# Output path is overridable: the Windows delegate-sdk path mints to a separate
+# Output path is overridable: the Windows delegate path mints to a separate
 # file so the uip CLI's own browser-OAuth login in ~/.uipath/.auth stays intact.
 : "${AUTH_FILE:=${HOME}/.uipath/.auth}"
 mkdir -p "$(dirname "$AUTH_FILE")"

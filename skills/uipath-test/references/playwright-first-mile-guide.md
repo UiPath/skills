@@ -16,7 +16,7 @@ There is **no link step**. Do **NOT** run `uip tm testcases link-automation` on 
 
 For `--output json`, parse the JSON envelope from the first `{` through its matching final `}` (or read the last balanced JSON object). Auto-updater chatter, `Update completed with failures.`, `Resolved project …` lines, and telemetry warnings may occur on either side. Judge the command only by the envelope's `Result` field.
 
-`testsets playwright-context` and `run --playwright-project` are hidden from `--help`. Older CLIs may return `unknown command` / `unknown option`: if the probe is missing, skip Step 5 and continue; if `--playwright-project` is rejected, run without it so every project in the package config runs, and do not retry the flag. Project scoping still works without the probe.
+`testsets playwright-context` and `run --playwright-project` need a recent CLI. Older ones may return `unknown command` / `unknown option`: if the probe is missing, skip Step 5 and continue; if `--playwright-project` is rejected, run without it so every project in the package config runs, and do not retry the flag. Project scoping still works without the probe.
 
 ## Prerequisites
 
@@ -98,7 +98,7 @@ Create and fill the set:
 uip tm testsets create --project-key <PROJECT_KEY> --name "PW Smoke" --output json
 uip tm testcases add --test-set-key <TEST_SET_KEY> --labels "PW_File_<path>" --output json
 ```
-Capture `TestSetKey` (for example `DEMO:10`). `--labels` is variadic, space-separated, exact, case-sensitive, and OR-matched; quote names containing spaces and discover real names with `uip tm objectlabel list` rather than guessing. It accepts any object label; `PW_*` are ingestion labels only. It is mutually exclusive with `--test-case-keys`; pass exactly one.
+Capture `TestSetKey` (for example `DEMO:10`). `--labels` is variadic, space-separated, exact, case-insensitive, and OR-matched; quote names containing spaces and discover real names with `uip tm objectlabel list` rather than guessing. It accepts any object label; `PW_*` are ingestion labels only. It is mutually exclusive with `--test-case-keys`; pass exactly one.
 
 Labels select **tests**; `--playwright-project` selects browsers/projects. To run a whole suite on one browser, fill with `PW_Suite_*` or `PW_File_*` and pass that browser in Step 6. `PW_Project_<name>` selects tests participating in that project but does not make the run project-only. To run only a project, label-fill the desired tests by tag, suite, or file and pass the project name at run time.
 

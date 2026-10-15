@@ -189,9 +189,7 @@ Every activity gets an inline ViewState dictionary and a unique IdRef:
 
 ### IdRef Naming
 
-Format: `{ActivityTypeName}_{Counter}`. Counters are per-type and sequential within the file.
-
-Examples: `Flowchart_1`, `FlowStep_1`, `FlowDecision_1`, `Assign_1`, `StateMachine_1`, `State_1`, `Transition_1`, `ProcessDiagram_1`, `EventNode_1`, `TaskNode_1`.
+Generation, stability, and scope rules: [xaml-basics-and-rules.md Rule 25](xaml-basics-and-rules.md#critical-rules--xaml-rules-1621a-24-25). Canvas examples: `Flowchart_1`, `FlowStep_1`, `FlowDecision_1`, `FlowSwitch`1_1`, `StateMachine_1`, `State_1`, `Transition_1`, `ProcessDiagram_1`, `EventNode_1`, `TaskNode_1`.
 
 ### HintSize
 
