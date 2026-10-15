@@ -59,7 +59,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "An AI Trust Layer policy the agent created (iso-42001-2023-*) is assigned to the tenant (shim state)"
+    # Advisory: the prompt SKIPs the providers list, the only value this control
+    # needs, so "nothing to apply, configure it manually" is a valid outcome.
+    description: "An AI Trust Layer policy the agent created (iso-42001-2023-*) is assigned to the tenant (shim state; advisory — SKIP can leave nothing to apply)"
     command: >-
       python3 -c "import json, os, sys;
       p = 'mocks/state.json';
@@ -69,7 +71,7 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: file_exists
     description: "Command output captured to output.txt"
