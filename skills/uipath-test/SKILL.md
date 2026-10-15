@@ -100,7 +100,7 @@ Project-scoped custom-field **definitions** (attach to Requirement/TestCase/Test
 
 ### Object labels
 
-Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet`, `TestExecution`, or `TestCaseLog`. Full list/get/add/remove surface, `--label-types`, and authoritative-set (`--remove-other-labels`) semantics: [references/object-labels-guide.md](references/object-labels-guide.md).
+Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet`, `TestExecution`, or `TestCaseLog`. Anti-patterns (label id vs object id; `--remove-other-labels` deleting hidden internal labels): [references/object-labels-guide.md](references/object-labels-guide.md).
 
 ## Critical Rules
 
