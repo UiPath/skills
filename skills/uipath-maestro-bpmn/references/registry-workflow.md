@@ -98,9 +98,10 @@ generated packages to invent the missing live schema.
 > Author every new connector node as a V2 element from `registry get
 > --input-details` instead of filling the template below, in new and existing
 > workflows alike — see [v2-connector-nodes.md](v2-connector-nodes.md). The
-> template stays the reference for reading existing V1 nodes, and for an older
-> CLI without `--input-details`. The rest of this section is how to find the
-> connection and object.
+> template stays the reference for reading existing V1 nodes. On a CLI that
+> rejects `--input-details` (`unknown option`), fill the template by every rule
+> in this section, including [one `target="body"` input](#body-shape-hand-authored-files-need-one-targetbody-input)
+> holding the whole request body.
 
 For connector **activity** types (`requiresDiscovery: Yes`, e.g.
 `Intsvc.ActivityExecution`), resolve a live connection and object, then enrich.
