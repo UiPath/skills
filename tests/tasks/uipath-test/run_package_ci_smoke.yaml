@@ -1,8 +1,6 @@
-# skip:true until UiPath/cli#4845 (`uip tm run --type package`) merges to cli
-# main: smoke installs `@uipath/cli@dev`, which only has the command after that
-# merge. Flip to skip:false once the catalog refresh lists `tm run`.
+# Needs `uip tm run --type package` (UiPath/cli#4845, in `@uipath/cli@dev` and
+# every release after it).
 task_id: skill-test-run-package-ci-smoke
-skip: true
 description: >
   Smoke test: agent uses the uipath-test skill to run every test in a package
   already uploaded to Orchestrator, the way a CI step would, with
