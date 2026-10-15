@@ -55,11 +55,7 @@ success_criteria:
 
   - type: run_command
     description: "The pack was really enabled on the tenant (shim state)"
-    command: >-
-      python3 -c "import json, os, sys;
-      p = 'mocks/state.json';
-      s = json.load(open(p)) if os.path.exists(p) else {};
-      sys.exit(0 if s.get('enabled') else 1)"
+    command: 'python3 mocks/check_state.py enabled'
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

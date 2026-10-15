@@ -348,6 +348,26 @@ def cheat_invented_tenants(sb: Sandbox):
         sb.uip("gov", "compliance-packs", "state", "enable", "tenant", f"deadbeef-0000-4000-8000-00000000000{n}", PACK)
 
 
+def on_another_tenant(verb):
+    """The right state change, on a tenant the login can see but is not on."""
+    return lambda sb: sb.ok("gov", "compliance-packs", "state", verb, "tenant", TENANT_2, PACK)
+
+
+def at_org_scope(verb):
+    # Attempted, not required to succeed: the shim answers some org-scope calls with a 409.
+    return lambda sb: sb.uip("gov", "compliance-packs", "state", verb, "organization", ORG, PACK)
+
+
+def assign_on_another_tenant(product):
+    def run(sb: Sandbox):
+        pid = sb.ok("gov", "aops-policy", "create", "--name", f"{PACK}-x", "--product-name", product,
+                    "--input", write(sb, "d.json", {"k": 1}))["Identifier"]
+        rows = [{"productIdentifier": product, "licenseTypeIdentifier": "NoLicense", "policyIdentifier": pid}]
+        sb.ok("gov", "aops-policy", "deployment", "tenant", "configure", TENANT_2,
+              "--tenant-name", "Other", "--input", write(sb, "a.json", rows))
+    return run
+
+
 def assign_existing(product):
     """Assign a policy that was already on the tenant instead of creating the pack's own."""
     def run(sb: Sandbox):
@@ -373,10 +393,14 @@ GOOD = {
     "partial_apply_smoke": partial_apply("AITrustLayer"),
 }
 CHEATS = {
+    "apply_commands_smoke": [on_another_tenant("enable")],
+    "disable_smoke": [on_another_tenant("disable"), at_org_scope("disable")],
+    "restore_smoke": [on_another_tenant("restore"), at_org_scope("restore")],
     "org_scope_smoke": [cheat_org_scope, cheat_org_id_as_a_tenant, cheat_invented_tenants],
-    "partial_apply_aitl_smoke": [cheat_wrong_product, assign_existing("AITrustLayer")],
-    "interactive_values_smoke": [cheat_wrong_product, assign_existing("Robot")],
-    "partial_apply_smoke": [assign_existing("AITrustLayer")],
+    "partial_apply_aitl_smoke": [cheat_wrong_product, assign_existing("AITrustLayer"),
+                                 assign_on_another_tenant("AITrustLayer")],
+    "interactive_values_smoke": [cheat_wrong_product, assign_existing("Robot"), assign_on_another_tenant("Robot")],
+    "partial_apply_smoke": [assign_existing("AITrustLayer"), assign_on_another_tenant("AITrustLayer")],
 }
 
 
@@ -432,3 +456,10 @@ def test_graders_reject_cheats(sb, name, cheat):
     sb.scenario(scenario)
     cheat(sb)
     assert not any(graders_pass(sb, graders))
+
+
+def test_every_state_grader_uses_the_shared_check():
+    # One tenant rule for every task: an inline grader is where it drifted before.
+    for name, (_, graders) in SHIM_TASKS.items():
+        for cmd in graders:
+            assert "state.json" not in cmd, f"{name}: grader reads shim state inline: {cmd}"

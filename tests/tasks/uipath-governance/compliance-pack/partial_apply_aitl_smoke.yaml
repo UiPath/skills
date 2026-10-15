@@ -62,12 +62,7 @@ success_criteria:
     # Advisory: the prompt SKIPs the providers list, the only value this control
     # needs, so "nothing to apply, configure it manually" is a valid outcome.
     description: "An AI Trust Layer policy the agent created (iso-42001-2023-*) is assigned to the tenant (shim state; advisory — SKIP can leave nothing to apply)"
-    command: >-
-      python3 -c "import json, os, sys;
-      p = 'mocks/state.json';
-      s = json.load(open(p)) if os.path.exists(p) else {};
-      created = {i for i, r in s.get('policies', {}).items() if r['Name'].startswith('iso-42001-2023-')};
-      sys.exit(0 if any(a['ProductIdentifier'] == 'AITrustLayer' and a['PolicyIdentifier'] in created for a in s.get('assignments') or []) else 1)"
+    command: 'python3 mocks/check_state.py assigned AITrustLayer'
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

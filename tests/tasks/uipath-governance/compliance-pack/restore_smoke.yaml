@@ -53,11 +53,7 @@ success_criteria:
 
   - type: run_command
     description: "Restore actually ran against the active pack (shim state)"
-    command: >-
-      python3 -c "import json, os, sys;
-      p = 'mocks/state.json';
-      s = json.load(open(p)) if os.path.exists(p) else {};
-      sys.exit(0 if s.get('restored') else 1)"
+    command: 'python3 mocks/check_state.py restored'
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

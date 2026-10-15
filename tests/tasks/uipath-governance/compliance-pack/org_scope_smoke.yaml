@@ -68,12 +68,7 @@ success_criteria:
 
   - type: run_command
     description: "The pack was enabled on every tenant in the org, one tenant at a time (shim state)"
-    command: >-
-      python3 -c "import json, os, sys;
-      p = 'mocks/state.json';
-      s = json.load(open(p)) if os.path.exists(p) else {};
-      tenants = {t['TenantId'] for t in json.load(open('mocks/fixtures/tenant-list.json'))['Data']};
-      sys.exit(0 if set(s.get('enabled', [])) >= tenants else 1)"
+    command: 'python3 mocks/check_state.py enabled-everywhere'
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
