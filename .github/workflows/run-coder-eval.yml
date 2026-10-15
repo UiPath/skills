@@ -1106,7 +1106,7 @@ jobs:
           EOF
           ( cd "$delegate_dir" && NPM_CONFIG_USERCONFIG="$tmp_npmrc" \
               npm install "@uipath/delegate-stdio@preview" )
-          interop_exe="$delegate_dir/node_modules/@uipath/delegate-runtime-win32-x64/interop/UiPath.Aria.ComputerUse.Api.exe"
+          interop_exe="$delegate_dir/node_modules/@uipath/delegate-runtime-win32-x64/interop/UiPath.Delegate.Host.Api.exe"
           if [ ! -f "$interop_exe" ]; then
             runtime_version="$(node -p "require('$delegate_dir/node_modules/@uipath/delegate-sdk/package.json').optionalDependencies['@uipath/delegate-runtime-win32-x64']")"
             for attempt in 1 2 3; do
@@ -1287,7 +1287,7 @@ jobs:
           done
           if [ -n "$interop_pid" ]; then
             kill "$interop_pid" 2>/dev/null || true
-            taskkill //F //IM UiPath.Aria.ComputerUse.Api.exe 2>/dev/null || true
+            taskkill //F //IM UiPath.Delegate.Host.Api.exe 2>/dev/null || true
           fi
           exit $overall_exit
 
@@ -1306,7 +1306,7 @@ jobs:
         if: always() && inputs.agent == 'delegate'
         shell: bash
         run: |
-          taskkill //F //IM UiPath.Aria.ComputerUse.Api.exe 2>/dev/null || true
+          taskkill //F //IM UiPath.Delegate.Host.Api.exe 2>/dev/null || true
           log="$RUNNER_TEMP/delegate-interop.log"
           if [ "${{ steps.eval.outcome }}" != "success" ] && [ -f "$log" ]; then
             echo "--- last 100 lines of $log (run did not succeed) ---"

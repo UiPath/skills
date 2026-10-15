@@ -1,6 +1,6 @@
 ---
 name: uipath-rules
-description: "UiPath Business Rules — `.dmn` decision tables (DMN 1.5, FEEL) in a BusinessRules project (`project.uiproj`), built with `uip rules` (`init`, `refresh`, `validate`, `debug`). Author, edit, review, validate, and debug a rule's decision table from a policy, spreadsheet, or description; list and describe deployed rules. For .bpmn business rule tasks->uipath-maestro-bpmn. For EvaluateBusinessRule in .xaml->uipath-rpa. For caseplan.json business rule tasks->uipath-maestro-case. For solution pack/publish/deploy->uipath-solution."
+description: "UiPath Business Rules — `.dmn` decision tables (DMN 1.5, FEEL) in a BusinessRules project (`project.uiproj`), built with `uip rules` (`init`, `refresh`, `validate`, `debug`). Author, edit, review, validate, and debug a rule's decision table from a policy, spreadsheet, or description; list and describe deployed rules. For .bpmn business rule tasks->uipath-maestro-bpmn. For EvaluateBusinessRule in .xaml->uipath-rpa. For caseplan.case/caseplan.json business rule tasks->uipath-maestro-case. For solution pack/publish/deploy->uipath-solution."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -23,14 +23,15 @@ A Business Rules project holds one DMN decision table. DMN and FEEL follow the O
 4. **No DOCTYPE, XML comments, or processing instructions.** Put notes in the annotation column or a `<description>` element.
 5. **Use the designer's types.** `string`, `number`, `boolean`, `Any`, `date`, `time`, `date and time`, `dayTimeDuration`, `yearMonthDuration`, for both columns and input arguments.
 <!--skill-flavor:lifecycle-rules:start-->
-6. **Scaffold with `init`; after every edit, `refresh` then `validate`.** Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; edit the scaffolded `.dmn` in place, keeping its root element.
+6. **Scaffold a new project with `init`; after every edit, `refresh` then `validate`.** An existing project needs no `init`: edit its `.dmn` and run `refresh`. Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; edit the scaffolded `.dmn` in place, keeping its root element.
 7. **A rule is done when `validate` passes and `debug` returns what the reviewed table expects.** On a wrong output, read the trace with `uip traces spans get <Data.traceId>`. Stop after 3 fix rounds and show the user the table and the failing inputs.
 <!--skill-flavor:lifecycle-rules:end-->
 8. **Stop on a tenant without Business Rules, and publish through `uip solution`.** When `rules debug` fails with `Business Rules is not enabled on tenant '<TENANT>'.`, stop and relay the CLI's instruction. Pack, publish, and deploy belong to the uipath-solution skill.
+9. **Name every rule.** Give each `<rule>` an `<annotationEntry>` with a short name for the case it covers; the review table's Annotation column is what goes there.
 
 ## Quick Start
 
-### 1. Scaffold
+### 1. Scaffold (new projects only)
 
 <!--skill-flavor:scaffold:start-->
 ```bash
@@ -50,7 +51,7 @@ Show the table as Markdown before authoring and after each change. Ask only what
 | # | creditScore (number) | income (number) | riskBand (string) | Annotation |
 |---|---|---|---|---|
 | 1 | < 580 | - | "High" | Subprime |
-| 2 | [580..700) | >= 50000 | "Medium" | |
+| 2 | [580..700) | >= 50000 | "Medium" | Near-prime, sufficient income |
 | 3 | - | - | "Low" | Default |
 ```
 
@@ -102,7 +103,7 @@ uip rules describe <RULE_NAME> --folder-path <FOLDER_PATH> --output json
 Each command takes `--folder-path` or `--folder-key`, never both. Exception: `list --all-folders` spans every folder you can see (mutually exclusive with the folder flags) — use it to locate a rule when its folder is unknown. `describe` returns the active version's entry points, with `InputArguments` and `OutputArguments` as JSON Schema strings. `OutputArguments` carrying `"x-uipath-decision-keyed": true` nests each output under its decision's name.
 <!--skill-flavor:deployed-rules:end-->
 
-Binding a rule into a process, workflow, or case belongs to that artifact's skill; consumers bind only a deployed rule.
+Binding a rule into a process, workflow, or case belongs to that artifact's skill.
 
 ## Reference Navigation
 

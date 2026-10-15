@@ -14,19 +14,25 @@ loop in [`CLI-LOOP.md`](CLI-LOOP.md) — `check` on the source, `compile` to emi
 uip maestro flow format <Name>.flow --output json
 ```
 
-Layout is not an authoring concern — nothing upstream needs it, and `validate`
-passes without it. It becomes one here, the moment the emitted file is opened
-by something that draws it: `solution upload`, `flow debug`, or a person
-opening the project in a designer. Run `format` before any of those, on the
-artifact as last emitted.
+**Greenfield files only.** Layout is not an authoring concern — nothing
+upstream needs it, and `validate` passes without it. It becomes one here, the
+moment a file `compile` wrote from scratch is opened by something that draws
+it: `solution upload`, `flow debug`, or a person opening the project in a
+designer. Run `format` before any of those, on the artifact as last emitted.
 
 `compile` writes a placeholder `ui.position` on each node and no top-level
-`layout` block at all — and the canvas renders from `layout`. The placeholders
-are one flat row, so a four-armed switch arrives as a single 3,000px line with
-the arms in sequence rather than side by side. `format` builds `layout`, fans
-the arms onto their own rows, sizes each node by its canvas shape, and reports
-`NodesRepositioned`. Skipping it is the most common cause of misshapen nodes in
-Studio Web.
+`layout` block. The canvas places each node from its `layout.nodes[<id>]`
+entry when there is one, and from `node.ui` otherwise, so a greenfield file
+draws at the placeholders. They are one flat row: a four-armed switch arrives
+as a single 3,000px line with the arms in sequence rather than side by side.
+`format` builds `layout`, fans the arms onto their own rows, sizes each node by
+its canvas shape, and reports `NodesRepositioned`. Skipping it on a greenfield
+file is the most common cause of misshapen nodes in Studio Web.
+
+**Never format a merged brownfield file.** The original's `layout` already
+holds the canvas author's positions, and `merge` keeps them. `format` re-lays
+out every node and discards them. Upload or debug the merged file as `merge`
+wrote it.
 
 ## Refresh solution resources first
 
@@ -97,6 +103,13 @@ Operational constraints, each of which has its own failure:
 - **`Debug polling timed out after <N>s` is not a failure.** The run continues
   server-side. Take `instanceId` from stderr and poll
   `uip maestro flow debug-instance status <INSTANCE_ID> --output json`.
+- **An RPA step does not run under a headless debug** ([rpa-workflow.md](rpa-workflow.md#evidence-boundary)).
+- **Every process and connection node must resolve.** A node bound to a
+  resource the tenant lacks (a placeholder key awaiting the real process, a stub
+  connection) fails provisioning and starts no instance; `Data.missingResources`
+  names it, though `check` and `validate` pass it. To debug the rest before the
+  resource exists, debug a scratch copy of the project without those nodes,
+  delete the copy afterwards, and report the run as the copy's.
 - **Do not pass `--folder-path` or `--folder-key`.** Debug provisions into your
   personal workspace; a shared folder fails `HTTP 500` at
   `Stage: prepare-custom-debug` with no instance started. Shared resources reach
@@ -124,7 +137,11 @@ the input's own name:
 ```
 
 At run time that variable is an OBJECT, not a path — a script reads the uploaded
-name as `$vars.<triggerNodeId>.output.<inputName>.FullName`.
+name as `$vars.<triggerNodeId>.output.<inputName>.FullName`. A script sees only
+that reference (`ID`, `FullName`, `MimeType`, `Metadata`), never the file's
+content: a flow that parses an uploaded file hands the reference to a step that
+reads files, such as an RPA process taking it as its file argument
+([rpa-workflow.md](rpa-workflow.md#where-the-job-runs)).
 
 **A flow with more than one root starts at the default root.** That is the
 trigger marked `isDefaultEntryPoint`, else the first trigger. To run another

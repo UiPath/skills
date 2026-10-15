@@ -5,7 +5,7 @@ Companion to [implementation.md § Step 12](implementation.md). Step 12 defines 
 For codes whose *names mislead* — the four that have sent repairs at the wrong element — see [phased-execution.md § Findings whose names mislead](phased-execution.md#findings-whose-names-mislead). Read that first when a finding does not match the element it names.
 
 ```bash
-uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json
+uip maestro case validate "<caseplan.case path>" --strict --sdd sdd.md --output json
 ```
 
 An unknown-option response means the installed CLI predates `--strict`/`--sdd` — see [case-commands.md § Version guard](case-commands.md#version-guard----strict----sdd-require-cli-1202).
@@ -14,7 +14,7 @@ An unknown-option response means the installed CLI predates `--strict`/`--sdd` �
 
 ### Check 4
 
-After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker resolution (Step 11.5), **first run `uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json`** (unknown-option response → [case-commands.md § Version guard](case-commands.md#version-guard----strict----sdd-require-cli-1202)). Its `STRICT_*` codes are the machine-checked half of this pass: `CASE_MGMT_XREF_UNRESOLVED` (an error on every profile, as is `CASE_MGMT_PLANNING_NOTATION` for a `<-`/`->` input value) is Check 4
+After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker resolution (Step 11.5), **first run `uip maestro case validate "<caseplan.case path>" --strict --sdd sdd.md --output json`** (unknown-option response → [case-commands.md § Version guard](case-commands.md#version-guard----strict----sdd-require-cli-1202)). Its `STRICT_*` codes are the machine-checked half of this pass: `CASE_MGMT_XREF_UNRESOLVED` (an error on every profile, as is `CASE_MGMT_PLANNING_NOTATION` for a `<-`/`->` input value) is Check 4
 
 ### Check 1 — input bindings
 
@@ -68,7 +68,7 @@ Repair, in order:
 
 1. First confirm the binding really is unused. If a task that should reference it lost its `=bindings.<id>` value, restore the task's reference instead of deleting the binding.
 2. Delete each reported entry from the root `bindings[]`.
-3. Run `uip maestro case bindings sync "<caseplan.json>" --output json`.
+3. Run `uip maestro case bindings sync "<caseplan.case>" --output json`.
 4. Prune the solution declaration the removal orphaned: [bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources) (`resources refresh`, `resources list --source local`, `resources remove` each unmatched entry, then `refresh` once more).
 5. Re-run `validate --strict` and confirm the warning is gone.
 

@@ -1,0 +1,126 @@
+task_id: skill-test-testcase-parameters-edit-integration
+description: >
+  Integration test (Parameters scenarios 9 and 17): agent uses the uipath-test
+  skill to edit parameters whose names the user gets slightly wrong. "User
+  name" does not match `Username` (names match exactly, ignoring case), so the
+  agent has to list the parameters and use the closest one instead of creating
+  a new one. Then "rename username to userid" collides with an existing
+  `Userid`: the CLI refuses, and the agent must report it rather than delete or
+  overwrite the other parameter. Graded on the live parameters: `Username` got
+  the new value, `Userid` is untouched, nothing new was created and nothing was
+  deleted. pre_run makes sure the owned `EVFX-PARAMEDIT-Login` test case exists
+  in HEALTH and resets its parameters.
+tags: [uipath-test, integration, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 15
+  max_turns: 40
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      projects = call("tm", "project", "list", "--filter", "HEALTH").get("Data") or []
+      if not any(p.get("ProjectKey") == "HEALTH" for p in projects):
+          need(call("tm", "project", "create", "--name", "HEALTH", "--project-key", "HEALTH"), "create HEALTH")
+
+      name = "EVFX-PARAMEDIT-Login"
+      rows = call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+      exact = [r for r in rows if r.get("Name") == name]
+      case = exact[0] if exact else need(
+          call("tm", "testcases", "create", "--project-key", "HEALTH", "--name", name), f"create {name}")
+      key = case["TestCaseKey"]
+      rows = call("tm", "testcases", "parameters", "list", "--project-key", "HEALTH",
+                  "--test-case-key", key, "--limit", "100").get("Data") or []
+      if rows:
+          need(call("tm", "testcases", "parameters", "delete", "--project-key", "HEALTH", "--test-case-key", key,
+                    "--parameter-ids", *[r["Id"] for r in rows], "--yes"), f"clear {key}")
+      need(call("tm", "testcases", "parameters", "add", "--project-key", "HEALTH", "--test-case-key", key,
+                "--name", "Username", "--default-value", "admin", "--hint", "User name for UiBank"), "seed Username")
+      need(call("tm", "testcases", "parameters", "add", "--project-key", "HEALTH", "--test-case-key", key,
+                "--name", "Userid", "--default-value", "u1"), "seed Userid")
+      print(f"SEEDED {name} ({key}): Username=admin, Userid=u1")
+      PYEOF
+    timeout: 240
+
+initial_prompt: |
+  on my EVFX-PARAMEDIT-Login test case in HEALTH, can you set the default for
+  "User name" to demo? if no param has exactly that name, just use the closest
+  one and tell me which. oh, and rename "username" to "userid" while you're at it.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Username now has the default value `demo` (closest match used; no new `User name` parameter)"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      name = "EVFX-PARAMEDIT-Login"
+      case = [t for t in uip("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name) if t.get("Name") == name][0]
+      params = {p["Name"]: p.get("DefaultValue") for p in
+                uip("tm", "testcases", "parameters", "list", "--project-key", "HEALTH", "--test-case-key", case["TestCaseKey"])}
+      print(params)
+      sys.exit(0 if params.get("Username") == "demo" and "User name" not in params else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The rename was not forced: exactly Username and Userid remain, and Userid still has `u1`"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      name = "EVFX-PARAMEDIT-Login"
+      case = [t for t in uip("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name) if t.get("Name") == name][0]
+      params = {p["Name"]: p.get("DefaultValue") for p in
+                uip("tm", "testcases", "parameters", "list", "--project-key", "HEALTH", "--test-case-key", case["TestCaseKey"])}
+      print(params)
+      sys.exit(0 if sorted(params) == ["Userid", "Username"] and params["Userid"] == "u1" else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not delete a parameter to make room for the rename (`--help` lookups excluded)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+delete\b(?!(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--help)'
+    weight: 2.0
+    pass_threshold: 1.0
