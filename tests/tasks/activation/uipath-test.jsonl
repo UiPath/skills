@@ -48,3 +48,7 @@
 {"id": "uipath-test-048", "prompt": "I need to manage test sets and executions in UiPath", "expected_skill": "uipath-test"}
 {"id": "uipath-test-049", "prompt": "Bulk-add 20 test cases from project INV into the new ReleaseCandidate test set", "expected_skill": "uipath-test"}
 {"id": "uipath-test-050", "prompt": "After my test set finishes, download the JUnit results and attachments and write a markdown report", "expected_skill": "uipath-test"}
+{"id": "uipath-test-057", "prompt": "Use Test Manager's AI to generate test cases for requirement PAY:12 and add the good ones to the project", "expected_skill": "uipath-test"}
+{"id": "uipath-test-058", "prompt": "Ask Test Manager autopilot to review the quality of our login requirement and suggest improvements", "expected_skill": "uipath-test"}
+{"id": "uipath-test-059", "prompt": "Which test cases linked to Test Manager requirement HEALTH:4 are obsolete now that the spec changed? Unlink them", "expected_skill": "uipath-test"}
+{"id": "uipath-test-060", "prompt": "My uip tm requirements generate-testcases call timed out, how do I get the results without regenerating?", "expected_skill": "uipath-test"}
