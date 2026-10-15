@@ -1,31 +1,33 @@
 # V2 connector nodes
 
-Studio Web edits a connector node with one of two components, and the
-workflow decides which:
+**Every new connector node is a V2 element**, built with `registry get
+--input-details` (below), in every workflow:
 
-- **New workflow → V2.** A workflow Studio Web or `uip maestro bpmn init`
-  creates carries `<uipath:intsvcActivityConfig version="v2" />` in its
-  process `extensionElements`. Every connector node in it is a V2 element
-  from `registry get --input-details` (below). The V2 properties panel reads
-  only the V2 shape; a V1 template node opens with no activity selected.
-- **Existing workflow without the marker → V1, node by node.** A workflow
-  that already has configured connector nodes and no marker stays V1:
-  Studio Web never adds the marker to it, so author every new connector node
-  from the V1 registry template (the rest of
-  [registry-workflow.md](registry-workflow.md)), never with `--input-details`,
-  and do not add the marker. `uip maestro bpmn validate` fails a V2 node in a
-  V1 workflow, and fails a V1-shaped trigger or wait in a V2 workflow (the
-  runtime runs those as V2 and faults with `Value cannot be null.
-  (Parameter 'Connection')`).
+- **New workflow.** A workflow Studio Web or `uip maestro bpmn init` creates
+  carries `<uipath:intsvcActivityConfig version="v2" />` in its process
+  `extensionElements`. The V2 properties panel reads only the V2 shape; a V1
+  template node opens with no activity selected.
+- **Existing workflow without the marker.** Still build the new node as V2.
+  The node's own `activityConfigurationVersion` `v2` decides how Studio Web
+  opens it, whatever the workflow says, and the runtime runs V2 activities,
+  triggers, waits and HTTP requests in an unmarked workflow. **Never add the
+  marker to an existing workflow**: its V1 nodes do not declare a version,
+  so the marker would make Studio Web read them as V2. Leave existing V1
+  nodes as they are unless the task asks to change them.
+- **An existing V1 trigger or wait does not run.** The runtime runs it as V2
+  and faults with `Value cannot be null. (Parameter 'Connection')`, Studio
+  Web's own V1 save included. `uip maestro bpmn validate` warns about one in
+  an unmarked workflow and fails one in a V2 workflow. When a task touches
+  such a trigger or wait, rebuild it as V2 with the same object, operation
+  and parameters, and say so in your summary.
 
-Read the marker before adding any connector node. A workflow with the marker
-but no connection available yet (an offline draft) keeps the node as a draft
-for the CLI to finish; do not fall back to the V1 template there.
+A workflow with no connection available yet (an offline draft) keeps the
+node as a draft for the CLI to finish; do not fall back to the V1 template.
 
 | Type | V2 element | Notes |
 | --- | --- | --- |
 | `Intsvc.ActivityExecution` | `bpmn:sendTask` | Connector activities. |
-| `Intsvc.UnifiedHttpRequest` | `bpmn:sendTask` | **Every new HTTP request**, manual or through a connector's connection — see [HTTP requests](#http-requests). Studio Web edits it with the V2 component in V1 workflows too, so it is the HTTP node in both. |
+| `Intsvc.UnifiedHttpRequest` | `bpmn:sendTask` | **Every new HTTP request**, manual or through a connector's connection — see [HTTP requests](#http-requests). Studio Web always edits it with the V2 component. |
 | `Intsvc.EventTrigger` | `bpmn:startEvent` | Its own entry point (`uipath:entryPointId`). |
 | `Intsvc.WaitForEvent` | `bpmn:receiveTask` | Move the `uipath:event` block onto an `intermediateCatchEvent` or `boundaryEvent` host if the process needs one, with a bare `<bpmn:messageEventDefinition />` after the flows. |
 | `Intsvc.AsyncExecution` (external agent) | `bpmn:serviceTask` | Saved as `Intsvc.SyncAgentExecution` or `Intsvc.AsyncAgentExecution`, whichever the connector reports — see [External agents and automations](#external-agents-and-automations). |
@@ -34,7 +36,7 @@ for the CLI to finish; do not fall back to the V1 template there.
 Never author `Intsvc.HttpExecution` (legacy HTTP) or a connector's own
 `httpRequest` object for a new node; keep one only where an existing workflow
 already has it. `Intsvc.TimerTrigger` binds no connection and is authored from
-its template in either workflow.
+its template.
 
 **A value that reads a variable is `=js:<expression>`** — `"=js:vars.Var_Name"`,
 `"=js:'Hello ' + vars.Var_Name"`. Studio Web's V2 component shows `=vars.x` as
@@ -111,6 +113,13 @@ target connector and folder from the connection. The element binds Studio
 Web's implicit connection for a manual request and the target connection for a
 connector one. Its outputs are `code`, `headers` and `body`, plus `Error`.
 
+A service with no Integration Service connector of its own (Spotify, an
+internal API) goes through a connection of the generic HTTP connector,
+`uipath-uipath-http`, which holds the service's base URL and auth: connector
+mode with `--connection-id` of that connection and a relative `url`
+(`"/me"`). Use manual mode only when no such connection exists and the
+request carries its own auth.
+
 ### External agents and automations
 
 An external agent (CrewAI, Snowflake Cortex, Azure AI Foundry, Salesforce
@@ -124,6 +133,11 @@ uip maestro bpmn registry get Intsvc.AsyncExecution \
     --input-details '{"bodyParameters":{"prompt":"=js:vars.Var_Question"}}' \
     --solution-folder <solution-dir> --output json
 ```
+
+The connection must be the agent connector's own: Execute Salesforce Agent
+is `uipath-salesforce-agent`, not a `uipath-salesforce-sfdc` connection. Find
+it with `uip is connections list <connector-key> --all-folders`; the command
+refuses a connection of another connector.
 
 Use `Intsvc.AsyncWorkflowExecution` for an automation. `Data.V2.ExtensionType`
 is the type the node is saved as: the connector's `executionType` decides sync
@@ -142,9 +156,9 @@ or async, and an async one also carries the event it answers with
    entity return identical lines; add each line once.
 3. Add each `Variables` line to `<uipath:variables>`, with the same `{varId}`
    / `{errorVarId}` / `{id}` replacements.
-4. The process keeps its `<uipath:intsvcActivityConfig version="v2" />`
-   (`bpmn init` writes it; add it yourself only to a new workflow that has no
-   connector nodes yet, never to an existing V1 one).
+4. Leave the process's `<uipath:intsvcActivityConfig>` marker as you found
+   it. `bpmn init` writes it for a new workflow; never add it to an existing
+   workflow that lacks it (the V2 node works there as it is).
 
 Do not edit the element's `uipath:context` or its `metadata`: they are the
 connector's design-time configuration, and the designer reads them back as
@@ -180,6 +194,14 @@ for each trigger start (without them a deployed process never gets its
 trigger), and one resource for each solution resource a picker bound. A V2
 trigger start is an entry point of its own, so a process whose only start is a
 connector trigger refreshes and packs without a manual start.
+
+Then sync the solution so each connection becomes a solution resource. The
+V2 properties panel shows a connection that is not one as "The selected
+connection is not part of the solution":
+
+```bash
+uip solution resources refresh --solution-folder <solution-dir>
+```
 
 To debug from the trigger, name its start event. A trigger debug replays a
 recent event rather than waiting for one, so cause the event (create or
