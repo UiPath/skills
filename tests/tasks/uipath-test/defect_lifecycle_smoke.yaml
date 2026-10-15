@@ -82,6 +82,10 @@ pre_run:
               if did and did != ZERO:
                   call("defect.cleanup", "tm", "defects", "delete", "--project-key", P,
                        "--defect-id", did, "--yes")
+          left = [l.get("DefectId") for l in failed_logs(e["Id"])
+                  if l.get("DefectId") not in (None, "", ZERO)]
+          if left:
+              fail(f"leftover defect(s) {left} still on the failed result after cleanup")
           print(f"FIXTURE: reusing failed result in {e['Id']}", flush=True)
           raise SystemExit(0)
 

@@ -7,10 +7,13 @@ description: >
   sets its status, priority and tracker link by hand (no tracker connected);
   traces it to its test case, execution and the requirement it puts at risk;
   checks it for evidence; writes a triage report; deletes the defect; and
-  deletes the project. Asserts every defects verb the defects guide teaches
-  except `attachments download` — a manual result carries no evidence the CLI
-  can seed (see fixtures/README.md) — plus the outcome: a report graded on the
-  values the agent set, and no `EVFX-DEFFLOW-*` project left from today. The
+  deletes the project. Asserts every defects verb except `list` (covered by no task yet) and
+  `attachments download` — a manual result carries no evidence the CLI can
+  seed (see fixtures/README.md) — plus the outcome: a report graded on the
+  values the agent set, and the exact project this run created (named in the
+  report) gone from the tenant. Grading only that project keeps concurrent
+  runs on the same tenant (several models in one nightly) from failing each
+  other. The
   skill — not the prompt — must teach recording a manual result with
   `testcaselog finish --result Failed`, deriving the defect's ids from the
   failed result, the hand-link flags, one `get-related` per object type, and
@@ -69,8 +72,8 @@ initial_prompt: |
   don't have Jira connected, I file issues by hand. Find out which test case
   and which execution the defect came from, which requirements it puts at risk,
   what tracker link Test Manager now holds for it, and whether any evidence is
-  attached to it. Write all of that to `defect-report.md` in the current
-  directory.
+  attached to it. Write all of that, plus the project's name, to
+  `defect-report.md` in the current directory.
 
   Once the report is written, delete the defect, then delete the project. You
   have my approval to delete both without asking.
@@ -200,16 +203,17 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Outcome: no EVFX-DEFFLOW-<today> project is left on the tenant (the project, and the defect with it, are really gone)"
+    description: "Outcome: the project this run created (named in defect-report.md) is gone from the tenant, so the defect went with it"
     command: |
       python3 - <<'PYEOF'
-      import json, subprocess, datetime
-      prefix = "EVFX-DEFFLOW-" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
+      import json, re, subprocess
+      names = re.findall(r"EVFX-DEFFLOW-\d{8}-\d{6}-[0-9a-f]{6}", open("defect-report.md", encoding="utf-8").read())
+      assert names, "defect-report.md does not name the EVFX-DEFFLOW-* project"
       out = subprocess.run(["uip", "tm", "project", "list", "--filter", "EVFX-DEFFLOW-", "--output", "json"],
                            capture_output=True, text=True).stdout
       d = json.loads(out[out.index("{"):])
       assert d.get("Result") == "Success", d
-      left = [p["Name"] for p in d.get("Data") or [] if (p.get("Name") or "").startswith(prefix)]
+      left = sorted({p["Name"] for p in d.get("Data") or []} & set(names))
       assert not left, f"project(s) left behind: {left}"
       PYEOF
     timeout: 90
