@@ -503,7 +503,7 @@ Before submitting your PR, verify:
 
 ### General
 - [ ] CODEOWNERS updated with your GitHub handle
-  (a user listed for `skills/<skill>/` can also run the [Optimize skill](.github/workflows/optimize-skill.yml) workflow on it, which spends model budget)
+  (a user listed for `skills/<skill>/`, or a member of a team listed there, can also run the [Optimize skill](.github/workflows/optimize-skill.yml) workflow on it, which spends model budget)
 - [ ] No secrets, tokens, or personal paths in any file
 - [ ] Command examples and sample output use `<UPPER_SNAKE_CASE>` placeholders — no literal dates, street addresses, phone numbers, or identifier-shaped digit runs ([Style Guide](#cli-commands))
 - [ ] No auto-generated or binary files committed (check `.gitignore`)
