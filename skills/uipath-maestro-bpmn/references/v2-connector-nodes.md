@@ -151,6 +151,26 @@ or async, and an async one also carries the event it answers with
 (`operation`, `eventMode`). Take the fields from `uip is resources describe
 <connector> <ObjectName> --connection-id <id> --operation Create`.
 
+### Files: download, upload, attach
+
+A download (OneDrive or Google Drive Download File, Outlook Download Email)
+outputs a file: its `response` output is `type="file"` with
+`target="=orchestrator.JobAttachments"`. An upload, or Send Email with an
+attachment, takes the file under its file parameter in `bodyParameters`
+(usually `file`), read from the download's variable:
+
+```bash
+uip maestro bpmn registry get Intsvc.ActivityExecution \
+    --connection-id <onedrive-connection> --object-name FileUploadV2 \
+    --input-details '{"queryParameters":{"referenceID":"<folder-id>"},"bodyParameters":{"file":"=js:vars.<download-var>"}}' \
+    --solution-folder <solution-dir> --output json
+```
+
+The CLI moves the file out of the body onto the multipart parameter and the
+`<uipath:input name="file" type="file" target="file">` input, as Studio Web
+saves it; the rest of `bodyParameters` stays the request body. Outlook's
+`message.toRecipients` is a comma-separated string, not a Graph array.
+
 ## 2. Paste it
 
 1. Put `ElementXml` in the process and replace its tokens: `{id}`, `{name}`,
