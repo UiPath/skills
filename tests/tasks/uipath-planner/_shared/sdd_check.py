@@ -44,7 +44,7 @@ import sys
 TASK_TYPES = {
     "action", "agent", "rpa", "process", "api-workflow", "function",
     "business-rule", "execute-connector-activity", "wait-for-connector",
-    "wait-for-timer", "case-management", "http-request",
+    "wait-for-timer", "case-management", "http-request", "flow-process",
 }
 
 # Legal rule types per gate (mirrors case-tool schema-helpers VALID_*_RULE_TYPES).
@@ -85,6 +85,7 @@ TASK_DETAIL_MARKERS = {
     "api-workflow": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "function": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "business-rule": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "flow-process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
 }
 
 
