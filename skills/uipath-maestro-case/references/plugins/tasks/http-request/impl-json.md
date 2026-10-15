@@ -21,7 +21,7 @@ The build's normal steps bind it: the Step 9 `uip maestro case bindings sync` fi
 
 - `type: "http-request"`, `data.serviceType: "Intsvc.UnifiedHttpRequest"`.
 - `uip maestro case validate` reports no `CASE_MGMT_CONNECTOR_ACTIVITY_UNRESOLVED` or `CASE_MGMT_CONNECTOR_INPUTS_EMPTY` for the task, and `--strict` no `STRICT_CONNECTOR_CONTEXT_INCOMPLETE`. If one fires, regenerate the task with `uip maestro case sdd convert`; never run `case spec` or `case splice` for it, since neither writes this type.
-- `data.outputs` is `code`, `headers`, `body` and `Error`, with `var` numbered apart across tasks (`code`, `code2`, …).
+- `data.outputs` is `code`, `headers`, `body` and `Error`, with `var` numbered apart from other tasks' outputs and from the case's own variable names (`code`, `code2`, …), so a case variable named `body` is never overwritten. An arrow row naming that variable (`Body -> body`) binds to it instead.
 - No header in the `body` input carries a credential ([planning.md § Rules](planning.md#rules), first item).
 - Connector mode: two `Connection` bindings on the task and at the root, and the connection listed in the solution after `resources refresh`.
 
