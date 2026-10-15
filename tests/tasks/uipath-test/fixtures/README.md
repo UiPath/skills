@@ -44,6 +44,10 @@ and therefore exact for this scheme.
 | `attachment_download_integration` | HEALTH | `EVFX-ATTDL-Login` | Created if absent; `pre_run` uploads `login-error.log` and `checkout-notes.txt` (local copies removed); `post_run` clears its attachments |
 | `attachment_overwrite_ask_integration` | HEALTH | `EVFX-ATTASK-Login` | Created if absent; `pre_run` uploads `report.txt` and writes a different local `report.txt`; `post_run` clears its attachments |
 | `attachment_lifecycle_e2e` | HEALTH | `EVFX-ATTLIFE-Checkout` | Created if absent; `pre_run` clears its attachments and writes a local `release-notes.txt`; `post_run` clears its attachments |
+| `testset_clone_smoke` | HEALTH | `EVFX-TSCLONE-Regression`, `EVFX-TSCLONE-TC{1,2}` | Seeded once, never changed. Each run's copy is `EVFX-TSCLONE-<YYYYMMDD-HHMMSS>-<hex>` (agent-named); `pre_run`/`post_run` sweep copies older than 6 hours |
+| `testset_order_integration` | its own project `EVTSORD` | `EVFX-TSORDER-Regression` = `EVTSORD:4` holding Alpha/Beta/Gamma = `EVTSORD:1-3` | Project seeded once so the keys the order criterion names never change; `pre_run` fails if the shape drifts and resets the source's enforce flag. Per-run copies `EVFX-TSORDER-<stamp>-<hex>`, swept after 6 hours |
+| `testset_settings_ask_integration` | HEALTH | `EVFX-TSASK-Regression`, `EVFX-TSASK-TC1` | Seeded once; read-only for the agent (`pre_run` resets the enforce flag if a past run changed it) |
+| `testset_lifecycle_e2e` | its own project `EVTSLIFE` | `EVFX-TSLIFE-Regression` = `EVTSLIFE:4` holding Alpha/Beta/Gamma = `EVTSLIFE:1-3` | Same as `EVTSORD`; the agent deletes its own copy, the 6-hour sweep catches any it leaves |
 
 The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
 (`seed`, `check`). It knows no names: each task passes its own `EVFX-` names

@@ -51,6 +51,10 @@ OWNERS = {
     "ATTDL": "attachment_download_integration.yaml",
     "ATTASK": "attachment_overwrite_ask_integration.yaml",
     "ATTLIFE": "attachment_lifecycle_e2e.yaml",
+    "TSCLONE": "testset_clone_smoke.yaml",
+    "TSORDER": "testset_order_integration.yaml",
+    "TSASK": "testset_settings_ask_integration.yaml",
+    "TSLIFE": "testset_lifecycle_e2e.yaml",
 }
 
 
