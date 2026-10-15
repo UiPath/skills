@@ -1,0 +1,162 @@
+task_id: skill-test-attachment-upload-smoke
+description: >
+  Smoke test (Attachments scenario 6): agent uses the uipath-test skill to
+  attach a local file to a test case in HEALTH and show its attachments.
+  Graded on the test case's live attachments (exactly the one uploaded file)
+  and on a successful upload command. pre_run makes sure the owned
+  EVFX-ATTUP-Checkout test case exists with no attachments and writes the
+  local file; post_run clears its attachments.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, os, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def ensure_case(name):
+          projects = call("tm", "project", "list", "--filter", "HEALTH").get("Data") or []
+          if not any(p.get("ProjectKey") == "HEALTH" for p in projects):
+              need(call("tm", "project", "create", "--name", "HEALTH", "--project-key", "HEALTH"), "create HEALTH")
+          rows = call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else need(
+              call("tm", "testcases", "create", "--project-key", "HEALTH", "--name", name), f"create {name}")
+
+      def clear(case):
+          rows = call("tm", "attachment", "list", "--project-key", "HEALTH", "--test-case-keys", case["TestCaseKey"]).get("Data") or []
+          for att in [a for r in rows for a in (r.get("AttachmentIds") or [])]:
+              need(call("tm", "attachment", "delete", "--project-key", "HEALTH", "--attachment-id", att,
+                        "--object-type", "testCase", "--yes"), f"clear {att}")
+
+      def upload(case, fname, body):
+          with open(fname, "w") as f:
+              f.write(body)
+          need(call("tm", "attachment", "upload", "--project-key", "HEALTH", "--object-id", case["Id"],
+                    "--object-type", "testCase", "--file", fname), f"upload {fname}")
+          os.remove(fname)  # only Test Manager holds it now
+
+      clear(ensure_case("EVFX-ATTUP-Checkout"))
+      with open("checkout-failure.png", "w") as f:
+          f.write("EVFX-ATTUP fake screenshot bytes\n")
+      print("SEEDED EVFX-ATTUP-Checkout with no attachments; local checkout-failure.png written")
+      PYEOF
+    timeout: 240
+
+post_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, os, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def ensure_case(name):
+          projects = call("tm", "project", "list", "--filter", "HEALTH").get("Data") or []
+          if not any(p.get("ProjectKey") == "HEALTH" for p in projects):
+              need(call("tm", "project", "create", "--name", "HEALTH", "--project-key", "HEALTH"), "create HEALTH")
+          rows = call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else need(
+              call("tm", "testcases", "create", "--project-key", "HEALTH", "--name", name), f"create {name}")
+
+      def clear(case):
+          rows = call("tm", "attachment", "list", "--project-key", "HEALTH", "--test-case-keys", case["TestCaseKey"]).get("Data") or []
+          for att in [a for r in rows for a in (r.get("AttachmentIds") or [])]:
+              need(call("tm", "attachment", "delete", "--project-key", "HEALTH", "--attachment-id", att,
+                        "--object-type", "testCase", "--yes"), f"clear {att}")
+
+      def upload(case, fname, body):
+          with open(fname, "w") as f:
+              f.write(body)
+          need(call("tm", "attachment", "upload", "--project-key", "HEALTH", "--object-id", case["Id"],
+                    "--object-type", "testCase", "--file", fname), f"upload {fname}")
+          os.remove(fname)  # only Test Manager holds it now
+
+      clear(ensure_case("EVFX-ATTUP-Checkout"))
+      PYEOF
+    timeout: 180
+
+initial_prompt: |
+  hey, can you attach checkout-failure.png (it's in this folder) to my
+  EVFX-ATTUP-Checkout test case in the HEALTH project, and then show me what's
+  attached to it?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uploaded with `attachment upload` (command must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+attachment\s+upload\b'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed the test case's attachments to confirm"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+attachment\s+(list|get)\b(?!(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--help)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "EVFX-ATTUP-Checkout now has exactly one attachment, checkout-failure.png"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      name = "EVFX-ATTUP-Checkout"
+      case = [t for t in uip("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name) if t.get("Name") == name][0]
+      rows = uip("tm", "attachment", "list", "--project-key", "HEALTH", "--test-case-keys", case["TestCaseKey"])
+      files = sorted(a["FileName"] for r in rows for a in (r.get("Attachments") or []))
+      print(files)
+      sys.exit(0 if files == ['checkout-failure.png'] else 1)
+      PYEOF
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

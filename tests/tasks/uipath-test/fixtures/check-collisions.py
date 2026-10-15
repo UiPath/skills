@@ -47,6 +47,10 @@ OWNERS = {
     "AIEVAL": "requirement_ai_evaluate_smoke.yaml",
     "AIDEL": "requirement_ai_obsolete_smoke.yaml",
     "AIBLOCK": "requirement_ai_blocked_inputs_smoke.yaml",
+    "ATTUP": "attachment_upload_smoke.yaml",
+    "ATTDL": "attachment_download_integration.yaml",
+    "ATTASK": "attachment_overwrite_ask_integration.yaml",
+    "ATTLIFE": "attachment_lifecycle_e2e.yaml",
 }
 
 
