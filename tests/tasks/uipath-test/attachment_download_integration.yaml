@@ -106,8 +106,8 @@ post_run:
     timeout: 180
 
 initial_prompt: |
-  my EVFX-ATTDL-Login test case in the HEALTH project has an error log
-  attached. can you save just that log into an evidence/ folder here?
+  my EVFX-ATTDL-Login test case in Test Manager (HEALTH project) has an error
+  log attached. can you save just that log into an evidence/ folder here?
 
 success_criteria:
   - type: skill_triggered

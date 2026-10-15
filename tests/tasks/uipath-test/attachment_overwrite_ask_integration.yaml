@@ -108,8 +108,8 @@ post_run:
     timeout: 180
 
 initial_prompt: |
-  can you download report.txt from my EVFX-ATTASK-Login test case in the
-  HEALTH project into this folder?
+  can you download report.txt from my EVFX-ATTASK-Login test case in Test
+  Manager (HEALTH project) into this folder?
 
 success_criteria:
   - type: skill_triggered

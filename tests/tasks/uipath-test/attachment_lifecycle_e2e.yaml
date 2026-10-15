@@ -105,10 +105,10 @@ post_run:
     timeout: 180
 
 initial_prompt: |
-  on my EVFX-ATTLIFE-Checkout test case in the HEALTH project: attach
-  release-notes.txt from this folder, rename the attachment to notes-v2.txt,
-  download it into a downloads/ folder, then delete it from the test case.
-  you've got my ok for that delete, no need to ask again.
+  on my EVFX-ATTLIFE-Checkout test case in Test Manager (HEALTH project):
+  attach release-notes.txt from this folder, rename the attachment to
+  notes-v2.txt, download it into a downloads/ folder, then delete it from the
+  test case. you've got my ok for that delete, no need to ask again.
 
 success_criteria:
   - type: skill_triggered

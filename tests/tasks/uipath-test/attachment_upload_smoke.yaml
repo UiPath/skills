@@ -105,8 +105,8 @@ post_run:
 
 initial_prompt: |
   hey, can you attach checkout-failure.png (it's in this folder) to my
-  EVFX-ATTUP-Checkout test case in the HEALTH project, and then show me what's
-  attached to it?
+  EVFX-ATTUP-Checkout test case in Test Manager (HEALTH project), and then
+  show me what's attached to it?
 
 success_criteria:
   - type: skill_triggered
