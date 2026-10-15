@@ -107,4 +107,5 @@ API workflow, or sub-case; never fabricate a name or folder. A destination's
 Static success proves the source and artifact contracts. It proves neither live
 behavior (resource resolution, human outcomes, timers, skipped-task completion,
 business calendars) nor the design decisions no schema checks: lane routing,
-non-completing exits, declared optionality, SDD fidelity. Read [Case runtime decisions](references/case-runtime.md) before authoring, not only when a rung fails.
+non-completing exits, declared optionality, and SDD intent beyond what the
+`--sdd` audit compares. Read [Case runtime decisions](references/case-runtime.md) before authoring, not only when a rung fails.
