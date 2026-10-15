@@ -19,6 +19,29 @@ Any dangling tail gets an End automatically; an explicit `.return(...)` is requi
 only when values must be bound. Multiple path ends are emitted as `end`, `end2`,
 `end3`, and so on.
 
+## Ending another path at the same End
+
+Give the End a `name`, and another path can end there with `.stepToRef(name)`
+instead of getting an End of its own. The flow then has ONE End with several
+incoming edges, as the canvas draws it.
+
+```ts
+.step('fetch', http({ url, managed: false, branches: [{ name: 'missing', condition: js`$vars.fetch.output.statusCode === 404` }] }))
+.stepToList('branch-missing', (b) => b.step('reportMissing', script({ code })).stepToRef('done'))
+.step('useResult', script({ code }))
+.return({}, { name: 'done' })   // reportMissing -> done, useResult -> done
+```
+
+- Only a NAMED End is a target. An unnamed `.return()` gets `end`, `end2`, ... in
+  emission order, so `.stepToRef('end')` is `REF_UNKNOWN_TARGET` unless an End
+  says `{ name: 'end' }`.
+- `check` refuses a ref to a name that two Ends, or a step and an End, share
+  (`REF_AMBIGUOUS_TARGET`).
+- A decompiled brownfield flow uses this form when a side path (an HTTP
+  `branch-*`, a human-task `outcome-*`, an error handler) runs into the End the
+  main path ends at. Keep the `.stepToRef('<end id>')` and the End's `name` when
+  you edit.
+
 ## At a glance
 
 End the current path and bind declared Flow outputs.
