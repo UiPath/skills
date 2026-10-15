@@ -29,6 +29,11 @@ and therefore exact for this scheme.
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `schedule_lifecycle_e2e` | CLAIM | `EVFX-SCHEDLC-SET`, `EVFX-SCHEDLC-TC1`, and the `EVFX-SCHEDLC-*` **schedule** namespace | Set and one case only — **no schedules seeded**. The agent creates ONE per-run stamped schedule `EVFX-SCHEDLC-<STAMP>` and walks its whole life (create weekly Mon+Thu → next-runs → update to 03:00 → disable → enable → delete); `pre_run` sweeps only earlier-day `EVFX-SCHEDLC-` rows and writes the fixture set id to `.schedlc_setid` for the stored-state graders |
+| `project_settings_smoke` | its own throwaway project | the `EVFX-PSET-*` namespace | `pre_run` creates one `EVFX-PSET-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago (so a concurrent run's project is never touched); `post_run` deletes it. The deliverable is a settings change, not the project, so the project is scratch (Rule 2). Unlike the self-contained build tasks, project create/delete is not under test here, so the hooks own the project's lifecycle and the agent never deletes it |
+| `testcase_parameters_bulk_add_smoke` | HEALTH | `EVFX-PARAM-Login`, `EVFX-PARAM-Transfer` | Created if absent; `pre_run` clears their parameters each run and seeds `Username=keepme` on Transfer |
+| `testcase_parameters_edit_integration` | HEALTH | `EVFX-PARAMEDIT-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) and `Userid=u1` |
+| `testcase_parameters_lifecycle_e2e` | HEALTH | `EVFX-PARAMLIFE-Login` | Created if absent; `pre_run` clears its parameters |
+| `testcase_parameters_ask_first_integration` | HEALTH | `EVFX-PARAMASK-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
@@ -165,6 +170,16 @@ Consequences worth knowing before you edit one:
    that dies leaves a project behind, and the prefix is what makes that residue
    identifiable and sweepable. The namespaces are registered in
    `check-collisions.py` like any other.
+
+## Per-run scratch projects (hook-owned)
+
+`project_settings_smoke` grades a change *inside* a project, not the
+project itself, so it fits neither the self-contained build pattern above (where the agent's own delete is
+graded) nor create-if-absent seeding (Rule 3), which would let one run's writes leak into the next.
+Instead `pre_run` creates a fresh `EVFX-<NS>-<YYYYMMDD-HHMMSS>-<hex>` project per run and writes its key
+to `project-key.txt`, the criteria read its live state, and `post_run` deletes it (coder_eval grades
+before `post_run`). The `pre_run` sweep deletes only projects stamped more than 6 hours ago, so
+concurrent runs never remove each other's project.
 
 ## Automation-linked fixtures
 

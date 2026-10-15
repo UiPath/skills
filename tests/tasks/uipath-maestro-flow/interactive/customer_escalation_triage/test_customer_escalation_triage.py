@@ -27,15 +27,14 @@ def _payload(**outputs):
 
 
 class CustomerEscalationTriageTests(unittest.TestCase):
-    def test_seed_has_isolated_sev1_and_sev3_cases(self) -> None:
-        document = seed.build_seed()
+    def test_seed_cases_isolated(self) -> None:
+        cases = seed.build_seed()["cases"]
 
-        self.assertEqual(len(document["cases"]), 2)
-        self.assertEqual(document["cases"][0]["expected"]["severity"], "Sev1")
-        self.assertEqual(document["cases"][1]["expected"]["severity"], "Sev3")
-        self.assertNotEqual(
-            document["cases"][0]["inputs"]["correlationId"],
-            document["cases"][1]["inputs"]["correlationId"],
+        self.assertEqual(
+            [case["expected"]["severity"] for case in cases], ["Sev1", "Sev2", "Sev3"]
+        )
+        self.assertEqual(
+            len({case["inputs"]["correlationId"] for case in cases}), checker.CASE_COUNT
         )
 
     def test_named_comparison_accepts_runtime_string_booleans(self) -> None:

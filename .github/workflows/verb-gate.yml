@@ -53,16 +53,17 @@ jobs:
           # Infrastructure edits (catalog refresh, checker script, this
           # workflow) re-gate every skill — same pattern as smoke-skills.yml's
           # "test infrastructure changed → run everything" branch.
-          # Both trees are gated, and the matrix carries the full PATH rather
-          # than a bare name — `preview/` skills are markdown that names `uip`
-          # verbs exactly like `skills/` ones, and a retired verb rots the same
-          # way in either place.
+          # All three trees are gated, and the matrix carries the full PATH
+          # rather than a bare name — `preview/` skills and the `classic/`
+          # trees a flavor pins are markdown that names `uip` verbs exactly
+          # like `skills/` ones, and a retired verb rots the same way in any
+          # of them. (`classic/` ships inside the flavor that pins it.)
           if echo "$CHANGED" | grep -qE '^(assets/uip-catalog-snapshot\.json|scripts/check-skill-verbs\.py|\.github/workflows/verb-gate\.yml)$'; then
-            SKILLS=$(ls -d skills/*/ preview/skills/*/ 2>/dev/null | sed 's|/$||' | sort -u)
+            SKILLS=$(ls -d skills/*/ preview/skills/*/ classic/skills/*/ 2>/dev/null | sed 's|/$||' | sort -u)
           else
             SKILLS=$(echo "$CHANGED" \
-              | grep -E '^(skills|preview/skills)/[^/]+/.*\.md$' \
-              | sed -E 's#^((skills|preview/skills)/[^/]+)/.*#\1#' \
+              | grep -E '^(skills|preview/skills|classic/skills)/[^/]+/.*\.md$' \
+              | sed -E 's#^((skills|preview/skills|classic/skills)/[^/]+)/.*#\1#' \
               | sort -u || true)
           fi
 

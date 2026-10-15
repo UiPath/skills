@@ -1,0 +1,32 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case",
+    "kind": "package",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "fileName": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case.1.0.6.nupkg",
+      "fileReference": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case_1.0.6",
+      "name": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case"
+    },
+    "locks": [],
+    "key": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case:1.0.6",
+    "files": [
+      {
+        "key": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case_1.0.6",
+        "name": "CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case.1.0.6.nupkg",
+        "url": "https://alpha.uipath.com/codereval/DefaultTenant/orchestrator_/odata/Processes/UiPath.Server.Configuration.OData.DownloadPackage(key='CM-Golden-Expense-Reporting-Manual.caseManagement.Task.agentic.case:1.0.6')?feedId=001c61d7-2108-4130-b7ff-198c88ecbf79",
+        "kind": "Package",
+        "version": "1.0.6"
+      }
+    ]
+  }
+}

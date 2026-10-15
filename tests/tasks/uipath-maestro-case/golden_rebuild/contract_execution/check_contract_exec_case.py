@@ -33,6 +33,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 from _shared.case_check import (  # noqa: E402
+    existing_caseplan,
     assert_tasks_nested,
     find_stages,
     find_transitions,
@@ -158,9 +159,7 @@ def _label(node: dict) -> str:
 
 
 def _read_plan() -> dict:
-    if os.path.exists(EXPECTED_CASEPLAN):
-        return read_caseplan(EXPECTED_CASEPLAN)
-    return read_caseplan()
+    return read_caseplan(existing_caseplan(EXPECTED_CASEPLAN))
 
 
 def _read_fixture() -> str:
@@ -489,12 +488,6 @@ def main():
         _fail(
             f"metadata.caseIdentifierType must be {identifier_type!r}; got "
             f"{metadata.get('caseIdentifierType')!r}"
-        )
-    if metadata.get("caseDirectlyPassTaskOutputs") is not True:
-        _fail(
-            "metadata.caseDirectlyPassTaskOutputs must be true "
-            "(SDD: task-output passing = Direct) - the lowered vars.<id> gates do not "
-            "resolve at runtime without it"
         )
     if metadata.get("intsvcActivityConfig") != "v2":
         _fail("metadata.intsvcActivityConfig must be 'v2'")

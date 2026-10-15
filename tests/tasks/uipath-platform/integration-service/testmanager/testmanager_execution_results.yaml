@@ -11,6 +11,10 @@ tags: [uipath-platform, integration, test-manager, resources, execute]
 run_limits:
   expected_turns: 40
   max_turns: 60
+  # Discovering a usable execution (IDs for logs/assertions/steps) can take
+  # ~15 min of live calls; nightly's 900s turn cap killed runs mid-way.
+  turn_timeout: 1500
+  task_timeout: 1800
 
 sandbox:
   python: {}
@@ -36,7 +40,7 @@ success_criteria:
   - type: command_executed
     description: "Get Test Execution (`... run get uipath-uipath-testmanager TestExecution`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestExecution'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+get\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestExecution'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -44,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Delete Test Execution (`... run delete uipath-uipath-testmanager TestExecution`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestExecution'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+delete\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestExecution'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -52,7 +56,7 @@ success_criteria:
   - type: command_executed
     description: "Get Test Case Logs of Test Execution (`... run list uipath-uipath-testmanager GetTestCaseLogsOfTestExecution`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetTestCaseLogsOfTestExecution'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?GetTestCaseLogsOfTestExecution'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -60,7 +64,7 @@ success_criteria:
   - type: command_executed
     description: "Get Test Case Log (`... run get uipath-uipath-testmanager TestCaseLog`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?TestCaseLog'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?TestCaseLog'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -68,7 +72,7 @@ success_criteria:
   - type: command_executed
     description: "Get Robot Logs (`... run list uipath-uipath-testmanager GetRobotLogs`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetRobotLogs'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?GetRobotLogs'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -76,7 +80,7 @@ success_criteria:
   - type: command_executed
     description: "Get Assertions (`... run list uipath-uipath-testmanager GetAssertions`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetAssertions'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?GetAssertions'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -84,7 +88,7 @@ success_criteria:
   - type: command_executed
     description: "Download Assertion (`... run get uipath-uipath-testmanager DownloadAssertion`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?DownloadAssertion'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?DownloadAssertion'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -92,7 +96,7 @@ success_criteria:
   - type: command_executed
     description: "Get Test Steps (`... run list uipath-uipath-testmanager GetTestSteps`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetTestSteps'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?GetTestSteps'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -100,7 +104,7 @@ success_criteria:
   - type: command_executed
     description: "Get Test Step Logs (`... run list uipath-uipath-testmanager GetTestStepLogs`)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?uipath-uipath-testmanager["\x27]?\s+["\x27]?GetTestStepLogs'
+    command_pattern: 'uip\s+is\s+resources\s+run\s+\S+\s+["\x27]?(?:uipath-uipath-testmanager|\$\{?\w+\}?)["\x27]?\s+["\x27]?GetTestStepLogs'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0

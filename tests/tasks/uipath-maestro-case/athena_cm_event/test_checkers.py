@@ -199,7 +199,7 @@ closes on required-stages-completed.
                 {"id": f"{task_id}_folder", "default": "Shared"},
             ])
         plan = {
-            "version": "30.0.0",
+            "version": "32.0.3",
             "name": "AthenaCMEventCase",
             "metadata": {
                 "caseIdentifier": "=vars.instanceExternalId",
@@ -292,6 +292,15 @@ closes on required-stages-completed.
         result = run(CASE_CHECK, self.workdir)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("StageB", result.stdout + result.stderr)
+
+    def test_both_checkers_accept_a_plan_saved_as_caseplan_case(self) -> None:
+        """Studio Web renames caseplan.json to caseplan.case on its first save."""
+        self.write_caseplan()
+        project = self.workdir / "AthenaCMEventCase" / "AthenaCMEventCase"
+        (project / "caseplan.json").rename(project / "caseplan.case")
+        for checker in (CASE_CHECK, RULES_CHECK):
+            result = run(checker, self.workdir)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

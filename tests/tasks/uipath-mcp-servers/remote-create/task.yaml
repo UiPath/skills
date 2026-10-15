@@ -1,7 +1,7 @@
 task_id: skill-mcp-servers-remote-create
 description: |
-  Register a remote-type AgentHub MCP server pointing at an external HTTP MCP endpoint with Bearer auth backed by an Orchestrator asset reference. Exercises the generic Server Types path: slug regex, --print-schema/template discovery, --file payload submission, post-create refresh-tools + verify. Uses the manifest-driven uip mock — no real tenant call.
-tags: [uipath-mcp-servers, smoke, 'mode:build']
+  Register a remote-type Agent Gateway MCP server pointing at an external HTTP MCP endpoint with Bearer auth backed by an Orchestrator asset reference. Exercises the generic Server Types path: slug regex, --print-schema/template discovery (camelCase, sendable as is), an Authorization header whose whole value is `%ASSETS/<name>%` (via `--header` or a camelCase payload `headers` line), post-create refresh-tools + inspection. Uses the manifest-driven uip mock — no real tenant call.
+tags: [uipath-mcp-servers, smoke, 'mode:build', 'lifecycle:setup']
 agent:
   type: claude-code
   allowed_tools: [Skill, Bash, Read, Write]
@@ -11,13 +11,16 @@ sandbox:
   - {type: template_dir, path: ../_shared/mock_template}
   - {type: template_dir, path: fixtures}
   mock_path_dirs: [mocks]
+reference:
+  directory: .
 initial_prompt: |
   Use the `uip` CLI as if it were the real UiPath CLI (it is mocked in this
   sandbox; manifest-driven canned responses).
 
   TASK: Register a remote-type AgentHub MCP server in the Shared folder.
     - Target URL: https://mock.api.example.com
-    - Auth: Bearer token from Orchestrator asset SLACK_BOT_TOKEN
+    - Auth: an Authorization header whose value comes from the Orchestrator
+      asset SLACK_BOT_TOKEN (the asset holds the full `Bearer <token>` value)
     - Use slug: mock-remote-api (must match ^[a-z0-9-]+$, length 3-50)
     - Suggested display name: "Mock Remote API"
 
@@ -25,30 +28,27 @@ initial_prompt: |
   then verify by listing tools.
 
   Save to the sandbox cwd:
-    - payload.json — the remote-server JSON body you submitted via --file or --body
     - create-command.sh — the exact `uip agenthub mcp create remote ...` invocation
+      (if it reads a --file payload, keep that file in the sandbox cwd)
     - trajectory.md — every uip call you ran, one line each
     - summary.txt — one or two lines on what you produced
 success_criteria:
-- {type: file_exists, path: payload.json, description: '`payload.json` was produced'}
 - {type: file_exists, path: create-command.sh, description: '`create-command.sh` was produced'}
 - type: file_contains
-  description: payload references the remote URL
-  path: payload.json
-  includes: ['https://mock.api.example.com']
-- type: file_contains
-  description: payload expresses the Bearer asset reference via the schema-documented form
-  path: payload.json
-  includes: [SLACK_BOT_TOKEN]
-- type: file_contains
-  description: create-command invokes `mcp create remote` (slug/uri/headers live in payload.json via --file)
+  description: create-command invokes `mcp create remote`
   path: create-command.sh
   includes: [mcp create remote]
-- {type: command_executed, description: Agent submitted the create via --file or --body, tool_name: Bash,
-  command_pattern: uip\s+agenthub\s+mcp\s+create\s+remote\b.*(--file|--body), min_count: 1}
-- {type: command_executed, description: Agent refreshed tools after create, tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp\s+refresh-tools\s+mock-remote-api,
+- {type: command_executed, description: Agent ran mcp create remote, tool_name: Bash, command_pattern: uip\s+agenthub\s+mcp\s+create\s+remote\b,
   min_count: 1}
-- {type: command_executed, description: 'Agent verified after create/refresh via a Critical-Rule-3 inspection verb (mcp list / mcp get / mcp-tools list)', tool_name: Bash,
+- type: run_command
+  description: 'The executed create sent https://mock.api.example.com with an Authorization header whose whole value is %ASSETS/SLACK_BOT_TOKEN% (--header, or a --file/--body payload with camelCase `uri` and a `headers` line); no `Bearer ` prefix'
+  command: python3 $REFERENCE_DIR/check_remote_create.py
+  timeout: 30
+  expected_exit_code: 0
+  weight: 3.0
+- {type: command_executed, description: Agent refreshed tools after create, tool_name: Bash, command_pattern: 'uip\s+agenthub\s+mcp\s+refresh-tools\s+mock-remote-api(?![^\n]*--dry-run)',
+  min_count: 1}
+- {type: command_executed, description: 'Agent inspected the server or its tools after create (mcp get / mcp list / mcp-tools list)', tool_name: Bash,
   command_pattern: uip\s+agenthub\s+(mcp\s+(get|list)|mcp-tools\s+list),
   min_count: 1}
 run_limits: {max_turns: 60}

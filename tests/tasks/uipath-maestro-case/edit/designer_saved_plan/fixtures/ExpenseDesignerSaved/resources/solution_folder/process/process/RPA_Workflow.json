@@ -1,0 +1,56 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "RPA Workflow",
+    "kind": "process",
+    "type": "process",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "kind": "Package",
+        "name": "CM-Golden-Expense-Reporting-Manual.process.RPA.Workflow"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Process",
+      "jobPriority": "Medium",
+      "jobRecording": "Disabled",
+      "duration": 40,
+      "frequency": 500,
+      "quality": 100,
+      "remoteControlAccess": "None",
+      "environmentVariables": "",
+      "name": "RPA Workflow",
+      "package": {
+        "name": "CM-Golden-Expense-Reporting-Manual.process.RPA.Workflow",
+        "key": "CM-Golden-Expense-Reporting-Manual.process.RPA.Workflow:1.0.6"
+      },
+      "packageName": "CM-Golden-Expense-Reporting-Manual.process.RPA.Workflow",
+      "packageVersion": "1.0.6",
+      "entryPointUniqueId": "b17b71b9-3aa4-4d84-9000-4dbb88a8681b",
+      "entryPointName": "Main.xaml",
+      "inputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"RPAExpenseRequestIn\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"RPAExpenseRequestIn\"\n  ]\n}",
+      "outputArgumentsSchemaV2": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"RPAExpenseRequestOut\": {\n      \"type\": \"string\"\n    }\n  }\n}",
+      "hiddenForAttendedUser": false,
+      "alwaysRunning": false,
+      "autoStartProcess": false,
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180,
+      "entryPoints": "[{\"UniqueId\":\"b17b71b9-3aa4-4d84-9000-4dbb88a8681b\",\"Path\":\"Main.xaml\",\"DisplayName\":null,\"InputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"RPAExpenseRequestIn\\\": {\\n      \\\"type\\\": \\\"string\\\"\\n    }\\n  },\\n  \\\"required\\\": [\\n    \\\"RPAExpenseRequestIn\\\"\\n  ]\\n}\",\"OutputArguments\":\"{\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"properties\\\": {\\n    \\\"RPAExpenseRequestOut\\\": {\\n      \\\"type\\\": \\\"string\\\"\\n    }\\n  }\\n}\",\"Type\":1,\"TargetRuntime\":null,\"ContentRoot\":null,\"DataVariation\":null,\"Id\":927446}]",
+      "tags": []
+    },
+    "locks": [],
+    "key": "0bc08e50-b45a-401c-aec8-a720e1d190e3",
+    "files": []
+  }
+}
