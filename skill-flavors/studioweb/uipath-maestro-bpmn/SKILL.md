@@ -22,3 +22,8 @@
    auto-deploys; a shared location needs `uip solution deploy run`. Follow
    `uipath-solution` for destinations and redeploys.
 <!--skill-flavor:delegated-resource-author-deploy:end-->
+
+<!--skill-flavor:v2-solution-resources-refresh:start-->
+   Studio Web keeps the open solution's resources in sync after
+   `bpmn refresh`; `uip solution resources refresh` is Node-CLI-only.
+<!--skill-flavor:v2-solution-resources-refresh:end-->
