@@ -65,9 +65,9 @@ Create each asset in the folder `<folder>` unless the asset says otherwise. The 
 - [ ] Create the **`<Connector>`** connection in the folder `<folder>` and sign it in with the account `<account>`.
 
 ## Data Fabric
-All test data lives in one entity: one record per test data row, found by its data-set name and schema name, its values a JSON text in `Data`. Everything needed to create and load it is in the folder `<project-slug>-data-fabric` next to this file.
+All test data lives in one entity: one record per test data row, with three fields: `DataSetName` (the data set the row belongs to), `RowNumber` (its order in the data set) and `Data` (its values as JSON text). A new data set takes a `DataSetName` no other data set uses. Everything needed to create and load it is in the folder `<project-slug>-data-fabric` next to this file.
 
-- [ ] Sign in to this environment's tenant with the UiPath CLI (`uip login`), open the folder `<project-slug>-data-fabric` and run `.\import-test-data.ps1 -DryRun`, then `.\import-test-data.ps1` (<the tenant | `-FolderKey <folder GUID>` for the folder `<folder>`>). It creates **`<Entity>`** from `<Entity>.schema.json`, loads its `<n>` records and ends with "Verified: `<n>` records, every recordset count matches."
+- [ ] Sign in to this environment's tenant with the UiPath CLI (`uip login`), open the folder `<project-slug>-data-fabric` and run `.\import-test-data.ps1 -DryRun`, then `.\import-test-data.ps1` (<the tenant | `-FolderKey <folder GUID>` for the folder `<folder>`>). It creates **`<Entity>`** from `<Entity>.schema.json`, loads its `<n>` records and ends with "Verified: `<n>` records, every data set's record count matches."
   - Without the script: `uip df entities create <Entity> --file <Entity>.schema.json`, then `uip df records insert <entity-id> --file records-01.json` and the same for each records file.
   - The entity definition, for reference:
 
@@ -76,7 +76,7 @@ All test data lives in one entity: one record per test data row, found by its da
   ```
 - [ ] Give `<accounts>` <read | read and write> access to **`<Entity>`**.
   - Data sets with no records yet: `<names>`. Their test cases show as failed in Test Manager until a record is added.
-  - Values the build masked: `<data set>` (`<schema>`), field `<field>`. Enter this environment's value in the record's `Data` text before running the cases that use it.
+  - Values the build masked: `<DataSetName>`, row `<RowNumber>`, field `<field>`. Enter this environment's value in the record's `Data` text before running the cases that use it.
 - [ ] Create the entity with exactly the name and fields of its definition above: the package reaches its entities by name in the tenant it runs in, so it needs no change. To edit the project in Studio against this tenant, first update its Data Fabric entities from this tenant, keeping the namespace **`<namespace>`**. <Only when this tenant is not the build tenant `<build tenant>`.>
 
 ## Test Manager
