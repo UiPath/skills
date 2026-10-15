@@ -7,7 +7,7 @@ Entry point for low-code agent work. Read this first after low-code mode is dete
 - Create a new low-code agent project (standalone or inline in a flow)
 - Edit `agent.json` — prompts, model, schemas, settings
 - Add tools, contexts, escalations, or MCP servers as files in `resources/{Name}/resource.json`
-- Add memory spaces or seed memory items with `uip agent memory`
+- Add memory spaces with `uip agent memory`, and promote deployed runs into them as memory items
 - Wire agent-to-agent calls within a solution or to an external deployed agent
 - Design input/output schemas and sync with `entry-points.json`
 - Validate agent project structure
@@ -103,7 +103,7 @@ Capabilities are **orthogonal**: there is no ordering requirement among them. Ad
 | Add an index-backed context (RAG) | [capabilities/context/index.md](capabilities/context/index.md) | |
 | Add attachments context | [capabilities/context/attachments.md](capabilities/context/attachments.md) | |
 | Add DataFabric entity-set context | [capabilities/context/datafabric.md](capabilities/context/datafabric.md) | |
-| Add a memory space or seed memory items | [capabilities/memory/memory.md](capabilities/memory/memory.md) | |
+| Add a memory space, or promote runs into memory items | [capabilities/memory/memory.md](capabilities/memory/memory.md) | |
 | Add an Action Center escalation (HITL) | [capabilities/escalation/escalation.md](capabilities/escalation/escalation.md) | |
 | Add guardrails (PII, harmful content, custom rules) | [capabilities/guardrails/guardrails.md](capabilities/guardrails/guardrails.md) | |
 | Embed an autonomous agent inline in a flow | [capabilities/inline-in-flow/inline-in-flow.md](capabilities/inline-in-flow/inline-in-flow.md) | |
