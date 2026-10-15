@@ -8,8 +8,8 @@ description: >
   with `registry search --local` before the empty-lookup gate (#3863) and bind
   it with resourceKey solution_folder.CreditRisk and an empty folderPath.
   Validates the case, then runs `uip maestro case debug` on the solution and
-  requires LOW_RISK (credit score 742) in the outputs, which only the rule can
-  produce.
+  requires the case and the rule task's own execution to complete. Case debug
+  reports element executions, not variable values, so the band is not graded.
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, feature:registry]
 max_iterations: 1
 sandbox:
@@ -57,7 +57,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The business-rule task binds the in-solution CreditRisk rule, wires creditScore in and RiskDecision.riskBand out, and debug returns LOW_RISK"
+    description: "The business-rule task binds the in-solution CreditRisk rule, wires creditScore in and RiskDecision.riskBand out, and debug completes with the rule task executed"
     command: "python3 $REFERENCE_DIR/_shared/check_business_rule_case.py"
     timeout: 720
     expected_exit_code: 0

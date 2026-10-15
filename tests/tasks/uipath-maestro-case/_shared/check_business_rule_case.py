@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """BusinessRuleSingleCase: the business-rule task binds the in-solution
 CreditRisk rule (resourceKey solution_folder.CreditRisk, empty folderPath),
-wires creditScore in and RiskDecision.riskBand out, and debug returns the
-rule's LOW_RISK band for the SDD's credit score of 742."""
+wires creditScore in and RiskDecision.riskBand out, and the debugged
+case runs the rule task to completion."""
 
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import (  # noqa: E402
-    assert_outputs_contain,
     assert_task_type_present,
     get_bindings,
     read_caseplan,
@@ -66,14 +65,24 @@ def check_structure(task: dict, bindings: list[dict]) -> None:
         )
 
 
+def assert_task_completed(payload: dict, task: dict) -> None:
+    """Case debug reports element executions, not variable values, so the task's
+    own execution reaching Completed is what the run can prove."""
+    runs = [e for e in payload.get("elementExecutions") or [] if e.get("elementId") == task.get("id")]
+    if not runs:
+        sys.exit(f"FAIL: debug has no execution for task {task.get('displayName')!r} (id {task.get('id')!r}).")
+    status = runs[-1].get("status")
+    if status not in ("Completed", "Successful"):
+        sys.exit(f"FAIL: debug execution for task {task.get('displayName')!r} finished {status!r}.")
+
+
 def main():
     task = assert_task_type_present("business-rule")
     check_structure(task, get_bindings(read_caseplan()))
     payload = run_debug(timeout=540)
-    # 742 >= 700 only reaches LOW_RISK through the rule's decision table.
-    assert_outputs_contain(payload, "LOW_RISK")
+    assert_task_completed(payload, task)
     print(f"OK: business-rule task bound to in-solution {RULE} "
-          f"(displayName={task.get('displayName')!r}); debug Completed with LOW_RISK")
+          f"(displayName={task.get('displayName')!r}); debug Completed, rule task executed")
 
 
 if __name__ == "__main__":
