@@ -3,8 +3,9 @@
 
 Compares the Flow project the agent left behind with the committed fixture it
 started from. Every original node, edge, binding, variable and definition must
-survive, and every node the task did not name must be byte-for-byte the same
-JSON (the bar builder-sdk's own round-trip corpus test uses). Agent sidecars
+survive, and every definition and every node the task did not name must be
+byte-for-byte the same JSON (the bar builder-sdk's own round-trip corpus test
+uses). Agent sidecars
 (`<uuid>/agent.json` and their `resources/*/resource.json`) count as part of the
 flow: a context index that loses its id still validates, so only a comparison
 with the original catches it.
@@ -139,11 +140,14 @@ def check_graph(
         if final_node_vars.get(var["id"]) != var:
             failures.append(f"node variable {var['id']!r} removed or changed")
 
-    final_definitions = {(d.get("nodeType"), d.get("version")) for d in final.get("definitions", [])}
+    final_definitions = {(d.get("nodeType"), d.get("version")): d for d in final.get("definitions", [])}
     for definition in original.get("definitions", []):
         key = (definition.get("nodeType"), definition.get("version"))
-        if key not in final_definitions:
+        after = final_definitions.get(key)
+        if after is None:
             failures.append(f"definition {key[0]}@{key[1]} removed")
+        elif after != definition:
+            failures.append(f"definition {key[0]}@{key[1]} changed ({', '.join(differing_keys(definition, after))})")
 
     for uuid, sidecar in original_agents.items():
         after = final_agents.get(uuid)

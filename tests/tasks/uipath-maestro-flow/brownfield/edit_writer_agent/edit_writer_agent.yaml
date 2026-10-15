@@ -20,9 +20,6 @@ sandbox:
     - type: template_dir
       path: ../fixture
 
-    - type: template_dir
-      path: ../../_setup
-      mount_point: _setup
 reference:
   directory: ../..
 
@@ -61,7 +58,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The writer agent's system prompt adds the 5-business-day line and keeps its existing instructions"
+    description: "The writer agent's system prompt adds the next-statement, 5-business-day line, keeps every existing line in both prompt copies, and nothing else in its agent.json changes"
     command: "python3 $REFERENCE_DIR/brownfield/check_brownfield_edit.py writer-prompt --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
     timeout: 30
     expected_exit_code: 0
@@ -69,8 +66,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The analyst agent, its context index resource, and every node, edge, binding, variable and definition outside the writer are unchanged"
-    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution --changed-node resolutionWriter --changed-agent e6360c37-75b3-4315-b63e-afe9815dd65c"
+    description: "The .flow, the analyst agent and its context index resource are unchanged"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution --changed-agent e6360c37-75b3-4315-b63e-afe9815dd65c"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
@@ -83,7 +80,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 _setup/cleanup_solutions.py"
-    timeout: 120

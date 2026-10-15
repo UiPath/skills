@@ -21,9 +21,6 @@ sandbox:
     - type: template_dir
       path: ../fixture
 
-    - type: template_dir
-      path: ../../_setup
-      mount_point: _setup
 reference:
   directory: ../..
 
@@ -64,7 +61,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The switch keeps its three cases and gains a request_more_info case that ends at a new End node mapping all five outputs"
+    description: "The switch keeps its three cases and gains one that matches only request_more_info, ending at a new End node whose outputs match the other End nodes plus a literal note"
     command: "python3 $REFERENCE_DIR/brownfield/check_brownfield_edit.py switch-route --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
     timeout: 30
     expected_exit_code: 0
@@ -86,7 +83,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 _setup/cleanup_solutions.py"
-    timeout: 120

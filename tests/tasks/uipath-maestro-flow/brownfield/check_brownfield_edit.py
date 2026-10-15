@@ -2,7 +2,9 @@
 """The requested edit to the DevCon BillingDisputeResolution fixture is present.
 
 One subcommand per task; `check_brownfield_preserved.py` grades everything the
-edit was not supposed to touch.
+edit was not supposed to touch. Scripts and expressions the agent wrote are run
+with `node` against stub `$vars`, so the grade follows what the code returns,
+not how it is spelled.
 
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/brownfield/check_brownfield_edit.py <edit> \\
@@ -14,20 +16,59 @@ Exit 0 on pass; exit 1 with a `FAIL:` line.
 from __future__ import annotations
 
 import argparse
+import json
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from _shared.check_brownfield_preserved import edge_key, load_project  # noqa: E402
+from _shared.check_brownfield_preserved import differing_keys, edge_key, load_project  # noqa: E402
 
 OUT_VARIABLES = ("determination", "recommendedAction", "creditAmount", "rationale", "resolutionEmailBody")
 WRITER_AGENT = "e6360c37-75b3-4315-b63e-afe9815dd65c"
+CAP_CASES = ((120, 120), (500, 500), (750, 500), (10000, 500))
+ACTIONS = ("escalate_to_manager", "auto_resolve", "reject", "request_more_info")
+ANALYST_STUB = {"determination": "valid", "creditAmount": 42, "rationale": "stub rationale"}
+
+
+class JsError(Exception):
+    pass
 
 
 def fail(message: str) -> int:
     print(f"FAIL: {message}")
     return 1
+
+
+def run_js(body: str, scope: dict) -> object:
+    if shutil.which("node") is None:
+        raise JsError("node is not on PATH")
+    program = (
+        "const $vars = JSON.parse(process.argv[1]);"
+        f"(async function () {{\n{body}\n}})()"
+        ".then(r => process.stdout.write(JSON.stringify(r === undefined ? null : r)));"
+    )
+    try:
+        proc = subprocess.run(
+            ["node", "-e", program, json.dumps(scope)], capture_output=True, text=True, timeout=20
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise JsError("timed out") from exc
+    if proc.returncode:
+        errors = [line for line in proc.stderr.splitlines() if re.match(r"^\w*Error\b", line)]
+        raise JsError(errors[0] if errors else f"node exited {proc.returncode}")
+    return json.loads(proc.stdout or "null")
+
+
+def evaluate_source(source: object, scope: dict) -> object:
+    text = str(source)
+    if text.startswith("=js:"):
+        return run_js(f"return ({text[4:]});", scope)
+    if text.startswith("="):
+        return run_js(f"return ({text[1:]});", scope)
+    return text
 
 
 def new_nodes(original: dict, final: dict) -> list[dict]:
@@ -39,16 +80,33 @@ def label(node: dict) -> str:
     return str(node.get("display", {}).get("label") or node.get("label") or "")
 
 
-def check_credit_cap(original: dict, final: dict, _agents: dict) -> int:
-    scripts = [n for n in new_nodes(original, final) if n["type"] == "core.action.script"]
-    capping = [n for n in scripts if "500" in str(n.get("inputs", {}).get("script", ""))]
-    if not capping:
-        return fail(f"no new Script node whose code caps at 500 (new scripts: {[n['id'] for n in scripts]})")
-    edges = {edge_key(e) for e in final["edges"]}
+def caps_at_500(script: str) -> str | None:
+    for given, expected in CAP_CASES:
+        scope = {
+            "disputeAnalyst": {"output": {**ANALYST_STUB, "creditAmount": given}},
+            "logCreditAmount": {"output": {"creditAmount": given}},
+        }
+        try:
+            result = run_js(script, scope)
+        except JsError as exc:
+            return f"creditAmount {given}: {exc}"
+        value = result.get("creditAmount") if isinstance(result, dict) else None
+        try:
+            ok = abs(float(value) - expected) < 1e-9
+        except (TypeError, ValueError):
+            ok = False
+        if not ok:
+            return f"creditAmount {given} returned {json.dumps(result)}, expected {{creditAmount: {expected}}}"
+    return None
+
+
+def check_credit_cap(original: dict, final: dict, _original_agents: dict, _agents: dict) -> int:
+    added = new_nodes(original, final)
+    new_ids = {n["id"] for n in added}
     by_source: dict[str, set[str]] = {}
+    edges = {edge_key(e) for e in final["edges"]}
     for source, _port, target, _tport in edges:
         by_source.setdefault(source, set()).add(target)
-    new_ids = {n["id"] for n in new_nodes(original, final)}
     frontier, seen = ["logCreditAmount"], set()
     while frontier:
         node = frontier.pop()
@@ -56,17 +114,24 @@ def check_credit_cap(original: dict, final: dict, _agents: dict) -> int:
             if target in new_ids and target not in seen:
                 seen.add(target)
                 frontier.append(target)
-    if not any(n["id"] in seen for n in capping):
-        return fail("the capping Script is not downstream of logCreditAmount through new nodes only")
-    if not any(target == "financialPosting" for node in seen for target in by_source.get(node, set())):
-        return fail("no new node on the auto-resolve path continues to financialPosting")
     if any(s == "logCreditAmount" and t == "financialPosting" for s, _p, t, _tp in edges):
         return fail("logCreditAmount still connects straight to financialPosting")
-    print(f"OK: {capping[0]['id']} caps the credit between logCreditAmount and financialPosting")
-    return 0
+    if not any(target == "financialPosting" for node in seen for target in by_source.get(node, set())):
+        return fail("no new node downstream of logCreditAmount continues to financialPosting")
+    scripts = [n for n in added if n["id"] in seen and n["type"] == "core.action.script"]
+    if not scripts:
+        return fail(f"no new Script node between logCreditAmount and financialPosting (new nodes on the path: {sorted(seen)})")
+    problems = []
+    for script in scripts:
+        problem = caps_at_500(str(script.get("inputs", {}).get("script", "")))
+        if problem is None:
+            print(f"OK: {script['id']} returns min(creditAmount, 500) between logCreditAmount and financialPosting")
+            return 0
+        problems.append(f"{script['id']}: {problem}")
+    return fail("no new Script on the path caps the credit at 500 (" + "; ".join(problems) + ")")
 
 
-def check_switch_route(original: dict, final: dict, _agents: dict) -> int:
+def check_switch_route(original: dict, final: dict, _original_agents: dict, _agents: dict) -> int:
     switch = next((n for n in final["nodes"] if n["id"] == "routeByAction"), None)
     if switch is None:
         return fail("routeByAction is gone")
@@ -76,10 +141,26 @@ def check_switch_route(original: dict, final: dict, _agents: dict) -> int:
         if case not in cases:
             return fail(f"original switch case {case['id']!r} was changed or removed")
     added = [c for c in cases if c not in original_switch["inputs"]["cases"]]
-    route = [c for c in added if "request_more_info" in str(c.get("expression", ""))]
-    if len(route) != 1:
-        return fail(f"expected one new case testing 'request_more_info', found {[c.get('id') for c in added]}")
-    port = f"case-{route[0]['id']}"
+    matches, notes = [], []
+    for case in added:
+        expression = str(case.get("expression", ""))
+        source = expression if expression.startswith("=") else f"=js:{expression}"
+        try:
+            hits = [
+                action
+                for action in ACTIONS
+                if evaluate_source(source, {"disputeAnalyst": {"output": {**ANALYST_STUB, "recommendedAction": action}}})
+            ]
+        except JsError as exc:
+            notes.append(f"{case.get('id')!r}: {exc}")
+            continue
+        if hits == ["request_more_info"]:
+            matches.append(case)
+        else:
+            notes.append(f"{case.get('id')!r} matches {hits}")
+    if len(matches) != 1:
+        return fail(f"expected one new case that matches only request_more_info, found {len(matches)} ({'; '.join(notes) or 'no new cases'})")
+    port = f"case-{matches[0]['id']}"
     targets = [t for s, p, t, _tp in (edge_key(e) for e in final["edges"]) if s == "routeByAction" and p == port]
     ends = {n["id"]: n for n in new_nodes(original, final) if n["type"] == "core.control.end"}
     end = next((ends[t] for t in targets if t in ends), None)
@@ -89,25 +170,53 @@ def check_switch_route(original: dict, final: dict, _agents: dict) -> int:
     missing = [v for v in OUT_VARIABLES if not str(outputs.get(v, {}).get("source", "")).strip()]
     if missing:
         return fail(f"End node {end['id']!r} does not map {missing}")
-    body = str(outputs["resolutionEmailBody"]["source"])
-    if "resolutionWriter" in body or not re.search(r"['\"`]", body):
-        return fail(f"resolutionEmailBody on {end['id']!r} is not a literal note: {body!r}")
+    reference = next(n for n in original["nodes"] if n["id"] == "returnRejection")["outputs"]
+    scope = {"disputeAnalyst": {"output": {**ANALYST_STUB, "recommendedAction": "request_more_info"}}}
+    try:
+        for variable in OUT_VARIABLES[:-1]:
+            got = evaluate_source(outputs[variable]["source"], scope)
+            want = evaluate_source(reference[variable]["source"], scope)
+            if got != want:
+                return fail(f"End node {end['id']!r} maps {variable} to {got!r}; the other End nodes return {want!r}")
+        body = evaluate_source(outputs["resolutionEmailBody"]["source"], scope)
+    except JsError as exc:
+        return fail(f"End node {end['id']!r} output does not evaluate: {exc}")
+    if not isinstance(body, str) or not body.strip():
+        return fail(f"resolutionEmailBody on {end['id']!r} is not a note: {body!r}")
     print(f"OK: {port} ends at {end['id']!r} ({label(end)!r}) with all five outputs mapped")
     return 0
 
 
-def check_writer_prompt(_original: dict, _final: dict, agents: dict) -> int:
+def system_prompt(agent: dict) -> dict:
+    return next((m for m in agent.get("messages", []) if m.get("role") == "system"), {})
+
+
+def check_writer_prompt(_original: dict, _final: dict, original_agents: dict, agents: dict) -> int:
     writer = agents.get(WRITER_AGENT)
     if writer is None:
         return fail(f"writer agent project {WRITER_AGENT} is gone")
-    system = " ".join(
-        str(m.get("content", "")) for m in writer["agent"].get("messages", []) if m.get("role") == "system"
-    )
-    if not re.search(r"\b(5|five)\s+business\s+days\b", system, re.IGNORECASE):
+    before, after = original_agents[WRITER_AGENT]["agent"], writer["agent"]
+    old, new = system_prompt(before), system_prompt(after)
+    content = str(new.get("content", ""))
+    if not re.search(r"\b(5|five)\s+business\s+days\b", content, re.IGNORECASE):
         return fail("writer system prompt does not mention 5 business days")
-    for kept in ("Billing Operations Team", "under 250 words", "invoice number"):
-        if kept.lower() not in system.lower():
-            return fail(f"writer system prompt lost an existing instruction ({kept!r})")
+    if not re.search(r"next\s+statement", content, re.IGNORECASE):
+        return fail("writer system prompt does not mention the next statement")
+    kept = {line.strip() for line in content.splitlines()}
+    lost = [line.strip() for line in str(old.get("content", "")).splitlines() if line.strip() and line.strip() not in kept]
+    if lost:
+        return fail(f"writer system prompt changed or dropped an existing line: {lost[0]!r}")
+    tokens = new.get("contentTokens")
+    if tokens is not None and "".join(str(t.get("rawString", "")) for t in tokens) != content:
+        return fail("writer system prompt contentTokens rawString no longer matches content")
+    if differing_keys({k: v for k, v in old.items() if k not in ("content", "contentTokens")},
+                      {k: v for k, v in new.items() if k not in ("content", "contentTokens")}):
+        return fail("writer system message changed outside content/contentTokens")
+    if [m for m in before.get("messages", []) if m is not old] != [m for m in after.get("messages", []) if m is not new]:
+        return fail("writer agent.json messages other than the system prompt changed")
+    changed = [k for k in differing_keys(before, after) if k != "messages"]
+    if changed:
+        return fail(f"writer agent.json changed outside the system prompt ({', '.join(changed)})")
     print("OK: writer system prompt adds the 5-business-day line and keeps the rest")
     return 0
 
@@ -125,9 +234,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--original", required=True, type=Path)
     parser.add_argument("--project", required=True, type=Path)
     args = parser.parse_args(argv)
-    original, _ = load_project(args.original)
+    original, original_agents = load_project(args.original)
     final, agents = load_project(args.project)
-    return CHECKS[args.edit](original, final, agents)
+    return CHECKS[args.edit](original, final, original_agents, agents)
 
 
 if __name__ == "__main__":

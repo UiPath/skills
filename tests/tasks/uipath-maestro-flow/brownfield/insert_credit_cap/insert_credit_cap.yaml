@@ -21,9 +21,6 @@ sandbox:
     - type: template_dir
       path: ../fixture
 
-    - type: template_dir
-      path: ../../_setup
-      mount_point: _setup
 reference:
   directory: ../..
 
@@ -62,7 +59,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "A new Script caps the credit at 500 between logCreditAmount and financialPosting, and the direct edge is gone"
+    description: "A new Script between logCreditAmount and financialPosting returns min(creditAmount, 500) when run, and the direct edge is gone"
     command: "python3 $REFERENCE_DIR/brownfield/check_brownfield_edit.py credit-cap --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
     timeout: 30
     expected_exit_code: 0
@@ -84,7 +81,3 @@ success_criteria:
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
-
-post_run:
-  - command: "python3 _setup/cleanup_solutions.py"
-    timeout: 120
