@@ -74,11 +74,27 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   are in existing source. A decompiled canvas form keeps its types as written,
   except a type copied from a bound Flow variable (`'string[]'`,
   `'string | null'`), which decompiles to the type it resolves to (`'array'`,
-  `'string'`). A control spelling (`'singleSelect'`, `'multiSelect'`,
-  `'enum'`) also stays as written, and `check` reports it as
-  `HITL_FIELD_TYPE_UNKNOWN`. Do not change it to `'string'` (the form loses its
-  control): leave that node untouched so merge keeps the original, or edit that
-  node's JSON in the `.flow` directly.
+  `'string'`).
+- A picker field uses a choice-control spelling, with its choices in `options`
+  (`{ id, value, label }` each, all three required): `'singleSelect'` and
+  `'enum'` are a single-choice dropdown (a `string` answer), `'multiSelect'` a
+  multi-select (an `array` answer). Never change one to `'string'` or
+  `'array'`: the form loses its control and renders a text box. A decompiled
+  canvas form keeps these spellings and their `options`, and you can edit the
+  node like any other.
+
+  ```ts
+  fields: [{
+    id: 'priority', type: 'singleSelect', direction: 'output',
+    options: [{ id: 'opt-1', value: 'high', label: 'High' }, { id: 'opt-2', value: 'low', label: 'Low' }],
+  }]
+  ```
+
+  A canvas field row can also carry `controlType`, `defaultValue`, `colSpan`,
+  `rules`, `requiredMessage` or `description`. Decompile does not keep those
+  yet, so editing the node drops them from every field on the form. If any
+  field in the `.flow` has one of them, leave that node untouched so merge
+  keeps the original, or edit that node's JSON in the `.flow` directly.
 - **Every outcome is its own exit — the SDK never emits `completed` on a task
   that has outcomes.** Each outcome gets `outcome-<slug>` (the name lowercased,
   non-alphanumerics to `-`). This holds on the default node and on quick-form,
