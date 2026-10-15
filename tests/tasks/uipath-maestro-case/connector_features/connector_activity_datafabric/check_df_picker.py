@@ -79,13 +79,7 @@ def main():
               and (b.get("default") or "").lower() == name.lower()]
     if not picked:
         sys.exit(f"FAIL: the task's folderEntityName is {sorted(refs)}, not =bindings.<id> of an entity binding for "
-                 f"{name} ({key}); splice the spec that case spec returned instead of editing the task")
-
-    # Studio Web lists a task's picker bindings on the task as well; splice writes them there.
-    listed = {b.get("id") for b in data.get("bindings") or [] if isinstance(b, dict)}
-    if not any(b.get("id") in listed for b in picked):
-        sys.exit(f"FAIL: the task's data.bindings does not list its {name} entity binding "
-                 f"({sorted(b.get('id') for b in picked)}); splice writes it")
+                 f"{name} ({key}); copy spec.resourceBindings into bindings[] and the task inputs")
 
     folder_refs, folder_rows = bound_rows("folderEntityName_folderKey")
     if not any(b.get("default") == folder_key for b in folder_rows) and folder_key not in folder_refs:

@@ -63,8 +63,6 @@
       --t-function:                   #84cc16;
       --t-execute-connector-activity: #ec4899;
       --t-wait-for-connector:         #6366f1;
-      --t-external-agent:             #d946ef;
-      --t-external-workflow:          #0ea5e9;
       --t-wait-for-timer:             #6b7280;
       --t-case-management:            #ef4444;
     }
@@ -302,8 +300,6 @@
     .task[data-type="api-workflow"]               { border-left-color: var(--t-api-workflow); }
     .task[data-type="function"]                   { border-left-color: var(--t-function); }
     .task[data-type="execute-connector-activity"] { border-left-color: var(--t-execute-connector-activity); }
-    .task[data-type="external-agent"] { border-left-color: var(--t-external-agent); }
-    .task[data-type="external-workflow"] { border-left-color: var(--t-external-workflow); }
     .task[data-type="wait-for-connector"]         { border-left-color: var(--t-wait-for-connector); }
     .task[data-type="wait-for-timer"]             { border-left-color: var(--t-wait-for-timer); }
     .task[data-type="case-management"]            { border-left-color: var(--t-case-management); }
@@ -324,8 +320,6 @@
     .badge.type-api-workflow               { background: color-mix(in srgb, var(--t-api-workflow) 12%, white); color: var(--t-api-workflow); border-color: color-mix(in srgb, var(--t-api-workflow) 25%, transparent); }
     .badge.type-function                   { background: color-mix(in srgb, var(--t-function) 12%, white); color: var(--t-function); border-color: color-mix(in srgb, var(--t-function) 25%, transparent); }
     .badge.type-execute-connector-activity { background: color-mix(in srgb, var(--t-execute-connector-activity) 12%, white); color: var(--t-execute-connector-activity); border-color: color-mix(in srgb, var(--t-execute-connector-activity) 25%, transparent); }
-    .badge.type-external-agent { background: color-mix(in srgb, var(--t-external-agent) 12%, white); color: var(--t-external-agent); border-color: color-mix(in srgb, var(--t-external-agent) 25%, transparent); }
-    .badge.type-external-workflow { background: color-mix(in srgb, var(--t-external-workflow) 12%, white); color: var(--t-external-workflow); border-color: color-mix(in srgb, var(--t-external-workflow) 25%, transparent); }
     .badge.type-wait-for-connector         { background: color-mix(in srgb, var(--t-wait-for-connector) 12%, white); color: var(--t-wait-for-connector); border-color: color-mix(in srgb, var(--t-wait-for-connector) 25%, transparent); }
     .badge.type-wait-for-timer             { background: color-mix(in srgb, var(--t-wait-for-timer) 15%, white); color: var(--t-wait-for-timer); border-color: color-mix(in srgb, var(--t-wait-for-timer) 30%, transparent); }
     .badge.type-case-management            { background: color-mix(in srgb, var(--t-case-management) 12%, white); color: var(--t-case-management); border-color: color-mix(in srgb, var(--t-case-management) 25%, transparent); }
@@ -531,7 +525,7 @@
           "tasks": [
             {
               "name": string,
-              "type": "action"|"agent"|"process"|"rpa"|"api-workflow"|"function"|"wait-for-timer"|"wait-for-connector"|"execute-connector-activity"|"external-agent"|"external-workflow"|"case-management",
+              "type": "action"|"agent"|"process"|"rpa"|"api-workflow"|"function"|"wait-for-timer"|"wait-for-connector"|"execute-connector-activity"|"case-management",
               "required": boolean,
               "runOnlyOnce": boolean,
               "persona": string | null,
@@ -1387,8 +1381,6 @@
           break;
         case "wait-for-connector":
         case "execute-connector-activity":
-        case "external-agent":
-        case "external-workflow":
           mount.appendChild(el("div", { class: "meta-row", style: "margin:8px 0 12px" }, [
             d.connector  ? el("span", null, [el("span", { class: "k" }, "Connector:"),   el("span", { class: "v" }, " " + d.connector)])   : null,
             d.connection ? el("span", null, [el("span", { class: "k" }, "Connection:"),  el("span", { class: "v" }, " " + d.connection)])  : null,

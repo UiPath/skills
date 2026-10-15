@@ -208,6 +208,7 @@
   },
   "references/registry-discovery.md": {
     "Artifact I/O": 1,
+    "Closed task types": 2,
     "Empty lookup gate": 2,
     "Handoff contract": 2,
     "Phase 1 registry gate": 2,

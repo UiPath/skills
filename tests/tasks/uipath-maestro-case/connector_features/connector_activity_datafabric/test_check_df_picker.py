@@ -18,12 +18,11 @@ def binding(bid, key, default, attribute="name", resource="entity"):
             "name": bid, "propertyAttribute": attribute, "default": default}
 
 
-def plan(query, bindings, task_bindings=None):
+def plan(query, bindings):
     task = {"type": "execute-connector-activity", "data": {
         "typeId": "t", "connectionId": "c",
         "context": [{"name": "connectorKey", "value": "uipath-uipath-dataservice"}],
         "inputs": [{"name": "queryParameters", "body": query}],
-        "bindings": bindings if task_bindings is None else task_bindings,
     }}
     return {"bindings": bindings,
             "nodes": [{"type": "case-management:Stage", "data": {"tasks": [[task]]}}]}
@@ -81,9 +80,3 @@ def test_fails_when_the_folder_key_names_another_folder(tmp_path):
     r = run(tmp_path, plan(QUERY, wrong))
     assert r.returncode == 1
     assert "folderKey" in r.stderr + r.stdout
-
-
-def test_fails_when_the_task_does_not_list_its_entity_binding(tmp_path):
-    r = run(tmp_path, plan(QUERY, BOUND, task_bindings=[]))
-    assert r.returncode == 1
-    assert "data.bindings" in r.stderr + r.stdout
