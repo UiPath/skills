@@ -45,8 +45,17 @@ ordering mistake that forces a rebuild.
 uip maestro flow decompile Deployed.flow -o .flow-sdk/Deployed.flow.ts
 node .flow-sdk/Deployed.pipeline.mjs    # compiles the pristine baseline; stops there
 # Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
-node .flow-sdk/Deployed.pipeline.mjs    # compiles the edit, merges into .flow-sdk/Deployed.merged.flow
+node .flow-sdk/Deployed.pipeline.mjs --strict   # compiles the edit, merges into .flow-sdk/Deployed.merged.flow
 ```
+
+`--strict` goes to the merge step: merge refuses (exit 1, no file written)
+instead of warning when the no-edit round trip changed something you did not
+author (see [Merge warnings](#merge-warnings-what-the-round-trip-changed)).
+Leave it off to get the warnings and a merged file. The script stops on any
+other option rather than ignoring it. A pipeline written by an SDK older than
+this option ignores `--strict` silently: if
+`grep -q STRICT .flow-sdk/Deployed.pipeline.mjs` finds nothing, use the hand
+loop below with `merge --strict`.
 
 Re-running it after further edits repeats only the compile and merge — the
 baseline is captured once and reused. Pass `--no-pipeline` to `decompile` when
@@ -116,9 +125,10 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
 - `the round trip appends End "<id>" after …` is the one benign line: compile
   adds an End where the original path just stops. It does not change behaviour.
 - Pass `--strict` to make merge refuse (exit 1, no file written) instead of
-  warning. The benign End line never refuses. `--strict` needs `--baseline`,
-  so use it in [the hand loop](#the-same-loop-by-hand); the generated
-  pipeline does not pass it. If `uip maestro flow merge` rejects `--strict`,
+  warning. The benign End line never refuses. `--strict` needs `--baseline`:
+  run `node .flow-sdk/<Name>.pipeline.mjs --strict`, which always has one, or
+  add it to the merge in [the hand loop](#the-same-loop-by-hand). If
+  `uip maestro flow merge` rejects `--strict`,
   your CLI does not forward it yet; run the same merge through the globally
   installed SDK's `flow-sdk` bin instead:
 
