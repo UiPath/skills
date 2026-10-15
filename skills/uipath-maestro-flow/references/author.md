@@ -79,11 +79,13 @@ cannot make: which node, which topology, what an output means, and what to ask.
    decision, except an uncovered rule case (rule 8), which you still decide.
    Consent gates — destructive operations, tenant writes — are never
    auto-answered.
+<!--skill-flavor:solution-lookup:start-->
 10. **Look for an existing solution before `uip solution init`.** Run
     `find . -maxdepth 2 -name '*.uipx'`. If one exists, ask which to use (one
     option per solution, "Create a new solution", then "Something else"); do
     not silently adopt, re-initialize, or repair it. The scaffold itself is in
     [SKILL.md](../SKILL.md#project-layout).
+<!--skill-flavor:solution-lookup:end-->
 11. **Never invoke another skill on your own.** When the flow needs an RPA
     process, an agent, or an app that does not exist, name the gap and hand
     the user what they need to switch skills.
