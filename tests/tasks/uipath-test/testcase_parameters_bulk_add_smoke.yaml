@@ -47,12 +47,18 @@ pre_run:
           key = case["TestCaseKey"]
           rows = call("tm", "testcases", "parameters", "list", "--project-key", "HEALTH",
                       "--test-case-key", key, "--limit", "100").get("Data") or []
+          # Best-effort clear: a concurrent CI run on this shared case may have
+          # already removed these ids, so a delete failure is not fatal.
           if rows:
-              need(call("tm", "testcases", "parameters", "delete", "--project-key", "HEALTH", "--test-case-key", key,
-                        "--parameter-ids", *[r["Id"] for r in rows], "--yes"), f"clear {key}")
+              call("tm", "testcases", "parameters", "delete", "--project-key", "HEALTH", "--test-case-key", key,
+                   "--parameter-ids", *[r["Id"] for r in rows], "--yes")
           for name, value in seed:
-              need(call("tm", "testcases", "parameters", "add", "--project-key", "HEALTH", "--test-case-key", key,
-                        "--name", name, "--default-value", value), f"seed {name} on {key}")
+              out = call("tm", "testcases", "parameters", "add", "--project-key", "HEALTH", "--test-case-key", key,
+                         "--name", name, "--default-value", value)
+              # A concurrent run may have added the same param between our list
+              # and add; the desired param then already exists, so tolerate it.
+              if out.get("Result") != "Success" and "already has a parameter named" not in str(out):
+                  need(out, f"seed {name} on {key}")
 
       reset(ensure_case("EVFX-PARAM-Login"), [])
       reset(ensure_case("EVFX-PARAM-Transfer"), [("Username", "keepme")])
