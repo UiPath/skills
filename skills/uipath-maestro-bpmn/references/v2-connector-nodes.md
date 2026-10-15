@@ -5,8 +5,7 @@
 
 - **New workflow.** A workflow Studio Web or `uip maestro bpmn init` creates
   carries `<uipath:intsvcActivityConfig version="v2" />` in its process
-  `extensionElements`. The V2 properties panel reads only the V2 shape; a V1
-  template node opens with no activity selected.
+  `extensionElements`.
 - **Existing workflow without the marker.** Still build the new node as V2.
   The node's own `activityConfigurationVersion` `v2` decides how Studio Web
   opens it, whatever the workflow says, and the runtime runs V2 activities,
@@ -21,13 +20,13 @@
   such a trigger or wait, rebuild it as V2 with the same object, operation
   and parameters, and say so in your summary.
 
-A workflow with no connection available yet (an offline draft) keeps the
-node as a draft for the CLI to finish; do not fall back to the V1 template.
+A workflow with no connection yet keeps the registry template shell as a
+draft (the SKILL.md draft rule); do not fill it in as a configured V1 node.
 
 | Type | V2 element | Notes |
 | --- | --- | --- |
 | `Intsvc.ActivityExecution` | `bpmn:sendTask` | Connector activities. |
-| `Intsvc.UnifiedHttpRequest` | `bpmn:sendTask` | **Every new HTTP request**, manual or through a connector's connection — see [HTTP requests](#http-requests). Studio Web always edits it with the V2 component. |
+| `Intsvc.UnifiedHttpRequest` | `bpmn:sendTask` | **Every new HTTP request**, manual or through a connector's connection — see [HTTP requests](#http-requests). |
 | `Intsvc.EventTrigger` | `bpmn:startEvent` | Its own entry point (`uipath:entryPointId`). |
 | `Intsvc.WaitForEvent` | `bpmn:receiveTask` | Move the `uipath:event` block onto an `intermediateCatchEvent` or `boundaryEvent` host if the process needs one, with a bare `<bpmn:messageEventDefinition />` after the flows. |
 | `Intsvc.AsyncExecution` (external agent) | `bpmn:serviceTask` | Saved as `Intsvc.SyncAgentExecution` or `Intsvc.AsyncAgentExecution`, whichever the connector reports — see [External agents and automations](#external-agents-and-automations). |
@@ -97,7 +96,7 @@ uip maestro bpmn registry get Intsvc.EventTrigger \
 ```bash
 # Authenticates itself: no connection
 uip maestro bpmn registry get Intsvc.UnifiedHttpRequest \
-    --input-details '{"authentication":"manual","method":"GET","url":"https://api.example.com/items","headers":{"Authorization":"=js:\'Bearer \' + vars.Var_Token"},"query":{"limit":"10"}}' \
+    --input-details '{"authentication":"manual","method":"GET","url":"https://api.example.com/items","headers":{"Authorization":"=js:\"Bearer \" + vars.Var_Token"},"query":{"limit":"10"}}' \
     --output json
 
 # Through a connector's connection: --connection-id names it, the endpoint is relative
@@ -171,28 +170,17 @@ The rest of `bodyParameters` is the request body. Outlook's
 
 ## 2. Paste it
 
-1. Put `ElementXml` in the process and replace its tokens: `{id}`, `{name}`,
-   `{incomingEdge}`, `{outgoingEdge}` (a trigger has no incoming edge),
-   `{varId}` and `{errorVarId}`. An output other than `response` / `Error`
-   writes `{varId}_<name>` (an HTTP request's `code`, `headers`, `body`).
-2. Add each `RootBindings` line to the process's `<uipath:bindings>`. Binding
-   ids are derived from what they bind, so two nodes on the same connection or
-   entity return identical lines; add each line once.
-3. Add each `Variables` line to `<uipath:variables>`, with the same `{varId}`
-   / `{errorVarId}` / `{id}` replacements.
-4. Leave the process's `<uipath:intsvcActivityConfig>` marker as you found
-   it. `bpmn init` writes it for a new workflow; never add it to an existing
-   workflow that lacks it (the V2 node works there as it is).
+Follow `Data.V2.Instructions` (tokens, `RootBindings`, `Variables`, the
+marker). Beyond it:
 
-If `Data.V2.MissingRequired` lists inputs (e.g. `bodyParameters.prompt`),
-run `registry get` again with them in `--input-details` before pasting:
-Studio Web marks a missing required input red and the run fails without it.
-
-Do not edit the element's `uipath:context` or its `metadata`: they are the
-connector's design-time configuration, and the designer reads them back as
-they are. To change a value, run `registry get` again with new
-`--input-details`. A body value that reads a variable (`"=js:vars.<id>"`) goes
-in `bodyParameters`, never into the pasted XML.
+- An output other than `response` / `Error` writes `{varId}_<name>` (an HTTP
+  request's `code`, `headers`, `body`). A trigger has no `{incomingEdge}`.
+- If `Data.V2.MissingRequired` lists inputs (e.g. `bodyParameters.prompt`),
+  run `registry get` again with them in `--input-details` before pasting.
+- Do not edit the element's `uipath:context` or its `metadata`. To change a
+  value, run `registry get` again with new `--input-details`. A body value
+  that reads a variable (`"=js:vars.<id>"`) goes in `bodyParameters`, never
+  into the pasted XML.
 
 V2 differs from the V1 template in ways that matter at run time, so never mix
 the two shapes in one node:
@@ -223,6 +211,7 @@ trigger), and one resource for each solution resource a picker bound. A V2
 trigger start is an entry point of its own, so a process whose only start is a
 connector trigger refreshes and packs without a manual start.
 
+<!--skill-flavor:v2-solution-resources-refresh:start-->
 Then sync the solution so each connection becomes a solution resource. The
 V2 properties panel shows a connection that is not one as "The selected
 connection is not part of the solution":
@@ -230,6 +219,7 @@ connection is not part of the solution":
 ```bash
 uip solution resources refresh --solution-folder <solution-dir>
 ```
+<!--skill-flavor:v2-solution-resources-refresh:end-->
 
 To debug from the trigger, name its start event. A trigger debug replays a
 recent event rather than waiting for one, so cause the event (create or
@@ -248,17 +238,22 @@ progress lines can lag behind the run, so read where the instance is with
 is in the debug log: `--log-level debug --log-file <file>`), and cause the
 event once the wait element shows as running.
 
-These need a CLI that has `registry get --input-details` and
-`bpmn debug --entry-point`. On an older CLI (`unknown option
-'--input-details'`), author the V1 template by
-[registry-workflow.md §3](registry-workflow.md#3-connector-intsvc-enrichment)
-in full — one `target="body"` input holding the whole body, not one input per
-field — and say in the notes that the node is V1.
+### A CLI without V2 nodes
+
+When `registry get` fails `unknown option '--input-details'` (or `bpmn debug`
+rejects `--entry-point`), the CLI predates V2 nodes:
+
+- **Triggers, waits, HTTP requests and external agents or automations:**
+  stop. Their V1 template faults at run time or has no allowed form. Tell the
+  user to update `uip` and leave the node out.
+- **Plain activities** (`Intsvc.ActivityExecution`): fill the V1 template by
+  [registry-workflow.md §3](registry-workflow.md#3-connector-intsvc-enrichment)
+  in full — one `target="body"` input holding the whole body — and say in the
+  notes that the node is V1.
 
 ## `--input-details` reference
 
-The contract is the CLI's (`packages/maestro-sdk/docs/connector-input-details.md`
-in the CLI repo) and is shared with `uip maestro case spec`:
+The contract is shared with `uip maestro case spec`:
 
 | Key | Activities | Triggers and waits | Lands in |
 | --- | --- | --- | --- |
@@ -273,6 +268,6 @@ take the field names and operators from the spec's `filter.fields`, emit
 `"And"` even for one condition, and never put a raw CEQL or JMESPath string in
 `queryParameters` for a field the connector filters with (`where`,
 `queryExpression`) — the designer re-renders the filter only from the tree.
-`{}` is refused. Connection identity (`connectionId`, `folderKey`, method,
+A `filter` of `{}` is refused. Connection identity (`connectionId`, `folderKey`, method,
 path) never goes in `--input-details`; it comes from `--connection-id` and the
 catalog, except for an HTTP request (above).

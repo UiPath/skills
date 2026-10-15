@@ -99,8 +99,10 @@ generated packages to invent the missing live schema.
 > --input-details` instead of filling the template below, in new and existing
 > workflows alike — see [v2-connector-nodes.md](v2-connector-nodes.md). The
 > template stays the reference for reading existing V1 nodes. On a CLI that
-> rejects `--input-details` (`unknown option`), fill the template by every rule
-> in this section, including [one `target="body"` input](#body-shape-hand-authored-files-need-one-targetbody-input)
+> rejects `--input-details` (`unknown option`), only a plain activity falls
+> back to it ([A CLI without V2 nodes](v2-connector-nodes.md#a-cli-without-v2-nodes)):
+> fill it by every rule in this section, including
+> [one `target="body"` input](#body-shape-hand-authored-files-need-one-targetbody-input)
 > holding the whole request body.
 
 For connector **activity** types (`requiresDiscovery: Yes`, e.g.
