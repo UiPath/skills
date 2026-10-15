@@ -235,7 +235,7 @@ Print: (1) `caseplan.case` path; (2) stages/tasks/conditions/SLA summary; (3) va
 After Phase 5, use **AskUserQuestion**:
 
 <!--skill-flavor:phase-six-run-option:start-->
-- `Run debug session` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json`, then `uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json`; stream results.
+- `Run debug session` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json`, then `uip maestro case debug "<directory>/<solution-name>/<projectName>" --log-level debug --output json`; stream results.
 <!--skill-flavor:phase-six-run-option:end-->
 - `Continue to publish` — proceed to Phase 7.
 
@@ -276,12 +276,12 @@ Requires `uip login`.
 uip solution resources refresh --solution-folder "<SolutionDir>" --output json
 uip maestro case pack "<SolutionDir>/<ProjectName>" "<SolutionDir>/dist" --output json
 uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json
-uip solution publish "<packagePath>" --wait --output json
+uip solution publish "<package-path>" --wait --output json
 ```
 
 Run `resources refresh` first to sync artefacts/debug overwrites from `bindings_v2.json` (Rule 15). Run `case pack` every time, without exception: it recompiles `caseplan.case` to `caseplan.case.bpmn` in the case project; its `.nupkg` is throwaway. Output must be `<SolutionDir>/dist`, a sibling of the project; never put it inside the project. `case pack` is mandatory per [§ Why `case pack` is mandatory](#why-case-pack-is-mandatory). Run `solution pack` on the solution directory containing `.uipx`, not the case project; it bundles project `.nupkg`s into one `.zip` under `<SolutionDir>/dist`. Add `--version <version>` when user names one; default `1.0.0`. Existing `name+version` is rejected; bump on republish. Run `solution publish` on the `.zip`; `--wait` blocks until the package reaches `Ready`/`Active`. Add `--personal-workspace` only when requested. Flags: [case-commands.md § uip solution publish](case-commands.md#uip-solution-publish).
 
-Read `<packagePath>` from `solution pack` response `Data.Packages` or list `<SolutionDir>/dist`; never guess. The zip is `<name>_<version>.zip` (underscore); `case pack` emits `<Name>.case.Case.<version>.nupkg`. Never publish the case `.nupkg`.
+Read `<package-path>` from `solution pack` response `Data.Packages` or list `<SolutionDir>/dist`; never guess. The zip is `<name>_<version>.zip` (underscore); `case pack` emits `<Name>.case.Case.<version>.nupkg`. Never publish the case `.nupkg`.
 
 ### Why `case pack` is mandatory
 
