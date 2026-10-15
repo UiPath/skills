@@ -1,0 +1,22 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "CreditRisk",
+    "kind": "businessRule",
+    "apiVersion": "orchestrator.uipath.com/v2",
+    "projectKey": "a5837792-b12e-47ce-880a-c174311df1d1",
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "CreditRisk"
+    },
+    "locks": [],
+    "key": "084f60d6-eb58-4e6d-a209-8e96cb92617c",
+    "files": []
+  }
+}
