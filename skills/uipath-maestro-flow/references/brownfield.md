@@ -128,8 +128,8 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
   warning. The benign End line never refuses. `--strict` needs `--baseline`:
   run `node .flow-sdk/<Name>.pipeline.mjs --strict`, which always has one, or
   add it to the merge in [the hand loop](#the-same-loop-by-hand). If
-  `uip maestro flow merge` rejects `--strict`, or the pipeline says this uip has
-  no `maestro flow merge --strict`,
+  `uip maestro flow merge` rejects `--strict`, or the pipeline exits 2 with
+  `--strict was asked for, but …`,
   your CLI does not forward it yet; run the same merge through the globally
   installed SDK's `flow-sdk` bin instead:
 
