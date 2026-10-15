@@ -43,7 +43,7 @@ initial_prompt: |
   Add a step right after Task_CreateRecord that reads the record it just
   created back by its Id, with the Data Service "Get Entity Record by ID"
   activity on the same entity and connection, and end the process after it.
-  Keep everything that is already there working as it is.
+  Leave Start_Trigger and Task_CreateRecord unchanged.
 
   Regenerate the package files and finish with the process passing
   `uip maestro bpmn validate`. Do NOT run debug, upload, publish or deploy, and
