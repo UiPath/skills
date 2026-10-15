@@ -1,0 +1,137 @@
+task_id: skill-test-testcase-parameters-bulk-add-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to add the same parameters to
+  two test cases in HEALTH, one of which already has one of them. There is no
+  bulk command and `parameters add` rejects a name that already exists, so the
+  agent must add per test case and skip the existing parameter without
+  overwriting its value. The prompt does not say any already exist. Graded on
+  the live parameters: both test cases end up with the new parameters, and the
+  pre-existing `Username` keeps its value with no `update` or `delete` used to
+  force it. pre_run makes sure the two owned `EVFX-PARAM-*` test cases exist
+  and resets their parameters.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 15
+  max_turns: 40
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      projects = call("tm", "project", "list", "--filter", "HEALTH").get("Data") or []
+      if not any(p.get("ProjectKey") == "HEALTH" for p in projects):
+          need(call("tm", "project", "create", "--name", "HEALTH", "--project-key", "HEALTH"), "create HEALTH")
+
+      def ensure_case(name):
+          rows = call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else need(
+              call("tm", "testcases", "create", "--project-key", "HEALTH", "--name", name), f"create {name}")
+
+      def reset(case, seed):
+          key = case["TestCaseKey"]
+          rows = call("tm", "testcases", "parameters", "list", "--project-key", "HEALTH",
+                      "--test-case-key", key, "--limit", "100").get("Data") or []
+          if rows:
+              need(call("tm", "testcases", "parameters", "delete", "--project-key", "HEALTH", "--test-case-key", key,
+                        "--parameter-ids", *[r["Id"] for r in rows], "--yes"), f"clear {key}")
+          for name, value in seed:
+              need(call("tm", "testcases", "parameters", "add", "--project-key", "HEALTH", "--test-case-key", key,
+                        "--name", name, "--default-value", value), f"seed {name} on {key}")
+
+      reset(ensure_case("EVFX-PARAM-Login"), [])
+      reset(ensure_case("EVFX-PARAM-Transfer"), [("Username", "keepme")])
+      print("SEEDED EVFX-PARAM-Login (no parameters), EVFX-PARAM-Transfer (Username=keepme)")
+      PYEOF
+    timeout: 240
+
+initial_prompt: |
+  hey, can you add a Timeout param set to 30 and a Username param set to admin
+  on both my EVFX-PARAM-Login and EVFX-PARAM-Transfer test cases in the HEALTH
+  project? just give me a quick summary per test case when you're done.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added parameters with `uip tm testcases parameters add`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+add\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "EVFX-PARAM-Login now has Timeout=30 and Username=admin"
+    command: |
+      python3 - "EVFX-PARAM-Login" <<'PYEOF'
+      import json, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      name = sys.argv[1]
+      case = [t for t in uip("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name) if t.get("Name") == name][0]
+      params = {p["Name"].lower(): p.get("DefaultValue") for p in
+                uip("tm", "testcases", "parameters", "list", "--project-key", "HEALTH", "--test-case-key", case["TestCaseKey"])}
+      print(params)
+      sys.exit(0 if params == {"timeout": "30", "username": "admin"} else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "EVFX-PARAM-Transfer now has Timeout=30, and its pre-existing Username still has the value `keepme` (skipped, not overwritten)"
+    command: |
+      python3 - "EVFX-PARAM-Transfer" <<'PYEOF'
+      import json, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      name = sys.argv[1]
+      case = [t for t in uip("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name) if t.get("Name") == name][0]
+      params = [(p["Name"].lower(), p.get("DefaultValue")) for p in
+                uip("tm", "testcases", "parameters", "list", "--project-key", "HEALTH", "--test-case-key", case["TestCaseKey"])]
+      print(params)
+      sys.exit(0 if sorted(params) == [("timeout", "30"), ("username", "keepme")] else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not update or delete a parameter to force the value in (`--help` lookups excluded)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+(update|delete)\b(?!(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--help)'
+    weight: 2.0
+    pass_threshold: 1.0

@@ -8,7 +8,8 @@ script with that dir as cwd, the way coder-eval runs it. Covered:
   an unwitnessed (location, folderPath) pair, a wrong binding folder and a
   missing binding fail.
 - `inline_wiring.assert_inline_agent_definition`: an `agent.json` with no
-  system prompt fails.
+  system prompt fails; `projectId` matching the directory passes without `id`;
+  a missing or mismatched `projectId` fails.
 - `check_inline_is_connector_tool.assert_connection_binding`: a real
   connection UUID passes; a placeholder, the SDK stub and a missing binding
   fail.
@@ -151,6 +152,27 @@ def test_agent_json_without_system_prompt_fails(tmp_path):
     result = run_checker("check_inline_external_rpa_tool.py", tmp_path)
     assert result.returncode != 0
     assert "no non-empty 'system' message" in result.stderr
+
+
+def test_agent_json_project_id_without_id_passes(tmp_path):
+    agent = copy.deepcopy(AGENT_JSON)
+    del agent["id"]
+    build_rpa_solution(tmp_path, location="solution", folder_path="", agent_json=agent)
+    result = run_checker("check_inline_external_rpa_tool.py", tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("project_id", [None, TOOL_ID], ids=["missing", "mismatched"])
+def test_agent_json_bad_project_id_fails(tmp_path, project_id):
+    agent = copy.deepcopy(AGENT_JSON)
+    agent.pop("projectId")
+    if project_id:
+        agent["projectId"] = project_id
+    build_rpa_solution(tmp_path, location="solution", folder_path="", agent_json=agent)
+    result = run_checker("check_inline_external_rpa_tool.py", tmp_path)
+    assert result.returncode != 0
+    assert "projectId" in result.stderr
+    assert "does not match its directory" in result.stderr
 
 
 def test_agent_json_missing_fails(tmp_path):

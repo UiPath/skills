@@ -70,9 +70,10 @@
     "Empty lookup gate": 2,
     "Never auto-debug or publish to Orchestrator": 2,
     "No authored edges": 1,
+    "Resolution audit": 1,
     "Runnable resources and sidecars": 3,
     "The build is lossless against the SDD": 3,
-    "Unresolved resources": 1
+    "Unresolved resources": 2
   },
   "references/placeholder-tasks.md": {
     "Empty lookup gate": 3,
@@ -122,8 +123,11 @@
     "Empty lookup gate": 4,
     "Resolution audit": 1
   },
+  "references/plugins/tasks/business-rule/impl-json.md": {
+    "Empty lookup gate": 1
+  },
   "references/plugins/tasks/business-rule/planning.md": {
-    "Empty lookup gate": 1,
+    "Empty lookup gate": 4,
     "Resolution audit": 1
   },
   "references/plugins/tasks/case-management/planning.md": {
