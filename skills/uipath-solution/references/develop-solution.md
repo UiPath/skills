@@ -684,7 +684,7 @@ Get the UUID from `upload` output or Studio Web -- the name string is not accept
 
 ### `.uipx` auto-discovery
 
-When `[solutionFile]` is omitted, the CLI walks up from the project path looking for a single `.uipx` file. If multiple `.uipx` files exist in the same directory, specify which one explicitly.
+When `[solution-file]` is omitted, the CLI walks up from the project path looking for a single `.uipx` file. If multiple `.uipx` files exist in the same directory, specify which one explicitly.
 
 ### `--solution-folder` defaults to cwd
 

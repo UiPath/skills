@@ -310,7 +310,7 @@ Start a Studio Web evaluation run. The Flow solution **must already exist in Stu
 
 Without `--wait`, returns immediately with `EvalSetRunId`. With `--wait`, the CLI polls until `Completed` or `Failed`, or `--timeout` elapses (the server-side run continues regardless).
 
-### `uip maestro flow eval run status <evalSetRunId>`
+### `uip maestro flow eval run status <eval-set-run-id>`
 
 Get current status. Terminal states: `Completed`, `Failed`.
 
@@ -321,7 +321,7 @@ Get current status. Terminal states: `Completed`, `Failed`.
 | `--project-id <id>` | No | Override project ID |
 | `--path <path>` | No | (see Common Options) |
 
-### `uip maestro flow eval run results <evalSetRunId>`
+### `uip maestro flow eval run results <eval-set-run-id>`
 
 Per-data-point results.
 
@@ -343,7 +343,7 @@ List runs for an eval set.
 uip maestro flow eval run list --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 ```
 
-### `uip maestro flow eval run compare <evalSetRunId>`
+### `uip maestro flow eval run compare <eval-set-run-id>`
 
 Compare two runs side-by-side.
 

@@ -24,7 +24,7 @@ See [auth-context.md](auth-context.md) for reading `~/.uipath/.auth` (the canoni
 
 ```bash
 uip gov aops-policy product list --output json
-uip gov aops-policy product get <productIdentifier> --output json
+uip gov aops-policy product get <product-identifier> --output json
 ```
 
 ## License Types
@@ -39,14 +39,14 @@ Returns all license types (`Attended`, `Unattended`, `Development`, `StudioPro`,
 
 ```bash
 # Raw template (structure + i18n component tree)
-uip gov aops-policy template get <productIdentifier> --output json
+uip gov aops-policy template get <product-identifier> --output json
 
 # FILLABLE blueprint — the object you edit and submit to policy create/update
-uip gov aops-policy template get <productIdentifier> \
+uip gov aops-policy template get <product-identifier> \
   --output-form-data ./form-data.json --output json
 
 # LOCALE-RESOLVED reference — field-by-field labels, descriptions, tooltips for the product
-uip gov aops-policy template get <productIdentifier> \
+uip gov aops-policy template get <product-identifier> \
   --output-template-locale-resource ./locale-resource.json --output json
 
 # Bulk — write all three JSON files per product under the output dir
@@ -61,7 +61,7 @@ The locale-resource is the runtime equivalent of the static `property-labels.jso
 # CREATE — --input holds the bare formData object (CLI wraps in { data: … } internally)
 uip gov aops-policy create \
   --name <policyName> \
-  --product-name <productIdentifier> \
+  --product-name <product-name> \
   --input <path> \
   --description <text> --priority <n> --availability <n> \
   --output json
@@ -73,20 +73,20 @@ uip gov aops-policy list [--product-name X] [--search Q] [--limit N] [--offset M
 
 # GET — returns metadata + full form-data payload in one call
 # (CLI fetches policyGetPolicyById + policyGetFormDataByPolicyId in parallel and merges into Data.data)
-uip gov aops-policy get <policyIdentifier> --output json
+uip gov aops-policy get <policy-identifier> --output json
 # Response shape: { Data: { name, identifier, description, priority, availability, product, data: {...} } }
 
 # UPDATE — ALL metadata flags required, see cli-known-issues.md #2
 uip gov aops-policy update \
   --identifier <guid> \
   --name <policyName> \
-  --product-name <productIdentifier> \
+  --product-name <product-name> \
   --description <text> --priority <n> --availability <n> \
   --input <path> \
   --output json
 
 # DELETE
-uip gov aops-policy delete <policyIdentifier> --output json
+uip gov aops-policy delete <policy-identifier> --output json
 ```
 
 > **`policy get` is the single read path.** It combines `policyGetPolicyById` (metadata) with `policyGetFormDataByPolicyId` (values) into one response. The `data` field is always populated — no separate `form-data` command needed.
@@ -108,16 +108,16 @@ Bare `formData` object, NOT wrapped in `{ "data": ... }`. The CLI adds the wrapp
 uip gov aops-policy deployment tenant list [--product-name <p>] [--limit N --offset M] --output json
 
 # Get a specific tenant + all its assignments
-uip gov aops-policy deployment tenant get <tenantIdentifier> --output json
+uip gov aops-policy deployment tenant get <tenant-identifier> --output json
 
 # Configure — atomic: one call assigns ALL policies for a tenant
-uip gov aops-policy deployment tenant configure <tenantIdentifier> \
+uip gov aops-policy deployment tenant configure <tenant-identifier> \
   --tenant-name <name> \
   --input <path-to-assignment-array.json> \
   --output json
 
 # Remove a single assignment by (tenant, product, licenseType)
-uip gov aops-policy deployment tenant remove <tenantIdentifier> ...
+uip gov aops-policy deployment tenant remove <tenant-identifier> ...
 ```
 
 `--input` JSON shape — pure array:
@@ -135,8 +135,8 @@ uip gov aops-policy deployment tenant remove <tenantIdentifier> ...
 
 ```bash
 uip gov aops-policy deployment group list --output json
-uip gov aops-policy deployment group get <groupIdentifier> --output json
-uip gov aops-policy deployment group configure <groupIdentifier> \
+uip gov aops-policy deployment group get <group-identifier> --output json
+uip gov aops-policy deployment group configure <group-identifier> \
   --group <name> [--source <local|aad|cloud>] --input <path> --output json
 uip gov aops-policy deployment group delete ...
 ```
@@ -145,8 +145,8 @@ uip gov aops-policy deployment group delete ...
 
 ```bash
 uip gov aops-policy deployment user list --output json
-uip gov aops-policy deployment user get <userIdentifier> --output json
-uip gov aops-policy deployment user configure <userIdentifier> \
+uip gov aops-policy deployment user get <user-identifier> --output json
+uip gov aops-policy deployment user configure <user-identifier> \
   --user <name> [--source <local|aad|cloud>] --input <path> --output json
 uip gov aops-policy deployment user delete ...
 ```
@@ -157,7 +157,7 @@ Resolves the policy actually enforced at request time through `USER → GROUP �
 
 ```bash
 # Caller's own effective policy — no extra flags (runs under the user token from `uip login`)
-uip gov aops-policy deployed-policy get <licenseType> <productName> <tenantIdentifier> --output json
+uip gov aops-policy deployed-policy get <license-type> <product-name> <tenant-identifier> --output json
 
 # List effective policies for a subject across products
 uip gov aops-policy deployed-policy list --tenant-identifier <tenantGuid> --output json

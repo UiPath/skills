@@ -16,7 +16,7 @@ All commands below are discovery/read-only. None mutate cloud state.
 | `uip maestro bpmn registry pull [-f\|--force]` | Sync and cache the registry. Without login, only OOTB extension types are synced; login adds discovered connectors and processes. |
 | `uip maestro bpmn registry list [--limit <n\|-1>]` | List cached extension types (and discovered connectors/processes). Default 30; use `--limit -1` for all. |
 | `uip maestro bpmn registry search <keyword>` | Find entries by keyword across extension type, label, connector name, process name. |
-| `uip maestro bpmn registry get <extensionType> [--connection-id <id>] [--object-name <name>]` | Get the full spec for one extension type: `xmlTemplate`, `contextFields`, `bindingInfo`, input/output patterns. `--connection-id`/`--object-name` add live Integration Service field metadata for `Intsvc.*` connector types. |
+| `uip maestro bpmn registry get <extension-type> [--connection-id <id>] [--object-name <name>]` | Get the full spec for one extension type: `xmlTemplate`, `contextFields`, `bindingInfo`, input/output patterns. `--connection-id`/`--object-name` add live Integration Service field metadata for `Intsvc.*` connector types. |
 | `uip is connections list --all-folders` | List live Integration Service connections (id + state) across all folders. Always pass `--all-folders`; a folder-scoped list silently misses connections. |
 | `uip rules list --all-folders` | List deployed business rules across all folders. `registry pull` does not discover rules. |
 

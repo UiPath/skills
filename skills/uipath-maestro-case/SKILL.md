@@ -173,9 +173,9 @@ Hard-stop AskUserQuestion (Step 16): `Publish to Orchestrator` / `Done`. On publ
 1. `uip solution resources refresh`
 2. `uip maestro case pack <SolutionDir>/<ProjectName> <SolutionDir>/dist --output json`
 3. `uip solution pack <SolutionDir> <SolutionDir>/dist --output json`
-4. `uip solution publish <packagePath> --wait --output json`
+4. `uip solution publish <package-path> --wait --output json`
 
-`case pack` is mandatory because it creates `caseplan.case.bpmn`; `validate` does not. Publish the `solution pack` `.zip`, not the case `.nupkg`; read `<packagePath>` from `Data.Packages`, never guess. `Done` exits.
+`case pack` is mandatory because it creates `caseplan.case.bpmn`; `validate` does not. Publish the `solution pack` `.zip`, not the case `.nupkg`; read `<package-path>` from `Data.Packages`, never guess. `Done` exits.
 <!--skill-flavor:phase-seven-publish:end-->
 
 ## Reference Navigation
