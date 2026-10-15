@@ -320,7 +320,7 @@ the exact stage display name — never the case name. -->
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
+| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
 
 ##### Task <N>.<M>: <TASK_NAME>
 
@@ -409,6 +409,18 @@ activity schema. Operation Configuration carries through as =jsonString: only he
 **Timer:** <timeDuration (relative) \| timeDate (absolute) \| timeCycle>
 **Value:** <ISO 8601 expression, date expression, or variable expression — NEVER <UNRESOLVED>: a timer cannot fire without it; block approval>
 **Business Calendar:** <calendar name or —>
+
+###### HTTP Request Task Detail (type: `http-request`)
+
+**Method:** <GET \| POST \| PUT \| PATCH \| DELETE>
+**URL:** <absolute URL; a path relative to the connector's base URL when Connector Key and Connection ID are set (convert stores it as the request path)>
+**Headers:** <JSON object in backticks, e.g. `{"Accept": "application/json"}`, or —; never a credential — authenticate with Connector Key + Connection ID>
+**Query:** <JSON object in backticks, or —>
+**Body:** <JSON literal in backticks, an `=` expression, or —>
+**Connector Key:** <connector whose connection authenticates the call, or — for a direct request>
+**Connection ID:** <tenant connection id, or <UNRESOLVED>; only with Connector Key>
+
+Outputs are the response's `code`, `headers` and `body`, plus `Error`.
 
 ###### Child Case Task Detail (type: `case-management`)
 
