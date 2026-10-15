@@ -4,7 +4,7 @@ description: >
   Test Manager's AI cannot work on. EVFX-AIBLOCK-NODESC has no description
   and no attachments, so generate-testcases fails with HTTP 400 before any
   job starts. EVFX-AIBLOCK-NOLINKS has a description but no linked test
-  cases, so find-obsolete-testcases fails the same way. Asserts rule 7 of
+  cases, so find-obsolete-testcases fails the same way. Asserts rule 5 of
   references/requirement-ai-guide.md: report the cause, do not write a
   description or link test cases to make the call pass, and do not retry
   a 400. Graded on tenant state: both requirements are unchanged. The task
@@ -58,7 +58,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent checked NODESC for attachments before giving up (rule 7: attachments are the other input) — advisory"
+    description: "Agent checked NODESC for attachments before giving up (rule 5: attachments are the other input) — advisory"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+attachments?\s+list\b'
     min_count: 1
@@ -66,14 +66,14 @@ success_criteria:
     pass_threshold: 0   # advisory
 
   - type: command_not_executed
-    description: "Agent did not write a description itself (rule 7)"
+    description: "Agent did not write a description itself (rule 5)"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+requirements?\s+update\b'
     weight: 2.0
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not link test cases just to make the search run (rule 7)"
+    description: "Agent did not link test cases just to make the search run (rule 5)"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+requirements?\s+testcases\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--add-testcase-ids)'
     weight: 2.0

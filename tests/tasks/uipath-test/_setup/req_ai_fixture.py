@@ -9,10 +9,6 @@ YAML where fixtures/check-collisions.py sees them; this file knows no names.
              reset its description, and remove what an earlier run of the task
              produced (test cases the AI created and linked, extra links).
     check  — exit 0 when the requirement / test cases are in the asserted state.
-    check-titles — exit 0 when a titles file lists a finished job's result.
-
-`seed` first checks that the CLI has the AI verbs and, if not, exits with
-TENANT NOT READY so smoke excludes the task instead of failing it.
 
 `uip` is the CLI on PATH; set UIP_CMD (for example "node /path/to/index.js")
 to run against another build.
@@ -53,33 +49,6 @@ def call(label, *args, timeout=180, check=True):
     return r.returncode, env
 
 
-AI_VERBS = ("generate-testcases", "evaluate", "find-obsolete-testcases")
-
-
-def require_ai_commands():
-    """Exclude the task, not fail it, when this CLI build lacks the AI verbs.
-
-    Smoke installs the Test Manager tool from cli/main's dev train, so the
-    verbs exist only once UiPath/cli#5060 is merged there. With no arguments a
-    known verb fails its own flag check before any request (no job, no AI
-    units); an unknown one answers `unknown command`. The pass-rate gate in
-    smoke-skills.yml drops a task whose pre_run fails with TENANT NOT READY on
-    stderr.
-    """
-    missing = []
-    for verb in AI_VERBS:
-        r = subprocess.run([*UIP, "tm", "requirements", verb, "--output", "json"],
-                           capture_output=True, text=True, timeout=60)
-        if "unknown command" in (r.stdout or "") + (r.stderr or ""):
-            missing.append(verb)
-    if missing:
-        print("TENANT NOT READY — this is an environment failure, not an agent "
-              f"failure: the installed CLI has no `uip tm requirements "
-              f"{' / '.join(missing)}` (UiPath/cli#5060 is not on the dev train "
-              "yet).", file=sys.stderr, flush=True)
-        sys.exit(1)
-
-
 def data(label, *args, **kw):
     return call(label, *args, **kw)[1].get("Data")
 
@@ -111,16 +80,6 @@ def ai_created(project):
     rows = data("tc.ai", "tm", "testcases", "list", "--project-key", project,
                 "--labels", AI_LABEL) or []
     return {t["Id"].lower(): t for t in rows if t.get("Id")}
-
-
-def attachments(project, req_id):
-    rows = data("att.list", "tm", "attachment", "list", "--project-key", project,
-                "--object-type", "requirement", "--object-ids", req_id) or []
-    # One row per object; the files sit under that row.
-    files = []
-    for row in rows if isinstance(rows, list) else [rows]:
-        files.extend(row.get("Attachments") or [])
-    return files
 
 
 def activity_id(env):
@@ -168,7 +127,6 @@ def ensure_testcase(project, name, description):
 
 
 def cmd_seed(a):
-    require_ai_commands()
     req = ensure_requirement(a.project, a.requirement,
                              None if a.no_description else a.description)
     rid = req["Id"]
@@ -200,33 +158,20 @@ def cmd_seed(a):
     if sorted(linked_ids(a.project, rid)) != sorted(wanted):
         fail(f"{a.requirement} links do not match the {len(wanted)} seeded test case(s)")
 
-    if a.attach:
-        name = os.path.basename(a.attach)
-        if not any(f.get("FileName") == name for f in attachments(a.project, rid)):
-            call("att.upload", "tm", "attachment", "upload", "--project-key", a.project,
-                 "--object-type", "requirement", "--object-id", rid, "--file", a.attach)
-        if not any(f.get("FileName") == name for f in attachments(a.project, rid)):
-            fail(f"{name} is not attached to {a.requirement}")
-
-    for out, verb, extra_args in (
-        (a.capture_generate_timeout, "generate-testcases",
-         ["--wait", "--timeout", "3", "--poll-interval", "1"]),
-        (a.capture_evaluate_start, "evaluate", []),
-    ):
-        if not out:
-            continue
+    out = a.capture_generate_timeout
+    if out:
         # Exit 2 (timed out) is the state the task needs; only a missing
         # ActivityId means the job never started.
-        _, env = call(f"capture.{verb}", "tm", "requirements", verb,
+        _, env = call("capture.generate", "tm", "requirements", "generate-testcases",
                       "--project-key", a.project, "--requirement-id", rid,
-                      *extra_args, check=False)
+                      "--wait", "--timeout", "3", "--poll-interval", "1", check=False)
         activity = activity_id(env)
         if not activity:
-            fail(f"{verb} started no job: {json.dumps(env)[:300]}")
+            fail(f"generate-testcases started no job: {json.dumps(env)[:300]}")
         os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
         with open(out, "w", encoding="utf-8") as fh:
             json.dump(env, fh, indent=2)
-        log(f"saved {verb} output for job {activity} to {out}")
+        log(f"saved the timed-out output of job {activity} to {out}")
 
     log(f"{a.requirement} ready: {rid}, {len(wanted)} linked test case(s)")
 
@@ -243,24 +188,12 @@ def cmd_check(a):
 
     if a.links is not None and len(links) != a.links:
         problems.append(f"expected {a.links} linked test case(s), found {len(links)}")
-    if a.min_links is not None and len(links) < a.min_links:
-        problems.append(f"expected at least {a.min_links} linked, found {len(links)}")
-    if a.max_links is not None and len(links) > a.max_links:
-        problems.append(f"expected at most {a.max_links} linked, found {len(links)}")
-
-    if a.links_ai_created or a.no_duplicate_titles:
+    if a.links_ai_created:
         generated = ai_created(a.project)
-        rows = [generated.get(t) for t in links]
-        if a.links_ai_created and not all(rows):
-            problems.append(f"{rows.count(None)} linked test case(s) lack the {AI_LABEL} label")
-        names = [r["Name"].strip().lower() for r in rows if r]
-        if a.no_duplicate_titles and len(names) != len(set(names)):
-            problems.append("the requirement has duplicate AI-created test cases "
-                            "(the same job was created twice)")
+        unlabelled = [t for t in links if t not in generated]
+        if unlabelled:
+            problems.append(f"{len(unlabelled)} linked test case(s) lack the {AI_LABEL} label")
 
-    for name in a.exists:
-        if not find_testcase(a.project, name):
-            problems.append(f"test case {name} no longer exists")
     if a.exist_count is not None:
         prefix, _, want = a.exist_count.rpartition("=")
         rows = data("tc.count", "tm", "testcases", "list", "--project-key", a.project,
@@ -269,10 +202,6 @@ def cmd_check(a):
         print(f"CHECK: {have} test case(s) named {prefix}*")
         if have != int(want):
             problems.append(f"expected {want} test case(s) named {prefix}*, found {have}")
-    for name in a.linked:
-        tc = find_testcase(a.project, name)
-        if not tc or tc["Id"].lower() not in links:
-            problems.append(f"test case {name} is not linked to {a.requirement}")
 
     desc = req.get("Description") or ""
     if a.description_empty and desc.strip():
@@ -289,47 +218,6 @@ def cmd_check(a):
     return 1 if problems else 0
 
 
-RESULT_LISTS = {"generate-testcases": "TestCases", "evaluate": "Suggestions"}
-
-
-def normalize(title):
-    title = re.sub(r"^\s*(?:[-*•]|\d+[.)]|#\d+:?)\s*", "", title)
-    return " ".join(title.strip().strip("\"'`").lower().split())
-
-
-def cmd_check_titles(a):
-    """The titles file lists the finished job's result, read again by its id."""
-    with open(a.capture, encoding="utf-8") as fh:
-        job = activity_id(json.load(fh))
-    if not job:
-        print(f"CHECK: no activity id in {a.capture}")
-        return 1
-    _, env = call("job.read", "tm", "requirements", a.verb, "--project-key", a.project,
-                  "--activity-id", job, check=False)
-    d = env.get("Data") or {}
-    status = d.get("Status")
-    if status not in ("Processed", "CannotGenerateAdditionalAIArtifacts"):
-        print(f"CHECK FAILED: job {job} is not finished (status {status})")
-        return 1
-    want = {normalize(r.get("Title") or "") for r in d.get(RESULT_LISTS[a.verb]) or []}
-    want.discard("")
-    try:
-        with open(a.titles, encoding="utf-8") as fh:
-            got = {normalize(line) for line in fh}
-    except OSError:
-        print(f"CHECK FAILED: {a.titles} was not written")
-        return 1
-    got.discard("")
-    hit = len(want & got)
-    print(f"CHECK: job {job} has {len(want)} title(s); {a.titles} lists {len(got)}, {hit} match")
-    if not want:
-        return 0 if not got else 1
-    if hit / len(want) < a.min_match or len(got - want) > max(1, len(want) // 10):
-        print("CHECK FAILED: the titles file does not list this job's result")
-        return 1
-    return 0
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -343,37 +231,20 @@ def main():
     g.add_argument("--no-description", action="store_true")
     s.add_argument("--case", action="append", default=[], metavar="NAME=DESCRIPTION",
                    help="a test case to create-if-absent and link (repeatable)")
-    s.add_argument("--attach", metavar="FILE", help="attach FILE to the requirement once")
     s.add_argument("--capture-generate-timeout", metavar="OUT",
                    help="start generate-testcases with a 3 s wait and save its output")
-    s.add_argument("--capture-evaluate-start", metavar="OUT",
-                   help="start evaluate without waiting and save its output")
 
     c = sub.add_parser("check")
     c.add_argument("--project", required=True)
     c.add_argument("--requirement", required=True)
     c.add_argument("--links", type=int)
-    c.add_argument("--min-links", type=int)
-    c.add_argument("--max-links", type=int)
     c.add_argument("--links-ai-created", action="store_true")
-    c.add_argument("--no-duplicate-titles", action="store_true")
-    c.add_argument("--exists", action="append", default=[], metavar="TEST_CASE_NAME")
-    c.add_argument("--linked", action="append", default=[], metavar="TEST_CASE_NAME")
     c.add_argument("--exist-count", metavar="NAME_PREFIX=N")
     c.add_argument("--description-empty", action="store_true")
     c.add_argument("--description-extends", metavar="TEXT",
                    help="the description must start with TEXT and add to it")
 
-    t = sub.add_parser("check-titles")
-    t.add_argument("--project", required=True)
-    t.add_argument("--verb", required=True, choices=sorted(RESULT_LISTS))
-    t.add_argument("--capture", required=True, help="the saved output that names the job")
-    t.add_argument("--titles", required=True, help="the agent's file, one title per line")
-    t.add_argument("--min-match", type=float, default=0.9)
-
     a = ap.parse_args()
-    if a.cmd == "check-titles":
-        return cmd_check_titles(a)
     if a.cmd == "seed":
         cmd_seed(a)
         return 0

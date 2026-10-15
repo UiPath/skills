@@ -1,4 +1,4 @@
-task_id: skill-test-requirement-ai-evaluate-apply-smoke
+task_id: skill-test-requirement-ai-evaluate-smoke
 description: >
   Smoke test: agent uses the uipath-test skill to have Test Manager's AI
   evaluate a deliberately thin requirement, asks the SAME evaluation for
