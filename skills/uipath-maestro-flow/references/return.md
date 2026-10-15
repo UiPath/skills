@@ -37,12 +37,28 @@ upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 - Only a NAMED End is a target. An unnamed `.return()` gets `end`, `end2`, ... in
   emission order, so `.stepToRef('end')` is `REF_UNKNOWN_TARGET` unless an End
   says `{ name: 'end' }`.
-- `check` refuses a name that two different Ends, or a step and an End, share.
-  Give each End a name no other step or End uses.
-- A decompiled brownfield flow uses this form when a side path (an HTTP
-  `branch-*`, a human-task `outcome-*`, an error handler) runs into the End the
-  main path ends at. Keep the `.stepToRef('<end id>')` and the End's `name` when
-  you edit.
+- The End may sit inside another port's path. Two side paths that the main
+  path never reaches can share one End. Needs `@uipath/maestro-builder-sdk`
+  6.32.1 or later; an older SDK refuses the ref (`REF_INTO_PORT_LIST`) and
+  renames a differing duplicate End `failed2`, so upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest`:
+
+  ```ts
+  .stepToList('branch-missing', (b) => b.step('reportMissing', script({ code })).return({}, { name: 'failed' }))
+  .stepToList('branch-throttled', (b) => b.step('reportThrottled', script({ code })).stepToRef('failed'))
+  ```
+
+- Two `.return`s with the same name and different values, label, version or
+  updates, or in different scopes (a loop body and the main path), are refused
+  (`DUP_END_NAME`; `compile --no-check` throws). They are not renamed
+  `failed2`. Identical repeats in one scope are one End. Prefer one `.return`
+  and `.stepToRef('<name>')` on the other paths.
+- `check` also refuses an End named like a step. Give each End a name no step
+  uses.
+- A decompiled brownfield flow uses this form when a path (an HTTP `branch-*`,
+  a human-task `outcome-*`, a `.stepSwitch` arm, an error handler, an
+  `.entryPoint` prefix) runs into an End another path already ends at. Keep the
+  `.stepToRef('<end id>')` and the End's `name` when you edit.
 
 ## At a glance
 
