@@ -1,0 +1,84 @@
+task_id: skill-bpmn-datafabric-v1-existing-workflow
+description: >
+  Brownfield edit of an existing workflow saved before Studio Web moved new
+  workflows to V2: it has configured V1 Data Service nodes and no V2 marker.
+  The agent adds a "Get Entity Record by ID" step after the existing Create
+  step. The workflow must stay V1 node by node: no V2 marker, no V2 element
+  from `registry get --input-details`, and the new node from the V1 template.
+tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:multi-node", connector, uipath-uipath-dataservice, "feature:entities", data-fabric]
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+    - type: template_dir
+      path: ../../../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+run_limits:
+  max_turns: 100
+  turn_timeout: 1800
+  task_timeout: 2400
+
+reference:
+  directory: ../../..
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-uipath-dataservice'
+    timeout: 120
+  - command: 'python3 "_setup/ensure_folder_entity.py" "_setup/skill_picker_eval_entity.entity.json"'
+    timeout: 120
+  - command: 'python3 "_setup/bind_fixture_connection.py" OrdersV1Solution'
+    timeout: 120
+
+initial_prompt: |
+  The solution in `OrdersV1Solution/` holds an existing Maestro BPMN project,
+  `OrdersV1`. Its process starts on a Data Service "Record Created" trigger
+  and then runs "Create Entity Record (Preview) - <entity>" (Task_CreateRecord)
+  on the tenant's Data Fabric connection.
+
+  Add a step right after Task_CreateRecord that reads the record it just
+  created back by its Id, with the Data Service "Get Entity Record by ID"
+  activity on the same entity and connection, and end the process after it.
+  Keep everything that is already there working as it is.
+
+  Regenerate the package files and finish with the process passing
+  `uip maestro bpmn validate`. Do NOT run debug, upload, publish or deploy, and
+  do NOT ask for approval, confirmation, or feedback.
+
+  Before starting, load the uipath-maestro-bpmn skill and follow its workflow.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent did not build a V2 element for the existing V1 workflow"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+bpmn\s+registry\s+get(?:(?!uip\s)[^&;|])*--input-details'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent regenerated the package files with refresh"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+maestro\s+bpmn\s+refresh'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final .bpmn passes `uip maestro bpmn validate`"
+    command: "python3 $REFERENCE_DIR/_shared/validate_bpmn.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The workflow stayed V1 and the new read-back node is a V1 node after Task_CreateRecord"
+    command: "python3 $REFERENCE_DIR/_shared/check_v1_workflow_stays_v1.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0

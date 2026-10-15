@@ -1,6 +1,6 @@
 # `case spec --input-details` — JSON shape reference
 
-> **Vendored from the CLI repo.** Canonical source: `packages/case-tool/docs/spec-input-details.md` in the `UiPath/cli` repo. Re-sync when the CLI's `--input-details` contract changes (the validators in `packages/case-tool/src/services/case-spec-input-validator.ts` are the source of truth).
+> **Vendored from the CLI repo.** Canonical source: `packages/maestro-sdk/docs/connector-input-details.md` in the `UiPath/cli` repo (shared with `uip maestro bpmn registry get --input-details`). Re-sync when the CLI's `--input-details` contract changes (the validators in `packages/maestro-sdk/src/connector-spec/input-validator.ts` are the source of truth).
 
 `uip maestro case spec` accepts an optional `--input-details <json>` flag that pre-fills the generated `caseShape` with values the consumer already has on hand. Without the flag, `caseShape.inputs[*].body` are empty containers (default behavior); with it, they're populated and the filter (if any) is compiled and spliced into the FE-canonical sinks.
 
