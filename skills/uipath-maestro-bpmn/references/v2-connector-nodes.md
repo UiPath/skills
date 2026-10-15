@@ -166,6 +166,10 @@ or async, and an async one also carries the event it answers with
    it. `bpmn init` writes it for a new workflow; never add it to an existing
    workflow that lacks it (the V2 node works there as it is).
 
+If `Data.V2.MissingRequired` lists inputs (e.g. `bodyParameters.prompt`),
+run `registry get` again with them in `--input-details` before pasting:
+Studio Web marks a missing required input red and the run fails without it.
+
 Do not edit the element's `uipath:context` or its `metadata`: they are the
 connector's design-time configuration, and the designer reads them back as
 they are. To change a value, run `registry get` again with new
