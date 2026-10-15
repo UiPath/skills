@@ -37,8 +37,9 @@ def _row_hits(item: dict, rows: list[tuple[str, str, bool]]) -> bool:
 
 
 def _decoy_fired(decoy: dict, rows: list[tuple[str, str, bool]]) -> bool:
+    element = re.compile(decoy.get("element", ""), re.IGNORECASE)
     for _, body, _ in rows:
-        if decoy["id"] in RULE_ID.findall(body) and decoy.get("element", "") in body:
+        if decoy["id"] in RULE_ID.findall(body) and element.search(body):
             return True
     return False
 

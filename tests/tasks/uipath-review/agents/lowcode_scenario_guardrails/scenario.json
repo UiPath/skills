@@ -8,8 +8,8 @@
   ],
   "min_recall": 0.66,
   "decoys": [
-    {"id": "LC_GUARDRAIL_MISAPPLIED", "element": "Made-up validator", "reason": "CLI owns format findings"},
-    {"id": "LC_GUARDRAIL_ACTION_INEFFECTIVE", "element": "Made-up validator", "reason": "CLI owns format findings"},
+    {"id": "LC_GUARDRAIL_MISAPPLIED", "element": "Made-up validator|totally_made_up_validator", "reason": "CLI owns format findings"},
+    {"id": "LC_GUARDRAIL_ACTION_INEFFECTIVE", "element": "Made-up validator|totally_made_up_validator", "reason": "CLI owns format findings"},
     {"id": "LC_GUARDRAIL_MISAPPLIED", "element": "Custom bad operator", "reason": "CLI owns format findings"},
     {"id": "LC_GUARDRAIL_ACTION_INEFFECTIVE", "element": "Custom bad operator", "reason": "CLI owns format findings"}
   ],

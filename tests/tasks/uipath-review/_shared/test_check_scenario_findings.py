@@ -147,6 +147,16 @@ def test_decoy_with_element_fails_only_when_element_is_in_the_row(tmp_path):
     assert run(tmp_path, _report(same), spec, _cli(tmp_path)).returncode != 0
 
 
+def test_decoy_element_is_a_case_insensitive_pattern(tmp_path):
+    spec = _spec(tmp_path, decoys=[
+        {"id": "LC_GUARDRAIL_MISAPPLIED", "element": "Made-up validator|totally_made_up_validator", "reason": "x"},
+    ])
+    lower = BOTH_HITS + "| W-D-003 | `LC_GUARDRAIL_MISAPPLIED` | made-up validator is misapplied. |\n"
+    by_id = BOTH_HITS + "| W-D-003 | `LC_GUARDRAIL_MISAPPLIED` | `totally_made_up_validator` is misapplied. |\n"
+    assert run(tmp_path, _report(lower), spec, _cli(tmp_path)).returncode != 0
+    assert run(tmp_path, _report(by_id), spec, _cli(tmp_path)).returncode != 0
+
+
 def test_all_finding_row_prefixes_are_parsed(tmp_path):
     rows = """\
     | C-001 | `LC_TOOL_OVERLAP` | overlap. |

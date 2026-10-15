@@ -23,7 +23,7 @@
     {"id": "LC_OUTPUT_CONSUMER_DRIFT", "reason": "no in-scope consumer"},
     {"id": "LC_CONTEXT_SOURCE_OVERLAP", "reason": "single context source"},
     {"id": "LC_PROMPT_FEW_SHOT_MISSING", "reason": "one flat output field"},
-    {"id": "LC_GUARDRAIL_MISAPPLIED", "element": "Fraud check", "reason": "CLI owns the unknown validator"}
+    {"id": "LC_GUARDRAIL_MISAPPLIED", "element": "Fraud check|fraud_score_validator", "reason": "CLI owns the unknown validator"}
   ],
   "min_categories": 5,
   "min_severity_bands": 2,
