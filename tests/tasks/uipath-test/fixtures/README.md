@@ -36,7 +36,7 @@ and therefore exact for this scheme.
 | `requirement_ai_generate_smoke` | HEALTH | `EVFX-AIGEN-REQ` | Requirement with a fixed description and **no** linked test cases. `pre_run` also starts one generate job with a 3 s wait (it times out) and saves the output to `nightly/` in the sandbox. The test cases the task creates from that job are scratch: `pre_run` deletes every linked test case labelled `autopilot-generated` and unlinks the rest |
 | `requirement_ai_evaluate_smoke` | HEALTH | `EVFX-AIEVAL-REQ` | Requirement whose description `pre_run` resets to the one-line `Users can reset their password.` every run (the task appends to it) |
 | `requirement_ai_obsolete_smoke` | HEALTH | `EVFX-AIDEL-REQ`, `EVFX-AIDEL-TC{1,2,3,4}` | All four linked; TC3 and TC4 off-topic on purpose. `pre_run` recreates the one the task deleted and relinks the ones it unlinked |
-| `requirement_ai_blocked_inputs_smoke` | HEALTH | `EVFX-AIBLOCK-NODESC`, `EVFX-AIBLOCK-NOLINKS` | NODESC: no description, no attachments. NOLINKS: a description, no linked test cases. Both calls fail with HTTP 400 before a job starts, so the task spends no AI units |
+| `requirement_ai_blocked_inputs_smoke` | HEALTH | `EVFX-AIBLOCK-NODESC` | No description, no attachments. `generate-testcases` fails with HTTP 400 before a job starts, so the task spends no AI units |
 
 The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
 (`seed`, `check`). It knows no names: each task passes its own `EVFX-` names
