@@ -153,6 +153,10 @@
   "references/plugins/tasks/create-inline-common.md": {
     "Empty lookup gate": 1
   },
+  "references/plugins/tasks/flow-process/planning.md": {
+    "Empty lookup gate": 2,
+    "Resolution audit": 1
+  },
   "references/plugins/tasks/function/planning.md": {
     "Empty lookup gate": 2,
     "Resolution audit": 1

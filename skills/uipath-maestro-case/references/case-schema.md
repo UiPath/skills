@@ -524,11 +524,12 @@ All tasks inside a stage share this envelope. Per-type `data` fields live in eac
 | `business-rule` | `plugins/tasks/business-rule/` |
 | `case-management` | `plugins/tasks/case-management/` |
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
+| `flow-process` | `plugins/tasks/flow-process/` |
 | `http-request` | `plugins/tasks/http-request/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 
-> **Not supported yet — do NOT author.** `external-agent`, `external-workflow`, `document-extraction`, `flow-process`. None of these are valid in `caseplan.case` (SKILL.md Rule 17).
+> **Not supported yet — do NOT author.** `external-agent`, `external-workflow`, `document-extraction`. None of these are valid in `caseplan.case` (SKILL.md Rule 17).
 
 ---
 
