@@ -57,6 +57,10 @@ untouched. Never normalize existing nodes to this skill's canonical templates:
 do not add missing attributes (e.g. `type="json" target="bodyField"` on an
 existing `uipath:input`) to elements the edit does not target — on untouched
 neighbors only wiring (`bpmn:incoming`/`bpmn:outgoing`) may change.
+Exception: `validate` errors on a payload with a `type` attribute or outside
+`<bpmn:extensionElements>`, and on an `Orchestrator.StartAgentJob` that binds
+`name`/`folderPath` without type version `v2`. Rewrite those payloads per rule
+6 and name each in the summary.
 
 For an existing ScriptTask, preserve its mapping discriminator and
 `uipath:scriptVersion`, and do not normalize a working brownfield node merely
@@ -212,7 +216,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    diagrams. On every `bpmn:` tag you paste, opening and closing, lowercase
    the first letter after `bpmn:`: `<bpmn:UserTask>` → `<bpmn:userTask>`,
    `<bpmn:ServiceTask>` → `<bpmn:serviceTask>`. Preserve the `uipath:*`
-   payload exactly.
+   payload exactly, except per rules 6 and 18.
    `BPMN.ScriptTask` is the registry lookup key, but a new node serializes
    `<uipath:type value="BPMN.Variables" version="v1" />` — never the lookup
    key. Local validation accepts the older discriminator, so a clean
@@ -521,11 +525,11 @@ and honestly surfaced to the user as gaps when asked.
 6. **Declare the node type as a `<uipath:type>` child.** Every
    `uipath:activity` / `uipath:event` / `uipath:mapping` sits inside
    `<bpmn:extensionElements>` and carries
-   `<uipath:type value="<Type>" version="<version>" />`. Rewrite a template
-   that puts `type` on the wrapper into this shape, keeping the wrapper's
-   `version`; this overrides paste-as-is in steps 2 and 3.
-   `Orchestrator.StartAgentJob` bound by `name` and `folderPath` takes type
-   version `v2`.
+   `<uipath:type value="<Type>" version="<version>" />`. For a template with
+   `type` on the wrapper, remove the attribute, add the child, leave the
+   wrapper's own `version`, and wrap the payload in `<bpmn:extensionElements>`
+   if it has none; this overrides paste-as-is in steps 2 and 3.
+   `Orchestrator.StartAgentJob` takes type version `v2`.
    Event extension types (`Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,
    `Maestro.ReceiveMessageEvent`, `Maestro.SendMessageEvent`) must use
    `<uipath:event>`, including when the BPMN host is task-like such as
