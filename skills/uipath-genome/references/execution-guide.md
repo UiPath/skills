@@ -167,7 +167,7 @@ Before the first UI group, run [source-migration-guide.md § Migration preflight
 
 ### 2.2c Migrate test data (extracted genomes)
 
-After the test project exists, migrate each data set from the derived data catalog where the source kept it — its records in the project's one test-data entity (`DataSetName`, `RowNumber`, `Data`), or its test case's variation file — per [test-execution-guide.md § Test data](test-execution-guide.md) and rules 1–2 there (scripted mapping, frozen argument set of a variation file) and the credential asset per account ([source-migration-guide.md § Credentials](source-migration-guide.md)), and report as that section states.
+After the test project exists, migrate each data set from the derived data catalog where the source kept it — its records in the project's one test-data entity, or its test case's variation file — per [test-execution-guide.md § Test data](test-execution-guide.md) and rules 1–2 there (scripted mapping, frozen argument set of a variation file) and the credential asset per account ([source-migration-guide.md § Credentials](source-migration-guide.md)), and report as that section states.
 
 ### 2.3 Wire handoffs
 
