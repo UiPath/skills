@@ -45,7 +45,7 @@ the candidate:
 
 ```
 flow-merge: wrote Deployed.flow (12 nodes, 13 edges)
-flow-merge: wrote 5c0a7f3e-91d2-4b6e-8f14-2a9b7c3d6e01/agent.json (carries messages[0].content)
+flow-merge: wrote <source-uuid>/agent.json (carries messages[0].content)
 ```
 
 `cp -r "$WORK/candidate/."` installs the `.flow` and every agent file merge
