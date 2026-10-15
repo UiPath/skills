@@ -40,10 +40,16 @@ log = logging.getLogger(__name__)
 
 LOCK_NAME = "coder-eval-compliance-pack-lock"
 LOCK_FOLDER = os.environ.get("COMPLIANCE_LOCK_FOLDER", "Shared")
-OWNER_FILE = ".compliance-lock-owner"
+OWNER_FILE = ".compliance-lock-owner"      # written once the lock is held
+PENDING_FILE = ".compliance-lock-pending"  # this run's owner id, written before the first create
 WAIT_SECONDS = float(os.environ.get("COMPLIANCE_LOCK_WAIT", "1200"))
-STALE_SECONDS = float(os.environ.get("COMPLIANCE_LOCK_STALE", "1500"))
+# A holder lives through the rest of pre_run (2 x 300s steps + 120s cleanup),
+# the agent (task_timeout 1200s in the nightly/default experiments), grading,
+# and post_run (2 x 120s): ~2300s. Only an entry older than that is a crash.
+STALE_SECONDS = float(os.environ.get("COMPLIANCE_LOCK_STALE", "2400"))
 POLL_SECONDS = float(os.environ.get("COMPLIANCE_LOCK_POLL", "15"))
+CALL_SECONDS = 60.0   # per CLI call, further capped by the time left
+MIN_CALL_SECONDS = 5.0
 
 
 def run_cli(args, timeout=60):
@@ -75,9 +81,9 @@ def field(entry, *names):
     return None
 
 
-def lock_entries():
+def lock_entries(timeout=CALL_SECONDS):
     """[(epoch, owner, key)] for every asset named exactly LOCK_NAME; None if listing failed."""
-    payload = run_cli(["or", "assets", "list", "--folder-path", LOCK_FOLDER, "--name", LOCK_NAME])
+    payload = run_cli(["or", "assets", "list", "--folder-path", LOCK_FOLDER, "--name", LOCK_NAME], timeout=timeout)
     if payload is None:
         return None
     data = payload.get("Data")
@@ -97,8 +103,16 @@ def lock_entries():
     return sorted(out, key=lambda e: (e[0], e[1]))
 
 
-def delete(key):
-    return key is not None and run_cli(["or", "assets", "delete", str(key), "--yes"]) is not None
+def delete(key, timeout=CALL_SECONDS):
+    return key is not None and run_cli(["or", "assets", "delete", str(key), "--yes"], timeout=timeout) is not None
+
+
+def read_file(path):
+    try:
+        with open(path) as fh:
+            return fh.read().strip() or None
+    except OSError:
+        return None
 
 
 def acquire():
@@ -107,36 +121,47 @@ def acquire():
     if os.path.exists(OWNER_FILE):
         log.info("Already held by this run — nothing to do")
         return
-    owner = f"{os.environ.get('GITHUB_RUN_ID', 'local')}-{uuid.uuid4().hex[:12]}"
+    # One owner across both steps: if step 1 was killed after its create, step 2
+    # recognises that entry as its own instead of waiting behind it.
+    owner = read_file(PENDING_FILE)
+    if not owner:
+        owner = f"{os.environ.get('GITHUB_RUN_ID', 'local')}-{uuid.uuid4().hex[:12]}"
+        with open(PENDING_FILE, "w") as fh:
+            fh.write(owner)
     created_keys = []  # every lock entry this run created, for cleanup if it gives up
+    deadline = time.time() + WAIT_SECONDS
+
+    def left():
+        return deadline - time.time()
+
+    def call_timeout():
+        return max(1.0, min(CALL_SECONDS, left()))
 
     def give_up(reason):
         # Never leave an entry behind when proceeding unlocked: an orphan would
         # block every other run's create until it goes stale.
-        keys = set(created_keys) | {key for _, o, key in lock_entries() or [] if o == owner}
+        keys = set(created_keys) | {key for _, o, key in lock_entries(timeout=15) or [] if o == owner}
         for key in keys:
-            if not delete(key):
+            if not delete(key, timeout=15):
                 log.warning("Could not delete own lock entry %s — it will go stale", key)
         log.warning("%s — proceeding UNLOCKED", reason)
 
-    deadline = time.time() + WAIT_SECONDS
-    while time.time() < deadline:
+    while left() > MIN_CALL_SECONDS:
         now = time.time()
         created = run_cli([
             "or", "assets", "create", LOCK_NAME, f"{owner}|{now:.0f}",
             "--folder-path", LOCK_FOLDER, "--type", "Text",
             "--description", "Held by a coder-eval compliance-pack e2e run; safe to delete if stale.",
-        ])
+        ], timeout=call_timeout())
         if created and isinstance(created.get("Data"), dict):
             key = field(created["Data"], "Key", "Id")
             if key is not None:
                 created_keys.append(key)
-        entries = lock_entries()
+        entries = lock_entries(timeout=call_timeout())
         if entries is None:
             give_up(f"Cannot list {LOCK_FOLDER}/{LOCK_NAME}")
             return
-        # Held = the oldest entry is ours, whichever attempt created it (an
-        # earlier create may only now be visible to list).
+        # Held = the oldest entry is ours, whichever attempt (or step) created it.
         if entries and entries[0][1] == owner:
             with open(OWNER_FILE, "w") as fh:
                 fh.write(owner)
@@ -146,7 +171,7 @@ def acquire():
         if ours:
             # A duplicate slipped through and an older holder wins: back off.
             for key in ours:
-                if delete(key) and key in created_keys:
+                if delete(key, timeout=call_timeout()) and key in created_keys:
                     created_keys.remove(key)
             log.info("Lost tie-break to %s — waiting", entries[0][1])
         elif entries:
@@ -154,33 +179,35 @@ def acquire():
             age = now - epoch
             if age > STALE_SECONDS:
                 log.warning("Breaking stale lock held by %s (%.0fs old)", holder, age)
-                if delete(key):
+                if delete(key, timeout=call_timeout()):
                     continue
                 log.warning("Could not delete the stale lock — backing off")
             log.info("Held by %s for %.0fs — waiting", holder, age)
         elif created:
             log.info("Created but not listed yet — rechecking")
-            time.sleep(3)
+            time.sleep(min(3.0, max(0.0, left())))
             continue
         else:
             give_up("Create failed and no lock exists — lock unusable")
             return
-        time.sleep(POLL_SECONDS + random.uniform(0, 5))
+        time.sleep(min(POLL_SECONDS + random.uniform(0, 5), max(0.0, left())))
     give_up(f"Waited {WAIT_SECONDS:.0f}s without the lock")
 
 
 def release():
-    if not os.path.exists(OWNER_FILE):
-        log.info("This run does not hold the lock — nothing to release")
+    owner = read_file(OWNER_FILE) or read_file(PENDING_FILE)
+    if not owner:
+        log.info("This run never took part in the lock — nothing to release")
         return
-    with open(OWNER_FILE) as fh:
-        owner = fh.read().strip()
-    for _, o, key in lock_entries() or []:
-        if o == owner:
-            log.info("Released %s/%s (%s)", LOCK_FOLDER, LOCK_NAME,
-                     "deleted" if delete(key) else "DELETE FAILED — will go stale")
-            return
-    log.warning("Lock entry for %s not found at release", owner)
+    mine = [key for _, o, key in lock_entries() or [] if o == owner]
+    for key in mine:
+        log.info("Released %s/%s (%s)", LOCK_FOLDER, LOCK_NAME,
+                 "deleted" if delete(key) else "DELETE FAILED — will go stale")
+    if not mine:
+        log.info("No lock entry for %s at release", owner)
+    for path in (OWNER_FILE, PENDING_FILE):
+        if os.path.exists(path):
+            os.remove(path)
 
 
 if __name__ == "__main__":

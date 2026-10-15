@@ -41,17 +41,18 @@ skips hidden files, and these belong in the eval report):
   - `calls.jsonl` — seeded empty; one record per invocation
     `{ts, tool, argv, exit, Result, Code[, error]}`, for run_command graders.
 
-A target id that is not a GUID (typically empty — `~/.uipath/.auth` is not
-present in the CI sandbox) gets the same HTTP 404 the live API returned for
-it, so an agent has to recover the tenant id the way it would for real.
+A target id the recorded login cannot see — empty (`~/.uipath/.auth` is not
+present in the CI sandbox), malformed, the org id passed as a tenant, or an
+invented GUID — gets the same HTTP 404 the live API returned, so an agent has
+to recover a real tenant id the way it would for real.
 
 `mock_path_dirs: [mocks]` PATH-prepends this script's directory inside the
 sandbox. Linux smoke only (no `windows` tag), hence no `uip.cmd` twin.
 """
 
+import fcntl
 import json
 import os
-import re
 import shutil
 import sys
 import time
@@ -62,6 +63,7 @@ FIXTURES = os.path.join(MOCK_DIR, "fixtures")
 SCENARIO_PATH = os.path.join(MOCK_DIR, "scenario")
 STATE_PATH = os.path.join(MOCK_DIR, "state.json")
 LOG_PATH = os.path.join(MOCK_DIR, "calls.jsonl")
+LOCK_PATH = os.path.join(MOCK_DIR, "state.lock")  # serialises concurrent calls' read-modify-write of state.json
 
 OFFLINE_MESSAGE = "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
 
@@ -74,8 +76,6 @@ SCENARIOS = {
     "already-configured": {"active": True, "coverage": "all-applied"},
     "drifted": {"active": True, "coverage": "drifted"},
 }
-
-GUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
 # Per-command failure Instructions, copied from gov-tool's state.ts.
 STATE_INSTRUCTIONS = {
@@ -154,6 +154,13 @@ def save_state(state):
             json.dump(state, fh)
     except OSError as exc:
         sys.stderr.write(f"uip (mock): could not save {STATE_PATH}: {exc}\n")
+
+
+def known_target(scope, target_id):
+    """Only ids the recorded login can see resolve; anything else 404s like the live API."""
+    if scope == "organization":
+        return target_id == fixture("login-status")["Data"]["OrganizationId"]
+    return target_id in {t["TenantId"] for t in fixture("tenant-list")["Data"]}
 
 
 def tenant_state(state, target_id):
@@ -273,7 +280,7 @@ def handle_state(verb, rest):
     if len(rest) < 2:
         return usage_error("target-id")
     scope, target_id = rest[0], rest[1]
-    if not GUID.match(target_id):
+    if not known_target(scope, target_id):
         return not_found(verb)
 
     state = load_state()
@@ -370,11 +377,18 @@ def policy_record(args, identifier, existing_priority=None):
         return None, failure(err)
     if data is not None and not isinstance(data, dict):
         return None, failure("Policy data must be a JSON object (the form-data blueprint, no wrapper).")
+    numbers = {}
+    for opt in ("--priority", "--availability"):
+        raw = flag(args, opt)
+        try:
+            numbers[opt] = int(raw) if raw else None
+        except ValueError:
+            return None, failure(f"error: option '{opt} <n>' argument '{raw}' is invalid.")
     record = {
         "Name": name,
         "Identifier": identifier,
-        "Priority": int(flag(args, "--priority")) if flag(args, "--priority") else existing_priority,
-        "Availability": int(flag(args, "--availability") or 30) or 30,
+        "Priority": numbers["--priority"] if numbers["--priority"] is not None else existing_priority,
+        "Availability": numbers["--availability"] or 30,
         "Product": product_meta(product),
         "Data": {"policyIdentifier": identifier, "data": data or {}},
     }
@@ -453,7 +467,7 @@ def handle_aops(sub, args):
     if sub == "deployment" and literal[1:2] == ["tenant"] and literal[2:3] in (["get"], ["configure"]):
         verb = literal[2]
         target_id = literal[3] if len(literal) > 3 else ""
-        if not GUID.match(target_id):
+        if not known_target("tenant", target_id):
             return fixture("error-404")
         base = fixture("aops-deployment-tenant")["Data"]
         tenant_name = base["Name"]
@@ -523,6 +537,22 @@ def real_uip():
 
 def main():
     args = sys.argv[1:]
+    # Agents issue parallel tool calls; hold the lock across load-mutate-save so
+    # two concurrent writes cannot drop one. Released before exec'ing the real CLI.
+    with open(LOCK_PATH, "a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        code = dispatch(args)
+    if code is not None:
+        return code
+    real = real_uip()
+    if not real:
+        sys.stderr.write("uip (shim): real uip CLI not found on PATH\n")
+        return 127
+    os.execv(real, [real] + args)
+
+
+def dispatch(args):
+    """Exit code for a handled call, or None to exec the real CLI."""
     literal = positionals(args)
 
     payload = None
@@ -550,11 +580,7 @@ def main():
         sys.stderr.write(OFFLINE_MESSAGE)
         return 1
     log_call(args, None)  # exec'd, so the exit status is not observed
-    real = real_uip()
-    if not real:
-        sys.stderr.write("uip (shim): real uip CLI not found on PATH\n")
-        return 127
-    os.execv(real, [real] + args)
+    return None
 
 
 if __name__ == "__main__":

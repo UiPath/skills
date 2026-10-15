@@ -23,13 +23,18 @@ sandbox:
 # delegate runs would still undo each other, so pre_run takes a tenant-side lock
 # (an Orchestrator asset) and the last post_run step releases it. The lock never
 # gates the task — see _setup/tenant_lock.py. coder-eval caps a pre_run step at
-# 300s, so the wait (up to ~9 min: the other two runs' copies at ~1.5-3.5 min
-# each) is split over two steps; the second is a no-op once the lock is held.
+# 300s, so the wait (up to 8 min: the other two runs' copies at ~1.5-3.5 min
+# each) is split over two steps sharing one owner; the second is a no-op once
+# the lock is held. WAIT stays well under the step timeout, every call inside
+# is capped by the time left, and fail_on_error: false keeps even a killed
+# step from aborting the task.
 pre_run:
-  - command: 'COMPLIANCE_LOCK_WAIT=270 python3 _setup/tenant_lock.py acquire'
+  - command: 'COMPLIANCE_LOCK_WAIT=240 python3 _setup/tenant_lock.py acquire'
     timeout: 300
-  - command: 'COMPLIANCE_LOCK_WAIT=270 python3 _setup/tenant_lock.py acquire'
+    fail_on_error: false
+  - command: 'COMPLIANCE_LOCK_WAIT=240 python3 _setup/tenant_lock.py acquire'
     timeout: 300
+    fail_on_error: false
   - command: 'python3 _setup/cleanup_compliance_pack.py'
     timeout: 120
 

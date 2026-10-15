@@ -72,7 +72,8 @@ success_criteria:
       python3 -c "import json, os, sys;
       p = 'mocks/state.json';
       s = json.load(open(p)) if os.path.exists(p) else {};
-      sys.exit(0 if len(set(s.get('enabled', []))) >= 4 else 1)"
+      tenants = {t['TenantId'] for t in json.load(open('mocks/fixtures/tenant-list.json'))['Data']};
+      sys.exit(0 if set(s.get('enabled', [])) >= tenants else 1)"
     timeout: 30
     expected_exit_code: 0
     weight: 2.0

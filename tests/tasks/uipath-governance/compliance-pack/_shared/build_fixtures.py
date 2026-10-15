@@ -231,7 +231,9 @@ def build(run_dirs):
     for obj in get("AopsPolicyList"):
         if obj["Data"]["Result"]:
             out["aops-list-" + obj["Data"]["Result"][0]["Product"]["Name"]] = obj
-    for obj in get("AopsPolicyGet")[:1]:
+    # Every recorded `get`: the shim answers `aops-policy get <id>` only for these,
+    # so a recording should `get` each pack policy coverage / state reference.
+    for obj in get("AopsPolicyGet"):
         out["aops-get-" + obj["Data"]["Identifier"]] = obj
     need("aops-deployment-tenant", lambda: pick(get("AopsPolicyDeploymentTenantGet"),
                                                 lambda o: all(p["PolicyIdentifier"] is None for p in o["Data"]["TenantPolicies"]),

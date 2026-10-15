@@ -167,6 +167,26 @@ def test_empty_tenant_id_gets_the_live_404(sb, verb):
     assert sb.state().get("enabled", []) == []
 
 
+@pytest.mark.parametrize("target", [ORG, "deadbeef-0000-4000-8000-000000000000"])
+def test_ids_the_login_cannot_see_404_as_tenants(sb, target):
+    # The org id sits next to TenantId in login-status; live, it is not a tenant.
+    code, body, _ = sb.uip("gov", "compliance-packs", "state", "enable", "tenant", target, PACK)
+    assert code == 1
+    assert body["Message"].startswith("HTTP 404")
+    assert sb.state().get("enabled", []) == []
+    code, _, _ = sb.uip("gov", "aops-policy", "deployment", "tenant", "get", target)
+    assert code == 1
+
+
+def test_concurrent_writes_keep_every_enable(sb):
+    tenants = tenant_ids(sb)
+    procs = [subprocess.Popen(["uip", "gov", "compliance-packs", "state", "enable", "tenant", t, PACK,
+                               "--output", "json"], cwd=sb.root, env=sb.env,
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) for t in tenants]
+    assert [p.wait(timeout=30) for p in procs] == [0] * len(tenants)
+    assert sorted(sb.state()["enabled"]) == sorted(tenants)
+
+
 def test_unknown_pack_404_and_usage_errors(sb):
     code, body, _ = sb.uip("gov", "compliance-packs", "state", "get", "tenant", TENANT, "iso-27001-2022")
     assert code == 1 and "404" in body["Message"]
@@ -214,6 +234,15 @@ def test_update_is_full_replace_and_missing_option_matches_commander(sb):
     assert "Description" not in upd and upd["Priority"] is None
     code, body, _ = sb.uip("gov", "aops-policy", "create", "--name", "x", "--product", "AITrustLayer")
     assert code == 1 and body["Message"] == "error: required option '--product-name <product-name>' not specified"
+
+
+@pytest.mark.parametrize("opt", ["--priority", "--availability"])
+def test_non_integer_number_flag_is_a_cli_error_not_a_traceback(sb, opt):
+    code, body, err = sb.uip("gov", "aops-policy", "create", "--name", "x", "--product-name", "Robot", opt, "high")
+    assert code == 1
+    assert body["Message"] == f"error: option '{opt} <n>' argument 'high' is invalid."
+    assert "Traceback" not in err
+    assert sb.calls()[-1]["exit"] == 1
 
 
 def test_template_get_writes_form_data(sb):
@@ -307,6 +336,26 @@ def cheat_wrong_product(sb: Sandbox):
     partial_apply("StudioWeb")(sb)
 
 
+def cheat_org_id_as_a_tenant(sb: Sandbox):
+    for t in tenant_ids(sb)[:3] + [ORG]:
+        sb.uip("gov", "compliance-packs", "state", "enable", "tenant", t, PACK)
+
+
+def cheat_invented_tenants(sb: Sandbox):
+    for n in range(4):
+        sb.uip("gov", "compliance-packs", "state", "enable", "tenant", f"deadbeef-0000-4000-8000-00000000000{n}", PACK)
+
+
+def assign_existing(product):
+    """Assign a policy that was already on the tenant instead of creating the pack's own."""
+    def run(sb: Sandbox):
+        existing = json.loads((FIXTURES / f"aops-list-{product}.json").read_text())["Data"]["Result"][0]["Identifier"]
+        rows = [{"productIdentifier": product, "licenseTypeIdentifier": "NoLicense", "policyIdentifier": existing}]
+        sb.ok("gov", "aops-policy", "deployment", "tenant", "configure", TENANT,
+              "--tenant-name", "DefaultTenant", "--input", write(sb, "a.json", rows))
+    return run
+
+
 # Correct call sequence per task, plus the cheats its graders must reject.
 GOOD = {
     "already_configured_smoke": posture,
@@ -322,9 +371,10 @@ GOOD = {
     "partial_apply_smoke": partial_apply("AITrustLayer"),
 }
 CHEATS = {
-    "org_scope_smoke": [cheat_org_scope],
-    "partial_apply_aitl_smoke": [cheat_wrong_product],
-    "interactive_values_smoke": [cheat_wrong_product],
+    "org_scope_smoke": [cheat_org_scope, cheat_org_id_as_a_tenant, cheat_invented_tenants],
+    "partial_apply_aitl_smoke": [cheat_wrong_product, assign_existing("AITrustLayer")],
+    "interactive_values_smoke": [cheat_wrong_product, assign_existing("Robot")],
+    "partial_apply_smoke": [assign_existing("AITrustLayer")],
 }
 
 
