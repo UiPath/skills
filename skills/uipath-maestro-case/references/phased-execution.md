@@ -55,7 +55,7 @@ Run it **after** the Phase 1 registry gate and [planning.md Step 4](planning.md#
 
 **Version guard.** If the response names `sdd` or `convert` as an unknown command (typically `ErrorCode: "invalid_argument"`, exit 3), author Phase 2 by hand exactly as described below, say so in one line, and continue. Exit 3 *without* that command-specific message is a real failure — report it and do not fall back.
 
-**`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). There are **20 kinds** (the authoritative list is the `UnresolvedItem` union in the CLI's `sdd-convert/types.ts` — read it there, never retype it). The four below are the ones with a *named downstream closer*; every other kind is closed by the Phase 4 repair loop acting on the entry's own `detail`. Each is closed by a later step, not by re-deriving it from the SDD.
+**`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). There are several kinds (the authoritative list is the `UnresolvedItem` union in the CLI's `sdd-convert/types.ts` — read it there, never retype it). The four below are the ones with a *named downstream closer*; every other kind is closed by the Phase 4 repair loop acting on the entry's own `detail`. Each is closed by a later step, not by re-deriving it from the SDD.
 
 > This table is the only place in this skill that names an `Unresolved` kind. That makes it the sole definition **and** the sole opportunity for an error — a kind added here and nowhere else has nothing to contradict it. Check a name against `types.ts` before trusting it.
 
