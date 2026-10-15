@@ -65,12 +65,12 @@ xmlns:ui="http://schemas.uipath.com/workflow/activities"
 
 A test case authored with an `<x:Property Name="in_X" Type="InArgument(x:String)" />` argument should generally bake in a default so `uip rpa run --file-path <TestCase>.xaml` is runnable without `--input-arguments`. Use the canonical root-attribute syntax — see [xaml/xaml-editing-catalog.md § Setting Default Values for Arguments](xaml/xaml-editing-catalog.md#setting-default-values-for-arguments). The wrong forms (bare attribute, `<x:Property.Value>`, `<InArgument>` child of `<x:Property>`) all produce confusing `member not supported` errors — the doc explicitly lists them so you don't waste time trying.
 
-### XAML Structure — Standalone Test Case (with Placeholder)
+### XAML Structure — Execution Template Placeholder
 
-For test cases designed to work with execution templates, use `ui:Placeholder` in the When container:
+The `ui:Placeholder` sits in the execution template, where the case runs ([§ Execution Templates](#execution-templates)); a bound case is an ordinary Given-When-Then file:
 
 ```xml
-<Sequence DisplayName="... When">
+<Sequence DisplayName="Run case">
   <ui:Placeholder
     Description="This placeholder activity will be replaced at build time and can only be used within an execution template." />
 </Sequence>
@@ -106,6 +106,8 @@ Copy-paste JSON snippet (including `publishAsTestCase` for coded test cases and 
 - `testCaseType` — `"TestCase"`.
 - `executionTemplateInvokeIsolated` — `false` unless the test runs under an execution template that requires isolation.
 - `fileName` — relative path of the `.xaml` or `.cs` test case file from the project root.
+
+**Template keys:** an execution template is registered as its own entry (`templateType` `ExecutionTemplate`), a new-test-case template with `templateType` `TestCase`, and a case is bound to its template with `executionTemplatePath` and `executionTemplateType` on its entry. Shapes: [../assets/json-template.md](../assets/json-template.md); behaviour: [§ Execution Templates](#execution-templates).
 
 > **`editingStatus` lifecycle:** Set to `"InProgress"` when creating a new test case. Update to `"Publishable"` only when the user explicitly asks to mark the test case as ready.
 
@@ -293,7 +295,7 @@ Place verification activities (VerifyExpression, VerifyExpressionWithOperator, V
 
 ## Execution Templates
 
-Execution templates wrap test cases at runtime with predefined execution conditions. They let you reuse the same test case logic across different environments, configurations, or application states without duplicating test code.
+Execution templates wrap test cases at runtime with predefined execution conditions. They let you reuse the same test case logic across different environments, configurations, or application states without duplicating test code. Setup, teardown, a timeout and failure capture written in the template apply to every case it wraps; the official `UiPath.Template.TestAutomationFramework` template is built this way.
 
 ### When to Use Execution Templates
 
@@ -301,21 +303,23 @@ Execution templates wrap test cases at runtime with predefined execution conditi
 - Apply **different browser/application configurations** per run
 - Set up **common preconditions** (login, navigation) shared across many test cases
 - Override **argument values** at runtime without modifying the test case
+- Apply a **timeout, failure capture or teardown** (closing the application) to every case
 
 ### How Execution Templates Work
 
-1. Create an execution template: right-click the **Templates** folder → **Add → Execution Template**
+1. Create an execution template: right-click the **Templates** folder → **Add → Execution Template**. On disk it is a workflow in `.templates\` holding one `ui:Placeholder` inside a Sequence ([§ Execution Template Placeholder](#xaml-structure--execution-template-placeholder)), registered as an `ExecutionTemplate` entry; each case it wraps names it with `executionTemplatePath` and `executionTemplateType` `"Local"` ([§ project.json Registration](#projectjson-registration)). A case whose entry names no template runs bare.
 2. Define variables and arguments in the template that match names in the test case
 3. At runtime, Studio **merges** the test case and template into a temporary file:
    - Arguments with matching names are **linked** — template values override test case defaults
    - Variables with matching names are **linked** — template values take precedence
    - Non-overlapping arguments/variables from both files are included as-is
+4. `uip rpa pack` writes `.generated\<case path>.xaml` for each bound case: the template with its Placeholder replaced by an Invoke Workflow File of the case, which receives the case's arguments by name. These generated files are the package's entry points (each `uniqueId` is the case's `testCaseId`), so Orchestrator and Test Manager runs execute each bound case inside its template. In the generated file only arguments reach the case; a template variable does not.
 
 ### Execution Template Structure
 
 ```
 MyProject/
-├── Templates/
+├── .templates/
 │   ├── StagingEnvironment.xaml       ← sets environment-specific variables
 │   └── ProductionEnvironment.xaml    ← different config for prod
 ├── TestCases/
@@ -332,7 +336,6 @@ MyProject/
 
 ### What NOT to Do with Execution Templates
 
-- Do NOT put test logic (assertions) in an execution template — templates are for configuration only
 - Do NOT create templates with arguments that do not match any test case — they will be ignored
 - Do NOT rely on execution templates for data-driven testing — use data sources (variations, Data Service, Queues) instead
 

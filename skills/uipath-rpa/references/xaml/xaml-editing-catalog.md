@@ -1,6 +1,6 @@
 # XAML Editing Catalog
 
-Per-operation and per-activity catalogs for XAML authoring: editing operations (arguments, variables, imports, assembly references, expressions, resource types) and complete reference workflows. Split out of [xaml-basics-and-rules.md](xaml-basics-and-rules.md) so that file is a plain full read (Rule 22) with no marker to locate first.
+Per-operation and per-activity catalogs for XAML authoring: editing operations (arguments, variables, imports, assembly references, global variables, expressions, resource types) and complete reference workflows. Split out of [xaml-basics-and-rules.md](xaml-basics-and-rules.md) so that file is a plain full read (Rule 22) with no marker to locate first.
 
 **Read contract — per entry, never end-to-end:** Grep `^###` on this file to list the entries with line numbers, then Read ONLY the entries matching the operation or activity at hand. Unsure whether an entry applies → read it. Reading this file top to bottom is the mistake the split removed.
 
@@ -101,6 +101,28 @@ Add `<AssemblyReference>` entries:
 <AssemblyReference>System.Data</AssemblyReference>
 <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
 ```
+
+### Global Variables
+
+Project-wide variables live in `.project/globalVariables.json`, an array with one entry per variable. A workflow reads one by name without declaring it, which makes it the channel for state that no argument carries, such as the configuration an execution template loads ([testing-guide.md § Execution Templates](../testing-guide.md#execution-templates)).
+
+```json
+[
+  {
+    "Constant": false,
+    "Name": "Config",
+    "TypeFullyQualifiedName": "<ASSEMBLY_QUALIFIED_TYPE>",
+    "UnresolvedTypeFullyQualifiedName": null,
+    "Expression": null,
+    "IsLiteral": false
+  }
+]
+```
+
+`TypeFullyQualifiedName` is the assembly-qualified type name, as Studio writes it for a variable of that type.
+
+- **VB expressions** read the variable by name: `Config("Key")`.
+- **C# expressions** qualify it: `GlobalVariables.Config["Key"]`, with `GlobalVariablesNamespace` among the namespace imports ([§ Adding Namespace Imports](#adding-namespace-imports)).
 
 ### Expressions
 
