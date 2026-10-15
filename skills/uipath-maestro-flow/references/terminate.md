@@ -21,6 +21,27 @@ Inside a parallel arm it aborts sibling arms, whereas `.return(...)` only ends i
 own path. Its mappings are terminal metadata, not a readable action result:
 `out('<terminate>')` remains invalid.
 
+## Stopping another path at the same Terminate
+
+A Terminate's name is a step name, so another path can stop there with
+`.stepToRef(name)` instead of getting a Terminate of its own. The flow then has
+ONE Terminate with several incoming edges, as the canvas draws it.
+
+```ts
+.stepToList('branch-missing', (b) => b.step('reportMissing', script({ code })).terminate('stopFailed'))
+.stepToList('branch-throttled', (b) => b.step('reportThrottled', script({ code })).stepToRef('stopFailed'))
+```
+
+- The Terminate may sit inside another port's path (an HTTP `branch-*`, a
+  human-task `outcome-*`, a `.stepSwitch` arm). A ref into a STEP there is still
+  `REF_INTO_PORT_LIST`; a Terminate runs nothing after itself, so it is allowed.
+- Spell each Terminate ONCE. Two `.terminate`s asking for the same name are
+  refused (`DUP_STEP`; `compile --no-check` throws). They are not renamed
+  `stopFailed2`. Stop the other paths with `.stepToRef('<name>')`.
+- A decompiled brownfield flow uses this form when a second path runs into a
+  Terminate another path already stops at. Keep the `.stepToRef('<terminate id>')`
+  when you edit.
+
 ## At a glance
 
 Stop the entire Flow run, including sibling parallel arms.
