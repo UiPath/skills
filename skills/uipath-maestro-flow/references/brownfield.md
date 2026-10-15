@@ -93,10 +93,15 @@ When that definition declares several exits and every one is wired (for
 example `core.logic.agentic-switch`: one `case-<id>` exit per choice in
 `inputs.criteria`, plus `default`), the node comes back as
 `.stepSwitch('<id>', rawNode(…), [{ value: 'case-returns', body: … }, …])`:
-one arm per exit, each arm's `value` being its port.
+one arm per exit, each arm's `value` being its port. Adding or removing a
+choice in `inputs.criteria` adds or removes its `case-<id>` exit: change the
+arms to match. If only some exits are wired, it still comes back as
+`.step(…)` with a `TODO: unstructured fan-out` comment, and compile refuses the
+flow. Do not delete the TODO or the `.layout()` keys to get past that (merge
+would then delete the arms); edit that `.flow`'s JSON directly.
 
 `mock()` in decompiled source therefore means the flow really contains a
-placeholder node (`core.logic.mock`). The one case that still degrades is a node
+placeholder node (`core.logic.mock`). Another case that degrades is a node
 whose definition is MISSING from the file — nothing can carry it, so it lowers
 to `mock() /* TODO: unsupported node type … */`; leave that node untouched and
 merge restores the original.
