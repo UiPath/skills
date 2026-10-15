@@ -78,19 +78,17 @@ For test cases designed to work with execution templates, use `ui:Placeholder` i
 
 ### Passing Arguments to Invoked Workflows
 
-If the workflow has arguments, pass them in the `InvokeWorkflowFile.Arguments` dictionary:
+If the workflow has arguments, pass them as entries of `InvokeWorkflowFile.Arguments`:
 
 ```xml
 <ui:InvokeWorkflowFile WorkflowFileName="CalculateDiscount.xaml" UnSafe="False">
   <ui:InvokeWorkflowFile.Arguments>
-    <scg:Dictionary x:TypeArguments="x:String, Argument">
-      <InArgument x:TypeArguments="x:Decimal" x:Key="amount">
-        <CSharpValue x:TypeArguments="x:Decimal">1500.00m</CSharpValue>
-      </InArgument>
-      <InArgument x:TypeArguments="x:Decimal" x:Key="discountRate">
-        <CSharpValue x:TypeArguments="x:Decimal">0.10m</CSharpValue>
-      </InArgument>
-    </scg:Dictionary>
+    <InArgument x:TypeArguments="x:Decimal" x:Key="amount">
+      <CSharpValue x:TypeArguments="x:Decimal">1500.00m</CSharpValue>
+    </InArgument>
+    <InArgument x:TypeArguments="x:Decimal" x:Key="discountRate">
+      <CSharpValue x:TypeArguments="x:Decimal">0.10m</CSharpValue>
+    </InArgument>
   </ui:InvokeWorkflowFile.Arguments>
 </ui:InvokeWorkflowFile>
 ```

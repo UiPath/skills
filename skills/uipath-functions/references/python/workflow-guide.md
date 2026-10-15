@@ -16,13 +16,7 @@ uip function new <name> --language js       # JavaScript Function → ../js/
 
 `--empty` skips the hello-world function (JS/TS only).
 
-**The scaffold follows the installed packages.** With a framework package present in the environment (`uipath-langchain`, `llama-index`, `openai-agents`), `uip function new -l py` emits that framework's **agent** scaffold — `langgraph.json` plus an LLM `main.py` — not a function scaffold. Expected behaviour, not a broken flag. Recovery, in one pass:
-
-1. Delete the framework config (`langgraph.json` and equivalents).
-2. Replace `main.py` with the function template (Step 3).
-3. Keep `pyproject.toml`'s `[project]` metadata (Step 5) — swap `dependencies` for what the function needs.
-
-Do not re-run `new` with different flag spellings, and do not read CLI or SDK internals to explain the scaffold. Reshape the project and move on.
+**The Python scaffold is a function project:** `main.py` + `pyproject.toml` + `uipath.json` with a `functions` map, regardless of any agent framework package (`uipath-langchain`, `uipath-llamaindex`, `uipath-openai-agents`) installed in the venv. For a coded agent, use `uip codedagent new` and the [`uipath-agents`](/uipath:uipath-agents) skill instead.
 
 ## Step 2: Define Function Schema
 

@@ -3,7 +3,7 @@
 <!--skill-flavor:step-six-zero:end-->
 
 <!--skill-flavor:step-six-intro:start-->
-The case file must live inside a project of the open Studio Web solution. `uip maestro case init` creates that project and seeds its scaffold; the case plugin owns the root caseplan write (and any scaffold file Studio Web did not seed). Project creation is the only CLI call. **Never use `uip maestro case cases add` (or another case mutation command) to create the root caseplan** — execute the T01 direct-JSON recipe so required root metadata such as `caseDirectlyPassTaskOutputs` is emitted.
+The case file must live inside a project of the open Studio Web solution. `uip maestro case init` creates that project and seeds its scaffold; the case plugin owns the root caseplan write (and any scaffold file Studio Web did not seed). Project creation is the only CLI call. **Never use `uip maestro case cases add` (or another case mutation command) to create the root caseplan** — execute the T01 direct-JSON recipe so required root metadata such as `intsvcActivityConfig` is emitted.
 <!--skill-flavor:step-six-intro:end-->
 
 <!--skill-flavor:step-six-t01-scaffold:start-->

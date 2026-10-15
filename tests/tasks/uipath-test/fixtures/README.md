@@ -31,6 +31,11 @@ and therefore exact for this scheme.
 | `manual_execution_record_integration` | CLAIM | `EVFX-MANUAL-SET`, `EVFX-MANUAL-TC{1,2,3}` | Set and cases only, no execution — the task opens one; `pre_run` sweeps earlier days' runs (sparing today's, so a concurrent run is never destroyed) and snapshots the survivors so the oracle grades the run the agent opens |
 | `reporting_date_backdate_integration` | CLAIM | `EVFX-REPORT-SET`, `EVFX-REPORT-TC{1,2}` | One **open** execution (recorded per-run by id, executions cannot be named) — the premise is that it is not closed; `pre_run` sweeps earlier days' runs (sparing today's) and opens one fresh OPEN run, recording its ExecutionId for the oracle |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `project_settings_smoke` | its own throwaway project | the `EVFX-PSET-*` namespace | `pre_run` creates one `EVFX-PSET-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago (so a concurrent run's project is never touched); `post_run` deletes it. The deliverable is a settings change, not the project, so the project is scratch (Rule 2). Unlike the self-contained build tasks, project create/delete is not under test here, so the hooks own the project's lifecycle and the agent never deletes it |
+| `testcase_parameters_bulk_add_smoke` | HEALTH | `EVFX-PARAM-Login`, `EVFX-PARAM-Transfer` | Created if absent; `pre_run` clears their parameters each run and seeds `Username=keepme` on Transfer |
+| `testcase_parameters_edit_integration` | HEALTH | `EVFX-PARAMEDIT-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) and `Userid=u1` |
+| `testcase_parameters_lifecycle_e2e` | HEALTH | `EVFX-PARAMLIFE-Login` | Created if absent; `pre_run` clears its parameters |
+| `testcase_parameters_ask_first_integration` | HEALTH | `EVFX-PARAMASK-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
@@ -168,6 +173,16 @@ Consequences worth knowing before you edit one:
    that dies leaves a project behind, and the prefix is what makes that residue
    identifiable and sweepable. The namespaces are registered in
    `check-collisions.py` like any other.
+
+## Per-run scratch projects (hook-owned)
+
+`project_settings_smoke` grades a change *inside* a project, not the
+project itself, so it fits neither the self-contained build pattern above (where the agent's own delete is
+graded) nor create-if-absent seeding (Rule 3), which would let one run's writes leak into the next.
+Instead `pre_run` creates a fresh `EVFX-<NS>-<YYYYMMDD-HHMMSS>-<hex>` project per run and writes its key
+to `project-key.txt`, the criteria read its live state, and `post_run` deletes it (coder_eval grades
+before `post_run`). The `pre_run` sweep deletes only projects stamped more than 6 hours ago, so
+concurrent runs never remove each other's project.
 
 ## Automation-linked fixtures
 

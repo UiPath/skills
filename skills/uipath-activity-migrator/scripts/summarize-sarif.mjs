@@ -10,7 +10,8 @@
 // Status: failed = the tool stopped the run (an error-level result with no file location, its own stop rule)
 // or an extension reported a project-level blocker; unknown = no validation result found (a project without
 // workflows, the Validate step failed as a whole, or a tool build with other validation rule ids); partial =
-// anything left to do; success = notes only.
+// anything listed as left classic, needing attention or a failed step; success = nothing listed.
+// Levels: a result without `level` is a warning (SARIF default); the tool's SARIF library omits the default.
 // A `failed` without blockers and every `unknown` carry a Reason line.
 // Input may be UTF-8 (with or without BOM) or UTF-16 (PowerShell 5.1 redirection).
 // No dependencies. Node 18+.
@@ -35,6 +36,9 @@ const TYPE_ISSUES = new Set([
 // threw (ERROR stops the run, WARNING lets it continue without that step), `Error processing workflow …` with a
 // file when one workflow's processing threw (the workflow is skipped from then on and copied unchanged).
 const STEP_RULES = new Set(['ERROR', 'WARNING']);
+// Restore results that stop the run at error level (isCritical) but arrive at warning level under
+// --ignore-missing-dependencies: the run went on, and the workflows that use the package will not compile.
+const RESTORE_ISSUES = new Set(['RESTORE-MISSING-PACKAGE', 'RESTORE-INCOMPATIBLE-PACKAGE', 'RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED']);
 // Activity- or workflow-scoped extension rules: an error there means one activity was left classic, not a failed run.
 const isActivityScoped = (id) => /^UIAUTOMATION-(ACTIVITY|WORKFLOW)-/.test(id) || id.endsWith('-ACTIVITY-MIGRATION');
 // The tool's own stop rule (UpgradeContext.HasCriticalError): an error-level result with no file location.
@@ -104,7 +108,9 @@ const run = (sarif.runs && sarif.runs[0]) || {};
 const rules = new Map(((run.tool && run.tool.driver && run.tool.driver.rules) || []).map((r) => [r.id, r]));
 const results = run.results || [];
 
-const levelOf = (r) => r.level || (rules.get(r.ruleId) && rules.get(r.ruleId).defaultConfiguration && rules.get(r.ruleId).defaultConfiguration.level) || 'note';
+// SARIF 2.1.0 §3.27.10: a result without `level` takes its rule's defaultConfiguration.level, and without that it is
+// `warning`. The tool's SARIF library omits both when they equal that default, so every warning arrives with no level.
+const levelOf = (r) => r.level || (rules.get(r.ruleId) && rules.get(r.ruleId).defaultConfiguration && rules.get(r.ruleId).defaultConfiguration.level) || 'warning';
 const fileOf = (r) => {
   const loc = r.locations && r.locations[0] && r.locations[0].physicalLocation && r.locations[0].physicalLocation.artifactLocation;
   return (loc && (loc.uri || loc.description)) || '';
@@ -134,6 +140,35 @@ const byFamily = {};
 const blockers = [];
 const packages = [];
 const effectiveVersions = {};
+const unparsedPackages = [];
+// Message shapes of the tool's core and the UIA extension that state a dependency change. Each feeds one entry per
+// package into `effectiveVersions` and the `Packages:` line; a message no shape matches stays on the line verbatim.
+const PACKAGE_SHAPES = [
+  // "Updated package 'X' from 'a' to 'b'." / "Upgraded package 'X' from version 'a' to compatible .NET Core version 'b'"
+  { re: /package '([^']+)' from (?:version )?'([^']+)' to (?:compatible \.NET Core version )?'([^']+)'/i, fields: (m) => [m[1], { from: m[2], to: m[3] }] },
+  // "Using existing project version 'a' for 'X'.Update is not needed." — the project already holds the target or a newer version
+  { re: /Using existing project version '([^']+)' for '([^']+)'/i, fields: (m) => [m[2], { from: m[1], to: m[1], unchanged: true }] },
+  // "Cannot use version 'r' for 'X'. Minimum required version is 'm'. Using minimum version." — the request was below the
+  // tool's minimum and raised to it; the "Updated package" note that follows carries the resulting `to`
+  { re: /Cannot use version '([^']+)' for '([^']+)'\. Minimum required version is '([^']+)'/i, fields: (m) => [m[2], { requested: m[1], minimum: m[3] }] },
+];
+function recordPackage(message) {
+  for (const shape of PACKAGE_SHAPES) {
+    const m = message.match(shape.re);
+    if (!m) continue;
+    const [pkg, fields] = shape.fields(m);
+    effectiveVersions[pkg] = { ...effectiveVersions[pkg], ...fields };
+    return true;
+  }
+  return false;
+}
+function pkgEntry([pkg, v]) {
+  if (v.unchanged) return `${pkg} ${v.to} (unchanged)`;
+  const raised = v.requested && v.minimum ? `requested ${v.requested}, raised to the tool minimum ${v.minimum}` : '';
+  if (v.to) return `${pkg} ${v.from} → ${v.to}${raised ? ` (${raised})` : ''}`;
+  // The raise warning arrived without the "Updated package" note that normally follows it.
+  return `${pkg} ${raised || `requested ${v.requested}`}`;
+}
 const typeIssues = [];
 const stepFailures = [];
 const actionRequired = [];
@@ -175,15 +210,15 @@ for (const r of results) {
   if (id === 'PROJECT-FRAMEWORK-UPDATE') frameworkChanged = true;
   if (id === 'RESTORE-PACKAGE-UPGRADE' || id.endsWith('-PACKAGE-UPGRADE') || id.endsWith('-PACKAGE-MIGRATION')) {
     packages.push(entry.message);
-    // "Updated package 'X' from 'a' to 'b'." / "Upgraded package 'X' from version 'a' to compatible .NET Core version 'b'"
-    const m = entry.message.match(/package '([^']+)' from (?:version )?'([^']+)' to (?:compatible \.NET Core version )?'([^']+)'/i);
-    if (m) effectiveVersions[m[1]] = { from: m[2], to: m[3] };
+    if (!recordPackage(entry.message)) unparsedPackages.push(entry.message);
   }
   if (critical || WARNING_LEVEL_BLOCKERS.has(id)) blockers.push(entry);
   // Per-file issues: the type/load/compile/validation rules at warning or error, plus any workflow a step could
   // not process (a step rule, or any other non-activity error, carrying a file). The run continued without them.
-  const perFileIssue = lvl !== 'note' && (TYPE_ISSUES.has(id)
-    || (entry.file && (fam === 'step' || (lvl === 'error' && fam !== 'uia' && fam !== 'productivity' && !isActivityScoped(id)))));
+  // Also: a restore issue the user chose to ignore (project-level, warning), and any non-note result of an unknown
+  // rule that names a workflow: it is about that file and above note level, so it needs a look.
+  const perFileIssue = lvl !== 'note' && !critical && (TYPE_ISSUES.has(id) || RESTORE_ISSUES.has(id)
+    || (entry.file && (fam === 'step' || fam === 'other' || (lvl === 'error' && fam !== 'uia' && fam !== 'productivity' && !isActivityScoped(id)))));
   if (perFileIssue) typeIssues.push(entry);
   // A whole step that threw at warning level: the run went on without it. An extension step here means that
   // extension migrated nothing; not a blocker, but the first thing to read after the status line.
@@ -212,15 +247,25 @@ for (const r of results) {
       uia.workflow.push(entry);
     }
   } else if (fam === 'productivity') {
+    // One result per activity carries the outcome: error = left classic; note = clean. A warning means the activity
+    // was rewritten with a caveat the message states (typically an unset ConnectionId). It is counted here as
+    // migrated AND as needing attention, like a UIA activity with a warning. Owner decision pending (Mail and
+    // GSuite package owners): the tool's own GENERAL-REPORTING line counts the same activity as "partially
+    // successful", not "successful"; if that is the intended reading, move the warning case to notMigrated.
     if (lvl === 'error') productivity.notMigrated.push(entry);
-    else if (lvl === 'warning') productivity.warnings.push(entry);
-    else productivity.migrated += 1;
+    else {
+      productivity.migrated += 1;
+      if (lvl === 'warning') productivity.warnings.push(entry);
+    }
   }
 }
 
 // Status keys off rule IDs as well as levels: the UIA extension reports unmigrated
 // activities at note or warning level, so a level-only reading would call them success.
-const leftovers = uia.notMigrated.length + uia.partial.length + uia.warnings.length + productivity.notMigrated.length + productivity.warnings.length + actionRequired.length + typeIssues.length + stepFailures.length;
+// Workflow-scoped UIA results above note level are about a whole file the extension could not treat as usual;
+// they need a look like any per-file issue.
+const uiaWorkflowIssues = uia.workflow.filter((e) => e.level !== 'note');
+const leftovers = uia.notMigrated.length + uia.partial.length + uia.warnings.length + uiaWorkflowIssues.length + productivity.notMigrated.length + productivity.warnings.length + actionRequired.length + typeIssues.length + stepFailures.length;
 let status;
 let statusReason = '';
 if (hasCriticalError || blockers.length > 0) status = 'failed';
@@ -234,7 +279,10 @@ else if (results.length === 0) {
     : 'a project without workflows, one whose every workflow failed earlier, or a tool build that reports validation under other rule ids, listed below under rules outside the known families';
   status = byLevel.error > 0 ? 'failed' : 'unknown';
   statusReason = `validation never reported: ${why}${byLevel.error > 0 ? `; ${byLevel.error} error-level result(s) explain it, see the per-file issues` : ''}`;
-} else if (byLevel.error > 0 || byLevel.warning > 0 || leftovers > 0) status = 'partial';
+} else if (leftovers > 0) status = 'partial';
+// Every error and every file-scoped warning is in one of the lists above or in blockers. A warning that lands in no
+// list is project-level information (a version raised to the tool minimum, an extension's summary line) and does not
+// make the run partial.
 else status = 'success';
 
 // Two report sets. "Left classic": UIA activities the tool did not migrate; they compile and run as
@@ -247,9 +295,11 @@ const activityKey = (e) => `${e.file}::${e.guid || e.activity || e.rule}`;
 // An activity left classic may also carry property-level results that hold its reason; every result about
 // such an activity goes to its left-classic slot, so the activity is counted once and keeps its reason.
 const leftClassicKeys = new Set(uia.notMigrated.map(activityKey));
+// A whole step that threw (stepFailures) is a needs-attention item too: an extension step there migrated nothing,
+// and a report that promoted the run to success on an empty attention list would hide it.
 const flagged = [...new Set([
-  ...uia.notMigrated, ...uia.partial, ...uia.warnings, ...productivity.notMigrated, ...productivity.warnings,
-  ...actionRequired, ...typeIssues,
+  ...uia.notMigrated, ...uia.partial, ...uia.warnings, ...uiaWorkflowIssues, ...productivity.notMigrated, ...productivity.warnings,
+  ...actionRequired, ...typeIssues, ...stepFailures,
 ])];
 const leftClassicResults = flagged.filter((e) => leftClassicKeys.has(activityKey(e)));
 const attentionResults = flagged.filter((e) => !leftClassicKeys.has(activityKey(e)));
@@ -323,7 +373,7 @@ if (wantJson) {
 
 const loc = (e) => `${e.file || '(project)'}${e.activity ? ': ' + e.activity : ''}${e.property ? ' / ' + e.property : ''}`;
 const itemLine = (e) => `- ${loc(e)} — ${e.reason || e.rule}${e.message ? ': ' + e.message : ''}`;
-const pkgLine = Object.entries(effectiveVersions).map(([p, v]) => `${p} ${v.from} → ${v.to}`).join('; ') || packages.join('; ');
+const pkgLine = [...Object.entries(effectiveVersions).map(pkgEntry), ...unparsedPackages].join('; ');
 
 // --- short summary (stdout) --------------------------------------------------
 const out = [];

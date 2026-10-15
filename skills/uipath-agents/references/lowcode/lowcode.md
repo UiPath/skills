@@ -62,7 +62,7 @@ Standard workflow for any low-code agent task:
 6. **Refresh solution resources** — `uip solution resources refresh --output json` if any capability needs solution-level files (external tools, IS tools, index contexts, memory spaces, escalations).
 7. **Upload** — `uip solution upload . --output json` (bundles and uploads in one pass; with user consent per Rule 6).
 
-To **run the agent end-to-end** (test it live, not just upload), use `uip agent debug <AGENT_PROJECT_DIR> --inputs '<json>' --output json` — it uploads the enclosing solution and runs it on Studio Web in one step, so it's an alternative to the Upload step, not an addition. Executes the agent for real — confirm with the user first (Rule 6). See [debug.md](debug.md).
+To **run the agent end-to-end** (test it live, not just upload), use `uip agent debug <AGENT_PROJECT_DIR> --inputs '<json>' --output json` — it uploads the enclosing solution and runs it on Studio Web in one step, so it's an alternative to the Upload step, not an addition. Bind a local file to a `job-attachment` input with `--attachment <FIELD>=<FILE_PATH>` (repeatable). Executes the agent for real — confirm with the user first (Rule 6). See [debug.md](debug.md).
 
 Capabilities are **orthogonal**: there is no ordering requirement among them. Adding a tool and an escalation in parallel is safe — they do not interact at the file level. Validate and refresh once after all capability edits are complete, not after each one.
 

@@ -26,11 +26,6 @@
       "_doc": "Pending -> Running -> Faulted; the ~66s Running-to-Faulted gap reflects the 60s SignalR establish wait."
     },
     {
-      "match": "or jobs traces d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
-      "file": "725e7d1c2c.json",
-      "_doc": "Two spans: RobotJob (TimeoutException stack) and the Apps Request Trigger span (FullTypeName UiPath.WorkflowEvents.Activities.AppRequestTrigger, ConnectionMode=SignalR). No invoke-workflow child span \u2014 the trigger never received a request because the channel never established."
-    },
-    {
       "match": "traces spans get --job-key d72c5e81-3a94-4f0b-8e21-6c9a0f4b7d13",
       "file": "725e7d1c2c.json",
       "_doc": "Alternate trace-retrieval form; same span payload."

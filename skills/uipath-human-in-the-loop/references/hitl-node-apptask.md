@@ -4,6 +4,10 @@ The AppTask variant uses a deployed coded app (Studio Web) as the task form. Nod
 
 ---
 
+<!--skill-flavor:flow-sdk-apptask-gate:start-->
+**Builder-SDK Flow projects (`.flow.ts`) — the default:** author a human task with `hitl({...})` in `<Name>.flow.ts` through the `uipath-maestro-flow` skill — see [hitl.md](../../uipath-maestro-flow/references/hitl.md). `compile` emits the node and overwrites the compiled `.flow`, so never write the JSON below into it by hand; it applies to a JSON-authored `.flow`.
+
+<!--skill-flavor:flow-sdk-apptask-gate:end-->
 ## App Lookup and Solution Registration
 
 Before writing the node JSON, resolve the app and register it with the solution. All API calls use auth from the stored login session (`uip login`).
