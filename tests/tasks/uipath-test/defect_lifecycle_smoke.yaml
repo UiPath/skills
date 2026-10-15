@@ -1,17 +1,17 @@
 task_id: skill-test-defect-lifecycle-smoke
 description: >
   Smoke test: agent uses the uipath-test skill to drive a defect through its
-  lifecycle on a seeded failed result in CLAIM — raise it from the failed
+  lifecycle on a seeded failed result — raise it from the failed
   test case log, set its priority and link it by hand to a tracker issue,
   report the tracker link, then delete it. Asserts that the agent derives
   `--execution-id` and the test case (`--test-case-id` or `--test-case-key`)
   from the run's failed logs rather
   than guessing, uses `defects update --external-reference/--external-link`
   (the only way to link a defect on a project with no tracker connected),
-  and deletes with `--yes`. The task owns the `EVFX-DEFECT-*` namespace;
-  `pre_run` seeds the failed result once and, on later runs, only deletes a
-  defect a previous run left on it, so every run starts from a result with
-  no defect.
+  and deletes with `--yes`. The task owns the `EVFX-DEFECT-*` namespace:
+  `pre_run` creates a fresh `EVFX-DEFECT-<stamp>-<hex>` project per run with
+  one failed result and no defect (key in `project-key.txt`), and `post_run`
+  deletes it, so concurrent runs never share the one-defect-per-result slot.
 tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case]
 
 run_limits:
@@ -21,9 +21,9 @@ run_limits:
 pre_run:
   - command: |
       python3 - <<'PYEOF'
-      import json, subprocess, sys
-      P, SET, CASE = "CLAIM", "EVFX-DEFECT-SET", "EVFX-DEFECT-TC1"
-      ZERO = "00000000-0000-0000-0000-000000000000"
+      import datetime, json, secrets, subprocess, sys
+      PREFIX = "EVFX-DEFECT-"
+      now = datetime.datetime.now(datetime.timezone.utc)
 
       def fail(msg):
           print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
@@ -39,73 +39,74 @@ pre_run:
           except Exception:
               return {}
 
-      def by_name(label, kind, name):
-          for x in call(label, "tm", kind, "list", "--project-key", P,
+      # Orphan sweep: a run that died before post_run strands its project.
+      # Only projects stamped more than 6 hours ago, so a concurrent run
+      # (several models run the nightly at once) keeps its own.
+      for p in call("sweep", "tm", "project", "list", "--filter", PREFIX).get("Data") or []:
+          name, key = p.get("Name") or "", p.get("ProjectKey")
+          try:
+              stamp = datetime.datetime.strptime(name[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
+          except ValueError:
+              continue
+          if key and now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+              call("sweep.delete", "tm", "project", "delete", "--project-key", key, "--yes")
+
+      # A fresh project per run: the failed result (one defect per result)
+      # is never shared with a concurrent run.
+      P = "EVDF" + secrets.token_hex(2).upper()
+      name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      if call("project.create", "tm", "project", "create", "--name", name,
+              "--project-key", P).get("Result") != "Success":
+          fail(f"could not create project {name} ({P})")
+      with open("project-key.txt", "w") as f:
+          f.write(P + "\n")
+
+      def created(kind, name):
+          call(f"{kind}.create", "tm", kind, "create", "--project-key", P, "--name", name)
+          for x in call(f"{kind}.find", "tm", kind, "list", "--project-key", P,
                         "--filter", name).get("Data") or []:
               if x.get("Name") == name:
                   return x
-          return None
-
-      def ensure(kind, name):
-          found = by_name(f"{kind}.find", kind, name)
-          if not found:
-              call(f"{kind}.create", "tm", kind, "create", "--project-key", P,
-                   "--name", name)
-              found = by_name(f"{kind}.refind", kind, name)
-          if not found:
-              fail(f"could not create or find {name}")
-          return found
-
-      ts = ensure("testsets", SET)
-      tc = ensure("testcases", CASE)
-      call("set.add", "tm", "testcases", "add", "--test-set-key", ts["TestSetKey"],
-           "--test-case-keys", tc["TestCaseKey"])
+          fail(f"could not create {name}")
 
       def failed_logs(eid):
-          return [l for l in call(f"logs.{eid[:8]}", "tm", "executions", "testcaselogs",
-                                  "list", "--project-key", P, "--execution-id", eid,
+          return [l for l in call("logs", "tm", "executions", "testcaselogs", "list",
+                                  "--project-key", P, "--execution-id", eid,
                                   "--only-failed").get("Data") or []
                   if l.get("Result") == "Failed"]
 
-      # Guard on the property the task reads: one finished run whose failed
-      # result carries NO defect. A defect a previous run left behind is this
-      # task's own scratch output, so delete it rather than seed another run.
-      for e in call("ex.list", "tm", "executions", "list", "--project-key", P,
-                    "--test-set-id", ts["Id"]).get("Data") or []:
-          if (e.get("ExecutionStatus") or e.get("Status")) != "Finished":
-              continue
-          logs = failed_logs(e["Id"])
+      def seed_failed_run(ts, tc):
+          call("set.add", "tm", "testcases", "add", "--test-set-key", ts["TestSetKey"],
+               "--test-case-keys", tc["TestCaseKey"])
+          eid = (call("run", "tm", "testsets", "run", "--test-set-key", ts["TestSetKey"],
+                      "--execution-type", "manual").get("Data") or {}).get("ExecutionId")
+          if not eid:
+              fail("could not start a manual execution")
+          call("finish", "tm", "testcaselog", "finish", "--project-key", P,
+               "--execution-id", eid, "--test-case-id", tc["Id"], "--result", "Failed",
+               "--has-error", "true", "--executed-by", "eval-fixture@uipath.com")
+          logs = failed_logs(eid)
           if not logs:
-              continue
-          for l in logs:
-              did = l.get("DefectId")
-              if did and did != ZERO:
-                  call("defect.cleanup", "tm", "defects", "delete", "--project-key", P,
-                       "--defect-id", did, "--yes")
-          left = [l.get("DefectId") for l in failed_logs(e["Id"])
-                  if l.get("DefectId") not in (None, "", ZERO)]
-          if left:
-              fail(f"leftover defect(s) {left} still on the failed result after cleanup")
-          print(f"FIXTURE: reusing failed result in {e['Id']}", flush=True)
-          raise SystemExit(0)
+              fail(f"execution {eid} has no failed result after finish")
+          return eid, logs[0]
 
-      r = call("run", "tm", "testsets", "run", "--test-set-key", ts["TestSetKey"],
-               "--execution-type", "manual")
-      eid = (r.get("Data") or {}).get("ExecutionId")
-      if not eid:
-          fail("could not start a manual execution")
-      call("finish", "tm", "testcaselog", "finish", "--project-key", P,
-           "--execution-id", eid, "--test-case-id", tc["Id"], "--result", "Failed",
-           "--has-error", "true", "--executed-by", "eval-fixture@uipath.com")
-      if not failed_logs(eid):
-          fail(f"execution {eid} has no failed result after finish")
-      print(f"FIXTURE: seeded failed result in {eid}", flush=True)
+      ts = created("testsets", "EVFX-DEFECT-SET")
+      tc = created("testcases", "EVFX-DEFECT-TC1")
+      eid, _ = seed_failed_run(ts, tc)
+      print(f"FIXTURE: seeded failed result in {eid} (project {P})", flush=True)
       PYEOF
     timeout: 280
 
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 180
+
 initial_prompt: |
-  The last run of the `EVFX-DEFECT-SET` test set in my Test Manager project
-  CLAIM failed on `EVFX-DEFECT-TC1`. Please raise a defect for that failure,
+  The key of my Test Manager project is in project-key.txt in this folder. The
+  last run of the `EVFX-DEFECT-SET` test set in that project failed on
+  `EVFX-DEFECT-TC1`. Please raise a defect for that failure,
   set its priority to High, and link it to the Jira issue CLAIM-4242
   (https://example.atlassian.net/browse/CLAIM-4242) — we don't have Jira
   connected, I filed it by hand. Show me the tracker link Test Manager now has
@@ -130,9 +131,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Complete create: `uip tm defects create --project-key CLAIM --execution-id <uuid>` with `--test-case-id <uuid>` or `--test-case-key <key>`"
+    description: "Complete create: `uip tm defects create --project-key <key> --execution-id <uuid>` with `--test-case-id <uuid>` or `--test-case-key <key>`"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--project-(key\s+CLAIM|id\s+\S))(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--test-case-(id|key)\s+\S)uip\s+tm\s+defects?\s+create\b'
+    command_pattern: '(?=[\s\S]*--project-(key|id)\s+\S)(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--test-case-(id|key)\s+\S)uip\s+tm\s+defects?\s+create\b'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -176,7 +177,7 @@ success_criteria:
     command: |
       python3 - <<'PYEOF'
       import json, subprocess
-      P, SET = "CLAIM", "EVFX-DEFECT-SET"
+      P, SET = open("project-key.txt").read().strip(), "EVFX-DEFECT-SET"
       ZERO = "00000000-0000-0000-0000-000000000000"
       def call(*a):
           out = subprocess.run(["uip", *a, "--output", "json"],

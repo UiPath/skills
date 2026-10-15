@@ -143,7 +143,7 @@ success_criteria:
   - type: command_executed
     description: "Agent read the requirements at risk with `get-related --object-type Requirement`"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--defect-id\s+\S)(?=[\s\S]*--object-type\s+["\x27]?Requirement\b)uip\s+tm\s+defects?\s+get-related\b'
+    command_pattern: '^(?=[\s\S]*\bRequirement\b)[\s\S]*?uip\s+tm\s+defects?\s+get-related\b(?=[\s\S]*--defect-id\s+\S)(?=[\s\S]*--object-type\s+\S)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
