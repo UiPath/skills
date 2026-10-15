@@ -203,6 +203,9 @@ and say in your summary that the runtime filter is the CEQL string.
 
 For a Data Fabric operation not listed, drop objects whose display name ends
 in `(Preview)` or `(Deprecated)`, then prefer a path starting with `/v2/`.
+A **folder** entity is the exception: only the `*_V3` objects pick one, so
+author those as V2 elements — see
+[v2-connector-nodes.md](v2-connector-nodes.md#1-get-the-element).
 
 `send-mail-v2` defaults its `saveAsDraft` query parameter to `true`, which
 saves a draft instead of sending. Add a `target="query"` `saveAsDraft` input

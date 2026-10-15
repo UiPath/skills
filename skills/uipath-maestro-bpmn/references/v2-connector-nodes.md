@@ -51,7 +51,14 @@ uip maestro bpmn registry get Intsvc.EventTrigger \
   `uip is resources describe` (activities) or `uip is triggers describe`
   (triggers, waits), with `-f` for any picker, as for Flow and Case.
 - A **resource picker** (a Data Fabric folder entity on `folderEntityName`)
-  takes the resource's name. The CLI finds it in the solution or on the
+  takes the resource's name. On Data Fabric the folder-entity picker is on
+  the `*_V3` objects (`CreateEntityRecord_V3`, `GetEntityRecord_V3`,
+  `QueryEntityRecords_V3`, `UpdateEntityRecord_V3`, `DeleteEntityRecord_V3`,
+  the `*Experimental_V3` objects, and the `EntityTriggers_V3` trigger), which
+  `uip is resources list` labels `(Preview)` or `(Experimental)`; the
+  `<EntityName>` objects are tenant entities and have no picker. Use the
+  `*_V3` objects for a folder entity even though the V1 table below says to
+  skip `(Preview)` objects. The CLI finds it in the solution or on the
   tenant, binds it into `--solution-folder`, and reads it through root
   bindings. When the name is in several folders the command fails
   `invalid_argument`, `A resource picker in --input-details did not resolve`,
@@ -112,17 +119,22 @@ trigger), and one resource for each solution resource a picker bound. A V2
 trigger start is an entry point of its own, so a process whose only start is a
 connector trigger refreshes and packs without a manual start.
 
-To debug from the trigger, name its start event; the run waits for a real
-event, so cause one (update a record in the picked entity) after the debug
-session starts:
+To debug from the trigger, name its start event. A trigger debug replays a
+recent event rather than waiting for one, so cause the event (create or
+update a record in the picked entity) **just before** you start; with none
+the run faults `102003 DebugTriggerNoMatches`:
 
 ```bash
 uip maestro bpmn debug <project-path> --entry-point <trigger-start-event-id>
 ```
 
 Without `--entry-point` the debug starts at the first entry point, which is
-the manual start when there is one. A wait is debugged from the manual start;
-cause its event while the wait is in progress.
+the manual start when there is one. A wait is debugged from the manual start,
+and its event has to happen while the wait is in progress. Debug's own
+progress lines can lag behind the run, so read where the instance is with
+`uip maestro bpmn debug-instance variables-all <instance-id>` (the instance id
+is in the debug log: `--log-level debug --log-file <file>`), and cause the
+event once the wait element shows as running.
 
 These need a CLI that has `registry get --input-details` and
 `bpmn debug --entry-point`. On an older CLI (`unknown option
