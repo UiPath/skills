@@ -86,7 +86,7 @@ The brief is self-contained — it carries the Step-1b Purpose and the pinned I/
 
 Shared invariants — [create-inline-common.md § Step 3](../create-inline-common.md#step-3--binding-invariants): two bindings `resource:"process"`, **`resourceSubType:"Agent"`**, shared `resourceKey="solution_folder.<AgentName>"`; `name` default `<AgentName>`, `folderPath` default `""` (the sentinel/`""` decoupling and deploy-provisioning rationale live there).
 
-**Agent debug delta:** `uip maestro case debug` packages the **entire solution directory** (`buildSolutionPackageFromDir(<solutionDir>)`) and **provisions agent siblings** — an inline agent resolves in a debug session (unlike Api siblings, which need a full deploy — [api-workflow/planning.md § Step 3](../api-workflow/planning.md#creating-an-api-workflow-inline)).
+**Agent debug delta:** `uip maestro case debug` packages the **entire solution directory** (`buildSolutionPackageFromDir(<solutionDir>)`) but does **not** provision agent siblings — the task faults with incident `170007` (verified 2026-10-12), as Api siblings do ([api-workflow/planning.md § Step 3](../api-workflow/planning.md#creating-an-api-workflow-inline)). Verify an inline agent's runtime behavior via a full solution deploy, never via `case debug`.
 
 ### Coded agents — default low-code; gated; integration caveat
 
