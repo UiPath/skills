@@ -76,14 +76,19 @@ success_criteria:
       python3 - <<'PYEOF'
       import json, subprocess, sys
       NAME = "EVFX-PERMPRE-PROJECT"
+      import time
       def call(*a):
           r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
           o = r.stdout or ""
           try: return json.loads(o[o.index("{"):])
           except Exception: return {}
+      # list --filter is eventually consistent under parallel smoke load; retry.
       pk = ""
-      for p in call("tm","project","list","--filter",NAME).get("Data") or []:
-          if p.get("Name") == NAME: pk = p.get("ProjectKey"); break
+      for _ in range(6):
+          for p in call("tm","project","list","--filter",NAME).get("Data") or []:
+              if p.get("Name") == NAME: pk = p.get("ProjectKey"); break
+          if pk: break
+          time.sleep(3)
       if not pk:
           print("NO_PROJECT"); sys.exit(1)
       d = call("tm","project-permissions","get","--project-key",pk)
