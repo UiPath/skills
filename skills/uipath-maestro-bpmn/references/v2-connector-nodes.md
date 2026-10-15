@@ -232,8 +232,10 @@ event once the wait element shows as running.
 
 These need a CLI that has `registry get --input-details` and
 `bpmn debug --entry-point`. On an older CLI (`unknown option
-'--input-details'`), author the V1 template and say in the notes that the
-node is V1.
+'--input-details'`), author the V1 template by
+[registry-workflow.md §3](registry-workflow.md#3-connector-intsvc-enrichment)
+in full — one `target="body"` input holding the whole body, not one input per
+field — and say in the notes that the node is V1.
 
 ## `--input-details` reference
 

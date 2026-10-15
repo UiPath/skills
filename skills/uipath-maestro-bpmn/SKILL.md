@@ -286,7 +286,23 @@ For registry-evidence-only tasks, follow the command-first recipe in
    by the HITL template's `<uipath:output ... var="...">` (for example
    `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
    variable.
-   For an `Intsvc.*` activity whose `inputTarget` is `body`
+   **Every new connector node is V2, in every workflow**, HTTP requests
+   (`Intsvc.UnifiedHttpRequest`) and external agents included: build it with
+   `registry get --input-details` and paste `Data.V2` as it is. In an existing
+   workflow without `<uipath:intsvcActivityConfig version="v2" />` never add
+   the marker, and leave its V1 nodes alone unless the task asks (a V1 trigger
+   or wait faults at run time, so rebuild one as V2 when the task touches it).
+   If `registry get` fails `unknown option '--input-details'`, the CLI
+   predates V2 nodes: stop on a trigger, wait, HTTP request or external agent
+   and tell the user to update `uip`; only a plain activity falls back to the
+   V1 template. See
+   [references/v2-connector-nodes.md](references/v2-connector-nodes.md).
+<!--skill-flavor:v2-solution-resources-refresh:start-->
+   After `bpmn refresh`, run `uip solution resources refresh` so the
+   connections become solution resources.
+<!--skill-flavor:v2-solution-resources-refresh:end-->
+   When filling the V1 template (an older CLI, or reading an existing V1 node)
+   for an `Intsvc.*` activity whose `inputTarget` is `body`
    (`Intsvc.ActivityExecution` and its async, agent, and workflow variants),
    these rules override the template's `InputNotes`, `DiscoveryNotes`, and
    `ContextFieldNotes`:
@@ -316,22 +332,6 @@ For registry-evidence-only tasks, follow the command-first recipe in
      value without a leading `=` is a literal: write `"=vars.<id>"`, and make
      text mixed with variables one `=js:` expression
      (`"=js:'Severity: ' + vars.Var_Severity"`).
-   **Every new connector node is V2, in every workflow.** Get each from
-   `uip maestro bpmn registry get <type> --connection-id <id> --object-name
-   <obj> [--operation <OP>] --input-details '<json>' --solution-folder <dir>`
-   and paste `Data.V2` as it is, with resource pickers (a Data Fabric folder
-   entity) by name and any value that reads a variable as `=js:<expression>`.
-   In an existing workflow without `<uipath:intsvcActivityConfig version="v2" />`
-   the V2 node works as it is: never add the marker there, and leave its
-   existing V1 nodes alone unless the task asks (a V1 trigger or wait faults
-   at run time, so rebuild one as V2 when the task touches it). After
-   `bpmn refresh`, run `uip solution resources refresh` so the connections
-   become solution resources.
-   Every HTTP request is `Intsvc.UnifiedHttpRequest` (built the same way);
-   never author the legacy `Intsvc.HttpExecution`.
-   External agents and automations (`Intsvc.AsyncExecution`,
-   `Intsvc.AsyncWorkflowExecution`) are V2 elements too. See
-   [references/v2-connector-nodes.md](references/v2-connector-nodes.md).
    For an Integration Service draft or boundary handoff the user asked for (a
    request that only says to validate is not one), emit **only** the
    `.bpmn` plus the notes file — do NOT create the four generated package files
