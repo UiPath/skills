@@ -13,12 +13,11 @@ import re
 import sys
 from pathlib import Path
 
-from report_evidence import run_review_cli
+from report_evidence import parse_final_grade, run_review_cli
 
 TABLE_ROW = re.compile(r"^\s*\|\s*([CWI])-(?:[A-Z]-)?\d+\s*\|(.*)$", re.MULTILINE)
 VALIDATION_ROW = re.compile(r"^\s*-\s*\[V-([EW])-\d+\](.*)$", re.MULTILINE)
 RULE_ID = re.compile(r"(?<![A-Za-z0-9_])[A-Z][A-Z0-9]+(?:_[A-Z0-9]+)+(?![A-Za-z0-9_])")
-FINAL_GRADE = re.compile(r"\*\*Final grade: ([ABCDF])\*\*\s*\Z")
 GRADES = "ABCDF"
 MIN_REPORT_BYTES = 1500
 
@@ -92,11 +91,10 @@ def main() -> None:
         if any(r[0] == band for r in table_rows):
             failures.append(f"forbidden band {band} present")
 
-    m = FINAL_GRADE.search(text)
-    if not m:
+    final = parse_final_grade(text)
+    if not final:
         failures.append("no `**Final grade: X**` footer as the last line")
     else:
-        final = m.group(1)
         print(f"Final grade {final}")
         allowed = spec.get("allowed_grades", list(GRADES))
         if final not in allowed:
