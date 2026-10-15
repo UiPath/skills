@@ -302,6 +302,18 @@ def test_native_filter_hop_through_ambiguous_script(tmp_path: Path, script: str)
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_native_filter_hop_to_constant_same_named_output_fails(tmp_path: Path) -> None:
+    def mutate(flow):
+        flow["nodes"].append(_script("normalizeInvoice", CONSTANT_SAME_NAMED_SCRIPT))
+        for rows in _native_rows(flow):
+            for row in rows:
+                row["value"] = "=js:$vars.normalizeInvoice.output.invoiceNumber"
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode != 0
+    assert "reaches $vars.…invoiceNumber" in result.stdout + result.stderr
+
+
 def test_native_filter_hop_to_nothing_still_fails(tmp_path: Path) -> None:
     """Following the hop must not degrade into accepting any `$vars` reference."""
 
@@ -340,6 +352,7 @@ def _script(node_id: str, script: str) -> dict:
     return {"id": node_id, "type": "core.action.script", "inputs": {"script": script}}
 
 
+CONSTANT_SAME_NAMED_SCRIPT = "return { invoiceNumber: \"MCS-9999-00000\" };"
 NORMALIZE_SCRIPT = (
     "const n = String($vars.start.output.invoiceNumber).trim().toUpperCase(); "
     "return { value: n.startsWith('MCS-') ? n : 'MCS-' + n };"
@@ -413,6 +426,24 @@ def test_connector_hop_through_ambiguous_script(tmp_path: Path, script: str) -> 
             "const f = (o) => o.v;\n"
             "return { queryExpression: `invoiceNumber = '${f({ v: n })}'` };",
             id="braces-in-interpolation",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "let n = \"\"; n += $vars.start.output.invoiceNumber; "
+            "return { queryExpression: \"invoiceNumber = '\" + n + \"'\" };",
+            id="compound-assignment",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "return { /* CEQL filter */ queryExpression: "
+            "\"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            id="comment-before-key",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "return { queryExpression: \"\", ...{ queryExpression: "
+            "\"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" } };",
+            id="overriding-spread",
         ),
         pytest.param(
             "=js:$vars.buildQuery.output.queryExpression",
@@ -505,6 +536,23 @@ def test_connector_hop_spellings_pass(tmp_path: Path, expression: str, script: s
             ),
             id="absent-output",
         ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            (
+                _script("normalizeInvoice", CONSTANT_SAME_NAMED_SCRIPT),
+                _script(
+                    "buildQuery",
+                    "return { queryExpression: \"invoiceNumber = '\" + "
+                    "$vars.normalizeInvoice.output.invoiceNumber + \"'\" };",
+                ),
+            ),
+            id="constant-same-named-output",
+        ),
+        pytest.param(
+            "=js:\"invoiceNumber = '\" + $vars.normalizeInvoice.output.invoiceNumber + \"'\"",
+            (_script("normalizeInvoice", CONSTANT_SAME_NAMED_SCRIPT),),
+            id="constant-same-named-output-direct",
+        ),
     ],
 )
 def test_connector_query_not_from_the_input_fails(
@@ -546,6 +594,11 @@ def test_connector_query_not_from_the_input_fails(
             "const n = String($vars.start.output.invoiceNumber).replace(/'/g, \"''\"); "
             "return { queryExpression: \"invoiceNumber = '\" + n };",
             id="escaped-value-no-closing-quote",
+        ),
+        pytest.param(
+            "return { queryExpression: `invoiceNumber = '${String($vars.start.output.invoiceNumber)"
+            ".replace(/'/g, \"''\")}` };",
+            id="template-quote-only-in-interpolation",
         ),
     ],
 )

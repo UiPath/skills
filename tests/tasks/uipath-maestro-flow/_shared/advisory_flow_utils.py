@@ -43,7 +43,9 @@ JS_CONTINUES_AFTER = set("+-*/%?:.&|=<>,([")
 JS_CONTINUES_BEFORE = set("+-*/%?:.&|=<>,")
 JS_UNDEFINED = "undefined"
 JS_IDENTIFIER = re.compile(r"(?<![\w$.])[A-Za-z_$][\w$]*")
-JS_ASSIGNED = re.compile(r"(?<![\w$.])([A-Za-z_$][\w$]*)\s*=(?![=>])")
+JS_ASSIGNED = re.compile(
+    r"(?<![\w$.])([A-Za-z_$][\w$]*)\s*(?:\*\*|<<|>>>?|&&|\|\||\?\?|[-+*/%&|^])?=(?![=>])"
+)
 JS_INLINE_LIMIT = 20_000
 JS_RETURN_OBJECT = re.compile(r"\breturn\s*\{")
 JS_ENTRY_KEY = re.compile(r"\s*(?:([A-Za-z_$][\w$]*)|\"([^\"]*)\"|'([^']*)')\s*(:)?")
@@ -204,7 +206,8 @@ def interpolation_end(source: str, index: int) -> int:
 def js_tokens(source: str) -> list[tuple[int, int, str, str]]:
     """``(start, end, kind, body)`` of each comment, regex, string and template in JS ``source``.
 
-    ``kind`` is the opening quote for a string or template; ``body`` is its unescaped contents.
+    ``kind`` is the opening quote for a string or template; ``body`` is its unescaped contents,
+    each `${…}` in a template reduced to `${}`.
     """
     tokens: list[tuple[int, int, str, str]] = []
     index, previous = 0, ""
@@ -242,7 +245,7 @@ def js_tokens(source: str) -> list[tuple[int, int, str, str]]:
             while index < len(source) and source[index] != char:
                 if char == "`" and source.startswith("${", index):
                     close = interpolation_end(source, index)
-                    body.append(source[index:close])
+                    body.append("${}")
                     index = close
                     continue
                 if source[index] == "\\" and index + 1 < len(source):
@@ -415,7 +418,7 @@ def script_output(node: dict[str, Any] | None, key: str | None) -> str | None:
     """The source of ``key`` in a Script's `return { … }`, with local names inlined.
 
     `undefined` when no returned object names ``key``. None when the node is no
-    Script, a returned object spreads another, or the trace is ambiguous (two
+    Script, a returned object spreads, or the trace is ambiguous (two
     returns name ``key``, a name is bound or assigned twice); callers then fall
     back to every string the node reads.
     """
@@ -430,12 +433,15 @@ def script_output(node: dict[str, Any] | None, key: str | None) -> str | None:
     spreads, values = False, []
     for returned in returns:
         for start, end in object_entries(code, returned.end() - 1):
-            spreads = spreads or code[start:end].lstrip().startswith("...")
+            start = end - len(code[start:end].lstrip())
+            spreads = spreads or code.startswith("...", start)
             entry = JS_ENTRY_KEY.match(script, start, end)
             if entry and key in entry.groups()[:3]:
                 values.append(script[entry.end():end] if entry.group(4) else key)
+    if spreads:
+        return None
     if not values:
-        return None if spreads else JS_UNDEFINED
+        return JS_UNDEFINED
 
     bindings = js_bindings(script, code)
     assigned = Counter(JS_ASSIGNED.findall(code))
@@ -456,16 +462,17 @@ def reaches_field(value: Any, field: str, nodes: list[dict[str, Any]], seen: set
         if path in seen:
             continue
         seen.add(path)
+        ref = OUTPUT_REF.match(path)
+        entry = script_output(by_id.get(ref.group(1)), ref.group(2) or ref.group(3)) if ref else None
+        if entry is not None:
+            if reaches_field(entry, field, nodes, seen):
+                return True
+            continue
         if references_field(path, field):
             return True
 
-        ref = OUTPUT_REF.match(path)
-        entry = script_output(by_id.get(ref.group(1)), ref.group(2) or ref.group(3)) if ref else None
         # Node-level fallback passes a dead read, e.g. `const out = {…constant…}; return out;`.
-        if entry is None:
-            if any(references_field(source, field) for source in upstream_sources(path, nodes)):
-                return True
-        elif reaches_field(entry, field, nodes, seen):
+        if any(references_field(source, field) for source in upstream_sources(path, nodes)):
             return True
     return False
 
@@ -488,15 +495,15 @@ def hop_quotes_column(path: str, column: str, nodes: list[dict[str, Any]], seen:
     return bool(VAR_PATHS.fullmatch(entry.strip())) and hop_quotes_column(entry, column, nodes, seen)
 
 
-def query_references_input(detail: dict[str, Any], field: str) -> bool:
+def query_references_input(detail: dict[str, Any], field: str, nodes: list[dict[str, Any]]) -> bool:
     """Accept direct `$vars` filters and v1's `{var_*}` + filterVariables form."""
     query = unwrap((detail.get("queryParameters") or {}).get("queryExpression"))
     rendered = str(query or "")
-    if "$vars." in rendered and references_field(rendered, field):
+    if reaches_field(rendered, field, nodes):
         return True
     filter_variables = detail.get("filterVariables") or {}
     return any(
-        placeholder in filter_variables and references_field(filter_variables[placeholder], field)
+        placeholder in filter_variables and reaches_field(filter_variables[placeholder], field, nodes)
         for placeholder in FILTER_REF.findall(rendered)
     )
 
@@ -725,10 +732,7 @@ def read_references_input(
     """
     nodes = list(nodes)
     if shape != NATIVE_READ:
-        detail = read_detail(node)
-        if query_references_input(detail, field):
-            return True
-        return reaches_field((detail.get("queryParameters") or {}).get("queryExpression"), field, nodes)
+        return query_references_input(read_detail(node), field, nodes)
 
     wanted = (column or "").strip().lower()
     for row in native_filter_rows(node):
@@ -740,7 +744,7 @@ def read_references_input(
         value = row.get("value")
         if "$vars." not in str(unwrap(value) or ""):
             continue
-        if references_field(value, field) or reaches_field(value, field, nodes):
+        if reaches_field(value, field, nodes):
             return True
     return False
 
