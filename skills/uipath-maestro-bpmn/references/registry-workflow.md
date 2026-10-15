@@ -598,6 +598,13 @@ through `registry get` like a §3 activity, but their object and operation come
 from the **trigger** catalogue, not from `uip is resources`. Omit `--operation`
 and the call fails with `Event enrichment requires --operation`.
 
+For a new trigger or wait, build the V2 element instead: its scoping
+parameters (Data Fabric's `entityScope`, `folderEntityName`,
+`folderEntityName_folderKey`) go under `--input-details.queryParameters`, and
+the CLI refuses a name the event object does not list. See
+[v2-connector-nodes.md](v2-connector-nodes.md). The `queryParams` /
+`filters.expression` body below is the V1 shape.
+
 ```bash
 uip is activities list <connectorKey> --triggers --output json   # Name + ObjectName + IsCurated
 uip is triggers objects <connectorKey> <OPERATION> --connection-id <id> --output json  # generic rows only
