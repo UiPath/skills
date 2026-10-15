@@ -286,3 +286,36 @@ test("the default uipath-planner keeps its task tools (the guard is not vacuous)
 
   assert.ok(plannerBodyLinesNaming(output, TASK_TOOLS).length > 0);
 });
+
+// Studio Web runs a BPMN project only through its own Debug service, which it
+// serves for `uip bpmn run` (Autopilot `cli/subcommandInterceptors/index.ts`,
+// key `bpmn:run`). `uip maestro bpmn debug` shares the `maestro:bpmn` key with
+// `init`, whose interceptor declines every other verb, so the command reaches
+// the browser CLI instead. The flavor must never tell the agent to run it.
+// `debug-instance` reads are a different verb and stay allowed.
+const BPMN_CLI_DEBUG = /uip maestro bpmn debug(?!-)/;
+
+function bpmnLinesNaming(root, pattern) {
+  const skillRoot = join(root, "uipath-maestro-bpmn");
+  const hits = [];
+  for (const file of markdownFiles(skillRoot)) {
+    readFileSync(file, "utf8").split("\n").forEach((line, index) => {
+      if (pattern.test(line)) hits.push(`${relative(skillRoot, file)}:${index + 1}`);
+    });
+  }
+  return hits;
+}
+
+test("the built studioweb uipath-maestro-bpmn debugs through `uip bpmn run`", (t) => {
+  const output = buildStudioweb(t);
+
+  assert.deepEqual(bpmnLinesNaming(output, BPMN_CLI_DEBUG), []);
+  const run = readFileSync(join(output, "uipath-maestro-bpmn", "references", "operate", "run.md"), "utf8");
+  assert.ok(run.includes("uip bpmn run <ProjectName>"), "run.md must give the host-served debug command");
+});
+
+test("the default uipath-maestro-bpmn keeps `uip maestro bpmn debug` (the guard is not vacuous)", (t) => {
+  const output = buildDefault(t);
+
+  assert.ok(bpmnLinesNaming(output, BPMN_CLI_DEBUG).length > 0);
+});
