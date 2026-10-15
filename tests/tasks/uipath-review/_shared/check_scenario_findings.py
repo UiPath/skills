@@ -19,7 +19,7 @@ TABLE_ROW = re.compile(r"^\s*\|\s*([CWI])-(?:[A-Z]-)?\d+\s*\|(.*)$", re.MULTILIN
 VALIDATION_ROW = re.compile(r"^\s*-\s*\[V-([EW])-\d+\](.*)$", re.MULTILINE)
 RULE_ID = re.compile(r"(?<![A-Za-z0-9_])[A-Z][A-Z0-9]+(?:_[A-Z0-9]+)+(?![A-Za-z0-9_])")
 GRADES = "ABCDF"
-MIN_REPORT_BYTES = 1500
+MIN_REPORT_BYTES = 500
 
 
 def finding_rows(text: str) -> list[tuple[str, str, bool]]:
