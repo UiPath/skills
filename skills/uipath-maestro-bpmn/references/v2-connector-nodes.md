@@ -113,6 +113,12 @@ target connector and folder from the connection. The element binds Studio
 Web's implicit connection for a manual request and the target connection for a
 connector one. Its outputs are `code`, `headers` and `body`, plus `Error`.
 
+When `registry get` says an object has no activity in the catalog
+(`Cannot identify the V2 element`, e.g. Slack's `emoji_list_GET`), the
+endpoint is not a catalog activity: send it as a connector-mode HTTP request
+through the same connection. Never fall back to the V1 template for it; the
+V1 node neither opens nor packs the way Studio Web needs.
+
 A service with no Integration Service connector of its own (Spotify, an
 internal API) goes through a connection of the generic HTTP connector,
 `uipath-uipath-http`, which holds the service's base URL and auth: connector
