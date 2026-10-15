@@ -7,15 +7,17 @@ user-invocable: true
 
 # UiPath Test Assistant
 
-Manage UiPath Test Manager projects, requirements, test cases, test sets, executions, logs, attachments, results, custom fields, labels, and persona-tailored shareable test reports.
+Manage UiPath Test Manager projects, requirements, test cases, test sets, executions, logs, attachments, results, custom fields, labels, performance (load) test scenarios, and persona-tailored shareable test reports.
 
 ## Use For
 
-Test Manager CRUD; execution analysis, coverage, regression trends, failure rates, go/no-go summaries; failed-run triage; flaky-versus-regression analysis; failure evidence; and shareable QA-engineer, developer, or release-manager reports.
+Test Manager CRUD; execution analysis, coverage, regression trends, failure rates, go/no-go summaries; failed-run triage; flaky-versus-regression analysis; failure evidence; load-testing an automated test case and finding why a load run failed; and shareable QA-engineer, developer, or release-manager reports.
 
 ## Concepts and CLI
 
 Requirements define what must be tested; test cases define scenarios and may contain **teststeps**; test sets group cases; executions are created when a test set or testcase runs. Testcase logs record a testcase in an execution and provide navigation; test-step logs record steps; testcase-log assertions are assertion steps.
+
+Performance scenarios load-test automated test cases. A scenario holds **load groups**: a test case, the Orchestrator package and folder it runs from, and a load profile (virtual users, ramp-up, peak, ramp-down). Running a scenario creates an execution; a **dry run** checks it works, a **performance run** applies the full load and draws on the tenant's performance testing licence.
 
 External Playwright packages are suites packaged and uploaded to Orchestrator. Ingestion auto-creates one testcase per Playwright test, without a link step, and labels each `PW_Tag_*`, `PW_Project_*`, `PW_Suite_*`, and `PW_File_*`. They run on serverless cloud runtimes; see [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
 
@@ -77,11 +79,16 @@ Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet
 
 ### Performance (load) testing
 
-`uip tm perf-scenario` manages load-test scenarios; `uip tm perf-scenario --help` lists every verb. Flow: `create --project-key <PROJECT_KEY> --name <NAME>` → `load-groups add --scenario-key <SCENARIO_KEY> …` → `execute --scenario-key <SCENARIO_KEY>` (dry run by default; a full run needs `--execution-type performanceTesting` and a passing dry run from `list-dry-run-reports`) → `results get` / `report generate`.
+Typical request: "can checkout handle 50 users?"
+
+1. Find the automated test case (`testcases list`), its folder and package (`testcases list-automations`).
+2. `uip tm perf-scenario create --project-key <PROJECT_KEY> --name <NAME>`, then `perf-scenario load-groups add --scenario-key <SCENARIO_KEY> --test-case-key <TEST_CASE_KEY> --folder-key <FOLDER_KEY> --package-name <PACKAGE_NAME> --virtual-users <N>`.
+3. `perf-scenario execute --scenario-key <SCENARIO_KEY> --wait` runs a dry run. A full run needs a passing dry run (`list-dry-run-reports`) and enough licence units (`licenses get`).
+4. `perf-scenario execute --scenario-key <SCENARIO_KEY> --execution-type performanceTesting --wait`, then `load-groups list --execution-id <EXECUTION_ID>` for each load group's result, and `results get` or `report generate` for the numbers.
 
 - Two different load-group ids. `load-groups update` / `remove` take the scenario's load-group id (from `get` or `load-groups add`). `load-groups get`, `jobs list`, `robot-logs list`, `http-errors`, `automation-errors` and `transaction-metrics` take the load group **execution** id from `load-groups list --execution-id <EXECUTION_ID>`. The wrong one returns 404 `not_found`.
-- Before a full run, check `licenses get --project-key <PROJECT_KEY>`. `RemainingVirtualUserUnits` is tenant-wide and can lag up to 4 hours. A full run needs virtual users × 1 (API), 10 (Chrome/Edge) or 100 (other targets); dry runs need none. If units are short, stop and tell the user.
-- Triage a failed load group with `robot-logs list --load-group-id <ID> --level Error` (levels `Trace|Info|Warn|Error|Fatal`; `--limit` max 500, page with `--offset`) and `jobs list --load-group-id <ID>` for job keys and machines. A 403 means the tenant's perf feature or permission is off: stop under Rule 10.
+- `licenses get` returns `RemainingVirtualUserUnits` for the whole tenant; it can lag up to 4 hours. A full run uses virtual users × 1 (API), 10 (Chrome/Edge) or 100 (other targets); dry runs use none. If units are short, stop and tell the user.
+- Triage a failed load group with `robot-logs list --load-group-id <ID> --level Error` and `jobs list --load-group-id <ID>`. A 403 means the tenant's performance testing feature or the user's permission is off: stop under Rule 10.
 - `delete --scenario-key <SCENARIO_KEY> --yes` removes the scenario and its load groups for good (Rule 5) and keeps past executions, unlinked. It does not stop a running execution; run `stop` first.
 
 ## Critical Rules
