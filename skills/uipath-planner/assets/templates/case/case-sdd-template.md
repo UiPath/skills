@@ -498,7 +498,7 @@ runtime metadata (agent prompts, package versions, endpoints) stays out of the S
      View, Create, Edit, Close, Reopen, Assign, ManageSLA, RunAdhocTasks, SelectStage, ViewSummary,
      LogsView, TasksView, TasksCreate, TasksEdit, TasksDelete, TaskAssignmentView, TaskAssignmentCreate,
      TaskAssignmentEdit, TaskAssignmentDelete, TaskSelfAssignmentCreate, TaskSelfAssignmentEdit,
-     TaskSelfAssignmentDelete, Manage. A `Stages` persona may hold only View, Assign, ManageSLA and
+     TaskSelfAssignmentDelete. A `Stages` persona may hold only View, Assign, ManageSLA and
      RunAdhocTasks. Names are unique, at most 64 characters, with none of < > " % ; & '. Description
      is required (at most 500 characters) and ships as the role's description. A condition on the
      persona ("loans > $5M only") is not a permission: write it in Notes and encode it as a guarded
