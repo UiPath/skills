@@ -267,6 +267,41 @@ def test_native_filter_reached_through_a_script_hop(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+AMBIGUOUS_SCRIPTS = [
+    pytest.param(
+        "const n = String($vars.start.output.invoiceNumber).trim(); "
+        "if (n) { return { value: n }; } else { return { value: 'NONE' }; }",
+        id="two-returns",
+    ),
+    pytest.param(
+        "try { return { value: String($vars.start.output.invoiceNumber).trim() }; } "
+        "catch (e) { return { value: '' }; }",
+        id="try-catch",
+    ),
+    pytest.param(
+        "let v;\nv = String($vars.start.output.invoiceNumber).trim();\nreturn { value: v };",
+        id="deferred-let",
+    ),
+    pytest.param(
+        "const n = String($vars.start.output.invoiceNumber).trim(); "
+        "['a'].map(t => { const n = t.toUpperCase(); return n; }); return { value: n };",
+        id="shadowed-name",
+    ),
+]
+
+
+@pytest.mark.parametrize("script", AMBIGUOUS_SCRIPTS)
+def test_native_filter_hop_through_ambiguous_script(tmp_path: Path, script: str) -> None:
+    def mutate(flow):
+        flow["nodes"].append(_script("normalizeInvoice", script))
+        for rows in _native_rows(flow):
+            for row in rows:
+                row["value"] = "=js:$vars.normalizeInvoice.output.value"
+
+    result = _run_invoice_native(tmp_path, mutate)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_native_filter_hop_to_nothing_still_fails(tmp_path: Path) -> None:
     """Following the hop must not degrade into accepting any `$vars` reference."""
 
@@ -346,9 +381,39 @@ def test_connector_query_built_two_hops_from_the_input(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+@pytest.mark.parametrize("script", AMBIGUOUS_SCRIPTS)
+def test_connector_hop_through_ambiguous_script(tmp_path: Path, script: str) -> None:
+    script = script.replace("value: n", "value: \"invoiceNumber = '\" + n + \"'\"")
+    script = script.replace("value: v", "value: \"invoiceNumber = '\" + v + \"'\"")
+    script = script.replace(
+        "value: String($vars.start.output.invoiceNumber).trim()",
+        "value: \"invoiceNumber = '\" + String($vars.start.output.invoiceNumber).trim() + \"'\"",
+    )
+    result = _run_invoice_connector(
+        tmp_path,
+        lambda flow: _connector_query(
+            flow, "=js:$vars.buildQuery.output.value", _script("buildQuery", script)
+        ),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 @pytest.mark.parametrize(
     ("expression", "script"),
     [
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "const n = $vars.start.output.invoiceNumber;\n"
+            "return { queryExpression: `invoiceNumber = '${n.startsWith(\"MCS-\") ? n : `MCS-${n}`}'` };",
+            id="nested-template",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "const n = $vars.start.output.invoiceNumber;\n"
+            "const f = (o) => o.v;\n"
+            "return { queryExpression: `invoiceNumber = '${f({ v: n })}'` };",
+            id="braces-in-interpolation",
+        ),
         pytest.param(
             "=js:$vars.buildQuery.output.queryExpression",
             "const supplied = String($vars.start.output.invoiceNumber ?? \"\").trim().toUpperCase();\n"
@@ -448,7 +513,7 @@ def test_connector_query_not_from_the_input_fails(
     """Following the hop must not degrade into accepting any `$vars` reference."""
     result = _run_invoice_connector(tmp_path, lambda flow: _connector_query(flow, expression, *producers))
     assert result.returncode != 0
-    assert "'invoiceNumber'" in result.stdout + result.stderr
+    assert "neither it nor a node it reads" in result.stdout + result.stderr
 
 
 @pytest.mark.parametrize(

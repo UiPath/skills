@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from collections import Counter
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -42,9 +43,10 @@ JS_CONTINUES_AFTER = set("+-*/%?:.&|=<>,([")
 JS_CONTINUES_BEFORE = set("+-*/%?:.&|=<>,")
 JS_UNDEFINED = "undefined"
 JS_IDENTIFIER = re.compile(r"(?<![\w$.])[A-Za-z_$][\w$]*")
+JS_ASSIGNED = re.compile(r"(?<![\w$.])([A-Za-z_$][\w$]*)\s*=(?![=>])")
+JS_INLINE_LIMIT = 20_000
 JS_RETURN_OBJECT = re.compile(r"\breturn\s*\{")
 JS_ENTRY_KEY = re.compile(r"\s*(?:([A-Za-z_$][\w$]*)|\"([^\"]*)\"|'([^']*)')\s*(:)?")
-JS_INTERPOLATION = re.compile(r"\$\{[^}]*\}")
 FAILED_PORTS = {"error", "failed", "failure", "faulted"}
 # Inner target handles on `core.logic.loop` that carry an edge from the last body
 # node back into the loop container. Excluding them keeps a loop from turning a
@@ -182,6 +184,23 @@ def starts_regex(source: str, index: int, previous: str) -> bool:
     return bool(word) and word.group() in REGEX_KEYWORDS
 
 
+def interpolation_end(source: str, index: int) -> int:
+    """The offset just past the `}` closing the `${` at ``index``."""
+    inner = index + 2
+    skips = {start: end for start, end, _, _ in js_tokens(source[inner:])}
+    depth, offset = 1, 0
+    while inner + offset < len(source):
+        if offset in skips:
+            offset = skips[offset]
+            continue
+        char = source[inner + offset]
+        depth += (char == "{") - (char == "}")
+        if not depth:
+            return inner + offset + 1
+        offset += 1
+    return len(source)
+
+
 def js_tokens(source: str) -> list[tuple[int, int, str, str]]:
     """``(start, end, kind, body)`` of each comment, regex, string and template in JS ``source``.
 
@@ -221,6 +240,11 @@ def js_tokens(source: str) -> list[tuple[int, int, str, str]]:
             body: list[str] = []
             index += 1
             while index < len(source) and source[index] != char:
+                if char == "`" and source.startswith("${", index):
+                    close = interpolation_end(source, index)
+                    body.append(source[index:close])
+                    index = close
+                    continue
                 if source[index] == "\\" and index + 1 < len(source):
                     index += 1
                 body.append(source[index])
@@ -235,11 +259,6 @@ def js_tokens(source: str) -> list[tuple[int, int, str, str]]:
     return tokens
 
 
-def js_string_literals(source: str) -> list[str]:
-    """The unescaped contents of the string and template literals in JS ``source``."""
-    return [body for _, _, kind, body in js_tokens(source) if kind in "\"'`"]
-
-
 def js_code(source: str) -> str:
     """``source`` with comments blanked and each literal blanked to a trailing `0`, offsets kept; `${…}` stays."""
     chars = list(source)
@@ -249,8 +268,17 @@ def js_code(source: str) -> str:
             chars[end - 1] = "0"
         if kind != "`":
             continue
-        for interpolation in JS_INTERPOLATION.finditer(source, start, end):
-            chars[interpolation.start():interpolation.end()] = interpolation.group()
+        index = start + 1
+        while index < end - 1:
+            if source[index] == "\\":
+                index += 2
+                continue
+            if not source.startswith("${", index):
+                index += 1
+                continue
+            close = interpolation_end(source, index)
+            chars[index:close] = "${" + js_code(source[index + 2:close - 1]) + "}"
+            index = close
     return "".join(chars)
 
 
@@ -360,14 +388,24 @@ def js_bindings(script: str, code: str) -> dict[str, str]:
     return bindings
 
 
-def inline_bindings(value: str, bindings: dict[str, str], active: frozenset[str] = frozenset()) -> str:
-    """``value`` with each local name it reads replaced by that name's initializer, transitively."""
-    parts, last = [], 0
+def inline_bindings(
+    value: str, bindings: dict[str, str], active: frozenset[str] = frozenset()
+) -> str | None:
+    """``value`` with each local name it reads replaced by that name's initializer, transitively.
+
+    None once the result passes JS_INLINE_LIMIT characters.
+    """
+    parts, size, last = [], 0, 0
     for name in JS_IDENTIFIER.finditer(js_code(value)):
         if name.group() not in bindings or name.group() in active:
             continue
-        parts.append(value[last:name.start()])
-        parts.append(inline_bindings(bindings[name.group()], bindings, active | {name.group()}))
+        inlined = inline_bindings(bindings[name.group()], bindings, active | {name.group()})
+        if inlined is None:
+            return None
+        parts += [value[last:name.start()], inlined]
+        size += name.start() - last + len(inlined)
+        if size > JS_INLINE_LIMIT:
+            return None
         last = name.end()
     parts.append(value[last:])
     return "".join(parts)
@@ -377,8 +415,9 @@ def script_output(node: dict[str, Any] | None, key: str | None) -> str | None:
     """The source of ``key`` in a Script's `return { … }`, with local names inlined.
 
     `undefined` when no returned object names ``key``. None when the node is no
-    Script or a returned object spreads another; callers then fall back to
-    every string the node reads.
+    Script, a returned object spreads another, or the trace is ambiguous (two
+    returns name ``key``, a name is bound or assigned twice); callers then fall
+    back to every string the node reads.
     """
     script = ((node or {}).get("inputs") or {}).get("script")
     if not key or not isinstance(script, str):
@@ -388,16 +427,21 @@ def script_output(node: dict[str, Any] | None, key: str | None) -> str | None:
     if not returns:
         return None
 
-    spreads = False
-    for returned in reversed(returns):
+    spreads, values = False, []
+    for returned in returns:
         for start, end in object_entries(code, returned.end() - 1):
             spreads = spreads or code[start:end].lstrip().startswith("...")
             entry = JS_ENTRY_KEY.match(script, start, end)
-            if not entry or key not in entry.groups()[:3]:
-                continue
-            value = script[entry.end():end] if entry.group(4) else key
-            return inline_bindings(value.strip(), js_bindings(script, code))
-    return None if spreads else JS_UNDEFINED
+            if entry and key in entry.groups()[:3]:
+                values.append(script[entry.end():end] if entry.group(4) else key)
+    if not values:
+        return None if spreads else JS_UNDEFINED
+
+    bindings = js_bindings(script, code)
+    assigned = Counter(JS_ASSIGNED.findall(code))
+    if len(values) > 1 or any(count > 1 or name not in bindings for name, count in assigned.items()):
+        return None
+    return inline_bindings(values[0].strip(), bindings)
 
 
 def reaches_field(value: Any, field: str, nodes: list[dict[str, Any]], seen: set[str] | None = None) -> bool:
@@ -417,6 +461,7 @@ def reaches_field(value: Any, field: str, nodes: list[dict[str, Any]], seen: set
 
         ref = OUTPUT_REF.match(path)
         entry = script_output(by_id.get(ref.group(1)), ref.group(2) or ref.group(3)) if ref else None
+        # Node-level fallback passes a dead read, e.g. `const out = {…constant…}; return out;`.
         if entry is None:
             if any(references_field(source, field) for source in upstream_sources(path, nodes)):
                 return True
