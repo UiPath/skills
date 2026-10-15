@@ -5,8 +5,9 @@ description: >
   plugin: `uip maestro case sdd convert` writes the task in the shape the Case
   Designer saves, with no registry lookup. Validates the case file, then runs
   `uip maestro case debug` against the public echo service postman-echo.com
-  and asserts the case completes with the echoed probe value bound into the
-  case variable the SDD's Outputs arrow row names. The endpoint is
+  and asserts the case and the task's own execution complete. Case debug
+  reports element executions, not variable values, so the echoed body is not
+  graded. The endpoint is
   third-party: an outage there fails the debug step, not the build checks.
 tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node]
 max_iterations: 1
@@ -121,7 +122,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The http-request task carries the SDD's request and output binding, and debug echoes the probe into echoResponse"
+    description: "The http-request task carries the SDD's request and output binding, and debug completes with the task executed"
     command: "python3 $REFERENCE_DIR/_shared/check_http_request_case.py"
     timeout: 720
     expected_exit_code: 0

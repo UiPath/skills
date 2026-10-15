@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """HttpRequestSingleCase: the http-request task carries the SDD's request and
-its Outputs arrow row, no header holds a credential, and debug echoes the
-probe back from postman-echo.com."""
+its Outputs arrow row, no header holds a credential, and the debugged
+case runs the task to completion."""
 
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import (  # noqa: E402
-    assert_outputs_contain,
     assert_task_type_present,
     run_debug,
 )
@@ -57,15 +56,24 @@ def check_structure(task: dict) -> None:
         )
 
 
+def assert_task_completed(payload: dict, task: dict) -> None:
+    """Case debug reports element executions, not variable values, so the task's
+    own execution reaching Completed is what the run can prove."""
+    runs = [e for e in payload.get("elementExecutions") or [] if e.get("elementId") == task.get("id")]
+    if not runs:
+        sys.exit(f"FAIL: debug has no execution for task {task.get('displayName')!r} (id {task.get('id')!r}).")
+    status = runs[-1].get("status")
+    if status not in ("Completed", "Successful"):
+        sys.exit(f"FAIL: debug execution for task {task.get('displayName')!r} finished {status!r}.")
+
+
 def main():
     task = assert_task_type_present("http-request")
     check_structure(task)
     payload = run_debug(timeout=540)
-    # postman-echo returns the posted JSON under `json`, so the probe reaching the
-    # outputs proves the request went out and the response landed in the variable.
-    assert_outputs_contain(payload, PROBE)
+    assert_task_completed(payload, task)
     print(f"OK: http-request task wired (displayName={task.get('displayName')!r}); "
-          f"debug Completed and echoed {PROBE!r}")
+          "debug Completed, task executed")
 
 
 if __name__ == "__main__":
