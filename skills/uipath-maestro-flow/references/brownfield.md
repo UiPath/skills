@@ -84,6 +84,21 @@ resource families, queue items, the AI patterns, document steps, conversational
 and voice steps, and connector event subscriptions. A recovered agent keeps its
 `source` uuid, so its `agent.json` sidecar still resolves.
 
+An agent's context index, tool or escalation node keeps its identity the same
+way. When the canvas or the CLI named the node or its resource directory
+differently from what compile derives, the decompiled entry carries `nodeId`
+and `source` (and a context index its canvas `label`):
+
+```ts
+context: [{ name: "Example SOP Index", id: "11111111-2222-4333-8444-555555555555",
+  folderPath: "Shared/Example", label: "SOP lookup",
+  nodeId: "ctx_7f2a1b", source: "d84e2c17-6a3f-4c59-b0e2-7f1a9c5b3d28" }]
+```
+
+Leave these as they are. Removing them makes compile name the node
+`<agent>Context` with a new directory, so merge drops the original node and adds
+a different one. Do not add them to a resource you create.
+
 A node type the SDK has no factory for still round-trips: it comes back as
 `rawNode({ nodeType, version, manifest, inputs })`, carrying the definition the
 file supplied, so the node keeps its type, its version and its inputs. Leave it

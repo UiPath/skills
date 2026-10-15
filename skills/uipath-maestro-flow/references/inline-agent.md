@@ -45,7 +45,7 @@ which makes the model pack its whole answer into one string field.
 ## Context grounding
 
 Context signature:
-`{ name, id, folderPath?, folderKey?, query?, retrievalMode?, resultCount?, threshold?, fileExtension? }`.
+`{ name, id, folderPath?, folderKey?, query?, retrievalMode?, resultCount?, threshold?, fileExtension?, label?, nodeId?, source? }`.
 
 Resolve the index from the tenant.
 Know the name: use `solution resources list` below.
@@ -59,6 +59,9 @@ uip solution resources list --kind Index --source remote --search "<index-name>"
 Maps onto the signature as `Key` → `id`, `Name` → `name`, `Folder` → `folderPath`, `FolderKey` → `folderKey`.
 `id` is the index's GUID (`Key`): it is the tail of the resource node's type. `check` reports `AGENT_CONTEXT_NO_ID` for a blank or non-GUID `id`, and compile refuses it even with `--no-check`.
 Give `folderPath`: the resource file carries no index id, so the type and the folder together locate the index.
+A context index, tool or escalation also takes `nodeId` and `source` (and a context index `label`): the resource node's id, its `resources/<source>/` directory, and its canvas label.
+Omit them in new flows; compile derives them. Decompile writes them for a node the canvas placed (see brownfield.md), and compile keeps them as given.
+`check` reports `INLINE_AGENT_RESOURCE_NODE_ID` for a blank `nodeId` or one another node has, and `INLINE_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a uuid.
 
 Local execution has no semantic retrieval service, so an inline-agent answer is ungrounded even when the resource wiring is present.
 Platform evidence must establish that the intended index was used and that its retrieved knowledge influenced the answer.
