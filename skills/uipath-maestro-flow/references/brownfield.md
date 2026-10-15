@@ -183,9 +183,10 @@ These findings the source cannot carry are printed on stderr as
   agent's folder beside the `.flow`. A few settings have no field, for example
   a static plain-text query, a query bound to an agent argument, deeprag
   citations turned off, or a folder-path prefix. The warning names the setting,
-  and recompiling writes the SDK's value instead. If the index matters to your
-  edit, set it again in the canvas after merging, or keep the original
-  `resource.json`.
+  and recompiling writes the SDK's value into the compiled
+  `resources/<source>/resource.json` beside the `-o` output. Merge does not
+  touch the project's copy: do not copy the compiled file over it. If that
+  already happened, tell the user to set the setting again in Studio Web.
 
 Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
 placing it in a solution, copy it over the canonical artifact rather than next
