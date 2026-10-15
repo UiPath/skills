@@ -59,7 +59,7 @@ Every subject is stated in full in exactly one file; every other mention is a on
 
 14. **A file's boundary is its audience: mode × condition.** A rule sits in the file every session that needs it reads, and in no file a session reads without needing it. A file every session of a mode reads holds no conditional block above about 5 KB; a block under about 5 KB whose condition is common stays where it is.
 15. **Every reference file has its row in SKILL.md § Read Plans,** keyed by a condition decidable at that phase, written in the same change as the file. Reads are named by the plan, never discovered by following pointers; a pointer into a section of a file the plan did not open is a section read.
-16. **The framework migration pack cites these files** by name, with § names and rule numbers, in its guides and its scripts' docstrings. A move, a rename or a renumber here repoints the pack in a paired pack PR.
+16. **The framework migration pack cites this skill's rules by their subject**, in the skill's own words — a section heading or a bold rule head ("the skill's rule that one tag is one node", "the skill's Source Map contract") — never by file name or number, so files here move, split and renumber without touching the pack. Renaming a subject the pack quotes updates the pack in a paired pack PR.
 
 ## Where to put new content
 
