@@ -29,6 +29,7 @@ All sub-steps are non-interactive. Run them first; their outputs drive the Step 
    | `pyproject.toml` + `uipath.json` with a `functions` map | `uipath-functions` |
    | `package.json` + `uipath.json` with a `functions` map | `uipath-functions` |
    | JSON containing `document.dsl` | `uipath-api-workflow` |
+   | `*.dmn` + `project.uiproj` with `"ProjectType": "BusinessRules"` | `uipath-rules` |
    | `.uipath/` or `app.config.json` | `uipath-coded-apps` |
    | `element.json` (+ `element-metadata.json`) | `uipath-connector-builder` |
    | `*.uipx` | `uipath-solution` (deploy/lifecycle ops) |
