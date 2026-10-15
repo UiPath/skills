@@ -25,7 +25,7 @@
             <uipath:input name="connectorKey" type="string" value="uipath-uipath-dataservice" />
             <uipath:input name="connectionId" type="string" value="=bindings.Binding_DfConn" />
             <uipath:input name="folderId" type="string" value="" />
-            <uipath:input name="folderPath" type="string" value="rahul.katikineni@uipath.com&apos;s workspace" />
+            <uipath:input name="folderPath" type="string" value="__DF_FOLDER_PATH__" />
             <uipath:input name="folderKey" type="string" value="__DF_FOLDER_KEY__" />
             <uipath:input name="operation" type="string" value="CREATED_V3" />
             <uipath:input name="objectName" type="string" value="EntityTriggers_V3" />

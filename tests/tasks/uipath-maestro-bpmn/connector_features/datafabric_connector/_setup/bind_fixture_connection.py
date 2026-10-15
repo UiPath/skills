@@ -8,6 +8,7 @@ one tenant names connections and entities another tenant does not have:
 
     __DF_CONNECTION_ID__   a live uipath-uipath-dataservice connection (pinged)
     __DF_FOLDER_KEY__      that connection's folder key
+    __DF_FOLDER_PATH__     that connection's folder, XML-escaped (fixtures use it in .bpmn attributes)
     __ENTITY_NAME__        the entity `_setup/ensure_folder_entity.py` recorded
     __ENTITY_KEY__         its key
     __ENTITY_FOLDER_KEY__  its folder key
@@ -17,6 +18,7 @@ Every file under <dir> is rewritten in place. Run it after ensure_folder_entity.
 import json
 import os
 import sys
+from xml.sax.saxutils import escape
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from preflight_connections import _connections, _first_live  # noqa: E402
@@ -34,6 +36,7 @@ def main():
     values = {
         "__DF_CONNECTION_ID__": str(connection["Id"]),
         "__DF_FOLDER_KEY__": str(connection.get("FolderKey") or ""),
+        "__DF_FOLDER_PATH__": escape(str(connection.get("Folder") or ""), {'"': "&quot;"}),
         "__ENTITY_NAME__": entity["name"],
         "__ENTITY_KEY__": entity["key"],
         "__ENTITY_FOLDER_KEY__": entity["folderKey"],
