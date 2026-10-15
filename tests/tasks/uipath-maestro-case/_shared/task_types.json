@@ -23,6 +23,12 @@
         "Type": "execute-connector-activity"
       },
       {
+        "Type": "external-agent"
+      },
+      {
+        "Type": "external-workflow"
+      },
+      {
         "Type": "flow-process"
       },
       {
@@ -47,12 +53,6 @@
     "StudioWebOnly": [
       {
         "Type": "document-extraction"
-      },
-      {
-        "Type": "external-agent"
-      },
-      {
-        "Type": "external-workflow"
       },
       {
         "Type": "script"
