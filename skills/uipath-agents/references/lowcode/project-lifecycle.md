@@ -195,7 +195,7 @@ Verify via `Data.SolutionRegistration.Status` in the `agent init` response. The 
 
 ```bash
 # Fallback — when Status is Skipped / Failed / NotInSolution (not needed for OptedOut or Registered).
-uip solution projects add "<AGENT_PROJECT_DIR>" [solutionFile] --output json
+uip solution projects add "<AGENT_PROJECT_DIR>" [solution-file] --output json
 ```
 
 Run from the solution directory. The first argument is the path to the agent project folder (positional, not `--project-path`). The optional second argument is the path to the `.uipx` solution file — if omitted, the CLI searches up from the project path to find the nearest `.uipx` automatically.

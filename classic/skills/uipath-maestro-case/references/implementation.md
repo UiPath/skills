@@ -280,7 +280,7 @@ Optional `case pack` (BPMN recompile) + `solution pack` + `solution publish` to 
 ## Step 16 — Publish to Orchestrator
 
 <!--skill-flavor:step-sixteen:start-->
-Run AskUserQuestion per [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). On `Publish to Orchestrator`, run `uip solution resources refresh`, then `uip maestro case pack "<SolutionDir>/<ProjectName>" "<SolutionDir>/dist" --output json`, `uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json`, and `uip solution publish "<packagePath>" --wait --output json`. Never skip `case pack`; it compiles `caseplan.case` → `caseplan.case.bpmn` every pass. Publish the `solution pack` `.zip`, never the `case pack` `.nupkg`. Read `<packagePath>` from `solution pack` response `Data.Packages`; never guess. On `Done`, exit. Never auto-run (Rule 13).
+Run AskUserQuestion per [phased-execution.md § Phase 7](phased-execution.md#phase-7--publish-to-orchestrator). On `Publish to Orchestrator`, run `uip solution resources refresh`, then `uip maestro case pack "<SolutionDir>/<ProjectName>" "<SolutionDir>/dist" --output json`, `uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json`, and `uip solution publish "<package-path>" --wait --output json`. Never skip `case pack`; it compiles `caseplan.case` → `caseplan.case.bpmn` every pass. Publish the `solution pack` `.zip`, never the `case pack` `.nupkg`. Read `<package-path>` from `solution pack` response `Data.Packages`; never guess. On `Done`, exit. Never auto-run (Rule 13).
 <!--skill-flavor:step-sixteen:end-->
 
 Stops at publish; `uip solution deploy run` is out of scope.

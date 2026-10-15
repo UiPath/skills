@@ -43,7 +43,7 @@ uip solution restore ./MySolution --output json
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `<solutionPath>` | Solution directory (containing a `.uipx`) or a `.uis` file (required) | -- |
+| `<solution-path>` | Solution directory (containing a `.uipx`) or a `.uis` file (required) | -- |
 | `--login-validity <minutes>` | Minimum minutes left on the access token before the CLI refreshes it before restore starts | 10 |
 | `--nuget-sources-config-path <path>` | Local `NuGet.config` that sets the package sources used for resolution | -- |
 
@@ -62,7 +62,7 @@ uip solution pack ./MySolution ./output --name "MySolution" --version "2.0.0" --
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `<solutionPath>` | Directory containing a `.uipx` or `.uis` file (required) | -- |
+| `<solution-path>` | Directory containing a `.uipx` or `.uis` file (required) | -- |
 | `<output-path>` | Directory where the .zip will be written (required unless `--dry-run`) | -- |
 | `--name <name>` | Override the package name | Name from `.uipx` |
 | `--version <version>` | Set the package version | `1.0.0` |
