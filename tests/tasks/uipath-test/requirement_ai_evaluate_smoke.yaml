@@ -31,7 +31,7 @@ reference:
 pre_run:
   - command: >-
       python3 _setup/req_ai_fixture.py seed --project HEALTH
-      --requirement EVFX-AIEVAL-REQ
+      --requirement EVFX-AIEVAL-REQ --require-access evaluate
       --description "Users can reset their password."
     timeout: 280
 
@@ -67,10 +67,13 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
+    # Bounded command_executed, not command_not_executed: the loader rewrites
+    # command_not_executed to max_count 0 (see uipath-insights/dashboards/copy_smoke.yaml).
+  - type: command_executed
     description: "No second evaluation job: \"more\" re-runs the first one (rule 1)"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+requirements?\s+evaluate(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    min_count: 0
     max_count: 1
     weight: 2.0
     pass_threshold: 1.0

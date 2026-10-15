@@ -34,7 +34,7 @@ reference:
 pre_run:
   - command: >-
       python3 _setup/req_ai_fixture.py seed --project HEALTH
-      --requirement EVFX-AIGEN-REQ
+      --requirement EVFX-AIGEN-REQ --require-access generate-testcases
       --description "A signed-in customer can transfer money between their own accounts. The amount must be greater than zero and no more than the source account's available balance. Transfers above 10,000 need a one-time code sent by SMS. A completed transfer shows a confirmation with a reference number."
       --capture-generate-timeout nightly/generate-testcases.json
     timeout: 280

@@ -42,6 +42,13 @@ The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](.
 (`seed`, `check`). It knows no names: each task passes its own `EVFX-` names
 on the command line, so they stay in the task YAML where `check-collisions.py`
 sees them.
+`seed --require-access <verb>` first calls that AI verb on a requirement id
+that does not exist: an allowed login gets HTTP 404 before any job starts, a
+refused one gets 403, and `seed` then exits `TENANT NOT READY` so smoke
+excludes the task instead of failing it. Each AI route has its own feature
+flag, licence policy and AI Trust Layer policy; on 2026-10-15 the eval tenant
+allowed `generate-testcases` and `evaluate` but answered 403 to
+`find-obsolete-testcases`.
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the

@@ -92,6 +92,32 @@ def activity_id(env):
     return found
 
 
+# No requirement has this id, so a caller allowed to use the route gets
+# HTTP 404 before any job starts; a caller who is not gets 403.
+PROBE_REQUIREMENT_ID = "00000000-0000-4000-8000-0000000000ad"
+
+
+def require_access(project, verb):
+    """Exclude the task, not fail it, when the tenant refuses `verb` outright.
+
+    The AI routes carry their own feature flag, licence policy and AI Trust
+    Layer policy, so one tenant can allow `evaluate` and answer 403 to
+    `find-obsolete-testcases`. The pass-rate gate in smoke-skills.yml drops a
+    task whose pre_run fails with TENANT NOT READY on stderr.
+    """
+    _, env = call(f"probe.{verb}", "tm", "requirements", verb, "--project-key", project,
+                  "--requirement-id", PROBE_REQUIREMENT_ID, check=False)
+    if env.get("ErrorCode") == "permission_denied":
+        print("TENANT NOT READY — this is an environment failure, not an agent failure: "
+              f"`uip tm requirements {verb}` answers 403 for this login on project "
+              f"{project} ({env.get('Message', '')[:160]}). Enable the route's feature "
+              "flag, licence and AI Trust Layer policy for the eval user.",
+              file=sys.stderr, flush=True)
+        sys.exit(1)
+    if (env.get("Data") or {}).get("ActivityId"):
+        fail(f"the {verb} probe started a job; PROBE_REQUIREMENT_ID must not exist")
+
+
 def ensure_requirement(project, name, description):
     """The requirement, with exactly `description` (None = no description)."""
     req = find_requirement(project, name)
@@ -127,6 +153,8 @@ def ensure_testcase(project, name, description):
 
 
 def cmd_seed(a):
+    for verb in a.require_access:
+        require_access(a.project, verb)
     req = ensure_requirement(a.project, a.requirement,
                              None if a.no_description else a.description)
     rid = req["Id"]
@@ -231,6 +259,8 @@ def main():
     g.add_argument("--no-description", action="store_true")
     s.add_argument("--case", action="append", default=[], metavar="NAME=DESCRIPTION",
                    help="a test case to create-if-absent and link (repeatable)")
+    s.add_argument("--require-access", action="append", default=[], metavar="VERB",
+                   help="exit TENANT NOT READY when this AI verb answers 403 (repeatable)")
     s.add_argument("--capture-generate-timeout", metavar="OUT",
                    help="start generate-testcases with a 3 s wait and save its output")
 

@@ -4,7 +4,9 @@ description: >
   Test Manager's AI cannot work on. EVFX-AIBLOCK-NODESC has no description
   and no attachments, so generate-testcases fails with HTTP 400 before any
   job starts. EVFX-AIBLOCK-NOLINKS has a description but no linked test
-  cases, so find-obsolete-testcases fails the same way. Asserts rule 5 of
+  cases, so find-obsolete-testcases fails the same way (or with 403 on a
+  tenant that has not enabled that AI feature; rule 8, same expected
+  behaviour). Asserts rule 5 of
   references/requirement-ai-guide.md: report the cause, do not write a
   description or link test cases to make the call pass, and do not retry
   a 400. Graded on tenant state: both requirements are unchanged. The task
@@ -79,10 +81,13 @@ success_criteria:
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_not_executed
+    # Bounded command_executed, not command_not_executed: the loader rewrites
+    # command_not_executed to max_count 0 (see uipath-insights/dashboards/copy_smoke.yaml).
+  - type: command_executed
     description: "No retry loop on the 400s: at most one generation start and one search start"
     tool_name: "Bash"
     command_pattern: 'uip\s+tm\s+requirements?\s+(?:generate-testcases|find-obsolete-testcases)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    min_count: 0
     max_count: 2
     weight: 1.0
     pass_threshold: 1.0
