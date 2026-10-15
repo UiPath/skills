@@ -4,15 +4,17 @@ task_id: skill-test-run-package-ci-smoke
 description: >
   Smoke test: agent uses the uipath-test skill to run every test in a package
   already uploaded to Orchestrator, the way a CI step would, with
-  `uip tm run --type package`. pre_run seeds a throwaway `EVFX-RUNPKG-*`
-  project per run and post_run deletes it, which also removes the execution
-  and the hidden test set the command creates. Graded on the JUnit report on
-  disk and on the tenant: the report's execution id must be a real execution
-  in that project, so a hand-written report fails. Also grades the single
-  complete command and guards against the hand-built chain (link-package →
-  testsets create → testsets run → wait → result download) it replaces. Test
-  results are not graded: the command exits 1 when a test fails, and the
-  skill teaches that this is a result to report, not a CLI error.
+  `uip tm run --type package`, inside the step's time budget. pre_run seeds a
+  throwaway `EVFX-RUNPKG-*` project per run and post_run deletes it, which also
+  removes the execution and the hidden test set the command creates. The eval
+  tenant has no robot, so the tests start but never finish: the run hits the
+  budget, `tm run` exits 4 and writes a partial JUnit report with the
+  unfinished tests marked skipped. Graded on that report on disk and on the
+  tenant: the report's execution id must be a real execution in the seeded
+  project, so a hand-written report fails, and no test may be reported as
+  passed. Also grades the single complete command, with a `--timeout` inside
+  the budget, and guards against the hand-built chain (link-package →
+  testsets create → testsets run → wait → result download) it replaces.
 tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
 
 run_limits:
@@ -73,7 +75,8 @@ initial_prompt: |
   "Testcases.with.parameters" to the Orchestrator folder
   "uipath-test-folder-feed". Run all of its tests in my Test Manager project
   (its key is in project-key.txt in this folder), retry failed ones once, and
-  write the JUnit report to results/junit.xml. Tell me how many tests passed.
+  write the JUnit report to results/junit.xml. This CI step is killed after
+  3 minutes, so the run must give up before that. Tell me how it went.
 
 success_criteria:
   - type: command_executed
@@ -85,9 +88,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "One complete `tm run --type package` command: package, folder, project, one retry"
+    description: "One complete `tm run --type package` command: package, folder, project, one retry, a --timeout within the 3-minute budget"
     tool_name: "Bash"
-    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--type[\s=]+package\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-name[\s=]+["\x27]?Testcases\.with\.parameters)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-version[\s=]+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--folder-(?:path[\s=]+["\x27]?uipath-test-folder-feed|key[\s=]+\S))(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-(?:key|id)[\s=]+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--max-retries[\s=]+1\b)uip\s+tm\s+run\b'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--type[\s=]+package\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-name[\s=]+["\x27]?Testcases\.with\.parameters)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-version[\s=]+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--folder-(?:path[\s=]+["\x27]?uipath-test-folder-feed|key[\s=]+\S))(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-(?:key|id)[\s=]+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--max-retries[\s=]+1\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--timeout[\s=]+["\x27]?(?:[1-9]\d?|1[0-7]\d|180)\b)uip\s+tm\s+run\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -102,7 +105,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The report's execution id is a Finished execution in the seeded project (a hand-written report fails)"
+    description: "The report's execution id is an execution in the seeded project (a hand-written report fails), and no test in it is marked passed"
     command: |
       python3 - <<'PYEOF'
       import json, re, subprocess, sys
@@ -115,7 +118,17 @@ success_criteria:
       rows = json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
       hit = [e for e in rows if (e.get("Id") or "").lower() == m.group(1).lower()]
       print("report execution:", m.group(1), "->", hit[0].get("Status") if hit else "not in project")
-      sys.exit(0 if hit and hit[0].get("Status") == "Finished" else 1)
+      if not hit:
+          sys.exit(1)
+      # The eval tenant has no robot, so the run cannot finish in the budget.
+      # While it is unfinished, no <testcase> may read as passed: one with no
+      # <skipped>, <failure> or <error> child is a pass to CI.
+      xml = open("results/junit.xml").read()
+      cases = re.findall(r'<testcase\b(.*?)(?=<testcase\b|</testsuite>)', xml, re.S)
+      passed = [c for c in cases if not re.search(r'<(skipped|failure|error)\b', c)]
+      print("testcases:", len(cases), "reported as passed:", len(passed))
+      done = hit[0].get("Status") == "Finished"
+      sys.exit(0 if cases and (done or not passed) else 1)
       PYEOF
     timeout: 60
     expected_exit_code: 0
