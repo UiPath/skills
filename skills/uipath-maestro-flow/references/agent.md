@@ -80,6 +80,7 @@ at author time.
 5. Compile into the nested Flow project, validate, refresh resources, and
    debug the Flow.
 
+<!--skill-flavor:agent-scaffold:start-->
 ```bash
 uip solution init <SolutionName> --output json
 ( cd <SolutionName> && uip maestro flow init <FlowName> --output json )
@@ -91,6 +92,7 @@ mkdir -p <SolutionName>/<AgentProject>
   && uip codedagent setup --force --output json \
   && uip codedagent new <AgentName> )
 ```
+<!--skill-flavor:agent-scaffold:end-->
 
 **Install the framework package BEFORE `new`.**
 `new` defaults to `--type auto`, which picks the template from whichever

@@ -96,6 +96,7 @@ time against a connection this tenant does not have. Read keys from
 `registry list --local` or the generated resource file, never from another
 project.
 
+<!--skill-flavor:skip-registration-fix:start-->
 **A single-nested project that upload rejects.** `uip maestro flow init` with
 `--skip-solution-registration` opts out of auto-scaffold and registration and
 leaves `<Project>/<Project>.flow` where `<Solution>/<Project>/<Project>.flow` is
@@ -108,6 +109,7 @@ running `uip solution init` then `flow init` from inside the solution; add
 `--automate` on the rebuild if the original was a Maestro Automate project — a
 `.maestro_automate` file in the project root says it was, and rebuilding without
 the flag silently returns a plain Flow.
+<!--skill-flavor:skip-registration-fix:end-->
 
 **Misshapen nodes on the canvas.** `compile` writes a placeholder
 `ui.position` on each node — all of them on one row — and no top-level `layout`
