@@ -8,12 +8,13 @@ const resp = await intsvc.http({
   method: 'GET',
   url: '/conversations.list',
   query: { types: 'public_channel', limit: 200, cursor },
-  cache: { ttl: 900 },
+  cache: { ttl: 900, storeWhen: { ok: true } },
 });
 ```
 
 A runtime without the cache ignores the option and calls the vendor, so passing it
-is always safe.
+is always safe. The runtime proxy's `docs/intsvc-sdk.md` §3a is the live contract
+for the fields and their limits; follow it where this page differs.
 
 ## When to cache
 
@@ -35,16 +36,18 @@ Pick the TTL from how stale the data may be, not from how expensive the call is:
 | people, channels, groups, projects | 15 min–1 h (`900`–`3600`) |
 | anything a user edits and then reads back | do not cache |
 
-The runtime caps every TTL at 48 h.
+The runtime caps every TTL. Editing or re-authenticating the connection starts
+fresh entries, so a TTL only bounds staleness between changes.
 
 ## The `cache` option
 
 | field | rule |
 |---|---|
 | `ttl` | seconds; required |
-| `key` | names the entry instead of the request, so two different calls share it. Up to 512 characters |
-| `keyHeaders` | request header names whose values change the answer (at most 16). Ignored with `key` |
+| `key` | names the entry instead of the request, so two different calls share it |
+| `keyHeaders` | request header names whose values change the answer. Ignored with `key` |
 | `refresh` | `true` skips the read, calls the vendor, and replaces the entry |
+| `storeWhen` | top-level JSON fields a 2xx body must carry to be stored, such as `{ ok: true }`. Not part of the key |
 
 The runtime builds the key, scoped to the tenant and the connection. Without `key`,
 the entry is the request itself: method, full URL with its query, the named
@@ -56,12 +59,16 @@ the entry is the request itself: method, full URL with its query, the named
   goes in `keyHeaders`, or two variants share one entry.
 
 Not stored: a non-2xx answer, a `Set-Cookie` or `Cache-Control: no-store`
-response, a streamed download, a body over 8 MiB. A POST body over 64 KiB, or one
-streamed from an attachment, is not cached without a `key`. PUT, PATCH and DELETE
-never are.
+response, a streamed download, a body over the runtime's entry limit. A large POST
+body, or one streamed from an attachment, is not cached without a `key`. PUT,
+PATCH and DELETE never are.
+
+A vendor that reports errors with a 2xx status (Slack's `{ "ok": false }`) would
+have them stored like any answer. Pass `storeWhen` with the success marker the
+script already checks, so only a successful answer is stored.
 
 Concurrent calls need no handling in the script. Identical calls that miss at the
-same time make one vendor call, the others waiting for it (up to 3 s). An answer
+same time make one vendor call, the others waiting briefly for it. An answer
 fetched earlier never overwrites one fetched later, so a `refresh` is not undone by
 a slower call that started before it.
 
@@ -92,4 +99,5 @@ const resp = await intsvc.http({
   caching. Check caching against the published script with `--script-ref`: run the
   same call twice, then once with `--refresh`.
 - **A hit still costs one of the 4 calls** in the run's budget.
-- **Say in the report** which calls are cached and with what TTL.
+- **Say in the report** which calls are cached, with what TTL and any `key`,
+  `keyHeaders` or `storeWhen`.
