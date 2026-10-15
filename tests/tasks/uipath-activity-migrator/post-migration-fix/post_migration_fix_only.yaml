@@ -70,6 +70,7 @@ success_criteria:
   - type: command_not_executed
     description: "No uip rpa command ran without clearing UIPATH_STUDIO_PID (Rule 8)"
     command_pattern: '\A(?![\s\S]*UIPATH_STUDIO_PID)[\s\S]*?(?:^|[;&|(]\s*|\n\s*)(?:uip|\$UIP)\s+rpa\s+(?:build|validate|run|debug|instances|execution|activities|uia)\b'
+    tool_name: "Bash"
     weight: 1.0
     pass_threshold: 1.0
 
@@ -111,7 +112,7 @@ success_criteria:
     description: "Fixed constructs in GetStaffRecords.xaml carry the Remediated annotation line"
     path: "StaffDirectoryAudit_Upgraded/GetStaffRecords.xaml"
     patterns:
-      - pattern: 'Remediated by uipath-activity-migrator on \d{4}-\d{2}-\d{2}'
+      - pattern: 'Annotation\.AnnotationText="[^"]*Remediated by uipath-activity-migrator on \d{4}-\d{2}-\d{2}'
         must_match: true
     weight: 2.0
     pass_threshold: 1.0
