@@ -9,7 +9,7 @@ description: >
   edge, binding, variable, agent sidecar and canvas position is unchanged. No
   flow debug, because what is under test is what the edit did to the files; a
   debug run would spend IxP, agent and API workflow calls without grading that.
-tags: [uipath-maestro-flow, integration, mode:build, lifecycle:edit, shape:multi-node, node:inline-agent, path-to-ga]
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:edit, shape:multi-node, node:inline-agent]
 
 run_limits:
   turn_timeout: 2400
