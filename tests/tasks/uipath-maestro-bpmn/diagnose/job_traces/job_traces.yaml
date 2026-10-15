@@ -48,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Agent first ran a cheaper read (job status or incidents)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(job\s+status\s+job-triage-001|instance\s+incidents\s+inst-triage-001)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+(job\s+status\s+job-triage-001|instances?\s+incidents\s+inst-triage-001)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

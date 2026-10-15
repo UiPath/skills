@@ -40,7 +40,7 @@ These actions may contact UiPath services or external systems.
    extensions in `.bpmn`; rerun CLI generation/enrichment for generated package JSON and Integration Service metadata.
 6. **Default publish wording to Studio Web upload unless the user explicitly asks for Orchestrator deployment** - keep deploy semantics explicit.
 7. **Always include folder context on runtime commands that require it** - `process run` takes `<FOLDER_KEY>` and
-   `instance`/`incident get` commands require `--folder-key` or `-f`.
+   `instances`/`incidents get` commands require `--folder-key` or `-f`.
 8. **Report identifiers plainly** - summarize returned Studio Web URLs, package paths, solution IDs, process keys,
    job keys, instance IDs, run IDs, final status, and folder context when available.
 9. **Do not retry before diagnosis** - identify root cause first, then decide whether retry, cancel, migrate,

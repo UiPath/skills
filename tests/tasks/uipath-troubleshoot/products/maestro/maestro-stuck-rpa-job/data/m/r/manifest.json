@@ -7,6 +7,10 @@
       "file": "7b3d8c49fd.json"
     },
     {
+      "match": "maestro bpmn instances asset 0fbda085-5c96-4dab-a4b3-012c1914845a --output json",
+      "file": "7b3d8c49fd.json"
+    },
+    {
       "match": "or jobs get 0fbda085-5c96-4dab-a4b3-012c1914845a --output json",
       "file": "6690a6b57e.json"
     },
@@ -27,11 +31,23 @@
       "file": "3eed399cb5.json"
     },
     {
+      "match": "maestro bpmn instances get 0fbda085-5c96-4dab-a4b3-012c1914845a --output json",
+      "file": "3eed399cb5.json"
+    },
+    {
       "match": "maestro bpmn instance incidents 0fbda085-5c96-4dab-a4b3-012c1914845a --output json",
       "file": "0f1f693bed.json"
     },
     {
+      "match": "maestro bpmn instances incidents 0fbda085-5c96-4dab-a4b3-012c1914845a --output json",
+      "file": "0f1f693bed.json"
+    },
+    {
       "match": "maestro bpmn instance element-executions 0fbda085-5c96-4dab-a4b3-012c1914845a --output json",
+      "file": "bf9f72f2c6.json"
+    },
+    {
+      "match": "maestro bpmn instances element-executions 0fbda085-5c96-4dab-a4b3-012c1914845a --output json",
       "file": "bf9f72f2c6.json"
     },
     {
@@ -45,6 +61,10 @@
     },
     {
       "match": "maestro bpmn instance cursors 0fbda085-5c96-4dab-a4b3-012c1914845a --output json",
+      "file": "81241cf1e0.json"
+    },
+    {
+      "match": "maestro bpmn instances cursors 0fbda085-5c96-4dab-a4b3-012c1914845a --output json",
       "file": "81241cf1e0.json"
     },
     {

@@ -14,7 +14,17 @@
       "exit_code": 0
     },
     {
+      "match": "maestro bpmn instances incidents inst-triage-001",
+      "file": "instance-incidents.json",
+      "exit_code": 0
+    },
+    {
       "match": "maestro bpmn incident get inc-triage-001",
+      "file": "incident-get.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn incidents get inc-triage-001",
       "file": "incident-get.json",
       "exit_code": 0
     },
@@ -24,7 +34,17 @@
       "exit_code": 0
     },
     {
+      "match": "maestro bpmn instances variables inst-triage-001",
+      "file": "instance-variables.json",
+      "exit_code": 0
+    },
+    {
       "match": "maestro bpmn instance asset inst-triage-001",
+      "file": "instance-asset.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instances asset inst-triage-001",
       "file": "instance-asset.json",
       "exit_code": 0
     },
@@ -34,7 +54,17 @@
       "exit_code": 0
     },
     {
+      "match": "maestro bpmn instances element-executions inst-triage-001",
+      "file": "element-executions.json",
+      "exit_code": 0
+    },
+    {
       "match": "maestro bpmn instance cursors inst-triage-001",
+      "file": "cursors.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn instances cursors inst-triage-001",
       "file": "cursors.json",
       "exit_code": 0
     }

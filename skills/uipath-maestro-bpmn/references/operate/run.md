@@ -58,7 +58,7 @@ If Studio Web URL is not returned, print `Studio Web URL: <not returned by CLI>`
 > proves the process ran — NOT that any output variable holds the expected value.
 > To inspect runtime variable definitions and any values the runtime exposes,
 > take the returned instance id and run
-> `uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json`
+> `uip maestro bpmn debug-instances variables-all <INSTANCE_ID> --output json`
 > (below). Debug instances are ephemeral — read variables in the same session,
 > right after the debug run. Match returned keys case-insensitively
 > (`finalStatus`/`FinalStatus`, `instanceId`/`InstanceId`, `elementExecutions`/
@@ -84,8 +84,8 @@ Use status first, then incidents and variables if the status is faulted or ambig
 
 ```bash
 uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
-uip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances get <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
 Use traces only when status, incidents, variables, and deployed BPMN correlation are insufficient:
@@ -94,14 +94,14 @@ Use traces only when status, incidents, variables, and deployed BPMN correlation
 uip maestro bpmn job traces <JOB_KEY> --output json
 ```
 
-For debug instances, prefer the `debug-instance` inspection commands when
+For debug instances, prefer the `debug-instances` inspection commands when
 standard deployed-instance commands do not have debug-session context. Use the
 identifiers returned by the debug command as the source of truth.
 
 ```bash
-uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
-uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
-uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances incidents <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances variables <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances variables-all <INSTANCE_ID> --output json
 ```
 
 ## Execution summary

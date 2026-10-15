@@ -209,9 +209,9 @@ does not exist, so the run fails. See
 **Hand-written `.flow` JSON:**
 
 1. Author the node with `entityConfig.entityName` set to the entity.
-2. Run `uip maestro flow node configure <Project>.flow <node-id> --detail '{"entityName":"<Name>"}'`.
+2. Run `uip maestro flow nodes configure <Project>.flow <node-id> --detail '{"entityName":"<Name>"}'`.
 
-`node configure` fills in `_resourceKey`, `_folderKey` and the two `bindings[]`
+`nodes configure` fills in `_resourceKey`, `_folderKey` and the two `bindings[]`
 rows — the same thing the Studio Web / VS Code entity picker writes — reports
 them as `BindingsCreated`, and regenerates `bindings_v2.json`. It is idempotent,
 so a second run reports `BindingsCreated: 0` and changes nothing.
@@ -222,11 +222,11 @@ already-wired node is a no-op. A genuine miss is never silent — naming an enti
 this solution does not author succeeds with `BindingsCreated: 0` **and** a
 `Warnings` entry saying so.
 
-Adding the node with the CLI instead needs no follow-up — `node add` resolves
+Adding the node with the CLI instead needs no follow-up — `nodes create` resolves
 the keys on the spot:
 
 ```bash
-uip maestro flow node add <Project>.flow core.datafabric.read \
+uip maestro flow nodes create <Project>.flow core.datafabric.read \
   --input '{"entityConfig":{"entityName":"Product","resultMode":"multiple"}}'
 ```
 
@@ -243,7 +243,7 @@ nothing and the run fails with:
 
 That error names the entity, so it reads as "the entity wasn't created" when the
 entity exists and the binding is missing. You should never reach it: `flow
-validate` reports the node as an error (`INLINE_ENTITY_UNBOUND`) naming the exact `node configure` to run — in a builder-SDK project, fix the `.flow.ts` instead, or the next `compile` reverts it —
+validate` reports the node as an error (`INLINE_ENTITY_UNBOUND`) naming the exact `nodes configure` to run — in a builder-SDK project, fix the `.flow.ts` instead, or the next `compile` reverts it —
 `flow pack` and `uip solution pack` run the same rule, and `flow debug` and `flow eval` raise the
 same message before packaging. Entities this solution only references, and
 tenant entities resolved at runtime, are not reported — they have no local

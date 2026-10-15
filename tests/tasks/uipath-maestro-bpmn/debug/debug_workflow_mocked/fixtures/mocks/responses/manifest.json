@@ -8,12 +8,27 @@
       "exit_code": 0
     },
     {
+      "match": "maestro bpmn debug-instances variables-all debug-run-042",
+      "file": "debug-variables-all.json",
+      "exit_code": 0
+    },
+    {
       "match": "maestro bpmn debug-instance variables debug-run-042",
       "file": "debug-variables.json",
       "exit_code": 0
     },
     {
+      "match": "maestro bpmn debug-instances variables debug-run-042",
+      "file": "debug-variables.json",
+      "exit_code": 0
+    },
+    {
       "match": "maestro bpmn debug-instance incidents debug-run-042",
+      "file": "debug-incidents-empty.json",
+      "exit_code": 0
+    },
+    {
+      "match": "maestro bpmn debug-instances incidents debug-run-042",
       "file": "debug-incidents-empty.json",
       "exit_code": 0
     },

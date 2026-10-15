@@ -267,7 +267,7 @@ casing for `entity`. Creating and modelling the entity belongs to
 
 `flow validate`, `flow pack` and `uip solution pack` refuse a node that names a
 local entity without these keys (`INLINE_ENTITY_UNBOUND`). The message suggests
-`uip maestro flow node configure`, which edits the compiled `.flow`; in a
+`uip maestro flow nodes configure`, which edits the compiled `.flow`; in a
 builder-SDK project fix the `.flow.ts` instead, or the next `compile` reverts it.
 
 **Debugging:** `uip maestro flow debug` works the first time for a solution with

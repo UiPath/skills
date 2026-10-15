@@ -18,7 +18,7 @@ first one did.
 `Data.finalStatus: "Faulted"` means the response in hand holds the reason.
 A projection can drop `Data.incidents`, but `--output-filter` never filters
 `Message` and `Instructions`: they summarize the incidents, when PIMS returned
-any, and name the `uip maestro flow debug-instance incidents <instanceId>`
+any, and name the `uip maestro flow debug-instances incidents <instanceId>`
 command. If `Data.incidents` is missing, or `null` in a projection, run that
 command. Do not re-run the flow. On the next run, add `incidents:incidents` to the projection,
 or redirect the unfiltered output to a file and search it:
@@ -35,28 +35,28 @@ edit rather than a platform question.
 
 ```bash
 # what went wrong
-uip maestro flow instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro flow incident get <INCIDENT_ID> -f <FOLDER_KEY> --output json
-uip maestro flow incident summary --output json          # across instances
+uip maestro flow instances incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro flow incidents get <INCIDENT_ID> -f <FOLDER_KEY> --output json
+uip maestro flow incidents summary --output json          # across instances
 
 # state at the point of failure
-uip maestro flow instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro flow instance variables <INSTANCE_ID> -f <FOLDER_KEY> \
+uip maestro flow instances variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro flow instances variables <INSTANCE_ID> -f <FOLDER_KEY> \
   --parent-element-id <ELEMENT_ID> --output json         # scoped to one element
-uip maestro flow instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro flow instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro flow instances element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro flow instances cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
 
 # what is deployed, and which instances exist
-uip maestro flow instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro flow instance list -f <FOLDER_KEY> --output json
-uip maestro flow instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro flow instances asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro flow instances list -f <FOLDER_KEY> --output json
+uip maestro flow instances get <INSTANCE_ID> -f <FOLDER_KEY> --output json
 
 # last resort
-uip maestro flow job status <job-key> --output json
-uip maestro flow job traces <job-key> --output json
+uip maestro flow jobs status <job-key> --output json
+uip maestro flow jobs traces <job-key> --output json
 ```
 
-All of these need `uip login`. Every `instance` command and `incident get` also
+All of these need `uip login`. Every `instances` command and `incidents get` also
 needs `--folder-key` (`-f`) or it is rejected before reaching the API. Get the key from
 `uip or folders list --output json`, or from the job or process context.
 

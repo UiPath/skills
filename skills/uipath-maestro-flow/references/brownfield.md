@@ -142,13 +142,13 @@ These findings the source cannot carry are printed on stderr as
 `flow-decompile: warning: …`, and `--strict` turns each into an error:
 
 - A node **no trigger reaches** — no edge leads to it, as when a designer or
-  `node add` left it unconnected. The builder has no detached-node construct,
+  `nodes create` left it unconnected. The builder has no detached-node construct,
   so the source omits it and marks the spot with `// TODO: node "<id>" … is not
   reachable`; recompiling drops that node. If it is your edit target, connect
   it in the `.flow` first or edit that node's JSON directly.
 - A `(type, typeVersion)` **this SDK does not bundle**, for a type it bundles
   at other versions — for example `uipath.human-in-the-loop.quick-form@1.6`
-  (written by `node add`) when the SDK ships `1.0` and `1.1`. Versions resolve
+  (written by `nodes create`) when the SDK ships `1.0` and `1.1`. Versions resolve
   exactly, so the source **omits** that `{ version }` and the node compiles at
   the SDK's default. `merge --baseline` keeps the node at the file's version,
   with the file's definition, as long as you leave it untouched; a node you

@@ -25,7 +25,7 @@ Every reference ID resolves only within the account authenticated by the connect
 **Never carry a reference ID from one flow, one connection, or one session into another.** Always re-run the lookup — `uip is resources run list`, or `uip is resources run script` for a `4.0.0` activity (see [Script References](#400-activities--script-references-scriptref)) — against the `--connection-id` bound to the current flow — even if you believe you already know the ID from a prior task or earlier in the same session.
 
 A reused reference ID:
-- Passes `uip is resources describe` / `node configure` / `flow validate` cleanly (no API call checks the value against the connection).
+- Passes `uip is resources describe` / `nodes configure` / `flow validate` cleanly (no API call checks the value against the connection).
 - Faults at runtime when the connector tries to use the ID against a mailbox/workspace/site that does not contain it.
 - Surfaces as a silent fault or generic "no matching resource" error — hard to diagnose without tracing back to the authoring step.
 
@@ -44,7 +44,7 @@ The rules above assume the lookup call (`uip is resources run list`, or `uip is 
 | The display name you searched by | `reference.lookupValue` names the field to write; `lookupNames` only names the fields to match *against*. |
 | A vendor "well-known" alias | Accepted by some vendor APIs directly, but the connector stores what you write and the field is typed as an ID. |
 | An ID from context, memory, or another connection | See [Reference IDs Are Connection-Scoped](#reference-ids-are-connection-scoped-critical). |
-| A plausible-looking placeholder | Passes `describe` / `node configure` / `flow validate`; faults at runtime. |
+| A plausible-looking placeholder | Passes `describe` / `nodes configure` / `flow validate`; faults at runtime. |
 
 Every one of these produces an artifact that validates clean and fails later, with the original cause no longer visible.
 

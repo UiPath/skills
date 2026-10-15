@@ -120,7 +120,7 @@ success_criteria:
   - type: command_executed
     description: "Static-simulation creation telemetry (report only; its requested removal leaves no durable witness)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+(?=.*--strategy\s+Static\b)(?=.*--mock-value\b)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulations?\s+(?:add|create)\s+(?=.*--strategy\s+Static\b)(?=.*--mock-value\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 0.0
@@ -136,7 +136,7 @@ success_criteria:
   - type: command_executed
     description: "Simulation-list telemetry (report only; persisted state is graded directly)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+list'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulations?\s+list'
     min_count: 1
     weight: 1.5
     pass_threshold: 0.0

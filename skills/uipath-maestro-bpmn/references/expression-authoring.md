@@ -89,7 +89,7 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
 ## Scope and availability
 
 - A process-level variable is readable from anywhere in the root process, and is
-  what `debug-instance variables-all` and `instance variables` surface. Declare
+  what `debug-instances variables-all` and `instances variables` surface. Declare
   it scoped to the process — see [structural-bpmn.md](structural-bpmn.md). A
   variable scoped to a node is bound to that node and is not surfaced as a
   process-level runtime variable.
@@ -98,7 +98,7 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
   never absent (see
   [Structural BPMN: Variables](structural-bpmn.md#variables)). A variable
   scoped to a node is bound to that node and is not surfaced as a root
-  runtime variable, so `debug-instance variables-all` cannot show it. Process
+  runtime variable, so `debug-instances variables-all` cannot show it. Process
   expressions reference that mutable variable as `vars.<id>`, not the
   caller-facing declaration.
 - Public caller inputs and outputs use the event bridge contract documented in

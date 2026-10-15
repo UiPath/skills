@@ -76,7 +76,7 @@ success_criteria:
   - type: command_executed
     description: "Advisory: live-v1 agent added a Query Entity Records node"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+node\s+add\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.query-entity-records'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+nodes?\s+(?:add|create)\s+\S+\s+"?uipath\.connector\.uipath-uipath-dataservice\.query-entity-records'
     min_count: 1
     weight: 0
     pass_threshold: 0.0

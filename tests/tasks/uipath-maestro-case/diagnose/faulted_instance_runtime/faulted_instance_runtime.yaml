@@ -50,7 +50,7 @@ success_criteria:
   - type: command_executed
     description: "Agent read the instance's incidents (instance list carries them, or instance incidents / incident get)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(instance\s+(list|incidents|get)|incident\s+(get|summary)|processes\s+(incidents|diagnose))\b'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(instances?\s+(list|incidents|get)|incidents?\s+(get|summary)|processes\s+(incidents|diagnose))\b'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -66,6 +66,6 @@ success_criteria:
   - type: command_not_executed
     description: "Read-only: no instance or incident was changed"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+instance\s+(retry|cancel|pause|resume|goto|migrate|variables-set|message\s+send|element\s+(cancel|retry))\b'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+instances?\s+(retry|cancel|pause|resume|goto|migrate|variables-set|messages?\s+send|elements?\s+(cancel|retry))\b'
     weight: 2.0
     pass_threshold: 1.0
