@@ -54,7 +54,7 @@ The six baseline inputs:
 |---|---|
 | Process **name** | Ask the user. Non-empty; a duplicate name 409s. |
 | **Description** | Ask the user, or derive from the supplied material and confirm. |
-| **Category id** | `GET /hierarchy` → pick from `data.categories[]` (`category_id`, `category_name`, nested `subcategories`) — **only nodes with `category_is_active: 1`** (0 = archived). One clear fit → propose it; several plausible → `AskUserQuestion` with the names. **Never send the template's `1`.** (Works on an empty tenant — do not depend on an existing process.) |
+| **Category id** | `GET /hierarchy` → pick from `data.categories[]` (`category_id`, `category_name`, nested `subcategories`) — **only nodes with `category_is_active: 1`** (0 = archived). Pick the most specific node that fits the material, and **"Other" only when nothing fits**. "Other" is any node with `category_is_other: 1`, and each branch can carry its own (e.g. *Finance & Accounting › Other*), so skip those too. One clear fit → propose it; several plausible → `AskUserQuestion` with the names. **Never send the template's `1`.** (Works on an empty tenant — do not depend on an existing process.) |
 | **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by **label** (e.g. "Standard Operating Procedure") and send that `answer_option` code. Never reuse the template's placeholder code. |
 | **Owner email** | The **signed-in identity is the default owner** — take it from the auth/identity call, not from a list. `GET /users` is optional; if you use it, do a targeted lookup with `?s=<email>&invite=all` (both parameters — the default filter hides users who can still own a process) and treat a miss as no signal. **Never block the publish on it** — submit and let the API decide. |
 | **Submitter email** | Same recipe as owner; usually the same person. |
@@ -164,7 +164,9 @@ Build `$DOC_PAYLOAD` per `ProcessDocumentValidator`:
 ```
 
 - `document_title`, `document_description`, `document_type_id` are all required (the field is `document_title`, **not** `document_name`).
-- **`document_type_id` comes from the fixed platform table in [`api-endpoints.md`](api-endpoints.md)** — PDD → `1`, SDD → `2`, otherwise `9` (MISC). Never guess other ids.
+- **`document_type_id` comes from the fixed platform table in [`api-endpoints.md`](api-endpoints.md)** — PDD → `1`, SDD → `2`, a `.bpmn` process map → `6` (under any other type AH shows it download-only, with no editor), otherwise `9` (MISC). Never guess other ids. A case plan (`caseplan.json`) is download-only whatever its type — see the same table.
+- **409 `Duplicate document with title found`** → a document with the same type **and file name** is already attached (the title is not checked; see [`api-endpoints.md`](api-endpoints.md)). Report it with that document, then continue with the remaining documents. Never rename or retitle and retry on your own.
+- **Fixing a `.bpmn` already attached as `9`:** uploading it again as `6` succeeds (different type, no 409) and leaves both copies. The Open API cannot delete documents, so tell the caller the old download-only copy is still there and should be deleted in the AH web UI.
 - Supply **exactly one** of `file` or `embed_link` — an XOR enforced in the handler, not the JSON schema. Both, or neither, 400s with `"One and only one of embed_link or file need to be specified."`
 - **`file` (default).** Base64-encode the file and send `file_name`, `mimetype`, `file_content`, `file_encoding`. `file_encoding` must be the literal `base64` — any other value fails with `"Invalid file."`, as does an empty `file_name`, `mimetype`, or `file_content`. Body limit is 300mb.
 - Common mimetypes: `.docx` → `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `.md` → `text/markdown`, `.pdf` → `application/pdf`.
