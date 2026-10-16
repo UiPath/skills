@@ -136,10 +136,11 @@ make from syntax alone. Exact signatures remain in the generated API.
   is minted from its name rather than copied from it, task and condition ids are
   derived, and companions are wired to match. A hand-edit fixes the field you
   looked at and leaves the derived ones carrying whatever the broken input had,
-  which plain `uip maestro case validate` does not report: only `--strict`
-  rejects a slot id copied from its name (`STRICT_FORMAL_ARG_ID`), so a
-  default-profile `Valid` is not done. Round-tripping the whole plan re-derives
-  all of them at once.
+  which plain `uip maestro case validate` does not report. `--strict` rejects a
+  slot id copied from its name (`STRICT_FORMAL_ARG_ID`), but neither profile
+  checks that task and condition ids match their derived form, so `Valid` from
+  either does not prove a hand-edit is complete. Round-tripping the whole plan
+  re-derives all of them at once.
 
 ## Product boundary
 
