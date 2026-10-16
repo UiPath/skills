@@ -108,7 +108,7 @@ resolve is that element with its registry payload and the identity slots left
 as public placeholders, never a bare `bpmn:task` standing in for the work. That
 applies to phase 4, where nodes are real. In a phase 2 skeleton every activity
 is deliberately a bare `bpmn:task` — see
-[references/phase-2-skeleton.md](references/phase-2-skeleton.md).
+[references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md).
 
 | Pattern | Reach for it when | Guide |
 | --- | --- | --- |
@@ -176,8 +176,8 @@ never changes what a step does.
 | --- | --- | --- | --- |
 | **0 — Surface** | — | Nothing to do yet: the skill assumes a terminal. | Below |
 | **1 — Preflight** | 1a–1b | Check login, scan for an existing solution and project. Writes nothing, so it runs in every mode. | Below |
-| **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no registry calls**. Draft mode only, except 2a. | [references/phase-2-skeleton.md](references/phase-2-skeleton.md) |
-| **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, hold the approval gate. Draft mode only. | [references/phase-2-skeleton.md](references/phase-2-skeleton.md#iterating) |
+| **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no registry calls**. Draft mode only, except 2a. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
+| **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, hold the approval gate. Draft mode only. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating) |
 | **4 — Wire it up** | 4a–4g | Discover, fetch templates, paste real payloads into the existing boxes, lay out, validate, refresh, show. | Below |
 
 The skeleton (2b–2f) and iteration (phase 3) exist to show the user a shape
@@ -192,7 +192,7 @@ request:
 
 | Mode | Detect it when | Phases |
 | --- | --- | --- |
-| **Brownfield** | A `.bpmn` the request targets already exists. Do not run `init`; if the file is bare (no `project.uiproj`), bootstrap it with the two-key `project.uiproj` + `refresh` path in 4c. Pre-empts the inference below — the shape is already on disk. | 0–1, then 3–4 |
+| **Brownfield** | A `.bpmn` the request targets already exists. Do not run `init`; if the file is bare (no `project.uiproj`), bootstrap it with the two-key `project.uiproj` + `refresh` path in 4c. Pre-empts the inference below — the shape is already on disk. | 0–1, then 4 |
 | **Discovery-only** | The request asks to discover before authoring, save raw registry JSON/evidence, or explicitly "do not author yet", even if it describes an eventual BPMN. Immediately create `registry-evidence/`, save `registry pull --output json`, `registry list --output json` or `registry search ... --output json`, and `registry get <type> --output json` for each requested type. Do not scaffold a project and do not read deep authoring references. Recipe: [references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks). | 0–1, then terminate |
 
 Otherwise infer the mode from the request before anything runs. **Never ask**
@@ -200,7 +200,7 @@ Otherwise infer the mode from the request before anything runs. **Never ask**
 
 | Mode | Take it when | Phases |
 | --- | --- | --- |
-| **Draft** | The session is in plan mode, or the request asks for the shape first — *plan mode*, *draft*, *design*, *sketch*, *what would it look like*, *show me first*. | 0–3, stop at the gate |
+| **Draft** | The session is in plan mode, or the request asks for the shape first — *plan mode*, *design*, *sketch*, *what would it look like*, *show me first*. The word *draft* alone is not a trigger: a "draft project" is a source-only handoff (Rule 16). | 0–3, stop at the gate |
 | **Auto** | Anything else. This is the default. | 0–1, 2a, 4, no stop |
 
 Auto is the default precisely because it is the only mode that completes
@@ -212,9 +212,9 @@ the shape first can stop and ask for it.
 
 **Draft mode is never the deliverable on its own.** The user's approval of the
 shape is what authorizes phase 4. Without it, report the skeleton as an
-unapproved draft rather than as a finished process. Draft mode needs a
-package-ready project, because the user sees the shape by opening
-an uploaded solution.
+unapproved draft rather than as a finished process. Draft mode shows the
+shape by upload when the request allows one (2f); when it forbids upload,
+show the laid-out local `.bpmn` path and a short text outline instead.
 
 Author early: do not pre-read every reference before writing. Read a reference
 only when you reach the structure it covers, and read only the section covering
@@ -249,7 +249,7 @@ upload. Surface detection is future work.
 
 Draft mode only, except 2a. Steps **2b** to **2f** — author blank boxes, `format`, `validate`, `refresh`,
 show the skeleton — are specified in
-[references/phase-2-skeleton.md](references/phase-2-skeleton.md). Only 2a is
+[references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md). Only 2a is
 below, because it is the one step that depends on phase 1's scan.
 
 - **2a Create or adopt the project** (greenfield only). Skip this step for
@@ -270,7 +270,7 @@ below, because it is the one step that depends on phase 1's scan.
 
 Adjust the shape, re-`format`, show the change, and hold the approval gate
 until the user agrees it: see
-[references/phase-2-skeleton.md](references/phase-2-skeleton.md#iterating).
+[references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating).
 Draft mode only.
 
 ### Phase 4 — Wire it up
@@ -355,8 +355,8 @@ Draft mode only.
    with the leaf as the name — and either pass `--skip-solution-registration`
    or make that parent a solution first, because default `init` inserts a
    `<ProjectName>Solution/` level the requested path does not have. Check
-   `Data.Path` against the requested path before editing. The
-   init scaffold declares no `xsi` namespace: add
+   `Data.Path` against the requested path before editing. Older
+   init scaffolds declare no `xsi` namespace: add
    `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` to
    `bpmn:definitions` before writing any `xsi:type` attribute. See
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
@@ -546,8 +546,10 @@ Draft mode only.
    contract (scope, idempotency, binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
-- **4g Show the finished process.** `uip solution upload <SolutionDir> --output json`
-  returns the `Data.DesignerUrl` to report.
+- **4g Show the finished process.** When the request allows an upload and the
+  project has a solution (`.uipx`), `uip solution upload <SolutionDir> --output json`
+  returns the `Data.DesignerUrl` to report. When the request forbids upload, or
+  there is no solution, report the local `.bpmn` path instead.
 
 ## Operate and diagnose
 
@@ -648,8 +650,9 @@ and honestly surfaced to the user as gaps when asked.
    or fixtures added to this skills repository, stay sanitized.
 10. **Confirm before any cloud change.** Publish, deploy, run, pause, resume,
    cancel, retry, and migrate require explicit user consent; validate locally
-   first. `solution upload` is the exception: a request to build the process
-   authorizes the upload that shows it, so upload without asking. Confirm only
+   first. `solution upload` is the exception: unless the request forbids it, a
+   request to build the process authorizes the upload that shows it, so upload
+   without asking. Confirm only
    when the project was adopted from a solution the agent did not create,
    because upload overwrites the cloud solution matching the local `.uipx`
    SolutionId — and confirm it where that solution is chosen (2a), not at
@@ -738,7 +741,7 @@ and honestly surfaced to the user as gaps when asked.
 
 | Topic | Read |
 | --- | --- |
-| Phase 2 skeleton — blank boxes, real control flow, no registry calls | [references/phase-2-skeleton.md](references/phase-2-skeleton.md) |
+| Phase 2 skeleton — blank boxes, real control flow, no registry calls | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
 | Discover → template → bind → assemble loop | [references/registry-workflow.md](references/registry-workflow.md) |
 | Structural BPMN, event matrix, boundary events, containers, multi-instance, diagram, validation | [references/structural-bpmn.md](references/structural-bpmn.md) |
 | Worked-out topology for a recurring process shape, and how shapes compose | Patterns table above → `references/patterns/*-guide.md` |

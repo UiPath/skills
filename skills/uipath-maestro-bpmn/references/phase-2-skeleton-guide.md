@@ -1,7 +1,7 @@
 # Phase 2 — Skeleton
 
-Author a skeleton of blank boxes, arrows and labels, upload it, and reach a link
-the user can open in about two minutes — it makes **no registry calls**.
+Author a skeleton of blank boxes, arrows and labels, show it to the user, and
+stop for their approval. It makes **no registry calls**.
 
 **Draft mode only.** Draft mode stops afterwards and asks the user to agree
 the shape (phase 3); phase 4 then pastes real payloads into these same boxes.
@@ -18,20 +18,20 @@ in. It is not a working process and must never be reported as one.
 1. **Every activity is a bare `<bpmn:task>`** carrying only an `id` and a
    `name`. No `uipath:activity`, no `uipath:event`, no payloads, no resource
    identities, no connections.
-2. **Do not use `serviceTask` or `sendTask`.** They render with their own icons
-   (a gear, an envelope), which makes a box look like a decided product choice
-   and pulls review toward "is this the right element?" instead of "should this
-   step exist?". Uniform blank boxes are the point.
+2. **Do not use `serviceTask` or `sendTask`.** Their icons (a gear, an
+   envelope) make a box look like a decided product choice. Keep every box
+   blank.
 3. **Make no registry calls.** No `registry pull`, `list`, `search`, or `get`.
    Element types are not being chosen yet.
-4. **Control flow is real.** Genuine `bpmn:startEvent`, `bpmn:exclusiveGateway`,
-   `bpmn:sequenceFlow`s, and a single `bpmn:endEvent` that every branch
-   converges on. Branch structure *is* the shape being approved, so it is not
-   simplified.
+4. **Control flow is real.** Genuine `bpmn:startEvent` (with its timer or
+   message definition when the process starts that way),
+   `bpmn:exclusiveGateway` and `bpmn:parallelGateway`, `bpmn:sequenceFlow`s,
+   and end events: one that every branch converges on, unless the request
+   names separate outcomes. Do not simplify the branch structure.
 5. **Label each box with the action first and the intended element family last,
    in brackets** — `Classify ticket [Agent]`, `Notify approvals team [Slack]`,
-   `Prepare ticket summary [Script]`. The label carries all the meaning a blank
-   box cannot, so it is load-bearing rather than decorative.
+   `Prepare ticket summary [Script]`. The label carries the meaning a blank box
+   cannot.
 6. **Name each branch flow** with the outcome it carries (`approve`, `reject`,
    `escalate`) via the flow's `name` attribute, so the routing reads off the
    picture.
@@ -107,29 +107,31 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   anything while validation fails, so 2d must pass first. On a skeleton that
   preserved the start event it reports `WrittenFiles: []`, which is the
   drift check passing rather than a no-op to skip.
-- **2f Make the shape visible.** Run
+- **2f Make the shape visible.** When the request allows an upload, run
   `uip solution upload <SolutionDir> --output json` and report the returned
   `Data.DesignerUrl`. Do not ask first: a request to build the
   process authorizes the upload that shows it, and a consent gate per
   iteration would defeat the mode. The one case that still needs confirmation
   is adopting a solution the agent did not create, because `upload` overwrites
   the cloud solution matching the local `.uipx` SolutionId. Confirm that at
-  2a, not here.
+  2a, not here. When the request forbids upload, skip it: report the laid-out
+  local `.bpmn` path and a short text outline of the shape instead.
 
 ## Iterating
 
-Adjust the skeleton, re-`format`, show the change, repeat. Each upload after
-the first reports
-`Data.Action: "Overwritten"` and reuses the same `SolutionId` and
-`DesignerUrl`, because `upload` writes the cloud solution id back into the local
-`.uipx`. `"Imported"` on a later upload means that id was lost and a second
-cloud solution was just created — stop and fix that before continuing.
+- **3a Edit the skeleton** from the user's feedback, then re-`format`.
+- **3b Show the change** the same way as 2f. Each upload after the first
+  reports `Data.Action: "Overwritten"` and reuses the same `SolutionId` and
+  `DesignerUrl`, because `upload` writes the cloud solution id back into the
+  local `.uipx`. `"Imported"` on a later upload means that id was lost and a
+  second cloud solution was just created — stop and fix that before
+  continuing. Repeat 3a–3b.
+- **3c Hold the gate.** Stop until the user explicitly approves the shape.
 
 Removing a box is the common edit: delete the task, delete its two sequence
 flows, add one replacement flow, then `format`. Since entry points are
 untouched, `refresh` stays a no-op.
 
-In draft mode the loop ends at an explicit approval gate, and that approval is
-what authorizes phase 4 — registry pull, element disambiguation, live
+That approval is what authorizes phase 4 — registry pull, element disambiguation, live
 connections, and payloads pasted into the existing boxes. Until then the
 skeleton is an unapproved draft, and saying otherwise misreports it.
