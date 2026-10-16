@@ -81,6 +81,10 @@ Open a manual run with `uip tm testsets run --test-set-key <KEY> --execution-typ
   - `--object-type` is the parent object's type, not the file's; a wrong one can still succeed.
   - `download --attachment-id` writes to the current folder under the server name unless `--result-path`/`--output-file`, and never replaces a file: on `already exists`, stop and ask; pass `--overwrite` only when the user asked.
   - `update` only renames (`--file-name`). `--all` is one page per call; follow `Pagination`. Confirm deletes (Rule 5).
+- Files out: `uip tm testcases export` (test cases to `.xlsx`; `--test-case-ids`, else the whole project) and `uip tm report export` (an execution's report, `--execution-id --format excel|pdf|junit`, or chosen results as PDFs, `--test-case-log-ids`, two or more as one `.zip`):
+  - When the user wants the file, pass `--wait --output-file <path>`. Without `--wait` only a job starts: poll `uip tm export-jobs get --job-id` while `Initiated`/`InProgress`, stop on `Failed`/`Cancelled`, then `attachment download --attachment-id <AttachmentId>` as `Instructions` prints. Never start the same export twice to check on it.
+  - An existing `--output-file` is refused before anything starts: ask, and pass `--overwrite` only when told.
+  - `export-jobs get` needs the project that started the job (others return 404). JUnit off on the tenant (`feature is not enabled`) or a 403 on result PDFs (licence): report it, don't retry.
 
 ### Playwright pack
 
