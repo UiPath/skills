@@ -8,11 +8,13 @@ description: >
   row, and never runs `project get-default` (which creates a default, open to
   the tenant's Everyone group, when the tenant has none) or `--set-default`
   (which moves the tenant-wide default under every other run). Graded on the
-  answer file against the server: the key of the first row when it carries
-  IsDefault true, else NONE, so both a tenant with a default and one without
-  are covered. A user who cannot open the default does not see it in the list
-  at all, so NONE means "no default this login can see"; the grader reads the
-  list as the same login, so it agrees with the agent either way.
+  answer file against the default pre_run records before the agent starts:
+  the key of the first row when it carries IsDefault true, else NONE, so both
+  a tenant with a default and one without are covered. A second check reads
+  the default again after the run and fails if it changed, so creating or
+  moving it by any route (not only the guarded commands) fails the task. A user who cannot open the default does not see it in the list
+  at all, so NONE means "no default this login can see"; pre_run and the graders
+  read the list as the same login, so they agree with the agent either way.
 tags: [uipath-test, smoke, mode:operate, lifecycle:discover, outcome-graded]
 
 run_limits:
@@ -22,7 +24,21 @@ run_limits:
 pre_run:
   - command: |
       python3 - <<'PYEOF'
-      import subprocess, sys
+      import json, subprocess, sys
+      def visible_default():
+          r = subprocess.run(["uip", "tm", "project", "list", "--limit", "1", "--output", "json"],
+                             capture_output=True, text=True)
+          o = r.stdout or ""
+          try:
+              rows = json.loads(o[o.index("{"):]).get("Data")
+          except Exception:
+              return None
+          if not isinstance(rows, list):
+              return None
+          first = rows[0] if rows else {}
+          if first.get("IsDefault") is True:
+              return {"Key": first.get("ProjectKey"), "Id": first.get("Id")}
+          return {"Key": "NONE", "Id": None}
       r = subprocess.run(["uip", "tm", "project", "get-default", "--help"],
                          capture_output=True, text=True)
       if r.returncode != 0:
@@ -31,6 +47,12 @@ pre_run:
                 file=sys.stderr, flush=True)
           sys.exit(1)
       print("FIXTURE: CLI has project get-default", flush=True)
+      before = visible_default()
+      if before is None:
+          print("FIXTURE: PROVISIONING FAILED - could not read `tm project list`", file=sys.stderr, flush=True)
+          sys.exit(1)
+      json.dump(before, open(".default-before.json", "w"))
+      print(f"FIXTURE: visible default before the run: {before['Key']}", flush=True)
       PYEOF
     timeout: 60
 
@@ -63,30 +85,75 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "default_project.txt names the server's default project key, or NONE when it has none"
+    description: "default_project.txt names the default this login saw before the run, or NONE when it saw none"
     command: |
       python3 - <<'PYEOF'
       import json, subprocess, sys
-      r = subprocess.run(["uip", "tm", "project", "list", "--limit", "1", "--output", "json"],
-                         capture_output=True, text=True)
-      o = r.stdout or ""
+      def visible_default():
+          r = subprocess.run(["uip", "tm", "project", "list", "--limit", "1", "--output", "json"],
+                             capture_output=True, text=True)
+          o = r.stdout or ""
+          try:
+              rows = json.loads(o[o.index("{"):]).get("Data")
+          except Exception:
+              return None
+          if not isinstance(rows, list):
+              return None
+          first = rows[0] if rows else {}
+          if first.get("IsDefault") is True:
+              return {"Key": first.get("ProjectKey"), "Id": first.get("Id")}
+          return {"Key": "NONE", "Id": None}
       try:
-          rows = json.loads(o[o.index("{"):]).get("Data")
-      except Exception:
-          print("LIST_FAILED"); sys.exit(1)
-      if not isinstance(rows, list):
-          print("LIST_FAILED"); sys.exit(1)
-      first = rows[0] if rows else {}
-      expected = first.get("ProjectKey") if first.get("IsDefault") is True else "NONE"
+          before = json.load(open(".default-before.json"))
+      except (OSError, ValueError):
+          print("NO_SNAPSHOT"); sys.exit(1)
       try:
           got = open("default_project.txt").read().strip()
       except OSError:
           print("NO_FILE"); sys.exit(1)
-      print("MATCH" if got == expected else f"MISMATCH expected={expected} got={got}")
-      sys.exit(0 if got == expected else 1)
+      ok = got == before["Key"]
+      print("MATCH" if ok else f"MISMATCH expected={before['Key']} got={got}")
+      sys.exit(0 if ok else 1)
       PYEOF
     expected_exit_code: 0
     expected_stdout: "MATCH"
+    stdout_match: contains
+    timeout: 60
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The tenant's default is the same project after the run (nothing created or moved, by any route)"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      def visible_default():
+          r = subprocess.run(["uip", "tm", "project", "list", "--limit", "1", "--output", "json"],
+                             capture_output=True, text=True)
+          o = r.stdout or ""
+          try:
+              rows = json.loads(o[o.index("{"):]).get("Data")
+          except Exception:
+              return None
+          if not isinstance(rows, list):
+              return None
+          first = rows[0] if rows else {}
+          if first.get("IsDefault") is True:
+              return {"Key": first.get("ProjectKey"), "Id": first.get("Id")}
+          return {"Key": "NONE", "Id": None}
+      try:
+          before = json.load(open(".default-before.json"))
+      except (OSError, ValueError):
+          print("NO_SNAPSHOT"); sys.exit(1)
+      after = visible_default()
+      if after is None:
+          print("LIST_FAILED"); sys.exit(1)
+      ok = after == before
+      print("UNCHANGED" if ok else f"CHANGED before={before} after={after}")
+      sys.exit(0 if ok else 1)
+      PYEOF
+    expected_exit_code: 0
+    expected_stdout: "UNCHANGED"
     stdout_match: contains
     timeout: 60
     weight: 3.0
