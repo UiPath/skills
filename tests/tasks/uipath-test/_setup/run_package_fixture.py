@@ -78,13 +78,18 @@ def require_robot(folder, key):
     # A runtime needs an account to run the jobs as: a folder member that may
     # hold an unattended session (a robot account, or a user with an
     # unattended robot).
-    members = call("or", "users", "list-in-folder", "--folder-key", key,
-                   "--include-inherited", "--limit", "200").get("Data") or []
-    for name in [m.get("UserName") for m in members if m.get("UserName")]:
-        rows = call("or", "users", "list", "--username", name, "--all-fields").get("Data") or []
-        if any(u.get("UserName") == name and u.get("MayHaveUnattendedSession") for u in rows):
-            log(f"unattended account {name}")
-            return
+    page, offset = 200, 0
+    while True:
+        members = call("or", "users", "list-in-folder", "--folder-key", key, "--include-inherited",
+                       "--limit", str(page), "--offset", str(offset)).get("Data") or []
+        for name in [m.get("UserName") for m in members if m.get("UserName")]:
+            rows = call("or", "users", "list", "--username", name, "--all-fields").get("Data") or []
+            if any(u.get("UserName") == name and u.get("MayHaveUnattendedSession") for u in rows):
+                log(f"unattended account {name}")
+                return
+        if len(members) < page:
+            break
+        offset += page
     not_ready(f"no member of '{folder}' may hold an unattended session; add a robot "
               "account to the folder as Automation User.")
 
