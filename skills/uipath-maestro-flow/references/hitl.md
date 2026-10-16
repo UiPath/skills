@@ -8,7 +8,7 @@ type, a deployed Action App, or a document-validation station.
 Signature:
 `hitl({ variant?: 'quick-form' | 'action-app' | 'document-validation', app?,
 document?, title?, priority?, labels?, recipient?, fields?, outcomes,
-outcomePorts?, exposeError? })`.
+outcomePorts?, exposeError?, legacyCompleted? })`.
 
 ```ts
 .var('status', types.string)
@@ -76,7 +76,18 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `getEffectiveHitlHandleCustomization`). A `completed` edge on a task with
   outcomes is stale: Studio Web and the converter remap it to the PRIMARY
   outcome, so every other outcome loses its path. `check` refuses it
-  (HITL_COMPLETED_PORT_GONE). `exposeError: true` additionally exposes
+  (HITL_COMPLETED_PORT_GONE). The one exception is `legacyCompleted: true`:
+  decompile writes it for a file whose task already leaves on `completed`, so
+  a no-edit round trip writes that edge back unchanged, and `check` warns
+  (HITL_LEGACY_COMPLETED). Never add it yourself. If the task asks you to fix
+  that task's routing, replace it with `outcomePorts: false` (every outcome
+  continues) or route each outcome. A decompiled task the designer drew may write
+  an outcome as `{ name: 'Reject', id: 'outcome-1778015958049' }`: the `id`
+  keeps the original outcome id, so its port is `outcome-outcome-1778015958049`
+  (route it with `.stepToList` by that port; `.stepSwitch` arms still match the
+  name), and the merged edges match the original node. Leave it as it is; new
+  outcomes need no `id`.
+  `exposeError: true` additionally exposes
   `out('<step>', 'error')` and selects the 1.2 definition (default node only).
 
   **Every outcome must be wired**, and there are three ways. Prefer the first:

@@ -1,0 +1,79 @@
+{
+  "_comment": "Snapshot of `uip maestro case task-types list --output json` Data. Do not edit by hand; refresh with: python3 tests/tasks/uipath-maestro-case/_shared/task_types.py --refresh",
+  "Data": {
+    "WriteSchemaVersion": "32.0.3",
+    "ReadSchemaVersion": "32.0.4",
+    "Authorable": [
+      {
+        "Type": "action"
+      },
+      {
+        "Type": "agent"
+      },
+      {
+        "Type": "api-workflow"
+      },
+      {
+        "Type": "business-rule"
+      },
+      {
+        "Type": "case-management"
+      },
+      {
+        "Type": "execute-connector-activity"
+      },
+      {
+        "Type": "flow-process"
+      },
+      {
+        "Type": "function"
+      },
+      {
+        "Type": "http-request"
+      },
+      {
+        "Type": "process"
+      },
+      {
+        "Type": "rpa"
+      },
+      {
+        "Type": "wait-for-connector"
+      },
+      {
+        "Type": "wait-for-timer"
+      }
+    ],
+    "StudioWebOnly": [
+      {
+        "Type": "document-extraction"
+      },
+      {
+        "Type": "external-agent"
+      },
+      {
+        "Type": "external-workflow"
+      },
+      {
+        "Type": "script"
+      }
+    ],
+    "NotTaskTypes": [
+      {
+        "Spelling": "connector-activity",
+        "Layer": "uip maestro case tasks describe --type",
+        "PlanType": "execute-connector-activity"
+      },
+      {
+        "Spelling": "connector-trigger",
+        "Layer": "uip maestro case tasks describe --type",
+        "PlanType": "wait-for-connector"
+      },
+      {
+        "Spelling": "wait-for-event",
+        "Layer": "data.serviceType (Intsvc.WaitForEvent)",
+        "PlanType": "wait-for-connector"
+      }
+    ]
+  }
+}

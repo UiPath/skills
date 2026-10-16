@@ -1,0 +1,259 @@
+task_id: skill-test-testcase-clone-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to copy a test case with its
+  labels. `clone` only queues the copy (`Accepted`, no key), so the agent has
+  to find it with the list command the CLI prints and must not clone again to
+  check. Graded on the live copy: exactly one test case with the run's name
+  from seed.json, carrying the source's label and both steps. pre_run seeds
+  `EVFX-TCCLONE-Login` once (label `EVFX-TCCLONE`, two steps) and writes the
+  run's copy name; post_run deletes the copy.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, os, re, subprocess, sys, time, uuid
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def seed(**values):
+          # seed.json lives in this run's working directory: pre_run, the agent and the graders share it,
+          # and a concurrent run has its own, so names built from uuid8 never collide.
+          s = json.load(open("seed.json")) if os.path.exists("seed.json") else {}
+          s.setdefault("uuid8", uuid.uuid4().hex[:8])
+          s.update({k: v.format(**s) for k, v in values.items()})
+          json.dump(s, open("seed.json", "w"))
+          return s
+
+      def cases(name):
+          rows = call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          return sorted((r for r in rows if r.get("Name") == name), key=lambda r: int(r["TestCaseKey"].split(":")[1]))
+
+      def delete(row):
+          call("tm", "testcases", "delete", "--project-key", "HEALTH", "--test-case-key", row["TestCaseKey"], "--yes")
+
+      def ensure_case(name, labels=(), steps=()):
+          # Seed once. Two runs seeding at the same moment can both create it, so keep the lowest key and
+          # delete the rest (with --yes) — a duplicate fixture would make the agent ask which one to use.
+          rows = cases(name)
+          for extra in rows[1:]:
+              delete(extra)
+          if rows:
+              return rows[0]
+          item = {"name": name, "labels": list(labels),
+                  "steps": [{"description": d, "expectedResult": e} for d, e in steps]}
+          json.dump([item], open(".seed-case.json", "w"))
+          need(call("tm", "testcases", "bulk-create", "--project-key", "HEALTH", "--file", ".seed-case.json"), f"create {name}")
+          os.remove(".seed-case.json")
+          # A run that started at the same moment may have created it too: settle, then keep the lowest key.
+          # Every racer deletes the same extras, so they all end on one survivor.
+          time.sleep(8)
+          rows = cases(name)
+          for extra in rows[1:]:
+              delete(extra)
+          return rows[0]
+
+      def ensure_set(name, case_rows):
+          rows = call("tm", "testsets", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          rows = sorted((r for r in rows if r.get("Name") == name), key=lambda r: int(r["TestSetKey"].split(":")[1]))
+          for extra in rows[1:]:
+              call("tm", "testsets", "delete", "--test-set-key", extra["TestSetKey"], "--yes")
+          if not rows:
+              need(call("tm", "testsets", "create", "--project-key", "HEALTH", "--name", name), f"create {name}")
+              time.sleep(8)  # settle a concurrent create, then keep the lowest key (same as ensure_case)
+              rows = call("tm", "testsets", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+              rows = sorted((r for r in rows if r.get("Name") == name), key=lambda r: int(r["TestSetKey"].split(":")[1]))
+              for extra in rows[1:]:
+                  call("tm", "testsets", "delete", "--test-set-key", extra["TestSetKey"], "--yes")
+          ts = rows[0]
+          have = {r.get("TestCaseKey") for r in call("tm", "testsets", "list-testcases", "--project-key", "HEALTH",
+                                                     "--test-set-key", ts["TestSetKey"]).get("Data") or []}
+          missing = [c["TestCaseKey"] for c in case_rows if c["TestCaseKey"] not in have]
+          if missing:
+              need(call("tm", "testcases", "add", "--test-set-key", ts["TestSetKey"], "--test-case-keys", *missing), f"assign to {name}")
+          return ts
+
+      def sweep(ns, hours=6):
+          # Delete this task's per-run cases (EVFX-<NS>-<uuid8>...) older than `hours`, never a live run's.
+          now = datetime.datetime.now(datetime.timezone.utc)
+          for r in call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", f"EVFX-{ns}-").get("Data") or []:
+              if not re.match(rf"EVFX-{ns}-[0-9a-f]{{8}}\b", r.get("Name") or ""):
+                  continue
+              created = (call("tm", "testcases", "get", "--project-key", "HEALTH", "--test-case-key", r["TestCaseKey"]).get("Data") or {}).get("Created")
+              if created and now - datetime.datetime.fromisoformat(created.replace("Z", "+00:00")) > datetime.timedelta(hours=hours):
+                  delete(r)
+
+      src = ensure_case("EVFX-TCCLONE-Login", ["EVFX-TCCLONE"],
+                        [("Open the login page", "The login form is shown"), ("Sign in as admin", "The dashboard opens")])
+      sweep("TCCLONE")
+      s = seed(copy_name="EVFX-TCCLONE-{uuid8} Login copy")
+      print(f"READY source {src['TestCaseKey']}; copy name {s['copy_name']}")
+      PYEOF
+    timeout: 300
+
+post_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, os, re, subprocess, sys, time, uuid
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def seed(**values):
+          # seed.json lives in this run's working directory: pre_run, the agent and the graders share it,
+          # and a concurrent run has its own, so names built from uuid8 never collide.
+          s = json.load(open("seed.json")) if os.path.exists("seed.json") else {}
+          s.setdefault("uuid8", uuid.uuid4().hex[:8])
+          s.update({k: v.format(**s) for k, v in values.items()})
+          json.dump(s, open("seed.json", "w"))
+          return s
+
+      def cases(name):
+          rows = call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          return sorted((r for r in rows if r.get("Name") == name), key=lambda r: int(r["TestCaseKey"].split(":")[1]))
+
+      def delete(row):
+          call("tm", "testcases", "delete", "--project-key", "HEALTH", "--test-case-key", row["TestCaseKey"], "--yes")
+
+      def ensure_case(name, labels=(), steps=()):
+          # Seed once. Two runs seeding at the same moment can both create it, so keep the lowest key and
+          # delete the rest (with --yes) — a duplicate fixture would make the agent ask which one to use.
+          rows = cases(name)
+          for extra in rows[1:]:
+              delete(extra)
+          if rows:
+              return rows[0]
+          item = {"name": name, "labels": list(labels),
+                  "steps": [{"description": d, "expectedResult": e} for d, e in steps]}
+          json.dump([item], open(".seed-case.json", "w"))
+          need(call("tm", "testcases", "bulk-create", "--project-key", "HEALTH", "--file", ".seed-case.json"), f"create {name}")
+          os.remove(".seed-case.json")
+          # A run that started at the same moment may have created it too: settle, then keep the lowest key.
+          # Every racer deletes the same extras, so they all end on one survivor.
+          time.sleep(8)
+          rows = cases(name)
+          for extra in rows[1:]:
+              delete(extra)
+          return rows[0]
+
+      def ensure_set(name, case_rows):
+          rows = call("tm", "testsets", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          rows = sorted((r for r in rows if r.get("Name") == name), key=lambda r: int(r["TestSetKey"].split(":")[1]))
+          for extra in rows[1:]:
+              call("tm", "testsets", "delete", "--test-set-key", extra["TestSetKey"], "--yes")
+          if not rows:
+              need(call("tm", "testsets", "create", "--project-key", "HEALTH", "--name", name), f"create {name}")
+              time.sleep(8)  # settle a concurrent create, then keep the lowest key (same as ensure_case)
+              rows = call("tm", "testsets", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+              rows = sorted((r for r in rows if r.get("Name") == name), key=lambda r: int(r["TestSetKey"].split(":")[1]))
+              for extra in rows[1:]:
+                  call("tm", "testsets", "delete", "--test-set-key", extra["TestSetKey"], "--yes")
+          ts = rows[0]
+          have = {r.get("TestCaseKey") for r in call("tm", "testsets", "list-testcases", "--project-key", "HEALTH",
+                                                     "--test-set-key", ts["TestSetKey"]).get("Data") or []}
+          missing = [c["TestCaseKey"] for c in case_rows if c["TestCaseKey"] not in have]
+          if missing:
+              need(call("tm", "testcases", "add", "--test-set-key", ts["TestSetKey"], "--test-case-keys", *missing), f"assign to {name}")
+          return ts
+
+      def sweep(ns, hours=6):
+          # Delete this task's per-run cases (EVFX-<NS>-<uuid8>...) older than `hours`, never a live run's.
+          now = datetime.datetime.now(datetime.timezone.utc)
+          for r in call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", f"EVFX-{ns}-").get("Data") or []:
+              if not re.match(rf"EVFX-{ns}-[0-9a-f]{{8}}\b", r.get("Name") or ""):
+                  continue
+              created = (call("tm", "testcases", "get", "--project-key", "HEALTH", "--test-case-key", r["TestCaseKey"]).get("Data") or {}).get("Created")
+              if created and now - datetime.datetime.fromisoformat(created.replace("Z", "+00:00")) > datetime.timedelta(hours=hours):
+                  delete(r)
+
+      s = json.load(open("seed.json")) if os.path.exists("seed.json") else {}
+      for r in cases(s["copy_name"]) if s.get("copy_name") else []:
+          delete(r)
+      PYEOF
+    timeout: 180
+
+initial_prompt: |
+  hey, can you make a copy of my EVFX-TCCLONE-Login test case in Test Manager
+  (HEALTH project)? keep its labels on the copy too. name the copy with the
+  `copy_name` in seed.json.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent cloned with labels included (`clone ... --include ... labels`, must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+clone\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--include(?:[\s\\=]+["\x27]?[a-z]+["\x27]?)*?[\s\\=]+["\x27]?labels\b'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exactly one copy under the seeded name, with the label and both steps (cloned once)"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys, time
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data")
+      seed = json.load(open("seed.json")) if __import__("os").path.exists("seed.json") else {}
+      def cases(name):
+          return [r for r in uip("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name) or [] if r.get("Name") == name]
+      def steps(row):
+          return len(uip("tm", "testcases", "steps", "list", "--project-key", "HEALTH", "--test-case-id", row["Id"]) or [])
+      def labelled(label):
+          return {r.get("Name") for r in uip("tm", "testcases", "list", "--project-key", "HEALTH", "--labels", label) or []}
+      name = seed["copy_name"]
+      for _ in range(12):  # the copy is made in the background, steps last
+          rows = cases(name)
+          if len(rows) == 1 and steps(rows[0]) == 2:
+              break
+          time.sleep(10)
+      rows = cases(name)
+      ok = len(rows) == 1 and steps(rows[0]) == 2 and name in labelled("EVFX-TCCLONE") and len(cases("EVFX-TCCLONE-Login")) == 1
+      print(name, len(rows), [steps(r) for r in rows])
+      sys.exit(0 if ok else 1)
+      PYEOF
+    timeout: 180
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

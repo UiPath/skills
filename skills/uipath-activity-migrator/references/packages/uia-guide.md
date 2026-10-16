@@ -65,11 +65,19 @@ For the meaning of any rule or reason, use the rule's `fullDescription` in `tool
 
 Actions, in this order, once the Step 5 build passed:
 
-1. **Annotations.** Migrated activities carry design-time annotations, one line per message: `[PostMigration Action Required]: <TYPE>: <message>`, followed by `[Existing annotation]: <user text>` when the classic activity had one. List them per file; they are the needs-attention items of the report:
+1. **Annotations.** Migrated activities carry design-time annotations, one line per message: `[PostMigration Action Required]: <TYPE>: <message>`, followed by `[Existing annotation]: <user text>` when the classic activity had one. List them per file from the XAML; they are the needs-attention items of the report. In bash:
 
    ```bash
    grep -rn "PostMigration Action Required" --include=*.xaml "<OUTPUT_DIR>"
    ```
+
+   In PowerShell:
+
+   ```powershell
+   Get-ChildItem -LiteralPath "<OUTPUT_DIR>" -Recurse -Filter *.xaml | Select-String -SimpleMatch 'PostMigration Action Required' | ForEach-Object { '{0}:{1}:{2}' -f $_.Path, $_.LineNumber, $_.Line.Trim() }
+   ```
+
+   Nothing else stands in for this listing. Run the listing even when the summarizer and the build warnings already seem to cover the annotations.
 
 2. **Expression-selector defects.** When the output contains `.ToStringWithDelimiter()` markers, run the full procedure in [uia-post-migration-fix-guide.md](../uia-post-migration-fix-guide.md) with `<OUTPUT_DIR>` as its `<MIGRATED_DIR>`: scan, classify each variable's value, present the findings table, confirm once, apply Fix 1 and Fix 2 with targeted edits, validate each edited file, then rebuild. Never rework or "improve" a selector that carries the marker; the defects are structural, and a selector rewrite destroys the variable binding.
 
