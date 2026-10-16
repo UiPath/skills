@@ -1,19 +1,20 @@
 # Needs `uip tm run --type package` (UiPath/cli#4845, in `@uipath/cli@dev` and
-# every release after it).
+# every release after it), the package and robot described in
+# fixtures/README.md.
 task_id: skill-test-run-package-ci-smoke
 description: >
   Smoke test: agent uses the uipath-test skill to run every test in a package
   already uploaded to Orchestrator, the way a CI step would, with
-  `uip tm run --type package`, inside the step's time budget. pre_run seeds a
-  throwaway `EVFX-RUNPKG-*` project per run and post_run deletes it, which also
-  removes the execution and the hidden test set the command creates. The eval
-  tenant has no robot, so the tests start but never finish: the run hits the
-  budget, `tm run` exits 4 and writes a partial JUnit report with the
-  unfinished tests marked skipped. Graded on that report on disk and on the
-  tenant: the report's execution id must be a real execution in the seeded
-  project, so a hand-written report fails, and no test may be reported as
-  passed. Also grades the single complete command, with a `--timeout` inside
-  the budget, and guards against the hand-built chain (link-package →
+  `uip tm run --type package`. The package is the cross-platform
+  `TestCase_CrossPlatform_VB_Tests` (one test that passes), so the folder's
+  serverless robot runs it to the end. pre_run checks the package is there,
+  seeds a throwaway `EVFX-RUNPKG-*` project per run, and post_run deletes it,
+  which also removes the execution and the hidden test set the command
+  creates. Graded on the JUnit report on disk and on the tenant: the report's
+  execution id must be a Finished execution in the seeded project, so a
+  hand-written report fails, and every test in it must read as passed. Also
+  grades the single complete command, with a `--timeout` inside the CI
+  step's budget, and guards against the hand-built chain (link-package →
   testsets create → testsets run → wait → result download) it replaces.
 tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
 
@@ -36,6 +37,15 @@ pre_run:
               return json.loads(r.stdout[r.stdout.index("{"):])
           except Exception:
               return {}
+
+      # The package is a one-time tenant fixture (see fixtures/README.md). If it
+      # is gone, fail loudly instead of scoring the agent on a run that cannot
+      # start.
+      pkg = call("or", "packages", "versions", "TestCase_CrossPlatform_VB_Tests",
+                 "--folder-path", "uipath-test-folder-feed")
+      if not pkg.get("Data"):
+          print(f"FIXTURE: PROVISIONING FAILED - TestCase_CrossPlatform_VB_Tests not in uipath-test-folder-feed: {pkg}")
+          sys.exit(1)
 
       # Orphan sweep: a run that died before post_run strands its project.
       # Only delete projects stamped more than 6 hours ago, so a concurrent
@@ -71,12 +81,11 @@ post_run:
     timeout: 120
 
 initial_prompt: |
-  CI just published the latest version of the test package
-  "Testcases.with.parameters" to the Orchestrator folder
-  "uipath-test-folder-feed". Run all of its tests in my Test Manager project
-  (its key is in project-key.txt in this folder), retry failed ones once, and
-  write the JUnit report to results/junit.xml. This CI step is killed after
-  3 minutes, so the run must give up before that. Tell me how it went.
+  CI just uploaded the test package "TestCase_CrossPlatform_VB_Tests" to the
+  Orchestrator folder "uipath-test-folder-feed". Run all of its tests in my
+  Test Manager project (its key is in project-key.txt in this folder), retry
+  failed ones once, and write the JUnit report to results/junit.xml. This CI
+  step is killed after 10 minutes. Tell me how many tests passed.
 
 success_criteria:
   - type: command_executed
@@ -88,9 +97,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "One complete `tm run --type package` command: package, folder, project, one retry, a --timeout within the 3-minute budget"
+    description: "One complete `tm run --type package` command: package, folder, project, one retry, a --timeout within the 10-minute budget"
     tool_name: "Bash"
-    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--type[\s=]+package\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-name[\s=]+["\x27]?Testcases\.with\.parameters)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-version[\s=]+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--folder-(?:path[\s=]+["\x27]?uipath-test-folder-feed|key[\s=]+\S))(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-(?:key|id)[\s=]+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--max-retries[\s=]+1\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--timeout[\s=]+["\x27]?(?:[1-9]\d?|1[0-7]\d|180)\b)uip\s+tm\s+run\b'
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--type[\s=]+package\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-name[\s=]+["\x27]?TestCase_CrossPlatform_VB_Tests\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-version[\s=]+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--folder-(?:path[\s=]+["\x27]?uipath-test-folder-feed|key[\s=]+\S))(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-(?:key|id)[\s=]+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--max-retries[\s=]+1\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--timeout[\s=]+["\x27]?(?:[1-9]\d?|[1-5]\d\d|600)\b)uip\s+tm\s+run\b'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -105,30 +114,26 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "The report's execution id is an execution in the seeded project (a hand-written report fails), and no test in it is marked passed"
+    description: "The report's execution id is a Finished execution in the seeded project (a hand-written report fails), and every test in it passed"
     command: |
       python3 - <<'PYEOF'
       import json, re, subprocess, sys
       key = open("project-key.txt").read().strip()
-      m = re.search(r'<testsuite\b[^>]*\bid="([0-9a-fA-F-]{36})"', open("results/junit.xml").read())
+      xml = open("results/junit.xml").read()
+      m = re.search(r'<testsuite\b[^>]*\bid="([0-9a-fA-F-]{36})"', xml)
       if not m:
           print("no <testsuite id> in results/junit.xml"); sys.exit(1)
       r = subprocess.run(["uip", "tm", "executions", "list", "--project-key", key,
                           "--output", "json"], capture_output=True, text=True)
       rows = json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
       hit = [e for e in rows if (e.get("Id") or "").lower() == m.group(1).lower()]
-      print("report execution:", m.group(1), "->", hit[0].get("Status") if hit else "not in project")
-      if not hit:
-          sys.exit(1)
-      # The eval tenant has no robot, so the run cannot finish in the budget.
-      # While it is unfinished, no <testcase> may read as passed: one with no
-      # <skipped>, <failure> or <error> child is a pass to CI.
-      xml = open("results/junit.xml").read()
+      status = hit[0].get("Status") if hit else "not in project"
+      # A <testcase> with no <skipped>, <failure> or <error> child is a pass.
       cases = re.findall(r'<testcase\b(.*?)(?=<testcase\b|</testsuite>)', xml, re.S)
-      passed = [c for c in cases if not re.search(r'<(skipped|failure|error)\b', c)]
-      print("testcases:", len(cases), "reported as passed:", len(passed))
-      done = hit[0].get("Status") == "Finished"
-      sys.exit(0 if cases and (done or not passed) else 1)
+      bad = [c for c in cases if re.search(r'<(skipped|failure|error)\b', c)]
+      print("report execution:", m.group(1), "->", status,
+            "| testcases:", len(cases), "not passed:", len(bad))
+      sys.exit(0 if status == "Finished" and cases and not bad else 1)
       PYEOF
     timeout: 60
     expected_exit_code: 0

@@ -29,7 +29,8 @@ and therefore exact for this scheme.
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `project_settings_smoke` | its own throwaway project | the `EVFX-PSET-*` namespace | `pre_run` creates one `EVFX-PSET-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago (so a concurrent run's project is never touched); `post_run` deletes it. The deliverable is a settings change, not the project, so the project is scratch (Rule 2). Unlike the self-contained build tasks, project create/delete is not under test here, so the hooks own the project's lifecycle and the agent never deletes it |
-| `run_package_ci_smoke` | its own throwaway project | the `EVFX-RUNPKG-*` namespace | Same hooks as `project_settings_smoke`: `pre_run` creates one `EVFX-RUNPKG-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans older than 6 hours; `post_run` deletes it, which also removes the execution and hidden test set `tm run --type package` creates. Reads, never changes, the Orchestrator package `Testcases.with.parameters` in `uipath-test-folder-feed`. The tenant has no robot, so the run never finishes; the prompt's 3-minute budget makes it end on `--timeout` with a partial report |
+| `run_package_ci_smoke` | its own throwaway project | the `EVFX-RUNPKG-*` namespace | Same hooks as `project_settings_smoke`: `pre_run` creates one `EVFX-RUNPKG-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans older than 6 hours; `post_run` deletes it, which also removes the execution and hidden test set `tm run --type package` creates. Runs, never changes, the package `TestCase_CrossPlatform_VB_Tests` (see [Run-package fixtures](#run-package-fixtures)); `pre_run` fails loudly if it is gone |
+| `run_package_failing_smoke` | its own throwaway project | the `EVFX-RUNPKGFAIL-*` namespace | Same hooks as `run_package_ci_smoke`, in its own namespace so the two never sweep each other's projects. Runs the package `FailingTestCase_CrossPlatform_VB_Tests` |
 | `testcase_parameters_bulk_add_smoke` | HEALTH | `EVFX-PARAM-Login`, `EVFX-PARAM-Transfer` | Created if absent; `pre_run` clears their parameters each run and seeds `Username=keepme` on Transfer |
 | `testcase_parameters_edit_integration` | HEALTH | `EVFX-PARAMEDIT-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) and `Userid=u1` |
 | `testcase_parameters_lifecycle_e2e` | HEALTH | `EVFX-PARAMLIFE-Login` | Created if absent; `pre_run` clears its parameters |
@@ -180,3 +181,26 @@ This is the one step `pre_run` cannot bootstrap on its own: it requires a
 package published to Orchestrator and a robot able to serve the folder. Until
 that exists, the signoff task's `pre_run` seeds a **manual** execution so the
 wait/report half of the task stays gradeable.
+
+## Run-package fixtures
+
+`run_package_ci_smoke` and `run_package_failing_smoke` need a package the
+tenant can actually run. Set up once on the eval tenant (alpha `codereval` /
+`DefaultTenant`), not by the hooks:
+
+- **Packages** in the `uipath-test-folder-feed` folder feed:
+  `TestCase_CrossPlatform_VB_Tests` 1.0.0 (one test, passes) and
+  `FailingTestCase_CrossPlatform_VB_Tests` 1.0.0 (one test, always fails).
+  They are the cross-platform fixtures from UiPath/cli
+  (`packages/test-manager-tool/tests/test-data/ported-run-tests/`), uploaded
+  with `uip or packages upload <file> --folder-key <FOLDER_KEY>`.
+- **Robot:** the folder's `Default Serverless` machine has one Unattended
+  runtime, and the robot account `tm-eval-robot` is in the folder as
+  Automation User. Serverless robots need no machine credentials, but they
+  run cross-platform packages only: the Windows package
+  `Testcases.with.parameters` in the same folder stays Pending forever.
+
+Both tasks' `pre_run` fail with `FIXTURE: PROVISIONING FAILED` when their
+package is missing, so a broken fixture is not scored as an agent regression.
+With one runtime, parallel runs queue for it; a run takes about a minute, well
+inside the prompts' 10-minute budget.
