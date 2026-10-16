@@ -1,6 +1,6 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, requirements, cases, sets, executions, defects; AI-generate test cases from requirements, evaluate requirements, find obsolete test cases; run every test in an uploaded package from CI, like uipcli test run; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, requirements, cases, sets, executions, defects; AI-generate test cases from requirements, evaluate requirements, find obsolete test cases; run every test in an uploaded package from CI; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
