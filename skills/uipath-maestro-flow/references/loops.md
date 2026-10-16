@@ -10,10 +10,10 @@ Signature: `.loop(name, collection, bodyFn, options?)`.
     'return { id: $vars.eachOrder.currentItem.id };' })))
 ```
 
-The SDK does not expose mutation of a Flow variable on each iteration. Keep
-per-item dispatch and decisions in the body. If work after the loop needs a
-summary, compute it from data already available outside the loop or use a
-dedicated step whose contract supplies that aggregate.
+Keep per-item dispatch and decisions in the body. A value the steps after the
+loop need is written to a `.var()` from a body step with `{ updates }`, as the
+`scan` example in [Loop options](#loop-options) shows; a parallel loop hands its
+results over differently (`parallel: true` there).
 
 Use a one-armed branch to skip the rest of one iteration without terminating
 the run. When the condition is false, that iteration completes and the loop
@@ -49,6 +49,18 @@ A branch or step that decides on the item has to name the loop, so a loop called
 `$vars.item.priority`, which resolves to nothing and takes the false arm on every
 iteration without erroring.
 
+## At a glance
+
+Run a body once for each value in a collection.
+
+Per-iteration flow-variable writes go through `{ updates }` on a body step.
+Every `.loop()` emits `core.logic.loop` 2.4: the body reads
+`$vars.<loop>.currentItem` and `$vars.<loop>.currentIteration` (not the legacy
+1.0.0 `currentIndex`, which `check` refuses). Options: `parallel: true`,
+`completionCondition` (checked after each iteration, stops early), and
+`body.break()` exits the whole loop from inside an arm. The option details and
+examples are below.
+
 ## Loop options
 
 Every `.loop()` emits the loop's 2.4 definition (inner `start`/`continue`/`break`
@@ -58,6 +70,10 @@ emitted only for an explicit `{ version: '1.0.0' }`, which accepts none of the
 options below.
 
 - `parallel: true` — run iterations concurrently instead of sequentially.
+  Concurrent iterations' `{ updates }` writes overwrite each other, so a `.var()`
+  they all update keeps only some of the writes, in no fixed order. Read the
+  results after the loop from `$vars.<loop>.output` instead: one entry per item,
+  in collection order, each `{ <bodyStep>: { output } }`.
 - `completionCondition` — an expression checked after each iteration; the loop
   stops early when it is true.
 - `body.break()` — exit the whole loop from inside an arm. Terminal on its
@@ -75,3 +91,23 @@ options below.
 
 Per-iteration flow-variable writes go through `{ updates }` on a body step —
 `{ updates: { seen: js`$vars.seen + 1` } }` — never through a mutation node.
+
+## Do while
+
+Run a body, then repeat **while a condition is true** — checked AFTER each
+pass, so the body always runs at least once (`core.logic.dowhile`). The
+container publishes no data output: write results to a `.var()` from inside
+the body with `{ updates }`. `limit` caps iterations (1–10,000; blank means
+the platform default of 10,000), and `body.break()` works exactly as in
+`.loop()`.
+
+Signature: `.doWhile(name, condition, bodyFn, { limit?, breakEnabled? })`.
+
+```ts
+.var('page', types.number, 1)
+.doWhile('paginate', js`$vars.fetch.output.body.hasNextPage === true`, (body) => body
+  .step('fetch', http({ url: tmpl`https://api.example.test/items?page=${v('page')}`,
+    method: 'GET', managed: false, returns: { hasNextPage: 'boolean' } }),
+    { updates: { page: js`$vars.page + 1` } }),
+  { limit: 50 })
+```

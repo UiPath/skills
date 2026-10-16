@@ -24,6 +24,22 @@ export default flow('support-chat')
   .build();
 ```
 
+## At a glance
+
+Work a live CHAT: wait for the person's message, answer it, post a reply. Every
+step is keyed by a `conversationId` — the conversation trigger publishes it.
+
+Signatures: `.trigger(conversationTrigger())`; `waitForMessage({ conversationId, numExchanges? })`; `conversationalAgent({ model, systemPrompt, settings })`; `sendMessage({ conversationId, exchangeId, content, endExchange? })`; `conversationContext({ conversationId, exchangeLimit? })`.
+
+```ts
+.trigger(conversationTrigger())
+.step('listen', waitForMessage({ conversationId: out('start', 'conversationId') }))
+.step('reply', conversationalAgent({ model: 'gpt-5.4', systemPrompt: 'Answer briefly.',
+  settings: { context: out('listen', 'conversationContext') } }))
+```
+
+`waitForMessage` SUSPENDS the flow (a catch event), it does not poll. Use `sendMessage` when the flow decides what to say, an agent when the model does.
+
 ## Conversations, exchanges, and messages
 
 Three nested things, and the field names follow them:

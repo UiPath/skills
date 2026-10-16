@@ -107,7 +107,8 @@ FALLBACK_CHECKS: dict[str, dict[str, object]] = {
     "query_params": {
         "label": "Google Tasks query-params HTTP fallback",
         "required": [
-            "tasks.googleapis.com/tasks/v1/lists",
+            "tasks.googleapis.com",
+            "/tasks/v1/lists",
             "/tasks",
             "method",
             "get",

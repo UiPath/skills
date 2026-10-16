@@ -18,3 +18,9 @@ with values; Terminate aborts the whole run.
 Any dangling tail gets an End automatically; an explicit `.return(...)` is required
 only when values must be bound. Multiple path ends are emitted as `end`, `end2`,
 `end3`, and so on.
+
+## At a glance
+
+End the current path and bind declared Flow outputs.
+
+Choose between arm-local returns and a shared continuation based on the graph the scenario needs.

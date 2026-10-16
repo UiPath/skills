@@ -35,13 +35,25 @@ need, then let TypeScript and `bpmn check` provide the detailed contract.
    state the document carried that nothing derives. Leave the `.preserve` call alone; see
    [Process contract](references/bpmn-runtime.md#variables-and-the-process-contract).
 5. Run `uip maestro bpmn check <Name>.bpmn.ts --source` after structural changes.
-6. Compile **into the scaffolded project**, then `format` it, then run product
-   validation — in that order, every time. `validate` refuses a file with no diagram
-   (`BPMN_PARSE_ERROR: No diagrams found`), and `compile` writes none; `format` adds it.
+6. Compile **into the scaffolded project**, then `format` it, then `refresh` it, then
+   run product validation — in that order, every time. `validate` refuses a file with
+   no diagram (`BPMN_PARSE_ERROR: No diagrams found`), and `compile` writes none;
+   `format` adds it.
    Exactly one emitted `<Name>.bpmn` may exist, at
    `<Name>/<Name>.bpmn`; do not leave a second copy at the workspace root, and do not
    leave the template `init` wrote in place of your compiled output.
-7. Use the merge pipeline for targeted edits to an existing process.
+7. **`refresh` is part of the loop, not part of packaging.** `init` generates
+   `entry-points.json` and `operate.json` once, naming the start event of the template
+   it wrote (`Event_start`); they do not follow source edits. Author a start event with
+   any other id — which authoring from your own chain always does — and step 6's
+   validator fails on the mismatch:
+   `entry-points.json references start event "Event_start" via filePath, but no
+   <bpmn:startEvent id="Event_start"> exists`. `uip maestro bpmn refresh <project-path>`
+   regenerates both from the compiled BPMN. Run it after any edit that changes a start
+   event id or adds or removes an entry point. It validates before it writes, so lay
+   the diagram out first (`format`) or it fails with `MISSING_DI_SHAPE`, and it needs an
+   init-generated project — with no `project.uiproj` it has nothing to regenerate.
+8. Use the merge pipeline for targeted edits to an existing process.
 
 ## API index
 
@@ -70,7 +82,8 @@ spells the paths its rows are relative to.
 | HTTP requests | `http` | [HTTP](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
 | Orchestrator jobs and queues | start/execute/queue methods | [Work dispatch](references/bpmn-runtime.md#http-and-orchestrator-work) | `examples/NotifyChannel.bpmn.ts` |
 | Human work | `humanTask` | [Human tasks](references/bpmn-runtime.md#human-task-outcomes) | `examples/NotifyChannel.bpmn.ts` |
-| Connectors and external work | `connector`, `externalAgent`, `externalWorkflow` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/NotifyChannel.bpmn.ts` |
+| Connectors and external work | `connector`, `externalAgent`, `externalWorkflow` | [Connectors](references/connectors.md) | `examples/NotifyChannel.bpmn.ts` |
+| A connector EVENT, as a start or a mid-flow wait | `eventTrigger`, `waitForEvent` | [Connector events](references/connectors.md#6-connector-events) | — |
 | Data Fabric records and file fields | `dataService` | [Connections](references/bpmn-runtime.md#connectors-and-bindings) | `examples/ContractRegistry.bpmn.ts` |
 | Any registry type, typed method or not | `activity` | [Registry extension types](references/bpmn-runtime.md#registry-extension-types) | `examples/InvoiceApproval.bpmn.ts` |
 | Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
@@ -146,11 +159,21 @@ uip maestro bpmn check <Name>.bpmn.ts --source
 uip maestro bpmn check <Name>.bpmn.ts --graph   # the resolved wiring, implied edges marked ~>
 uip maestro bpmn compile <Name>.bpmn.ts -o <Name>/<Name>.bpmn
 uip maestro bpmn format <Name>/<Name>.bpmn
+uip maestro bpmn refresh <Name> --output json   # entry-points.json + operate.json, from the BPMN
 uip maestro bpmn validate <Name>/<Name>.bpmn --output json
 ```
 
 `check` owns source and graph invariants. Product validation owns the compiled
 BPMN contract. Change the TypeScript source and rebuild; do not patch emitted XML.
+
+Skipping `refresh` is the most common way to fail `validate` on a process that is
+otherwise correct: see step 7 above.
+
+A process with connector nodes gives `check` more to work with. It reads the connector
+library and the project's `bindings.json` when they are there, and reports a missing
+required input, an unresolved `lookup()`, an unprepared object or a self-naming binding
+*before* compile does — each with the one command that closes it. `--library <dir>` and
+`--connectors-local <dir>` name them explicitly; both are auto-detected otherwise.
 
 ## Operating a process
 

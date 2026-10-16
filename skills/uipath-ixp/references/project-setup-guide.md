@@ -53,7 +53,7 @@ Use the `ProjectName` from the create output for all subsequent commands. This i
 Create the working directory using the returned `ProjectName`:
 
 ```bash
-mkdir -p /tmp/ixp/<project-name>/{docs,text,taxonomies,prompts}
+mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,prompts}
 ```
 
 ## Step 2 — Configure the Model
@@ -62,7 +62,7 @@ Before labelling, configure the extraction model based on what the documents loo
 
 ```bash
 uip ixp documents list <project-name> --output json
-uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/sample --output json
+uip ixp documents download <project-name> <document-id> -o /tmp/ixp/<project-name>/docs/<document-id> --output json
 ```
 
 View with the **Read tool** — one full Read per document, **no `pages` parameter** (returns text + image natively). Then decide:

@@ -1,0 +1,46 @@
+{
+ "name_contains": "Cobalt Claim File Request & Delivery",
+ "documents": {
+  "pdd": "corpus/claim-file-request/pdd.md"
+ },
+ "systems": {
+  "MTS": [
+   "mts"
+  ],
+  "Policy Atlas": [],
+  "CRV": [
+   "crv"
+  ],
+  "CLCC": [
+   "clcc"
+  ],
+  "ECM": [
+   "ecm"
+  ],
+  "Venture Atlas": [],
+  "TeamConnect": [
+   "teamconnect",
+   "team connect"
+  ],
+  "Outlook": [],
+  "SharePoint": [
+   "sharepoint"
+  ],
+  "iManage": [
+   "imanage"
+  ]
+ },
+ "optional_systems": {
+  "UiPath Maestro": [
+   "maestro"
+  ],
+  "Action Center": [
+   "action center"
+  ],
+  "Case automation": [
+   "case automation",
+   "case management"
+  ]
+ },
+ "allow_other_category": true
+}

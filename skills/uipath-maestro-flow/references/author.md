@@ -85,7 +85,7 @@ cannot make: which node, which topology, what an output means, and what to ask.
 
 | Journey | Read |
 | --- | --- |
-| Create a new flow | [SKILL.md — Project layout](../SKILL.md#project-layout), then [`CLI-LOOP.md`](CLI-LOOP.md) |
+| Create a new flow | [SKILL.md — Project layout](../SKILL.md#project-layout), then [SKILL.md — Lifecycle](../SKILL.md#lifecycle) (the local gates alone are in [`CLI-LOOP.md`](CLI-LOOP.md#local-authoring-hard-gates)) |
 | Edit an existing flow (`.flow.ts` or raw `.flow`) | [`brownfield.md`](brownfield.md) |
 | Add or change one node | the node's row in [SKILL.md — Supported node types](../SKILL.md#supported-node-types) |
 | Connector with tenant-specific fields | [`connector-params.md`](connector-params.md) + [`bindings.md`](bindings.md) |
@@ -176,3 +176,21 @@ step-level progress list, only when the user asks for it (verbose, show steps,
 track progress) or has a standing preference for it. A logical step is the
 smallest outcome the user cares about — "added the Slack step", not the three
 commands behind it.
+
+## API index lookups
+
+The two index files, `dist/api-members.md` and `dist/api-index.md`, ship in the installed `@uipath/maestro-builder-sdk` package. A row looks like this, and its path is relative to that package's root:
+
+```
+| `outcomePorts` | property | `HitlInputs` | `dist/core/actions.d.ts:583-597` |
+```
+
+Each file's own header names the repo and generator it came from, and says not to edit it there — the rows are regenerated from the declarations on every build.
+
+Match one name, then read the span — it is the whole declaration including its doc comment, so one read answers the question, with the types and the `@remarks` and `@example` bodies in full. No searching and no shell, so it works the same on Windows.
+
+A field or method name is the usual case, because these references are one line per field — so `api-members.md` is usually the one you want. Both cover all three entry points, `/case` and `/bpmn` included.
+
+They live in the package rather than in SKILL.md **because the spans are only true of one build**: a line moves whenever a declaration above it changes, and the skill ships on its own cadence. An index beside the `.d.ts` files it points into cannot disagree with them.
+
+Read the `.d.ts`, never `dist/*.js`: the compiled JavaScript carries no types and no comments, so searching it is how a lookup turns into twenty tool calls. A name in neither index is probably a RUNTIME output key — a human task's `Action`, an error envelope's fields — which no declaration carries; those are in the node references. The sibling surfaces' runtime-only decisions live in their own skills: `uipath-maestro-case` and `uipath-maestro-bpmn`; neither is needed to build a Flow.

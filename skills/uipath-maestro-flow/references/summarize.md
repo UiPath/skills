@@ -15,6 +15,18 @@ Signature: `summarize({ attachment, prompt, returnCitations? })`
   }))
 ```
 
+## At a glance
+
+Summarize reads a document; Batch transform ([batch-transform.md](batch-transform.md)) enriches a CSV into a new file.
+
+```ts
+.step('digest', summarize({ attachment: out('start', 'document'),
+  prompt: 'Summarize the decisions and owners.',
+  returnCitations: true }))
+```
+
+Request citations only when the scenario needs them.
+
 ## General
 
 - Error **460005** can be transient; retry it once before classifying the failure

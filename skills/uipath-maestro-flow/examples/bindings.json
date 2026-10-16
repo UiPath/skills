@@ -72,6 +72,14 @@
       "resourceKey": "<folder-key of that connection, same command>",
       "default": "00000000-0000-0000-0000-000000000008",
       "propertyAttribute": "FolderKey"
+    },
+    {
+      "id": "outlook",
+      "name": "outlook",
+      "resource": "Connection",
+      "resourceKey": "<outlook365-connection-id from `uip is connections list --output json`>",
+      "default": "00000000-0000-0000-0000-000000000010",
+      "propertyAttribute": "ConnectionId"
     }
   ]
 }

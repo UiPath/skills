@@ -2,7 +2,7 @@
 
 Shared **planning** logic for connector-based triggers: TypeCache lookup, connection pick, `case spec` discovery, reference resolution, the required-param gate, SDD mapping, and input-values + filter authoring. It ends at `tasks/registry-resolved.json`.
 
-> **This file is half the contract.** Every JSON shape written to `caseplan.json` — the populated `caseShape` splice, placeholder substitution, binding-ID mint, the connector-bound condition-rule block, the placeholder stub, and root bindings — lives in the companion [connector-trigger-impl.md](connector-trigger-impl.md). Planning alone never produces a runnable connector node.
+> **This file is half the contract.** Every JSON shape written to `caseplan.case` — the populated `caseShape` splice, placeholder substitution, binding-ID mint, the connector-bound condition-rule block, the placeholder stub, and root bindings — lives in the companion [connector-trigger-impl.md](connector-trigger-impl.md). Planning alone never produces a runnable connector node.
 
 Used by three:
 - [connector-trigger task](plugins/tasks/connector-trigger/planning.md) — in-stage `wait-for-connector` task
@@ -125,6 +125,8 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 ```json
 {"eventParameters": {"parentFolderId": "AAMkADNm..."}}
 ```
+
+A field listed under `inputs.queryParameters` / `inputs.pathParameters` (Step 3) goes in `queryParameters` / `pathParameters` instead. Scope selectors and resource pickers often sit there.
 
 **filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operator table, anti-patterns, worked examples (single / multi-AND / nested AND-OR): [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs (JMESPath instead of CEQL). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values.
 

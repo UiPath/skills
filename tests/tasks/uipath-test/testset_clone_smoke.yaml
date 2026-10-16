@@ -1,0 +1,201 @@
+task_id: skill-test-testset-clone-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to copy a test set in HEALTH
+  under a unique name the prompt describes. Clone returns no id from the
+  server, waits for the copy and returns its key; the copy keeps the source's
+  test cases. Graded on a successful clone with the requested name shape and
+  on a fresh copy holding the source's two test cases, while the source stays
+  as it was. Every run makes its own uniquely named copy, so concurrent runs
+  cannot collide; the source fixtures are seeded once and never changed, and
+  post_run sweeps copies older than six hours.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 30
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, re, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def key_of(row):
+          return row.get("TestSetKey") or row.get("TestCaseKey") or row.get("Key")
+
+      def ensure_project(key, name):
+          rows = call("tm", "project", "list", "--filter", key).get("Data") or []
+          if any(p.get("ProjectKey") == key for p in rows):
+              return False
+          need(call("tm", "project", "create", "--name", name, "--project-key", key), f"create project {key}")
+          return True
+
+      def find_set(project, name):
+          rows = call("tm", "testsets", "list", "--project-key", project, "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else None
+
+      def ensure_case(project, name):
+          rows = call("tm", "testcases", "list", "--project-key", project, "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else need(call("tm", "testcases", "create", "--project-key", project, "--name", name), f"create {name}")
+
+      def ensure_set(project, name, case_names):
+          ts = find_set(project, name)
+          if ts is None:
+              ts = need(call("tm", "testsets", "create", "--project-key", project, "--name", name), f"create {name}")
+          have = {r.get("Name") for r in call("tm", "testsets", "list-testcases", "--project-key", project, "--test-set-key", key_of(ts)).get("Data") or []}
+          missing = [ensure_case(project, n) for n in case_names if n not in have]
+          if missing:
+              need(call("tm", "testcases", "add", "--test-set-key", key_of(ts), "--test-case-keys", *[key_of(c) for c in missing]), f"assign to {name}")
+          return ts
+
+      def sweep(project, prefix, hours=6):
+          # delete only this task's copies (prefix + stamp) older than `hours`, so a concurrent run's copy is safe
+          now = datetime.datetime.now(datetime.timezone.utc)
+          for r in call("tm", "testsets", "list", "--project-key", project, "--filter", prefix).get("Data") or []:
+              m = re.fullmatch(re.escape(prefix) + r"(\d{8}-\d{6})-[0-9a-f]{6}", r.get("Name") or "")
+              if m and now - datetime.datetime.strptime(m.group(1), "%Y%m%d-%H%M%S").replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=hours):
+                  call("tm", "testsets", "delete", "--test-set-key", key_of(r), "--yes")
+
+      ensure_project("HEALTH", "HEALTH")
+      ensure_set("HEALTH", "EVFX-TSCLONE-Regression", ["EVFX-TSCLONE-TC1", "EVFX-TSCLONE-TC2"])
+      sweep("HEALTH", "EVFX-TSCLONE-")
+      print("READY EVFX-TSCLONE-Regression (2 test cases)")
+      PYEOF
+    timeout: 300
+
+post_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, re, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def key_of(row):
+          return row.get("TestSetKey") or row.get("TestCaseKey") or row.get("Key")
+
+      def ensure_project(key, name):
+          rows = call("tm", "project", "list", "--filter", key).get("Data") or []
+          if any(p.get("ProjectKey") == key for p in rows):
+              return False
+          need(call("tm", "project", "create", "--name", name, "--project-key", key), f"create project {key}")
+          return True
+
+      def find_set(project, name):
+          rows = call("tm", "testsets", "list", "--project-key", project, "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else None
+
+      def ensure_case(project, name):
+          rows = call("tm", "testcases", "list", "--project-key", project, "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else need(call("tm", "testcases", "create", "--project-key", project, "--name", name), f"create {name}")
+
+      def ensure_set(project, name, case_names):
+          ts = find_set(project, name)
+          if ts is None:
+              ts = need(call("tm", "testsets", "create", "--project-key", project, "--name", name), f"create {name}")
+          have = {r.get("Name") for r in call("tm", "testsets", "list-testcases", "--project-key", project, "--test-set-key", key_of(ts)).get("Data") or []}
+          missing = [ensure_case(project, n) for n in case_names if n not in have]
+          if missing:
+              need(call("tm", "testcases", "add", "--test-set-key", key_of(ts), "--test-case-keys", *[key_of(c) for c in missing]), f"assign to {name}")
+          return ts
+
+      def sweep(project, prefix, hours=6):
+          # delete only this task's copies (prefix + stamp) older than `hours`, so a concurrent run's copy is safe
+          now = datetime.datetime.now(datetime.timezone.utc)
+          for r in call("tm", "testsets", "list", "--project-key", project, "--filter", prefix).get("Data") or []:
+              m = re.fullmatch(re.escape(prefix) + r"(\d{8}-\d{6})-[0-9a-f]{6}", r.get("Name") or "")
+              if m and now - datetime.datetime.strptime(m.group(1), "%Y%m%d-%H%M%S").replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=hours):
+                  call("tm", "testsets", "delete", "--test-set-key", key_of(r), "--yes")
+
+      sweep("HEALTH", "EVFX-TSCLONE-")
+      PYEOF
+    timeout: 180
+
+initial_prompt: |
+  hey, can you make a copy of the EVFX-TSCLONE-Regression test set in Test
+  Manager (HEALTH project)? name it EVFX-TSCLONE-<current UTC time as
+  YYYYMMDD-HHMMSS>-<6 random lowercase hex characters>. others may copy it at
+  the same moment, so the random part matters. tell me the new set's key when
+  it's done.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent cloned under a new name (`--new-name EVFX-TSCLONE-<stamp>-<tag>`, literal, a shell variable, or a command substitution; must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testsets\s+clone\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--new-name[\s\\=]+(?:["\x27]?EVFX-TSCLONE-(?:\d{8}-\d{6}-[0-9a-f]{6}\b|\$[({])|["\x27]?\$\{?[A-Za-z_])'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A fresh EVFX-TSCLONE-<stamp>-<tag> copy holds the source's two test cases, and the source still has exactly those two"
+    command: |
+      python3 - <<'PYEOF'
+      import datetime, json, re, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data")
+      def key_of(row): return row.get("TestSetKey") or row.get("Key")
+      def fresh_copies(project, prefix, minutes=45):
+          now = datetime.datetime.now(datetime.timezone.utc); out = []
+          for r in uip("tm", "testsets", "list", "--project-key", project, "--filter", prefix) or []:
+              m = re.fullmatch(re.escape(prefix) + r"(\d{8}-\d{6})-[0-9a-f]{6}", r.get("Name") or "")
+              if m and abs(now - datetime.datetime.strptime(m.group(1), "%Y%m%d-%H%M%S").replace(tzinfo=datetime.timezone.utc)) < datetime.timedelta(minutes=minutes):
+                  out.append(r)
+          return out
+      def source(project, name):
+          return [r for r in uip("tm", "testsets", "list", "--project-key", project, "--filter", name) or [] if r.get("Name") == name][0]
+      copies = fresh_copies("HEALTH", "EVFX-TSCLONE-")
+      names = lambda k: sorted(r["Name"] for r in uip("tm", "testsets", "list-testcases", "--project-key", "HEALTH", "--test-set-key", k) or [])
+      want = ["EVFX-TSCLONE-TC1", "EVFX-TSCLONE-TC2"]
+      ok_copy = any(names(key_of(c)) == want for c in copies)
+      ok_src = names(key_of(source("HEALTH", "EVFX-TSCLONE-Regression"))) == want
+      print("copies:", [c["Name"] for c in copies], "copy ok:", ok_copy, "source ok:", ok_src)
+      sys.exit(0 if ok_copy and ok_src else 1)
+      PYEOF
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

@@ -24,3 +24,9 @@ duration and measure before/after timestamps; product scheduling behavior still
 requires platform evidence.
 
 The duration is ISO-8601: `PT30S`, `PT15M`, `PT2H`, `P1D`, `P1W`.
+
+## At a glance
+
+Pause this path for a duration — or until an absolute date-time — then continue.
+
+Use a real-time rung when elapsed time itself is the requirement.

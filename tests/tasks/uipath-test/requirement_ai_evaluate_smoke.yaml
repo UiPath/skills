@@ -1,0 +1,101 @@
+task_id: skill-test-requirement-ai-evaluate-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to have Test Manager's AI
+  evaluate a deliberately thin requirement, asks the SAME evaluation for
+  more suggestions, then applies one suggestion to the requirement's
+  description. Asserts from references/requirement-ai-guide.md that "more
+  suggestions" is `evaluate --activity-id <id> --more-suggestions` on the
+  first job and not a second evaluation (rule 1), and that applying a
+  suggestion is a `requirements update --description` built from the
+  current text (evaluate itself changes nothing). Graded on tenant state:
+  the description differs from the seeded one and is longer. The task owns
+  the EVFX-AIEVAL-* namespace; pre_run writes the thin description back
+  every run. Spends two AI jobs per run (the evaluation and its re-run).
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 14
+  max_turns: 40
+  turn_timeout: 1500
+  task_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+reference:
+  directory: _setup
+
+pre_run:
+  - command: >-
+      python3 _setup/req_ai_fixture.py seed --project HEALTH --stamped-prefix EVFX-AIEVAL-
+      --requirement EVFX-AIEVAL-REQ --require-access evaluate
+      --description "Users can reset their password."
+    timeout: 280
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  Have Test Manager's AI review the quality of requirement EVFX-AIEVAL-REQ
+  in the project whose key is in project-key.txt and suggest improvements. Once you have those, ask it for
+  a few more suggestions on top. Then apply the first suggestion to the
+  requirement: add its proposed wording to the end of the current
+  description.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status before touching Test Manager (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0   # advisory
+
+  - type: command_executed
+    description: "Agent started an evaluation of the requirement (`evaluate --requirement-id|--requirement-key`)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+evaluate(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "More suggestions came from the same job: `evaluate --activity-id <id> --more-suggestions`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+evaluate(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--activity-id\s+\S)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--more-suggestions\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+    # Bounded command_executed, not command_not_executed: the loader rewrites
+    # command_not_executed to max_count 0 (see uipath-insights/dashboards/copy_smoke.yaml).
+  - type: command_executed
+    description: "No second evaluation job: \"more\" re-runs the first one (rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+evaluate(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    min_count: 0
+    max_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent applied the suggestion with `requirements update --description`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+update\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--description\s+\S)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Outcome: the description starts with the seeded text and adds to it (the suggestion was appended, not swapped in)"
+    command: "python3 $REFERENCE_DIR/req_ai_fixture.py check --project HEALTH --requirement EVFX-AIEVAL-REQ --description-extends \"Users can reset their password.\""
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

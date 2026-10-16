@@ -40,7 +40,9 @@ If the file at `Tasks file` already exists (resume scenario), ask the user via `
 > 1. **Continue with the current task list** *(recommended)* — pick up where you left off; checkbox state preserved
 > 2. **Regenerate from the SDD** — discard the current task list and rebuild from the SDD; checkbox state lost (or preserved per identity matching, see [plan-and-tasks-format.md → Regenerate logic](plan-and-tasks-format.md#regenerate-logic-pdd-driven-lane-only))
 
+<!--skill-flavor:resume-continue:start-->
 - **Choice 1:** read the existing tasks.md → recreate live `TaskCreate` calls with status preserved → no SDD re-parsing needed → done.
+<!--skill-flavor:resume-continue:end-->
 - **Choice 2:** parse the SDD fresh, run identity-matching against the old file (preserve completed work), write the new tasks.md, emit live tasks. See [plan-and-tasks-format.md](plan-and-tasks-format.md) for the regenerate algorithm and archive-footer format.
 
 If the file does not exist (first run), proceed to Step 3.
@@ -100,6 +102,7 @@ Based on the project list, pick the matching pattern from [multi-skill-patterns-
 | Case Management with §4 integrations that reference unbuilt resources | Build external components first, then `uipath-maestro-case`; inline `action`, connector, timer, and child-case task details stay with the Case specialist |
 | Case Management whose §4 integrations are pre-existing or unresolved portable intent | `uipath-maestro-case` build task first; unresolved IDs/folders travel as review items for the Case specialist's registry discovery |
 | Any SDD with a filled "IXP / Document Understanding Models" table | Add an IXP model build + validation task via `uipath-ixp` per model, ordered before its consumer's build tasks |
+| Any SDD whose decision tables a deployed rule evaluates (BPMN `businessRuleTask`, Case `business-rule` task) | Add a rule build + validation task per decision table via `uipath-rules`, ordered before its consumer's build tasks |
 | Any SDD with a filled "Coded Functions" table | Add a Function build + validation task per function via `uipath-functions`, ordered before its consumer's build tasks |
 | Agent with RPA tools in §3 Tools | Pattern 5 |
 | Coded App | Coded App build + `uipath-solution` deploy + testing (when wrapped in `.uipx`); otherwise `uipath-coded-apps` self-deploys |
@@ -162,11 +165,13 @@ Compose the file using the schema in [plan-and-tasks-format.md](plan-and-tasks-f
 
 ## Step 8 — Plan-mode review (interactive autonomy only)
 
+<!--skill-flavor:plan-mode-review:start-->
 If `Execution autonomy: interactive`, call `EnterPlanMode` with the full tasks.md content. Wait for user approval.
 
 - Approval criteria: any response without specific change requests. "Looks good", "ok", "proceed", "yes", or a topic change all count as approval.
 - If the user requests specific changes, incorporate them and re-present (max 3 revisions; after that, proceed with the latest).
 - On approval → `ExitPlanMode` → Step 9.
+<!--skill-flavor:plan-mode-review:end-->
 
 If `Execution autonomy: autonomous`, skip plan mode. Output a summary instead:
 
@@ -183,8 +188,11 @@ Defaulted handoff fields: Execution autonomy → interactive, Tasks file → <in
 Review the SDD's `## Planner Handoff` table and re-run if any of these are wrong.
 ```
 
+<!--skill-flavor:defaulted-fields-review:start-->
 In `Execution autonomy: interactive` mode, prepend the same "Defaulted handoff fields" block (when applicable) to the `EnterPlanMode` payload so the reviewer sees it at approval time.
+<!--skill-flavor:defaulted-fields-review:end-->
 
+<!--skill-flavor:live-tasks-and-handoff:start-->
 ## Step 9 — Emit live tasks
 
 Emit `TaskCreate` calls one per task row, respecting the row order. After all tasks are created, emit `TaskUpdate` calls with `addBlockedBy` to set up dependencies.
@@ -196,6 +204,7 @@ Apply Rule G-8: if any TaskCreate or TaskUpdate fails, log a single warning, con
 The planner's job is done. The main agent reads the live tasks (via TaskList) and walks them in dependency order, loading the appropriate specialist for each. As tasks complete, the planner — invoked again by the main agent on TaskUpdate events, or whenever it next runs in this project — refreshes the corresponding checkbox in tasks.md (`[ ]` → `[~]` → `[x]`) so that future sessions see current state.
 
 > Implementation note: the planner does not directly observe TaskUpdate events. The "refresh tasks.md from live tasks" responsibility lives in the main agent's session loop, not in this skill. This skill writes the file once and trusts the agent to keep it in sync. On next entry to Lane A, the planner re-reads the file and proceeds.
+<!--skill-flavor:live-tasks-and-handoff:end-->
 
 ## Lane A budget
 

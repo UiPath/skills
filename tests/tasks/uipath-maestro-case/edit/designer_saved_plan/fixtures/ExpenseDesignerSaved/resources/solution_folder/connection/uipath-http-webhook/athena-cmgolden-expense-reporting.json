@@ -1,0 +1,28 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "athena-cmgolden-expense-reporting",
+    "kind": "connection",
+    "type": "uipath-http-webhook",
+    "apiVersion": "integrationservice.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "connectorName": "HTTP Webhook",
+      "name": "athena-cmgolden-expense-reporting",
+      "authenticationType": "AuthenticateAfterDeployment",
+      "connectorVersion": "1.5.11",
+      "connectorKey": "uipath-http-webhook",
+      "pollingInterval": 5
+    },
+    "locks": [],
+    "key": "6a817d24-cbbd-4389-b10d-4329214ffb8d",
+    "files": []
+  }
+}
