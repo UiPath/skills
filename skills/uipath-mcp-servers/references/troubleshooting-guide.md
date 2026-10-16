@@ -73,6 +73,20 @@ Text `uip agenthub` prints in a failure's `Message`, `Instructions` or `Errors` 
 | `Found <N> matching tools.` | Several tools matched `--name` and none is named exactly that: pass a tool id, or `--allow-multiple` to act on every match. `Found 0 matching tools.` (`mcp-tools get`) means none matched: take a name from `mcp-tools list`. |
 | `RCS Entities/Search requires the RCS.Search scope. …` (Instructions of a 401 / 403 on `candidates`) | Re-run `uip login`. |
 
+## Per-user connections
+
+| Text | Fix |
+|------|-----|
+| ``Per-user connections exist only on remote MCP servers, and '<SLUG>' is a `<TYPE>` server.`` | Pass a `remote` server's slug; the `NextCommand` lists them. |
+| `Per-user connections are not enabled on this tenant.` | The feature is off: the server's own connection serves every user (`mcp update <SLUG> --connection-id <CONNECTION_ID>`). |
+| `Forbidden (403). …` on `mcp-user-connections set`, with `Instructions` naming Connections.Edit and McpServers.Edit | A missing permission, or a connection that is not Enabled or that you cannot see: run `uip is connections ping <CONNECTION_ID> --force-refresh --output json`. When it is not Enabled, its owner re-authenticates it (`uip is connections edit <CONNECTION_ID>`). |
+| `You can see no connection of the UiPath MCP connector named '<NAME>'.` | `uip is connections list uipath-uipath-mcp --all-folders --output json` lists the ones you can see. Another user's personal connection may not be among them: ask for its id and pass `--connection-id`. |
+| `<N> connections of the UiPath MCP connector are named '<NAME>'.` / `<N> users in the organization have the email '<EMAIL>'.` | `Instructions` lists each id (connections with folder and state): show them to the user, ask which one, and pass it as `--connection-id` / `--user-id`. |
+| `No user in the organization has the email '<EMAIL>'.` | Check the email with the user; `uip admin users list --search <TEXT> --output json` lists users with their emails. |
+| `Looking a user up by email needs permission to read the organization's users. …` (Instructions of a 403) | Ask for the user's id and pass `--user-id`. |
+| `--me needs a user's login, …` | The login is an external application's: pass `--user-email` or `--user-id`. |
+| `'<SLUG>' has no per-user connection for user <USER>.` | Nothing to delete: `mcp-user-connections list` shows the users that have one. |
+
 ## Network
 
 | Text | Fix |

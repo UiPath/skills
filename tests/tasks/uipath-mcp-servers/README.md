@@ -15,6 +15,8 @@ tests/tasks/uipath-mcp-servers/
 ├── remote-create/                     # mocked
 ├── resource-create/                   # mocked
 ├── update-cross-folder-retarget/      # mocked
+├── user-connection-set/               # mocked
+├── user-connection-status/            # mocked
 │   ├── task.yaml
 │   └── fixtures/mocks/responses/
 │       ├── manifest.json              # rule dispatch (substring match → response file)
@@ -48,6 +50,8 @@ Rule numbers reference the SKILL.md Critical Rules (1-10).
 | `remote-create`                | smoke (mock) | 1, 3, 4, 5, 7 | an Authorization header whose whole value is `%ASSETS/SLACK_BOT_TOKEN%`, via `--header` or a camelCase payload `headers` line, no `Bearer ` prefix (graded from the mock call log by `check_remote_create.py`); `refresh-tools`; inspection via `mcp get` / `mcp list` / `mcp-tools list` |
 | `resource-create`              | smoke (mock) | Tools section | `candidates --category automation`; `mcp-tools create-resource ... --dry-run` scoped to the server (`template resource` is advisory) |
 | `update-cross-folder-retarget` | smoke (mock) | Tools section | `mcp-tools update` (not a new create) with `--target-identifier` + explicit `--target-folder-*` |
+| `user-connection-set`          | smoke (mock) | 2, Per-User Connections | `mcp-user-connections set` for the named user (`--user-email` / `--user-id`) and connection (`--connection-name` / `--connection-id`) in the server's folder, never `--me`, and no `mcp update` (graded from the mock call log by `check_user_connection_set.py`) |
+| `user-connection-status`       | smoke (mock) | Per-User Connections | `mcp-user-connections list` shows the user's own connection as `RequiresAuth`; nothing changed; LLM judge: the user re-authenticates their own connection |
 | `e2e-command-server`           | e2e (live)   | 2, 7          | `mcp get` shows a command server running `npx` with `@modelcontextprotocol/server-everything`; async `refresh-tools` with a folder flag |
 | `e2e-platform-server`          | e2e (live)   | 2, 7, 9       | `mcp get` shows the `testmanager` service; `mcp-tools list` returns exactly `Get_test_sets` and `Get_test_cases` |
 | `e2e-remote-server`            | e2e (live)   | 2, 7          | `mcp get` shows the DeepWiki URI; sync `refresh-tools` with a folder flag stored tools (`mcp-tools list`) |
@@ -107,4 +111,4 @@ Then translate the captured shapes into the per-scenario `manifest.json` + respo
 
 ## Notes on the mock dispatcher
 
-`_shared/mock_template/mocks/uip` is substring-match-first, supports `passthrough: true` for open-ended commands, and logs every call to `.calls.jsonl`. Don't edit it per scenario.
+`_shared/mock_template/mocks/uip` is substring-match-first, supports `passthrough: true` for open-ended commands, and logs every call to `.calls.jsonl`. Don't edit it per scenario. The `user-connection-*` tasks mock the `mcp-user-connections` help text (captured from the CLI) ahead of the `--help` passthrough, so they do not depend on the `@dev` CLI having the command.

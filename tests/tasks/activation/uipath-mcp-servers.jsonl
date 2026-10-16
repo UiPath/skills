@@ -38,3 +38,6 @@
 {"id": "uipath-mcp-servers-045", "prompt": "What URL do I give my MCP client to connect to the invoice-tools server in Agent Gateway?", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-046", "prompt": "Turn a few Orchestrator processes and an agent into tools on one Agent Gateway MCP server", "expected_skill": "uipath-mcp-servers"}
 {"id": "uipath-mcp-servers-047", "prompt": "List every MCP server in Agent Gateway across all my folders", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-052", "prompt": "Make one user call my remote MCP server in Agent Gateway with their own Integration Service connection", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-053", "prompt": "Which users have their own connection on my Agent Gateway MCP server, and are they still valid?", "expected_skill": "uipath-mcp-servers"}
+{"id": "uipath-mcp-servers-054", "prompt": "Remove a user's per-user connection from an Agent Gateway MCP server", "expected_skill": "uipath-mcp-servers"}
