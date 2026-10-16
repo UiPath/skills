@@ -159,7 +159,7 @@ Read `caseplan.case`, locate the placeholder task by `id`, and mutate its `data`
 |---|---|
 | `process`, `agent`, `rpa`, `api-workflow`, `function`, `business-rule`, `case-management` | Set `data.name`, `data.folderPath` (both `=bindings.<id>` refs). Write `data.inputs[]` / `data.outputs[]` from the `tasks describe` schema (each input `value: ""` to start). |
 | `action` | Set `data.name`, `data.folderPath` (`=bindings.<id>`), `data.taskTitle`, `data.priority`, `data.recipient` (if known). Write `data.inputs[]` / `data.outputs[]` from the schema. |
-| `execute-connector-activity`, `wait-for-connector` | Set `data.typeId`, `data.connectionId`. Write `data.inputs[]` / `data.outputs[]` from the `case spec` schema (per the connector plugin's `impl-json.md`). |
+| `execute-connector-activity`, `wait-for-connector`, `external-agent`, `external-workflow` | Set `data.typeId`, `data.connectionId`. Write `data.inputs[]` / `data.outputs[]` from the `case spec` schema (per the connector plugin's `impl-json.md`). |
 
 Per-class JSON shape lives in `plugins/tasks/<type>/impl-json.md` — match those exactly.
 

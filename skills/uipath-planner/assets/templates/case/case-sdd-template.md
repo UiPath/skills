@@ -559,7 +559,7 @@ Rule: case-design-layers-guide.md § Layer 3 (External names). -->
 
 | Agent | Service Type | Endpoint | Modeled As | Used By Tasks |
 |-------|-------------|----------|------------|---------------|
-| <agent name> | <CrewAI \| Salesforce \| Databricks \| Custom \| ...> | <endpoint URL or reference> | <api-workflow \| execute-connector-activity> | <task names> |
+| <agent name> | <CrewAI \| Salesforce \| Databricks \| Custom \| ...> | <endpoint URL or reference> | <external-agent \| external-workflow \| api-workflow> | <task names> |
 
 ### IXP / Document Understanding Models
 
