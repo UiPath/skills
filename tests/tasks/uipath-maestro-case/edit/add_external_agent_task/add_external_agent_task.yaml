@@ -1,0 +1,74 @@
+task_id: skill-case-edit-add-external-agent-task
+description: >
+  Adds an external-agent task (Snowflake Cortex "Interact Agent") to the Review
+  stage of an existing LinearThreeStages case from a saved `case spec` result.
+  Graded on what the Case Designer saves for one (alpha, 2026-10-16): the
+  external-agent type, the sync agent service type, the spliced context and
+  inputs, the connection and folder root bindings, the bindings sidecar, and
+  `validate --strict`. Offline, no debug. Needs a uip whose `case splice` writes
+  external tasks (UiPath/cli#5240).
+tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 900
+  max_turns: 45
+  turn_timeout: 900
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../templates
+    - type: template_dir
+      path: fixtures
+
+reference:
+  # Case root, not `.`: the grader imports `_shared/`, which a task-only
+  # staging leaves out (ModuleNotFoundError at grade time).
+  directory: ../..
+
+initial_prompt: |
+  The LinearThreeStages case solution already exists on disk under
+  LinearThreeStages/. Its Review stage runs two wait-for-timer tasks.
+
+  Add an external-agent task named "Ask Sales Agent" to the Review stage. It
+  asks the Snowflake Cortex agent SALES_AGENT (database SALES_DB, schema PUBLIC)
+  through the Snowflake Cortex connection `7a1e5c3d-0000-4000-8000-0000000000c1`
+  to "Summarize the open sales pipeline in one sentence." Run it when the stage
+  is entered; Review must not wait on it to complete.
+
+  The tenant is not reachable from this environment. `agent-spec.json` in the
+  current directory is the saved result of
+  `uip maestro case spec --type activity --activity-type-id 1dea7eb3-2abf-3720-b92b-d4c2eb063584 --connection-id 7a1e5c3d-0000-4000-8000-0000000000c1`
+  with those inputs; use it in place of calling spec.
+
+  Leave everything else exactly as it is.
+
+  Do NOT run `uip maestro case debug`. Do NOT ask for approval, confirmation, or
+  feedback. Make the edit end-to-end in a single pass and finish with
+  `uip maestro case validate --strict` passing on the resulting case plan.
+  Before starting, load the uipath-maestro-case skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: run_command
+    description: "uip maestro case validate --strict passes on the edited case plan"
+    command: "p=$(ls LinearThreeStages/LinearThreeStages/caseplan.case LinearThreeStages/LinearThreeStages/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --strict --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "One external-agent task in Review: Intsvc.SyncAgentExecution, the spec's context and inputs spliced, connection and folder bound at the root, and bindings_v2.json carrying the connection"
+    command: "python3 $REFERENCE_DIR/edit/add_external_agent_task/check_add_external_agent_task.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
