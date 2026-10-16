@@ -100,6 +100,18 @@ Without an SDD, run `--strict` alone. A default-profile `Valid` whose
 If a finding persists after a source fix and recompile, stop and report its
 code as unfinished; never patch emitted JSON.
 
+`check` also reads the connector library, the same one `compile` resolves
+against: `$FLOW_SDK_LIBRARY_JSON`, else the `uip maestro registry pull`
+snapshot, plus `.flow-sdk/connectors-local` when `registry prepare` wrote it.
+A connector task, external task, event trigger or wait-for-connector that
+`compile` cannot resolve fails `check` first, with compile's code and text.
+
+Before `check` on a Case with connector work, run `uip maestro registry pull`:
+with no library cached these rules stay silent, so a clean `check` proves
+nothing about the connector. To use another library, set
+`$FLOW_SDK_LIBRARY_JSON` for both `check` and `compile`, not `--library`, so
+both resolve against the same one.
+
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
 API workflow, or sub-case; never fabricate a name or folder. A destination's
 `selected-stage-completed` entry does not imply a source `exitToStage` hand-off.
