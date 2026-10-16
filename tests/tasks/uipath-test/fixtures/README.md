@@ -31,6 +31,7 @@ and therefore exact for this scheme.
 | `manual_execution_record_integration` | CLAIM | `EVFX-MANUAL-SET`, `EVFX-MANUAL-TC{1,2,3}` | Set and cases only, no execution — the task opens one; `pre_run` sweeps earlier days' runs (sparing today's, so a concurrent run is never destroyed) and snapshots the survivors so the oracle grades the run the agent opens |
 | `reporting_date_backdate_integration` | CLAIM | `EVFX-REPORT-SET`, `EVFX-REPORT-TC{1,2}` | One **open** execution (recorded per-run by id, executions cannot be named) — the premise is that it is not closed; `pre_run` sweeps earlier days' runs (sparing today's) and opens one fresh OPEN run, recording its ExecutionId for the oracle |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `schedule_lifecycle_e2e` | CLAIM | `EVFX-SCHEDLC-SET`, `EVFX-SCHEDLC-TC1`, and the `EVFX-SCHEDLC-*` **schedule** namespace | Set and one case only — **no schedules seeded**. The agent creates ONE per-run stamped schedule `EVFX-SCHEDLC-<STAMP>` and walks its whole life (create weekly Mon+Thu → next-runs → update to 03:00 → disable → enable → delete); `pre_run` sweeps only earlier-day `EVFX-SCHEDLC-` rows and writes the fixture set id to `.schedlc_setid` for the stored-state graders |
 | `testcaselog_override_integration` | CLAIM | `EVFX-TCLOG-TC{1,2,3}` | per-run STAMPED manual execution `EVFX-TCLOG-<STAMP>-RUN` (via `testcases run`), results `Passed, Failed, Passed`, **nothing overridden**; the task writes an override onto the failed log, so `pre_run` stamps a fresh execution and sweeps only earlier-day ones |
 | `testcaselog_read_smoke` | CLAIM | `EVFX-TCLOGRD-TC1` | 1 finished manual log, result `Passed`, create-if-absent and never deleted (read-only task) |
 | `testcaselog_manual_record_e2e` | CLAIM | `EVFX-TCLOGMR-TC1` | just the test case; the agent opens its own per-run STAMPED manual execution `EVFX-TCLOGMR-<STAMP>-RUN` and records a manual result; `pre_run` sweeps only earlier-day executions |
@@ -47,10 +48,10 @@ and therefore exact for this scheme.
 | `testcase_parameters_edit_integration` | HEALTH | `EVFX-PARAMEDIT-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) and `Userid=u1` |
 | `testcase_parameters_lifecycle_e2e` | HEALTH | `EVFX-PARAMLIFE-Login` | Created if absent; `pre_run` clears its parameters |
 | `testcase_parameters_ask_first_integration` | HEALTH | `EVFX-PARAMASK-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) |
-| `requirement_ai_generate_smoke` | HEALTH | `EVFX-AIGEN-REQ` | Requirement with a fixed description and **no** linked test cases. `pre_run` also starts one generate job with a 3 s wait (it times out) and saves the output to `nightly/` in the sandbox. The test cases the task creates from that job are scratch: `pre_run` deletes every linked test case labelled `autopilot-generated` and unlinks the rest |
-| `requirement_ai_evaluate_smoke` | HEALTH | `EVFX-AIEVAL-REQ` | Requirement whose description `pre_run` resets to the one-line `Users can reset their password.` every run (the task appends to it) |
-| `requirement_ai_obsolete_smoke` | HEALTH | `EVFX-AIDEL-REQ`, `EVFX-AIDEL-TC{1,2,3,4}` | All four linked; TC3 and TC4 off-topic on purpose. `pre_run` recreates the one the task deleted and relinks the ones it unlinked |
-| `requirement_ai_blocked_inputs_smoke` | HEALTH | `EVFX-AIBLOCK-NODESC` | No description, no attachments. `generate-testcases` fails with HTTP 400 before a job starts, so the task spends no AI units |
+| `requirement_ai_generate_smoke` | its own throwaway project | the `EVFX-AIGEN-*` namespace | `pre_run` creates one `EVFX-AIGEN-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`), seeds `EVFX-AIGEN-REQ`, pre-warms one generate job (saving the timed-out envelope to `nightly/`) and excludes the run as tenant-not-ready if the AI backend cannot finish it; `post_run` deletes the project. Per-run so concurrent runs never share the requirement or its AI-created cases |
+| `requirement_ai_evaluate_smoke` | its own throwaway project | the `EVFX-AIEVAL-*` namespace | `pre_run` creates one `EVFX-AIEVAL-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and seeds `EVFX-AIEVAL-REQ` with `Users can reset their password.`; `post_run` deletes the project |
+| `requirement_ai_obsolete_smoke` | its own throwaway project | the `EVFX-AIDEL-*` namespace | `pre_run` creates one `EVFX-AIDEL-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and seeds `EVFX-AIDEL-REQ` + `EVFX-AIDEL-TC{1,2,3,4}` (TC3/TC4 off-topic), all linked; `post_run` deletes the project. Per-run so a concurrent run never recreates the case this run deletes |
+| `requirement_ai_blocked_inputs_smoke` | its own throwaway project | the `EVFX-AIBLOCK-*` namespace | `pre_run` creates one `EVFX-AIBLOCK-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and seeds `EVFX-AIBLOCK-NODESC` with no description/attachments; `post_run` deletes the project. `generate-testcases` fails HTTP 400 before a job starts, so no AI units |
 | `attachment_upload_smoke` | its own throwaway project | the `EVFX-ATTUP-*` namespace | `pre_run` creates one `EVFX-ATTUP-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) holding `EVFX-ATTUP-Checkout` with no attachments, writes the local `checkout-failure.png`, sweeps orphans older than 6 hours; `post_run` deletes the project. Per-run because the agent mutates attachments and a shared case would break the exactly-one check |
 | `attachment_download_integration` | HEALTH | `EVFX-ATTDL-Login` | Created if absent; `pre_run` uploads `login-error.log` and `checkout-notes.txt` (local copies removed); `post_run` clears its attachments |
 | `attachment_overwrite_ask_integration` | HEALTH | `EVFX-ATTASK-Login` | Created if absent; `pre_run` uploads `report.txt` and writes a different local `report.txt`; `post_run` clears its attachments |
@@ -178,6 +179,21 @@ before the agent runs and grades the single new run the agent then opens —
 failing safe if a concurrent variant leaks a second new run in, rather than
 picking a winner by recency.
 
+`schedule_lifecycle_e2e` adds `EVFX-SCHEDLC-SET` and its one case. It seeds **no
+schedules**: the agent creates one itself, stamped with the run's date
+(`EVFX-SCHEDLC-<STAMP>`), so there is no fixed-name schedule for a concurrent
+variant run to collide on. `pre_run` sweeps only *earlier-day* `EVFX-SCHEDLC-`
+schedules — sparing today's stamp lets two models run the nightly at once — and
+writes the fixture set id to `.schedlc_setid` in the sandbox cwd. Correctness is
+graded on the **stored state** of the agent's own schedule: it snapshots its real
+server-side row to `schedule-paused.json` (after disable) and `schedule-live.json`
+(after enable), and the graders read those back plus live Test Manager to assert
+the Mon+Thu 03:00 cadence, the disabled→enabled transition, and final deletion —
+each scoped to the agent's stamp/id, so the grade is per-run isolated without a
+reseeded pre-state. The `command_executed` checks are advisory only.
+
+`schedule_list_smoke` is the one remaining read-only smoke; it seeds and asserts
+a single enabled `EVFX-SCHEDSMOKE-DAILY` schedule so the list is never empty.
 The three `testcaselog` tasks all open executions with a manual run, because
 this CLI has **no `executions create`** — `uip tm testcases run --name <NAME>
 --execution-type manual` returns the new execution under `Data.Id` and opens a

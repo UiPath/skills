@@ -1,6 +1,6 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, requirements, cases, sets, executions, defects; AI-generate test cases from requirements, evaluate requirements, find obsolete test cases; run every test in an uploaded package from CI; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, requirements, cases, sets, executions, defects; schedule test sets on a recurring cadence; AI-generate test cases from requirements, evaluate requirements, find obsolete test cases; run every test in an uploaded package from CI; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
@@ -76,6 +76,10 @@ Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcom
 
 Open a manual run with `uip tm testsets run --test-set-key <KEY> --execution-type manual` (id = `Data.ExecutionId`; there is **no `executions create`** verb), resolve each `--test-case-id` from the run's own logs via `uip tm executions testcaselogs list --execution-id <ID>`, then record each case with `testcaselog start`/`finish`. **A manual run self-closes when its last log finishes** — `executions finish` is the force-close for a run left with logs open, not the normal last step. `set-reporting-date` needs an already-**closed** run (`ExecutionFinished`, not `Status`). The manual-vs-automated distinction, filtered reads, every `cancel`/`delete`/`finish`/`export`/`set-reporting-date` caveat, and the exit-code contract live in [references/executions-guide.md](references/executions-guide.md); discover flags and enums with `-h`.
 
+### Test set schedules
+
+- Verbs (`--help` for flags): `uip tm schedules create|update|list|next-runs|enable|disable|delete`. `list` is the only read — no get by id — so recover values there before `update`, which replaces the **whole** definition (pass every flag you want kept; it cannot change the enabled state — use `enable`/`disable`). `delete` and `--all` need `--yes`.
+- `--cron` is **6 or 7 fields starting with seconds**, not Unix cron (daily at 02:00 is `0 0 2 1/1 * ? *`; the CLI refuses a five-field expression client-side). `--cron-details` is the recurrence JSON and is **required for every recurrence type**. `--start-time`/`--disable-time` are wall-clock `YYYY-MM-DDTHH:mm` read in `--timezone` — seconds or a `Z` are refused. Pass `next-runs` the ids `list` prints — the endpoint underneath is keyed by a different GUID and answers `200` with an empty list for a bad id. Cron/recurrence rules and gotchas: [references/schedules-guide.md](references/schedules-guide.md).
 ### Run an uploaded package (CI)
 
 `uip tm run --type package --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-path <FOLDER_PATH> --project-key <PROJECT_KEY> --output json` runs every test in a package already uploaded to Orchestrator, re-runs failures with `--max-retries <N>`, and writes a report. Pack and upload first with `uip rpa pack` / `uip or packages upload`.
@@ -157,6 +161,7 @@ For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For an
 - Shareable tester or release-manager report: [references/test-result-report-guide.md](references/test-result-report-guide.md)
 - Publish a project and link it to a Test Manager testcase (Studio/RPA): [references/publish-and-link-guide.md](references/publish-and-link-guide.md)
 - Pack, ingest, label, and run Playwright on serverless: [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md)
+- Run a test set on a cadence, cron shapes, and single-vs-bulk batch semantics (`uip tm schedules`): [references/schedules-guide.md](references/schedules-guide.md)
 - Custom-field definitions, labels, and values (`uip tm customfield`): [references/custom-fields-guide.md](references/custom-fields-guide.md)
 - Object labels / tag metadata on test entities (`uip tm objectlabel`): [references/object-labels-guide.md](references/object-labels-guide.md)
 - Project time zone, execution name format, and what is read-only (`uip tm project settings`): [references/project-settings-guide.md](references/project-settings-guide.md)
