@@ -59,7 +59,7 @@ Named failure patterns with symptom → cause → investigation → fix. Match t
 
 **Investigation:**
 1. Verify robot exists: `uip admin robot-accounts list --search "<ROBOT_NAME>" --output json`
-2. Check group membership from the account side: take the id from step 1, then `uip admin robot-accounts get <ROBOT_ID> --output json` and read its group-ids field. Prefer this over `groups members list`, which returns only one 50-entry page — absence from that page is not evidence of non-membership.
+2. Check group membership from the account side: take the id from step 1, then `uip admin robot-accounts get <ROBOT_ID> --output json` and read its group-ids field. Prefer this over `groups members list`, which without `--all` returns only one 50-entry page — absence from that page is not evidence of non-membership.
 
 **Fix:** Cause 1 → create robot account. Cause 2 → robot accounts are **identities only** — they don't carry API credentials (Client ID + Secret). For API access, create an **external app** instead. For unattended execution, Orchestrator provisions credentials via machine connection. Cause 3 → report the missing membership and let the user decide; add to the group only once they ask (SKILL.md Critical Rule 34).
 

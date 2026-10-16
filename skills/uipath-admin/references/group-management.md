@@ -52,15 +52,32 @@ uip admin groups update <GROUP_ID> --name "<NEW_NAME>" --output json
 
 ## Pagination for Members
 
-`members list` returns **one page, 50 entries by default, with no indication that
-more exist**. A group with 80 members looks like a group with 50.
+`--all` fetches every member in one call, and the envelope states whether you have
+the whole group:
+
+```bash
+uip admin groups members list <GROUP_ID> --all --output json
+```
+
+Read `Pagination.HasMore`, never the row count. `false` means these rows are the
+complete membership. `true` means they are not, and a `Warning` says so in words.
+`--all` walks up to 10,000 members and reports `HasMore: true` if it stops there.
+
+Without `--all` the command returns **one page, 50 entries by default**: a group
+with 80 members looks like a group with 50. `Pagination` still rides the envelope,
+so the page is self-describing either way.
 
 ```bash
 uip admin groups members list <GROUP_ID> --limit 50 --offset 0 --output json
 uip admin groups members list <GROUP_ID> --limit 50 --offset 50 --output json
 ```
 
-Keep raising `--offset` by `--limit` until a page comes back short or empty.
+Keep raising `--offset` by `--limit` until `Pagination.HasMore` is `false`. `--all`
+conflicts with both flags, so past the 10,000 cap the offset walk is the only route.
+
+**On a CLI that rejects `--all`** as an unknown option, `Pagination` is absent too:
+page until one comes back short or empty, and treat that as the weaker signal it is
+— a service that clamps `top` can return a short page that is not the last.
 
 ### Never conclude non-membership from a `members list` page
 
@@ -75,8 +92,14 @@ Resolve membership from the account side instead — one call, no paging:
 uip admin users list --search "<email>" --output json   # read GroupIDs on the match
 ```
 
-If `GroupIDs` contains the group id, the user is a member. And whatever the answer,
-changing it is not a remedy for an authorization error — see Critical Rule 34.
+If `GroupIDs` contains the group id, the user is a member.
+
+An `--all` listing that reports `HasMore: false` is also conclusive — that is the
+whole group. The account-side lookup still wins for a single account: one call, no
+10,000-member cap, and it works on a CLI too old to have `--all`.
+
+Whatever the answer, changing it is not a remedy for an authorization error — see
+Critical Rule 34.
 
 ## Error Handling
 
