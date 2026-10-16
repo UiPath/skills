@@ -167,6 +167,7 @@ If the field or exact value is unavailable or ambiguous, halt and ask; non-inter
 }
 ```
 
+- `type`: `external-agent` or `external-workflow` for an external agent or automation ([planning § External agents and automations](planning.md#external-agents-and-automations)); `splice` then writes its `serviceType`.
 - `description`: the task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
 
 Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle or ordered task-set rule is selected; if `lane` conflicts with mode, mode wins.
@@ -189,7 +190,7 @@ Never hand-write `data.context`, `data.inputs`, `data.outputs`, or the connectio
 
 - **Output binding.** For every output the SDD references — bare name or first segment of a `->` path — apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes) to the entry `splice` wrote, keeping its `id` / `var` / `elementId`. Outputs the SDD does not reference stay as splice minted them.
 - **Output name collisions.** `caseShape.outputs[]` returns `response` / `Error` for every connector task. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule) across all tasks already in `caseplan.case`: on a collision append a counter suffix starting at 2 to `var`, `id`, `value`, and `target` (as `=<new var>`); `name`, `displayName`, and `source` stay unchanged.
-- **Solution-resource pickers.** When `spec.resourceBindings[]` is present, mint one id per `rows[]` item, append a root binding for each (`id` = the minted id, `type` = `"string"`, `resource` and `resourceKey` from the entry, `name`, `propertyAttribute`, `default` from the row), and replace that row's `bindingIdPlaceholder` in `data.inputs` with its id. Copy the values exactly; `splice` does not write these.
+- **Solution-resource pickers: nothing to do.** When `spec.resourceBindings[]` is present, `splice` writes one root binding per `rows[]` item (reusing a root binding that already has the same `resource`, `resourceKey` and `propertyAttribute`), replaces each `bindingIdPlaceholder` with its id, and lists those picker rows on the task's `data.bindings[]`, as Studio Web saves them; its Summary reports them as `ResourceBindingIds`. If `splice` refuses with `This spec references {{RESOURCE_BINDING_ID:<field>}}, but its ResourceBindings define no row for it`, the spec is stale: run `case spec` again. On a CLI whose Summary has no `ResourceBindingIds` and leaves a `{{RESOURCE_BINDING_ID:` in `data.inputs`, mint the rows yourself: one id per `rows[]` item, a root binding for each (`id`, `type` = `"string"`, `resource` and `resourceKey` from the entry, `name`, `propertyAttribute`, `default` from the row), that id in place of the row's placeholder, and each of those root bindings listed on the task's `data.bindings[]`.
 - **Multipart file inputs** — 5.d below.
 
 #### Step 5.d — Multipart file inputs (after splice)
@@ -228,7 +229,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 5. `data.context[name="folderKey"].value` is `=bindings.<FolderBindingId from splice Summary>`; entry absent when `spec.connection.folderKey` was null
 6. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify)
 7. Root bindings exist for ConnectionId + folderKey with the ids splice reported, each carrying `default`
-8. `data.bindings[]` carries no root-binding copies — omit the key or write `[]`; both are the same state
+8. `data.bindings[]` holds only the picker rows `splice` wrote (absent or `[]` without a picker); no connection or folder binding is copied there
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` (written by splice; uniqueness rule applied for outputs in Step 5.c)
 10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 3–8 across every connector node
 11. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
@@ -244,7 +245,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 - **Do NOT add `operation` or `_label` to `data.context[]`.** The FE only adds `operation` for triggers; activity context must not have it.
 - **Do NOT add `designTimeMetadata` to the metadata body.** The FE does not include it for case management tasks.
 - **Do NOT add top-level `errorState` to the metadata body.** Error state belongs inside `activityPropertyConfiguration.errorState` only — that's already the shape in `caseShape.context`.
-- **Do NOT copy root bindings into `data.bindings[]`.** Connection and folder bindings are managed centrally in the root `bindings[]` and are never duplicated per-task. Omitting the key and writing `[]` are equivalent — the FE reads per-activity property bindings at `data.context[name="metadata"].bindings`, never at `data.bindings`, and `bindings` is optional in the schema. Only a non-empty copy is the defect.
+- **Do NOT copy connection or folder bindings into `data.bindings[]`.** They are managed centrally in the root `bindings[]` and are never duplicated per-task. The picker rows `splice` lists there are the only entries it holds; do not add or remove them by hand. Without a picker, omitting the key and writing `[]` are equivalent.
 - **Do NOT hand-write `data.context`, `data.inputs`, `data.outputs`, or the connection's root bindings.** `uip maestro case splice` writes them from the saved spec envelope (Step 5.b). Any agent-composed version is reconstruction from memory, which is where nested subtrees get dropped.
 - **Do NOT translate, drop, or reroute an SDD filter.** Use FilterTree only with `spec.filter`; otherwise preserve the exact SDD value in a declared plain sink or halt (Step 4).
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
