@@ -79,9 +79,9 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   (`{ id, value, label }` each, all three required): `'singleSelect'` and
   `'enum'` are a single-choice dropdown (a `string` answer), `'multiSelect'` a
   multi-select (an `array` answer). Never change one to `'string'` or
-  `'array'`: the form loses its control and renders a text box. A decompiled
-  canvas form keeps these spellings and their `options`, and you can edit the
-  node like any other.
+  `'array'`: the form loses its picker. A decompiled canvas form keeps these
+  spellings and their `options`, and you can edit the node unless a field has
+  one of the keys below.
 
   ```ts
   fields: [{
