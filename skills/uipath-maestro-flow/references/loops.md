@@ -88,7 +88,10 @@ options below.
   input and restarts it, and `check` refuses it (`REF_TO_OWN_LOOP`). Works on
   a 1.0.0 loop too (via `loopBack`). Needs `@uipath/maestro-builder-sdk`
   6.20.0 or later; an older SDK fails with `continue is not a function`, so
-  upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+  upgrade the copy `uip` uses:
+  `npm install -g @uipath/maestro-builder-sdk@latest`, or
+  `npm install --save-dev @uipath/maestro-builder-sdk@latest` for a
+  workspace copy.
 
 ```ts
 .loop('each', input('items'), (body) => body
