@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <path id="acme-mark" d="M32 6 L58 56 H44 L32 31 L20 56 H6 Z"/>
+  <circle id="acme-dot" cx="32" cy="48" r="5"/>
+</svg>

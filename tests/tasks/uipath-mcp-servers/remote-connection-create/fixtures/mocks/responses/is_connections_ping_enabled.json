@@ -1,0 +1,9 @@
+{
+  "Result": "Success",
+  "Code": "ConnectionPing",
+  "Data": {
+    "ConnectionId": "6f3c2a10-4b7e-4c1d-9a2e-0d5b8c7e1a01",
+    "Status": "Enabled",
+    "Message": "Connection is active."
+  }
+}

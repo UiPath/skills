@@ -38,7 +38,7 @@ reference:
 initial_prompt: |
   My InvoiceParse automation in the Cloud Robots folder won't start anymore —
   it goes straight to Faulted without ever running. It runs as a serverless
-  cloud robot. This started today and now every run fails. Why, and how do I
+  cloud robot. This started recently and now every run fails. Why, and how do I
   fix it?
 
 success_criteria:

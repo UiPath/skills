@@ -17,11 +17,15 @@ from _shared.bpmn_check import (  # noqa: E402
 )
 
 
+TYPE_VERSIONS = {"Orchestrator.StartAgentJob": "v2"}
+
+
 def require_wrapper(root: ET.Element, wrapper: str, extension_name: str, type_value: str) -> None:
+    version = TYPE_VERSIONS.get(type_value)
     matches = [
         elem
         for elem in elements(root, wrapper)
-        if has_typed_uipath_extension(elem, extension_name, type_value)
+        if has_typed_uipath_extension(elem, extension_name, type_value, version=version)
     ]
     if not matches:
         fail(f"missing bpmn:{wrapper} with {type_value} uipath:{extension_name} shell")

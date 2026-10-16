@@ -21,6 +21,21 @@ export default flow('expense-request')
   .build();
 ```
 
+## At a glance
+
+A person starts the flow by submitting a form (`core.trigger.form`); the
+submitted values ARE the flow's inputs.
+
+```ts
+export default flow('expense')
+  .input({ amount: types.number, reason: types.string })
+  .trigger(formTrigger())
+  .step('log', script({ code: 'return $vars.start.output.amount;' }))
+  .build();
+```
+
+Locally `--input` supplies the values; no rung renders a form.
+
 ## The derived schema
 
 The form's fields are derived from `.input()` at compile time, the same rule
@@ -33,6 +48,10 @@ shape the form by shaping the inputs.
 
 `check` warns (`FORM_TRIGGER_NO_INPUTS`) when the flow declares no inputs: the
 person would get an empty form with only a submit button.
+
+A `types.file` input becomes an upload field whose value is a reference to the
+file, not its content ([operate.md](operate.md#debug--a-real-end-to-end-run)).
+The form takes no title, description or accepted file types.
 
 ## Evidence boundary
 

@@ -6,7 +6,7 @@ Top-level binding creation. Referenced by **all** task plugins — non-connector
 
 ## Destination
 
-Bindings live at top-level `bindings[]` in `caseplan.json` (no `root` wrapper, no `data.inputs`).
+Bindings live at top-level `bindings[]` in `caseplan.case` (no `root` wrapper, no `data.inputs`).
 
 ## What Bindings Are
 
@@ -22,6 +22,7 @@ The bindings array stores resource metadata for tasks — process names, folder 
 | rpa | `"process"` | — | name + folderPath |
 | api-workflow | `"process"` | `"Api"` | name + folderPath |
 | function | `"process"` | `"Function"` | name + folderPath |
+| business-rule | `"BusinessRule"` | — | name + folderPath |
 | case-management | `"process"` | `"CaseManagement"` | name + folderPath |
 | connector (activity/trigger) | `"Connection"` | — | ConnectionId + folderKey |
 
@@ -33,7 +34,7 @@ Create **two** binding entries in top-level `bindings[]` per **resource**, not p
 
 ### Full binding shape — non-connector tasks
 
-For non-connector tasks (`process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `case-management`), `name` and `propertyAttribute` carry the same value (`"name"` / `"folderPath"`):
+For non-connector tasks (`process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `business-rule`, `case-management`), `name` and `propertyAttribute` carry the same value (`"name"` / `"folderPath"`):
 
 ```json
 [
@@ -112,7 +113,7 @@ Examples:
 - folderPath `""` (empty), name `"ReviewHITL"` → `".ReviewHITL"`
 - **api-workflow** — `name` is the registry entry's own `name` field, read verbatim: often the generic literal `"API Workflow"` (folderPath `"Shared/Finance/EnrichInvoice"` → `"Shared/Finance/EnrichInvoice.API Workflow"`), but a workflow given a real name carries that instead (e.g. `"ContractOperationsApi"`). Never assume which — using the wrong one produces a `resourceKey` Orchestrator can't resolve. See [api-workflow/planning.md § Registry Resolution](../../tasks/api-workflow/planning.md#registry-resolution).
 
-> **Inline-built sibling (agent / api-workflow) — `resourceKey` and `folderPath` are DECOUPLED (do NOT derive one from the other).** For an agent or API workflow built inline at the Rule 18 gate ([create-inline-common.md § Step 3](../../tasks/create-inline-common.md#step-3--binding-invariants)), the `folderPath` binding `default` is **`""`** (runtime co-located folder) but the `resourceKey` is the literal **`"solution_folder.<name>"`** (resource identity) — NOT `".<name>"`. The general `<folderPath>.<name>` formula does **not** apply here; hardcode the `solution_folder` prefix in `resourceKey` while leaving `folderPath` empty. This split is intentional: `solution_folder` identifies the resource for deploy/provisioning, `""` tells the running case to start the sibling in its own folder. Authoring `folderPath: "solution_folder"` (so `resourceKey` and `folderPath` agree) passes `validate` but fails at invocation with `folder not exist`.
+> **Inline-built sibling (agent / api-workflow / business-rule) — `resourceKey` and `folderPath` are DECOUPLED (do NOT derive one from the other).** For an agent, API workflow, or business rule built inline at the Rule 18 gate ([create-inline-common.md § Step 3](../../tasks/create-inline-common.md#step-3--binding-invariants)), the `folderPath` binding `default` is **`""`** (runtime co-located folder) but the `resourceKey` is the literal **`"solution_folder.<name>"`** (resource identity) — NOT `".<name>"`. The general `<folderPath>.<name>` formula does **not** apply here; hardcode the `solution_folder` prefix in `resourceKey` while leaving `folderPath` empty. This split is intentional: `solution_folder` identifies the resource for deploy/provisioning, `""` tells the running case to start the sibling in its own folder. Authoring `folderPath: "solution_folder"` (so `resourceKey` and `folderPath` agree) passes `validate` but fails at invocation with `folder not exist`.
 
 ### Data sources — connector tasks
 

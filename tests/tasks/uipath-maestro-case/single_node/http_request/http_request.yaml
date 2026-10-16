@@ -1,0 +1,141 @@
+task_id: skill-case-single-http-request
+description: >
+  Build a Case Management definition from an sdd.md whose only task is a
+  direct (manual-authentication) http-request. Exercises the http-request
+  plugin: `uip maestro case sdd convert` writes the task in the shape the Case
+  Designer saves, with no registry lookup. Validates the case file, then runs
+  `uip maestro case debug` against the public echo service postman-echo.com
+  and asserts the case and the task's own execution complete. Case debug
+  reports element executions, not variable values, so the echoed body is not
+  graded. The endpoint is
+  third-party: an outage there fails the debug step, not the build checks.
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node]
+max_iterations: 1
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+run_limits:
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1500
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "HttpRequestSingleCase"
+  containing a project also named "HttpRequestSingleCase" from the sdd.md
+  below. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — HttpRequestSingleCase
+
+  Single-stage, single-task case exercising the http-request task plugin end-to-end.
+
+  ## Section 1: Case Definition
+
+  ### 1.1 Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | HttpRequestSingleCase |
+  | Case Description | Single-node case that posts an invoice number to an echo service and keeps the echoed body. |
+  | Case Identifier | Prefix: HRC, Type: constant |
+  | Case-Level SLA | 1 d |
+  | SLA Type | Static |
+
+  ### 1.3 Triggers
+  | Trigger Type | Source | Configuration | Initial Variable Mapping |
+  |---|---|---|---|
+  | manual | User-initiated start of the case | - | - |
+
+  ### 1.4 Case Completion Conditions
+  | WHEN | IF | THEN | Marks Case Complete |
+  |---|---|---|---|
+  | required-stages-completed | - | Case marked complete | Yes |
+
+  ### 1.5 Case Variables
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |---|---|---|---|---|---|---|
+  | echoResponse | Variable | object | | | | Response body returned by the echo service; populated by Post Invoice. |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Notify (`notify`)
+  **Type:** Stage
+  **Description:** Post the invoice number to the echo service.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting |
+  |---|---|---|
+  | case-entered | - | No |
+
+  #### Stage Completion Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete |
+  |---|---|---|---|
+  | required-tasks-completed | - | exit-only | Yes |
+
+  #### Tasks
+  | # | Task ID | Task Name | Type | Required | Run Only Once | Persona | SLA |
+  |---|---------|-----------|------|----------|---------------|---------|-----|
+  | 1 | `notify.postInvoice` | Post Invoice | http-request | Yes | No | system | — |
+
+  ##### Task 1.1: Post Invoice (`notify.postInvoice`)
+
+  **Type:** http-request
+  **Description:** POST the invoice number to the echo service and keep the response body.
+
+  **Entry Condition**
+
+  | WHEN | IF |
+  |---|---|
+  | current-stage-entered | - |
+
+  **Method:** POST
+  **URL:** https://postman-echo.com/post
+  **Headers:** `{"Accept": "application/json"}`
+  **Query:** `{"source": "skills-case-eval"}`
+  **Body:** `{"invoiceNumber": "INV-1042", "probe": "skills-case-http-7f3a"}`
+  **Connector Key:** —
+  **Connection ID:** —
+
+  **Outputs**
+  | Field | Type | Binding |
+  |---|---|---|
+  | Body | object | -> echoResponse |
+  ```
+
+  Treat all build gates as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug` yourself — the test harness runs it. Do NOT ask for approval,
+  confirmation, or feedback. Build end-to-end in a single pass and finish
+  with `uip maestro case validate` passing on the resulting case plan.
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated case plan"
+    command: "p=$(ls HttpRequestSingleCase/HttpRequestSingleCase/caseplan.case HttpRequestSingleCase/HttpRequestSingleCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The http-request task carries the SDD's request and output binding, and debug completes with the task executed"
+    command: "python3 $REFERENCE_DIR/_shared/check_http_request_case.py"
+    timeout: 720
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

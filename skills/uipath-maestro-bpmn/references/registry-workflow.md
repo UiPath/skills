@@ -11,6 +11,7 @@ uip maestro bpmn registry pull            # sync + cache (login for connectors/p
 uip maestro bpmn registry list --limit -1 --output json   # all extension types
 uip maestro bpmn registry search <keyword> --output json  # find a type by intent
 uip is connections list --all-folders --output json   # live IS connections (all folders)
+uip rules list --all-folders --output json            # deployed business rules (all folders)
 ```
 
 Map the user's intent to an extension type from the list. Pick the
@@ -59,7 +60,7 @@ uip maestro bpmn registry get <extensionType> --output json
 
 | Field | Use |
 | --- | --- |
-| `xmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only.** |
+| `xmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only** (except SKILL.md rules 6 and 18). |
 | `bpmnElement` | The host element's PascalCase model type (`bpmn:ServiceTask`). Normalize both this field and the `xmlTemplate` host tag to lower-camel when serializing (`<bpmn:serviceTask>`) — 27 of the 29 bundled templates carry the PascalCase tag. |
 | `extensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |
 | `contextFields[]` | The `uipath:context` inputs; each may carry its own `bindingInfo`. |
@@ -103,11 +104,12 @@ resolve their object elsewhere — see
 ```bash
 uip is connections list --all-folders --output json   # pick a connection id + its connector (search all folders)
 uip is resources list <connectorKey> --connection-id <id> --output json   # the objects that connector exposes
+uip is activities list <connectorKey> --output json   # the catalog: ObjectName + MethodName per activity (takes no --connection-id)
 uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <id> --object-name <object> --output json
 ```
 
-### Picking the object: take it from the table, do not infer it
+### Picking the object: the table first, then the parameters
 
 A connector exposes several objects that perform the same operation, and
 `uip is resources describe` cannot rank them. Four Jira objects create an
@@ -204,10 +206,34 @@ Without it the runtime sends the body as JSON.
 
 For a connector or operation not listed, describe every candidate and keep
 the ones whose `Operation.Curated` names the activity asked for. Expect more
-than one to survive — that is what happens on Jira — and treat the remainder
-as undecidable from the CLI: pick one, then say in your summary which object
-you used and which others tied. Never pick silently — `validate` and `pack`
-accept any object name, so nothing local tells the user you guessed.
+than one to survive: the catalog serves a plain, a `V2` and a `_V3` spelling
+of the same activity, and Jira has four.
+
+**Break the tie on parameters, not on the name.** Describe cannot tell you
+which candidate is the live one, but it does tell you which ones cannot do
+the job. Of the survivors, keep only those whose `Parameters` and
+`RequestFields` carry every value the task names. UiPath Data Service serves
+`UploadFileToRecordField` beside `UploadFileToRecordFieldV2`, and only the
+unsuffixed one takes a `fieldName` parameter: V2 takes `entityName`,
+`recordId`, `file` and `expansionLevel`, with no way to name the field. A task
+that names a field can only be built on the unsuffixed object. Pick by display
+name there and you author a process that cannot do what was asked, and it
+still passes `validate` and `pack`.
+
+If several still survive they are undecidable from the CLI: pick one, and say
+in your summary which you used and which tied. If none of them exposes a value
+the task requires, say that instead of dropping the requirement or smuggling it
+in as an input name. Never pick silently — `validate` and `pack` accept any
+object name, so nothing local tells the user you guessed.
+
+`describe` is the contract. Never run the operation (`uip is resources run
+...`) to learn a field name, a filter syntax or a default: that executes
+against the live tenant, and its create and delete verbs leave records behind.
+The answer is already in `Parameters`/`RequestFields`. A failed `describe` is
+not a contract either. If it errors with `Operation '<x>' not found`, take the
+operation it lists and re-run, rather than authoring the node from a guess.
+The listed operation wins even when the verb reads oddly for the activity:
+Data Service models `DownloadFileFromRecordFieldV2` as `Create`, not `List`.
 
 The response adds an enrichment block with the live field metadata. Match the
 key case-insensitively — the CLI's output formatter has changed key casing
@@ -323,14 +349,28 @@ never filter `RequestFields` by the names you expect. A missing Slack
 ### Required `Parameters` are separate from the body — emit every one
 
 `uip is resources describe` reports `Parameters` alongside `RequestFields`.
-Each parameter is its own input, targeted by its `Type` (`query`, `path`, or
-`file`) — never folded into the body. Emit an input for every parameter marked
-`Required: true`, using its `DefaultValue` when the request has no better
-value:
+Each parameter is its own input, and its `target` is the parameter's own
+`Type`: `path`, `query`, `body` or `multipart` (`validator/bpmn-spec.json`).
+Emit an input for every parameter marked `Required: true`, using its
+`DefaultValue` when the request has no better value:
 
 ```xml
-<uipath:input target="query" name="send_as" type="string" value="bot" />
+<uipath:input name="entityName" target="path"      type="string" value="FlowCodeEvalEntity" />
+<uipath:input name="fieldName"  target="path"      type="string" value="file1" />
+<uipath:input name="recordId"   target="path"      type="string" value="=vars.Var_CreatedRecord.Id" />
+<uipath:input name="send_as"    target="query"     type="string" value="bot" />
+<uipath:input name="file"       target="multipart" type="file"   value="=vars.Var_DownloadedFile" />
 ```
+
+A path parameter is required even though the context `path` field already
+shows it as a `{placeholder}`: the placeholder is the template, the input is
+the value.
+
+A `body`-typed parameter is the one exception to "its own input". The node
+already carries exactly one `target="body"` input holding the whole request
+object, and a second one does not merge: the last wins and the provider
+receives a bare scalar (see *Body shape* above). Carry that parameter as a
+field inside that single body object, under the name describe gives it.
 
 Omitting one is accepted by local validation and by `pack`, then fails only at
 runtime with `400` and `Value for required parameter '<name>' not found`. A
@@ -374,18 +414,31 @@ A node that targets a cloud resource carries a binding. The `bindingInfo` on the
 extension type tells you the binding shape; the concrete value comes from
 discovery or the user.
 
-- **Resource bindings** (`bindingInfo.resource` = `process` / `queue` /
-  `BusinessRule`): the context field named by `bindingInfo.contextField`
-  (e.g. `releaseKey`, `queueName`, `entityKey`) holds the resource key
-  (`bindingInfo.propertyAttribute`, usually `Key`). Resolve the real key with
-  `registry search` / discovered `Processes` / `Queues`; never guess a GUID.
-  A business rule binds `entityKey`, `name`, and `folderPath` to `BusinessRule`
-  (`Key`, `name`, `folderPath`) — never a `process` `releaseKey`, even when
-  `registry get` returns one. Its key is the rule's catalog entity key, never a
-  `Key` from `Processes` or a release key; if the user has not given it, ask.
-  A rule defined only in this solution uses its name as the key. The
-  `folderPath` binding always carries a `default`, `""` when the rule lives in
-  the running job's folder. Its unbound `_label` context holds the rule's name.
+- **Resource bindings** (`bindingInfo.resource` = `process` / `queue`): the
+  context field named by `bindingInfo.contextField` (e.g. `releaseKey`,
+  `queueName`) holds the resource key (`bindingInfo.propertyAttribute`,
+  usually `Key`). Resolve the real key with `registry search` / discovered
+  `Processes` / `Queues`; never guess a GUID.
+- **Business rule bindings** (`BusinessRule`): the context `name` and
+  `folderPath` each reference a `BusinessRule` binding (`propertyAttribute`
+  `name` / `folderPath`) — never a `Key` binding or a `process` `releaseKey`,
+  even when `registry get` returns one. Find the rule with
+  `uip rules list --all-folders`; its `Name` and `FolderPath` fill the
+  bindings. Both bindings carry the same
+  `resourceKey`: `<folderPath>.<name>`, or `<name>` alone when the folder path
+  is empty — never the catalog entity key, a `Key` from `Processes`, or a
+  release key. The engine runs the rule by `name` + `folderPath` and uses
+  `resourceKey` only to match deploy-time binding overwrites. Bind only a deployed
+  rule; one defined only in this solution is deployed first (SKILL.md rule 17).
+  The task is `version="v3"`: below v3 the engine cannot read the `.uirule`
+  package a BusinessRules project deploys.
+  Bind only a decision-keyed rule: the `OutputArguments` from
+  `uip rules describe` must carry `"x-uipath-decision-keyed": true`. A rule
+  without it reads back empty columns from the task's `output`; do not bind it —
+  run `uip rules refresh <project-path>` on its project and redeploy it first.
+  The `folderPath` binding always carries a `default`, `""` when
+  the rule lives in the running job's folder. The unbound `_label` context
+  input holds the rule's name.
 - **Connection bindings** (`Intsvc.*`): the context references a connection via
   `=bindings.<bindingId>`, and a `<uipath:binding>` of `resource="Connection"`
   with `propertyAttribute="ConnectionId"` in the process-level
@@ -403,11 +456,16 @@ block. Each `<uipath:binding>` carries `id`, `resource`, `propertyAttribute`, an
 `default` value (the resolved key or id). On a **connection** binding
 `resourceKey` is required too — omitting it fails `validate` with
 `Integration Service activity connection binding "<id>" is missing
-resourceKey`. A `BusinessRule` binding carries the rule key as `resourceKey`.
-Other binding kinds (`process`, `queue`) carry no `resourceKey`; do not invent
-one.
+resourceKey`. `process` and `queue` bindings carry `resourceKey` from
+`bindingInfo.resourceKeyPattern`. Both `BusinessRule` bindings carry the same
+`resourceKey`, `<folderPath>.<name>` (`<name>` alone when the folder path is empty):
 
-A folder-scoped connector activity needs TWO bindings that share one
+```xml
+<uipath:binding id="Binding_RuleName"   name="name"         type="string" resource="BusinessRule" propertyAttribute="name"       resourceKey="<FOLDER_PATH>.<RULE_NAME>" default="<RULE_NAME>" />
+<uipath:binding id="Binding_RuleFolder" name="folderPath"   type="string" resource="BusinessRule" propertyAttribute="folderPath" resourceKey="<FOLDER_PATH>.<RULE_NAME>" default="<FOLDER_PATH>" />
+```
+
+Every `Intsvc.ActivityExecution` bound to a connection needs TWO bindings that share one
 `resourceKey` (the connection id) and differ in `propertyAttribute`: the
 connection binding's `default` is the connection id, the folder binding's
 `default` is the folder key.
@@ -468,9 +526,9 @@ next section for the fix.
 
 ## Job-wrapper v1 trap — `releaseKey` templates are unrunnable
 
-`Orchestrator.StartJob`, `Orchestrator.ExecuteApiWorkflowAsync`,
-`Orchestrator.BusinessRules`, and `Orchestrator.StartAgenticProcess[Async]` /
-`StartCaseMgmtProcess[Async]` all serve the same **v1** `xmlTemplate`:
+`Orchestrator.StartJob`, `Orchestrator.ExecuteApiWorkflowAsync`, and
+`Orchestrator.StartAgenticProcess[Async]` / `StartCaseMgmtProcess[Async]` all
+serve the same **v1** `xmlTemplate`:
 `<uipath:activity version="v1">` with a hidden, unbound `releaseKey` /
 `folderId` / `folderPath` / `name` context (`binding: false` on every field
 except `releaseKey`, which carries `bindingInfo` — `resource: "process"`,
@@ -488,8 +546,8 @@ the template's second bug.** Verified end-to-end for
    `bindingInfo` already documents (see [§4
    Bindings](#4-bindings--from-bindinginfo-never-invented) above): a
    process-kind `<uipath:binding resource="process" propertyAttribute="Key"
-   default="<resolved-key>" />`, referenced from the context as
-   `=bindings.<id>`. Resolve `<resolved-key>` from `uip or processes list
+   resourceKey="<RELEASE_KEY>" default="<RELEASE_KEY>" />`, referenced from the context as
+   `=bindings.<id>`. Resolve `<RELEASE_KEY>` from `uip or processes list
    --folder-path <path> --output json` → the deployed resource's
    `Key` — never leave the template's `{releaseKey}` placeholder unresolved.
 2. **The template's `folderId` context field is misnamed — the runtime reads
@@ -616,8 +674,9 @@ auth, schema, or enrichment decision is missing).
    [structural-bpmn.md](structural-bpmn.md)).
 2. Declare the process's variables (`<uipath:variables>`, each with an
    `elementId`) and the `<uipath:bindings>` block.
-3. For each node, paste its `registry get` `xmlTemplate`, fill placeholders, and
-   wire `{incomingEdge}`/`{outgoingEdge}` to your sequence flows.
+3. For each node, paste its `registry get` `xmlTemplate` (except SKILL.md rules
+   6 and 18), fill placeholders, and wire `{incomingEdge}`/`{outgoingEdge}` to
+   your sequence flows.
 4. Author the structural BPMN the registry does not emit: sequence flows,
    gateway conditions/defaults, event definitions, boundary events,
    subprocess/call-activity containers, multi-instance markers.
@@ -658,12 +717,6 @@ exact template for any of them with `registry get <type>`.
 
 This table is a discovery aid, not a substitute for `registry get` — always pull
 the live template before authoring.
-
-If a registry `xmlTemplate` returns a PascalCase BPMN host tag such as
-`bpmn:SendTask` or `bpmn:ReceiveTask`, normalize only the BPMN host element
-names to the serializer's lower-camel form (`bpmn:sendTask`,
-`bpmn:receiveTask`) when inserting it into a source file. Keep the
-`uipath:*` payload and its `uipath:type` value unchanged.
 
 Event types stay event-wrapped even when you place them on task-like BPMN
 hosts: `Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,

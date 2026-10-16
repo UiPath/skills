@@ -68,3 +68,7 @@
 {"id": "negative-069", "prompt": "Migrate our SVN repository to Git and keep the history", "expected_skill": ""}
 {"id": "negative-070", "prompt": "Upgrade this ASP.NET Framework 4.6 web app to .NET 8", "expected_skill": ""}
 {"id": "negative-071", "prompt": "Move our Jenkins pipelines to GitHub Actions", "expected_skill": ""}
+{"id": "negative-072", "prompt": "Model this loan approval decision table in Camunda Modeler and deploy it to Zeebe", "expected_skill": ""}
+{"id": "negative-073", "prompt": "Write a Drools DRL rule file that flags transactions over 10000 for review", "expected_skill": ""}
+{"id": "negative-074", "prompt": "Add an ESLint rule that forbids default exports in this TypeScript repo", "expected_skill": ""}
+{"id": "negative-075", "prompt": "Implement a decision table in plain Python with pandas for our discount tiers", "expected_skill": ""}

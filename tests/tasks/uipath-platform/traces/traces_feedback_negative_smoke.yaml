@@ -7,9 +7,16 @@ description: >
   judgment from feedback.md § Choosing a span: when the agent is the top-level
   span (no orchestrating robot job, case, or parent agent) the root span IS the
   agent execution, so `--span-id` must be left off rather than guessed at.
-  Auth/404 responses are acceptable outcomes — the graded behavior is command
-  shape and the deliberate omission of `--span-id`.
+  `uip` is an offline `record_cli` mock that answers every call with a
+  404 envelope — the graded behavior is the argv each call received.
+  That argv includes the deliberate omission of `--span-id`.
 tags: [uipath-platform, smoke, mode:build, lifecycle:setup, traces, feedback]
+
+sandbox:
+  record_cli:
+    - tool: uip
+      stdout: |
+        {"Result":"Failure","Message":"Resource not found (404 Not Found)"}
 
 run_limits:
   expected_turns: 10
@@ -27,27 +34,36 @@ initial_prompt: |
   tenant — that is expected. File the review anyway and report what comes back.
 
 success_criteria:
-  - type: command_executed
+  # Graded from cli_mocks/calls.jsonl: one record per real invocation, argv
+  # already split by the shell, so line continuations, quoting, and calls
+  # batched into one Bash step need no handling here.
+  - type: cli_called
     description: "Agent filed negative feedback on the trace with the review text as a comment"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--negative)(?=[\s\S]*--trace-id)(?=[\s\S]*--comment[\s=])'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback create"
+    flags:
+      negative: {present: true}
+      trace-id: "7d3a91e0f5c24b8ea0c6d219bb47f0a3"
+      comment: {present: true}
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: cli_called
     description: "Agent attributed the feedback to the agent and its version"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create(?=[\s\S]*--agent-id)(?=[\s\S]*--agent-version)(?=[\s\S]*--folder-key)'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback create"
+    flags:
+      agent-id: "c41d7b62-05ae-4f39-9a18-73e2b6d4c08f"
+      agent-version: "2.4.0"
+      folder-key: "2f6c8a41-93bd-4d17-8e55-6a0b7c19d3e2"
     weight: 2.0
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: cli_called
     description: "Feedback was filed WITHOUT --span-id: for a directly-invoked agent the root span is the agent run"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+traces\s+feedback\s+create'
-    exclude_pattern: '--span-id'
-    min_count: 1
+    tool: uip
+    verb: "traces feedback create"
+    flags:
+      span-id: {absent: true}
     weight: 3.0
     pass_threshold: 1.0

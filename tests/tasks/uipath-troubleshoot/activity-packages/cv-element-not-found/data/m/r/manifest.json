@@ -26,11 +26,6 @@
       "_doc": "Recorded verbatim: the Running -> Faulted transition set. Confirms a clean single execution — carries no diagnostic signal beyond jobs get."
     },
     {
-      "match": "or jobs traces 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
-      "file": "93706b31af.json",
-      "_doc": "Recorded verbatim. One RobotJob span whose Attributes carry the full UiPath.CV.ElementNotFoundException stack with the CvClickWithDescriptor.EndExecute faulting frame and the CVScope.OnFault propagation frame. No child CvClick/CVScope spans were emitted (no per-activity OpenTelemetry spans for this job), so the trace adds the verbatim .NET stack but no extra attribute-level disambiguation beyond jobs get/logs."
-    },
-    {
       "match": "traces spans get --job-key 37e7a8bb-d207-4db4-8ebf-f0ccc7aa85e9",
       "file": "93706b31af.json",
       "_doc": "Alternate trace-retrieval form (platform traces command). Maps to the same recorded span payload so the investigation does not depend on which trace form the agent reaches for."
