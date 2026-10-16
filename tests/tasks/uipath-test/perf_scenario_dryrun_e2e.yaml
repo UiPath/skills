@@ -9,6 +9,16 @@ description: >
   dryrun.txt matches its result, and no performanceTesting run was started.
 tags: [uipath-test, e2e, mode:operate, lifecycle:end-to-end, outcome-graded]
 
+# Blocked: Test Manager refuses a perf dry run unless the package is built with
+# UiPath.Testing.Activities 25.10.0 or newer ("The dependency
+# UiPath.Testing.Activities must be version 25.10.0 or higher"), and the
+# folder's serverless robot runs cross-platform packages only. The shared
+# TestCase_CrossPlatform_VB_Tests is built with 23.6.0-preview. Re-enable once a
+# cross-platform test package built with Testing.Activities >= 25.10.0 is in
+# _setup/packages and this task points at it. Everything before the dry run
+# (setup, scenario, load group) passed on the eval tenant.
+skip: true
+
 run_limits:
   expected_turns: 20
   max_turns: 40
