@@ -16,16 +16,17 @@ For **case-level event triggers** (outside any stage), use [`plugins/triggers/ev
 
 An external agent (CrewAI, Snowflake Cortex, Salesforce Agentforce, Azure AI Foundry, Google Vertex…) or an external automation (Power Automate, Salesforce flows) is a task of its own type, built exactly like a connector activity:
 
-| sdd.md | `type` | TypeCache index (§ 1) |
-|---|---|---|
-| `EXTERNAL_AGENT` | `external-agent` | `typecache-external-agent-activities-index.json` |
-| `EXTERNAL_AUTOMATION` | `external-workflow` | `typecache-external-automation-activities-index.json` |
+| `type` | TypeCache index (§ 1) |
+|---|---|
+| `external-agent` | `typecache-external-agent-activities-index.json` |
+| `external-workflow` | `typecache-external-automation-activities-index.json` |
 
 Differences from a connector activity:
 - **§ 1:** search the index in the table, not `typecache-activities-index.json`. Pass `--type typecache-external-agent-activities` (or `typecache-external-automation-activities`) to `registry get-connection` in § 2.
 - **§ 2:** the connection must be the agent's own connector's. Execute Salesforce Agent is `uipath-salesforce-agent`, not a `uipath-salesforce-sfdc` connection; `case spec` refuses another connector's with `invalid_argument`.
-- **§ 3:** `case spec --type activity` finds the entry in the external catalog by itself. Its context carries `executionType` (`sync`, `async` or `hybrid`), and `operation` / `eventMode` for an async agent. Set every required body field (an agent's `prompt`): the run fails without it.
-- **impl:** write the skeleton with the external `type`; `splice` writes the service type the Case Designer saves (`Intsvc.SyncAgentExecution` / `Intsvc.AsyncAgentExecution`, `Intsvc.SyncWorkflowExecution` / `Intsvc.AsyncWorkflowExecution`) from `executionType`. Do not set `serviceType` yourself.
+- **§ 3:** `case spec --type activity` finds the entry in the external catalog by itself.
+
+If `sdd convert` drops the task as a type an SDD may not declare, or `splice` refuses it as `not a connector task`, the CLI predates external tasks: say so in one line, keep the task as an `<UNRESOLVED>` placeholder ([§ Unresolved Fallback](#unresolved-fallback)), and ask the user to update `uip`.
 
 ## Resolution Pipeline
 
