@@ -67,6 +67,9 @@ OWNERS = {
     "FXASK": "export_overwrite_ask_integration.yaml",
     "FXLAB": "testcases_export_by_label_e2e.yaml",
     "FXRPT": "report_export_integration.yaml",
+    "MXEXP": "project_export_smoke.yaml",
+    "MXASK": "project_import_ask_integration.yaml",
+    "MXLIFE": "project_migration_e2e.yaml",
 }
 
 

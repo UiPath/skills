@@ -60,6 +60,9 @@ and therefore exact for this scheme.
 | `export_overwrite_ask_integration` | HEALTH | `EVFX-FXASK-Login` | Seeded once, read-only. `pre_run` writes the user's `exports/report.xlsx` in the run's folder |
 | `testcases_export_by_label_e2e` | HEALTH | `EVFX-FXLAB-TC{1,2}` (label `EVFX-FXLAB-Payments`), `EVFX-FXLAB-TC3` (label `EVFX-FXLAB-Other`) | Seeded once, read-only; `pre_run` deletes duplicates a concurrent first seed leaves and fails if the labels drifted |
 | `report_export_integration` | HEALTH | `EVFX-FXRPT-Login`, `EVFX-FXRPT-Checkout`, `EVFX-FXRPT-Set` holding both, with exactly one finished manual run (one Passed, one Failed) | Seeded once. `pre_run` keeps the oldest finished run and deletes any other run of the set; `post_run` deletes runs the agent started |
+| `project_export_smoke` | its own project `EVMXEXP` (`EVFX-MXEXP-Project`) | test cases `MX Alpha`, `MX Beta` | Seeded once, never changed; `pre_run` removes duplicates a concurrent first seed leaves and fails if the shape drifted. The package goes to the run's own `backup/` |
+| `project_import_ask_integration` | its own project `EVMXASK` (`EVFX-MXASK-Project`) | test cases `MX Alpha`, `MX Beta` | Same as `EVMXEXP`; `package.tmh` comes from its latest completed export (one export if none) |
+| `project_migration_e2e` | source `EVMXLIF` (`EVFX-MXLIFE-Project`); a new project per run, key `EVMX<4 hex>`, name `EVFX-MXLIFE-<uuid8>` from the run's `seed.json` | test cases `MX Alpha`, `MX Beta` in the source | `post_run` deletes the run's project; `pre_run` sweeps `EVFX-MXLIFE-<uuid8>` projects older than 6 hours |
 
 The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
 (`seed`, `check`). It knows no names: each task passes its own `EVFX-` names
