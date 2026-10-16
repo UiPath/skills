@@ -6,6 +6,8 @@ description: >
   Add a script node to an existing BellevueWeather flow that converts the
   temperature from Fahrenheit to Celsius between the HTTP fetch and the
   format-summary step. Exercises inserting a node into an existing edge.
+  Graded offline too: the edit must come out of the skill's decompile/merge
+  loop (a hand-edited .flow fails) and leave the rest of the flow unchanged.
 tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:edit, shape:multi-node]
 
 run_limits:
@@ -58,6 +60,23 @@ success_criteria:
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  # ── Brownfield edit ───────────────────────────────────────────────────
+  - type: run_command
+    description: "The .flow was written by uip maestro flow merge (the skill's decompile/merge loop), not edited by hand"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect merged --original $REFERENCE_DIR/edit/templates/initial_flow/BellevueWeather/BellevueWeather --project BellevueWeather/BellevueWeather"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "start, getWeather and checkTemperature, every edge but the one the new node splits, and every variable and definition are unchanged"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/edit/templates/initial_flow/BellevueWeather/BellevueWeather --project BellevueWeather/BellevueWeather --changed-node formatSummary --changed-node endNiceDay --changed-node endBringJacket --removed-edge getWeather:default>formatSummary:input"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
 post_run:

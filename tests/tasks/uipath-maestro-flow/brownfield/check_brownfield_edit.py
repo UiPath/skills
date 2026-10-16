@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """The requested edit to the DevCon BillingDisputeResolution fixture is present.
 
-One subcommand per task, plus `merged`: the `.flow` came out of the skill's
-decompile -> compile -> merge loop, not a hand edit.
-`check_brownfield_preserved.py` grades everything the edit was not supposed to
-touch. Scripts and expressions the agent wrote are run with `node` against stub
-`$vars`, so the grade follows what the code returns, not how it is spelled.
+One subcommand per task; `check_brownfield_preserved.py` grades everything the
+edit was not supposed to touch. Scripts and expressions the agent wrote are run
+with `node` against stub `$vars`, so the grade follows what the code returns,
+not how it is spelled.
 
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/brownfield/check_brownfield_edit.py <edit> \\
@@ -235,28 +234,8 @@ def check_writer_prompt(_original: dict, _final: dict, original_agents: dict, ag
     return 0
 
 
-def check_merged(original: dict, final: dict, _original_agents: dict, _agents: dict) -> int:
-    # merge takes every edge from the compiled source, which numbers them edge_0..edge_N
-    # (builder-sdk FLOW_PARITY.md §6.2), so a surviving original edge id means a hand edit.
-    # A tripwire, not proof (a hand edit can renumber too), and it inverts if merge ever keeps
-    # original edge ids the way compile now keeps node ids (builder-sdk #1249, #1253).
-    original_ids = {e["id"] for e in original["edges"]}
-    kept = sorted(original_ids & {e.get("id") for e in final["edges"]})
-    if kept:
-        return fail(
-            f"{len(kept)} of {len(original_ids)} original edge ids survive (e.g. {kept[0]!r}): the .flow was "
-            "edited by hand, not written by `uip maestro flow merge`, which renumbers every edge. When the "
-            "merge candidate changes something the task did not ask for, the skill's answer is to fix the "
-            ".flow.ts and merge again, not to patch the .flow (uipath-maestro-flow references/brownfield.md, "
-            "'Merge warnings: what the round trip changed')"
-        )
-    print("OK: the .flow was written by `uip maestro flow merge` (no original edge id survives)")
-    return 0
-
-
 CHECKS = {
     "credit-cap": check_credit_cap,
-    "merged": check_merged,
     "switch-route": check_switch_route,
     "writer-prompt": check_writer_prompt,
 }
