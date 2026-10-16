@@ -1,0 +1,114 @@
+task_id: skill-agent-usecase-supplier-web-research
+description: >
+  Use-case pattern "researcher with web search". The agent runs a supplier
+  background check by searching the public web through the UiPath GenAI
+  Activities "Web Search" Integration Service activity and returns a sourced
+  risk briefing. Graded on the final project only: Web Search IS tool wiring
+  (connector, activity, literal `results[*]` output key, Studio Web
+  silent-drop rules), solution-level connection resource, output contract,
+  read-only `uip agent validate`, and an LLM judge on the system prompt.
+  Cloud auth required — the staging tenant must have the
+  `uipath-uipath-airdk` (GenAI Activities) connector.
+tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, connector, feature:connections]
+
+run_limits:
+  expected_turns: 35
+  turn_timeout: 1200
+  task_timeout: 1500
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  Procurement wants a quick background check before we onboard a new
+  supplier. Build a UiPath low-code agent, "SupplierResearchAgent", in a
+  solution called "SupplierResearchSol". It gets the `supplierName`, and
+  optionally the supplier's `country` and `website`.
+
+  It should research the supplier on the public web — use UiPath's GenAI
+  web search for that — and look at what the company does, news from the
+  last 12 months, and red flags: sanctions, lawsuits, bankruptcy or
+  insolvency, data breaches, and serious negative press.
+
+  It returns:
+
+    - `companyOverview`: a short paragraph
+    - `recentNews`: a list of notable items
+    - `riskFlags`: a list, each with a type, a description and the URL of
+      the source
+    - `overallRisk`: low, medium, high or unknown
+    - `sources`: every URL it relied on
+
+  Every claim must be traceable to a URL the search actually returned. If
+  the search finds too little to judge, the risk is "unknown" — not "low".
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
+  or feedback. Do NOT pause between planning and implementation. Complete the
+  entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: file_exists
+    description: "SupplierResearchAgent/agent.json exists"
+    path: "SupplierResearchSol/SupplierResearchAgent/agent.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: json_check
+    description: "Agent project is registered in the SupplierResearchSol solution"
+    path: "SupplierResearchSol/SupplierResearchSol.uipx"
+    assertions:
+      - expression: "length(Projects)"
+        operator: "gte"
+        expected: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final project passes read-only uip agent validate (derived files current)"
+    command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate SupplierResearchSol/SupplierResearchAgent"
+    timeout: 150
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "GenAI Web Search IS tool wired correctly, connection provisioned, inputs templated, sourced risk contract"
+    command: "python3 $REFERENCE_DIR/lowcode/use_cases/supplier_web_research/check_supplier_web_research.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "LLM judge: system prompt bounds the search, covers the red flags, enforces source discipline and the unknown rule"
+    files: ["SupplierResearchSol/SupplierResearchAgent/agent.json"]
+    weight: 2.0
+    pass_threshold: 0.75
+    include_reference: false
+    prompt: |
+      You are grading the system prompt of a UiPath low-code agent that
+      researches suppliers on the web. Read
+      `SupplierResearchSol/SupplierResearchAgent/agent.json` and grade ONLY
+      the `content` of the `messages[]` entry whose `role == "system"`.
+      Ignore schemas, settings, resources and the user message.
+
+      Score four rubric items, each worth 1/4:
+
+        R1. Search strategy — tells the agent when and how to use the web
+            search tool (e.g. separate queries for background, recent news
+            and each red-flag area, using country/website to disambiguate
+            same-name companies) and bounds the number of searches.
+        R2. Red flags — names sanctions, lawsuits, bankruptcy/insolvency,
+            data breaches and serious negative press, and restricts "recent
+            news" to the last 12 months.
+        R3. Source discipline — every overview statement, news item and risk
+            flag must be backed by a URL returned by the search; the agent
+            must not invent URLs or facts, and lists all relied-on URLs in
+            `sources`.
+        R4. Risk rating — gives criteria for low / medium / high, and says
+            that too little evidence means "unknown", never "low".
+
+      Award 1.0 for clear, specific coverage, 0.5 for partial or vague
+      coverage, 0.0 for missing. The final `score` is the average of R1–R4,
+      rounded to two decimals. If the file or the system message is missing,
+      score 0.0.
