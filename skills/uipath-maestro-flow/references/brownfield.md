@@ -37,10 +37,13 @@ leave an earlier `*.merged.flow` there: the project validator treats every
 ## Flows with draft nodes: let merge compile
 
 A canvas-saved flow often holds **draft** nodes: a connector with no connection
-yet, a required input left empty, or a generic operation with no object picked.
-`compile` refuses them even with `--no-check`, so the loop above stops at the
-first compile of the untouched source. Hand the edited **source** to `merge`
-instead, and let it build the baseline from the original itself:
+yet, a required input left empty, or a generic operation with no object picked
+(connector action steps only; a draft trigger, `waitForEvent` or connector tool
+still refuses and must be finished first). `compile` refuses them even with
+`--no-check`, so the loop above stops at the first compile of the untouched
+source, and so do the pipeline and the by-hand loop below. Hand the edited
+**source** to `merge` instead, and let it build the baseline from the original
+itself:
 
 ```bash
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
@@ -49,12 +52,15 @@ flow-sdk flow merge "$PROJECT/Deployed.flow.ts" --original "$CANONICAL" \
   --baseline-from "$CANONICAL" -o "$WORK/candidate.flow"
 ```
 
-- `--baseline-from <original.flow>` decompiles and compiles the original in
-  memory, so there is no baseline to capture, and none to capture too late.
-  With a `.flow.ts` as the edited input, merge compiles that too. Both
-  compiles tolerate draft nodes, and only the merged result is written.
+Set `PROJECT`, `CANONICAL` and `WORK`, then validate and replace, as in the
+loop above.
+
+- `--baseline-from <original.flow>` builds the baseline in memory; skip the
+  baseline compile. A `.flow.ts` edited input is compiled by merge too. Both
+  compiles tolerate draft nodes.
 - A draft node you did **not** touch is restored exactly as saved, with
-  `[DRAFT_NODE_KEPT]` on stderr.
+  `[DRAFT_NODE_KEPT]` on stderr. A draft inside a subflow is always refused,
+  touched or not: merge takes subflows from the edited source whole.
 - A draft node you **changed** gets the refusal a normal compile gives
   (`[BINDING_MISSING]`, `[CONNECTOR_INPUT_MISSING]` or
   `[CONNECTOR_OBJECT_REQUIRED]`) and nothing is written. Finish that node or
