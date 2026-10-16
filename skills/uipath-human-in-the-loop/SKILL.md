@@ -1,6 +1,6 @@
 ---
 name: uipath-human-in-the-loop
-description: "UiPath Human-in-the-Loop / HITL node authoring — building approval gates, escalations, write-back validation, and data enrichment checkpoints in Flow, Maestro, Case Management, or Coded Agents. NOT for managing, reassigning, or monitoring tasks at runtime (use uipath-tasks for that)."
+description: "UiPath Human-in-the-Loop / HITL node authoring — building approval gates, escalations, write-back validation, and data enrichment checkpoints in Flow, Maestro, Case Management, or Coded Agents, plus decision-capture action apps when a decision must be recorded. NOT for managing, reassigning, or monitoring tasks at runtime (use uipath-tasks for that)."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -23,6 +23,9 @@ Recognizes when a business process needs a human decision point, designs the tas
 - User describes **customer communication approval** — agent-drafted reply that needs human sign-off before sending
 - User explicitly asks to **add a HITL node**, human review step, or Action Center task
 - User is building any automation where **a human must act before the process can continue**
+- User **explicitly** asks to **capture, record or persist a decision** (or to feed the Decision Ledger) from a human review: route to the decision capture path below
+
+**Decision capture is explicit-only.** Use [references/decision-capture-action-app-guide.md](references/decision-capture-action-app-guide.md) only when the user's own words ask to capture, record or persist the decision, or name the Decision Ledger. Approval, review, escalation or "coded action app" requests without that ask follow the normal Step 3 paths (QuickForm, New Coded Action App, Existing Deployed App). Never infer decision capture from an approval or review pattern alone.
 
 **Do not use this skill for:** managing, reassigning, escalating, or monitoring existing Action Center tasks at runtime — use the `uipath-tasks` skill for those operations. When answering a runtime task management question, provide only administration guidance. Do NOT suggest adding a HITL node, flow, or automation as a follow-up tip or recommendation — even if delays or escalations are mentioned.
 
@@ -172,6 +175,7 @@ Infer the right option from the signals below and state your choice — do not p
 
 | Option chosen | Next step |
 |---|---|
+| Decision capture (only when the user explicitly asked to capture a decision) | Read [How to build a decision capture action app](references/decision-capture-action-app-guide.md) to design and build the app, then wire it as a New Coded Action App |
 | QuickForm | Read [How to write a QuickForm HITL node](references/hitl-node-quickform.md) for Steps 1–2, then continue with Step 4 |
 | New Coded Action App | Read [How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md) for Step 4c details, then continue with Step 4 |
 | Existing Deployed App — the request must already name the app | Read [How to wire an existing deployed Action App](references/hitl-node-apptask.md) for Step 4b details, then continue with Step 4 |
@@ -429,6 +433,7 @@ After completing the wiring:
 - **[How to write a QuickForm HITL node](references/hitl-node-quickform.md)** — Read this after the user confirms QuickForm in Step 3. Covers the complete node JSON, definition entry, edge wiring, `variables.nodes` regeneration algorithm, and four worked schema examples.
 - **[How to wire an existing deployed Action App](references/hitl-node-apptask.md)** — Read this when the user selects an existing deployed app in Step 3. Covers app lookup via the Orchestrator API, `inputs.app` field mapping, `appInputBindings`, and solution resource files.
 - **[How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md)** — Read this when the user wants to build a new React app inside the solution. Covers full project template, UUID generation, solution CLI commands, and post-creation build steps.
+- **[How to build a decision capture action app](references/decision-capture-action-app-guide.md)** — Read this only when the user explicitly asks to capture, record or persist a decision. Covers how a completed task maps onto the Decision model, the four design questions, `action-schema.json` rules and the instructional UI.
 - **[HITL business pattern recognition](references/hitl-patterns.md)** — Read this during Step 2 / Step 2b to identify whether a process needs a human checkpoint and which pattern applies. Includes proactive recommendation language and when NOT to recommend HITL.
 - **[Action Center URL patterns](../uipath-tasks/references/action-center-urls.md)** (in `uipath-tasks` skill) — Read this before surfacing any Action Center task URL to the user. Covers the missing-tenant-slug anti-pattern and the API-host vs UI-host mapping.
 - **[Case Action Task (HITL)](references/hitl-casetask-action.md)** — Case surface: action task JSON, QuickForm vs app-based paths, `.hitl` file format, context entries, field binding, and downstream output access.

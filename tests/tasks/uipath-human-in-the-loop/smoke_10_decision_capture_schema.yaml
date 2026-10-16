@@ -1,0 +1,80 @@
+task_id: skill-hitl-smoke-decision-capture-schema
+description: >
+  Smoke test: agent uses the uipath-human-in-the-loop skill's decision capture path to author
+  `action-schema.json` for a review/approval use case so that a completed
+  task persists as a complete Decision: agent proposals as inOuts, one
+  outcome per resolution, rationaleText and instructionText as outputs.
+
+tags: [uipath-human-in-the-loop, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+
+initial_prompt: |
+  I want to capture each reviewer's decision in the Decision Ledger.
+  Author `action-schema.json` at the sandbox root for a Coded Action App. The app reviews expense claims: an upstream agent proposes
+  Approve or Deny with a confidence score, proposes a priority
+  (High/Normal/Low) for the finance queue, and proposes reasons. A human
+  reviewer corrects any of these, explains why, and tells the agent what
+  to do next time.
+
+  The schema is an object
+  with four top-level sections, `inputs`, `outputs`, `inOuts` and
+  `outcomes`, each containing a `properties` object.
+
+  This is an automated test. Do not pause for clarifying questions, write
+  the schema directly. Do NOT run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "action-schema.json was created"
+    path: "action-schema.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "action-schema.json is valid JSON"
+    command: "python3 -c \"import json; json.load(open('action-schema.json'))\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "agent proposals the reviewer can change are inOuts: priority and evidence"
+    command: "python3 -c \"import json,sys; io=json.load(open('action-schema.json'))['inOuts']['properties']; keys=' '.join(io).lower(); sys.exit(0 if 'priority' in keys and 'evidence' in io else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "each resolution is its own outcome (Approve and Deny), never a single Submit"
+    command: "python3 -c \"import json,sys; o=[k.lower() for k in json.load(open('action-schema.json'))['outcomes']['properties']]; sys.exit(0 if 'approve' in o and 'deny' in o and 'submit' not in o else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the reviewer's rationale and instruction are outputs: rationaleText and instructionText"
+    command: "python3 -c \"import json,sys; o=json.load(open('action-schema.json'))['outputs']['properties']; sys.exit(0 if 'rationaleText' in o and 'instructionText' in o else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the agent's recommendation is an input: agentRecommendedOutcome and confidenceScore"
+    command: "python3 -c \"import json,sys; i=json.load(open('action-schema.json'))['inputs']['properties']; sys.exit(0 if 'agentRecommendedOutcome' in i and 'confidenceScore' in i else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "no proposal is split into a differently named output, and no telemetry outputs: outputs hold nothing the agent proposes and no signals/decision/action field"
+    command: "python3 -c \"import json,sys; d=json.load(open('action-schema.json')); o=[k.lower() for k in d['outputs']['properties']]; bad={'signals','decision','action','selectedresolutionid','priority','evidence'}; sys.exit(1 if bad.intersection(o) else 0)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
