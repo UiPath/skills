@@ -80,7 +80,8 @@ export default casePlan('loan-approval')
 ```bash
 uip maestro case check <Name>.case.ts --source
 uip maestro case compile <Name>.case.ts -o <project>/<plan>
-uip maestro case validate <project>/<plan> --output json
+uip maestro case validate <project>/<plan> --strict --sdd <sdd.md> --output json  # SDD supplied
+uip maestro case validate <project>/<plan> --strict --output json                 # no SDD
 uip solution resources remove <orphan-key> --solution-folder <solution> --output json
 uip solution resources refresh --solution-folder <solution> --output json
 ```
@@ -88,6 +89,14 @@ uip solution resources refresh --solution-folder <solution> --output json
 `check` owns source-level invariants and emits teaching diagnostics. Product
 validation owns the compiled Case contract. Do not repair emitted JSON by hand;
 change the TypeScript source and rebuild.
+
+The build is complete only when `validate --strict` passes. When the request
+supplies an `sdd.md`, add `--sdd <path>`: it audits the plan against the SDD.
+Without an SDD, run `--strict` alone. A default-profile `Valid` whose
+`Data.Suppressed.Errors` is above 0 is not completion; run the command its
+`Instructions` names. Fix each finding in the TypeScript source and recompile.
+If a finding persists after a source fix and recompile, stop and report its
+code as unfinished; never patch emitted JSON.
 
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
 API workflow, or sub-case; never fabricate a name or folder. A destination's
@@ -98,4 +107,5 @@ API workflow, or sub-case; never fabricate a name or folder. A destination's
 Static success proves the source and artifact contracts. It proves neither live
 behavior (resource resolution, human outcomes, timers, skipped-task completion,
 business calendars) nor the design decisions no schema checks: lane routing,
-non-completing exits, declared optionality, SDD fidelity. Read [Case runtime decisions](references/case-runtime.md) before authoring, not only when a rung fails.
+non-completing exits, declared optionality, and SDD intent beyond what the
+`--sdd` audit compares. Read [Case runtime decisions](references/case-runtime.md) before authoring, not only when a rung fails.
