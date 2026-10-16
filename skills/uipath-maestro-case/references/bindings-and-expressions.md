@@ -8,16 +8,20 @@ Every task input is wired using one of two modes. Pick based on the source of th
 
 | Mode | Canonical form | Implementation |
 |------|----------------|----------------|
-| **Literal or expression** | `input = "<value>"` | Write `"<value>"` to `task.data.inputs[i].value` in caseplan.json |
+| **Literal or expression** | `input = "<value>"` | Write `"<value>"` to `task.data.inputs[i].value` in caseplan.case |
 | **Cross-task reference** | `input <- "Stage"."Task".output` | Resolve the source's output reference ID → write `"=vars.<outputReferenceId>"` to target input's `value` |
 
 For the full JSON shapes and binding procedure, see [plugins/variables/io-binding/impl-json.md](plugins/variables/io-binding/impl-json.md).
 
-For connector tasks, input values are written directly to `caseplan.json` — see [plugins/tasks/connector-activity/impl-json.md](plugins/tasks/connector-activity/impl-json.md).
+For connector tasks, input values are written directly to `caseplan.case` — see [plugins/tasks/connector-activity/impl-json.md](plugins/tasks/connector-activity/impl-json.md).
 
 ## Expression Prefixes
 
 When using the literal/expression mode, the `--value` string can start with one of these prefixes to resolve dynamically at runtime. Plain strings without a prefix are treated as literals.
+
+> **Why `=vars.` may be bare and `=metadata.` may not.** Two different things wear a leading `=`. A **path prefix** has a resolver — `=vars.`, `=bindings.`, `=datafabric.`, `=response`, `=orchestrator.JobAttachments` — and resolves on its own. A **scope namespace** is a name visible *inside* a `=js:` expression: `vars`, `iterator`, `metadata`. `vars` is registered as both, which is why bare `=vars.X` is correct and is the dominant form in every reference plan. `metadata` is **only** a namespace: there is no `=metadata.` resolver, so a bare `=metadata.X` names nothing and reads empty at run time. Do not generalise from `=vars.` to the others — the list of path prefixes above is closed, and `iterator` has the same shape as `metadata`.
+>
+> **This table is the `--value` sink. `=metadata.` does not travel to every slot.** In a task or rule **output** — `value` and `source` on a `custom: true` entry — write **`=js:metadata.<Field>`**, never the bare `=metadata.` form. `metadata` is a namespace resolved *inside* an expression (alongside `vars` and `iterator`), not a prefix that routes one, which is why the product's own constant carries no leading `=`. The canvas normalises a bare `=` value to `=js:` + body, so the two are not alternatives: one is the input to that normalisation and the other is its output, and a plan carrying the bare form in an output source has an un-normalised value in a slot that expects the normalised one. Validated by nothing on any profile — `validate` returns `Valid` either way and the expression simply reads nothing at run time.
 
 | Prefix | Meaning | Example |
 |--------|---------|---------|
@@ -40,7 +44,9 @@ When using the literal/expression mode, the `--value` string can start with one 
 
 ## Canonical form per sink
 
-Every `=`-prefixed value in `caseplan.json` is dispatched to one of two runtime evaluators based on the sink it lands in. **The wrap form must match the sink** — wrong wrap is a silent runtime fault (the literal string arrives at the consumer instead of the resolved value).
+> **Inside `=js:`, every identifier is namespace-qualified.** Write `=js:vars.<variableName>`, `=js:metadata.<field>`, `=js:response.<field>`, `=js:bindings.<id>`, `=js:iterator.<field>`. A bare identifier — `=js:priority`, `=js:amount > 100` — is an undefined global: it evaluates to `undefined`, throws nothing, and `validate` returns `Valid`. Use the variable's `name`, not its formal-arg `id`.
+
+Every `=`-prefixed value in `caseplan.case` is dispatched to one of two runtime evaluators based on the sink it lands in. **The wrap form must match the sink** — wrong wrap is a silent runtime fault (the literal string arrives at the consumer instead of the resolved value).
 
 ### Two evaluator paths
 
@@ -100,7 +106,7 @@ The lookup-path resolver has NO `=metadata.` branch — plain `=metadata.X` is N
 
 ### Planner-emit form
 
-The SDD uses SDD-natural references — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<- "Stage"."Task".out` (verbatim, unresolved). Other `=`-prefixed forms (`=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments`) also pass through to impl for per-sink wrap; see [Expression Prefixes](#expression-prefixes) for the full set. The implementation step rewrites to the canonical sink form when constructing `caseplan.json`. Detail: [plugins/variables/io-binding/planning.md](plugins/variables/io-binding/planning.md) and each plugin's `impl-json.md`.
+The SDD uses SDD-natural references — `=vars.X`, `=metadata.X`, `=bindings.X`, cross-task `<- "Stage"."Task".out` (verbatim, unresolved). Other `=`-prefixed forms (`=response.X`, `=Error.X`, `=datafabric.X`, `=orchestrator.JobAttachments`) also pass through to impl for per-sink wrap; see [Expression Prefixes](#expression-prefixes) for the full set. The implementation step rewrites to the canonical sink form when constructing `caseplan.case`. Detail: [plugins/variables/io-binding/planning.md](plugins/variables/io-binding/planning.md) and each plugin's `impl-json.md`.
 
 ## Cross-Task References
 
@@ -112,7 +118,9 @@ Cross-task references wire the output of an earlier task into an input of a late
 input_name <- "Stage Name"."Task Name".output_name
 ```
 
-- `Stage Name` — the `display-name` of the containing stage (exactly as written in a `Create stage "<name>"` task)
+- `Stage Name` — the `display-name` of the containing stage (exactly as written in a `Create stage "<name>"` task). A heading like `### Stage 2: Underwriting (`stage-underwriting`)` makes that stage referenceable three ways: by its **name** (`"Underwriting"`), by its **slug** (`"stage-underwriting"`), and by its **ordinal** (`"Stage 2"`). A WHEN cell may carry both halves — `selected-stage-completed("Underwriting" (`stage-underwriting`))` — and is read name half first.
+  **Resolve in that order: display name, then slug, then ordinal — each accepted only where nothing stronger already claims the reference, whatever order the stages appear in.** A stage actually titled "Stage 2" therefore beats the second stage's ordinal either way round, and a stage named `Alpha` beats another stage's slug `alpha`. Comparison is case-insensitive and trimmed, nothing more: `stage-1` and `stage 1` are different keys, so a hyphenated slug can never collide with an ordinal and only the name-versus-slug collision is reachable in a normal document.
+  The ordinal and the slug are positional or generated, so a reordered or re-slugged SDD silently re-points them, while the name is what the author wrote — resolve any of the three, and never rewrite a reference from one spelling to another.
 - `Task Name` — the `display-name` of the source task (exactly as written in an `Add <type> task "<name>"` task)
 - `output_name` — a named output field from the source task
 
@@ -125,7 +133,7 @@ uip maestro case tasks describe --type <type> --id "<taskTypeId>" --output json
 uip maestro case tasks describe --type connector-activity --id "<typeId>" --connection-id "<uuid>" --output json
 ```
 
-Output names appear in the response under the output schema. Record them on the source task's `data.outputs[]` in `caseplan.json` so downstream references can be validated.
+Output names appear in the response under the output schema. Record them on the source task's `data.outputs[]` in `caseplan.case` so downstream references can be validated.
 
 ### Validation rule
 
@@ -138,7 +146,7 @@ Missing any of the three → halt planning and ask the user; do not fabricate.
 
 ### Implementation translation
 
-The execution phase resolves names to IDs by reading caseplan.json:
+The execution phase resolves names to IDs by reading caseplan.case:
 
 ```python
 # Pseudo-code:
@@ -147,7 +155,7 @@ src_task  = find_task_by_name(src_stage, "Task Name")
 src_output = find_output_by_name(src_task, "output_name")
 output_reference_id = resolve_output_reference_id(caseplan, src_output)
 target_input.value = f"=vars.{output_reference_id}"
-# Write updated caseplan.json back to disk
+# Write updated caseplan.case back to disk
 ```
 
 See [plugins/variables/io-binding/impl-json.md § Output reference ID](plugins/variables/io-binding/impl-json.md#output-reference-id-authoritative) for the authoritative resolver. It reads a normal / bare / reassigned output's `.id`; only a custom `=` output, which has no `.id`, resolves through its verified root companion's `.id`.
@@ -173,7 +181,7 @@ vars.$xref('Stage Name','Task Name','output_name')
 "value": "=js:({ approvalDecision: vars.$xref('AP Review','AP lead approval','outcome'), urgentPaymentDecision: vars.$xref('AP Review','Urgent payment','outcome') })"
 ```
 
-**Resolution** — a single post-pass near the end of Phase 3 (Step 11.5, after conditions and SLA are written) walks every string value in `caseplan.json`, resolves each marker through the common output-reference-ID algorithm, and substitutes `vars.<outputReferenceId>` in place. Because it runs after all outputs are minted and deduped, it reads the real suffixed `.id` (`outcome2`, `data6`) rather than a reassigned output's Case-variable `.var` pointer. An unresolved marker is a build-time ERROR surfaced via **AskUserQuestion** (Check 4), not a silent fail — and `vars.$xref` would throw at runtime too (a method call on `vars`). See [plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115).
+**Resolution** — a single post-pass near the end of Phase 3 (Step 11.5, after conditions and SLA are written) walks every string value in `caseplan.case`, resolves each marker through the common output-reference-ID algorithm, and substitutes `vars.<outputReferenceId>` in place. Because it runs after all outputs are minted and deduped, it reads the real suffixed `.id` (`outcome2`, `data6`) rather than a reassigned output's Case-variable `.var` pointer. An unresolved marker is a build-time ERROR surfaced via **AskUserQuestion** (Check 4), not a silent fail — and `vars.$xref` would throw at runtime too (a method call on `vars`). See [plugins/variables/io-binding/impl-json.md § In-Expression Marker Resolution](plugins/variables/io-binding/impl-json.md#in-expression-marker-resolution-step-115).
 
 > **Additive, not a replacement.** Whole-value `input <- "Stage"."Task".out` resolves to `=vars.<outputReferenceId>` through the same algorithm. The `vars.$xref(...)` marker is only for the in-expression case. Use whole-value `<-` when the output IS the input; use the marker when the output is one term inside a larger `=js:` expression.
 
@@ -227,10 +235,11 @@ action task "Review Classification" in stage "Triage"
 - **Plain-string where expression was intended.** `"metadata.amount"` (no `=`) is the literal string `metadata.amount`, not a reference. Always include the `=` prefix for dynamic values.
 - **Nesting expressions inside literals.** `"$metadata.amount"` or `"{{ amount }}"` do not work. Use `=metadata.amount` directly as the full value.
 - **Plain `=vars.X` inside connector body JSON.** The runtime does NOT evaluate plain prefix refs in connector body sinks — they arrive at the API as literal strings. Wrap as `=js:(vars.X)`. See [§ Canonical form per sink](#canonical-form-per-sink).
+- **Namespace-less identifier inside `=js:`.** `=js:priority === 'Urgent'` reads an undefined global and the rule never fires. Qualify it: `=js:vars.priority === 'Urgent'`.
 - **Plain `=metadata.X` anywhere.** The lookup-path resolver has no `=metadata.` branch. Always wrap as `=js:metadata.X` (or `=js:(metadata.X)` for connector body / parens-required sinks).
 - **Trailing default instead of a guard.** `vars.X.Y || '{}'` guards nothing — the throw lands on `.Y`, before `||` is reached. Guard the object: `vars.X?.Y`.
 - **Dotted access via plain prefix.** `=vars.user.email` looks up a variable with id literally `user.email` and fails. Use `=js:vars.user?.email`.
-- **`=js:(...)` outer parens on `conditionExpression`.** Conditions use bare `=js:<expr>` per FE convention. Sub-clause parens go inside when combining: `=js:(vars.X) && (vars.Y)` — outer wrap stays bare.
+- **`=js:(...)` outer parens on `conditionExpression`.** Conditions take `=js:<expr>` with no outer parentheses per FE convention. "No outer parentheses" never means "no namespace" — the identifiers inside stay qualified. Sub-clause parens go inside when combining: `=js:(vars.X) && (vars.Y)` — outer wrap stays bare.
 - **Manually building filter-expression strings.** For filter sinks, author a structured FilterTree with `isLiteral: true` values when possible. Variable-bearing filters use `` =js:`<template>` `` with `${vars.X}` interpolations — see [connector-trigger-planning.md](connector-trigger-planning.md).
 
 <!-- END: bindings-and-expressions.md -->

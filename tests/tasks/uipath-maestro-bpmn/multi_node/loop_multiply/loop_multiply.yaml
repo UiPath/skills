@@ -11,11 +11,6 @@ run_limits:
   expected_turns: 22
   max_turns: 75
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -33,13 +28,13 @@ initial_prompt: |
   Requirements:
   - Apply `bpmn:multiInstanceLoopCharacteristics` with `isSequential="true"` to
     the script task, and bind the collection through the
-    `uipath:loopCharacteristics` extension (`inputCollection` and `inputElement`)
-    per the skill's structural reference — the registry serves no template for
-    this, author it from the canvas contract.
-  - Declare variables and author the script-task payload per the skill's
-    structural reference; do not hand-author uipath:* XML from prose.
-  - Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
-    for every sequence flow.
+    `uipath:loopCharacteristics` extension (`inputCollection` and
+    `inputElement`) the way your skill prescribes. No registry template covers
+    the loop marker; author it from the canvas contract.
+  - Declare variables and author the script-task payload the way your skill
+    prescribes; do not invent uipath:* XML from prose.
+  - The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+    every node and an edge for every sequence flow.
 
   Do NOT upload, publish, deploy, debug, run, or pack anything. Do NOT ask for
   approval, confirmation, or feedback. Do NOT pause between planning and

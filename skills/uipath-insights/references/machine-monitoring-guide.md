@@ -78,7 +78,7 @@ uip insights machines runtime-mix --time-range 1440 --output json
 
 `Data[]`: exactly two rows, `Unattended` then `Attended`, each with `ExecutionType`, `JobDurationMs`, `AverageUtilizationMs`.
 
-Both values are milliseconds. `AverageUtilizationMs` divides the runtime by the window's distinct robot count, counted across attended and unattended robots together, so the `Unattended` row is not a per-unattended-robot average. It is a duration, never a percentage; do not compare either value against a percentage threshold. Both cross the wire as single-precision floats, so treat the last few milliseconds of a large total as noise.
+Both values are milliseconds. `AverageUtilizationMs` divides the runtime by the window's distinct robot count, counted across attended and unattended robots together, so the `Unattended` row is not a per-unattended-robot average. It is a duration, never a percentage; do not compare either value against a percentage threshold, and do not divide either value by the window length to report how many robots were busy on average. Give the unattended/attended split as the two durations; if you also state it as a share, say it is a share of total runtime, not of capacity. Both cross the wire as single-precision floats, so treat the last few milliseconds of a large total as noise.
 
 Both aggregates are coalesced to zero server-side, and the command returns its two rows whatever the filters matched. A `0`/`0` pair therefore means no job runtime matched, which a mistyped filter value produces just as an idle window does. Check machine names with `filter-machines list`, and check host names and type labels by re-running without that filter, before reporting zeros as a finding.
 
@@ -158,4 +158,4 @@ uip insights machines utilization --time-range 43200 --output json
 
 `Data[]`: `MachineName`, `HostMachineName`, `UtilizationMinutes`. At most ten rows, minutes descending.
 
-`UtilizationMinutes` is runtime inside the window, rounded to two decimals. It is not a utilization percentage: the response carries no capacity denominator, so do not build one of your own out of the window length or the slot counts. A machine with no running-job interval in the window is omitted, not reported as zero.
+`UtilizationMinutes` is runtime inside the window, rounded to two decimals. It is not a utilization percentage: the response carries no capacity denominator, so do not build one of your own out of the window length or the slot counts. The same goes for any figure that divides runtime by the window under another name: an average concurrency, an "active robot count", or a "robot-equivalent" is that missing denominator again, and the result is a number the backend never computed. When the user asks how busy the fleet was, answer with the minutes per machine and their ranking, and say that a share of capacity is not available from these commands. A machine with no running-job interval in the window is omitted, not reported as zero.

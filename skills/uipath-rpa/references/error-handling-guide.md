@@ -1,21 +1,17 @@
 # Error Handling Guide
 
-Production-grade error handling and resilience for modern UiPath projects (Windows / Cross-platform) — XAML and coded. Covers exception taxonomy, Try/Catch discipline, Retry Scope, ContinueOnError, Throw/Rethrow, screenshot-on-error, fail-fast validation, the Global Exception Handler, state recovery, transaction boundaries, idempotent/compensating writes, sensitive-data handling, and retry ownership across layers.
+Production-grade error handling and resilience for modern UiPath projects (Windows / Cross-platform), XAML and coded. Covers exception taxonomy, Try/Catch, Retry Scope, ContinueOnError, Throw/Rethrow, screenshots, validation, Global Exception Handler (GEH), state recovery, transaction boundaries, idempotent/compensating writes, sensitive data, and retry ownership.
 
-Scope boundary — this guide owns the **decision layer and resilience patterns**. For mechanics owned elsewhere, link out, don't restate:
+This guide owns the **decision layer and resilience patterns**. For mechanics:
 
-- Raw `TryCatch` / `Throw` / `Rethrow` XAML shapes + the Rule 24 `Sequence`-wrap → [common-activity-card.md](common-activity-card.md).
+- Raw `TryCatch` / `Throw` / `Rethrow` XAML shapes + Rule 24 `Sequence` wrap → [common-activity-card.md](common-activity-card.md).
 - `ContinueOnError`-swallow gotcha, Studio Web `Throw.Exception` round-trip, `s:Exception` alias → [xaml/common-pitfalls.md](xaml/common-pitfalls.md).
-- Per-activity property surfaces → `activity-docs/UiPath.System.Activities/<ver>/activities/{RetryScope,TryCatch,Throw,Rethrow}.md`.
-- REFramework exception flow, queue retry, `MaxConsecutiveSystemExceptions` → [reframework-guide.md](reframework-guide.md).
-- C# expression-binding mechanics (`CSharpValue`/`CSharpReference`) → [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
+- Per-activity properties → `activity-docs/UiPath.System.Activities/<ver>/activities/{RetryScope,TryCatch,Throw,Rethrow}.md`.
+- REFramework flow, queue retry, `MaxConsecutiveSystemExceptions` → [reframework-guide.md](reframework-guide.md).
+- C# expression-binding mechanics → [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md).
 - Long-running / persistence interplay → [xaml/long-running-workflow-guide.md](xaml/long-running-workflow-guide.md).
 
-> Legacy (.NET 4.6.1) projects: use [legacy/error-handling-guide.md](legacy/error-handling-guide.md) instead.
-
-VB primary; C# expression forms given inline. Coded (`.cs`) uses the C# forms directly — see [§ Coded](#coded-c).
-
----
+Legacy (.NET 4.6.1): use [legacy/error-handling-guide.md](legacy/error-handling-guide.md). VB is primary; inline C# forms apply directly to `.cs` workflows; see [§ Coded](#coded-c).
 
 ## 1. Exception Taxonomy
 
@@ -29,48 +25,41 @@ Two families. Classify correctly — misclassification either wastes retries on 
 | **Action** | Log, skip item, mark failed | Retry (limited), reset app state, then escalate |
 | **Orchestrator queue Auto-Retry** | Not retried | Retried (when enabled) |
 
-**Rules:**
-
-1. `BusinessRuleException` and `System.ApplicationException` are **siblings** — both inherit directly from `System.Exception`, neither from the other. A `System.Exception` catch matches everything; a `BusinessRuleException` catch matches only business exceptions.
-2. Business classification is **never automatic** — you must `Throw New BusinessRuleException(...)` explicitly. Any unhandled error that isn't an explicit business throw surfaces as a system exception.
-3. Qualify as `UiPath.Core.BusinessRuleException` when ambiguous — the name also exists in other namespaces. `UiPath.Core` is imported by default in new projects, so the short name resolves; use the full name in coded files or on a compiler-ambiguity error.
-4. `Check True` / `Check False` throw `CheckpointException`, **not** `BusinessRuleException`. For business validation use `If` + `Throw New BusinessRuleException(...)`.
-5. **Isolated invoke loses the type:** a `BusinessRuleException` from a workflow invoked with **Isolated** checked arrives at the caller as `System.Exception` (separate process), breaking type-based `Catch` routing. If the caller routes on type, don't use Isolated. If you must, catch inside the isolated workflow and return a structured status / error-code **output argument**, or throw with a stable code prefix the caller matches — never route on the human-readable `Message` (it changes, localizes, and carries variable data).
-
----
+1. `BusinessRuleException` and `System.ApplicationException` are siblings directly derived from `System.Exception`; neither derives from the other. `System.Exception` catches everything; `BusinessRuleException` only business exceptions.
+2. Classification is never automatic: explicitly `Throw New BusinessRuleException(...)`. Other unhandled errors are system exceptions.
+3. Qualify `UiPath.Core.BusinessRuleException` when ambiguous. `UiPath.Core` is imported by default in new projects; use the full name in coded files or after compiler ambiguity.
+4. `Check True` / `Check False` throw `CheckpointException`, not `BusinessRuleException`; validate business data with `If` + `Throw New BusinessRuleException(...)`.
+5. **Isolated invoke preserves type and properties.** A workflow invoked with **Isolated** checked runs in its own executor, but the caller catches the original type and properties (`BusinessRuleException` remains one; `FileNotFoundException` retains `FileName`). Type-based Catch routing works across it; never route on human-readable `Message`, which can change, localize, and contain variable data.
 
 ## 2. Choose the Mechanism
 
-| Need | Use | Notes |
-|------|-----|-------|
-| Handle / classify a failure, run compensating logic | **Try/Catch** | Wrap external interactions (UI, file, network, DB) — not assignments or control flow |
-| Auto-retry a flaky action with a success check | **Retry Scope** | Add a Condition to verify the action landed; keep the body idempotent |
-| Reject bad input before any work | **Fail-fast** + `Throw New BusinessRuleException` | Validate all inputs up front (§7) |
-| Tolerate an expected, non-critical failure | **`ContinueOnError=True`** | Narrow set only (§6). Never on data/critical writes |
-| Centralized last-line logging / screenshot across the whole process | **Global Exception Handler** | One per project; not a substitute for local Try/Catch (§8) |
-| Per-transaction retry + system/business split at scale | **REFramework** | [reframework-guide.md](reframework-guide.md) |
+| Need | Use | Constraint |
+|---|---|---|
+| Handle/classify failure or compensate | **Try/Catch** | Wrap each externally interacting unit whose failure is handled differently, at step, transaction, or process level; not assignments/control flow. |
+| Branch on UI presence | **Check App State** | Only when absence changes the next action, typically an optional popup. Not a guard before acting on the same element, page-load wait, or check that only throws for a later activity; use that activity's timeout and not-found failure (UIA package guide, *Unnecessary Check App State*). |
+| Retry flaky action with success check | **Retry Scope** | Add a Condition verifying success; keep Action idempotent. |
+| Reject bad input before work | **Fail-fast** + `Throw New BusinessRuleException` | Validate all inputs up front (§7). |
+| Tolerate expected non-critical failure | **`ContinueOnError=True`** | Narrow use only (§6); never data/critical writes. |
+| Centralized final logging/screenshot | **Global Exception Handler** | One per project; not a local Try/Catch replacement (§8). |
+| Per-transaction retry and system/business split | **REFramework** | See [reframework-guide.md](reframework-guide.md). |
 
-Default posture: **fail-fast on bad data, Try/Catch around every external interaction, Retry Scope for transient UI/network steps, GEH for centralized observability.** Don't blanket-wrap pure logic.
-
----
+Default: fail fast on bad data; Try/Catch each differently handled external-interaction unit; Retry Scope for transient UI/network steps; GEH for centralized observability. Do not blanket-wrap pure logic or pre-check an element its activity will act on: its timeout waits and not-found error fails; handle that where behavior differs.
 
 ## 3. Try/Catch Discipline
 
-Raw XAML shape and the mandatory `Sequence` wrap: [common-activity-card.md § TryCatch](common-activity-card.md). Rules that matter for correctness:
+Raw shapes and mandatory `Sequence` wrap: [common-activity-card.md § TryCatch](common-activity-card.md).
 
-1. **Order catches specific → general; `System.Exception` last.** The designer/readers rely on this; a `System.Exception` clause above specific ones makes them unreachable. (Place `BusinessRuleException`, `TimeoutException`, `SelectorNotFoundException` first.)
-2. **Never leave a Catch empty** — violates Workflow Analyzer `ST-DBP-003`. At minimum `Log Message` the exception. Applies to XAML and coded alike.
-3. **Catch only what you'll act on.** Wrap external interactions; don't wrap a whole `Process.xaml` in a catch-all that hides where the failure was.
-4. **`Finally` is cleanup only** — close/kill apps, dispose connections, delete temp files. No business logic. Use `ContinueOnError=True` on best-effort cleanup so a missing resource doesn't mask the original error.
-5. **`Finally` DOES run when the Catch rethrows** (modern, verified) — cleanup is safe to place there even on a rethrow path. (Older legacy-era guidance claiming Finally is skipped on Rethrow does **not** apply to modern Windows / Cross-platform projects.)
-6. **Don't design business recovery around runtime/process termination.** Out-of-memory, a killed host process, and UiPath fatal faults can tear the job down without your Catch/Finally running — treat them as unrecoverable, not as something to handle.
-7. **`exception.Source` returns the activity TYPE, not its DisplayName**, when the Try/Catch and the failing activity are in the same workflow. To capture the failing step's name, move the risky step into its own workflow and wrap the `Invoke Workflow File`.
-
----
+1. Catch specific types before general types; `System.Exception` last. Put `BusinessRuleException`, `TimeoutException`, and `SelectorNotFoundException` first; a preceding `System.Exception` makes them unreachable.
+2. Never leave Catch empty: this violates `ST-DBP-003`. At minimum `Log Message` the exception in XAML and coded workflows.
+3. Catch only failures you act on. Wrap external interactions, not an entire `Process.xaml` catch-all.
+4. `Finally` is cleanup only: close/kill apps, dispose connections, delete temp files. No business logic. Use `ContinueOnError=True` for best-effort cleanup so missing resources do not mask the original error.
+5. A `TryCatch` `Finally` runs only when the exception is caught inside the same workflow file. An exception leaving the file—rethrow, throw from Catch, or never caught—skips that file's Finally regardless of invoking Catch, Invoke Workflow File `ContinueOnError`, or `Isolated`. Invoke Workflow File runs as a separate workflow instance; its unhandled exception ends that instance without those Finally blocks. A rethrow caught by an outer Try/Catch in the same file does run the inner Finally. If exceptions can escape, put mandatory cleanup/end logging at the end of Try and in every Catch before Rethrow, with a `System.Exception` Catch, or in the caller.
+6. Do not design recovery around process termination. Out-of-memory, killed host processes, and UiPath fatal faults can prevent Catch/Finally; treat them as unrecoverable.
+7. `exception.Source` is the activity **type**, not DisplayName, when Try/Catch and the failing activity share a workflow. To capture the failing step name, put it in its own workflow and wrap `Invoke Workflow File`.
 
 ## 4. Throw & Rethrow
 
-Raw XAML shapes: [common-activity-card.md § Throw / § Rethrow](common-activity-card.md). `Throw.Exception` is a **constructor expression**, not a string.
+Raw shapes: [common-activity-card.md § Throw / § Rethrow](common-activity-card.md). `Throw.Exception` is a constructor expression, not a string.
 
 ```vb
 ' Throw a business exception (build the message in an Assign first for complex text)
@@ -80,15 +69,13 @@ New BusinessRuleException("Invoice " & invoiceId & " amount " & amount.ToString(
 new BusinessRuleException($"Invoice {invoiceId} amount {amount:F2} is negative")
 ```
 
-1. **`Rethrow` preserves the original exception type AND stack trace** (verified). Use it inside a `Catch` to log / screenshot, then propagate unchanged. `Rethrow` is Catch-only — outside a `Catch.Action` it throws `InvalidOperationException`.
-2. **Never `Throw New Exception(ex.Message)` to re-surface** — it resets the stack trace to the throw site and drops the type (.NET `CA2200` anti-pattern). Use `Rethrow`. Use `Throw New <Type>(...)` only to *translate* to a different exception type (e.g. wrap a system error as a business one).
-3. Place `Rethrow` last in the `Catch` body — anything after is unreachable.
-
----
+1. `Rethrow` preserves original type and stack trace. Use it inside Catch after logging/screenshot to propagate unchanged. It is Catch-only; outside `Catch.Action` it throws `InvalidOperationException`.
+2. Never use `Throw New Exception(ex.Message)` to resurface an error: it resets the stack and drops the type (`CA2200`). Use `Rethrow`; use `Throw New <Type>(...)` only to translate types, such as wrapping a system error as business.
+3. Put `Rethrow` last in Catch; later activities are unreachable.
 
 ## 5. Retry Scope
 
-Property surface (`NumberOfRetries`, `RetryInterval`, `ContinueOnError`, `LogRetriedExceptions`): [activity-docs/UiPath.System.Activities/26.4/activities/RetryScope.md](activity-docs/UiPath.System.Activities/26.4/activities/RetryScope.md). Two bodies: **Action** (`ActivityBody` — activities to attempt) and an optional **Condition** (`ActivityFunc(Of Boolean)` — a check that the action landed). A retry fires when the Action throws **or** the Condition returns `False`. Verified XAML shape (the property-element names aren't in the activity doc):
+Properties (`NumberOfRetries`, `RetryInterval`, `ContinueOnError`, `LogRetriedExceptions`): [activity-docs/UiPath.System.Activities/26.4/activities/RetryScope.md](activity-docs/UiPath.System.Activities/26.4/activities/RetryScope.md). It has an Action (`ActivityBody`) and optional Condition (`ActivityFunc(Of Boolean)`); retry occurs when Action throws or Condition returns `False`. Verified XAML shape (the property-element names aren't in the activity doc):
 
 ```xml
 <ui:RetryScope NumberOfRetries="3" RetryInterval="00:00:05" DisplayName="Retry Scope">
@@ -106,67 +93,48 @@ Property surface (`NumberOfRetries`, `RetryInterval`, `ContinueOnError`, `LogRet
 </ui:RetryScope>
 ```
 
-`xmlns:ui="http://schemas.uipath.com/workflow/activities"` — the same schema provides `ui:LogMessage` and the `ui:BusinessRuleException` type used in a `Catch`: `<Catch x:TypeArguments="ui:BusinessRuleException">` (verified — the specific catch loads and matches `BusinessRuleException` ahead of `s:Exception`, in both VB and C# expression XAML). The CLR-namespace form `xmlns:uic="clr-namespace:UiPath.Core;assembly=UiPath.System.Activities"` + `uic:BusinessRuleException` is equivalent and is what some bundled samples use — either resolves.
+`xmlns:ui="http://schemas.uipath.com/workflow/activities"` also supplies `ui:LogMessage` and `ui:BusinessRuleException`; a verified specific Catch is `<Catch x:TypeArguments="ui:BusinessRuleException">`. Equivalent CLR form: `xmlns:uic="clr-namespace:UiPath.Core;assembly=UiPath.System.Activities"` + `uic:BusinessRuleException`; either resolves.
 
-**Verified count semantics — total executions equals `NumberOfRetries` (NOT 1 + retries):**
+**Total executions equal `NumberOfRetries`, not 1 + retries:** `0` = 0 (Action never runs; use `1` for one guaranteed run), `1` = 1, `3` (default) = 3 (one initial + two retries). `=3` runs exactly three times then throws the last error; `=0` is a no-op.
 
-| `NumberOfRetries` | Action executions |
-|---|---|
-| `0` | **0 — the Action never runs (no-op).** Use `1` for a single guaranteed run. |
-| `1` | 1 (0 retries) |
-| `3` (default) | 3 (1 initial + 2 retries) |
-
-> Verified by run: `=3` runs the Action exactly 3 times then throws the last error; `=0` runs it zero times.
-
-1. **`RetryInterval` is a `TimeSpan`, not a number of seconds.** The literal `3` is parsed as a TimeSpan = **3 days**. Write `00:00:05` for 5 seconds (default `00:00:05`).
-2. **Condition logic is inverted vs a while-loop:** Condition `True` **exits**; `False` triggers another attempt. With no Condition the scope is exception-driven only (retries on throw, succeeds on the first error-free run).
-3. **Keep the Action idempotent** — it re-runs in full on every attempt. `Add Queue Item`, `Append Range`, `Write Range`, `Insert Rows`, and payment/order POSTs **duplicate** on retry. Retry Scope has no built-in dedup; guard mutations with an existence check or idempotency key.
-4. **Nest Retry Scope INSIDE Try/Catch** (retry innermost). After exhausting attempts it rethrows the last error to the outer Catch.
-5. **Modern UI Automation `Click` / `Type Into` have built-in "Verify execution" retry** — prefer it for single UI steps; reach for Retry Scope for multi-step blocks. In modern design, `Check App State` can't sit directly in the Condition — store its `State` to a Boolean and reference that.
-6. **Orchestration Processes:** Retry Scope (and `Delay`) are unsupported in `Main` — wrap in a `No Persist Scope`.
-7. **Retry attempts are near-invisible by default** — `LogRetriedExceptions=False`, and when enabled `RetriedExceptionsLogLevel` defaults to `Trace`, below the usual Orchestrator log level, so retry evidence disappears. Enable it and set the level intentionally, or log the attempt count yourself.
-
----
+1. `RetryInterval` is a `TimeSpan`, not seconds. `3` means **3 days**; use `00:00:05` for five seconds (default `00:00:05`).
+2. Condition semantics are inverse of a while loop: `True` exits; `False` retries. Without Condition, retry is exception-driven and succeeds on the first error-free run.
+3. Action reruns fully, so keep it idempotent. `Add Queue Item`, `Append Range`, `Write Range`, `Insert Rows`, and payment/order POSTs can duplicate. Retry Scope has no deduplication; use an existence check or idempotency key.
+4. Nest Retry Scope **inside Try/Catch**; after exhaustion it rethrows the last error to the outer Catch.
+5. Modern UI Automation `Click` / `Type Into` have built-in **Verify execution** retry; prefer it for one UI step and Retry Scope for multi-step blocks. In modern design, `Check App State` cannot be directly in Condition; store its `State` to a Boolean and reference it.
+6. In Orchestration Processes, Retry Scope and `Delay` are unsupported in `Main`; wrap them in `No Persist Scope`.
+7. Attempts are nearly invisible by default: `LogRetriedExceptions=False`, and enabled `RetriedExceptionsLogLevel` defaults to `Trace`, below usual Orchestrator logging. Enable it and choose the level intentionally, or log attempt count yourself.
 
 ## 6. ContinueOnError
 
-`ContinueOnError=True` tells an activity to **suppress its fault and continue** — for activities and error types that honor it, the activity doesn't throw, so an enclosing `Catch` never fires and the failure is silent. It is **not a universal shield**: some activities/exceptions ignore it (e.g. a `NetHttpRequest` timeout still throws — rule 3 below). Default `False`. Workflow Analyzer `UI-ANA-017` flags every `True`. Background: [xaml/common-pitfalls.md](xaml/common-pitfalls.md).
+`ContinueOnError=True` suppresses a fault and continues where honored; the activity does not throw, so an enclosing Catch does not fire and failure is silent. It is not universal: some activities/exceptions ignore it; `NetHttpRequest` timeout is one example. Default is `False`; Workflow Analyzer `UI-ANA-017` flags every `True`. See [xaml/common-pitfalls.md](xaml/common-pitfalls.md).
 
-1. **First thing to check when "my Try/Catch isn't catching"** — a `ContinueOnError=True` on the activity (or its scope) ate the error.
-2. **On a scope activity** (`Use Application/Browser`, `Attach`, `Retry Scope`, `On Element Appear`, `Trigger Scope`) `True` **cascades** — it suppresses errors from every nested child, including intentional business throws. Set it on the specific child, never the scope, unless you mean to silence the whole block.
-3. **HTTP failure behavior differs by activity — handle the one you use:**
-   - **Modern HTTP Request (`NetHttpRequest`)** — `ContinueOnError=True` by default. A network failure (`HttpRequestException` — DNS / SSL / refused) becomes a synthetic **`503`** response (message in `TextContent`), so it does **not** throw — check `StatusCode`. But a **timeout (`TaskCanceledException`) is NOT caught — it throws even with `ContinueOnError=True`.** For critical calls set `ContinueOnError=False` (network errors then propagate as `HttpRequestException`) and handle timeouts explicitly. ([NetHttpRequest.md § ContinueOnError Behavior](activity-docs/UiPath.Web.Activities/2.5/activities/NetHttpRequest.md))
-   - **Classic `HttpClient`** — with `ContinueOnError=True` the error is swallowed and execution continues with an **unpopulated response and `StatusCode` left at `0`**; a downstream parse of the empty body then crashes. Set `ContinueOnError=False`, or check `StatusCode` before using the body. ([HttpClient.md](activity-docs/UiPath.Web.Activities/2.5/activities/HttpClient.md))
+1. When Try/Catch is not catching, first inspect the activity or scope for `ContinueOnError=True`.
+2. On `Use Application/Browser`, `Attach`, `Retry Scope`, `On Element Appear`, and `Trigger Scope`, `True` cascades to all nested children, including intentional business throws. Set it on a specific child, never the scope, unless silencing the whole block is intended.
+3. HTTP behavior:
+   - **Modern HTTP Request (`NetHttpRequest`)**: default `ContinueOnError=True`. Network failure (`HttpRequestException`, including DNS/SSL/refused) becomes synthetic **`503`** in `TextContent` and does not throw; check `StatusCode`. Timeout (`TaskCanceledException`) still throws. For critical calls set `ContinueOnError=False`; network errors then propagate as `HttpRequestException`, and handle timeouts explicitly. ([NetHttpRequest.md § ContinueOnError Behavior](activity-docs/UiPath.Web.Activities/2.5/activities/NetHttpRequest.md))
+   - **Classic `HttpClient`**: with `True`, errors are swallowed, response is unpopulated, and `StatusCode` remains `0`; parsing the empty body can crash. Set `False`, or check `StatusCode` before using the body. ([HttpClient.md](activity-docs/UiPath.Web.Activities/2.5/activities/HttpClient.md))
 
-| `ContinueOnError=True` | Verdict |
-|---|---|
-| `Element Exists` / `Check App State` (returns Boolean, never throws) | Fine |
-| Best-effort cleanup in `Finally` (close a maybe-open dialog) | Fine |
-| Data-scrape "next page" selector that vanishes on the last page | OK, paired with an existence check |
-| HTTP / DB write / file write / any output used downstream | **Never** — silent failure → corrupt/empty data |
-
----
+Allowed uses: `Element Exists` / `Check App State` (Boolean, no throw), best-effort cleanup in Finally, and a data-scrape next-page selector that disappears on the last page when paired with an existence check. Never use it on HTTP / DB write / file write / any output used downstream — silent failure → corrupt/empty data. Never use it on `Invoke Workflow File` when callee work or outputs matter: the caller continues as if complete with values set before failure, and callee Finally blocks did not run (§3 rule 5; see [xaml/common-pitfalls.md § Out and InOut Arguments When the Callee Faults](xaml/common-pitfalls.md#out-and-inout-arguments-when-the-callee-faults)).
 
 ## 7. Fail-Fast Input Validation
 
-Validate **all** required inputs in one `Sequence` at the start, before any business logic. Throw `BusinessRuleException` immediately with the offending value in the message.
+Validate **all** required inputs in one `Sequence` at the start, before business logic. Catch every problem up front, not one run at a time. Don't validate inside loops — validate once before the loop. Immediately throw `BusinessRuleException` with the offending value; fail fast, fail loud, and do not let invalid data reach business logic.
 
 ```vb
 If String.IsNullOrWhiteSpace(in_InvoiceNumber) Then Throw New BusinessRuleException("Invoice number is empty")
 If in_Amount <= 0 Then Throw New BusinessRuleException("Amount must be positive: " & in_Amount.ToString())
 ```
 
-Catch every problem up front, not one run at a time. Don't validate inside loops — validate once before the loop. Guiding principle: **fail fast, fail loud** — surface bad data immediately with context; never let an invalid value flow into business logic and fail obscurely later.
-
----
-
 ## 8. Global Exception Handler (GEH)
 
-A project-wide handler the runtime invokes when an activity faults. **One per project.** Use it for centralized logging / screenshots and a global retry/abort verdict — not as a replacement for local Try/Catch.
+The runtime invokes one project-wide handler when an activity faults. Use it for centralized logging/screenshots and a global retry/abort verdict, not instead of local Try/Catch.
 
 ### Scaffold
 
-A dedicated workflow with exactly two non-removable, case-sensitive arguments: `errorInfo` (In, `ExceptionHandlerArgs`) and `result` (Out, `ErrorAction`). Both types live in `UiPath.Activities.Contracts` (XAML alias `xmlns:uico="http://schemas.uipath.com/workflow/activities/contracts"`). Verified scaffold:
+Create a dedicated workflow with exactly two non-removable, case-sensitive arguments: `errorInfo` (In, `ExceptionHandlerArgs`) and `result` (Out, `ErrorAction`). Both types are in `UiPath.Activities.Contracts`; XAML alias: `xmlns:uico="http://schemas.uipath.com/workflow/activities/contracts"`.
+
+Verified scaffold:
 
 ```xml
 <Activity x:Class="GlobalHandlerX"
@@ -195,13 +163,13 @@ A dedicated workflow with exactly two non-removable, case-sensitive arguments: `
 </Activity>
 ```
 
-The verdict expression is the imported enum name — `ErrorAction.Abort` — **not** `uico:ErrorAction.Abort` (the `uico:` prefix is XML-only; inside a VB/C# expression it's invalid). `ErrorAction` resolves only if `UiPath.Activities.Contracts` is in `NamespacesForImplementation`.
+The expression is imported `ErrorAction.Abort`, not `uico:ErrorAction.Abort`; `uico:` is XML-only and invalid in VB/C# expressions. `ErrorAction` resolves only when `UiPath.Activities.Contracts` is in `NamespacesForImplementation`.
 
-`errorInfo` exposes: `Exception` (the `System.Exception`), `ActivityInfo` (`.Name`, `.TypeName` of the faulting activity), `RetryCount`, `Variables("name")`, `Arguments("name")`, `WorkflowArguments("name")`.
+`errorInfo` exposes `Exception`, `ActivityInfo` (`.Name`, `.TypeName`), `RetryCount`, `Variables("name")`, `Arguments("name")`, and `WorkflowArguments("name")`.
 
 ### Registration
 
-Register the file in `project.json` under `runtimeOptions` (verified — build clean):
+Register in `project.json` under `runtimeOptions`:
 
 ```json
 "runtimeOptions": {
@@ -209,87 +177,73 @@ Register the file in `project.json` under `runtimeOptions` (verified — build c
 }
 ```
 
-1. **One per project.** Cannot be `Main.xaml`. **Not available for Library projects** — libraries must rely on Try/Catch and propagation.
-2. **Removing a GEH is two edits, both required:** delete the handler `.xaml` AND remove the `exceptionHandlerWorkflow` key from `project.json`. Deleting only the file leaves a stale registration pointing at a missing workflow.
+1. One per project; it cannot be `Main.xaml` and is unavailable for Library projects, which must use Try/Catch and propagation.
+2. Removing it requires deleting the handler `.xaml` and removing `exceptionHandlerWorkflow` from `project.json`; otherwise registration points to a missing workflow.
 
 ### Verdicts — `ErrorAction`
 
-Set `result` to one of (enum `UiPath.Activities.Contracts.ErrorAction`):
-
 | Verdict | Effect |
 |---|---|
-| `Continue` | **Re-throw** the exception (let normal propagation / local Catch handle it). *Not* "skip" — a common community misreading. |
-| `Ignore` | Suppress the error, continue from the **next** activity. |
-| `Retry` | Re-execute the **failed activity**. |
-| `Abort` | Stop the job after the handler finishes. |
+| `Continue` | **Re-throw**; normal propagation/local Catch handles it. It does not mean skip. |
+| `Ignore` | Suppress error and continue from the next activity. |
+| `Retry` | Re-execute the failed activity. |
+| `Abort` | Stop the job after the handler. |
 
 ### Verdict logic — avoid the runaway loop
 
-The GEH re-enters at **every** call-stack level a fault propagates through, so an unconditional `result = ErrorAction.Retry` compounds — an always-failing activity is retried far more than intended and can loop without end. Always gate the verdict. XAML `If.Condition` expression forms (VB):
+GEH re-enters at every call-stack level. Unconditional `Retry` can retry an always-failing activity indefinitely. Always gate it:
 
-1. **Classify first** — business data won't fix itself, so abort: `[TypeOf errorInfo.Exception Is BusinessRuleException]` → set `result = ErrorAction.Abort`.
-2. **Filter the faulting activity type** — don't "retry" scaffolding: `[New HashSet(Of String)({"Throw","Rethrow","TryCatch","RetryScope","Sequence"}).Contains(errorInfo.ActivityInfo.TypeName)]` → `Continue` (re-throw), don't retry.
-3. **Gate retries on `RetryCount`** — `[errorInfo.RetryCount < 2]` → `Retry`, else `Abort`.
+1. Business data does not self-correct: `[TypeOf errorInfo.Exception Is BusinessRuleException]` → `result = ErrorAction.Abort`.
+2. Do not retry scaffolding: `[New HashSet(Of String)({"Throw","Rethrow","TryCatch","RetryScope","Sequence"}).Contains(errorInfo.ActivityInfo.TypeName)]` → `Continue` (re-throw).
+3. `[errorInfo.RetryCount < 2]` → `Retry`; otherwise `Abort`.
 
 ### Interplay and limits
 
-- **When the GEH fires — three cases:**
-  1. **Caught and handled** — the faulting activity's own Try/Catch catches it (no rethrow): GEH does **not** fire.
-  2. **Fully unhandled** — nothing up the call stack catches it: GEH fires, then its verdict applies. Verified under `uip rpa run`.
-  3. **Nested / call-stack** — version-sensitive: some Studio versions invoke the GEH *first-chance*, before a local `Catch`, for an activity nested in a `Sequence` inside `Try` (reported in 25.0.157). Don't assume a local Try/Catch always shields the GEH in deeply-nested code. See [UiPath Global Exception Handler docs](https://docs.uipath.com/studio/latest/user-guide/global-exception-handler).
-- **Retries activities, not workflows.** To retry a whole workflow, wrap it in your own loop / Retry Scope.
-- **Don't combine with REFramework** — REFramework's per-state Try/Catch and the GEH fight; business exceptions get caught/retried and can loop. Pick one strategy.
-- **Debugging:** on a fault Studio pauses, highlights the activity, shows the exception in **Locals** / **Call Stack**; the ribbon offers Continue / Retry / Ignore / Abort. The debug **Retry** button does **not** invoke the GEH; only Continue does.
+- Caught and handled locally without rethrow: GEH does not fire.
+- Fully unhandled: GEH fires and verdict applies; verified under `uip rpa run`.
+- Nested/call-stack behavior is version-sensitive: some Studio versions invoke GEH first-chance before local Catch for an activity nested in a `Sequence` inside Try (reported in 25.0.157). Do not assume deeply nested local Try/Catch always shields GEH. See [UiPath Global Exception Handler docs](https://docs.uipath.com/studio/latest/user-guide/global-exception-handler).
+- GEH retries activities, not workflows; retry a whole workflow with your own loop / Retry Scope.
+- Do not combine GEH with REFramework: their Try/Catch/retry strategies can fight and loop on business exceptions; choose one.
+- During debugging, Studio pauses/highlights the activity and shows exception in Locals/Call Stack; ribbon offers Continue / Retry / Ignore / Abort. Debug **Retry** does not invoke GEH; only Continue does.
 
-**Verifying the GEH:** to fire it, run a workflow that throws an **unhandled** error — a `Throw` not wrapped in a local Try/Catch. Verified by run: with the handler registered, `uip rpa run` executes the handler (its logs appear) and honors the verdict — e.g. returning `Ignore` skips the faulting activity and the run completes with `hasErrors:false`. An agent that needs to exercise GEH logic just triggers an unhandled error.
-
----
+To verify GEH, run a workflow with an **unhandled** error—a `Throw` outside local Try/Catch. With registration, `uip rpa run` runs the handler, logs it, and honors verdict; e.g. returning `Ignore` skips the faulting activity and the run completes with `hasErrors:false`.
 
 ## 9. Screenshot-on-Error
 
-For unattended post-mortem, capture a screenshot in the Catch (or GEH) before propagating. Modern activity: **Take Screenshot** (`UiPath.UIAutomationNext.Activities.NTakeScreenshot`, package `UiPath.UIAutomation.Activities`).
+Capture in Catch or GEH before propagating. Use **Take Screenshot** (`UiPath.UIAutomationNext.Activities.NTakeScreenshot`, package `UiPath.UIAutomation.Activities`).
 
-1. **Use an absolute path** including folder + `.png` — relative paths resolve into the NuGet cache. Create the directory first.
-2. **Set `ContinueOnError=True` on the capture** so a failed screenshot doesn't abort the handler.
-3. **Take Screenshot needs an interactive session** — under unattended Robots with no display it fails (`Win32Exception 0x80004005`) or silently writes nothing. For reliable unattended post-mortem prefer **Orchestrator session recording** (Robot 2023.2+) over the activity.
-4. **Treat screenshots as sensitive data** — they routinely capture PII, credentials, invoices, and open sessions. Write to an access-controlled folder / storage bucket (not a world-readable temp), name files by job/transaction id + timestamp, set a retention + cleanup policy, and don't attach raw screenshots to logs that ship to a broad audience.
-
----
+1. Use an absolute folder path ending `.png`; relative paths resolve to the NuGet cache. Create the directory first.
+2. Set capture `ContinueOnError=True` so screenshot failure cannot abort the handler.
+3. It requires an interactive session; unattended Robots without a display may fail (`Win32Exception 0x80004005`) or write nothing. Prefer **Orchestrator session recording** (Robot 2023.2+) for reliable unattended post-mortems.
+4. Screenshots routinely contain PII, credentials, invoices, and sessions. Use access-controlled storage, job/transaction id + timestamp names, retention/cleanup, and do not attach raw screenshots to broadly distributed logs.
 
 ## 10. Logging Exceptions
 
-1. **Log `exception.ToString()`** (type + message + full stack), not just `.Message` — `.Message` alone loses the root cause. Guard null: `If(exception IsNot Nothing, exception.ToString(), "<missing>")`.
-2. **Level:** `Error` for caught system exceptions; `Warn` for recoverable business exceptions; `Fatal` for unrecoverable. Only `Trace`/`Verbose` capture argument values (PII risk) — don't log secrets.
-3. **Log before you handle** — emit the exception detail before the Catch swallows or rethrows it.
-4. **Limits:** `Log Message` truncates at 10,000 chars; Automation Cloud drops robot logs > 50 KB. The Orchestrator robot log level overrides local config (default `Information`).
-
----
+1. Log `exception.ToString()` (type, message, full stack), not only `.Message`; guard null: `If(exception IsNot Nothing, exception.ToString(), "<missing>")`.
+2. Severity: `Error` for caught system exceptions, `Warn` for recoverable business exceptions, `Fatal` for unrecoverable. `Trace`/`Verbose` capture argument values and risk PII; do not log secrets.
+3. Log before handling, including before Catch swallows or rethrows.
+4. `Log Message` truncates at 10,000 chars; Automation Cloud drops robot logs over 50 KB. Orchestrator robot log level overrides local configuration; default is `Information`.
 
 ## 11. Recover to a Known State Before Retrying
 
-Retrying a UI or system action without resetting state usually repeats the failure or corrupts data. After a system exception, **before the next attempt**:
+Before the next attempt after a system exception:
 
-1. Dismiss blocking popups / modal dialogs.
-2. Return the app or browser to a known anchor (home / search page); reattach, or close and reopen if the window is gone.
-3. Clear partially-entered form data; discard half-built records.
-4. Re-login if the session expired or timed out.
-5. Clean up partial artifacts (temp files, interrupted downloads).
-6. **Verify the expected screen is present** (`Check App State` / `Element Exists`) before re-running the action.
+1. Dismiss blocking popups/modal dialogs.
+2. Return app/browser to a known anchor (home/search); reattach, or close/reopen if gone.
+3. Clear partial form data and discard half-built records.
+4. Re-login after session expiry/timeout.
+5. Remove partial artifacts such as temp files and interrupted downloads.
+6. Verify the expected screen with `Check App State` / `Element Exists`.
 
-Wire this reset into the Retry Scope Action (run it first, ahead of the real step) or into the Catch before a manual retry. Rule: **a retry that skips state recovery is usually a bug.**
+Put reset first in Retry Scope Action or in Catch before manual retry. A retry without state recovery is usually a bug.
 
 ## 12. Transaction Boundary (outside REFramework)
 
-Scope error handling to **one item**, not the whole loop, so a single bad item can't abort the batch. Two recipes by source:
+Handle one item, not the entire loop, so one bad item cannot abort the batch.
 
-**Queue-backed — let Orchestrator own retry.** Get a queue item, process, then set its status with `Set Transaction Status`:
-- **Success** on completion.
-- **BusinessException** on bad data → Orchestrator does **not** retry; flagged for human review.
-- **ApplicationException** on a transient/system failure → Orchestrator retries per the queue's `Max # of retries`.
+**Queue-backed — Orchestrator owns retry:** get item, process, then `Set Transaction Status`: **Success** on completion; **BusinessException** for bad data (no retry, human review); **ApplicationException** for transient/system failure (queue `Max # of retries`). Do not add a per-item retry loop; carry item `Reference` / id in every log line.
 
-Don't wrap your own per-item retry loop on top — the queue owns transaction retry (§15). Carry the item `Reference` / id in every log line.
-
-**DataTable / list — own a status column + bounded in-workflow retry.** No queue, so you own status and retry:
+**DataTable/list — own status and bounded retry:**
 
 ```
 For each row/item:
@@ -305,44 +259,38 @@ For each row/item:
     Persist the status column; release per-item resources
 ```
 
-1. **One Try/Catch per item** — a single bad item must not abort the batch.
-2. `BusinessRuleException` → mark failed/skipped, continue. System exception → bounded retry of the **same** item, then escalate.
-3. Persist per-item status and release resources in `Finally`; include an **item id / correlation id** in every log line.
+1. One Try/Catch per item; one bad item must not abort the batch.
+2. Business exception: mark failed/skipped and continue. System exception: bounded retry of the same item, then escalate.
+3. Persist item status and release resources in Finally; include item id/correlation id in every log line.
 
 ## 13. Compensation & Resume-Safe Writes
 
-A failure partway through external writes leaves partial side effects. Make writes safe to re-run:
-
-1. **Idempotency key** on API creates (client-generated id or `Idempotency-Key` header) so a retried create doesn't duplicate.
-2. **Check-before-create** when no key is available — query by natural key first. **Not concurrency-safe on its own:** two robots can both check, see nothing, and both create. Back it with a server-side unique constraint / upsert, a lock or reservation record, or a downstream reconciliation pass — don't rely on the check alone.
-3. **Record the external id immediately** after creation (persist before the next step) so a resumed run continues from it instead of re-creating.
-4. **Never blindly retry a non-idempotent write** (payment, append, keyless POST) — see §5 rule 3.
-5. **Define compensation** for partial work: delete the created draft, void the transaction, or mark the record for manual reconciliation.
+1. Use an idempotency key on API creates (client-generated id or `Idempotency-Key` header).
+2. Without one, check natural key before create. This is not concurrency-safe: two robots can both see nothing and create. Add server unique constraint/upsert, lock/reservation, or reconciliation; never rely on the check alone.
+3. Persist external id immediately after creation, before the next step, so resume continues instead of recreating.
+4. Never blindly retry non-idempotent writes (payment, append, keyless POST); see §5 rule 3.
+5. Define compensation for partial work: delete created draft, void transaction, or mark for manual reconciliation.
 
 ## 14. Sensitive Data in Logs & Screenshots
 
-Error paths are where secrets leak — exceptions and screenshots capture live data.
-
-1. **Never log** credentials, auth headers/tokens, full request/response bodies, bank/card numbers, full customer identifiers, or document images unless explicitly approved. Redact or hash first.
-2. `exception.ToString()` is right for the stack trace (§10), but the **message may still contain secrets or input values** — sanitize messages you build; don't echo raw input.
-3. Treat screenshots as sensitive data — restricted storage, id+timestamp naming, retention/cleanup, access control (§9).
-4. `Trace` / `Verbose` capture argument values (PII) — keep them out of production, and don't defeat the project's excluded-logged-data settings (`Private:*`, `*password*`).
+1. Never log credentials, auth headers/tokens, full request/response bodies, bank/card numbers, full customer identifiers, or document images unless explicitly approved; redact or hash first.
+2. `exception.ToString()` preserves stack detail, but its message may contain secrets/input values. Sanitize constructed messages; do not echo raw input.
+3. Restrict screenshots, use id+timestamp names, retention/cleanup, and access control (§9).
+4. `Trace` / `Verbose` capture argument values; keep them out of production and preserve excluded-logged-data settings (`Private:*`, `*password*`).
 
 ## 15. Who Owns the Retry — Pick One Layer
 
-Retries **stack multiplicatively**: 3 local × 3 queue × 3 job = up to 27 executions of the same work, with duplicate side effects. Assign one owner per concern.
+Retries multiply: 3 local × 3 queue × 3 job can execute the same work up to 27 times and duplicate side effects. Assign one owner per concern.
 
-| Layer | Owns | Don't use it for |
+| Layer | Owns | Not for |
 |---|---|---|
-| **Orchestrator queue retry** (`Max # of retries`) | Business-transaction retry, when queues are used | short transient UI blips |
-| **Retry Scope** | Short transient retry around **one** flaky action | whole-transaction retry |
-| **Global Exception Handler** | Centralized logging/screenshot + a global verdict | business-transaction retry (§8) |
-| **Orchestrator job/process retry** | Whole-job restart (use sparingly) | per-item or per-action retry |
+| **Orchestrator queue retry** (`Max # of retries`) | Business-transaction retry with queues | Short UI blips |
+| **Retry Scope** | Short transient retry around one flaky action | Whole transaction |
+| **Global Exception Handler** | Central logging/screenshot and global verdict | Business-transaction retry (§8) |
+| **Orchestrator job/process retry** | Whole-job restart, sparingly | Per-item/action retry |
 
-1. Queues present → queue retry owns transaction retry; keep Retry Scope for sub-second UI flakiness only.
-2. **Don't enable retry at every layer** — pick the lowest layer that fully resets state (§11) and disable the rest.
-
----
+1. With queues, queue retry owns transaction retry; keep Retry Scope only for sub-second UI flakiness.
+2. Do not enable every layer; choose the lowest layer that fully resets state (§11) and disable the others.
 
 ## Coded (C#)
 
@@ -356,11 +304,7 @@ catch (BusinessRuleException) { Log("business error", LogLevel.Warn); throw; }  
 catch (Exception ex)         { Log(ex.ToString(), LogLevel.Error); throw; }
 ```
 
-- `throw;` (bare) preserves the stack trace; `throw ex;` resets it — same `CA2200` rule as Rethrow vs Throw-new.
-- Workflow Analyzer rules (`ST-DBP-003`, etc.) apply to `.cs` workflows too.
-- Retry: a plain `for` loop with `try/catch` and a delay, or call a Retry Scope from XAML. C# expression-binding mechanics for XAML activities: [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md); coded `using` directives: [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules).
-
----
+Bare `throw;` preserves stack; `throw ex;` resets it—the same `CA2200` rule as Rethrow versus Throw-new. Workflow Analyzer rules including `ST-DBP-003` apply to `.cs`. For retry, use a plain `for` loop with `try/catch` and delay, or call Retry Scope from XAML. C# XAML binding: [xaml/csharp-activity-binding-guide.md](xaml/csharp-activity-binding-guide.md); coded `using` directives: [coded/operations-guide.md § Using Statements Rules](coded/operations-guide.md#using-statements-rules).
 
 ## Anti-patterns
 
@@ -372,7 +316,7 @@ catch (Exception ex)         { Log(ex.ToString(), LogLevel.Error); throw; }
 | "Retry ran fewer times than expected" / "ran N, not N+1" | `NumberOfRetries` is TOTAL executions, not extra retries; `0` = no-op | Set N = total runs wanted; `1` = one run (§5) |
 | "RetryInterval waited days" | `3` parsed as 3 days | Use `00:00:05` (§5) |
 | "Duplicate rows / queue items after retry" | non-idempotent Action in Retry Scope | Existence check / idempotency key (§5) |
-| "BusinessRuleException caught as system error" | not thrown explicitly, Isolated invoke, or namespace ambiguity | Explicit `Throw New BusinessRuleException`, qualify `UiPath.Core`, avoid Isolated (§1) |
+| "BusinessRuleException caught as system error" | not thrown explicitly, or namespace ambiguity | Explicit `Throw New BusinessRuleException`, qualify `UiPath.Core` (§1) |
 | Empty `Catch` | silent failure, `ST-DBP-003` | Log at minimum (§3) |
 | `Throw New Exception(ex.Message)` to re-surface | resets stack, drops type | `Rethrow` (§4) |
 | Screenshot works attended, nothing unattended | no interactive session | Orchestrator recording + absolute path (§9) |

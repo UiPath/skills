@@ -26,6 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import (  # noqa: E402
+    existing_caseplan,
     assert_tasks_nested,
     find_stages,
     find_transitions,
@@ -91,7 +92,7 @@ def _has_path(plan: dict, src: str, dst: str, max_hops: int = 12) -> bool:
 
 
 def main() -> None:
-    plan = read_caseplan(EXPECTED_CASEPLAN if os.path.exists(EXPECTED_CASEPLAN) else None)
+    plan = read_caseplan(existing_caseplan(EXPECTED_CASEPLAN))
     assert_tasks_nested(plan)
 
     # --- trigger

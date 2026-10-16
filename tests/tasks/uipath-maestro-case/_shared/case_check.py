@@ -1,6 +1,6 @@
 """Shared helpers for uipath-maestro-case single-node e2e checks.
 
-Locates the generated `caseplan.json`, runs ``uip maestro case validate``,
+Locates the generated case plan (`caseplan.case` or `caseplan.json`), runs ``uip maestro case validate``,
 and asserts that a task of the expected ``type`` exists somewhere in the
 case definition. ``case-management`` tasks are allowed to land as skeletons
 (empty ``data``) when the referenced sub-case isn't published on the tenant
@@ -26,12 +26,55 @@ import time
 from typing import Any, Iterable, NoReturn, Sequence
 
 
-def find_caseplan(pattern: str = "**/caseplan.json") -> str:
-    matches = sorted(
-        p for p in glob.glob(pattern, recursive=True) if "/.venv/" not in p
+# The names Studio Web gives a case plan on disk, newest first (the CLI's
+# CasePlanFileNames). Studio Web renames the plan to `caseplan.case` on its first
+# save and reads the newest name present, so a grader accepts every name and, in
+# one directory, takes the newest the way Studio Web does.
+CASE_PLAN_NAMES = ("caseplan.case", "caseplan.json", "case.stage.json", "default.stage.json")
+# YAML globs (`caseplan.[cj][as][so][en]`) and `ls` resolvers deliberately accept
+# only the first two: the names the CLI and the skill write. Where both sit in one
+# directory, YAML refuses to guess and Python takes the newest; either way the run
+# fails, because the skill never writes two plans.
+
+
+def glob_caseplans(pattern: str = "**/caseplan.json") -> list[str]:
+    """Plans matching ``pattern``, with ``caseplan.json`` in it read as any plan name.
+
+    One plan per directory: where a directory holds several names, the newest wins.
+    """
+    patterns = (
+        [pattern.replace("caseplan.json", name) for name in CASE_PLAN_NAMES]
+        if "caseplan.json" in pattern
+        else [pattern]
     )
+    by_dir: dict[str, str] = {}
+    for rank_pattern in patterns:
+        for path in glob.glob(rank_pattern, recursive=True):
+            if "/.venv/" not in path:
+                by_dir.setdefault(os.path.dirname(path), path)
+    return sorted(by_dir.values())
+
+
+def existing_caseplan(path: str) -> str | None:
+    """The plan in ``path``'s directory under any plan name, newest first; None if absent.
+
+    ``path`` names the expected plan, e.g. ``Sol/Case/caseplan.json``. A path whose
+    file name is not a plan name is returned as is when it exists.
+    """
+    if os.path.basename(path) not in CASE_PLAN_NAMES:
+        return path if os.path.isfile(path) else None
+    directory = os.path.dirname(path)
+    for name in CASE_PLAN_NAMES:
+        candidate = os.path.join(directory, name)
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def find_caseplan(pattern: str = "**/caseplan.json") -> str:
+    matches = glob_caseplans(pattern)
     if not matches:
-        _fail(f"No caseplan.json found matching {pattern}")
+        _fail(f"No case plan ({' / '.join(CASE_PLAN_NAMES)}) found matching {pattern}")
     if len(matches) == 1:
         return matches[0]
 
@@ -79,33 +122,117 @@ def read_caseplan(path: str | None = None) -> dict:
         return json.load(f)
 
 
+def exit_type(condition: dict) -> str:
+    """A stage exit condition's type, reading an absent `type` as `exit-only`.
+
+    `type` is optional on exit conditions, and the runtime treats a condition
+    without one as exit-only: the case-schema converter only branches on
+    `wait-for-user` and `return-to-origin`. `validate --strict --sdd` reads it the
+    same way. A grader that compares `condition.get("type")` to "exit-only"
+    instead fails a correct plan the runtime and the audit both accept — so read
+    it through here. A declared routing type is still only ever the declared one.
+    """
+    return condition.get("type") or "exit-only"
+
+
 def is_non_required(item: dict) -> bool:
     """Accept the Case SDK's omitted default and the explicit false form."""
     value = item.get("isRequired")
     return value is None or value is False
 
 
+def _expand_resolved_resource(resource: object) -> object:
+    """Give a `sdd resolve` resource the legacy cache-entry fields graders read.
+
+    `uip maestro case sdd resolve` records each match normalized to
+    `{name, identifierField, identifier, folder}` rather than copying the raw
+    cache object through. The saving is not size — its ledger is about as large
+    as a hand-written one — but who writes it: the CLI in well under a second,
+    where the model spent ~49s generating the same file. So the graders adapt
+    to the CLI's spelling rather than making the agent re-copy cache objects.
+    Identity is preserved exactly; only its spelling changes. A raw cache entry
+    (no `identifierField`) passes through untouched.
+    """
+    if not isinstance(resource, dict) or "identifierField" not in resource:
+        return resource
+    out = dict(resource)
+    field = str(resource.get("identifierField") or "")
+    ident = resource.get("identifier")
+    name = resource.get("name")
+    folder = resource.get("folder")
+    if field:
+        out.setdefault(field, ident)
+    if field == "id":  # action apps: deploymentTitle / deploymentFolder
+        out.setdefault("deploymentTitle", name)
+        if folder:
+            out.setdefault("deploymentFolder", {"fullyQualifiedName": folder})
+    elif folder:
+        out.setdefault("folders", [{"fullyQualifiedName": folder}])
+    return out
+
+
+def normalize_audit_entry(entry: dict) -> dict:
+    """Map one `sdd resolve` ledger entry onto the shape graders assert on.
+
+    Returns a copy; legacy hand-written entries come back unchanged.
+
+    Three spellings differ, identity does not:
+      * `searchQuery` is `{name, folder}`; graders compare the portable name.
+        Collapsing it also matters for correctness, not just spelling: the SDD's
+        own `folder: "<UNRESOLVED>"` rides along inside it, so the substring
+        `<UNRESOLVED` appears in every entry whose SDD left the folder open —
+        resolved ones included (6 of 7 across the registry_handoff fixtures,
+        four of them successfully selected). As a miss signal it would mean
+        nothing, and a miss the agent never marked would pass. The marker has
+        to come from the entry's identity slot, which is what Rule 10 requires.
+      * `cacheFile` is the index name (`agent`); graders expect the file
+        basename (`agent-index.json`).
+      * `selected` / `matches[]` are normalized resources — see
+        `_expand_resolved_resource`.
+    """
+    out = dict(entry)
+    query = out.get("searchQuery")
+    if isinstance(query, dict):
+        out["searchQuery"] = query.get("name") or query.get("Name") or ""
+    cache = out.get("cacheFile")
+    if isinstance(cache, str) and cache and not cache.endswith(".json"):
+        out["cacheFile"] = f"{cache}-index.json"
+    # Touch only keys that are present: a hand-written entry that omits
+    # `selected` must not come back claiming `selected: null`.
+    if "selected" in out:
+        out["selected"] = _expand_resolved_resource(out["selected"])
+    if isinstance(out.get("matches"), list):
+        out["matches"] = [_expand_resolved_resource(m) for m in out["matches"]]
+    return out
+
+
 def registry_audit_entries(payload: object) -> list[dict]:
-    """Read equivalent flat and enveloped registry-audit representations."""
+    """Read every legal registry-audit representation as one list of entries.
+
+    Accepts a bare list (hand-written, and the planner lane's verbatim ledger),
+    a `resolutions` / `resources` envelope, and `uip maestro case sdd resolve`'s
+    own `{resolved, unresolved, scope}` object. Entries come back normalized by
+    `normalize_audit_entry`, so a grader asserts one shape whichever wrote it.
+    """
     if isinstance(payload, list):
         entries = payload
     elif isinstance(payload, dict):
         entries = next(
             (
                 payload[key]
-                for key in ("resolutions", "resources")
+                for key in ("resolved", "resolutions", "resources")
                 if isinstance(payload.get(key), list)
             ),
             None,
         )
         if entries is None:
-            _fail("registry-resolved.json has no resolutions/resources list")
+            _fail("registry-resolved.json has no resolutions/resources list (nor an `sdd resolve` resolved list)")
     else:
         _fail("registry-resolved.json must be a list or object envelope")
 
     if not all(isinstance(entry, dict) for entry in entries):
         _fail("registry-resolved.json entries must be objects")
-    return entries
+    return [normalize_audit_entry(entry) for entry in entries]
 
 
 def iter_tasks(plan: dict):
@@ -231,7 +358,7 @@ def task_is_skeleton(task: dict) -> bool:
 # ── Schema-aware structural helpers ─────────────────────────────────────────
 #
 # Case-level metadata lives at the top level alongside a `metadata` block — the
-# flat schema introduced in v20 and inherited through v30. Node internals are
+# flat schema introduced in v20 and inherited through v32.0.3. Node internals are
 # stable across those versions except the trigger node, which v24 rewired from
 # `case-management:Trigger` to `uipath.case.trigger` (see find_triggers), and the
 # selected-stage rules, which v29 moved from `selectedStageId` to the multi-select
@@ -628,11 +755,7 @@ def _split_case_husks(
 
 def _caseplan_node_count(root: str) -> int | None:
     """Return the node count for one unambiguous Case plan under ``root``."""
-    plans = sorted(
-        path
-        for path in glob.glob(os.path.join(root, "**/caseplan.json"), recursive=True)
-        if "/.venv/" not in path
-    )
+    plans = glob_caseplans(os.path.join(root, "**/caseplan.json"))
     if len(plans) != 1:
         return None
     try:

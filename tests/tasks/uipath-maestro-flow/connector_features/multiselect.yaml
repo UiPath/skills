@@ -17,13 +17,33 @@ run_limits:
 reference:
   directory: ..
 
-# Each recipient must match exactly one Slack user, or the 3-entry check below
-# cannot pass. "Coder Eval" is deliberately NOT used: it is a prefix of "Coder
-# Eval Test", so a substring lookup returns two rows and the agent is then
-# required to stop and ask. Re-verify uniqueness before changing a name.
+# Each recipient must match exactly ONE Slack user, exact case, on the
+# connection the prompt names (Shared/uipath-maestro-flow = connection
+# 849e85d8-1aa9-4d52-8bbd-20041c8f05d8), or the 3-entry check below cannot
+# pass. The match is exact and case-sensitive: `prepare --resolve` does not
+# match "E2E-testing" to "E2E-Testing".
+#
+# Verified 2026-09-23 on that connection: curated_users holds 48 users
+# (HasMore false), and each name below matches exactly one of them:
+#   "Coder Evals"             profile.real_name  -> U0BAW1WQT0F
+#   IS-sandboxes@uipath.com   profile.email      -> U02EBQA5AD9
+#   "E2E-Testing"             profile.real_name  -> U0A1U64L5EG
+# IS-sandboxes@uipath.com has real_name "wxpadzgv Sandboxes", so it resolves
+# by e-mail only.
+#
+# Do not take names from another Slack connection. #3393's evidence (5989
+# users, "Coder Eval Test", "E2E Nightly Summary") came from 2bbc2253, the
+# tenant's default connection in folder Shared, which is a different
+# workspace. Neither name exists on 849e85d8.
+#
+# 849e85d8 is a bring-your-own-account connection. If it is re-pointed to
+# another workspace, these names break again. Re-verify before changing a
+# name, or after the connection changes (read-only):
+#   uip is resources run list uipath-salesforce-slack curated_users \
+#     --connection-id 849e85d8-1aa9-4d52-8bbd-20041c8f05d8 --output json
 initial_prompt: |
   Create a flow file to create a Slack group direct message between
-  Coder Eval Test, IS-sandboxes@uipath.com and E2E Nightly Summary.
+  Coder Evals, IS-sandboxes@uipath.com and E2E-Testing.
   Do NOT use any activity or node marked 'beta'. Use the non-beta Slack activity.
   Use the connection present in Shared/uipath-maestro-flow.
 

@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """DataFabricTriggerRegression (BPMN): connector-trigger lifecycle coverage.
 
-Ported from Flow
+Ported from the retired Flow task
 `connector_features/datafabric_connector/trigger_lifecycle.yaml`'s
-``check_trigger_lifecycle.py``: same two-branch scenario (a Record Created
-trigger on ContractRegistry with a dueDate filter feeding a filtered/limited
-Query, and a Record Updated trigger on FileUploadVerify_20260618 feeding a
-Get-by-Id and a Delete both wired to the trigger's own output), translated
+``check_trigger_lifecycle.py`` (retired because the Maestro Flow registry has
+no `uipath.connector.trigger.uipath-uipath-dataservice.*` node; BPMN resolves
+the same IS webhook through ``Intsvc.EventTrigger`` and is unaffected, so the
+line references in the assertion map below point at that deleted file): same
+two-branch scenario (a Record Created trigger on ContractRegistry with a
+dueDate filter feeding a filtered/limited Query, and a Record Updated trigger
+on FileUploadVerify_20260618 feeding a Get-by-Id and a Delete both wired to
+the trigger's own output), translated
 from a JSON node/``inputs.detail`` walk to an XML walk over the
 registry-driven ``Intsvc.EventTrigger`` startEvent shell and the
 ``Intsvc.ActivityExecution`` connector sendTask shell (see

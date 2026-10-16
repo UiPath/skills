@@ -63,7 +63,7 @@ RECONSTRUCTED = GOOD.replace(
 
 
 CLEAN_AUDIT = '[{"task": "Hold", "selected": {"name": "X"}}]'
-# Rule 9 shape for an unresolved entry: matches [], selected null, and the
+# Rule 10 shape for an unresolved entry: matches [], selected null, and the
 # <UNRESOLVED: reason> text in the identity slot — see
 # skills/uipath-maestro-case/references/placeholder-tasks.md § registry-resolved.json Entry Shape.
 UNRESOLVED_AUDIT = ('[{"task": "Hold", "taskType": "process", "matches": [], "selected": null, '
@@ -73,7 +73,7 @@ UNRESOLVED_AUDIT = ('[{"task": "Hold", "taskType": "process", "matches": [], "se
 def caseplan(placeholder=True):
     task = {"id": "tA", "type": "wait-for-timer", "displayName": "Hold",
             "data": {} if placeholder else {"serviceType": "X"}}
-    return {"id": "case-Stub000001", "version": "30.0.0", "name": "Stub", "metadata": {},
+    return {"id": "case-Stub000001", "version": "32.0.3", "name": "Stub", "metadata": {},
             "nodes": [{"id": "Stage_a", "type": "case-management:Stage",
                        "data": {"label": "S", "tasks": [[task]]}}], "edges": []}
 
@@ -184,3 +184,13 @@ def test_header_row_is_not_counted(tmp_path, header):
     res = run(tmp_path, case=caseplan(), log=log)
     assert res.returncode == 0, res.stdout
     assert "1 row(s)" in res.stdout
+
+
+def test_a_plan_saved_as_caseplan_case_is_graded(tmp_path):
+    """Studio Web renames the plan to caseplan.case; the grader still sees Phase 2."""
+    d = tmp_path / "Sol" / "Proj"; d.mkdir(parents=True)
+    (d / "caseplan.case").write_text(json.dumps(caseplan()))
+    res = run(tmp_path)
+    assert res.returncode == 1, res.stdout
+    assert "placeholder task(s)" in res.stdout
+    assert "NO tasks/build-issues.md" in res.stdout

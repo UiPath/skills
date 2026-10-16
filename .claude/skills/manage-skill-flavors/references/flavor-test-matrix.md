@@ -10,7 +10,7 @@ Read this reference completely when adding a flavor or changing the composer, pa
 | One host-specific instruction | Add the smallest complete marked block | Add the matching replacement block at the mirrored path | That passage differs only in the target flavor. |
 | Reviewed pass-through skill | No marker needed | No override needed | The complete skill is included automatically. |
 | Unsafe canonical instruction | Keep the default complete | Add the smallest matching replacement | The custom package remains complete and host-correct. |
-| New flavor | No edit unless a real difference exists | Create at least one real sparse override | Generic discovery creates its complete package. |
+| New flavor | No edit unless a real difference exists | Create at least one real sparse override or a `.canonical` pin | Generic discovery creates its complete package. |
 
 ## Path and Block Closure
 
@@ -41,7 +41,7 @@ Test discovery with temporary flavors created in reverse lexical order.
 - No custom flavor: build only `default`.
 - `alpha-host` and `zeta-host`: build `default`, `alpha-host`, `zeta-host` in stable order.
 - Skills without overrides pass through in every custom flavor.
-- New `future-host` with one sparse override: automatically create `build/skills/future-host`, `build/packages/future-host`, and `@uipath/skills-future-host`.
+- New `future-host` with one sparse override, or with only a `.canonical` pin: automatically create `build/skills/future-host`, `build/packages/future-host`, and `@uipath/skills-future-host`.
 - Reject uppercase, underscore, whitespace, path-like, or reserved `default` names.
 - Reject flavor-directory symlinks and empty flavor directories.
 - Reject a derived npm package name longer than npm's 214-character limit.

@@ -1,8 +1,8 @@
 # Dashboard Read Commands
 
-The two dashboard reads answer what a Maestro process's Monitoring tab shows and what is stored in a dashboard: `dashboards get` returns one dashboard, by process key or by id, and `dashboard-filters list` returns the global filters saved on one. They never create, change, render, or refresh anything; `dashboards create` is in the writes guide.
+The two dashboard reads answer what a Maestro process's Monitoring tab shows and what is stored in a dashboard: `dashboards get` returns one dashboard, by process key or by id, and `dashboard-filters list` returns the global filters saved on one. They never create, change, render, or refresh anything; `dashboards create`, `update`, `delete`, and `copy` are in the writes guide.
 
-A standalone dashboard belongs to one Maestro process. The process key is the handle: take it from the user or from `uip maestro bpmn processes list`, then read `dashboards get --process-key <guid>`. Numeric dashboard ids come from that read (`Saved: true`) or from a create response. No `filter-*` command discovers either.
+A standalone dashboard belongs to one Maestro process. The process key is the handle: take it from the user or from `uip maestro bpmn processes list`, then read `dashboards get --process-key <guid>`. Numeric dashboard ids come from that read (`Saved: true`) or from a create or copy response. No `filter-*` command discovers either.
 
 Keys inside `Data` are PascalCase in the CLI's JSON output. Read `DataModel`, not `dataModel`. The `--output-file` artifact is the one exception and Rule 4 covers it.
 

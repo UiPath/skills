@@ -58,20 +58,18 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: llm_judge
-    description: "Final reply confirms resources are synced and the solution is ready to pack"
-    include_agent_output: true
-    prompt: |
-      Evaluate ONLY the agent's final reply. The task asked the agent to
-      sync a solution's bundled resources/bindings and confirm readiness
-      to pack.
-
-      Score 1.0 if the reply states the resources/bindings are refreshed
-      or in sync and the solution is ready to pack (English or Romanian).
-
-      Score 0.0 if the reply skips the refresh, claims readiness without
-      having synced, reports an unresolved error, or only dumps raw output
-      with no interpretation.
-    include_reference: false
+  # Behavioural stand-in for "confirm the resources are in sync": grade
+  # refresh's own exit status instead of the agent's claim that it synced.
+  # Replaced an llm_judge that graded the final reply's wording — a
+  # self-report. Not a check on solution_folder files: `projects add` already
+  # writes the package/process JSONs and syncs the project's bindings, so in
+  # this flow refresh leaves the same files on disk that registration did.
+  # Refresh exits 1 on a failed auth, sync or contribution write.
+  - type: command_executed
+    description: "uip solution resources refresh exited successfully (resources actually in sync, not just claimed)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+solution\s+resources\s+refresh\b(?!\s+(?:--help|-h)\b)'
+    min_count: 1
+    require_success: true
     weight: 1.5
     pass_threshold: 1.0

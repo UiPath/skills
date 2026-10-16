@@ -1,0 +1,38 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "GreetingProcess",
+    "kind": "process",
+    "type": "processOrchestration",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "75a5fd8f-9d2b-4b5b-aca3-9cdbf1b398f0",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "GreetingProcess"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "ProcessOrchestration",
+      "name": "GreetingProcess",
+      "package": {
+        "key": "c0e531dc-8e00-4b3e-9d8e-954f20400844"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "d216c009-9cad-4ec8-927c-d806a9504385",
+    "files": []
+  }
+}

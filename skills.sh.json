@@ -7,10 +7,12 @@
       "description": "Build automations: RPA workflows, Maestro flows and BPMN, agents, coded apps, API workflows, connectors, functions, and document understanding.",
       "skills": [
         "uipath-rpa",
+        "uipath-activity-migrator",
         "uipath-maestro-flow",
         "uipath-agents",
         "uipath-maestro-bpmn",
         "uipath-maestro-case",
+        "uipath-rules",
         "uipath-coded-apps",
         "uipath-api-workflow",
         "uipath-human-in-the-loop",
@@ -21,12 +23,13 @@
     },
     {
       "title": "Solution & Planning",
-      "description": "Turn a process design into an implementation-ready solution, then package, review, and discover automation opportunities.",
+      "description": "Turn a process design into an implementation-ready solution, document existing automations as genome blueprints, then package, review, and discover automation opportunities.",
       "skills": [
         "uipath-planner",
         "uipath-solution",
         "uipath-review",
-        "uipath-automation-discovery"
+        "uipath-automation-discovery",
+        "uipath-genome"
       ]
     },
     {
@@ -34,6 +37,7 @@
       "description": "Operate the platform via the uip CLI: Orchestrator, Integration Service, Data Fabric, Admin, source control and CI/CD pipelines, governance, testing, tasks, analytics, and MCP servers.",
       "skills": [
         "uipath-platform",
+        "uipath-knowledge-bundles",
         "uipath-admin",
         "uipath-aops",
         "uipath-test",
@@ -42,13 +46,17 @@
         "uipath-process-mining",
         "uipath-tasks",
         "uipath-mcp-servers",
-        "uipath-automationhub"
+        "uipath-automationhub",
+        "uipath-vertical-solutions"
       ]
     },
     {
       "title": "Diagnostics & Feedback",
       "description": "Investigate failures across any UiPath product and send bug reports or improvement suggestions to the team.",
-      "skills": ["uipath-troubleshoot", "uipath-feedback"]
+      "skills": [
+        "uipath-troubleshoot",
+        "uipath-feedback"
+      ]
     }
   ]
 }

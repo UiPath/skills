@@ -31,7 +31,7 @@ initial_prompt: |
     skill: `.bpmn` XML, main file `VendorPOReviewBpmn/VendorPOReviewBpmn.bpmn`.
     Do NOT build a `.flow`.
   - Model the review as a `bpmn:userTask` using the documented `Actions.HITL`
-    `uipath:activity` shell from the registry template.
+    activity type.
   - Present the PO context to the reviewer via the HITL activity's input
     mapping, and capture the reviewer's returned fields (decision, notes) as
     typed HITL output mappings, each bound to a declared process variable.

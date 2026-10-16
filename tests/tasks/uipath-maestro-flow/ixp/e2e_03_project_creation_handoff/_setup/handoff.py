@@ -38,8 +38,9 @@ one fixture domain and can run at the same time.
 
 **seed** checks the one precondition left — that the `deployments create` verb
 exists, since it rides the CLI `dev` dist-tag — then sweeps stale
-domain-covering projects, snapshots tenant project names as digests, and
-creates this run's folder, naming it in seed.json for the prompt.
+domain-covering projects and tenant-feed packages, snapshots tenant project
+names as digests, and creates this run's folder, naming it in seed.json for the
+prompt.
 
 The snapshot is how both tasks tell this run's projects from pre-existing ones:
 `check` diffs against it, and teardown reads it for the run folder and for
@@ -59,7 +60,9 @@ owned outright. The run folder itself is always deleted — deleting a folder is
 what removes its deployments and their registry nodes (deployments have no
 delete verb of their own), so the tenant does not accumulate a published
 extractor per run. No other folder is ever deleted: a deployment the agent
-parked elsewhere is reported as LEAKED for a hand-delete. Always exits 0: post_run
+parked elsewhere is reported as LEAKED for a hand-delete. Packages bound to a
+process in the run folder are deleted from the tenant feed after the folder,
+fixture-domain names only. Always exits 0: post_run
 runs after grading, so a cleanup problem must never turn a graded result into
 a failure (every failure is still printed).
 """
@@ -77,10 +80,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from handoff_tenant import (  # noqa: E402  (path set above)
     SNAPSHOT,
     delete_folder_with_retry,
+    delete_package,
     folder_get,
     iso_age_seconds,
     ixp_node_identifiers,
     list_deployments_if_present,
+    list_domain_package_versions,
+    list_folder_process_packages,
     matches_fixture_domain,
     new_project_names,
     read_snapshot,
@@ -186,6 +192,37 @@ def sweep_domain_projects(projects: list[dict]) -> list[str]:
     return deleted
 
 
+def sweep_domain_packages() -> list[str]:
+    """Delete this fixture's stale packages from the tenant process feed.
+
+    The package-feed twin of sweep_domain_projects, with the same age guard.
+    An agent that deploys its flow uploads a .nupkg; packages are tenant-scoped,
+    so the run folder's delete leaves it behind. By 2026-09-28 the feed held 12
+    leaked versions under 3 `Falconry…` ids, and the v2 agent in
+    adhoc-2026-09-28_16-14-30 hit `HTTP 409: Package already exists` on
+    `FalconryLicenceFlow.flow.Flow:1.0.0`, rebuilt the flow under a suffixed
+    name, and left two Flow projects that the graders refuse to choose between.
+
+    Hygiene, not a gate: a listing failure is reported and the seed goes on.
+    """
+    try:
+        versions = list_domain_package_versions()
+    except Exception as exc:  # noqa: BLE001 — hygiene must not fail the seed
+        print(f"WARN: package sweep skipped: {exc}")
+        return []
+    deleted: list[str] = []
+    for version in versions:
+        key = str(version.get("Key") or "")
+        age = iso_age_seconds(version.get("Published"))
+        if not key or age is None or age < LEAKED_PROJECT_AGE_SECONDS:
+            age_note = "undateable" if age is None else f"{age:.0f}s old"
+            print(f"KEEPING fixture package '{key}' ({age_note}) — it may belong to a live run.")
+        elif delete_package(key):
+            print(f"swept leaked fixture package '{key}' ({age:.0f}s old)")
+            deleted.append(key)
+    return deleted
+
+
 def create_run_folder(name_extractor: bool) -> str:
     """Create this run's folder, write seed.json, return the folder's Key.
 
@@ -247,6 +284,7 @@ def seed_main(name_extractor: bool = False) -> int:
     # slug then correctly reads as having created it.
     projects = list_projects()
     swept = sweep_domain_projects(projects)
+    sweep_domain_packages()
     # Snapshot the projects BEFORE creating the folder, so the only step
     # between the folder existing and the snapshot recording it is a local
     # file write. A network failure in between leaks a folder teardown cannot
@@ -437,7 +475,23 @@ def cleanup() -> None:
     # `folders get` is not proof the folder is gone, and treating it as proof
     # is what burned the fixture domain before. A spurious LEAKED line is
     # cheap; a silent skip costs the domain.
+    # Read BEFORE the folder delete, which removes the processes that name them.
+    try:
+        bound_packages = list_folder_process_packages(run_folder_key)
+    except Exception as exc:  # noqa: BLE001 — the folder delete is what matters
+        print(f"WARN: could not list the run folder's processes: {exc}")
+        bound_packages = []
+
     run_folder_deleted = delete_folder(run_folder_key)
+
+    # A process in the run folder is this run's, but its package lives in the
+    # tenant feed and outlives the folder. Delete only fixture-domain names:
+    # the agent may have bound a package it did not upload.
+    for package_key in bound_packages:
+        if matches_fixture_domain(package_key):
+            delete_package(package_key)
+        else:
+            print(f"NOT DELETED package '{package_key}' — not a fixture-domain name.")
     if not run_folder_deleted and folder_get(run_folder_key) is None:
         print(
             f"NOTE: run folder {run_folder_key} does not resolve after the failed "

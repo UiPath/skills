@@ -7,6 +7,26 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import registry_audit_entries  # noqa: E402
 
 
+def g(obj, *names, default=None):
+    """Case-insensitive key read.
+
+    `selected` and `matches[]` are registry cache entries copied through by the agent,
+    and `uip maestro case registry search` returns PascalCase (`Name`, `EntityKey`)
+    while the skill's own examples show camelCase. SKILL.md Rule 10 pins the ledger's
+    OUTER keys and says nothing about the shape inside them, so both spellings are
+    legal and runs alternate: suite7 wrote `name`, suite8 wrote `Name`, and asserting
+    on one spelling failed a correct resolution. Read either.
+    """
+    if not isinstance(obj, dict):
+        return default
+    lowered = {str(k).casefold(): v for k, v in obj.items()}
+    for n in names:
+        v = lowered.get(str(n).casefold())
+        if v is not None:
+            return v
+    return default
+
+
 EXPECTED = {
     "FinancialPostingFunction": {
         "task": "Post Invoice",
@@ -68,17 +88,28 @@ for name, expected in EXPECTED.items():
 
     selected = entry.get("selected") or entry.get("resourceIdentity")
     assert isinstance(selected, dict), f"missing selected result for {name}"
-    selected_name = selected.get("name") or entry.get("resolvedResource")
-    assert selected_name == name, f"selected the wrong resource for {name}"
+    # `selected` is the registry cache entry copied through, and `registry search` returns
+    # PascalCase (`Name`), while the skill's own examples show camelCase. SKILL.md Rule 10
+    # pins the ledger's OUTER keys and says nothing about the shape inside `selected`, so
+    # both spellings are legal and runs alternate between them: suite7 wrote `name`,
+    # suite8 wrote `Name` and this assertion failed a correct resolution. Accept either.
+    selected_name = (
+        g(selected, "name")
+        or entry.get("resolvedResource")
+    )
+    assert selected_name == name, (
+        f"selected the wrong resource for {name}: got {selected_name!r} "
+        f"(selected keys: {sorted(selected)[:8]})"
+    )
 
     cached_resources = load_json(cache_root / expected["cache_file"])
     exact_matches = [
         resource
         for resource in cached_resources
-        if str(resource.get("name", "")).strip().casefold() == name.casefold()
+        if str(g(resource, "name", default="")).strip().casefold() == name.casefold()
     ]
     assert exact_matches, f"test precondition failed: no live registry match for {name}"
-    cache_keys = {str(r.get("entityKey")) for r in exact_matches}
+    cache_keys = {str(g(r, "entityKey")) for r in exact_matches}
 
     # registry-resolved.json records a NORMALIZED audit shape (flat `folder`, derived
     # `entitySubType`/`folderType`), not the raw cache object (`folders[]` array + extra
@@ -93,29 +124,27 @@ for name, expected in EXPECTED.items():
         # near-name candidates alongside the exact hit. Correctness is proven by
         # `selected`; here we only require the exact-name match to be present.
         assert any(
-            str(m.get("name", "")).strip().casefold() == name.casefold()
+            str(g(m, "name", default="")).strip().casefold() == name.casefold()
             for m in recorded
         ), f"{name} audit recorded no exact-name match"
     assert (
         str(selected_name).strip().casefold() == name.casefold()
-        and str(selected.get("entityKey")) in cache_keys
+        and str(g(selected, "entityKey")) in cache_keys
     ), f"selected result for {name} is not a live exact-name cache entry"
 
     # Multi-match disambiguation: when several exact-name copies exist (e.g. ephemeral
     # debug-solution deploys of the same resource), the resolver must select the canonical
     # resource, NOT a debug copy. The audit shape varies run to run — folder/type may be
     # flat (folder/folderType) or nested (folders[0].fullyQualifiedName/.type).
-    fol = selected.get("folders") or []
+    fol = g(selected, "folders") or []
     sel_folder = str(
-        selected.get("folder")
-        or selected.get("folderPath")
+        g(selected, "folder", "folderPath")
         or entry.get("folderPath")
-        or (fol[0].get("fullyQualifiedName") if fol else "")
+        or (g(fol[0], "fullyQualifiedName") if fol else "")
     ).casefold()
     sel_ftype = str(
-        selected.get("folderType")
-        or selected.get("organizationUnitType")
-        or (fol[0].get("type") if fol else "")
+        g(selected, "folderType", "organizationUnitType")
+        or (g(fol[0], "type") if fol else "")
     ).casefold()
     assert sel_ftype != "debugsolution" and "debug_" not in sel_folder, (
         f"{name} resolved to an ephemeral debug-solution deploy "

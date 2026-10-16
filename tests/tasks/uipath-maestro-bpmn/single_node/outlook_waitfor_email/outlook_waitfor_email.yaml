@@ -3,32 +3,32 @@ description: >
   Build-and-validate: a Maestro BPMN process with a manual start, a mid-flow
   Wait-for-event node that pauses the process until a Microsoft Outlook 365
   email is received in the Inbox (registry `Intsvc.WaitForEvent` on a
-  `bpmn:receiveTask`, connector `uipath-microsoft-outlook365`) WHOSE SUBJECT
+  `bpmn:receiveTask` or message `bpmn:intermediateCatchEvent`, connector
+  `uipath-microsoft-outlook365`) WHOSE SUBJECT
   CONTAINS the fixed string "TestWaitFor", then an End. Exercises the
   connector-wait registry wrapper (event node added mid-flow with the
   registry template, NOT replacing the manual start; bound to the Outlook
-  connection) AND the structured `filter` tree (a subject / Contains /
-  "TestWaitFor" literal leaf -- never a bare filter-expression string). No
+  connection) AND the runtime filter (a `contains(subject, 'TestWaitFor')`
+  clause in the `target="body"` input's `filters.expression`, scoped to the
+  Inbox via `queryParams.parentFolderId` and its equality clause). No
   execution -- `bpmn debug` is intentionally omitted; the task only requires
   the process to build and validate. Distinct from a connector-trigger START
   event, which would use the same event to start the process; this one uses
   it as a mid-flow wait. Ported from Flow
   `single_node/outlook_waitfor_email/outlook_waitfor_email.yaml`; the Flow
   Wait-for-event node (matched by a `type` substring) becomes a
-  `bpmn:receiveTask` carrying the registry `Intsvc.WaitForEvent` wrapper, and
-  the Flow node-id/JSON walk becomes an XML walk over the receiveTask's
-  `uipath:input` context fields and filter payload.
+  `bpmn:receiveTask` or message `bpmn:intermediateCatchEvent` carrying the
+  registry `Intsvc.WaitForEvent` wrapper, and the Flow node-id/JSON walk
+  becomes an XML walk over that node's `uipath:input` context fields and body
+  filter.
 tags: [uipath-maestro-bpmn, integration, "mode:build", "lifecycle:generate", "shape:single-node", "feature:trigger", connector, uipath-microsoft-outlook365, filter, wait-for-event]
 sandbox:
   template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
     - type: template_dir
       path: ../../_setup
       mount_point: _setup
 run_limits:
   expected_turns: 55
-  turn_timeout: 600
 
 reference:
   directory: ../..

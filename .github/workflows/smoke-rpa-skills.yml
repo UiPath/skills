@@ -130,19 +130,19 @@ jobs:
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
       # deps). Windows RPA tasks run under the tempdir driver, so no agent image.
       #
-      # claude-agent-sdk releases that ship without a win_amd64 wheel make uv
-      # fall back to the sdist, which bundles no claude.exe — every task here
-      # then dies at agent_crash ("Claude Code not found"). coder-eval asks for
-      # >=0.2.124 with no upper bound, so exclude those single releases instead
-      # of capping: a later version that restores the wheel resolves normally.
-      # Known wheel-less releases: 0.2.144, 0.2.157 (verified on PyPI: 0.2.157
-      # publishes mac/linux wheels + sdist only; 0.2.156 has win_amd64).
+      # claude-agent-sdk releases sometimes ship without a win_amd64 wheel
+      # (0.2.144, 0.2.157, 0.2.160). uv then builds the sdist, which bundles no
+      # claude.exe, and every task dies at agent_crash ("Claude Code not
+      # found"). --only-binary makes the resolver skip any release lacking a
+      # wheel for this platform and take the newest one that has it — no
+      # per-release denylist, no upper cap. The check below fails fast if a
+      # wheel ever arrives without the bundled binary.
       - name: Install coder-eval
         shell: bash
         run: |
-          uv pip install --system \
-            "coder-eval==${{ steps.ceref.outputs.version }}" \
-            "claude-agent-sdk!=0.2.144,!=0.2.157"
+          uv pip install --system --only-binary claude-agent-sdk \
+            "coder-eval==${{ steps.ceref.outputs.version }}"
+          python3 -c "import pathlib, sys, claude_agent_sdk as s; exe = pathlib.Path(s.__file__).parent / '_bundled' / 'claude.exe'; print(f'claude-agent-sdk {s.__version__}: {exe}'); sys.exit(0 if exe.is_file() else f'::error::claude-agent-sdk {s.__version__} has no bundled claude.exe')"
 
       - name: Configure NuGet feed for Helm packages
         shell: bash

@@ -24,7 +24,7 @@ Follow the pipeline in [connector-trigger-planning.md § Planning Pipeline](../.
 
 ## Fields to Resolve
 
-Ledger entry in `tasks/registry-resolved.json` — Rule 9's keys plus the resolved connector fields:
+Ledger entry in `tasks/registry-resolved.json` — Rule 10's keys plus the resolved connector fields:
 
 ```json
 {
@@ -53,9 +53,9 @@ Output bindings are **not** recorded here: they come from the SDD Outputs table 
 
 ## Unresolved Fallback
 
-Two entry paths: **Scenario A** — connector not found in TypeCache ([connector-trigger-planning.md § 1 No-match](../../../connector-trigger-planning.md#1-find-the-trigger-in-typecache), after the Rule 17 gate); **Scenario B** — connector found but connection unresolved, only after the create offer ([connector-trigger-planning.md § Resolve the connection](../../../connector-trigger-planning.md#2-resolve-the-connection)) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight here.
+Two entry paths: **Scenario A** — connector not found in TypeCache ([connector-trigger-planning.md § 1 No-match](../../../connector-trigger-planning.md#1-find-the-trigger-in-typecache), after the Rule 18 gate); **Scenario B** — connector found but connection unresolved, only after the create offer ([connector-trigger-planning.md § Resolve the connection](../../../connector-trigger-planning.md#2-resolve-the-connection)) is **declined** or fails. When `Connections` is empty, offer to create one first — do not jump straight here.
 
-> **Rule 17 exception.** Empty `Connections` from `get-connection` (the connector trigger exists in typecache but no IS connection is registered) does NOT require the Rule 17 gate — proceed directly to placeholder.
+> **Rule 18 exception.** Empty `Connections` from `get-connection` (the connector trigger exists in typecache but no IS connection is registered) does NOT require the Rule 18 gate — proceed directly to placeholder.
 
 If the connector or connection cannot be resolved:
 - Mark `type-id` or `connection-id` with `<UNRESOLVED: reason>`

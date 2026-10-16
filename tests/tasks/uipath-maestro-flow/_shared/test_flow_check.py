@@ -859,6 +859,17 @@ _POLL_TIMEOUT = (
     'is accessible, and Studio Web debug is available, then retry.",\n'
     '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
 )
+# Trimmed from skill-flow-lowcode-agent 2026-10-09: the agent job's LLM call
+# 500'd; the envelope says RetryWillNotFix and carries no HttpStatus.
+_LLM_PROVIDER_500 = (
+    '{\n  "Result": "Failure",\n'
+    '  "Message": "Debug session Faulted. [170002] Failure in the Orchestrator Job (element countRs)",\n'
+    '  "Context": {"ErrorCode": "170002"},\n'
+    '  "Data": {"finalStatus": "Faulted", "incidents": [{"errorCode": "170002",\n'
+    '    "errorDetails": "LLM provider returned HTTP 500",\n'
+    '    "dependentFaultCode": "AGENT_RUNTIME.HTTP_ERROR"}]},\n'
+    '  "ErrorCode": "unknown_error",\n  "Retry": "RetryWillNotFix"\n}'
+)
 
 
 # Verbatim from `uip maestro flow debug` on 2026-09-02 07:48Z: Studio Web's
@@ -1018,6 +1029,20 @@ def test_run_debug_does_not_retry_nontransient_error(monkeypatch):
     assert calls["n"] == 1
 
 
+@pytest.mark.parametrize(
+    "agent_fault,attempts",
+    [(flow_check.AgentFaultRetry.NONE, 1), (flow_check.AgentFaultRetry.RETRY, 2)],
+)
+def test_run_debug_retries_agent_5xx_only_when_opted_in(monkeypatch, agent_fault, attempts):
+    calls = _stub_debug(monkeypatch, [_cp(1, _LLM_PROVIDER_500), _cp(0, _COMPLETED)])
+    if attempts == 1:
+        with pytest.raises(SystemExit):
+            run_debug(agent_fault=agent_fault)
+    else:
+        run_debug(agent_fault=agent_fault)
+    assert calls["n"] == attempts
+
+
 def test_run_debug_exhausts_retries_on_persistent_504(monkeypatch):
     calls = _stub_debug(monkeypatch, [_cp(1, _TRANSIENT_504)] * 3)
     with pytest.raises(SystemExit):
@@ -1036,10 +1061,23 @@ def test_run_debug_exhausts_retries_on_persistent_504(monkeypatch):
         (_cp(1, '{"ErrorCode": "invalid_argument", "Retry": "RetryWillNotFix"}'), False),
         (_cp(1, '{"Context": {"HttpStatus": 404}}'), False),           # 4xx is not transient
         (_cp(1, _POLL_TIMEOUT), True),                                 # CLI poll-budget expiry
+        (_cp(1, _LLM_PROVIDER_500), False),                            # agent 5xx: opt-in only
     ],
 )
 def test_is_transient_debug_error(cp, expected):
     assert flow_check._is_transient_debug_error(cp) is expected
+
+
+@pytest.mark.parametrize(
+    "cp,expected",
+    [
+        (_cp(1, _LLM_PROVIDER_500), True),
+        (_cp(1, _LLM_PROVIDER_500.replace("HTTP 500", "HTTP 400")), False),
+    ],
+)
+def test_agent_fault_retry_opts_into_llm_5xx(cp, expected):
+    retry = flow_check.AgentFaultRetry.RETRY
+    assert flow_check._is_transient_debug_error(cp, retry) is expected
 
 
 # ── run_debug: a faulted run carries the backend's incident details ──────────
@@ -1655,3 +1693,81 @@ def test_run_debug_invariants_under_random_schedules(seed, monkeypatch):
     for cap, cli in caps:
         assert cap > 0, f"non-positive subprocess cap {cap}"
         assert cli < cap, f"CLI timeout {cli} does not fit inside the {cap}s cap"
+
+
+# ── assert_output_not_serialized_object ──────────────────────────────────────
+# The 2026-09-23 v2 debug (skill-flow-devcon-billing-resolution-writer, cmd 23):
+# the inline agent packed its whole answer into `body`.
+_PACKED_BODY = (
+    '{"subject":"Resolution for Invoice INV-2026-0042","body":"Dear Acme Industries,'
+    '\\n\\nThank you for your patience while we reviewed your billing dispute. We have '
+    'completed our review of invoice INV-2026-0042 and approved a credit in the amount '
+    'of $125.50.\\n\\nBest regards,\\nBilling Support"}'
+)
+# The 2026-08-31_06 mirror image: the JSON landed in `subject`.
+_PACKED_SUBJECT = (
+    '{"subject":"Resolution for Invoice MCS-2026-04872","body":"Dear Northwind Traders,'
+    '\\n\\nWe approved a credit of $1,610."}'
+)
+_PLAIN_BODY = (
+    "Dear Acme Industries,\n\nWe have completed our review of invoice INV-2026-0042 "
+    "and approved a credit of $125.50.\n\nBest regards,\nBilling Support"
+)
+
+
+def _named_globals(**globals_):
+    return {"variables": {"globals": dict(globals_)}}
+
+
+def test_assert_output_not_serialized_object_packed_body():
+    payload = _named_globals(emailSubject="Billing dispute resolution email drafted", emailBody=_PACKED_BODY)
+    with pytest.raises(SystemExit) as exc:
+        flow_check.assert_output_not_serialized_object(payload, "emailBody")
+    assert "emailBody is a serialized JSON object (keys: subject, body)" in str(exc.value)
+
+
+def test_assert_output_not_serialized_object_packed_subject():
+    payload = _named_globals(emailSubject=_PACKED_SUBJECT, emailBody="Completed drafting the email as JSON.")
+    with pytest.raises(SystemExit) as exc:
+        flow_check.assert_output_not_serialized_object(payload, "emailSubject")
+    assert "emailSubject is a serialized JSON object" in str(exc.value)
+
+
+def test_assert_output_not_serialized_object_fenced_and_array():
+    fenced = _named_globals(emailBody="```json\n" + _PACKED_BODY + "\n```")
+    with pytest.raises(SystemExit, match="serialized JSON object"):
+        flow_check.assert_output_not_serialized_object(fenced, "emailBody")
+    array = _named_globals(emailBody='[{"subject":"x","body":"y"}]')
+    with pytest.raises(SystemExit, match="serialized JSON array"):
+        flow_check.assert_output_not_serialized_object(array, "emailBody")
+
+
+def test_assert_output_not_serialized_object_reads_the_typed_array_shape():
+    payload = {"variables": {"globalVariables": [{"id": "emailBody", "value": _PACKED_BODY}]}}
+    with pytest.raises(SystemExit, match="serialized JSON object"):
+        flow_check.assert_output_not_serialized_object(payload, "emailBody")
+
+
+def test_assert_output_not_serialized_object_plain_prose():
+    payload = _named_globals(emailSubject="Resolution for Invoice INV-2026-0042", emailBody=_PLAIN_BODY)
+    flow_check.assert_output_not_serialized_object(payload, "emailSubject")
+    flow_check.assert_output_not_serialized_object(payload, "emailBody")
+
+
+def test_assert_output_not_serialized_object_structured_value():
+    """A whole agent-output object (or array) mapped into the text field fails too."""
+    for value in ({"subject": "Resolution", "body": "Dear Acme"}, [{"body": "Dear Acme"}]):
+        with pytest.raises(SystemExit):
+            flow_check.assert_output_not_serialized_object(_named_globals(emailBody=value), "emailBody")
+
+
+def test_named_global_reads_globals_then_global_variables():
+    assert flow_check._named_global(_named_globals(emailBody="x"), "EMAILBODY")[0] == "x"
+    payload = {"variables": {"globals": {}, "globalVariables": [{"id": "emailBody", "value": "y"}]}}
+    assert flow_check._named_global(payload, "emailBody")[0] == "y"
+    assert flow_check._named_global({}, "emailBody") == (None, {})
+
+
+def test_assert_output_not_serialized_object_braces_in_prose():
+    for text in ("Credit {INV-1} issued.", "{Dear customer} we approved it", '"just a quoted string"', "42"):
+        flow_check.assert_output_not_serialized_object(_named_globals(emailBody=text), "emailBody")

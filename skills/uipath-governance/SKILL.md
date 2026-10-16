@@ -65,7 +65,7 @@ Activate on **any** governance / policy / rule intent — even when the user did
    which uip && uip --version
    uip login status --output json
    ```
-   If not installed: `npm install -g @uipath/cli`. If not logged in: `uip login` (`--authority <URL>` for non-prod). For Access `evaluate`, login MUST be tenant-scoped.
+   If not installed, run the official installer (`curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash` on macOS/Linux; `irm https://download.uipath.com/uipath-cli/install.ps1 | iex` in Windows PowerShell). If not logged in: `uip login` (`--authority <URL>` for non-prod). For Access `evaluate`, login MUST be tenant-scoped.
    If logged in to the **wrong tenant** within the same org — use the fast path: `uip login tenant list --output json` then `uip login tenant set <NAME>`. Full re-login only needed for a different org or authority. See [`references/auth-context.md`](./references/auth-context.md) § Switching tenants.
 3. **Route to the chosen mechanic** and follow its flow end-to-end.
    - AOps product policy → [`references/aops-policy/aops-policy-overview-guide.md`](./references/aops-policy/aops-policy-overview-guide.md)

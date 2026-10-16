@@ -25,7 +25,8 @@ initial_prompt: |
   (create that input file with a few sample order lines inside the project
   first), append a "processed" marker line to it, and log the file contents.
   The project must target cross-platform (Portable); Studio Desktop is not
-  available. The task is not complete until per-file `uip rpa validate`
+  available. No Robot is installed, so do not run the workflow. The task
+  is not complete until per-file `uip rpa validate`
   passes for the workflow AND `uip rpa build` passes for the project.
   Use --output json on any uip commands you run.
 

@@ -1,27 +1,21 @@
 name: $(Date:yyMMdd)$(Rev:.r)-gate
 
 # Release gate for @uipath/skills. Triggered over the REST API by the
-# `sign-hooks` job in .github/workflows/publish.yml; it never runs on its own.
+# `release-gate` job in .github/workflows/publish.yml; it never runs on its
+# own.
 #
-# It does the two things that cannot be done from GitHub Actions:
-#
-#   1. Authenticode-signs `hooks/*.ps1` with the official code-signing
-#      certificate. That certificate is never exported and is reachable only
-#      through an Azure DevOps ARM service connection's service principal, so
-#      there is no PFX that GitHub could hold. The signer is a Windows-only
-#      executable, hence the Windows agent.
-#   2. Runs FOSSA against the exact commit being released.
+# It runs FOSSA against the release, the one thing that cannot be done from
+# GitHub Actions: the FOSSA secrets are reachable only through an Azure DevOps
+# service connection.
 #
 # Publishing deliberately stays in GitHub Actions: npm mints provenance
 # attestations only for GitHub Actions and GitLab CI identities, so the tarball
-# must be packed and published there. This pipeline hands the signed scripts
-# back as the `signed-hooks` artifact and the publish job overlays them before
-# packing.
+# must be packed and published there. The npm-level integrity signature is the
+# provenance attestation produced by GitHub.
 #
-# Only `.ps1` files are signed. An Authenticode signature block is a PowerShell
-# construct; the `.sh` twins cannot carry one, and an npm tarball has no
-# in-package signature format at all (`NuGetKeyVaultSignTool` is for `.nupkg`).
-# The npm-level signature is the provenance attestation produced by GitHub.
+# (This gate used to Authenticode-sign `hooks/*.ps1` as well; the hooks are
+# now Node scripts — hooks/*.mjs — which no interpreter verifies signatures
+# on, so there is nothing left to sign. See scripts/run-release-gate.mjs.)
 
 trigger: none
 
@@ -34,19 +28,13 @@ parameters:
     values:
       - preview
       - latest
+  # Recorded on the run for traceability: it ties this gate run to the exact
+  # commit the publish job is packing, so an audit can pair a published
+  # version with its gate verdict. The FOSSA template checks out the ref the
+  # run was queued against.
   - name: sourceCommit
-    displayName: 'Exact commit SHA to sign (40 hex chars)'
+    displayName: 'Commit SHA being published (40 hex chars)'
     type: string
-  # Deliberately the same connection as FOSSA's below, not a second one: its
-  # service principal is already scoped to this project and already reaches the
-  # subscription holding the signing certificate, so enabling signing is one
-  # permission grant on an existing identity rather than a second identity plus
-  # an identical second grant. Trade-off accepted: the nightly FOSSA job shares
-  # an identity that can sign, a capability it never exercises.
-  - name: signingServiceConnection
-    displayName: 'ARM connection with signing-certificate access'
-    type: string
-    default: 'InternalProdEAServiceConnection'
   - name: azureServiceConnection
     displayName: 'Azure connection used for the FOSSA secrets'
     type: string
@@ -58,21 +46,6 @@ parameters:
 
 resources:
   repositories:
-    # Two aliases onto the same templates repository at different tags: the
-    # signing and security templates are versioned independently.
-    - repository: signing
-      type: github
-      name: UiPath/AzurePipelinesTemplates
-      # 2.0.18 is the highest tag this repository publishes -- there is no
-      # 2.1.x or 2.2.x, despite what the version list in the signing wiki page
-      # implies, and pinning one fails the run with "No commit found for SHA".
-      #
-      # >= 2.0.7 is mandatory: earlier tags use the retired local-PFX signtool
-      # that stopped working when the DigiCert certificate was replaced. `.ps1`
-      # support landed in 1.6.0, and 2.0.18's `excludedFileTypes` default does
-      # not exclude it.
-      ref: refs/tags/uipath.package-signing.2.0.18
-      endpoint: github.com_UiPath
     - repository: fossa
       type: github
       name: UiPath/AzurePipelinesTemplates
@@ -80,134 +53,6 @@ resources:
       endpoint: github.com_UiPath
 
 stages:
-  - stage: Sign_Hooks
-    displayName: 'Sign PowerShell hooks'
-    dependsOn: []
-    jobs:
-      - job: Sign
-        displayName: 'Authenticode-sign hooks/*.ps1'
-        pool:
-          # Windows is required: the signing template shells out to
-          # AzureSignTool.exe, which has no non-Windows build.
-          vmImage: 'windows-latest'
-        steps:
-          # persistCredentials so the explicit fetch below can reach the commit.
-          - checkout: self
-            clean: true
-            fetchDepth: 0
-            persistCredentials: true
-
-          # The REST API starts a run against a *branch*, and the branch tip can
-          # move between GitHub dispatching this run and the agent checking out.
-          # Signing the wrong commit would be invisible: the signature would be
-          # valid, just over bytes nobody released. Pin to the exact SHA GitHub
-          # asked for, and record it in the artifact manifest so the publish job
-          # can assert it matches its own `github.sha`.
-          - pwsh: |
-              Set-StrictMode -Version Latest
-              $ErrorActionPreference = 'Stop'
-
-              $sha = '${{ parameters.sourceCommit }}'
-              if ($sha -notmatch '^[0-9a-f]{40}$') {
-                throw "sourceCommit must be a full 40-character commit SHA, got: $sha"
-              }
-
-              git fetch --no-tags origin $sha
-              git checkout --detach $sha
-              $head = (git rev-parse HEAD).Trim()
-              if ($head -ne $sha) {
-                throw "checkout landed on $head, expected $sha"
-              }
-              Write-Host "Signing tree at $head"
-            displayName: 'Check out the exact requested commit'
-
-          # Refuse to report success for a run that signed nothing. If the hook
-          # set is ever renamed or moved, this fails loudly here rather than
-          # shipping an unsigned package that CI called signed.
-          - pwsh: |
-              Set-StrictMode -Version Latest
-              $ErrorActionPreference = 'Stop'
-
-              $hooksDir = Join-Path $env:BUILD_SOURCESDIRECTORY 'hooks'
-              $scripts = @(Get-ChildItem -LiteralPath $hooksDir -Filter '*.ps1' -File)
-              if ($scripts.Count -eq 0) {
-                throw "No .ps1 files found in $hooksDir"
-              }
-              foreach ($script in $scripts) {
-                $name = $script.Name
-                Write-Host "  will sign $name"
-              }
-              Write-Host "Found $($scripts.Count) hook script(s) to sign"
-            displayName: 'Enumerate the hook scripts'
-
-          # Signs in place. Every parameter beyond the paths is the template's
-          # documented default (SHA-256 digest, DigiCert timestamp authority,
-          # author signature).
-          - template: Signing/signing.yml@signing
-            parameters:
-              azureConnectionName: ${{ parameters.signingServiceConnection }}
-              pathsToSign:
-                - '$(Build.SourcesDirectory)/hooks/*.ps1'
-
-          # Cryptographic verification, on the only platform that can do it.
-          # `Get-AuthenticodeSignature` validates the chain and the timestamp
-          # against the Windows trust store; the publish job on Linux can only
-          # check structurally that the signature block survived packing.
-          - pwsh: |
-              Set-StrictMode -Version Latest
-              $ErrorActionPreference = 'Stop'
-
-              $hooksDir = Join-Path $env:BUILD_SOURCESDIRECTORY 'hooks'
-              $staging = Join-Path $env:BUILD_ARTIFACTSTAGINGDIRECTORY 'signed-hooks'
-              New-Item -ItemType Directory -Path $staging -Force | Out-Null
-
-              $entries = @()
-              foreach ($script in @(Get-ChildItem -LiteralPath $hooksDir -Filter '*.ps1' -File | Sort-Object Name)) {
-                $signature = Get-AuthenticodeSignature -LiteralPath $script.FullName
-                $name = $script.Name
-                $status = $signature.Status
-                if ($status -ne 'Valid') {
-                  $message = $signature.StatusMessage
-                  throw "Signature is not valid for ${name}: ${status} - ${message}"
-                }
-                if (-not $signature.TimeStamperCertificate) {
-                  # Without a countersignature the signature stops verifying the
-                  # day the signing certificate expires, silently breaking every
-                  # already-published version.
-                  throw "Signature for ${name} carries no RFC 3161 timestamp"
-                }
-
-                Copy-Item -LiteralPath $script.FullName -Destination (Join-Path $staging $name)
-                $digest = (Get-FileHash -LiteralPath $script.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-                $thumbprint = $signature.SignerCertificate.Thumbprint
-                $subject = $signature.SignerCertificate.Subject
-                Write-Host "  ${name}: ${status} (${thumbprint})"
-                $entries += [ordered]@{
-                  name       = $name
-                  sha256     = $digest
-                  thumbprint = $thumbprint
-                  subject    = $subject
-                }
-              }
-
-              $manifest = [ordered]@{
-                commit  = '${{ parameters.sourceCommit }}'
-                channel = '${{ parameters.channel }}'
-                buildId = $env:BUILD_BUILDID
-                scripts = $entries
-              }
-              $json = $manifest | ConvertTo-Json -Depth 5
-              Set-Content -LiteralPath (Join-Path $staging 'manifest.json') -Value $json -Encoding utf8
-              Write-Host "Verified and staged $($entries.Count) signed script(s)"
-            displayName: 'Verify signatures and stage the artifact'
-
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish the signed-hooks artifact'
-            inputs:
-              targetPath: '$(Build.ArtifactStagingDirectory)/signed-hooks'
-              artifact: 'signed-hooks'
-              publishLocation: 'pipeline'
-
   # FOSSA blocks stable promotions only. A new transitive-dependency finding
   # holding up a preview costs a release line; holding up `latest` is the point.
   # The nightly scan in .pipelines/security.yml is unchanged and still advisory.

@@ -1,0 +1,22 @@
+{
+ "name_contains": "Insurance Claim Denial Management and Appeals",
+ "documents": {
+  "pdd": "corpus/bluemountain-denials-management/pdd.md"
+ },
+ "systems": {},
+ "optional_systems": {
+  "Fax and mail intake": [
+   "fax",
+   "mail intake"
+  ],
+  "Spreadsheets and inboxes": [
+   "spreadsheet",
+   "inbox",
+   "excel"
+  ],
+  "Case Management Platform": [
+   "case management"
+  ]
+ },
+ "allow_other_category": true
+}

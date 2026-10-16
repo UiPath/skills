@@ -102,7 +102,7 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
   expressions reference that mutable variable as `vars.<id>`, not the
   caller-facing declaration.
 - Public caller inputs and outputs use the event bridge contract documented in
-  [Structural BPMN: Variables](structural-bpmn.md#variables-bpmnvariables).
+  [Structural BPMN: Variables](structural-bpmn.md#variables).
   Do not route on a public input before its StartEvent bridge or treat a mutable
   internal value as an implicit public output.
 - Preserve exact variable ids: if the requested variable id is `product`,

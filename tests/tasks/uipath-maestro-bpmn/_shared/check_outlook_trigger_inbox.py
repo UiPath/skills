@@ -56,7 +56,7 @@ Assertion map (Flow -> BPMN):
   I                                   locate/parse .bpmn                   -> parse_bpmn()
   I                                   resolve `=bindings.<id>` to a live connection id -> _resolve_binding()
   T                                   connectorKey/objectName/operation match at any input depth, case/hyphen-insensitive -> is_email_received_trigger()
-  T                                   parentFolderId input at any depth, or inside a JSON filter/parameters blob -> find_parent_folder_id()
+  T                                   parentFolderId input at any depth, or inside a JSON filter/parameters blob or body.queryParams -> find_parent_folder_id()
   T                                   connectionId as a literal value OR the `=bindings.<id>` indirection -> _bound_connection_value()/_resolve_binding()
   DROPPED  require_no_private_connector_values / require_sequence_integrity / require_di_for_visible_elements  (not in Flow; the `validate` criterion already covers structure)
   DROPPED  "no manual start coexists" / "exactly one trigger start" / "trigger is process entry (no inbound flow)"  (Flow's check_trigger_node only asserts the trigger node exists; it never asserted exclusivity or process-entry position)
@@ -317,14 +317,17 @@ def find_parent_folder_id(trigger: ET.Element) -> str:
     generic Intsvc.EventTrigger schema does not pin where an Outlook-specific
     event field lands once enriched, so search (in order): a same-named
     ``uipath:input`` anywhere under the node, then a ``filter``/``parameters``
-    input whose value/text parses as JSON with that key."""
+    input whose value/text parses as JSON with that key, or a ``target="body"``
+    input with it under ``queryParams`` (the Studio Web shape)."""
     for inp in node_inputs(trigger):
         if inp.attrib.get("name", "").lower() == "parentfolderid":
             v = inp.attrib.get("value") or (inp.text or "")
             if v.strip():
                 return v.strip()
     for inp in node_inputs(trigger):
-        if inp.attrib.get("name", "").lower() not in ("filter", "parameters"):
+        name = inp.attrib.get("name", "").lower()
+        is_body = name == "body" and inp.attrib.get("target") == "body"
+        if name not in ("filter", "parameters") and not is_body:
             continue
         raw = inp.attrib.get("value") or (inp.text or "")
         if not raw or not raw.strip():
@@ -333,6 +336,8 @@ def find_parent_folder_id(trigger: ET.Element) -> str:
             parsed = json.loads(raw)
         except json.JSONDecodeError:
             continue
+        if is_body:
+            parsed = parsed.get("queryParams") if isinstance(parsed, dict) else None
         if isinstance(parsed, dict):
             for key, val in parsed.items():
                 if key.lower() == "parentfolderid" and isinstance(val, str) and val.strip():

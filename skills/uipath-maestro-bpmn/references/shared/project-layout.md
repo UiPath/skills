@@ -87,7 +87,7 @@ For the regeneration and drift-check contract, see [local-metadata-regeneration-
 A synthetic local project authored without a CLI generator must still match the
 metadata contract before packing: the root process follows the initializer's
 shape (`isExecutable` omitted, or the equivalent `"false"` — never forced to
-`"true"`), each root start event carries
+`"true"`), each root manual start event carries
 `<uipath:entryPointId value="<uuid>" />`, `operate.json` has `"main"` plus
 `"contentType": "ProcessOrchestration"`, and `package-descriptor.json` maps the
 BPMN file and generated JSON. `uip maestro bpmn refresh <project-path>`

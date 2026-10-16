@@ -24,7 +24,11 @@ import json
 import math
 import re
 import subprocess
+import time
 import xml.etree.ElementTree as ET
+from collections.abc import Collection, Iterator
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -136,9 +140,9 @@ def sha256(path: Path) -> str:
 
 # Worst-case wall clock for one `run_debug` call, mirroring
 # flow_check.debug_budget so test_criterion_budgets.py can hold both suites to
-# the same arithmetic. BPMN's run_debug makes a single attempt with no backoff,
-# so the budget is the call's own timeout; the retries/backoff parameters exist
-# to keep the two signatures interchangeable if that changes.
+# the same arithmetic. BPMN's run_debug retries within its own timeout, so the
+# budget is that timeout; the retries/backoff parameters exist to keep the two
+# signatures interchangeable.
 # Headroom a criterion needs beyond the calls it makes, for process start and
 # teardown. Mirrors flow_check.CRITERION_MARGIN_SECONDS; test_criterion_budgets
 # enforces the pair.
@@ -431,50 +435,59 @@ def _write_debug_log(log_file, text: str) -> None:
         pass
 
 
+class DebugRetry(Enum):
+    NONE = "none"
+    TRANSIENT = "transient"
+
+
+# A gateway 5xx while polling kills the CLI before it reports an instance id,
+# labelled RetryWillNotFix. skill-bpmn-jira-get-issue 2026-10-09:
+# "Failed during poll-instance-status: 504 Gateway Timeout".
+_TRANSIENT_DEBUG = re.compile(
+    r'failed during poll-instance-status: 5\d\d|"retry": "retrylater"|"errorcode": "server_error"'
+)
+DEBUG_RETRY_BACKOFF_SECONDS = 5
+_DEBUG_RETRY_ATTEMPTS = 2
+_MIN_RETRY_SECONDS = 60
+
+
+def _is_transient_debug(completed: subprocess.CompletedProcess[str]) -> bool:
+    if completed.returncode == 0:
+        return False
+    return _TRANSIENT_DEBUG.search(f"{completed.stdout}\n{completed.stderr}".lower()) is not None
+
+
 def run_debug(
     project_dir,
     inputs: dict,
     log_file,
     *,
     timeout: int = DEBUG_BUDGET_DEFAULT_TIMEOUT,
+    retry: DebugRetry = DebugRetry.NONE,
 ) -> tuple:
-    """Run one `uip maestro bpmn debug`; return (debug_data, instance_id).
+    """Run `uip maestro bpmn debug`; return (debug_data, instance_id).
 
     Lives here rather than in a task checker so test_criterion_budgets.py can
     price it, the same way flow_check.run_debug is priced in the flow suite.
+
+    `DebugRetry.TRANSIENT` re-runs the whole debug after a transient CLI
+    failure, so pass it only from a checker whose process has no side effects.
+    At most `_DEBUG_RETRY_ATTEMPTS`, all sharing the one `timeout` deadline, so
+    the budget is unchanged.
     """
 
     poll_ms = poll_interval_ms(timeout)
-    try:
-        completed = run_cli(
-            [
-                "uip",
-                "maestro",
-                "bpmn",
-                "debug",
-                str(project_dir),
-                "--poll-interval",
-                str(poll_ms),
-                "--inputs",
-                json.dumps(inputs, separators=(",", ":")),
-            ],
-            timeout=timeout,
-            # Not passed through as the CLI's own --log-file: the CLI buffers
-            # that file and a SIGKILL on timeout leaves it empty (run
-            # 35524004307). The poll log (instance id, per-poll status) is
-            # streamed to stderr instead, survives on the TimeoutExpired
-            # exception, and is written to `log_file` from here.
-            log_file=None,
-        )
-    except subprocess.TimeoutExpired as exc:
-        out, err = _as_text(exc.stdout), _as_text(exc.stderr)
-        _write_debug_log(log_file, out + err)
-        partial = err or out
-        raise CheckFailure(
-            f"bpmn debug did not reach a terminal status within the {timeout}s budget "
-            f"(the instance is still running or stuck); CLI log tail: {partial[-3000:]}"
-        ) from None
-    _write_debug_log(log_file, (completed.stdout or "") + (completed.stderr or ""))
+    deadline = time.monotonic() + timeout
+    for attempt in range(1, _DEBUG_RETRY_ATTEMPTS + 1):
+        completed = _debug_attempt(project_dir, inputs, log_file, poll_ms, timeout, deadline)
+        if retry is not DebugRetry.TRANSIENT or not _is_transient_debug(completed):
+            break
+        if attempt == _DEBUG_RETRY_ATTEMPTS:
+            break
+        if deadline - time.monotonic() - DEBUG_RETRY_BACKOFF_SECONDS < _MIN_RETRY_SECONDS:
+            break
+        time.sleep(DEBUG_RETRY_BACKOFF_SECONDS)
+
     payload = parse_json_output(completed.stdout or completed.stderr, "debug")
     debug_data = get_ci(payload, "Data", {})
     if str(get_ci(payload, "ErrorCode", "")).casefold() == "timeout":
@@ -492,3 +505,254 @@ def run_debug(
             + f"; stderr tail: {(completed.stderr or '')[-1500:]}"
         )
     return debug_data, instance_id
+
+
+def _debug_attempt(
+    project_dir, inputs: dict, log_file, poll_ms: int, timeout: int, deadline: float
+) -> subprocess.CompletedProcess[str]:
+    try:
+        completed = run_cli(
+            [
+                "uip",
+                "maestro",
+                "bpmn",
+                "debug",
+                str(project_dir),
+                "--poll-interval",
+                str(poll_ms),
+                "--inputs",
+                json.dumps(inputs, separators=(",", ":")),
+            ],
+            timeout=max(1, math.floor(deadline - time.monotonic())),
+            # Not passed through as the CLI's own --log-file: the CLI buffers
+            # that file and a SIGKILL on timeout leaves it empty (run
+            # 35524004307). The poll log (instance id, per-poll status) is
+            # streamed to stderr instead, survives on the TimeoutExpired
+            # exception, and is written to `log_file` from here.
+            log_file=None,
+        )
+    except subprocess.TimeoutExpired as exc:
+        out, err = _as_text(exc.stdout), _as_text(exc.stderr)
+        _write_debug_log(log_file, out + err)
+        partial = err or out
+        raise CheckFailure(
+            f"bpmn debug did not reach a terminal status within the {timeout}s budget "
+            f"(the instance is still running or stuck); CLI log tail: {partial[-3000:]}"
+        ) from None
+    _write_debug_log(log_file, (completed.stdout or "") + (completed.stderr or ""))
+    return completed
+
+
+SOLUTION_INIT_TIMEOUT = 90
+SOLUTION_IMPORT_TIMEOUT = 180
+VARIABLES_ALL_TIMEOUT = 120
+INCIDENTS_TIMEOUT = 120
+
+COMPLETED_STATUSES = frozenset({"Completed", "Successful"})
+
+
+def import_exact(bpmn_path: Path, project_dir: Path, solution_dir: Path) -> Path:
+    """Import the submitted project into a fresh solution and return the
+    imported project directory, failing if the imported .bpmn bytes differ."""
+
+    original_hash = sha256(bpmn_path)
+    solution_dir.parent.mkdir(parents=True, exist_ok=True)
+    initialized = run_cli(
+        ["uip", "solution", "init", str(solution_dir)], timeout=SOLUTION_INIT_TIMEOUT
+    )
+    payload_data(initialized, "initialize ephemeral solution")
+
+    solution_files = sorted(solution_dir.glob("*.uipx"))
+    if len(solution_files) != 1:
+        raise CheckFailure(
+            f"solution init produced {len(solution_files)} .uipx files in "
+            f"{solution_dir}, expected exactly one"
+        )
+
+    imported = run_cli(
+        [
+            "uip",
+            "solution",
+            "projects",
+            "import",
+            str(project_dir.resolve()),
+            "--solutionFile",
+            str(solution_files[0]),
+        ],
+        timeout=SOLUTION_IMPORT_TIMEOUT,
+    )
+    payload_data(imported, "import exact BPMN project")
+
+    imported_project = solution_dir / project_dir.name
+    if sha256(imported_project / bpmn_path.name) != original_hash:
+        raise CheckFailure("solution import changed the submitted BPMN bytes")
+    print(f"OK: imported exact artifact (sha256={original_hash})")
+    return imported_project
+
+
+@dataclass(frozen=True)
+class DebugEvidence:
+    variables: Any
+    variables_text: str
+    incidents: list[Any] | None
+    incidents_raw: Any
+
+
+def fetch_variables(instance_id: str) -> tuple[Any, str]:
+    """`debug-instance variables-all`: (data, raw stdout)."""
+
+    variables = run_cli(
+        ["uip", "maestro", "bpmn", "debug-instance", "variables-all", instance_id],
+        timeout=VARIABLES_ALL_TIMEOUT,
+    )
+    _payload, variables_data = payload_data(variables, "variables-all")
+    return variables_data, variables.stdout or ""
+
+
+def fetch_incidents(instance_id: str) -> tuple[list[Any] | None, Any]:
+    """`debug-instance incidents`: (records, raw data)."""
+
+    incidents = run_cli(
+        ["uip", "maestro", "bpmn", "debug-instance", "incidents", instance_id],
+        timeout=INCIDENTS_TIMEOUT,
+    )
+    _payload, incidents_data = payload_data(incidents, "incidents")
+    return incident_records(incidents_data), incidents_data
+
+
+def debug_evidence(instance_id: str) -> DebugEvidence:
+    """Variables then incidents. A grader with side effects calls the two
+    fetches itself, journaling between them."""
+
+    variables_data, variables_text = fetch_variables(instance_id)
+    incidents, incidents_data = fetch_incidents(instance_id)
+    return DebugEvidence(variables_data, variables_text, incidents, incidents_data)
+
+
+def require_clean_run(debug_data: Any, evidence: DebugEvidence) -> str:
+    """Raise unless the run completed with no incidents; return FinalStatus."""
+
+    final_status = get_ci(debug_data, "FinalStatus")
+    if final_status not in COMPLETED_STATUSES:
+        detail = []
+        faulted = [
+            f"{get_ci(item, 'ElementId')}={get_ci(item, 'Status')}"
+            for item in get_ci(debug_data, "ElementExecutions", []) or []
+            if isinstance(item, dict)
+            and str(get_ci(item, "Status") or "").casefold() != "completed"
+        ]
+        if faulted:
+            detail.append(f"non-completed elements: {faulted}")
+        if evidence.incidents:
+            detail.append(f"incidents: {json.dumps(evidence.incidents)[:1500]}")
+        raise CheckFailure(
+            f"final status was {final_status!r}"
+            + ("; " + "; ".join(detail) if detail else "")
+        )
+
+    if evidence.incidents is None:
+        raise CheckFailure(
+            f"incidents response has an unknown shape: {evidence.incidents_raw!r}"
+        )
+    if evidence.incidents:
+        raise CheckFailure(f"unexpected incidents: {evidence.incidents}")
+
+    print(f"OK: bpmn debug completed (FinalStatus={final_status}, no incidents)")
+    return final_status
+
+
+def value_leaves(value: Any) -> Iterator[Any]:
+    if isinstance(value, dict):
+        for item in value.values():
+            yield from value_leaves(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from value_leaves(item)
+    elif value is not None:
+        yield value
+
+
+def output_leaves(
+    variables_data: Any,
+    skip: Collection[str] = (),
+    *,
+    elements: Collection[str] | None = None,
+) -> list[Any]:
+    """Leaves of the root Globals and the elements' Outputs, minus the
+    globals, elements and top-level output names in `skip` (see
+    :func:`input_echo_ids`). `elements` limits the Outputs to those element
+    ids; None reads every element."""
+
+    skipped = {normalized_identifier(name) for name in skip}
+    wanted = None if elements is None else {normalized_identifier(e) for e in elements}
+    globals_ = get_ci(root_scope(variables_data), "Globals", {}) or {}
+    leaves: list[Any] = []
+    if isinstance(globals_, dict):
+        for name, value in globals_.items():
+            if normalized_identifier(name) in skipped:
+                continue
+            leaves.extend(value_leaves(value))
+
+    scopes = get_ci(variables_data, "Variables", [])
+    for scope in scopes if isinstance(scopes, list) else []:
+        elements_ = get_ci(scope, "Elements", [])
+        for element in elements_ if isinstance(elements_, list) else []:
+            element_id = normalized_identifier(get_ci(element, "ElementId"))
+            if element_id in skipped or (wanted is not None and element_id not in wanted):
+                continue
+            outputs = get_ci(element, "Outputs", {})
+            if isinstance(outputs, dict):
+                outputs = {
+                    key: value
+                    for key, value in outputs.items()
+                    if normalized_identifier(key) not in skipped
+                }
+            leaves.extend(value_leaves(outputs))
+    return leaves
+
+
+def output_haystack(variables_data: Any, skip: Collection[str] = ()) -> str:
+    return "\n".join(str(v) for v in output_leaves(variables_data, skip)).lower()
+
+
+def input_echo_ids(process: ET.Element) -> set[str]:
+    """Where a process input shows up unchanged in variables-all: the
+    `uipath:input` ids and names, every variable and output name a mapping
+    copies one into verbatim (transitively), and the start events.
+
+        <uipath:input id="input_Var_Amount" name="Amount" elementId="Start_1"/>
+        <uipath:output name="Amt" var="Var_Amount" source="=vars.input_Var_Amount"/>
+        -> {"input_Var_Amount", "Amount", "Var_Amount", "Amt", "Start_1"}
+    """
+
+    ids: set[str] = set()
+    for variables in process.iter(q(UIPATH_NS, "variables")):
+        for node in variables.iter(q(UIPATH_NS, "input")):
+            ids.update(v for v in (node.attrib.get("id"), node.attrib.get("name")) if v)
+
+    for start in process.iter(q(BPMN_NS, "startEvent")):
+        if start.attrib.get("id"):
+            ids.add(start.attrib["id"])
+
+    copies: list[tuple[str, str, str | None]] = []
+    for element in process.iter():
+        extensions = element.find(q(BPMN_NS, "extensionElements"))
+        if extensions is None:
+            continue
+        for mapping in extensions.iter(q(UIPATH_NS, "output")):
+            source = (mapping.attrib.get("source") or "").strip()
+            var = mapping.attrib.get("var")
+            if source.startswith("=vars.") and var:
+                copies.append((source.removeprefix("=vars."), var, mapping.attrib.get("name")))
+
+    grew = True
+    while grew:
+        grew = False
+        for source, var, name in copies:
+            if source not in ids or var in ids:
+                continue
+            ids.add(var)
+            if name:
+                ids.add(name)
+            grew = True
+    return ids

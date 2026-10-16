@@ -12,11 +12,6 @@ run_limits:
   expected_turns: 18
   max_turns: 45
 
-sandbox:
-  template_sources:
-    - type: template_dir
-      path: ../../../../../skills/uipath-maestro-bpmn
-
 reference:
   directory: ../..
 
@@ -30,17 +25,23 @@ initial_prompt: |
         - a default branch,
     - each branch leads to its own end event.
 
-  Include a bpmndi:BPMNDiagram with a BPMNShape for every node and a BPMNEdge
-  for every sequence flow. Make sure the process is correct before you finish.
+  The emitted `.bpmn` must carry a complete bpmndi:BPMNDiagram — a shape for
+  every node and an edge for every sequence flow. Make sure the process is
+  correct before you finish.
 
   The task is complete only once you have confirmed the file is correct with a
   local validation step. Do NOT ask for approval, confirmation, or feedback and
   do NOT pause between planning and implementation.
 
 success_criteria:
-  - type: file_exists
+  # Presence by the shared locator, not a root path: the v1 skill writes `PriorityRouting.bpmn`
+  # where it stands, the builder-SDK skill scaffolds `PriorityRouting/PriorityRouting.bpmn` — both are the
+  # task done. Same rule the grader below uses to find the file.
+  - type: run_command
     description: "BPMN source was authored"
-    path: "PriorityRouting.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py PriorityRouting"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

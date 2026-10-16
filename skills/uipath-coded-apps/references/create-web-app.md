@@ -27,9 +27,8 @@ Please answer these questions to continue:
 **1. App name** — lowercase kebab-case project folder name (e.g. `my-dashboard`)
 
 **2. Environment** — which UiPath environment?
-   - `cloud` — Production *(most common)*
-   - `staging` — Staging
-   - `alpha` — Alpha
+   - `cloud` — `cloud.uipath.com` *(most common)*
+   - Custom — paste your portal or API URL (Automation Suite, dedicated, or other non-default host)
 
 **3. Org name** — your UiPath organization slug (from `cloud.uipath.com/<orgName>`)
 
@@ -61,7 +60,7 @@ Once you have the answers (app name, environment, org, tenant, styling), execute
 
 ### 3.1 — Resolve the base URL
 
-Map the `<environment>` answer from Step 1 to a base URL using the table in [SKILL.md](../SKILL.md) (Production → `https://api.uipath.com`, Staging → `https://staging.api.uipath.com`, Alpha → `https://alpha.api.uipath.com`). If the user gave a custom URL, use that verbatim. Store as `<base-url>`.
+Map the `<environment>` answer from Step 1 to a base URL using the table in [SKILL.md](../SKILL.md) (`cloud` → `https://api.uipath.com`; a custom portal URL → its API host per that table). If the user gave a custom API URL, use that verbatim. Store as `<base-url>`.
 
 ### 3.2 — Create the Vite project
 

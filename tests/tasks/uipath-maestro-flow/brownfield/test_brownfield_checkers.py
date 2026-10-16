@@ -1,0 +1,262 @@
+"""The brownfield graders pass the right edits and fail the round-trip losses they exist for."""
+
+from __future__ import annotations
+
+import copy
+import importlib.util
+import json
+import shutil
+from pathlib import Path
+
+import pytest
+
+HERE = Path(__file__).resolve().parent
+FIXTURE = HERE / "fixture" / "BillingDisputeResolution" / "BillingDisputeResolution"
+FLOW = f"{FIXTURE.name}.flow"
+ANALYST = "07b8b6ea-ce49-4d28-9370-7b8bee866def"
+WRITER = "e6360c37-75b3-4315-b63e-afe9815dd65c"
+
+
+def _load(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+preserved = _load("check_brownfield_preserved", HERE.parent / "_shared" / "check_brownfield_preserved.py")
+edit = _load("check_brownfield_edit", HERE / "check_brownfield_edit.py")
+
+
+@pytest.fixture
+def project(tmp_path: Path) -> Path:
+    target = tmp_path / FIXTURE.name
+    shutil.copytree(FIXTURE, target)
+    return target
+
+
+def mutate(project: Path, change) -> None:
+    path = project / FLOW
+    flow = json.loads(path.read_text())
+    change(flow)
+    path.write_text(json.dumps(flow, indent=2))
+
+
+def node(flow: dict, node_id: str) -> dict:
+    return next(n for n in flow["nodes"] if n["id"] == node_id)
+
+
+def graph(project: Path, *extra: str) -> int:
+    return preserved.main(["--original", str(FIXTURE), "--project", str(project), *extra])
+
+
+def layout(project: Path) -> int:
+    return preserved.main(["--aspect", "layout", "--original", str(FIXTURE), "--project", str(project)])
+
+
+def intent(project: Path, which: str) -> int:
+    return edit.main([which, "--original", str(FIXTURE), "--project", str(project)])
+
+
+def insert_cap(flow: dict) -> None:
+    cap = copy.deepcopy(node(flow, "logCreditAmount"))
+    cap["id"] = "capCreditAmount"
+    cap["inputs"]["script"] = "return { creditAmount: Math.min($vars.disputeAnalyst.output.creditAmount, 500) };"
+    flow["nodes"].append(cap)
+    flow["edges"] = [
+        e for e in flow["edges"]
+        if not (e["sourceNodeId"] == "logCreditAmount" and e["targetNodeId"] == "financialPosting")
+    ]
+    flow["edges"] += [
+        {"id": "a", "sourceNodeId": "logCreditAmount", "sourcePort": "success", "targetNodeId": "capCreditAmount", "targetPort": "input"},
+        {"id": "b", "sourceNodeId": "capCreditAmount", "sourcePort": "success", "targetNodeId": "financialPosting", "targetPort": "input"},
+    ]
+    flow["layout"]["nodes"]["capCreditAmount"] = {"position": {"x": 1632, "y": 96}, "size": {"width": 96, "height": 96}}
+
+
+CAP_EDGE = "logCreditAmount:success>financialPosting:input"
+
+
+def test_unedited_fixture_is_preserved(project: Path) -> None:
+    assert graph(project) == 0
+    assert layout(project) == 0
+    for which in ("credit-cap", "switch-route", "writer-prompt"):
+        assert intent(project, which) == 1
+
+
+def test_credit_cap_edit_passes_only_with_its_allowance(project: Path) -> None:
+    mutate(project, insert_cap)
+    assert intent(project, "credit-cap") == 0
+    assert graph(project, "--removed-edge", CAP_EDGE) == 0
+    assert graph(project) == 1
+    assert layout(project) == 0
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        pytest.param("return { creditAmount: Math.max($vars.disputeAnalyst.output.creditAmount, 500) };", id="max-not-min"),
+        pytest.param("return { creditAmount: 500 };", id="constant"),
+        pytest.param("return { creditAmount: Math.min($vars.disputeAnalyst.output.creditAmount, 5000) };", id="wrong-cap"),
+        pytest.param("return Math.min($vars.disputeAnalyst.output.creditAmount, 500);", id="bare-number"),
+    ],
+)
+def test_credit_cap_rejects_a_script_that_does_not_cap(project: Path, script: str) -> None:
+    def wrong(flow: dict) -> None:
+        insert_cap(flow)
+        node(flow, "capCreditAmount")["inputs"]["script"] = script
+
+    mutate(project, wrong)
+    assert intent(project, "credit-cap") == 1
+
+
+def test_credit_cap_accepts_the_logged_amount(project: Path) -> None:
+    def from_log(flow: dict) -> None:
+        insert_cap(flow)
+        node(flow, "capCreditAmount")["inputs"]["script"] = (
+            "const amount = $vars.logCreditAmount.output.creditAmount;\nreturn { creditAmount: amount > 500 ? 500 : amount };"
+        )
+
+    mutate(project, from_log)
+    assert intent(project, "credit-cap") == 0
+
+
+def add_route(flow: dict, expression: str = "$vars.disputeAnalyst.output.recommendedAction === 'request_more_info'") -> dict:
+    node(flow, "routeByAction")["inputs"]["cases"].append({"id": "info", "label": "request_more_info", "expression": expression})
+    end = copy.deepcopy(node(flow, "returnRejection"))
+    end["id"] = "returnInfoRequest"
+    end["outputs"]["resolutionEmailBody"] = {"source": "=js:'More information was requested.'"}
+    flow["nodes"].append(end)
+    flow["edges"].append(
+        {"id": "c", "sourceNodeId": "routeByAction", "sourcePort": "case-info", "targetNodeId": "returnInfoRequest", "targetPort": "input"}
+    )
+    flow["layout"]["nodes"]["returnInfoRequest"] = {"position": {"x": 1536, "y": 320}, "size": {"width": 96, "height": 96}}
+    return end
+
+
+def test_switch_route_edit(project: Path) -> None:
+    mutate(project, add_route)
+    assert intent(project, "switch-route") == 0
+    assert graph(project, "--changed-node", "routeByAction") == 0
+    assert layout(project) == 0
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        pytest.param(lambda f: add_route(f, "$vars.disputeAnalyst.output.recommendedAction !== 'request_more_info'"), id="negated-condition"),
+        pytest.param(lambda f: add_route(f, "$vars.disputeAnalyst.output.recommendedAction.includes('re')"), id="matches-other-actions"),
+        pytest.param(lambda f: add_route(f)["outputs"].update(creditAmount={"source": "=js:0"}), id="pass-through-output-differs"),
+        pytest.param(lambda f: add_route(f)["outputs"].update(resolutionEmailBody={"source": "=js:$vars.resolutionWriter.output.body"}), id="body-reads-writer"),
+    ],
+)
+def test_switch_route_rejects_wrong_routes(project: Path, change) -> None:
+    mutate(project, change)
+    assert intent(project, "switch-route") == 1
+
+
+def test_switch_route_rejects_a_renamed_original_case(project: Path) -> None:
+    def rename(flow: dict) -> None:
+        cases = node(flow, "routeByAction")["inputs"]["cases"]
+        cases[0]["id"] = "case_1"
+        cases.append({"id": "info", "expression": "x === 'request_more_info'"})
+
+    mutate(project, rename)
+    assert intent(project, "switch-route") == 1
+
+
+NEW_LINE = "- Say the credit appears on the next statement within 5 business days."
+
+
+def edit_writer(project: Path, change) -> None:
+    path = project / WRITER / "agent.json"
+    agent = json.loads(path.read_text())
+    change(agent, next(m for m in agent["messages"] if m["role"] == "system"))
+    path.write_text(json.dumps(agent))
+
+
+def add_line(_agent: dict, system: dict) -> None:
+    system["content"] = system["content"].replace("\n\nYou have no tools.", f"\n{NEW_LINE}\n\nYou have no tools.")
+    system["contentTokens"][0]["rawString"] = system["content"]
+
+
+def test_writer_prompt_edit(project: Path) -> None:
+    edit_writer(project, add_line)
+    assert intent(project, "writer-prompt") == 0
+    assert graph(project, "--changed-agent", WRITER) == 0
+    assert graph(project) == 1
+    assert layout(project) == 0
+
+
+def _content_only(_agent: dict, system: dict) -> None:
+    system["content"] = system["content"].replace("\n\nYou have no tools.", f"\n{NEW_LINE}\n\nYou have no tools.")
+
+
+def _drop_bullet(agent: dict, system: dict) -> None:
+    add_line(agent, system)
+    system["content"] = system["content"].replace('- Sign off as "Billing Operations Team".\n', "")
+    system["contentTokens"][0]["rawString"] = system["content"]
+
+
+def _schema_changed(agent: dict, system: dict) -> None:
+    add_line(agent, system)
+    agent["outputSchema"] = {}
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        pytest.param(_content_only, id="content-tokens-stale"),
+        pytest.param(_drop_bullet, id="existing-line-dropped"),
+        pytest.param(_schema_changed, id="output-schema-changed"),
+    ],
+)
+def test_writer_prompt_rejects_collateral_changes(project: Path, change) -> None:
+    edit_writer(project, change)
+    assert intent(project, "writer-prompt") == 1
+
+
+def test_writer_task_keeps_the_flow_node(project: Path) -> None:
+    edit_writer(project, add_line)
+    mutate(project, lambda f: node(f, "resolutionWriter")["inputs"]["agentInputVariables"].pop())
+    assert graph(project, "--changed-agent", WRITER) == 1
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        pytest.param(lambda f: node(f, "sopIndex").update(type="uipath.agent.resource.context.index.x."), id="context-index-id-lost"),
+        pytest.param(lambda f: f["bindings"].append({**f["bindings"][0], "id": "dup"}), id="binding-duplicated"),
+        pytest.param(lambda f: f["edges"].pop(next(i for i, e in enumerate(f["edges"]) if e["sourcePort"] == "default")), id="edge-dropped"),
+        pytest.param(lambda f: f["variables"]["globals"].pop(), id="flow-output-dropped"),
+        pytest.param(lambda f: f["definitions"].pop(), id="definition-dropped"),
+        pytest.param(lambda f: f["definitions"][-1].update(description="rewritten"), id="definition-body-changed"),
+        pytest.param(lambda f: node(f, "approvalDecision")["inputs"].update(expression="true"), id="untouched-node-rewritten"),
+    ],
+)
+def test_round_trip_losses_fail_the_graph_check(project: Path, change) -> None:
+    mutate(project, change)
+    assert graph(project) == 1
+
+
+def test_analyst_sidecar_change_fails(project: Path) -> None:
+    resource = next((project / ANALYST / "resources").glob("*/resource.json"))
+    data = json.loads(resource.read_text())
+    data["indexName"] = ""
+    resource.write_text(json.dumps(data))
+    assert graph(project) == 1
+
+
+def test_relayout_fails_the_layout_check(project: Path) -> None:
+    mutate(project, lambda f: f["layout"]["nodes"]["financialPosting"]["position"].update(x=1920))
+    assert graph(project) == 0
+    assert layout(project) == 1
+
+
+def test_new_node_on_top_of_another_fails_the_layout_check(project: Path) -> None:
+    def stacked(flow: dict) -> None:
+        insert_cap(flow)
+        flow["layout"]["nodes"]["capCreditAmount"]["position"] = {"x": 1728, "y": -40}
+
+    mutate(project, stacked)
+    assert layout(project) == 1

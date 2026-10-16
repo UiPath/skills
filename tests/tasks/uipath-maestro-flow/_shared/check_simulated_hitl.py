@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from flow_check import find_flow_file
+from flow_check import find_flow_file, hitl_output_read_downstream
 
 
 def fail(message: str) -> None:
@@ -184,15 +184,25 @@ def check_expense(flow: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
     ):
         fail("need a text reason output field")
     assert_outcome_wiring(hitl_id, outcomes, edges)
-    scripts = [
-        str((node.get("inputs") or {}).get("script", ""))
-        for node in nodes
-        if node.get("type") == "core.action.script"
-    ]
-    expected = f"$vars.{hitl_id}.output"
-    if not any(expected in script for script in scripts):
-        fail(f"downstream script must read HITL output via {expected}")
+    assert_hitl_output_read_downstream(flow, nodes, hitl_id)
     print("OK: expense HITL schema, routing, and downstream output access are correct")
+
+
+def assert_hitl_output_read_downstream(
+    flow: dict[str, Any], nodes: list[dict[str, Any]], hitl_id: Any
+) -> None:
+    """Direct script read, or variableUpdates capture read downstream.
+
+    See ``flow_check.hitl_output_read_downstream`` for the rule.
+    """
+    if hitl_output_read_downstream(flow, nodes, hitl_id):
+        return
+    expected = f"$vars.{hitl_id}.output"
+    fail(
+        f"downstream logic must read HITL output: a script reading {expected}, "
+        f"or a variableUpdates entry reading {expected} whose variable a script "
+        "or end output then reads"
+    )
 
 
 CHECKS = {

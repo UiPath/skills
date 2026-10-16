@@ -29,6 +29,8 @@ Walk down. Each rung narrows the blast radius; stop at the rung that answers the
 
 IDs chain downward: `testcaselogs list` returns the `test-case-log-id` that rungs 3 and 4 need. Do not guess it.
 
+Once a failure is a real regression, raise a defect on it, or read the defect already raised through the row's `DefectId`: see [defects-guide.md](defects-guide.md).
+
 ## Real defect, or flaky test?
 
 A single red run cannot tell you. Ask the test case's own history:

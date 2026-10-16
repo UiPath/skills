@@ -1,6 +1,7 @@
 # action task — Implementation (Direct JSON Write)
 
-> **Phase split.** Phase 2 writes shape with empty input values. Phase 3 binds values per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md). See [phased-execution.md](../../../phased-execution.md).
+> **Shared shape.** The rules every resource task follows — id/elementId format, `=bindings.` references, the Phase 2/3 split, binding dedup, output binding, and the placeholder fallback — are in [resource-task-common.md](../resource-task-common.md). This file states only what is specific to this type.
+
 
 ## Task JSON Shape
 
@@ -26,10 +27,6 @@
 }
 ```
 
-- `id`: `t` + 8 alphanumeric chars. `elementId`: `${stageId}-${taskId}`.
-- `isRequired` and `shouldRunOnlyOnce` come from the SDD task envelope; default `shouldRunOnlyOnce` to `false` when omitted. Do not infer run-once from task type.
-- `description`: the task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
-- `data.name` / `data.folderPath` MUST be `=bindings.<id>` references — never literals.
 
 ## Action-Specific Fields
 
@@ -55,26 +52,21 @@
 uip maestro case tasks describe --type action --id "<action-app-id>" --output json
 ```
 
-Fallback: planning-captured schema from `registry-resolved.json`. If unavailable, placeholder per [placeholder-tasks.md](../../../placeholder-tasks.md).
 
 **Step 1 — Root-level bindings:**
 
-Read [bindings/impl-json.md § Full binding shape — non-connector tasks](../../variables/bindings/impl-json.md) for the canonical 7-field shape (all required — omitting any causes Studio Web render failure). Per-task overrides:
 
 - `resource`: `"app"`
 - `resourceSubType`: omit (no resourceSubType for action tasks)
 - `name` / `folderPath` defaults: from `registry-resolved.json` `name` / `folder-path` fields
 
-Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 
 **Step 2 — Write task:**
 
-1. Generate `id` (`t` + 8 chars) and `elementId` (`<stageId>-<taskId>`)
 2. Set `data.taskTitle`, `data.priority`, `data.labels` from the SDD now (plain strings, not Phase-3 bindings); omit `data.actionCatalogName` (see the note under § Action-Specific Fields for the one case that writes it). **`data.recipient` is an object, NEVER a bare string.** Wrap the SDD's recipient value as `{ "Type": <int>, "Value": <value> }`. `UserGroup:` is the one prefix planning keeps: strip it and emit `Type 1` with the **group name** in `Value`, never a UUID. Every other value arrives bare and its Type comes from its shape (`=vars.X` → `3`, email → `2`, user UUID → `0`). E.g. `recipient: =vars.assignedLoanOfficer` → `{ "Type": 3, "Value": "=vars.assignedLoanOfficer" }`, and `recipient: UserGroup: Compliance` → `{ "Type": 1, "Value": "Compliance" }`. Do not copy the bare value through as `data.recipient`.
 3. Set `data.name` = `=bindings.<nameBindingId>`, `data.folderPath` = `=bindings.<folderPathBindingId>`
 4. Write `data.inputs[]` / `data.outputs[]` from Step 0 schema. Each input: `{ name, type, id, var, elementId, value: "" }`. Each output: `{ name, type, id, var, value, source, target, elementId }`.
 
-   **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is the `tasks describe` output (Step 0 above).
 5. Append to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share `tasks[laneIndex][]`; if `lane` conflicts with mode, mode wins.
 
 > Entry conditions added in Step 10. Only `data.inputs[].value` is deferred to Phase 3 per [io-binding/impl-json.md](../../variables/io-binding/impl-json.md); the scalar `data.*` fields above are final at Step 2.
@@ -83,9 +75,7 @@ Dedup per [§ Deduplication](../../variables/bindings/impl-json.md).
 
 - `type: "action"`
 - `data.taskTitle` non-empty
-- `data.name` and `data.folderPath` start with `=bindings.`
 - the bindings array has 2 entries: `resource: "app"`, no `resourceSubType`, `propertyAttribute` = `name` / `folderPath`
-- `data.inputs` and `data.outputs` populated (unless placeholder)
 - `data.recipient` is an **object** `{ Type, Value }`, never a bare string — present whenever the SDD recorded a recipient (omitted only for Skip or no-Type-maps). A group/role is `Type 1` carrying the group **name**; dropping it leaves the task created and reaching nobody
 - `data.actionCatalogName` is absent (present only for a catalog the USER named and you confirmed in the app's deployment folder)
 - `entryConditions` is present and non-empty — a task with no entry condition is never triggered, and `validate` does NOT catch it (it accepts an empty array and a missing key). Use the activation the SDD declares (`current-stage-entered`, `runs-sequentially`, `adhoc`, `sla-status-change` for an SLA `start-task` response — see [sla-response-shapes.md](../../../sla-response-shapes.md))

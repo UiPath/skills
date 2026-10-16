@@ -3,7 +3,9 @@ description: >
   Scaffold a new Integration Service connector shell offline and validate it.
   Covers the builder init + validate happy path and asserts the generated
   element.json carries the derived design element key — the minimum a real
-  build must produce.
+  build must produce. The spec names an auth type because `validate` now
+  hard-errors on a connector with no auth configured; without it the agent had
+  to improvise auth from the validate error to reach 0 errors.
 tags: [uipath-connector-builder, smoke, 'mode:build', 'lifecycle:generate']
 
 initial_prompt: |
@@ -20,6 +22,7 @@ initial_prompt: |
     - Organization slug: acme
     - Base URL: https://api.acme.example.com
     - Category: Developer
+    - Authentication: none (the API is public; configure the `none` auth type)
 
   After scaffolding, run the connector-builder validate step and make sure it
   passes with 0 errors.

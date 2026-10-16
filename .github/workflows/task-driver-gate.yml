@@ -1,8 +1,9 @@
 name: Task Driver Gate
 
-# Two gates over the task/experiment corpus:
+# Three gates over the task/experiment corpus:
 #   1. no coder-eval task YAML pins `sandbox.driver: tempdir`
 #   2. every Windows-reachable `pre_run`/`post_run` command is a single line
+#   3. no task stages a `skills/<name>` directory via `sandbox.template_sources`
 #
 # Gate 1:
 # The sandbox driver is chosen by the run environment, never by the task:

@@ -1,15 +1,37 @@
 #!/usr/bin/env python3
-"""Cross-check each native `core.datafabric.*` node instance against the
-structural rules in references/author/plugins/data-fabric/impl.md that
-`flow validate` does NOT enforce:
+"""Cross-check each native `core.datafabric.*` node instance against the shape
+Studio Web writes, which `flow validate` does NOT enforce:
 
-- a `definitions[]` entry exists for the node's exact `type`:`typeVersion`
-  (catches a hand-authored definition standing in for the registry's)
-- no instance `outputs` block (the manifest + `variables.nodes[]` own the
-  output contract for these nodes — see "JSON structure")
-- no instance `model` block
+- a `definitions[]` entry exists for the node's exact `type`:`typeVersion`,
+  and it is not a trimmed copy: `model.type == "bpmn:Task"`,
+  `"api-function"` in `runtimeConstraints.exclude`, and an `outputDefinition`
+  for every verb except delete. Every registry version of these nodes has all
+  three (flow-workbench core-datafabric-*/v1.*.ts). The CLI export reads the
+  file's own `definitions[]` (canvas conversion.ts `flowJsonToBpmnXml` builds
+  its manifest map from `workflow.definitions`): `model` seeds the exported
+  task (services bpmn-to-xml.ts:1015-1028) and `outputDefinition` types the
+  node's process variables (bpmn-to-xml.ts:483-494). The `outputDefinition`
+  rule is a checker-intent rule: without it export falls back to
+  `variables.nodes[].type`, and no archived run is known to break on that.
+  `form` is not checked: the canvas falls back to the registry's form
+  (conversion.ts:196 `fileDef.form ?? manifestDef.form`), and two scored v1
+  runs wrote definitions without one.
+- instance `outputs`, when present, match the definition's
+  `outputDefinition`: no key the definition lacks, and the same `type`, `var`
+  and `source` for each key. The canvas persists these (instance-converters.ts
+  `nodeToInstance` keeps every output whose `source` is set, and the manifests
+  declare `source: '=response'`), so they are allowed, not invented. Delete
+  declares no output, so it carries none.
+- no instance `model` block, not even one identical to the definition's.
+  Studio Web never writes one (flow-core node.ts: "`node.model` is never
+  written"; `nodeToInstance` omits it). This rule grades the canvas shape, not
+  harm: an identical copy changes nothing today, but export spreads an
+  instance copy over the definition's (services bpmn-to-xml.ts), so once the
+  definition moves on a stale copy wins. The builder SDK emits none from the
+  release after 6.7.0; 6.7.0 output fails this rule and nothing else. The
+  rule itself is unchanged from the version before it.
 - no outgoing edge with `sourcePort: "error"` (these four nodes have no
-  error port — see "No error port")
+  error port)
 
 Exit code:
   0  no defects found
@@ -31,6 +53,62 @@ CORE_TYPES = {
     "core.datafabric.update",
     "core.datafabric.delete",
 }
+NO_OUTPUT_TYPES = {"core.datafabric.delete"}
+
+
+def _source(value):
+    """`=response` whether written as the canvas does or as the SDK does.
+
+    The canvas keeps the manifest's plain string (`'=response'`); the builder
+    SDK wraps it as `{type: 'literal', expression: '=response', ...}`.
+    """
+    if isinstance(value, dict):
+        return value.get("expression", value.get("source"))
+    return value
+
+
+def _definition_problems(d: dict, node_type: str) -> list[str]:
+    problems = []
+    model_type = (d.get("model") or {}).get("type") if isinstance(d.get("model"), dict) else None
+    if model_type != "bpmn:Task":
+        problems.append(f"model.type is {model_type!r}, expected 'bpmn:Task'")
+    constraints = d.get("runtimeConstraints")
+    exclude = (constraints or {}).get("exclude") if isinstance(constraints, dict) else None
+    if not isinstance(exclude, list) or "api-function" not in exclude:
+        problems.append("runtimeConstraints.exclude lacks 'api-function'")
+    if node_type not in NO_OUTPUT_TYPES and not isinstance(d.get("outputDefinition"), dict):
+        problems.append("outputDefinition is missing")
+    return problems
+
+
+def _outputs_problems(outputs, definition: dict | None, node_type: str) -> list[str]:
+    if outputs is None or outputs == {}:
+        return []
+    if not isinstance(outputs, dict):
+        return [f"instance `outputs` is a {type(outputs).__name__}, not an object"]
+    if node_type in NO_OUTPUT_TYPES:
+        return [f"instance `outputs` {sorted(outputs)} on a node type that declares no output"]
+    declared = (definition or {}).get("outputDefinition")
+    if not isinstance(declared, dict):
+        return []  # already reported against the definition
+    problems = []
+    extra = sorted(set(outputs) - set(declared))
+    if extra:
+        problems.append(f"instance `outputs` has {extra}, which the definition's "
+                        f"outputDefinition {sorted(declared)} does not declare")
+    for key in sorted(set(outputs) & set(declared)):
+        mine, theirs = outputs[key], declared[key]
+        if not isinstance(mine, dict) or not isinstance(theirs, dict):
+            problems.append(f"instance `outputs.{key}` is not an object")
+            continue
+        for field in ("type", "var"):
+            if mine.get(field) != theirs.get(field):
+                problems.append(f"instance `outputs.{key}.{field}` is {mine.get(field)!r}, "
+                                f"the definition says {theirs.get(field)!r}")
+        if _source(mine.get("source")) != _source(theirs.get("source")):
+            problems.append(f"instance `outputs.{key}.source` is {_source(mine.get('source'))!r}, "
+                            f"the definition says {_source(theirs.get('source'))!r}")
+    return problems
 
 
 def check_flow(path: str) -> list[str]:
@@ -42,14 +120,19 @@ def check_flow(path: str) -> list[str]:
     defs_by_key = {
         (d.get("nodeType") or d.get("type"), str(d.get("version"))): d
         for d in doc.get("definitions", [])
+        if isinstance(d, dict)
     }
-    nodes = [n for n in doc.get("nodes", []) if n.get("type") in CORE_TYPES]
+    nodes = [n for n in doc.get("nodes", []) if isinstance(n, dict) and n.get("type") in CORE_TYPES]
     if not nodes:
         return []
 
     errors = []
+    # `.flow` edges name their ends `sourceNodeId`/`targetNodeId`; `source` is
+    # accepted for any older shape.
     error_edge_sources = {
-        e.get("source") for e in doc.get("edges", []) if e.get("sourcePort") == "error"
+        e.get("sourceNodeId", e.get("source"))
+        for e in doc.get("edges", [])
+        if isinstance(e, dict) and e.get("sourcePort") == "error"
     }
 
     for n in nodes:
@@ -57,20 +140,25 @@ def check_flow(path: str) -> list[str]:
         node_type = n.get("type")
         type_version = str(n.get("typeVersion"))
 
-        if (node_type, type_version) not in defs_by_key:
+        definition = defs_by_key.get((node_type, type_version))
+        if definition is None:
             errors.append(
                 f"{path}: node {node_id!r} ({node_type}:{type_version}) has no matching "
                 f"definitions[] entry"
             )
-        if "outputs" in n:
-            errors.append(f"{path}: node {node_id!r} ({node_type}) carries an instance "
-                           f"`outputs` block — these nodes must not have one")
+        else:
+            for problem in _definition_problems(definition, node_type):
+                errors.append(f"{path}: definitions[] entry for {node_type}:{type_version} "
+                              f"is not the registry's copy — {problem}")
+        for problem in _outputs_problems(n.get("outputs"), definition, node_type):
+            errors.append(f"{path}: node {node_id!r} ({node_type}) — {problem}")
         if "model" in n:
             errors.append(f"{path}: node {node_id!r} ({node_type}) carries an instance "
-                           f"`model` block — BPMN type/serviceType live in the definition")
+                          f"`model` block — Studio Web never writes one (the definition "
+                          f"owns BPMN type/serviceType; export merges an instance copy over it)")
         if node_id in error_edge_sources:
             errors.append(f"{path}: node {node_id!r} ({node_type}) has an outgoing "
-                           f"sourcePort: \"error\" edge — these nodes have no error port")
+                          f"sourcePort: \"error\" edge — these nodes have no error port")
 
     return errors
 

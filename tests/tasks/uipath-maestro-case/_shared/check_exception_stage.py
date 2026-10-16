@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import (  # noqa: E402
     find_node_by_label,
     find_stages,
+    exit_type,
     first_rule_of_condition,
     get_case_exit_conditions,
     get_default_sla,
@@ -32,15 +33,15 @@ def main():
     process_exit_only = [
         ec
         for ec in process_exits
-        if ec.get("type") == "exit-only"
+        if exit_type(ec) == "exit-only"
         and ec.get("marksStageComplete") is True
         and (first_rule_of_condition(ec) or {}).get("rule") == "required-tasks-completed"
     ]
     if not process_exit_only:
         sys.exit(
-            "FAIL: 'Process' should have an explicit exit-only exit condition "
+            "FAIL: 'Process' should have an exit-only exit condition "
             "(required-tasks-completed, marksStageComplete=true); "
-            f"got exit types {[ec.get('type') for ec in process_exits]}"
+            f"got exit types {[exit_type(ec) for ec in process_exits]}"
         )
 
     def _is_secondary(n):
@@ -117,7 +118,7 @@ def main():
         sys.exit(
             "FAIL: 'Issues' missing canonical return-to-origin exit "
             "(marksStageComplete=true + required-tasks-completed); "
-            f"got {[(ec.get('type'), ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in issues_exits]}"
+            f"got {[(exit_type(ec), ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in issues_exits]}"
         )
     if issues_invalid_returns:
         sys.exit(
@@ -131,7 +132,7 @@ def main():
     critical_exit_only = [
         ec
         for ec in critical_exits
-        if ec.get("type") == "exit-only"
+        if exit_type(ec) == "exit-only"
         and ec.get("marksStageComplete") is True
         and (first_rule_of_condition(ec) or {}).get("rule") == "required-tasks-completed"
     ]
@@ -140,7 +141,7 @@ def main():
             "FAIL: terminal secondary stage 'Critical' must exit via canonical "
             "exit-only completion (marksStageComplete=true + "
             "required-tasks-completed); "
-            f"got {[(ec.get('type'), ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in critical_exits]}"
+            f"got {[(exit_type(ec), ec.get('marksStageComplete'), (first_rule_of_condition(ec) or {}).get('rule')) for ec in critical_exits]}"
         )
     if any(ec.get("type") == "return-to-origin" for ec in critical_exits):
         sys.exit("FAIL: terminal secondary stage 'Critical' must not return to origin")

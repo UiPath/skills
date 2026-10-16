@@ -2,8 +2,10 @@
 """HITL completion wiring check.
 
 Asserts the Actions.HITL user task's completion is wired to a downstream step
-(not straight to an end event) and that the step reaches an end event. Reuses
-the shared uipath-maestro-bpmn stdlib-ET helpers; input is locally authored.
+(not straight to an end event) and that the step reaches an end event. Gateways
+in between, such as an Approve/Reject split, are walked through, never counted
+as the step. Reuses the shared uipath-maestro-bpmn stdlib-ET helpers; input is
+locally authored.
 """
 
 from __future__ import annotations
@@ -22,6 +24,7 @@ from _shared.bpmn_check import (  # noqa: E402
     require_di_for_visible_elements,
     require_no_private_connector_values,
     require_sequence_integrity,
+    tag_case_hint,
 )
 
 DOWNSTREAM = {
@@ -34,6 +37,13 @@ DOWNSTREAM = {
     "userTask",
     "callActivity",
 }
+GATEWAYS = {
+    "exclusiveGateway",
+    "inclusiveGateway",
+    "parallelGateway",
+    "eventBasedGateway",
+    "complexGateway",
+}
 
 
 def local(tag: str) -> str:
@@ -45,7 +55,7 @@ def main() -> None:
 
     hitl = [t for t in elements(root, "userTask") if has_uipath_extension(t, "Actions.HITL")]
     if not hitl:
-        fail("no bpmn:userTask carrying an Actions.HITL uipath:activity shell")
+        fail("no bpmn:userTask carrying an Actions.HITL uipath:activity shell" + tag_case_hint(root, "userTask"))
     hid = attr(hitl[0], "id")
 
     flows = elements(root, "sequenceFlow")
@@ -54,12 +64,26 @@ def main() -> None:
         fail(f"HITL task {hid} has no outgoing sequence flow (completion not wired)")
 
     kind = {attr(e, "id"): local(e.tag) for e in root.iter() if attr(e, "id")}
-    downstream_targets = [
-        attr(f, "targetRef") for f in outgoing if kind.get(attr(f, "targetRef")) in DOWNSTREAM
-    ]
+
+    def first_steps(node: str, seen: set[str]) -> list[str]:
+        steps = []
+        for f in flows:
+            if attr(f, "sourceRef") != node:
+                continue
+            target = attr(f, "targetRef")
+            if target in seen:
+                continue
+            seen.add(target)
+            if kind.get(target) in GATEWAYS:
+                steps += first_steps(target, seen)
+                continue
+            steps.append(target)
+        return steps
+
+    reached = first_steps(hid, {hid})
+    downstream_targets = [t for t in reached if kind.get(t) in DOWNSTREAM]
     if not downstream_targets:
-        seen = [kind.get(attr(f, "targetRef")) for f in outgoing]
-        fail(f"HITL completion flows to {seen}, not to a downstream task")
+        fail(f"HITL completion flows to {[kind.get(t) for t in reached]}, not to a downstream task")
 
     end_ids = {attr(e, "id") for e in elements(root, "endEvent")}
 
