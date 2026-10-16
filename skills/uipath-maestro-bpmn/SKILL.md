@@ -286,7 +286,23 @@ For registry-evidence-only tasks, follow the command-first recipe in
    by the HITL template's `<uipath:output ... var="...">` (for example
    `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
    variable.
-   For an `Intsvc.*` activity whose `inputTarget` is `body`
+   **Every new connector node is V2, in every workflow**, HTTP requests
+   (`Intsvc.UnifiedHttpRequest`) and external agents included: build it with
+   `registry get --input-details` and paste `Data.V2` as it is. In an existing
+   workflow without `<uipath:intsvcActivityConfig version="v2" />` never add
+   the marker, and leave its V1 nodes alone unless the task asks (a V1 trigger
+   or wait faults at run time, so rebuild one as V2 when the task touches it).
+   If `registry get` fails `unknown option '--input-details'`, the CLI
+   predates V2 nodes: stop on a trigger, wait, HTTP request or external agent
+   and tell the user to update `uip`; only a plain activity falls back to the
+   V1 template. See
+   [references/v2-connector-nodes.md](references/v2-connector-nodes.md).
+<!--skill-flavor:v2-solution-resources-refresh:start-->
+   After `bpmn refresh`, run `uip solution resources refresh` so the
+   connections become solution resources.
+<!--skill-flavor:v2-solution-resources-refresh:end-->
+   When filling the V1 template (an older CLI, or reading an existing V1 node)
+   for an `Intsvc.*` activity whose `inputTarget` is `body`
    (`Intsvc.ActivityExecution` and its async, agent, and workflow variants),
    these rules override the template's `InputNotes`, `DiscoveryNotes`, and
    `ContextFieldNotes`:
@@ -365,6 +381,9 @@ For registry-evidence-only tasks, follow the command-first recipe in
    later one on such a draft, keeps the manual `Event_start`, gives the
    trigger its own start id, joins the two per
    [Gateways](references/structural-bpmn.md#gateways), and runs `refresh`.
+   A V2 connector trigger start is the exception: it carries its own
+   `uipath:entryPointId` and is an entry point, so it may be the only start
+   and `refresh` accepts it.
    A recurring timer is a `timeCycle` with an `R/` repeat (`R/P1D`), not the
    template's `timeDuration`. Clearing a stale-entry error by editing or
    deleting `entry-points.json` instead of running `refresh` passes
