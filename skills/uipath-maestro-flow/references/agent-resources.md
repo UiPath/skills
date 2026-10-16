@@ -61,20 +61,26 @@ form INLINE instead — `fields` (the same rows a human task takes) and no `app`
 ## Memory
 
 Do not give `inlineAgent` a `memory`; `check` refuses it (`AGENT_MEMORY_NOT_AUTHORABLE`).
-Find the space, then attach it to the sidecar after the last `compile`. `add` only
-attaches an existing space: an empty list means stop and report it.
-`--field` takes a sidecar `inputSchema` key, e.g. `start__output__userQuestion`:
+Find the space, declare it in the solution, then attach it to the sidecar after the
+last `compile`. `add` only attaches an existing space: an empty list means stop and
+report it. `--field` takes a sidecar `inputSchema` key, e.g. `start__output__userQuestion`.
+`<MEMORY_SPACE_NAME>` and `<MEMORY_SPACE_FOLDER>` are the list row's `Name` and `Folder`:
 
 ```bash
-uip solution resources list --source remote --kind MemorySpace --search "<space>" --output json
-uip agent memory add <FeatureName> --memory-space "<Name>" --folder-path "<Folder>" \
-  --field <inputSchema-key>=1 --path "<FlowProjectDir>/<source>" --output json
-uip agent refresh "<FlowProjectDir>/<source>" --inline-in-flow \
-  --bindings-target "<FlowProjectDir>/bindings_v2.json" --output json
+uip solution resources list --source remote --kind MemorySpace --search "<MEMORY_SPACE_NAME>" --output json
+uip solution resources add --source remote --kind MemorySpace --name "<MEMORY_SPACE_NAME>" \
+  --folder-path "<MEMORY_SPACE_FOLDER>" --solution-folder "<Solution>" --output json
+uip agent memory add <FeatureName> --memory-space "<MEMORY_SPACE_NAME>" \
+  --folder-path "<MEMORY_SPACE_FOLDER>" --field <inputSchema-key>=1 \
+  --path "<Solution>/<Name>/<source>" --output json
+uip agent refresh "<Solution>/<Name>/<source>" --inline-in-flow \
+  --bindings-target "<Solution>/<Name>/bindings_v2.json" --output json
 ```
 
-Threshold, result count, search mode: `uip agent memory add --help`. Seed items:
-`uip agent memory item add --help`.
+`memory add` reporting `SolutionResource.Status: NotDeclared` means the space is not
+linked: run the `resources add` line, then `memory add` again. Threshold, result count,
+search mode: `uip agent memory add --help`. Do not add items: they come from real runs
+after deploy (`uip agent memory item add --help`).
 
 ## Evidence boundary
 
