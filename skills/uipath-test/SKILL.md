@@ -26,9 +26,15 @@ Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcom
 ### Projects, folders, and requirements
 
 - Projects: `uip tm project list --filter <NAME_OR_KEY>` finds by name/key; `project create --name <PROJECT_NAME> --project-key <PROJECT_KEY>` creates; `project update --project-key <PROJECT_KEY> --name <PROJECT_NAME>` updates name/description; `project delete --project-key <PROJECT_KEY>` deletes; `project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` sets the default Orchestrator folder; `project clear-default-folder --project-key <PROJECT_KEY>` clears it; `project owners list --project-key <PROJECT_KEY> [<PROJECT_KEY> ...]` lists owners.
+- Permissions: `uip tm project-permissions get` returns `Data.Permissions` (the permission names the **caller** holds on that project) and `Data.Count`. Gated on `Project.Read`, so a successful `get` always carries at least `Project.Read` (`Count >= 1`); no read access fails with a 403 (or 404 for a project you cannot see), never a `Success` with an empty array. Only `get` is exposed.
 - Project settings: `uip tm project settings get --project-key <PROJECT_KEY>` reads time zone, execution name format, step cap, default folder and governance; `project settings update --project-key <PROJECT_KEY> [--time-zone <IANA_NAME>] [--execution-name-format <TEMPLATE>]` writes only those first two. IANA names, placeholders, read-only fields and half-applied updates: [references/project-settings-guide.md](references/project-settings-guide.md).
 - Get folder keys with `uip or folders list -n <name> --all --output json`; it returns all folders visible to the current user.
 - Prefix with `uip tm requirements`: `list --project-key <PROJECT_KEY>`; `list-by-test-execution --project-key <PROJECT_KEY> --execution-id <uuid>`; `get --project-key <PROJECT_KEY> (--requirement-id <uuid> | --requirement-key <key>)` (mutually exclusive UUID/key); `create --project-key <PROJECT_KEY> --name <name>`; `update --project-key <PROJECT_KEY> --requirement-id <uuid>` (updates name/description and requires at least one of `--name` or `--description`); `delete --project-key <PROJECT_KEY> --requirement-ids <uuid...>` (variadic IDs); `export --project-key <PROJECT_KEY> --output-file <path>` (exports `.xlsx`); `list-testcase-ids --project-key <PROJECT_KEY> --requirement-id <uuid>`; `testcases --project-key <PROJECT_KEY> --requirement-id <uuid> (--add-testcase-ids <uuid...> | --remove-testcase-ids <uuid...>)` (mutually exclusive attach/detach selectors).
+- Move or back up a whole project with `uip tm project export` → `uip tm project import` (a `.tmh` package): [references/project-migration-guide.md](references/project-migration-guide.md). Jobs are read with `uip tm migration get|list|download`; package schemas with `uip tm migration schemas list|download`.
+  - Both are jobs of minutes. Pass `--wait` (export also `--output-file`); without it you get a job id for `migration get`. Never start a second export or import to check on one.
+  - Automation goes in by default (`--exclude automation` drops it); governance, project config (Test Cloud only, else 403) and prompts only with `--include`.
+  - Test sets travel only as `.tmh`; test cases and requirements can also go to Excel (`testcases export`, `requirements export`). "Export these" with no format or purpose: ask which.
+  - Before importing, ask: into an existing project, or a new one (`--create-project`)? A taken key: ask for `--new-project-key`.
 
 ### AI on requirements
 
@@ -38,6 +44,11 @@ Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcom
 
 - `uip tm testcases create --project-key <PROJECT_KEY> --name <TEST_CASE_NAME>`; `list --project-key <PROJECT_KEY>` optionally `--filter <text>` matching name/key by **PREFIX**, not substring; `update --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY> --name <TEST_CASE_NAME>` updates name, description, precondition, or postcondition and requires at least one field; `delete --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` deletes by key.
 - `link-automation --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY> --folder-key <FOLDER_KEY> --package-name <PACKAGE_NAME> --test-name <TEST_NAME>` links Orchestrator package automation, optionally `--entry-point-id <PACKAGE_ENTRY_POINT_ID>` (from `list-automations`) to bind by id, which overrides `--test-name`; `unlink-automation --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` unlinks; `list-automations --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` lists folder test entry points, optionally `--package-name <PACKAGE_NAME>`, each row carrying `PackageEntryPointId`; `list-testsets --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` lists containing sets.
+- Look up, inventory, copy and bulk-create test cases with `uip tm testcases` (flags via `--help`):
+  - "Which sets include the cases labelled X" is one `list-testsets --labels X`, never a loop over cases. It shows explicit assignments only, not sets that pull a case in by a dynamic label; say so.
+  - `clone` returns `Accepted` with no key and copies in the background, steps last. Find the copy with the `list --filter` from `Instructions`. Never clone again to check or retry; after a 5xx, list first, as a copy may exist. Labels, documents, requirements and parameters copy only with `--include`.
+  - `bulk-create --file` takes a JSON array of `{"name", "labels": [...], "steps": [{"description", "expectedResult"}]}`. Names are not unique, so a re-run duplicates. Pass `--skip-existing` when some names may already exist. A file error (exit 3) creates nothing. If a later batch fails, earlier ones stay: report and ask before re-running. `KeysResolved: false` still means created.
+  - `list --automated` leaves out Playwright-linked cases. A 403 on `group-by` (licence or feature off): stop and tell the user.
 - Steps: `uip tm testcases steps list --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` lists manual steps using `--test-case-id <UUID>`, not `--test-case-key`. `steps get --project-key <PROJECT_KEY> --step-id <UUID>` gets; `steps add --project-key <PROJECT_KEY> --test-case-id <UUID> --description <text>` adds flag-mode steps (`--description` required), or `steps add --project-key <PROJECT_KEY> --test-case-id <UUID> --step '<json>' [--step '<json>' ...]` adds repeated JSON steps (mutually exclusive with flag mode and **not atomic**: earlier steps persist if a later one fails); `steps update --project-key <PROJECT_KEY> --step-id <UUID>` updates passed fields only; `steps move --project-key <PROJECT_KEY> --step-id <UUID> --target-position <n>` moves to 0-based position; `steps delete --project-key <PROJECT_KEY> --step-id <UUID> --yes` deletes.
 - `list-result-history --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID>` lists history, optionally `--only-failed`, `--filter`, `--limit`, `--offset`. `run --project-key <PROJECT_KEY> --test-case-id <TEST_CASE_ID> --name <EXECUTION_NAME> --execution-type <manual|automated|none|mixed>` starts an execution for one or more space-separated testcase UUIDs; optionally `--async`, `--folder-key`, `--robot-user-key`, `--machine-key`.
 - `uip tm testcases add --test-set-key <TEST_SET_KEY> (--test-case-keys <KEY1> <KEY2> … | --labels <Label1> <Label2> …)` adds by explicit keys or every testcase carrying at least one label; selectors are mutually exclusive and variadic space-separated. Keys also accept comma form (`DEMO:1,DEMO:2`), labels do not (`--labels A,B` is one label). Label matching is OR, exact, and case-insensitive; quote labels containing spaces. Without `--dynamic`, `--labels` copies the current matches into the set once; testcases labeled later are not added. `uip tm testcases remove --test-set-key <TEST_SET_KEY> --test-case-keys <KEY1,KEY2,...>` removes comma-separated static links; it succeeds but does nothing for a testcase included only by a dynamic label — change its labels or the set's dynamic labels instead.
@@ -85,6 +96,10 @@ Open a manual run with `uip tm testsets run --test-set-key <KEY> --execution-typ
   - `--object-type` is the parent object's type, not the file's; a wrong one can still succeed.
   - `download --attachment-id` writes to the current folder under the server name unless `--result-path`/`--output-file`, and never replaces a file: on `already exists`, stop and ask; pass `--overwrite` only when the user asked.
   - `update` only renames (`--file-name`). `--all` is one page per call; follow `Pagination`. Confirm deletes (Rule 5).
+- Files out: `uip tm testcases export` (test cases to `.xlsx`; `--test-case-ids`, else the whole project) and `uip tm report export` (an execution's report, `--execution-id --format excel|pdf|junit`, or chosen results as PDFs, `--test-case-log-ids`, two or more as one `.zip`):
+  - When the user wants the file, pass `--wait --output-file <path>`. Without `--wait` only a job starts: poll `uip tm export-jobs get --job-id` while `Initiated`/`InProgress`, stop on `Failed`/`Cancelled`, then `attachment download --attachment-id <AttachmentId>` as `Instructions` prints. Never start the same export twice to check on it.
+  - An existing `--output-file` is refused before anything starts: ask, and pass `--overwrite` only when told.
+  - `export-jobs get` needs the project that started the job (others return 404). JUnit off on the tenant (`feature is not enabled`) or a 403 on result PDFs (licence): report it, don't retry.
 
 ### Playwright pack
 
@@ -104,7 +119,7 @@ Project-scoped custom-field **definitions** (attach to Requirement/TestCase/Test
 
 ### Object labels
 
-Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet`, `TestExecution`, or `TestCaseLog`. Full list/get/add/remove surface, `--label-types`, and authoritative-set (`--remove-other-labels`) semantics: [references/object-labels-guide.md](references/object-labels-guide.md).
+Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet`, `TestExecution`, or `TestCaseLog`. Anti-patterns (label id vs object id; `--remove-other-labels` deleting hidden internal labels): [references/object-labels-guide.md](references/object-labels-guide.md).
 
 ## Critical Rules
 
@@ -132,6 +147,7 @@ For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For an
 
 ## Navigate to a Workflow
 
+- Back up, copy or move a project, in one tenant or across tenants and environments (`uip tm project export` → `import`): [references/project-migration-guide.md](references/project-migration-guide.md)
 - Execution lifecycle (manual open/record/finish), filtered reads, cancel, delete, xlsx export, and reporting date (`uip tm executions`): [references/executions-guide.md](references/executions-guide.md)
 - Failed-run root cause, assertions, step logs, evidence, and flaky-versus-regression analysis: [references/failure-triage-guide.md](references/failure-triage-guide.md)
 - Raise a defect from a failed result, trace it to its test case/requirements, link it to a tracker issue (`uip tm defects`): [references/defects-guide.md](references/defects-guide.md)

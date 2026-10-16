@@ -1,6 +1,6 @@
 # XAML Editing Catalog
 
-Per-operation and per-activity catalogs for XAML authoring: editing operations (arguments, variables, imports, assembly references, expressions, resource types) and complete reference workflows. Split out of [xaml-basics-and-rules.md](xaml-basics-and-rules.md) so that file is a plain full read (Rule 22) with no marker to locate first.
+Per-operation and per-activity catalogs for XAML authoring: editing operations (arguments, variables, imports, assembly references, global variables, expressions, resource types) and complete reference workflows. Split out of [xaml-basics-and-rules.md](xaml-basics-and-rules.md) so that file is a plain full read (Rule 22) with no marker to locate first.
 
 **Read contract — per entry, never end-to-end:** Grep `^###` on this file to list the entries with line numbers, then Read ONLY the entries matching the operation or activity at hand. Unsure whether an entry applies → read it. Reading this file top to bottom is the mistake the split removed.
 
@@ -101,6 +101,28 @@ Add `<AssemblyReference>` entries:
 <AssemblyReference>System.Data</AssemblyReference>
 <AssemblyReference>UiPath.Excel.Activities</AssemblyReference>
 ```
+
+### Global Variables
+
+Project-wide variables and constants live in `.project/globalVariables.json`, one entry each. A workflow reads them without declaring them, which makes them the channel for state no argument carries, such as the configuration an execution template loads ([testing-guide.md § Execution Templates](../testing-guide.md#execution-templates)).
+
+```json
+[
+  {
+    "Constant": false,
+    "Name": "<NAME>",
+    "TypeFullyQualifiedName": "<ASSEMBLY_QUALIFIED_TYPE>",
+    "UnresolvedTypeFullyQualifiedName": null,
+    "Expression": null,
+    "IsLiteral": false
+  }
+]
+```
+
+`TypeFullyQualifiedName` is the assembly-qualified type name, as Studio writes it for a variable of that type. A constant has `"Constant": true` and its value as an expression in `Expression` (`"\"00:20:00\""` for a text constant).
+
+- **VB expressions** read both by name: `<NAME>("Key")`, `TimeSpan.Parse(<CONSTANT>)`.
+- **C# expressions** qualify them: `GlobalVariables.<NAME>["Key"]` with `GlobalVariablesNamespace` among the namespace imports, `GlobalConstants.<CONSTANT>` with `GlobalConstantsNamespace` ([§ Adding Namespace Imports](#adding-namespace-imports)).
 
 ### Expressions
 

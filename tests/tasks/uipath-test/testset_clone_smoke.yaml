@@ -161,9 +161,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent cloned under a new name (`--new-name EVFX-TSCLONE-<stamp>-<tag>`, literal or a shell variable; must succeed)"
+    description: "Agent cloned under a new name (`--new-name EVFX-TSCLONE-<stamp>-<tag>`, literal, a shell variable, or a command substitution; must succeed)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+tm\s+testsets\s+clone\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--new-name[\s\\=]+(?:["\x27]?EVFX-TSCLONE-\d{8}-\d{6}-[0-9a-f]{6}\b|["\x27]?\$\{?[A-Za-z_])'
+    command_pattern: '(uip|\$UIP)\s+tm\s+testsets\s+clone\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--new-name[\s\\=]+(?:["\x27]?EVFX-TSCLONE-(?:\d{8}-\d{6}-[0-9a-f]{6}\b|\$[({])|["\x27]?\$\{?[A-Za-z_])'
     require_success: true
     min_count: 1
     weight: 1.5
