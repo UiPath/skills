@@ -8,6 +8,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import (  # noqa: E402
+    _get_ci,
     assert_task_type_present,
     run_debug,
 )
@@ -59,10 +60,11 @@ def check_structure(task: dict) -> None:
 def assert_task_completed(payload: dict, task: dict) -> None:
     """Case debug reports element executions, not variable values, so the task's
     own execution reaching Completed is what the run can prove."""
-    runs = [e for e in payload.get("elementExecutions") or [] if e.get("elementId") == task.get("id")]
+    executions = _get_ci(payload, "elementExecutions", "ElementExecutions") or []
+    runs = [e for e in executions if _get_ci(e, "elementId", "ElementId") == task.get("id")]
     if not runs:
         sys.exit(f"FAIL: debug has no execution for task {task.get('displayName')!r} (id {task.get('id')!r}).")
-    status = runs[-1].get("status")
+    status = _get_ci(runs[-1], "status", "Status")
     if status not in ("Completed", "Successful"):
         sys.exit(f"FAIL: debug execution for task {task.get('displayName')!r} finished {status!r}.")
 
