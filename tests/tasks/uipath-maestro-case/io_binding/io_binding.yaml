@@ -8,7 +8,7 @@ description: >
   variable-copy, computed, and metadata bindings. Two sequential NameToAge
   tasks retain the equal-name output regression and require collision-safe
   task-output IDs. No inline API sibling is created.
-tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, resource, feature:registry]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:multi-node, resource, feature:registry, path-to-ga]
 
 run_limits:
   expected_turns: 220

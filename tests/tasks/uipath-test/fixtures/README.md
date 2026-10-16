@@ -79,11 +79,16 @@ on the command line, so they stay in the task YAML where `check-collisions.py`
 sees them.
 `seed --require-access <verb>` first calls that AI verb on a requirement id
 that does not exist: an allowed login gets HTTP 404 before any job starts, a
-refused one gets 403, and `seed` then exits `TENANT NOT READY` so smoke
-excludes the task instead of failing it. Each AI route has its own feature
-flag, licence policy and AI Trust Layer policy; on 2026-10-15 the eval tenant
-allowed `generate-testcases` and `evaluate` but answered 403 to
-`find-obsolete-testcases`.
+refused one gets 403, and `seed` then exits `TENANT NOT READY`. The PR smoke
+gate (smoke-skills.yml) drops such a task from its pass rate; the nightly has
+no such filter and records it as ERROR (tagged infra on the evalboard) until
+the tenant is fixed. `find-obsolete-testcases` is the refused one on the eval
+tenant: on Cloud, Test Manager's `findObsoleteTests` requires a Test Cloud
+licence on the user or `A4TMasterFFEnabled` on the org, while
+`generate-testcases` and `evaluate` check that only on Automation Suite and
+dedicated clouds. `coder-eval-bot` on org `codereval` (alpha) has neither, so
+`requirement_ai_obsolete_smoke` errors in the nightly until one of them is
+granted (as of 2026-10-16). The fix is on the tenant, not in this repo.
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
