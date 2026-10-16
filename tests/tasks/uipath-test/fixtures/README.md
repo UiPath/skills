@@ -229,6 +229,24 @@ package published to Orchestrator and a robot able to serve the folder. Until
 that exists, the signoff task's `pre_run` seeds a **manual** execution so the
 wait/report half of the task stays gradeable.
 
+## The `uipath-test-folder-feed` folder
+
+Every task that needs an Orchestrator package uses this one folder, so do not
+rename, delete or empty it. It has its own package feed (`FolderHierarchy`),
+so packages uploaded to it stay out of the tenant feed.
+
+| Task | Uses | Package |
+|---|---|---|
+| `link_automation_and_run` | folder name, in the prompt | `Testcases.with.parameters` |
+| `release_signoff_wait_report_e2e` | folder key, in `pre_run` | `Testcases.with.parameters` |
+| `run_package_ci_smoke` | folder name, in `pre_run` and the prompt | `TestCase_CrossPlatform_VB_Tests` |
+| `run_package_failing_smoke` | folder name, in `pre_run` and the prompt | `FailingTestCase_CrossPlatform_VB_Tests` |
+
+`Testcases.with.parameters` is a Windows package. The folder's serverless
+robot runs cross-platform packages only, so runs of it start but never finish
+(see [Automation-linked fixtures](#automation-linked-fixtures)). A new task
+that needs a run to finish must use a cross-platform package.
+
 ## Run-package fixtures
 
 `run_package_ci_smoke` and `run_package_failing_smoke` run a real package, so
