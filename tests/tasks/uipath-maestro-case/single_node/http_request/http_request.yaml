@@ -9,7 +9,7 @@ description: >
   reports element executions, not variable values, so the echoed body is not
   graded. The endpoint is
   third-party: an outage there fails the debug step, not the build checks.
-tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, path-to-ga]
 max_iterations: 1
 sandbox:
   template_sources:
