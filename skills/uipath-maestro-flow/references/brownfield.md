@@ -60,7 +60,9 @@ Merge warns, does not carry, and refuses under `--strict` when:
   round trip's own changes (`the edited <source>/agent.json differs from the
   original's ... The change is NOT carried`). Use separate directories.
 - the edit changes or removes an agent resource that merge cannot pair with
-  one of the project's (see below). Make that change on the canvas.
+  one of the project's: the canvas gave the resource node an id compile does
+  not reproduce, and its `resource.json` has fields compile does not write.
+  Make that change on the canvas.
 - the agent node carries its prompts on the node itself (older canvas saves).
   The edited `agent.json` would not be what runs. Make that change on the canvas.
 
@@ -70,8 +72,7 @@ round trip's changes along with yours.
 ### Agent resources: added, changed, removed
 
 An agent's context index or tool lives in
-`<source>/resources/<dir>/resource.json`. The canvas and compile name `<dir>`
-differently, so merge pairs them by the node that names the directory:
+`<source>/resources/<dir>/resource.json`.
 
 ```
 flow-merge: wrote <source-uuid>/resources/<new-dir>/resource.json (carries added resource)
@@ -83,9 +84,10 @@ flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derive
 - An added or changed resource is installed by `cp -r`. A changed one keeps its
   original directory.
 - A removed one is not: delete every directory merge lists under `remove`
-  (`removed` in `--json`). Otherwise the agent keeps that resource.
+  (`Data.Removed` in `--output json`). Otherwise the agent keeps that resource.
 - A resource another `.flow` in the project still uses is kept
-  (`flow-merge: kept <dir>: <Other>.flow still references it`).
+  (`flow-merge: kept <source>/resources/<dir>: <Other>.flow still references it`).
+  No action needed: do not delete it.
 - In a Flow project, merge also writes `bindings_v2.json` with the changed
   agent's rows re-derived, so a removed index is no longer declared.
 
