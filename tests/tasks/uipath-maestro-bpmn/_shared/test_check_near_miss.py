@@ -142,6 +142,34 @@ SHAPES_REJECTED = {
         + APPROVED_TAIL,
         "can finish without its approval",
     ),
+    "reviews-share-later-verdict": (
+        PARALLEL_STAGE
+        + STAGE_GATE
+        + [("Manager", "Director"), ("Director", "Decision")]
+        + MANAGER_VERDICT[1:]
+        + APPROVED_TAIL,
+        "no exclusive gateway after Manager offers a second route",
+    ),
+    "rejection-loops": (
+        PARALLEL_STAGE
+        + STAGE_GATE
+        + [
+            ("Manager", "Decision"),
+            ("Decision", "Provision"),
+            ("Decision", "DeadLoop", MANAGER_REJECT),
+            ("DeadLoop", "DeadLoop"),
+        ]
+        + APPROVED_TAIL,
+        "no exclusive gateway after Manager offers a second route",
+    ),
+    "rejection-reconverges": (
+        PARALLEL_STAGE
+        + [("Join", "Stage"), ("Stage", "Manager"), ("Stage", "EndRej", PARALLEL_REJECT)]
+        + MANAGER_VERDICT
+        + [("NotifyRej", "Provision")]
+        + APPROVED_TAIL[:2],
+        "no exclusive gateway after Manager offers a second route",
+    ),
 }
 
 

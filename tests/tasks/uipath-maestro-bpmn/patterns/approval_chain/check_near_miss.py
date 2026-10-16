@@ -39,14 +39,30 @@ def gates_stage(
     return bool(reachable(root, gate_id, blocked=reviews) & end_ids)
 
 
-def verdict_gates(root, review_id: str, gate_ids: set[str]) -> set[str]:
-    before_gate = {review_id} | reachable(root, review_id, blocked=gate_ids)
+def verdict_gates(root, review_id: str, gate_ids: set[str], reviews: set[str]) -> set[str]:
+    blocked = gate_ids | (reviews - {review_id})
+    before_gate = {review_id} | reachable(root, review_id, blocked=blocked)
     return {target for source, target in edges(root) if source in before_gate and target in gate_ids}
 
 
-def can_reject(root, gate_id: str, end_ids: set[str]) -> bool:
-    exits = [target for source, target in edges(root) if source == gate_id]
-    return len(exits) >= 2 and bool(reachable(root, gate_id) & end_ids)
+def terminates(root, node_id: str, blocked: set[str], end_ids: set[str]) -> bool:
+    if node_id in blocked:
+        return False
+    return node_id in end_ids or bool(reachable(root, node_id, blocked=blocked) & end_ids)
+
+
+def can_reject(root, gate_id: str, end_ids: set[str], side_effect_ids: set[str]) -> bool:
+    # Two exits that each finish without re-entering the gate, one of them
+    # skipping every side effect of the other: a rejection that loops forever
+    # or merges back into fulfillment is no exit.
+    exits = {target for source, target in edges(root) if source == gate_id}
+    for kept in exits:
+        if not terminates(root, kept, {gate_id}, end_ids):
+            continue
+        fulfilled = ({kept} | reachable(root, kept, blocked={gate_id})) & side_effect_ids
+        if any(terminates(root, other, {gate_id} | fulfilled, end_ids) for other in exits - {kept}):
+            return True
+    return False
 
 
 def out_degree(root, node_id: str) -> int:
@@ -111,7 +127,8 @@ def main() -> None:
         # And each later review's own verdict is gated before the process can end.
         if reachable(root, review_id, blocked=gate_ids) & end_ids:
             fail(f"{review_id} reaches an end without an exclusive gateway, so its rejection cannot stop the chain")
-        if not any(can_reject(root, g, end_ids) for g in verdict_gates(root, review_id, gate_ids)):
+        verdicts = verdict_gates(root, review_id, gate_ids, sequential)
+        if not any(can_reject(root, g, end_ids, side_effect_ids) for g in verdicts):
             fail(f"no exclusive gateway after {review_id} offers a second route to an end, so its rejection has no exit")
         acted_before_verdict = reachable(root, review_id, blocked=gate_ids) & side_effect_ids
         if acted_before_verdict:
