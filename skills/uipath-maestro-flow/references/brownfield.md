@@ -129,11 +129,14 @@ resource families, queue items, the AI patterns, document steps, conversational
 and voice steps, and connector event subscriptions. A recovered agent keeps its
 `source` uuid, so its `agent.json` sidecar still resolves.
 
-A step's name is its node id, and compile never renames a step to make it
-unique. A new step whose name an existing step already has is refused, even
-with `--no-check`: `DUP_STEP` for the same name, `STEP_ID_COLLISION` for a
-name that differs only outside letters, digits and `_` (`a b` vs `a_b`) or
-that equals the trigger's id. Give the new step a name of its own. To send a
+A step's node id is its name with every character other than a letter, digit
+or `_` turned into `_` (`a b` gets id `a_b`), and compile never renames a step
+to make it unique. A new step whose name a step in the same flow already has
+is refused, even with `--no-check`: `DUP_STEP` for the same name,
+`STEP_ID_COLLISION` for a name that gives the same id (`a b` vs `a_b`) or that
+equals the trigger's id. Give the new step a name of its own. (A child flow's
+steps are not checked against the caller's: a copy whose ids are taken is
+prefixed `<caller>_<step>`.) To send a
 second path to an existing step, end that path with `.stepToRef('<name>')`
 instead of adding the step again.
 
