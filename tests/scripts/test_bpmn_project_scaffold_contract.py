@@ -6,7 +6,7 @@ import re
 import xml.etree.ElementTree as ET
 from uuid import UUID
 
-from bpmn_doc_example import NS, REFERENCE, minimal_example
+from bpmn_doc_example import NS, SCRIPT_REFERENCE, VARIABLES_REFERENCE, minimal_example
 
 
 def test_minimal_example_has_supported_root_contract() -> None:
@@ -70,14 +70,14 @@ def test_minimal_example_has_complete_di_coverage() -> None:
 
 
 def test_variable_and_migration_examples_use_serializer_attributes() -> None:
-    text = REFERENCE.read_text(encoding="utf-8")
+    text = VARIABLES_REFERENCE.read_text(encoding="utf-8")
     # Match the heading, not its parenthetical: the section has been titled both
     # "## Variables" and "## Variables (`BPMN.Variables`)".
     _, marker, variables_section = text.partition("\n## Variables")
-    assert marker, "structural-bpmn.md is missing its Variables section"
+    assert marker, f"{VARIABLES_REFERENCE.name} is missing its Variables section"
     variables_section = variables_section.split("\n## ", 1)[0]
     match = re.search(r"```xml\n(?P<xml>.*?)\n```", variables_section, re.DOTALL)
-    assert match, "structural-bpmn.md is missing its variable declaration example"
+    assert match, f"{VARIABLES_REFERENCE.name} is missing its variable declaration example"
 
     wrapper = ET.fromstring(
         '<root xmlns:uipath="http://uipath.org/schema/bpmn">'
@@ -119,11 +119,11 @@ def test_script_task_examples_dispatch_and_return_bare() -> None:
     `scriptVersion` v2+ the runtime wraps the return under `response`
     (`ScriptActivities.cs`), so a script that wraps it again double-wraps.
     """
-    text = REFERENCE.read_text(encoding="utf-8")
+    text = SCRIPT_REFERENCE.read_text(encoding="utf-8")
     fragments = re.findall(
         r"```xml\n(?P<xml>(?:(?!```).)*?<bpmn:scriptTask.*?)\n```", text, re.DOTALL
     )
-    assert fragments, "structural-bpmn.md is missing its script-task example"
+    assert fragments, f"{SCRIPT_REFERENCE.name} is missing its script-task example"
 
     for xml in fragments:
         wrapper = ET.fromstring(
