@@ -45,22 +45,58 @@ def test_typed_extension_accepts_nested_type_child() -> None:
     assert has_uipath_extension(task, "Orchestrator.StartJob")
 
 
-def test_typed_extension_accepts_registry_direct_type_attribute() -> None:
-    task = _service_task(
-        '<uipath:activity type="Orchestrator.StartAgentJob" version="v1" />'
-    )
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '<bpmn:extensionElements><uipath:activity type="Orchestrator.StartAgentJob" '
+        'version="v1" /></bpmn:extensionElements>',
+        '<uipath:activity version="v1">'
+        '<uipath:type value="Orchestrator.StartAgentJob" version="v2" /></uipath:activity>',
+        '<bpmn:extensionElements><uipath:activity type="Orchestrator.StartAgentJob" '
+        'version="v1"><uipath:type value="Orchestrator.StartAgentJob" version="v2" />'
+        "</uipath:activity></bpmn:extensionElements>",
+    ],
+)
+def test_typed_extension_rejects_shapes_the_runtime_ignores(payload: str) -> None:
+    task = _service_task(payload)
 
-    assert has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
-    assert has_uipath_extension(task, "Orchestrator.StartAgentJob")
+    assert not has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
 
 
 def test_typed_extension_rejects_wrong_wrapper_or_type() -> None:
     task = _service_task(
-        '<uipath:event type="Orchestrator.StartAgentJob" version="v1" />'
+        '<bpmn:extensionElements><uipath:event version="v1">'
+        '<uipath:type value="Orchestrator.StartAgentJob" version="v2" />'
+        "</uipath:event></bpmn:extensionElements>"
     )
 
+    assert has_typed_uipath_extension(task, "event", "Orchestrator.StartAgentJob")
     assert not has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
     assert not has_typed_uipath_extension(task, "event", "Orchestrator.StartJob")
+
+
+def test_typed_extension_accepts_the_requested_type_version() -> None:
+    task = _service_task(
+        '<bpmn:extensionElements><uipath:activity version="v1">'
+        '<uipath:type value="Orchestrator.StartAgentJob" version="v2" />'
+        "</uipath:activity></bpmn:extensionElements>"
+    )
+
+    assert has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob", version="v2")
+
+
+@pytest.mark.parametrize("type_attrs", ['version="v1"', ""])
+def test_typed_extension_rejects_another_type_version(type_attrs: str) -> None:
+    task = _service_task(
+        '<bpmn:extensionElements><uipath:activity version="v2">'
+        f'<uipath:type value="Orchestrator.StartAgentJob" {type_attrs} />'
+        "</uipath:activity></bpmn:extensionElements>"
+    )
+
+    assert has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
+    assert not has_typed_uipath_extension(
+        task, "activity", "Orchestrator.StartAgentJob", version="v2"
+    )
 
 
 def test_bundled_start_agent_contract_matches_runtime_registry() -> None:
@@ -74,10 +110,17 @@ def test_bundled_start_agent_contract_matches_runtime_registry() -> None:
         "folderPath",
     ]
     assert start_agent["bindingInfo"]["contextField"] == "name"
-    assert '<uipath:activity type="Orchestrator.StartAgentJob"' in start_agent[
-        "xmlTemplate"
-    ]
-    assert "<bpmn:extensionElements>" not in start_agent["xmlTemplate"]
+    template = ET.fromstring(
+        start_agent["xmlTemplate"].replace(
+            "<bpmn:ServiceTask",
+            f'<bpmn:ServiceTask xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}"',
+            1,
+        )
+    )
+    type_elem = template.find("bpmn:extensionElements/uipath:activity/uipath:type", NS)
+    assert type_elem is not None
+    assert type_elem.attrib == {"value": "Orchestrator.StartAgentJob", "version": "v2"}
+    assert "type" not in template.find("bpmn:extensionElements/uipath:activity", NS).attrib
     assert "releaseKey" not in start_agent["xmlTemplate"]
 
 

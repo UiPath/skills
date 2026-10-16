@@ -60,7 +60,7 @@ uip maestro bpmn registry get <extensionType> --output json
 
 | Field | Use |
 | --- | --- |
-| `xmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only.** |
+| `xmlTemplate` | The literal node XML with `{placeholder}` slots. **Author from this; fill placeholders only** (except SKILL.md rules 6 and 18). |
 | `bpmnElement` | The host element's PascalCase model type (`bpmn:ServiceTask`). Normalize both this field and the `xmlTemplate` host tag to lower-camel when serializing (`<bpmn:serviceTask>`) — 27 of the 29 bundled templates carry the PascalCase tag. |
 | `extensionTag` | `uipath:activity`, `uipath:event`, or `uipath:mapping`. |
 | `contextFields[]` | The `uipath:context` inputs; each may carry its own `bindingInfo`. |
@@ -674,8 +674,9 @@ auth, schema, or enrichment decision is missing).
    [structural-bpmn.md](structural-bpmn.md)).
 2. Declare the process's variables (`<uipath:variables>`, each with an
    `elementId`) and the `<uipath:bindings>` block.
-3. For each node, paste its `registry get` `xmlTemplate`, fill placeholders, and
-   wire `{incomingEdge}`/`{outgoingEdge}` to your sequence flows.
+3. For each node, paste its `registry get` `xmlTemplate` (except SKILL.md rules
+   6 and 18), fill placeholders, and wire `{incomingEdge}`/`{outgoingEdge}` to
+   your sequence flows.
 4. Author the structural BPMN the registry does not emit: sequence flows,
    gateway conditions/defaults, event definitions, boundary events,
    subprocess/call-activity containers, multi-instance markers.

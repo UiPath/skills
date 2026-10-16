@@ -57,17 +57,18 @@ pre_run:
           return subprocess.run(["uip", *w, "--help"],
                                capture_output=True, text=True).returncode == 0
 
-      # Dedupe: the name-keyed create-if-absent races under parallel smoke load
-      # and can leave >1 set with this name; the agent then correctly stops on
-      # the ambiguity. Keep the lowest-Id canonical set, delete the extras.
+      # Dedupe: the name-keyed create-if-absent can race under parallel smoke
+      # load and leave >1 set with this name; the agent then correctly stops on
+      # the ambiguity. Keep the lowest-Id canonical set and delete the extras.
+      # `delete` needs explicit confirmation, so pass --yes or it no-ops.
       dupes = sorted(all_named("set.all", "testsets", SET),
                      key=lambda x: str(x.get("Id")))
-      if len(dupes) > 1 and has_verb("tm", "testsets", "delete"):
+      if len(dupes) > 1:
           for extra in dupes[1:]:
               k = pick(extra, "TestSetKey", "Key", "ObjKey")
               if k:
                   call(f"set.dedup.{k}", "tm", "testsets", "delete",
-                       "--test-set-key", k)
+                       "--test-set-key", k, "--yes")
           dupes = sorted(all_named("set.after", "testsets", SET),
                          key=lambda x: str(x.get("Id")))
       ts = dupes[0] if dupes else None
@@ -146,9 +147,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent read the run's aggregate with get-stats (list rows carry no totals)"
+    description: "Agent read the run's aggregate with get-stats or report get (list rows carry no totals; the skill names both as sources)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+executions?\s+get-stats\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)'
+    command_pattern: 'uip\s+tm\s+(?:executions?\s+get-stats|report\s+get)\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--execution-id\s+\S)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

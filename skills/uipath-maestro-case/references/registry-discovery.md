@@ -236,6 +236,7 @@ Use the component type from the sdd.md to identify the **primary** cache file, t
 | RPA | `process-index.json` |
 | AGENT | `agent-index.json` |
 | FUNCTION | `function-index.json` |
+| FLOW | `flow-index.json` |
 | `business-rule` | `businessRule-index.json` |
 | CASE_MANAGEMENT | `caseManagement-index.json` |
 | CONNECTOR_ACTIVITY | `typecache-activities-index.json` |
@@ -246,7 +247,7 @@ Use the component type from the sdd.md to identify the **primary** cache file, t
 
 For types marked "not in cache" (`EXTERNAL_AGENT`, `TIMER`), skip the cache lookup — these have no registry representation. `TIMER` → emit the `wait-for-timer` plugin shape. **`EXTERNAL_AGENT` has no generation plugin here — never write `type: external-agent`; model as `api-workflow` / `execute-connector-activity` per Rule 17.**
 
-**Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search the other cache files using the task's type-specific portable name, preserving the existing fallback behavior. For `process` tasks the fallback is a hard gate before any unresolved/placeholder outcome — see [`plugins/tasks/process/planning.md` § Registry Resolution](plugins/tasks/process/planning.md#registry-resolution). **Exception: do not cross-type-fallback an `action`, `case-management`, `function`, or `business-rule` lookup.** An Action App ID is valid only from `action-apps-index.json`, a child-case `entityKey` is valid only from `caseManagement-index.json`, a function `entityKey` is valid only from `function-index.json`, and a rule `entityKey` is valid only from `businessRule-index.json`; a same-named process, agent, or API workflow is not a compatible substitute for any of these task types.
+**Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search the other cache files using the task's type-specific portable name, preserving the existing fallback behavior. For `process` tasks the fallback is a hard gate before any unresolved/placeholder outcome — see [`plugins/tasks/process/planning.md` § Registry Resolution](plugins/tasks/process/planning.md#registry-resolution). **Exception: do not cross-type-fallback an `action`, `case-management`, `function`, `flow-process`, or `business-rule` lookup.** An Action App ID is valid only from `action-apps-index.json`, a child-case `entityKey` is valid only from `caseManagement-index.json`, a function `entityKey` is valid only from `function-index.json`, and a rule `entityKey` is valid only from `businessRule-index.json`, a flow `entityKey` is valid only from `flow-index.json`; a same-named process, agent, or API workflow is not a compatible substitute for any of these task types.
 
 ### 2. Search by Name and Folder Path
 
@@ -320,6 +321,7 @@ After finding a match, map the **cache file type** (not the sdd.md component typ
 | `process-index.json` | `rpa` | `entityKey` |
 | `api-index.json` | `api-workflow` | `entityKey` |
 | `function-index.json` | `function` | `entityKey` |
+| `flow-index.json` | `flow-process` | `entityKey` |
 | `businessRule-index.json` | `business-rule` | `entityKey` |
 | `processOrchestration-index.json` | `process` | `entityKey` |
 | `caseManagement-index.json` | `case-management` | `entityKey` |

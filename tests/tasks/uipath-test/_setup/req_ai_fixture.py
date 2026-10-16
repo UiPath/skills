@@ -201,6 +201,32 @@ def cmd_seed(a):
             json.dump(env, fh, indent=2)
         log(f"saved the timed-out output of job {activity} to {out}")
 
+        # Backend health gate. The saved envelope above is the timed-out state
+        # the task needs (the agent must resume the job by --activity-id). But
+        # the agent then has to WAIT for that job to finish, and when the AI
+        # Trust Layer / LLM gateway is slow the job outruns the agent's budget
+        # and the run fails on an environment problem, not an agent one. So
+        # pre-warm the SAME job here within a generous budget: if it finishes,
+        # the agent's resume is instant; if it is still running after the
+        # budget, the backend is too slow for this run — exclude the task as
+        # tenant-not-ready (the pass-rate gate drops a pre_run that exits non
+        # zero with TENANT NOT READY on stderr) rather than let it fail closed.
+        rc, henv = call("backend.health", "tm", "requirements", "generate-testcases",
+                        "--project-key", a.project, "--activity-id", activity,
+                        "--wait", "--timeout", "240", "--poll-interval", "5",
+                        timeout=300, check=False)
+        timed_out = (rc == 2 or (henv.get("ErrorCode") or "").lower() == "timeout"
+                     or "timed out" in (henv.get("Message") or "").lower())
+        if timed_out:
+            print("TENANT NOT READY — the AI generate backend did not finish job "
+                  f"{activity} within 240s on project {a.project}; the AI Trust "
+                  "Layer / LLM gateway is too slow for this run. Not an agent "
+                  "failure.", file=sys.stderr, flush=True)
+            sys.exit(1)
+        if rc != 0:
+            fail(f"backend.health on job {activity} failed (rc={rc}): "
+                 f"{json.dumps(henv)[:300]}")
+
     log(f"{a.requirement} ready: {rid}, {len(wanted)} linked test case(s)")
 
 
