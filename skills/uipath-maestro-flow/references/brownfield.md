@@ -66,6 +66,41 @@ Merge warns, does not carry, and refuses under `--strict` when:
 Never copy `$WORK/edited/<source>/` into the project by hand: it carries the
 round trip's changes along with yours.
 
+## Flows with draft nodes: let merge compile
+
+A canvas-saved flow often holds **draft** nodes: a connector with no connection
+yet, a required input left empty, or a generic operation with no object picked
+(connector action steps only; a draft trigger, `waitForEvent` or connector tool
+still refuses and must be finished first). `compile` refuses them even with
+`--no-check`, so the loop above stops at the first compile of the untouched
+source, and so do the pipeline and the by-hand loop below. Hand the edited
+**source** to `merge` instead, and let it build the baseline from the original
+itself:
+
+```bash
+uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
+# Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
+flow-sdk flow merge "$PROJECT/Deployed.flow.ts" --original "$CANONICAL" \
+  --baseline-from "$CANONICAL" -o "$WORK/candidate.flow"
+```
+
+Set `PROJECT`, `CANONICAL` and `WORK`, then validate and replace, as in the
+loop above.
+
+- `--baseline-from <original.flow>` builds the baseline in memory; skip the
+  baseline compile. A `.flow.ts` edited input is compiled by merge too. Both
+  compiles tolerate draft nodes.
+- A draft node you did **not** touch is restored exactly as saved, with
+  `[DRAFT_NODE_KEPT]` on stderr. A draft inside a subflow is always refused,
+  touched or not: merge takes subflows from the edited source whole.
+- A draft node you **changed** gets the refusal a normal compile gives
+  (`[BINDING_MISSING]`, `[CONNECTOR_INPUT_MISSING]` or
+  `[CONNECTOR_OBJECT_REQUIRED]`) and nothing is written. Finish that node or
+  revert the edit.
+- Pass `--library` / `--bindings` as you would to `compile`; `--strict` works
+  here too. Use the SDK's `flow-sdk` bin: `uip maestro flow merge` does not
+  forward `--baseline-from` yet (UiPath/cli#5214).
+
 ## The generated pipeline
 
 `decompile` writes `<Name>.pipeline.mjs` into the `.flow-sdk/` work directory
