@@ -19,6 +19,25 @@ Any dangling tail gets an End automatically; an explicit `.return(...)` is requi
 only when values must be bound. Multiple path ends are emitted as `end`, `end2`,
 `end3`, and so on.
 
+Only an End sets a flow output. When a step sets an output with `{ updates }`,
+code reads it as `$vars.<output>`, or a `{ shared }` input or a default feeds
+it, the SDK holds the value in a Variable named `<output>Value`, and every End
+maps the output from it. You still write the output's own name:
+
+```ts
+.output({ summary: types.string })
+.step('work', script({ code: 'return "hi";', returns: 'string' }), { updates: { summary: out('work') } })
+// emits: summaryValue (inout) = $vars.work.output; each End: summary <- $vars.summaryValue
+```
+
+- Read the result by the output's name: `variables.globals.summary` in the
+  debug read-back. `summaryValue` can appear beside it; ignore it.
+- Do not give anything else the name `<output>Value`: an input, output,
+  `.var()`, step, entry point, or trigger id. `check` reports
+  `OUTPUT_BACKING_COLLISION`; rename yours.
+- An End that does not name an output, and has no such Variable behind it,
+  returns `null` for it.
+
 ## Ending another path at the same End
 
 Give the End a `name`, and another path can end there with `.stepToRef(name)`
