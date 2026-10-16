@@ -55,6 +55,11 @@ and therefore exact for this scheme.
 | `testcase_bulk_create_integration` | HEALTH | none shared; `EVFX-TCBULK-<uuid8> <title>` per run | `pre_run` writes `cases.json` and creates the first case; `post_run` deletes the run's cases, `pre_run` sweeps ones older than 6 hours |
 | `testcase_lookup_integration` | HEALTH | `EVFX-TCLOOK-TC{1,2}` (label `EVFX-TCLOOK-Checkout`), `EVFX-TCLOOK-TC3` (label `EVFX-TCLOOK-Other`), `EVFX-TCLOOK-Set{A,B,C}` holding TC1, TC2, TC3 | Seeded once, read-only. `pre_run` deletes duplicates a concurrent first seed leaves (lowest key wins) and fails if the shape drifted |
 | `testcase_lifecycle_e2e` | HEALTH | none shared; `EVFX-TCLIFE-<uuid8> Login`/`Logout`/`Login copy` per run | The agent deletes its copy; `post_run` deletes the rest, `pre_run` sweeps ones older than 6 hours |
+| `testcases_export_smoke` | HEALTH | `EVFX-FXEXP-Login` | Seeded once, read-only. The file goes to the run's own `exports/` |
+| `export_job_download_integration` | HEALTH | `EVFX-FXJOB-Checkout` | Seeded once, read-only. `pre_run` starts a no-wait export and writes its job id to the run's `seed.json` |
+| `export_overwrite_ask_integration` | HEALTH | `EVFX-FXASK-Login` | Seeded once, read-only. `pre_run` writes the user's `exports/report.xlsx` in the run's folder |
+| `testcases_export_by_label_e2e` | HEALTH | `EVFX-FXLAB-TC{1,2}` (label `EVFX-FXLAB-Payments`), `EVFX-FXLAB-TC3` (label `EVFX-FXLAB-Other`) | Seeded once, read-only; `pre_run` deletes duplicates a concurrent first seed leaves and fails if the labels drifted |
+| `report_export_integration` | HEALTH | `EVFX-FXRPT-Login`, `EVFX-FXRPT-Checkout`, `EVFX-FXRPT-Set` holding both, with exactly one finished manual run (one Passed, one Failed) | Seeded once. `pre_run` keeps the oldest finished run and deletes any other run of the set; `post_run` deletes runs the agent started |
 
 The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
 (`seed`, `check`). It knows no names: each task passes its own `EVFX-` names

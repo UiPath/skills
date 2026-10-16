@@ -62,6 +62,11 @@ OWNERS = {
     "TCBULK": "testcase_bulk_create_integration.yaml",
     "TCLOOK": "testcase_lookup_integration.yaml",
     "TCLIFE": "testcase_lifecycle_e2e.yaml",
+    "FXEXP": "testcases_export_smoke.yaml",
+    "FXJOB": "export_job_download_integration.yaml",
+    "FXASK": "export_overwrite_ask_integration.yaml",
+    "FXLAB": "testcases_export_by_label_e2e.yaml",
+    "FXRPT": "report_export_integration.yaml",
 }
 
 
