@@ -70,7 +70,7 @@ success_criteria:
     command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0.0  # advisory: an already-authenticated agent may skip it; outcome criteria grade the work
 
   - type: command_executed
     description: "Agent created a project with both --name and --project-key carrying values"

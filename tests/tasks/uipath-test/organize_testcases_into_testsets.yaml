@@ -94,7 +94,7 @@ success_criteria:
     command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0.0  # advisory: an already-authenticated agent may skip it; outcome criteria grade the work
 
   - type: command_executed
     description: "Agent narrowed the lookup server-side with --filter rather than listing the project (Critical Rules #8 + #9)"
