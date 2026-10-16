@@ -1,6 +1,6 @@
 # Local Metadata Regeneration
 
-Use this guide when BPMN source changed and local package metadata must be refreshed or verified: after binding a connection, or before packaging, upload, debug, publish, or deploy.
+Use this guide when BPMN source changed and local package metadata must be refreshed or verified: after binding a connection, or before packaging, upload, debug, publish, or deploy. Not for a trigger-start draft: it has no manual start, so `refresh` fails; skip it ([SKILL.md](../../SKILL.md) step 3).
 
 **Do NOT apply it to an Integration Service draft or boundary handoff.** When the user asked for a local BPMN draft that hands connector enrichment to the CLI (a request that only says to validate is not one), `entry-points.json`, `bindings_v2.json`, `operate.json`, and `package-descriptor.json` stay CLI-owned — do not hand-author or pre-generate them. Author only the `.bpmn` source shape plus a `.md` notes file **inside the project directory** naming the CLI-owned blockers. The regeneration workflow below reaches such a project only once its connectors are enriched.
 
@@ -94,7 +94,8 @@ Do not derive metadata from stale package files first. Use existing generated fi
    ```
 
    `refresh` materializes `Intsvc.*` connection bindings (including triggers)
-   and validates before writing. It needs `project.uiproj` — without one it
+   and validates before writing. It needs a root manual start, so a
+   trigger-start draft never reaches this step. It needs `project.uiproj` — without one it
    exits `BpmnRefreshFailed` / `RetryWillNotFix`; for a bare `.bpmn`, write the
    two-key `project.uiproj` first. `Data.WrittenFiles` names the files that were
    stale and `Data.UnchangedFiles` the ones already current, so a drift answer
