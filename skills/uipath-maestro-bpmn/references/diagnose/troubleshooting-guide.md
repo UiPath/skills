@@ -18,7 +18,9 @@ Collect public-safe identifiers:
 - Folder/context label.
 - Approximate run time.
 - Local commit or package version, if known.
+<!--skill-flavor:run-source:start-->
 - Whether the run came from `uip maestro bpmn debug` or `uip maestro bpmn process run`.
+<!--skill-flavor:run-source:end-->
 
 Do not record secrets, tenant URLs, connection IDs, or payload data in public notes.
 
@@ -29,9 +31,11 @@ uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 
 Parse the instance ID, folder context, process key, final status, and any trace/run identifiers from the JSON output.
+<!--skill-flavor:debug-run-identifiers:start-->
 For debug runs, prefer the `instanceId` returned by
 `uip maestro bpmn debug` and inspect it with `debug-instance` commands. Keep
 deployed-instance status reads and debug-session inspection separate.
+<!--skill-flavor:debug-run-identifiers:end-->
 
 ## Step 2 - Read incidents
 

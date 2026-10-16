@@ -22,3 +22,12 @@
    auto-deploys; a shared location needs `uip solution deploy run`. Follow
    `uipath-solution` for destinations and redeploys.
 <!--skill-flavor:delegated-resource-author-deploy:end-->
+<!--skill-flavor:live-run-node-output:start-->
+   (5) Unless the task forbids
+   live runs or asks for a draft or handoff, run the process with
+   `uip bpmn run` (Studio Web's Debug service) and read the node's output in
+   its `Execution trace`. Map `=result.<key>` to the key that output used; a
+   scalar can surface under a generic key instead of the schema property
+   name. Without a run, or when the trace does not show the value, use the
+   schema name and report the mapping as unverified.
+<!--skill-flavor:live-run-node-output:end-->
