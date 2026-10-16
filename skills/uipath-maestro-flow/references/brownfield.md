@@ -104,7 +104,10 @@ decompiled entry. `check` reports `INLINE_AGENT_RESOURCE_NODE_ID` for a blank
 resource), `INLINE_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
 uuid, and `INLINE_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
 with the same `source`: both would write one `resource.json`. Delete both
-`nodeId` and `source` from a copied entry.
+`nodeId` and `source` from a copied entry. Needs `@uipath/maestro-builder-sdk`
+6.33.0 or later; an older SDK's decompile omits these fields and compile renames
+the node with a new directory, so upgrade with
+`npm install -g @uipath/maestro-builder-sdk@latest`.
 
 A node type the SDK has no factory for still round-trips: it comes back as
 `rawNode({ nodeType, version, manifest, inputs })`, carrying the definition the
