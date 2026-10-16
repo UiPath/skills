@@ -15,7 +15,7 @@
     "Unresolved resources": 2
   },
   "references/brownfield.md": {
-    "Artifact I/O": 2,
+    "Artifact I/O": 3,
     "Never auto-debug or publish to Orchestrator": 2,
     "Runnable resources and sidecars": 1,
     "The build is lossless against the SDD": 1

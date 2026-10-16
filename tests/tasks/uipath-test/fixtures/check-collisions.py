@@ -25,6 +25,8 @@ EVFX = re.compile(r"EVFX-[A-Z]+(?:-[A-Za-z0-9]+)*")
 
 # Namespace segment -> the single task file allowed to own it.
 OWNERS = {
+    "SCHEDSMOKE": "schedule_list_smoke.yaml",
+    "SCHEDLC": "schedule_lifecycle_e2e.yaml",
     "RERUN": "execution_rerun_failed_integration.yaml",
     "FLAKY": "flaky_tests_analysis.yaml",
     "SIGNOFF": "release_signoff_wait_report_e2e.yaml",
@@ -36,6 +38,9 @@ OWNERS = {
     "SCHEMA": "customfield_schema_multiscope_build.yaml",
     "CFIELD": "customfield_definition_crud_smoke.yaml",
     "TRIAGE": "failed_run_triage_diagnose.yaml",
+    "TCLOG": "testcaselog_override_integration.yaml",
+    "TCLOGRD": "testcaselog_read_smoke.yaml",
+    "TCLOGMR": "testcaselog_manual_record_e2e.yaml",
     "PERMPRE": "project_permissions_preflight_smoke.yaml",
     "PERMAT": "project_permissions_access_integration.yaml",
     "DEFECT": "defect_lifecycle_smoke.yaml",
@@ -45,6 +50,8 @@ OWNERS = {
     "REPORT": "reporting_date_backdate_integration.yaml",
     "EXLIST": "executions_list_smoke.yaml",
     "PSET": "project_settings_smoke.yaml",
+    "RUNPKG": "run_package_ci_smoke.yaml",
+    "RUNPKGFAIL": "run_package_failing_smoke.yaml",
     "PARAM": "testcase_parameters_bulk_add_smoke.yaml",
     "PARAMEDIT": "testcase_parameters_edit_integration.yaml",
     "PARAMLIFE": "testcase_parameters_lifecycle_e2e.yaml",
@@ -70,6 +77,9 @@ OWNERS = {
     "FXASK": "export_overwrite_ask_integration.yaml",
     "FXLAB": "testcases_export_by_label_e2e.yaml",
     "FXRPT": "report_export_integration.yaml",
+    "MXEXP": "project_export_smoke.yaml",
+    "MXASK": "project_import_ask_integration.yaml",
+    "MXLIFE": "project_migration_e2e.yaml",
     "PERF": "perf_scenario_cleanup_smoke.yaml",
     "PERFSET": "perf_scenario_setup_integration.yaml",
     "PERFDRY": "perf_scenario_dryrun_e2e.yaml",
