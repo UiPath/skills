@@ -79,7 +79,7 @@ Threshold, result count, search mode: `uip agent memory add --help`. Seed items:
 ## Evidence boundary
 
 Every resource here is tenant data, runtime behaviour, or both: no local rung
-calls an MCP server, delegates to a remote agent, retrieves a memory, or asks a
+calls an MCP server, delegates to a remote agent, or asks a
 client application to run a tool. Offline `validate` proves the minted node
 types, the wiring to the right handle, and the declared contracts. Whether the
 resources exist and what they return is platform evidence.

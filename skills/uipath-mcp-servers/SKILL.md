@@ -1,6 +1,6 @@
 ---
 name: uipath-mcp-servers
-description: "UiPath Agent Gateway MCP servers (`uip agenthub mcp` / `uip agenthub mcp-tools`). Register, update, refresh tools, list, get, delete MCP servers: uipath (Orchestrator processes, agents, agentic processes, API workflows as tools), coded (published uipath-mcp Python server package), command (npx/uvx), remote (HTTP MCP URL, Relay), swagger (OpenAPI spec), platform (UiPath service operations, e.g. Test Manager); get the MCP URL a client connects to. For an agent that calls MCP tools→uipath-agents. For `uip mcp serve` (the uip CLI as an MCP server)→uipath-platform."
+description: "UiPath Agent Gateway MCP servers (`uip agenthub mcp` / `uip agenthub mcp-tools`). Register, update, refresh tools, check connections, list, get, delete MCP servers: uipath (Orchestrator processes, agents, agentic processes, API workflows as tools), coded (published uipath-mcp Python server package), command (npx/uvx), remote (HTTP MCP URL, Relay), swagger (OpenAPI spec), platform (UiPath service operations, e.g. Test Manager); get the MCP URL a client connects to. For an agent that calls MCP tools→uipath-agents. For `uip mcp serve` (the uip CLI as an MCP server)→uipath-platform."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 ---
 
@@ -13,6 +13,7 @@ Agent Gateway is Orchestrator's hub for MCP servers and A2A agents: [about](http
 **Servers — `uip agenthub mcp`, plus `uip agenthub platform-services` / `platform-tools` to look up `platform` names:**
 
 - Create, update, delete, list or get an MCP server of any type ([Server Types](#server-types) says when to use each), and refresh its tools.
+- Check whether a server works: its Integration Service connection and its tools ([Checking a Server](#checking-a-server)).
 - Get the `McpUrl` an MCP client connects to.
 - Find the UiPath services and tool names a `platform` server can expose.
 
@@ -124,6 +125,14 @@ These are the things the CLI does not advertise in `--help`.
 | `selfhosted`, `process-assistant` | Refused. |
 
 Payload fields per type, the `uipath` tools list, masked values and moving a server to another host: [references/updating-servers-guide.md](references/updating-servers-guide.md).
+
+## Checking a Server
+
+Agent Gateway's **Check connection** tests a server's Integration Service connection; **Refresh tools** tests the server itself.
+
+- **The connection:** `uip is connections ping <CONNECTION_ID> --force-refresh --output json`, with the `ConnectionId` from `mcp get` (no `ConnectionId` means the server has no connection to check). `Data.Status: "Enabled"` means it is active. Any other status fails with `Connection '<CONNECTION_ID>' is not enabled (status: <STATUS>).`; an `Expired` connection needs its owner to sign in again (`uip is connections edit <CONNECTION_ID>`, or Integration Service in the portal). Tell the user; do not create, swap or clear a connection to get past it.
+- **The server:** `refresh-tools` (Rule 7). On `remote` and `swagger`, `Refreshed` means Agent Gateway reached the server (or the spec) with its credentials and stored the tools it listed; confirm with `mcp-tools list` (Rule 5). A failure names the cause ([troubleshooting](references/troubleshooting-guide.md#refresh)). On `coded` / `command` it only starts the job. It authenticates with the caller's own per-user connection on the server when there is one, otherwise with the server's `ConnectionId`; the CLI cannot list per-user connections.
+- `refresh-tools` is a write: on `remote` and `swagger`, a tool list that differs from the stored one in any field recreates every tool with a new id and deletes the tools' guardrails. When the user only asked to check the server, say so before running it.
 
 ## Tools (`uip agenthub mcp-tools`)
 

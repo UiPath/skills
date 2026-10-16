@@ -1,0 +1,160 @@
+task_id: skill-ah-publish-from-pdd-403-fallback
+description: >
+  APPLICATIONS NEVER BLOCK THE PUBLISH — the RPANAV-19120 scenario, live, on the
+  second alpha tenant coderevalsAH. That tenant is configured for it, and pre_run
+  fails as ERROR when the configuration drifts: its Business Process schema does NOT
+  offer `new_applications` (the applications section's "add new applications"
+  control is off), the inventory holds two of the PDD's five systems (Microsoft
+  Dynamics 365, Signicat) and none of the other three, and the CI identity is a
+  non-admin, so the skill's only route to the missing systems is the admin
+  inventory upsert (`uip ah applications update`), which the tenant refuses. The
+  same PDD and process map as publish_from_pdd_structural, behind the same call
+  recorder. The grade: the agent attempted the upsert once, before the create, and
+  then published anyway — exactly one successful create, the two inventory systems
+  attached by id, no `new_applications` key, no decoy or out-of-scope substitute,
+  and the three unattachable systems named in the description. The payload,
+  documents, read-back, header and users-list checks are the structural task's
+  own. post_run archives this run's process. Judge-free.
+tags: [uipath-automationhub, integration, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 22
+  max_turns: 40
+
+# The structural task's fixtures and recorder; use_tenant.py points `uip` at the
+# second tenant before anything else runs.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_shared/live_template
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: ../publish_from_pdd_structural/fixtures
+  mock_path_dirs:
+    - .uip-recorder
+
+# The grader is the structural task's check_publish.py (shared subcommands plus `fallback`).
+reference:
+  directory: ../publish_from_pdd_structural
+
+pre_run:
+  - command: "python3 _setup/use_tenant.py coderevalsAH f2ebc735-da3c-479e-8e72-362bcb10a71e"
+    timeout: 120
+  - command: >-
+      python3 _setup/preflight_ah.py --require-non-admin --require-no-new-applications
+      --require-app "Microsoft Dynamics 365" --require-app Signicat
+      --require-no-app Trapets --require-no-app Scrive --require-no-app "Temenos T24"
+    timeout: 300
+  - command: "python3 _setup/seed_publish.py"
+    timeout: 60
+
+initial_prompt: |
+  Our Retail Account Onboarding process is approved. Its PDD is
+  `pdd-retail-account-onboarding.md` and its process map is
+  `process-map-retail-account-onboarding.bpmn`, both in this folder. Publish the
+  process to UiPath Automation Hub as a business process and attach both
+  documents.
+
+  The PDD is the only source for what the process is and which systems it uses.
+  Keep the process name exactly as the PDD titles it, including its reference code.
+
+  Important:
+  - The `uip` CLI is already available and authenticated against the target
+    tenant. Do NOT run `uip login` and do NOT handle a token yourself.
+  - Do NOT inspect `_setup/`, `.uip-recorder/`, `.ah-tenant.json` or `seed.json`.
+  - Do NOT call AskUserQuestion — it is not available in this harness. Treat the
+    payload preview as approved and keep going.
+
+  Before starting, load the uipath-automationhub skill and follow its workflow.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-auth'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key (401s a cloud token exactly like x-ah-openapi-auth)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-app-key'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent stayed on the CLI transport — no hand-built Authorization header and no raw HTTP to Automation Hub"
+    tool_name: "Bash"
+    command_pattern: '(?i)(authorization["'']?\s*[:=]|\b(curl|wget|invoke-restmethod|invoke-webrequest)\b[^\n]*automationhub_)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exactly one automations create --from-schema, on the Business Process idea flow, and it succeeded on the tenant (the 403 never stops or re-runs the publish)"
+    command: "python3 $REFERENCE_DIR/check_publish.py create-once"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Submitted answers resolve every required field: PDD process name and description, an active, non-'Other' category from the tenant's tree, the auth-info email as owner and submitter, documentation codes verbatim from the schema enum, no template placeholders"
+    command: "python3 $REFERENCE_DIR/check_publish.py payload"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The scenario under test (RPANAV-19120): attempt the admin upsert once, take the
+  # 403, publish anyway with what the inventory has, and say what was left out.
+  - type: run_command
+    description: "403 FALLBACK — admin applications upsert attempted once, before the create, refused by the tenant and never retried; the create carries the two inventory ids only (no new_applications, no decoy or out-of-scope substitute) and the description names Trapets, Scrive and Temenos T24 as not in the inventory"
+    command: "python3 $REFERENCE_DIR/check_publish.py fallback"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "PDD (type 1) and the laid-out process map (type 6, or 9) each uploaded once to the created process, byte-identical to the staged files"
+    command: "python3 $REFERENCE_DIR/check_publish.py documents"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Owner lookup, if any, is server-side and does not assume the active-only filter: every users list carries --search and --invite-status all (RPANAV-19110)"
+    command: "python3 $REFERENCE_DIR/check_publish.py users"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent read the attachments and the record back after the create (documents list + automations get)"
+    command: "python3 $REFERENCE_DIR/check_publish.py verify"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not read the harness's call log, snapshot or setup scripts instead of the tenant"
+    tool_name: "Bash"
+    command_pattern: '(cat|less|head|tail|grep|jq|python3?)\s+[\s\S]*(\.uip-recorder/|\.ah-tenant\.json|seed\.json|_setup/)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_ah.py"
+    timeout: 300

@@ -28,7 +28,7 @@ Define an autonomous agent inside this Flow project, with optional resources.
     rules: [{ $ruleType: 'always', applyTo: 'inputAndOutput' }] }] }))
 ```
 
-`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds; memory is attached with the CLI, not `inlineAgent` ([agent-resources.md](agent-resources.md#memory)); `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
+`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds, each with its own identity ([agent-resources.md](agent-resources.md#tool-kinds)); memory is attached with the CLI, not `inlineAgent` ([agent-resources.md](agent-resources.md#memory)); `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
 
 ## Model and answer judgment
 

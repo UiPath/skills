@@ -232,7 +232,7 @@ Report created/edited file path, brief description, key activities/logic, instal
 
 ## XAML File Anatomy
 
-Every workflow root follows this structure. `x:Class` equals the file’s project-relative path without `.xaml`, with separators replaced by underscores: `MyWorkflow.xaml` → `MyWorkflow`; `Workflows/SendEmail.xaml` → `Workflows_SendEmail`. Dots such as `Workflows.SendEmail` cause *"Invalid ActivityBuilder name … Suggested name …"*.
+Every workflow root follows this structure. `x:Class` equals the file’s project-relative path without `.xaml`, with separators replaced by underscores: `MyWorkflow.xaml` → `MyWorkflow`; `Workflows/SendEmail.xaml` → `Workflows_SendEmail`. Dots such as `Workflows.SendEmail` cause *"Invalid ActivityBuilder name … Suggested name …"*. In a C# project the root also carries `sap2010:ExpressionActivityEditor.ExpressionActivityEditor="C#"`, as `init` writes it in `Main.xaml`: Studio opens a root without it as VisualBasic and refuses the file, while `validate` and `build`, which compile in the project's language, pass it.
 
 ```xml
 <Activity mc:Ignorable="sap sap2010 sads" x:Class="FolderName_FileName"
