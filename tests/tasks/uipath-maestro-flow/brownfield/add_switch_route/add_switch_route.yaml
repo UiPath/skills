@@ -5,11 +5,12 @@ description: >
   on the 2026-09-29 nightly. The agent adds a fourth case to a switch whose
   cases carry their own ids and conditions (`escalate` / `auto` / `reject`), and
   ends it at a new End node that maps the flow outputs. Graded offline on
-  purpose: validate, the new route, and that the three original cases and every
-  other node, edge, binding, variable, agent sidecar and canvas position are
-  unchanged. No flow debug, because what is under test is what the edit did to
-  the file; a debug run would spend IxP, agent and API workflow calls without
-  grading that.
+  purpose: validate, the new route, that the edit went through the skill's
+  decompile/merge loop (a hand-edited .flow fails), and that the switch's label,
+  its three original cases and every other node, edge, binding, variable, agent
+  sidecar and canvas position are unchanged. No flow debug, because what is
+  under test is what the edit did to the file; a debug run would spend IxP,
+  agent and API workflow calls without grading that.
 tags: [uipath-maestro-flow, integration, mode:build, lifecycle:edit, shape:multi-node, node:switch]
 
 run_limits:
@@ -82,4 +83,12 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The .flow was written by uip maestro flow merge (the skill's decompile/merge loop), not edited by hand"
+    command: "python3 $REFERENCE_DIR/brownfield/check_brownfield_edit.py merged --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0

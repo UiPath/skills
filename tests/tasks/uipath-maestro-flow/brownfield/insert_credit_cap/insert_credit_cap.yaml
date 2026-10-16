@@ -5,8 +5,9 @@ description: >
   on the 2026-09-29 nightly (17 nodes, two inline agents with sidecars, a
   context index, Data Service connector nodes, an API workflow, a switch whose
   cases carry their own conditions). The agent inserts one Script node on the
-  auto-resolve route. Graded offline on purpose: validate, the edit itself, and
-  that every node, edge, binding, variable, agent sidecar and canvas position
+  auto-resolve route. Graded offline on purpose: validate, the edit itself, that
+  it went through the skill's decompile/merge loop (a hand-edited .flow fails),
+  and that every node, edge, binding, variable, agent sidecar and canvas position
   the task did not name is unchanged. No flow debug, because what is under test
   is what the edit did to the file; a debug run would spend IxP, agent and API
   workflow calls without grading that.
@@ -80,4 +81,12 @@ success_criteria:
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The .flow was written by uip maestro flow merge (the skill's decompile/merge loop), not edited by hand"
+    command: "python3 $REFERENCE_DIR/brownfield/check_brownfield_edit.py merged --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
