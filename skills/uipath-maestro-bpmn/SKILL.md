@@ -169,11 +169,12 @@ dropping and merging items while summarizing, then building from the summary.
 
 ## Workflow
 
-Authoring runs four phases in order. The **mode** decides which steps run; it
+Authoring runs five phases in order. The **mode** decides which steps run; it
 never changes what a step does.
 
 | Phase | Steps | What happens | Reference |
 | --- | --- | --- | --- |
+| **0 — Surface** | — | Nothing to do yet: the skill assumes a terminal. | Below |
 | **1 — Preflight** | 1a–1b | Check login, scan for an existing solution and project. Writes nothing, so it runs in every mode. | Below |
 | **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no registry calls**. Draft mode only, except 2a. | [references/phase-2-skeleton.md](references/phase-2-skeleton.md) |
 | **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, hold the approval gate. Draft mode only. | [references/phase-2-skeleton.md](references/phase-2-skeleton.md#iterating) |
@@ -191,16 +192,16 @@ request:
 
 | Mode | Detect it when | Phases |
 | --- | --- | --- |
-| **Brownfield** | A `.bpmn` the request targets already exists. Do not run `init`; if the file is bare (no `project.uiproj`), bootstrap it with the two-key `project.uiproj` + `refresh` path in 4c. Pre-empts the inference below — the shape is already on disk. | 1, then 3–4 |
-| **Discovery-only** | The request asks to discover before authoring, save raw registry JSON/evidence, or explicitly "do not author yet", even if it describes an eventual BPMN. Immediately create `registry-evidence/`, save `registry pull --output json`, `registry list --output json` or `registry search ... --output json`, and `registry get <type> --output json` for each requested type. Do not scaffold a project and do not read deep authoring references. Recipe: [references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks). | 1, then terminate |
+| **Brownfield** | A `.bpmn` the request targets already exists. Do not run `init`; if the file is bare (no `project.uiproj`), bootstrap it with the two-key `project.uiproj` + `refresh` path in 4c. Pre-empts the inference below — the shape is already on disk. | 0–1, then 3–4 |
+| **Discovery-only** | The request asks to discover before authoring, save raw registry JSON/evidence, or explicitly "do not author yet", even if it describes an eventual BPMN. Immediately create `registry-evidence/`, save `registry pull --output json`, `registry list --output json` or `registry search ... --output json`, and `registry get <type> --output json` for each requested type. Do not scaffold a project and do not read deep authoring references. Recipe: [references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks). | 0–1, then terminate |
 
 Otherwise infer the mode from the request before anything runs. **Never ask**
 — there is no mode question, and nothing in this skill blocks on one:
 
 | Mode | Take it when | Phases |
 | --- | --- | --- |
-| **Draft** | The session is in plan mode, or the request asks for the shape first — *plan mode*, *draft*, *design*, *sketch*, *what would it look like*, *show me first*. | 1–3, stop at the gate |
-| **Auto** | Anything else. This is the default. | 1, 2a, 4, no stop |
+| **Draft** | The session is in plan mode, or the request asks for the shape first — *plan mode*, *draft*, *design*, *sketch*, *what would it look like*, *show me first*. | 0–3, stop at the gate |
+| **Auto** | Anything else. This is the default. | 0–1, 2a, 4, no stop |
 
 Auto is the default precisely because it is the only mode that completes
 unattended: draft's gate at 3c needs a user to satisfy it, so a non-interactive
@@ -220,6 +221,11 @@ only when you reach the structure it covers, and read only the section covering
 it — [references/structural-bpmn.md](references/structural-bpmn.md) opens with
 a section index naming every anchor. Get the needed templates, then write the
 first complete version before further spelunking.
+
+### Phase 0 — Surface
+
+Nothing to do yet: the skill assumes a terminal and shows the shape by
+upload. Surface detection is future work.
 
 ### Phase 1 — Preflight
 

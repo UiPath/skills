@@ -89,7 +89,7 @@ error-severity findings, and only when they block import.
 
 ## Steps
 
-Phase 1 runs first, and 2a has created or adopted the project — see
+Phases 0 and 1 run first, and 2a has created or adopted the project — see
 [SKILL.md](../SKILL.md#workflow). Then:
 
 - **2b Author the skeleton** into the `.bpmn` that `init` generated, editing in
