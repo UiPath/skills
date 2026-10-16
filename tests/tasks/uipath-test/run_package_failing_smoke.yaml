@@ -7,7 +7,7 @@ description: >
   `uip tm run --type package` and the run reports a failing test. The package
   is the cross-platform `FailingTestCase_CrossPlatform_VB_Tests` (one test
   that always fails), run by the folder's serverless robot. The skill teaches
-  (Rule 10(c)) that exit 1 with `RunPackageTestsFailed` is a test result to
+  (Rule 10(d)) that exit 1 with `RunPackageTestsFailed` is a test result to
   report, not a CLI error to retry. pre_run checks the package is there,
   seeds a throwaway `EVFX-RUNPKGFAIL-*` project per run, and post_run deletes
   it. Graded on the JUnit report on disk and on the tenant: the report's

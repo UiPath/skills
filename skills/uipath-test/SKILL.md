@@ -67,11 +67,11 @@ Open a manual run with `uip tm testsets run --test-set-key <KEY> --execution-typ
 
 ### Run an uploaded package (CI)
 
-`uip tm run --type package --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-path <FOLDER_PATH> --project-key <PROJECT_KEY> --output json` runs every test in a package already uploaded to Orchestrator, re-runs failures, and writes a report. Pack and upload first with `uip rpa pack` / `uip or packages upload`.
+`uip tm run --type package --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-path <FOLDER_PATH> --project-key <PROJECT_KEY> --output json` runs every test in a package already uploaded to Orchestrator, re-runs failures with `--max-retries <N>`, and writes a report. Pack and upload first with `uip rpa pack` / `uip or packages upload`.
 
 - Get `<VERSION>` from `uip or packages versions <PACKAGE_NAME> --folder-path <FOLDER_PATH> --output json`. An app version (`1.0`) runs its latest `1.0.x` patch; an exact version must be the latest patch, and an older one exits 3 with nothing created.
 - Under a CI step time limit, pass `--timeout <SECONDS>` below that limit (default 7200): a step killed first leaves no report.
-- Exit 1 with `RunPackageTestsFailed` or `RunPackageCancelled` is a test result: report it, see Rule 10(c). Exit 4 is a timeout: the execution may still be running and `Data.OutputPath` holds a partial report with unfinished tests marked skipped. Report the timeout; never count skipped tests as passed. Every other non-zero exit stops (Rule 10).
+- Exit 1 with `RunPackageTestsFailed` or `RunPackageCancelled` is a test result: report it, see Rule 10(d). Exit 4 is a timeout: the execution may still be running and `Data.OutputPath` holds a partial report with unfinished tests marked skipped. Report the timeout; never count skipped tests as passed. Every other non-zero exit stops (Rule 10).
 - `--input-path` names that no test declares are listed in `Data.IgnoredInputs`; tell the user (usually a typo).
 
 ### Logs, reports, attachments, and results
