@@ -342,7 +342,7 @@ uip solution deploy config link config.json MyQueue \
   --name ProductionQueue --folder-path "Shared/Production"
 ```
 
-Effect on the file: appends `linkToResource: { name, folderPath }` to the matched resource entry. The `--name` / `--folder-path` arguments must point to a real Orchestrator/Apps resource — the deployment fails if it doesn't exist.
+Effect on the file: appends `linkToResource: { name, folderPath }` to the matched resource entry. The `--name` / `--folder-path` arguments must point to a real Orchestrator/Apps resource — the deployment fails if it doesn't exist. An `Entity` resource cannot be linked: the deploy refuses it (`Resource kind 'entity' does not support linking.`), so every deployment provisions a new, empty entity in its folder; load its records after the deploy.
 
 When the same resource name appears multiple times in the config (different kinds), pass `resourceKey` instead of `name` to disambiguate. The CLI surfaces the available keys in the error message.
 
