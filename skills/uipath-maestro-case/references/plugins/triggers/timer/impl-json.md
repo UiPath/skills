@@ -6,7 +6,7 @@ Cross-cutting direct-JSON rules live in [`case-editing-operations.md`](../../../
 
 ## Purpose
 
-Add a scheduled trigger to a case. Adapts shape to whether any Trigger node already exists in `schema.nodes`: emits the initial `trigger_1` minimal shape if none, or a secondary trigger with full render fields if one or more exist. Dual-file write: `caseplan.json` + `entry-points.json`.
+Add a scheduled trigger to a case. Adapts shape to whether any Trigger node already exists in `schema.nodes`: emits the initial `trigger_1` minimal shape if none, or a secondary trigger with full render fields if one or more exist. Dual-file write: `caseplan.case` + `entry-points.json`.
 
 ## Input spec (from `sdd.md`)
 
@@ -71,7 +71,7 @@ Emit a secondary trigger with `data.parentElement` included:
 
 ## `entry-points.json` append (required in both cases)
 
-Locate `entry-points.json` adjacent to `caseplan.json` (same directory). Append one entry:
+Locate `entry-points.json` adjacent to `caseplan.case` (same directory). Append one entry:
 
 ```json
 {
@@ -84,12 +84,12 @@ Locate `entry-points.json` adjacent to `caseplan.json` (same directory). Append 
 }
 ```
 
-- `<caseplan-basename>` — the literal filename of the case file (typically `caseplan.json`), producing a path like `/content/caseplan.json.bpmn#trigger_xxxxxx`.
+- `<caseplan-basename>` — the literal filename of the case file (typically `caseplan.case`), producing a path like `/content/caseplan.case.bpmn#trigger_xxxxxx`.
 - `<UUID v4>` — fresh `crypto.randomUUID()` per write. Non-deterministic; normalizer strips in golden diff.
 - `displayName` matches `node.data.display.label` (including the `Trigger <N>` default if `displayName` absent).
 - Leave this entry's `input`/`output` schemas (the `entry-points.json` fields above — not the trigger node's I/O) empty here — Step 6.3 back-fills them from the case's In/Out args ([entry-points-sync.md](../../../entry-points-sync.md)).
 
-**Write order:** `caseplan.json` first, then `entry-points.json`. If the second write fails, the skill surfaces the inconsistency to the user rather than silently half-applying.
+**Write order:** `caseplan.case` first, then `entry-points.json`. If the second write fails, the skill surfaces the inconsistency to the user rather than silently half-applying.
 
 ## ID generation
 

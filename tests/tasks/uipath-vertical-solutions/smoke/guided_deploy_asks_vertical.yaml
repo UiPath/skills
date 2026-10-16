@@ -1,0 +1,114 @@
+task_id: skill-vss-guided-deploy-asks-vertical
+description: >
+  Smoke: a bare "deploy a vertical solution" request. The skill must
+  trigger, check the login, and ask which vertical before anything else —
+  no package guessed, no dry run started, and never `--yes`. Offline:
+  `uip` is a record_cli mock, so criteria grade the recorded invocations.
+tags: [uipath-vertical-solutions, smoke, mode:operate, lifecycle:setup]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 20
+
+sandbox:
+  record_cli:
+    - tool: uip
+      # Fallback for anything no rule claims (e.g. `uip --version`).
+      exit_code: 0
+      stdout: "1.205.0\n"
+      responses:
+        - when:
+            verb: "login status"
+          stdout: >-
+            {"Result":"Success","Code":"LoginStatus","Data":{"Status":"Logged in",
+            "Identity":"deployer@example.com","IdentityType":"User",
+            "Organization":"example-org","Tenant":"DefaultTenant"}}
+
+        - when:
+            verb: "vss deploy"
+            flags:
+              help: {present: true, aliases: ["h"]}
+          stdout: |
+            Usage: uip vss deploy [options] [command]
+            Commands:
+              cancel   Cancel a deploy job.
+              resume   Resume a paused or failed deploy job from its last checkpoint.
+              seed     Load Data Fabric records from the local seed workspace.
+              status   Show the status and step checkpoints of a deploy job.
+
+        - when:
+            verb: "vss"
+          exit_code: 1
+          stderr: "uip (mock): not connected to the Vertical Solutions service in this offline smoke sandbox.\n"
+
+        - when:
+            verb: "or"
+          exit_code: 1
+          stderr: "uip (mock): not connected to a tenant in this offline smoke sandbox.\n"
+
+initial_prompt: |
+  Deploy a vertical solution.
+
+  This session has one turn: when you need an answer from me, ask your
+  question and end your turn. The `uip` CLI is a mock here and is not
+  connected to a live tenant; run each command once and do not retry.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-vertical-solutions skill"
+    skill_name: "uipath-vertical-solutions"
+    expected_skill: "uipath-vertical-solutions"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Checked the login before anything else (Critical Rule 1)"
+    verb: "login status"
+    tool: "uip"
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Fewest facets on a guard: the forbidden act is passing --yes to any
+  # `uip vss deploy` command, whatever else is on the line.
+  - type: cli_called
+    description: "Never passed --yes to uip vss deploy (Critical Rule 8)"
+    verb: "vss deploy"
+    tool: "uip"
+    flags:
+      "yes": {present: true, aliases: ["y"]}
+    min_count: 0
+    max_count: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did not guess a package or start a dry run before the user picked the vertical and the solution"
+    verb: "vss deploy"
+    tool: "uip"
+    flags:
+      package-name: {present: true}
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "Asked which vertical first, naming FINS and offering another vertical"
+    include_agent_output: true
+    prompt: |
+      The user said only "Deploy a vertical solution". The right next step is
+      to ask which vertical (the industry the solution is for) before asking
+      which solution.
+
+      Score 1.0 if the agent's final message asks the user which vertical,
+      names FINS (Financial Services) as an option, and also allows for a
+      vertical not listed. Mentioning that it is logged in and which tenant
+      the deploy would go to is fine.
+
+      Score 0.5 if it asks which vertical but does not name FINS, or names
+      FINS but gives no way to pick another vertical.
+
+      Score 0.0 if it does not ask which vertical, jumps straight to a FINS
+      package as if chosen, or says it deployed something.
+    weight: 2.0
+    pass_threshold: 0.8

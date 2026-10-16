@@ -4,7 +4,7 @@ Read § Reading the Project through § Component Detection, § Call Graph Rules,
 
 ## Reading the Project
 
-A UiPath project is its own raw form. No inventory script renders it: extraction reads the files, and a suspected source defect is verified in one pass — the cited workflow re-read in full with its disabled activities, both directions of its argument bindings and the workflow it invokes ([extraction-guide.md](extraction-guide.md) Step 4b). Read in this order:
+A UiPath project is its own raw form. No inventory script renders it: extraction reads the files, and a suspected source defect is verified in one pass — the cited workflow re-read in full with its disabled activities, both directions of its argument bindings and the workflow it invokes ([defect-verification-guide.md](defect-verification-guide.md)). Read in this order:
 
 1. **Manifest** — `project.json` (fields: § Signals — XAML; test registrations: § Signals — Test projects), or the solution's `.uipx` (§ Detection) and each project's manifest.
 2. **Inventory** with Glob per § Inventory and Exclusions — files per folder and per artifact type, the counts § Provenance names.
@@ -44,7 +44,7 @@ A UiPath project is its own raw form. No inventory script renders it: extraction
 | `*.cs.json` | Coded workflow argument metadata | read with the `.cs` |
 | `*.flow` | Maestro Flow | § Signals — Flow |
 | `*.bpmn` | Maestro BPMN process | § Signals — BPMN |
-| `caseplan.json` | Maestro Case plan | § Signals — Case |
+| `caseplan.case` / `caseplan.json` | Maestro Case plan | § Signals — Case |
 | `agent.json` (`"type": "lowCode"`) + `resources/*/resource.json` | Low-code agent | § Signals — Low-code Agent |
 | `langgraph.json` / `llama_index.json` / `openai_agents.json` + `*.py` | Coded agent | § Signals — Coded Agent |
 | `Workflow.json` (`document.dsl`) | API workflow | § Signals — API Workflow |
@@ -67,13 +67,15 @@ Generated boilerplate, never a source of logic: `CodedWorkflow.cs`, `Connections
 | `project.json` with `.xaml` and/or `[Workflow]` `.cs` (`.uipx` Type `Process`, `Library`, `Test`) | RPA process / library | `uipath-rpa` | Owns both XAML and coded workflows |
 | `project.uiproj` + `.flow` (`.uipx` Type `Flow`) | Flow | `uipath-maestro-flow` | |
 | `project.uiproj` + `.bpmn` (`.uipx` Type `ProcessOrchestration`) | BPMN process | `uipath-maestro-bpmn` | |
-| `caseplan.json` | Case plan | `uipath-maestro-case` | |
+| `caseplan.case` / `caseplan.json` | Case plan | `uipath-maestro-case` | |
 | `agent.json` lowCode (`.uipx` Type `Agent`) | Low-code agent | `uipath-agents` | |
 | `pyproject.toml` + framework json | Coded agent | `uipath-agents` | |
 | `Workflow.json` (`.uipx` Type `Api`) | API workflow | `uipath-api-workflow` | |
 | `uipath.json` `functions` map | Coded Function | `uipath-functions` | |
 | `project.uiproj` `ProjectType: "AppV2"` or standalone coded app markers | Coded app (Web or Action per `webAppManifest.json` `config.isActionApp`) | `uipath-coded-apps` | |
 | `element.json` + `element-metadata.json` | Custom connector | `uipath-connector-builder` | |
+
+The project folder is the part of a workflow's path the project stands for; the rest, the project-relative path the step table's Source objects cell carries (§ Provenance), is the workflow's path in the rebuild.
 
 A test project (`.uipx` Type `Test`, `[TestCase]`-only `.cs`, `designOptions.outputType: Tests`) beside the projects it tests is evidence, not a component: record "test coverage present" in the Source Map and use its assertions as acceptance-criteria evidence. When the source holds only test projects, the suite is what the genome documents: its test-case groups are test components, and its execution template with the helpers the cases share is one shared component of the same project ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1; signals: § Signals — Test projects).
 
@@ -103,7 +105,7 @@ Designer view state and layout sizes are not logic (§ Reading the Project).
 
 ### REFramework projects
 
-A project built on the Robotic Enterprise Framework template is recognised by its shape, not by a manifest flag: `Main.xaml` is a `<StateMachine>` whose states are Init, Get Transaction Data, Process Transaction and End Process; a `Framework/` folder holds the framework workflows; `Data/Config.xlsx` has the sheets Settings, Constants and Assets. The framework **is** the Transactional Shape ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)); the business logic is the Workflow. Which file feeds which row:
+A project built on the Robotic Enterprise Framework template is recognised by its shape, not by a manifest flag: `Main.xaml` is a `<StateMachine>` whose states are Init, Get Transaction Data, Process Transaction and End Process; a `Framework/` folder holds the framework workflows; `Data/Config.xlsx` has the sheets Settings, Constants and Assets. The framework **is** the Transactional Shape ([transactional-shape-guide.md](transactional-shape-guide.md)); the business logic is the Workflow. Which file feeds which row:
 
 | Source | Feeds | How |
 |---|---|---|
@@ -118,7 +120,7 @@ A project built on the Robotic Enterprise Framework template is recognised by it
 | `Framework/CloseAllApplications.xaml`, `Framework/KillAllProcesses.xaml` | At-the-end steps; Error Handling § Global (forced close between retries) | |
 | `Main.xaml` and its transitions, `InitAllSettings.xaml`, `RetryCurrentTransaction.xaml`, `TakeScreenshot.xaml`, the template's `Tests/`, `Exceptions_Screenshots/`, `Documentation/` | **Not steps.** Source Map row `Framework files` listing them; `Tests/` is test-coverage evidence | Execution recreates them from the template when the shape is applied |
 
-A **dispatcher** is recognised the other way round: a plain project (Sequence or Flowchart root) whose loop reads a source and adds one queue item per row with a reference; the queue name — a literal or a configuration value — joins it to the performer that consumes it (§ Call Graph Rules rule 3). A REFramework project whose initialisation adds the items its own item fetch then takes from the same queue is both at once: its producer steps are the initialisation's reads and adds, its consumer is the rest of the framework, and the As-is is one process holding both roles over a queue — the shape Split option C keeps ([genome-format-guide.md § Transactional Shape](genome-format-guide.md) rule 3). A guard in that initialisation (a unique reference, a check that the day's items already exist) is the Coordination row's once-guard.
+A **dispatcher** is recognised the other way round: a plain project (Sequence or Flowchart root) whose loop reads a source and adds one queue item per row with a reference; the queue name — a literal or a configuration value — joins it to the performer that consumes it (§ Call Graph Rules rule 3). A REFramework project whose initialisation adds the items its own item fetch then takes from the same queue is both at once: its producer steps are the initialisation's reads and adds, its consumer is the rest of the framework, and the As-is is one process holding both roles over a queue — the shape Split option C keeps ([transactional-shape-guide.md](transactional-shape-guide.md) rule 3). A guard in that initialisation (a unique reference, a check that the day's items already exist) is the Coordination row's once-guard.
 
 ## Signals — Coded C#
 
@@ -296,7 +298,7 @@ Skip `bpmndi:` diagram elements.
 4. Missing entry point: `outputType: Library` → each public workflow is an independent capability, listed as separate steps; `Process` without `main` → `Main.xaml` / `Main.cs` by convention, else alphabetical with `*[Inferred]*`.
 5. Unreachable workflows: list in Source Map as dead code; exclude from Workflow.
 6. Test project: the execution template invokes every registered case through its placeholder, so its steps are shared steps of every case (§ Signals — Test projects). A workflow belongs to the component whose folder holds it; a call from another component's case is a cross-component edge, never a copy of the callee.
-7. REFramework / StateMachine: the Workflow's call graph starts at the per-item process workflow and adds the once-per-run and at-the-end workflows as steps of their own (§ Signals — XAML › REFramework projects); the state machine, its transitions and the framework's retry and status workflows are not steps. The queue is a Platform Dependency; the business/system outcome classification and the counts go to the Transactional Shape ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)).
+7. REFramework / StateMachine: the Workflow's call graph starts at the per-item process workflow and adds the once-per-run and at-the-end workflows as steps of their own (§ Signals — XAML › REFramework projects); the state machine, its transitions and the framework's retry and status workflows are not steps. The queue is a Platform Dependency; the business/system outcome classification and the counts go to the Transactional Shape ([transactional-shape-guide.md](transactional-shape-guide.md)).
 
 ## Expression Translation
 
@@ -342,7 +344,7 @@ Variation row holding a password-looking field (`*password*`, `*pwd*`, `*secret*
 
 ## Provenance
 
-What the Source Map rows of [genome-format-guide.md § Source Map](genome-format-guide.md) carry for a UiPath source:
+What the Source Map rows of [extracted-genome-guide.md § Source Map](extracted-genome-guide.md) carry for a UiPath source:
 
 | Identity of | Carried as |
 |---|---|

@@ -18,7 +18,7 @@
       "exit_code": 0
     },
     {
-      "match": "or jobs traces 3033bce6-5585-4455-aaec-db7a9f791126",
+      "match": "traces spans get --job-key 3033bce6-5585-4455-aaec-db7a9f791126",
       "file": "2c9858ab16.json",
       "exit_code": 0
     },
@@ -38,7 +38,7 @@
       "exit_code": 0
     },
     {
-      "match": "or jobs traces dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1",
+      "match": "traces spans get --job-key dbf1d1b9-0a4f-4a4a-b867-9091f42fd5e1",
       "file": "ac5c9ac7fa.json",
       "exit_code": 0
     },

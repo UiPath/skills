@@ -32,9 +32,14 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from _shared.case_check import existing_caseplan  # noqa: E402
+
 CASEPLAN = "ConnectorNaming/ConnectorNaming/caseplan.json"
 ERROR_OUTPUT_NAMES = {"error"}
 ENVELOPE_BODY_KEYS = {"parameters", "filters", "queryParams"}
+# `filters` holds the compiled `expression`, never a request field: check_filter grades it
+FILTER_ENVELOPE_KEY = "filters"
 ERROR_ENVELOPE = ["code", "message", "detail", "category", "status", "element"]
 # The exact request fields fixtures/sdd.md declares, keyed by connectorKey (NOT by the
 # node's free-text displayName, which an agent can rename). A count floor was gameable
@@ -184,6 +189,12 @@ def check_inputs(label: str, block: dict, auth: list[str], connector_key: str = 
             # structural envelope keys a trigger input body carries, not contract fields:
             # `parameters` holds eventParameters, `filters` holds the filter tree
             if not prefix and written in ENVELOPE_BODY_KEYS:
+                if written == FILTER_ENVELOPE_KEY:
+                    # a populated filter is a populated request; its field names are
+                    # check_filter's to grade, and `expression` is not a contract field
+                    if value:
+                        written_count += 1
+                    continue
                 # recurse into the envelope: eventParameters ARE contract fields
                 if isinstance(value, dict):
                     walk(value, prefix)
@@ -485,7 +496,8 @@ def check_bindings(label: str, block: dict, root_bindings: list) -> None:
 
 
 def main() -> int:
-    path = sys.argv[1] if len(sys.argv) > 1 else CASEPLAN
+    requested = sys.argv[1] if len(sys.argv) > 1 else CASEPLAN
+    path = existing_caseplan(requested) or requested
     if not os.path.exists(path):
         print(f"FAIL: {path} not found")
         return 1

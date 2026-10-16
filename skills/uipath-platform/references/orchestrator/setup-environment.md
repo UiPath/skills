@@ -112,39 +112,40 @@ uip or roles update <role-key> \
   --output json
 ```
 
-Use `uip or roles permissions` to discover all grantable permission names. Use `uip or roles get <key>` to inspect a role's current grants.
+Use `uip or roles permissions list --limit 1000` to discover all grantable permission names (the default `--limit` of 50 returns only part of them). Use `uip or roles get <key>` to inspect a role's current grants.
 
 Role types:
 
 - **Tenant** — Applies across the entire tenant. Assigned via `uip or users assign-roles`.
 - **Folder** — Applies only within specific folders. Assigned via `uip or users assign` or `uip or roles assign`.
 
-> **⚠️ All three role-assign commands are destructive.** `users assign-roles`, `users assign`, and `roles assign` each **replace** the user's role list at their respective scope (tenant or per-folder). Roles not in `--role-keys` are removed silently. Always read the current roles first with `uip or roles user-roles list <user-key> --output json` and pass the full desired union. For purely additive *user* membership on a single role, use `uip or roles users <role-key> --add-users <user-key>` — that command does NOT replace the role's other assignees.
+> **⚠️ All three role-assign commands are destructive.** `users assign-roles`, `users assign`, and `roles assign` each **replace** the user's role list at their respective scope (tenant or per-folder). Roles not in `--role-keys` are removed silently. Always read the current roles first with `uip or roles user-roles list <username> --output json` and pass the full desired union. For purely additive *user* membership on a single role, use `uip or roles users set <role-key> --add-user-keys <user-key>` — that command does NOT replace the role's other assignees.
 
 #### Inspect / Audit / Delete Roles
 
 ```bash
 # List all roles in the tenant
-uip or roles list --output json
+uip or roles list --limit 1000 --output json
 
-# Full grantable-permissions catalogue (large — use --output-filter)
-uip or roles permissions --output json
+# Full grantable-permissions catalogue. The default --limit of 50 returns only part of it,
+# and --output-filter refuses to run without an explicit --limit
+uip or roles permissions list --limit 1000 --output json
 
 # Effective permissions for one user (tenant + folder roles merged)
-uip or roles user-permissions <user-key-guid> --folder-path "Finance" --output json
+uip or roles user-permissions list <username> --folder-path "Finance" --output json
 
 # Roles assigned to a user (tenant + folder)
-uip or roles user-roles <user-key-guid> --output json
+uip or roles user-roles list <username> --output json
 
 # Manage user assignments on a single role (add/remove users at the role level)
-uip or roles users <role-key> --add-users <user-key-1>,<user-key-2> --output json
-uip or roles users <role-key> --remove-users <user-key-1> --output json
+uip or roles users set <role-key> --add-user-keys <user-key-1>,<user-key-2> --output json
+uip or roles users set <role-key> --remove-user-keys <user-key-1> --output json
 
 # Delete a role. Static built-in roles (Folder Administrator etc.) cannot be deleted.
 uip or roles delete <role-key> --output json
 ```
 
-`roles user-permissions` is the right command for "what can this user actually do here" debugging; it accounts for inherited folder roles and tenant overrides. `roles user-roles` is the inverse — given a user, which role assignments exist.
+`roles user-permissions list` is the right command for "what can this user actually do here" debugging; it accounts for inherited folder roles and tenant overrides. `roles user-roles list` is the inverse — given a user, which role assignments exist. `permissions`, `user-roles`, `user-permissions` and `users` are command groups, not commands: without `list` (or `set`) they print their help and exit 1, or reject the value typed after them as an unknown command.
 
 For the forward lookup — "who holds this role" — use `roles users list`:
 
@@ -229,7 +230,7 @@ Key flags on `users update`:
 
 `DirectoryRobot` principals don't need `--unattended-username` / `--unattended-password` on import — the robot identity already carries its own credentials in IS. Use `users update --license-type Unattended` on the robot key to set the license profile.
 
-> **`users update` does NOT expose role assignments.** It only touches tenant-side flags (license, session flags, unattended credentials). To change roles, use `uip or users assign` (folder roles), `uip or users assign-roles` (tenant roles), or `uip or roles users <role-key> --add-users/--remove-users` (single-role membership). Identity attributes like `--name`, `--surname`, `--email` on directory principals are sourced from Identity Service via sync — updating them via `users update` only updates the Orchestrator-side cached copy and may be overwritten on the next IS sync.
+> **`users update` does NOT expose role assignments.** It only touches tenant-side flags (license, session flags, unattended credentials). To change roles, use `uip or users assign` (folder roles), `uip or users assign-roles` (tenant roles), or `uip or roles users set <role-key> --add-user-keys/--remove-user-keys` (single-role membership). Identity attributes like `--name`, `--surname`, `--email` on directory principals are sourced from Identity Service via sync — updating them via `users update` only updates the Orchestrator-side cached copy and may be overwritten on the next IS sync.
 
 ### Step 5: Assign Users to Folders
 

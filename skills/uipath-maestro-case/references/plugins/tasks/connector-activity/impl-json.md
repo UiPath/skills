@@ -4,7 +4,7 @@
 
 > **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --input-details` once, reads the populated `caseShape`, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Fetch the populated connector task scaffold via `uip maestro case spec --input-details`, then drop it into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `registry-resolved.json` and threads them through the spec call.
+Fetch the populated connector task scaffold via `uip maestro case spec --input-details`, then drop it into `caseplan.case`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `registry-resolved.json` and threads them through the spec call.
 
 ## Prerequisites from Planning
 
@@ -174,7 +174,7 @@ Append the task to the target stage's `data.tasks` structure using `activation-m
 **5.b — Splice (CLI-authored).** One call fills `data` from the saved spec and appends the connection's root bindings:
 
 ```bash
-uip maestro case splice "<caseplan.json>" \
+uip maestro case splice "<caseplan.case>" \
   --task-id "<taskId>" \
   --spec "tasks/spec-cache.<elementId>.json" \
   --connection-id "<connection-id from registry-resolved.json>" \
@@ -188,7 +188,7 @@ Never hand-write `data.context`, `data.inputs`, `data.outputs`, or the connectio
 **5.c — What stays with the agent after splice**, each as a narrow Edit on the spliced task:
 
 - **Output binding.** For every output the SDD references — bare name or first segment of a `->` path — apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes) to the entry `splice` wrote, keeping its `id` / `var` / `elementId`. Outputs the SDD does not reference stay as splice minted them.
-- **Output name collisions.** `caseShape.outputs[]` returns `response` / `Error` for every connector task. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule) across all tasks already in `caseplan.json`: on a collision append a counter suffix starting at 2 to `var`, `id`, `value`, and `target` (as `=<new var>`); `name`, `displayName`, and `source` stay unchanged.
+- **Output name collisions.** `caseShape.outputs[]` returns `response` / `Error` for every connector task. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule) across all tasks already in `caseplan.case`: on a collision append a counter suffix starting at 2 to `var`, `id`, `value`, and `target` (as `=<new var>`); `name`, `displayName`, and `source` stay unchanged.
 - **Solution-resource pickers.** When `spec.resourceBindings[]` is present, mint one id per `rows[]` item, append a root binding for each (`id` = the minted id, `type` = `"string"`, `resource` and `resourceKey` from the entry, `name`, `propertyAttribute`, `default` from the row), and replace that row's `bindingIdPlaceholder` in `data.inputs` with its id. Copy the values exactly; `splice` does not write these.
 - **Multipart file inputs** — 5.d below.
 
