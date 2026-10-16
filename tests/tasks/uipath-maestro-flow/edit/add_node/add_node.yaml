@@ -73,7 +73,7 @@ success_criteria:
 
   - type: run_command
     description: "start, getWeather and checkTemperature, every edge but the one the new node splits, and every variable and definition are unchanged"
-    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/edit/templates/initial_flow/BellevueWeather/BellevueWeather --project BellevueWeather/BellevueWeather --changed-node formatSummary --changed-node endNiceDay --changed-node endBringJacket --removed-edge getWeather:default>formatSummary:input"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/edit/templates/initial_flow/BellevueWeather/BellevueWeather --project BellevueWeather/BellevueWeather --changed-node formatSummary --changed-node endNiceDay --changed-node endBringJacket --removed-edge 'getWeather:default>formatSummary:input'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

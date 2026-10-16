@@ -70,7 +70,7 @@ success_criteria:
 
   - type: run_command
     description: "start, getWeather and the start -> getWeather edge, and every variable and definition still in use are unchanged"
-    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/edit/templates/initial_flow/BellevueWeather/BellevueWeather --project BellevueWeather/BellevueWeather --changed-node formatSummary --changed-node checkTemperature --removable-node endNiceDay --removable-node endBringJacket --removed-edge getWeather:default>formatSummary:input --removed-edge formatSummary:success>checkTemperature:input --removed-edge checkTemperature:true>endNiceDay:input --removed-edge checkTemperature:false>endBringJacket:input"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/edit/templates/initial_flow/BellevueWeather/BellevueWeather --project BellevueWeather/BellevueWeather --changed-node formatSummary --changed-node checkTemperature --removable-node endNiceDay --removable-node endBringJacket --removed-edge 'getWeather:default>formatSummary:input' --removed-edge 'formatSummary:success>checkTemperature:input' --removed-edge 'checkTemperature:true>endNiceDay:input' --removed-edge 'checkTemperature:false>endBringJacket:input'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

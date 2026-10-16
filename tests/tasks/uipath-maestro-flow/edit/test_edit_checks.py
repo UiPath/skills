@@ -27,6 +27,10 @@ def criteria(task: str) -> dict[str, list[str]]:
     text = (HERE / task / f"{task}.yaml").read_text()
     found = {}
     for command in re.findall(r'command: "python3 \$REFERENCE_DIR/_shared/check_brownfield_preserved\.py ([^"]*)"', text):
+        # run_command hands the string to a shell, so an unquoted '>' in an edge spec is a redirect.
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+        lexer.whitespace_split = True
+        assert not any(set(token) <= set("();<>|&") for token in lexer), f"{task}: unquoted shell operator in {command}"
         argv = shlex.split(command.replace("$REFERENCE_DIR", str(REFERENCE_DIR)))
         found["merged" if "merged" in argv else "graph"] = argv
     assert set(found) == {"merged", "graph"}, task
