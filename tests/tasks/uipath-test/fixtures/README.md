@@ -31,6 +31,9 @@ and therefore exact for this scheme.
 | `manual_execution_record_integration` | CLAIM | `EVFX-MANUAL-SET`, `EVFX-MANUAL-TC{1,2,3}` | Set and cases only, no execution — the task opens one; `pre_run` sweeps earlier days' runs (sparing today's, so a concurrent run is never destroyed) and snapshots the survivors so the oracle grades the run the agent opens |
 | `reporting_date_backdate_integration` | CLAIM | `EVFX-REPORT-SET`, `EVFX-REPORT-TC{1,2}` | One **open** execution (recorded per-run by id, executions cannot be named) — the premise is that it is not closed; `pre_run` sweeps earlier days' runs (sparing today's) and opens one fresh OPEN run, recording its ExecutionId for the oracle |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `testcaselog_override_integration` | CLAIM | `EVFX-TCLOG-TC{1,2,3}` | per-run STAMPED manual execution `EVFX-TCLOG-<STAMP>-RUN` (via `testcases run`), results `Passed, Failed, Passed`, **nothing overridden**; the task writes an override onto the failed log, so `pre_run` stamps a fresh execution and sweeps only earlier-day ones |
+| `testcaselog_read_smoke` | CLAIM | `EVFX-TCLOGRD-TC1` | 1 finished manual log, result `Passed`, create-if-absent and never deleted (read-only task) |
+| `testcaselog_manual_record_e2e` | CLAIM | `EVFX-TCLOGMR-TC1` | just the test case; the agent opens its own per-run STAMPED manual execution `EVFX-TCLOGMR-<STAMP>-RUN` and records a manual result; `pre_run` sweeps only earlier-day executions |
 | `customfield_definition_crud_smoke` | its own throwaway project | the `EVFX-CFIELD-*` namespace | `pre_run` creates one `EVFX-CFIELD-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago; `post_run` deletes it. The agent creates/renames/deletes an "Eval Reviewer" field inside it, so per-run isolation keeps concurrent gate runs from colliding on the field name |
 | `project_permissions_preflight_smoke` | `EVFX-PERMPRE-PROJECT` | the `EVFX-PERMPRE-*` namespace | `pre_run` create-if-absent of the project; no test cases/sets/executions — the task only reads `project-permissions get` |
 | `project_permissions_access_integration` | `EVFX-PERMAT-PROJECT` | the `EVFX-PERMAT-*` namespace | `pre_run` create-if-absent of the project; no test cases/sets/executions — the task only reads `project-permissions get` |
@@ -40,7 +43,7 @@ and therefore exact for this scheme.
 | `project_settings_smoke` | its own throwaway project | the `EVFX-PSET-*` namespace | `pre_run` creates one `EVFX-PSET-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago (so a concurrent run's project is never touched); `post_run` deletes it. The deliverable is a settings change, not the project, so the project is scratch (Rule 2). Unlike the self-contained build tasks, project create/delete is not under test here, so the hooks own the project's lifecycle and the agent never deletes it |
 | `run_package_ci_smoke` | its own throwaway project | the `EVFX-RUNPKG-*` namespace | Same hooks as `project_settings_smoke`: `pre_run` creates one `EVFX-RUNPKG-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans older than 6 hours; `post_run` deletes it, which also removes the execution and hidden test set `tm run --type package` creates. Runs the package `TestCase_CrossPlatform_VB_Tests`, uploading it when the folder feed lacks it; exits TENANT NOT READY on a tenant that cannot run it (see [Run-package fixtures](#run-package-fixtures)) |
 | `run_package_failing_smoke` | its own throwaway project | the `EVFX-RUNPKGFAIL-*` namespace | Same hooks as `run_package_ci_smoke`, in its own namespace so the two never sweep each other's projects. Runs the package `FailingTestCase_CrossPlatform_VB_Tests` |
-| `testcase_parameters_bulk_add_smoke` | HEALTH | `EVFX-PARAM-Login`, `EVFX-PARAM-Transfer` | Created if absent; `pre_run` clears their parameters each run and seeds `Username=keepme` on Transfer |
+| `testcase_parameters_bulk_add_smoke` | its own throwaway project | the `EVFX-PARAM-*` namespace | `pre_run` creates one `EVFX-PARAM-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) holding `EVFX-PARAM-Login` (no parameters) and `EVFX-PARAM-Transfer` (`Username=keepme`), sweeps orphans older than 6 hours, and `post_run` deletes it. Per-run because the agent mutates the cases and concurrent gate runs would corrupt a shared one |
 | `testcase_parameters_edit_integration` | HEALTH | `EVFX-PARAMEDIT-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) and `Userid=u1` |
 | `testcase_parameters_lifecycle_e2e` | HEALTH | `EVFX-PARAMLIFE-Login` | Created if absent; `pre_run` clears its parameters |
 | `testcase_parameters_ask_first_integration` | HEALTH | `EVFX-PARAMASK-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) |
@@ -48,7 +51,7 @@ and therefore exact for this scheme.
 | `requirement_ai_evaluate_smoke` | HEALTH | `EVFX-AIEVAL-REQ` | Requirement whose description `pre_run` resets to the one-line `Users can reset their password.` every run (the task appends to it) |
 | `requirement_ai_obsolete_smoke` | HEALTH | `EVFX-AIDEL-REQ`, `EVFX-AIDEL-TC{1,2,3,4}` | All four linked; TC3 and TC4 off-topic on purpose. `pre_run` recreates the one the task deleted and relinks the ones it unlinked |
 | `requirement_ai_blocked_inputs_smoke` | HEALTH | `EVFX-AIBLOCK-NODESC` | No description, no attachments. `generate-testcases` fails with HTTP 400 before a job starts, so the task spends no AI units |
-| `attachment_upload_smoke` | HEALTH | `EVFX-ATTUP-Checkout` | Created if absent; `pre_run` clears its attachments and writes a local `checkout-failure.png`; `post_run` clears its attachments |
+| `attachment_upload_smoke` | its own throwaway project | the `EVFX-ATTUP-*` namespace | `pre_run` creates one `EVFX-ATTUP-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) holding `EVFX-ATTUP-Checkout` with no attachments, writes the local `checkout-failure.png`, sweeps orphans older than 6 hours; `post_run` deletes the project. Per-run because the agent mutates attachments and a shared case would break the exactly-one check |
 | `attachment_download_integration` | HEALTH | `EVFX-ATTDL-Login` | Created if absent; `pre_run` uploads `login-error.log` and `checkout-notes.txt` (local copies removed); `post_run` clears its attachments |
 | `attachment_overwrite_ask_integration` | HEALTH | `EVFX-ATTASK-Login` | Created if absent; `pre_run` uploads `report.txt` and writes a different local `report.txt`; `post_run` clears its attachments |
 | `attachment_lifecycle_e2e` | HEALTH | `EVFX-ATTLIFE-Checkout` | Created if absent; `pre_run` clears its attachments and writes a local `release-notes.txt`; `post_run` clears its attachments |
@@ -174,6 +177,47 @@ exact run its `pre_run` opened, and `manual_execution_record` snapshots the set
 before the agent runs and grades the single new run the agent then opens —
 failing safe if a concurrent variant leaks a second new run in, rather than
 picking a winner by recency.
+
+The three `testcaselog` tasks all open executions with a manual run, because
+this CLI has **no `executions create`** — `uip tm testcases run --name <NAME>
+--execution-type manual` returns the new execution under `Data.Id` and opens a
+Pending log per case. Those executions sit on an ad-hoc test set hidden from
+`testsets list`, so they never pollute the test-set list an agent sees, and
+`executions list` cannot find them either — a sweep enumerates the task's own
+logs (`testcaselog list --search`) and groups them by `TestExecutionId`.
+
+Concurrency drove the shape of all three (two model variants share CLAIM):
+
+- `testcaselog_override_integration` stamps a fresh execution
+  `EVFX-TCLOG-<STAMP>-RUN` every run and sweeps only executions whose logs were
+  all last touched **before today**, so a concurrent run's in-flight execution
+  is never deleted (an earlier fixed-name delete-and-recreate raced). `pre_run`
+  writes the stamped execution's id to `target_execution.txt` in the sandbox
+  cwd; the prompt scopes the agent to that one run and the oracle grades **that
+  execution's** failing log (now `Passed` over an `OriginalResult` of `Failed`,
+  with a non-empty override reason), not any `EVFX-TCLOG` log in the project —
+  so a concurrent variant's correction or a historical corrected row cannot
+  false-pass it. `pre_run`'s guard is on the property, not a count (Rule 4): it
+  asserts **exactly one** log on the stamped execution reports `Failed` and that
+  **no** log starts with `OriginalResult` already differing from `Result`.
+- `testcaselog_read_smoke` is a pure reader: it seeds one finished
+  `Passed` log create-if-absent and never deletes, so growth is flat at one
+  execution. `Passed` (not `Failed`) also keeps the log off the override task's
+  `--results Failed` discovery, since the three namespaces share the
+  `EVFX-TCLOG` stem.
+- `testcaselog_manual_record_e2e` seeds only the test case; the agent opens its
+  own stamped execution, so nothing fixed-name exists to collide on. `pre_run`
+  sweeps only earlier-day executions, then snapshots the surviving
+  `EVFX-TCLOGMR` execution ids into `baseline_executions.txt` (sandbox cwd). The
+  agent creates its execution during the run, so `pre_run` cannot know that id,
+  and a log row carries no run name while the ad-hoc executions are invisible to
+  `executions list` — so the oracle isolates this run by crediting only a
+  `Passed` log on an execution **not** in the baseline, which rules out a
+  historical pass.
+
+The `-TC` in each task's `--search` prefix (`EVFX-TCLOG-TC`, `EVFX-TCLOGRD-TC`,
+`EVFX-TCLOGMR-TC`) is load-bearing: `--search` is a prefix match, and without
+the dash `EVFX-TCLOG` would also match the `TCLOGRD`/`TCLOGMR` siblings.
 
 ## Why
 
