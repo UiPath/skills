@@ -98,12 +98,28 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent validated edited files at error severity"
-    command_pattern: 'uip\s+rpa\s+validate(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--min-severity\s+error)'
-    min_count: 1
+  # Per-file validate at error severity is graded as an outcome the harness runs
+  # itself: the agent's own validate may run inside the RPA authoring subagent the
+  # build guide tells it to spawn, and the record keeps no subagent commands (run
+  # 2026-10-16_04-22-10). `uip rpa validate` exits 0 with or without findings, so
+  # the check reads Data.message: "No diagnostics found." or "Found N error(s): …".
+  - type: run_command
+    description: "Edited file validates with 0 errors at error severity (harness-run)"
+    command: |-
+      python -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); run = lambda f: subprocess.run([uip, 'rpa', 'validate', '--project-dir', os.path.abspath('payment-review-edge_Upgraded'), '--file-path', f, '--min-severity', 'error', '--output', 'json'], env=env, capture_output=True, text=True, errors='replace'); sys.exit(0 if all(r.returncode == 0 and 'No diagnostics found.' in r.stdout for r in map(run, ('Main.xaml',))) else 1)"
+    timeout: 600
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
+
+  # Advisory, no weight: the agent's own validate call. Present when the agent
+  # edited in place, absent by design when it delegated the edit to a subagent.
+  - type: command_executed
+    description: "Advisory: agent itself ran validate at error severity (absent when the edit was delegated)"
+    command_pattern: 'uip\s+rpa\s+validate(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--min-severity\s+error)'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
 
   - type: file_check
     description: "Output project.json is a Windows project pinned to UIAutomation 26.10.4"
