@@ -100,8 +100,11 @@ Leave these as they are. Removing them makes compile name the node
 with a new directory, so merge drops the original node and adds a different
 one. Do not add them to a resource you create, including one copied from a
 decompiled entry. `check` reports `INLINE_AGENT_RESOURCE_NODE_ID` for a blank
-`nodeId` or one another node has, and `INLINE_AGENT_RESOURCE_SOURCE_NOT_GUID`
-for a `source` that is not a uuid.
+`nodeId` or one another node has (or that compile derives for another
+resource), `INLINE_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
+uuid, and `INLINE_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
+with the same `source`: both would write one `resource.json`. Delete both
+`nodeId` and `source` from a copied entry.
 
 A node type the SDK has no factory for still round-trips: it comes back as
 `rawNode({ nodeType, version, manifest, inputs })`, carrying the definition the
