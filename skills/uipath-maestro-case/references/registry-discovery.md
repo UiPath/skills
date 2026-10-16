@@ -26,7 +26,7 @@ cd "<SOLUTION_DIR>" && uip maestro case sdd resolve "<SDD_PATH>" --out "<PROJECT
 
 It does the part of discovery that has one right answer — which index each task type uses, the exact-name search on the task's portable name, the narrowing by the SDD's folder — and writes the whole Rule 10 ledger, creating `tasks/`. It reads caches only: no tenant, no network. Never hand-author the ledger it writes.
 
-Read two fields of the response:
+Read three fields of the response:
 
 - `Data.Counts` — `tasks`, `selected`, `ambiguous`, `absent`.
 - `Data.Unresolved[]` — one row per `(name, taskType)` it could not settle, with `reason`, `usages`, and `creatable`. This is the whole of the remaining work.

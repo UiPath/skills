@@ -30,7 +30,7 @@ Pick this plugin when the sdd.md labels a task `business-rule` — a rule that m
 
 ### No tenant-index match → check in-solution siblings BEFORE the gate
 
-**Skip this check when `sdd resolve` reported `Data.Scope.siblingsChecked: true`.** Run from the solution directory ([registry-discovery.md § Resolve with the CLI first](../../../registry-discovery.md#resolve-with-the-cli-first)), resolve already searched the solution's own projects: a sibling is `selected` with `source: "local"` and folder `solution_folder`, and an `absent` entry is absent from both. Otherwise — when steps 1–4 find nothing in the tenant index **and** the CLI supports `registry --local` — check for an existing in-solution sibling before treating the rule as unresolved:
+**Skip this check when `sdd resolve` reported `Data.Scope.siblingsChecked: true`** — resolve already searched the solution's own projects ([registry-discovery.md § Resolve with the CLI first](../../../registry-discovery.md#resolve-with-the-cli-first)). Otherwise — when steps 1–4 find nothing in the tenant index **and** the CLI supports `registry --local` — check for an existing in-solution sibling before treating the rule as unresolved:
 
 ```bash
 uip maestro case registry search "<name>" --type businessRule --local --output json
