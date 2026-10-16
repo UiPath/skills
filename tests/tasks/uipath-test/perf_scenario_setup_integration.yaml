@@ -9,11 +9,9 @@ description: >
   users, and nothing was run.
 tags: [uipath-test, integration, mode:build, lifecycle:setup, outcome-graded]
 
-# Blocked: on the eval tenant (alpha codereval/DefaultTenant) every perf-scenario
-# call returns 403 for coder-eval-bot, even with an App Tester (Test Cloud)
-# licence and the Performance Tester role in CLAIM; a browser-signed-in user
-# passes. EVFX-PERFSET-TC1 also needs its one-time link to a performance-ready
-# package there. Re-enable once the bot can call perf-scenario list.
+# Blocked: EVFX-PERFSET-TC1 needs a one-time link to a performance-ready package on the
+# eval tenant (alpha codereval), and none is published there yet
+# (fixtures/README.md, Automation-linked fixtures). Re-enable once it is linked.
 skip: true
 
 run_limits:

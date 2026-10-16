@@ -11,13 +11,6 @@ description: >
   RemainingVirtualUserUnits.
 tags: [uipath-test, smoke, mode:operate, lifecycle:setup, outcome-graded]
 
-# Blocked: on the eval tenant (alpha codereval/DefaultTenant) every perf-scenario
-# call returns 403 for coder-eval-bot, even with an App Tester (Test Cloud)
-# licence and the Performance Tester role in CLAIM. The same task passes for a
-# browser-signed-in user, so the bot's password-grant token is not resolved as
-# Test Cloud licensed. Re-enable once the bot can call perf-scenario list.
-skip: true
-
 run_limits:
   expected_turns: 8
   max_turns: 20
