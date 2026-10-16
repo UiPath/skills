@@ -85,6 +85,14 @@ If the agent uses any other framework (LlamaIndex, OpenAI Agents, plain Python, 
 
 Call `WebFetch` once per page. From the core page extract Validator classes, entity-type enums, `GuardrailScope` / `GuardrailExecutionStage`, and Action classes. From the LangChain page (when applicable) extract middleware classes, supported scopes/stages, extra parameters, and the correct `uipath_langchain.guardrails` import paths.
 
+> **If your fetch tool saved a page to a file instead of returning its text, do not read that file top to bottom.** Both pages are long, and paging through them in chunks exhausts the turn budget before the agent file is edited. Grep the saved file once for only the symbols this task needs (the validator, middleware, and action class names, plus the entity enum), then continue:
+>
+> ```bash
+> grep -n -A12 -E '<SYMBOL_1>|<SYMBOL_2>|<SYMBOL_3>' "<SAVED_PAGE_FILE>"
+> ```
+>
+> Grep again only for a symbol the first grep did not return.
+
 **Use the fetched content as the sole source of truth.** Never rely on memory for class names, enum members, or import paths — the SDK evolves and the docs are the only reliable mapping.
 
 Build a `{ validator_id → { middleware_class, validator_class, entity_enum, allowed_scopes, allowed_stages } }` lookup in working memory by joining catalog entries with SDK class names.

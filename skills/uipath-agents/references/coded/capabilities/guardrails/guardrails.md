@@ -18,6 +18,14 @@ Add guardrails to a Python coded agent (LangChain/LangGraph) in two styles: **mi
 2. **`https://uipath.github.io/uipath-python/core/guardrails/`**
    Extract: built-in validator names, entity types per validator, available actions, execution stage constraints.
 
+> **If your fetch tool saved a page to a file instead of returning its text, do not read that file top to bottom.** Both pages are long, and paging through them in chunks exhausts the turn budget before the agent file is edited. Grep the saved file once for only the symbols this task needs (the middleware, validator, and action class names, plus the entity enum), then write the code:
+>
+> ```bash
+> grep -n -A12 -E '<SYMBOL_1>|<SYMBOL_2>|<SYMBOL_3>' "<SAVED_PAGE_FILE>"
+> ```
+>
+> Grep again only for a symbol the first grep did not return.
+
 **Use the fetched content as the sole source of truth.** Never rely on memory for:
 - Which middleware classes exist
 - Which scopes or stages a guardrail supports
