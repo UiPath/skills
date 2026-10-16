@@ -312,6 +312,10 @@ Draft mode only.
    `validate` does not prove that mapping is right. For the compatibility
    fallback and its scope, see
    [references/structural-bpmn.md#script-tasks--jint-authoring-contract](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
+   A wrapper that invokes another project (API workflow, RPA, agent) maps its
+   result on the node itself: `source="=result.<field>"`, never the script
+   task's `=result.response`. Publish that variable straight from the
+   completion end event, with no copy task in between — see rule 17 (5).
 - **4c Assemble.** For greenfield, author into the `.bpmn` that 2a's `init`
    generated, using `Edit` — never `Write` a full-file replacement over it.
    Editing in place preserves the four generated JSON files, the initializer's
