@@ -29,15 +29,6 @@
 
 Build order follows the table unless **Handoffs** requires otherwise.
 
-*Only when test components exist — otherwise delete this block:*
-
-**Project layout — {N} buildable projects.** Components {x–y} are test-case groups of the single test project `{ProcessName}.Tests`, one folder each; they are separate components for documentation, never separate projects.
-
-| Folder in `{ProcessName}.Tests` | Component | Test cases | Data file(s) |
-|---|---|---|---|
-| `{ComponentSlug}/` | {#} | {test case names} | `.variations/{TestCase}.json` ({n} rows) per data-driven case, or none |
-| `Config/` | shared | — | configuration workflow: the Configuration Questions' values and the constants the test components' Interfaces list, credential-asset name → environment URL map |
-
 ## Process Map
 
 {Numbered high-level stages. Each names the component that runs it and the exit condition.}
@@ -121,7 +112,7 @@ flowchart LR
 
 ## Transactional Shape
 
-{Does the process iterate over units of work — items that succeed, fail, are retried and are tracked independently? Describe how the process handles them as it is and which splits are possible; decide nothing — the Components table's Type cell reads `RPA process`, and the split, the store and the template are chosen at execution. A process can hold several flows — one kind of item handed from its producer to its consumer (components 1 → 2, 2 → 3, an independent 5 → 6): one `### Flow N` block each, even when there is one. A flow whose items a coordinator takes, one instance per item, has no RPA consumer and is no flow: the stub (format guide § Transactional Shape rule 1). Component genomes carry their own role per flow.}
+{Does the process iterate over units of work — items that succeed, fail, are retried and are tracked independently? Describe how the process handles them as it is and which splits are possible; decide nothing — the Components table's Type cell reads `RPA process`, and the split, the store and the template are chosen at execution. A process can hold several flows — one kind of item handed from its producer to its consumer (components 1 → 2, 2 → 3, an independent 5 → 6): one `### Flow N` block each, even when there is one. A flow whose items a coordinator takes, one instance per item, has no RPA consumer and is no flow: the stub (transactional shape guide rule 1). Component genomes carry their own role per flow.}
 
 **Flows:** Flow 1 — {unit}: component {p} → component {c} (Handoffs row {n}); Flow 2 — {unit}: component {c} → component {d} (Handoffs row {m}); chains: component {c} consumes Flow 1 and produces Flow 2; independent: {Flow k}.
 
@@ -141,7 +132,7 @@ flowchart LR
 | Item kinds | {one kind, or several routed inside the consumer — what differs} |
 | Step groups | consumer once per run: {steps}; per item: {steps}; at the end: {steps} |
 
-Outcomes — these rows, whatever the source calls its per-item results (approved, rejected, skipped are Success or a Business exception; format guide § Transactional Shape rule 4):
+Outcomes — these rows, whatever the source calls its per-item results (approved, rejected, skipped are Success or a Business exception; transactional shape guide rule 4):
 
 | Outcome | When | Effect |
 |---|---|---|
@@ -149,7 +140,7 @@ Outcomes — these rows, whatever the source calls its per-item results (approve
 | Business exception | {component #} Step {N} rules: {names} | no retry; item recorded with the reason; run continues |
 | System exception | every other failure — {component #} Step {N} handlers: {names} | applications reopened, item retried {n}×, then recorded as failed with the reason; run stops after {m} consecutive |
 
-**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists, each option by its letter (format guide § Transactional Shape rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
+**Split options** — rows A, B and C for the unit of work and for each unit the Alternative units line lists, each option by its letter (transactional shape guide rule 3 defines them) with only what this flow requires and changes; runner counts are deployment settings, never options; none asserted. A flow with one side outside the genome replaces the table with `Split options: none — the consumer is outside this genome: {what takes the items}.` (rule 9):
 
 | Unit of work | Option | Requires | Changes against as-is |
 |---|---|---|---|

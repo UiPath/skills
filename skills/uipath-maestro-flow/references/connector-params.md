@@ -521,8 +521,9 @@ the one command that shows what the collection holds. Tenant discovery is still
 not a phase of this loop. When the candidates share a name, pick one
 by the `--connection-id <id>` each candidate line prints; `bindings.json` is
 written on that route too. The entries are named after the `connection:` and
-`folder:` labels your source already uses for this connector (for example
-`is-sandboxes`); a source that uses none gets `<connector's last segment>`
+`folder:` labels your source already uses for this connector, which
+[must differ](bindings.md#where-both-values-come-from); a source
+that uses none gets `<connector's last segment>`
 (`slack`) and `shared`; `--bind-connection` / `--bind-folder` override both.
 A label `prepare` cannot read without running the source (a computed value, or
 a step whose connector it cannot trace) is never guessed: `prepare` prints a

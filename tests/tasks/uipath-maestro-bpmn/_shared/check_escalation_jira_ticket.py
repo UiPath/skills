@@ -38,7 +38,7 @@ Assertion map (Flow -> BPMN):
                                                                                  already makes one attempt, no
                                                                                  backoff)
   F    check_escalation_jira_ticket.py:64-68    no whole-run retries
-      -> bpmn_live.run_debug has no retry/backoff parameter to begin with
+      -> bpmn_live.run_debug default, DebugRetry.NONE
        (a retried Create-Issue would duplicate the ticket)
   F    check_escalation_jira_ticket.py:70-90    except-branch: on a debug
       -> on CheckFailure from run_debug, scrape the debug log file
@@ -312,7 +312,7 @@ def main() -> None:
     # No whole-run retries: this process CREATES a Jira issue, so a retried
     # whole run on a transient error could create a duplicate ticket that this
     # checker (deriving keys from the final attempt) wouldn't see or clean up.
-    # bpmn_live.run_debug makes a single attempt with no backoff by design.
+    # Keep run_debug at its default, DebugRetry.NONE.
     log_file = LIVE_RUN_DIR / "debug.log"
     try:
         debug_data, instance_id = run_debug(imported_project, seed["inputs"], log_file)

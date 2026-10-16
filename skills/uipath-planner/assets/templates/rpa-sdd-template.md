@@ -200,10 +200,33 @@ flowchart TD
 >    - **Allowed values** (enum-shaped) when the PDD lists a closed set (e.g., `{ "Approved", "Rejected", "Pending" }`)
 > 4. **Tie BR rows to test oracles.** Every validation BR with a concrete example in §17 Canonical Test Case becomes a test assertion. Use the canonical input/output values from Phase 1 extraction — do NOT invent.
 > 5. **Embedded rules count.** A PDD that says "the hash must be 40 lowercase hex chars" is a BR even though the PDD has no dedicated Business Rules section.
+> 6. **Classify every rule before tabling it.** This table holds validation rules only; decision rules and reasoning rules fill the two subsections below. Classification, homes and the coverage check: [Business Rules Guide](../../references/business-rules-guide.md).
 
 | ID | Rule Name | Description | Trigger Condition | Validation (regex / range / type / allowed values) | Affected Steps |
 |---|---|---|---|---|---|
-| BR-01 | <RULE_NAME> | <DESCRIPTION> | <WHEN_DOES_IT_APPLY> | <REGEX_OR_RANGE_OR_TYPE_OR_ENUM_— `n/a` ONLY if the rule is purely behavioural> | <STEP_NUMBERS> |
+| BR-01 | <RULE_NAME> | <DESCRIPTION> | <WHEN_DOES_IT_APPLY> | <REGEX_OR_RANGE_OR_TYPE_OR_ENUM> | <STEP_NUMBERS> |
+
+### Decision Tables
+
+<!-- references/business-rules-guide.md → Decision tables. Runs in: the step and its coded logic or lookup. Empty: `None. No rule decides an outcome.` -->
+
+#### D1 — <DECISION_NAME>
+**Hit policy:** <UNIQUE / FIRST / COLLECT>
+**Inputs:** `<INPUT_NAME>` (<string / number / boolean / date>), …
+**Output:** `<OUTPUT_NAME>` (<TYPE_AND_ALLOWED_VALUES>)
+**Runs in:** <STEP_NUMBER_AND_LOGIC>
+
+| # | <INPUT_NAME> | <INPUT_NAME> | → <OUTPUT_NAME> | Rule |
+|---|---|---|---|---|
+| 1 | <ENTRY> | <ENTRY> | <OUTPUT> | <BR_ID> |
+
+### Rules That Need Reasoning
+
+<!-- references/business-rules-guide.md → Rules that need reasoning. A person applies it through Action Center. Empty: `None. Every rule is deterministic.` -->
+
+| ID | Rule | Applied by | Inputs → Output | Where it runs |
+|---|---|---|---|---|
+| <BR_ID> | <RULE> | <Agent / Person> | <INPUTS> → <OUTPUT> | <WHERE_IT_RUNS> |
 
 ---
 

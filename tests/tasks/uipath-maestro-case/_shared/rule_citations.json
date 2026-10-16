@@ -1,5 +1,6 @@
 {
   "SKILL.md": {
+    "Artifact I/O": 1,
     "Build gate": 1,
     "Build-review preference": 2,
     "Convert before authoring": 5,
@@ -9,12 +10,12 @@
     "Read references to EOF before mutation": 1,
     "Resolution audit": 1,
     "SDD is the sole post-design input, across sessions": 1,
-    "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 2,
+    "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 4,
     "The build is lossless against the SDD": 2,
     "Unresolved resources": 2
   },
   "references/brownfield.md": {
-    "Artifact I/O": 2,
+    "Artifact I/O": 3,
     "Never auto-debug or publish to Orchestrator": 2,
     "Runnable resources and sidecars": 1,
     "The build is lossless against the SDD": 1
@@ -34,7 +35,7 @@
   },
   "references/case-schema.md": {
     "Closed task types": 1,
-    "Layout": 3,
+    "Layout": 4,
     "No authored edges": 3
   },
   "references/connector-integration.md": {
@@ -69,9 +70,10 @@
     "Empty lookup gate": 2,
     "Never auto-debug or publish to Orchestrator": 2,
     "No authored edges": 1,
+    "Resolution audit": 1,
     "Runnable resources and sidecars": 3,
     "The build is lossless against the SDD": 3,
-    "Unresolved resources": 1
+    "Unresolved resources": 2
   },
   "references/placeholder-tasks.md": {
     "Empty lookup gate": 3,
@@ -87,6 +89,7 @@
     "SDD is the sole post-design input, across sessions": 2
   },
   "references/plugins/case/impl-json.md": {
+    "Artifact I/O": 2,
     "The build is lossless against the SDD": 2
   },
   "references/plugins/case/planning.md": {
@@ -120,8 +123,11 @@
     "Empty lookup gate": 4,
     "Resolution audit": 1
   },
+  "references/plugins/tasks/business-rule/impl-json.md": {
+    "Empty lookup gate": 1
+  },
   "references/plugins/tasks/business-rule/planning.md": {
-    "Empty lookup gate": 1,
+    "Empty lookup gate": 4,
     "Resolution audit": 1
   },
   "references/plugins/tasks/case-management/planning.md": {
@@ -147,9 +153,19 @@
   "references/plugins/tasks/create-inline-common.md": {
     "Empty lookup gate": 1
   },
+  "references/plugins/tasks/flow-process/planning.md": {
+    "Empty lookup gate": 2,
+    "Resolution audit": 1
+  },
   "references/plugins/tasks/function/planning.md": {
     "Empty lookup gate": 2,
     "Resolution audit": 1
+  },
+  "references/plugins/tasks/http-request/impl-json.md": {
+    "Runnable resources and sidecars": 1
+  },
+  "references/plugins/tasks/http-request/planning.md": {
+    "Cross-task references": 1
   },
   "references/plugins/tasks/process/planning.md": {
     "Resolution audit": 1

@@ -49,8 +49,8 @@ initial_prompt: |
   My Orchestrator job just faulted with
   `System.ArgumentException: The range is invalid`.
   Pinned job key: dd111111-cccc-dddd-eeee-ffffaaaabbbb. It's a Delete
-  Range activity and it worked yesterday when the workbook had data —
-  failed today on a freshly-recreated workbook. What's wrong?
+  Range activity and it worked on the previous run when the workbook had
+  data — then failed on a freshly-recreated workbook. What's wrong?
 
 success_criteria:
   - type: skill_triggered

@@ -5,6 +5,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _shared.case_check import existing_caseplan  # noqa: E402
+
 PROJECT = Path("LinearThreeStages") / "LinearThreeStages"
 REVIEW_STAGE = "Stage_Qn7tBz"
 RULE_NAME = "CreditRisk"
@@ -20,7 +23,8 @@ def check(ok, message):
 
 
 def main():
-    plan = json.loads((PROJECT / "caseplan.json").read_text())
+    plan_path = existing_caseplan(str(PROJECT / "caseplan.json")) or PROJECT / "caseplan.json"
+    plan = json.loads(Path(plan_path).read_text())
     tasks = [
         (node["id"], task)
         for node in plan.get("nodes", [])
@@ -60,10 +64,10 @@ def main():
     check("Error" in sources, f"output Error missing, outputs are {sorted(sources)}")
     check(
         any(
-            o.get("var") == "riskBand" and o.get("source") == "=result.RiskDecision.riskBand" and o.get("type") == "string"
+            o.get("var") == "riskBand" and o.get("source") == "=RiskDecision.riskBand" and o.get("type") == "string"
             for o in outputs
         ),
-        f"no string output writes =result.RiskDecision.riskBand into riskBand, outputs are {sources}",
+        f"no string output writes =RiskDecision.riskBand into riskBand, outputs are {sources}",
     )
 
     sidecar = json.loads((PROJECT / "bindings_v2.json").read_text())

@@ -26,12 +26,6 @@
       "_doc": "Recorded verbatim: Pending -> Running -> Faulted in ~8s, single clean execution, no retries."
     },
     {
-      "match": "or jobs traces 7fd5e890-f162-4591-a895-e649b09aea02",
-      "file": "1b284a08f9.json",
-      "exit_code": 1,
-      "_doc": "Faithful replay of the recorded evidence gap: in the original session trace retrieval FAILED with 'Error retrieving trace ID for job' (exit 1). Every trace-retrieval form returns the same recorded failure so the eval agent faces the same gap — the diagnosis must come from jobs get + error logs."
-    },
-    {
       "match": "traces spans get --job-key 7fd5e890-f162-4591-a895-e649b09aea02",
       "file": "1b284a08f9.json",
       "exit_code": 1,

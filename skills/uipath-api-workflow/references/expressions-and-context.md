@@ -10,7 +10,7 @@ API workflows use **JavaScript** for all expressions (`evaluate.language: "javas
 | `$workflow.input` | The workflow's input arguments (from `--input-arguments` JSON or caller). Constant for the entire run. | Workflow run |
 <!--skill-flavor:workflow-input-source:end-->
 | `$workflow` | Workflow runtime info: `{ id, definition, input, startedAt }`. Use `$workflow.input` to read inputs. | Workflow run |
-| `$input` | The **current task's input** = the previous task's `$output`. **NOT the workflow's input arguments.** Only equals workflow input on the very first task. | Per-task |
+| `$input` | The **current task's input** = the previous task's `$output`. **NOT the workflow's input arguments.** Only equals workflow input on the very first task. `undefined` after a Log Message. | Per-task |
 | `$context` | Mutable shared state: `$context.variables.<name>`, `$context.outputs.<Activity>` | Workflow run |
 | `$output` | The current task's raw output. | This task only |
 | `$helpers` | Engine host functions, available in `run.script` code: `$helpers.file.fileToBase64(ref)` and `$helpers.file.base64ToFile({ base64, fileName?, mimeType? })` — both `async`, so `await` them. See [File references](#file-references-jobattachment-and-helpersfile). | Inside scripts |
@@ -149,6 +149,7 @@ Each task's raw output is in `$output`. To make it available to later tasks, you
 |----------|-----------|----------------|
 | **Variables** | Assign | `{ ...$context, variables: { ...$context.variables, ...$output } }` |
 | **Outputs** | Everything else (JS_Invoke, If, ForEach, DoWhile, TryCatch, Response, Wait) | `{ ...$context, outputs: { ...$context?.outputs, "ActivityKey": $output } }` |
+| **None** | Log Message | No `export` — it has no output |
 
 ### Output key
 

@@ -83,9 +83,12 @@ surrounding task or release policy.
 
 Layout is deliberately absent from this sequence. `uip maestro flow format`
 is not an authoring gate — `validate` passes without it and nothing upstream
-reads a position. It is required before the emitted file reaches anything that
-draws it: `solution upload`, `flow debug`, or a person opening the project in a
-designer. See [`operate.md`](operate.md#lay-out-the-emitted-flow-first).
+reads a position. For a greenfield file (one `compile` wrote from scratch), run
+it before the file reaches anything that draws it: `solution upload`,
+`flow debug`, or a person opening the project in a designer. Do not run it on a
+merged brownfield file: `format` re-lays out every node, so it discards the
+positions the canvas author chose. See
+[`operate.md`](operate.md#lay-out-the-emitted-flow-first).
 
 These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
 
@@ -109,7 +112,8 @@ detail a runtime-evidence bar needs.
 
 The JSON envelope has top-level `Result`; a successful validation also reports
 `Data.Status: "Valid"` and may carry `Data.Warnings`. Treat warnings as failures
-except for the reviewed shared-connection advisory. Preserve any exception's
+except for the reviewed shared-connection advisory and the `err()` read
+diagnostics in [`error-handling.md`](error-handling.md#reading-the-failure). Preserve any exception's
 exact code/text and rationale instead of broadening an allowlist.
 
 ### Bounded completion
@@ -245,13 +249,15 @@ when PIMS returns none or the fetch fails), and `--output-filter` projects
 failure `Data` too, so add `incidents:incidents` to the projection to keep
 them. If `Data.incidents` is missing, fetch incidents with the separate
 `debug-instance incidents` call below, keyed by the `instanceId` you just read.
+With `variablesError`, the outputs are unknown, not empty: run the re-read
+command its `Instructions` give.
 
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
 
 ```bash
-( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
-( cd <Solution> && uip maestro flow debug <Name> --log-level error \
+( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
+( cd "<Solution>" && uip maestro flow debug <Name> --log-level error \
   --inputs @inputs.json \
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>,incidents:incidents}" \
   --output json )

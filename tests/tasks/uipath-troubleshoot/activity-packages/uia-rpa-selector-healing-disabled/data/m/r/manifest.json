@@ -31,7 +31,7 @@
       "file": "667509c877.json"
     },
     {
-      "match": "or jobs traces 777d35d4-26bc-49ad-bbdb-5243ba2947fc",
+      "match": "traces spans get --job-key 777d35d4-26bc-49ad-bbdb-5243ba2947fc",
       "file": "924fb2bc90.json"
     },
     {

@@ -1,0 +1,87 @@
+task_id: skill-test-requirement-ai-blocked-inputs-smoke
+description: >
+  Smoke test (negative): agent uses the uipath-test skill on a requirement
+  Test Manager's AI cannot work on. EVFX-AIBLOCK-NODESC has no description
+  and no attachments, so generate-testcases fails with HTTP 400 before any
+  job starts, and the CLI's own hint suggests writing a description. Asserts
+  rule 5 of references/requirement-ai-guide.md and SKILL.md Critical Rule 10:
+  report the cause and stop; do not write a description to make the call
+  pass, and do not retry the 400. One requirement only, on purpose: with
+  two, an agent that correctly stops after the first failure (Rule 10)
+  never reaches the second, so the task graded the skill against itself.
+  Graded on tenant state: the requirement is unchanged. The task owns the
+  EVFX-AIBLOCK-* namespace; pre_run restores it every run. Spends no AI
+  units.
+tags: [uipath-test, smoke, mode:diagnose, lifecycle:discover]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 30
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+reference:
+  directory: _setup
+
+pre_run:
+  - command: >-
+      python3 _setup/req_ai_fixture.py seed --project HEALTH --stamped-prefix EVFX-AIBLOCK-
+      --requirement EVFX-AIBLOCK-NODESC --no-description
+    timeout: 280
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  In the project whose key is in project-key.txt, have Test Manager's AI propose test cases for
+  requirement EVFX-AIBLOCK-NODESC.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent tried generation on EVFX-AIBLOCK-NODESC"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked the requirement for attachments, the other input the AI accepts (rule 5) — advisory"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+attachments?\s+list\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0   # advisory
+
+  - type: command_not_executed
+    description: "Agent did not write a description itself, though the CLI's hint suggests it (rule 5)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+update\b'
+    weight: 2.0
+    pass_threshold: 1.0
+
+    # Bounded command_executed, not command_not_executed: the loader rewrites
+    # command_not_executed to max_count 0 (see uipath-insights/dashboards/copy_smoke.yaml).
+  - type: command_executed
+    description: "No retry of the 400: one generation start at most"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    min_count: 0
+    max_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Outcome: EVFX-AIBLOCK-NODESC still has no description and no linked test cases"
+    command: "python3 $REFERENCE_DIR/req_ai_fixture.py check --project HEALTH --requirement EVFX-AIBLOCK-NODESC --description-empty --links 0"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0

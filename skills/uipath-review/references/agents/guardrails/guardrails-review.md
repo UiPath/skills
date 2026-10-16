@@ -60,6 +60,7 @@ else:
 - On **CACHE_HIT**, read `.guardrails-catalog-cache.json` directly.
 - On **CACHE_MISS**, run `uip agent guardrails catalog --output json > .guardrails-catalog-cache.json` and save its output. The CLI writes success and error JSON to stdout; do not add `2>&1`.
 - Never invoke `uip agent guardrails catalog` a second time in the same review. Read `.guardrails-catalog-cache.json` for every later look, parse, or re-check.
+- Entries are at `Data.Guardrails[]` in the saved JSON — the CLI re-cases the catalog's snake_case keys to PascalCase, so the catalog fields this guide names appear as `ValidatorId`, `WhenToUse`, `WhenNotToUse`, `UseCases`, `SecurityRiskAddressed`, `SecurityCategory`, `Examples[].Config` (with `ActionType`). `Data.guardrails` or `when_to_use` match nothing.
 
 ### Guardrails List (NEVER cached — tenant-specific)
 
@@ -75,7 +76,7 @@ Build `{ validatorId: status }` from the `Data` array, using only `Status == "Av
 
 ### If the catalog is unavailable
 
-If output contains `"Code": "GuardrailCatalogUnavailable"` or the CLI is unavailable, do not guess:
+Unavailable means the **fetch itself failed**: the output contains `"Code": "GuardrailCatalogUnavailable"`, any non-`Success` `Result` (e.g. `"Message": "Failed to fetch guardrail catalog"` from an auth or network fault), or the `uip` binary is missing — all of these MUST be declared under **Rules Skipped**. An empty parse or unexpected keys **after a successful fetch** is NOT unavailability — it means you parsed the wrong path (see the PascalCase/`Data.Guardrails[]` note in Step 0); re-read the raw JSON before declaring the catalog unavailable. A report claiming the catalog was unavailable when it was reachable is a defect, and so is staying silent about a failed fetch. When the fetch failed, do not guess:
 
 - **Audit Mode:** put catalog-dependent `LC_GUARDRAIL_ACTION_INEFFECTIVE` and `LC_GUARDRAIL_MISAPPLIED` under the report's **Rules Skipped** subsection with reason `"guardrails catalog unavailable"` (SKILL.md Critical Rule 9 — Rules Skipped). Emit no catalog-grounded effectiveness/relevance verdict.
 - **Recommend Mode:** continue `agent.json`-only schema/prompt/tool inference; use generic scope/action wording and note `catalog-limited`.
