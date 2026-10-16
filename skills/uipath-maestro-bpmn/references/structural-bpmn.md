@@ -231,8 +231,8 @@ Subprocess start events do not carry an entry-point id.
 A root start becomes an `entry-points.json` entry when it is **manual**, or
 when it is an `Intsvc.EventTrigger` connector start carrying a
 `uipath:entryPointId` (a V2 element from `registry get --input-details`
-always does — see [v2-connector-nodes.md](v2-connector-nodes.md)). Manual
-starts come first. A timer start is never one (an `entryPointId` on it is
+always does — see [v2-connector-nodes.md](v2-connector-nodes.md)). Entries
+follow the order the starts appear in the diagram. A timer start is never one (an `entryPointId` on it is
 inert); a V1 connector start from the registry template has no
 `entryPointId`, so it is not one either. With
 neither kind of root start `refresh` throws `BPMN file must contain a root
