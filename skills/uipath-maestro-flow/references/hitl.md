@@ -67,6 +67,18 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
 - A field's `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'`
   (pre-filled AND editable — give it a `value`; the reviewed value comes back
   at the field's own id).
+- A field's `type` is one of the platform's 11 quick-form types: `'string'`,
+  `'number'`, `'integer'`, `'float'`, `'double'`, `'boolean'`, `'date'`,
+  `'datetime'`, `'file'`, `'object'`, `'array'`. `'text'` and `'date-time'` are
+  accepted as older spellings of `'string'` / `'datetime'`; leave them as they
+  are in existing source. A decompiled canvas form keeps its types as written,
+  except a type copied from a bound Flow variable (`'string[]'`,
+  `'string | null'`), which decompiles to the type it resolves to (`'array'`,
+  `'string'`). A control spelling (`'singleSelect'`, `'multiSelect'`,
+  `'enum'`) also stays as written, and `check` reports it as
+  `HITL_FIELD_TYPE_UNKNOWN`. Do not change it to `'string'` (the form loses its
+  control): leave that node untouched so merge keeps the original, or edit that
+  node's JSON in the `.flow` directly.
 - **Every outcome is its own exit — the SDK never emits `completed` on a task
   that has outcomes.** Each outcome gets `outcome-<slug>` (the name lowercased,
   non-alphanumerics to `-`). This holds on the default node and on quick-form,
