@@ -303,7 +303,12 @@ Draft mode only.
    `--object-name` from the table in
    [references/registry-workflow.md](references/registry-workflow.md#picking-the-object-the-table-first-then-the-parameters)
    — a connector exposes several objects per operation and `describe` does not
-   rank them. Do not call `registry get` for structural
+   rank them. A `describe` field carrying `Reference` (Slack
+   `conversationsInfoId`) takes the `LookupValue` from a live list of its
+   `Reference.ObjectName` — the channel id `C0123ABCDEF`, never
+   `#<channel-name>` (Rule 2). If the lookup finds nothing, stop and report
+   that field: a name passes `validate` and faults at run time. Do not call
+   `registry get` for structural
    gaps the registry never owns: sequence flows, gateways, events, boundary
    events, multi-instance/loop markers, `errorMapping`/retry structure, or
    diagrams. On every `bpmn:` tag you paste, opening and closing, lowercase
@@ -394,11 +399,15 @@ Draft mode only.
      target="body">` holding the whole request object in CDATA, never one
      input per field and never a bare array. Dotted names nest
      (`fields.project.key` → `{"fields":{"project":{"key":…}}}`); `users[*]`
-     is an array under `users` (`{"users":["U1","U2"]}`). See
+     is an array under `users` (`{"users":["U1","U2"]}`). Place it, and
+     every `Parameters` input, inside `<uipath:activity>`, between
+     `</uipath:context>` and the template's `<uipath:output>`. An input after
+     `</uipath:activity>` is never sent, and `validate` does not catch it. See
      [Body shape](references/registry-workflow.md#body-shape-hand-authored-files-need-one-targetbody-input).
    - **Required `Parameters`.** Each `Required: true` entry (Slack `send_as`)
      is its own `uipath:input` with `target` set to its `Type`, after
-     `</uipath:context>`, valued from the request, else its `DefaultValue`. See
+     `</uipath:context>` and still inside `<uipath:activity>`, valued from the
+     request, else its `DefaultValue`. See
      [Parameters](references/registry-workflow.md#required-parameters-are-separate-from-the-body--emit-every-one).
    - **`operation`** (`Intsvc.ActivityExecution` only) is the described
      `Operation.Name` (`Create`, `List`, `Retrieve`, `Update`, `Delete`,
