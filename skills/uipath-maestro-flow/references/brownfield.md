@@ -15,24 +15,56 @@ it recursively.
 PROJECT=Solution/Deployed
 CANONICAL="$PROJECT/Deployed.flow"
 WORK=.flow-work/Deployed
-mkdir -p "$WORK"
+mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
 
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
-uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline.flow"
+uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow"
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
-uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited.flow"
-uip maestro flow merge "$CANONICAL" "$WORK/edited.flow" \
-  -o "$WORK/candidate.flow" --baseline "$WORK/baseline.flow"
+uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.flow"
+uip maestro flow merge "$CANONICAL" "$WORK/edited/Deployed.flow" \
+  -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow"
 
-uip maestro flow validate "$WORK/candidate.flow" --output json
-cp "$WORK/candidate.flow" "$CANONICAL"
+uip maestro flow validate "$WORK/candidate/Deployed.flow" --output json
+cp -r "$WORK/candidate/." "$PROJECT/"
 uip maestro flow validate "$CANONICAL" --output json
 ```
 
 Replace the canonical artifact only after the candidate validates. Do not copy
-`baseline.flow`, `edited.flow`, or `candidate.flow` into the project, and do not
-leave an earlier `*.merged.flow` there: the project validator treats every
-`.flow` below the project directory as a deliverable.
+the `baseline/` or `edited/` directories into the project, and do not leave an
+earlier `*.merged.flow` there: the project validator treats every `.flow` below
+the project directory as a deliverable.
+
+### Why three directories: inline agents
+
+An inline agent is two files: the node in the `.flow`, and its prompts, model
+and run settings in `<source>/agent.json` beside it. An edit to a prompt
+changes only that file. Each compile writes `<source>/agent.json` next to its
+own output, and merge compares the baseline's copy with the edited copy, applies
+only your change to the project's `agent.json`, and writes the result next to
+the candidate:
+
+```
+flow-merge: wrote Deployed.flow (12 nodes, 13 edges)
+flow-merge: wrote <source-uuid>/agent.json (carries messages[0].content)
+```
+
+`cp -r "$WORK/candidate/."` installs the `.flow` and every agent file merge
+carried. Fields the round trip does not reproduce (such as `maxIterations`, or a
+`description` on an agent input) keep the project's values.
+
+Merge warns, does not carry, and refuses under `--strict` when:
+
+- the baseline and the edited flow are in ONE directory. The second compile
+  overwrote the baseline's `agent.json`, so merge cannot tell your edit from the
+  round trip's own changes (`the edited <source>/agent.json differs from the
+  original's ... The change is NOT carried`). Use separate directories.
+- the edit adds or removes an agent's resource (a context index or a tool).
+  Make that change on the canvas.
+- the agent node carries its prompts on the node itself (older canvas saves).
+  The edited `agent.json` would not be what runs. Make that change on the canvas.
+
+Never copy `$WORK/edited/<source>/` into the project by hand: it carries the
+round trip's changes along with yours.
 
 ## The generated pipeline
 
@@ -51,7 +83,9 @@ node .flow-sdk/Deployed.pipeline.mjs    # compiles the edit, merges into .flow-s
 Re-running it after further edits repeats only the compile and merge — the
 baseline is captured once and reused. Pass `--no-pipeline` to `decompile` when
 you deliberately want the manual sequence instead. The pipeline writes its
-`.flow` artifacts into that `.flow-sdk/` directory; use it only when the
+`.flow` artifacts into that `.flow-sdk/` directory (the baseline and the edited
+compile each in a directory of their own, for the agent reason above), and the
+agent files merge carries next to `Deployed.merged.flow`; use it only when the
 directory is outside the canonical Flow project, because product validation
 treats every `.flow` below the project, hidden folders included, as a
 deliverable. When source must remain in the
@@ -61,15 +95,17 @@ project for relative sidecars, use the safe project loop above.
 
 ```bash
 uip maestro flow decompile Deployed.flow -o .flow-sdk/Deployed.flow.ts --no-pipeline
-uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/Deployed.baseline.flow
+mkdir -p .flow-sdk/baseline .flow-sdk/edited
+uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/baseline/Deployed.flow
 # Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
-uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/Deployed.edited.flow
-uip maestro flow merge Deployed.flow .flow-sdk/Deployed.edited.flow \
-  -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/Deployed.baseline.flow
+uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/edited/Deployed.flow
+uip maestro flow merge Deployed.flow .flow-sdk/edited/Deployed.flow \
+  -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow
 ```
 
 Like the pipeline, this keeps every candidate in `.flow-sdk/`; validate
-`.flow-sdk/Deployed.merged.flow`, then replace the original with it.
+`.flow-sdk/Deployed.merged.flow`, then replace the original with it and copy
+every `<source>/` file merge reports writing.
 
 The baseline must be compiled from the pristine decompiled source, before any
 edit. It lets merge distinguish authored changes from reconstructed content;
@@ -89,6 +125,16 @@ A node type the SDK has no factory for still round-trips: it comes back as
 file supplied, so the node keeps its type, its version and its inputs. Leave it
 alone unless the task asks you to change it — and if you do, edit its `inputs`,
 not the hoisted `…Definition` const, which is the platform's own manifest.
+When that definition declares several exits and every one is wired (for
+example `core.logic.agentic-switch`: one `case-<id>` exit per choice in
+`inputs.criteria`, plus `default`), the node comes back as
+`.stepSwitch('<id>', rawNode(…), [{ value: 'case-returns', body: … }, …])`:
+one arm per exit, each arm's `value` being its port. Adding or removing a
+choice in `inputs.criteria` adds or removes its `case-<id>` exit: change the
+arms to match. When only some exits are wired, it comes back as
+`.step('<id>', rawNode(…))` whose main path continues on the definition's main
+port (`default` for an agentic switch), with each other wired exit as
+`.stepToList('case-<id>', …)`; an unwired exit stays unwired.
 
 `mock()` in decompiled source therefore means the flow really contains a
 placeholder node (`core.logic.mock`). The one case that still degrades is a node
@@ -123,8 +169,8 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
   installed SDK's `flow-sdk` bin instead:
 
   ```bash
-  flow-sdk flow merge .flow-sdk/Deployed.edited.flow --original Deployed.flow \
-    -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/Deployed.baseline.flow --strict
+  flow-sdk flow merge .flow-sdk/edited/Deployed.flow --original Deployed.flow \
+    -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow --strict
   ```
 
 ## The file's schema version comes back out
@@ -177,10 +223,21 @@ These findings the source cannot carry are printed on stderr as
   (with a `/* TODO: this switch's case expressions are not a uniform … */`
   comment). Recompiling fails or picks a different case, even when your edit is
   somewhere else in the flow, so make the change in the `.flow` JSON directly.
+- A **context-index setting `context: [...]` cannot express**. Decompile reads
+  an index's retrieval settings (mode, query, threshold, result count, file
+  extension) from `<agent source>/resources/<source>/resource.json`, so keep the
+  agent's folder beside the `.flow`. A few settings have no field, for example
+  a static plain-text query, a query bound to an agent argument, deeprag
+  citations turned off, or a folder-path prefix. The warning names the setting,
+  and recompiling writes the SDK's value into the compiled
+  `resources/<source>/resource.json` beside the `-o` output. Merge does not
+  touch the project's copy: do not copy the compiled file over it. If that
+  already happened, tell the user to set the setting again in Studio Web.
 
 Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
 placing it in a solution, copy it over the canonical artifact rather than next
-to it, then validate the canonical project path again.
+to it, together with every `<source>/` file merge reports writing, then
+validate the canonical project path again.
 
 Do not run `uip maestro flow format` on the merged file; it discards the author's layout.
 

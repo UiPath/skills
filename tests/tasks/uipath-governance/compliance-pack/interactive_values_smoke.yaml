@@ -5,27 +5,21 @@ description: >
   the user before proceeding. Tests Step 1b of partial-apply/impl.md for the ISO 42001
   compliance standard.
 
-  Platform note: uip commands fail with auth errors - expected.
 tags: [uipath-governance, smoke, mode:build, lifecycle:setup, feature:compliance]
 
-
+# Compliance-pack and AOps state is tenant-global, so live runs collided with
+# concurrent tasks (CI run 36674826204). The `uip` shim serves those calls from
+# recorded fixtures and keeps state in the sandbox — see mock_template/mocks/uip.
+# Scenario `inactive`: ISO 42001 never applied; AOps policies and tenant assignments are recorded.
 sandbox:
   python: {}
+  mock_path_dirs: [mocks]
   template_sources:
-    - type: template_dir
-      path: _setup
-      mount_point: _setup
+    - {type: template_dir, path: mock_template}
 
-# CI passes live tenant auth into every smoke sandbox, so the partial-apply
-# flow can REALLY create `iso-42001-2023-*-robot` AOps policies. Clean up before
-# and after.
 pre_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
-
-post_run:
-  - command: 'python3 _setup/cleanup_compliance_pack.py'
-    timeout: 120
+  - command: 'printf inactive > mocks/scenario'
+    timeout: 10
 
 initial_prompt: |
   As part of our ISO 42001 work I want to restrict which URLs and applications
@@ -37,7 +31,7 @@ initial_prompt: |
 
   If you're asked for the URL or application lists, just answer SKIP for now.
   Important:
-  - uip CLI not connected — auth errors expected. Run each command once and continue.
+  - Run each command once and continue.
   - Always pass --output json. Do NOT prompt for confirmation.
   - Write any helper scripts to the current working directory using relative paths
     (e.g. ./scripts/, ./compliance-session/), not to AppData or TEMP paths.
@@ -63,6 +57,14 @@ success_criteria:
     min_count: 1
     weight: 1.5
     pass_threshold: 0
+
+  - type: run_command
+    description: "A Robot policy the agent created (iso-42001-2023-*) is assigned to the tenant (shim state)"
+    command: 'python3 mocks/check_state.py assigned Robot'
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
 
   - type: file_exists
     description: "Command output captured to output.txt"

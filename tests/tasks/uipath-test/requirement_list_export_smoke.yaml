@@ -14,6 +14,39 @@ run_limits:
   expected_turns: 18
   max_turns: 50
 
+# Every run creates the marker requirement and nothing deleted it, so HEALTH
+# piled up copies carrying "eval-export". The label-scoped list then ran past
+# one page, the agent's fresh requirement fell off it, and the agent stopped
+# on `--limit 1000` (page size is capped at 100). Delete earlier copies so each
+# run starts with none, and the list the agent verifies holds exactly its own.
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess
+      P, NAME = "HEALTH", "Eval Export Marker - HIPAA retention"
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      removed = 0
+      for _ in range(20):  # 100 per pass; re-query from offset 0 after each delete
+          rows = call("tm", "requirements", "list", "--project-key", P,
+                      "--filter", NAME, "--limit", "100").get("Data") or []
+          ids = [r["Id"] for r in rows if r.get("Name") == NAME and r.get("Id")]
+          if not ids:
+              break
+          call("tm", "requirements", "delete", "--project-key", P,
+               "--requirement-ids", *ids, "--yes")
+          removed += len(ids)
+      print(f"FIXTURE: removed {removed} leftover '{NAME}' requirement(s) from {P}", flush=True)
+      PYEOF
+    timeout: 280
+
 initial_prompt: |
   I'm in the HEALTH project in Test Manager and need to pull together a
   small coverage report. First, create a requirement named "Eval Export

@@ -27,7 +27,13 @@ and therefore exact for this scheme.
 | `project_scaffold_build` | its own throwaway project | the `EVFX-SCAFFOLD-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `testset_curation_by_label_build` | its own throwaway project | the `EVFX-CURATE-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `failed_run_triage_diagnose` | CLAIM | `EVFX-TRIAGE-SET`, `EVFX-TRIAGE-TC{1,2,3}` | 1 Finished execution, results `Passed, Failed, Passed` — a STABLE failure, not intermittency (that shape belongs to `flaky_tests_analysis`) |
+| `executions_list_smoke` | CLAIM | `EVFX-EXLIST-SET`, `EVFX-EXLIST-TC{1,2}` | At least one Finished execution; a pure reader, so `pre_run` seeds one recorded run only when none finished exists and leaves a healthy fixture untouched |
+| `manual_execution_record_integration` | CLAIM | `EVFX-MANUAL-SET`, `EVFX-MANUAL-TC{1,2,3}` | Set and cases only, no execution — the task opens one; `pre_run` sweeps earlier days' runs (sparing today's, so a concurrent run is never destroyed) and snapshots the survivors so the oracle grades the run the agent opens |
+| `reporting_date_backdate_integration` | CLAIM | `EVFX-REPORT-SET`, `EVFX-REPORT-TC{1,2}` | One **open** execution (recorded per-run by id, executions cannot be named) — the premise is that it is not closed; `pre_run` sweeps earlier days' runs (sparing today's) and opens one fresh OPEN run, recording its ExecutionId for the oracle |
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
+| `defect_lifecycle_smoke` | its own per-run project | the `EVFX-DEFECT-*` namespace | `pre_run` creates one `EVFX-DEFECT-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) holding `EVFX-DEFECT-SET`/`EVFX-DEFECT-TC1` and one Finished execution with TC1 `Failed` and no defect; it sweeps orphans stamped more than 6 hours ago, and `post_run` deletes the project. Per-run because a result holds one defect and several models run the nightly concurrently |
+| `defect_traceability_integration` | its own per-run project | the `EVFX-DEFTRACE-*` namespace | Same per-run project pattern (`EVFX-DEFTRACE-<YYYYMMDD-HHMMSS>-<hex>`, key in `project-key.txt`): `EVFX-DEFTRACE-SET`/`TC1`/`REQ` with the requirement covering TC1, one Finished execution with TC1 `Failed`, and a defect on that result linked by hand to tracker issue `EVFX-DEFTRACE-1`; `post_run` deletes the project |
+| `defect_full_lifecycle_e2e` | its own throwaway project | the `EVFX-DEFFLOW-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks). Does not grade `defects attachments download`: a manual result gives the defect no evidence (a file uploaded to the result with `attachment upload --object-type testCaseLog` does not appear under `defects attachments list`), so there is nothing to download |
 | `project_settings_smoke` | its own throwaway project | the `EVFX-PSET-*` namespace | `pre_run` creates one `EVFX-PSET-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago (so a concurrent run's project is never touched); `post_run` deletes it. The deliverable is a settings change, not the project, so the project is scratch (Rule 2). Unlike the self-contained build tasks, project create/delete is not under test here, so the hooks own the project's lifecycle and the agent never deletes it |
 | `run_package_ci_smoke` | its own throwaway project | the `EVFX-RUNPKG-*` namespace | Same hooks as `project_settings_smoke`: `pre_run` creates one `EVFX-RUNPKG-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans older than 6 hours; `post_run` deletes it, which also removes the execution and hidden test set `tm run --type package` creates. Runs, never changes, the package `TestCase_CrossPlatform_VB_Tests` (see [Run-package fixtures](#run-package-fixtures)); `pre_run` fails loudly if it is gone |
 | `run_package_failing_smoke` | its own throwaway project | the `EVFX-RUNPKGFAIL-*` namespace | Same hooks as `run_package_ci_smoke`, in its own namespace so the two never sweep each other's projects. Runs the package `FailingTestCase_CrossPlatform_VB_Tests` |
@@ -35,6 +41,30 @@ and therefore exact for this scheme.
 | `testcase_parameters_edit_integration` | HEALTH | `EVFX-PARAMEDIT-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) and `Userid=u1` |
 | `testcase_parameters_lifecycle_e2e` | HEALTH | `EVFX-PARAMLIFE-Login` | Created if absent; `pre_run` clears its parameters |
 | `testcase_parameters_ask_first_integration` | HEALTH | `EVFX-PARAMASK-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) |
+| `requirement_ai_generate_smoke` | HEALTH | `EVFX-AIGEN-REQ` | Requirement with a fixed description and **no** linked test cases. `pre_run` also starts one generate job with a 3 s wait (it times out) and saves the output to `nightly/` in the sandbox. The test cases the task creates from that job are scratch: `pre_run` deletes every linked test case labelled `autopilot-generated` and unlinks the rest |
+| `requirement_ai_evaluate_smoke` | HEALTH | `EVFX-AIEVAL-REQ` | Requirement whose description `pre_run` resets to the one-line `Users can reset their password.` every run (the task appends to it) |
+| `requirement_ai_obsolete_smoke` | HEALTH | `EVFX-AIDEL-REQ`, `EVFX-AIDEL-TC{1,2,3,4}` | All four linked; TC3 and TC4 off-topic on purpose. `pre_run` recreates the one the task deleted and relinks the ones it unlinked |
+| `requirement_ai_blocked_inputs_smoke` | HEALTH | `EVFX-AIBLOCK-NODESC` | No description, no attachments. `generate-testcases` fails with HTTP 400 before a job starts, so the task spends no AI units |
+| `attachment_upload_smoke` | HEALTH | `EVFX-ATTUP-Checkout` | Created if absent; `pre_run` clears its attachments and writes a local `checkout-failure.png`; `post_run` clears its attachments |
+| `attachment_download_integration` | HEALTH | `EVFX-ATTDL-Login` | Created if absent; `pre_run` uploads `login-error.log` and `checkout-notes.txt` (local copies removed); `post_run` clears its attachments |
+| `attachment_overwrite_ask_integration` | HEALTH | `EVFX-ATTASK-Login` | Created if absent; `pre_run` uploads `report.txt` and writes a different local `report.txt`; `post_run` clears its attachments |
+| `attachment_lifecycle_e2e` | HEALTH | `EVFX-ATTLIFE-Checkout` | Created if absent; `pre_run` clears its attachments and writes a local `release-notes.txt`; `post_run` clears its attachments |
+| `testset_clone_smoke` | HEALTH | `EVFX-TSCLONE-Regression`, `EVFX-TSCLONE-TC{1,2}` | Seeded once, never changed. Each run's copy is `EVFX-TSCLONE-<YYYYMMDD-HHMMSS>-<hex>` (agent-named); `pre_run`/`post_run` sweep copies older than 6 hours |
+| `testset_order_integration` | its own project `EVTSORD` | `EVFX-TSORDER-Regression` = `EVTSORD:4` holding Alpha/Beta/Gamma = `EVTSORD:1-3` | Project seeded once so the keys the order criterion names never change; `pre_run` fails if the shape drifts and resets the source's enforce flag. Per-run copies `EVFX-TSORDER-<stamp>-<hex>`, swept after 6 hours |
+| `testset_settings_ask_integration` | HEALTH | `EVFX-TSASK-Regression`, `EVFX-TSASK-TC1` | Seeded once; read-only for the agent (`pre_run` resets the enforce flag if a past run changed it) |
+| `testset_lifecycle_e2e` | its own project `EVTSLIFE` | `EVFX-TSLIFE-Regression` = `EVTSLIFE:4` holding Alpha/Beta/Gamma = `EVTSLIFE:1-3` | Same as `EVTSORD`; the agent deletes its own copy, the 6-hour sweep catches any it leaves |
+
+The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
+(`seed`, `check`). It knows no names: each task passes its own `EVFX-` names
+on the command line, so they stay in the task YAML where `check-collisions.py`
+sees them.
+`seed --require-access <verb>` first calls that AI verb on a requirement id
+that does not exist: an allowed login gets HTTP 404 before any job starts, a
+refused one gets 403, and `seed` then exits `TENANT NOT READY` so smoke
+excludes the task instead of failing it. Each AI route has its own feature
+flag, licence policy and AI Trust Layer policy; on 2026-10-15 the eval tenant
+allowed `generate-testcases` and `evaluate` but answered 403 to
+`find-obsolete-testcases`.
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
@@ -107,11 +137,28 @@ behaviour.
 
 ## Steady state
 
-Four test sets and eleven test cases, fixed — `EVFX-RERUN-SET`,
-`EVFX-FLAKY-SET`, `EVFX-SIGNOFF-SET`, `EVFX-JUNIT-SET` and their cases. Nothing
-accretes: `execution_rerun` repairs one execution rather than appending,
-`junit_export` and `release_readiness` seed once, `flaky` appends only to
-restore intermittency, and `organize` sweeps its own scratch.
+Eight persistent `EVFX-` test sets and their cases — `EVFX-RERUN-SET`,
+`EVFX-FLAKY-SET`, `EVFX-SIGNOFF-SET`, `EVFX-JUNIT-SET`, `EVFX-TRIAGE-SET`,
+`EVFX-EXLIST-SET`, `EVFX-MANUAL-SET` and `EVFX-REPORT-SET`. `organize` also uses
+`EVFX-ORG-SRC-TC*` cases, but the `EVFX-ORG-SET-<timestamp>-*` sets it creates
+are scratch, swept in its own `post_run`, and are not steady state.
+
+The sets and cases never accrete. Executions are the exception, and there are
+two shapes. Most tasks hold the count at zero growth by construction:
+`execution_rerun` repairs one execution rather than appending, `junit_export`
+and `release_readiness` seed once, `executions_list` tops up a single
+run only when no finished execution exists, `flaky` appends only to restore
+intermittency, and `organize` sweeps its own scratch. `manual_execution_record`
+and `reporting_date_backdate` instead open one execution per run and sweep
+earlier days' runs — sparing today's, so a concurrent variant run's in-flight
+execution is never destroyed — so growth is bounded to one day's runs rather
+than zero. That is deliberate, because both tasks consume the execution they are
+given, and it is only possible because `executions delete` exists. Neither
+grades a recency pick over the shared set: `reporting_date_backdate` records the
+exact run its `pre_run` opened, and `manual_execution_record` snapshots the set
+before the agent runs and grades the single new run the agent then opens —
+failing safe if a concurrent variant leaks a second new run in, rather than
+picking a winner by recency.
 
 ## Why
 
@@ -125,8 +172,8 @@ the code under test never changed.
 ## Self-contained build tasks
 
 The three `mode:build` tasks — `project_scaffold_build`,
-`testset_curation_by_label_build`, `customfield_schema_multiscope_build` — sit
-outside the seeded-fixture model entirely. Each one **creates its own throwaway
+`testset_curation_by_label_build`, `customfield_schema_multiscope_build` — and
+the `defect_full_lifecycle_e2e` task sit outside the seeded-fixture model entirely. Each one **creates its own throwaway
 project, does all its work inside it, and deletes it as the final graded step.**
 They read and write nothing in CLAIM, HEALTH or BANK.
 
