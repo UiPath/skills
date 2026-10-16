@@ -36,14 +36,14 @@ What to look for:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?attributes.error != null].{name: name, spanType: spanType, error: attributes.error}"
+     --output-filter "[?Attributes.Error != null].{name: Name, spanType: SpanType, error: Attributes.Error}"
    ```
 
 3. Parse the `error` field — it is a JSON string. Extract the `detail` value:
 
    ```bash
    uip traces spans get <trace-id> --output json \
-     --output-filter "spans[?attributes.error != null].attributes.error" \
+     --output-filter "[?Attributes.Error != null].Attributes.Error" \
      | jq -r '.[] | fromjson | .detail'
    ```
 
