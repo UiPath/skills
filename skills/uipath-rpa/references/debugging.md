@@ -213,6 +213,8 @@ A clean `run`, then the same workflow under `debug start`:
 >
 > **Helm verdict: a run passed only when `Data.hasErrors` is `false` AND `Data.errorMessage` is `null` AND `Data.debugState` is `null` or `"Completed"`.** All three are required: a suspended debug session reports `hasErrors: false` with `debugState: "Suspended"` and guidance in `errorMessage`; a completed failure reports `hasErrors: true` with the chain in `errorMessage`.
 >
+> A test case's verification that fails with `ContinueOnFailure` `True` (the default) leaves all three clean. Its own `[Error]` line, the verification's result message, is the only sign: check a test case's verification lines in addition to the verdict.
+>
 > **Do NOT use a log line's level as a failure signal** — workflow `Log Message` activities emit at any level, and a clean run that logs at `Error` still returns `hasErrors: false`. Treating log levels as a verdict flips green runs to "failed". Conversely, when a run has failed, `errorMessage` and the `[Error]` lines above the envelope carry the most specific diagnosis — read them for the root cause after the verdict is already established.
 
 Helm examples:

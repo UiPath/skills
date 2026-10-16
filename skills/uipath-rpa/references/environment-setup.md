@@ -98,7 +98,7 @@ Before running `init`, decide which template to use.
 |---|---|
 | "REFramework", "ERP template", "SAP template", "based on X template", or any specific template name | Run `uip rpa templates search --query "<term>" --output json` (see § "Search and select" below) |
 | "library", "library project" | Use `--template-id LibraryProcessTemplate` (built-in, no search) |
-| "test project", "test automation" | Use `--template-id TestAutomationProjectTemplate` (built-in, no search) |
+| "test project", "test automation" | Run `uip rpa templates search --query "Test Automation Framework" --output json` and create from the Official Test Automation Framework template ([testing-guide.md § Test Automation Framework](testing-guide.md#test-automation-framework)); `--template-id TestAutomationProjectTemplate` (built-in, no search) only when the user asks for a blank test project |
 | Nothing template-related | Use `--template-id BlankTemplate` (default) |
 
 **2. Search and select**
