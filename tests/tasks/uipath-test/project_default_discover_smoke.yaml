@@ -10,7 +10,9 @@ description: >
   (which moves the tenant-wide default under every other run). Graded on the
   answer file against the server: the key of the first row when it carries
   IsDefault true, else NONE, so both a tenant with a default and one without
-  are covered.
+  are covered. A user who cannot open the default does not see it in the list
+  at all, so NONE means "no default this login can see"; the grader reads the
+  list as the same login, so it agrees with the agent either way.
 tags: [uipath-test, smoke, mode:operate, lifecycle:discover, outcome-graded]
 
 run_limits:
@@ -35,7 +37,7 @@ pre_run:
 initial_prompt: |
   Our CI pipelines run their tests in this tenant's default UiPath Test Manager
   project. I only need to know which project that is. Write just its project
-  key to default_project.txt, or NONE if the tenant has no default project yet.
+  key to default_project.txt, or NONE if you can't find one.
 
 success_criteria:
   - type: skill_triggered
@@ -48,7 +50,7 @@ success_criteria:
   - type: command_not_executed
     description: "Did not create or move the default project (no get-default, no --set-default)"
     tool_name: "Bash"
-    command_pattern: '(?:uip|\$UIP)\s+tm\s+project\s+(get-default\b(?!(?:(?!\n|&&|\|\||;|\|).)*\s(--help|-h)\b)|update\b(?:(?!\n|&&|\|\||;|\|).)*--set-default)'
+    command_pattern: '(?:uip|\$UIP)\s+tm\s+project\s+(?:get-default\b(?!(?:(?!(?<!\\)\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?:--help|-h)\b)|update\b(?:(?!(?<!\\)\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--set-default(?![\w-]))'
     weight: 3.0
     pass_threshold: 1.0
 
