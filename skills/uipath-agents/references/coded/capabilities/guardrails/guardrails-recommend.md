@@ -85,13 +85,21 @@ If the agent uses any other framework (LlamaIndex, OpenAI Agents, plain Python, 
 
 Call `WebFetch` once per page. From the core page extract Validator classes, entity-type enums, `GuardrailScope` / `GuardrailExecutionStage`, and Action classes. From the LangChain page (when applicable) extract middleware classes, supported scopes/stages, extra parameters, and the correct `uipath_langchain.guardrails` import paths.
 
-> **If your fetch tool saved a page to a file instead of returning its text, do not read that file top to bottom.** Both pages are long, and paging through them in chunks exhausts the turn budget before the agent file is edited. Grep the saved file once for only the symbols this task needs (the validator, middleware, and action class names, plus the entity enum), then continue:
+> **If your fetch tool saved a page to a file instead of returning its text, do not read that file top to bottom.** Both pages are long, and paging through them in chunks exhausts the turn budget before the agent file is edited. Extract only what this task needs in two greps, then continue:
 >
-> ```bash
-> grep -n -A12 -E '<SYMBOL_1>|<SYMBOL_2>|<SYMBOL_3>' "<SAVED_PAGE_FILE>"
-> ```
+> 1. **Index grep.** You do not know the exact class names yet — list the page's headings and class declarations to learn their spellings:
 >
-> Grep again only for a symbol the first grep did not return.
+>    ```bash
+>    grep -n -E '^#+ |^class ' "<SAVED_PAGE_FILE>"
+>    ```
+>
+> 2. **Targeted grep.** Pull the sections for the symbols this task needs (the validator, middleware, and action class names, plus the entity enum). Match case-insensitively on the validator's name stem so a catalog id like `pii_detection` still hits the class name whatever its casing:
+>
+>    ```bash
+>    grep -in -A12 -E '<SYMBOL_OR_STEM_1>|<SYMBOL_OR_STEM_2>' "<SAVED_PAGE_FILE>"
+>    ```
+>
+> Grep again only for a symbol these two did not return. If the saved file is raw HTML rather than markdown (the index grep returns nothing), grep the class-name stems case-insensitively anyway — do not fall back to paging through the file.
 
 **Use the fetched content as the sole source of truth.** Never rely on memory for class names, enum members, or import paths — the SDK evolves and the docs are the only reliable mapping.
 
