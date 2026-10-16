@@ -202,7 +202,7 @@ See sdd-generation-guide.md Phase 3 Step 2 item 4 for the format spec.
 
 | Connector | System | Access Method | Used By |
 |---|---|---|---|
-| <CONNECTOR_NAME> | <SYSTEM> | <ACCESS_METHOD> | <PAGES_OR_COMPONENTS> |
+| <CONNECTOR_NAME> | <SYSTEM_NAME> | <ACCESS_METHOD> | <PAGES_OR_COMPONENTS> |
 
 ---
 
