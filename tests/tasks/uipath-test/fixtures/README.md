@@ -51,6 +51,10 @@ and therefore exact for this scheme.
 | `testset_order_integration` | its own project `EVTSORD` | `EVFX-TSORDER-Regression` = `EVTSORD:4` holding Alpha/Beta/Gamma = `EVTSORD:1-3` | Project seeded once so the keys the order criterion names never change; `pre_run` fails if the shape drifts and resets the source's enforce flag. Per-run copies `EVFX-TSORDER-<stamp>-<hex>`, swept after 6 hours |
 | `testset_settings_ask_integration` | HEALTH | `EVFX-TSASK-Regression`, `EVFX-TSASK-TC1` | Seeded once; read-only for the agent (`pre_run` resets the enforce flag if a past run changed it) |
 | `testset_lifecycle_e2e` | its own project `EVTSLIFE` | `EVFX-TSLIFE-Regression` = `EVTSLIFE:4` holding Alpha/Beta/Gamma = `EVTSLIFE:1-3` | Same as `EVTSORD`; the agent deletes its own copy, the 6-hour sweep catches any it leaves |
+| `testcase_clone_smoke` | HEALTH | `EVFX-TCCLONE-Login` (label `EVFX-TCCLONE`, two steps) | Seeded once, never changed. Each run's copy is `EVFX-TCCLONE-<uuid8> Login copy` from its `seed.json`; `post_run` deletes it, `pre_run` sweeps copies older than 6 hours |
+| `testcase_bulk_create_integration` | HEALTH | none shared; `EVFX-TCBULK-<uuid8> <title>` per run | `pre_run` writes `cases.json` and creates the first case; `post_run` deletes the run's cases, `pre_run` sweeps ones older than 6 hours |
+| `testcase_lookup_integration` | HEALTH | `EVFX-TCLOOK-TC{1,2}` (label `EVFX-TCLOOK-Checkout`), `EVFX-TCLOOK-TC3` (label `EVFX-TCLOOK-Other`), `EVFX-TCLOOK-Set{A,B,C}` holding TC1, TC2, TC3 | Seeded once, read-only. `pre_run` deletes duplicates a concurrent first seed leaves (lowest key wins) and fails if the shape drifted |
+| `testcase_lifecycle_e2e` | HEALTH | none shared; `EVFX-TCLIFE-<uuid8> Login`/`Logout`/`Login copy` per run | The agent deletes its copy; `post_run` deletes the rest, `pre_run` sweeps ones older than 6 hours |
 
 The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
 (`seed`, `check`). It knows no names: each task passes its own `EVFX-` names

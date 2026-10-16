@@ -58,6 +58,10 @@ OWNERS = {
     "TSORDER": "testset_order_integration.yaml",
     "TSASK": "testset_settings_ask_integration.yaml",
     "TSLIFE": "testset_lifecycle_e2e.yaml",
+    "TCCLONE": "testcase_clone_smoke.yaml",
+    "TCBULK": "testcase_bulk_create_integration.yaml",
+    "TCLOOK": "testcase_lookup_integration.yaml",
+    "TCLIFE": "testcase_lifecycle_e2e.yaml",
 }
 
 
