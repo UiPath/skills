@@ -1,13 +1,13 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, requirements, cases, sets, executions; AI-generate test cases from requirements, evaluate requirements, find obsolete test cases; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, requirements, cases, sets, executions, defects; AI-generate test cases from requirements, evaluate requirements, find obsolete test cases; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
 
 # UiPath Test Assistant
 
-Manage UiPath Test Manager projects, requirements (including AI test case generation, requirement evaluation and obsolete test case search), test cases, test sets, executions, logs, attachments, results, custom fields, labels, and persona-tailored shareable test reports.
+Manage UiPath Test Manager projects, requirements (including AI test case generation, requirement evaluation and obsolete test case search), test cases, test sets, executions, logs, defects, attachments, results, custom fields, labels, and persona-tailored shareable test reports.
 
 ## Use For
 
@@ -15,7 +15,7 @@ Test Manager CRUD; execution analysis, coverage, regression trends, failure rate
 
 ## Concepts and CLI
 
-Requirements define what must be tested; test cases define scenarios and may contain **teststeps**; test sets group cases; executions are created when a test set or testcase runs. Testcase logs record a testcase in an execution and provide navigation; test-step logs record steps; testcase-log assertions are assertion steps. Test Manager's **AI** works from a requirement's description and attachments: it proposes test cases, suggests improvements to the requirement, or flags linked test cases that look obsolete. Each runs as a background job with an activity id.
+Requirements define what must be tested; test cases define scenarios and may contain **teststeps**; test sets group cases; executions are created when a test set or testcase runs. Testcase logs record a testcase in an execution and provide navigation; test-step logs record steps; testcase-log assertions are assertion steps. Test Manager's **AI** works from a requirement's description and attachments: it proposes test cases, suggests improvements to the requirement, or flags linked test cases that look obsolete. Each runs as a background job with an activity id. A **defect** is a bug raised from one testcase log and synced to the project's defect tracker (Jira, Azure DevOps, …).
 
 External Playwright packages are suites packaged and uploaded to Orchestrator. Ingestion auto-creates one testcase per Playwright test, without a link step, and labels each `PW_Tag_*`, `PW_Project_*`, `PW_Suite_*`, and `PW_File_*`. They run on serverless cloud runtimes; see [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
 
@@ -62,7 +62,7 @@ Open a manual run with `uip tm testsets run --test-set-key <KEY> --execution-typ
 
 ### Logs, reports, attachments, and results
 
-- `uip tm testcaselog start --project-key <PROJECT_KEY> --execution-id <EXECUTION_ID> --test-case-id <TEST_CASE_ID>` starts, optionally `--run-id <NUMBER>`. `finish --project-key <PROJECT_KEY> --execution-id <EXECUTION_ID> --test-case-id <TEST_CASE_ID> --result <None|Passed|Failed|Restricted> --has-error <true|false> --executed-by <EMAIL>` finishes. **`--executed-by` is validated non-empty then discarded** — the stored `ExecutedBy` is the authenticated caller, so never tell the user a result was attributed to whoever they named. <!-- Verified 2026-10-12, CLI 1.205.0 on alpha. --> Optionally `--detail-link <URL>`, `--run-id`, `--is-post-condition-met`, `--step-logs <json>` or `--step-logs-file <path>`.
+- `uip tm testcaselog start --project-key <PROJECT_KEY> --execution-id <EXECUTION_ID> --test-case-id <TEST_CASE_ID>` starts, optionally `--run-id <NUMBER>`. `finish --project-key <PROJECT_KEY> --execution-id <EXECUTION_ID> --test-case-id <TEST_CASE_ID> --result <None|Passed|Failed|Restricted> --has-error <true|false> --executed-by <EMAIL>` finishes and records the result (how a manual run's case is marked `Failed`). **`--executed-by` is validated non-empty then discarded** — the stored `ExecutedBy` is the authenticated caller, so never tell the user a result was attributed to whoever they named. <!-- Verified 2026-10-12, CLI 1.205.0 on alpha. --> Optionally `--detail-link <URL>`, `--run-id`, `--is-post-condition-met`, `--step-logs <json>` or `--step-logs-file <path>`.
 - `uip tm testcaselog list-assertions --project-key <PROJECT_KEY> --test-case-log-id <TEST_CASE_LOG_ID>` lists assertions; `uip tm teststeplog list --project-key <PROJECT_KEY> --test-case-log-id <TEST_CASE_LOG_ID>` lists step logs.
 - `uip tm report get --execution-id <EXECUTION_ID> (--project-key <KEY> | --test-set-key <KEY>)` summarizes a completed execution; exactly one project-identifying option is required. Passing only `--execution-id` exits with `Provide --project-key or --test-set-key`.
 - `uip tm attachment download --execution-id <EXECUTION_ID>` downloads testcase attachments; `attachment upload --object-id <UUID> --object-type <type> --file <path>` uploads to a Test Manager object, such as `--object-type testCaseLog`; `uip tm result download --execution-id <EXECUTION_ID>` downloads JUnit XML, optionally `--project-key`, `--test-set-key`, `--result-path <DIR>`.
@@ -75,6 +75,10 @@ Open a manual run with `uip tm testsets run --test-set-key <KEY> --execution-typ
 ### Playwright pack
 
 `uip tm pack --project-path <dir> --type playwright --project-key <PROJECT_KEY> --name <PackageName> --package-version <ver> -o <out-dir>` packs a Playwright suite into a `.nupkg`; a lockfile and `@playwright/test` are required. `--package-version` is NuGet/SemVer-style with three or four numeric parts and an optional prerelease/build suffix (`1.0.0`, `1.0.0.0`, `1.0.1-beta.1`); `1.0` and nonnumeric values are rejected. `--project-key` targets the Test Manager project for automatic testcase ingestion; `--no-create-test-cases` skips it; `--dry-run` previews. Upload with `uip or packages upload <nupkg>`. Packing is offline and needs no auth. The upload → ingestion → label-fill → run pipeline is in [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
+
+### Defects
+
+`uip tm defects` `create | list | get | update | delete | get-external-issue | get-related | attachments list|download` — raise a defect from a failed result, change its status/priority/tracker link, and trace it. Defects are UUID-only: find the one on a result through `DefectId` in `executions testcaselogs list`. Before any `defects` call, read [references/defects-guide.md](references/defects-guide.md): `update` and `delete` often take 10–40 s and need a shell time limit of at least 120 s.
 
 ### Wait and user
 
@@ -97,9 +101,10 @@ Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet
 5. **Confirm before delete:** confirm the target resource key unless the user already authorized that exact delete. Every delete requires `--yes` or `-y`; omission exits without deleting.
 6. For a required folder key, use `uip or folders list -n <folder-name> --all --output json` when the user named the folder; when choosing one yourself, omit `--all` to list only member folders. Run `/uipath-platform` for folder-management details.
 7. **Discover before assuming:** never guess automation names, folder keys, project IDs, or testcase keys; run the matching list first, such as `uip tm testcases list-automations` or `uip or folders list -n <folder-name> --all`.
-8. **Narrow named-entity list calls server-side:** when given a name, key, label, or tag, inspect `uip tm <resource> list --help` or `uip or <resource> list --help` for its narrowing flag and use it. Never list all then filter client-side; this applies to every entity across `uip tm` and `uip or`. Exception: `tm testcases list --filter` is prefix matching. If a mid-name term returns zero, retry with a broader contextual prefix; relist without `--filter` only if no workable prefix exists, paging through all results with `--limit`/`--offset` before concluding absence.
+8. **Narrow named-entity list calls server-side:** when given a name, key, label, or tag, inspect `uip tm <resource> list --help` or `uip or <resource> list --help` for its narrowing flag and use it. Never list all then filter client-side; this applies to every entity across `uip tm` and `uip or`. Exception: `tm testcases list --filter` is prefix matching. If a mid-name term returns zero, retry with a broader contextual prefix; relist without `--filter` only if no workable prefix exists, walking every page (Rule 11) before concluding absence.
 9. **Default-folder recovery:** `uip tm testcases run` and `uip tm testsets run` require a project default folder. Attempt the run first. Only when failure text exactly includes `"Message": "HTTP 400: Please assign folder to project level before executing testcases."` and `errorCode: itemNotFound`, run `uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY> --output json`, then retry once. Get keys with `uip or folders list -n <folder-name> --all --output json`. Do not interpret other errors as missing folders: an unusable default gives opaque `HTTP 5xx`; a nonexistent folder key gives `"HTTP 400: Internal Server Error."` with `errorCode: unknown`. Both stop under Rule 10. Never overwrite a working default folder; an arbitrary folder may be rejected by Test Manager and break later runs. This is the only named run exception to Rule 10; all other run failures stop.
 10. **Any `uip` failure or ambiguity stops and asks the user:** this includes command errors, malformed output, unclear flags/values, multiple matches, missing identifiers, or unexpected schemas. Never fall back to REST. Exceptions are expected outcomes identified exactly: (a) the Rule 9 missing-folder error, handled there; (b) `uip tm wait` exit code 2 with `Timed out after <N>s waiting for execution '<EXECUTION_ID>'. Last status: <status>.`, which means bounded timeout worked—report non-finish and continue remaining steps. `Polling failed/interrupted/aborted ...` and exit code 1 are real wait failures; (c) a requirement AI command exiting 2 with `ErrorCode: timeout`: the job is still running, so resume it with the `--activity-id … --wait` command its `Instructions` name, never a new start. Every other failure stops.
+11. **Walk the pages before concluding an item is absent:** list responses carry only `Data`, with no total, cursor, or has-more flag. A page that returns exactly as many rows as `--limit` (default 50) may have more, so when the item you need is not on it, rerun the same list with `--offset` raised by the page size until a page comes back short. Page size is capped at 100: `--limit` above 100 fails with `HTTP 400 … Page size cannot be greater than 100.` For a list without `--limit`/`--offset`, such as `tm testcases list`, narrow with its filter flags instead (Rule 8).
 
 ## Quick Start
 
@@ -115,6 +120,7 @@ For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For an
 
 - Execution lifecycle (manual open/record/finish), filtered reads, cancel, delete, xlsx export, and reporting date (`uip tm executions`): [references/executions-guide.md](references/executions-guide.md)
 - Failed-run root cause, assertions, step logs, evidence, and flaky-versus-regression analysis: [references/failure-triage-guide.md](references/failure-triage-guide.md)
+- Raise a defect from a failed result, trace it to its test case/requirements, link it to a tracker issue (`uip tm defects`): [references/defects-guide.md](references/defects-guide.md)
 - AI on a requirement: propose and create test cases, evaluate the requirement, find and unlink or delete obsolete test cases (`uip tm requirements generate-testcases`, `evaluate`, `find-obsolete-testcases`): [references/requirement-ai-guide.md](references/requirement-ai-guide.md)
 - Shareable tester or release-manager report: [references/test-result-report-guide.md](references/test-result-report-guide.md)
 - Publish a project and link it to a Test Manager testcase (Studio/RPA): [references/publish-and-link-guide.md](references/publish-and-link-guide.md)
