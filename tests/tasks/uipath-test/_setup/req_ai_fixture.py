@@ -134,16 +134,21 @@ def require_access(project, verb):
 
     The AI routes carry their own feature flag, licence policy and AI Trust
     Layer policy, so one tenant can allow `evaluate` and answer 403 to
-    `find-obsolete-testcases`. The pass-rate gate in smoke-skills.yml drops a
-    task whose pre_run fails with TENANT NOT READY on stderr.
+    `find-obsolete-testcases` (on Cloud, findObsoleteTests needs a Test Cloud
+    licence on the user or A4TMasterFFEnabled on the org; the other two check
+    that only on AS and dedicated clouds). The pass-rate gate in
+    smoke-skills.yml drops a task whose pre_run fails with TENANT NOT READY on
+    stderr. The nightly does not and records ERROR until the tenant is fixed.
     """
     _, env = call(f"probe.{verb}", "tm", "requirements", verb, "--project-key", project,
                   "--requirement-id", PROBE_REQUIREMENT_ID, check=False)
     if env.get("ErrorCode") == "permission_denied":
         print("TENANT NOT READY — this is an environment failure, not an agent failure: "
               f"`uip tm requirements {verb}` answers 403 for this login on project "
-              f"{project} ({env.get('Message', '')[:160]}). Enable the route's feature "
-              "flag, licence and AI Trust Layer policy for the eval user.",
+              f"{project} ({env.get('Message', '')[:160]}). For find-obsolete-testcases "
+              "on Cloud, give the eval user a Test Cloud licence or enable "
+              "A4TMasterFFEnabled on the org; otherwise enable the route's feature flag "
+              "and AI Trust Layer policy for the eval user.",
               file=sys.stderr, flush=True)
         sys.exit(1)
     if (env.get("Data") or {}).get("ActivityId"):
