@@ -644,7 +644,9 @@ and then run `uip maestro bpmn refresh <project>` so the binding is
 materialized into a `Connection` resource in `bindings_v2.json` — a trigger whose
 connection is not materialized passes `validate` but faults at runtime with a
 null connection (error 102010). Use `refresh`, not the deprecated
-`update-metadata`, which does not materialize connection bindings.
+`update-metadata`, which does not materialize connection bindings. A
+trigger-start draft skips `refresh` ([SKILL.md](../SKILL.md) step 3); a
+package-ready, upload, debug, publish, or deploy deliverable runs it.
 
 ## Connectionless vs connector HTTP
 
