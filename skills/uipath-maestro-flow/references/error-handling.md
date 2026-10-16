@@ -53,6 +53,7 @@ That node is also gone from the tenant registry, which serves only `core.action.
 Moving to the managed node is a behaviour change, not a rename: a non-2xx stops arriving on the success path with `statusCode` and fails the step instead, so a status branch becomes a handler reading `err(step, 'status')`.
 
 A `.loop()` container CAN carry a handler: `.onError()` after `.loop(...)` wires the container's own error port, and a body step's failure routes to it — measured, the container's envelope carries the body's message in `detail` and the failing body step's canvas label in `element`, and the instance completes instead of faulting. Read it the usual way, `h.err('detail')`.
+Inside a loop body, end a step's handler with `.continue()` to skip the item and go on to the next one ([`loops.md`](loops.md#loop-options)).
 
 A sub-flow step's handler catches a failure in any step of its child the same way: measured, `detail` carries the inner step's message, `element` the failing inner step's label, `message` the family's generic text (`Error invoking script task`), and the instance completes. That is how a run gets one failure path: put its steps in one child flow, call it as the parent's single step, and attach one `.onError()` there, instead of a handler on every step.
 
