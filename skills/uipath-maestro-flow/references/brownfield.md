@@ -129,6 +129,31 @@ resource families, queue items, the AI patterns, document steps, conversational
 and voice steps, and connector event subscriptions. A recovered agent keeps its
 `source` uuid, so its `agent.json` sidecar still resolves.
 
+An agent's context index, tool or escalation node keeps its identity the same
+way. A decompiled resource entry may carry `nodeId` (the resource node's id),
+`source` (its `resources/<source>/` directory) or `label` (a context index's
+canvas label):
+
+```ts
+context: [{ name: "Example SOP Index", id: "11111111-2222-4333-8444-555555555555",
+  folderPath: "Shared/Example", label: "SOP lookup",
+  nodeId: "ctx_7f2a1b", source: "d84e2c17-6a3f-4c59-b0e2-7f1a9c5b3d28" }]
+```
+
+Leave these as they are. Removing them makes compile name the node
+`<agent>Context` / `Tool` / `Escalation` (with `2`, `3`, ... for more than one)
+with a new directory, so merge drops the original node and adds a different
+one. Do not add them to a resource you create, including one copied from a
+decompiled entry. `check` reports `INLINE_AGENT_RESOURCE_NODE_ID` for a blank
+`nodeId` or one another node has (or that compile derives for another
+resource), `INLINE_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
+uuid, and `INLINE_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
+with the same `source`: both would write one `resource.json`. Delete both
+`nodeId` and `source` from a copied entry. Needs `@uipath/maestro-builder-sdk`
+6.33.0 or later; an older SDK's decompile omits these fields and compile renames
+the node with a new directory, so upgrade with
+`npm install -g @uipath/maestro-builder-sdk@latest`.
+
 A node type the SDK has no factory for still round-trips: it comes back as
 `rawNode({ nodeType, version, manifest, inputs })`, carrying the definition the
 file supplied, so the node keeps its type, its version and its inputs. Leave it
