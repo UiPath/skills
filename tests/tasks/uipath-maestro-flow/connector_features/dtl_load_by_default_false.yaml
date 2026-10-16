@@ -9,17 +9,17 @@ description: >
   .flow check covers; a debug run would only list live store products.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-automattic-woocommerce, ipe, mode:build]
 
-run_limits:
-  expected_turns: 51
-  task_timeout: 1500
-  max_turns: 120
-  turn_timeout: 1200
-
 sandbox:
   template_sources:
     - type: template_dir
       path: ../_setup
       mount_point: _setup
+
+run_limits:
+  expected_turns: 51
+  task_timeout: 1500
+  max_turns: 120
+  turn_timeout: 1200
 
 reference:
   directory: ..
