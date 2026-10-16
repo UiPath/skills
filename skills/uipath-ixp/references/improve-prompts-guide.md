@@ -111,7 +111,7 @@ uip ixp projects get-taxonomy <project-name> --output json
 
 Save to `/tmp/ixp/<project-name>/taxonomies/v1.json`. Output is `{ status, dataset: { entity_defs, label_groups } }` (raw snake_case); each `dataset.label_groups[]` holds `label_defs` with their fields and current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each prompt update (v2, v3, …).
 
-The parent `label_def` `name` (e.g. `"Invoice"`) and the field `name` (e.g. `"Invoice Number"`) are what you pass to `fields update-prompts --updates` as `group` and `name`.
+The parent `label_def` `name` (e.g. `"Invoice"`) and the field `name` (e.g. `"Invoice Number"`) are what you pass to `fields update-prompts --updates-file` as `group` and `name`.
 
 ### 1d. Read sample documents (2-3 documents)
 

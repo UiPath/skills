@@ -29,7 +29,7 @@ For each document from the list, process one at a time: get predictions, downloa
 uip ixp labellings get-predictions <project-name> <document-id> --output json
 ```
 
-This returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is `{ DocumentId, Labels[] }` (for a single-document call, `Predictions[0]`). Each label is `{ Name, Occurrence, Fields[] }`, and each field has `FieldId`, `FieldName`, `FormattedValue`. `Occurrence` is the explicit 0-based index used for `--occurrence`/`--updates`, valid **for this read only** — see [Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped).
+This returns `Data: { ProjectName, TotalDocuments, DocumentsWithPredictions, Predictions[] }`. Each `Predictions[]` entry is `{ DocumentId, Labels[] }` (for a single-document call, `Predictions[0]`). Each label is `{ Name, Occurrence, Fields[] }`, and each field has `FieldId`, `FieldName`, `FormattedValue`. `Occurrence` is the explicit 0-based index used for `--occurrence`/`--updates-file`, valid **for this read only** — see [Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped).
 
 The response also carries `ModelVersion` — the model version that produced these predictions. Note it: pass it to `confirm --model-version` in step 2d so a retrain mid-review can't silently change the values `confirm` stamps.
 
@@ -91,7 +91,7 @@ For **NOT CONFIRMED** fields: state the predicted value, the actual value (if vi
 
 Submit confirmed, corrected, and missing fields for this document — all in one `confirm` call.
 
-**Pass the version you reviewed.** Add `-m <model_version>` (the `ModelVersion` from step 2a) to every `confirm` call below — the narrowed `--occurrence`/`--updates` forms included. If a retrain landed since you read the predictions, the confirm is rejected with `PredictionVersionChangedError` instead of stamping values you never saw — re-run step 2a, re-review this document, then confirm again.
+**Pass the version you reviewed.** Add `-m <model_version>` (the `ModelVersion` from step 2a) to every `confirm` call below — the narrowed `--occurrence`/`--updates-file` forms included. If a retrain landed since you read the predictions, the confirm is rejected with `PredictionVersionChangedError` instead of stamping values you never saw — re-run step 2a, re-review this document, then confirm again.
 
 **If there are corrections:**
 
@@ -148,7 +148,7 @@ uip ixp labellings confirm <project-name> <document-id> \
 
 Occurrences not targeted carry forward whatever annotation they already had (so wrong predictions in untouched occurrences stay unannotated).
 
-**Confirm all the correct rows in one `--updates` call, not one `--occurrence` call per row** — every index in a single call resolves against the same read, whereas the second of two sequential calls is working from indices the first one invalidated ([Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped)):
+**Confirm all the correct rows in one `--updates-file` call, not one `--occurrence` call per row** — every index in a single call resolves against the same read, whereas the second of two sequential calls is working from indices the first one invalidated ([Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped)):
 
 ```bash
 cat > /tmp/ixp/<project-name>/prompts/confirm_updates.json << 'EOF'
@@ -163,7 +163,7 @@ uip ixp labellings confirm <project-name> <document-id> \
 
 See [CLI Reference § Labellings](cli-reference.md#labellings) and Critical Rule 12.
 
-**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates-file <path>`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 13.
+**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates-file` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates-file <path>`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 13.
 
 ```bash
 # Roll back only occurrence 2 of Line Items (every field in that line):
@@ -189,7 +189,7 @@ Only two states read back in document order: a document with no annotations on t
 
 The consequence for labelling: **an `Occurrence` value is only valid for the read that produced it, and any write to that group invalidates it.** So
 
-- put every occurrence you want to confirm (or unconfirm) in ONE `--updates` call — all of its indices resolve against the same read;
+- put every occurrence you want to confirm (or unconfirm) in ONE `--updates-file` call — all of its indices resolve against the same read;
 - if sequential per-occurrence calls are unavoidable, re-run `get-predictions` between them and re-locate each row by its field values;
 - never reuse an index across a write, and report rows to the user by value ("the row with Description `Widget B`"), not as "row 3".
 
