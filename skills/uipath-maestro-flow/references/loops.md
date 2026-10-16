@@ -66,8 +66,12 @@ examples are below.
 Every `.loop()` emits the loop's 2.4 definition (inner `start`/`continue`/`break`
 handles), the version the registry serves and the designer authors. The legacy
 1.0.0 shape (body from `output`, back-edge into `loopBack`, `currentIndex`) is
-emitted only for an explicit `{ version: '1.0.0' }`, which accepts none of the
-options below.
+emitted only for an explicit `{ version: '1.0.0' }`. On 1.0.0, `body.continue()`
+works; `completionCondition`, `breakEnabled` and `body.break()` fail `check` with
+`LOOP_VERSION_UNSUPPORTED`. `parallel: true` compiles on 1.0.0 only to
+round-trip a canvas 1.0.0 loop, and `check` warns `LOOP_PARALLEL_LEGACY`: that
+version is not confirmed to run iterations in parallel. For a new parallel loop,
+drop `version` (2.4).
 
 - `parallel: true` — run iterations concurrently instead of sequentially.
   Concurrent iterations' `{ updates }` writes overwrite each other, so a `.var()`

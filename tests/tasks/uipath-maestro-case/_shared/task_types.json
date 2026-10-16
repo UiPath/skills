@@ -23,7 +23,13 @@
         "Type": "execute-connector-activity"
       },
       {
+        "Type": "flow-process"
+      },
+      {
         "Type": "function"
+      },
+      {
+        "Type": "http-request"
       },
       {
         "Type": "process"
@@ -47,12 +53,6 @@
       },
       {
         "Type": "external-workflow"
-      },
-      {
-        "Type": "flow-process"
-      },
-      {
-        "Type": "http-request"
       },
       {
         "Type": "script"
