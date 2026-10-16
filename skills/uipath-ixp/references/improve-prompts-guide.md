@@ -22,8 +22,8 @@ Before starting, understand the limits of prompt iteration:
 Prompts live at three levels and are edited by three separate commands:
 
 - **`uip ixp projects update-prompt <project> --prompt "<text>"`** — the project's **Overall extraction instructions**, seen on every extraction for every field.
-- **`uip ixp groups update-prompts <project> --updates <json>`** — field group (label_def) instructions (e.g., "Invoice", "Line Items"). Match by label_def name.
-- **`uip ixp fields update-prompts <project> --updates <json>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field group name + field name and fails if either combination is not found.
+- **`uip ixp groups update-prompts <project> --updates-file <path>`** — field group (label_def) instructions (e.g., "Invoice", "Line Items"). Match by label_def name.
+- **`uip ixp fields update-prompts <project> --updates-file <path>`** — per-field instructions (e.g., "Invoice Number", "Invoice Date"). Match by field group name + field name and fails if either combination is not found.
 
 `groups update-prompts` and `fields update-prompts` match by their supplied identity and update only the named entries, preserving every definition you didn't change. `projects update-prompt` overwrites the entire project prompt, so always submit the full text. To update more than one level in the same iteration, run the commands back-to-back.
 
@@ -111,7 +111,7 @@ uip ixp projects get-taxonomy <project-name> --output json
 
 Save to `/tmp/ixp/<project-name>/taxonomies/v1.json`. Output is `{ status, dataset: { entity_defs, label_groups } }` (raw snake_case); each `dataset.label_groups[]` holds `label_defs` with their fields and current `instructions`. These per-field instructions are what you'll be iterating on. Increment the version after each prompt update (v2, v3, …).
 
-The parent `label_def` `name` (e.g. `"Invoice"`) and the field `name` (e.g. `"Invoice Number"`) are what you pass to `fields update-prompts --updates` as `group` and `name`.
+The parent `label_def` `name` (e.g. `"Invoice"`) and the field `name` (e.g. `"Invoice Number"`) are what you pass to `fields update-prompts --updates-file` as `group` and `name`.
 
 ### 1d. Read sample documents (2-3 documents)
 
@@ -220,7 +220,7 @@ cat > /tmp/ixp/<project-name>/prompts/field_updates.json << 'FIELDS_EOF'
 FIELDS_EOF
 
 uip ixp fields update-prompts <project-name> \
-  --updates "$(cat /tmp/ixp/<project-name>/prompts/field_updates.json)" \
+  --updates-file /tmp/ixp/<project-name>/prompts/field_updates.json \
   --output json
 
 # If group instructions also need updating, run a second command.
@@ -231,7 +231,7 @@ cat > /tmp/ixp/<project-name>/prompts/group_updates.json << 'GROUPS_EOF'
 GROUPS_EOF
 
 uip ixp groups update-prompts <project-name> \
-  --updates "$(cat /tmp/ixp/<project-name>/prompts/group_updates.json)" \
+  --updates-file /tmp/ixp/<project-name>/prompts/group_updates.json \
   --output json
 
 # Only if the project prompt needs changing
@@ -308,7 +308,7 @@ cat > /tmp/ixp/<project-name>/prompts/rollback.json << 'FIELDS_EOF'
 FIELDS_EOF
 
 uip ixp fields update-prompts <project-name> \
-  --updates "$(cat /tmp/ixp/<project-name>/prompts/rollback.json)" \
+  --updates-file /tmp/ixp/<project-name>/prompts/rollback.json \
   --output json
 ```
 
