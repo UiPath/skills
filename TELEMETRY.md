@@ -13,7 +13,9 @@ synchronous SessionStart step
 the same session on App Insights' native `session_Id` (see
 [Correlation](#correlation)). No local state file, no
 session daemon — session-level metrics are computed at query time from the
-event stream.
+event stream. Another hook, `hooks/flow-diff-hook.mjs`, sends
+nothing off the machine; it is described in
+[Flow-diff hook](#flow-diff-hook-local-only-not-telemetry).
 
 ## Events
 
@@ -379,3 +381,58 @@ session.
   by execution policy). When `uip` is absent — or predates `--hook`
   (UiPath/cli#4444) — events are silently dropped and the wrapper still exits
   0; the hook never fails the session.
+
+## Flow-diff hook (local only, not telemetry)
+
+`hooks/flow-diff-hook.mjs` tells the UiPath VS Code extension which Maestro
+files a coding agent wrote, so the extension's canvas can show the agent's turn
+as one before/after review. It needs the extension build from
+UiPath/flow-workbench with the local agent hook server (UiPath/flow-workbench#3581).
+Without it there is no `~/.uipath/ide`, and the hook exits at once.
+
+**Registered on** `PostToolUse` (`Edit|MultiEdit|Write|Bash`), `PostToolUseFailure`
+(`Bash`, since a command that exits non-zero may still have written), `PermissionRequest`
+(`Edit|MultiEdit|Write`), `Stop`, `StopFailure` and `UserPromptSubmit`. Every
+entry is `async` and declares `timeout: 10`. Claude Code does not enforce a
+timeout on async command hooks, so the hook bounds itself: 2 s for stdin and
+2 s per socket message. It prints nothing and always exits 0.
+
+**Reads**
+
+- From the hook payload: the session id, `tool_name`, `file_path`, Write's
+  `content`, Edit's `tool_response` (`originalFile`, `oldString`, `newString`,
+  `replaceAll`), MultiEdit's `edits`, and Bash's `command`. The hook reads the
+  command only to check whether it mentions `uip maestro` or a `.flow`, `.bpmn`
+  or `.case` file. Any other command stops the hook before it touches a file.
+- Lockfiles `~/.uipath/ide/*.lock`, or the one named by `UIPATH_FLOW_HOOK_LOCK`
+  (the extension sets it in its own terminals). A lockfile is trusted only when
+  it is a regular file owned by the user with no group or other permission bits,
+  has `v` exactly `2`, a live `pid`, a 64-hex `token`, and a socket named
+  `uipath-flow-hook-<16 hex>` (`.sock` on Unix, `\\.\pipe\…` on Windows).
+- Reviewed files, of the types the lockfile lists (today `.flow`), inside the
+  lockfile's workspace folders, up to 10 MiB each. After a matching Bash command,
+  the hook walks those folders (bounded depth and entry count, skipping
+  dot-folders and `node_modules`) for files modified since the session's
+  checkpoint.
+
+**Writes** `~/.uipath/ide/sessions/<hash of the session id>/` (mode 0700). It
+holds a `since` checkpoint, touched at each prompt and after each matching
+command, plus one 0600 entry per window and file that the turn reported or
+proposed. Entries are removed when the turn ends, and a session left untouched
+for 24 h is swept.
+
+**Sends** over the lockfile's socket only. On Unix the hook first checks that
+the path is a socket owned by the user. Each message is one JSON line:
+`{"v":2,"agent":"claude","sessionId":…,"pid":…,"event":"write","file":…,"hashes":[…],"token":…}`
+or the same with `"event":"turn.end"` and no `file`/`hashes`. A hash is the
+SHA-256 of the file's UTF-8 content after dropping a leading BOM and turning
+CRLF into LF. File content never leaves the hook process. At turn end the hook
+re-hashes every file the turn reported and sends a final `write` before
+`turn.end`, so a later `uip maestro … format` still matches.
+
+**Compatibility:** both sides require `v` to equal `2` exactly. A lockfile with
+any other version is ignored without a message, so a protocol change must ship
+in the extension and this hook together. `tests/scripts/flow-diff-hook.test.mjs`
+pins the wire format and the hash's golden vectors.
+
+**Disable:** set `UIPATH_FLOW_DIFF_DISABLED=1` (or `true`).

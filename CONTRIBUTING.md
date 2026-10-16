@@ -34,7 +34,8 @@ Thank you for your interest in contributing! Whether you're adding a new skill, 
 │   └── *.md                   # Each file becomes /uipath:<filename>
 ├── hooks/                     # Session-initialization hooks
 │   ├── hooks.json             # Hook definitions (SessionStart, etc.) — polyglot dispatch
-│   └── set-session-env.mjs    # Session-env hook (Node.js; telemetry has no script — hooks.json pipes to `uip track --hook`)
+│   ├── set-session-env.mjs    # Session-env hook (Node.js; telemetry has no script — hooks.json pipes to `uip track --hook`)
+│   └── flow-diff-hook.mjs     # Reports agent .flow writes to the UiPath VS Code extension (local IPC; see TELEMETRY.md § Flow-diff hook)
 ├── references/                # Shared documentation and activity references
 │   └── activity-docs/         # Per-package, per-version activity API docs
 ├── skills/                    # Individual skill implementations
