@@ -187,7 +187,7 @@ The two index files, `dist/api-members.md` and `dist/api-index.md`, ship in the 
 
 Each file's own header names the repo and generator it came from, and says not to edit it there — the rows are regenerated from the declarations on every build.
 
-Match one name, then read the span — it is the whole declaration including its doc comment, so one read answers the question, with the types and the `@remarks` and `@example` bodies in full. No searching and no shell, so it works the same on Windows.
+`node "<SKILL_DIR>/scripts/sdk-api.mjs" <name>...` does the match and the read for every name in one call: each span is the whole declaration including its doc comment, with the types and the `@remarks` and `@example` bodies in full. Batch every name the build needs into that one call. It is plain Node, so it works the same on Windows. It then prints the exported types those declarations reference, three hops deep, so chasing an option shape to its field types takes no further call; `--depth 0` turns that off. `--all` adds the `/case` and `/bpmn` entry points; `--max-lines N` lifts the 300-line cap on one span. It finds the SDK the way `uip` does (workspace `node_modules` first, then global) and exits 2 with `SDK_NOT_FOUND` when neither has it. A name with no match prints similar names.
 
 A field or method name is the usual case, because these references are one line per field — so `api-members.md` is usually the one you want. Both cover all three entry points, `/case` and `/bpmn` included.
 
