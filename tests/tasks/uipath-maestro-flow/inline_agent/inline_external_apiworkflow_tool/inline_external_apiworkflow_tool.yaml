@@ -92,6 +92,17 @@ success_criteria:
     weight: 3.0
     pass_threshold: 1.0
 
+  # Outcome gate: the agent tool's own contract for the inline agent's
+  # directory (schema version, definition, bindings_v2.json drift). Builder-SDK
+  # output passes it since UiPath/builder-sdk#962 (SDK 6.16.16).
+  - type: run_command
+    description: "uip agent validate --inline-in-flow passes on every inline agent"
+    command: "python3 $REFERENCE_DIR/inline_agent/_shared/validate_inline_agent.py WeatherFlowSol/WeatherFlow/WeatherFlow.flow"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "Inline external API workflow tool: resource.json shape + folder binding + flow node + tool-handle edge"
     command: "python3 $REFERENCE_DIR/inline_agent/_shared/check_inline_external_apiworkflow_tool.py"
