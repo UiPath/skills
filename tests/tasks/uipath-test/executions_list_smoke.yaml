@@ -21,7 +21,7 @@ pre_run:
     command: |
       python3 - <<'EOF'
       import json, subprocess, sys, time
-      P, SET = "CLAIM", "EVFX-EXLIST-SET"
+      P, SET = "CLAIM", "EVFX-EXLIST-SET2"
       CASES = ["EVFX-EXLIST-TC1", "EVFX-EXLIST-TC2"]
 
       def fail(msg):
@@ -57,17 +57,19 @@ pre_run:
           return subprocess.run(["uip", *w, "--help"],
                                capture_output=True, text=True).returncode == 0
 
-      # Dedupe: the name-keyed create-if-absent races under parallel smoke load
-      # and can leave >1 set with this name; the agent then correctly stops on
-      # the ambiguity. Keep the lowest-Id canonical set, delete the extras.
+      # Dedupe without delete — the eval bot lacks test-set delete permission
+      # (403). The name-keyed create-if-absent can still race under parallel
+      # load; keep the lowest-Id canonical set and RENAME any extras out of the
+      # way (best-effort) so the agent's name lookup stays unambiguous.
       dupes = sorted(all_named("set.all", "testsets", SET),
                      key=lambda x: str(x.get("Id")))
-      if len(dupes) > 1 and has_verb("tm", "testsets", "delete"):
+      if len(dupes) > 1:
           for extra in dupes[1:]:
               k = pick(extra, "TestSetKey", "Key", "ObjKey")
               if k:
-                  call(f"set.dedup.{k}", "tm", "testsets", "delete",
-                       "--test-set-key", k)
+                  call(f"set.rename.{k}", "tm", "testsets", "update",
+                       "--test-set-key", k,
+                       "--name", f"{SET}-DUP-{str(extra.get('Id'))[:8]}")
           dupes = sorted(all_named("set.after", "testsets", SET),
                          key=lambda x: str(x.get("Id")))
       ts = dupes[0] if dupes else None
@@ -125,7 +127,7 @@ pre_run:
 
 initial_prompt: |
   In the CLAIM project in Test Manager, what executions do we have on the
-  "EVFX-EXLIST-SET" test set, and for the most recent finished one, what are the
+  "EVFX-EXLIST-SET2" test set, and for the most recent finished one, what are the
   pass/fail totals? No need to check back with me.
 
 success_criteria:
