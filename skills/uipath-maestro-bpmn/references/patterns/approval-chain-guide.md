@@ -16,7 +16,7 @@ These four carry the shape. Change one and you are building something else.
   `reject_merge`, which feeds one shared notify-and-end pair, so adding an
   approver adds a row, not a new terminal branch. Wiring the reject edges
   straight into `notify_rejected` is a fake join (`FAKE_JOIN`) that `validate`
-  does not report; see [structural-bpmn.md](../structural-bpmn.md#gateways).
+  does not report; see [structural-bpmn-flow.md](../structural-bpmn-flow.md#gateways).
 - **Per-approver outcome variables.** Each step records its own verdict and
   rationale. A single shared `outcome` variable would let the last approver
   overwrite the audit trail of the ones before.

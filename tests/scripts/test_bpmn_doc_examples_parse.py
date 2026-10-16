@@ -66,7 +66,7 @@ def _prefixes_used(text: str) -> set[str]:
     ids=lambda p: str(p.name),
 )
 def test_skeleton_declares_every_prefix_its_fragments_use(path: Path) -> None:
-    """An agent pastes this file's fragments into whichever skeleton it copied.
+    """An agent pastes the skill's fragments into whichever skeleton it copied.
 
     The skeleton lost `xmlns:xsi` when an example moved; the file still used
     `xsi:type` in four fragments, so anyone following the docs produced
@@ -84,7 +84,9 @@ def test_skeleton_declares_every_prefix_its_fragments_use(path: Path) -> None:
     ]
     if not skeletons:
         pytest.skip("no full skeleton in this file")
-    used = _prefixes_used(text)
+    used = set().union(
+        *(_prefixes_used(p.read_text(encoding="utf-8")) for p in SKILL.rglob("*.md"))
+    )
     gaps = []
     for index, skeleton in enumerate(skeletons):
         declared = set(re.findall(r"xmlns:([\w.-]+)=", skeleton))
