@@ -81,7 +81,10 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   multi-select (an `array` answer). Never change one to `'string'` or
   `'array'`: the form loses its picker. A decompiled canvas form keeps these
   spellings and their `options`, and you can edit the node unless a field has
-  one of the keys below.
+  one of the keys below. Needs `@uipath/maestro-builder-sdk` 6.31.9 or later;
+  an older SDK reports `HITL_FIELD_TYPE_UNKNOWN` (do not follow its
+  `type: 'string'` hint), so upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest`.
 
   ```ts
   fields: [{
