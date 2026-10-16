@@ -64,6 +64,8 @@ Both flags: `--search` keeps it server-side and off the page limit; `--invite-st
 - **Named but not in the inventory** → add them in the same answer (below). A missing system is never a reason to stop, to ask the user, or to pick a look-alike.
 - **Nothing named** → if the schema does **not** flag the application question `required`, **omit it entirely** — a process with no applications is valid. Never pad the answer with inventory entries to "fill it in". Only when the tenant flags it `required` and the material names no system, ask the user with `AskUserQuestion` (inventory entries as options, plus free text for a system not in the list).
 
+**UiPath itself is never one of them.** The automation is what the process becomes, not a system it uses, so leave out "UiPath" and its own components (Orchestrator, Action Center, robots, Maestro, Case Management, Document Understanding, Integration Service…) even when the PDD or SDD lists them as systems or future-state steps.
+
 #### Adding systems that are not in the inventory — `new_applications`
 
 Check the schema first: if the application question (`<ASSESSMENT>-COUNT_APPS`, "Applications used") has a **`new_applications`** property next to `value`, the submission itself can create applications — **no admin permission, no separate call, no `categoryIds`**. Send the new systems alongside any existing ids:
