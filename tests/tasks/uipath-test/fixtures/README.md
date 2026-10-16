@@ -34,6 +34,8 @@ and therefore exact for this scheme.
 | `testcase_parameters_lifecycle_e2e` | HEALTH | `EVFX-PARAMLIFE-Login` | Created if absent; `pre_run` clears its parameters |
 | `testcase_parameters_ask_first_integration` | HEALTH | `EVFX-PARAMASK-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) |
 | `perf_scenario_cleanup_smoke` | CLAIM | the `EVFX-PERF-*` namespace | `pre_run` creates two per-run scenarios, `EVFX-PERF-<YYYYMMDD-HHMMSS>-<hex>-OLD` (the agent deletes it; name in `old-scenario.txt`) and `-KEEP` (must survive; name in `keep-scenario.txt`), and sweeps `EVFX-PERF-` scenarios stamped more than 6 hours ago; `post_run` deletes whatever this run left |
+| `perf_scenario_setup_integration` | CLAIM | the `EVFX-PERFSET-*` namespace: `EVFX-PERFSET-TC1` + per-run scenarios | `EVFX-PERFSET-TC1` is created if absent and must be linked once to a performance-ready package (see [Automation-linked fixtures](#automation-linked-fixtures)); `pre_run` writes a per-run `EVFX-PERFSET-<YYYYMMDD-HHMMSS>-<hex>` scenario name to `scenario-name.txt` and sweeps ones older than 6 hours; `post_run` deletes the run's scenario |
+| `perf_scenario_dryrun_e2e` | CLAIM | the `EVFX-PERFDRY-*` namespace: `EVFX-PERFDRY-TC1` + per-run scenarios | As `perf_scenario_setup_integration`; the agent also dry-runs the scenario, and `post_run` stops a dry run still in flight before deleting the scenario (past executions are kept) |
 
 `release_readiness` deliberately owns no `EVFX-` name: the task grades the
 agent's ability to FIND the regression suite, so renaming it would delete the
@@ -180,3 +182,8 @@ This is the one step `pre_run` cannot bootstrap on its own: it requires a
 package published to Orchestrator and a robot able to serve the folder. Until
 that exists, the signoff task's `pre_run` seeds a **manual** execution so the
 wait/report half of the task stays gradeable.
+
+`EVFX-PERFSET-TC1` and `EVFX-PERFDRY-TC1` need the same one-time link, to a
+package set up for performance testing (on TestManagerDevTenant, `CLI.Testing`
+works). Their `pre_run` creates the test case if absent and stops with
+`SEED FAILED` until it is linked.
