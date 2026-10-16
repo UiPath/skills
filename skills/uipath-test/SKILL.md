@@ -133,7 +133,7 @@ Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet
 Typical request: "can checkout handle 50 users?"
 
 1. Find the automated test case (`testcases list`), its folder and package (`testcases list-automations`).
-2. `uip tm perf-scenario create --project-key <PROJECT_KEY> --name <NAME>`, then `perf-scenario load-groups add --scenario-key <SCENARIO_KEY> --test-case-key <TEST_CASE_KEY> --folder-key <FOLDER_KEY> --package-name <PACKAGE_NAME> --virtual-users <N>`.
+2. `uip tm perf-scenario create --project-key <PROJECT_KEY> --name <NAME>`, then `perf-scenario load-groups add --scenario-key <SCENARIO_KEY> --test-case-key <TEST_CASE_KEY> --folder-key <FOLDER_KEY> --package-name <PACKAGE_NAME>`. `add` ignores load-profile flags: Test Manager resets the new load group to its defaults (20 virtual users). Set the profile afterwards with `perf-scenario load-groups update --load-group-id <LOAD_GROUP_ID> --project-key <PROJECT_KEY> --virtual-users <N>`, using the load-group id `add` returns.
 3. `perf-scenario execute --scenario-key <SCENARIO_KEY> --wait` runs a dry run. A full run needs a passing dry run (`list-dry-run-reports`) and enough licence units (`licenses get`).
 4. `perf-scenario execute --scenario-key <SCENARIO_KEY> --execution-type performanceTesting --wait`, then `load-groups list --execution-id <EXECUTION_ID>` for each load group's result, and `results get` or `report generate` for the numbers.
 

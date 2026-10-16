@@ -4,74 +4,71 @@ description: >
   case can be load tested: create a scenario under the name pre_run hands it,
   bind EVFX-PERFDRY-TC1 to it as a load group with 1 virtual user, run a dry
   run, wait for it to finish, and write the dry run's result to dryrun.txt,
-  without starting a full performance run. Graded on the tenant: a dry run of
-  this scenario finished, dryrun.txt matches its result, and no
-  performanceTesting run was started.
+  without starting a full performance run. Graded on the tenant: the load
+  group is set to 1 virtual user, a dry run of this scenario finished,
+  dryrun.txt matches its result, and no performanceTesting run was started.
 tags: [uipath-test, e2e, mode:operate, lifecycle:end-to-end, outcome-graded]
-
-# Blocked: EVFX-PERFDRY-TC1 needs a one-time link to a performance-ready package on the
-# eval tenant (alpha codereval), and none is published there yet
-# (fixtures/README.md, Automation-linked fixtures). Re-enable once it is linked.
-skip: true
 
 run_limits:
   expected_turns: 20
   max_turns: 40
+  turn_timeout: 900
+  task_timeout: 1500
 
-# Dedicated fixture, see tests/tasks/uipath-test/fixtures/README.md. A dry run
-# takes about 4 minutes and uses no licence units. post_run stops a dry run
-# still in flight, then deletes the scenario; past executions are kept.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+# Dedicated fixture, see tests/tasks/uipath-test/fixtures/README.md. The shared
+# run-package script checks the tenant (folder, runtime), uploads
+# TestCase_CrossPlatform_VB_Tests to uipath-test-folder-feed when it is
+# missing, and creates a throwaway project per run (key in project-key.txt).
+# The second step creates EVFX-PERFDRY-TC1 in that project, links it to the
+# package and writes the scenario name to scenario-name.txt. Either step exits
+# TENANT NOT READY when the tenant cannot do it. A dry run takes a few minutes
+# on the folder's serverless robot and uses no licence units. post_run stops a
+# dry run still in flight, then deletes the project.
 pre_run:
+  - command: >-
+      python3 _setup/run_package_fixture.py seed --folder uipath-test-folder-feed
+      --package TestCase_CrossPlatform_VB_Tests --nupkg TestCase_CrossPlatform_VB_Tests.1.0.0.nupkg
+      --prefix EVFX-PERFDRY- --key-prefix EVPD
+    timeout: 240
   - command: |
       python3 - <<'PYEOF'
       import datetime, json, secrets, subprocess, sys
-      P, NS = "CLAIM", "EVFX-PERFDRY-"
-      TC = NS + "TC1"
-      now = datetime.datetime.now(datetime.timezone.utc)
+      FOLDER, PACKAGE, TEST, TC = "uipath-test-folder-feed", "TestCase_CrossPlatform_VB_Tests", "TestCase", "EVFX-PERFDRY-TC1"
+      P = open("project-key.txt").read().strip()
 
       def call(*a):
-          r = subprocess.run(["uip", *a, "--output", "json"],
-                             capture_output=True, text=True)
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
           try:
               return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
           except Exception:
-              return {}
+              return {"Result": "Failure", "Message": (r.stdout + r.stderr)[:300]}
 
-      # Sweep scenarios a dead run stranded; only ones stamped more than
-      # 6 hours ago, so a concurrent run keeps its own.
-      listed = call("tm", "perf-scenario", "list", "--project-key", P, "--search", NS, "--limit", "200")
-      for s in (listed.get("Data") or {}).get("Scenarios") or []:
-          name, key = s.get("Name") or "", s.get("ScenarioKey")
-          if not key or not name.startswith(NS):
-              continue
-          try:
-              stamp = datetime.datetime.strptime(name[len(NS):len(NS) + 15], "%Y%m%d-%H%M%S")
-          except ValueError:
-              continue
-          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
-              call("tm", "perf-scenario", "delete", "--scenario-key", key, "--yes")
-
-      # The test case under load is created if absent, but its automation link
-      # is a one-time manual step (fixtures/README.md, Automation-linked
-      # fixtures): it needs a performance-ready package in a folder.
-      found = [t for t in call("tm", "testcases", "list", "--project-key", P, "--filter", TC).get("Data") or []
-               if t.get("Name") == TC]
-      if not found:
-          out = call("tm", "testcases", "create", "--project-key", P, "--name", TC)
-          if out.get("Result") != "Success":
-              print(f"SEED FAILED: could not create {TC} in {P}: {out}")
-              sys.exit(1)
-          found = [{}]
-      if not found[0].get("PackageName"):
-          print(f"SEED FAILED: {TC} in {P} is not linked to a package. Link it once to a "
-                "performance-ready package with `uip tm testcases link-automation` "
-                "(fixtures/README.md, Automation-linked fixtures).")
+      def not_ready(msg):
+          print(f"TENANT NOT READY — environment failure, not an agent failure: {msg}", file=sys.stderr)
           sys.exit(1)
 
-      name = f"{NS}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
-      with open("scenario-name.txt", "w") as f:
-          f.write(name + "\n")
-      print(f"SEEDED: {TC} ({found[0].get('TestCaseKey')}) on {found[0].get('PackageName')}; scenario name {name}")
+      lic = call("tm", "perf-scenario", "licenses", "get", "--project-key", P)
+      if lic.get("Result") != "Success":
+          not_ready(f"this login cannot use performance testing in {P}: {lic.get('ErrorCode')} {lic.get('Message')}")
+      tc = call("tm", "testcases", "create", "--project-key", P, "--name", TC)
+      if tc.get("Result") != "Success":
+          print(f"SEED FAILED: could not create {TC} in {P}: {tc}"); sys.exit(1)
+      key = (tc.get("Data") or {}).get("TestCaseKey") or next(
+          t["TestCaseKey"] for t in call("tm", "testcases", "list", "--project-key", P, "--filter", TC).get("Data") or [] if t.get("Name") == TC)
+      folder = (call("or", "folders", "list", "-n", FOLDER, "--all").get("Data") or [{}])[0].get("Key")
+      link = call("tm", "testcases", "link-automation", "--project-key", P, "--test-case-key", key,
+                  "--folder-key", folder or "", "--package-name", PACKAGE, "--test-name", TEST)
+      if link.get("Result") != "Success":
+          not_ready(f"could not link {TC} to {PACKAGE} in {FOLDER}: {link.get('Message')}")
+      name = f"EVFX-PERFDRY-{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      open("scenario-name.txt", "w").write(name + "\n")
+      print(f"SEEDED {TC} ({key}) in {P}, linked to {PACKAGE}; scenario name {name}")
       PYEOF
     timeout: 180
 
@@ -85,25 +82,24 @@ post_run:
               return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
           except Exception:
               return {}
-      if os.path.exists("scenario-name.txt"):
-          name = open("scenario-name.txt").read().strip()
+      if os.path.exists("project-key.txt"):
+          P = open("project-key.txt").read().strip()
           # Delete does not stop a running execution, so stop this run's first.
-          execs = (call("tm", "perf-scenario", "executions", "list", "--project-key", "CLAIM", "--limit", "50").get("Data") or {}).get("Data") or []
+          execs = (call("tm", "perf-scenario", "executions", "list", "--project-key", P, "--limit", "50").get("Data") or {}).get("Data") or []
           for e in execs:
-              if (e.get("Name") or "").startswith(name + " - ") and e.get("Status") not in ("Finished", "Cancelled"):
-                  call("tm", "perf-scenario", "stop", "--execution-id", e["Id"], "--project-key", "CLAIM")
-          for s in (call("tm", "perf-scenario", "list", "--project-key", "CLAIM", "--search", name).get("Data") or {}).get("Scenarios") or []:
-              if s.get("Name") == name and s.get("ScenarioKey"):
-                  call("tm", "perf-scenario", "delete", "--scenario-key", s["ScenarioKey"], "--yes")
+              if e.get("Status") not in ("Finished", "Cancelled"):
+                  call("tm", "perf-scenario", "stop", "--execution-id", e["Id"], "--project-key", P)
+          call("tm", "project", "delete", "--project-key", P, "--yes")
       PYEOF
     timeout: 180
 
 initial_prompt: |
-  Before we load test EVFX-PERFDRY-TC1 in my Test Manager project CLAIM, I want
-  to know if it even works under the perf runner. Set up a scenario for it with
-  1 virtual user, named as in scenario-name.txt, do a dry run and wait for it.
-  Don't start a real load run. Write just the dry run result, Passed or Failed,
-  to dryrun.txt.
+  Before we load test EVFX-PERFDRY-TC1, I want to know if it even works under
+  the perf runner. It's in the Test Manager project whose key is in
+  project-key.txt, and it runs from the Orchestrator folder
+  "uipath-test-folder-feed". Set up a scenario for it with 1 virtual user,
+  named as in scenario-name.txt, do a dry run and wait for it. Don't start a
+  real load run. Write just the dry run result, Passed or Failed, to dryrun.txt.
 
 success_criteria:
   - type: command_executed
@@ -123,9 +119,10 @@ success_criteria:
       def call(*a):
           r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
           return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+      P = open("project-key.txt").read().strip()
       name = open("scenario-name.txt").read().strip()
-      tc = [t for t in call("tm", "testcases", "list", "--project-key", "CLAIM", "--filter", TC)["Data"] if t.get("Name") == TC][0]
-      keys = [s["ScenarioKey"] for s in (call("tm", "perf-scenario", "list", "--project-key", "CLAIM", "--search", name)["Data"] or {}).get("Scenarios") or []
+      tc = [t for t in call("tm", "testcases", "list", "--project-key", P, "--filter", TC)["Data"] if t.get("Name") == TC][0]
+      keys = [s["ScenarioKey"] for s in (call("tm", "perf-scenario", "list", "--project-key", P, "--search", name)["Data"] or {}).get("Scenarios") or []
               if s.get("Name") == name]
       if len(keys) != 1:
           print("scenarios named", name, ":", keys); sys.exit(1)
@@ -144,7 +141,8 @@ success_criteria:
     command: |
       python3 - <<'PYEOF'
       import json, os, subprocess, sys
-      r = subprocess.run(["uip", "tm", "perf-scenario", "executions", "list", "--project-key", "CLAIM",
+      P = open("project-key.txt").read().strip()
+      r = subprocess.run(["uip", "tm", "perf-scenario", "executions", "list", "--project-key", P,
                           "--execution-type", "dryRun", "--limit", "50", "--output", "json"],
                          capture_output=True, text=True)
       out = json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])

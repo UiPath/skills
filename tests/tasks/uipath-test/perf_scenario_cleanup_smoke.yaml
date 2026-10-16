@@ -54,11 +54,16 @@ pre_run:
           name = f"{run}-{role}"
           out = call("tm", "perf-scenario", "create", "--project-key", P, "--name", name)
           if out.get("Result") != "Success":
-              # Say whether reading scenarios works too: a 403 on both points
-              # at the tenant (performance testing licence or feature), a 403
-              # on create alone at the account's project permission.
+              # A 403 on create and on list means this login cannot use
+              # performance testing at all (no Test Cloud licence resolved, or
+              # the feature is off): an environment failure, which the
+              # smoke pass-rate gate drops instead of scoring.
+              if out.get("ErrorCode") == "permission_denied" and listed.get("ErrorCode") == "permission_denied":
+                  print(f"TENANT NOT READY — environment failure, not an agent failure: this login "
+                        f"cannot use performance testing in {P} (perf-scenario create and list return 403).",
+                        file=sys.stderr)
+                  sys.exit(1)
               print(f"SEED FAILED: could not create scenario {name} in {P}: {out}")
-              print(f"perf-scenario list in {P}: {listed.get('Result')} {listed.get('ErrorCode', '')}")
               sys.exit(1)
           with open(path, "w") as f:
               f.write(name + "\n")

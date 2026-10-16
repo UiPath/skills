@@ -73,8 +73,8 @@ and therefore exact for this scheme.
 | `project_import_ask_integration` | its own project `EVMXASK` (`EVFX-MXASK-Project`) | test cases `MX Alpha`, `MX Beta` | Same as `EVMXEXP`; `package.tmh` comes from its latest completed export (one export if none) |
 | `project_migration_e2e` | source `EVMXLIF` (`EVFX-MXLIFE-Project`); a new project per run, key `EVMX<4 hex>`, name `EVFX-MXLIFE-<uuid8>` from the run's `seed.json` | test cases `MX Alpha`, `MX Beta` in the source | `post_run` deletes the run's project; `pre_run` sweeps `EVFX-MXLIFE-<uuid8>` projects older than 6 hours |
 | `perf_scenario_cleanup_smoke` | CLAIM | the `EVFX-PERF-*` namespace | `pre_run` creates two per-run scenarios, `EVFX-PERF-<YYYYMMDD-HHMMSS>-<hex>-OLD` (the agent deletes it; name in `old-scenario.txt`) and `-KEEP` (must survive; name in `keep-scenario.txt`), and sweeps `EVFX-PERF-` scenarios stamped more than 6 hours ago; `post_run` deletes whatever this run left |
-| `perf_scenario_setup_integration` | CLAIM | the `EVFX-PERFSET-*` namespace: `EVFX-PERFSET-TC1` + per-run scenarios | `EVFX-PERFSET-TC1` is created if absent and must be linked once to a performance-ready package (see [Automation-linked fixtures](#automation-linked-fixtures)); `pre_run` writes a per-run `EVFX-PERFSET-<YYYYMMDD-HHMMSS>-<hex>` scenario name to `scenario-name.txt` and sweeps ones older than 6 hours; `post_run` deletes the run's scenario |
-| `perf_scenario_dryrun_e2e` | CLAIM | the `EVFX-PERFDRY-*` namespace: `EVFX-PERFDRY-TC1` + per-run scenarios | As `perf_scenario_setup_integration`; the agent also dry-runs the scenario, and `post_run` stops a dry run still in flight before deleting the scenario (past executions are kept) |
+| `perf_scenario_setup_integration` | its own project per run (`EVFX-PERFSET-*`, key `EVPL<4 hex>`) | `EVFX-PERFSET-TC1` + a per-run scenario | `pre_run` runs `_setup/run_package_fixture.py seed` (see [Run-package fixtures](#run-package-fixtures)), then creates `EVFX-PERFSET-TC1` in the project, links it to `TestCase_CrossPlatform_VB_Tests` in `uipath-test-folder-feed` and writes the scenario name to `scenario-name.txt`; `post_run` deletes the project |
+| `perf_scenario_dryrun_e2e` | its own project per run (`EVFX-PERFDRY-*`, key `EVPD<4 hex>`) | `EVFX-PERFDRY-TC1` + a per-run scenario | As `perf_scenario_setup_integration`; the agent also dry-runs the scenario on the folder's serverless robot, and `post_run` stops a dry run still in flight before deleting the project |
 
 The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
 (`seed`, `check`). It knows no names: each task passes its own `EVFX-` names
@@ -307,11 +307,6 @@ package published to Orchestrator and a robot able to serve the folder. Until
 that exists, the signoff task's `pre_run` seeds a **manual** execution so the
 wait/report half of the task stays gradeable.
 
-`EVFX-PERFSET-TC1` and `EVFX-PERFDRY-TC1` need the same one-time link, to a
-package set up for performance testing (on TestManagerDevTenant, `CLI.Testing`
-works). Their `pre_run` creates the test case if absent and stops with
-`SEED FAILED` until it is linked.
-
 ## The `uipath-test-folder-feed` folder
 
 Every task that needs an Orchestrator package uses this one folder, so do not
@@ -324,6 +319,8 @@ so packages uploaded to it stay out of the tenant feed.
 | `release_signoff_wait_report_e2e` | folder key, in `pre_run` | `Testcases.with.parameters` |
 | `run_package_ci_smoke` | folder name, in `pre_run` and the prompt | `TestCase_CrossPlatform_VB_Tests` |
 | `run_package_failing_smoke` | folder name, in `pre_run` and the prompt | `FailingTestCase_CrossPlatform_VB_Tests` |
+| `perf_scenario_setup_integration` | folder name, in `pre_run` and the prompt | `TestCase_CrossPlatform_VB_Tests` |
+| `perf_scenario_dryrun_e2e` | folder name, in `pre_run` and the prompt | `TestCase_CrossPlatform_VB_Tests` |
 
 `Testcases.with.parameters` is a Windows package. The folder's serverless
 robot runs cross-platform packages only, so runs of it start but never finish

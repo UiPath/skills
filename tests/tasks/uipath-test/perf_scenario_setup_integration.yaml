@@ -2,101 +2,85 @@ task_id: skill-test-perf-scenario-setup-integration
 description: >
   Integration test: agent uses the uipath-test skill to set up a performance
   (load) test for one automated test case without running it: create a
-  scenario under the name pre_run hands it, and bind the test case to it as a
-  load group with 5 virtual users, which means finding the test case's package
-  and Orchestrator folder. Graded on the tenant: the scenario exists with
-  exactly one load group for EVFX-PERFSET-TC1, its package, and 5 virtual
-  users, and nothing was run.
+  scenario under the name pre_run hands it, bind the test case to it as a load
+  group, and set the load group to 5 virtual users. That means finding the test
+  case's package and Orchestrator folder, and knowing that `load-groups add`
+  ignores the load profile so it has to be set with `load-groups update`.
+  Graded on the tenant: the scenario has exactly one load group for
+  EVFX-PERFSET-TC1 on its package with 5 virtual users, and nothing was run.
 tags: [uipath-test, integration, mode:build, lifecycle:setup, outcome-graded]
-
-# Blocked: EVFX-PERFSET-TC1 needs a one-time link to a performance-ready package on the
-# eval tenant (alpha codereval), and none is published there yet
-# (fixtures/README.md, Automation-linked fixtures). Re-enable once it is linked.
-skip: true
 
 run_limits:
   expected_turns: 14
   max_turns: 30
 
-# Dedicated fixture, see tests/tasks/uipath-test/fixtures/README.md. The
-# scenario name is stamped per run and handed over in scenario-name.txt so
-# concurrent runs never grade each other's scenario; post_run deletes it.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+# Dedicated fixture, see tests/tasks/uipath-test/fixtures/README.md. The shared
+# run-package script checks the tenant (folder, runtime), uploads
+# TestCase_CrossPlatform_VB_Tests to uipath-test-folder-feed when it is
+# missing, and creates a throwaway project per run (key in project-key.txt).
+# The second step creates EVFX-PERFSET-TC1 in that project, links it to the
+# package and writes the scenario name to scenario-name.txt. Either step exits
+# TENANT NOT READY when the tenant cannot do it; post_run deletes the project.
 pre_run:
+  - command: >-
+      python3 _setup/run_package_fixture.py seed --folder uipath-test-folder-feed
+      --package TestCase_CrossPlatform_VB_Tests --nupkg TestCase_CrossPlatform_VB_Tests.1.0.0.nupkg
+      --prefix EVFX-PERFSET- --key-prefix EVPL
+    timeout: 240
   - command: |
       python3 - <<'PYEOF'
       import datetime, json, secrets, subprocess, sys
-      P, NS = "CLAIM", "EVFX-PERFSET-"
-      TC = NS + "TC1"
-      now = datetime.datetime.now(datetime.timezone.utc)
+      FOLDER, PACKAGE, TEST, TC = "uipath-test-folder-feed", "TestCase_CrossPlatform_VB_Tests", "TestCase", "EVFX-PERFSET-TC1"
+      P = open("project-key.txt").read().strip()
 
-      def call(*a):
-          r = subprocess.run(["uip", *a, "--output", "json"],
-                             capture_output=True, text=True)
-          try:
-              return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
-          except Exception:
-              return {}
-
-      # Sweep scenarios a dead run stranded; only ones stamped more than
-      # 6 hours ago, so a concurrent run keeps its own.
-      listed = call("tm", "perf-scenario", "list", "--project-key", P, "--search", NS, "--limit", "200")
-      for s in (listed.get("Data") or {}).get("Scenarios") or []:
-          name, key = s.get("Name") or "", s.get("ScenarioKey")
-          if not key or not name.startswith(NS):
-              continue
-          try:
-              stamp = datetime.datetime.strptime(name[len(NS):len(NS) + 15], "%Y%m%d-%H%M%S")
-          except ValueError:
-              continue
-          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
-              call("tm", "perf-scenario", "delete", "--scenario-key", key, "--yes")
-
-      # The test case under load is created if absent, but its automation link
-      # is a one-time manual step (fixtures/README.md, Automation-linked
-      # fixtures): it needs a performance-ready package in a folder.
-      found = [t for t in call("tm", "testcases", "list", "--project-key", P, "--filter", TC).get("Data") or []
-               if t.get("Name") == TC]
-      if not found:
-          out = call("tm", "testcases", "create", "--project-key", P, "--name", TC)
-          if out.get("Result") != "Success":
-              print(f"SEED FAILED: could not create {TC} in {P}: {out}")
-              sys.exit(1)
-          found = [{}]
-      if not found[0].get("PackageName"):
-          print(f"SEED FAILED: {TC} in {P} is not linked to a package. Link it once to a "
-                "performance-ready package with `uip tm testcases link-automation` "
-                "(fixtures/README.md, Automation-linked fixtures).")
-          sys.exit(1)
-
-      name = f"{NS}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
-      with open("scenario-name.txt", "w") as f:
-          f.write(name + "\n")
-      print(f"SEEDED: {TC} ({found[0].get('TestCaseKey')}) on {found[0].get('PackageName')}; scenario name {name}")
-      PYEOF
-    timeout: 180
-
-post_run:
-  - command: |
-      python3 - <<'PYEOF'
-      import json, os, subprocess
       def call(*a):
           r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
           try:
               return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
           except Exception:
-              return {}
-      if os.path.exists("scenario-name.txt"):
-          name = open("scenario-name.txt").read().strip()
-          for s in (call("tm", "perf-scenario", "list", "--project-key", "CLAIM", "--search", name).get("Data") or {}).get("Scenarios") or []:
-              if s.get("Name") == name and s.get("ScenarioKey"):
-                  call("tm", "perf-scenario", "delete", "--scenario-key", s["ScenarioKey"], "--yes")
+              return {"Result": "Failure", "Message": (r.stdout + r.stderr)[:300]}
+
+      def not_ready(msg):
+          print(f"TENANT NOT READY — environment failure, not an agent failure: {msg}", file=sys.stderr)
+          sys.exit(1)
+
+      lic = call("tm", "perf-scenario", "licenses", "get", "--project-key", P)
+      if lic.get("Result") != "Success":
+          not_ready(f"this login cannot use performance testing in {P}: {lic.get('ErrorCode')} {lic.get('Message')}")
+      tc = call("tm", "testcases", "create", "--project-key", P, "--name", TC)
+      if tc.get("Result") != "Success":
+          print(f"SEED FAILED: could not create {TC} in {P}: {tc}"); sys.exit(1)
+      key = (tc.get("Data") or {}).get("TestCaseKey") or next(
+          t["TestCaseKey"] for t in call("tm", "testcases", "list", "--project-key", P, "--filter", TC).get("Data") or [] if t.get("Name") == TC)
+      folder = (call("or", "folders", "list", "-n", FOLDER, "--all").get("Data") or [{}])[0].get("Key")
+      link = call("tm", "testcases", "link-automation", "--project-key", P, "--test-case-key", key,
+                  "--folder-key", folder or "", "--package-name", PACKAGE, "--test-name", TEST)
+      if link.get("Result") != "Success":
+          not_ready(f"could not link {TC} to {PACKAGE} in {FOLDER}: {link.get('Message')}")
+      name = f"EVFX-PERFSET-{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      open("scenario-name.txt", "w").write(name + "\n")
+      print(f"SEEDED {TC} ({key}) in {P}, linked to {PACKAGE}; scenario name {name}")
       PYEOF
+    timeout: 180
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
     timeout: 120
 
 initial_prompt: |
-  I want to load test our EVFX-PERFSET-TC1 test case in the Test Manager project
-  CLAIM with 5 virtual users. Set up a performance scenario for it, named as in
-  scenario-name.txt. Don't run anything yet, I'll start it myself.
+  I want to load test our EVFX-PERFSET-TC1 test case with 5 virtual users. It's
+  in the Test Manager project whose key is in project-key.txt, and it runs from
+  the Orchestrator folder "uipath-test-folder-feed". Set up a performance
+  scenario for it, named as in scenario-name.txt. Don't run anything yet, I'll
+  start it myself.
 
 success_criteria:
   - type: command_executed
@@ -132,9 +116,10 @@ success_criteria:
       def call(*a):
           r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
           return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+      P = open("project-key.txt").read().strip()
       name = open("scenario-name.txt").read().strip()
-      tc = [t for t in call("tm", "testcases", "list", "--project-key", "CLAIM", "--filter", TC)["Data"] if t.get("Name") == TC][0]
-      keys = [s["ScenarioKey"] for s in (call("tm", "perf-scenario", "list", "--project-key", "CLAIM", "--search", name)["Data"] or {}).get("Scenarios") or []
+      tc = [t for t in call("tm", "testcases", "list", "--project-key", P, "--filter", TC)["Data"] if t.get("Name") == TC][0]
+      keys = [s["ScenarioKey"] for s in (call("tm", "perf-scenario", "list", "--project-key", P, "--search", name)["Data"] or {}).get("Scenarios") or []
               if s.get("Name") == name]
       if len(keys) != 1:
           print("scenarios named", name, ":", keys); sys.exit(1)
