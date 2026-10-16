@@ -5,6 +5,8 @@ task_id: skill-flow-ipe-dtl-load-by-default-false
 description: >
   Tests the DTL loadByDefault=false IS feature — configures a connector node
   where dropdown values load only on user interaction on the WooCommerce connector.
+  Validate-only: the feature is design-time dropdown configuration, which the
+  .flow check covers; a debug run would only list live store products.
 tags: [uipath-maestro-flow, integration, lifecycle:generate, shape:multi-node, connector, uipath-automattic-woocommerce, ipe, mode:build]
 
 run_limits:
