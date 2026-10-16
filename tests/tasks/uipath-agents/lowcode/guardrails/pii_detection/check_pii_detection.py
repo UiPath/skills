@@ -14,6 +14,9 @@ pii_detection in agent.json with correct structure:
   - action.$actionType == "block"
   - selector.scopes uses PascalCase values
   - id is UUID-shaped
+  - inputSchema declares a job-attachment field (the uploaded statement)
+  - validatorParameters contains the enum parameter "detectionScope" with
+    value "Both" — the user asked for the typed text AND the uploaded file
 """
 
 import json
@@ -44,8 +47,31 @@ def find_param(params: list, param_id: str) -> dict | None:
     return None
 
 
+def has_job_attachment_field(schema: dict) -> bool:
+    props = schema.get("properties") if isinstance(schema, dict) else None
+    if not isinstance(props, dict):
+        return False
+    for prop in props.values():
+        if not isinstance(prop, dict):
+            continue
+        if prop.get("$ref") == "#/definitions/job-attachment":
+            return True
+        if prop.get("x-uipath-resource-kind") == "JobAttachment":
+            return True
+    return False
+
+
 def main() -> None:
     agent = load(AGENT)
+
+    # --- job-attachment input (the uploaded account statement) ---
+    if not has_job_attachment_field(agent.get("inputSchema") or {}):
+        props = list(((agent.get("inputSchema") or {}).get("properties") or {}).keys())
+        sys.exit(
+            "FAIL: inputSchema must declare a job-attachment field for the uploaded "
+            f'statement ($ref "#/definitions/job-attachment"). Got properties: {props}'
+        )
+    print("OK: inputSchema declares a job-attachment input")
 
     # --- guardrails array exists ---
     guardrails = agent.get("guardrails")
@@ -160,6 +186,32 @@ def main() -> None:
                 f"got {thresholds_value!r}"
             )
         print(f"OK: entityThresholds = {thresholds_value} (map-enum)")
+
+    # --- detectionScope parameter (enum, Both: text and files) ---
+    detection_scope = find_param(params, "detectionScope")
+    if detection_scope is None:
+        ids = [p.get("id") for p in params if isinstance(p, dict)]
+        sys.exit(
+            'FAIL: validatorParameters missing parameter with id == "detectionScope" — '
+            f"the uploaded file is never inspected without it. Got ids: {ids}"
+        )
+    if detection_scope.get("$parameterType") != "enum":
+        sys.exit(
+            f'FAIL: detectionScope parameter.$parameterType must be "enum", '
+            f"got {detection_scope.get('$parameterType')!r}"
+        )
+    value = detection_scope.get("value")
+    if value not in {"Text", "Files", "Both"}:
+        sys.exit(
+            f'FAIL: detectionScope parameter.value must be one of "Text", "Files", "Both" '
+            f"(exact case), got {value!r}"
+        )
+    if value != "Both":
+        sys.exit(
+            f'FAIL: the user asked for both the typed text and the uploaded file: '
+            f'detectionScope parameter.value must be "Both", got {value!r}'
+        )
+    print('OK: detectionScope == "Both" (enum)')
 
     print("OK: PII detection builtInValidator guardrail is valid")
 

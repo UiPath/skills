@@ -12,6 +12,9 @@ prompt_injection in agent.json with correct scope constraints:
   - validatorParameters contains a number parameter with id "threshold"
   - action.$actionType == "block"
   - id is UUID-shaped
+  - inputSchema declares a job-attachment field (the uploaded document)
+  - validatorParameters contains the enum parameter "detectionScope" with
+    value "Both" — the user asked for the text AND the uploaded document
 
 This test specifically validates the most dangerous anti-pattern:
 adding prompt_injection to Agent or Tool scope (which is invalid).
@@ -35,8 +38,31 @@ def load(path: Path) -> dict:
         sys.exit(f"FAIL: {path} is not valid JSON: {e}")
 
 
+def has_job_attachment_field(schema: dict) -> bool:
+    props = schema.get("properties") if isinstance(schema, dict) else None
+    if not isinstance(props, dict):
+        return False
+    for prop in props.values():
+        if not isinstance(prop, dict):
+            continue
+        if prop.get("$ref") == "#/definitions/job-attachment":
+            return True
+        if prop.get("x-uipath-resource-kind") == "JobAttachment":
+            return True
+    return False
+
+
 def main() -> None:
     agent = load(AGENT)
+
+    # --- job-attachment input (the uploaded document) ---
+    if not has_job_attachment_field(agent.get("inputSchema") or {}):
+        props = list(((agent.get("inputSchema") or {}).get("properties") or {}).keys())
+        sys.exit(
+            "FAIL: inputSchema must declare a job-attachment field for the uploaded "
+            f'document ($ref "#/definitions/job-attachment"). Got properties: {props}'
+        )
+    print("OK: inputSchema declares a job-attachment input")
 
     # --- guardrails array exists ---
     guardrails = agent.get("guardrails")
@@ -142,6 +168,36 @@ def main() -> None:
             f"got {val}"
         )
     print(f"OK: threshold parameter = {val} (number, in range)")
+
+    # --- detectionScope parameter (enum, Both: text and files) ---
+    detection_scope = None
+    for p in params:
+        if isinstance(p, dict) and p.get("id") == "detectionScope":
+            detection_scope = p
+            break
+    if detection_scope is None:
+        ids = [p.get("id") for p in params if isinstance(p, dict)]
+        sys.exit(
+            'FAIL: validatorParameters missing parameter with id == "detectionScope" — '
+            f"the uploaded document is never inspected without it. Got ids: {ids}"
+        )
+    if detection_scope.get("$parameterType") != "enum":
+        sys.exit(
+            f'FAIL: detectionScope parameter.$parameterType must be "enum", '
+            f"got {detection_scope.get('$parameterType')!r}"
+        )
+    value = detection_scope.get("value")
+    if value not in {"Text", "Files", "Both"}:
+        sys.exit(
+            f'FAIL: detectionScope parameter.value must be one of "Text", "Files", "Both" '
+            f"(exact case), got {value!r}"
+        )
+    if value != "Both":
+        sys.exit(
+            f'FAIL: the user asked for both the text and the uploaded document: '
+            f'detectionScope parameter.value must be "Both", got {value!r}'
+        )
+    print('OK: detectionScope == "Both" (enum)')
 
     print("OK: prompt injection guardrail is valid with Llm-only scope")
 

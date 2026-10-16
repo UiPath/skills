@@ -141,7 +141,13 @@ sidecar. Each rail is `$guardrailType: 'custom'` (with `rules`) or
 (`block` with a reason, `filter` over fields, or `log` with a severity), and
 `enabledForEvals`. Custom rules are `$ruleType: 'word' | 'number' | 'boolean'`
 over a field selector, or `'always'`. A rail with no scopes or an empty rules
-array can never fire — `check` rejects both.
+array can never fire — `check` rejects both. File-capable built-in validators
+take an extra `validatorParameters` entry `{ $parameterType: 'enum', id:
+'detectionScope', value: 'Text' | 'Files' | 'Both' }` that decides whether
+the validator reads the text, the run's files, or both; inline agents inherit
+the standalone low-code behaviour unchanged (the sidecar is a projected
+`agent.json`). Scope coverage, caps and recipes live in the low-code
+guardrails files guide of [/uipath:uipath-agents](/uipath:uipath-agents).
 
 `mode: 'standard' | 'advanced'` picks the harness; naming it selects the
 node's 1.3 definition (omitting it keeps 1.2 byte-identically) and lands on

@@ -2,18 +2,22 @@ task_id: skill-agent-guardrail-prompt-injection
 description: >
   Prompt injection guardrail with Llm-only scope constraint. End-to-end
   test: scaffold a standalone low-code agent and add a builtInValidator
-  guardrail for prompt_injection. Verifies the agent correctly restricts
-  scopes to ["Llm"] only (not Agent or Tool), uses $parameterType "number"
-  for the threshold parameter, and does not add it to PostExecution stage.
+  guardrail for prompt_injection that covers both the user's text and an
+  uploaded document. Verifies the agent correctly restricts scopes to
+  ["Llm"] only (not Agent or Tool), uses $parameterType "number" for the
+  threshold parameter, does not add it to PostExecution stage, declares a
+  job-attachment input, and sets the file-support parameter detectionScope to
+  Both (text and files).
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 reference:
   directory: .
 
 initial_prompt: |
-  Create a UiPath low-code agent "InjSafeAgent" that answers user questions. Add
-  a guardrail that catches prompt-injection attempts (use a 0.5 threshold) and
-  blocks them with the message "Prompt injection detected." The solution should
-  be named "InjGuardSol".
+  Create a UiPath low-code agent "InjSafeAgent" that answers user questions and
+  accepts an uploaded document as a file input. Add a guardrail that catches
+  prompt-injection attempts in both the user's text and inside the uploaded
+  document (use a 0.5 threshold) and blocks them with the message "Prompt
+  injection detected." The solution should be named "InjGuardSol".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval,
   confirmation, or feedback. Do NOT pause between planning and
@@ -72,7 +76,7 @@ success_criteria:
 
 
   - type: run_command
-    description: "Prompt injection guardrail shape (Llm-only scope, number threshold, block action)"
+    description: "Prompt injection guardrail shape (Llm-only scope, number threshold, block action, file input, detectionScope Both)"
     command: "python3 $REFERENCE_DIR/check_prompt_injection.py"
     timeout: 30
     expected_exit_code: 0
@@ -80,6 +84,6 @@ success_criteria:
     pass_threshold: 1.0
 
 run_limits:
-  expected_turns: 15
+  expected_turns: 18
   max_turns: 30
   turn_timeout: 1200
