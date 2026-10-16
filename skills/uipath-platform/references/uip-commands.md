@@ -131,7 +131,7 @@ All `uip platform` commands accept `--organization <account-id>` to override the
 
 ## Traces (`uip traces`)
 
-LLM execution trace observability and feedback annotation. See [traces/traces.md](traces/traces.md) (spans) and [traces/feedback.md](traces/feedback.md) (feedback).
+LLM execution trace observability, feedback annotation, and decisions. See [traces/traces.md](traces/traces.md) (spans), [traces/feedback.md](traces/feedback.md) (feedback), and [traces/decisions.md](traces/decisions.md) (decisions).
 
 | Command | Description |
 |---|---|
@@ -142,6 +142,9 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 | `uip traces feedback list detailed` | Feedback with span context, plus time-range/category/sort filters |
 | `uip traces feedback update <id>` | Change sentiment, comment, metadata, or categories |
 | `uip traces feedback delete <id>` | Remove feedback |
+| `uip traces decisions create` | Write decisions to a trace from `--input` JSON or flags; an existing `decisionId` is replaced |
+| `uip traces decisions get <id>` | Fetch one decision by decision ID |
+| `uip traces decisions list` | Query decisions by trace, process, actor, platform, outcome, or time |
 
 ---
 
