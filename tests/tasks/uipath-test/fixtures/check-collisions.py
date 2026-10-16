@@ -48,6 +48,8 @@ OWNERS = {
     "REPORT": "reporting_date_backdate_integration.yaml",
     "EXLIST": "executions_list_smoke.yaml",
     "PSET": "project_settings_smoke.yaml",
+    "RUNPKG": "run_package_ci_smoke.yaml",
+    "RUNPKGFAIL": "run_package_failing_smoke.yaml",
     "PARAM": "testcase_parameters_bulk_add_smoke.yaml",
     "PARAMEDIT": "testcase_parameters_edit_integration.yaml",
     "PARAMLIFE": "testcase_parameters_lifecycle_e2e.yaml",
