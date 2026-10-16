@@ -585,6 +585,8 @@ Or byte-equality for upload/download round-trips:
   expected_exit_code: 0
 ```
 
+Set `read_only: true` only when the command reads sandbox artifacts and nothing else; the criterion then also runs, unscored, after a turn timeout or agent crash. Never set it on a `flow validate`, `flow debug`, or any grader that writes state or calls a live service.
+
 ### `skill_triggered`
 
 Verify the agent invoked a Claude Code Skill tool. Useful for "did the agent recognize this scenario calls for skill X?" Both `skill_name` and `expected_skill` are required; the expected label is "yes" iff `expected_skill == skill_name`:
