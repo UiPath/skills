@@ -165,7 +165,7 @@ uip solution pack ./MySolution ./MySolution/dist --version 2.0.0 --output json
 
 | Flag | Description |
 |------|-------------|
-| `<solutionPath>` | **(required)** Solution directory (the folder containing the `.uipx`) — **not** the case project directory |
+| `<solution-path>` | **(required)** Solution directory (the folder containing the `.uipx`) — **not** the case project directory |
 | `<output-path>` | **(required)** Output directory for the `.zip` |
 | `-n, --name <name>` | Package name (default: solution folder name) |
 | `-v, --version <version>` | Package version (default: `1.0.0`) |
@@ -185,12 +185,12 @@ Packs each contained project into a `.nupkg` and bundles them into one `<name>_<
 Publish a packed solution `.zip` to the tenant solution feed. **Requires `uip login`.** Phase 7 step 4 — consent-gated.
 
 ```bash
-uip solution publish <packagePath> --wait --output json
+uip solution publish <package-path> --wait --output json
 ```
 
 | Flag | Description |
 |------|-------------|
-| `<packagePath>` | **(required)** Path to the `.zip` produced by `uip solution pack` |
+| `<package-path>` | **(required)** Path to the `.zip` produced by `uip solution pack` |
 | `--wait` | Block until the published package reaches `Ready` / `Active` |
 | `--timeout <seconds>` | Package-state polling timeout (default: `360`) |
 | `--personal-workspace` | Publish to the current user's Personal Workspace feed instead of the tenant feed |

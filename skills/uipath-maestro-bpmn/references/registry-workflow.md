@@ -53,7 +53,7 @@ envelope.
 ## 2. Get the template for each chosen type
 
 ```bash
-uip maestro bpmn registry get <extensionType> --output json
+uip maestro bpmn registry get <extension-type> --output json
 ```
 
 `Data.ExtensionType` contains everything needed to author the node:

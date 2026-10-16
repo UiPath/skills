@@ -119,7 +119,7 @@ The canonical ambiguous prompt is *"Block ChatGPT for my finance team using Stud
 - Do NOT merge AOps and Access intent into one policy. Different artifacts, different CLIs, different schemas.
 - Do NOT activate this skill for platform ops. Route to `uipath-platform`.
 - Do NOT propose skill edits when intent doesn't map to either branch. Ask the user to clarify.
-- Do NOT use `deployed-policy list` for gap detection — it returns all rules in priority order, not the merged effective value. Use `deployed-policy get <licenseType> <productName> <tenantId>` to get the single effective merged policy.
+- Do NOT use `deployed-policy list` for gap detection — it returns all rules in priority order, not the merged effective value. Use `deployed-policy get <license-type> <product-name> <tenant-identifier>` to get the single effective merged policy.
 - Do NOT skip the post-apply report even if apply partially fails — show what succeeded and what needs manual attention.
 - For compliance pack posture analysis, use `uip gov compliance-packs state coverage` — do NOT use `aops-policy deployed-policy` commands; those are for AOps policy debugging (Branch A), not compliance pack flows.
 - For full pack configuration, use `state enable` — do NOT manually call `aops-policy create` for each product; that path is only for partial/scoped configuration.

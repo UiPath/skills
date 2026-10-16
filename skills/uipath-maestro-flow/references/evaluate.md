@@ -115,10 +115,10 @@ unsimulated connector step really sends — once per eval, every run.
 
 ```bash
 uip maestro flow eval run start   --set "Smoke Tests" --path ./MySolution/MyFlow --output json
-uip maestro flow eval run status  <evalSetRunId> --set "Smoke Tests" --path ./MySolution/MyFlow --output json
-uip maestro flow eval run results <evalSetRunId> --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+uip maestro flow eval run status  <eval-set-run-id> --set "Smoke Tests" --path ./MySolution/MyFlow --output json
+uip maestro flow eval run results <eval-set-run-id> --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 uip maestro flow eval run list    --set "Smoke Tests" --path ./MySolution/MyFlow --output json
-uip maestro flow eval run compare <evalSetRunId> --compare-to <evalSetRunId> \
+uip maestro flow eval run compare <eval-set-run-id> --compare-to <eval-set-run-id> \
   --set "Smoke Tests" --path ./MySolution/MyFlow --output json
 ```
 
