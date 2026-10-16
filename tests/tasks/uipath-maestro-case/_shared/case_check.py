@@ -239,21 +239,12 @@ REGISTRY_CACHE_DIR = os.path.join("~", ".uip", "case-resources")
 
 
 def read_registry_cache(cache_file: str) -> list:
-    """Load one `~/.uip/case-resources/<cache_file>` index, or FAIL with why.
-
-    The index exists only after `uip maestro case registry pull` ran in this
-    sandbox, and a registry-handoff grader compares the audit against it. A run
-    that never pulled leaves no file; reading it raw died with a
-    FileNotFoundError traceback that named a path, not the skipped step. That
-    absence is the agent's miss, not a tenant gap, so it must not read as the
-    "test precondition failed" message the task yamls reserve for one.
-    """
+    """Load `~/.uip/case-resources/<cache_file>`, or FAIL naming the missing pull."""
     path = os.path.expanduser(os.path.join(REGISTRY_CACHE_DIR, cache_file))
     if not os.path.isfile(path):
         _fail(
-            f"registry cache {path} is absent: the run never refreshed the tenant "
-            f"registry (`uip maestro case registry pull`), so its audit cannot be "
-            f"checked against the tenant"
+            f"registry cache {path} is absent: `uip maestro case registry pull` never ran or "
+            f"did not succeed, so the audit cannot be checked against the tenant"
         )
     try:
         with open(path, encoding="utf-8") as handle:
