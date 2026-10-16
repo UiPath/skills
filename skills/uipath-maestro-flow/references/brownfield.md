@@ -195,6 +195,9 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
   merged edge's handle means `validate` will refuse the candidate.
 - `the round trip appends End "<id>" after …` is the one benign line: compile
   adds an End where the original path just stops. It does not change behaviour.
+  A flow decompiled with `.openTails()` gets this line only after a human
+  task that ends a path; see
+  [A path without an End stays open](#a-path-without-an-end-stays-open).
 - `agent "<id>" carries its prompts, model and settings on the node (embedded) …`
   means that agent keeps its configuration in the `.flow`, not in
   `<source>/agent.json` (some canvas and `node add` saves do this). Merge keeps
@@ -285,6 +288,21 @@ to it, together with every `<source>/` file merge reports writing, then
 validate the canonical project path again.
 
 Do not run `uip maestro flow format` on the merged file; it discards the author's layout.
+
+## A path without an End stays open
+
+A flow built in the designer or with `uip maestro flow node add` often ends on
+a step with no End node after it. `decompile` emits `.openTails()` near the
+top of every chain it writes: the root `flow(...)` chain and each subflow
+child's chain. With it, a path that runs out of steps compiles with no End
+node, as in the original. Leave the call alone. Removing it makes compile add
+an End to every open path in that flow; a subflow child has its own call.
+
+When you add a step after an open tail, the new step becomes the tail and is
+left open too. To make that path return the flow's outputs, end it with
+`.return({ ... })`. An open path maps no outputs. A human task's exit is
+always capped with an End, because a task with nothing after it never
+finishes.
 
 ## Split (`$ref`) artifacts
 
