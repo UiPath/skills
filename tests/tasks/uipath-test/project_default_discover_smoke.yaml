@@ -1,0 +1,99 @@
+# Needs `uip tm project get-default` (UiPath/cli#4844, in `@uipath/cli@dev` and
+# every release after it); pre_run exits CLI TOO OLD on a CLI without it.
+task_id: skill-test-project-default-discover-smoke
+description: >
+  Smoke test: the agent finds the tenant's default Test Manager project (the
+  one CI runs use when they have no project of their own) without changing the
+  tenant. Asserts it routes through the skill, reads the first `project list`
+  row, and never runs `project get-default` (which creates a default, open to
+  the tenant's Everyone group, when the tenant has none) or `--set-default`
+  (which moves the tenant-wide default under every other run). Graded on the
+  answer file against the server: the key of the first row when it carries
+  IsDefault true, else NONE, so both a tenant with a default and one without
+  are covered.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover, outcome-graded]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 20
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import subprocess, sys
+      r = subprocess.run(["uip", "tm", "project", "get-default", "--help"],
+                         capture_output=True, text=True)
+      if r.returncode != 0:
+          print("FIXTURE: CLI TOO OLD - `uip tm project get-default` is missing; "
+                "this task needs UiPath/cli#4844 (@uipath/cli@dev or a release after it).",
+                file=sys.stderr, flush=True)
+          sys.exit(1)
+      print("FIXTURE: CLI has project get-default", flush=True)
+      PYEOF
+    timeout: 60
+
+initial_prompt: |
+  Our CI pipelines run their tests in this tenant's default UiPath Test Manager
+  project. I only need to know which project that is. Write just its project
+  key to default_project.txt, or NONE if the tenant has no default project yet.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Routed through the uipath-test skill"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Did not create or move the default project (no get-default, no --set-default)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+(get-default\b(?!(?:(?!\n|&&|\|\||;|\|).)*\s(--help|-h)\b)|update\b(?:(?!\n|&&|\|\||;|\|).)*--set-default)'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Read the project list, where the default project comes first"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project\s+list\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "default_project.txt names the server's default project key, or NONE when it has none"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      r = subprocess.run(["uip", "tm", "project", "list", "--limit", "1", "--output", "json"],
+                         capture_output=True, text=True)
+      o = r.stdout or ""
+      try:
+          rows = json.loads(o[o.index("{"):]).get("Data")
+      except Exception:
+          print("LIST_FAILED"); sys.exit(1)
+      if not isinstance(rows, list):
+          print("LIST_FAILED"); sys.exit(1)
+      first = rows[0] if rows else {}
+      expected = first.get("ProjectKey") if first.get("IsDefault") is True else "NONE"
+      try:
+          got = open("default_project.txt").read().strip()
+      except OSError:
+          print("NO_FILE"); sys.exit(1)
+      print("MATCH" if got == expected else f"MISMATCH expected={expected} got={got}")
+      sys.exit(0 if got == expected else 1)
+      PYEOF
+    expected_exit_code: 0
+    expected_stdout: "MATCH"
+    stdout_match: contains
+    timeout: 60
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Checked login status first (advisory convention)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
