@@ -19,10 +19,10 @@ Any dangling tail gets an End automatically; an explicit `.return(...)` is requi
 only when values must be bound. Multiple path ends are emitted as `end`, `end2`,
 `end3`, and so on.
 
-Only an End sets a flow output, as in Studio Web. When a step sets an output
-with `{ updates }` (or a `{ shared }` input or a default feeds it), the SDK holds
-the value in a Variable named `<output>Value`, and every End maps the output
-from it. You still write the output's own name:
+Only an End sets a flow output. When a step sets an output with `{ updates }`,
+code reads it as `$vars.<output>`, or a `{ shared }` input or a default feeds
+it, the SDK holds the value in a Variable named `<output>Value`, and every End
+maps the output from it. You still write the output's own name:
 
 ```ts
 .output({ summary: types.string })
@@ -32,8 +32,9 @@ from it. You still write the output's own name:
 
 - Read the result by the output's name: `variables.globals.summary` in the
   debug read-back. `summaryValue` can appear beside it; ignore it.
-- Do not name your own `.var()`, input, or step `<output>Value`. `check`
-  reports `OUTPUT_BACKING_COLLISION`; rename yours.
+- Do not give anything else the name `<output>Value`: an input, output,
+  `.var()`, step, entry point, or trigger id. `check` reports
+  `OUTPUT_BACKING_COLLISION`; rename yours.
 - An End that does not name an output, and has no such Variable behind it,
   returns `null` for it.
 
