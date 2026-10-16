@@ -26,16 +26,19 @@ own path. Its mappings are terminal metadata, not a readable action result:
 A Terminate's name is a step name, so another path can stop there with
 `.stepToRef(name)` instead of getting a Terminate of its own. The flow then has
 ONE Terminate with several incoming edges, as the canvas draws it.
+Needs `@uipath/maestro-builder-sdk` 6.32.2 or later; an older SDK refuses the
+ref as `REF_INTO_PORT_LIST`, so upgrade with
+`npm install -g @uipath/maestro-builder-sdk@latest`.
 
 ```ts
 .stepToList('branch-missing', (b) => b.step('reportMissing', script({ code })).terminate('stopFailed'))
 .stepToList('branch-throttled', (b) => b.step('reportThrottled', script({ code })).stepToRef('stopFailed'))
 ```
 
-- The Terminate may sit inside another port's path (an HTTP `branch-*`, a
+- The Terminate may sit inside another path (an HTTP `branch-*`, a
   human-task `outcome-*`, a `.stepSwitch` arm, an `.entryPoint` prefix). A ref
-  into a STEP there is still `REF_INTO_PORT_LIST`; a Terminate runs nothing
-  after itself, so it is allowed.
+  into a STEP inside a `branch-*` or `outcome-*` list is still
+  `REF_INTO_PORT_LIST`; a Terminate runs nothing after itself, so it is allowed.
 - Spell each Terminate ONCE. Two `.terminate`s asking for the same name are
   refused (`DUP_STEP`; `compile --no-check` throws). They are not renamed
   `stopFailed2`. Stop the other paths with `.stepToRef('<name>')`. A step and a
