@@ -57,7 +57,7 @@ Maestro CLI commands are namespaced by process type. Pick the subcommand that ma
 | Flow | `uip maestro flow ...` | `.flow` files | Lightweight node-and-edge orchestration; connector-heavy, lower ceremony than BPMN |
 | Case | `uip maestro case ...` | Case definition JSON | Case-centric work with stages, tasks, SLAs, escalations, and triggers |
 
-**Identify the process type first** — check the source artifact, the `processType` field on incidents/instances, or ask the user. Running `uip maestro bpmn instance get <id>` against a Flow instance returns no data. Substitute `<type>` below with `bpmn`, `flow`, or `case`.
+**Identify the process type first** — check the source artifact, the `processType` field on incidents/instances, or ask the user. Running `uip maestro bpmn instances get <id>` against a Flow instance returns no data. Substitute `<type>` below with `bpmn`, `flow`, or `case`.
 
 ```
 uip maestro <type> process list|get|run                          — list/get/run processes
@@ -77,7 +77,7 @@ uip maestro <type> incident get <incident-id>                    — get a singl
 ```
 
 Key commands for troubleshooting (substitute `<type>` with `bpmn`, `flow`, or `case`):
-- `uip maestro <type> instance incidents <instance-id> -f <folder-key>` — **full incident details** including `errorDetails` with stack traces. Use this, not `incident summary`.
+- `uip maestro <type> instances incidents <instance-id> -f <folder-key>` — **full incident details** including `errorDetails` with stack traces. Use this, not `incident summary`.
 - `uip maestro <type> instance element-executions <instance-id> -f <folder-key>` — what each element did
 - `uip maestro <type> processes incidents <process-key> --folder-key <fk>` — incidents across all instances of a process
 

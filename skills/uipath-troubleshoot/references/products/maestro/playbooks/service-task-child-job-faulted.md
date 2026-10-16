@@ -27,8 +27,8 @@ What to look for:
 
 Service tasks are a BPMN concept — use the `bpmn` subcommand. For Flow/Case service-equivalent failures, swap `bpmn` for `flow` or `case`.
 
-1. Get full incident details: `uip maestro bpmn instance incidents <instance-id> -f <folder-key> --output json`
-2. Get element executions to identify the faulted service task: `uip maestro bpmn instance element-executions <instance-id> -f <folder-key> --output json`
+1. Get full incident details: `uip maestro bpmn instances incidents <instance-id> -f <folder-key> --output json`
+2. Get element executions to identify the faulted service task: `uip maestro bpmn instances element-executions <instance-id> -f <folder-key> --output json`
 3. Find the child job key from the incident's `errorDetails` and get its state and error message: `uip or jobs get <child-job-key> --output json`
 4. Get child job logs for execution detail: `uip or jobs logs <child-job-key> --level Error --output json`
 5. Check whether a boundary error event is attached to the service task (visible in element executions)

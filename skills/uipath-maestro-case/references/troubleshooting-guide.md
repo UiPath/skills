@@ -2,7 +2,7 @@
 
 Diagnostic workflow for failed debug runs and deployed case process runs. All commands require `uip login`.
 
-> **`--folder-key` is required for `incident get`.** Most `instance` subcommands accept `--folder-key <FOLDER_KEY>` and auto-detect from the authenticated folder if omitted, but `incident get` requires it explicitly. Get the folder key from `uip or folders list --output json` or from the job/process context.
+> **`--folder-key` is required for `incidents get`.** Most `instances` subcommands accept `--folder-key <FOLDER_KEY>` and auto-detect from the authenticated folder if omitted, but `incident get` requires it explicitly. Get the folder key from `uip or folders list --output json` or from the job/process context.
 
 ## Diagnostic priority
 
@@ -30,19 +30,19 @@ Parse the instance ID and folder key from the response.
 Failed cases always have an incident. Start here — incidents give you the error category, message, and the faulting element.
 
 ```bash
-uip maestro case instance incidents <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json
+uip maestro case instances incidents <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json
 ```
 
 Drill into a specific incident for full detail:
 
 ```bash
-uip maestro case incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
+uip maestro case incidents get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
 ```
 
 To get a cross-process incident overview:
 
 ```bash
-uip maestro case incident summary --output json
+uip maestro case incidents summary --output json
 ```
 
 For all incidents on a specific case process:
@@ -58,13 +58,13 @@ uip maestro case processes incidents <PROCESS_KEY> --folder-key <FOLDER_KEY> --o
 Get the variable values at the time of failure to understand what data each stage/task was working with:
 
 ```bash
-uip maestro case instance variables <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json
+uip maestro case instances variables <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json
 ```
 
 Scope to a specific element (stage or task):
 
 ```bash
-uip maestro case instance variables <INSTANCE_ID> --folder-key <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
+uip maestro case instances variables <INSTANCE_ID> --folder-key <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
 ```
 
 > **Empty variables →** skip to Step 4.
@@ -76,16 +76,16 @@ Use the incident's faulting element ID and the variable state to locate the fail
 If the local `caseplan.case` may differ from what was deployed, fetch the deployed case definition:
 
 ```bash
-uip maestro case instance asset <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json
+uip maestro case instances asset <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json
 ```
 
-> **`instance asset` fails →** fall back to local `caseplan.case`.
+> **`instances asset` fails →** fall back to local `caseplan.case`.
 
 Additional instance inspection commands:
 
 ```bash
-uip maestro case instance element-executions <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json  # per-element execution details
-uip maestro case instance cursors <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json             # current execution cursor positions
+uip maestro case instances element-executions <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json  # per-element execution details
+uip maestro case instances cursors <INSTANCE_ID> --folder-key <FOLDER_KEY> --output json             # current execution cursor positions
 ```
 
 ## Step 5 — Traces (last resort)
@@ -111,8 +111,8 @@ uip maestro case job traces <JOB_KEY> --pretty                  # human-readable
 
 For full flag tables and all subcommands, see [case-commands.md](case-commands.md):
 
-- `uip maestro case instance` — list/get/incidents/variables/asset/cursors/element-executions and lifecycle (pause/resume/cancel/retry/migrate/goto)
-- `uip maestro case incident` — `summary`, `get`
+- `uip maestro case instances` — list/get/incidents/variables/asset/cursors/element-executions and lifecycle (pause/resume/cancel/retry/migrate/goto)
+- `uip maestro case incidents` — `summary`, `get`
 - `uip maestro case processes incidents <PROCESS_KEY>` — all incidents on a process
 - `uip maestro case job` — `status`, `traces`
 

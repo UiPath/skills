@@ -142,7 +142,7 @@ This happens after republish, branch switching, package reuse, or local edits ma
 Diagnose what actually ran:
 
 ```bash
-uip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
 Fix ownership: correlate the incident to deployed BPMN first.
@@ -154,8 +154,8 @@ The instance has no active fault but is not progressing.
 Inspect cursors and element executions before using lifecycle actions:
 
 ```bash
-uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
 Common causes include a message/event wait without the expected signal, a timer configuration mismatch,

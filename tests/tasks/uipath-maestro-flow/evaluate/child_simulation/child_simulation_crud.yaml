@@ -105,7 +105,7 @@ success_criteria:
   - type: command_executed
     description: "Agent created an eval set"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+set\s+add'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+sets?\s+(?:add|create)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
@@ -113,7 +113,7 @@ success_criteria:
   - type: command_executed
     description: "Agent added a data point with --inputs and --expected"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+add\s+.*(--inputs.*--expected|--expected.*--inputs)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+(?:add|create)\s+.*(--inputs.*--expected|--expected.*--inputs)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -121,7 +121,7 @@ success_criteria:
   - type: command_executed
     description: "Agent added a Static child simulation with --parent and --mock-value"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+(?=.*--parent\b)(?=.*--strategy\s+Static\b)(?=.*--mock-value\b)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulations?\s+(?:add|create)\s+(?=.*--parent\b)(?=.*--strategy\s+Static\b)(?=.*--mock-value\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -129,7 +129,7 @@ success_criteria:
   - type: command_executed
     description: "Agent added an Llm child simulation with --parent and --strategy Llm"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+(?=.*--parent\b)(?=.*--strategy\s+Llm\b)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulations?\s+(?:add|create)\s+(?=.*--parent\b)(?=.*--strategy\s+Llm\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
@@ -137,7 +137,7 @@ success_criteria:
   - type: command_executed
     description: "Agent listed child simulations with --parent"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+list\s+.*--parent'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulations?\s+list\s+.*--parent'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
@@ -145,7 +145,7 @@ success_criteria:
   - type: command_executed
     description: "Agent removed a child simulation with --parent"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+remove\s+(?=.*--parent\b)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulations?\s+(?:remove|delete)\s+(?=.*--parent\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0
@@ -153,7 +153,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did NOT add a parent simulation without --parent before adding children"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulation\s+add\s+agent-1\s+(?!.*--parent)'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+simulations?\s+(?:add|create)\s+agent-1\s+(?!.*--parent)'
     weight: 1.5
     pass_threshold: 1.0
 

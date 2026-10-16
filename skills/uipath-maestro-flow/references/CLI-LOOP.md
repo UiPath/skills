@@ -248,7 +248,7 @@ projection yields `null`. A faulted run usually carries `Data.incidents` (absent
 when PIMS returns none or the fetch fails), and `--output-filter` projects
 failure `Data` too, so add `incidents:incidents` to the projection to keep
 them. If `Data.incidents` is missing, fetch incidents with the separate
-`debug-instance incidents` call below, keyed by the `instanceId` you just read.
+`debug-instances incidents` call below, keyed by the `instanceId` you just read.
 With `variablesError`, the outputs are unknown, not empty: run the re-read
 command its `Instructions` give.
 
@@ -272,13 +272,13 @@ each `direction: out` global, as in the standard read-back above), and
 product-runtime path; a bare process exit code is not. Omit the filter only when
 diagnosing a field the projection did not retain.
 
-Fetch incidents by `instance` only when a failed run has no `Data.incidents`
+Fetch incidents by `instances` only when a failed run has no `Data.incidents`
 (`null` in a projection) or your projection dropped it.
 
 For a fault, query the backend incident payload with the returned instance id:
 
 ```bash
-uip maestro flow debug-instance incidents <instanceId> \
+uip maestro flow debug-instances incidents <instanceId> \
   --output-filter "[*].{E:ElementId,C:ErrorCode,M:ErrorMessage,D:ErrorDetails}"
 ```
 

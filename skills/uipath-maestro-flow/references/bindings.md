@@ -177,7 +177,7 @@ next compile.
 
 ## Emitted-artifact bindings
 
-`uip maestro flow binding add` edits bindings inside an already emitted `.flow`;
+`uip maestro flow bindings create` edits bindings inside an already emitted `.flow`;
 it does not create or update `.flow-sdk/bindings.json`. SDK-authored Integration
 Service actions and managed HTTP nodes should instead keep symbolic names in
 source plus `bindings.json`, so recompilation deterministically restores the

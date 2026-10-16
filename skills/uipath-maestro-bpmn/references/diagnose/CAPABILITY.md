@@ -29,11 +29,11 @@ deployed BPMN asset correlation, element executions, cursors, generated package 
 1. **Investigate in priority order** - context, incidents, runtime variables, deployed BPMN asset,
    element executions/cursors, generated package files, then traces. For failed
    BPMN run triage, always execute the deployed asset read
-   `uip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json`
+   `uip maestro bpmn instances asset <INSTANCE_ID> -f <FOLDER_KEY> --output json`
    before writing the diagnosis, even when incidents and variables already
    reveal the likely root cause.
-2. **Always include folder context on instance and incident reads** - `instance` commands require `--folder-key` or `-f`,
-   and `incident get` requires `--folder-key`.
+2. **Always include folder context on instance and incident reads** - `instances` commands require `--folder-key` or `-f`,
+   and `incidents get` requires `--folder-key`.
 3. **Use the CLI as the diagnostic interface** - run `uip maestro bpmn ... --output json` reads. When mock or fixture
    files are present in a test harness, treat them as CLI backing data and do not read those files **by any means** —
    no shell read such as `cat`, `less`, `head`, `tail`, `grep`, `jq`, or `sed`, and no file-read or editor tool — on a
@@ -49,7 +49,7 @@ deployed BPMN asset correlation, element executions, cursors, generated package 
    and secret values in summaries.
 8. **Do not mutate while diagnosing** - retry, cancel, migrate, and cursor movement are Operate actions and require
    explicit user consent after root cause analysis.
-9. **One literal command per diagnostic read, never a loop** - write each read out in full, e.g. `uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json`.
+9. **One literal command per diagnostic read, never a loop** - write each read out in full, e.g. `uip maestro bpmn instances cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json`.
    No loop, function, alias, or variable in place of the verb, ID, or folder key: the command log is the record of what
    was read. To batch, chain the literal reads in one Bash call, one per line.
 

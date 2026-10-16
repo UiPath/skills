@@ -137,7 +137,7 @@ success_criteria:
   - type: command_not_executed
     description: "Evaluation-run telemetry (report only; no durable local witness)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+run\s+start'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+flow\s+eval\s+runs?\s+start'
     weight: 1.0
     pass_threshold: 0.0
 
