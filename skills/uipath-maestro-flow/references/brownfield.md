@@ -254,8 +254,11 @@ These findings the source cannot carry are printed on stderr as
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and
   merge into it: `merge` preserves the original's declared version.
-- An **edge the builder cannot spell** — for example a second edge leaving a
-  decision's `true` port, which no builder construct produces. The
+- An **edge the builder cannot spell** — for example two edges out of one
+  port whose paths meet again at a step that is not a Merge. (Two edges out of
+  one port whose paths each end at an End or a Terminate are fine: they
+  decompile to a `.parallel` whose arms all end, named `<node>Fork` after the
+  node they leave — see [parallel-merge.md](parallel-merge.md).) The
   warning names it as `<source>@<port> -> <target>@<port>`, and the source marks
   the spot with a `/* TODO: edge(s) … are NOT in this source */` comment (or a
   `// TODO: edge …` line near the top when no step leads to it). Recompiling
