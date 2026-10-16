@@ -5,13 +5,14 @@ Shared by `run_package_ci_smoke` and `run_package_failing_smoke`. Each task
 passes its own EVFX- prefix and package on the command line, so the names stay
 in the task YAML where fixtures/check-collisions.py sees them.
 
-    seed — check the tenant can run the package (folder, runtime), upload the
+    seed — check the tenant can run the package (folder, runtime,
+           unattended account), upload the
            package from packages/ when the folder feed lacks it, sweep this
            task's stale projects, and create a throwaway project whose key is
            written to project-key.txt.
 
 A tenant that cannot run the package (no folder, no machine with a runtime in
-it, or no right to upload) exits with TENANT NOT READY on stderr. The pass-rate
+it, no folder member that may run unattended, or no right to upload) exits with TENANT NOT READY on stderr. The pass-rate
 gate in smoke-skills.yml drops such a task instead of scoring it as an agent
 failure.
 
@@ -64,7 +65,7 @@ def folder_key(folder):
     return rows[0]["Key"]
 
 
-def require_runtime(folder, key):
+def require_robot(folder, key):
     # Test Manager starts the package's tests as unattended jobs in the folder.
     # Without a machine that has a runtime, they stay Pending until --timeout.
     rows = call("or", "machines", "list", "--folder-key", key, "--all-fields").get("Data") or []
@@ -74,6 +75,18 @@ def require_runtime(folder, key):
         not_ready(f"no machine in '{folder}' has an Unattended or Test Automation runtime, "
                   "so the run can never finish.")
     log(f"runtime on {', '.join(m.get('Name') or '?' for m in usable)}")
+    # A runtime needs an account to run the jobs as: a folder member that may
+    # hold an unattended session (a robot account, or a user with an
+    # unattended robot).
+    members = call("or", "users", "list-in-folder", "--folder-key", key,
+                   "--include-inherited", "--limit", "200").get("Data") or []
+    for name in [m.get("UserName") for m in members if m.get("UserName")]:
+        rows = call("or", "users", "list", "--username", name, "--all-fields").get("Data") or []
+        if any(u.get("UserName") == name and u.get("MayHaveUnattendedSession") for u in rows):
+            log(f"unattended account {name}")
+            return
+    not_ready(f"no member of '{folder}' may hold an unattended session; add a robot "
+              "account to the folder as Automation User.")
 
 
 def ensure_package(folder, key, package, nupkg):
@@ -127,7 +140,7 @@ def main():
     s.add_argument("--key-prefix", required=True, help="4-letter project key prefix")
     a = parser.parse_args()
     key = folder_key(a.folder)
-    require_runtime(a.folder, key)
+    require_robot(a.folder, key)
     ensure_package(a.folder, key, a.package, a.nupkg)
     seed_project(a.prefix, a.key_prefix)
 

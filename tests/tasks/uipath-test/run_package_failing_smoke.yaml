@@ -19,7 +19,8 @@ tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, out
 run_limits:
   expected_turns: 8
   max_turns: 25
-  turn_timeout: 1200
+  turn_timeout: 900
+  task_timeout: 1200
 
 sandbox:
   template_sources:
@@ -62,7 +63,7 @@ success_criteria:
   - type: command_executed
     description: "One complete `tm run --type package` command: package, folder, project, a --timeout within the 10-minute budget"
     tool_name: "Bash"
-    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--type[\s=]+package\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-name[\s=]+["\x27]?FailingTestCase_CrossPlatform_VB_Tests\b)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--package-version[\s=]+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--folder-(?:path[\s=]+["\x27]?uipath-test-folder-feed|key[\s=]+\S))(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--project-(?:key|id)[\s=]+\S)(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--timeout[\s=]+["\x27]?(?:[1-9]\d?|[1-5]\d\d|600)\b)uip\s+tm\s+run\b'
+    command_pattern: '(?:uip|\$UIP)\s+tm\s+run\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--type[\s=]+package\b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--package-name[\s=]+["\x27]?FailingTestCase_CrossPlatform_VB_Tests\b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--package-version[\s=]+\S)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--folder-(?:path[\s=]+["\x27]?uipath-test-folder-feed|key[\s=]+\S))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--project-(?:key|id)[\s=]+\S)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--timeout[\s=]+["\x27]?(?:[1-9]\d?|[1-5]\d\d|600)\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0

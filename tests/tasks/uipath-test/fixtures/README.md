@@ -260,13 +260,16 @@ logged in to:
    serverless machine with one Unattended runtime, plus a robot account in the
    folder as Automation User. Serverless robots need no machine credentials,
    but they run cross-platform packages only.
-3. **Package:** `TestCase_CrossPlatform_VB_Tests` or
+3. **Unattended account:** a member of that folder may hold an unattended
+   session (`MayHaveUnattendedSession`), such as that robot account.
+4. **Package:** `TestCase_CrossPlatform_VB_Tests` or
    `FailingTestCase_CrossPlatform_VB_Tests` is in the folder feed. When it is
    missing, the script uploads it from `_setup/packages/`. These are the
    cross-platform fixtures from UiPath/cli
    (`packages/test-manager-tool/tests/test-data/ported-run-tests/`).
 
-When the folder or the runtime is missing, or the upload is refused, `pre_run`
+When the folder, the runtime or the unattended account is missing, or the
+upload is refused, `pre_run`
 exits with `TENANT NOT READY` on stderr, naming the tenant and what is missing,
 and the pass-rate gate in `smoke-skills.yml` drops the task. Automation Suite
 has no serverless robots, so it needs a self-hosted machine with an unattended
