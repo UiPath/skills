@@ -3,9 +3,10 @@
 Author a skeleton of blank boxes, arrows and labels, upload it, and reach a link
 the user can open in about two minutes — it makes **no registry calls**.
 
-**Draft mode only.** Draft mode stops afterwards and asks the user to agree
-the shape (phase 3); phase 4 then pastes real payloads into these same boxes.
-Auto mode skips 2b–2f and phase 3 and authors real nodes directly in phase 4.
+**Both modes build the skeleton.** Draft mode shows it (2f) and stops for the
+user to agree the shape (phase 3). Auto mode skips 2f and phase 3 and goes
+straight to phase 4. Either way, phase 4 pastes real payloads into these same
+boxes.
 Brownfield edits (the shape already exists) and discovery-only tasks (nothing
 is authored) skip this phase too.
 
@@ -107,7 +108,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   anything while validation fails, so 2d must pass first. On a skeleton that
   preserved the start event it reports `WrittenFiles: []`, which is the
   drift check passing rather than a no-op to skip.
-- **2f Make the shape visible.** Run
+- **2f Make the shape visible** (draft mode only). Run
   `uip solution upload <SolutionDir> --output json` and report the returned
   `Data.DesignerUrl`. Do not ask first: a request to build the
   process authorizes the upload that shows it, and a consent gate per

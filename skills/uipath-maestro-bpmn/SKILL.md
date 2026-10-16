@@ -176,14 +176,14 @@ never changes what a step does.
 | --- | --- | --- | --- |
 | **0 — Surface** | — | Nothing to do yet: the skill assumes a terminal. | Below |
 | **1 — Preflight** | 1a–1b | Check login, scan for an existing solution and project. Writes nothing, so it runs in every mode. | Below |
-| **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no registry calls**. Draft mode only, except 2a. | [references/phase-2-skeleton.md](references/phase-2-skeleton.md) |
+| **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no registry calls**. Both modes, except 2f (draft only). | [references/phase-2-skeleton.md](references/phase-2-skeleton.md) |
 | **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, hold the approval gate. Draft mode only. | [references/phase-2-skeleton.md](references/phase-2-skeleton.md#iterating) |
 | **4 — Wire it up** | 4a–4g | Discover, fetch templates, paste real payloads into the existing boxes, lay out, validate, refresh, show. | Below |
 
-The skeleton (2b–2f) and iteration (phase 3) exist to show the user a shape
-before it is wired. **Auto mode skips both**: it runs 2a to scaffold the
-project, then authors real nodes directly in phase 4. Every other step is
-identical.
+Both modes build the skeleton (2a–2e), and phase 4 always fills its boxes.
+Showing it (2f) and iterating on it (phase 3) exist to put a shape in front
+of the user before it is wired, so **auto mode skips only 2f and phase 3**.
+Every other step is identical.
 
 ### Modes
 
@@ -201,7 +201,7 @@ Otherwise infer the mode from the request before anything runs. **Never ask**
 | Mode | Take it when | Phases |
 | --- | --- | --- |
 | **Draft** | The session is in plan mode, or the request asks for the shape first — *plan mode*, *draft*, *design*, *sketch*, *what would it look like*, *show me first*. | 0–3, stop at the gate |
-| **Auto** | Anything else. This is the default. | 0–1, 2a, 4, no stop |
+| **Auto** | Anything else. This is the default. | 0–1, 2a–2e, 4, no stop |
 
 Auto is the default precisely because it is the only mode that completes
 unattended: draft's gate at 3c needs a user to satisfy it, so a non-interactive
@@ -247,7 +247,7 @@ upload. Surface detection is future work.
 
 ### Phase 2 — Skeleton
 
-Draft mode only, except 2a. Steps **2b** to **2f** — author blank boxes, `format`, `validate`, `refresh`,
+Both modes, except 2f (draft only). Steps **2b** to **2f** — author blank boxes, `format`, `validate`, `refresh`,
 show the skeleton — are specified in
 [references/phase-2-skeleton.md](references/phase-2-skeleton.md). Only 2a is
 below, because it is the one step that depends on phase 1's scan.
@@ -263,8 +263,8 @@ below, because it is the one step that depends on phase 1's scan.
   adopt, initialize, or repair an existing solution. Say in that question that
   adopting one means a later `upload` overwrites its cloud copy, because this is
   the only point where that is still the user's choice to make. If it found
-  nothing, run `init` now, by the rules in **Assemble** (4c); 2b (draft) or 4c
-  (auto) authors into the `.bpmn` it generates.
+  nothing, run `init` now, by the rules in **Assemble** (4c); 2b authors into
+  the `.bpmn` it generates.
 
 ### Phase 3 — Iterate
 
