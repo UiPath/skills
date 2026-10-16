@@ -1,0 +1,472 @@
+{
+ "database": "student_club",
+ "class": "Native",
+ "source": "derived from goldens/bird by make_native_goldens.py",
+ "entities": [
+  {
+   "name": "Event",
+   "table": "event",
+   "tier": "reference",
+   "fields": [
+    {
+     "name": "event_id",
+     "sourceColumn": "event_id",
+     "type": "STRING",
+     "role": "key",
+     "isRequired": true
+    },
+    {
+     "name": "event_name",
+     "sourceColumn": "event_name",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "event_date",
+     "sourceColumn": "event_date",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "type",
+     "sourceColumn": "type",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "notes",
+     "sourceColumn": "notes",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "location",
+     "sourceColumn": "location",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "status",
+     "sourceColumn": "status",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    }
+   ],
+   "relationships": []
+  },
+  {
+   "name": "Major",
+   "table": "major",
+   "tier": "reference",
+   "fields": [
+    {
+     "name": "major_id",
+     "sourceColumn": "major_id",
+     "type": "STRING",
+     "role": "key",
+     "isRequired": true
+    },
+    {
+     "name": "major_name",
+     "sourceColumn": "major_name",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "department",
+     "sourceColumn": "department",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "college",
+     "sourceColumn": "college",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    }
+   ],
+   "relationships": []
+  },
+  {
+   "name": "ZipCode",
+   "table": "zip_code",
+   "tier": "reference",
+   "fields": [
+    {
+     "name": "zip_code",
+     "sourceColumn": "zip_code",
+     "type": "DECIMAL",
+     "role": "key",
+     "isRequired": true
+    },
+    {
+     "name": "type",
+     "sourceColumn": "type",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "city",
+     "sourceColumn": "city",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "county",
+     "sourceColumn": "county",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "state",
+     "sourceColumn": "state",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "short_state",
+     "sourceColumn": "short_state",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    }
+   ],
+   "relationships": []
+  },
+  {
+   "name": "Attendance",
+   "table": "attendance",
+   "tier": "core",
+   "fields": [
+    {
+     "name": "link_to_event",
+     "sourceColumn": "link_to_event",
+     "type": "STRING",
+     "role": "key",
+     "isRequired": true
+    },
+    {
+     "name": "link_to_member",
+     "sourceColumn": "link_to_member",
+     "type": "STRING",
+     "role": "key",
+     "isRequired": true
+    }
+   ],
+   "relationships": [
+    {
+     "field": "link_to_member",
+     "referenceEntity": "Member",
+     "referenceField": "member_id"
+    },
+    {
+     "field": "link_to_event",
+     "referenceEntity": "Event",
+     "referenceField": "event_id"
+    }
+   ]
+  },
+  {
+   "name": "Budget",
+   "table": "budget",
+   "tier": "core",
+   "fields": [
+    {
+     "name": "budget_id",
+     "sourceColumn": "budget_id",
+     "type": "STRING",
+     "role": "key",
+     "isRequired": true
+    },
+    {
+     "name": "category",
+     "sourceColumn": "category",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "spent",
+     "sourceColumn": "spent",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "remaining",
+     "sourceColumn": "remaining",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "amount",
+     "sourceColumn": "amount",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "event_status",
+     "sourceColumn": "event_status",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "link_to_event",
+     "sourceColumn": "link_to_event",
+     "type": "STRING",
+     "role": "link",
+     "isRequired": false
+    }
+   ],
+   "relationships": [
+    {
+     "field": "link_to_event",
+     "referenceEntity": "Event",
+     "referenceField": "event_id"
+    }
+   ]
+  },
+  {
+   "name": "Expense",
+   "table": "expense",
+   "tier": "core",
+   "fields": [
+    {
+     "name": "expense_id",
+     "sourceColumn": "expense_id",
+     "type": "STRING",
+     "role": "key",
+     "isRequired": true
+    },
+    {
+     "name": "expense_description",
+     "sourceColumn": "expense_description",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "expense_date",
+     "sourceColumn": "expense_date",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "cost",
+     "sourceColumn": "cost",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "approved",
+     "sourceColumn": "approved",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "link_to_member",
+     "sourceColumn": "link_to_member",
+     "type": "STRING",
+     "role": "link",
+     "isRequired": false
+    },
+    {
+     "name": "link_to_budget",
+     "sourceColumn": "link_to_budget",
+     "type": "STRING",
+     "role": "link",
+     "isRequired": false
+    }
+   ],
+   "relationships": [
+    {
+     "field": "link_to_member",
+     "referenceEntity": "Member",
+     "referenceField": "member_id"
+    },
+    {
+     "field": "link_to_budget",
+     "referenceEntity": "Budget",
+     "referenceField": "budget_id"
+    }
+   ]
+  },
+  {
+   "name": "Income",
+   "table": "income",
+   "tier": "core",
+   "fields": [
+    {
+     "name": "income_id",
+     "sourceColumn": "income_id",
+     "type": "STRING",
+     "role": "key",
+     "isRequired": true
+    },
+    {
+     "name": "date_received",
+     "sourceColumn": "date_received",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "amount",
+     "sourceColumn": "amount",
+     "type": "DECIMAL",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "source",
+     "sourceColumn": "source",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "notes",
+     "sourceColumn": "notes",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "link_to_member",
+     "sourceColumn": "link_to_member",
+     "type": "STRING",
+     "role": "link",
+     "isRequired": false
+    }
+   ],
+   "relationships": [
+    {
+     "field": "link_to_member",
+     "referenceEntity": "Member",
+     "referenceField": "member_id"
+    }
+   ]
+  },
+  {
+   "name": "Member",
+   "table": "member",
+   "tier": "core",
+   "fields": [
+    {
+     "name": "member_id",
+     "sourceColumn": "member_id",
+     "type": "STRING",
+     "role": "key",
+     "isRequired": true
+    },
+    {
+     "name": "first_name",
+     "sourceColumn": "first_name",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "last_name",
+     "sourceColumn": "last_name",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "email",
+     "sourceColumn": "email",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "position",
+     "sourceColumn": "position",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "t_shirt_size",
+     "sourceColumn": "t_shirt_size",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "phone",
+     "sourceColumn": "phone",
+     "type": "STRING",
+     "role": "attribute",
+     "isRequired": false
+    },
+    {
+     "name": "zip",
+     "sourceColumn": "zip",
+     "type": "DECIMAL",
+     "role": "link",
+     "isRequired": false
+    },
+    {
+     "name": "link_to_major",
+     "sourceColumn": "link_to_major",
+     "type": "STRING",
+     "role": "link",
+     "isRequired": false
+    }
+   ],
+   "relationships": [
+    {
+     "field": "zip",
+     "referenceEntity": "ZipCode",
+     "referenceField": "zip_code"
+    },
+    {
+     "field": "link_to_major",
+     "referenceEntity": "Major",
+     "referenceField": "major_id"
+    }
+   ]
+  }
+ ],
+ "consumers": [
+  {
+   "project": "StudentClubInsights",
+   "skill": "uipath-maestro-flow",
+   "entities": {
+    "Expense": "read-write",
+    "Member": "read",
+    "Budget": "read"
+   },
+   "where": {
+    "Expense": "start (record-created) \u00b7 update-expense",
+    "Member": "lookup-member",
+    "Budget": "lookup-budget"
+   }
+  }
+ ],
+ "solution": {
+  "name": "StudentClubInsights",
+  "folder": "Shared"
+ }
+}

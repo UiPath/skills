@@ -1,0 +1,93 @@
+task_id: skill-planner-pdd-vocab-to-tasks-invoice
+description: >
+  PDD lane with a user-passed compiled entity spec. The PDD is a Delegate (Cartographer) invoice-processing PDD;
+  `vocabulary/entities.json` was compiled by code from the project's customer ontology (wiki to-be/ontology, base:
+  process-skills Procure-to-Pay overview) and passes the Data Fabric entity grammar. The planner must author the
+  SDD (Phase D) and derive the task list (Lane A), carrying the spec as given: 12 choice-set tasks first, 4 ready
+  Native entities with their create bodies verbatim (RELATIONSHIP to SupplierInvoice, ordered after it), and 4
+  ERP-owned Federated entities kept as blocked tasks (source system not selected). Scored by
+  sdd_to_tasks_entities/check_tasks_entities.py (entities, fields, types, relationships, order; bindings unscored)
+  and check_spec_extras.py (choice-set tasks, blocked VDO tasks). Oracle for the bodies — it measures carrying,
+  ordering and blocking. Nothing is created.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, data-fabric, lane-a, vocabulary, ontology]
+
+run_limits:
+  expected_turns: 40
+  task_timeout: 3600
+  turn_timeout: 2700
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+# the entity checker lives in a sibling eval; the planner tests dir is the reference root
+reference:
+  directory: ..
+
+initial_prompt: |
+  The Process Definition Document for invoice processing is saved as `pdd.md` in the current directory. Use the
+  compiled entity spec at `./vocabulary/entities.json` for how each Data Fabric entity is defined.
+
+  Run the uipath-planner skill autonomously — don't ask me questions. Author the Solution Design Document and save
+  it as `invoice-processing-sdd.md`, then derive the full task list from it and save it as
+  `invoice-processing-tasks.md`, both in the current directory.
+
+  Important:
+  - Plan only. Do NOT run `uip df entities create|update|delete`, `uip df choice-sets create`, any `uip solution`
+    write, or build anything. Live TaskCreate calls are fine.
+  - Every Data Fabric entity and choice set in the spec needs its own platform task.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "SDD written"
+    path: "invoice-processing-sdd.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Tasks file written"
+    path: "invoice-processing-tasks.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Entity tasks vs the compiled spec: entities, fields, types, relationships, order"
+    command: python3 "$REFERENCE_DIR/sdd_to_tasks_entities/check_tasks_entities.py" --golden "$REFERENCE_DIR/pdd_vocab_to_tasks_invoice/golden.json" --tasks invoice-processing-tasks.md
+    score_from_stdout: true
+    timeout: 60
+    weight: 4.0
+    pass_threshold: 0.6
+
+  - type: run_command
+    description: "Choice-set tasks first; ERP-owned Federated entities kept as blocked tasks"
+    command: python3 "$REFERENCE_DIR/pdd_vocab_to_tasks_invoice/check_spec_extras.py" --golden "$REFERENCE_DIR/pdd_vocab_to_tasks_invoice/golden.json" --tasks invoice-processing-tasks.md
+    score_from_stdout: true
+    timeout: 60
+    weight: 2.0
+    pass_threshold: 0.6
+
+  - type: command_executed
+    description: "Agent must NOT create, update or delete entities or choice sets"
+    tool_name: "Bash"
+    command_pattern: 'uip\b[^\n|;&]*?\bdf\s+(entities|choice-sets)\s+(create|update|delete)\b(?![^\n|;&]*--help)'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT write to a solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\b[^\n|;&]*?\bsolution\s+(init|projects|resources|pack|publish|deploy|upload)\b(?![^\n|;&]*--help)'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
