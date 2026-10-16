@@ -245,11 +245,11 @@ Use the component type from the sdd.md to identify the **primary** cache file, t
 | CONNECTOR_ACTIVITY | `typecache-activities-index.json` |
 | CONNECTOR_TRIGGER | `typecache-triggers-index.json` |
 | PROCESS | `processOrchestration-index.json` |
-| EXTERNAL_AGENT | `typecache-external-agent-activities-index.json` |
-| EXTERNAL_AUTOMATION | `typecache-external-automation-activities-index.json` |
+| `external-agent` | `typecache-external-agent-activities-index.json` |
+| `external-workflow` | `typecache-external-automation-activities-index.json` |
 | TIMER | *(not in cache)* |
 
-For `TIMER` ("not in cache"), skip the cache lookup — it has no registry representation; emit the `wait-for-timer` plugin shape. `EXTERNAL_AGENT` / `EXTERNAL_AUTOMATION` are written as `type: external-agent` / `external-workflow` and built like a connector activity — see [connector-activity § External agents and automations](plugins/tasks/connector-activity/planning.md#external-agents-and-automations).
+For `TIMER` ("not in cache"), skip the cache lookup — it has no registry representation; emit the `wait-for-timer` plugin shape. `external-agent` / `external-workflow` are built like a connector activity — see [connector-activity § External agents and automations](plugins/tasks/connector-activity/planning.md#external-agents-and-automations).
 
 **Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search the other cache files using the task's type-specific portable name, preserving the existing fallback behavior. For `process` tasks the fallback is a hard gate before any unresolved/placeholder outcome — see [`plugins/tasks/process/planning.md` § Registry Resolution](plugins/tasks/process/planning.md#registry-resolution). **Exception: do not cross-type-fallback an `action`, `case-management`, `function`, `flow-process`, or `business-rule` lookup.** An Action App ID is valid only from `action-apps-index.json`, a child-case `entityKey` is valid only from `caseManagement-index.json`, a function `entityKey` is valid only from `function-index.json`, and a rule `entityKey` is valid only from `businessRule-index.json`, a flow `entityKey` is valid only from `flow-index.json`; a same-named process, agent, or API workflow is not a compatible substitute for any of these task types.
 
