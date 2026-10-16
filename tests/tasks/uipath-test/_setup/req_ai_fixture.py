@@ -239,12 +239,24 @@ def cmd_check(a):
         return 1
     rid = req["Id"]
     links = linked_ids(a.project, rid)
+    # Links the agent just created are eventually consistent; when a count is
+    # expected, retry until it settles so a stale read right after create does
+    # not false-fail (fail-safe: a genuinely wrong count still fails after the
+    # retries). The AI label can lag the link too, so re-read both together.
+    generated = ai_created(a.project) if a.links_ai_created else {}
+    if a.links is not None:
+        for _ in range(6):
+            if len(links) == a.links and (not a.links_ai_created
+                                          or all(t in generated for t in links)):
+                break
+            time.sleep(3)
+            links = linked_ids(a.project, rid)
+            generated = ai_created(a.project) if a.links_ai_created else {}
     print(f"CHECK: {a.requirement} has {len(links)} linked test case(s)")
 
     if a.links is not None and len(links) != a.links:
         problems.append(f"expected {a.links} linked test case(s), found {len(links)}")
     if a.links_ai_created:
-        generated = ai_created(a.project)
         unlabelled = [t for t in links if t not in generated]
         if unlabelled:
             problems.append(f"{len(unlabelled)} linked test case(s) lack the {AI_LABEL} label")
