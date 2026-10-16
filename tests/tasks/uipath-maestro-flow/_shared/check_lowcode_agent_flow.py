@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.flow_check import (  # noqa: E402
+    AgentFaultRetry,
     assert_flow_has_node_type,
     assert_output_value,
     run_debug,
@@ -22,7 +23,7 @@ def main():
     # existing resource the task targets, so it fails this assert even when it
     # returns the right count.
     assert_flow_has_node_type(["uipath.core.agent"])
-    payload = run_debug(timeout=240)
+    payload = run_debug(timeout=240, agent_fault=AgentFaultRetry.RETRY)
     # 2 r's in 'arrow'.
     assert_output_value(payload, 2)
     print("OK: Low-code agent node present; output contains 2")

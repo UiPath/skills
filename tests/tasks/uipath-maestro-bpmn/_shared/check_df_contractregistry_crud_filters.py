@@ -112,7 +112,7 @@ Checks performed:
   5. One ContractRegistry Update Entity Record sendTask whose contractTitle
      is a ``=vars.<id>`` reference to a declared process variable.
   6. One ContractRegistry Get Entity Record by ID sendTask referencing the
-     Update node's own output variable.
+     Update node's own output variable, directly or through up to 3 copy hops.
   7. A completion end event maps out at least one of the CRUD nodes' output
      variables.
 
@@ -125,15 +125,15 @@ Assertion map (Flow -> BPMN):
   F check_contractregistry_crud_filters.py:92-96   each Query limited to 100          -> has_standalone_token(q, "100")
   F check_contractregistry_crud_filters.py:98-104  Update sets contractTitle          -> "contractTitle" not in update_body
   F check_contractregistry_crud_filters.py:105-108 contractTitle is variable-bound    -> UPDATE_TITLE_VAR_RE + variable_declared()
-  F check_contractregistry_crud_filters.py:113-116 Get-by-Id wired to Update output   -> wired_var lookup against update_out_vars
-  F check_contractregistry_crud_filters.py:118-120 an End node has mapped outputs     -> derives_from_crud() end-event walk
+  F check_contractregistry_crud_filters.py:113-116 Get-by-Id wired to Update output   -> derives_from() against update_out_vars
+  F check_contractregistry_crud_filters.py:118-120 an End node has mapped outputs     -> derives_from() end-event walk
   I                                                locate/parse .bpmn                 -> parse_bpmn()
   T  curated|generic entity-CRUD node classification -> is_kind()
   T  entity name anywhere in inputs/objectName/path   -> entity_ok()
   T  inputs at any depth                              -> node_inputs()/all_node_values()
   T  expression strings (=...) passing type checks    -> UPDATE_TITLE_VAR_RE match on `=vars.<id>`
   T  vars.<VarId> references in place of Flow node-id refs -> Get-by-Id wired_var check
-  T  transitive variable derivation through BPMN.Variables copy tasks -> derives_from_crud()
+  T  transitive variable derivation through BPMN.Variables copy tasks -> derives_from()
   DROPPED  require_no_private_connector_values  (not in Flow grader)
   DROPPED  require_sequence_integrity            (not in Flow grader; `validate` criterion covers structure)
   DROPPED  require_di_for_visible_elements       (not in Flow grader; `validate` criterion covers structure)
@@ -189,6 +189,8 @@ GENERIC_OP_PATTERNS = {
 # An expression (leading "=") that reads a declared variable: `=vars.X` or
 # `=js:... vars.X ...`. A literal string title is the regression this catches.
 UPDATE_TITLE_VAR_RE = re.compile(r"\bvars\.([A-Za-z0-9_]+)")
+VAR_REF_RE = re.compile(r"vars\.([A-Za-z0-9_]+)")
+COPY_CHAIN_HOPS = 3
 
 
 def node_inputs(task: ET.Element) -> list[ET.Element]:
@@ -301,6 +303,28 @@ def variable_declared(root: ET.Element, var_id: str) -> bool:
     return any(child.attrib.get("id") == var_id for child in variables)
 
 
+def var_sources(root: ET.Element) -> dict[str, list[str]]:
+    sources: dict[str, list[str]] = {}
+    for out in root.findall(".//uipath:output", NS):
+        var = out.attrib.get("var")
+        source = out.attrib.get("source")
+        if var and source:
+            sources.setdefault(var, []).append(source)
+    return sources
+
+
+def derives_from(var_id: str, roots: set[str], sources: dict[str, list[str]], hops: int) -> bool:
+    if var_id in roots:
+        return True
+    if hops <= 0:
+        return False
+    return any(
+        derives_from(ref, roots, sources, hops - 1)
+        for source in sources.get(var_id, [])
+        for ref in VAR_REF_RE.findall(source)
+    )
+
+
 def main() -> None:
     path, root = parse_bpmn("ContractRegistryCrudFilters")
 
@@ -362,8 +386,15 @@ def main() -> None:
     if not update_out_vars:
         fail("Update node has no <uipath:output var=...> for the Get node to reference")
     get_values = all_node_values(get)
+    sources = var_sources(root)
+    update_roots = set(update_out_vars)
     wired_var = next(
-        (v for v in update_out_vars if any(f"vars.{v}" in value for value in get_values)),
+        (
+            ref
+            for value in get_values
+            for ref in VAR_REF_RE.findall(value)
+            if derives_from(ref, update_roots, sources, COPY_CHAIN_HOPS)
+        ),
         None,
     )
     if wired_var is None:
@@ -371,42 +402,18 @@ def main() -> None:
             f"Get-by-Id node does not reference any Update output variable "
             f"(vars.{{{', '.join(update_out_vars)}}}); found values: {get_values}"
         )
-    print(f"OK: Get-by-Id node references Update output vars.{wired_var}")
+    print(f"OK: Get-by-Id node references Update output (via vars.{wired_var})")
 
     crud_vars: set[str] = set()
     for t in (create, *queries, update, get):
         crud_vars.update(output_vars(t))
-    # A CRUD node's response is often not exposed directly: a separate
-    # BPMN.Variables mapping task first copies it into another process
-    # variable (e.g. Var_CreatedRecord <- =vars.Var_CreateResponse), and the
-    # end event maps out THAT copy instead. Build a var -> source map from
-    # every <uipath:output var=... source=...> in the document (mapping
-    # tasks and the CRUD nodes' own activity outputs alike) and follow the
-    # chain up to 3 hops looking for a CRUD output var at the root.
-    var_sources: dict[str, str] = {}
-    for out in root.findall(".//uipath:output", NS):
-        var = out.attrib.get("var")
-        source = out.attrib.get("source")
-        if var and source and var not in var_sources:
-            var_sources[var] = source
-
-    def derives_from_crud(var_id: str, hops: int) -> bool:
-        if var_id in crud_vars:
-            return True
-        if hops <= 0:
-            return False
-        source = var_sources.get(var_id, "")
-        return any(
-            derives_from_crud(ref, hops - 1) for ref in re.findall(r"vars\.([A-Za-z0-9_]+)", source)
-        )
-
     mapped = False
     for end in elements(root, "endEvent"):
         if not has_typed_uipath_extension(end, "mapping", "BPMN.Variables"):
             continue
         for out in end.findall(".//uipath:output", NS):
             source = out.attrib.get("source", "")
-            if any(derives_from_crud(v, 3) for v in re.findall(r"vars\.([A-Za-z0-9_]+)", source)):
+            if any(derives_from(v, crud_vars, sources, COPY_CHAIN_HOPS) for v in VAR_REF_RE.findall(source)):
                 mapped = True
                 break
         if mapped:

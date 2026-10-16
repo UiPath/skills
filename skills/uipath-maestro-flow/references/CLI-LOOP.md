@@ -1,10 +1,14 @@
 # Authoring and product-CLI loops
 
-Choose one loop before running any build command:
+Choose one loop before running any build command, as
+[SKILL.md — Lifecycle](../SKILL.md#lifecycle) says:
 
 - if the task requests product-CLI validation/debug, or the workspace enables
-  `flowSdk.emitOnly`/`FLOW_SDK_EMIT_ONLY=1`, use only the eval/product-CLI loop;
-- otherwise use the packaged-SDK local gates.
+  `flowSdk.emitOnly`/`FLOW_SDK_EMIT_ONLY=1`, use only the eval/product-CLI loop.
+  Its scaffold and its full command block are in SKILL.md, so a greenfield run
+  needs nothing from this file; the debug flags and projections below are for
+  runs whose acceptance bar needs product-runtime evidence;
+- otherwise use the packaged-SDK local gates (this file).
 
 In eval/product mode, create the solution/project scaffold immediately after
 choosing the loop, before authoring the source. Once the source first
@@ -68,7 +72,7 @@ names it, never before the source exists:
 ```bash
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source
 # run each prepare the check names, with the exact command it prints:
-uip maestro registry prepare <key> <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
+uip maestro registry prepare <key> --action <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source    # re-check until clean
 uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow
 uip maestro flow validate <Name>.flow --output json
@@ -79,67 +83,28 @@ surrounding task or release policy.
 
 Layout is deliberately absent from this sequence. `uip maestro flow format`
 is not an authoring gate — `validate` passes without it and nothing upstream
-reads a position. It is required before the emitted file reaches anything that
-draws it: `solution upload`, `flow debug`, or a person opening the project in a
-designer. See [`operate.md`](operate.md#lay-out-the-emitted-flow-first).
+reads a position. For a greenfield file (one `compile` wrote from scratch), run
+it before the file reaches anything that draws it: `solution upload`,
+`flow debug`, or a person opening the project in a designer. Do not run it on a
+merged brownfield file: `format` re-lays out every node, so it discards the
+positions the canvas author chose. See
+[`operate.md`](operate.md#lay-out-the-emitted-flow-first).
 
 These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
 
 ## Product-CLI scaffold
 
-Product debug needs a solution containing a Flow project. Keep the authored
-source in `.flow-sdk/` under the workspace root, outside the solution, and
-create the nested scaffold once:
-
-```bash
-uip solution init <Solution>
-( cd <Solution> && uip maestro flow init <Name> )
-uip maestro flow decompile <Solution>/<Name>/<Name>.flow -o .flow-sdk/<Name>.flow.ts --no-pipeline
-```
-
-That third command seeds the authored source from the stub `flow init` just wrote, so the flow's id and name come from the product instead of being invented, and the stub is overwritten in place by the first `compile -o`.
-Skip it when the source already exists, and skip the whole block for an existing project.
-For a **Maestro Automate** project (the request names that product, not just the verb "automate"), add `--automate` to the `flow init` line; nothing else in either loop changes.
-
-`<Solution>` and `<Name>` are the request's own names, used verbatim: a request
-that gives one name for both ("inside a solution of the same name") uses it for
-both, and a request that names only the Flow uses `<Name>` for both. The result
-has three related names: `.flow-sdk/<Name>.flow.ts`, the `<Name>` project directory, and
-`<Name>.flow` inside that project. Keep them aligned for this scaffold so each
-command addresses the intended project; `compile -o` remains the authority over
-where the emitted file is written.
+The scaffold (`uip solution init`, `flow init --sdk-source` for the seed, and
+`--automate` for a Maestro Automate project) is in
+[SKILL.md — Project layout](../SKILL.md#project-layout). It is kept in one place
+so the two copies cannot drift.
 
 ## Eval/product-CLI packaging: emit-only
 
-The product-runtime eval sets `flowSdk.emitOnly` in `package.json` (with
-`FLOW_SDK_EMIT_ONLY=1` retained as an environment override). Emit-only is a
-property of the **project**, not of the directory you run from: the mode is the
-nearest `package.json` up the tree that actually declares `flowSdk.emitOnly`, so
-compiling from a scaffolded solution subdirectory behaves exactly as it does
-from the project root. A nested `package.json` that says nothing about `flowSdk`
-inherits; one that sets `emitOnly: false` opts out. In that mode
-`uip maestro flow compile` only serializes source, and `uip maestro flow check`
-refuses, because product validation owns structural verification. The required
-base pass is emit, any required artifact bindings, then validate. Add resource
-refresh and debug only when the stated acceptance bar requires product-runtime
-behavior evidence:
-
-```bash
-uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Solution>/<Name>/<Name>.flow
-uip maestro flow validate <Solution>/<Name>/<Name>.flow --output json
-# Before anything opens the emitted file — upload, debug, or a designer:
-uip maestro flow format <Solution>/<Name>/<Name>.flow --output json
-# Only for a stated runtime-behavior claim:
-( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
-( cd <Solution> && uip maestro flow debug <Name> --log-level error \
-  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals}" \
-  --output json )
-```
-
-This loop has exactly one emitted artifact:
-`<Solution>/<Name>/<Name>.flow`. Never emit a second root-level `<Name>.flow`;
-validators and evidence collectors cannot choose safely between duplicates.
-Re-run the whole sequence after the final source or binding edit.
+The emit-only rules (which `package.json` decides the mode, what `compile` and
+`check` do in it) and the compile → validate → format → refresh → debug block
+are in [SKILL.md — Lifecycle](../SKILL.md#lifecycle). The sections below add the
+detail a runtime-evidence bar needs.
 
 ## Product validation and conditional bindings
 
@@ -147,7 +112,8 @@ Re-run the whole sequence after the final source or binding edit.
 
 The JSON envelope has top-level `Result`; a successful validation also reports
 `Data.Status: "Valid"` and may carry `Data.Warnings`. Treat warnings as failures
-except for the reviewed shared-connection advisory. Preserve any exception's
+except for the reviewed shared-connection advisory and the `err()` read
+diagnostics in [`error-handling.md`](error-handling.md#reading-the-failure). Preserve any exception's
 exact code/text and rationale instead of broadening an allowlist.
 
 ### Bounded completion
@@ -199,6 +165,7 @@ These are the common flags; use only the ones the behavior claim needs:
 | JSON inputs | `-i '{"name":"value"}'` or `--inputs @inputs.json` |
 | File input | `--attachment <input-name>=<path>`; repeat for multiple files |
 | Folder | one of `--folder-id`, `--folder-key`, or `--folder-path`; omit to auto-detect |
+| Start trigger | `--entry-point <trigger-node-id>`; omit to start at the default root |
 | Poll bound | `--timeout <seconds> --poll-interval <milliseconds>`; keep the stated task bound |
 | Compact read-back | `--output-filter "<JMESPath>" --output json` |
 | Quiet logs | `--log-level error`, or `--log-file <path>` to move them off the stream entirely |
@@ -235,12 +202,14 @@ read-back into seven tool calls.
 # Did it finish? The cheapest possible check.
 --output-filter "{status:finalStatus,instance:instanceId}"
 
-# The standard read-back: status, where to look, what did NOT complete, all globals.
+# The standard read-back: status, where to look, what did NOT complete, the
+# flow's declared outputs — one <Out>:variables.globals.<Out> pair per output —
+# and incidents.
 --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,\
 failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},\
-globals:variables.globals}"
+weatherVerdict:variables.globals.weatherVerdict,incidents:incidents}"
 
-# Just the values the flow produced.
+# Every global, including each step's raw output — diagnosis only (see below).
 --output-filter "variables.globals"
 
 # Every element's status, when you need the path the run actually took.
@@ -262,32 +231,49 @@ double quotes instead of single ones:
 --output-filter '{status:finalStatus,raw:variables.globals."multiply.output"}'
 ```
 
-**There is no `incidents` in this envelope.** `Data` carries exactly
-`finalStatus`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`, `folderKey`,
-`solutionId`, `variables` and `elementExecutions` — an `incidents:incidents`
-projection silently yields `null`. Incidents come from the separate
+**Name the globals the claim needs; never project all of them for a verdict.**
+Every step's output is in this map whole: an HTTP step carries its response
+body and headers, a connector step its full record. One geocoding call can make
+the read-back hundreds of lines. Trimming it with `tail` or `head` then drops
+`status` and `failed`, and the only way back is a second `flow debug` run
+(~30 s against the cloud). Name each declared output, and add a step's output
+only when the claim is about that step.
+
+**A completed run has no `incidents` in this envelope.** Its `Data` carries
+`finalStatus`, `entryPoint`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`,
+`folderKey`, `solutionId`, `variables` and `elementExecutions`, plus
+`variablesFetch` when the variables read needed a retry; `variablesError`
+replaces `variables` when that read fails. So an `incidents:incidents`
+projection yields `null`. A faulted run usually carries `Data.incidents` (absent
+when PIMS returns none or the fetch fails), and `--output-filter` projects
+failure `Data` too, so add `incidents:incidents` to the projection to keep
+them. If `Data.incidents` is missing, fetch incidents with the separate
 `debug-instance incidents` call below, keyed by the `instanceId` you just read.
+With `variablesError`, the outputs are unknown, not empty: run the re-read
+command its `Instructions` give.
 
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
 
 ```bash
-( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
-( cd <Solution> && uip maestro flow debug <Name> --log-level error \
+( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
+( cd "<Solution>" && uip maestro flow debug <Name> --log-level error \
   --inputs @inputs.json \
-  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals}" \
+  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>,incidents:incidents}" \
   --output json )
 ```
 
 The top-level envelope still carries `Result`; the projection above selects
 from `Data`. Read and retain `Result`, the projected status/instance/URL, the
-`failed` element executions, and the globals the claim needs.
+`failed` element executions, the declared outputs the claim needs (`<Out>` is
+each `direction: out` global, as in the standard read-back above), and
+`incidents` on a faulted run.
 `Completed` with the expected globals and an empty `failed` is evidence for the
 product-runtime path; a bare process exit code is not. Omit the filter only when
 diagnosing a field the projection did not retain.
 
-Incidents are **not** in this envelope — fetch them by the `instance` you just
-read, and only when something actually failed.
+Fetch incidents by `instance` only when a failed run has no `Data.incidents`
+(`null` in a projection) or your projection dropped it.
 
 For a fault, query the backend incident payload with the returned instance id:
 

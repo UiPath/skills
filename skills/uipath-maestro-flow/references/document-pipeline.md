@@ -24,6 +24,24 @@ Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? }
 .step('total', script({ code: 'return $vars.extract.output.ExtractionResult;' }))
 ```
 
+## At a glance
+
+Classify a document (`uipath.document.classify`), or extract fields against an
+INLINE schema (`uipath.ixp.extract-document-builder`) instead of a published
+IxP project's trained fields.
+Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
+`dynamicExtract({ fileRef, schema, model: { modelName, folderKey, ... }, pageRange? })`.
+
+```ts
+.step('classify', documentClassify({ fileRef: input('file'), splitPages: true }))
+.step('extract', dynamicExtract({ fileRef: input('file'),
+  schema: { type: 'object', properties: { total: { type: 'string' } } },
+  model: { modelName: 'invoiceixp-cef0d447-ixp', folderKey: '<folder-guid>' } }))
+```
+
+Dynamic Extract still needs a model deployment identity — copy `modelName` and
+`folderKey` from the tenant; never construct them.
+
 ## The model identity
 
 Dynamic Extract authors its SCHEMA inline, but execution still runs against a

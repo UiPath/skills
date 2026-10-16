@@ -5,7 +5,8 @@ Post-run cleanup: delete the AgentHub MCP server an e2e task created.
 Reads report.json (CWD), written by the agent:
   {"slug": "<server-slug>", "folder_path": "Shared"}   # or "folder_key": "<guid>"
 
-Deletes via the authed CLI: `uip agenthub mcp delete <slug> --folder-path|--folder-key ...`.
+Deletes via the authed CLI: `uip agenthub mcp delete <slug> --yes --folder-path|--folder-key ...`
+(`--yes` is required: without it the CLI refuses the delete instead of prompting).
 Idempotent — a missing server counts as already-clean. Exit 0 ALWAYS: cleanup failures never
 fail the test (matches uipath-platform/data-fabric/_shared/cleanup_entities.py). Locally without a tenant
 this is a no-op.
@@ -40,7 +41,7 @@ def main():
         print("SKIP: no 'slug' key in report.json")
         sys.exit(0)
 
-    cmd = ["uip", "agenthub", "mcp", "delete", slug]
+    cmd = ["uip", "agenthub", "mcp", "delete", slug, "--yes"]
     if report.get("folder_key"):
         cmd += ["--folder-key", report["folder_key"]]
     else:

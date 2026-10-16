@@ -20,7 +20,7 @@ from check_athena_cm_event_case import (  # noqa: E402
     stage_task,
 )
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from _shared.case_check import find_node_by_label, read_caseplan  # noqa: E402
+from _shared.case_check import existing_caseplan, find_node_by_label, read_caseplan  # noqa: E402
 
 
 # task name -> (authored entry rule, predecessor named by the rule's selector)
@@ -59,9 +59,10 @@ def entry_rules(task: dict) -> list[dict]:
 
 
 def main() -> None:
-    if not os.path.isfile(CASEPLAN_PATH):
-        fail(f"expected generated caseplan at {CASEPLAN_PATH}")
-    plan = read_caseplan(CASEPLAN_PATH)
+    path = existing_caseplan(CASEPLAN_PATH)
+    if path is None:
+        fail(f"expected generated caseplan at {CASEPLAN_PATH} (or caseplan.case beside it)")
+    plan = read_caseplan(path)
 
     stages = {label: find_node_by_label(plan, label) for label in ("StageA", "StageB", "StageC")}
     tasks = {

@@ -55,7 +55,7 @@ xmlns:uta="clr-namespace:UiPath.Testing.Activities;assembly=UiPath.Testing.Activ
 ## XAML Example
 
 ```xml
-<!-- Rule to ignore date patterns like "01/15/2024" -->
+<!-- Rule to ignore MM/DD/YYYY date patterns -->
 <uta:CreateComparisonRule
   DisplayName="Create Date Rule"
   RuleName="&quot;DatePattern&quot;"

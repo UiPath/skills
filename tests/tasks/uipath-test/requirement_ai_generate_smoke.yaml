@@ -1,0 +1,101 @@
+task_id: skill-test-requirement-ai-generate-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to finish a Test Manager AI
+  test case generation that a pipeline started and stopped waiting on, show
+  the proposed test cases, and create only the first two from that SAME job.
+  pre_run starts the job for real with a 3 s wait, so the saved output in
+  nightly/ is the CLI's actual timeout envelope (exit 2, ErrorCode timeout,
+  job still running). Asserts the costly-mistake guards of
+  references/requirement-ai-guide.md: the job is resumed and reused by
+  --activity-id and never started again (Scenario 4, rule 1), and the create
+  is `--activity-id <id> --create --select 1 2` (Scenario 1). Graded on
+  tenant state: the requirement ends with exactly two linked test cases,
+  both labelled autopilot-generated. The task owns the EVFX-AIGEN-*
+  namespace; pre_run resets the requirement and deletes the test cases an
+  earlier run created. Spends one AI job per run, started in pre_run; a job
+  takes 1–5 min, hence the longer turn limit.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case]
+
+run_limits:
+  expected_turns: 12
+  max_turns: 40
+  turn_timeout: 1500
+  task_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+reference:
+  directory: _setup
+
+pre_run:
+  - command: >-
+      python3 _setup/req_ai_fixture.py seed --project HEALTH --stamped-prefix EVFX-AIGEN-
+      --requirement EVFX-AIGEN-REQ --require-access generate-testcases
+      --description "A signed-in customer can transfer money between their own accounts. The amount must be greater than zero and no more than the source account's available balance. Transfers above 10,000 need a one-time code sent by SMS. A completed transfer shows a confirmation with a reference number."
+      --capture-generate-timeout nightly/generate-testcases.json
+    timeout: 280
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  Our nightly pipeline started Test Manager's AI test case generation for
+  requirement EVFX-AIGEN-REQ in the project whose key is in project-key.txt, but it stopped waiting before
+  the result came back. Its output is in nightly/generate-testcases.json.
+  Show me what the AI proposed, then create just the first two of those test
+  cases, linked to the requirement.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status before touching Test Manager (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0   # advisory
+
+  - type: command_executed
+    description: "Agent picked up the pipeline's job by id: `generate-testcases --project-key HEALTH --activity-id <uuid>`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--activity-id\s+["\x27]?[0-9a-fA-F]{8}-)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--project-(?:key\s+["\x27]?HEALTH\b|id\s+\S))(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--create\b)'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "A wait on the job was bounded with --timeout (rule 2) — advisory: the job may already be finished when the agent reads it"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--wait\b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--timeout\s+["\x27]?\d)'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0   # advisory
+
+  - type: command_executed
+    description: "Agent created test cases 1 and 2 from that job: `generate-testcases --activity-id <id> --create --select 1 2`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--activity-id\s+\S)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--create\b)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--select\s+["\x27]?(?:1\s+2|2\s+1)(?![\s"\x27]*\d))'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No new generation job: a timed-out job is resumed, never restarted (rule 1, Scenario 4)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Outcome: EVFX-AIGEN-REQ has exactly two linked test cases, both created by the AI (label autopilot-generated)"
+    command: "python3 $REFERENCE_DIR/req_ai_fixture.py check --project HEALTH --requirement EVFX-AIGEN-REQ --links 2 --links-ai-created"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

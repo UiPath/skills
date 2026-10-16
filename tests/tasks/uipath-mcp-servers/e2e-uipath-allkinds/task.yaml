@@ -3,7 +3,7 @@ description: >
   E2E (live DefaultTenant): create a `uipath`-type AgentHub MCP server and add one resource tool for
   every UI-exposed resource category on the SAME server — automation, agent, agentic-process, and
   api-workflow. Verify all four tools land on the live tenant, then the harness deletes the server.
-tags: [uipath-mcp-servers, e2e, mode:build]
+tags: [uipath-mcp-servers, e2e, mode:build, lifecycle:setup]
 sandbox:
   template_sources:
     - type: template_dir

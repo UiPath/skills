@@ -1,0 +1,56 @@
+task_id: skill-rules-integration-diagnose-wrong-output
+description: >
+  Agent diagnoses a Business Rules project that passes `uip rules validate` but
+  returns the wrong risk band, offline: under the FIRST hit policy a Medium row
+  reading `>= 580` shadows the Low row for every score of 700 or more. Grades
+  the high-score and policy cases returning the expected band, rows 1, 3, and 4
+  kept unchanged and in place, the entry point
+  carrying the contract, `uip rules validate` run by the grader, and the
+  project not being re-scaffolded.
+tags: [uipath-rules, integration, "mode:diagnose", "lifecycle:generate"]
+
+sandbox:
+  python: {}
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Our `RiskRules/` UiPath Business Rules project returns "Medium" for a credit
+  score of 720 with income 90000; it should be "Low". Find and fix the cause.
+  The policy:
+
+  - A credit score below 580 is High risk.
+  - A credit score from 580 up to 699 is Medium risk when income is at least
+    50000, otherwise High risk.
+  - A credit score of 700 or more is Low risk.
+
+  There is no tenant to evaluate against, so do not run `uip rules debug`.
+  Do not ask for confirmation.
+
+success_criteria:
+  - type: run_command
+    description: "High scores return Low, every policy case returns the expected band, and only row 2 changed"
+    command: "python3 $REFERENCE_DIR/integration/diagnose_wrong_output/check_diagnose_wrong_output.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "uip rules validate passes on the project"
+    command: "python3 $REFERENCE_DIR/_shared/rules_check.py validate"
+    timeout: 120
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent fixed the existing project instead of re-scaffolding it"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+rules\s+init'
+    weight: 1.0
+    pass_threshold: 1.0

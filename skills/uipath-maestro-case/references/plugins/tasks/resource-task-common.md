@@ -1,6 +1,6 @@
 # Resource tasks — the shape every non-connector task shares
 
-`action`, `agent`, `api-workflow`, `case-management`, `function`, `process` and `rpa` all bind a tenant resource and share the rules below. Each type's own `impl-json.md` states only what differs — its `type` discriminator, its `data` fields, and its lookup. Read this file once per build, then that type's file.
+`action`, `agent`, `api-workflow`, `business-rule`, `case-management`, `function`, `process` and `rpa` all bind a tenant resource and share the rules below. Each type's own `impl-json.md` states only what differs — its `type` discriminator, its `data` fields, and its lookup. Read this file once per build, then that type's file.
 
 > **Phase split.** Phase 2 writes shape with empty input values. Phase 3 binds values per [io-binding/impl-json.md](../variables/io-binding/impl-json.md). See [phased-execution.md](../../phased-execution.md).
 
@@ -10,7 +10,7 @@
 >
 > ```bash
 > uip maestro case tasks describe --type <taskType> --id <selected.identifier> --output json   # save verbatim with Write
-> uip maestro case splice "<caseplan.json>" --task-id "<taskId>" --described "<that saved file>" --output json
+> uip maestro case splice "<caseplan.case>" --task-id "<taskId>" --described "<that saved file>" --output json
 > ```
 >
 > It merges by row `name` into the rows the task already carries: `type`, `_jsonSchema`, `options` and `displayName` come from describe; `id`, `var`, `elementId` and any SDD-authored `value` / `source` / `target` are preserved. A name describe returns that the task does not carry is reported in `Summary.Unmatched` and never appended — `Error` lands there on every resource, and which outputs the case uses is the SDD's call. Read `Summary.InputsUpdated` / `OutputsUpdated` to confirm. Idempotent: the same call twice is byte-identical. This is what `sdd convert`'s `output-type` unresolved entry names; it closes there, not by hand.

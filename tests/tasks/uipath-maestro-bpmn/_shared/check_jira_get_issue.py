@@ -188,7 +188,7 @@ def main() -> None:
     )
 
     debug_data, instance_id = bpmn_live.run_debug(
-        imported_project, {}, LIVE_RUN_DIR / "debug.log"
+        imported_project, {}, LIVE_RUN_DIR / "debug.log", retry=bpmn_live.DebugRetry.TRANSIENT
     )
     print(f"OK: debug completed (instance {instance_id})")
 
