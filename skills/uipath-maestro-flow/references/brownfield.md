@@ -157,7 +157,7 @@ These findings the source cannot carry are printed on stderr as
   connector, a published process or agent) keeps its pin.
 
   When the file *does* hold the definition (the normal case: every `.flow`
-  carries one per node type and version it uses), there is no warning.
+  carries one per node type and version it uses), the node does not move.
   Decompile copies that definition into a `const`, passes it to
   `.definitions([...])`, and keeps the pin; compile resolves the pin against
   it. For example `uipath.human-in-the-loop.quick-form@1.6`, written by
@@ -174,8 +174,13 @@ These findings the source cannot carry are printed on stderr as
   `.definitions([...])` call as decompile wrote them: without them, `compile`
   refuses the pin and names the versions it can resolve (for a registered
   family, `check` reports it first as `NODE_VERSION_UNREGISTERED`). The SDK
-  still writes an edited node's inputs from its own factory (`hitl()` here),
-  so `validate` the merged file as usual.
+  still writes an edited node's inputs from its own factory (`hitl()` here).
+  When the carried definition's inputs differ from that factory's version,
+  decompile warns `node "<id>" keeps <type>@<version> from the file's
+  definitions[]; its inputs differ from <sdk-version> (<fields>)`. If that
+  node is your edit target, edit its inputs in the merged `.flow` JSON
+  directly. `rawNode` is not a substitute here: it cannot yet route a human
+  task's outcome exits.
 - A **file-format version outside the writable band** (below `1.6`) — the source
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and
