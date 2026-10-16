@@ -53,6 +53,7 @@ success_criteria:
   - type: run_command
     description: "Flow file was created"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -61,6 +62,7 @@ success_criteria:
   - type: run_command
     description: "Every outcome on the HITL node has its own wired port — none on the outcome-completed placeholder"
     command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py outcome-wiring"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

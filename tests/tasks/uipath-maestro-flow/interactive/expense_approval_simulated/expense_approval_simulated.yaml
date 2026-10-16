@@ -93,6 +93,7 @@ success_criteria:
   - type: run_command
     description: "Flow has a correct inline HITL schema, decision capture, outcome-port wiring, and downstream .output access"
     command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py expense"
+    read_only: true
     timeout: 15
     expected_exit_code: 0
     weight: 6.0
@@ -106,6 +107,7 @@ success_criteria:
   - type: run_command
     description: "Project/flow is named ExpenseApproval (elicited from the user)"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ExpenseApproval"
+    read_only: true
     timeout: 15
     expected_exit_code: 0
     weight: 1.0

@@ -60,6 +60,7 @@ success_criteria:
   - type: run_command
     description: "Flow contains the original script node"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview '\"extractMeta\"'"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -68,6 +69,7 @@ success_criteria:
   - type: run_command
     description: "Flow contains the inserted HITL node"
     command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py quick-form"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 2.5
@@ -76,6 +78,7 @@ success_criteria:
   - type: run_command
     description: "Both HITL outcome ports (Approve and Reject) are wired, not the outcome-completed placeholder"
     command: "python3 $REFERENCE_DIR/_shared/check_simulated_hitl.py outcome-wiring"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -84,6 +87,7 @@ success_criteria:
   - type: run_command
     description: "HITL has a boolean output field for the approval decision"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name ContractReview '\"boolean\"'"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 1.5

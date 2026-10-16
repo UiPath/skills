@@ -53,6 +53,7 @@ success_criteria:
   - type: run_command
     description: Generated flow contains an IxP extraction node or core.logic.mock fallback
     command: grep -rqE "\"type\"[[:space:]]*:[[:space:]]*\"(uipath\.ixp|core\.logic\.mock)" --include="*.flow" .
+    read_only: true
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
@@ -61,18 +62,21 @@ success_criteria:
   - type: run_command
     description: Generated flow contains a SharePoint trigger or connector node
     command: grep -rqiE "sharepoint" --include="*.flow" .
+    read_only: true
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
   - type: run_command
     description: Generated flow contains an HTTP action node (core.action.http)
     command: grep -rqE "core\.action\.http|\"type\"[[:space:]]*:[[:space:]]*\"[^\"]*http[^\"]*\"" --include="*.flow" .
+    read_only: true
     expected_exit_code: 0
     weight: 2.0
     pass_threshold: 1.0
   - type: run_command
     description: Generated flow references the IxP extraction output via $vars (downstream consumption)
     command: grep -rqF '$vars.' --include="*.flow" .
+    read_only: true
     expected_exit_code: 0
     weight: 1.5
     pass_threshold: 1.0
@@ -80,8 +84,8 @@ run_limits:
   # Heavy multi-connector e2e: the completed baseline used 882s / 71 turns.
   # 1500s and 120 turns retain measured headroom on the slower Bedrock route
   # without changing the campaign's pre-run envelope (RE-12529).
-  # turn_timeout matches task_timeout: at 1200 it was the binding ceiling —
+  # turn_timeout was raised to 1500: at 1200 it was the binding ceiling —
   # three consecutive sonnet-5 runs died at ~1202s with 300s of task budget left.
   max_turns: 120
   turn_timeout: 1500
-  task_timeout: 1500
+  task_timeout: 1620

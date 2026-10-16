@@ -78,6 +78,7 @@ success_criteria:
   - type: run_command
     description: "Flow file created inside the user-selected solution"
     command: "python3 $REFERENCE_DIR/interactive/check_solution_select.py flow"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 2.0
@@ -87,6 +88,7 @@ success_criteria:
   - type: run_command
     description: "Agent did not init the Flow project inside a pre-existing solution"
     command: "python3 $REFERENCE_DIR/interactive/check_solution_select.py existing-untouched"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 1.5
@@ -124,6 +126,7 @@ success_criteria:
   - type: run_command
     description: "Selected solution contains an initialized Flow project"
     command: "python3 $REFERENCE_DIR/interactive/check_solution_select.py project"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -133,6 +136,7 @@ success_criteria:
   - type: run_command
     description: "Agent created the selected solution artifact"
     command: "python3 $REFERENCE_DIR/interactive/check_solution_select.py solution"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 1.0
@@ -141,6 +145,7 @@ success_criteria:
   - type: run_command
     description: "Advisory: no default WeatherAlert solution before the name was given — records the default-then-repair inefficiency; nondeterministic on simulator name-timing, so non-gating"
     command: "python3 $REFERENCE_DIR/interactive/check_solution_select.py no-extra-solution"
+    read_only: true
     timeout: 30
     expected_exit_code: 0
     weight: 1.0

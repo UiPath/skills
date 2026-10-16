@@ -126,6 +126,7 @@ success_criteria:
   - type: run_command
     description: "Flow targets the #office-bellevue channel (elicited from the user)"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --regex '(?i)(office-bellevue|conversationsInfoId[^A-Za-z0-9]+C[A-Z0-9]{6,})'"
+    read_only: true
     timeout: 15
     expected_exit_code: 0
     weight: 3.0
@@ -139,6 +140,7 @@ success_criteria:
   - type: run_command
     description: "Project/flow is named SlackChannelDescription (elicited from the user)"
     command: "python3 $REFERENCE_DIR/_shared/flow_contains.py --flow-name SlackChannelDescription"
+    read_only: true
     timeout: 15
     expected_exit_code: 0
     weight: 1.0
