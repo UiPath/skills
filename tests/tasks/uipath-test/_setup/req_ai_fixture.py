@@ -20,6 +20,7 @@ import re
 import shlex
 import subprocess
 import sys
+import time
 
 AI_LABEL = "autopilot-generated"
 UIP = shlex.split(os.environ.get("UIP_CMD", "uip"))
@@ -262,6 +263,15 @@ def cmd_check(a):
         problems.append("the requirement's description was changed")
     if a.description_extends is not None:
         base = a.description_extends.strip()
+        # The agent's `requirements update` is eventually consistent; right
+        # after a slow AI-backed apply the first read can still show the seeded
+        # text. Retry before concluding nothing changed (fail-safe: a genuinely
+        # un-applied suggestion still reads as base after the retries).
+        for _ in range(6):
+            if desc.strip() != base:
+                break
+            time.sleep(3)
+            desc = (find_requirement(a.project, a.requirement) or {}).get("Description") or ""
         if desc.strip() == base:
             problems.append("the requirement's description was not changed")
         elif not desc.strip().startswith(base):
