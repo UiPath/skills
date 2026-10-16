@@ -25,5 +25,6 @@
 
 <!--skill-flavor:v2-solution-resources-refresh:start-->
    Studio Web keeps the open solution's resources in sync after
-   `bpmn refresh`; `uip solution resources refresh` is Node-CLI-only.
+   `bpmn refresh`: skip the `uip solution resources refresh` step that
+   `Data.V2.Instructions` ends with. It is Node-CLI-only and is not run here.
 <!--skill-flavor:v2-solution-resources-refresh:end-->
