@@ -120,9 +120,10 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
   `<source>/agent.json` (some canvas and `node add` saves do this). Merge keeps
   that configuration and applies only your change to the node: an input, an
   output, the label. A prompt, model or settings edit in the `.flow.ts` does
-  not reach an embedded agent; make it on the canvas. `--strict` refuses a
-  merged node that drops or changes that configuration, or whose kept prompt
-  still uses `{{input.X}}` after your edit removed input `X`.
+  not reach an embedded agent; make it on the canvas. `--strict` accepts an
+  input or output edit, and refuses a merged node that drops or changes that
+  configuration, or whose kept prompt still uses `{{input.X}}` after your edit
+  removed input `X`.
 - Pass `--strict` to make merge refuse (exit 1, no file written) instead of
   warning. The benign End line never refuses. `--strict` needs `--baseline`,
   so use it in [the hand loop](#the-same-loop-by-hand); the generated
