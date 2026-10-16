@@ -15,8 +15,10 @@ fall through to a shared successor when they need common work before the final
 answer. This is different from `.terminate(...)`: Return completes its path
 with values; Terminate aborts the whole run.
 
-Any dangling tail gets an End automatically; an explicit `.return(...)` is required
-only when values must be bound. Multiple path ends are emitted as `end`, `end2`,
+Any dangling tail gets an End automatically, unless the flow calls
+`.openTails()` (decompile writes it; see
+[brownfield.md](brownfield.md#a-path-without-an-end-stays-open)). An explicit
+`.return(...)` is required only when values must be bound. Multiple path ends are emitted as `end`, `end2`,
 `end3`, and so on.
 
 Only an End sets a flow output. When a step sets an output with `{ updates }`,
