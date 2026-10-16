@@ -8,7 +8,7 @@ type, a deployed Action App, or a document-validation station.
 Signature:
 `hitl({ variant?: 'quick-form' | 'action-app' | 'document-validation', app?,
 document?, title?, priority?, labels?, recipient?, fields?, outcomes,
-outcomePorts?, exposeError? })`.
+outcomePorts?, exposeError?, legacyCompleted? })`.
 
 ```ts
 .var('status', types.string)
@@ -67,6 +67,18 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
 - A field's `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'`
   (pre-filled AND editable — give it a `value`; the reviewed value comes back
   at the field's own id).
+- A field's `type` is one of the platform's 11 quick-form types: `'string'`,
+  `'number'`, `'integer'`, `'float'`, `'double'`, `'boolean'`, `'date'`,
+  `'datetime'`, `'file'`, `'object'`, `'array'`. `'text'` and `'date-time'` are
+  accepted as older spellings of `'string'` / `'datetime'`; leave them as they
+  are in existing source. A decompiled canvas form keeps its types as written,
+  except a type copied from a bound Flow variable (`'string[]'`,
+  `'string | null'`), which decompiles to the type it resolves to (`'array'`,
+  `'string'`). A control spelling (`'singleSelect'`, `'multiSelect'`,
+  `'enum'`) also stays as written, and `check` reports it as
+  `HITL_FIELD_TYPE_UNKNOWN`. Do not change it to `'string'` (the form loses its
+  control): leave that node untouched so merge keeps the original, or edit that
+  node's JSON in the `.flow` directly.
 - **Every outcome is its own exit — the SDK never emits `completed` on a task
   that has outcomes.** Each outcome gets `outcome-<slug>` (the name lowercased,
   non-alphanumerics to `-`). This holds on the default node and on quick-form,
@@ -76,7 +88,12 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `getEffectiveHitlHandleCustomization`). A `completed` edge on a task with
   outcomes is stale: Studio Web and the converter remap it to the PRIMARY
   outcome, so every other outcome loses its path. `check` refuses it
-  (HITL_COMPLETED_PORT_GONE). A decompiled task the designer drew may write
+  (HITL_COMPLETED_PORT_GONE). The one exception is `legacyCompleted: true`:
+  decompile writes it for a file whose task already leaves on `completed`, so
+  a no-edit round trip writes that edge back unchanged, and `check` warns
+  (HITL_LEGACY_COMPLETED). Never add it yourself. If the task asks you to fix
+  that task's routing, replace it with `outcomePorts: false` (every outcome
+  continues) or route each outcome. A decompiled task the designer drew may write
   an outcome as `{ name: 'Reject', id: 'outcome-1778015958049' }`: the `id`
   keeps the original outcome id, so its port is `outcome-outcome-1778015958049`
   (route it with `.stepToList` by that port; `.stepSwitch` arms still match the

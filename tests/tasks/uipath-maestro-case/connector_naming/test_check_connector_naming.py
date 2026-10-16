@@ -151,6 +151,19 @@ def test_a_trigger_envelope_key_is_not_graded_as_a_contract_field():
     assert chk.FAILURES == []
 
 
+def test_a_compiled_trigger_filter_is_not_graded_as_a_request_field():
+    """The filter envelope carries `expression`, which no contract declares."""
+    body = {"filters": {"expression": "(contains(Title,'x'))"}}
+    chk.check_inputs("T", block(inputs=[{"body": body}]), ["calendarID"])
+    assert chk.FAILURES == []
+
+
+def test_a_filter_operand_written_as_a_request_field_is_reported():
+    body = {"filters": {"expression": "(contains(Title,'x'))"}, "Title": "x"}
+    chk.check_inputs("T", block(inputs=[{"body": body}]), ["calendarID"])
+    assert "input key 'Title' matches no field" in only()
+
+
 def test_a_request_that_wrote_nothing_is_reported():
     chk.check_inputs("T", block(inputs=[{"body": {}}]), ["message.subject"])
     assert "no request field was written at all" in only()

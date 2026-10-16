@@ -1,0 +1,17 @@
+{
+ "name_contains": "Commercial Credit Evaluation & Approval",
+ "documents": {
+  "pdd": "corpus/commercial-credit-evaluation/pdd.md"
+ },
+ "systems": {
+  "Salesforce": []
+ },
+ "optional_systems": {
+  "External and internal credit sources": [
+   "credit source",
+   "credit bureau",
+   "credit data"
+  ]
+ },
+ "allow_other_category": true
+}

@@ -30,7 +30,7 @@ Pick this plugin when the sdd.md describes a task as `AGENT` — an AI agent tha
 
 ### No tenant-index match → check in-solution siblings BEFORE the gate
 
-When steps 1–4 find nothing in the tenant index **and** the CLI supports `registry --local`, check for an existing in-solution sibling before treating the agent as unresolved.
+**Skip this check when `sdd resolve` reported `Data.Scope.siblingsChecked: true`** — resolve already searched the solution's own projects ([registry-discovery.md § Resolve with the CLI first](../../../registry-discovery.md#resolve-with-the-cli-first)). Otherwise — when steps 1–4 find nothing in the tenant index **and** the CLI supports `registry --local` — check for an existing in-solution sibling before treating the agent as unresolved.
 
 ```bash
 uip maestro case registry search "<name>" --type agent --local --output json
@@ -86,7 +86,7 @@ The brief is self-contained — it carries the Step-1b Purpose and the pinned I/
 
 Shared invariants — [create-inline-common.md § Step 3](../create-inline-common.md#step-3--binding-invariants): two bindings `resource:"process"`, **`resourceSubType:"Agent"`**, shared `resourceKey="solution_folder.<AgentName>"`; `name` default `<AgentName>`, `folderPath` default `""` (the sentinel/`""` decoupling and deploy-provisioning rationale live there).
 
-**Agent debug delta:** `uip maestro case debug` packages the **entire solution directory** (`buildSolutionPackageFromDir(<solutionDir>)`) and **provisions agent siblings** — an inline agent resolves in a debug session (unlike Api siblings, which need a full deploy — [api-workflow/planning.md § Step 3](../api-workflow/planning.md#creating-an-api-workflow-inline)).
+**Agent debug delta:** `uip maestro case debug` packages the **entire solution directory** (`buildSolutionPackageFromDir(<solutionDir>)`) but does **not** provision agent siblings — the task faults with incident `170007` (verified 2026-10-12), as Api siblings do ([api-workflow/planning.md § Step 3](../api-workflow/planning.md#creating-an-api-workflow-inline)). Verify an inline agent's runtime behavior via a full solution deploy, never via `case debug`.
 
 ### Coded agents — default low-code; gated; integration caveat
 

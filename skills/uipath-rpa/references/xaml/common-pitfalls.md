@@ -508,9 +508,9 @@ Skipping both produces `Cannot create unknown type` at `build`.
 | Click | `ClickType` | `Single` | Single click (not double) |
 | Click | `MouseButton` | `Left` | Left mouse button |
 | Click | `AlterIfDisabled` | `True` | Alters element even if disabled (legacy compat) |
-| All UIAutomation activities | `TimeoutMS` | `30000` (30s) | How long to wait for element before timeout |
-| UIAutomation | `DelayBefore` | `200`ms | Delay before action |
-| UIAutomation | `DelayAfter` | `300`ms | Delay after action |
+| UI Automation activities | `Timeout` | `30` seconds, a double (Check App State: `5`) | How long to wait for the target before failing |
+| UI Automation activities | `DelayBefore` | `0.2` seconds | Delay before action |
+| UI Automation activities | `DelayAfter` | `0.3` seconds | Delay after action; classic activities' millisecond values: [legacy/selector-guide.md](../legacy/selector-guide.md) |
 | ExtractData | `DelayBetweenPagesMS` | `300`ms | Between pagination clicks |
 | HTTP Request | `Timeout` | `10000` (10s) | Request timeout |
 | HTTP Request | `ContinueOnError` | `True` | Failures don't stop execution (unusual default) |
