@@ -37,6 +37,9 @@ OWNERS = {
     "TRIAGE": "failed_run_triage_diagnose.yaml",
     "PERMPRE": "project_permissions_preflight_smoke.yaml",
     "PERMAT": "project_permissions_access_integration.yaml",
+    "DEFECT": "defect_lifecycle_smoke.yaml",
+    "DEFTRACE": "defect_traceability_integration.yaml",
+    "DEFFLOW": "defect_full_lifecycle_e2e.yaml",
     "MANUAL": "manual_execution_record_integration.yaml",
     "REPORT": "reporting_date_backdate_integration.yaml",
     "EXLIST": "executions_list_smoke.yaml",
@@ -49,6 +52,14 @@ OWNERS = {
     "AIEVAL": "requirement_ai_evaluate_smoke.yaml",
     "AIDEL": "requirement_ai_obsolete_smoke.yaml",
     "AIBLOCK": "requirement_ai_blocked_inputs_smoke.yaml",
+    "ATTUP": "attachment_upload_smoke.yaml",
+    "ATTDL": "attachment_download_integration.yaml",
+    "ATTASK": "attachment_overwrite_ask_integration.yaml",
+    "ATTLIFE": "attachment_lifecycle_e2e.yaml",
+    "TSCLONE": "testset_clone_smoke.yaml",
+    "TSORDER": "testset_order_integration.yaml",
+    "TSASK": "testset_settings_ask_integration.yaml",
+    "TSLIFE": "testset_lifecycle_e2e.yaml",
 }
 
 

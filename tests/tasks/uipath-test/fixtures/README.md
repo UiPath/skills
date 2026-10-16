@@ -33,6 +33,9 @@ and therefore exact for this scheme.
 | `customfield_schema_multiscope_build` | its own throwaway project | the `EVFX-SCHEMA-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks) |
 | `project_permissions_preflight_smoke` | `EVFX-PERMPRE-PROJECT` | the `EVFX-PERMPRE-*` namespace | `pre_run` create-if-absent of the project; no test cases/sets/executions — the task only reads `project-permissions get` |
 | `project_permissions_access_integration` | `EVFX-PERMAT-PROJECT` | the `EVFX-PERMAT-*` namespace | `pre_run` create-if-absent of the project; no test cases/sets/executions — the task only reads `project-permissions get` |
+| `defect_lifecycle_smoke` | its own per-run project | the `EVFX-DEFECT-*` namespace | `pre_run` creates one `EVFX-DEFECT-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) holding `EVFX-DEFECT-SET`/`EVFX-DEFECT-TC1` and one Finished execution with TC1 `Failed` and no defect; it sweeps orphans stamped more than 6 hours ago, and `post_run` deletes the project. Per-run because a result holds one defect and several models run the nightly concurrently |
+| `defect_traceability_integration` | its own per-run project | the `EVFX-DEFTRACE-*` namespace | Same per-run project pattern (`EVFX-DEFTRACE-<YYYYMMDD-HHMMSS>-<hex>`, key in `project-key.txt`): `EVFX-DEFTRACE-SET`/`TC1`/`REQ` with the requirement covering TC1, one Finished execution with TC1 `Failed`, and a defect on that result linked by hand to tracker issue `EVFX-DEFTRACE-1`; `post_run` deletes the project |
+| `defect_full_lifecycle_e2e` | its own throwaway project | the `EVFX-DEFFLOW-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks). Does not grade `defects attachments download`: a manual result gives the defect no evidence (a file uploaded to the result with `attachment upload --object-type testCaseLog` does not appear under `defects attachments list`), so there is nothing to download |
 | `project_settings_smoke` | its own throwaway project | the `EVFX-PSET-*` namespace | `pre_run` creates one `EVFX-PSET-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago (so a concurrent run's project is never touched); `post_run` deletes it. The deliverable is a settings change, not the project, so the project is scratch (Rule 2). Unlike the self-contained build tasks, project create/delete is not under test here, so the hooks own the project's lifecycle and the agent never deletes it |
 | `testcase_parameters_bulk_add_smoke` | HEALTH | `EVFX-PARAM-Login`, `EVFX-PARAM-Transfer` | Created if absent; `pre_run` clears their parameters each run and seeds `Username=keepme` on Transfer |
 | `testcase_parameters_edit_integration` | HEALTH | `EVFX-PARAMEDIT-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) and `Userid=u1` |
@@ -42,6 +45,14 @@ and therefore exact for this scheme.
 | `requirement_ai_evaluate_smoke` | HEALTH | `EVFX-AIEVAL-REQ` | Requirement whose description `pre_run` resets to the one-line `Users can reset their password.` every run (the task appends to it) |
 | `requirement_ai_obsolete_smoke` | HEALTH | `EVFX-AIDEL-REQ`, `EVFX-AIDEL-TC{1,2,3,4}` | All four linked; TC3 and TC4 off-topic on purpose. `pre_run` recreates the one the task deleted and relinks the ones it unlinked |
 | `requirement_ai_blocked_inputs_smoke` | HEALTH | `EVFX-AIBLOCK-NODESC` | No description, no attachments. `generate-testcases` fails with HTTP 400 before a job starts, so the task spends no AI units |
+| `attachment_upload_smoke` | HEALTH | `EVFX-ATTUP-Checkout` | Created if absent; `pre_run` clears its attachments and writes a local `checkout-failure.png`; `post_run` clears its attachments |
+| `attachment_download_integration` | HEALTH | `EVFX-ATTDL-Login` | Created if absent; `pre_run` uploads `login-error.log` and `checkout-notes.txt` (local copies removed); `post_run` clears its attachments |
+| `attachment_overwrite_ask_integration` | HEALTH | `EVFX-ATTASK-Login` | Created if absent; `pre_run` uploads `report.txt` and writes a different local `report.txt`; `post_run` clears its attachments |
+| `attachment_lifecycle_e2e` | HEALTH | `EVFX-ATTLIFE-Checkout` | Created if absent; `pre_run` clears its attachments and writes a local `release-notes.txt`; `post_run` clears its attachments |
+| `testset_clone_smoke` | HEALTH | `EVFX-TSCLONE-Regression`, `EVFX-TSCLONE-TC{1,2}` | Seeded once, never changed. Each run's copy is `EVFX-TSCLONE-<YYYYMMDD-HHMMSS>-<hex>` (agent-named); `pre_run`/`post_run` sweep copies older than 6 hours |
+| `testset_order_integration` | its own project `EVTSORD` | `EVFX-TSORDER-Regression` = `EVTSORD:4` holding Alpha/Beta/Gamma = `EVTSORD:1-3` | Project seeded once so the keys the order criterion names never change; `pre_run` fails if the shape drifts and resets the source's enforce flag. Per-run copies `EVFX-TSORDER-<stamp>-<hex>`, swept after 6 hours |
+| `testset_settings_ask_integration` | HEALTH | `EVFX-TSASK-Regression`, `EVFX-TSASK-TC1` | Seeded once; read-only for the agent (`pre_run` resets the enforce flag if a past run changed it) |
+| `testset_lifecycle_e2e` | its own project `EVTSLIFE` | `EVFX-TSLIFE-Regression` = `EVTSLIFE:4` holding Alpha/Beta/Gamma = `EVTSLIFE:1-3` | Same as `EVTSORD`; the agent deletes its own copy, the 6-hour sweep catches any it leaves |
 
 The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
 (`seed`, `check`). It knows no names: each task passes its own `EVFX-` names
@@ -161,8 +172,8 @@ the code under test never changed.
 ## Self-contained build tasks
 
 The three `mode:build` tasks — `project_scaffold_build`,
-`testset_curation_by_label_build`, `customfield_schema_multiscope_build` — sit
-outside the seeded-fixture model entirely. Each one **creates its own throwaway
+`testset_curation_by_label_build`, `customfield_schema_multiscope_build` — and
+the `defect_full_lifecycle_e2e` task sit outside the seeded-fixture model entirely. Each one **creates its own throwaway
 project, does all its work inside it, and deletes it as the final graded step.**
 They read and write nothing in CLAIM, HEALTH or BANK.
 
