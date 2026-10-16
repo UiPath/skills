@@ -441,6 +441,16 @@ def test_connector_hop_through_ambiguous_script(tmp_path: Path, script: str) -> 
         ),
         pytest.param(
             "=js:$vars.buildQuery.output.queryExpression",
+            "return { \"queryExpression\": \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            id="double-quoted-key",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
+            "return { /* CEQL */ 'queryExpression': \"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" };",
+            id="single-quoted-key",
+        ),
+        pytest.param(
+            "=js:$vars.buildQuery.output.queryExpression",
             "return { queryExpression: \"\", ...{ queryExpression: "
             "\"invoiceNumber = '\" + $vars.start.output.invoiceNumber + \"'\" } };",
             id="overriding-spread",

@@ -430,10 +430,11 @@ def script_output(node: dict[str, Any] | None, key: str | None) -> str | None:
     if not returns:
         return None
 
+    string_starts = {start for start, _, kind, _ in js_tokens(script) if kind in "\"'"}
     spreads, values = False, []
     for returned in returns:
         for start, end in object_entries(code, returned.end() - 1):
-            start = end - len(code[start:end].lstrip())
+            start = next((i for i in range(start, end) if i in string_starts or not code[i].isspace()), end)
             spreads = spreads or code.startswith("...", start)
             entry = JS_ENTRY_KEY.match(script, start, end)
             if entry and key in entry.groups()[:3]:
