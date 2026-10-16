@@ -29,12 +29,18 @@ reference:
 
 pre_run:
   - command: >-
-      python3 _setup/req_ai_fixture.py seed --project HEALTH
+      python3 _setup/req_ai_fixture.py seed --project HEALTH --stamped-prefix EVFX-AIBLOCK-
       --requirement EVFX-AIBLOCK-NODESC --no-description
     timeout: 280
 
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
 initial_prompt: |
-  In project HEALTH, have Test Manager's AI propose test cases for
+  In the project whose key is in project-key.txt, have Test Manager's AI propose test cases for
   requirement EVFX-AIBLOCK-NODESC.
 
 success_criteria:

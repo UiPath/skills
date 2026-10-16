@@ -14,9 +14,11 @@ YAML where fixtures/check-collisions.py sees them; this file knows no names.
 to run against another build.
 """
 import argparse
+import datetime
 import json
 import os
 import re
+import secrets
 import shlex
 import subprocess
 import sys
@@ -52,6 +54,35 @@ def call(label, *args, timeout=180, check=True):
 
 def data(label, *args, **kw):
     return call(label, *args, **kw)[1].get("Data")
+
+
+def stamped_project(prefix):
+    """Create a per-run project `<prefix><stamp>-<hex>`, sweep orphans stamped
+    more than 6 hours ago, and write its key to project-key.txt (the grader's
+    check reads it back). AI tasks share a requirement and the AI-created test
+    cases it spawns, so concurrent gate runs on one HEALTH requirement corrupt
+    each other's counts — a per-run project isolates them."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    for p in (data("proj.sweep", "tm", "project", "list", "--filter", prefix,
+                   check=False) or []):
+        nm, key = p.get("Name") or "", p.get("ProjectKey")
+        if not key or not nm.startswith(prefix):
+            continue
+        try:
+            stamp = datetime.datetime.strptime(nm[len(prefix):len(prefix) + 15],
+                                               "%Y%m%d-%H%M%S")
+        except ValueError:
+            continue
+        if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+            call("proj.del", "tm", "project", "delete", "--project-key", key,
+                 "--yes", check=False)
+    key = "EVAI" + secrets.token_hex(2).upper()
+    name = f"{prefix}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+    call("proj.create", "tm", "project", "create", "--name", name, "--project-key", key)
+    with open("project-key.txt", "w", encoding="utf-8") as fh:
+        fh.write(key + "\n")
+    log(f"stamped project {name} ({key})")
+    return key
 
 
 def find_requirement(project, name):
@@ -154,6 +185,8 @@ def ensure_testcase(project, name, description):
 
 
 def cmd_seed(a):
+    if getattr(a, "stamped_prefix", None):
+        a.project = stamped_project(a.stamped_prefix)
     for verb in a.require_access:
         require_access(a.project, verb)
     req = ensure_requirement(a.project, a.requirement,
@@ -233,6 +266,12 @@ def cmd_seed(a):
 
 def cmd_check(a):
     problems = []
+    # Seed may have put the fixture in a per-run project; use it if present.
+    try:
+        with open("project-key.txt", encoding="utf-8") as fh:
+            a.project = fh.read().strip() or a.project
+    except FileNotFoundError:
+        pass
     req = find_requirement(a.project, a.requirement)
     if not req:
         print(f"CHECK: requirement {a.requirement} not found")
@@ -311,6 +350,10 @@ def main():
                    help="exit TENANT NOT READY when this AI verb answers 403 (repeatable)")
     s.add_argument("--capture-generate-timeout", metavar="OUT",
                    help="start generate-testcases with a 3 s wait and save its output")
+    s.add_argument("--stamped-prefix", metavar="PREFIX",
+                   help="seed into a fresh per-run project <PREFIX><stamp>-<hex> "
+                        "(key written to project-key.txt) instead of --project, so "
+                        "concurrent gate runs do not share the requirement")
 
     c = sub.add_parser("check")
     c.add_argument("--project", required=True)
