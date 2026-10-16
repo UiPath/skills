@@ -29,6 +29,20 @@ parameters:
     displayName: Fail the run when FOSSA finds issues (release gate)
     type: boolean
     default: false
+  - name: enableSonar
+    displayName: Run SonarCloud analysis with test coverage
+    type: boolean
+    default: true
+  - name: sonarServiceConnection
+    displayName: SonarCloud service connection (Autopilot's SonarCloud, as shared into skills)
+    type: string
+    default: 'SonarCloud-skills'
+  # A single space, trimmed below: an empty string default makes the queue
+  # dialog demand a value.
+  - name: sonarPoolName
+    displayName: Agent pool for the Sonar job (blank = Microsoft-hosted ubuntu-latest)
+    type: string
+    default: ' '
 
 resources:
   repositories:
@@ -36,6 +50,11 @@ resources:
       type: github
       name: UiPath/AzurePipelinesTemplates
       ref: refs/tags/uipath.security.fossa.3.1.1
+      endpoint: github.com_UiPath
+    - repository: sonar
+      type: github
+      name: UiPath/AzurePipelinesTemplates
+      ref: refs/tags/uipath.sonar-coverage.4.0.1
       endpoint: github.com_UiPath
 
 stages:
@@ -45,3 +64,8 @@ stages:
           azureServiceConnection: ${{ parameters.azureServiceConnection }}
           poolName: ${{ parameters.poolName }}
           blockOnIssue: ${{ parameters.blockOnIssue }}
+  - ${{ if eq(parameters.enableSonar, true) }}:
+      - template: jobs/ci.quality.sonar.yml
+        parameters:
+          sonarServiceConnection: ${{ parameters.sonarServiceConnection }}
+          poolName: ${{ trim(parameters.sonarPoolName) }}
