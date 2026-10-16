@@ -109,3 +109,10 @@ case-design-layers-guide.md's; the cells own the shape.)
      deterministic routing, so when the source says entry is automatic the picker row IS the defect:
      repair it per § Section 2 Authoring rules, stage-picker bullet, decision-routed branch (all four
      edits). Source silent on who launches the lane ⟹ keep what is authored.
+ 36. The Personas table header is literally `| Persona | Scope | Stages | Permissions | Description | Notes |`,
+     and every row is machine-readable: Scope is `Case` or `Stages`; Stages names exact Section 2 stage
+     display names (`—` for `Case`); Permissions holds only the permission keys the template lists, and a
+     `Stages` row only View, Assign, ManageSLA, RunAdhocTasks; every task's `Persona` cell (rule 34) names a
+     row of this table or `system`. `View, Act, Reassign` is prose, not permissions — `uip maestro case sdd
+     convert` reports each such cell as a `case-role` Unresolved item and `validate --sdd` fails it. A
+     condition on the persona goes in Notes and in a guarded cell (rule 32), never in Permissions or Stages.
