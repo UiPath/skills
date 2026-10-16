@@ -173,8 +173,11 @@ The rest of `bodyParameters` is the request body. Outlook's
 Follow `Data.V2.Instructions` (tokens, `RootBindings`, `Variables`, the
 marker). Beyond it:
 
-- An output other than `response` / `Error` writes `{varId}_<name>` (an HTTP
-  request's `code`, `headers`, `body`). A trigger has no `{incomingEdge}`.
+- Replace only the double-brace tokens (`{{ID}}`, `{{NAME}}`, ...); a
+  single-brace `{name}` inside a connector path is the connector's own.
+- An output other than `response` / `Error` writes `{{VAR_ID}}_<name>` (an
+  HTTP request's `code`, `headers`, `body`). A trigger has no
+  `{{INCOMING_EDGE}}`.
 - If `Data.V2.MissingRequired` lists inputs (e.g. `bodyParameters.prompt`),
   run `registry get` again with them in `--input-details` before pasting.
 - Do not edit the element's `uipath:context` or its `metadata`. To change a
