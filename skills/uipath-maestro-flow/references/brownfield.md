@@ -213,6 +213,16 @@ These findings the source cannot carry are printed on stderr as
   (with a `/* TODO: this switch's case expressions are not a uniform … */`
   comment). Recompiling fails or picks a different case, even when your edit is
   somewhere else in the flow, so make the change in the `.flow` JSON directly.
+- A **context-index setting `context: [...]` cannot express**. Decompile reads
+  an index's retrieval settings (mode, query, threshold, result count, file
+  extension) from `<agent source>/resources/<source>/resource.json`, so keep the
+  agent's folder beside the `.flow`. A few settings have no field, for example
+  a static plain-text query, a query bound to an agent argument, deeprag
+  citations turned off, or a folder-path prefix. The warning names the setting,
+  and recompiling writes the SDK's value into the compiled
+  `resources/<source>/resource.json` beside the `-o` output. Merge does not
+  touch the project's copy: do not copy the compiled file over it. If that
+  already happened, tell the user to set the setting again in Studio Web.
 
 Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
 placing it in a solution, copy it over the canonical artifact rather than next
