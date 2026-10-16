@@ -178,6 +178,7 @@ For topic-specific errors, use the relevant reference. Cross-cutting failures:
 | `unknown option '--folder-key'` / `unknown option '--include-folders'` | Installed tool is outdated | `uip tools install @uipath/data-fabric-tool@latest`; if still missing, surface as unsupported |
 | `--folder-key and --include-folders are mutually exclusive` | Both flags passed on `entities list` / `choice-sets list` | Pick one |
 | Entity / choice set created via `--folder-key <X>` doesn't appear in list | Lists default to tenant-only | Re-run with `--folder-key <X>` or `--include-folders` |
+| `entities create` fails with `Message: "Error creating entity"` | The service rejected the definition; its reason is in `Instructions` (e.g. a field name that is a reserved SQL word) | Read `Instructions`, rename per Rule 4, create again |
 | Record write to a federated entity fails | Federated entities are read-only — data lives in the source | Write at the source; `--native-only` filters writable entities. Creating a federated entity **is** supported → [`federated-entity-creation.md`](federated-entity-creation.md) |
 
 Any error not in this table → Rule 18. Topic-specific error tables live in the topic references.
