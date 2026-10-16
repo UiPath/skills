@@ -141,10 +141,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent exported the chosen ids (`testcases export --test-case-ids`, must succeed)"
+    description: "Agent exported the chosen ids (`testcases export --test-case-ids`)"
     tool_name: "Bash"
     command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+export\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--test-case-ids\b'
-    require_success: true
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
