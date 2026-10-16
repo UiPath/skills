@@ -238,12 +238,17 @@ def check_writer_prompt(_original: dict, _final: dict, original_agents: dict, ag
 def check_merged(original: dict, final: dict, _original_agents: dict, _agents: dict) -> int:
     # merge takes every edge from the compiled source, which numbers them edge_0..edge_N
     # (builder-sdk FLOW_PARITY.md §6.2), so a surviving original edge id means a hand edit.
+    # A tripwire, not proof (a hand edit can renumber too), and it inverts if merge ever keeps
+    # original edge ids the way compile now keeps node ids (builder-sdk #1249, #1253).
     original_ids = {e["id"] for e in original["edges"]}
     kept = sorted(original_ids & {e.get("id") for e in final["edges"]})
     if kept:
         return fail(
             f"{len(kept)} of {len(original_ids)} original edge ids survive (e.g. {kept[0]!r}): the .flow was "
-            "edited by hand, not written by `uip maestro flow merge`, which renumbers every edge"
+            "edited by hand, not written by `uip maestro flow merge`, which renumbers every edge. When the "
+            "merge candidate changes something the task did not ask for, the skill's answer is to fix the "
+            ".flow.ts and merge again, not to patch the .flow (uipath-maestro-flow references/brownfield.md, "
+            "'Merge warnings: what the round trip changed')"
         )
     print("OK: the .flow was written by `uip maestro flow merge` (no original edge id survives)")
     return 0
