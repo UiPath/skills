@@ -89,7 +89,7 @@ error-severity findings, and only when they block import.
 
 ## Steps
 
-Phases 0 and 1 run first, and 2a has created or adopted the project — see
+Phase 1 runs first, and 2a has created or adopted the project — see
 [SKILL.md](../SKILL.md#workflow). Then:
 
 - **2b Author the skeleton** into the `.bpmn` that `init` generated, editing in
@@ -98,8 +98,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   the start event**: its name feeds the entry-point schema, so renaming it
   makes `refresh` rewrite `entry-points.json` for no benefit.
 - **2c `uip maestro bpmn format <file>.bpmn`** — generates the diagram. Without
-  it no box renders on the canvas (Rule 5). Re-run it after each batch of edits
-  while the user is watching.
+  it no box renders on the canvas (Rule 5).
 - **2d `uip maestro bpmn validate <file>.bpmn --output json`** — must reach
   `Status: Valid`. This is an import-readiness check, not a design review:
   act on errors, ignore the expected warnings above.
@@ -108,11 +107,9 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   anything while validation fails, so 2d must pass first. On a skeleton that
   preserved the start event it reports `WrittenFiles: []`, which is the
   drift check passing rather than a no-op to skip.
-- **2f Make the shape visible**, by the route 0a identified. Behind a live
-  canvas — VS Code, Studio Desktop, or in-product Autopilot — `2c`'s `format`
-  already put the change on screen and there is nothing to do here. In a
-  terminal, run `uip solution upload <SolutionDir> --output json` and report
-  the returned `Data.DesignerUrl`. Do not ask first: a request to build the
+- **2f Make the shape visible.** Run
+  `uip solution upload <SolutionDir> --output json` and report the returned
+  `Data.DesignerUrl`. Do not ask first: a request to build the
   process authorizes the upload that shows it, and a consent gate per
   iteration would defeat the mode. The one case that still needs confirmation
   is adopting a solution the agent did not create, because `upload` overwrites
@@ -121,8 +118,8 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
 
 ## Iterating
 
-Adjust the skeleton, re-`format`, show the change, repeat. On a live canvas the
-refresh is automatic. In a bare terminal, each upload after the first reports
+Adjust the skeleton, re-`format`, show the change, repeat. Each upload after
+the first reports
 `Data.Action: "Overwritten"` and reuses the same `SolutionId` and
 `DesignerUrl`, because `upload` writes the cloud solution id back into the local
 `.uipx`. `"Imported"` on a later upload means that id was lost and a second
