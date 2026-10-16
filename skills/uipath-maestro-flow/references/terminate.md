@@ -33,11 +33,13 @@ ONE Terminate with several incoming edges, as the canvas draws it.
 ```
 
 - The Terminate may sit inside another port's path (an HTTP `branch-*`, a
-  human-task `outcome-*`, a `.stepSwitch` arm). A ref into a STEP there is still
-  `REF_INTO_PORT_LIST`; a Terminate runs nothing after itself, so it is allowed.
+  human-task `outcome-*`, a `.stepSwitch` arm, an `.entryPoint` prefix). A ref
+  into a STEP there is still `REF_INTO_PORT_LIST`; a Terminate runs nothing
+  after itself, so it is allowed.
 - Spell each Terminate ONCE. Two `.terminate`s asking for the same name are
   refused (`DUP_STEP`; `compile --no-check` throws). They are not renamed
-  `stopFailed2`. Stop the other paths with `.stepToRef('<name>')`.
+  `stopFailed2`. Stop the other paths with `.stepToRef('<name>')`. A step and a
+  Terminate with one name are `DUP_STEP` too: rename one of them.
 - A decompiled brownfield flow uses this form when a second path runs into a
   Terminate another path already stops at. Keep the `.stepToRef('<terminate id>')`
   when you edit.
