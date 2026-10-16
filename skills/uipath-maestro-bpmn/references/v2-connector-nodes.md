@@ -173,8 +173,6 @@ The rest of `bodyParameters` is the request body. Outlook's
 Follow `Data.V2.Instructions` (tokens, `RootBindings`, `Variables`, the
 marker). Beyond it:
 
-- Replace only the double-brace tokens (`{{ID}}`, `{{NAME}}`, ...); a
-  single-brace `{name}` inside a connector path is the connector's own.
 - An output other than `response` / `Error` writes `{{VAR_ID}}_<name>` (an
   HTTP request's `code`, `headers`, `body`). A trigger has no
   `{{INCOMING_EDGE}}`.
