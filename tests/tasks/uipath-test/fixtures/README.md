@@ -38,6 +38,8 @@ and therefore exact for this scheme.
 | `defect_traceability_integration` | its own per-run project | the `EVFX-DEFTRACE-*` namespace | Same per-run project pattern (`EVFX-DEFTRACE-<YYYYMMDD-HHMMSS>-<hex>`, key in `project-key.txt`): `EVFX-DEFTRACE-SET`/`TC1`/`REQ` with the requirement covering TC1, one Finished execution with TC1 `Failed`, and a defect on that result linked by hand to tracker issue `EVFX-DEFTRACE-1`; `post_run` deletes the project |
 | `defect_full_lifecycle_e2e` | its own throwaway project | the `EVFX-DEFFLOW-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks). Does not grade `defects attachments download`: a manual result gives the defect no evidence (a file uploaded to the result with `attachment upload --object-type testCaseLog` does not appear under `defects attachments list`), so there is nothing to download |
 | `project_settings_smoke` | its own throwaway project | the `EVFX-PSET-*` namespace | `pre_run` creates one `EVFX-PSET-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago (so a concurrent run's project is never touched); `post_run` deletes it. The deliverable is a settings change, not the project, so the project is scratch (Rule 2). Unlike the self-contained build tasks, project create/delete is not under test here, so the hooks own the project's lifecycle and the agent never deletes it |
+| `run_package_ci_smoke` | its own throwaway project | the `EVFX-RUNPKG-*` namespace | Same hooks as `project_settings_smoke`: `pre_run` creates one `EVFX-RUNPKG-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans older than 6 hours; `post_run` deletes it, which also removes the execution and hidden test set `tm run --type package` creates. Runs the package `TestCase_CrossPlatform_VB_Tests`, uploading it when the folder feed lacks it; exits TENANT NOT READY on a tenant that cannot run it (see [Run-package fixtures](#run-package-fixtures)) |
+| `run_package_failing_smoke` | its own throwaway project | the `EVFX-RUNPKGFAIL-*` namespace | Same hooks as `run_package_ci_smoke`, in its own namespace so the two never sweep each other's projects. Runs the package `FailingTestCase_CrossPlatform_VB_Tests` |
 | `testcase_parameters_bulk_add_smoke` | HEALTH | `EVFX-PARAM-Login`, `EVFX-PARAM-Transfer` | Created if absent; `pre_run` clears their parameters each run and seeds `Username=keepme` on Transfer |
 | `testcase_parameters_edit_integration` | HEALTH | `EVFX-PARAMEDIT-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) and `Userid=u1` |
 | `testcase_parameters_lifecycle_e2e` | HEALTH | `EVFX-PARAMLIFE-Login` | Created if absent; `pre_run` clears its parameters |
@@ -241,3 +243,54 @@ This is the one step `pre_run` cannot bootstrap on its own: it requires a
 package published to Orchestrator and a robot able to serve the folder. Until
 that exists, the signoff task's `pre_run` seeds a **manual** execution so the
 wait/report half of the task stays gradeable.
+
+## The `uipath-test-folder-feed` folder
+
+Every task that needs an Orchestrator package uses this one folder, so do not
+rename, delete or empty it. It has its own package feed (`FolderHierarchy`),
+so packages uploaded to it stay out of the tenant feed.
+
+| Task | Uses | Package |
+|---|---|---|
+| `link_automation_and_run` | folder name, in the prompt | `Testcases.with.parameters` |
+| `release_signoff_wait_report_e2e` | folder key, in `pre_run` | `Testcases.with.parameters` |
+| `run_package_ci_smoke` | folder name, in `pre_run` and the prompt | `TestCase_CrossPlatform_VB_Tests` |
+| `run_package_failing_smoke` | folder name, in `pre_run` and the prompt | `FailingTestCase_CrossPlatform_VB_Tests` |
+
+`Testcases.with.parameters` is a Windows package. The folder's serverless
+robot runs cross-platform packages only, so runs of it start but never finish
+(see [Automation-linked fixtures](#automation-linked-fixtures)). A new task
+that needs a run to finish must use a cross-platform package.
+
+## Run-package fixtures
+
+`run_package_ci_smoke` and `run_package_failing_smoke` run a real package, so
+the tenant must be able to run one. Both call
+`_setup/run_package_fixture.py seed`, which checks the tenant the run is
+logged in to:
+
+1. **Folder** `uipath-test-folder-feed` is visible to the login.
+2. **Runtime:** a machine assigned to that folder has an Unattended or Test
+   Automation runtime. On Automation Cloud the simplest setup is the folder's
+   serverless machine with one Unattended runtime, plus a robot account in the
+   folder as Automation User. Serverless robots need no machine credentials,
+   but they run cross-platform packages only.
+3. **Unattended account:** a member of that folder may hold an unattended
+   session (`MayHaveUnattendedSession`), such as that robot account.
+4. **Package:** `TestCase_CrossPlatform_VB_Tests` or
+   `FailingTestCase_CrossPlatform_VB_Tests` is in the folder feed. When it is
+   missing, the script uploads it from `_setup/packages/`. These are the
+   cross-platform fixtures from UiPath/cli
+   (`packages/test-manager-tool/tests/test-data/ported-run-tests/`).
+
+When the folder, the runtime or the unattended account is missing, or the
+upload is refused, `pre_run`
+exits with `TENANT NOT READY` on stderr, naming the tenant and what is missing,
+and the pass-rate gate in `smoke-skills.yml` drops the task. Automation Suite
+has no serverless robots, so it needs a self-hosted machine with an unattended
+robot and credentials before these tasks can run there.
+
+The alpha `codereval` / `DefaultTenant` eval tenant is set up this way: the
+`Default Serverless` machine has one Unattended runtime and the robot account
+`tm-eval-robot` is in the folder. With one runtime, parallel runs queue for it;
+a run takes one to three minutes, well inside the prompts' 10-minute budget.
