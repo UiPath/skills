@@ -1,0 +1,79 @@
+task_id: skill-api-workflow-golden-jira-release-notes
+description: >
+  Autopilot golden scenario: build an API workflow that turns the closed tickets under
+  one or more Jira epics into release notes through OpenAI. Graded on the live
+  outcome: check_release_notes.py adds one closed ticket under the first fixture epic
+  (so notes hardcoded at authoring time fail), runs the workflow on the two fixture
+  epics (fixture.json) and needs a list of summary-and-description notes that names
+  every closed ticket and none of the open ones, then deletes the added ticket; an
+  llm_judge scores whether the output looks like release notes for a product feature.
+  The prompt keeps the scenario's wording and adds the VAT task's run consent and
+  headless lines. Skipped until the run tenant has one Jira and one OpenAI connection
+  and fixture.json is seeded (seed_jira_fixture.py); run it with --include-skipped.
+tags: [uipath-api-workflow, e2e, mode:build, lifecycle:generate, outcome-graded, connector, feature:registry]
+
+skip: true
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Based on one or more epic tickets from Jira, I want to build release notes of relevant
+  tasks underneath. So the goal is to pull in every ticket and it's contents for each of
+  the epics. Then run them through openAI and eventually return a list of short summary
+  and description release notes.The tickets we pull from the EPIC should be in a closed
+  status. What's in progress we don't care about
+
+  You have my consent to run the workflow, signed in, to test it.
+  Do NOT ask for approval, confirmation, or feedback.
+  Do NOT pause between planning and implementation.
+
+success_criteria:
+  - type: run_command
+    description: "Release notes for the fixture epics name every closed ticket, one of them created at grading time, and none of the open ones (live Jira and OpenAI)"
+    command: "python3 $REFERENCE_DIR/golden/jira_release_notes/check_release_notes.py"
+    timeout: 420
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: llm_judge
+    description: "The output looks like the release notes for a product feature"
+    files: ["golden-output/release_notes.json"]
+    include_reference: false
+    prompt: |
+      golden-output/release_notes.json holds `workflow_output`, the output of an API
+      workflow that turns the closed Jira tickets under one or more epics into release
+      notes, next to `closed_tickets`, the tickets it was given, and
+      `tickets_to_leave_out`, the ones that are not closed.
+
+      Score 1.0 when `workflow_output` reads like the release notes for a product
+      feature: a list of entries, each a short summary and a description written for
+      the people who use the product, covering the closed tickets and none of the
+      tickets to leave out.
+      Score 0.5 when it is recognisably release notes but entries lack a summary or a
+      description, repeat the raw ticket text, or one closed ticket is missing.
+      Score 0.0 when `workflow_output` is null or empty, is not release notes, or
+      includes a ticket to leave out.
+    weight: 5.0
+    pass_threshold: 0.7
+
+  - type: run_command
+    description: "Informational: the project passes static validation"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | LC_ALL=C sort | head -1); test -n "$WF" && uip api-workflow validate "$WF" --output json | grep -q ''"Status": "Valid"'''
+    timeout: 30
+    expected_exit_code: 0
+    weight: 0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Informational: reaches Jira and OpenAI through their Integration Service connectors"
+    command: 'WF=$(find . -name Workflow.json -not -path "./Workflow.json" -not -path "*/node_modules/*" | LC_ALL=C sort | head -1); test -n "$WF" && grep -q "uipath-atlassian-jira" "$WF" && grep -q "uipath-openai-openai" "$WF"'
+    timeout: 10
+    expected_exit_code: 0
+    weight: 0
+    pass_threshold: 1.0
+
+run_limits:
+  expected_turns: 24
+  max_turns: 80

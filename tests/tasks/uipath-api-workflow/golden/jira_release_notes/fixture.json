@@ -1,0 +1,66 @@
+{
+  "project_key": "CE",
+  "epics": [
+    {
+      "key": null,
+      "summary": "Invoice Hub 2.4",
+      "children": [
+        {
+          "key": null,
+          "status": "done",
+          "summary": "Export the invoice list to CSV",
+          "description": "Finance users can export the filtered invoice list to a CSV file from the Invoices page. The export keeps the current sort order and column selection.",
+          "markers": ["CSV"]
+        },
+        {
+          "key": null,
+          "status": "done",
+          "summary": "Sign in with Okta single sign-on",
+          "description": "Workspace admins can turn on Okta single sign-on so that people sign in with their company account instead of a separate password.",
+          "markers": ["Okta"]
+        },
+        {
+          "key": null,
+          "status": "done",
+          "summary": "Show the VAT breakdown on receipts",
+          "description": "Receipts list the VAT rate and the VAT amount for every line item, and the VAT total above the grand total.",
+          "markers": ["VAT"]
+        },
+        {
+          "key": null,
+          "status": "in_progress",
+          "summary": "Move invoice storage to the Zephyrus ledger",
+          "description": "Migrate stored invoices to the Zephyrus ledger service. Still in progress; not part of this release.",
+          "markers": ["Zephyrus"]
+        }
+      ]
+    },
+    {
+      "key": null,
+      "summary": "Expenses mobile app 1.8",
+      "children": [
+        {
+          "key": null,
+          "status": "done",
+          "summary": "Offline mode for the expense list",
+          "description": "The expense list opens without a network connection and syncs changes once the phone is back online.",
+          "markers": ["offline"]
+        },
+        {
+          "key": null,
+          "status": "done",
+          "summary": "Unlock the app with Face ID",
+          "description": "People can unlock the expenses app with Face ID instead of typing their PIN.",
+          "markers": ["Face ID"]
+        },
+        {
+          "key": null,
+          "status": "todo",
+          "summary": "Narwhal colour theme",
+          "description": "Add the Narwhal colour theme to the appearance settings. Not started.",
+          "markers": ["Narwhal"]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+experiment_id: autopilot-golden
+description: >
+  Autopilot golden scenarios: Autopilot through coder-eval's built-in
+  Delegate agent on GPT-5.6 Luna at xhigh reasoning effort, with 8
+  replicates per task. Setup and run command: tests/README.md,
+  Experiment Configs.
+
+defaults:
+  repeats: 8
+
+  run_limits:
+    turn_timeout: 1800
+    task_timeout: 2400
+
+  sandbox:
+    driver: docker
+    docker:
+      image: skills-image:latest
+      env_passthrough_extra:
+        - SKILLS_REPO_PATH
+        - UIPATH_CLI_ENABLE_ENV_AUTH
+        - UIPATH_CLI_AUTH_TOKEN
+        - UIPATH_CLI_ORGANIZATION_NAME
+        - UIPATH_CLI_ORGANIZATION_ID
+        - UIPATH_CLI_TENANT_NAME
+        - UIPATH_CLI_TENANT_ID
+        - CODEX_API_KEY
+        - CODEX_BASE_URL
+      extra_mounts:
+        - ~/.uipath:/.uipath:rw
+
+  agent:
+    type: delegate
+    sdk_options:
+      effort: xhigh
+    plugins:
+      - type: "local"
+        path: "$SKILLS_REPO_PATH"
+
+  checker_context:
+    api_route:
+      route: litellm
+      model: gpt-5.6-luna
+      params:
+        api_version: "2024-05-01"
+        num_retries: 5
+      env_params:
+        api_base: CODEX_BASE_URL
+        api_key: CODEX_API_KEY
+
+  post_run:
+    - command: "find . -maxdepth 5 -type d \\( -name node_modules -o -name .npm-prefix -o -name .venv \\) -prune -exec rm -rf {} +"
+      timeout: 30
+
+variants:
+  - variant_id: luna-xhigh
+    description: "GPT-5.6 Luna, xhigh effort"
+    agent:
+      model: gpt-5-6-luna
