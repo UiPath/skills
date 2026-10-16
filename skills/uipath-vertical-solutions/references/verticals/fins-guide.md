@@ -83,7 +83,7 @@ uip admin groups list --output json                                   # which gr
 uip admin groups create "<GROUP_NAME>" --output json                  # a missing group
 uip admin users list --search "<NAME_OR_EMAIL>" --limit 10 --output json   # a member's user id
 uip admin groups members add <GROUP_ID> --user-ids "<USER_ID_1>,<USER_ID_2>" --output json
-uip admin groups members list <GROUP_ID> --output json                # check
+uip admin groups members list <GROUP_ID> --all --output json          # check
 ```
 
 In the portal: **Admin**, then **Accounts & Groups**, then **Groups**, then **Add group**.

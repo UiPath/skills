@@ -30,7 +30,7 @@ Group IDs are positional, not flags. Run `groups get <GROUP_ID>`, not `groups ge
 | `create` | `uip admin groups create "<GROUP_NAME>" --output json` | `<GROUP_NAME>` required; unique within a partition | `GroupCreated` |
 | `update` | `uip admin groups update <GROUP_ID> --name "<NEW_NAME>" --output json` | `<GROUP_ID>` required, UUID; `-n, --name <name>` required | `GroupUpdated` |
 | `delete` | `uip admin groups delete <GROUP_ID> --output json` | Only custom groups can be deleted; built-in groups cannot | `GroupDeleted` |
-| `members list` | `uip admin groups members list <GROUP_ID> --output json` | `<GROUP_ID>` required, UUID; `-l, --limit <number>` (default `50`); `--offset <number>` (default `0`) | `GroupMembers` |
+| `members list` | `uip admin groups members list <GROUP_ID> --all --output json` | `<GROUP_ID>` required, UUID; `--all` fetches every member (up to 10,000) and conflicts with the next two; `-l, --limit <number>` (default `50`); `--offset <number>` (default `0`). Returns `Pagination`, plus a `Warning` when the rows are not the whole group — see [group-management.md](group-management.md#pagination-for-members) | `GroupMembers` |
 | `members add` | `uip admin groups members add <GROUP_ID> --user-ids "<USER_ID_1>,<USER_ID_2>" --output json` | `<GROUP_ID>` required; `--user-ids <ids>` required, comma-separated UUIDs. Run `users list` first to resolve IDs. | `GroupMembersAdded` |
 | `members revoke` | `uip admin groups members revoke <GROUP_ID> --user-ids "<USER_ID>" --output json` | `<GROUP_ID>` and `--user-ids <ids>` required | `GroupMembersRevoked` |
 

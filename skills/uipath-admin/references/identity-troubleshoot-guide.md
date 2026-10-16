@@ -57,10 +57,12 @@ uip admin users list --search "<email>" --output json   # read GroupIDs on the m
 If the group that carries the role is absent from `GroupIDs`, the gap is membership —
 not the role or its scope.
 
-Do **not** decide this from `groups members list <GROUP_ID>`: it returns a single
-50-entry page and gives no sign that more members exist, so a user on a later page
-reads as a non-member. If you use it anyway, page with `--limit`/`--offset` to the end
-before drawing any conclusion ([group-management.md](group-management.md#pagination-for-members)).
+Do **not** decide this from `groups members list <GROUP_ID>` without `--all`: it
+returns a single 50-entry page, so a user on a later page reads as a non-member. If
+you use it, pass `--all` and confirm `Pagination.HasMore` is `false` before drawing
+any conclusion ([group-management.md](group-management.md#pagination-for-members)).
+The account-side lookup above stays the better route: one call, no cap, and it works
+on a CLI too old to have `--all`.
 
 Reporting the gap is where this ends. Adding the user to the group is a change the
 user decides on and asks for — never something you do to clear the error (SKILL.md
