@@ -1,0 +1,112 @@
+task_id: skill-test-schedule-list-smoke
+description: >
+  Smoke test: the agent lists the test set schedules in a project and reports
+  which are switched on. Exercises `uip tm schedules list` — the only read in
+  the domain, since there is no get-by-id — and checks the agent reaches for the CLI rather than inventing schedule state. The fixture seeds one
+  enabled schedule so the list is never empty; the agent is graded on calling
+  the list and on the login-first convention, not on any mutation.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:trigger]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 20
+
+pre_run:
+  - timeout: 300
+    command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys, datetime
+      P, SET = "CLAIM", "EVFX-SCHEDSMOKE-SET"
+      NAME = "EVFX-SCHEDSMOKE-DAILY"
+      CRON = "0 0 6 1/1 * ? *"
+      DETAILS = '{"type":4,"daily":{"atHour":6,"atMinute":0,"frequencyIndays":1}}'
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out = (r.stdout or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:300]}", flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def pick(d, *names):
+          for n in names:
+              if d.get(n):
+                  return d[n]
+          return None
+
+      def by_name(label, kind, name):
+          d = call(label, "tm", kind, "list", "--project-key", P, "--filter", name)
+          for x in (d.get("Data") or []):
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      def has_verb(*words):
+          return subprocess.run(["uip", *words, "--help"],
+                               capture_output=True, text=True).returncode == 0
+
+      if not has_verb("tm", "schedules", "list"):
+          fail("this CLI has no 'uip tm schedules list' - needs the release "
+               "carrying the test set schedule verbs")
+
+      ts = by_name("set.find", "testsets", SET)
+      if not ts:
+          call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
+          ts = by_name("set.refind", "testsets", SET)
+      if not ts:
+          fail(f"could not create or find {SET}")
+      set_id = ts.get("Id")
+
+      # Seed one enabled schedule if absent, so the list the agent reads is
+      # never empty. Asserting the PROPERTY (an enabled EVFX-SCHEDSMOKE-DAILY
+      # exists) leaves a healthy fixture untouched and self-heals a drifted one.
+      d = call("sched.list", "tm", "schedules", "list", "--project-key", P, "--limit", "200")
+      row = next((r for r in (d.get("Data") or []) if r.get("Name") == NAME), None)
+      if not row:
+          start = (datetime.datetime.now(datetime.timezone.utc)
+                   + datetime.timedelta(days=2)).strftime("%Y-%m-%dT%H:%M")
+          call("sched.create", "tm", "schedules", "create", "--project-key", P,
+               "--test-set-id", set_id, "--name", NAME, "--cron", CRON,
+               "--cron-details", DETAILS, "--timezone", "UTC", "--start-time", start)
+          d = call("sched.verify", "tm", "schedules", "list", "--project-key", P, "--limit", "200")
+          row = next((r for r in (d.get("Data") or []) if r.get("Name") == NAME), None)
+      if not row:
+          fail(f"could not seed {NAME}")
+      print(f"FIXTURE: ready seeded={NAME}", flush=True)
+      EOF
+
+initial_prompt: |
+  In my UiPath Test Manager project CLAIM, which test set schedules are set up,
+  and which of them are currently switched on? Just list them for me.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent listed the project's schedules through the CLI as JSON"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+schedules\s+list\b(?=(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*--project-(?:key[=\s]+CLAIM|id[=\s]+\S))'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not reach past the CLI to the schedule REST route"
+    tool_name: "Bash"
+    command_pattern: '(?i)(curl|wget)(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*testsetschedules?\b'
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0

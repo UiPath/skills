@@ -1,0 +1,89 @@
+# Test Execution Guide — test components at build
+
+A genome with test components adds to [execution-guide.md](execution-guide.md) the test cases' shape and data and, for a suite extracted with its checkpoints, the parity with the source's results.
+
+## Test cases
+
+**Test components** follow the owning skill's testing guidance for shape and registration (Given-When-Then, data sources, test-case registration in the project manifest). Genome-specific rules on top: each case's data source is where § Test data keeps its data set; a source loop over data rows becomes the data source's variations with an execute-flag skip gate inside the case; constants live in the shared configuration workflow ([genome-format-guide.md § Interface](genome-format-guide.md)); checkpoints and captures are verify activities (§ Result parity rules 2–3); the case's own checkpoints and the checks the genome's rebuild text adds are its verifies, so a case whose criterion sits in the steps it calls ends with no verify of its own; every case records a one-line result the business consumer can read.
+
+## Rules
+
+1. **Migrate test data from the data catalog by default.** Seed records and variation files are filled from it by a scripted, reviewable mapping from source columns to entity fields or test-case arguments, never by hand (§ Test data). Generated placeholder rows are a temporary state, not a deliverable.
+2. **A variation file's argument set is frozen during data migration.** Mappings place source values onto the test cases' existing arguments; a value with no argument goes to the project's configuration workflow or argument defaults and is listed as `unmapped`. Source row counts and execution flags replace generated ones. Never widen a test case's argument set to fit the source layout.
+
+## Result parity — making a UiPath run comparable with the source's
+
+Whether a migrated suite reproduces the source's results is decided by whoever can compare runs — against a fresh source run when the source still executes, or against the last result log the export carries when it does not. That comparison is not the skill's job, nor is verifying the outcome. The skill's job is to make it possible: the built automation asserts at the source's checkpoints under the source's ids, attaches evidence named by those ids, and ships a mapping table saying which UiPath assertion and which artifact stand for each source checkpoint. The table is **static** — derived from the workflows before any run — one per test case, kept with the project (`<build>/migration/parity/<TestCase>.md`):
+
+| # | Source checkpoint | Expected | UiPath assertion | Evidence | Compare |
+|---|---|---|---|---|---|
+| 12 | step 12 (id 4471) — verify requisition status after submit | `Successfully Completed` | Verify Expression With Operator `[CP 12] Requisition status`, Equality, on the status cell's text read after "Click Submit" | the assertion's screenshot; log `[CP 12] status: expected Successfully Completed, got Successfully Completed` | equals |
+| 19 | step 19 (id 4488) — screen capture after the position opened | position page shown | Verify Expression on True `[Capture 19] Position page` after "Click OK" | the assertion's screenshot | present |
+| — | none | — | pick acceptance: `VerifyOptions` Appears on "Type Location", target: the field's value display | none | added |
+
+Rules:
+
+1. **Every source checkpoint has a row.** A checkpoint is a source step that asserts something (verify, compare, visible, cell check, a row search whose miss fails the step), a step the source's result log records as a check, or a capture the source took where the state was meant to be inspected; the source guide's § Evidence says which of its step kinds count. A check whose failure the source logs as a pass or ignores is not a checkpoint, a check inside a loop asserts on every pass, and a check on one branch asserts only on that branch. Extraction lists them per workflow step in the Source Map's Checkpoints row ([extracted-genome-guide.md § Source Map](extracted-genome-guide.md)). No checkpoint list, no parity.
+2. **Every row names the UiPath construct that asserts the same thing:** the verify activity the owning skill's testing guidance gives for that kind of check — for a value on screen, the verify that wraps the read — with the source's operator and case rule under the testing package's comparison rules (the normal case), or a Check activity where the source branched ([ui-verification-guide.md](ui-verification-guide.md)). The verify sits at the checkpoint's source point, in When or in a workflow the case invokes, and stops the case where the source's failure ends it; the case's Then holds the final success criterion the case's own steps check, or only its result line when the steps it calls carry the checks. A custom check — a comparison in code and a throw, a Check activity and a log line — records no assertion, so its row is `not asserted`. A checkpoint with no counterpart is a row marked `not asserted` with the reason; the report counts them.
+3. **Evidence per checkpoint, findable by id.** Each checkpoint's verify carries the id in both texts Test Manager stores: its title, `[CP <id>] <what>`, and its message format, which shows the expected and the observed value (`[CP 12] status: expected Successfully Completed, got {…}`). The verify logs that message itself, at Info on pass and at Error on fail, so a run's log reads row by row against the table and against the source's result log with no log line of the build's own. The failure screenshot is on for every verify. The success screenshot is on only where the source captured at that point — a capture right after the checkpoint is that checkpoint's screenshot — so the rebuild captures where the source did and nowhere else. A source capture that is no checkpoint is a verify on True titled `[Capture <id>] <what the screen shows>`, its success screenshot on: the screenshot reaches the result as a checkpoint's does — evidence, not a parity row — and it never fails where the source checked nothing. A verify's screenshot covers what the testing package captures, not the source's capture mode (the owning skill's testing guidance): where the source captured one window or one element, the checkpoint's Evidence cell and the report say what the screenshot covers instead. The verify properties behind these texts: the owning skill's testing guidance. A library whose steps hold checkpoints or captures depends on the testing package.
+4. **The compare rule is the source's own criteria** carried over — equals, contains, present, absent, count — never tightened or loosened.
+5. **Assertions the source never had are rows marked `added`:** the pattern verifications [ui-target-migration-guide.md § Composite interactions](ui-target-migration-guide.md) requires (pick acceptance the source did not verify) and the checks the genome's rebuild text states. A build adds none of its own. They do not count toward parity; they are listed so the reviewer sees the difference.
+6. **Generated, not typed.** The verify titles carry the checkpoint id, so the table is produced by the executor's own script from the genome's Checkpoints rows of the case and of every step it calls, matched by id against the workflows' verify titles: a listed checkpoint with no verify is `not asserted`, and a verify carrying a listed id is never `added`. It needs no run, and is regenerated after every change. A table maintained by hand drifts from the project within one edit. The columns above and the counts line (`source checkpoints N, asserted N, not asserted N, added N`) are the schema every generator writes, so tables from different runs and executors read alike; the script lives in the build's `migration/` folder beside the tables it writes.
+
+The completion report states, per test case: source checkpoints, asserted, not asserted (with reasons), added, and where the tables are. It does not claim parity — only a comparison of runs can make that statement, and it belongs to the reviewer who holds a source result.
+
+## Test data — pipeline
+
+**The rebuild keeps a data set where the source kept it.** A data set the source reads from a store outside its project — a test-management database's recordsets, a database table — is edited by its owners without a release, read when each run starts, and may be written by the run itself. One the project ships as files (variation files, fixtures, a sheet in the repository) changes only with the project. The first becomes records of a Data Fabric entity (§ Data kept in a store), the second a variation file per test case (§ Data shipped with the project). The source guide's § Test Data says where its data lives; an authored genome keeps its data where the description puts it, in project files otherwise.
+
+| Step | Output |
+|---|---|
+| 1. Decode the data catalog | data sets as named rows (schema = layout variables, in column order); per data set the root that runs with it, the calls that bind it (mode, filter) and the steps that write it |
+| 2. Per data set, decide its home and the mapping | store: its entity, the field per column, its seed records; files: per data file its source data sets and rows, per argument its source variable (with transform when needed), join, constant, lookup into another data set, or default |
+| 3. Check coverage, then migrate | every column or argument has a rule, credentials refused, rows rewritten, coverage report per entity or file (migrated / kept / missing) |
+| 4. Rebuild the project | data is not compiled; rebuild once to catch argument or field drift |
+
+Report per project: rows and cells migrated, values kept at defaults and why, source values with no counterpart (and where they went), source quirks carried over (typos, wrong-field values, historical worker names, stale run dates). Historical run dates and worker names must be refreshed before a run on a live tenant; say so in the report.
+
+### Data kept in a store
+
+1. **One entity per schema, not per data set.** Data sets of one schema share its columns, so one entity holds them all: a field for the data set's name, one for the row number (the source's row order, a number field), then one text field per column. Every column is text: a typed field changes a value as the source held it (a decimal loses its scale, a date its format), and a source that types its values into screens as text keeps parity only as text. A step that needs a number or a date parses the text there, under the source's format. Field names follow Data Fabric's name rules (`uipath-platform`), the display name is the source column as written, and the report lists the mapping. A credential column becomes `<Column>Asset`, holding the asset name ([source-migration-guide.md § Credentials](source-migration-guide.md)).
+2. **Every data set of the schema lives in its entity**, whatever reads or writes it — a root's own, one a call binds, one the run writes — so a data set several cases share is one set of records, as in the source.
+3. **The entity exists in the connected tenant before a workflow that uses it is written**, as the Data Fabric scaffolding answer decides ([execution-guide.md § 1.3](execution-guide.md)). An entity deleted or renamed in the tenant drops its type at the next install into a project, so every workflow using it stops compiling: entity names are a contract. Create one entity first and carry it through the install, a workflow that uses it, validate, build and a local run; create the rest once that chain holds.
+4. **Seed:** one JSON file per entity in the test project's `TestData/` folder, records keyed by field names, generated by script from the data catalog with credential columns holding asset names, and versioned with the project — the baseline a re-seed restores. It is loaded with the record insert from a JSON file, in batches the insert accepts, never through a CSV import, which loses text holding line breaks or quotes (`uipath-platform`).
+5. **A root's data set is its test case's data source.** The case binds to the entity filtered on the data set's name — a data-driven cluster on any of its members' names — and every matching record is one variation, read when the run starts, so a record added or edited later runs with no republish. How the binding is written, and its limits: the owning skill's testing guidance. The argument has no default, so no copy of the data stays in the project. Three things the source did differently are reported, not rebuilt:
+   - a data set with no rows today: the case shows Failed without running until a record matches (an open item);
+   - more rows than the data source returns: the rows beyond it never run (a gap);
+   - rows that depend on one another through run-wide variables or the application's state, because the source ran every row in one session: each record runs as its own job. A dependency through a data set the run writes is kept, since that data set is in the entity.
+6. **A call that binds a data set queries the entity before the invoke**, with the data set's name and the call's filter as criteria, values from the caller's variables when the call starts, sorted by row number and paged per the query activity's doc. The callee then runs once per record in row order, each pass a step of the same test:
+
+   | Mode | Rebuild |
+   |---|---|
+   | Read | the query and the loop |
+   | Read and update | after each pass, an update of that record with the columns the callee wrote |
+   | Append | a loop that creates a record from the callee's outputs, row number = count + 1, until the callee exits |
+   | Clear and append | the data set's records deleted first, then append |
+
+   No record matches → the call does what the source guide says the source does; a skipped call is no invoke and a Warn log line naming the callee, the data set and the criteria with their values. A no-match in today's data is a fact the genome states, not a source defect: the call keeps its query, so a record that matches later runs the callee with no change.
+7. **A data set the run writes is written to the entity as the source writes it:** a clear deletes its records, an append creates the next row number, a read by position queries by row number and keeps a cursor, and a save-now or reload command builds nothing, since every write is stored at once. A write whose semantics the source guide leaves open is unresolved and asked.
+8. **Isolation.** Tests that write a shared data set do not run in parallel, or write under a data-set name per run — the source's own idiom when it builds the name from the date or the user.
+
+### Data shipped with the project
+
+Each data-driven test case gets one variation file in the owning skill's format, filled by the scripted mapping (rule 1) from its source data sets. Recurring transforms: organisation-with-manager strings (`Org (Manager)` → org, manager), On/Off → boolean, country → region code, dates normalised, placeholder markers (`^`) → empty, user name → credential asset name and tenant URL.
+
+**When the source row is wider than the analyzer's argument cap.** A data-driven test case binds its variation file to its arguments **by name**, so the column set and the argument set are one set: a row of thirty source columns is a case with thirty arguments, and the workflow-analyzer rule that caps arguments (`ST-DBP-002`, Error severity, so it fails analyze and pack but not validate) is breached by the data, not by the authoring. The cap is a default best practice written for hand-authored workflows; no project setting changes it — rule settings live in the user's analyzer configuration or a governance policy — and the pack command's governance-file option is accepted and then ignored. Resolve it in this order, and never by the last two:
+
+1. Drop columns the case never reads — a variation column with no `row:` reference is dead weight, and trimming them is free.
+2. Move values that are **environment**, not scenario, into the shared configuration workflow (asset names, tenant URLs) — rule 2's normal route.
+3. Still over: accept the finding. Record it as an accepted analyzer error with the reason, pack that project with the rule ignored (the analyze and pack commands' ignored-rules option, which a tenant governance policy overrides), and list the findings verbatim in the report ([execution-guide.md § 1.5](execution-guide.md) item 1 — decide with the user and record the decision). The analyzer runs first without the option so the findings are captured. Every later pack needs the same option, or a policy that disables the rule: an open item.
+4. **Not** by dropping source data to fit, and **not** by moving per-scenario values into configuration — either one makes the case stop testing what the source tested, which is the whole point of the migration.
+
+## Anti-patterns
+
+1. Authoring test rows from genome defaults when the Source Map names a reachable export (rule 1).
+2. Widening a test case's argument set to fit the source layout instead of mapping onto the existing arguments and configuration defaults (rule 2).
+3. Reporting a test migration done without the result parity table, or with a hand-typed table; evidence not findable by checkpoint id is not comparable evidence (§ Result parity).
+4. Dropping source data, or moving per-scenario values into configuration, to get a data-driven test case under the argument cap (§ Test data).
+5. Copying a data set the source kept in a store into variation files or argument defaults, typing its columns, or reporting a filter that matches no row today as a source defect (§ Test data, Data kept in a store).
+6. Asserting a test project's checkpoint with `VerifyOptions`, or with a Check activity and a log line, or attaching its evidence through a screenshot workflow of the build's own ([ui-verification-guide.md](ui-verification-guide.md), § Result parity rule 3).

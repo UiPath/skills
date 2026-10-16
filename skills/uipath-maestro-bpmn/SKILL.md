@@ -57,6 +57,10 @@ untouched. Never normalize existing nodes to this skill's canonical templates:
 do not add missing attributes (e.g. `type="json" target="bodyField"` on an
 existing `uipath:input`) to elements the edit does not target — on untouched
 neighbors only wiring (`bpmn:incoming`/`bpmn:outgoing`) may change.
+Exception: `validate` errors on a payload with a `type` attribute or outside
+`<bpmn:extensionElements>`, and on an `Orchestrator.StartAgentJob` whose type
+version is not `v2` and whose `releaseKey` or `folderId` has no value. Rewrite
+those payloads per rule 6 and name each in the summary.
 
 For an existing ScriptTask, preserve its mapping discriminator and
 `uipath:scriptVersion`, and do not normalize a working brownfield node merely
@@ -297,7 +301,7 @@ Draft mode only.
    `for t in TypeA TypeB TypeC; do uip maestro bpmn registry get "$t" --output json; done`.
    Enrich `Intsvc.*` connector nodes with `--connection-id`/`--object-name`; take
    `--object-name` from the table in
-   [references/registry-workflow.md](references/registry-workflow.md#picking-the-object-take-it-from-the-table-do-not-infer-it)
+   [references/registry-workflow.md](references/registry-workflow.md#picking-the-object-the-table-first-then-the-parameters)
    — a connector exposes several objects per operation and `describe` does not
    rank them. Do not call `registry get` for structural
    gaps the registry never owns: sequence flows, gateways, events, boundary
@@ -305,7 +309,7 @@ Draft mode only.
    diagrams. On every `bpmn:` tag you paste, opening and closing, lowercase
    the first letter after `bpmn:`: `<bpmn:UserTask>` → `<bpmn:userTask>`,
    `<bpmn:ServiceTask>` → `<bpmn:serviceTask>`. Preserve the `uipath:*`
-   payload exactly.
+   payload exactly, except per rules 6 and 18.
    `BPMN.ScriptTask` is the registry lookup key, but a new node serializes
    `<uipath:type value="BPMN.Variables" version="v1" />` — never the lookup
    key. Local validation accepts the older discriminator, so a clean
@@ -402,7 +406,7 @@ Draft mode only.
    - **Data Service files** use `UploadFileToRecordField`,
      `DownloadFileFromRecordField`, and `DeleteFileFromRecordField`, never the
      `V2` objects `uip is resources list` shows. See
-     [Picking the object](references/registry-workflow.md#picking-the-object-take-it-from-the-table-do-not-infer-it).
+     [Picking the object](references/registry-workflow.md#picking-the-object-the-table-first-then-the-parameters).
    - **`folderKey`** (`Intsvc.ActivityExecution` only). Keep the template's
      `folderKey` context input as `=bindings.<folderBindingId>` plus its
      folder binding on every node that binds a connection. Without it the run faults `102010` `Value cannot be
@@ -432,7 +436,8 @@ Draft mode only.
    artifact the CLI must supply.
    Run `uip maestro bpmn refresh <project-path>` after any edit that changes a
    start event id or adds or removes an entry point — **not only when packaging
-   or operating**. Lay the diagram out first (4d): `refresh` validates
+   or operating**; a trigger-start draft (below) is the exception. Lay the
+   diagram out first (4d): `refresh` validates
    before it writes, so a node you just added fails it with `MISSING_DI_SHAPE`. `operate.json` and `entry-points.json` are generated once and
    do not follow source edits, so 4e's validator fails on the mismatch:
    `entry-points.json references start event "Event_start" via filePath, but no
@@ -450,12 +455,20 @@ Draft mode only.
    synthetic local project. Every root **manual** start event needs a
    `<uipath:entryPointId value="<uuid>" />` child in its `extensionElements`;
    without one `refresh` fails the whole project `RetryWillNotFix` instead of
-   writing an empty entry-point list. A connector or timer start is not
-   manual, so a project that runs `refresh` or `pack` keeps the initializer's
-   manual start alongside it; only a source-only draft replaces it. Clearing
-   the resulting stale-entry error by editing or deleting `entry-points.json`
-   instead of running `refresh` passes `validate` and `pack` while shipping an
-   empty `bindings_v2.json`.
+   writing an empty entry-point list. When the request names a trigger as the
+   start and asks for no package-ready, upload, debug, publish, or deploy
+   deliverable, it is a trigger-start draft: turn the initializer's
+   `Event_start` into the trigger in place, keeping its id and its
+   `uipath:entryPointId` child, add no second start, and skip `refresh` (it
+   fails with no manual start), even after binding a connection;
+   `entry-points.json` stays valid. Any of those deliverables, including a
+   later one on such a draft, keeps the manual `Event_start`, gives the
+   trigger its own start id, joins the two per
+   [Gateways](references/structural-bpmn.md#gateways), and runs `refresh`.
+   A recurring timer is a `timeCycle` with an `R/` repeat (`R/P1D`), not the
+   template's `timeDuration`. Clearing a stale-entry error by editing or
+   deleting `entry-points.json` instead of running `refresh` passes
+   `validate` and `pack` while shipping an empty `bindings_v2.json`.
    Give public inputs and outputs explicit runtime bridges, and converge routes
    returning one result on a single completion EndEvent — for the two-layer
    contract see
@@ -542,8 +555,9 @@ Draft mode only.
    `project.uiproj`, re-run 4d and 4e, and refresh again — never repair the generated
    JSON by hand. Refresh after binding a connection (4a) and for a
    package-ready, upload, debug, publish, or deploy deliverable; a source-only
-   draft needs it only for 4c's start-event edits. For the full
-   contract (scope, idempotency, binding rules) see
+   draft needs it only for 4c's start-event edits, and a trigger-start
+   draft (4c) skips it. For the full contract (scope, idempotency,
+   binding rules) see
    [references/shared/local-metadata-regeneration-guide.md](references/shared/local-metadata-regeneration-guide.md).
 
 - **4g Show the finished process.** When the request allows an upload and the
@@ -625,14 +639,16 @@ and honestly surfaced to the user as gaps when asked.
    `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as
    the last write to the `.bpmn` and before `validate` or `refresh`, both of
    which error on a node with no shape.
-6. **Preserve the registry's node-type shape.** Most `uipath:activity` /
-   `uipath:event` / `uipath:mapping` templates declare their type as a nested
-   `<uipath:type value="<Type>" version="v1" />`. Some runtime-authored
-   templates use the payload's `type` attribute instead; notably,
-   `Orchestrator.StartAgentJob` is a direct child of `bpmn:ServiceTask` with
-   `<uipath:activity type="Orchestrator.StartAgentJob" version="v1">`. Both
-   declarations are supported. Paste the selected registry template literally
-   and do not normalize one form into the other.
+6. **Declare the node type as a `<uipath:type>` child.** Every
+   `uipath:activity` / `uipath:event` / `uipath:mapping` sits inside
+   `<bpmn:extensionElements>` and carries
+   `<uipath:type value="<Type>" version="<version>" />`. For a template with
+   `type` on the wrapper, remove the attribute, add the child, leave the
+   wrapper's own `version`, and wrap the payload in `<bpmn:extensionElements>`
+   if it has none; this overrides paste-as-is in 4b and 4c. Take
+   `<version>` from the template's `uipath:type`, else from
+   `uip maestro bpmn registry get <Type>`. `Orchestrator.StartAgentJob` takes
+   `v2`, binds `name`/`folderPath`, and drops `releaseKey`/`folderId`.
    Event extension types (`Intsvc.WaitForEvent`, `Intsvc.EventTrigger`,
    `Maestro.ReceiveMessageEvent`, `Maestro.SendMessageEvent`) must use
    `<uipath:event>`, including when the BPMN host is task-like such as
@@ -711,8 +727,8 @@ and honestly surfaced to the user as gaps when asked.
    (4) Pick the wrapper by `ProcessType`, read from
    `uip or processes list --folder-path <path> --all-fields --output json`
    ([registry-workflow.md](references/registry-workflow.md#agent-wrapper-selection--pick-by-processtype-not-the-label));
-   a low-code agent uses `Orchestrator.StartAgentJob`, whose template (rule
-   6) binds `name` and `folderPath`, not rule 18. For a rule-18 wrapper, read
+   a low-code agent uses `Orchestrator.StartAgentJob` (type `v2`, rule 6),
+   which binds `name` and `folderPath`, not rule 18. For a rule-18 wrapper, read
    the same response's `Key` and `FolderKey` (PascalCase, like the default
    list; the default list without `--all-fields` omits `ProcessType`) and
    bind per rule 18, never a fabricated or placeholder key. Re-read both
@@ -728,8 +744,8 @@ and honestly surfaced to the user as gaps when asked.
 18. **Job-wrapper registry templates (`Orchestrator.StartJob`,
    `ExecuteApiWorkflowAsync`, `StartAgenticProcess[Async]`,
    `StartCaseMgmtProcess[Async]`) serve an unresolved `releaseKey` that
-   validates but faults at runtime. This is the one exception to rule 6's
-   paste-literally.** For all of them, bind `releaseKey` via
+   validates but faults at runtime. This overrides paste-as-is in 4b
+   and 4c.** For all of them, bind `releaseKey` via
    `=bindings.<id>` to the resource's `Key`. For `ExecuteApiWorkflowAsync`
    only, also add a literal `folderKey` with the folder's `FolderKey` and
    drop `folderId`, `folderPath`, and `name`. For the others, keep the
