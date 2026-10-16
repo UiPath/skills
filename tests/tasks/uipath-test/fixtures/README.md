@@ -35,7 +35,7 @@ and therefore exact for this scheme.
 | `defect_traceability_integration` | its own per-run project | the `EVFX-DEFTRACE-*` namespace | Same per-run project pattern (`EVFX-DEFTRACE-<YYYYMMDD-HHMMSS>-<hex>`, key in `project-key.txt`): `EVFX-DEFTRACE-SET`/`TC1`/`REQ` with the requirement covering TC1, one Finished execution with TC1 `Failed`, and a defect on that result linked by hand to tracker issue `EVFX-DEFTRACE-1`; `post_run` deletes the project |
 | `defect_full_lifecycle_e2e` | its own throwaway project | the `EVFX-DEFFLOW-*` namespace | Nothing seeded, nothing persists — see [Self-contained build tasks](#self-contained-build-tasks). Does not grade `defects attachments download`: a manual result gives the defect no evidence (a file uploaded to the result with `attachment upload --object-type testCaseLog` does not appear under `defects attachments list`), so there is nothing to download |
 | `project_settings_smoke` | its own throwaway project | the `EVFX-PSET-*` namespace | `pre_run` creates one `EVFX-PSET-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago (so a concurrent run's project is never touched); `post_run` deletes it. The deliverable is a settings change, not the project, so the project is scratch (Rule 2). Unlike the self-contained build tasks, project create/delete is not under test here, so the hooks own the project's lifecycle and the agent never deletes it |
-| `run_package_ci_smoke` | its own throwaway project | the `EVFX-RUNPKG-*` namespace | Same hooks as `project_settings_smoke`: `pre_run` creates one `EVFX-RUNPKG-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans older than 6 hours; `post_run` deletes it, which also removes the execution and hidden test set `tm run --type package` creates. Runs, never changes, the package `TestCase_CrossPlatform_VB_Tests` (see [Run-package fixtures](#run-package-fixtures)); `pre_run` fails loudly if it is gone |
+| `run_package_ci_smoke` | its own throwaway project | the `EVFX-RUNPKG-*` namespace | Same hooks as `project_settings_smoke`: `pre_run` creates one `EVFX-RUNPKG-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans older than 6 hours; `post_run` deletes it, which also removes the execution and hidden test set `tm run --type package` creates. Runs the package `TestCase_CrossPlatform_VB_Tests`, uploading it when the folder feed lacks it; exits TENANT NOT READY on a tenant that cannot run it (see [Run-package fixtures](#run-package-fixtures)) |
 | `run_package_failing_smoke` | its own throwaway project | the `EVFX-RUNPKGFAIL-*` namespace | Same hooks as `run_package_ci_smoke`, in its own namespace so the two never sweep each other's projects. Runs the package `FailingTestCase_CrossPlatform_VB_Tests` |
 | `testcase_parameters_bulk_add_smoke` | HEALTH | `EVFX-PARAM-Login`, `EVFX-PARAM-Transfer` | Created if absent; `pre_run` clears their parameters each run and seeds `Username=keepme` on Transfer |
 | `testcase_parameters_edit_integration` | HEALTH | `EVFX-PARAMEDIT-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) and `Userid=u1` |
@@ -231,23 +231,30 @@ wait/report half of the task stays gradeable.
 
 ## Run-package fixtures
 
-`run_package_ci_smoke` and `run_package_failing_smoke` need a package the
-tenant can actually run. Set up once on the eval tenant (alpha `codereval` /
-`DefaultTenant`), not by the hooks:
+`run_package_ci_smoke` and `run_package_failing_smoke` run a real package, so
+the tenant must be able to run one. Both call
+`_setup/run_package_fixture.py seed`, which checks the tenant the run is
+logged in to:
 
-- **Packages** in the `uipath-test-folder-feed` folder feed:
-  `TestCase_CrossPlatform_VB_Tests` 1.0.0 (one test, passes) and
-  `FailingTestCase_CrossPlatform_VB_Tests` 1.0.0 (one test, always fails).
-  They are the cross-platform fixtures from UiPath/cli
-  (`packages/test-manager-tool/tests/test-data/ported-run-tests/`), uploaded
-  with `uip or packages upload <file> --folder-key <FOLDER_KEY>`.
-- **Robot:** the folder's `Default Serverless` machine has one Unattended
-  runtime, and the robot account `tm-eval-robot` is in the folder as
-  Automation User. Serverless robots need no machine credentials, but they
-  run cross-platform packages only: the Windows package
-  `Testcases.with.parameters` in the same folder stays Pending forever.
+1. **Folder** `uipath-test-folder-feed` is visible to the login.
+2. **Runtime:** a machine assigned to that folder has an Unattended or Test
+   Automation runtime. On Automation Cloud the simplest setup is the folder's
+   serverless machine with one Unattended runtime, plus a robot account in the
+   folder as Automation User. Serverless robots need no machine credentials,
+   but they run cross-platform packages only.
+3. **Package:** `TestCase_CrossPlatform_VB_Tests` or
+   `FailingTestCase_CrossPlatform_VB_Tests` is in the folder feed. When it is
+   missing, the script uploads it from `_setup/packages/`. These are the
+   cross-platform fixtures from UiPath/cli
+   (`packages/test-manager-tool/tests/test-data/ported-run-tests/`).
 
-Both tasks' `pre_run` fail with `FIXTURE: PROVISIONING FAILED` when their
-package is missing, so a broken fixture is not scored as an agent regression.
-With one runtime, parallel runs queue for it; a run takes about a minute, well
-inside the prompts' 10-minute budget.
+When the folder or the runtime is missing, or the upload is refused, `pre_run`
+exits with `TENANT NOT READY` on stderr, naming the tenant and what is missing,
+and the pass-rate gate in `smoke-skills.yml` drops the task. Automation Suite
+has no serverless robots, so it needs a self-hosted machine with an unattended
+robot and credentials before these tasks can run there.
+
+The alpha `codereval` / `DefaultTenant` eval tenant is set up this way: the
+`Default Serverless` machine has one Unattended runtime and the robot account
+`tm-eval-robot` is in the folder. With one runtime, parallel runs queue for it;
+a run takes one to three minutes, well inside the prompts' 10-minute budget.

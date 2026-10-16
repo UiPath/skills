@@ -1,6 +1,6 @@
 # Needs `uip tm run --type package` (UiPath/cli#4845, in `@uipath/cli@dev` and
-# every release after it), the package and robot described in
-# fixtures/README.md.
+# every release after it) and a tenant set up as in fixtures/README.md
+# (Run-package fixtures); on any other tenant pre_run exits TENANT NOT READY.
 task_id: skill-test-run-package-failing-smoke
 description: >
   Smoke test: agent runs every test in an uploaded package with
@@ -8,8 +8,8 @@ description: >
   is the cross-platform `FailingTestCase_CrossPlatform_VB_Tests` (one test
   that always fails), run by the folder's serverless robot. The skill teaches
   (Rule 10(d)) that exit 1 with `RunPackageTestsFailed` is a test result to
-  report, not a CLI error to retry. pre_run checks the package is there,
-  seeds a throwaway `EVFX-RUNPKGFAIL-*` project per run, and post_run deletes
+  report, not a CLI error to retry. pre_run checks the tenant can run it
+  (TENANT NOT READY otherwise), uploads the package when missing, seeds a throwaway `EVFX-RUNPKGFAIL-*` project per run, and post_run deletes
   it. Graded on the JUnit report on disk and on the tenant: the report's
   execution id must be a Finished execution in the seeded project, the report
   must record the failed test (as `<failure>` or `<error>`), and the project must hold exactly one execution,
@@ -21,56 +21,21 @@ run_limits:
   max_turns: 25
   turn_timeout: 1200
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+# The script checks the tenant can run the package (folder, runtime) and exits
+# TENANT NOT READY when it cannot, uploads the package from _setup/packages/
+# when the folder feed lacks it, and seeds the throwaway project.
 pre_run:
-  - command: |
-      python3 - <<'PYEOF'
-      import datetime, json, secrets, subprocess, sys
-      PREFIX = "EVFX-RUNPKGFAIL-"
-      now = datetime.datetime.now(datetime.timezone.utc)
-
-      def call(*a):
-          r = subprocess.run(["uip", *a, "--output", "json"],
-                             capture_output=True, text=True)
-          try:
-              return json.loads(r.stdout[r.stdout.index("{"):])
-          except Exception:
-              return {}
-
-      # The package is a one-time tenant fixture (see fixtures/README.md). If it
-      # is gone, fail loudly instead of scoring the agent on a run that cannot
-      # start.
-      pkg = call("or", "packages", "versions", "FailingTestCase_CrossPlatform_VB_Tests",
-                 "--folder-path", "uipath-test-folder-feed")
-      if not pkg.get("Data"):
-          print(f"FIXTURE: PROVISIONING FAILED - FailingTestCase_CrossPlatform_VB_Tests not in uipath-test-folder-feed: {pkg}")
-          sys.exit(1)
-
-      # Orphan sweep: a run that died before post_run strands its project.
-      # Only delete projects stamped more than 6 hours ago, so a concurrent
-      # run keeps its own.
-      for p in call("tm", "project", "list", "--filter", PREFIX).get("Data") or []:
-          name = p.get("Name") or ""
-          key = p.get("ProjectKey")
-          if not key or not name.startswith(PREFIX):
-              continue
-          try:
-              stamp = datetime.datetime.strptime(name[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
-          except ValueError:
-              continue
-          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
-              call("tm", "project", "delete", "--project-key", key, "--yes")
-
-      key = "EVRF" + secrets.token_hex(2).upper()
-      name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
-      out = call("tm", "project", "create", "--name", name, "--project-key", key)
-      if out.get("Result") != "Success":
-          print(f"SEED FAILED: could not create {name} ({key}): {out}")
-          sys.exit(1)
-      with open("project-key.txt", "w") as f:
-          f.write(key + "\n")
-      print(f"SEEDED project {name} with key {key}")
-      PYEOF
-    timeout: 180
+  - command: >-
+      python3 _setup/run_package_fixture.py seed --folder uipath-test-folder-feed
+      --package FailingTestCase_CrossPlatform_VB_Tests --nupkg FailingTestCase_CrossPlatform_VB_Tests.1.0.0.nupkg
+      --prefix EVFX-RUNPKGFAIL- --key-prefix EVRF
+    timeout: 240
 
 post_run:
   - command: |
