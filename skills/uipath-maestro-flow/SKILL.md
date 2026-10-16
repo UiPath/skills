@@ -213,7 +213,10 @@ The table is the authoritative router. Before writing a node, read its `Referenc
 ## Authoring a flow
 
 Choose each node from a registry search, never a brand name; ask when the
-request leaves a finite decision open; bind every declared output on every
+request leaves a finite decision open, including an input value, range, or
+combination no stated rule covers (never fold it into a stated value; with
+nobody to ask, map it to the most defensible stated value and list it under
+Open questions as **[REQUIRED]**); bind every declared output on every
 path (`check` misses a missing one, and the run returns `undefined`); handle an
 error only when the request says what should happen. The journeys, the
 scope gate for a request that names no steps, when to plan first, and the
