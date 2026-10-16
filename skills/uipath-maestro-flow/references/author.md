@@ -55,25 +55,28 @@ cannot make: which node, which topology, what an output means, and what to ask.
    for invalid input", "handle timeouts"); an unhandled failure must fault the
    run. A handler either genuinely recovers or reaches a terminal the caller
    can tell apart from success — a distinct `.return`, or `.terminate`.
-8. **Never invent the business meaning of a named output — ask.** When a
-   request names an output (`caseKey`, `severity`, `ticketId`) without saying
-   how to derive it, whether it passes through or is reformatted is the user's
-   rule. Ask, or state the assumption and confirm it. A guessed format compiles
-   and validates and returns the wrong value. Rules that cover only some input
-   values, ranges, or combinations leave the rest open: `High` for refunds over
-   $500 and `Low` under $50 leave $50 to $500 unassigned; `Sev1` when no
-   workaround is available leaves every case with a workaround unassigned. List
-   each uncovered case and ask; never fold it into a stated value or a default
-   the user did not give. With nobody to ask, choose the most defensible value
-   for each, rather than stopping, and list it in the final report.
+8. **Never invent the business meaning of a named output or an uncovered
+   input case — ask.** When a request names an output (`caseKey`, `severity`,
+   `ticketId`) without saying how to derive it, whether it passes through or
+   is reformatted is the user's rule. Ask, or state the assumption and confirm
+   it. A guessed format compiles and validates and returns the wrong value.
+   Rules that cover only some input values, ranges, or combinations leave the
+   rest open: `High` for refunds over $500 and `Low` under $50 leave $50 to
+   $500 unassigned; `Expedite` for an overdue order from a Gold customer
+   leaves overdue orders from every other tier unassigned. List each uncovered
+   case and ask; never fold it into a stated value or a default the user did
+   not give. With nobody to ask, the no-folding rule lifts: map each uncovered
+   case to the most defensible stated value rather than stopping, and list
+   each under Open questions as **[REQUIRED]**.
 9. **Present a finite decision as a list of options, with "Something else"
    last.** Which solution, which connector, which trigger, which resource to
    bind: ask with the enumerated choices, never as an open question. Without a
    structured-question tool, ask in chat as a numbered list. With nobody to ask
-   (CI, headless), take the recommended option and record it prominently in the
-   final report; if none is recommended, stop and report the open decision,
-   except an uncovered rule case (rule 8), which you still decide. Consent
-   gates — destructive operations, tenant writes — are never auto-answered.
+   (CI, headless), take the recommended option and record it prominently in
+   the final report; if none is recommended, stop and report the open
+   decision, except an uncovered rule case (rule 8), which you still decide.
+   Consent gates — destructive operations, tenant writes — are never
+   auto-answered.
 10. **Look for an existing solution before `uip solution init`.** Run
     `find . -maxdepth 2 -name '*.uipx'`. If one exists, ask which to use (one
     option per solution, "Create a new solution", then "Something else"); do
