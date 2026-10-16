@@ -138,7 +138,9 @@ equals the trigger's id. Give the new step a name of its own. (A child flow's
 steps are not checked against the caller's: a copy whose ids are taken is
 prefixed `<caller>_<step>`.) To send a
 second path to an existing step, end that path with `.stepToRef('<name>')`
-instead of adding the step again.
+instead of adding the step again. Needs `@uipath/maestro-builder-sdk` 6.32.4 or
+later; an older SDK silently renames the second step `<name>2`, so upgrade with
+`npm install -g @uipath/maestro-builder-sdk@latest`.
 
 An agent's context index, tool or escalation node keeps its identity the same
 way. A decompiled resource entry may carry `nodeId` (the resource node's id),
