@@ -6,9 +6,14 @@ description: >
   job starts, and the CLI's own hint suggests writing a description. Asserts
   rule 5 of references/requirement-ai-guide.md and SKILL.md Critical Rule 10:
   report the cause and stop; do not write a description to make the call
-  pass, and do not retry the 400. One requirement only, on purpose: with
-  two, an agent that correctly stops after the first failure (Rule 10)
-  never reaches the second, so the task graded the skill against itself.
+  pass, and do not retry the 400. Two paths are correct: start generation
+  and read the 400, or check the description and the attachments first and
+  never start. The 2026-10-16 nightly took both, codex the first and claude
+  the second, so the one positive gate accepts either; what fails the task
+  is a written description, a second start, or a changed requirement. One
+  requirement only, on purpose: with two, an agent that correctly stops
+  after the first failure (Rule 10) never reaches the second, so the task
+  graded the skill against itself.
   Graded on tenant state: the requirement is unchanged. The task owns the
   EVFX-AIBLOCK-* namespace; pre_run restores it every run. Spends no AI
   units.
@@ -38,10 +43,14 @@ initial_prompt: |
   requirement EVFX-AIBLOCK-NODESC.
 
 success_criteria:
+    # Either path is correct (rule 5): start the job and read the 400, or read
+    # the empty description and the attachment list first and never start.
+    # Grading only the start failed the second path at 0.86 (claude, nightly
+    # 2026-10-16) for doing what the guide asks.
   - type: command_executed
-    description: "Agent tried generation on EVFX-AIBLOCK-NODESC"
+    description: "Agent found out there is nothing for the AI to work from: it started generation on EVFX-AIBLOCK-NODESC and got the 400, or it checked the requirement's attachments before starting (rule 5)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)'
+    command_pattern: '(?:uip\s+tm\s+requirements?\s+generate-testcases(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--(?:activity-id|help))(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--requirement-(?:id|key)\s+\S)|uip\s+tm\s+attachments?\s+list\b)'
     min_count: 1
     weight: 1.0
     pass_threshold: 1.0
