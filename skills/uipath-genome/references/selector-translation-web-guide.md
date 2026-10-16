@@ -95,7 +95,7 @@ The column comes from the header caption: `colName` on web (`ui5-colLabel`, `sap
 
 `url` keeps the host and wildcards the path — a host the source reads from configuration (an environment switch) is a selector variable in the screen's scope, bound to that setting's scheme, host and port by an argument of every workflow whose card attaches to the screen, never the value the setting held at build, which stops every attach once the setting points elsewhere.
 
-On a single-page web application, one scope per window (rule 9) is the difference between one scope and thirty: the page title changes with every task, so title-derived scopes fragment into `'*App*'`, `'*App *'`, `'*App_Common*'`, `'Create Thing - App'` … each a separate object with its own failure mode, while the host never changed.
+On a single-page web application, one scope for its tab (rule 9) is the difference between one scope and thirty: the page title changes with every task, so title-derived scopes fragment into `'*App*'`, `'*App *'`, `'*App_Common*'`, `'Create Thing - App'` … each a separate object with its own failure mode, while the host never changed.
 
 | Technology | Scope on | Shape |
 |---|---|---|
