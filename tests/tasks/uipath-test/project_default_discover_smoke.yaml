@@ -48,14 +48,14 @@ success_criteria:
   - type: command_not_executed
     description: "Did not create or move the default project (no get-default, no --set-default)"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+project\s+(get-default\b(?!(?:(?!\n|&&|\|\||;|\|).)*\s(--help|-h)\b)|update\b(?:(?!\n|&&|\|\||;|\|).)*--set-default)'
+    command_pattern: '(?:uip|\$UIP)\s+tm\s+project\s+(get-default\b(?!(?:(?!\n|&&|\|\||;|\|).)*\s(--help|-h)\b)|update\b(?:(?!\n|&&|\|\||;|\|).)*--set-default)'
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Read the project list, where the default project comes first"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+project\s+list\b'
+    command_pattern: '(?:uip|\$UIP)\s+tm\s+project\s+list\b'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
