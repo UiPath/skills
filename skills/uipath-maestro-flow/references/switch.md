@@ -17,8 +17,9 @@ Prefer Switch when one discriminant selects three or more paths; Branch is
 usually clearer for two. Decide whether cases end independently or rejoin a
 shared successor.
 
-Cases compare strictly (`===`) from top to bottom. Each case gets a generated
-`case-<id>` port; the optional final callback uses `default`.
+Cases are tried top to bottom; a `value` case compares strictly (`===`) with
+`on`. Each case gets a generated `case-<id>` port; the optional final callback
+uses `default`.
 
 A case can carry its own condition instead of a value: ``{ when: js`...`, label?,
 body }``. The switch takes the first case whose condition is true. Pass
@@ -34,6 +35,10 @@ body }``. The switch takes the first case whose condition is true. Pass
 A case has exactly one of `value` or `when` (`SWITCH_CASE_FORM` otherwise), and
 a `value` case needs an `on`. Decompile writes `when` cases for a designer-drawn
 switch whose cases are not one shared `<discriminant> === <value>`; keep them.
+
+In a new flow, use `when` cases when each path needs its own condition (ranges,
+different fields) and there are three or more paths; two conditions are still a
+`.branch`.
 
 A decompiled switch the designer drew may carry `id: "default-1"` (and so on) on
 its cases. That keeps the case ids the original file has, so the merged edges
