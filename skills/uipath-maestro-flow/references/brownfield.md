@@ -179,6 +179,19 @@ with the same `source`: both would write one `resource.json`. Delete both
 the node with a new directory, so upgrade with
 `npm install -g @uipath/maestro-builder-sdk@latest`.
 
+A step's node id is its name with every character other than a letter, digit
+or `_` turned into `_` (`a b` gets id `a_b`), and compile never renames a step
+to make it unique. A new step whose name a step in the same flow already has
+is refused, even with `--no-check`: `DUP_STEP` for the same name,
+`STEP_ID_COLLISION` for a name that gives the same id (`a b` vs `a_b`) or that
+equals the trigger's id. Give the new step a name of its own. (A child flow's
+steps are not checked against the caller's: a copy whose ids are taken is
+prefixed `<caller>_<step>`.) To send a
+second path to an existing step, end that path with `.stepToRef('<name>')`
+instead of adding the step again. Needs `@uipath/maestro-builder-sdk` 6.32.4 or
+later; an older SDK silently renames the second step `<name>2`, so upgrade with
+`npm install -g @uipath/maestro-builder-sdk@latest`.
+
 A node type the SDK has no factory for still round-trips: it comes back as
 `rawNode({ nodeType, version, manifest, inputs })`, carrying the definition the
 file supplied, so the node keeps its type, its version and its inputs. Leave it
