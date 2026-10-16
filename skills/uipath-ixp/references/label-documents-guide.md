@@ -151,15 +151,19 @@ Occurrences not targeted carry forward whatever annotation they already had (so 
 **Confirm all the correct rows in one `--updates` call, not one `--occurrence` call per row** — every index in a single call resolves against the same read, whereas the second of two sequential calls is working from indices the first one invalidated ([Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped)):
 
 ```bash
+cat > /tmp/ixp/<project-name>/prompts/confirm_updates.json << 'EOF'
+[{"occurrence":0},{"occurrence":2,"fields":["c4e1907a3b8f25d6"]}]
+EOF
+
 uip ixp labellings confirm <project-name> <document-id> \
-  --group "Line Items" --updates '[{"occurrence":0},{"occurrence":2,"fields":["c4e1907a3b8f25d6"]}]' \
+  --group "Line Items" --updates-file /tmp/ixp/<project-name>/prompts/confirm_updates.json \
   -m <model_version> \
   --output json
 ```
 
 See [CLI Reference § Labellings](cli-reference.md#labellings) and Critical Rule 12.
 
-**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates '[…]'`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 13.
+**Per-occurrence unconfirm.** `unconfirm` takes the same `--group`/`--occurrence`/`--updates` flags, so a wrong confirmation can be rolled back at the same granularity. `unconfirm --fields a7c3e9105f2b4d86` (no `--group`) removes `a7c3e9105f2b4d86` from **every** occurrence; scope it to one line with `--group "Line Items" --occurrence 2`, or several at once with `--group "Line Items" --updates-file <path>`, using the same 0-based indices. Without `--fields`, every annotated field in the targeted occurrence(s) is rolled back; with `--fields`, only those. See Critical Rule 13.
 
 ```bash
 # Roll back only occurrence 2 of Line Items (every field in that line):
