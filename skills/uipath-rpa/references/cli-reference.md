@@ -27,7 +27,7 @@ The pattern works at every depth (`uip rpa uia <verb> --help`, `uip login --help
 
 ## Output format
 
-`--output` defaults to `json`; accepted values are `json`, `table`, `yaml`, and `plain`. Keep `json` for programmatic parsing; `table` can balloon to 100 KB+. `--output-filter "<JMESPath>"` filters the response envelope's `Data` field. Global `--log-level <debug|info|warn|error>` and `--log-file <path>` are available; raise the log level or add `--verbose` when diagnosing. Most envelopes are `{Result: "Success"|"Failure", Code, Data, Message?, Instructions?}`. Branch on `Result`, not stdout text.
+`--output` defaults to `json`; accepted values are `json`, `table`, `yaml`, and `plain`. Keep `json` for programmatic parsing; `table` can balloon to 100 KB+. `--output-filter "<JMESPath>"` filters the response envelope's `Data` field. Global `--log-level <debug|info|warn|error>` and `--log-file <path>` are available; raise the log level or add `--verbose` when diagnosing. Most envelopes are `{Result: "Success"|"Failure", Code, Data, Message?, Instructions?}`. Branch on `Result`, not stdout text: it says whether the command ran; what the command found is in `Data` (`validate`'s diagnostics: § validate).
 
 ## Authentication
 
@@ -140,6 +140,12 @@ Rules: `count=42` sends string `"42"`; `count:=42` sends number `42`. `debug tes
 
 `uip rpa validate` returns diagnostics for a file or project and revalidates by default. `--skip-validation` reads possibly stale cached results; `--min-severity` filters. Confirm flags with `uip rpa validate --help`. `--file-path` accepts a project-relative or absolute path with forward, back, or mixed separators; prefer the shorter relative form.
 
+`Result: Success` and exit code 0 mean validate ran, with or without findings. The diagnostics are the text of `Data.message`: `No diagnostics found.`, or `Found N error(s)[, M warning(s)]:` followed by one `[error]` or `[warning]` line per finding (file, message, activity).
+
+An activity that can run without a target reports no unset target: Type Into and Keyboard Shortcuts act on the focused element by design, so validate's "Target or Input UI Element must be set" errors are not a count of a file's target slots.
+
+Validate reads the entity types the project last generated. After a Data Fabric entity install changes the project's entities, run `build`: a workflow whose entity type the install removed still validates with no diagnostics, and build fails with `Cannot create unknown type`.
+
 ## build
 
 `uip rpa build` compiles every workflow in the project, not just files passed to `validate` (§ What each phase covers); it is required before returning a project (see [§ Project Build Verification](#project-build-verification-required-before-returning-a-project)). It takes the project directory positionally, runs independently of Studio IPC, and exposes log level, `skip-analyze`, governance, and NuGet-source flags through `uip rpa build --help`.
@@ -238,17 +244,17 @@ REPEAT:
 
 ```text
 REPEAT:
-  1. uip rpa build "<PROJECT_DIR>" --log-level Warn --output json
+  1. uip rpa build "<PROJECT_DIR>" --log-level Warn --detailed-log-path "<LOG_FILE>" --output json
   2. IF build has errors:
-     a. identify <OFFENDER> from build output
-     b. uip rpa validate --file-path "<OFFENDER>" --project-dir "<PROJECT_DIR>" --output json
+     a. <OFFENDER> and its activity are each error's FilePath and ActivityId.IdRef in <LOG_FILE>
+     b. uip rpa validate --file-path "<OFFENDER>" --project-dir "<PROJECT_DIR>" --output json   # compile errors only; an analyzer error is re-checked by the next build
      c. fix one root cause, GOTO 1
   3. EXIT to Smoke Test
 ```
 
 Per-file `validate` covers structural XAML, references, schema, members, enums, and expression compilation for one file. `build` covers every workflow, analyzer rules, and packaging. Neither replaces the other, and neither detects an attribute-form expression that silently becomes a literal; see [§ What each phase covers](#what-each-phase-covers).
 
-Target changed files with `validate --file-path`; `build` is project-scoped and names an offender for targeted revalidation. Each loop has a **5-attempt cap**: five Phase 1 attempts per file and a separate five Phase 2 attempts. After exhaustion, present remaining errors. Counters reset for a new file, user prompt, or resumed loop.
+Target changed files with `validate --file-path`; `build` is project-scoped; its stdout names an analyzer error by its activity only, and the detailed log (`--detailed-log-path`) gives every error's `FilePath` and `ActivityId` — re-run `validate --file-path` on that file for a compile error. Each loop has a **5-attempt cap**: five Phase 1 attempts per file and a separate five Phase 2 attempts. After exhaustion, present remaining errors. Counters reset for a new file, user prompt, or resumed loop.
 
 ### Rules
 
