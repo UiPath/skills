@@ -233,7 +233,9 @@ Run: <the owning skill's run command for the entry point>
 Open items: <top open-items file> (<n> setup steps for the target environment; open-items-guide.md)
 ```
 
-Extracted genomes add the healing-pass note: inferred targets are verified on the first run against the live application, and fixes go into the Object Repository element. They also name, as not built, the objects of the Source Map's `Not covered` row: building them is an extraction edit, then re-execution. Migrated test components add the checkpoint line per test case — `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` — and the path of the generated mapping tables ([test-execution-guide.md § Result parity](test-execution-guide.md)). The report does not claim results match the source; the tables make that comparison possible for whoever holds a source result.
+When a run the build made changed data in a target system or a store, the report lists each change with how to undo it, and nothing is undone unasked.
+
+Extracted genomes add the healing-pass note ([ui-target-migration-guide.md § Rules](ui-target-migration-guide.md), rule 2): the targets not yet verified live, listed by window, a target found only by its fallback counted as missed, and the healing pass offered to the user. They also name, as not built, the objects of the Source Map's `Not covered` row: building them is an extraction edit, then re-execution. Migrated test components add the checkpoint line per test case — `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` — and the path of the generated mapping tables ([test-execution-guide.md § Result parity](test-execution-guide.md)). The report does not claim results match the source; the tables make that comparison possible for whoever holds a source result.
 
 ### 3.4 Open items for the engineer
 
