@@ -89,3 +89,30 @@ The variations file lives at `.variations/{{variationName}}_Sheet1.json` with sh
   { "{{paramName}}": "value3" }
 ]
 ```
+
+### Test case bound to an execution template
+
+Template files live in `.templates\`. An execution template is its own entry, and a new-test-case template takes `templateType` `TestCase`:
+
+```json
+{
+  "templateType": "ExecutionTemplate",
+  "fileName": ".templates\\{{TemplateName}}.xaml"
+}
+```
+
+Each case it wraps adds two keys to its own entry:
+
+```json
+{
+  "editingStatus": "InProgress",
+  "testCaseId": "{{UUID_V4}}",
+  "testCaseType": "TestCase",
+  "executionTemplatePath": ".templates\\{{TemplateName}}.xaml",
+  "executionTemplateType": "Local",
+  "executionTemplateInvokeIsolated": false,
+  "fileName": "{{TestCase}}.xaml"
+}
+```
+
+Behaviour: [../references/testing-guide.md § Execution Templates](../references/testing-guide.md#execution-templates).

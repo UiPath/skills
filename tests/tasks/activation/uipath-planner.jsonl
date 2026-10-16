@@ -89,3 +89,6 @@
 {"id": "uipath-planner-089", "prompt": "Write the architecture doc for this automation before we implement anything", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-090", "prompt": "Given this PDF process design, propose project decomposition and write the SDD", "expected_skill": "uipath-planner"}
 {"id": "uipath-planner-091", "prompt": "Prepare a UiPath solution design from the PDD so a coding agent can build the projects next", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-092", "prompt": "Here is our month-end close SOP in ./docs/close-sop.md. Design the UiPath automation for it.", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-093", "prompt": "Use the BPMN model in ./design/claims-intake.bpmn as the design and plan how we build it in UiPath", "expected_skill": "uipath-planner"}
+{"id": "uipath-planner-094", "prompt": "We transcribed a walkthrough of the onboarding process in ./notes/onboarding-walkthrough.txt. Plan the UiPath implementation.", "expected_skill": "uipath-planner"}

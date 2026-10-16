@@ -41,6 +41,11 @@ import sys
 
 PLACEHOLDER_KEY = "placeholder"
 
+# The names a case plan takes on disk, newest first (the CLI's CasePlanFileNames).
+# Studio Web renames caseplan.json to caseplan.case on its first save; one plan per
+# project, the newest name winning. Never the `<plan>.bpmn` side-car.
+CASE_PLAN_NAMES = ("caseplan.case", "caseplan.json", "case.stage.json", "default.stage.json")
+
 # caseplan stores a connector key two ways: as a plain field, and as an entry in
 # a task's `context` array. Both occur in real builds; miss the second and a
 # fully-broken caseplan reports zero connector references.
@@ -88,10 +93,14 @@ def _sidecar_connections(project_dir):
 
 def check(solution_dir, quiet=False):
     solution_dir = pathlib.Path(solution_dir)
-    caseplans = sorted(solution_dir.glob("*/caseplan.json"))
+    by_project = {}
+    for name in CASE_PLAN_NAMES:
+        for found in solution_dir.glob(f"*/{name}"):
+            by_project.setdefault(found.parent, found)
+    caseplans = sorted(by_project.values())
     if not caseplans:
         if not quiet:
-            print(f"SKIP: no */caseplan.json under {solution_dir} — not a case solution")
+            print(f"SKIP: no */caseplan.case or */caseplan.json under {solution_dir} — not a case solution")
         return 0
 
     failures = []

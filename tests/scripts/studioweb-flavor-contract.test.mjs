@@ -239,3 +239,50 @@ test("the studioweb functions and coded-app flavors do not deny the QuickJS node
     assert.ok(skill.includes("QuickJS sandbox"), `${skillName} must say the shell's node is a QuickJS sandbox`);
   }
 });
+
+// The Studio Web panel has plan mode but no task tools. `EnterPlanMode` is
+// called before research (the host names the plan files and attaches its
+// authoring contract), `ExitPlanMode` puts the plan on the review card, and the
+// host derives the task list from the approved plan. A planner that tells the
+// agent to create tasks there, or to write a markdown plan, starts building with
+// no approval. Frontmatter is excluded: marker blocks cannot sit inside YAML, so
+// `description` and `allowed-tools` still carry the canonical text.
+const TASK_TOOLS = /\b(TaskCreate|TaskUpdate|TaskList|addBlockedBy)\b/;
+const RETIRED_PLAN_TOOLS = /\b(EnterPlan|ExitPlan)\b/;
+
+function plannerBodyLinesNaming(root, pattern) {
+  const plannerRoot = join(root, "uipath-planner");
+  const hits = [];
+  for (const file of markdownFiles(plannerRoot)) {
+    let text = readFileSync(file, "utf8");
+    if (file.endsWith("SKILL.md")) text = text.replace(/^---\n[\s\S]*?\n---\n/, "");
+    text.split("\n").forEach((line, index) => {
+      if (pattern.test(line)) hits.push(`${relative(plannerRoot, file)}:${index + 1}`);
+    });
+  }
+  return hits;
+}
+
+test("the built studioweb uipath-planner uses plan mode and no task tools", (t) => {
+  const output = buildStudioweb(t);
+
+  assert.deepEqual(plannerBodyLinesNaming(output, TASK_TOOLS), []);
+  assert.deepEqual(plannerBodyLinesNaming(output, RETIRED_PLAN_TOOLS), []);
+  const laneB = readFileSync(join(output, "uipath-planner", "references", "non-pdd-lane-guide.md"), "utf8");
+  assert.ok(
+    laneB.includes("Call `EnterPlanMode` as soon as the user picks this option"),
+    "explore-first must enter plan mode before discovery",
+  );
+  assert.ok(
+    laneB.includes("call `ExitPlanMode` with outcome `complete`"),
+    "explore-first must present the plan with ExitPlanMode",
+  );
+  const laneA = readFileSync(join(output, "uipath-planner", "references", "pdd-driven-lane-guide.md"), "utf8");
+  assert.ok(laneA.includes("1. Call `EnterPlanMode`."), "Lane A interactive review must enter plan mode");
+});
+
+test("the default uipath-planner keeps its task tools (the guard is not vacuous)", (t) => {
+  const output = buildDefault(t);
+
+  assert.ok(plannerBodyLinesNaming(output, TASK_TOOLS).length > 0);
+});

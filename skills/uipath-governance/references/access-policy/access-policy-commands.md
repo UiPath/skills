@@ -36,7 +36,7 @@ If not logged in:
 
 ```bash
 uip login                                          # interactive OAuth
-uip login --authority https://alpha.uipath.com     # non-production environments
+uip login --authority "<AUTHORITY_URL>"           # non-default host (Automation Suite, dedicated)
 ```
 
 For `evaluate`, login must target a specific tenant (not just an organization).

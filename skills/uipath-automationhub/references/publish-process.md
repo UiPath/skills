@@ -40,7 +40,7 @@ curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
 
 Parse `data.properties.schema.properties` for the field catalog (Assessment Type > Section > Question; note types, required flags, enum `answer_option` codes/labels) and keep `data.user_inputs` as the payload template. The process-name question (key contains `OVERVIEW_NAME`) is **required**.
 
-> ⚠️ **Do NOT POST `data.user_inputs` verbatim.** The template ships **example/placeholder values that the API rejects** — e.g. `OVERVIEW_CATEGORY: 1` (→ `Invalid Category Id`), a placeholder `PROCESS_DOCUMENTS` answer-option that triggers a backend `co_question_answer_option_value` crash, and `First.last@example.com` owner/submitter emails. Treat the template as **shape only** and replace every value with a real one (below).
+> ⚠️ **Do NOT POST `data.user_inputs` verbatim.** The template ships **example/placeholder values that the API rejects** — e.g. `OVERVIEW_CATEGORY: 1` (→ `Invalid Category Id`), an example `PROCESS_DOCUMENTS` answer that has nothing to do with the real documents, and `First.last@example.com` owner/submitter emails. Treat the template as **shape only** and replace every value with a real one (below).
 
 ## Step 4: Collect the inputs, then assemble the payload
 
@@ -54,7 +54,7 @@ The six baseline inputs:
 |---|---|
 | Process **name** | Ask the user. Non-empty; a duplicate name 409s. |
 | **Description** | Ask the user, or derive from the supplied material and confirm. |
-| **Category id** | `GET /hierarchy` → pick from `data.categories[]` (`category_id`, `category_name`, nested `subcategories`) — **only nodes with `category_is_active: 1`** (0 = archived). One clear fit → propose it; several plausible → `AskUserQuestion` with the names. **Never send the template's `1`.** (Works on an empty tenant — do not depend on an existing process.) |
+| **Category id** | `GET /hierarchy` → pick from `data.categories[]` (`category_id`, `category_name`, nested `subcategories`) — **only nodes with `category_is_active: 1`** (0 = archived). Pick the most specific node that fits the material, and **"Other" only when nothing fits**. "Other" is any node with `category_is_other: 1`, and each branch can carry its own (e.g. *Finance & Accounting › Other*), so skip those too. One clear fit → propose it; several plausible → `AskUserQuestion` with the names. **Never send the template's `1`.** (Works on an empty tenant — do not depend on an existing process.) |
 | **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by **label** (e.g. "Standard Operating Procedure") and send that `answer_option` code. Never reuse the template's placeholder code. |
 | **Owner email** | The **signed-in identity is the default owner** — take it from the auth/identity call, not from a list. `GET /users` is optional; if you use it, do a targeted lookup with `?s=<email>&invite=all` (both parameters — the default filter hides users who can still own a process) and treat a miss as no signal. **Never block the publish on it** — submit and let the API decide. |
 | **Submitter email** | Same recipe as owner; usually the same person. |
@@ -75,7 +75,7 @@ The six baseline inputs:
 }
 ```
 
-`application_name` required (1–50 chars); `application_version` (≤20), `application_language` (≤50), `application_comments` (≤512), `application_is_citrix_client` (boolean) optional; at most 20 per submission. Entries are matched on **name + version, case- and space-insensitive** — a match reuses the existing application, so it never duplicates. New ones land in the tenant inventory and are selectable by id afterwards. "Thin applications used" (`…-COUNT_THIN_APPS`) takes inventory ids only and just flags apps already answered in "Applications used". The field contract and its `400` messages are in [`api-endpoints.md`](api-endpoints.md) → `POST /idea-from-schema`.
+`application_name` required (1–50 chars); `application_version` (≤20), `application_language` (≤50), `application_comments` (≤512), `application_is_citrix_client` (boolean) optional; at most 20 per submission. Entries are matched on **name + version, case- and space-insensitive** — a match reuses the existing application, so it never duplicates. New ones land in the tenant inventory and are selectable by id afterwards. "Thin applications used" (`…-COUNT_THIN_APPS`) takes inventory ids only and just flags apps already answered in "Applications used". To flag a new app as thin, set `application_is_citrix_client: true` on its entry, so the create needs no follow-up update. Updates replace the whole list; read [`api-endpoints.md`](api-endpoints.md) (`new_applications`) before touching applications on an existing process. The field contract and its `400` messages are in [`api-endpoints.md`](api-endpoints.md) → `POST /idea-from-schema`.
 
 **Fallback — no `new_applications` in the schema** (an Automation Hub build that predates it, or the admin disabled adding applications for that section, which also returns `400 "…Adding new applications is disabled for this assessment…"`): create through the inventory API. `PUT /appinventory` upserts, and an element whose `application_id` is `null` inserts:
 
@@ -89,7 +89,7 @@ All five fields are required and `categoryIds` needs ≥1 real id. This needs th
 
 Then build `user_inputs` using the template's **structure** but the **collected values**:
 - Place each value in its `AssessmentType > section > question` slot.
-- Follow the template's wrapping per field: most are `{ "value": <v> }`; owner/submitter questions take a **direct string** (no `value` wrapper).
+- Follow the template's wrapping per field: **every** answer is `{ "value": <v> }` except **user questions**: owner, submitter, and any user picker the tenant adds (the schema marks them `format: email`). Those take the email as a **direct string**; the server also accepts `{ "value": <email> }` for them. Never send a bare string for any other question: it reads as an empty answer, and on `OVR-OVERVIEW_NAME` the API rejects it with `Automation name cannot be empty.`
 - Convert enum labels to their `answer_option` codes taken from that field's own `enum` in the schema — **never** reuse the template's placeholder code. Send integers as numbers.
 
 **Required fields for `idea_flow_id` = Business Process** (verified live — the backend enforces owner + submitter even though the schema's `required` flags do **not** list them):
@@ -105,7 +105,7 @@ Then build `user_inputs` using the template's **structure** but the **collected 
 
 Include only sections that have at least one populated field. Show the user a concise preview (name + key fields, and "show raw JSON" on request) and get a confirm before writing.
 
-**Preflight before creating:** validate the payload against the schema you fetched — every `required`-flagged question plus owner/submitter answered; every enum answer a code copied **verbatim** from that question's own `enum` (a code with a dropped segment is rejected as an unnamed required-field error); no template placeholders left; applications exactly the systems the material names (ids in `value`, the rest in `new_applications` when the schema offers it, the question omitted when none are named and it isn't `required`). Requiredness comes from *this tenant's* schema, never a fixed list — the same flow requires `COUNT_APPS` on one tenant and rejects it on another.
+**Preflight before creating:** validate the payload against the schema you fetched — every `required`-flagged question plus owner/submitter answered; every answer except user questions wrapped as `{ "value": … }` (a bare string reads as empty); every enum answer a code copied **verbatim** from that question's own `enum` (a code with a dropped segment is never selected: a `required` question then fails with `Please fill in all the required information`, and an optional one is silently dropped); no template placeholders left; applications exactly the systems the material names (ids in `value`, the rest in `new_applications` when the schema offers it, the question omitted when none are named and it isn't `required`). Requiredness comes from *this tenant's* schema, never a fixed list — the same flow requires `COUNT_APPS` on one tenant and rejects it on another.
 
 ## Step 5: Create the process
 
@@ -120,7 +120,7 @@ where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 
 - **201** → the envelope is `{ "message": "Resource Created", "statusCode": 201, "data": { … } }` — read **`data.process_id`** (it is nested, NOT top-level). Keep it for Step 6. A 201 means the process WAS created: if a field read comes back undefined, re-read the response — **never re-POST** (that creates a duplicate and 409s).
 - **400** → fix and retry. The message shapes seen live:
-  - `errorDetails: { "<question>": ["An answer selection is required…"] }` → that required field is missing/empty; add it.
+  - `errorDetails: { "<question>": ["An answer selection is required…"] }` → that required field is missing or empty, or its enum code isn't copied verbatim from that field's `enum`. Fix it.
   - `errorDetails: {}` with `"Please fill in all the required information"` → a required field the API **won't name** is missing. Check in order: (1) owner (`OVR-PROCESS_OWNER`) / submitter (`OVR-OVERVIEW_PROCESS_SUBMITTER`) — enforced but never flagged; (2) **diff your payload against every `required`-flagged question in the live schema** — tenant admins add required questions (e.g. "Applications used" / "Thin applications used"), and a payload missing any of them gets this same generic 400. Fill the gaps (Step 4 recipes), then retry once.
   - `"Cannot identify owner by email"` (`localizationKey: error_invalid_process_owner`) → **not a typo'd address; do not retry with a different email.** The account is authenticated but has never been activated on this tenant: AH creates a user row just-in-time on first authenticated call, and only an interactive web sign-in promotes it to the state owner/submitter assignment requires. Confirm the identity is real with the auth/identity call (`IsActive: 1` plus a role list), then tell them to open Automation Hub in a browser once and sign in, and retry unchanged:
 
@@ -130,7 +130,9 @@ where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 
     Build that URL from the org/tenant you are already authenticated against — never from the error response. Nothing was created, so the retry is safe. Newer Automation Hub versions accept these users with no sign-in at all, so on an up-to-date tenant this error should not appear.
   - `"Invalid Category Id."` → `OVERVIEW_CATEGORY` isn't a real category on this tenant (see Step 4).
-  - `Cannot set properties of undefined (setting 'co_question_answer_option_value')` → an enum field carries an invalid `answer_option` code (you left a template placeholder in). Use a code from that field's `enum`.
+  - `"Automation name cannot be empty."` → `OVR-OVERVIEW_NAME` is missing from the payload, empty, or a bare string. Send it under its section as `{"value": "<name>"}`, then retry once.
+  - `Cannot set properties of undefined (setting 'co_question_answer_option_value')`, or `Question "<key>" can't be answered on this tenant: it has no answer slot to hold a value…` → **a server-side defect: this tenant has nowhere to store one of your free-text answers** (an answer whose schema `value` is a plain `string` or `number` with no `enum`). Your values aren't wrong, so don't rewrite them. Newer builds return `Question "<key>" can't be answered on this tenant: it has no answer slot to hold a value…` instead, naming the question: drop exactly that key. The older message names nothing: drop every **optional** free-text answer. In both cases keep every `required` answer and owner/submitter, retry **once**, and tell the user which answers were left out. If it still fails, or the named question is `required`, stop and report it with the tenant and `idea_flow_id`.
+- **500** on create, with no `user_inputs` key at the top of the body → the answers weren't wrapped. Send `{ "idea_flow_id": <id>, "user_inputs": { … } }` and retry once.
 - **401** → re-authenticate. **409** → duplicate name; ask the user for a new name or stop.
 
 ## Step 6: Attach documents (PDD/SDD)
@@ -162,7 +164,9 @@ Build `$DOC_PAYLOAD` per `ProcessDocumentValidator`:
 ```
 
 - `document_title`, `document_description`, `document_type_id` are all required (the field is `document_title`, **not** `document_name`).
-- **`document_type_id` comes from the fixed platform table in [`api-endpoints.md`](api-endpoints.md)** — PDD → `1`, SDD → `2`, otherwise `9` (MISC). Never guess other ids.
+- **`document_type_id` comes from the fixed platform table in [`api-endpoints.md`](api-endpoints.md)** — PDD → `1`, SDD → `2`, a `.bpmn` process map → `6` (under any other type AH shows it download-only, with no editor), otherwise `9` (MISC). Never guess other ids. A case plan (`caseplan.json`) is download-only whatever its type — see the same table.
+- **409 `Duplicate document with title found`** → a document with the same type **and file name** is already attached (the title is not checked; see [`api-endpoints.md`](api-endpoints.md)). Report it with that document, then continue with the remaining documents. Never rename or retitle and retry on your own.
+- **Fixing a `.bpmn` already attached as `9`:** uploading it again as `6` succeeds (different type, no 409) and leaves both copies. The Open API cannot delete documents, so tell the caller the old download-only copy is still there and should be deleted in the AH web UI.
 - Supply **exactly one** of `file` or `embed_link` — an XOR enforced in the handler, not the JSON schema. Both, or neither, 400s with `"One and only one of embed_link or file need to be specified."`
 - **`file` (default).** Base64-encode the file and send `file_name`, `mimetype`, `file_content`, `file_encoding`. `file_encoding` must be the literal `base64` — any other value fails with `"Invalid file."`, as does an empty `file_name`, `mimetype`, or `file_content`. Body limit is 300mb.
 - Common mimetypes: `.docx` → `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `.md` → `text/markdown`, `.pdf` → `application/pdf`.

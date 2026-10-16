@@ -19,6 +19,24 @@ Signature:
   code: 'return $vars.policy.output.body.limit;' }))
 ```
 
+## At a glance
+
+Standalone HTTP keeps non-2xx responses on its success output. Managed HTTP routes
+them through its error port. Both expose JSON response bodies as parsed values.
+
+Signature: `http({ method?, url, managed, connection?, folder?, targetConnector?, headers?, query?, body?, contentType?, timeout?, retryCount?, returns?, branches? })`.
+
+```ts
+.step('getPolicy', http({ method: 'GET', url: policyUrl,
+  managed: true, returns: { limit: 'number' },
+  branches: [{ name: 'throttled', condition: js`$vars.getPolicy.output.statusCode === 429` }] }))
+.stepToList('branch-throttled', (b) => b.return({}))
+.step('limit', script({ code: 'return $vars.getPolicy.output.body.limit;' }))
+```
+
+Match `managed` to the scenario's node; connector auth needs both `connection` and `folder` from `.flow-sdk/bindings.json`.
+A `branch-<name>` side exit uses `.stepToList`; omit both bindings for manual/implicit mode.
+
 ## Choosing the node
 
 Match the product node named by the scenario. “Managed HTTP Request,” “HTTP
@@ -66,6 +84,11 @@ node detail and the emitted flow's resource bindings:
 Connection mode emits `authentication: "connector"`, targets
 `uipath-uipath-http`, and treats `url` as a path relative to the connection's
 configured base URL. Supplying only one of `connection` or `folder` is an error.
+
+A secret the call needs, such as a header token or basic credentials, belongs in
+that connection. The builder has no node that reads an Orchestrator asset or
+credential, so a token written into `headers` sits in the flow source as plain
+text.
 
 For an HTTP fallback authenticated by another connector, set its connector key
 as `targetConnector`. The node remains the managed HTTP wrapper, while the

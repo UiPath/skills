@@ -25,6 +25,9 @@ Construct the input-details object literally from the trigger's `registry-resolv
 {
     // eventParameters from the resolved entry's input-values.eventParameters (or omit when no event params authored)
     "eventParameters": "<input-values.eventParameters or omit>",
+    // queryParameters / pathParameters from input-values (or omit) — scope selectors, resource pickers
+    "queryParameters": "<input-values.queryParameters or omit>",
+    "pathParameters": "<input-values.pathParameters or omit>",
     // filter — FilterTree object from the resolved entry (or omit when not authored)
     "filter": "<filter from the resolved entry or omit>"
 }
@@ -32,15 +35,21 @@ Construct the input-details object literally from the trigger's `registry-resolv
 
 Full input-details contract: [`case-spec-input-details.md`](case-spec-input-details.md).
 
+**Solution-resource pickers** work as for activities; see [connector-activity impl-json.md](plugins/tasks/connector-activity/impl-json.md) § Step 1. A trigger's picker is usually a query parameter (listed under `inputs.queryParameters`), not an event parameter: put its value in `queryParameters`.
+
 ### Step 2 — Run `case spec` with input-details
 
 ```bash
 uip maestro case spec --type trigger \
+  --trigger-kind <start|wait-for> \
   --activity-type-id "<type-id>" \
   --connection-id "<connection-id>" \
   --input-details "<json from Step 1>" \
+  --solution-folder "<SolutionDir>" \
   --output json > tasks/spec-cache.<elementId>.json
 ```
+
+`--trigger-kind start` for the case-level event trigger, `wait-for` for a connector-bound condition rule. A start trigger without `start` is typed as a wait and never fires ([`case-spec-input-details.md` § `--trigger-kind`](case-spec-input-details.md#--trigger-kind-trigger-only)).
 
 **The redirect is the only way this file is created.** It holds the CLI's raw response envelope (`Result` / `Code` / `Data`) byte-for-byte. Do NOT author it, and do NOT invent a wrapper of your own around `caseShape` — a hand-built cache is not a cache, and every downstream check compares against it.
 
@@ -70,6 +79,7 @@ Mint two prefixed IDs for the connection + folder bindings:
 |---|---|
 | Connection binding | `b` + 8 alphanumeric chars (e.g. `bA1B2C3D4`) |
 | Folder binding | `b` + 8 alphanumeric chars (different from connection binding) |
+| Resource binding rows | one per `spec.resourceBindings[].rows[]` item |
 
 These ids are **picked inline by the agent** (per SKILL.md Rule 14) — no subprocess.
 
@@ -79,7 +89,7 @@ When the trigger has event parameters (i.e. `caseShape.context[name="metadata"].
 <connection-id>_<startNode.id>
 ```
 
-`startNode.id` is the case's start-node id (existing in `caseplan.json`). This matches FE's `PackagingUtil.ts:227` convention. **Per-plugin override:** for case-level event triggers, `startNode.id` is the trigger node's own id (the event trigger IS the start node for its case-entry path) — see [event/impl-json.md § Step 4](plugins/triggers/event/impl-json.md#step-4--mint-binding-ids-and-trigger-registration-key).
+`startNode.id` is the case's start-node id (existing in `caseplan.case`). This matches FE's `PackagingUtil.ts:227` convention. **Per-plugin override:** for case-level event triggers, `startNode.id` is the trigger node's own id (the event trigger IS the start node for its case-entry path) — see [event/impl-json.md § Step 4](plugins/triggers/event/impl-json.md#step-4--mint-binding-ids-and-trigger-registration-key).
 
 Save them as `<connBindingId>`, `<folderBindingId>`, `<eventTriggerKey>` for Step 4.
 
@@ -92,6 +102,7 @@ The CLI emits placeholders the skill resolves at write-time:
 | `{{CONN_BINDING_ID}}` | `caseShape.context[name="connection"].value` (string `=bindings.{{CONN_BINDING_ID}}`) | `<connBindingId>` |
 | `{{FOLDER_BINDING_ID}}` | `caseShape.context[name="folderKey"].value` (string `=bindings.{{FOLDER_BINDING_ID}}`); entry only present when `spec.connection.folderKey !== null` | `<folderBindingId>` |
 | `{{TRIGGER_REGISTRATION_KEY}}` | `caseShape.context[name="metadata"].body.bindings[*].metadata.ParentResourceKey` (string `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`); entry only present when `caseShape.context[name="metadata"].body.bindings` exists (i.e. trigger has event parameters) | `<eventTriggerKey>` |
+| `{{RESOURCE_BINDING_ID:<field>}}` | `caseShape.inputs[name="body"].body.parameters` and `caseShape.context[name="metadata"].body.inputMetadata.triggerQueryParameters` (a query-parameter picker), or `body.queryParams` (an event-parameter one); only when `spec.resourceBindings[]` is present | the id minted for that row |
 
 #### Write `context` / `inputs` / `outputs` from the spec-cache
 
@@ -115,7 +126,7 @@ Conventions (shared with activity):
 - **Outputs:** name-based, not `v` + 8 — `id` = `camelCase(name)`, `var` = same as `id`, and only for an entry the SDD does not reference. Entries it does reference are emitted by [io-binding/impl-json.md § Output Binding Shapes](plugins/variables/io-binding/impl-json.md#output-binding-shapes)
 - `elementId` = the task's elementId (in-stage `wait-for-connector` task), the trigger node's id (case-level event trigger), or `<ownerNodeId>-<ruleId>` (connector-bound condition rule — see [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule))
 
-For **outputs** apply the dedup rule: collect existing output `var` values across every task / trigger / **connector-bound condition rule** already in `caseplan.json`; if a `var` already exists (e.g. `response`, `error` collide across multiple connector tasks / triggers / rules), append a counter starting at 2 (`response2`, `error2`). Update `var`, `id`, `value`, `target` (when present); keep `name`, `displayName`, `source` unchanged. **Rule outputs participate in the same global pool** — the dedup must walk condition `rules[][].uipath.outputs[]` across all 4 condition scopes (stage-entry / stage-exit / case-exit / task-entry, case-exit rules living under `metadata.caseExitRules`) in **both directions**: when a rule mints outputs, dedupe against tasks + triggers + rules; when a task / trigger mints outputs, dedupe against existing rule outputs. See [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule) for the full enumeration.
+For **outputs** apply the dedup rule: collect existing output `var` values across every task / trigger / **connector-bound condition rule** already in `caseplan.case`; if a `var` already exists (e.g. `response`, `error` collide across multiple connector tasks / triggers / rules), append a counter starting at 2 (`response2`, `error2`). Update `var`, `id`, `value`, `target` (when present); keep `name`, `displayName`, `source` unchanged. **Rule outputs participate in the same global pool** — the dedup must walk condition `rules[][].uipath.outputs[]` across all 4 condition scopes (stage-entry / stage-exit / case-exit / task-entry, case-exit rules living under `metadata.caseExitRules`) in **both directions**: when a rule mints outputs, dedupe against tasks + triggers + rules; when a task / trigger mints outputs, dedupe against existing rule outputs. See [global-vars/impl-json.md § Uniqueness Rule](plugins/variables/global-vars/impl-json.md#uniqueness-rule) for the full enumeration.
 
 > **Trigger-NODE inputs only:** the case-level event-**trigger node** gets no `elementId` on its inputs (different from in-stage task inputs). This does **NOT** apply to connector-bound **condition rules** — a rule's inputs AND outputs BOTH get `elementId = <ownerNodeId>-<ruleId>` (= `root-<ruleId>` for case-exit). See [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule), and each plugin's `impl-json.md` for the target-specific shape.
 
@@ -223,6 +234,8 @@ Read [bindings/impl-json.md § Full binding shape — connector tasks](plugins/v
 - `<connection-id>` (drives `resourceKey` on both bindings + ConnectionBinding `default`): from this trigger's `registry-resolved.json` entry
 - `<connectorKey>` (drives ConnectionBinding templated `name`): from `registry-resolved.json`
 - `<folderKey>` (FolderKey binding `default`): from `spec.connection.folderKey` in Step 2 response. **Omit the FolderKey binding entirely when this value is null** (matches `binding-builder.ts:73-83`).
+
+**Solution-resource rows:** append them as [connector-activity impl-json.md](plugins/tasks/connector-activity/impl-json.md) § Step 5 (Solution-resource pickers) describes.
 
 Dedup per [§ Deduplication](plugins/variables/bindings/impl-json.md). Source-of-truth code: `binding-builder.ts` in `uipcli-case-validate/packages/case-tool/src/utils/`.
 

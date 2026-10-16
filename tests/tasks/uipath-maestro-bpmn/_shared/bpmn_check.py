@@ -137,6 +137,24 @@ def elements(root: ET.Element, local_name: str) -> list[ET.Element]:
     return root.findall(f".//bpmn:{local_name}", NS)
 
 
+def tag_case_hint(root: ET.Element, local_name: str) -> str:
+    if elements(root, local_name):
+        return ""
+    prefix = f"{{{NS['bpmn']}}}"
+    wanted = local_name.casefold()
+    found = sorted(
+        {
+            el.tag[len(prefix):]
+            for el in root.iter()
+            if el.tag.startswith(prefix)
+            and el.tag[len(prefix):].casefold() == wanted
+        }
+    )
+    if not found:
+        return ""
+    return f" (found bpmn:{found[0]}; tags are case-sensitive, expected bpmn:{local_name})"
+
+
 def one_or_more(root: ET.Element, local_name: str) -> list[ET.Element]:
     found = elements(root, local_name)
     if not found:
@@ -279,19 +297,22 @@ def has_uipath_extension(element: ET.Element, token: str) -> bool:
 
 
 def has_typed_uipath_extension(
-    element: ET.Element, extension_name: str, type_value: str
+    element: ET.Element, extension_name: str, type_value: str, *, version: str | None = None
 ) -> bool:
-    """Match both registry-supported UiPath payload type declarations."""
-    payloads = list(element.findall(f"uipath:{extension_name}", NS))
+    """True when a ``uipath:<extension_name>`` inside ``bpmn:extensionElements``
+    has no ``type`` attribute and a ``uipath:type`` child whose value is
+    ``type_value`` and, when given, whose version is ``version``."""
     ext = element.find("bpmn:extensionElements", NS)
-    if ext is not None:
-        payloads.extend(ext.findall(f"uipath:{extension_name}", NS))
+    if ext is None:
+        return False
 
-    for payload in payloads:
-        if payload.attrib.get("type") == type_value:
-            return True
+    for payload in ext.findall(f"uipath:{extension_name}", NS):
+        if "type" in payload.attrib:
+            continue
+
         if any(
             type_elem.attrib.get("value") == type_value
+            and (version is None or type_elem.attrib.get("version") == version)
             for type_elem in payload.findall("uipath:type", NS)
         ):
             return True

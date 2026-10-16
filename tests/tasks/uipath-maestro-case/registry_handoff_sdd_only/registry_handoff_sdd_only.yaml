@@ -1,7 +1,8 @@
 # --- Tenant fixtures (LIVE registry) --------------------------------------------------
 # This task resolves against the real tenant registry, so it is only valid when the
 # tenant CONTAINS:
-#   * api-workflow  "FinancialPostingFunction"
+#   * api-workflow  "FinancialPostingFunction" (two folders hold one; the simulated user
+#     picks Shared/BillingDisputeResolution, so the run never stalls on the ambiguity)
 #   * agent         "EmailDrafter"
 # If either is renamed or removed, the checker aborts with
 #   "test precondition failed: no live registry match ..."
@@ -90,7 +91,7 @@ success_criteria:
 
   - type: run_command
     description: "The run stopped after Phase 1 and did not create a caseplan"
-    command: "! find . -name caseplan.json -not -path '*/.venv/*' | grep -q ."
+    command: "! find . \\( -name caseplan.json -o -name caseplan.case \\) -not -path '*/.venv/*' | grep -q ."
     timeout: 10
     expected_exit_code: 0
     weight: 1.0
@@ -107,7 +108,8 @@ simulation:
     stop before any caseplan or solution build.
   constraints:
     - "Do not change the SDD or provide alternate resource names."
-    - "If asked to choose among exact-name registry matches, choose the match whose name exactly matches the SDD Resolved Resource and use its exact folder."
+    - "If asked which FinancialPostingFunction to use, choose the one in Shared/BillingDisputeResolution; the tenant holds a second copy in another folder."
+    - "For any other choice among exact-name registry matches, choose the match whose name exactly matches the SDD Resolved Resource and use its exact folder."
     - "If a resource is still missing after the required lookup gate, choose a placeholder rather than creating it inline; the test is about portable lookup intent, not resource creation."
     - "When shown the resolution summary, say it is sufficient and ask the agent to stop before Phase 2."
     - "Do not ask for Phase 0, design, stage, task, variable, or I/O changes."

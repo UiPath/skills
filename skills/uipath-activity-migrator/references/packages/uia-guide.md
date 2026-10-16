@@ -12,15 +12,15 @@ Availability and defaults come from `"<MIGRATOR_EXE>" analyze --help` on the ins
 
 | Flag | Use |
 |---|---|
-| `--uia-package-version=<VER>` | Pass the resolved `<UIA_VERSION>`; omit the flag when Step 2 fell back to the tool default. A value below the tool's built-in minimum is refused and the minimum used instead, reported under `UIAUTOMATION-PACKAGE-UPGRADE` at warning level as `Cannot use version … Minimum required version is … Using minimum version.`; Step 3 relays that to the user |
+| `--uia-package-version=<VER>` | Pass the resolved `<UIA_VERSION>`; omit the flag when Step 2 fell back to the tool default. A value below the tool's built-in minimum is refused and the minimum used instead, reported under `UIAUTOMATION-PACKAGE-UPGRADE` at warning level as `Cannot use version … Minimum required version is … Using minimum version.`; the summarizer's `Packages:` line shows it as "requested …, raised to the tool minimum …" and Step 3 relays that to the user |
 | `--uia-fix-selector-strategy=true` | Only on rerun, when the build fails with an ambiguous `SelectorStrategy` (`CS0104` / `BC30561`). Fully qualifies the enum in pre-existing expressions |
 | `--uia-enable-partial-migration=true` | Only when the user asks and `--help` lists it. Emits the closest modern activity even when fidelity is lost; the result needs manual review. Needs a package that supports it (see version gates); older packages ignore the flag |
 
-All three are extension options: pass them as `--name=value`. The space-separated form is accepted and silently ignored ([tool-behavior-guide.md § Option binding](../tool-behavior-guide.md#option-binding)).
+All three are extension options: the `=` form only ([tool-behavior-guide.md § Option binding](../tool-behavior-guide.md#option-binding)).
 
 ### Version gates
 
-Known thresholds at the time of writing; the tool's own minimum is the one it reports when it clamps.
+Known thresholds at the time of writing; the tool's own minimum is the one it reports when it raises a lower request.
 
 | Package version | Unlocks |
 |---|---|
@@ -30,19 +30,12 @@ Known thresholds at the time of writing; the tool's own minimum is the one it re
 
 ### Resolve the target line
 
-Goal: the latest stable patch of the release line the client's robots run.
+Goal: the latest stable patch of the release line the client's robots run. The steps, the command, the one question and the feed-unreachable fallback are SKILL.md Step 2; this section holds what those steps rest on.
 
-1. If the user named a line or version, resolve that and skip the question. A bare line ("26.10") means the highest stable patch of that line.
-2. Resolve candidate lines from the official UiPath NuGet feed:
-
-   ```bash
-   node "<SKILL_DIR>/scripts/resolve-package-lines.mjs" --package UiPath.UIAutomation.Activities --min 25.10.21
-   ```
-
-   The script drops prerelease versions, groups by `major.minor`, keeps LTS lines (minor `10`), takes the highest stable patch per line, drops lines below the minimum, and returns the two most recent lines. Do not use `uip rpa packages versions` for this: it starts the headless Studio host, which refuses Legacy projects and needs a project folder. Set `UIPATH_ACTIVITY_MIGRATOR_FEED_URL` to a mirror's NuGet v3 flat-container base when the public feed is blocked.
-3. The newest candidate is the recommendation. Compatibility runs one way: a package version works on Studio and robots at or above the minimum its release notes list, and an older package always works on a newer host. Do not use `studioVersion` from `project.json` as a signal; it records the Studio that last saved the Legacy project, not the one that will open the result or the robots that will run it.
-4. Ask once with `AskUserQuestion`. Newest line first, labeled `(Recommended)`. Option label: `<line>.x → <resolved version>`. Option description for the newest: "Longest support ahead; requires Studio and robots at or above the minimum this package version lists in its release notes." For the older: "Safe pick when the fleet is behind that minimum."
-5. Script prints `error` (feed unreachable): pass no version and let the tool pin its built-in default; do not ask. Step 3 sets `<UIA_VERSION>` from the version the tool reports, and the report line carries the suffix "(tool default, feed unreachable)".
+- The line resolver drops prerelease versions, groups by `major.minor`, keeps LTS lines (minor `10`), takes the highest stable patch per line, drops lines below the minimum, and returns the two most recent lines. Set `UIPATH_ACTIVITY_MIGRATOR_FEED_URL` to a mirror's NuGet v3 flat-container base when the public feed is blocked.
+- Compatibility runs one way: a package version works on Studio and robots at or above the minimum its release notes list, and an older package always works on a newer host. That is why the newest line is the recommendation and the older line the safe pick when the fleet is behind.
+- `studioVersion` in `project.json` is not a signal: it records the Studio that last saved the Legacy project, not the one that will open the result or the robots that will run it.
+- Option descriptions for the question: newest, "Longest support ahead; requires Studio and robots at or above the minimum this package version lists in its release notes."; older, "Safe pick when the fleet is behind that minimum."
 
 ### Stop conditions specific to this package
 
@@ -72,18 +65,25 @@ For the meaning of any rule or reason, use the rule's `fullDescription` in `tool
 
 Actions, in this order, once the Step 5 build passed:
 
-1. **Annotations.** Migrated activities carry design-time annotations, one line per message: `[PostMigration Action Required]: <TYPE>: <message>`, followed by `[Existing annotation]: <user text>` when the classic activity had one. List them per file; they are the needs-attention items of the report:
+1. **Annotations.** Migrated activities carry design-time annotations, one line per message: `[PostMigration Action Required]: <TYPE>: <message>`, followed by `[Existing annotation]: <user text>` when the classic activity had one. List them per file from the XAML; they are the needs-attention items of the report. In bash:
 
    ```bash
    grep -rn "PostMigration Action Required" --include=*.xaml "<OUTPUT_DIR>"
    ```
+
+   In PowerShell:
+
+   ```powershell
+   Get-ChildItem -LiteralPath "<OUTPUT_DIR>" -Recurse -Filter *.xaml | Select-String -SimpleMatch 'PostMigration Action Required' | ForEach-Object { '{0}:{1}:{2}' -f $_.Path, $_.LineNumber, $_.Line.Trim() }
+   ```
+
+   Nothing else stands in for this listing. Run the listing even when the summarizer and the build warnings already seem to cover the annotations.
 
 2. **Expression-selector defects.** When the output contains `.ToStringWithDelimiter()` markers, run the full procedure in [uia-post-migration-fix-guide.md](../uia-post-migration-fix-guide.md) with `<OUTPUT_DIR>` as its `<MIGRATED_DIR>`: scan, classify each variable's value, present the findings table, confirm once, apply Fix 1 and Fix 2 with targeted edits, validate each edited file, then rebuild. Never rework or "improve" a selector that carries the marker; the defects are structural, and a selector rewrite destroys the variable binding.
 
 Report inputs:
 
 - **Left classic.** Activities the pinned package could not migrate compile and run as classic. They are the `<L>` count on the status line, and the summarizer's "UIA not migrated" section is their inventory (SKILL.md Step 6). Never name a modern equivalent for one: several classic activities (Wait Attribute, Anchor Base, Start Process among them) have no one-to-one counterpart. Never count `<ui:` elements as a cross-check: that prefix also covers classic System and Excel activities and property elements such as `<ui:Highlight.Target>`.
-- **Runtime prerequisites.** Studio 2024.10 or later to open the project. Robots at or above the minimum `<UIA_VERSION>` requires. Only when the project automates a browser: the UiPath browser extension must be installed on the robot machines.
 
 Not part of this hook: a build error that calls for a rerun with a flag is handled in Step 5 by [build-verification-guide.md](../build-verification-guide.md) with the flags of Hook 1, and package versions on the output are never edited (Rule 7).
 

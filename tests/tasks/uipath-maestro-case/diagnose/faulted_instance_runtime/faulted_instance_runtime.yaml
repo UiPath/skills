@@ -1,0 +1,71 @@
+task_id: skill-case-diagnose-faulted-instance-runtime
+description: >
+  Diagnose mode, runtime: a deployed case (OutcomeExpenseApproval, Orchestrator
+  folder Shared/OutcomeExpenseApproval on the eval tenant) has a faulted run.
+  The agent must find the faulted instance, read its incident, and map the
+  faulting element to the task by name — the troubleshooting guide's instance ->
+  incidents -> asset path, which no other task exercises. Read-only: retrying,
+  cancelling, or otherwise changing the instance fails the task. The grader
+  re-derives the instance, task, and error code from the tenant at grading time
+  (check_faulted_instance.py), so the answer file is checked against live
+  ground truth, not trusted. `uip maestro case processes diagnose` fails on
+  every call until UiPath/cli#5038 ships, so the task accepts it but does not
+  require it. Precondition: the faulted instance
+  still exists; the grader exits 2 and says so when it does not. The prompt
+  may route to uipath-troubleshoot instead (codex did, 2026-10-09), which is a
+  legitimate path, so the skill check stays advisory. `processes incidents`
+  returns [] for this process although the instance has an open incident (the
+  CLI omits processType on that read; fixed in UiPath/cli#5038). Agents that
+  trust it lose turns, hence the 80-turn budget.
+tags: [uipath-maestro-case, integration, mode:diagnose, lifecycle:discover]
+max_iterations: 1
+
+run_limits:
+  task_timeout: 1200
+  max_turns: 80
+  turn_timeout: 600
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Our OutcomeExpenseApproval case, deployed in the Orchestrator folder
+  "Shared/OutcomeExpenseApproval", has a run that faulted. Find out why: which
+  instance faulted, which task in the case failed, and what error it hit.
+
+  Write your findings to diagnosis.json with the keys instanceId, taskName (the
+  task's name as it appears in the case), errorCode, and errorMessage.
+
+  This is an investigation only. Do not retry, cancel, pause, or change the
+  instance or its incidents. Do NOT ask for approval, confirmation, or feedback.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Advisory: agent invoked the uipath-maestro-case skill"
+    skill_name: "uipath-maestro-case"
+    expected_skill: "uipath-maestro-case"
+    weight: 1.0
+    pass_threshold: 0.0
+
+  - type: command_executed
+    description: "Agent read the instance's incidents (instance list carries them, or instance incidents / incident get)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(instance\s+(list|incidents|get)|incident\s+(get|summary)|processes\s+(incidents|diagnose))\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "diagnosis.json names a faulted instance, the failing task by name and its error code, matching the tenant at grading time"
+    command: "python3 $REFERENCE_DIR/check_faulted_instance.py"
+    timeout: 300
+    expected_exit_code: 0
+    weight: 4.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Read-only: no instance or incident was changed"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+instance\s+(retry|cancel|pause|resume|goto|migrate|variables-set|message\s+send|element\s+(cancel|retry))\b'
+    weight: 2.0
+    pass_threshold: 1.0

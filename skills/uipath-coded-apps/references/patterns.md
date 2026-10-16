@@ -885,10 +885,10 @@ https://cloud.uipath.com/embed_/{orgName}/{tenantName}/actions_/current-task/tas
 | API URL | Cloud UI URL |
 |---------|-------------|
 | `https://api.uipath.com` | `https://cloud.uipath.com` |
-| `https://staging.api.uipath.com` | `https://staging.uipath.com` |
-| `https://alpha.api.uipath.com` | `https://alpha.uipath.com` |
+| `https://<PREFIX>.api.uipath.com` | `https://<PREFIX>.uipath.com` |
+| Any other host (Automation Suite, custom) | Same host, unchanged |
 
-**NEVER use naive string replacement** like `baseUrl.replace('api.', 'cloud.')` — this breaks for staging/alpha (produces `staging.cloud.uipath.com` which is wrong).
+**NEVER use naive string replacement** like `baseUrl.replace('api.', 'cloud.')` — this breaks for prefixed hosts (produces `<PREFIX>.cloud.uipath.com`, which is wrong).
 
 Add this helper to `src/utils/formatters.ts`:
 
@@ -898,8 +898,7 @@ export function apiToCloudUrl(apiBaseUrl: string): string {
   try {
     const url = new URL(apiBaseUrl);
     // "api.uipath.com" → "cloud.uipath.com"
-    // "staging.api.uipath.com" → "staging.uipath.com"
-    // "alpha.api.uipath.com" → "alpha.uipath.com"
+    // "<prefix>.api.uipath.com" → "<prefix>.uipath.com"
     let cloudHost = url.hostname.replace('api.uipath.com', 'uipath.com');
     if (cloudHost === 'uipath.com') cloudHost = 'cloud.uipath.com';
     return `${url.protocol}//${cloudHost}`;
@@ -967,7 +966,7 @@ if (pendingTask) {
 }
 ```
 
-**Do NOT construct the URL manually** — always use the `apiToCloudUrl` + `buildTaskUrl` helpers to ensure correct environment mapping across cloud/staging/alpha.
+**Do NOT construct the URL manually** — always use the `apiToCloudUrl` + `buildTaskUrl` helpers to ensure correct environment mapping across cloud and other UiPath-hosted environments.
 
 ### iframe component
 

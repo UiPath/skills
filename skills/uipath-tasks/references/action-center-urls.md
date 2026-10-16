@@ -43,7 +43,7 @@ Every URL above MUST include:
 
 | Segment    | Source                                                | Notes |
 |------------|-------------------------------------------------------|-------|
-| `{host}`   | UI host (NOT the API host — see "Environment mapping" below) | `cloud.uipath.com`, `staging.uipath.com`, `alpha.uipath.com` |
+| `{host}`   | UI host (NOT the API host — see "Environment mapping" below) | `cloud.uipath.com`, or the session's UI host |
 | `{org}`    | Organization name or ID                               | URL-encode if it contains spaces/unicode. |
 | `{tenant}` | Tenant **name** (e.g. `DefaultTenant`)                | **Mandatory.** Never substitute a path keyword like `actions` here. |
 | `{taskKey}` or `{taskId}` | From `uip tasks get` / `uip tasks list` JSON | Use `Key` (string GUID) for inbox; numeric `Id` for standalone. |
@@ -51,7 +51,7 @@ Every URL above MUST include:
 ## Anti-pattern: missing tenant slug
 
 ```text
-❌ https://alpha.uipath.com/popoc/orchestrator_/actions/inbox/<taskKey>
+❌ https://cloud.uipath.com/popoc/orchestrator_/actions/inbox/<taskKey>
                           ^^^^^^^
                           tenant slug missing
 ```
@@ -77,14 +77,13 @@ these URLs.
 | API host                   | UI host                    |
 |----------------------------|----------------------------|
 | `api.uipath.com`           | `cloud.uipath.com`         |
-| `staging.api.uipath.com`   | `staging.uipath.com`       |
-| `alpha.api.uipath.com`     | `alpha.uipath.com`         |
 | `gov.api.uipath.com`       | `gov.uipath.com`           |
+| `<PREFIX>.api.uipath.com`  | `<PREFIX>.uipath.com`      |
 
-If `uip login status` reports a base URL of `https://alpha.api.uipath.com`,
+If `uip login status` reports a base URL of `https://<PREFIX>.api.uipath.com`,
 strip the `api.` prefix before building an Action Center URL.
 
-> **Note:** the table covers the four common public environments. Regional
+> **Note:** the table covers the common public patterns. Regional
 > (e.g. EU-specific) and private/dedicated cloud hosts may use different
 > prefixes. When in doubt, take the host from `uip login status --output
 > json` and apply the same `api.X → X` transformation; if the base URL
