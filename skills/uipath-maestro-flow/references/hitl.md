@@ -80,11 +80,11 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `'enum'` are a single-choice dropdown (a `string` answer), `'multiSelect'` a
   multi-select (an `array` answer). Never change one to `'string'` or
   `'array'`: the form loses its picker. A decompiled canvas form keeps these
-  spellings and their `options`, and you can edit the node unless a field has
-  one of the keys below. Needs `@uipath/maestro-builder-sdk` 6.31.9 or later;
-  an older SDK reports `HITL_FIELD_TYPE_UNKNOWN` (do not follow its
-  `type: 'string'` hint), so upgrade with
-  `npm install -g @uipath/maestro-builder-sdk@latest`.
+  spellings and their `options`, and you can edit the node unless
+  `flow decompile` warns about one of its fields (see below). Needs
+  `@uipath/maestro-builder-sdk` 6.31.9 or later; an older SDK reports
+  `HITL_FIELD_TYPE_UNKNOWN` (do not follow its `type: 'string'` hint), so
+  upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 
   ```ts
   fields: [{
