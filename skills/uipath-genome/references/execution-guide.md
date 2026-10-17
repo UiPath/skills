@@ -9,6 +9,7 @@ Genome says *what* to build; build skills know *how*. Execution reads genome, co
 3. Every acceptance criterion carries a verdict (§ 3.1).
 4. The completion report is given (§ 3.3).
 5. When the target environment needs any setup — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite — [open-items-guide.md](open-items-guide.md) is read and the open-items files are written beside the solution or project folder (§ 3.4).
+6. A refactor also meets [refactor-guide.md § Done](refactor-guide.md).
 
 ## Phase 1 — Parse and configure
 
@@ -33,9 +34,11 @@ Gather facts the 1.3 scaffolding questions are built from before asking anything
 
 Ask before writing any code, creating any project, or installing any package. This step runs in every execution, including when the genome's Configuration Questions section is the stub line, because the scaffolding questions below do not come from the genome.
 
-Three groups of questions, asked in this order:
+Three groups of questions, asked in this order — four in a refactor:
 
 **Genome questions** — every numbered question in the genome's Configuration Questions section. Absent only when that section is the stub line.
+
+**Refactor questions** — when the Source Map names a UiPath source, after the genome questions: each component retired, folded or given its target, the rulings on its source defects, the run modes, the run record and the connections' identities, [refactor-guide.md § Refactor questions](refactor-guide.md). The targets decide which split and scaffolding questions follow.
 
 **Split questions** — asked once per flow when the genome's Transactional Shape is not the stub, after the genome questions and before any scaffolding question, because the project list depends on every flow's answers: [transactional-execution-guide.md § Split questions](transactional-execution-guide.md).
 
@@ -45,7 +48,7 @@ Three groups of questions, asked in this order:
 |---|---|---|
 | Location | Where to create the project? | Folder next to genome (1.2 step 4); reuse existing project found there (only when one exists and matches the primary skill); another path |
 | Library layout *(process genomes with a library component that one project consumes, directly or through libraries folded into that project)* | Build each such library as a package of its own, or its workflows as a folder of the project that consumes it (§ 1.4)? | One project (Recommended when the source kept the library's objects in its consumer's own project, so the library is the extraction's grouping and not the source's): the consumer invokes the library's workflows as workflow files, which the debugger steps into and a change reaches without a pack and an install, while the library's parts share the consumer's one owner and run after one another ([execution-parts-guide.md](execution-parts-guide.md) item 1); packages, as the genome lays them out (Recommended otherwise): versioned, reusable beyond this genome, the private workflows hidden behind the public ones; per library, the user naming which to fold |
-| Target framework (RPA projects) | Which target framework? | The one the host supports and an existing project uses; alternatives the host supports |
+| Target framework (RPA projects) | Which target framework? | The one the host supports and an existing project uses — in a refactor, Portable unless the Target answer kept Windows ([refactor-guide.md § Choosing the target](refactor-guide.md)); alternatives the host supports |
 | Expression language (RPA projects) | Which expression language? | The owning skill's default for a new project, unless the edit surface recorded in 1.2 step 2 cannot open it; the other language |
 | Settings store (every project with settings or constants) | Where do the genome's settings and constants live? | Settings as one Orchestrator asset each, read once per job — every Orchestrator connection is its own environment (dev, UAT, prod), so each environment sets its own value without a new package — and constants where the project keeps its configuration — the REFramework template's configuration file, the test project's configuration (the Test Automation Framework template's configuration files, or a shared configuration workflow without the template), the owning skill's configuration for a non-RPA project — and in the code on a plain RPA project or a library (Recommended); every value as an Orchestrator asset; a configuration workbook in a storage bucket, loaded once, when the business edits many values together ([genome-format-guide.md § Configuration Questions](genome-format-guide.md)) |
 | Workflow type (RPA projects) | Author the workflows as XAML, as coded C#, or both? | The owning skill's default for a new project; coded workflows only; hybrid, each step in the type the owning skill's mode rules give it. An option that makes an earlier answer unusable — an activity package or connection whose API one type lacks, an edit surface recorded in 1.2 step 2 that cannot open the type — names that answer, and the question is asked again |
@@ -230,6 +233,7 @@ Scaffolding: <target framework>, <expression language>, <package@version, …> (
 Gate: validate + build per project (errors / warnings), libraries packed to <feed>, solution pack dry run <verdict>; runs performed or "compile only — no reachable application"
 <!--skill-flavor:report-gate:end-->
 Run: <the owning skill's run command for the entry point>
+Refactor: <the line of refactor-guide.md § Done> | not a refactor
 Open items: <top open-items file> (<n> setup steps for the target environment; open-items-guide.md)
 ```
 
@@ -247,7 +251,7 @@ Execution ends by writing, beside the solution or project folder, what the targe
 2. **Pausing between skill groups.** "Shall I continue with the RPA part?" is wrong. Advance.
 3. **One project per skill group.** Component genome is one project. Process genome is one solution with one project per non-test component, a library the Library layout answer folds excepted, and exactly one test project holding every test component — never one test project per business area.
 4. **Reordering Build With or Components** except for the handoff-dependency case in 2.1.
-5. **Adding features the genome does not name, or dropping steps it does.** Gaps go to the user, not into improvised code.
+5. **Adding features the genome does not name, or dropping steps it does.** Gaps go to the user, not into improvised code. A refactor adds only what its answers ask for and drops only what they retire or fold ([refactor-guide.md](refactor-guide.md)).
 6. **Editing the genome during execution.** It is read-only.
 7. **Skipping acceptance validation** because "everything compiled". Criteria are the definition of done.
 8. **Building past the owning skill.** Activity XML written from memory, or a subagent dispatched without the skill's mandatory reads and authoring journey (2.2 step 2).
