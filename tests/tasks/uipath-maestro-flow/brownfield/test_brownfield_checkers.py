@@ -54,6 +54,10 @@ def layout(project: Path) -> int:
     return preserved.main(["--aspect", "layout", "--original", str(FIXTURE), "--project", str(project)])
 
 
+def merged(project: Path) -> int:
+    return preserved.main(["--aspect", "merged", "--original", str(FIXTURE), "--project", str(project)])
+
+
 def intent(project: Path, which: str) -> int:
     return edit.main([which, "--original", str(FIXTURE), "--project", str(project)])
 
@@ -80,7 +84,8 @@ CAP_EDGE = "logCreditAmount:success>financialPosting:input"
 def test_unedited_fixture_is_preserved(project: Path) -> None:
     assert graph(project) == 0
     assert layout(project) == 0
-    for which in ("credit-cap", "merged", "switch-route", "writer-prompt"):
+    assert merged(project) == 1
+    for which in ("credit-cap", "switch-route", "writer-prompt"):
         assert intent(project, which) == 1
 
 
@@ -188,13 +193,13 @@ def renumber_edges(flow: dict) -> None:
 @pytest.mark.parametrize("edit", [insert_cap, add_route], ids=["credit-cap", "switch-route"])
 def test_hand_edit_fails_the_merge_check(project: Path, edit) -> None:
     mutate(project, edit)
-    assert intent(project, "merged") == 1
+    assert merged(project) == 1
 
 
 @pytest.mark.parametrize("edit", [insert_cap, add_route], ids=["credit-cap", "switch-route"])
 def test_merged_edit_passes_the_merge_check(project: Path, edit) -> None:
     mutate(project, lambda f: (edit(f), renumber_edges(f)))
-    assert intent(project, "merged") == 0
+    assert merged(project) == 0
 
 
 NEW_LINE = "- Say the credit appears on the next statement within 5 business days."

@@ -87,7 +87,7 @@ success_criteria:
 
   - type: run_command
     description: "The .flow was written by uip maestro flow merge (the skill's decompile/merge loop), not edited by hand"
-    command: "python3 $REFERENCE_DIR/brownfield/check_brownfield_edit.py merged --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect merged --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
