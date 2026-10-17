@@ -84,4 +84,4 @@ each case log, so `start` returns that same log, not a duplicate.
 400. `finish` destroys any override on the log.
 
 Reads need test-case-log read permission; override and assign need the matching
-write permissions (`uip tm project permissions get --project-key`).
+write permissions (`uip tm project-permissions get --project-key`).

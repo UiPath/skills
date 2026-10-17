@@ -45,7 +45,9 @@ There is **no `executions create`** — open a manual run with
   overwrites.
 - **`export` needs a licensed user** — a caller who can `list-filtered` may still be
   refused — and an empty filter still writes a valid zero-row workbook reporting
-  Success, so verify the filter, not the exit code.
+  Success, so verify the filter, not the exit code. `--output-file` is refused up
+  front (`ValidationError`/exit 3) when it names a directory or an existing file;
+  pass `--overwrite` to replace one, and only when the user asked.
 - **`cancel`: read `Data.Status`, not the exit code.** `Cancelling` = the stop was
   recorded; `Running` = only forwarded to Orchestrator (legacy dispatch or no live work
   left); terminal = already over. A manual run has no job to stop and is refused — close
