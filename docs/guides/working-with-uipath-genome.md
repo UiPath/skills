@@ -2,6 +2,60 @@
 
 uipath-genome turns a project, or an idea, into a genome: a markdown blueprint of the automation. The agent then builds the UiPath automation from it, runs it against the real applications and fixes what fails. You make a few decisions; the agent, with helper agents it starts in parallel, does the rest.
 
+## What a genome holds
+
+Every genome has the same sections; one that does not apply carries a one-line stub, never a gap. The body reads as a specification in plain words, with no activity, variable or file names, so someone who knows the process can review it. The build reads every section:
+
+| Question | Sections | What the build does with them |
+| --- | --- | --- |
+| What it is | Overview, Target Applications | Machine setup and network access go to the open items |
+| How it is built | Build With, Platform Dependencies, Interface, Configuration Questions | Each part goes to its UiPath skill; the open values are asked before anything is written |
+| What it does | Workflow, Business Rules, Error Handling, Transactional Shape | Builds each step, rule and failure handler; asks how to split work done item by item |
+| When it is done | Acceptance Criteria | Gives each numbered criterion a verdict in the completion report |
+| Where it came from (extracted genomes only) | Source Map | Carries the UI targets and test data over from the source |
+
+One project gives a component genome. Two or more give a process genome, with the process map, the handoffs between the projects and the deployment, plus one component genome per project.
+
+## Not a one-to-one translation
+
+A genome says what the automation does, not how the source did it, so the build writes each part the UiPath way:
+
+| In the source | In the UiPath build |
+| --- | --- |
+| One automation that coordinates the work and drives the screens | A coordinator and the processes it starts, each built by its own UiPath skill |
+| The same procedure copied into several automations | One library, published to a feed and installed as a package |
+| A loop over items with hand-made retries and status | Split as you choose: one process, a producer and a consumer, or one process with a queue; REFramework when picked |
+| A target recorded per step or per window | One Object Repository element per field, shared by every step that uses it |
+| A wait-and-check step after each action | Verification on the action itself; a separate check only where the outcome changes what happens next |
+| Jumps to labels | Branches and loops |
+| Passwords and hosts in files or code | One credential asset per account; per-environment values as settings |
+
+Kept as the source has it: every business rule, outcome and log line, and the step names, so a reviewer can match each step to its source. Every departure is listed with its reason.
+
+## Why it holds up
+
+Reading and building are checked apart, with you in between:
+
+1. **A checkpoint before any code.** Everything the agent understood is plain text you review before the build starts. A wrong reading is fixed in the genome, not found after go-live.
+2. **Hidden rules written down.** Rules that live in error handlers, default values and settings files are read like any step and written at the step where they act, so the review sees them.
+3. **Judged against the genome.** Expected outcomes come from the genome and, for an existing project, its source, never from what the build produced, so the build cannot grade its own work.
+4. **Every fix checked again.** After a fix, every run and test it touches runs again. A fix that breaks a criterion already met is undone, and the report gives the final build's verdicts.
+
+## How it compares
+
+| | Convert step by step | One-shot AI rewrite | Spec-first coding tools | uipath-genome |
+| --- | --- | --- | --- | --- |
+| Starts from the automation you have | Yes | Yes | No: specs the next change | Yes, or from an idea |
+| A plain-language spec, reviewed before the build | No | No | Yes | Yes |
+| Rules in error handlers, defaults and settings written down | Copied, not shown | Often lost | Not read | Yes, where they act |
+| Built the target's way, not the old shape | No: same shape | Yes | Yes | Yes |
+| Gaps marked, not guessed | Unmapped steps flagged | No: filled with guesses | Yes | Yes |
+| Done means the source's outcomes, checked | It compiles | Its own tests | The spec's tests | Yes, a verdict on each |
+
+**Where another way is enough:** a step-by-step converter when the new automation must keep the old shape; a one-shot rewrite for a small automation someone knows well. The genome costs a review turn and hours of agent time. It pays off when the rules are many, hidden, or must be proven.
+
+## What one run produced
+
 ![About 31 agent-hours in 9½ hours of run time, against 7 minutes of your answers](images/agents-over-time.svg)
 
 *Session logs of one run · 7–8 Oct 2026 · agents per 10 minutes of active time*
@@ -84,11 +138,11 @@ You get:
 | The run passes but nothing changed | Checks the app's records, not just the green result |
 | The genome is wrong | Notes it in the completion report, and asks you when the genome leaves a gap |
 
-It re-runs until a run is clean; a failure it cannot fix goes into the completion report. You answer only when asked: a decision, a missing value, or an OK for another run that creates records.
+It re-runs until a run is clean. After each fix it re-runs what the fix touches and undoes a fix that breaks something that already worked; a failure it cannot fix goes into the completion report. You answer only when asked: a decision, a missing value, or an OK for another run that creates records.
 
 ## 5 · Open items
 
 The run ends with two lists.
 
 - **Setup for the target environment:** `<project>-open-items.md`, beside the project folder. It is a checklist for whoever deploys: folder and robots, packages, queues and assets, machine setup (apps, browser extension, network access), and triggers last. Credentials list the username only; the password is entered in Orchestrator.
-- **Decisions for you:** in the completion report — criteria not yet met with the change each needs, missing source data, and corrections to the genome. Say "fix them" and the agent fixes and checks again. A genome correction is an edit to the genome, then a rebuild.
+- **Decisions for you:** in the completion report — criteria not yet met with the change each needs, missing source data, and corrections to the genome. Say "fix them": the agent fixes each one, re-runs what the fix touches, and undoes a fix that breaks a criterion already met. A genome correction is an edit to the genome, then a rebuild.
