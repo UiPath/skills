@@ -211,7 +211,7 @@ Acceptance Criteria
 Result: 5/8 met, 1 partial, 1 not met, 1 not verifiable
 ```
 
-For each Partial or Not Met: state what is missing and the concrete change. Fix them when the user asks, or immediately in autonomous runs, then re-validate.
+For each Partial or Not Met: state what is missing and the concrete change. Fix them when the user asks, or immediately in autonomous runs, then re-validate the touched files and re-run every local run and test that exercises them: a fix to a shared workflow can break a criterion already Met. A fix that turns a Met criterion into Partial or Not Met is undone before another fix is tried, and the report gives the final build's verdicts.
 
 ### 3.3 Completion report
 
