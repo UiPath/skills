@@ -1,0 +1,828 @@
+{
+ "source": "BIRD dev student_club (sqlite schema), compiled by goal1-fwd/fhir/compile.py without a standard mapping",
+ "mapping": null,
+ "prefix": "",
+ "entities": [
+  {
+   "name": "Event",
+   "body": {
+    "displayName": "Event",
+    "description": "Customer table event (42 rows)",
+    "fields": [
+     {
+      "name": "eventId",
+      "displayName": "event_id",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": false,
+      "description": "A unique identifier for the event",
+      "lengthLimit": 200
+     },
+     {
+      "name": "eventName",
+      "displayName": "event_name",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "event name",
+      "lengthLimit": 200
+     },
+     {
+      "name": "eventDate",
+      "displayName": "event_date",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The date the event took place or is scheduled to take place",
+      "lengthLimit": 200
+     },
+     {
+      "name": "type",
+      "displayName": "type",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The kind of event, such as game, social, election",
+      "lengthLimit": 200
+     },
+     {
+      "name": "notes",
+      "displayName": "notes",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "A free text field for any notes about the event",
+      "lengthLimit": 200
+     },
+     {
+      "name": "location",
+      "displayName": "location",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "Address where the event was held or is to be held or the name of such a location",
+      "lengthLimit": 200
+     },
+     {
+      "name": "status",
+      "displayName": "status",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "One of three values indicating if the event is in planning, is opened, or is closed",
+      "lengthLimit": 200
+     }
+    ]
+   },
+   "relationships": [],
+   "provenance": [
+    {
+     "field": "eventId",
+     "sourceColumn": "event_id",
+     "source": "event.event_id"
+    },
+    {
+     "field": "eventName",
+     "sourceColumn": "event_name",
+     "source": "event.event_name"
+    },
+    {
+     "field": "eventDate",
+     "sourceColumn": "event_date",
+     "source": "event.event_date"
+    },
+    {
+     "field": "type",
+     "sourceColumn": "type",
+     "source": "event.type"
+    },
+    {
+     "field": "notes",
+     "sourceColumn": "notes",
+     "source": "event.notes"
+    },
+    {
+     "field": "location",
+     "sourceColumn": "location",
+     "source": "event.location"
+    },
+    {
+     "field": "status",
+     "sourceColumn": "status",
+     "source": "event.status"
+    }
+   ]
+  },
+  {
+   "name": "Major",
+   "body": {
+    "displayName": "Major",
+    "description": "Customer table major (113 rows)",
+    "fields": [
+     {
+      "name": "majorId",
+      "displayName": "major_id",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": false,
+      "description": "A unique identifier for each major",
+      "lengthLimit": 200
+     },
+     {
+      "name": "majorName",
+      "displayName": "major_name",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "major name",
+      "lengthLimit": 200
+     },
+     {
+      "name": "department",
+      "displayName": "department",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The name of the department that offers the major",
+      "lengthLimit": 200
+     },
+     {
+      "name": "college",
+      "displayName": "college",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The name college that houses the department that offers the major",
+      "lengthLimit": 200
+     }
+    ]
+   },
+   "relationships": [],
+   "provenance": [
+    {
+     "field": "majorId",
+     "sourceColumn": "major_id",
+     "source": "major.major_id"
+    },
+    {
+     "field": "majorName",
+     "sourceColumn": "major_name",
+     "source": "major.major_name"
+    },
+    {
+     "field": "department",
+     "sourceColumn": "department",
+     "source": "major.department"
+    },
+    {
+     "field": "college",
+     "sourceColumn": "college",
+     "source": "major.college"
+    }
+   ]
+  },
+  {
+   "name": "ZipCode",
+   "body": {
+    "displayName": "ZipCode",
+    "description": "Customer table zip_code (41877 rows)",
+    "fields": [
+     {
+      "name": "zipCodeKey",
+      "displayName": "zip_code",
+      "type": "DECIMAL",
+      "isRequired": true,
+      "isUnique": false,
+      "description": "The ZIP code itself. A five-digit number identifying a US post office.",
+      "decimalPrecision": 0
+     },
+     {
+      "name": "type",
+      "displayName": "type",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The kind of ZIP code",
+      "lengthLimit": 200
+     },
+     {
+      "name": "city",
+      "displayName": "city",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The city to which the ZIP pertains",
+      "lengthLimit": 200
+     },
+     {
+      "name": "county",
+      "displayName": "county",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The county to which the ZIP pertains",
+      "lengthLimit": 200
+     },
+     {
+      "name": "state",
+      "displayName": "state",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The name of the state to which the ZIP pertains",
+      "lengthLimit": 200
+     },
+     {
+      "name": "shortState",
+      "displayName": "short_state",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The abbreviation of the state to which the ZIP pertains",
+      "lengthLimit": 200
+     }
+    ]
+   },
+   "relationships": [],
+   "provenance": [
+    {
+     "field": "zipCodeKey",
+     "sourceColumn": "zip_code",
+     "source": "zip_code.zip_code"
+    },
+    {
+     "field": "type",
+     "sourceColumn": "type",
+     "source": "zip_code.type"
+    },
+    {
+     "field": "city",
+     "sourceColumn": "city",
+     "source": "zip_code.city"
+    },
+    {
+     "field": "county",
+     "sourceColumn": "county",
+     "source": "zip_code.county"
+    },
+    {
+     "field": "state",
+     "sourceColumn": "state",
+     "source": "zip_code.state"
+    },
+    {
+     "field": "shortState",
+     "sourceColumn": "short_state",
+     "source": "zip_code.short_state"
+    }
+   ]
+  },
+  {
+   "name": "Budget",
+   "body": {
+    "displayName": "Budget",
+    "description": "Customer table budget (52 rows)",
+    "fields": [
+     {
+      "name": "budgetId",
+      "displayName": "budget_id",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": false,
+      "description": "A unique identifier for the budget entry",
+      "lengthLimit": 200
+     },
+     {
+      "name": "category",
+      "displayName": "category",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The area for which the amount is budgeted, such as, advertisement, food, parking",
+      "lengthLimit": 200
+     },
+     {
+      "name": "spent",
+      "displayName": "spent",
+      "type": "DECIMAL",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The total amount spent in the budgeted category for an event.",
+      "decimalPrecision": 2
+     },
+     {
+      "name": "remaining",
+      "displayName": "remaining",
+      "type": "DECIMAL",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "A value calculated as the amount budgeted minus the amount spent",
+      "decimalPrecision": 2
+     },
+     {
+      "name": "amount",
+      "displayName": "amount",
+      "type": "DECIMAL",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The amount budgeted for the specified category and event",
+      "decimalPrecision": 0
+     },
+     {
+      "name": "eventStatus",
+      "displayName": "event_status",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "the status of the event",
+      "lengthLimit": 200
+     },
+     {
+      "name": "linkToEvent",
+      "displayName": "link_to_event",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The unique identifier of the event to which the budget line applies.",
+      "lengthLimit": 200
+     }
+    ]
+   },
+   "relationships": [
+    {
+     "field": "linkToEvent",
+     "referenceEntity": "Event",
+     "kind": "foreign-key column (plain field)"
+    }
+   ],
+   "provenance": [
+    {
+     "field": "budgetId",
+     "sourceColumn": "budget_id",
+     "source": "budget.budget_id"
+    },
+    {
+     "field": "category",
+     "sourceColumn": "category",
+     "source": "budget.category"
+    },
+    {
+     "field": "spent",
+     "sourceColumn": "spent",
+     "source": "budget.spent"
+    },
+    {
+     "field": "remaining",
+     "sourceColumn": "remaining",
+     "source": "budget.remaining"
+    },
+    {
+     "field": "amount",
+     "sourceColumn": "amount",
+     "source": "budget.amount"
+    },
+    {
+     "field": "eventStatus",
+     "sourceColumn": "event_status",
+     "source": "budget.event_status"
+    },
+    {
+     "field": "linkToEvent",
+     "sourceColumn": "link_to_event",
+     "source": "budget.link_to_event"
+    }
+   ]
+  },
+  {
+   "name": "Member",
+   "body": {
+    "displayName": "Member",
+    "description": "Customer table member (33 rows)",
+    "fields": [
+     {
+      "name": "memberId",
+      "displayName": "member_id",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": false,
+      "description": "unique id of member",
+      "lengthLimit": 200
+     },
+     {
+      "name": "firstName",
+      "displayName": "first_name",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "member's first name",
+      "lengthLimit": 200
+     },
+     {
+      "name": "lastName",
+      "displayName": "last_name",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "member's last name",
+      "lengthLimit": 200
+     },
+     {
+      "name": "email",
+      "displayName": "email",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "member's email",
+      "lengthLimit": 200
+     },
+     {
+      "name": "position",
+      "displayName": "position",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The position the member holds in the club",
+      "lengthLimit": 200
+     },
+     {
+      "name": "tShirtSize",
+      "displayName": "t_shirt_size",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The size of tee shirt that member wants when shirts are ordered",
+      "lengthLimit": 200
+     },
+     {
+      "name": "phone",
+      "displayName": "phone",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The best telephone at which to contact the member",
+      "lengthLimit": 200
+     },
+     {
+      "name": "zip",
+      "displayName": "zip",
+      "type": "DECIMAL",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "the zip code of the member's hometown",
+      "decimalPrecision": 0
+     },
+     {
+      "name": "linkToMajor",
+      "displayName": "link_to_major",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The unique identifier of the major of the member. References the Major table",
+      "lengthLimit": 200
+     }
+    ]
+   },
+   "relationships": [
+    {
+     "field": "zip",
+     "referenceEntity": "ZipCode",
+     "kind": "foreign-key column (plain field)"
+    },
+    {
+     "field": "linkToMajor",
+     "referenceEntity": "Major",
+     "kind": "foreign-key column (plain field)"
+    }
+   ],
+   "provenance": [
+    {
+     "field": "memberId",
+     "sourceColumn": "member_id",
+     "source": "member.member_id"
+    },
+    {
+     "field": "firstName",
+     "sourceColumn": "first_name",
+     "source": "member.first_name"
+    },
+    {
+     "field": "lastName",
+     "sourceColumn": "last_name",
+     "source": "member.last_name"
+    },
+    {
+     "field": "email",
+     "sourceColumn": "email",
+     "source": "member.email"
+    },
+    {
+     "field": "position",
+     "sourceColumn": "position",
+     "source": "member.position"
+    },
+    {
+     "field": "tShirtSize",
+     "sourceColumn": "t_shirt_size",
+     "source": "member.t_shirt_size"
+    },
+    {
+     "field": "phone",
+     "sourceColumn": "phone",
+     "source": "member.phone"
+    },
+    {
+     "field": "zip",
+     "sourceColumn": "zip",
+     "source": "member.zip"
+    },
+    {
+     "field": "linkToMajor",
+     "sourceColumn": "link_to_major",
+     "source": "member.link_to_major"
+    }
+   ]
+  },
+  {
+   "name": "Attendance",
+   "body": {
+    "displayName": "Attendance",
+    "description": "Customer table attendance (326 rows)",
+    "fields": [
+     {
+      "name": "linkToEvent",
+      "displayName": "link_to_event",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": false,
+      "description": "The unique identifier of the event which was attended",
+      "lengthLimit": 200
+     },
+     {
+      "name": "linkToMember",
+      "displayName": "link_to_member",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": false,
+      "description": "The unique identifier of the member who attended the event",
+      "lengthLimit": 200
+     }
+    ]
+   },
+   "relationships": [
+    {
+     "field": "linkToEvent",
+     "referenceEntity": "Event",
+     "kind": "foreign-key column (plain field)"
+    },
+    {
+     "field": "linkToMember",
+     "referenceEntity": "Member",
+     "kind": "foreign-key column (plain field)"
+    }
+   ],
+   "provenance": [
+    {
+     "field": "linkToEvent",
+     "sourceColumn": "link_to_event",
+     "source": "attendance.link_to_event"
+    },
+    {
+     "field": "linkToMember",
+     "sourceColumn": "link_to_member",
+     "source": "attendance.link_to_member"
+    }
+   ]
+  },
+  {
+   "name": "Expense",
+   "body": {
+    "displayName": "Expense",
+    "description": "Customer table expense (32 rows)",
+    "fields": [
+     {
+      "name": "expenseId",
+      "displayName": "expense_id",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": false,
+      "description": "unique id of income",
+      "lengthLimit": 200
+     },
+     {
+      "name": "expenseDescription",
+      "displayName": "expense_description",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "A textual description of what the money was spend for",
+      "lengthLimit": 200
+     },
+     {
+      "name": "expenseDate",
+      "displayName": "expense_date",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The date the expense was incurred",
+      "lengthLimit": 200
+     },
+     {
+      "name": "cost",
+      "displayName": "cost",
+      "type": "DECIMAL",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The dollar amount of the expense",
+      "decimalPrecision": 2
+     },
+     {
+      "name": "approved",
+      "displayName": "approved",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "A true or false value indicating if the expense was approved",
+      "lengthLimit": 200
+     },
+     {
+      "name": "linkToMember",
+      "displayName": "link_to_member",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The member who incurred the expense",
+      "lengthLimit": 200
+     },
+     {
+      "name": "linkToBudget",
+      "displayName": "link_to_budget",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "The unique identifier of the record in the Budget table that indicates the expected total expenditure for a given category and event.",
+      "lengthLimit": 200
+     }
+    ]
+   },
+   "relationships": [
+    {
+     "field": "linkToMember",
+     "referenceEntity": "Member",
+     "kind": "foreign-key column (plain field)"
+    },
+    {
+     "field": "linkToBudget",
+     "referenceEntity": "Budget",
+     "kind": "foreign-key column (plain field)"
+    }
+   ],
+   "provenance": [
+    {
+     "field": "expenseId",
+     "sourceColumn": "expense_id",
+     "source": "expense.expense_id"
+    },
+    {
+     "field": "expenseDescription",
+     "sourceColumn": "expense_description",
+     "source": "expense.expense_description"
+    },
+    {
+     "field": "expenseDate",
+     "sourceColumn": "expense_date",
+     "source": "expense.expense_date"
+    },
+    {
+     "field": "cost",
+     "sourceColumn": "cost",
+     "source": "expense.cost"
+    },
+    {
+     "field": "approved",
+     "sourceColumn": "approved",
+     "source": "expense.approved"
+    },
+    {
+     "field": "linkToMember",
+     "sourceColumn": "link_to_member",
+     "source": "expense.link_to_member"
+    },
+    {
+     "field": "linkToBudget",
+     "sourceColumn": "link_to_budget",
+     "source": "expense.link_to_budget"
+    }
+   ]
+  },
+  {
+   "name": "Income",
+   "body": {
+    "displayName": "Income",
+    "description": "Customer table income (36 rows)",
+    "fields": [
+     {
+      "name": "incomeId",
+      "displayName": "income_id",
+      "type": "STRING",
+      "isRequired": true,
+      "isUnique": false,
+      "description": "A unique identifier for each record of income",
+      "lengthLimit": 200
+     },
+     {
+      "name": "dateReceived",
+      "displayName": "date_received",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "the date that the fund received",
+      "lengthLimit": 200
+     },
+     {
+      "name": "amount",
+      "displayName": "amount",
+      "type": "DECIMAL",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "amount of funds",
+      "decimalPrecision": 0
+     },
+     {
+      "name": "source",
+      "displayName": "source",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "A value indicating where the funds come from such as dues, or the annual university allocation",
+      "lengthLimit": 200
+     },
+     {
+      "name": "notes",
+      "displayName": "notes",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "A free-text value giving any needed details about the receipt of funds",
+      "lengthLimit": 200
+     },
+     {
+      "name": "linkToMember",
+      "displayName": "link_to_member",
+      "type": "STRING",
+      "isRequired": false,
+      "isUnique": false,
+      "description": "link to member",
+      "lengthLimit": 200
+     }
+    ]
+   },
+   "relationships": [
+    {
+     "field": "linkToMember",
+     "referenceEntity": "Member",
+     "kind": "foreign-key column (plain field)"
+    }
+   ],
+   "provenance": [
+    {
+     "field": "incomeId",
+     "sourceColumn": "income_id",
+     "source": "income.income_id"
+    },
+    {
+     "field": "dateReceived",
+     "sourceColumn": "date_received",
+     "source": "income.date_received"
+    },
+    {
+     "field": "amount",
+     "sourceColumn": "amount",
+     "source": "income.amount"
+    },
+    {
+     "field": "source",
+     "sourceColumn": "source",
+     "source": "income.source"
+    },
+    {
+     "field": "notes",
+     "sourceColumn": "notes",
+     "source": "income.notes"
+    },
+    {
+     "field": "linkToMember",
+     "sourceColumn": "link_to_member",
+     "source": "income.link_to_member"
+    }
+   ]
+  }
+ ],
+ "renames": [
+  {
+   "entity": "ZipCode",
+   "sourceColumn": "zip_code",
+   "name": "zipCodeKey",
+   "reason": "same as the entity name"
+  }
+ ]
+}

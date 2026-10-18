@@ -1,0 +1,75 @@
+task_id: skill-planner-sdd-to-tasks-entities
+description: >
+  Lane A derives the task list from a ready Flow SDD whose data model is eight Native Data Fabric
+  entities with relationships, and whose flow reads two of them and updates a third. Scored
+  deterministically: one `platform:<Solution>:entity:<Entity>` task per entity with a complete create
+  body, RELATIONSHIP fields or Blocked-by edges for every relationship, a
+  `solution:<Solution>:resources:Entity:<Entity>` task per entity, and an `Entities:` binding row with
+  the right read/write direction on the consumer task (Goal 1 plan v10, Phase N1). Nothing is created
+  on the tenant and nothing is built.
+tags: [uipath-planner, integration, mode:build, lifecycle:generate, data-fabric, lane-a]
+
+run_limits:
+  expected_turns: 25
+  task_timeout: 3000
+  turn_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: .
+
+initial_prompt: |
+  The Solution Design Document for the student club expense-approval flow is saved as
+  `student-club-insights-sdd.md` in the current directory. It is `Status: ready` and carries the
+  Planner Handoff header. Run the uipath-planner skill's PDD-driven lane (Lane A) in autonomous mode
+  and derive the full task list; write it to `student-club-insights-tasks.md` in the current directory.
+
+  Important:
+  - Derive tasks only. Do NOT run `uip df entities create|update|delete`, any `uip solution` write,
+    or build anything. Live TaskCreate calls are fine.
+  - Every Data Fabric entity in the SDD needs its own platform task with the complete create body,
+    and every task that reads or writes an entity must say which ones.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill (tasks were not free-formed)"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Tasks file written"
+    path: "student-club-insights-tasks.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Tasks file scored against the golden: entity tasks, fields, types, relationships, bindings, order"
+    command: python3 "$REFERENCE_DIR/check_tasks_entities.py" --golden "$REFERENCE_DIR/golden.json" --tasks student-club-insights-tasks.md
+    score_from_stdout: true
+    timeout: 60
+    weight: 4.0
+    pass_threshold: 0.6
+
+  - type: command_executed
+    description: "Agent must NOT create, update or delete entities"
+    tool_name: "Bash"
+    command_pattern: 'uip\b[^\n|;&]*?\bdf\s+entities\s+(create|update|delete)\b(?![^\n|;&]*--help)'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent must NOT write to a solution"
+    tool_name: "Bash"
+    command_pattern: 'uip\b[^\n|;&]*?\bsolution\s+(init|projects|resources|pack|publish|deploy|upload)\b(?![^\n|;&]*--help)'
+    min_count: 0
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0

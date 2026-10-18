@@ -68,6 +68,7 @@ Operationalizes item 2. Best-effort and auth-required — same rules as tenant l
 | IXP projects / models | `uip ixp projects list --output json` — newer CLIs only; on `unknown command` apply the drift rule below or user-named estate |
 | Deployed Solutions | `uip solution deploy list --output json` |
 | Data Fabric entities | `uip df entities list --output json` |
+| Federated connector allow-list (which connectors may back a VDO) | `uip df connectors list --output json` — on `unknown command`, the same list is the Data Fabric API `GET …/supportedConnectors`; never substitute the full `uip is connectors list` catalogue |
 | API Workflows | No dedicated listing verb — they publish into Orchestrator: check the `uip or processes list` output, else user-named estate |
 | Coded Apps, Coded Functions | No CLI listing — user-named estate only; ask when signals suggest one exists |
 

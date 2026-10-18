@@ -1,0 +1,80 @@
+task_id: skill-sdd-pdd-to-sdd-entities
+description: >
+  Phase D produces the SDD's `### Data Fabric entities` table from a PDD whose
+  systems of record are external databases: the entity part of the solution
+  schema (entity, class, connector key from the federated allow-list, external
+  object, fields, joins). Scored deterministically against a schema golden
+  derived from the live federated fixtures in the alpha tenant (Goal 1, BIRD
+  student_club). The agent may read the tenant (`uip is …`, `uip df … list`)
+  but must not create anything.
+tags: [uipath-planner, integration, lifecycle:generate, data-fabric, federated]
+
+run_limits:
+  expected_turns: 30
+  task_timeout: 3600
+  turn_timeout: 2700
+
+# Stage the PDD as `pdd.md` in the sandbox root — the strongest planner-activation signal.
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixtures
+
+reference:
+  directory: .
+
+initial_prompt: |
+  I've saved the Process Design Document for the student club team as `pdd.md`
+  in the current directory. Read it and produce the complete Solution Design
+  Document with the uipath-planner skill, Autonomous mode, no checkpoints; for
+  any [SME REVIEW] items use sensible defaults and proceed.
+
+  The team's records live in SQL Server (connection `birdadmin_sqlserver`,
+  Shared folder) with a Snowflake copy; the solution must read them live as
+  Data Fabric federated entities, not copy them. Use the `alpha` login profile
+  for any tenant discovery you need (`uip --profile alpha …`).
+
+  Important:
+  - Do NOT run `uip df entities create|update|delete` or any `uip solution` write.
+  - Your deliverable is the SDD markdown file, saved as `student-club-insights-sdd.md`
+    in the current directory, including the template's `### Data Fabric entities` table.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent engaged the uipath-planner skill (rather than free-forming the SDD)"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "SDD file created"
+    path: "student-club-insights-sdd.md"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "SDD carries the Data Fabric entities table and the planner handoff"
+    path: "student-club-insights-sdd.md"
+    includes:
+      - "Data Fabric entities"
+      - "Planner Handoff"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Data Fabric entities table scored against the student_club golden (entities, class, connector, object, fields, joins)"
+    command: python3 "$REFERENCE_DIR/check_sdd_entities.py" --golden "$REFERENCE_DIR/golden.json" --sdd student-club-insights-sdd.md
+    score_from_stdout: true
+    timeout: 60
+    weight: 4.0
+    pass_threshold: 0.6
+
+  - type: command_executed
+    description: "Agent must NOT create, update or delete entities"
+    tool_name: "Bash"
+    command_pattern: 'uip\b[^\n|;&]*?\bdf\s+entities\s+(create|update|delete)'
+    min_count: 0
+    max_count: 0
+    weight: 2.0
+    pass_threshold: 1.0

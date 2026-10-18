@@ -65,6 +65,20 @@ A request is **single-skill** when:
 
 > **BPMN is a peer orchestrator to Flow.** The same Pattern 2/3 structure applies to a Maestro BPMN process — swap `uipath-maestro-bpmn` for `uipath-maestro-flow`. As with Flow, inline `uipath:*` elements (scriptTask, businessRuleTask, connector, userTask/HITL) are authored by the BPMN specialist itself and are NOT separate components — only separate buildable projects (standalone RPA process, coded agent, coded app) fan out.
 
+## Pattern 3a — A project that reads or writes Data Fabric entities
+
+**When it applies:** any project (Flow, BPMN, Case, RPA, Agent) keeps, looks up or updates business records in Data Fabric — the entities are tenant resources the project binds to by name, exactly like Pattern 3's deployed components.
+
+```
+1. uipath-platform     → create each Native entity (one task per entity; create body in the prompt; relationship targets first)
+2. uipath-solution     → declare each entity as a solution resource (`uip solution resources add --kind Entity`)
+3. <project skill>     → build the project; its task carries the `Entities:` binding row (entity, read/write, where)
+4. <project skill>     → testing (mandatory)
+5. uipath-solution     → pack / publish / deploy
+```
+
+Entities the tenant already has are reused (steps 2–3 only). An entity over an external system of record is a federated view — its step 1 is `[!] blocked` until the CLI ships federated create. Rule text: [pdd-driven-lane-guide.md → Step 6 rule 8](pdd-driven-lane-guide.md#step-6--derive-tasks).
+
 ## Pattern 4 — Flow deploy to Orchestrator
 
 **When it applies:** the flow exists; user wants it deployed to Orchestrator.
