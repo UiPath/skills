@@ -105,23 +105,34 @@ The shipped library covers roughly 150 connectors.
 A tenant can serve more, and `compile` says so:
 
 ```
-connector not in library: uipath.connector.uipath-uipath-testmanager.create-v2-attachment-upload.
-Connector "uipath-uipath-testmanager" is present but carries no "…".
+connector not in library: uipath.connector.uipath-uipath-testmanager.create-test-set.
 ```
 
-Two routes, in order:
+**`uip maestro registry prepare <key> --action <name>` resolves it through the live connection and writes an overlay the compiler reads** — one call per operation, the action named the way the connector's activity catalog spells it in kebab case (`uip is activities list <key> --output json` lists the names: `CreateTestSet` → `create-test-set`, `GetAssignedTestCasesForTestSet` → `get-assigned-test-cases-for-test-set`).
+This covers a connector the Flow node catalog does not carry at all (Test Manager is one: `registry search uipath-uipath-testmanager` answers nothing): `prepare` then reads Integration Service itself — the activity catalog for the identity, `is resources describe` for the path, parameters and fields — and says so:
 
-1. **`uip maestro registry prepare <key> --action <name>`** — it resolves the operation through the live connection and writes an overlay the compiler reads, which is the whole point of the overlay.
-2. **A hand-filled `.activity(id, 'Intsvc.ActivityExecution', …)`**, when prepare cannot reach it. Take the identity from the registry, never from the connector's OpenAPI document:
+```
+  source: Integration Service activity CreateTestSet (TestSet POST) — the Flow node catalog serves no node for uipath-uipath-testmanager, so this operation compiles in BPMN only (a Flow step needs the registry's node definition).
+prepare-connector: uipath.connector.uipath-uipath-testmanager.create-test-set → connectors-local/ (overlay + …, 1 variant(s), 3 input field(s))
+prepare-connector: next: .connector("<id>", "uipath-uipath-testmanager", "create-test-set", { ProjectId: /* string, required */, name: /* string, required */ }, { connection: "testmanager", folder: "shared" })
+```
+
+Author the call it prints; `bpmn check` then holds the inputs to the operation's real contract (a Test Manager update is a JSON-patch body — `path` and `value` — not the record's columns, and `execute-test-set` takes `testSetId`, `executionType` and `asyncMode`), and `compile` emits the task the platform matches on: `objectName` and `method` from the catalog, the path and its `target="path"` rows from the describe.
+Measured end to end on the Test Manager test-set lifecycle (seven operations): seven `prepare` calls, `check: ok`, `compile`, `tidy`, `validate` → `Valid`.
+
+An action `prepare` cannot find is refused with the activities Integration Service does list, as action ids; re-run with one of them.
+It never asks Integration Service for a connector the catalog does serve — a misspelt action on Jira gets the catalog's closest action, as before.
+
+Only when `prepare` cannot reach the tenant at all, fall back to **a hand-filled `.activity(id, 'Intsvc.ActivityExecution', …)`**, taking the identity from the catalog, never from the connector's OpenAPI document:
 
 ```bash
 uip is connections list <connector-key> --all-folders --output json      # the connection id
-uip is activities list <connector-key> --output json                     # Name + ObjectName + IsCurated
+uip is activities list <connector-key> --output json                     # Name + ObjectName + MethodName + IsCurated
 uip maestro bpmn registry get Intsvc.ActivityExecution \
-    --connection-id <id> --object-name <ObjectName> --output json        # the node template
+    --connection-id <id> --object-name <ObjectName> --operation <Verb> --output json   # the node template, with the describe
 ```
 
-`objectName` is the **registry's** object (`UploadAttachment`, `TestSet`), and `operation` is its CRUD verb (`Create`, `List`, `Retrieve`, `Delete`).
+`objectName` is the **catalog's** object (`UploadAttachment`, `TestSet`) and `method` its verb (`POST`, `GETBYID`, `PATCH`, `DELETE`).
 Neither is the connector's REST slug.
 A node carrying `objectName="v2::attachment::upload"` validates and then dispatches to nothing — the platform matches on the curated pair, and so do the graders that compare against a real export.
 
