@@ -12,13 +12,13 @@ A UiPath project is its own raw form. No inventory script renders it: extraction
 4. **Every workflow in full** — `.xaml`, `.cs` with its `.cs.json`. Designer data fills up to half of an older project's XAML, and an Integration Service connector activity carries its connector's cached object schema — every field of the object with its search operators and picklist values — which can fill nine tenths of a connector-heavy file. Read the files through this filter, which drops view state, namespace and assembly lists, layout sizes, the cached schemas and the compressed design configuration only, keeping every activity, property, annotation, `IdRef`, `xmlns`, expression and every field the activity sets (a field it sets carries a child value element, so its line is never a self-closed one):
 
    ```bash
-   sed -e '/<TextExpression.NamespacesForImplementation>/,/<\/TextExpression.NamespacesForImplementation>/d' \
-       -e '/<TextExpression.ReferencesForImplementation>/,/<\/TextExpression.ReferencesForImplementation>/d' \
-       -e '/<sap:WorkflowViewStateService.ViewState>/,/<\/sap:WorkflowViewStateService.ViewState>/d' \
-       -e '/<sap2010:WorkflowViewState.ViewStateManager>/,/<\/sap2010:WorkflowViewState.ViewStateManager>/d' \
-       -e '/<uibi:BusinessEntity.SearchableFields>/,/<\/uibi:BusinessEntity.SearchableFields>/d' \
-       -e '/<uibi:BusinessEntity.EntityMetadata>/,/<\/uibi:BusinessEntity.EntityMetadata>/d' \
-       -e '/<uiisi:OperationEntityField.EnumValues>/,/<\/uiisi:OperationEntityField.EnumValues>/d' \
+   sed -e '/<TextExpression.NamespacesForImplementation>.*<\/TextExpression.NamespacesForImplementation>/d; /<TextExpression.NamespacesForImplementation>/,/<\/TextExpression.NamespacesForImplementation>/d' \
+       -e '/<TextExpression.ReferencesForImplementation>.*<\/TextExpression.ReferencesForImplementation>/d; /<TextExpression.ReferencesForImplementation>/,/<\/TextExpression.ReferencesForImplementation>/d' \
+       -e '/<sap:WorkflowViewStateService.ViewState>.*<\/sap:WorkflowViewStateService.ViewState>/d; /<sap:WorkflowViewStateService.ViewState>/,/<\/sap:WorkflowViewStateService.ViewState>/d' \
+       -e '/<sap2010:WorkflowViewState.ViewStateManager>.*<\/sap2010:WorkflowViewState.ViewStateManager>/d; /<sap2010:WorkflowViewState.ViewStateManager>/,/<\/sap2010:WorkflowViewState.ViewStateManager>/d' \
+       -e '/<uibi:BusinessEntity.SearchableFields>.*<\/uibi:BusinessEntity.SearchableFields>/d; /<uibi:BusinessEntity.SearchableFields>/,/<\/uibi:BusinessEntity.SearchableFields>/d' \
+       -e '/<uibi:BusinessEntity.EntityMetadata>.*<\/uibi:BusinessEntity.EntityMetadata>/d; /<uibi:BusinessEntity.EntityMetadata>/,/<\/uibi:BusinessEntity.EntityMetadata>/d' \
+       -e '/<uiisi:OperationEntityField.EnumValues>.*<\/uiisi:OperationEntityField.EnumValues>/d; /<uiisi:OperationEntityField.EnumValues>/,/<\/uiisi:OperationEntityField.EnumValues>/d' \
        -e '/^ *<uiisi:OperationEntityField [^>]*\/> *$/d' \
        -e 's/ Configuration="H4sI[^"]*"/ Configuration="(compressed)"/g' \
        -e 's/ sap:VirtualizedContainerService.HintSize="[^"]*"//g' "<XAML_FILE>"
