@@ -172,6 +172,14 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
 The rest of `bodyParameters` is the request body. Outlook's
 `message.toRecipients` is a comma-separated string, not a Graph array.
 
+OneDrive's `referenceID` is an item's `ReferenceID`, `<drive-id> - <item-id>`;
+a bare item id fails with `400 ... drive id appears to be malformed`. List a
+folder's files, each with `FullName`, `Type` and `ReferenceID`, with
+`uip is resources run list uipath-microsoft-onedrive CuratedFileAndFolder
+--connection-id <id> --query "id=<folder-item-id>" --output json`; the
+`CuratedFolder` list gives the folders. Other query keys are ignored and
+return the drive root.
+
 ## 2. Paste it
 
 Follow `Data.V2.Instructions` (tokens, `RootBindings`, `Variables`, the

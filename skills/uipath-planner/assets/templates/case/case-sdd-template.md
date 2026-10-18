@@ -407,7 +407,11 @@ its fields ⊆ the app schema (code-switched app); otherwise it is the substitut
 **Trigger / Event:** <trigger display name for wait-for-connector, or —>
 
 <!-- Missing Connection ID / Activity Type ID → high review item. Inputs `Field` verbatim to the IS
-activity schema. Operation Configuration carries through as =jsonString: only here. -->
+activity schema. Operation Configuration carries through as =jsonString: only here. A solution-resource
+picker (a Data Fabric entity) is an Inputs row holding the resource name; when that name can exist in
+more than one folder, add a `<picker>_folderKey` row with the folder key (and `entityScope` = `folder`).
+The task's own outputs are `response` and `Error`: name a response field `response.<field>`, in an
+Outputs row and in a later task's read (`"<Stage>"."<Task>".response.<field>`). -->
 
 **Inputs:**
 
