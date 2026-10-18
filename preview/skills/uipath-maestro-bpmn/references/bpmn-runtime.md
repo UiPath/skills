@@ -162,10 +162,13 @@ binding half, which is the same for every connector-backed node.
 - A connector's path and query parameters are one `uipath:input` row each, under
   the library's own parameter name and tagged `target="path"` / `target="query"`;
   the request body is the one json `target="body"` row. `.connector()` and
-  `.dataService()` write that. Through `.activity()`, an undeclared scalar input is
-  written as a `type="string"` attribute and a structured one as a json body, the
-  key as its target; when a row's target is not its name — a query parameter — spell
-  it out with `inputRows: [{ name, type, target, value }]` instead of `inputs`.
+  `.dataService()` write that. Through `.activity()`, a request field goes in
+  `inputs: { field: value }` and is folded into the body row (`inputs: { script }`
+  on a JDBC query becomes `{"script": …}` in the body); a path or query parameter is
+  spelled out with `inputRows: [{ name, type, target, value }]`, **with its `target`**.
+  Integration Service reads rows by target only, so a row without one validates and is
+  never sent — `check` refuses it (`CONNECTOR_INPUT_ROW_NO_TARGET`), and the local
+  engine warns and drops it.
 
 ## Registry extension types
 
