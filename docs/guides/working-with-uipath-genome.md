@@ -54,6 +54,39 @@ Reading and building are checked apart, with you in between:
 
 **Where another way is enough:** a step-by-step converter when the new automation must keep the old shape; a one-shot rewrite for a small automation someone knows well. The genome costs a review turn and hours of agent time. It pays off when the rules are many, hidden, or must be proven.
 
+## Rebuilding an existing automation
+
+A genome extracted from an existing automation is rebuilt in one of two ways. Either way, every rule, outcome and message is kept, with the schedule and every output.
+
+**As it is.** The build keeps the source's step names, order and folders, so whoever knows the old automation can check the new one side by side. Every difference (a step renamed, merged, split, dropped or added) is a row of a correspondence table with its reason. The build asks how closely to follow:
+
+1. Names, shape and the table (recommended).
+2. Names and shape, without the table: for sources of thousands of steps, where the table costs more than a reviewer gains.
+3. The build's own names and grouping.
+
+**As a refactor.** Every part is re-authored on the UiPath product its shape fits, and the build names its steps in the business's words. A UiPath project is rebuilt only as a refactor; a smaller change is made in the project itself. The product is chosen for the shape, never as an upgrade, and every capability it relies on is checked first:
+
+| Its steps | UiPath product |
+| --- | --- |
+| Screens, or work only the robot's machine reaches | RPA process, Portable unless an activity exists only for Windows |
+| Connector and HTTP calls, a short run of few steps | API workflow |
+| Connector and HTTP calls in a long run, with waits, or with every run inspectable step by step | Maestro flow |
+| A person's task, waits of days, events or parallel branches between automations | Maestro flow, BPMN process or case |
+| A rule table, a document-extraction model, judgment no rule decides, code several parts call | A decision table, extraction model, agent or function of its own, when the business maintains it apart, it is trained, or several parts call it |
+
+A refactor is proven before the switch, with a way back:
+
+1. **Questions**, after the genome's: rebuild or retire each part (retire only when its owner confirms nobody uses it), fold a part into another when it only re-reads what that part already knew, the product for each part, a ruling on each source defect, whether to build a shadow mode and a write-test mode, and which identity each connection signs in as.
+2. **A plan**, written before any project exists: the decisions, every output the rebuild produces differently with its reason, the outputs it keeps, and what cannot be proven until it runs.
+3. **Tests first.** Before a step's logic is written, its tests pin what the source does for every rule and branch, texts compared word for word; recorded runs are replayed when you have them.
+4. **Shadow.** The rebuild runs beside the source on the same inputs and records what it would write instead of writing it; a comparison lists each item as the same, different as the plan expects, or to look at.
+5. **Write test.** One item written for real and read back.
+6. **Switch**, in one change window: the source's triggers off and its jobs finished first, so two implementations never write at once; a rollback ready; the source kept deployed until it is retired.
+
+A change needs a reason: a source defect, your ruling, a refactor answer or a platform limit, each a row of the plan. A retried write first checks that it has not already gone through.
+
+How far it is proven: target plans checked on small cases, and one component rebuilt with all 62 of its tests passing. A full refactor built end to end and a shadow run against a live source have not been done yet.
+
 ## What one run produced
 
 ![About 31 agent-hours in 9½ hours of run time, against 7 minutes of your answers](images/agents-over-time.svg)
@@ -100,6 +133,7 @@ Say what you have. The agent writes the genome, checks it and asks what to chang
 | --- | --- | --- |
 | A project or solution | "Extract a genome from `<folder>`" | Reads every file and asks only for related documents (PDD, SOP). For a large project it proposes working in parts and waits for your OK |
 | An idea, SOP or transcript | "Write a genome for `<idea>`" | Asks up to three rounds of questions |
+| A UiPath project to refactor | "Refactor `<folder>`" | Extracts the genome and waits for your review, then asks the refactor questions and builds |
 
 You get one genome per project — a spec of its steps, business rules, acceptance criteria and the UiPath skill that builds each part — plus an overview genome when there are several. Ask for changes in plain words ("step 4 is wrong") and the agent edits the file.
 
@@ -115,7 +149,7 @@ This is your main decision point. The build follows the genome, and the agent ne
 
 ## 3 · Build
 
-Say "Build `<name>-genome.md`". The agent asks its questions first, in batches of up to four, each with a recommended answer: the genome's open values, the project location, XAML or C#, where settings live and package versions. Then it builds without stopping.
+Say "Build `<name>-genome.md`". The agent asks its questions first, in batches of up to four, each with a recommended answer: the genome's open values, the project location, XAML or C#, where settings live and package versions. A rebuild as it is also asks how closely to follow the source; a refactor asks its own questions first ([Rebuilding an existing automation](#rebuilding-an-existing-automation)). Then it builds without stopping.
 
 You get:
 
@@ -144,5 +178,5 @@ It re-runs until a run is clean. After each fix it re-runs what the fix touches 
 
 The run ends with two lists.
 
-- **Setup for the target environment:** `<project>-open-items.md`, beside the project folder. It is a checklist for whoever deploys: folder and robots, packages, queues and assets, machine setup (apps, browser extension, network access), and triggers last. Credentials list the username only; the password is entered in Orchestrator.
+- **Setup for the target environment:** `<project>-open-items.md`, beside the project folder. It is a checklist for whoever deploys: folder and robots, packages, queues and assets, machine setup (apps, browser extension, network access), and triggers last. A refactor ends it with the cutover: shadow runs compared with the source, the write test, the switch, the rollback and what to retire. Credentials list the username only; the password is entered in Orchestrator.
 - **Decisions for you:** in the completion report — criteria not yet met with the change each needs, missing source data, and corrections to the genome. Say "fix them": the agent fixes each one, re-runs what the fix touches, and undoes a fix that breaks a criterion already met. A genome correction is an edit to the genome, then a rebuild.
