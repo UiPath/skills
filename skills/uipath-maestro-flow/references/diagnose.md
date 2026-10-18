@@ -120,6 +120,7 @@ concern. Fix, for a greenfield file only: `uip maestro flow format <Name>.flow`,
 which is owed before an upload, a debug, or anyone opening the project in a
 designer — see [`operate.md`](operate.md#lay-out-the-emitted-flow-first). Do not
 run it on a merged brownfield file; it re-lays out the author's canvas.
+When the source sets `.layout()`, the misshapen node is the one with no entry, or an entry at the wrong coordinates: add or move its `at(x, y)` and recompile rather than running `format`, which would discard every other entry too ([`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim)).
 
 **Green `validate`, faulted `debug`.** Structural correctness and runtime
 correctness are different claims. `validate` proves the emitted `.flow` is well

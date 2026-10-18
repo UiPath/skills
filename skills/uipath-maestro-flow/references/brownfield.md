@@ -324,6 +324,12 @@ validate the canonical project path again.
 
 Do not run `uip maestro flow format` on the merged file; it discards the author's layout.
 
+Decompiled source carries that layout as a `.layout({ nodes })` block, one long-hand entry per node.
+Keep it.
+A step the edit adds has no entry, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), and `dim(width, height)` for a container the edit grew.
+A step the edit removes must lose its entry, or compile fails on the unknown key.
+Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim).
+
 ## Split (`$ref`) artifacts
 
 A deployed `.flow` may be SPLIT across sibling files with JSON Reference —

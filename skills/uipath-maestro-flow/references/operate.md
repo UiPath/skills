@@ -34,6 +34,38 @@ holds the canvas author's positions, and `merge` keeps them. `format` re-lays
 out every node and discards them. Upload or debug the merged file as `merge`
 wrote it.
 
+### Lay out from source instead: `.layout()`, `at()`, `dim()`
+
+The builder can place the nodes itself, so the emitted file never needs `format`.
+`.layout({ nodes })` on the flow takes one entry per node, keyed by step name, with `start` for the trigger and `end` for the end node; `at(x, y)` writes an entry, and `dim(width, height)` the size a container needs.
+Use it when the request asks for a particular arrangement, or when a decompiled source already carries one ([`brownfield.md`](brownfield.md#the-same-loop-by-hand)).
+Otherwise `format` is less work and lays out as well.
+
+```ts
+import { at, dim, flow } from '@uipath/maestro-builder-sdk';
+
+export default flow('invoice-intake')
+  // …steps…
+  .layout({
+    nodes: {
+      start: at(256, 144), fetch: at(448, 144), eachInvoice: at(640, 144, dim(672, 288)),
+      extract: at(144, 96), route: at(336, 96), // inside eachInvoice, relative to it
+      done: at(1408, 144),
+      onFailure: at(448, 304), end: at(640, 304),
+    },
+  })
+  .build();
+```
+
+Rules:
+
+1. **Use the canvas grid.** A node is 96 px square; a column is 192 px, a row 160 px: `x = 256 + 192 × column`, `y = 144 + 160 × row`.
+   The main path goes on row 0 left to right; an error handler or a side arm takes the row below.
+2. **A child's position is relative to its container.** A loop or do-while body starts at `at(144, 96)` inside the container's padding, and the container needs a `dim()` wide enough to hold the body: `192 × bodyNodes + 288` wide and `288` tall for one row.
+3. **Name every node, or none.** A missing entry falls back to compile's one-row placeholder, which lands on top of your layout; an unknown key fails `compile`.
+4. **Never `format` a file whose source sets `.layout()`.** `format` re-lays out every node and discards the source's positions, exactly as it does to a merged brownfield file.
+5. **`at` and `dim` must be in `dist/api-index.md` of the installed SDK.** If they are not, upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`; on an older SDK write the entry long-hand, `{ position: { x, y } }` with an optional `size: { width, height }`.
+
 ## Refresh solution resources first
 
 ```bash

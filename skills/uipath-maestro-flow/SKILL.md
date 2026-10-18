@@ -87,7 +87,7 @@ The `uip maestro flow` commands delegate their semantics to the installed `@uipa
 ```bash
 ( cd "<Solution>/<Name>" && uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow )
 uip maestro flow validate "<Solution>/<Name>/<Name>.flow" --output json
-# Greenfield only (never a merged brownfield file), before upload/debug/a designer:
+# Greenfield only (never a merged brownfield file or a source that sets .layout()), before upload/debug/a designer:
 uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 # Only for a stated runtime-behavior claim:
 ( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
@@ -138,6 +138,7 @@ The quick start above shows the shape — `flow(id)`, declarations, nodes, `.ret
   | ``js`…` `` / ``tmpl`…` `` | an expression, or a string, you write yourself |
 
   `ran(step)` earns an early mention: when arms converge, one shared continuation usually reads better than the same work duplicated per arm, and `ran` is how that continuation asks whether the value it wants was produced.
+- **`.layout({ nodes })` places nodes on the canvas from source; `at(x, y)` and `dim(width, height)` write its entries.** It is optional metadata, keyed by step name (plus `start` for the trigger and `end`), and it changes nothing the flow does. The default stays `uip maestro flow format` after compile; write `.layout()` only when the request asks for a particular arrangement or when editing a decompiled source that already carries one. A file whose source sets it is laid out as emitted, so never run `format` on it. Details and the grid: [`references/operate.md`](references/operate.md#lay-out-the-emitted-flow-first).
 
 ## API index
 
