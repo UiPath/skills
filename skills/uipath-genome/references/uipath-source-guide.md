@@ -332,7 +332,7 @@ Check `project.json` `expressionLanguage` before reading XAML. VisualBasic: `And
 
 ## Deployed State
 
-A package runs as Orchestrator processes, and what runs is the process: each binds one package version, can override any binding of the package, and owns its triggers. When the user names the folder that runs it, read it with `uipath-platform`'s read commands — each process record with all its fields (its binding overrides are among them), the triggers, the assets and queues the workflows name, the job history — and write nothing; an export of those records the user gives is read the same way.
+A package runs as Orchestrator processes, and what runs is the process: each binds one package version, can override any binding of the package, and owns its triggers. When the user names the folder that runs it, read it with `uipath-platform`'s read commands — each process record with all its fields (its binding overrides are among them), the triggers, the assets and queues the workflows name, the job history, the other processes sharing them — and write nothing; an export of those records the user gives is read the same way.
 
 | Read | Tells you | Genome |
 |---|---|---|
@@ -342,6 +342,7 @@ A package runs as Orchestrator processes, and what runs is the process: each bin
 | Triggers: type, schedule and time zone, queue and its job limits, event (connector, object, event, filter) | how each entry point starts | Workflow step 1, Deployment. An event trigger is read here and never inferred from the entry point's event arguments, which show only that an event starts it |
 | Assets the workflows read, the queues' settings | values (never a credential's secret); unique reference, retries, retention | Configuration Question defaults; the Transactional Shape's As-is |
 | Job history of a window: runs, faults grouped by message and step, durations, items per run | whether an entry point is used, its volumes, what a fault does on real data | the Source Map's runtime row; a consequence the history shows is a fact, not `*[Inferred]*` |
+| The other processes of the folder and of each folder a binding resolves to: their declared resources, their triggers, and their packages' workflows when the declared resources leave a name blank or the package declares none | who else adds items to each queue the component uses or reads them, starts it or is started by it, and uses its assets, buckets and connections; a name another package builds from an expression is unresolved, never matched to one | each Platform Dependencies row names the processes sharing it and how; the processes read and the unresolved names go to the Source Map's deployed-state row |
 
 Without the deployed state, Platform Dependencies and Deployment come from the package, a trigger the package does not hold is `*[Inferred]*`, and the Source Map's deployed-state row says it was not read.
 
@@ -380,7 +381,7 @@ What the Source Map rows of [extracted-genome-guide.md § Source Map](extracted-
 | A test case | Its path plus `testCaseId`, `` `Tests/Case.xaml` (<testCaseId>) ``; a checkpoint inside it by its activity `IdRef` |
 | A step's data set | The data variation file's project-relative path, `` `.variations/<Case>.json` ``, in the step table's Data sets cell |
 | Inventory | Workflows per artifact type, test cases, data files and rows, Object Repository applications, screens and elements, accounts |
-| Deployed state | The folder and the date read; per process its package version, runtime and triggers, and each binding override with the package value it replaces; or "not read" (§ Deployed State) |
+| Deployed state | The folder and the date read; per process its package version, runtime and triggers, and each binding override with the package value it replaces; the other processes read, and each name another package builds from an expression; or "not read" (§ Deployed State) |
 | Runtime | The job-history window: per process the runs, the faults grouped by message and step, the durations; an entry point with no run named |
 
 No inventory script derives a process inventory or a recordset list, so the genome check runs without the export check, and [extraction-guide.md](extraction-guide.md) Step 6b's Glob check takes its place.
