@@ -123,6 +123,19 @@ def check_annotations_in_order(table: ET.Element, expected: list[str]) -> None:
 
 
 def check_named_rules(table: ET.Element) -> None:
+    clauses = len(table.findall("dmn:annotation", NS))
+    if clauses != 1:
+        fail(f"the table declares {clauses} <annotation> columns, expected 1")
+    miscounted = [index + 1 for index, rule in enumerate(table.findall("dmn:rule", NS))
+                  if len(rule.findall("dmn:annotationEntry", NS)) != 1]
+    if miscounted:
+        fail(f"rows {miscounted} do not carry exactly one annotationEntry for the one annotation column")
+    inputs, outputs = len(table.findall("dmn:input", NS)), len(table.findall("dmn:output", NS))
+    ragged = [index + 1 for index, rule in enumerate(table.findall("dmn:rule", NS))
+              if len(rule.findall("dmn:inputEntry", NS)) != inputs
+              or len(rule.findall("dmn:outputEntry", NS)) != outputs]
+    if ragged:
+        fail(f"rows {ragged} do not carry one entry per input and output column")
     unnamed = [index + 1 for index, text in enumerate(annotations(table)) if not text]
     if unnamed:
         fail(f"rows {unnamed} have no annotation; every rule needs a name")

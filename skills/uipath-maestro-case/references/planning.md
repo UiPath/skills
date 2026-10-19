@@ -108,12 +108,12 @@ Otherwise, continue with the normal resolution path:
 
 1. **Identify the plugin** by matching the sdd.md component description to an entry in the catalogs below (§3.1–§3.3).
 2. **Load the plugin's `planning.md` — once per plugin type, not per component.** It lists the exact fields to resolve from sdd.md, the cache file(s) to consult, and any discovery steps required. Group the SDD's components by plugin type, read that plugin's `planning.md` a single time, then resolve and emit EVERY component of that type from the one read. Re-reading a plugin reference per element is a read-budget defect (observed: `planning.md` re-read 10–16×, `impl-json.md` up to 26× per build); after context compaction, re-read only the plugin for the section in progress.
-3. **Resolve every task in one call** — `uip maestro case sdd resolve "<SDD_PATH>" --out tasks/registry-resolved.json --output json` (SKILL.md Rule 3). It reads each task's type-specific portable name (`Resolved Resource` for process/agent/rpa/api-workflow/function/business-rule, the Action App title for action, `Child Case` for case-management), searches the matching index, narrows by folder, and writes the whole Rule 10 ledger. `Data.Counts` says how many it selected; `Data.Unresolved[]` lists the rest. A missing or `<UNRESOLVED>` portable name violates the SDD contract and must be surfaced instead of silently falling back to `Task Name`.
-4. **Work only what resolve left.** Apply [registry-discovery.md](registry-discovery.md) — and a plugin `planning.md`'s Registry Resolution section — by hand to the `Data.Unresolved[]` entries alone: an `absent` entry runs the cross-type fallback and in-solution sibling check before the Rule 18 gate; an `ambiguous` one takes the match priority there. Never re-search a task resolve selected, and never rewrite its entry.
+3. **Resolve every task in one call** — `uip maestro case sdd resolve "<SDD_PATH>" --out tasks/registry-resolved.json --output json` (SKILL.md Rule 3), run from the solution directory when the solution exists so it also finds in-solution siblings ([registry-discovery.md § Resolve with the CLI first](registry-discovery.md#resolve-with-the-cli-first)). It reads each task's type-specific portable name (`Resolved Resource` for process/agent/rpa/api-workflow/function/business-rule, the Action App title for action, `Child Case` for case-management), searches the matching index, narrows by folder, and writes the whole Rule 10 ledger. `Data.Counts` says how many it selected; `Data.Unresolved[]` lists the rest. A missing or `<UNRESOLVED>` portable name violates the SDD contract and must be surfaced instead of silently falling back to `Task Name`.
+4. **Work only what resolve left.** Apply [registry-discovery.md](registry-discovery.md) — and a plugin `planning.md`'s Registry Resolution section — by hand to the `Data.Unresolved[]` entries alone: an `absent` entry runs the cross-type fallback, and the in-solution sibling check unless resolve reported `Data.Scope.siblingsChecked: true`, before the Rule 18 gate; an `ambiguous` one takes the match priority there. Never re-search a task resolve selected, and never rewrite its entry.
 
 ### 3.1 Task Type catalog
 
-> **Closed enum — 12 values.** sdd.md `Type:` and caseplan.case `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 17 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
+> **Closed enum — 13 values.** sdd.md `Type:` and caseplan.case `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 17 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
 
 | sdd.md `Type:` / caseplan.case `type` | Plugin folder |
 |---|---|
@@ -126,6 +126,7 @@ Otherwise, continue with the normal resolution path:
 | `business-rule` | `plugins/tasks/business-rule/` |
 | `case-management` | `plugins/tasks/case-management/` |
 | `execute-connector-activity` | `plugins/tasks/connector-activity/` |
+| `flow-process` | `plugins/tasks/flow-process/` |
 | `http-request` | `plugins/tasks/http-request/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |

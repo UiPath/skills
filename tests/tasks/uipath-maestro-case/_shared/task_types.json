@@ -23,6 +23,9 @@
         "Type": "execute-connector-activity"
       },
       {
+        "Type": "flow-process"
+      },
+      {
         "Type": "function"
       },
       {
@@ -50,9 +53,6 @@
       },
       {
         "Type": "external-workflow"
-      },
-      {
-        "Type": "flow-process"
       },
       {
         "Type": "script"

@@ -51,6 +51,7 @@ Text `uip agenthub` prints in a failure's `Message`, `Instructions` or `Errors` 
 | `Forbidden (403). …` on `refresh-tools` of a `remote` / `swagger` server with a `%ASSETS/<ASSET_NAME>%` header | Orchestrator refused to give that asset's value for a CLI login (it gives it to Agent Gateway in the portal and to jobs). The token's scopes are not the cause, and `mcp get` still shows the header as stored. Ask the user to refresh the tools in Agent Gateway, or whether to store the value as a secret header (`--header <NAME>=<VALUE>`) instead. |
 | ``Tools on `uipath` MCP servers are manually authored and cannot be refreshed.`` | Add tools with `mcp-tools create-resource`. |
 | ``Tools on `selfhosted` MCP servers come from the runtime connected to them …`` | Change the tools in the runtime. |
+| `Failed to retrieve authentication token from Integration Service connection` on `refresh-tools` of a `remote` server | Ping the connection ([Checking a Server](../SKILL.md#checking-a-server)): an `Expired` one needs its owner to sign in again. It must be an OAuth connection of connector `uipath-uipath-mcp`. When the server's connection is active, the refresh may have used your own per-user connection on the server: check it in Agent Gateway. |
 | `Failed to connect to MCP server: …` / HTTP 504 `Request timeout` | The remote server is unreachable: check the URI, the headers, and Relay for a private host. |
 
 ## Platform

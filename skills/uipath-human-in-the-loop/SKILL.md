@@ -1,6 +1,6 @@
 ---
 name: uipath-human-in-the-loop
-description: "UiPath Human-in-the-Loop / HITL node authoring — building approval gates, escalations, write-back validation, and data enrichment checkpoints in Flow, Maestro, Case Management, or Coded Agents. NOT for managing, reassigning, or monitoring tasks at runtime (use uipath-tasks for that)."
+description: "UiPath Human-in-the-Loop / HITL node authoring — building approval gates, escalations, write-back validation, and data enrichment checkpoints in Flow, Maestro, Case Management, or Coded Agents, plus a guided decision experience that captures reviewer corrections as decisions. NOT for managing, reassigning, or monitoring tasks at runtime (use uipath-tasks for that)."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -23,6 +23,9 @@ Recognizes when a business process needs a human decision point, designs the tas
 - User describes **customer communication approval** — agent-drafted reply that needs human sign-off before sending
 - User explicitly asks to **add a HITL node**, human review step, or Action Center task
 - User is building any automation where **a human must act before the process can continue**
+- User asks to **capture, record or learn from a decision** (or to feed the Decision Ledger), or a reviewer **confirms or corrects a proposal**: use the guided decision experience below
+
+**Guided decision experience.** Before designing any Coded Action App schema, read [references/decision-capture-action-app-guide.md](references/decision-capture-action-app-guide.md). It sets a toggle from the request: on when the user asks to capture or learn from a decision, or when a reviewer confirms or corrects something an agent or automation proposed. On adds a fixed set of decision fields beside the author's own and switches the UI to a guided layout, without renaming the author's fields. Never ask a yes/no question about it; state it in one line when you turned it on unasked.
 
 **Do not use this skill for:** managing, reassigning, escalating, or monitoring existing Action Center tasks at runtime — use the `uipath-tasks` skill for those operations. When answering a runtime task management question, provide only administration guidance. Do NOT suggest adding a HITL node, flow, or automation as a follow-up tip or recommendation — even if delays or escalations are mentioned.
 
@@ -48,6 +51,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
     In every downstream script, use `$vars.<nodeId>.output.<fieldId>` where `<fieldId>` is the `id` you gave the field in the schema — never the `variable` name.
 11. **Input field binding paths use the upstream output key, not the HITL field's own `id`.** These are two different things: the HITL field `id` identifies the form field (always lowercase); the binding path key is the name used in the upstream script's `return` statement (preserves camelCase). If a script returns `{ supplierName: "Acme" }`, the correct binding is `vars.fetchSupplier.output.supplierName` — writing `suppliername` (the field `id`) produces a path that does not exist at runtime. The form field will be blank; `flow validate` will not catch it. Always derive the binding key from the upstream script source, not from the HITL schema you are designing.
 12. **Downstream scripts must access `$vars.<nodeId>.output`.** Any script node that runs after the HITL node must read `$vars.<nodeId>.output` (the result object) — do not rely solely on `$vars.<nodeId>.status`. Concrete example: `const output = $vars.reviewNode1.output; const reason = output.reason;`. This is required even when the primary routing uses `status`.
+13. **Read the guided decision guide before writing any Coded Action App `action-schema.json`.** Open [references/decision-capture-action-app-guide.md](references/decision-capture-action-app-guide.md) first; it sets the decision toggle from the request and, when on, lists the fields to add (`proposedOutcome`, `proposalConfidence`, `rationaleOptions`, `instructionOptions`, `evidence` with `weight`, `rationale`, `instructionText`, `instructionScope`). Writing the schema without it drops those fields.
 
 ---
 
@@ -172,6 +176,7 @@ Infer the right option from the signals below and state your choice — do not p
 
 | Option chosen | Next step |
 |---|---|
+| Guided decision experience (the request asks to capture a decision, or a reviewer corrects a proposal) | Read [Guided decision experience](references/decision-capture-action-app-guide.md) to add the decision fields and guided layout, then wire it as a New Coded Action App |
 | QuickForm | Read [How to write a QuickForm HITL node](references/hitl-node-quickform.md) for Steps 1–2, then continue with Step 4 |
 | New Coded Action App | Read [How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md) for Step 4c details, then continue with Step 4 |
 | Existing Deployed App — the request must already name the app | Read [How to wire an existing deployed Action App](references/hitl-node-apptask.md) for Step 4b details, then continue with Step 4 |
@@ -429,6 +434,7 @@ After completing the wiring:
 - **[How to write a QuickForm HITL node](references/hitl-node-quickform.md)** — Read this after the user confirms QuickForm in Step 3. Covers the complete node JSON, definition entry, edge wiring, `variables.nodes` regeneration algorithm, and four worked schema examples.
 - **[How to wire an existing deployed Action App](references/hitl-node-apptask.md)** — Read this when the user selects an existing deployed app in Step 3. Covers app lookup via the Orchestrator API, `inputs.app` field mapping, `appInputBindings`, and solution resource files.
 - **[How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md)** — Read this when the user wants to build a new React app inside the solution. Covers full project template, UUID generation, solution CLI commands, and post-creation build steps.
+- **[Guided decision experience](references/decision-capture-action-app-guide.md)** — Read this before designing any Coded Action App schema; it decides from the request whether the guided decision experience is on. Covers the toggle, the decision fields it adds beside the author's own, what the backend records, and the guided layout.
 - **[HITL business pattern recognition](references/hitl-patterns.md)** — Read this during Step 2 / Step 2b to identify whether a process needs a human checkpoint and which pattern applies. Includes proactive recommendation language and when NOT to recommend HITL.
 - **[Action Center URL patterns](../uipath-tasks/references/action-center-urls.md)** (in `uipath-tasks` skill) — Read this before surfacing any Action Center task URL to the user. Covers the missing-tenant-slug anti-pattern and the API-host vs UI-host mapping.
 - **[Case Action Task (HITL)](references/hitl-casetask-action.md)** — Case surface: action task JSON, QuickForm vs app-based paths, `.hitl` file format, context entries, field binding, and downstream output access.

@@ -1,0 +1,159 @@
+task_id: skill-test-testcaselog-read-smoke
+description: >
+  Smoke test: the agent reads one test case's log and reports what result the
+  run reports and whether it was later changed. Exercises the read side of
+  `uip tm testcaselog` — `list`/`get`/`latest` — and the Result-versus-
+  OriginalResult idea, checking the agent reaches for the CLI rather than
+  inventing a result. The fixture seeds one finished log create-if-absent, so
+  the read is never empty.
+
+  Read-only, so concurrency-trivially-safe: the agent mutates nothing, the
+  fixture never deletes, and the seeded log sits off the sibling override and
+  manual-record namespaces. The agent is graded on reading a log through the CLI and
+  on the login-first convention, not on any mutation.
+tags: [uipath-test, smoke, mode:diagnose, lifecycle:discover, feature:test-case]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 20
+
+# Pure reader — seeds once, never per run (fixtures/README.md Rule 4). There is
+# no `executions create`: the log is opened with a manual `testcases run` and
+# finished Passed, create-if-absent so a healthy fixture is left untouched and
+# growth stays flat at one execution.
+pre_run:
+  - timeout: 300
+    command: |
+      python3 - <<'EOF'
+      import json, subprocess, sys, datetime, secrets
+      P = "CLAIM"
+      CASE = "EVFX-TCLOGRD-TC1"
+      SEARCH = "EVFX-TCLOGRD-TC"
+      now = datetime.datetime.now(datetime.timezone.utc)
+      stamp = now.strftime("%Y%m%d-%H%M%S") + secrets.token_hex(3)
+      runname = f"EVFX-TCLOGRD-{stamp}-RUN"
+
+      def fail(msg):
+          print(f"FIXTURE: PROVISIONING FAILED - {msg}", flush=True)
+          sys.exit(1)
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out, err = (r.stdout or "").strip(), (r.stderr or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:400]} err={err[:250]}",
+                flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def by_name(label, kind, name):
+          d = call(label, "tm", kind, "list", "--project-key", P, "--filter", name)
+          for x in (d.get("Data") or []):
+              if x.get("Name") == name:
+                  return x
+          return None
+
+      def has_verb(*words):
+          return subprocess.run(["uip", *words, "--help"],
+                               capture_output=True, text=True).returncode == 0
+
+      for words in (["tm", "testcases", "run"],
+                    ["tm", "testcaselog", "finish"],
+                    ["tm", "testcaselog", "list"],
+                    ["tm", "testcaselog", "get"],
+                    ["tm", "testcaselog", "latest"]):
+          if not has_verb(*words):
+              fail(f"this CLI has no 'uip {' '.join(words)}' - needs the "
+                   f"release carrying the test case log verbs")
+
+      # Case - create if absent, never delete.
+      tc = by_name("case.find", "testcases", CASE)
+      if not tc:
+          call("case.create", "tm", "testcases", "create", "--project-key", P,
+               "--name", CASE)
+          tc = by_name("case.refind", "testcases", CASE)
+      if not tc:
+          fail(f"could not create or find {CASE}")
+      cid = tc.get("Id")
+      if not cid:
+          fail(f"{CASE} has no id")
+
+      # Create-if-absent on the PROPERTY: a finished (non-None) log for this case
+      # already present means the fixture is healthy — leave it untouched. Only
+      # open and finish a new one when none exists.
+      d = call("log.find", "tm", "testcaselog", "list", "--project-key", P,
+               "--search", SEARCH, "--limit", "50")
+      finished = [l for l in (d.get("Data") or [])
+                  if l.get("Result") not in (None, "", "None")]
+      if not finished:
+          run = call("run", "tm", "testcases", "run", "--project-key", P,
+                     "--test-case-id", cid, "--name", runname,
+                     "--execution-type", "manual")
+          eid = (run.get("Data") or {}).get("Id")
+          if not eid:
+              fail("could not open the manual execution")
+          logs = call("logs", "tm", "executions", "testcaselogs", "list",
+                      "--execution-id", eid, "--project-key", P).get("Data") or []
+          if not logs:
+              fail(f"execution {eid} opened no logs")
+          call("finish", "tm", "testcaselog", "finish", "--project-key", P,
+               "--execution-id", eid, "--test-case-id", cid,
+               "--result", "Passed", "--has-error", "false",
+               "--executed-by", "evfx-tclogrd-fixture@uipath.com")
+          d = call("log.verify", "tm", "testcaselog", "list", "--project-key", P,
+                   "--search", SEARCH, "--limit", "50")
+          finished = [l for l in (d.get("Data") or [])
+                      if l.get("Result") not in (None, "", "None")]
+          if not finished:
+              fail(f"seeded run did not settle a finished log for {CASE}")
+
+      print(f"FIXTURE: ready case={CASE!r} finished_logs={len(finished)}", flush=True)
+      EOF
+
+initial_prompt: |
+  In my UiPath Test Manager project CLAIM, the test case "EVFX-TCLOGRD-TC1" had
+  a recent run. What result does that run report for it now, and is that the
+  result the run originally recorded, or was it changed afterwards? Just read it
+  back for me — no need to change anything.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rule #1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    # The core smoke behaviour: read the log through the CLI. list/get/latest, or
+    # a run-scoped testcaselogs list, are all valid; what is graded is that the
+    # answer came from the CLI (as JSON) rather than being made up.
+    description: "Agent read a test case log through the CLI"
+    command_pattern: 'uip\s+tm\s+(testcaselog\s+(list|get|latest)|executions?\s+testcaselogs\s+list)\b'
+    tool_name: "Bash"
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    # Only mutations are forbidden. `override get` is a READ (it reports whether
+    # a result was overridden — a valid way to answer "was it changed?"), so it
+    # must not trip this guard; only override create/update/delete, finish and
+    # assign change state.
+    description: "Agent did not change the log it was asked only to read"
+    command_pattern: 'uip\s+tm\s+testcaselog\s+(finish|assign|override\s+(create|update|delete))\b'
+    tool_name: "Bash"
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not reach past the CLI to the test case log REST route"
+    command_pattern: '(?i)(curl|wget)(?:(?!uip\s)[^&;|\r\n\\]|\\\r?\n|\\[^\r\n])*testcaselogs?\b'
+    tool_name: "Bash"
+    max_count: 0
+    weight: 1.0
+    pass_threshold: 1.0

@@ -14,12 +14,15 @@ YAML where fixtures/check-collisions.py sees them; this file knows no names.
 to run against another build.
 """
 import argparse
+import datetime
 import json
 import os
 import re
+import secrets
 import shlex
 import subprocess
 import sys
+import time
 
 AI_LABEL = "autopilot-generated"
 UIP = shlex.split(os.environ.get("UIP_CMD", "uip"))
@@ -51,6 +54,35 @@ def call(label, *args, timeout=180, check=True):
 
 def data(label, *args, **kw):
     return call(label, *args, **kw)[1].get("Data")
+
+
+def stamped_project(prefix):
+    """Create a per-run project `<prefix><stamp>-<hex>`, sweep orphans stamped
+    more than 6 hours ago, and write its key to project-key.txt (the grader's
+    check reads it back). AI tasks share a requirement and the AI-created test
+    cases it spawns, so concurrent gate runs on one HEALTH requirement corrupt
+    each other's counts — a per-run project isolates them."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    for p in (data("proj.sweep", "tm", "project", "list", "--filter", prefix,
+                   check=False) or []):
+        nm, key = p.get("Name") or "", p.get("ProjectKey")
+        if not key or not nm.startswith(prefix):
+            continue
+        try:
+            stamp = datetime.datetime.strptime(nm[len(prefix):len(prefix) + 15],
+                                               "%Y%m%d-%H%M%S")
+        except ValueError:
+            continue
+        if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+            call("proj.del", "tm", "project", "delete", "--project-key", key,
+                 "--yes", check=False)
+    key = "EVAI" + secrets.token_hex(2).upper()
+    name = f"{prefix}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+    call("proj.create", "tm", "project", "create", "--name", name, "--project-key", key)
+    with open("project-key.txt", "w", encoding="utf-8") as fh:
+        fh.write(key + "\n")
+    log(f"stamped project {name} ({key})")
+    return key
 
 
 def find_requirement(project, name):
@@ -102,16 +134,21 @@ def require_access(project, verb):
 
     The AI routes carry their own feature flag, licence policy and AI Trust
     Layer policy, so one tenant can allow `evaluate` and answer 403 to
-    `find-obsolete-testcases`. The pass-rate gate in smoke-skills.yml drops a
-    task whose pre_run fails with TENANT NOT READY on stderr.
+    `find-obsolete-testcases` (on Cloud, findObsoleteTests needs a Test Cloud
+    licence on the user or A4TMasterFFEnabled on the org; the other two check
+    that only on AS and dedicated clouds). The pass-rate gate in
+    smoke-skills.yml drops a task whose pre_run fails with TENANT NOT READY on
+    stderr. The nightly does not and records ERROR until the tenant is fixed.
     """
     _, env = call(f"probe.{verb}", "tm", "requirements", verb, "--project-key", project,
                   "--requirement-id", PROBE_REQUIREMENT_ID, check=False)
     if env.get("ErrorCode") == "permission_denied":
         print("TENANT NOT READY — this is an environment failure, not an agent failure: "
               f"`uip tm requirements {verb}` answers 403 for this login on project "
-              f"{project} ({env.get('Message', '')[:160]}). Enable the route's feature "
-              "flag, licence and AI Trust Layer policy for the eval user.",
+              f"{project} ({env.get('Message', '')[:160]}). For find-obsolete-testcases "
+              "on Cloud, give the eval user a Test Cloud licence or enable "
+              "A4TMasterFFEnabled on the org; otherwise enable the route's feature flag "
+              "and AI Trust Layer policy for the eval user.",
               file=sys.stderr, flush=True)
         sys.exit(1)
     if (env.get("Data") or {}).get("ActivityId"):
@@ -153,6 +190,8 @@ def ensure_testcase(project, name, description):
 
 
 def cmd_seed(a):
+    if getattr(a, "stamped_prefix", None):
+        a.project = stamped_project(a.stamped_prefix)
     for verb in a.require_access:
         require_access(a.project, verb)
     req = ensure_requirement(a.project, a.requirement,
@@ -201,23 +240,67 @@ def cmd_seed(a):
             json.dump(env, fh, indent=2)
         log(f"saved the timed-out output of job {activity} to {out}")
 
+        # Backend health gate. The saved envelope above is the timed-out state
+        # the task needs (the agent must resume the job by --activity-id). But
+        # the agent then has to WAIT for that job to finish, and when the AI
+        # Trust Layer / LLM gateway is slow the job outruns the agent's budget
+        # and the run fails on an environment problem, not an agent one. So
+        # pre-warm the SAME job here within a generous budget: if it finishes,
+        # the agent's resume is instant; if it is still running after the
+        # budget, the backend is too slow for this run — exclude the task as
+        # tenant-not-ready (the pass-rate gate drops a pre_run that exits non
+        # zero with TENANT NOT READY on stderr) rather than let it fail closed.
+        rc, henv = call("backend.health", "tm", "requirements", "generate-testcases",
+                        "--project-key", a.project, "--activity-id", activity,
+                        "--wait", "--timeout", "240", "--poll-interval", "5",
+                        timeout=300, check=False)
+        timed_out = (rc == 2 or (henv.get("ErrorCode") or "").lower() == "timeout"
+                     or "timed out" in (henv.get("Message") or "").lower())
+        if timed_out:
+            print("TENANT NOT READY — the AI generate backend did not finish job "
+                  f"{activity} within 240s on project {a.project}; the AI Trust "
+                  "Layer / LLM gateway is too slow for this run. Not an agent "
+                  "failure.", file=sys.stderr, flush=True)
+            sys.exit(1)
+        if rc != 0:
+            fail(f"backend.health on job {activity} failed (rc={rc}): "
+                 f"{json.dumps(henv)[:300]}")
+
     log(f"{a.requirement} ready: {rid}, {len(wanted)} linked test case(s)")
 
 
 def cmd_check(a):
     problems = []
+    # Seed may have put the fixture in a per-run project; use it if present.
+    try:
+        with open("project-key.txt", encoding="utf-8") as fh:
+            a.project = fh.read().strip() or a.project
+    except FileNotFoundError:
+        pass
     req = find_requirement(a.project, a.requirement)
     if not req:
         print(f"CHECK: requirement {a.requirement} not found")
         return 1
     rid = req["Id"]
     links = linked_ids(a.project, rid)
+    # Links the agent just created are eventually consistent; when a count is
+    # expected, retry until it settles so a stale read right after create does
+    # not false-fail (fail-safe: a genuinely wrong count still fails after the
+    # retries). The AI label can lag the link too, so re-read both together.
+    generated = ai_created(a.project) if a.links_ai_created else {}
+    if a.links is not None:
+        for _ in range(6):
+            if len(links) == a.links and (not a.links_ai_created
+                                          or all(t in generated for t in links)):
+                break
+            time.sleep(3)
+            links = linked_ids(a.project, rid)
+            generated = ai_created(a.project) if a.links_ai_created else {}
     print(f"CHECK: {a.requirement} has {len(links)} linked test case(s)")
 
     if a.links is not None and len(links) != a.links:
         problems.append(f"expected {a.links} linked test case(s), found {len(links)}")
     if a.links_ai_created:
-        generated = ai_created(a.project)
         unlabelled = [t for t in links if t not in generated]
         if unlabelled:
             problems.append(f"{len(unlabelled)} linked test case(s) lack the {AI_LABEL} label")
@@ -236,6 +319,15 @@ def cmd_check(a):
         problems.append("the requirement's description was changed")
     if a.description_extends is not None:
         base = a.description_extends.strip()
+        # The agent's `requirements update` is eventually consistent; right
+        # after a slow AI-backed apply the first read can still show the seeded
+        # text. Retry before concluding nothing changed (fail-safe: a genuinely
+        # un-applied suggestion still reads as base after the retries).
+        for _ in range(6):
+            if desc.strip() != base:
+                break
+            time.sleep(3)
+            desc = (find_requirement(a.project, a.requirement) or {}).get("Description") or ""
         if desc.strip() == base:
             problems.append("the requirement's description was not changed")
         elif not desc.strip().startswith(base):
@@ -263,6 +355,10 @@ def main():
                    help="exit TENANT NOT READY when this AI verb answers 403 (repeatable)")
     s.add_argument("--capture-generate-timeout", metavar="OUT",
                    help="start generate-testcases with a 3 s wait and save its output")
+    s.add_argument("--stamped-prefix", metavar="PREFIX",
+                   help="seed into a fresh per-run project <PREFIX><stamp>-<hex> "
+                        "(key written to project-key.txt) instead of --project, so "
+                        "concurrent gate runs do not share the requirement")
 
     c = sub.add_parser("check")
     c.add_argument("--project", required=True)

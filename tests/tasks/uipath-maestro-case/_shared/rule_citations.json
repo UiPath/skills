@@ -15,7 +15,7 @@
     "Unresolved resources": 2
   },
   "references/brownfield.md": {
-    "Artifact I/O": 2,
+    "Artifact I/O": 3,
     "Never auto-debug or publish to Orchestrator": 2,
     "Runnable resources and sidecars": 1,
     "The build is lossless against the SDD": 1
@@ -35,7 +35,7 @@
   },
   "references/case-schema.md": {
     "Closed task types": 1,
-    "Layout": 3,
+    "Layout": 4,
     "No authored edges": 3
   },
   "references/connector-integration.md": {
@@ -152,6 +152,10 @@
   },
   "references/plugins/tasks/create-inline-common.md": {
     "Empty lookup gate": 1
+  },
+  "references/plugins/tasks/flow-process/planning.md": {
+    "Empty lookup gate": 2,
+    "Resolution audit": 1
   },
   "references/plugins/tasks/function/planning.md": {
     "Empty lookup gate": 2,

@@ -74,7 +74,7 @@ For each entry in `caseShape.inputs[]`:
 - `id` = same as `var`
 - `elementId` = the task's elementId
 
-For each entry in `caseShape.outputs[]`: same fields, **plus the dedup rule** per [common § Step 5](../../../connector-trigger-impl.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers).
+For each entry in `caseShape.outputs[]`: **name-based ids, not `v` + 8** — `id` = `var` = the output's name in camelCase (`response`, `Error` → `error`), `elementId` as above, **plus the dedup rule** per [common § Step 5](../../../connector-trigger-impl.md#step-5--mint-var--id--elementid-on-inputs-and-outputs) (`response` / `error` collide across multiple connector tasks/triggers). The Case Designer keeps a name-shaped output id on save and rewrites a `v…` one to a name-derived id without updating the expressions that read it, so a `v…` output id that anything reads breaks on the next Designer save.
 
 **Output binding.** Apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes). The Step 0 schema for this plugin is `caseShape.outputs[]` from `case spec` (Step 2 above). The dedup rule above applies first; output binding consumes the deduped names.
 

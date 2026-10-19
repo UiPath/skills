@@ -1,0 +1,7 @@
+{
+  "Result": "Failure",
+  "Message": "Connection '6f3c2a10-4b7e-4c1d-9a2e-0d5b8c7e1a02' is not enabled (status: Failed).",
+  "Instructions": "The Integration Service API did not return a detailed failure reason. Inspect the connection in Automation Cloud, then re-authenticate only if credentials are expired or invalid.",
+  "ErrorCode": "unknown_error",
+  "Retry": "RetryWillNotFix"
+}
