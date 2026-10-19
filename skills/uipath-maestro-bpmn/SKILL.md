@@ -349,9 +349,9 @@ Say which mode was taken in the final report.
 In plan mode, writes wait for plan approval: put the skeleton outline (boxes,
 gateways, conditions) in the plan, then build 2a–2f once the plan is approved.
 
-**Draft mode is never the deliverable on its own.** The user's approval of the
-shape is what authorizes phase 4. Without it, report the skeleton as an
-unapproved draft rather than as a finished process. Draft mode shows the
+**Only *Build it* at 3c authorizes phase 4.** When the user keeps the
+outline, or has not answered, report the skeleton as an outline, not as a
+finished process. Draft mode shows the
 shape by upload when the request allows one (2f); when it forbids upload,
 show the laid-out local `.bpmn` path and a short text outline instead.
 

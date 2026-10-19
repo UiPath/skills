@@ -128,12 +128,21 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   local `.uipx`. `"Imported"` on a later upload means that id was lost and a
   second cloud solution was just created — stop and fix that before
   continuing. Repeat 3a–3b.
-- **3c Hold the gate.** Stop until the user explicitly approves the shape.
+- **3c Ask before building.** Show the shape, then ask exactly this, as a
+  pick list if the host has one, else as plain text:
+
+  > Is this the process you want?
+  > 1. **Build it**: make every step work.
+  > 2. **Change it**: tell me what to add, remove, or move.
+  > 3. **Keep it**: stop here with this outline.
+
+  *Build it* goes to phase 4. *Change it* goes back to 3a. *Keep it* ends
+  the run with the skeleton reported as an outline.
 
 Removing a box is the common edit: delete the task, delete its two sequence
 flows, add one replacement flow, then `format`. Since entry points are
 untouched, `refresh` stays a no-op.
 
-That approval is what authorizes phase 4 — registry pull, element disambiguation, live
+Only *Build it* authorizes phase 4 — registry pull, element disambiguation, live
 connections, and payloads pasted into the existing boxes. Until then the
-skeleton is an unapproved draft, and saying otherwise misreports it.
+skeleton is an outline, and calling it a finished process misreports it.
