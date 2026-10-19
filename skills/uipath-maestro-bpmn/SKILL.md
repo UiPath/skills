@@ -396,8 +396,10 @@ Nothing to do yet. Surface detection is future work.
   `Instructions` say "Studio Web API returned 404" just means there is no
   cloud copy yet: skip the rest of 1c. If the download fails
   for another reason (offline, not logged in), skip 1c and say so in the final
-  report. Otherwise compare the downloaded solution with the local one. If they
-  match, carry on. If they differ, ask the user which copy to keep before
+  report. Otherwise compare each project's `.bpmn` in the download with the
+  local one; Studio Web reformats the `.uipx` and `project.uiproj` and adds
+  `SolutionStorage.json`, so only the `.bpmn` files tell real edits apart. If
+  they match, carry on. If they differ, ask the user which copy to keep before
   authoring, because a later `upload` replaces the cloud copy with the local
   one and would erase edits made in Studio Web.
 
