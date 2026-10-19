@@ -138,6 +138,8 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
 `objectName` is the **catalog's** object (`UploadAttachment`, `TestSet`) and `method` its verb (`POST`, `GETBYID`, `PATCH`, `DELETE`).
 Neither is the connector's REST slug.
 A node carrying `objectName="v2::attachment::upload"` validates and then dispatches to nothing — the platform matches on the curated pair, and so do the graders that compare against a real export.
+`check` holds a hand-filled task to the catalog, since `validate` does not: `N/A` copied from a generic record row or a `<…>` placeholder in an identity row (`INTSVC_CATALOG_PLACEHOLDER`), a `method` outside `GET`/`GETBYID`/`POST`/`PUT`/`PATCH`/`DELETE` (`INTSVC_METHOD_UNKNOWN`), an `operation` that is not an identifier, a slug `objectName`, a `{param}` in the path with no `target: 'path'` input row (`INTSVC_PATH_PARAM_UNBOUND` — a value in `inputs` lands in the body), a literal `connection` (`INTSVC_CONNECTION_NOT_BINDING`, the `refresh` refusal), a `=bindings.<id>` nothing declares (`INTSVC_BINDING_UNDECLARED`) or declared as the wrong kind, and a task with no connection at all.
+For a generic record verb (`Create Record`, `Delete Record`), the catalog row's `N/A` is not the answer: `objectName` is the object you pick from `uip is resources list <key> --connection-id <id>`, `method` that verb's HTTP method, and `path` comes from `uip is resources describe <key> <object> --operation <Verb> --connection-id <id>`.
 
 ## 5. Data Fabric is not this
 
