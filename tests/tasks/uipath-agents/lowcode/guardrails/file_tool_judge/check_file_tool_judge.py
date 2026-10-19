@@ -20,11 +20,13 @@ import sys
 import uuid
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+from _shared.file_guardrail_assertions import require_detection_scope, require_job_attachment_input  # noqa: E402
+
 ROOT = Path(os.getcwd()) / "ContractIntakeSolution" / "ContractIntakeAgent"
 AGENT = ROOT / "agent.json"
 TOOL = ROOT / "resources" / "Analyze Files" / "resource.json"
 VALID_SCOPES = {"Agent", "Llm", "Tool"}
-DETECTION_SCOPE_VALUES = {"Text", "Files", "Both"}
 
 
 def load(path: Path) -> dict:
@@ -102,18 +104,7 @@ def main() -> None:
         sys.exit(f'FAIL: validatorParameters needs a "text" parameter id == "guardrailText" with a non-empty value, got {rule!r}')
     print("OK: guardrailText present (text)")
 
-    detection_scope = find_param(params, "detectionScope")
-    if detection_scope is None:
-        ids = [p.get("id") for p in params if isinstance(p, dict)]
-        sys.exit(f'FAIL: validatorParameters missing parameter id == "detectionScope" — the judge must be told to read the file contents. Got ids: {ids}')
-    if detection_scope.get("$parameterType") != "enum":
-        sys.exit(f'FAIL: detectionScope.$parameterType must be "enum", got {detection_scope.get("$parameterType")!r}')
-    value = detection_scope.get("value")
-    if value not in DETECTION_SCOPE_VALUES:
-        sys.exit(f"FAIL: detectionScope.value must be one of {sorted(DETECTION_SCOPE_VALUES)} (exact case), got {value!r}")
-    if value != "Files":
-        sys.exit(f'FAIL: the user asked to judge the file contents, not the tool\'s text arguments: detectionScope.value must be "Files", got {value!r}')
-    print('OK: detectionScope == "Files" (enum)')
+    require_detection_scope(params, "Files", "the user asked to judge the file contents, not the tool's text arguments")
 
     tool = load(TOOL)
     if tool.get("properties", {}).get("toolType") != "analyze-attachments":

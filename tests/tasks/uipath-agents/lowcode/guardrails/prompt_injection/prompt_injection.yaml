@@ -10,7 +10,7 @@ description: >
   Both (text and files).
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 reference:
-  directory: .
+  directory: ../../..   # uipath-agents test root, so the checker can import _shared/
 
 initial_prompt: |
   Create a UiPath low-code agent "InjSafeAgent" that answers user questions and
@@ -77,7 +77,7 @@ success_criteria:
 
   - type: run_command
     description: "Prompt injection guardrail shape (Llm-only scope, number threshold, block action, file input, detectionScope Both)"
-    command: "python3 $REFERENCE_DIR/check_prompt_injection.py"
+    command: "python3 $REFERENCE_DIR/lowcode/guardrails/prompt_injection/check_prompt_injection.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

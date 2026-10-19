@@ -10,7 +10,7 @@ description: >
   detectionScope set to Both (text and files).
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, guardrail]
 reference:
-  directory: .
+  directory: ../../..   # uipath-agents test root, so the checker can import _shared/
 
 initial_prompt: |
   Create a UiPath low-code agent "PiiSafeAgent" that answers user questions about
@@ -77,7 +77,7 @@ success_criteria:
 
   - type: run_command
     description: "PII detection guardrail shape (builtInValidator, pii_detection, parameters, PascalCase, file input, detectionScope Both)"
-    command: "python3 $REFERENCE_DIR/check_pii_detection.py"
+    command: "python3 $REFERENCE_DIR/lowcode/guardrails/pii_detection/check_pii_detection.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0

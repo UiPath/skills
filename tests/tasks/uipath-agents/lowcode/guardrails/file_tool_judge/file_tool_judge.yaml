@@ -21,7 +21,7 @@ sandbox:
     - {type: template_dir, path: ../_fixtures/ContractIntakeSolution}
 
 reference:
-  directory: .
+  directory: ../../..   # uipath-agents test root, so the checker can import _shared/
 
 initial_prompt: |
   My contract intake agent at ContractIntakeSolution/ContractIntakeAgent reads
@@ -70,7 +70,7 @@ success_criteria:
 
   - type: run_command
     description: "Judge guardrail on Analyze Files reads the file (Tool scope, matchNames, enum model, text rule, detectionScope Files, block)"
-    command: "python3 $REFERENCE_DIR/check_file_tool_judge.py"
+    command: "python3 $REFERENCE_DIR/lowcode/guardrails/file_tool_judge/check_file_tool_judge.py"
     timeout: 30
     expected_exit_code: 0
     weight: 5.0
