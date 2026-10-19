@@ -252,15 +252,15 @@ binding half, which is the same for every connector-backed node.
   `operate.json` use the bare filename; `entry-points.json` adds `#<start-id>`;
   `package-descriptor.json` uses a top-level `content` array.
 
-  Every start event compiles with a `uipath:entryPointId`: the one you set, else a
+  Every root start event compiles with a `uipath:entryPointId`: the one you set, else a
   stable GUID the SDK derives from the process and start-event ids (the same on every
-  compile and machine). `refresh` reads it from the BPMN to write `entry-points.json`,
-  so nothing is required before `.startEvent('<start-id>')`. To keep the id `bpmn init`
-  assigned, decompile the stub it wrote (the id is carried into the seed) or declare
-  `.metadata({ entryPointId: '<uuid>' })`; a second root start or a nested one takes its
-  own on the event (`.startEvent(id, { entryPointId })`, `startEntryPointId` on
-  `.eventSubProcess()`), and `false` writes none, which is what `decompile` emits for an
-  import that carried none so the round trip stays faithful. A value you set must be a
+  compile and machine; it changes if the process or start id changes, so when renaming
+  either in a deployed process, pin the old id). `refresh` reads it from the BPMN to
+  write `entry-points.json`, so nothing is required before `.startEvent('<start-id>')`.
+  To keep the id `bpmn init` assigned, decompile the stub it wrote (the id is carried
+  into the seed) or declare `.metadata({ entryPointId: '<uuid>' })`; a second root start
+  takes its own on the event (`.startEvent(id, { entryPointId })`), and `false` writes
+  none. A value you set must be a
   GUID — `validate` refuses any other (`Root start event uipath:entryPointId value …
   must be a GUID`), and `check` reports `ENTRYPOINT_ID_NOT_GUID` first. Then generate the files from the built BPMN:
 
@@ -289,9 +289,11 @@ binding half, which is the same for every connector-backed node.
 
   Inspect every generated metadata file against this contract. In particular,
   `entry-points.json.entryPoints` must be non-empty and reference the built BPMN
-  plus its start id. If it is empty, do not hand-write the JSON: the root start event
-  is missing its `uipath:entryPointId` (an `entryPointId: false` left in a decompiled
-  source, or a BPMN the SDK did not compile) — fix the source, rebuild, and rerun `refresh`.
+  plus its start id. If it is empty, do not hand-write the JSON: the BPMN was not
+  compiled by the SDK and its root start event has no `uipath:entryPointId`; fix the
+  source, rebuild, and rerun `refresh`. `refresh` refusing with `Expected one
+  uipath:entryPointId on root manual start event` means an `entryPointId: false` on that
+  start (from decompiling an id-less import): delete it and rebuild.
 
 <!-- RULE:bpmn.layout.separate -->
 - Compile emits semantic XML. Run `uip maestro bpmn format` only when a canvas
