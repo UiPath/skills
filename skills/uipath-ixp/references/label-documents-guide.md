@@ -10,7 +10,7 @@ You act as a **reviewer** — IXP generates predictions, you validate them field
 ## Step 1 — Get Documents and Taxonomy
 
 ```bash
-mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,prompts}
+mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,payloads}
 uip ixp documents list <project-name> --output json
 uip ixp projects get-taxonomy <project-name> --output json
 ```
@@ -151,12 +151,12 @@ Occurrences not targeted carry forward whatever annotation they already had (so 
 **Confirm all the correct rows in one `--updates-file` call, not one `--occurrence` call per row** — every index in a single call resolves against the same read, whereas the second of two sequential calls is working from indices the first one invalidated ([Occurrence numbers are read-scoped](#occurrence-numbers-are-read-scoped)):
 
 ```bash
-cat > /tmp/ixp/<project-name>/prompts/confirm_updates.json << 'EOF'
+cat > /tmp/ixp/<project-name>/payloads/confirm_updates.json << 'EOF'
 [{"occurrence":0},{"occurrence":2,"fields":["c4e1907a3b8f25d6"]}]
 EOF
 
 uip ixp labellings confirm <project-name> <document-id> \
-  --group "Line Items" --updates-file /tmp/ixp/<project-name>/prompts/confirm_updates.json \
+  --group "Line Items" --updates-file /tmp/ixp/<project-name>/payloads/confirm_updates.json \
   -m <model_version> \
   --output json
 ```

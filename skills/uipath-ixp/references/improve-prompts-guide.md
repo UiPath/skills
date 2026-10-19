@@ -78,7 +78,7 @@ A read that fails counts against the budget like any other attempt, and never re
 If documents were just labelled (or uploaded, or the taxonomy was edited), wait out the resulting retrain before reading metrics — apply the bounded wait in [Waiting for retrain](#waiting-for-retrain).
 
 ```bash
-mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,prompts}
+mkdir -p /tmp/ixp/<project-name>/{docs,taxonomies,payloads}
 uip ixp projects get-metrics <project-name> --model-version latest --output json
 ```
 
@@ -212,7 +212,7 @@ Focus on **what** to extract and **where** to find it. Do NOT specify format —
 Use the parent **field group name** and exact **field name** in each field-update object; use the **label_def/group name** in each group-update object:
 
 ```bash
-cat > /tmp/ixp/<project-name>/prompts/field_updates.json << 'FIELDS_EOF'
+cat > /tmp/ixp/<project-name>/payloads/field_updates.json << 'FIELDS_EOF'
 [
   {"group": "Invoice", "name": "Invoice Number", "instructions": "The unique document identifier, found in the header area top-right. Example: 2106732, QC006."},
   {"group": "Invoice", "name": "Invoice Date", "instructions": "The date the invoice was issued. Found near the invoice number."}
@@ -220,18 +220,18 @@ cat > /tmp/ixp/<project-name>/prompts/field_updates.json << 'FIELDS_EOF'
 FIELDS_EOF
 
 uip ixp fields update-prompts <project-name> \
-  --updates-file /tmp/ixp/<project-name>/prompts/field_updates.json \
+  --updates-file /tmp/ixp/<project-name>/payloads/field_updates.json \
   --output json
 
 # If group instructions also need updating, run a second command.
-cat > /tmp/ixp/<project-name>/prompts/group_updates.json << 'GROUPS_EOF'
+cat > /tmp/ixp/<project-name>/payloads/group_updates.json << 'GROUPS_EOF'
 [
   {"name": "Invoice", "instructions": "General invoice header fields including number, dates, payment terms, and totals."}
 ]
 GROUPS_EOF
 
 uip ixp groups update-prompts <project-name> \
-  --updates-file /tmp/ixp/<project-name>/prompts/group_updates.json \
+  --updates-file /tmp/ixp/<project-name>/payloads/group_updates.json \
   --output json
 
 # Only if the project prompt needs changing
@@ -303,12 +303,12 @@ If any fields regressed, do a selective rollback:
 
 ```bash
 # Only include the regressed fields, not the whole iteration
-cat > /tmp/ixp/<project-name>/prompts/rollback.json << 'FIELDS_EOF'
+cat > /tmp/ixp/<project-name>/payloads/rollback.json << 'FIELDS_EOF'
 [{"group": "Invoice", "name": "Vendor Address", "instructions": "previous instruction for this field only"}]
 FIELDS_EOF
 
 uip ixp fields update-prompts <project-name> \
-  --updates-file /tmp/ixp/<project-name>/prompts/rollback.json \
+  --updates-file /tmp/ixp/<project-name>/payloads/rollback.json \
   --output json
 ```
 

@@ -1,9 +1,9 @@
 task_id: skill-ixp-update-prompts-heredoc-smoke
 description: >
   Smoke: agent improves a per-field instruction with
-  `fields update-prompts --updates`. The skill constructs the JSON via
-  heredoc; the grader verifies both that shell workflow and the complete
-  expanded payload received by the CLI mock.
+  `fields update-prompts --updates-file`. The skill writes the JSON with a
+  heredoc under payloads/ in the same Bash command as the call (Critical
+  Rule 5); the grader checks that command and the payload it wrote.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -37,27 +37,26 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # Shell-text checks: only the Bash command shows the heredoc and `$(cat …)`,
-  # so these stay command_executed. The project must appear in the same command:
-  # literally in the path, or in the `P=...` assignment the path's `$P` comes from.
+  # The payload lives in a file, so the recorder sees only its path: the
+  # heredoc and its content are graded from the Bash command that wrote it.
+  # Rule 5 puts the write and the call in ONE command, so each check needs both.
+  # Quote runs are `(?:\\?["'])*`: harnesses that wrap commands in
+  # `/bin/bash -lc "…"` backslash-escape inner quotes.
   - type: command_executed
-    description: "Agent wrote the --updates payload under /tmp/ixp/<project>/prompts/ via heredoc"
+    description: "Agent wrote the payload under /tmp/ixp/<project>/payloads/ and passed it with --updates-file in the same command"
     tool_name: "Bash"
-    command_pattern: '(?=.*my_invoices-f1afa9ef-ixp).*cat\s*>\s*/tmp/ixp/\S+/prompts/\S+\.json\s*<<'
+    command_pattern: '(?s)(?=.*my_invoices-f1afa9ef-ixp)cat\s*>\s*(?:\\?["''])*/tmp/ixp/\S+/payloads/\S+\.json(?:\\?["''])*\s*<<.*update-prompts\s.*--updates-file\s+(?:\\?["''])*/tmp/ixp/\S+/payloads/\S+\.json'
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
 
-  # Quote runs are `(?:\\?["'])*`, not `["']?`: this criterion reads raw Bash
-  # text, and an agent harness that wraps commands in `/bin/bash -lc "…"`
-  # backslash-escapes the inner quotes, so `--updates "$(cat …)"` is recorded as
-  # `--updates \""'$(cat …)"`. Matching one bare optional quote passed under
-  # claude-code and failed under codex for the same correct command.
-  - type: command_executed
-    description: "Agent passed the heredoc file to `fields update-prompts --updates`"
-    tool_name: "Bash"
-    command_pattern: '(?=.*my_invoices-f1afa9ef-ixp).*update-prompts\s.*--updates\s+(?:\\?["''])*\$\(cat\s+/tmp/ixp/\S+/prompts/\S+\.json\)'
-    min_count: 1
+  - type: cli_called
+    description: "CLI received `fields update-prompts --updates-file` with a payloads/ file"
+    verb: "ixp fields update-prompts"
+    tool: "uip"
+    positional: ["my_invoices-f1afa9ef-ixp"]
+    flags:
+      updates-file: {matches_regex: '/payloads/[^/]+\.json$'}
     weight: 2.5
     pass_threshold: 1.0
 
@@ -65,32 +64,26 @@ success_criteria:
   # either combination is not found. Both names are exact from
   # _setup/fixtures/taxonomy.json (`Invoice Header` > `Invoice Number`); the
   # mock fails every read, so the prompt supplies them.
-  - type: cli_called
-    description: "`--updates` addresses the `Invoice Header` group"
-    verb: "ixp fields update-prompts"
-    tool: "uip"
-    positional: ["my_invoices-f1afa9ef-ixp"]
-    flags:
-      updates: {contains: "Invoice Header"}
+  - type: command_executed
+    description: "The payload addresses the `Invoice Header` group"
+    tool_name: "Bash"
+    command_pattern: '(?s)cat\s*>\s*\S*payloads/\S+\.json\S*\s*<<(?=.*Invoice Header).*--updates-file'
+    min_count: 1
     weight: 0.84
     pass_threshold: 1.0
 
-  - type: cli_called
-    description: "`--updates` addresses the `Invoice Number` field"
-    verb: "ixp fields update-prompts"
-    tool: "uip"
-    positional: ["my_invoices-f1afa9ef-ixp"]
-    flags:
-      updates: {contains: "Invoice Number"}
+  - type: command_executed
+    description: "The payload addresses the `Invoice Number` field"
+    tool_name: "Bash"
+    command_pattern: '(?s)cat\s*>\s*\S*payloads/\S+\.json\S*\s*<<(?=.*Invoice Number).*--updates-file'
+    min_count: 1
     weight: 0.83
     pass_threshold: 1.0
 
-  - type: cli_called
-    description: "`--updates` carries the requested instruction"
-    verb: "ixp fields update-prompts"
-    tool: "uip"
-    positional: ["my_invoices-f1afa9ef-ixp"]
-    flags:
-      updates: {contains: "Do NOT use the Purchase Order"}
+  - type: command_executed
+    description: "The payload carries the requested instruction"
+    tool_name: "Bash"
+    command_pattern: '(?s)cat\s*>\s*\S*payloads/\S+\.json\S*\s*<<(?=.*Do NOT use the Purchase Order).*--updates-file'
+    min_count: 1
     weight: 0.83
     pass_threshold: 1.0
