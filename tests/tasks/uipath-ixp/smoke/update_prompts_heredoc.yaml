@@ -39,13 +39,14 @@ initial_prompt: |
 success_criteria:
   # The payload lives in a file, so the recorder sees only its path: the
   # heredoc and its content are graded from the Bash command that wrote it.
-  # Rule 5 puts the write and the call in ONE command, so each check needs both.
-  # Quote runs are `(?:\\?["'])*`: harnesses that wrap commands in
-  # `/bin/bash -lc "…"` backslash-escape inner quotes.
+  # Same Bash command: a heredoc into a payloads/ file (or a $VAR), then
+  # update-prompts passes that SAME target. \1 ties the two paths; \2 is the
+  # heredoc delimiter. `\\?` allows the quote escaping of `/bin/bash -lc "…"`.
   - type: command_executed
-    description: "Agent wrote the payload under /tmp/ixp/<project>/payloads/ and passed it with --updates-file in the same command"
+    description: "Agent wrote the payload with a heredoc and passed that same file to --updates-file in one command"
     tool_name: "Bash"
-    command_pattern: '(?s)(?=.*my_invoices-f1afa9ef-ixp)cat\s*>\s*(?:\\?["''])*/tmp/ixp/\S+/payloads/\S+\.json(?:\\?["''])*\s*<<.*update-prompts\s.*--updates-file\s+(?:\\?["''])*/tmp/ixp/\S+/payloads/\S+\.json'
+    command_pattern: >-
+      (?s)(?=.*my_invoices-f1afa9ef-ixp)cat\s*>\s*(?:\\?["'])*(\S*?payloads/[^\s"'\\]+\.json|\$\{?\w+\}?)(?:\\?["'])*\s*<<-?\s*\\?['"]?(\w+)\\?['"]?.*?\n\2\b.*update-prompts\s.*--updates-file\s+(?:\\?["'])*\1(?![\w/.])
     min_count: 1
     weight: 2.5
     pass_threshold: 1.0
@@ -63,11 +64,14 @@ success_criteria:
   # An entry is addressed by `group` + `name`, and `update-prompts` fails when
   # either combination is not found. Both names are exact from
   # _setup/fixtures/taxonomy.json (`Invoice Header` > `Invoice Number`); the
-  # mock fails every read, so the prompt supplies them.
+  # mock fails every read, so the prompt supplies them. Content is matched
+  # inside the heredoc body only (between `<< DELIM` and the DELIM line), so
+  # text in a comment or a later command can't satisfy it.
   - type: command_executed
     description: "The payload addresses the `Invoice Header` group"
     tool_name: "Bash"
-    command_pattern: '(?s)cat\s*>\s*\S*payloads/\S+\.json\S*\s*<<(?=.*Invoice Header).*--updates-file'
+    command_pattern: >-
+      (?s)cat\s*>\s*\S+\s*<<-?\s*\\?['"]?(\w+)\\?['"]?[^\n]*\n(?:(?!\n\1\b).)*?Invoice Header(?:(?!\n\1\b).)*?\n\1\b.*--updates-file
     min_count: 1
     weight: 0.84
     pass_threshold: 1.0
@@ -75,7 +79,8 @@ success_criteria:
   - type: command_executed
     description: "The payload addresses the `Invoice Number` field"
     tool_name: "Bash"
-    command_pattern: '(?s)cat\s*>\s*\S*payloads/\S+\.json\S*\s*<<(?=.*Invoice Number).*--updates-file'
+    command_pattern: >-
+      (?s)cat\s*>\s*\S+\s*<<-?\s*\\?['"]?(\w+)\\?['"]?[^\n]*\n(?:(?!\n\1\b).)*?Invoice Number(?:(?!\n\1\b).)*?\n\1\b.*--updates-file
     min_count: 1
     weight: 0.83
     pass_threshold: 1.0
@@ -83,7 +88,8 @@ success_criteria:
   - type: command_executed
     description: "The payload carries the requested instruction"
     tool_name: "Bash"
-    command_pattern: '(?s)cat\s*>\s*\S*payloads/\S+\.json\S*\s*<<(?=.*Do NOT use the Purchase Order).*--updates-file'
+    command_pattern: >-
+      (?s)cat\s*>\s*\S+\s*<<-?\s*\\?['"]?(\w+)\\?['"]?[^\n]*\n(?:(?!\n\1\b).)*?Do NOT use the Purchase Order(?:(?!\n\1\b).)*?\n\1\b.*--updates-file
     min_count: 1
     weight: 0.83
     pass_threshold: 1.0
