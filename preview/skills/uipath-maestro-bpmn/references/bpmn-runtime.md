@@ -194,11 +194,13 @@ binding half, which is the same for every connector-backed node.
   { name, inputSchema }, inputs: { Reference } })`. Both validate on uip 1.205.
 
 <!-- RULE:bpmn.activity.runtime-internal -->
-- Do not author the case manager's own nodes (`Maestro.UpdateCaseState`,
-  `RetrieveCaseState`, `CaseCyclePrepare`, `CaseCycleCommit`,
-  `CaseManagerPlaceholder`, `CaseManagerGuardrails`, `CaseRulesEvaluator`): the
-  platform writes them when it materializes a case plan, and `check` warns
-  `TYPE_RUNTIME_INTERNAL` on one. Author the case in the Case SDK instead.
+- The case manager's own nodes (`Maestro.UpdateCaseState`, `RetrieveCaseState`,
+  `CaseCyclePrepare`, `CaseCycleCommit`, `CaseManagerPlaceholder`,
+  `CaseManagerGuardrails`, `CaseRulesEvaluator`) are written by the platform when
+  it materializes a case plan. Author one only to preserve it from an imported
+  artifact, verbatim, in the form `decompile` writes (`contextVerbatim: true`),
+  which `check` leaves alone; a fresh one draws `TYPE_RUNTIME_INTERNAL`. A new
+  case belongs in the Case SDK.
 
 <!-- RULE:bpmn.activity.async-no-output -->
 - A fire-and-forget start (`async: true` on `.startAgenticProcess()` or
