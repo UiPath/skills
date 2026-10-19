@@ -6,7 +6,7 @@ An agent or automation hosted outside UiPath (CrewAI, Snowflake Cortex, Salesfor
 
 ```bash
 uip maestro flow registry search '<agent or connector name>' --output json   # Category external-agent / external-workflow
-uip maestro registry search '<agent or connector name>'                      # is it in the SDK connector library?
+uip maestro registry search '<agent or connector name>' --output json        # is it in the SDK connector library?
 uip is connections list <connector-key> --all-folders --output json           # an enabled connection and its FolderKey
 ```
 
