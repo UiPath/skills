@@ -54,7 +54,7 @@ export default flow('invoice-intake')
     nodes: {
       start: at(256, 144), fetch: at(448, 144), eachInvoice: at(640, 144, dim(576, 320)),
       extract: at(144, 96), route: at(336, 96), // inside eachInvoice, relative to it
-      review: at(1312, 144, dim(288, 96)), // an inline agent carries its size
+      review: at(1312, 144, dim(288, 96)), // an agent node carries its size
       done: at(1696, 144),
       onFailure: at(448, 528), end: at(640, 528), // below the container, not beside its body
     },
@@ -66,7 +66,7 @@ Rules:
 
 1. **Use the canvas grid.** A node is 96 px square; a column is 192 px, a row 160 px: `x = 256 + 192 × column`, `y = 144 + 160 × row`.
    The main path goes on row 0 left to right; an error handler or a side arm takes the row below.
-   Compile writes 96 × 96 on every node and the designer draws the persisted size, so a node whose canvas shape is larger must carry it: an inline agent (`inlineAgent`) is `at(x, y, dim(288, 96))`, and the next column starts 384 px to its right; a container carries its `dim()` (rule 2), and the row below it starts one row gap (64 px) under its bottom edge, not at the next 160 px row.
+   Compile writes 96 × 96 on every node and the designer draws the persisted size, so a node whose canvas shape is larger must carry it: an agent node (`inlineAgent`, `conversationalAgent`, `voiceAgent`) is `at(x, y, dim(288, 96))`, and the next column starts 384 px to its right; a container carries its `dim()` (rule 2), and the row below it starts one row gap (64 px) under its bottom edge, not at the next 160 px row.
 2. **A child's position is relative to its container.** A loop or do-while body starts at `at(144, 96)` inside the container's padding, and the container needs a `dim()` that holds the body: the right edge of its rightmost child plus 144, by the bottom edge of its lowest child plus 96, never smaller than `format`'s `dim(560, 320)`.
    For one row of 96 px nodes that is `dim(max(560, 192 × bodyNodes + 192), 320)`; a body with an inline agent, a second row or a nested container is measured from its own entries, not from the node count.
 3. **Name every node, or none.** A missing entry falls back to compile's one-row placeholder, which lands on top of your layout; an unknown key fails `compile`.
