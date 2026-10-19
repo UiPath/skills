@@ -2,7 +2,7 @@
 
 > **Phase split.** Written in Phase 2 only. The timer task has no variable inputs to bind — `timerType` + duration come from the SDD's tinning. Phase 3 does not revisit this plugin. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Write the timer task directly to `caseplan.json`. No CLI command needed.
+Write the timer task directly to `caseplan.case`. No CLI command needed.
 
 ## Task JSON Shape
 

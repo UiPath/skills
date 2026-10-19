@@ -142,8 +142,8 @@ def assert_inline_agent_definition(agent_dir: Path) -> dict:
     The node is a shell: the prompts and model live only in `agent.json`, so
     an empty or prompt-less file gives a flow that validates but runs an
     agent with no instructions. Checks: valid JSON, `type == "lowCode"`,
-    `id` equal to the directory name, a non-empty `settings.model`, and a
-    non-empty `system` and `user` message.
+    `projectId` equal to the directory name, a non-empty `settings.model`,
+    and a non-empty `system` and `user` message.
 
     Interim: `uip agent validate --inline-in-flow` is the real contract, but
     it rejects every SDK-compiled agent today (UiPath/flow-builder-sdk#962).
@@ -153,10 +153,10 @@ def assert_inline_agent_definition(agent_dir: Path) -> dict:
     data = load_json(path)
     if data.get("type") != "lowCode":
         sys.exit(f"FAIL: {path} type should be 'lowCode', got {data.get('type')!r}")
-    if data.get("id") != agent_dir.name:
+    if data.get("projectId") != agent_dir.name:
         sys.exit(
-            f"FAIL: {path} id {data.get('id')!r} does not match its directory "
-            f"name {agent_dir.name!r}"
+            f"FAIL: {path} projectId {data.get('projectId')!r} does not match "
+            f"its directory name {agent_dir.name!r}"
         )
     model = (data.get("settings") or {}).get("model")
     if not isinstance(model, str) or not model.strip():

@@ -53,7 +53,7 @@ From the description, extract: target applications, human actors, workflow steps
 - **Who signs in.** Every persona or account that logs into a target system (administrator, recruiter, integration user, a proxied approver) is one credential asset in Platform Dependencies ([genome-format-guide.md § Platform Dependencies](genome-format-guide.md)).
 - **What varies per scenario.** When the description implies data-driven runs (per country, per organisation type, per integration, per worker), separate the fields that change per row from the constants; the row schema is what the Interface of a test component lists ([genome-format-guide.md § Interface](genome-format-guide.md)), the constants go to configuration.
 - **Whether the application is reachable at build time.** Note it; execution captures UI targets live when it is and ships placeholders when it is not (an authored genome has no source target catalog).
-- **What the unit of work is.** When the description iterates over items (each invoice, each row, each ticket, each file), name the item, its identifying reference, the daily volume, what produces the items and what consumes them as described, where they live, whether several robots or several sources are involved, and which other granularities are viable; when items are handed on again as items of their own (a second stage, on its own schedule or robot, consumes what the first produces) or several independent item streams exist, each is its own flow — an item's children (a mail's attachments, a file's rows) are a level of that item, not a flow; this is the Transactional Shape ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)) — it describes the as-is and lists the split options with their evidence; the split itself is chosen at execution. A run that succeeds or fails as one has none — the stub.
+- **What the unit of work is.** When the description iterates over items (each invoice, each row, each ticket, each file), name the item, its identifying reference, the daily volume, what produces the items and what consumes them as described, where they live, whether several robots or several sources are involved, and which other granularities are viable; when items are handed on again as items of their own (a second stage, on its own schedule or robot, consumes what the first produces) or several independent item streams exist, each is its own flow — an item's children (a mail's attachments, a file's rows) are a level of that item, not a flow; this is the Transactional Shape ([transactional-shape-guide.md](transactional-shape-guide.md)) — it describes the as-is and lists the split options with their evidence; the split itself is chosen at execution. A run that succeeds or fails as one has none — the stub.
 
 ## Step 5 — Suggest platform capabilities
 
@@ -64,7 +64,7 @@ Add these even when the user did not name them:
 | PDFs, scanned documents, forms | Document Understanding activities in `uipath-rpa` step; `uipath-ixp` component when custom extraction model needed |
 | Clicking, typing, reading a screen, desktop app | UI automation in `uipath-rpa` |
 | REST APIs, connectors, SaaS systems | Integration Service connector activities (`uipath-rpa`) or `uipath-api-workflow` component when no UI involved |
-| Many items processed independently, retries, resilience, several robots | Transactional Shape with the As-is, the split options and the evidence ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)); an Orchestrator queue under Platform Dependencies only when the description itself shares items across robots or runs — otherwise the store follows the split chosen at execution, not imposed |
+| Many items processed independently, retries, resilience, several robots | Transactional Shape with the As-is, the split options and the evidence ([transactional-shape-guide.md](transactional-shape-guide.md)); an Orchestrator queue under Platform Dependencies only when the description itself shares items across robots or runs — otherwise the store follows the split chosen at execution, not imposed |
 | Coordinating several automations, waiting on events | `uipath-maestro-flow` (short-lived) or `uipath-maestro-bpmn` (long-running, human lanes) coordinator component |
 | Judgement, classification, summarisation, free-text decisions | `uipath-agents` component |
 | Human review, approval, sign-off | Human-in-the-loop checkpoint in coordinator; actor row in Actors and Systems |
@@ -81,7 +81,7 @@ Ask only for gaps that change the build: missing target system, unknown trigger,
 
 ## Step 7 — Generate
 
-Populate every template section per the format guide's population matrix. Build With rows come from the skill mapping guide, one skill per step. Business rules and error handling attach to the step where they fire. The Transactional Shape classifies those rules and handlers into per-item outcomes, describes the as-is roles, store and coordination, and lists the split options for the unit of work and each alternative unit, with what each requires and changes and the evidence — or carries its stub ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)). Acceptance criteria derive one-to-one from steps, rules, transformations, and handlers.
+Populate every template section per the format guide's population matrix. Build With rows come from the skill mapping guide, one skill per step. Business rules and error handling attach to the step where they fire. The Transactional Shape classifies those rules and handlers into per-item outcomes, describes the as-is roles, store and coordination, and lists the split options for the unit of work and each alternative unit, with what each requires and changes and the evidence — or carries its stub ([transactional-shape-guide.md](transactional-shape-guide.md)). Acceptance criteria derive one-to-one from steps, rules, transformations, and handlers.
 
 Process genomes: write the process file first (Components table, Process Map, Handoffs), then each component genome with its `Part of:` line and an Interface matching the Handoffs row.
 
@@ -95,18 +95,4 @@ Write the file named by the slug rule ([genome-format-guide.md § File Naming an
 python3 "<SKILL_DIR>/scripts/check-genome.py" <process|component> "<GENOME_MD>" --profile strict
 ```
 
-Use `python` on Windows. A process genome takes the checker to every component genome it links. Fix every `FAIL` line and run it again, at most three rounds, then offer edits ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)), naming what is left. Edits are in-place, never a regeneration, and each is checked the same way before answering:
-
-| Request | Update |
-|---|---|
-| "Add detail to step X" | Workflow step X; add acceptance criteria if detail is testable |
-| "Change complexity" | Complexity section, then section depth per matrix |
-| "Add/remove an application" | Target Applications, Workflow, Build With, Acceptance Criteria |
-| "Use a different skill for step X" | Build With row and rationale, validated against mapping guide |
-| "Split this into components" | Promote to process genome: create process file, move component content into component files, add Handoffs |
-| "Scenario X signs in as persona Y" | Platform Dependencies (credential asset for Y), test component's row schema (asset name per row), Configuration Questions |
-| "Make it transactional" / "drop the transactional shape" | Transactional Shape (unit of work, As-is, outcomes, split options, evidence) or its stub; Platform Dependencies (the store the As-is names); Configuration Questions (retry counts) |
-| "Step X should be a business exception" | Transactional Shape outcomes table; the rule under Business Rules for step X; an acceptance criterion for the recorded reason |
-| "One row per transaction instead of one file" (change the unit of work) | Transactional Shape (Unit of work, Alternative units of work, As-is, outcomes, split options); Interface; Handoffs data passed; Platform Dependencies (store); Acceptance Criteria (duplicate and retry cases) |
-| "Split the dispatcher into its own component" / "use one queue" / "apply the REFramework" | Not a genome edit: the split, the store and the template are chosen at execution from the Split options ([transactional-execution-guide.md § Split questions](transactional-execution-guide.md)). Edit the genome only when the described process itself changes — a new source, a new item kind, items that must now be shared — and then the As-is, the Evidence and the options |
-| Edits to an extracted genome (rename / reorder / remove steps, "drop the Source Map") | [extraction-guide.md](extraction-guide.md) Step 7 |
+Use `python` on Windows. A process genome takes the checker to every component genome it links. Fix every `FAIL` line and run it again, at most three rounds, then offer edits ([genome-format-guide.md § Write, Then Offer Edits](genome-format-guide.md)), naming what is left. Edits: [editing-guide.md](editing-guide.md).

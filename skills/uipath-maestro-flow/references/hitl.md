@@ -8,7 +8,7 @@ type, a deployed Action App, or a document-validation station.
 Signature:
 `hitl({ variant?: 'quick-form' | 'action-app' | 'document-validation', app?,
 document?, title?, priority?, labels?, recipient?, fields?, outcomes,
-outcomePorts?, exposeError? })`.
+outcomePorts?, exposeError?, legacyCompleted? })`.
 
 ```ts
 .var('status', types.string)
@@ -67,6 +67,37 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
 - A field's `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'`
   (pre-filled AND editable — give it a `value`; the reviewed value comes back
   at the field's own id).
+- A field's `type` is one of the platform's 11 quick-form types: `'string'`,
+  `'number'`, `'integer'`, `'float'`, `'double'`, `'boolean'`, `'date'`,
+  `'datetime'`, `'file'`, `'object'`, `'array'`. `'text'` and `'date-time'` are
+  accepted as older spellings of `'string'` / `'datetime'`; leave them as they
+  are in existing source. A decompiled canvas form keeps its types as written,
+  except a type copied from a bound Flow variable (`'string[]'`,
+  `'string | null'`), which decompiles to the type it resolves to (`'array'`,
+  `'string'`).
+- A picker field uses a choice-control spelling, with its choices in `options`
+  (`{ id, value, label }` each, all three required): `'singleSelect'` and
+  `'enum'` are a single-choice dropdown (a `string` answer), `'multiSelect'` a
+  multi-select (an `array` answer). Never change one to `'string'` or
+  `'array'`: the form loses its picker. A decompiled canvas form keeps these
+  spellings and their `options`, and you can edit the node unless a field has
+  one of the keys below. Needs `@uipath/maestro-builder-sdk` 6.31.9 or later;
+  an older SDK reports `HITL_FIELD_TYPE_UNKNOWN` (do not follow its
+  `type: 'string'` hint), so upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest`.
+
+  ```ts
+  fields: [{
+    id: 'priority', type: 'singleSelect', direction: 'output',
+    options: [{ id: 'opt-1', value: 'high', label: 'High' }, { id: 'opt-2', value: 'low', label: 'Low' }],
+  }]
+  ```
+
+  A canvas field row can also carry `controlType`, `defaultValue`, `colSpan`,
+  `rules`, `requiredMessage` or `description`. Decompile does not keep those
+  yet, so editing the node drops them from every field on the form. If any
+  field in the `.flow` has one of them, leave that node untouched so merge
+  keeps the original, or edit that node's JSON in the `.flow` directly.
 - **Every outcome is its own exit — the SDK never emits `completed` on a task
   that has outcomes.** Each outcome gets `outcome-<slug>` (the name lowercased,
   non-alphanumerics to `-`). This holds on the default node and on quick-form,
@@ -76,7 +107,18 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `getEffectiveHitlHandleCustomization`). A `completed` edge on a task with
   outcomes is stale: Studio Web and the converter remap it to the PRIMARY
   outcome, so every other outcome loses its path. `check` refuses it
-  (HITL_COMPLETED_PORT_GONE). `exposeError: true` additionally exposes
+  (HITL_COMPLETED_PORT_GONE). The one exception is `legacyCompleted: true`:
+  decompile writes it for a file whose task already leaves on `completed`, so
+  a no-edit round trip writes that edge back unchanged, and `check` warns
+  (HITL_LEGACY_COMPLETED). Never add it yourself. If the task asks you to fix
+  that task's routing, replace it with `outcomePorts: false` (every outcome
+  continues) or route each outcome. A decompiled task the designer drew may write
+  an outcome as `{ name: 'Reject', id: 'outcome-1778015958049' }`: the `id`
+  keeps the original outcome id, so its port is `outcome-outcome-1778015958049`
+  (route it with `.stepToList` by that port; `.stepSwitch` arms still match the
+  name), and the merged edges match the original node. Leave it as it is; new
+  outcomes need no `id`.
+  `exposeError: true` additionally exposes
   `out('<step>', 'error')` and selects the 1.2 definition (default node only).
 
   **Every outcome must be wired**, and there are three ways. Prefer the first:
@@ -84,7 +126,7 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   | | |
   | --- | --- |
   | `.stepSwitch(name, hitl({…}), arms)` | one arm per outcome, `value` naming the outcome. No tacit exit, arms converge, and a missing arm is a warning (STEP_SWITCH_EXIT_UNROUTED) rather than a port with no edge. |
-  | `.step()` + `.stepToList('outcome-<slug>', …)`, on a task that routes per outcome | the FIRST outcome continues the main path and the rest are side arms. Those arms do NOT converge — each gets an End of its own. |
+  | `.step()` + `.stepToList('outcome-<slug>', …)`, on a task that routes per outcome | the FIRST outcome continues the main path and the rest are side arms. Those arms do NOT converge — each gets an End of its own, which maps every output from its variable (NO_RETURN warns when the arm leaves one unset). |
   | `.step()`, on a task that does not route per outcome | every outcome continues to the next step, each on its own edge. The decision reaches the flow as data: `out('<step>', 'Action')`. |
 
   Do not route the FIRST outcome with `.stepToList`: its port is already taken by
@@ -148,8 +190,9 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   **Route EVERY outcome.** With `.stepToList`, an unrouted one deploys and then
   stalls the run when the reviewer picks it (`check` warns
   HITL_OUTCOME_UNROUTED). With `.stepSwitch` it compiles to an End instead, so
-  the run finishes rather than hanging — but finishes without the flow's declared
-  outputs, which STEP_SWITCH_EXIT_UNROUTED says out loud. Inside a `.parallel()`
+  the run finishes rather than hanging — but the End only maps each declared
+  output from its variable, and nothing on that path set them, which
+  STEP_SWITCH_EXIT_UNROUTED says out loud. Inside a `.parallel()`
   arm that End would hang the join instead, so there it is refused
   (HITL_END_OUTCOME_IN_PARALLEL). `action: 'End'` changes
   what happens on that outcome (the run ends instead of stalling), not whether

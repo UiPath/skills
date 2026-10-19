@@ -72,7 +72,7 @@ Body:
 ```json
 { "idea_flow_id": <id>, "user_inputs": { "<AssessmentType>": { "<section-ahid>": { "<question-key>": { "value": "<v>" } } } } }
 ```
-**Do not POST `data.user_inputs` verbatim** — its example values are placeholders that the API rejects. Replace each with a real value; in particular resolve a **valid** `OVERVIEW_CATEGORY` id (the template's `1` → `Invalid Category Id`) and real `answer_option` codes. A code not in that field's `enum` is never selected: on a `required` question the create fails with `Please fill in all the required information`, and `errorDetails` names the field (`An answer selection is required for submission`). On an optional question the create **succeeds and the answer is silently dropped**, so the preflight is the only guard.
+**Do not POST `data.user_inputs` verbatim** — its example values are placeholders that the API rejects. Replace each with a real value; in particular resolve a **valid** `OVERVIEW_CATEGORY` id (the template's `1` → `Invalid Category Id`) and real `answer_option` codes. A single- or multiple-choice value not in that field's `enum` (a label, a slug, a retyped code) is never selected. Newer builds reject it on create and update, required or optional, with a `400` naming the field: `Question "<key>" has no answer option matching "<value>". Allowed values: …`, the same text in `errorDetails["<key>"]`, and the stored answer left untouched; a multiple-choice answer sent as a bare string gets `Question "<key>" expects an array of answer option values`. Older builds fail a `required` question with `Please fill in all the required information` (`errorDetails` names the field: `An answer selection is required for submission`), and on an optional question the create **succeeds and the answer is silently dropped**, so run the preflight on every build.
 
 **Required fields (Business Process, `idea_flow_id`=7), verified live** — note the backend enforces owner + submitter even though the schema's `required` flags omit them:
 
@@ -123,12 +123,18 @@ Attach a document to a process — **by uploaded bytes (`file`) or by link (`emb
   | 5 | DWI (Detailed Work Instructions) | 11 | ASC (Automation Source Code) |
   | 6 | PM (Process Map) | | |
 
-  Pick by the document's kind: PDD → `1`, SDD → `2`; when unsure, default to `9` (MISC).
+  Pick by the document's kind: PDD → `1`, SDD → `2`, a `.bpmn` process map → `6`; when unsure, default to `9` (MISC).
+- **A `.bpmn` file is always `6` (PM) — this overrides the MISC fallback.** AH opens a document in its process-model editor (the canvas) only when it is type `6` **and** its `file_name` ends in `.bpmn`; the same file under `9` or any other type is download-only, with no Edit (verified on alpha, 2026-10-13). Type `6` + `.bpmn` is necessary, not sufficient: the map must also be a file upload (not `embed_link`), and the editor must be available on the tenant (older AH builds gate it behind a feature flag, and it is off on gov). So tell the caller the map *should* open in the editor; do not promise it will. The AH web UI pre-selects Process Map for a `.bpmn`; the API does not infer it — send `6` yourself. Keep the `.bpmn` extension on `file_name`: the editor keys on it, not on `mimetype`.
+- **A Maestro case plan (`caseplan.json` / `.case`) is not BPMN.** The API accepts it under any type, but AH has no viewer or editor for it — it is download-only (and the web UI does not allow `.json` uploads at all). Upload it as `6` only when the caller asks for it as the process model, and tell them it will be a download, not an editable map.
 - Plus **exactly one** of `file` or `embed_link` — an XOR enforced in the handler, not the schema. Sending both, or neither, 400s with `"One and only one of embed_link or file need to be specified."`
 - **`file` — byte upload, the default.** Validated by `EncodedFileValidator`: `file_name`, `mimetype`, `file_content`, `file_encoding` are all required and must be non-empty, and `file_encoding` must be `base64` — the only accepted value. No mimetype allowlist. The JSON body limit is **300mb**, so a PDD-sized `.docx` or `.md` fits with room to spare.
 - **`embed_link`** — use only when the document already lives at a URL and the bytes are not available.
 
 Returns the standard envelope with the created id **nested under `data`** — read **`data.document_id`**. *(Used by the publish flow.)*
+
+A **409 `Duplicate document with title found`** is **not** about the title, despite its message. The server returns it when a non-deleted document on the same process already has the same **`document_type_id` and the same `file_name`** (matched against the stored original file name). The title is never checked: a duplicate title with a different file name succeeds, and so does the same file name under a different type. To surface it, find the existing document in the documents list by `document_type_id` + `file.originalname`, and report it to the caller. Never silently rename the file or retitle and retry.
+
+**Re-typing an existing upload creates a second copy.** The type is part of the duplicate check, so re-uploading a `.bpmn` that is already attached as `9` with type `6` succeeds and leaves **two** documents with the same file name: one editable, one download-only. The Open API has no update or delete route for documents, so tell the caller the old type-`9` copy is still on the process and that they should delete it in the AH web UI.
 
 ### POST `/automations/{process_id}/media`  *(not needed for documents)*
 A separate byte-upload route taking the same `EncodedFileValidator` shape. Documents do **not** need it — `/documents` accepts `file` directly.
@@ -151,7 +157,7 @@ Search/list processes. Returns a paged list (results under a resource key, e.g. 
 Fetch one process by numeric id (or slug). Returns the full process record (can be ~300 fields; project to the ones you need for display). *(Used by the get flow.)*
 
 ### GET `/automations/{process_id}/documents`
-List a process's documents (key `documents`). Each entry carries `document_id`, `document_title`, `document_type_id`, and **either** a `file_id` (file-backed — downloadable) **or** an `embed_link` (link-backed — nothing to download; show the URL). *(Used by both flows.)*
+List a process's documents (key `documents`). Each entry carries `document_id`, `document_title`, `document_type_id`, a nested `file` (with `originalname`, the uploaded file name, and `mimetype`) for file-backed documents, and **either** a `file_id` (file-backed — downloadable) **or** an `embed_link` (link-backed — nothing to download; show the URL). *(Used by both flows.)*
 
 ### GET `/download/file/{file_id}`
 Download a file-backed document's **bytes**. `{file_id}` is the `file_id` from the documents list — **not** the `document_id`. The response body is the raw file — save it with `curl -o <path>`; there is no JSON envelope. Link-backed documents (`file_id` absent) cannot be downloaded — present their `embed_link` instead. *(Used by the get flow.)*
@@ -174,7 +180,7 @@ Move an automation into another idea flow (e.g. convert an idea into a Business 
 | 401 | Unauthorized — token missing/expired, or `x-ah-openapi-auth` was wrongly sent |
 | 403 | Forbidden — the user lacks the AH permission (authorization = the user's real AH role) |
 | 404 | Wrong URL, or AH not available on the tenant — see **Automation Hub not available on this tenant** below |
-| 409 | Duplicate process name |
+| 409 | Duplicate process name; on a document attach, a duplicate document (see `POST /automations/{process_id}/documents`) |
 
 ### Automation Hub not available on this tenant
 

@@ -7,6 +7,7 @@ Text `uip agenthub` prints in a failure's `Message`, `Instructions` or `Errors` 
 | Text | Fix |
 |------|-----|
 | `HTTP 400: …` with `Errors` | Fix the fields `Errors` lists. Without `Errors`, re-run with `--dry-run` to inspect the resolved body. |
+| ``Payload keys differ from their fields only in case: `<KEY>` should be `<FIELD>`, …`` | Rename each key as listed; the `NextCommand` (`--print-schema`) lists the fields. |
 | `Use exactly one input source: …` / `Use exactly one of --file, --body, or scalar options.` | Pass scalar flags or `--file` or `--body`, not a mix. `--no-use-relay`, `--no-use-all-tools`, `--connection-id`, `--clear-connection` and every `mcp-tools` content flag count as scalar flags. |
 | `No input provided. …` | Pass scalar flags, `--file <PAYLOAD_FILE>` or `--body <JSON>`. On `mcp create` / `mcp update`, the `NextCommand` (`--print-schema`) lists the fields. |
 | `Fix the JSON syntax in …` (Instructions) / `Unexpected end of JSON input` | Fix the JSON; pass `"{}"`, not `""`, for an empty schema. |
@@ -50,6 +51,7 @@ Text `uip agenthub` prints in a failure's `Message`, `Instructions` or `Errors` 
 | `Forbidden (403). …` on `refresh-tools` of a `remote` / `swagger` server with a `%ASSETS/<ASSET_NAME>%` header | Orchestrator refused to give that asset's value for a CLI login (it gives it to Agent Gateway in the portal and to jobs). The token's scopes are not the cause, and `mcp get` still shows the header as stored. Ask the user to refresh the tools in Agent Gateway, or whether to store the value as a secret header (`--header <NAME>=<VALUE>`) instead. |
 | ``Tools on `uipath` MCP servers are manually authored and cannot be refreshed.`` | Add tools with `mcp-tools create-resource`. |
 | ``Tools on `selfhosted` MCP servers come from the runtime connected to them …`` | Change the tools in the runtime. |
+| `Failed to retrieve authentication token from Integration Service connection` on `refresh-tools` of a `remote` server | Ping the connection ([Checking a Server](../SKILL.md#checking-a-server)): an `Expired` one needs its owner to sign in again. It must be an OAuth connection of connector `uipath-uipath-mcp`. When the server's connection is active, the refresh may have used your own per-user connection on the server: check it in Agent Gateway. |
 | `Failed to connect to MCP server: …` / HTTP 504 `Request timeout` | The remote server is unreachable: check the URI, the headers, and Relay for a private host. |
 
 ## Platform
@@ -57,7 +59,7 @@ Text `uip agenthub` prints in a failure's `Message`, `Instructions` or `Errors` 
 | Text | Fix |
 |------|-----|
 | `Service '<SERVICE_NAME>' is not available or not enabled` / `Platform service '<SERVICE_NAME>' is not offered on this tenant. …` | Pick a `ServiceName` from `platform-services list`, exactly as cased. |
-| `Tools not found in service swagger: <NAMES>` / `Tools not found on <SLUG>: <NAMES>.` | Use names from `platform-tools list --service <SERVICE_NAME>`, exactly as cased (`swagger` in the first message is literal). |
+| `Tools not found in service swagger: <NAMES>` / `Tools not found on <SLUG>: <NAMES>.` / `Tools not found in the <SERVICE_NAME> service: <NAMES>.` | Use names from `platform-tools list --service <SERVICE_NAME>`, exactly as cased (`swagger` in the first message is literal). |
 | `<SLUG> exposes All tools, so --tool would not change which tools it exposes.` | Add `--no-use-all-tools` to expose only the `--tool` list. |
 | `<SLUG> exposes All tools, so a single tool cannot be disabled.` | Run `uip agenthub mcp update <SLUG> --no-use-all-tools --folder-path <FOLDER_PATH> --output json` first. |
 | `--tool has no effect with --use-all-tools: …` | Pass one of the two. |
@@ -69,7 +71,7 @@ Text `uip agenthub` prints in a failure's `Message`, `Instructions` or `Errors` 
 |------|-----|
 | `Conversational agents cannot be used as MCP tools: <NAMES>` | Pick a non-conversational agent. |
 | `--target-name requires --category …` / `Ambiguous --target-name …` / `No <CATEGORY> candidate matched name '<NAME>'.` | Pass `--category`; for a resource in another folder pass `--target-folder-*`; or pick an `Id` from `candidates` and pass it as `--target-identifier`. |
-| `Found <N> matching tools.` | Several tools matched `--name`: pass a tool id, or `--allow-multiple` to act on every match. `Found 0 matching tools.` (`mcp-tools get`) means none matched: take a name from `mcp-tools list`. |
+| `Found <N> matching tools.` | Several tools matched `--name` and none is named exactly that: pass a tool id, or `--allow-multiple` to act on every match. `Found 0 matching tools.` (`mcp-tools get`) means none matched: take a name from `mcp-tools list`. |
 | `RCS Entities/Search requires the RCS.Search scope. …` (Instructions of a 401 / 403 on `candidates`) | Re-run `uip login`. |
 
 ## Network

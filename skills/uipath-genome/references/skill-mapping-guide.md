@@ -6,9 +6,9 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 
 1. **One skill per row.** A step that mixes concerns (UI interaction plus a long calculation, or an API call plus an LLM decision) is split into two steps, each with its own skill.
 2. **Build skills only.** Build With lists skills that produce a deployable artifact. Skills that operate the platform (queues, assets, connections, folders, jobs) go under **Platform Dependencies**, never in Build With.
-3. **One component = one project — except test components.** In a process genome each non-test component maps to one buildable project and therefore to one primary skill. Steps inside a component may still use a second skill when the project is hybrid (XAML + coded files in one RPA project both map to `uipath-rpa`, so a hybrid RPA project is still one skill). Test components all map to the *same* `uipath-rpa` test project ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1). Producer and consumer are roles of the Transactional Shape, not Type cell words; a split chosen at execution may turn one `uipath-rpa` component into several `uipath-rpa` projects, and the skill does not change ([genome-format-guide.md § Transactional Shape](genome-format-guide.md)).
+3. **One component = one project — except test components.** In a process genome each non-test component maps to one buildable project and therefore to one primary skill. Steps inside a component may still use a second skill when the project is hybrid (XAML + coded files in one RPA project both map to `uipath-rpa`, so a hybrid RPA project is still one skill). Test components all map to the *same* `uipath-rpa` test project ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1). Producer and consumer are roles of the Transactional Shape, not Type cell words; a split chosen at execution may turn one `uipath-rpa` component into several `uipath-rpa` projects, and the skill does not change ([transactional-shape-guide.md](transactional-shape-guide.md)).
 4. **Orchestration is a step, not an annotation.** When a process coordinates several automations, the coordinator (Flow, BPMN, or Case plan) is its own component with its own row.
-5. **Do not invent skill names.** Use only the names in the tables below; a name that is not listed will not resolve at execution time.
+5. **Do not invent skill names.** Use only the names in the tables below; a name that is not listed will not resolve at execution time — the retired `uipath-rpa-workflows`, `uipath-coded-workflows` and `uipath-coded-agents` included.
 
 ## Build Skills
 
@@ -17,7 +17,7 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 | RPA workflow: desktop or browser UI automation, Excel, mail, PDF, file system, Object Repository selectors, Document Understanding activities, Integration Service connector activities, C# coded business logic, test cases | `uipath-rpa` | "click", "type into", "read the spreadsheet", "download attachments", "scrape", "fill the form", "validate with C#", "call Salesforce connector" | `project.json` with `.xaml` files and/or `.cs` files carrying `[Workflow]` / `[TestCase]` |
 | Maestro Flow: lightweight orchestration of deployed processes, agents, connectors; script and HTTP nodes; inline agent steps; approval nodes; connector triggers | `uipath-maestro-flow` | "when X happens in Slack/Jira, run Y", "chain these automations", "a flow that calls the agent then the process" | `.flow` file, `entry-points.json`, `bindings_v2.json` |
 | BPMN process orchestration: long-running multi-lane process, gateways, events, human tasks, compensation | `uipath-maestro-bpmn` | "end-to-end process", "swim lanes", "wait for approval for days", "process with stages and gateways" | `.bpmn` file |
-| Case management: case plan with stages, tasks, SLAs, ad-hoc human work | `uipath-maestro-case` | "case", "claims handling", "each case has stages and SLAs" | `caseplan.json` |
+| Case management: case plan with stages, tasks, SLAs, ad-hoc human work | `uipath-maestro-case` | "case", "claims handling", "each case has stages and SLAs" | `caseplan.case` / `caseplan.json` |
 | Agent: LLM reasoning, tool selection, natural-language decisions, conversational | `uipath-agents` | "decide", "classify with AI", "summarize", "chatbot", "agent that reads the email and picks an action" | `agent.json` with `"type": "lowCode"`; or Python project with `pyproject.toml` plus `langgraph.json` / `main.py` and `uipath.json` without a `functions` map |
 | Coded function: deterministic Python or TypeScript/JavaScript unit, no LLM | `uipath-functions` | "a function that computes", "pure transform", "rule-based scoring" | `uipath.json` with a `functions` map |
 | Business rule: one DMN decision table that a process, flow or case evaluates | `uipath-rules` | "decision table", "the business maintains these rules", "look up the approval level by amount and region" | `.dmn` file beside `project.uiproj` |
@@ -45,15 +45,18 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 
 ## Decision Tree for Ambiguous Steps
 
-1. Step interacts with a screen (desktop or browser) → `uipath-rpa`.
+1. Step interacts with a screen (desktop or browser), or with what only a robot's machine reaches — Excel and Office files, files and folders on local or network storage, an on-premises database, desktop mail, a terminal → `uipath-rpa`.
 2. Step reads or writes Excel, mail, PDF, files, or calls an Integration Service connector activity from a workflow → `uipath-rpa`.
-3. Step needs an LLM to decide, classify, summarize, or converse → `uipath-agents` when the agent is a component of its own: a conversation, an agent several components call, an agent with its own evaluations. One reasoning step among a Flow's other steps, with its model, tools and answer contract, is the Flow's inline agent → `uipath-maestro-flow`.
-4. Step is deterministic code with no UI and no LLM, invoked as a unit by other components → `uipath-functions`. If the same logic lives inside an RPA project as C#, keep `uipath-rpa`.
-5. Step is a sequence of HTTP calls with no UI → `uipath-api-workflow` when standalone; `uipath-rpa` when it lives inside an RPA project.
-6. Step coordinates other components: lightweight, event-driven, minutes-long → `uipath-maestro-flow`; long-running with human lanes and gateways → `uipath-maestro-bpmn`; case-centric with stages and SLAs → `uipath-maestro-case`.
-7. Step is a user-facing screen → `uipath-coded-apps`.
-8. Step trains or deploys an extraction model → `uipath-ixp`; the workflow that *uses* the model stays with its own skill.
-9. Still ambiguous between `uipath-rpa` and anything else → `uipath-rpa`.
+3. Step reads fields from semi-structured documents (invoices, forms, contracts) → a document-extraction step of the component that uses it; training or deploying the extraction model is its own row → `uipath-ixp`.
+4. Step decides by a threshold, eligibility or routing table the business maintains → a decision table of its own, which the step evaluates → `uipath-rules`.
+5. Step needs an LLM to decide, classify, summarize, or converse → `uipath-agents` when the agent is a component of its own: a conversation, an agent several components call, an agent with its own evaluations. One reasoning step among a Flow's other steps, with its model, tools and answer contract, is the Flow's inline agent → `uipath-maestro-flow`. A fixed generation step with no decision (summarize, draft) is an LLM activity of the component that runs it.
+6. Step is deterministic code with no UI and no LLM, invoked as a unit by other components → `uipath-functions`. If the same logic lives inside an RPA project as C#, keep `uipath-rpa`.
+7. Step is a sequence of HTTP or connector calls with no UI, to systems the cloud reaches → `uipath-api-workflow` when standalone; `uipath-rpa` when it lives inside an RPA project.
+8. Step waits for a person — an approval, a review, missing data: inside one RPA process, a task in Action Center and a long-running workflow → `uipath-rpa`; inside a coordinator, that coordinator's human-task node or task (Rationale names `uipath-human-in-the-loop`).
+9. Step coordinates other components → `uipath-maestro-flow` for a pipeline of automations with branches; `uipath-maestro-bpmn` for formal gateways, events, timers or subprocesses; `uipath-maestro-case` for a case moving through stages with SLAs. A coordinator is chosen only for coordination one component cannot hold — state that outlives a run (waits of days, events, timers), parallel branches, several automations that run on their own, per-step visibility end to end. A component that calls another automation and uses its result in the same run keeps the call as a step, and starting one dispatcher and its performer needs no coordinator.
+10. Step is a user-facing screen → `uipath-coded-apps`.
+11. Data several components share is a Data Fabric entity: a Platform Dependency, never a step's skill; the step that reads or writes it takes the skill of the component that runs it.
+12. Still ambiguous between `uipath-rpa` and anything else → `uipath-rpa`.
 
 ## Common Combinations
 

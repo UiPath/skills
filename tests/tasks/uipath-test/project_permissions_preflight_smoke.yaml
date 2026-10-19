@@ -1,0 +1,117 @@
+task_id: skill-test-project-permissions-preflight-smoke
+description: >
+  Smoke test: the agent reports which Test Manager permissions the caller holds
+  on a named project before doing work there. Asserts it routes through the skill
+  and runs `project-permissions get` for that project (not a guess), and that the
+  live response is a well-formed envelope — Result Success, Code
+  ProjectPermissionsGet, a non-empty Permissions string array and a Count that
+  equals its length. The get is itself gated on Project.Read, so a successful
+  response always carries at least Project.Read (Count >= 1); no read access
+  fails with a 403/404, never a Success with an empty array.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover]
+
+run_limits:
+  expected_turns: 6
+  max_turns: 20
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      NAME = "EVFX-PERMPRE-PROJECT"
+
+      def call(label, *a):
+          r = subprocess.run(["uip", *a, "--output", "json"],
+                             capture_output=True, text=True)
+          out = (r.stdout or "").strip()
+          print(f"FIXTURE[{label}] rc={r.returncode} out={out[:160]}", flush=True)
+          try:
+              return json.loads(out[out.index("{"):])
+          except Exception:
+              return {}
+
+      def find():
+          for p in call("list", "tm", "project", "list", "--filter", NAME).get("Data") or []:
+              if p.get("Name") == NAME:
+                  return p
+          return None
+
+      p = find()
+      if not p:
+          # project-key must be short; derive a stable one from the name
+          call("create", "tm", "project", "create", "--name", NAME, "--project-key", "EVFXPERMPRE")
+          p = find()
+      if not p:
+          print("FIXTURE: PROVISIONING FAILED - could not find or create project", flush=True)
+          sys.exit(1)
+      print(f"FIXTURE: project {NAME} ready ({p.get('ProjectKey')})", flush=True)
+      PYEOF
+    timeout: 120
+
+initial_prompt: |
+  I'm about to start working in my UiPath Test Manager project
+  "EVFX-PERMPRE-PROJECT" and I want to know up front what I'm actually allowed to do
+  in it with my current credentials. List the permissions I hold on that project.
+  If I happen to hold none, say so plainly rather than treating it as an error.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Routed through the uipath-test skill"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the caller's permissions for the named project with project-permissions get"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+project-permissions\s+get\b(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--project-(key|id)\s)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The live response is a valid ProjectPermissionsGet envelope with a non-empty Permissions array (Count==len, Project.Read present)"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      NAME = "EVFX-PERMPRE-PROJECT"
+      import time
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          o = r.stdout or ""
+          try: return json.loads(o[o.index("{"):])
+          except Exception: return {}
+      # list --filter is eventually consistent under parallel smoke load; retry.
+      pk = ""
+      for _ in range(6):
+          for p in call("tm","project","list","--filter",NAME).get("Data") or []:
+              if p.get("Name") == NAME: pk = p.get("ProjectKey"); break
+          if pk: break
+          time.sleep(3)
+      if not pk:
+          print("NO_PROJECT"); sys.exit(1)
+      d = call("tm","project-permissions","get","--project-key",pk)
+      data = d.get("Data") or {}
+      perms = data.get("Permissions")
+      ok = (d.get("Result") == "Success" and d.get("Code") == "ProjectPermissionsGet"
+            and bool(data.get("ProjectId")) and isinstance(perms, list)
+            and len(perms) >= 1 and "Project.Read" in perms
+            and data.get("Count") == len(perms))
+      print("SHAPE_OK" if ok else "SHAPE_FAIL")
+      sys.exit(0 if ok else 1)
+      PYEOF
+    expected_exit_code: 0
+    expected_stdout: "SHAPE_OK"
+    stdout_match: contains
+    timeout: 60
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Checked login status first (advisory convention)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0

@@ -28,7 +28,7 @@ Define an autonomous agent inside this Flow project, with optional resources.
     rules: [{ $ruleType: 'always', applyTo: 'inputAndOutput' }] }] }))
 ```
 
-`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds; `memory: { name, id }` attaches an episodic memory; `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
+`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds, each with its own identity ([agent-resources.md](agent-resources.md#tool-kinds)); memory is attached with the CLI, not `inlineAgent` ([agent-resources.md](agent-resources.md#memory)); `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
 
 ## Model and answer judgment
 
@@ -57,7 +57,9 @@ uip solution resources list --kind Index --source remote --search "<index-name>"
 ```
 
 Maps onto the signature as `Key` → `id`, `Name` → `name`, `Folder` → `folderPath`, `FolderKey` → `folderKey`.
-Give `folderPath`: the emitted resource carries no index id, so the folder is half of how the runtime finds the index.
+`id` is the index's GUID (`Key`): it is the tail of the resource node's type. `check` reports `AGENT_CONTEXT_NO_ID` for a blank or non-GUID `id`, and compile refuses it even with `--no-check`.
+Give `folderPath`: the resource file carries no index id, so the type and the folder together locate the index.
+Resource entries may carry `nodeId` / `source` / `label` from decompile; see [brownfield.md](brownfield.md). Omit them in new flows.
 
 Local execution has no semantic retrieval service, so an inline-agent answer is ungrounded even when the resource wiring is present.
 Platform evidence must establish that the intended index was used and that its retrieved knowledge influenced the answer.

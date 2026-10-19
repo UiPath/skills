@@ -47,7 +47,7 @@ the cell is optional, note the provenance, and move on. -->
 
 ## Table of Contents
 
-1. [Case Definition](#section-1-case-definition) — Metadata, SLA, Triggers, Exit Conditions, Variables
+1. [Case Definition](#section-1-case-definition) — Metadata, SLA, Triggers, Exit Conditions, Variables, Business Events
 2. [Stages & Tasks](#section-2-stages--tasks)
    - [Stage <N>: <STAGE_NAME>](#stage-n-stage_name) — <N> tasks
    - [Secondary Stage: <SECONDARY_STAGE_NAME>](#secondary-stage-secondary_stage_name) — <N> tasks
@@ -191,7 +191,7 @@ Configuration cell = user intent in business terms (`Record created`, `Email rec
 <!-- WHEN + Marks Case Complete pairing is schema-constrained: Yes normally uses `required-stages-completed`;
 selected-stage rules are for non-completing exits (alternate dispositions: Withdrawn / Rejected /
 Cancelled — required when the case has ≥1 secondary stage, else high review item `Alt-disposition exits
-missing`). ≥1 Yes row always. Display Name defaulting (every condition table in this SDD): carry the
+missing`). `api-event("<Name>")` is legal with either Marks value (§ Business Events). ≥1 Yes row always. Display Name defaulting (every condition table in this SDD): carry the
 author's value verbatim; blank → `Entry Rule {N}` / `Complete Rule {N}` / `Exit Rule {N}` by table kind,
 N 1-based per label kind — never invent a label otherwise. -->
 
@@ -219,6 +219,24 @@ Config-as-In: runtime business rules (priority bands, thresholds, taxonomies) ri
 > `{"employeeName":"Test Employee","amount":125.5}` becomes
 > `"{\"employeeName\":\"Test Employee\",\"amount\":125.5}"`. Same for numbers and booleans — `"5"`,
 > `"true"`, not `5` or `true`. Leave the cell blank for no default; `file` defaults must be blank.
+
+### Business Events
+
+<!-- Section only when ≥1 condition row's WHEN is `api-event("<Name>")`; omit otherwise. A business
+event is a named signal an outside caller sends to a running case through the case API; each row
+becomes one `metadata.businessEvents[]` entry. Name is the exact text every `api-event("…")` cell
+quotes — a WHEN that quotes an undeclared Name is not resolved. Names are unique (on a duplicate the
+first row wins). Payload is a JSON Schema object for the event body, in one code span, or `—` when the
+event carries no body. Description is optional.
+Where `api-event` may stand: Stage Entry, Stage Exit (either Marks value), Task Entry and Case Exit
+(either Marks value). Never on a task whose Entry Conditions also hold `runs-sequentially`, and never
+in Case Triggers — a case is not started by a business event. The Case Designer offers business events
+only when the `canvas-enableCaseEventSender` feature flag is on for the tenant; when the user has not
+confirmed it, add a medium review item `Business events need canvas-enableCaseEventSender`. -->
+
+| Name | Description | Payload |
+|------|-------------|---------|
+| <event name, exactly as api-event cells quote it> | <what the event signals, or —> | <`{"type":"object","properties":{…}}` or —> |
 
 ---
 
@@ -280,13 +298,13 @@ an SLA lane names the SLA, the response, and why it interrupts or not. -->
 
 | WHEN | IF | Interrupting | Display Name |
 |------|-----|-------------|--------------|
-| <case-entered \| selected-stage-completed("StageName") \| selected-stage-exited("StageName") \| user-selected-stage \| wait-for-connector \| sla-status-change("<SLA target>","<SLA Title>") for a breach \| sla-status-change("<SLA target>","<SLA Title>","<At-Risk Escalation Display Name>") for at-risk> | <conditionExpression or —> | <Yes \| No> | <label or —> |
+| <case-entered \| selected-stage-completed("StageName") \| selected-stage-exited("StageName") \| user-selected-stage \| wait-for-connector \| api-event("<Business Event Name>") \| sla-status-change("<SLA target>","<SLA Title>") for a breach \| sla-status-change("<SLA target>","<SLA Title>","<At-Risk Escalation Display Name>") for at-risk> | <conditionExpression or —> | <Yes \| No> | <label or —> |
 
 #### Stage Exit Conditions
 
 | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
 |------|-----|-----------|---------------------|--------------|
-| <required-tasks-completed \| wait-for-connector \| selected-tasks-completed("TaskName")> | <conditionExpression or —> | <exit-only \| return-to-origin \| wait-for-user> | <Yes \| No> | <label or —> |
+| <required-tasks-completed \| wait-for-connector \| selected-tasks-completed("TaskName") \| api-event("<Business Event Name>")> | <conditionExpression or —> | <exit-only \| return-to-origin \| wait-for-user> | <Yes \| No> | <label or —> |
 
 #### Stage SLA
 
@@ -320,7 +338,7 @@ the exact stage display name — never the case name. -->
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
+| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| flow-process \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
 
 ##### Task <N>.<M>: <TASK_NAME>
 
@@ -333,7 +351,7 @@ the exact stage display name — never the case name. -->
 
 | WHEN | IF | Display Name |
 |------|-----|--------------|
-| <current-stage-entered \| selected-tasks-completed("TaskA", "TaskB") \| wait-for-connector \| adhoc \| runs-sequentially> | <conditionExpression or —> | <label or —> |
+| <current-stage-entered \| selected-tasks-completed("TaskA", "TaskB") \| wait-for-connector \| api-event("<Business Event Name>") \| adhoc \| runs-sequentially> | <conditionExpression or —> | <label or —> |
 
 **Task envelope**
 
@@ -409,6 +427,18 @@ activity schema. Operation Configuration carries through as =jsonString: only he
 **Timer:** <timeDuration (relative) \| timeDate (absolute) \| timeCycle>
 **Value:** <ISO 8601 expression, date expression, or variable expression — NEVER <UNRESOLVED>: a timer cannot fire without it; block approval>
 **Business Calendar:** <calendar name or —>
+
+###### HTTP Request Task Detail (type: `http-request`)
+
+**Method:** <GET \| POST \| PUT \| PATCH \| DELETE>
+**URL:** <absolute URL; a path relative to the connector's base URL when Connector Key and Connection ID are set (convert stores it as the request path)>
+**Headers:** <JSON object in backticks, e.g. `{"Accept": "application/json"}`, or —; never a credential — authenticate with Connector Key + Connection ID>
+**Query:** <JSON object in backticks, or —>
+**Body:** <JSON literal in backticks, an `=` expression, or —>
+**Connector Key:** <connector whose connection authenticates the call, or — for a direct request>
+**Connection ID:** <tenant connection id, or <UNRESOLVED>; only with Connector Key>
+
+Outputs are the response's `code`, `headers` and `body`, plus `Error`.
 
 ###### Child Case Task Detail (type: `case-management`)
 

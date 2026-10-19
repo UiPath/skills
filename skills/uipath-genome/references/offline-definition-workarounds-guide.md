@@ -54,19 +54,25 @@ Field semantics deciding whether an offline file behaves:
 
 ## Screens — `TargetApp` definitions offline
 
-A screen's definition is a `uix:TargetApp`, obtained like an element's: write the seed below, mutate it only through `uip rpa uia target-app update-definition` (`--name`, `--description`, `--selector` — it also writes the `.metadata` sibling in the CLI's own shape, and prints nothing on success, § CLI behaviour observed offline), then register and link it in the order of § Order of commands, offline. The command exposes no launch URL or file path, so an application card linked to an offline screen can only *attach*: the launch itself is a Start Process ([source-migration-guide.md § Composite interactions](source-migration-guide.md), "actions without a control") and the live pass may move the open into the card. A window-level screen with no elements is the legitimate shape for maximise, close and "window exists" steps, and for the scope a Start Process-launched application is attached through.
+A screen's definition is a `uix:TargetApp`. Write the seed below, mutate it only through `uip rpa uia target-app update-definition`, then register and link it (§ Order of commands, offline). The command also writes the `.metadata` sibling and prints nothing on success (§ CLI behaviour observed offline).
 
-The whole seed `create-screen` accepts — `Area` zeros are fine offline, `Selector` is what `update-definition --selector` fills:
+The seed `create-screen` accepts:
 
 ```xml
-<uix:TargetApp Area="0, 0, 0, 0" Selector="&lt;html app='chrome.exe' url='https://host.example.com/*' /&gt;" Version="V3" />
+<uix:TargetApp Area="0, 0, 0, 0" Url="https://host.example.com/start" Selector="&lt;html app='chrome.exe' url='https://host.example.com/*' /&gt;" Version="V3" />
 ```
+
+- `Area`: zeros are fine offline.
+- `Selector`: set with `--selector`. A literal selector also sets `BrowserType`, so the seed carries none.
+- Launch settings, which the card opens the application with: `Url` on a browser screen; `FilePath`, `Arguments` and `WorkingDirectory` on a desktop one. Write them in the seed: `update-definition` leaves them unchanged and `create-screen` stores them. After `create-screen`, read the screen back with `object-repository get-screen-xaml` to check that it holds them.
+- A launch setting is a literal or one variable, written as an expression in the project's language (in a C# project the element form with a `CSharpValue`, as § Selector variables in number attributes shows). The variable must be in scope in every workflow with a card linked to the screen; where it is not, `link-screen` fails with `Failed to save the workflow after updating the activity.` and the file stays as it was.
+- `link-screen` copies the screen's launch settings into the card it links. A card linked before the screen changed keeps its copy until it is linked again.
 
 ## Order of commands, offline
 
-The run's target tool ([source-migration-guide.md § UI targets](source-migration-guide.md)) runs these steps. A success line is not proof: a batch past the shell's length limit reports success for the part that arrived. After each `create-*` and `link-*`, count the `TargetApp` / `TargetAnchorable` entries in the file it wrote to (the Object Repository file, the workflow) and stop when the count did not move.
+The run's target tool ([ui-target-migration-guide.md § UI targets](ui-target-migration-guide.md)) runs these steps. A success line is not proof: a batch past the shell's length limit reports success for the part that arrived. After each `create-*` and `link-*`, count the `TargetApp` / `TargetAnchorable` entries in the file it wrote to (the Object Repository file, the workflow) and stop when the count did not move.
 
-1. Screen seed → `target-app update-definition --name --description --selector`.
+1. Screen seed, launch settings included → `target-app update-definition --name --description --selector`.
 2. Element seeds, one copy per element → `target-anchorable update-definition --name --description --full-selector --scope-selector --semantic-selector --activity-type` per element; `--full-selector` on every element (§ Starting-point definition file, Seed leakage). `--description` is accepted and lands in the `.xaml.metadata` sibling. `--semantic-selector` adds the semantic step beside the strict one (`SearchSteps="Selector, SemanticSelector"`) and leaves the strict selector as it is, an interpolated expression included. On a registered element, the same call on its exported definition (`object-repository get-element-definition`) followed by `replace-elements` carries the semantic step and the description into the store and keeps the `referenceId` (checked).
 3. `object-repository create-app` → `create-screen` with the screen definition → `create-elements` with every new element definition of that screen in one call (`--definition-file-paths`, comma-separated). The ids the registry keeps come from what they print:
    - `create-app` prints the application's `referenceId`.
@@ -96,7 +102,7 @@ The error names the attribute, but the attribute is valid: keep it, because the 
 2. In the definition file, rewrite that expression (or that literal) as an interpolated string: `string.Format("…tableRow='{0}'…", Row)` becomes `$"…tableRow='{Row}'…"`. In a C# project that is the text of the `CSharpValue`; in a VB project it is the attribute value `[$"…"]` (both checked).
 3. Register the definition with `create-elements` (`replace-elements` for an existing element), then link as usual.
 4. After the link pass, every target linked to that element in one workflow file is the same tag, without the selector. Restore them with one Edit per file and element, `replace_all` on that tag: add the definition's `FullSelectorArgument`, text unchanged, and keep `Reference`. It is a child element in a C# project and an attribute in a VB project. Validate the file. The build compiles the expression, and per-file `validate`, `build` and the run accept the target.
-5. A re-link writes the target without the expression again, and no link command keeps it. Re-apply step 4 after every re-link and after every `replace-elements` that changes the expression text. The run's target tool does it ([source-migration-guide.md § UI targets](source-migration-guide.md)). The link table marks these rows, and the report lists them.
+5. A re-link writes the target without the expression again, and no link command keeps it. Re-apply step 4 after every re-link and after every `replace-elements` that changes the expression text. The run's target tool does it ([ui-target-migration-guide.md § UI targets](ui-target-migration-guide.md)). The link table marks these rows, and the report lists them.
 
 Linked target after step 4 (C# project):
 
@@ -129,8 +135,8 @@ Structural validity is the easy half. A catalog cannot tell you these, and each 
 | Unknown | Wrong answer | Right answer |
 |---|---|---|
 | Which node in the widget takes the action — the container carrying the developer identifier, or the focusable leaf carrying the caption | flatten both into one tag | two tags (container then leaf), or tag-only plus semantic description when the nesting is unknown ([selector-translation-guide.md](selector-translation-guide.md) rule 14) |
-| Whether the element exposes `aaname` at all | write the caption onto `aaname` because the catalog recorded a label | apply rule 5's three-case test; a container gets `visibleinnertext` matched exactly, or nothing |
-| The element's real HTML tag | `tag='DIV'` as a neutral-looking default — or the tag the control *type* implies, overriding a tag the source actually recorded | strongest evidence first: a tag read out of recorded markup, then the node's role when a known role identifier names it, then the control type, then omit `tag` (rule 14, "Where the tag comes from"). A source's control type is a classification of the widget; a recorded tag is an observation of the node |
+| Whether the element exposes `aaname` at all | write the caption onto `aaname` because the catalog recorded a label | apply the three-case test of [selector-translation-web-guide.md § Rule 5](selector-translation-web-guide.md); a container gets `visibleinnertext` matched exactly, or nothing |
+| The element's real HTML tag | `tag='DIV'` as a neutral-looking default — or the tag the control *type* implies, overriding a tag the source actually recorded | strongest evidence first: a tag read out of recorded markup, then the node's role when a known role identifier names it, then the control type, then omit `tag` ([selector-translation-web-guide.md § Rule 14](selector-translation-web-guide.md), "Where the tag comes from"). A source's control type is a classification of the widget; a recorded tag is an observation of the node |
 | Whether an attribute value is stable or generated | keep any id the catalog held | drop ids failing the volatility filters (a letter after a digit, hashes, GUIDs) |
 | The window's identity on the web | derive a title wildcard per screen | one `url` scope per host, authored once and reused by every target on that application (rule 9) |
 | Which node shows the accepted value of a pick, and whether it shares attributes with the popup entry | verify on a text leaf matched page-wide by the value | verify on the field's value display scoped to the field; the entry is scoped to the popup labelled with the field (rule 16) |
@@ -142,4 +148,4 @@ Shared failure mode: all these wrong answers *look* like finished work and pass 
 
 ## Before shipping
 
-An offline-authored definition is structurally valid but functionally unproven: `target-anchorable validate` (`--step Strict` isolates the strict step) probes a live application, so the definition stays owed a live pass and its element description says `offline-unverified`. Before that pass is possible, read the definitions back against this guide's own checks — search steps disagreeing with their arguments, a `FuzzySelector` step or an anchor on an offline definition — and [selector-translation-guide.md § Checking a definition](selector-translation-guide.md). Everything a structural check cannot see is what the live pass is for ([source-migration-guide.md § Verifying targets](source-migration-guide.md)).
+An offline-authored definition is structurally valid but functionally unproven: `target-anchorable validate` (`--step Strict` isolates the strict step) probes a live application, so the definition stays owed a live pass and its element description says `offline-unverified`. Before that pass is possible, read the definitions back against this guide's own checks — search steps disagreeing with their arguments, a `FuzzySelector` step or an anchor on an offline definition — and [selector-translation-guide.md § Checking a definition](selector-translation-guide.md). Everything a structural check cannot see is what the live pass is for ([ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md)).
