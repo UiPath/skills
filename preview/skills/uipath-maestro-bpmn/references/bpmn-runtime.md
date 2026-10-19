@@ -94,7 +94,7 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 <!-- RULE:bpmn.orchestrator.business-rule -->
 - A deployed business rule is `.businessRule(id, { process, folder, input, outputs })`, nothing else.
-  The builder stamps the task `v3` (below v3 the engine cannot run a `.uirule` package), binds `name` and `folderPath` to the `BusinessRule` resource keyed `<folder>.<name>` on your behalf, and writes the `output` (`=result`) and `Error` (`=Error`) rows. The result is keyed by decision name: a column reads `=result.<Decision>.<column>` — `outputs: { tier: '=result.Eligibility.tier' }`, or `vars.<id>_businessRuleResponse.Eligibility.tier` downstream — never `=result.tier` or `=response.tier`. `uip rules describe <name> --output json` lists the deployed rule's decisions and columns; only a decision-keyed rule (its `OutputArguments` carry `x-uipath-decision-keyed`) fits this row.
+  The builder writes the version, the `BusinessRule` bindings and the `output`/`Error` rows; do not add them. The result is keyed by decision name: a column reads `=result.<Decision>.<column>`, as in `outputs: { tier: '=result.Eligibility.tier' }` or `vars.<id>_businessRuleResponse.Eligibility.tier` downstream, never `=result.tier` or `=response.tier`. `uip rules describe <name> --folder-path <folder> --output json` lists the deployed rule's decisions and columns; only a decision-keyed rule (its `OutputArguments` carry `x-uipath-decision-keyed`) fits this row.
   `releaseKey` is refused: a rule is never addressed by a process key.
 
 <!-- RULE:bpmn.runtime.metadata -->
