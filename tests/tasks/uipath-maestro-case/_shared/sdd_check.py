@@ -45,7 +45,7 @@ TASK_TYPES = {
     "action", "agent", "rpa", "process", "api-workflow", "function",
     "business-rule", "execute-connector-activity", "wait-for-connector",
     "wait-for-timer", "case-management", "http-request", "flow-process",
-    "external-agent", "external-workflow",
+    "external-agent", "external-workflow", "document-extraction",
 }
 
 # Legal rule types per gate (mirrors case-tool schema-helpers VALID_*_RULE_TYPES).
@@ -82,6 +82,7 @@ TASK_DETAIL_MARKERS = {
     "wait-for-timer": ("Timer Task Detail", "**Timer Configuration:**", "**Duration:**", "**Timer:**"),
     "case-management": ("Child Case Task Detail", "**Child Case:**"),
     "http-request": ("HTTP Request Task Detail", "**Method:**", "**URL:**"),
+    "document-extraction": ("Document Extraction Task Detail", "**IXP Deployment:**", "**Model Name:**"),
     "process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "agent": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "rpa": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
