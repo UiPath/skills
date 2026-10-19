@@ -106,7 +106,9 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   solution directory. `refresh` validates internally and refuses to write
   anything while validation fails, so 2d must pass first. On a skeleton that
   preserved the start event it reports `WrittenFiles: []`, which is the
-  drift check passing rather than a no-op to skip.
+  drift check passing rather than a no-op to skip. Skip 2e for a
+  trigger-start skeleton (timer or message start): `refresh` fails with no
+  manual start, as in 4c.
 - **2f Make the shape visible.** When the request allows an upload, run
   `uip solution upload <SolutionDir> --output json` and report the returned
   `Data.DesignerUrl`. Do not ask first: a request to build the

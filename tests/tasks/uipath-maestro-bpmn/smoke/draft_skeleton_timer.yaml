@@ -1,0 +1,52 @@
+task_id: skill-bpmn-smoke-draft-skeleton-timer
+description: >
+  Draft-mode smoke eval for a trigger-start shape: the user asks to see the
+  shape first, so the agent builds a phase 2 skeleton whose start event is a
+  real timer start, with bare bpmn:task boxes and generated DI, makes no
+  registry call, skips `refresh` (it fails with no manual start), and stops
+  at the approval gate instead of wiring real nodes.
+tags: [uipath-maestro-bpmn, smoke, "mode:build"]
+
+run_limits:
+  expected_turns: 20
+  max_turns: 60
+
+sandbox:
+  python: {}
+
+reference:
+  directory: .
+
+initial_prompt: |
+  Create a local BPMN project named "NightlyReportSketch" for this process:
+  - Every day at 06:00, the process starts on a timer.
+  - Collect yesterday's orders.
+  - An exclusive gateway sends days with more than 100 orders to a manager
+    summary and every other day to a short summary.
+  - Both branches finish at a single end event.
+
+  Show me the shape first; I want to approve it before you wire anything up.
+  Do not upload, publish, deploy, debug, or run anything.
+
+success_criteria:
+  - type: command_not_executed
+    description: "Agent made no registry calls before the shape was approved"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+registry\s+(pull|list|search|get)'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not upload, as the request forbids"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+solution\s+upload'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Skeleton has a timer start, bare task boxes, a real conditioned gateway, full DI, project metadata, and validates with zero errors"
+    command: "python3 $REFERENCE_DIR/check_draft_skeleton.py NightlyReportSketch --timer-start"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

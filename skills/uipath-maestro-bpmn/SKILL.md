@@ -93,9 +93,8 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    else, author, and name each assumption and what tied in your summary. When
    the request says not to pause for approval or confirmation, ask nothing.
    When the source is an image, confirm the full inventory, not a summary —
-   see [Authoring from an image](#authoring-from-an-image). Otherwise the
-   process *structure* is confirmed only at the 3c gate in draft mode, and not
-   at all in auto mode — never ask about the shape outside that gate.
+   see [Authoring from an image](#authoring-from-an-image). In draft mode,
+   structure questions wait for the 3c gate.
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
    `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as
@@ -130,11 +129,11 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    cancel, retry, and migrate require explicit user consent; validate locally
    first. `solution upload` is the exception: unless the request forbids it, a
    request to build the process authorizes the upload that shows it, so upload
-   without asking. Confirm only
-   when the project was adopted from a solution the agent did not create,
-   because upload overwrites the cloud solution matching the local `.uipx`
-   SolutionId — and confirm it where that solution is chosen (2a), not at
-   upload time.
+   without asking. Confirm only when the project was not created in this run —
+   adopted at 2a, or edited in place (brownfield) — because upload overwrites
+   the cloud solution matching the local `.uipx` SolutionId. Confirm it where
+   that solution is chosen (2a); when 2a did not run, confirm before the 4g
+   upload.
 11. **Retry is node configuration, never canvas.** Handle transient failures
    with `uipath:retry` on the activity. Never draw a retry loop from gateways
    and timer events. See
@@ -321,7 +320,7 @@ never changes what a step does.
 
 | Phase | Steps | What happens | Reference |
 | --- | --- | --- | --- |
-| **0 — Surface** | — | Nothing to do yet: the skill assumes a terminal. | Below |
+| **0 — Surface** | — | Nothing to do yet; surface detection is future work. | Below |
 | **1 — Preflight** | 1a–1b | Check login, scan for an existing solution and project. Writes nothing, so it runs in every mode. | Below |
 | **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no registry calls**. Draft mode only, except 2a. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
 | **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, hold the approval gate. Draft mode only. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating) |
@@ -351,12 +350,10 @@ on the choice.
 | **Draft** | The session is in plan mode, or the user wants to see or approve the shape before it is built: *draft it first*, *plan it*, *sketch*, *design*, *what would it look like*, *show me first*. Judge the intent, not the word: a "draft project" or "draft handoff" asking for a source-only deliverable (Rule 16) is auto mode. | 0–3, stop at the gate |
 | **Auto** | Anything else. This is the default. | 0–1, 2a, 4, no stop |
 
-Auto is the default precisely because it is the only mode that completes
-unattended: draft's gate at 3c needs a user to satisfy it, so a non-interactive
-run that chose draft would stall there. Inferring instead of asking means CI,
-evals, and every other unattended caller get a finished process without special
-handling. Say which mode was taken in the final report, so a user who wanted
-the shape first can stop and ask for it.
+Say which mode was taken in the final report.
+
+In plan mode, writes wait for plan approval: put the skeleton outline (boxes,
+gateways, conditions) in the plan, then build 2a–2f once the plan is approved.
 
 **Draft mode is never the deliverable on its own.** The user's approval of the
 shape is what authorizes phase 4. Without it, report the skeleton as an
@@ -372,8 +369,7 @@ first complete version before further spelunking.
 
 ### Phase 0 — Surface
 
-Nothing to do yet: the skill assumes a terminal and shows the shape by
-upload. Surface detection is future work.
+Nothing to do yet. Surface detection is future work.
 
 ### Phase 1 — Preflight
 
@@ -434,7 +430,7 @@ Draft mode only.
    `Enabled`; the list's `State` is cached) and fall to the next candidate when
    it is not. Another owner is no reason to skip it; name each bound
    connection's Name, Owner, and Folder (never its Id) as a Rule 4 assumption.
-   Use placeholders only when the user asked for a draft, a handoff, or
+   Use placeholders only when the user asked for a source-only draft (Rule 16), a handoff, or
    placeholder, synthetic, public-safe, or sanitized values, or when no
    candidate pings `Enabled`.
    See [references/registry-workflow.md](references/registry-workflow.md).
@@ -663,7 +659,7 @@ Draft mode only.
    `MISSING_RESOURCE` (warning) and `MISSING_BINDING` (error) are one finding
    about one unresolved node, and the binding half is a live tenant lookup.
    Bind the node to a deployed resource. When the user asked for a
-   placeholder, draft, or boundary handoff, or 4a found no `Enabled`
+   placeholder, a source-only draft (Rule 16), or a boundary handoff, or 4a found no `Enabled`
    candidate, no invented identifier can clear
    `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
    expected result. Report the pair once and continue; `refresh` (4f)
@@ -706,8 +702,10 @@ Draft mode only.
 
 - **4g Show the finished process.** When the request allows an upload and the
   project has a solution (`.uipx`), `uip solution upload <SolutionDir> --output json`
-  returns the `Data.DesignerUrl` to report. When the request forbids upload, or
-  there is no solution, report the local `.bpmn` path instead.
+  returns the `Data.DesignerUrl` to report. When the project was not created in
+  this run (brownfield, or adopted at 2a without a confirmation), confirm before
+  uploading (Rule 10). When the request forbids upload, or there is no
+  solution, report the local `.bpmn` path instead.
 
 ## Operate and diagnose
 

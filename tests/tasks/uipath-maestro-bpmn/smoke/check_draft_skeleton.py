@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Grade a draft-mode skeleton: bare task boxes, real control flow, no wiring.
 
-Usage: check_draft_skeleton.py <ProjectName>
+Usage: check_draft_skeleton.py <ProjectName> [--timer-start]
 """
 
 import json
@@ -52,7 +52,14 @@ def main() -> None:
     if not os.path.isfile(os.path.join(os.path.dirname(path), "project.uiproj")):
         fail(f"project.uiproj missing beside {path}")
 
+    if "--timer-start" in sys.argv:
+        starts = one_or_more(root, "startEvent")
+        if not any(s.find("bpmn:timerEventDefinition", NS) is not None for s in starts):
+            fail("expected a timer start event (bpmn:timerEventDefinition on a startEvent)")
+
     uip = shutil.which("uip")
+    if not uip:
+        fail("uip not found on PATH; cannot validate the skeleton")
     if uip:
         res = subprocess.run([uip, "maestro", "bpmn", "validate", path, "--output", "json"],
                              capture_output=True, text=True, timeout=45)
