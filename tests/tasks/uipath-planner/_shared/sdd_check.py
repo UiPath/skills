@@ -48,28 +48,23 @@ TASK_TYPES = {
 }
 
 # Legal rule types per gate (mirrors case-tool schema-helpers VALID_*_RULE_TYPES).
-# `api-event` (a declared business event) follows the Designer rule picker, not the
-# looser schema: every gate below except a sequential task's entry, and never a
-# case trigger.
 STAGE_ENTRY = {"case-entered", "selected-stage-completed", "selected-stage-exited",
-               "wait-for-connector", "user-selected-stage", "sla-status-change",
-               "api-event"}
-STAGE_COMPLETION = {"required-tasks-completed", "wait-for-connector",
-                    "api-event"}                                         # Marks: Yes
-STAGE_EXIT = {"selected-tasks-completed", "wait-for-connector",
-              "api-event"}                                               # Marks: No
+               "wait-for-connector", "user-selected-stage", "sla-status-change"}
+STAGE_COMPLETION = {"required-tasks-completed", "wait-for-connector"}   # Marks: Yes
+STAGE_EXIT = {"selected-tasks-completed", "wait-for-connector"}          # Marks: No
 TASK_ENTRY = {"current-stage-entered", "selected-tasks-completed",
-              "wait-for-connector", "adhoc", "runs-sequentially", "api-event",
+              "wait-for-connector", "adhoc", "runs-sequentially",
               # the `start-task` SLA response; CLI-verified valid on task entry
               # (uip 1.198.0-preview.102). See skills/uipath-maestro-case/
               # references/sla-response-shapes.md section 3.
               "sla-status-change"}
-CASE_COMPLETION = {"required-stages-completed", "wait-for-connector",
-                   "api-event"}                                          # Marks: Yes
+CASE_COMPLETION = {"required-stages-completed", "wait-for-connector"}    # Marks: Yes
 CASE_EXIT = {"selected-stage-completed", "selected-stage-exited",
-             "wait-for-connector", "api-event"}                          # Marks: No
+             "wait-for-connector"}                                       # Marks: No
 EXIT_TYPES = {"exit-only", "wait-for-user", "return-to-origin"}
 RETURN_TO_ORIGIN_COMPLETION = {"required-tasks-completed", "wait-for-connector"}
+for _gate in (STAGE_ENTRY, STAGE_COMPLETION, STAGE_EXIT, TASK_ENTRY, CASE_COMPLETION, CASE_EXIT):
+    _gate.add("api-event")  # a business event: every gate the Designer offers, never a case trigger
 KNOWN_RULES = STAGE_ENTRY | STAGE_COMPLETION | STAGE_EXIT | TASK_ENTRY | CASE_COMPLETION | CASE_EXIT
 SUMMARY_ONLY_HEADINGS = {
     "Source", "Case Objective", "Actors And Systems", "Case Trigger", "Stages",
@@ -425,7 +420,6 @@ def main() -> None:
     exit_types: dict[str, set[str]] = {}
     marks_idx: int | None = None
     et_idx: int | None = None
-    task_entry_rules: set[str] = set()
     for line in text.splitlines():
         s = line.strip()
         m = re.match(r"###\s+(Stage \d+|Exception Stage|Secondary Stage):\s*(.*)", s)
@@ -457,7 +451,7 @@ def main() -> None:
                 has_exit[cur_stage] = True
             continue
         if s.startswith("**Entry Condition"):
-            gate = "task-entry"; task_entry_rules = set(); continue
+            gate = "task-entry"; continue
         im = re.match(r"\*\*Interrupting:\*\*\s*(Yes|No)", s)
         if im:
             if cur_stage:
@@ -490,14 +484,6 @@ def main() -> None:
             issues.append(f"rule: {rule!r} is not a legal stage-entry rule ({where})")
         elif gate == "task-entry" and rule not in TASK_ENTRY:
             issues.append(f"rule: {rule!r} is not a legal task-entry rule ({where})")
-        elif gate == "task-entry":
-            first_seen = rule not in task_entry_rules
-            task_entry_rules.add(rule)
-            if first_seen and {"api-event", "runs-sequentially"} <= task_entry_rules:
-                issues.append(
-                    "rule: 'api-event' is not offered on a sequential task's entry "
-                    f"(runs-sequentially) ({where})"
-                )
         elif gate in ("stage-exit", "case-exit"):
             # Resolve Marks-Complete by header index; fall back to last cell.
             marks_cell = cells[marks_idx] if (marks_idx is not None and marks_idx < len(cells)) else cells[-1]
