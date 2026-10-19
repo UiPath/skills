@@ -161,15 +161,13 @@ An inline agent in a Flow carries the same `guardrails[]` (its sidecar is a proj
 1. Calibrate first with the file's text pasted as plain input (`detectionScope` omitted) to confirm the validator and thresholds fire; then switch to `Files` and run with the real file.
 2. Run with a file bound to the input field — [../../debug.md](../../debug.md) § Attachments. To reuse an already-uploaded file, pass its reference in `--inputs` (`{"<FILE_FIELD>":{"ID":"<ATTACHMENT_ID>"}}`).
 3. Read the verdict from the guardrail evaluation span (`reason`, `Flagged files:`) with `uip traces spans get <TRACE_ID> --output json`.
-4. Evaluation sets and bulk validation run without attachments — a `Files` guardrail cannot be exercised there.
 
 ## Availability
 
 | Environment | File inspection |
 |---|---|
-| Automation Cloud, Unified Runtime | Per validator, when `detectionScope` appears in the validator's `Parameters` in `uip agent guardrails list` |
+| Automation Cloud | Per validator, when `detectionScope` appears in the validator's `Parameters` in `uip agent guardrails list` |
 | Automation Suite | Not available — guardrails evaluate text only |
-| Legacy (non-Unified) agent runtime, eval runs, bulk validate | No files carried |
 | BYO (`byoValidatorName`) guardrails | **Not available** — external providers receive no attachments |
 | Advanced agents, coded agents | Not covered by this guide |
 
