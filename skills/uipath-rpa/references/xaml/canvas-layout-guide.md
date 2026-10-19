@@ -18,7 +18,7 @@ Branching logic with multiple decision points, loops, and back-edges. Best when 
 |------|---------|------------------|
 | `FlowStep` | Wraps **exactly one** activity (which may be a container). The unit of work. | `FlowStep.Next` → one node |
 | `FlowDecision` | Boolean branch. `Condition` plus `True`/`False` targets. | `FlowDecision.True` / `.False` → one node each |
-| `FlowSwitch<T>` | Multi-way branch keyed by an expression. | `Default` plus one target per case |
+| `FlowSwitch<T>` | Multi-way branch keyed by an expression: one key against literal cases. Conditions tried in order (the first true one wins) are a chain of `FlowDecision`s, one per condition, the default the last False; a key computed from them hides each case's condition in one expression. | `Default` plus one target per case |
 
 A `FlowStep` wraps one activity. If that activity is a container (`Sequence`, `NApplicationCard`, `TryCatch`), its children stay nested and are NOT separate nodes. See [§ What Counts as a Node](#what-counts-as-a-node).
 
@@ -136,9 +136,81 @@ Every node except the start must be reachable: referenced by `Flowchart.StartNod
 `FlowDecision.Condition` and `FlowSwitch` expressions follow the project's expression language:
 
 - **C# projects:** `<CSharpValue x:TypeArguments="x:Boolean">condition</CSharpValue>`
-- **VB projects:** `<mva:VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="condition" />`
+- **VB projects:** `<mva:VisualBasicValue x:TypeArguments="x:Boolean" ExpressionText="condition" />`, or the attribute form `Condition="[condition]"` on the `FlowDecision` (brackets, XML-escaped), as the § 3 FlowDecision example uses
 
 Structure first, then coordinates: ViewState positions a node **only after** it is registered — see [§ 3. Flowchart Layout](#3-flowchart-layout) below and SKILL.md Rule 20.
+
+### Annotations
+
+`sap2010:Annotation.AnnotationText="…"` on a `FlowDecision`, on a node's activity and on the `<Flowchart>` itself validates and shows in Studio. Annotate where node names repeat by design (names dictated by a source or by the user): say what the name stands for at that node, and on the Flowchart how the canvas is laid out.
+
+### Exception Handling Across Nodes
+
+A `TryCatch` is a tree container: it cannot span nodes, and its Catch cannot continue at a node. Keep the handler inside the Catch when it ends (rethrows, logs and ends) or rejoins at the TryCatch's next node. Put it on the canvas when it rejoins the flow at another node, or when several protected regions share one handler or one retry tail:
+
+1. The protected steps are one `FlowStep` holding a `TryCatch`; its Catch of `s:Exception` only assigns the exception to a workflow variable (body in a `Sequence`, Rule 24).
+2. A `FlowDecision` `storedException IsNot Nothing` follows: True leads into the handler's first node, False to the protected steps' next node.
+3. The handler's nodes sit on the canvas; a retry is a link back.
+4. A node assigns `Nothing` to the variable once the exception is handled, before any link back to a protected node.
+5. The final failure throws the stored variable ([error-handling-guide.md § 4](../error-handling-guide.md#4-throw--rethrow)).
+
+```xml
+<!-- standard xmlns omitted; xmlns:s="clr-namespace:System;assembly=System.Private.CoreLib"; Flowchart.Variables declares storedException as s:Exception -->
+<FlowStep x:Name="__ReferenceID2" sap2010:WorkflowViewState.IdRef="FlowStep_2">
+  <sap:WorkflowViewStateService.ViewState>
+    <scg:Dictionary x:TypeArguments="x:String, x:Object">
+      <av:Point x:Key="ShapeLocation">240,230</av:Point>
+      <av:Size x:Key="ShapeSize">110,70</av:Size>
+    </scg:Dictionary>
+  </sap:WorkflowViewStateService.ViewState>
+  <TryCatch DisplayName="Search: Find Record, Check Folder" sap2010:WorkflowViewState.IdRef="TryCatch_1">
+    <TryCatch.Try>
+      <Sequence DisplayName="Search" sap2010:WorkflowViewState.IdRef="Sequence_2"><!-- the protected steps --></Sequence>
+    </TryCatch.Try>
+    <TryCatch.Catches>
+      <Catch x:TypeArguments="s:Exception" sap2010:WorkflowViewState.IdRef="Catch`1_1">
+        <ActivityAction x:TypeArguments="s:Exception">
+          <ActivityAction.Argument>
+            <DelegateInArgument x:TypeArguments="s:Exception" Name="caught" />
+          </ActivityAction.Argument>
+          <Sequence DisplayName="Store the exception" sap2010:WorkflowViewState.IdRef="Sequence_3">
+            <Assign DisplayName="Store the exception" sap2010:WorkflowViewState.IdRef="Assign_1">
+              <Assign.To><OutArgument x:TypeArguments="s:Exception">[storedException]</OutArgument></Assign.To>
+              <Assign.Value><InArgument x:TypeArguments="s:Exception">[caught]</InArgument></Assign.Value>
+            </Assign>
+          </Sequence>
+        </ActivityAction>
+      </Catch>
+    </TryCatch.Catches>
+  </TryCatch>
+  <FlowStep.Next><x:Reference>__ReferenceID3</x:Reference></FlowStep.Next>
+</FlowStep>
+<FlowDecision x:Name="__ReferenceID3" Condition="[storedException IsNot Nothing]" DisplayName="Search failed?"
+              sap2010:Annotation.AnnotationText="True when a protected step failed." sap2010:WorkflowViewState.IdRef="FlowDecision_1">
+  <sap:WorkflowViewStateService.ViewState>
+    <scg:Dictionary x:TypeArguments="x:String, x:Object">
+      <x:Boolean x:Key="IsExpanded">True</x:Boolean>
+      <av:Point x:Key="ShapeLocation">265,350</av:Point>
+      <av:Size x:Key="ShapeSize">60,60</av:Size>
+    </scg:Dictionary>
+  </sap:WorkflowViewStateService.ViewState>
+  <FlowDecision.True><x:Reference>__ReferenceID4</x:Reference></FlowDecision.True>   <!-- the handler's first node -->
+  <FlowDecision.False><x:Reference>__ReferenceID9</x:Reference></FlowDecision.False> <!-- the protected steps' next node -->
+</FlowDecision>
+```
+
+### Converting a Sequence to a Flowchart
+
+Variables that exist only to steer control flow — set in branches, read by a `While` condition or an `If` at the top of a loop (`done`, `needReconnect`, `searchOk`) — are links in disguise; a conversion that keeps them draws the structured program, not the flow. To convert:
+
+1. Find each such flag's writers and readers.
+2. Replace "set the flag, fall through to the reader" with a link from the writer to the node the reader would branch to.
+3. Delete the flag and the `While` or `If` that read it.
+4. Keep exception scopes per [§ Exception Handling Across Nodes](#exception-handling-across-nodes).
+
+### Editing a File Studio Saved
+
+Studio rewrites a Flowchart authored as direct-child nodes linked by `x:Reference` into inline nodes nested in `.Next` / `.True` / `.False` with trailing `x:Reference` registrations ([§ Node Registration](#node-registration)), and adds `HintSize` and `ConnectorLocation`. Both forms are valid, so a diff after the user opens the file in Studio is expected, not a defect — and an Edit against the text as authored then fails. Re-read the file before editing it.
 
 ---
 
@@ -179,8 +251,8 @@ Every activity gets an inline ViewState dictionary and a unique IdRef:
   <sap:WorkflowViewStateService.ViewState>
     <scg:Dictionary x:TypeArguments="x:String, x:Object">
       <av:Point x:Key="ShapeLocation">170,110</av:Point>
-      <av:Size x:Key="ShapeSize">262,60</av:Size>
-      <av:PointCollection x:Key="ConnectorLocation">300,170 300,220</av:PointCollection>
+      <av:Size x:Key="ShapeSize">110,70</av:Size>
+      <av:PointCollection x:Key="ConnectorLocation">225,180 225,230</av:PointCollection>
     </scg:Dictionary>
   </sap:WorkflowViewStateService.ViewState>
   <!-- activity content -->
@@ -224,10 +296,12 @@ One node per top-level step → separate boxes. One step's children nested → s
 
 | Node Type | Typical Size (W x H) | Shape |
 |-----------|----------------------|-------|
-| Start Node (Flowchart's own ViewState) | 50x50 or 60x75 | Circle at top |
-| FlowStep (wraps any activity) | 110x70 to 262x60 | Rectangle |
-| FlowDecision | 60x60 to 61x61 | Diamond |
+| Start Node (Flowchart's own ViewState) | 50x50 | Circle at top |
+| FlowStep (wraps any activity) | 110x70 | Rectangle |
+| FlowDecision | 60x60 | Diamond |
 | FlowSwitch | 60x60 | Diamond |
+
+Studio's designer normalises every FlowStep to `110,70` on save, whatever was authored, and keeps a FlowDecision at `60,60` and the Start at `50,50`; author these sizes so a saved file keeps the layout.
 
 ### ViewState Per Node Type
 
@@ -294,17 +368,17 @@ The Flowchart element itself has ViewState for the start circle and canvas dimen
 ```xml
 <FlowDecision x:Name="__ReferenceID1" Condition="[retryCount &gt; maxRetries]"
               DisplayName="Max retries reached?"
-              sap:VirtualizedContainerService.HintSize="61,61"
+              sap:VirtualizedContainerService.HintSize="60,60"
               sap2010:WorkflowViewState.IdRef="FlowDecision_1">
   <sap:WorkflowViewStateService.ViewState>
     <scg:Dictionary x:TypeArguments="x:String, x:Object">
       <x:Boolean x:Key="IsExpanded">True</x:Boolean>
       <av:Point x:Key="ShapeLocation">420,130</av:Point>
-      <av:Size x:Key="ShapeSize">61,61</av:Size>
+      <av:Size x:Key="ShapeSize">60,60</av:Size>
       <x:String x:Key="TrueLabel">Yes</x:String>
       <x:String x:Key="FalseLabel">No</x:String>
       <av:PointCollection x:Key="TrueConnector">420,160 290,160 290,250</av:PointCollection>
-      <av:PointCollection x:Key="FalseConnector">481,160 590,160 590,245</av:PointCollection>
+      <av:PointCollection x:Key="FalseConnector">480,160 590,160 590,245</av:PointCollection>
     </scg:Dictionary>
   </sap:WorkflowViewStateService.ViewState>
   <FlowDecision.True>
@@ -383,28 +457,37 @@ Based on Studio's auto-arrange (Sugiyama layered layout):
 
 **Recommended layout for generation:**
 
-1. Start node: `ShapeLocation="270,2.5"` with `ShapeSize="50,50"` — centered horizontally
-2. Nodes in rows, each row ~110-120px apart (node height + 50px gap)
-3. Linear flows: keep X centered (all at X=170 for 262px-wide steps on a 600px canvas)
-4. Decision branches: True ~150-200px left, False ~150-200px right of center
+1. Start node: `ShapeLocation="270,10"` with `ShapeSize="50,50"` — centered horizontally (centre x 295)
+2. Nodes in rows, each row node height + 40–50px apart (120px for 110x70 steps)
+3. Linear flows: keep the centres on one column (X=240 for 110px-wide steps under the Start)
+4. Decision branches: True ~150px left, False ~150px right of the decision's centre
 5. Use `__ReferenceID{N}` starting from 0
 
 **Simple linear flowchart (3 steps):**
 ```text
-Start:      (270, 2.5)    50x50
-FlowStep 1: (170, 110)    262x60
-FlowStep 2: (170, 220)    262x60
-FlowStep 3: (170, 330)    262x60
+Start:      (270, 10)     50x50
+FlowStep 1: (240, 110)    110x70
+FlowStep 2: (240, 230)    110x70
+FlowStep 3: (240, 350)    110x70
 ```
 
 **Flowchart with decision:**
 ```text
-Start:          (270, 2.5)     50x50
-FlowStep 1:    (170, 110)     262x60
-FlowDecision:  (270, 220)     60x60
-  True branch:  (100, 330)    200x60     (left)
-  False branch: (400, 330)    200x60     (right)
+Start:          (270, 10)      50x50
+FlowStep 1:     (240, 110)     110x70
+FlowDecision:   (265, 230)     60x60
+  True branch:  (90, 340)      110x70     (left)
+  False branch: (390, 340)     110x70     (right)
 ```
+
+### Placing Nodes from Given Coordinates
+
+When the layout is given — another tool's canvas, a hand sketch — keep its relative positions:
+
+1. Scale each axis so the smallest gap between neighbouring node centres becomes at least the node size plus 40px (110 + 40 across, 70 + 40 down for steps). The factor is per axis and per source: rows 45px apart scale by (70 + 40) / 45 ≈ 2.5 down, columns 60px apart by (110 + 40) / 60 = 2.5 across.
+2. Shift so the smallest coordinate lands on the margin; a source's coordinates may be negative.
+3. Convert each centre to the `ShapeLocation` corner: centre minus half the `ShapeSize`.
+4. Leave connectors out; Studio routes them.
 ### Node Registration
 
 See [§ Node Registration](#node-registration) at the top of this file — structure and registration come before coordinates.
