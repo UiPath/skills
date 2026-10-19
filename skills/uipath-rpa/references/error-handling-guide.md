@@ -72,6 +72,7 @@ new BusinessRuleException($"Invoice {invoiceId} amount {amount:F2} is negative")
 1. `Rethrow` preserves original type and stack trace. Use it inside Catch after logging/screenshot to propagate unchanged. It is Catch-only; outside `Catch.Action` it throws `InvalidOperationException`.
 2. Never use `Throw New Exception(ex.Message)` to resurface an error: it resets the stack and drops the type (`CA2200`). Use `Rethrow`; use `Throw New <Type>(...)` only to translate types, such as wrapping a system error as business.
 3. Put `Rethrow` last in Catch; later activities are unreachable.
+4. **Throwing a caught exception object** (`Throw` with `[storedException]`) outside its Catch keeps its type, message, `Source` and `Data`, but restarts its stack trace; no analyzer rule flags it. It is the only way to raise the original exception once the handler has left the Catch, as a Flowchart's handler on the canvas does ([xaml/canvas-layout-guide.md § Exception Handling Across Nodes](xaml/canvas-layout-guide.md#exception-handling-across-nodes)). Set `Source` (or a `Data` entry) to the failing step first when a later handler reads it (§ 3 rule 7). Inside a Catch, `Rethrow` stays the rule.
 
 ## 5. Retry Scope
 
