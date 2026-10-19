@@ -48,10 +48,10 @@ export default flow('invoice-intake')
   // …steps…
   .layout({
     nodes: {
-      start: at(256, 144), fetch: at(448, 144), eachInvoice: at(640, 144, dim(672, 288)),
+      start: at(256, 144), fetch: at(448, 144), eachInvoice: at(640, 144, dim(672, 320)),
       extract: at(144, 96), route: at(336, 96), // inside eachInvoice, relative to it
       done: at(1408, 144),
-      onFailure: at(448, 304), end: at(640, 304),
+      onFailure: at(448, 496), end: at(640, 496), // below the container, not beside its body
     },
   })
   .build();
@@ -61,10 +61,11 @@ Rules:
 
 1. **Use the canvas grid.** A node is 96 px square; a column is 192 px, a row 160 px: `x = 256 + 192 × column`, `y = 144 + 160 × row`.
    The main path goes on row 0 left to right; an error handler or a side arm takes the row below.
-2. **A child's position is relative to its container.** A loop or do-while body starts at `at(144, 96)` inside the container's padding, and the container needs a `dim()` wide enough to hold the body: `192 × bodyNodes + 288` wide and `288` tall for one row.
+   A node wider than a slot takes more columns: an inline agent (`inlineAgent`) is 288 × 96, so the next column starts 384 px to its right; a container takes its own width, and the row below it starts 32 px under its bottom edge, not at the next 160 px row.
+2. **A child's position is relative to its container.** A loop or do-while body starts at `at(144, 96)` inside the container's padding, and the container needs a `dim()` that holds the body: `dim(192 × bodyNodes + 288, 320)` for one row, never smaller than `format`'s `dim(560, 320)`.
 3. **Name every node, or none.** A missing entry falls back to compile's one-row placeholder, which lands on top of your layout; an unknown key fails `compile`.
 4. **Never `format` a file whose source sets `.layout()`.** `format` re-lays out every node and discards the source's positions, exactly as it does to a merged brownfield file.
-5. **`at` and `dim` must be in `dist/api-index.md` of the installed SDK.** If they are not, upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`; on an older SDK write the entry long-hand, `{ position: { x, y } }` with an optional `size: { width, height }`.
+5. **`at` and `dim` must be in `dist/api-index.md` of the SDK copy in use.** If they are not, upgrade that copy: `npm install @uipath/maestro-builder-sdk@latest` in a workspace that has its own `node_modules` copy (it is used before the global one), else `npm install -g @uipath/maestro-builder-sdk@latest`; or write the entry long-hand, `{ position: { x, y } }` with an optional `size: { width, height }`.
 
 ## Refresh solution resources first
 
