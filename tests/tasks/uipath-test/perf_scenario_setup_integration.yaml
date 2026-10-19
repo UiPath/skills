@@ -1,0 +1,142 @@
+task_id: skill-test-perf-scenario-setup-integration
+description: >
+  Integration test: agent uses the uipath-test skill to set up a performance
+  (load) test for one automated test case without running it: create a
+  scenario under the name pre_run hands it, bind the test case to it as a load
+  group, and set the load group to 5 virtual users. That means finding the test
+  case's package and Orchestrator folder, and knowing that `load-groups add`
+  ignores the load profile so it has to be set with `load-groups update`.
+  Graded on the tenant: the scenario has exactly one load group for
+  EVFX-PERFSET-TC1 on its package with 5 virtual users, and nothing was run.
+tags: [uipath-test, integration, mode:build, lifecycle:setup, outcome-graded]
+
+run_limits:
+  expected_turns: 14
+  max_turns: 30
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+
+# Dedicated fixture, see tests/tasks/uipath-test/fixtures/README.md. The shared
+# run-package script checks the tenant (folder, runtime), uploads
+# TestCase_CrossPlatform_VB_Tests to uipath-test-folder-feed when it is
+# missing, and creates a throwaway project per run (key in project-key.txt).
+# The second step creates EVFX-PERFSET-TC1 in that project, links it to the
+# package and writes the scenario name to scenario-name.txt. Either step exits
+# TENANT NOT READY when the tenant cannot do it; post_run deletes the project.
+pre_run:
+  - command: >-
+      python3 _setup/run_package_fixture.py seed --folder uipath-test-folder-feed
+      --package TestCase_CrossPlatform_VB_Tests --nupkg TestCase_CrossPlatform_VB_Tests.1.0.0.nupkg
+      --prefix EVFX-PERFSET- --key-prefix EVPL
+    timeout: 240
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      FOLDER, PACKAGE, TEST, TC = "uipath-test-folder-feed", "TestCase_CrossPlatform_VB_Tests", "TestCase", "EVFX-PERFSET-TC1"
+      P = open("project-key.txt").read().strip()
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+          except Exception:
+              return {"Result": "Failure", "Message": (r.stdout + r.stderr)[:300]}
+
+      def not_ready(msg):
+          print(f"TENANT NOT READY — environment failure, not an agent failure: {msg}", file=sys.stderr)
+          sys.exit(1)
+
+      lic = call("tm", "perf-scenario", "licenses", "get", "--project-key", P)
+      if lic.get("Result") != "Success":
+          not_ready(f"this login cannot use performance testing in {P}: {lic.get('ErrorCode')} {lic.get('Message')}")
+      tc = call("tm", "testcases", "create", "--project-key", P, "--name", TC)
+      if tc.get("Result") != "Success":
+          print(f"SEED FAILED: could not create {TC} in {P}: {tc}"); sys.exit(1)
+      key = (tc.get("Data") or {}).get("TestCaseKey") or next(
+          t["TestCaseKey"] for t in call("tm", "testcases", "list", "--project-key", P, "--filter", TC).get("Data") or [] if t.get("Name") == TC)
+      folder = (call("or", "folders", "list", "-n", FOLDER, "--all").get("Data") or [{}])[0].get("Key")
+      link = call("tm", "testcases", "link-automation", "--project-key", P, "--test-case-key", key,
+                  "--folder-key", folder or "", "--package-name", PACKAGE, "--test-name", TEST)
+      if link.get("Result") != "Success":
+          not_ready(f"could not link {TC} to {PACKAGE} in {FOLDER}: {link.get('Message')}")
+      name = f"EVFX-PERFSET-{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      open("scenario-name.txt", "w").write(name + "\n")
+      print(f"SEEDED {TC} ({key}) in {P}, linked to {PACKAGE}; scenario name {name}")
+      PYEOF
+    timeout: 180
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  I want to load test our EVFX-PERFSET-TC1 test case with 5 virtual users. It's
+  in the Test Manager project whose key is in project-key.txt, and it runs from
+  the Orchestrator folder "uipath-test-folder-feed". Set up a performance
+  scenario for it, named as in scenario-name.txt. Don't run anything yet, I'll
+  start it myself.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the scenario with `perf-scenario create`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent bound the test case with `perf-scenario load-groups add`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+load-groups\s+add\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The scenario has exactly one load group: EVFX-PERFSET-TC1, its package, 5 virtual users"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      TC = "EVFX-PERFSET-TC1"
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+      P = open("project-key.txt").read().strip()
+      name = open("scenario-name.txt").read().strip()
+      tc = [t for t in call("tm", "testcases", "list", "--project-key", P, "--filter", TC)["Data"] if t.get("Name") == TC][0]
+      keys = [s["ScenarioKey"] for s in (call("tm", "perf-scenario", "list", "--project-key", P, "--search", name)["Data"] or {}).get("Scenarios") or []
+              if s.get("Name") == name]
+      if len(keys) != 1:
+          print("scenarios named", name, ":", keys); sys.exit(1)
+      groups = call("tm", "perf-scenario", "get", "--scenario-key", keys[0])["Data"].get("LoadGroups") or []
+      print("load groups:", [(g.get("TestCaseKey"), g.get("PackageName"), g.get("VirtualUsers")) for g in groups])
+      ok = (len(groups) == 1 and groups[0].get("TestCaseKey") == tc["TestCaseKey"]
+            and groups[0].get("PackageName") == tc["PackageName"] and groups[0].get("VirtualUsers") == 5)
+      sys.exit(0 if ok else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not run the scenario (the user will start it)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+tm\s+perf-scenario\s+execute\b'
+    weight: 1.5
+    pass_threshold: 1.0
