@@ -1,7 +1,5 @@
 # Delay
 
-> **On the [Common Activity Card](../../../../common-activity-card.md)** — prefer the card for routine authoring.
-
 `System.Activities.Statements.Delay`
 
 Pauses workflow execution for a fixed duration.
