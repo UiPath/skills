@@ -11,7 +11,7 @@ description: >
   itself touches no binding, so only the brownfield pull rule makes the agent
   run `uip maestro case bindings sync`; graded on the sidecar matching the
   plan afterwards. Local only; nothing is uploaded or debugged.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, path-to-ga]
 max_iterations: 1
 
 run_limits:
