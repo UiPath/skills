@@ -166,9 +166,10 @@ binding half, which is the same for every connector-backed node.
   `inputs: { field: value }` and is folded into the body row (`inputs: { script }`
   on a JDBC query becomes `{"script": …}` in the body); a path or query parameter is
   spelled out with `inputRows: [{ name, type, target, value }]`, **with its `target`**.
-  Integration Service reads rows by target only, so a row without one validates and is
-  never sent — `check` refuses it (`CONNECTOR_INPUT_ROW_NO_TARGET`), and the local
-  engine warns and drops it.
+  `inputRows`, when present, replaces `inputs`: spell the body row too,
+  `{ name: 'body', type: 'json', target: 'body', body: { script } }`, or the request
+  fields are silently dropped. A row without `target` is never sent; `check` refuses it
+  (`CONNECTOR_INPUT_ROW_NO_TARGET`).
 
 ## Registry extension types
 
