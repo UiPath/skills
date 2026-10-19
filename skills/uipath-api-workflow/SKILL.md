@@ -84,6 +84,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
    - After every stub, check required fields using resource description or stub inputs, then re-stub with `--inputs` if needed.
    - Connector parameters use flat dotted keys and bare literals; do not use `${'literal'}`.
    - Do not use `UiPath.Http` with a vendor connection UUID. IntSvc results are wrapped; read `$context.outputs.<ExportBucketKey>.content.<field>`.
+   - IntSvc list and search activities return one page per call; pass the `elements-next-page-token` response header back as the `nextPage` query parameter. The header is present on every page, including the last, so never loop while it is present and never stop on a short page: decode it and continue only while its `providerNextPage` is a non-empty string other than `"DONE"`. See [references/connector-activity-discovery.md](references/connector-activity-discovery.md#paging-list-and-search-results).
 <!--skill-flavor:connector-solution-registration:start-->
    - In Solutions mode, sync IntSvc bindings with `uip api-workflow bindings sync --workflow <Workflow.json>` and refresh with `uip solution resources refresh --solution-folder <path>`. Skip for HTTP, non-connectors, and standalone projects.
 <!--skill-flavor:connector-solution-registration:end-->

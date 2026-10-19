@@ -229,6 +229,31 @@ Use `Data.SlotKey` for the activity key in `do` and `Data.ExportBucketKey` for `
 
 Use the IS Elements endpoint, which may include a hub prefix. `/<objectName>` is only a degraded fallback when `IsEnrichmentAvailable` is false; re-stub after IS access returns or inspect `uip is resources describe`.
 
+## Paging list and search results
+
+IntSvc list and search activities return one page per call. Page with the cursor, never with counts:
+
+1. Read the cursor from the `elements-next-page-token` response header (`$context.outputs.<ExportBucketKey>.headers`) and pass it as the next call's `queryParameters.nextPage`.
+2. The header is present on every page, including the last. It is base64url JSON `{ providerNextPage, page, pageSize }`, and on the last page `providerNextPage` is `"DONE"`. Continue only while `providerNextPage` is a non-empty string other than `"DONE"`. A loop on header presence never ends: sending the `"DONE"` cursor back returns the first page again or empty pages.
+3. Do not stop on a page shorter than `pageSize`. Vendors may return fewer items while more remain; the Jira search activity states this in its `pageSize` description.
+4. Keep a page cap in the `doWhile` condition as a safety net. When the loop ends with the cap reached and `hasMore` still true, fail the run with a clear error instead of returning partial data.
+
+Compute the next cursor and the continue flag in a JavaScript activity after each call (`issue_search_get_1` is the activity's `Data.ExportBucketKey`):
+
+```javascript
+const headers = $context.outputs.issue_search_get_1?.headers ?? {};
+const token = Object.entries(headers).find(([name]) => name.toLowerCase() === "elements-next-page-token")?.[1];
+let cursor;
+try {
+  cursor = JSON.parse(atob(String(token).replace(/-/g, "+").replace(/_/g, "/"))).providerNextPage;
+} catch (error) {
+  cursor = undefined;
+}
+return { nextPage: token ?? "", hasMore: typeof cursor === "string" && cursor !== "" && cursor !== "DONE" };
+```
+
+Loop shape: [control-flow-patterns.md](control-flow-patterns.md#11-paging-a-connector-list-or-search).
+
 ## Multipart endpoints
 
 The stub detects `parameters[].type === "multipart"` and emits both flat `bodyParameters` and `multipartParameters`, commonly including `{ "name": "body", "dataType": "string" }` and a file part. Keep `multipartParameters` even without an attachment: the executor JSON-stringifies the entire `bodyParameters` object into the string part and expects file references in file parts. Removing the declaration causes `400 "Unable to parse multipart body"`.
@@ -255,6 +280,7 @@ Use exact schema names, flat dotted keys, bare literals or real `${$context...}`
 - Do not read IntSvc output at the root; use `.content` and `Data.ExportBucketKey`.
 - Do not nest connector fields or wrap connector literals as `${'literal'}`.
 - Do not remove `multipartParameters` from multipart operations.
+- Do not loop while `elements-next-page-token` is present or stop on a short page; decode the cursor and stop when `providerNextPage` is `"DONE"` or missing.
 - Do not leave `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` or any `<REPLACE_WITH_*>` placeholder in a generated workflow; stop and ask the user if no working UUID or URL is available.
 - Do not skip the required-field cross-check.
 
