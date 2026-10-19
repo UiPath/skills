@@ -333,20 +333,14 @@ identical.
 
 ### Modes
 
-No mode is ever asked for. Two are detected from what is on disk or in the
-request:
-
-| Mode | Detect it when | Phases |
-| --- | --- | --- |
-| **Brownfield** | A `.bpmn` the request targets already exists. Do not run `init`; if the file is bare (no `project.uiproj`), bootstrap it with the two-key `project.uiproj` + `refresh` path in 4c. Pre-empts the inference below — the shape is already on disk. | 0–1, then 4 |
-| **Discovery-only** | The request asks to discover before authoring, save raw registry JSON/evidence, or explicitly "do not author yet", even if it describes an eventual BPMN. Immediately create `registry-evidence/`, save `registry pull --output json`, `registry list --output json` or `registry search ... --output json`, and `registry get <type> --output json` for each requested type. Do not scaffold a project and do not read deep authoring references. Recipe: [references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks). | 0–1, then terminate |
-
-Otherwise infer the mode from the request's intent before anything runs.
-*Draft* and *auto* are internal names: never ask which mode, and never block
-on the choice.
+Check the modes top to bottom and take the first that matches. *Draft* and
+*auto* are internal names: never ask which mode, and never block on the
+choice.
 
 | Mode | Take it when | Phases |
 | --- | --- | --- |
+| **Brownfield** | A `.bpmn` the request targets already exists. Do not run `init`; if the file is bare (no `project.uiproj`), bootstrap it with the two-key `project.uiproj` + `refresh` path in 4c. | 0–1, then 4 |
+| **Discovery-only** | The request asks to discover before authoring, save raw registry JSON/evidence, or explicitly "do not author yet", even if it describes an eventual BPMN. Immediately create `registry-evidence/`, save `registry pull --output json`, `registry list --output json` or `registry search ... --output json`, and `registry get <type> --output json` for each requested type. Do not scaffold a project and do not read deep authoring references. Recipe: [references/registry-workflow.md](references/registry-workflow.md#registry-evidence-only-tasks). | 0–1, then terminate |
 | **Draft** | The session is in plan mode, or the user wants to see or approve the shape before it is built: *draft it first*, *plan it*, *sketch*, *design*, *what would it look like*, *show me first*. Judge the intent, not the word: a "draft project" or "draft handoff" asking for a source-only deliverable (Rule 16) is auto mode. | 0–3, stop at the gate |
 | **Auto** | Anything else. This is the default. | 0–1, 2a, 4, no stop |
 
