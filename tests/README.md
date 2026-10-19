@@ -585,7 +585,7 @@ Or byte-equality for upload/download round-trips:
   expected_exit_code: 0
 ```
 
-Set `read_only: true` only when the command reads sandbox artifacts and nothing else; the criterion then also runs, unscored, after an agent crash, and after a turn timeout only when `task_timeout` leaves room past `turn_timeout` (see the equal-caps note above). Never set it on a `flow validate`, `flow debug`, or any grader that writes state or calls a live service.
+Set `read_only: true` only when the command reads sandbox artifacts and nothing else; the criterion then also runs, unscored, after an agent crash, and after a turn timeout only when `task_timeout` leaves room past `turn_timeout` (see the equal-caps note above). Never set it on a `flow validate`, `flow debug`, or any grader that writes state or calls a live service. For a Flow task, `uipath-maestro-flow/_shared/test_read_only_marks.py` allows the mark only on its reviewed pure readers; add a new checker there only after reading every path it runs.
 
 ### `skill_triggered`
 
