@@ -92,6 +92,11 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Published work is addressed by name and folder. Queue items require a folder;
   live execution is the evidence that the resource exists and is runnable.
 
+<!-- RULE:bpmn.orchestrator.business-rule -->
+- A deployed business rule is `.businessRule(id, { process, folder, input, outputs })`, nothing else.
+  The builder writes the version, the `BusinessRule` bindings and the `output`/`Error` rows; do not add them. The result is keyed by decision name: a column reads `=result.<Decision>.<column>`, as in `outputs: { tier: '=result.Eligibility.tier' }` or `vars.<id>_businessRuleResponse.Eligibility.tier` downstream, never `=result.tier` or `=response.tier`. `uip rules describe <name> --folder-path <folder> --output json` lists the deployed rule's decisions and columns; only a decision-keyed rule (its `OutputArguments` carry `x-uipath-decision-keyed`) fits this row.
+  `releaseKey` is refused: a rule is never addressed by a process key.
+
 <!-- RULE:bpmn.runtime.metadata -->
 - `metadata.*` values are empty in local `flow-debug`. Use literals or `vars.*`
   when an offline behavior check must observe the value.
