@@ -137,7 +137,8 @@ See [Connections and bindings](bpmn-runtime.md#connectors-and-bindings) and `exa
 `.eventTrigger(id, connector, event, opts)` starts the process on a connector event; `.waitForEvent(id, connector, event, opts)` pauses one mid-flow.
 Both resolve against the same library and both take the same `connection` / `folder` bindings.
 
-- `filter` is the subscription's **scope** — the connector's own event parameters, e.g. `{ parentFolderId: '<mail folder id>' }` for Outlook `email-received`. Omitting it subscribes to everything the connection can see, which `check` reports as `EVENT_NO_SCOPE` and names the parameters the operation declares.
+- `filter` is the subscription's **scope**: the connector's own event parameters, e.g. `{ parentFolderId: lookup('uipath-microsoft-outlook365', 'email-received', 'parentFolderId').by('displayName', 'Inbox') }` for Outlook `email-received`. Omitting it subscribes to everything the connection can see, which `check` reports as `EVENT_NO_SCOPE` and names the parameters the operation declares.
+  Same rule as §2: a scope value that is an **id** (a mail folder, a channel, a workspace) takes a `lookup()`, never a pasted value; §3 resolves it (`--action email-received`).
 - `object` names what a **generic** event watches — `record-created` and its kin on Data Fabric, Salesforce, ServiceNow, Jira. Such an entry carries no default, so without it the node emits `objectName: ""`, validates, and watches nothing. `check` reports `EVENT_GENERIC_NO_OBJECT`. A curated event has its object built in and refuses one (`EVENT_OBJECT_NOT_GENERIC`).
 
 ```bash
