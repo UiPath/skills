@@ -86,8 +86,8 @@ is not an authoring gate — `validate` passes without it and nothing upstream
 reads a position. For a greenfield file (one `compile` wrote from scratch), run
 it before the file reaches anything that draws it: `solution upload`,
 `flow debug`, or a person opening the project in a designer. Do not run it on a
-merged brownfield file: `format` re-lays out every node, so it discards the
-positions the canvas author chose. See
+merged brownfield file, or on one whose source sets `.layout()`: `format`
+re-lays out every node, so it discards the positions the author chose. See
 [`operate.md`](operate.md#lay-out-the-emitted-flow-first).
 
 These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
