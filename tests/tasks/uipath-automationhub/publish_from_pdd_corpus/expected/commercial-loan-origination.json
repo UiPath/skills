@@ -30,6 +30,15 @@
   "WORM archive": [
    "worm",
    "archive"
+  ],
+  "Case platform": [
+   "case platform"
+  ],
+  "Screening services": [
+   "screening services"
+  ],
+  "Controlled workpaper": [
+   "controlled workpaper"
   ]
  },
  "allow_other_category": true

@@ -254,6 +254,33 @@ def test_create_after_the_success_fails(sandbox: Path, tmp_path: Path) -> None:
     assert "never re-run" in grade(sandbox, "create-once").stdout
 
 
+CREATE_ON_FLOW = r'''#!/usr/bin/env python3
+import json, sys
+if " automations create" in " " + " ".join(sys.argv[1:]):
+    print(json.dumps({"Result": "Success", "Data": {"Id": %d, "IdeaFlowId": %%d}})); sys.exit(0)
+print(json.dumps({"Result": "Success", "Data": {}}))
+''' % PROCESS_ID
+
+
+def create_by_flow_name(sandbox: Path) -> None:
+    (sandbox / "ah-answers.json").write_text(json.dumps(good_answers()))
+    uip(sandbox, "ah", "automations", "create", "--from-schema", "--idea-flow", "Business Process",
+        "--file", "./ah-answers.json", "--output", "json")
+
+
+def test_create_by_flow_name_on_the_business_process_flow_passes(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(CREATE_ON_FLOW % 8)
+    create_by_flow_name(sandbox)
+    result = grade(sandbox, "create-once")
+    assert result.returncode == 0, result.stdout
+
+
+def test_create_by_flow_name_on_another_flow_fails(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(CREATE_ON_FLOW % 9)
+    create_by_flow_name(sandbox)
+    assert "targeted idea flow 9" in grade(sandbox, "create-once").stdout
+
+
 def test_template_placeholders_fail(sandbox: Path) -> None:
     answers = good_answers()
     section(answers, "OVR-OVERVIEW_DESCRIPTION")["OVR-OVERVIEW_DESCRIPTION"] = {"value": "Sample input for the description field"}

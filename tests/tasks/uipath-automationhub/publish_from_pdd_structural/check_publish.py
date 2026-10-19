@@ -258,12 +258,25 @@ def check_create_once(calls: list[dict], seed: dict) -> str:
     if "--from-schema" not in create["args"]:
         raise CheckFailed("create did not use --from-schema")
     flow_id = str(seed.get("business_process_flow_id"))
-    if flag(create, "--idea-flow-id") != flow_id:
-        raise CheckFailed(f"create targeted idea flow {flag(create, '--idea-flow-id')}, "
+    if created_flow_id(create) != flow_id:
+        raise CheckFailed(f"create targeted idea flow {created_flow_id(create)}, "
                           f"not the Business Process flow ({flow_id})")
     retries = len(calls_matching(calls, "ah automations create")) - 1
     note = f" after {retries} rejected attempt(s)" if retries else ""
     return f"one successful create on the Business Process flow (process {created_id(calls)}){note}"
+
+
+def created_flow_id(create: dict) -> str | None:
+    """The flow by --idea-flow-id, else the one the service reports creating on.
+
+    `--idea-flow "<name>"` is the CLI's other way to pick the flow; only the
+    envelope's `Data.IdeaFlowId` says which flow that name resolved to.
+    """
+    by_flag = flag(create, "--idea-flow-id")
+    if by_flag is not None:
+        return by_flag
+    reported = create.get("data_idea_flow_id")
+    return None if reported is None else str(reported)
 
 
 def check_payload(calls: list[dict], seed: dict) -> str:
