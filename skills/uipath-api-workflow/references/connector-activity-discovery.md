@@ -231,28 +231,15 @@ Use the IS Elements endpoint, which may include a hub prefix. `/<objectName>` is
 
 ## Paging list and search results
 
-IntSvc list and search activities return one page per call. Page with the cursor, never with counts:
+IntSvc list and search activities that take a `nextPage` parameter return one page per call. Studio Web hides `nextPage` and page size from users and offers "Max records" instead; do the same:
 
-1. Read the cursor from the `elements-next-page-token` response header (`$context.outputs.<ExportBucketKey>.headers`) and pass it as the next call's `queryParameters.nextPage`.
-2. The header is present on every page, including the last. It is base64url JSON `{ providerNextPage, page, pageSize }`, and on the last page `providerNextPage` is `"DONE"`. Continue only while `providerNextPage` is a non-empty string other than `"DONE"`. A loop on header presence never ends: sending the `"DONE"` cursor back returns the first page again or empty pages.
-3. Do not stop on a page shorter than `pageSize`. Vendors may return fewer items while more remain; the Jira search activity states this in its `pageSize` description.
-4. Keep a page cap in the `doWhile` condition as a safety net. When the loop ends with the cap reached and `hasMore` still true, fail the run with a clear error instead of returning partial data.
+1. **Let the runtime page.** Add `"maximumRecordsReturned": -1` to the stub's `with` object, next to `queryParameters`, and keep every other stub field as emitted. `-1` fetches every record; a positive number caps the total. For a GET whose `.content` is an array, the runtime requests the pages itself, returns one list in `.content`, and removes the paging headers. For other methods it only truncates `.content` to the cap.
+2. **Loop only when each page needs its own processing.** After each call, read `$context.outputs.<ExportBucketKey>.page`, which is `{ hasMorePages, nextPageToken }`. The runtime adds it only when another page exists. Pass `page.nextPageToken` as the next call's `queryParameters.nextPage`, and stop when `.page` is absent. If `.content` is not an array, the runtime adds no `.page`; decide on the `elements-has-more` response header when present (`"false"` on the last page).
+3. **Never decide on the raw `elements-next-page-token` header.** It is present on every page, including the last, where it decodes to `providerNextPage: "DONE"`. Sending it back returns the first page again or empty pages, so a loop on header presence never ends.
+4. **Do not stop on a page shorter than `pageSize`.** Vendors may return fewer items while more remain; the Jira search activity states this in its `pageSize` description.
+5. **Cap a manual loop.** Keep a page cap in the `doWhile` condition, and when the loop ends with the cap reached and `.page` still present, fail the run with a clear error instead of returning partial data.
 
-Compute the next cursor and the continue flag in a JavaScript activity after each call (`issue_search_get_1` is the activity's `Data.ExportBucketKey`):
-
-```javascript
-const headers = $context.outputs.issue_search_get_1?.headers ?? {};
-const token = Object.entries(headers).find(([name]) => name.toLowerCase() === "elements-next-page-token")?.[1];
-let cursor;
-try {
-  cursor = JSON.parse(atob(String(token).replace(/-/g, "+").replace(/_/g, "/"))).providerNextPage;
-} catch (error) {
-  cursor = undefined;
-}
-return { nextPage: token ?? "", hasMore: typeof cursor === "string" && cursor !== "" && cursor !== "DONE" };
-```
-
-Loop shape: [control-flow-patterns.md](control-flow-patterns.md#11-paging-a-connector-list-or-search).
+Manual loop shape: [control-flow-patterns.md](control-flow-patterns.md#11-paging-a-connector-list-or-search).
 
 ## Multipart endpoints
 
@@ -280,7 +267,7 @@ Use exact schema names, flat dotted keys, bare literals or real `${$context...}`
 - Do not read IntSvc output at the root; use `.content` and `Data.ExportBucketKey`.
 - Do not nest connector fields or wrap connector literals as `${'literal'}`.
 - Do not remove `multipartParameters` from multipart operations.
-- Do not loop while `elements-next-page-token` is present or stop on a short page; decode the cursor and stop when `providerNextPage` is `"DONE"` or missing.
+- Do not hand-roll paging on the `elements-next-page-token` header or stop on a short page; set `maximumRecordsReturned`, or loop on `.page` when each page needs its own processing.
 - Do not leave `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` or any `<REPLACE_WITH_*>` placeholder in a generated workflow; stop and ask the user if no working UUID or URL is available.
 - Do not skip the required-field cross-check.
 

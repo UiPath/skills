@@ -175,15 +175,15 @@ To include the If's output, reference `$context.outputs.If_1`; the wrapper expor
 
 ### 11. Paging a connector list or search
 
-Wrap the IntSvc call in a DoWhile. Compute `hasMore` from the decoded cursor, never from header presence or page length; stop rule and script: [connector-activity-discovery.md](connector-activity-discovery.md#paging-list-and-search-results).
+To collect all records, set `maximumRecordsReturned: -1` on the activity and write no loop. Loop only when each page needs its own processing, and drive the loop from the activity's `.page` output, never from the `elements-next-page-token` header or page length; rules: [connector-activity-discovery.md](connector-activity-discovery.md#paging-list-and-search-results).
 
 ```text
 Do_While_1 (doWhile: ${$context.variables.hasMore && $context.variables.pageCount < 100})
 └─ Do_While_1#Body
    ├─ Search activity (queryParameters.nextPage: ${$context.variables.nextPage})
-   ├─ Javascript_1 → { nextPage, hasMore } from the cursor
-   ├─ Assign items = items + this page's items
-   ├─ Assign nextPage, Assign hasMore
+   ├─ … process this page's .content
+   ├─ Assign nextPage = ${$context.outputs.<ExportBucketKey>.page?.nextPageToken ?? ''}
+   ├─ Assign hasMore = ${Boolean($context.outputs.<ExportBucketKey>.page)}
    └─ Assign pageCount = pageCount + 1
 If_1#Wrapper (when: ${$context.variables.hasMore})
 └─ If_1#Then → fail the run: page cap reached
