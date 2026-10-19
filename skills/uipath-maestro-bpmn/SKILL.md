@@ -468,8 +468,8 @@ Draft mode only.
    `validate` does not prove that mapping is right. For the compatibility
    fallback and its scope, see
    [references/structural-bpmn.md#script-tasks--jint-authoring-contract](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
-- **4c Assemble.** For greenfield, author into the `.bpmn` that 2a's `init`
-   generated, using `Edit` — never `Write` a full-file replacement over it.
+- **4c Assemble.** For greenfield, edit the `.bpmn` that 2a's `init`
+   generated in place; never replace the whole file.
    Editing in place preserves the four generated JSON files, the initializer's
    `Event_start` id, and its `uipath:entryPointId`. Author from the complete minimal file in
    [references/structural-bpmn.md](references/structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples)
