@@ -43,6 +43,13 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  - type: command_not_executed
+    description: "Agent skipped refresh, which fails on a trigger-start skeleton"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+refresh'
+    weight: 1.0
+    pass_threshold: 1.0
+
   - type: run_command
     description: "Skeleton has a timer start, bare task boxes, a real conditioned gateway, full DI, project metadata, and validates with zero errors"
     command: "python3 $REFERENCE_DIR/check_draft_skeleton.py NightlyReportSketch --timer-start"

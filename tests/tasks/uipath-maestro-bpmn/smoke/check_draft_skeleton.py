@@ -60,16 +60,15 @@ def main() -> None:
     uip = shutil.which("uip")
     if not uip:
         fail("uip not found on PATH; cannot validate the skeleton")
-    if uip:
-        res = subprocess.run([uip, "maestro", "bpmn", "validate", path, "--output", "json"],
-                             capture_output=True, text=True, timeout=45)
-        try:
-            data = json.loads(res.stdout).get("Data") or {}
-        except ValueError:
-            data = {}
-        status = data.get("Status") or data.get("status")
-        if status != "Valid":
-            fail(f"uip maestro bpmn validate did not report Valid (exit {res.returncode}): {res.stdout[:400]}")
+    res = subprocess.run([uip, "maestro", "bpmn", "validate", path, "--output", "json"],
+                         capture_output=True, text=True, timeout=45)
+    try:
+        data = json.loads(res.stdout).get("Data") or {}
+    except ValueError:
+        data = {}
+    status = data.get("Status") or data.get("status")
+    if status != "Valid":
+        fail(f"uip maestro bpmn validate did not report Valid (exit {res.returncode}): {res.stdout[:400]}")
 
     print(f"OK: {path} is a validated draft skeleton with {len(boxes)} bare boxes and no wiring")
 
