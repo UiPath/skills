@@ -25,6 +25,7 @@ pre_run:
   - command: |
       python3 - <<'PYEOF'
       import json, subprocess, sys
+      # First row only, on purpose: the server sorts the default first.
       def visible_default():
           r = subprocess.run(["uip", "tm", "project", "list", "--limit", "1", "--output", "json"],
                              capture_output=True, text=True)
