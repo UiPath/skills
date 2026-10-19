@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from _shared.case_check import existing_caseplan  # noqa: E402
+from _shared.case_check import existing_caseplan, find_tasks_of_type  # noqa: E402
 
 PROJECT = Path("LinearThreeStages") / "LinearThreeStages"
 REVIEW_STAGE = "Stage_Qn7tBz"
@@ -22,19 +22,19 @@ def check(ok, message):
         failures.append(message)
 
 
+def stage_holding(plan, task):
+    return next((node.get("id") for node in plan.get("nodes", [])
+                 if any(task in lane for lane in node.get("data", {}).get("tasks", []) if isinstance(lane, list))),
+                None)
+
+
 def main():
-    plan_path = existing_caseplan(str(PROJECT / "caseplan.json")) or PROJECT / "caseplan.json"
-    plan = json.loads(Path(plan_path).read_text())
-    tasks = [
-        (node["id"], task)
-        for node in plan.get("nodes", [])
-        for lane in node.get("data", {}).get("tasks", [])
-        for task in lane
-        if task.get("type") == "external-agent"
-    ]
-    if len(tasks) != 1:
-        sys.exit(f"FAIL: expected one external-agent task, found {len(tasks)}")
-    stage_id, task = tasks[0]
+    plan = json.loads(Path(existing_caseplan(str(PROJECT / "caseplan.json")) or PROJECT / "caseplan.json").read_text())
+    agents = find_tasks_of_type(plan, "external-agent")
+    if len(agents) != 1:
+        sys.exit(f"FAIL: expected one external-agent task, found {len(agents)}")
+    task = agents[0]
+    stage_id = stage_holding(plan, task)
     data = task.get("data", {})
     check(stage_id == REVIEW_STAGE, f"external-agent task is in {stage_id}, not the Review stage")
     check(task.get("isRequired") is False,
