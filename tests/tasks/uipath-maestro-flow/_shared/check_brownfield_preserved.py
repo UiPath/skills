@@ -14,11 +14,18 @@ with the original catches it.
 and size, and a node the edit added has a layout entry that overlaps no other
 node.
 
+`--aspect merged` checks that the `.flow` came out of the skill's decompile ->
+compile -> merge loop, not a hand edit.
+
+`--removable-node` names an original node the edit may change or delete, with
+its edges, node variables and layout entry; the task's own grader checks
+whether it had to go.
+
 Usage (from a task's run_command, cwd = sandbox root):
     python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py \\
-        --original $REFERENCE_DIR/brownfield/fixture/<Sol>/<Project> --project <Sol>/<Project> \\
-        [--changed-node ID ...] [--removed-edge SRC:PORT>TGT:PORT ...] \\
-        [--changed-agent UUID ...] [--aspect graph|layout]
+        --original $REFERENCE_DIR/<fixture>/<Sol>/<Project> --project <Sol>/<Project> \\
+        [--changed-node ID ...] [--removable-node ID ...] [--removed-edge SRC:PORT>TGT:PORT ...] \\
+        [--changed-agent UUID ...] [--aspect graph|layout|merged]
 
 Exit 0 on pass; exit 1 with one `FAIL:` line per difference.
 """
@@ -69,6 +76,14 @@ def parse_edge(spec: str) -> tuple[str, str, str, str]:
     return (source_node, source_port, target_node, target_port)
 
 
+def subflow_parts(flow: dict, key: str) -> list[dict]:
+    parts = list(flow.get(key, []))
+    for subflow in (flow.get("subflows") or {}).values():
+        if isinstance(subflow, dict):
+            parts += subflow.get(key, [])
+    return parts
+
+
 def binding_signature(binding: dict) -> str:
     return json.dumps({k: v for k, v in binding.items() if k != "id"}, sort_keys=True)
 
@@ -85,6 +100,7 @@ def check_graph(
     changed_nodes: set[str],
     removed_edges: set[tuple[str, str, str, str]],
     changed_agents: set[str],
+    removable_nodes: set[str] = frozenset(),
 ) -> list[str]:
     failures: list[str] = []
 
@@ -96,16 +112,18 @@ def check_graph(
     for node in original.get("nodes", []):
         after = final_nodes.get(node["id"])
         if after is None:
-            failures.append(f"node {node['id']!r} was removed")
-        elif node["id"] not in changed_nodes and after != node:
+            if node["id"] not in removable_nodes:
+                failures.append(f"node {node['id']!r} was removed")
+        elif node["id"] not in changed_nodes | removable_nodes and after != node:
             failures.append(f"node {node['id']!r} changed ({', '.join(differing_keys(node, after))})")
 
     original_ids = set(final_nodes) & {n["id"] for n in original.get("nodes", [])}
-    untouched = original_ids - changed_nodes
+    gone = {n["id"] for n in original.get("nodes", [])} - original_ids
+    untouched = original_ids - changed_nodes - removable_nodes
     final_edges = Counter(edge_key(e) for e in final.get("edges", []))
     original_edges = {edge_key(e) for e in original.get("edges", [])}
     for edge in sorted(original_edges - removed_edges):
-        if not final_edges[edge]:
+        if not final_edges[edge] and edge[0] not in gone and edge[2] not in gone:
             failures.append("edge removed: {}:{} -> {}:{}".format(*edge))
     for edge in sorted(removed_edges):
         if final_edges[edge]:
@@ -135,17 +153,19 @@ def check_graph(
     final_node_vars = {v["id"]: v for v in final_variables.get("nodes", [])}
     for var in variables.get("nodes", []):
         owner = var.get("binding", {}).get("nodeId")
-        if owner in changed_nodes:
+        if owner in changed_nodes or owner in removable_nodes:
             continue
         if final_node_vars.get(var["id"]) != var:
             failures.append(f"node variable {var['id']!r} removed or changed")
 
     final_definitions = {(d.get("nodeType"), d.get("version")): d for d in final.get("definitions", [])}
+    used_types = {n.get("type") for n in subflow_parts(final, "nodes")}
     for definition in original.get("definitions", []):
         key = (definition.get("nodeType"), definition.get("version"))
         after = final_definitions.get(key)
         if after is None:
-            failures.append(f"definition {key[0]}@{key[1]} removed")
+            if key[0] in used_types:
+                failures.append(f"definition {key[0]}@{key[1]} removed")
         elif after != definition:
             failures.append(f"definition {key[0]}@{key[1]} changed ({', '.join(differing_keys(definition, after))})")
 
@@ -176,13 +196,14 @@ def boxes_overlap(a: dict, b: dict) -> bool:
     )
 
 
-def check_layout(original: dict, final: dict) -> list[str]:
+def check_layout(original: dict, final: dict, removable_nodes: set[str] = frozenset()) -> list[str]:
     failures: list[str] = []
     before = original.get("layout", {}).get("nodes", {})
     after = final.get("layout", {}).get("nodes", {})
     original_ids = {n["id"] for n in original.get("nodes", [])}
+    final_ids = {n["id"] for n in final.get("nodes", [])}
     for node_id in sorted(original_ids):
-        if node_id not in before:
+        if node_id not in before or (node_id in removable_nodes and node_id not in final_ids):
             continue
         if node_id not in after:
             failures.append(f"layout entry for {node_id!r} removed")
@@ -190,7 +211,7 @@ def check_layout(original: dict, final: dict) -> list[str]:
             failures.append(
                 f"{node_id!r} moved: {before[node_id].get('position')} -> {after[node_id].get('position')}"
             )
-    new_ids = sorted({n["id"] for n in final.get("nodes", [])} - original_ids)
+    new_ids = sorted(final_ids - original_ids)
     for node_id in new_ids:
         if node_id not in after:
             failures.append(f"new node {node_id!r} has no layout entry")
@@ -201,21 +222,49 @@ def check_layout(original: dict, final: dict) -> list[str]:
     return failures
 
 
+def check_merged(original: dict, final: dict) -> list[str]:
+    # merge takes every edge from the compiled source, which numbers them edge_0..edge_N
+    # (builder-sdk FLOW_PARITY.md §6.2), so a surviving original edge id means a hand edit.
+    # A tripwire, not proof (a hand edit can renumber too), and it inverts if merge ever keeps
+    # original edge ids the way compile now keeps node ids (builder-sdk #1249, #1253).
+    original_ids = {e["id"] for e in subflow_parts(original, "edges")}
+    kept = sorted(original_ids & {e.get("id") for e in subflow_parts(final, "edges")})
+    if not kept:
+        return []
+    return [
+        f"{len(kept)} of {len(original_ids)} original edge ids survive (e.g. {kept[0]!r}): the .flow was "
+        "edited by hand, not written by `uip maestro flow merge`, which renumbers every edge. When the "
+        "merge candidate changes something the task did not ask for, the skill's answer is to fix the "
+        ".flow.ts and merge again, not to patch the .flow (uipath-maestro-flow references/brownfield.md, "
+        "'Merge warnings: what the round trip changed')"
+    ]
+
+
+OK_MESSAGES = {
+    "graph": "OK: graph preserved outside the requested change",
+    "layout": "OK: layout preserved outside the requested change",
+    "merged": "OK: the .flow was written by `uip maestro flow merge` (no original edge id survives)",
+}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--original", required=True, type=Path)
     parser.add_argument("--project", required=True, type=Path)
     parser.add_argument("--changed-node", action="append", default=[])
+    parser.add_argument("--removable-node", action="append", default=[])
     parser.add_argument("--removed-edge", action="append", default=[])
     parser.add_argument("--changed-agent", action="append", default=[])
-    parser.add_argument("--aspect", choices=("graph", "layout"), default="graph")
+    parser.add_argument("--aspect", choices=("graph", "layout", "merged"), default="graph")
     args = parser.parse_args(argv)
 
     original, original_agents = load_project(args.original)
     final, final_agents = load_project(args.project)
 
     if args.aspect == "layout":
-        failures = check_layout(original, final)
+        failures = check_layout(original, final, set(args.removable_node))
+    elif args.aspect == "merged":
+        failures = check_merged(original, final)
     else:
         failures = check_graph(
             original,
@@ -225,13 +274,14 @@ def main(argv: list[str] | None = None) -> int:
             set(args.changed_node),
             {parse_edge(e) for e in args.removed_edge},
             set(args.changed_agent),
+            set(args.removable_node),
         )
 
     for failure in failures:
         print(f"FAIL: {failure}")
     if failures:
         return 1
-    print(f"OK: {args.aspect} preserved outside the requested change")
+    print(OK_MESSAGES[args.aspect])
     return 0
 
 

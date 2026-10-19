@@ -62,9 +62,9 @@ success_criteria:
     pass_threshold: 0   # advisory
 
   - type: command_executed
-    description: "Agent picked up the pipeline's job by id: `generate-testcases --project-key HEALTH --activity-id <uuid>`"
+    description: "Agent picked up the pipeline's job by id: `generate-testcases --project-key <key from project-key.txt> --activity-id <uuid>`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--activity-id\s+["\x27]?[0-9a-fA-F]{8}-)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--project-(?:key\s+["\x27]?HEALTH\b|id\s+\S))(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--create\b)'
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--activity-id\s+["\x27]?[0-9a-fA-F]{8}-)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--project-(?:key|id)\s+\S)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--create\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

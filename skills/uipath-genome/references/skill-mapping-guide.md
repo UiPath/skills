@@ -45,15 +45,18 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 
 ## Decision Tree for Ambiguous Steps
 
-1. Step interacts with a screen (desktop or browser) → `uipath-rpa`.
+1. Step interacts with a screen (desktop or browser), or with what only a robot's machine reaches — Excel and Office files, files and folders on local or network storage, an on-premises database, desktop mail, a terminal → `uipath-rpa`.
 2. Step reads or writes Excel, mail, PDF, files, or calls an Integration Service connector activity from a workflow → `uipath-rpa`.
-3. Step needs an LLM to decide, classify, summarize, or converse → `uipath-agents` when the agent is a component of its own: a conversation, an agent several components call, an agent with its own evaluations. One reasoning step among a Flow's other steps, with its model, tools and answer contract, is the Flow's inline agent → `uipath-maestro-flow`.
-4. Step is deterministic code with no UI and no LLM, invoked as a unit by other components → `uipath-functions`. If the same logic lives inside an RPA project as C#, keep `uipath-rpa`.
-5. Step is a sequence of HTTP calls with no UI → `uipath-api-workflow` when standalone; `uipath-rpa` when it lives inside an RPA project.
-6. Step coordinates other components: lightweight, event-driven, minutes-long → `uipath-maestro-flow`; long-running with human lanes and gateways → `uipath-maestro-bpmn`; case-centric with stages and SLAs → `uipath-maestro-case`.
-7. Step is a user-facing screen → `uipath-coded-apps`.
-8. Step trains or deploys an extraction model → `uipath-ixp`; the workflow that *uses* the model stays with its own skill.
-9. Still ambiguous between `uipath-rpa` and anything else → `uipath-rpa`.
+3. Step reads fields from semi-structured documents (invoices, forms, contracts) → a document-extraction step of the component that uses it; training or deploying the extraction model is its own row → `uipath-ixp`.
+4. Step decides by a threshold, eligibility or routing table the business maintains → a decision table of its own, which the step evaluates → `uipath-rules`.
+5. Step needs an LLM to decide, classify, summarize, or converse → `uipath-agents` when the agent is a component of its own: a conversation, an agent several components call, an agent with its own evaluations. One reasoning step among a Flow's other steps, with its model, tools and answer contract, is the Flow's inline agent → `uipath-maestro-flow`. A fixed generation step with no decision (summarize, draft) is an LLM activity of the component that runs it.
+6. Step is deterministic code with no UI and no LLM, invoked as a unit by other components → `uipath-functions`. If the same logic lives inside an RPA project as C#, keep `uipath-rpa`.
+7. Step is a sequence of HTTP or connector calls with no UI, to systems the cloud reaches → `uipath-api-workflow` when standalone; `uipath-rpa` when it lives inside an RPA project.
+8. Step waits for a person — an approval, a review, missing data: inside one RPA process, a task in Action Center and a long-running workflow → `uipath-rpa`; inside a coordinator, that coordinator's human-task node or task (Rationale names `uipath-human-in-the-loop`).
+9. Step coordinates other components → `uipath-maestro-flow` for a pipeline of automations with branches; `uipath-maestro-bpmn` for formal gateways, events, timers or subprocesses; `uipath-maestro-case` for a case moving through stages with SLAs. A coordinator is chosen only for coordination one component cannot hold — state that outlives a run (waits of days, events, timers), parallel branches, several automations that run on their own, per-step visibility end to end. A component that calls another automation and uses its result in the same run keeps the call as a step, and starting one dispatcher and its performer needs no coordinator.
+10. Step is a user-facing screen → `uipath-coded-apps`.
+11. Data several components share is a Data Fabric entity: a Platform Dependency, never a step's skill; the step that reads or writes it takes the skill of the component that runs it.
+12. Still ambiguous between `uipath-rpa` and anything else → `uipath-rpa`.
 
 ## Common Combinations
 
