@@ -15,6 +15,7 @@ tags: [uipath-maestro-flow, e2e, mode:build, lifecycle:generate, low-code, inlin
 run_limits:
   expected_turns: 66
   turn_timeout: 1200
+  task_timeout: 1500
 
 # An agent left to itself often models "escalate to a human" as a human-in-the-loop
 # flow node — fine in general, but this task specifically exercises the agent
