@@ -1,21 +1,23 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, requirements, cases, sets, executions, defects; schedule test sets on a recurring cadence; AI-generate test cases from requirements, evaluate requirements, find obsolete test cases; run every test in an uploaded package from CI; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, requirements, cases, sets, executions, defects; schedule test sets on a recurring cadence; AI-generate test cases from requirements, evaluate requirements, find obsolete test cases; run every test in an uploaded package from CI; performance (load) test scenarios; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
 
 # UiPath Test Assistant
 
-Manage UiPath Test Manager projects, requirements (including AI test case generation, requirement evaluation and obsolete test case search), test cases, test sets, executions, logs, defects, attachments, results, custom fields, labels, and persona-tailored shareable test reports.
+Manage UiPath Test Manager projects, requirements (including AI test case generation, requirement evaluation and obsolete test case search), test cases, test sets, executions, logs, defects, attachments, results, custom fields, performance (load) test scenarios, labels, and persona-tailored shareable test reports.
 
 ## Use For
 
-Test Manager CRUD; CI runs of every test in an uploaded package; execution analysis, coverage, regression trends, failure rates, go/no-go summaries; failed-run triage; flaky-versus-regression analysis; failure evidence; and shareable QA-engineer, developer, or release-manager reports.
+Test Manager CRUD; CI runs of every test in an uploaded package; execution analysis, coverage, regression trends, failure rates, go/no-go summaries; failed-run triage; flaky-versus-regression analysis; failure evidence; load-testing an automated test case and finding why a load run failed; and shareable QA-engineer, developer, or release-manager reports.
 
 ## Concepts and CLI
 
 Requirements define what must be tested; test cases define scenarios and may contain **teststeps**; test sets group cases; executions are created when a test set or testcase runs. Testcase logs record a testcase in an execution and provide navigation; test-step logs record steps; testcase-log assertions are assertion steps. Test Manager's **AI** works from a requirement's description and attachments: it proposes test cases, suggests improvements to the requirement, or flags linked test cases that look obsolete. Each runs as a background job with an activity id. A **defect** is a bug raised from one testcase log and synced to the project's defect tracker (Jira, Azure DevOps, …).
+
+Performance scenarios load-test automated test cases. A scenario holds **load groups**: a test case, the Orchestrator package and folder it runs from, and a load profile (virtual users, ramp-up, peak, ramp-down). Running a scenario creates an execution; a **dry run** checks it works, a **performance run** applies the full load and draws on the tenant's performance testing licence.
 
 External Playwright packages are suites packaged and uploaded to Orchestrator. Ingestion auto-creates one testcase per Playwright test, without a link step, and labels each `PW_Tag_*`, `PW_Project_*`, `PW_Suite_*`, and `PW_File_*`. They run on serverless cloud runtimes; see [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md).
 
@@ -125,6 +127,20 @@ Project-scoped custom-field **definitions** (attach to Requirement/TestCase/Test
 ### Object labels
 
 Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet`, `TestExecution`, or `TestCaseLog`. Anti-patterns (label id vs object id; `--remove-other-labels` deleting hidden internal labels): [references/object-labels-guide.md](references/object-labels-guide.md).
+
+### Performance (load) testing
+
+Typical request: "can checkout handle 50 users?"
+
+1. Find the automated test case (`testcases list`), its folder and package (`testcases list-automations`).
+2. `uip tm perf-scenario create --project-key <PROJECT_KEY> --name <NAME>`, then `perf-scenario load-groups add --scenario-key <SCENARIO_KEY> --test-case-key <TEST_CASE_KEY> --folder-key <FOLDER_KEY> --package-name <PACKAGE_NAME>`. `add` ignores load-profile flags: Test Manager resets the new load group to its defaults (20 virtual users). Set the profile afterwards with `perf-scenario load-groups update --load-group-id <LOAD_GROUP_ID> --project-key <PROJECT_KEY> --virtual-users <N>`, using the load-group id `add` returns.
+3. `perf-scenario execute --scenario-key <SCENARIO_KEY> --wait` runs a dry run. A full run needs a passing dry run (`list-dry-run-reports`) and enough licence units (`licenses get`).
+4. `perf-scenario execute --scenario-key <SCENARIO_KEY> --execution-type performanceTesting --wait`, then `load-groups list --execution-id <EXECUTION_ID>` for each load group's result, and `results get` or `report generate` for the numbers.
+
+- Two different load-group ids. `load-groups update` / `remove` take the scenario's load-group id (from `get` or `load-groups add`). `load-groups get`, `jobs list`, `robot-logs list`, `http-errors`, `automation-errors` and `transaction-metrics` take the load group **execution** id from `load-groups list --execution-id <EXECUTION_ID>`. The wrong one returns 404 `not_found`.
+- `licenses get` returns `RemainingVirtualUserUnits` for the whole tenant; it can lag up to 4 hours. A full run uses virtual users × 1 (API), 10 (Chrome/Edge) or 100 (other targets); dry runs use none. If units are short, stop and tell the user.
+- Triage a failed load group with `robot-logs list --load-group-id <ID> --level Error` and `jobs list --load-group-id <ID>`. A 403 means the tenant's performance testing feature or the user's permission is off: stop under Rule 10.
+- `delete --scenario-key <SCENARIO_KEY> --yes` removes the scenario and its load groups for good (Rule 5) and keeps past executions, unlinked. It does not stop a running execution; run `stop` first.
 
 ## Critical Rules
 
