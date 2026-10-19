@@ -321,7 +321,7 @@ never changes what a step does.
 | Phase | Steps | What happens | Reference |
 | --- | --- | --- | --- |
 | **0 — Surface** | — | Nothing to do yet; surface detection is future work. | Below |
-| **1 — Preflight** | 1a–1b | Check login, scan for an existing solution and project. Writes nothing, so it runs in every mode. | Below |
+| **1 — Preflight** | 1a–1c | Check login, scan for an existing solution and project, start from its cloud copy. Changes nothing in the project, so it runs in every mode. | Below |
 | **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no registry calls**. Draft mode only, except 2a. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
 | **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, hold the approval gate. Draft mode only. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating) |
 | **4 — Wire it up** | 4a–4g | Discover, fetch templates, paste real payloads into the existing boxes, lay out, validate, refresh, show. | Below |
@@ -384,6 +384,21 @@ Nothing to do yet. Surface detection is future work.
 
   The result decides whether 2a creates or adopts. Record it; do not scan again
   in phase 2.
+- **1c Start from the cloud copy.** When 1b found a solution (skip this for
+  discovery-only), download it by the `SolutionId` in its `.uipx` into a
+  separate directory:
+
+  ```bash
+  uip solution download <SOLUTION_ID> --extract -d <DOWNLOAD_DIR> --output json
+  ```
+
+  `init` writes a `SolutionId` before any upload, so a "not found" result just
+  means there is no cloud copy yet: skip the rest of 1c. If the download fails
+  for another reason (offline, not logged in), skip 1c and say so in the final
+  report. Otherwise compare the downloaded solution with the local one. If they
+  match, carry on. If they differ, ask the user which copy to keep before
+  authoring, because a later `upload` replaces the cloud copy with the local
+  one and would erase edits made in Studio Web.
 
 ### Phase 2 — Skeleton
 
