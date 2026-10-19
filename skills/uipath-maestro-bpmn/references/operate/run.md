@@ -30,7 +30,6 @@ uip solution projects import <ProjectDir> --solutionFile <SolutionName>/<Solutio
 uip solution resources refresh --solution-folder <SolutionName> --output json
 cd <SolutionName> && uip maestro bpmn debug <ProjectDirName> --output json
 ```
-<!--skill-flavor:local-debug-solution:end-->
 
 ```bash
 uip maestro bpmn debug [project-path] --output json
@@ -63,6 +62,7 @@ If Studio Web URL is not returned, print `Studio Web URL: <not returned by CLI>`
 > right after the debug run. Match returned keys case-insensitively
 > (`finalStatus`/`FinalStatus`, `instanceId`/`InstanceId`, `elementExecutions`/
 > `ElementExecutions`) — the CLI's JSON key casing varies by version.
+<!--skill-flavor:local-debug-solution:end-->
 
 ## Process run - deployed process
 
@@ -130,8 +130,10 @@ If execution faults, hand off to [diagnose/CAPABILITY.md](../diagnose/CAPABILITY
 
 ## Anti-patterns
 
+<!--skill-flavor:debug-not-validation:start-->
 - **Never run `uip maestro bpmn debug` as validation.** Use Author validation and packaging checks for correctness;
   debug executes the process.
+<!--skill-flavor:debug-not-validation:end-->
 - **Never reuse stale inputs silently.** Confirm every side-effecting run's input set and redact secrets from summaries.
 - **Never skip folder context for deployed runs.** `process run` requires `<FOLDER_KEY>` and instance inspection commands
   require `--folder-key` or `-f`.

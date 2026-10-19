@@ -620,13 +620,17 @@ and honestly surfaced to the user as gaps when asked.
    list; the default list without `--all-fields` omits `ProcessType`) and
    bind per rule 18, never a fabricated or placeholder key. Re-read both
    after every deploy: `deploy run` creates a new folder, so a literal
-   `folderKey` from an earlier deploy points at the old one. (5) Unless the task forbids
+   `folderKey` from an earlier deploy points at the old one.
+<!--skill-flavor:live-run-node-output:start-->
+   (5) Unless the task forbids
    live runs or asks for a draft or handoff, run the process
    (`uip maestro bpmn debug`) and read the node's output in
    `debug-instance variables-all`. Map `=result.<key>` to the key that output
    used; a scalar can surface under a generic key instead of the schema
    property name. Without a run, use the schema name and report the mapping
-   as unverified. A business rule maps its whole result as one `output` from
+   as unverified.
+<!--skill-flavor:live-run-node-output:end-->
+   A business rule maps its whole result as one `output` from
    `=result`, never one output per decision or column.
 18. **Job-wrapper registry templates (`Orchestrator.StartJob`,
    `ExecuteApiWorkflowAsync`, `StartAgenticProcess[Async]`,
