@@ -239,7 +239,7 @@ IntSvc list and search activities that take a `nextPage` parameter return one pa
 4. **Do not stop on a short page.** Vendors may return fewer items than the page size while more remain.
 5. **Cap a manual loop.** Keep a page cap in the `doWhile` condition. When the loop ends with the cap reached and more pages remaining, fail the run with a clear error instead of returning partial data.
 
-The Studio Web designer manages `nextPage` itself and can drop it from the activity when it saves. In a workflow edited in Studio Web, prefer `maximumRecordsReturned`; after a designer save, check that a manual loop's `nextPage` is still on the activity.
+The Studio Web designer manages `nextPage` itself and can drop it from the activity when it saves. It keeps `maximumRecordsReturned` only on List operations that take `nextPage`, where it shows "Max records"; `uip is resources describe` lists an object's operations. In a workflow edited in Studio Web, prefer `maximumRecordsReturned`, and after a designer save check that the paging field is still on the activity.
 
 Manual loop shape: [control-flow-patterns.md](control-flow-patterns.md#11-paging-a-connector-list-or-search).
 
