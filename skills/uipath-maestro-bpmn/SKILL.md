@@ -392,8 +392,9 @@ Nothing to do yet. Surface detection is future work.
   uip solution download <SOLUTION_ID> --extract -d <DOWNLOAD_DIR> --output json
   ```
 
-  `init` writes a `SolutionId` before any upload, so a "not found" result just
-  means there is no cloud copy yet: skip the rest of 1c. If the download fails
+  `init` writes a `SolutionId` before any upload, so a failure whose
+  `Instructions` say "Studio Web API returned 404" just means there is no
+  cloud copy yet: skip the rest of 1c. If the download fails
   for another reason (offline, not logged in), skip 1c and say so in the final
   report. Otherwise compare the downloaded solution with the local one. If they
   match, carry on. If they differ, ask the user which copy to keep before
