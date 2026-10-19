@@ -62,8 +62,11 @@ form INLINE instead — `fields` (the same rows a human task takes) and no `app`
 
 Do not give `inlineAgent` a `memory`; `check` refuses it (`AGENT_MEMORY_NOT_AUTHORABLE`).
 Find the space, declare it in the solution, then attach it to the sidecar after the
-last `compile`. `add` only attaches an existing space: an empty list means stop and
-report it. `--field` takes a sidecar `inputSchema` key, e.g. `start__output__userQuestion`.
+last `compile`. No row and the user wants a new space: skip `resources add`, omit
+`--folder-path`; `memory add` declares the space in the solution (`Status: Created`) and
+deploy creates it. No row for a named existing space: stop and report it. `--field`
+takes a key from `inputSchema.properties` in `<source>/agent.json`, e.g.
+`start__output__userQuestion`; read it, never build it, since the CLI does not check it.
 `<MEMORY_SPACE_NAME>` and `<MEMORY_SPACE_FOLDER>` are the list row's `Name` and `Folder`:
 
 ```bash
@@ -80,7 +83,8 @@ uip agent refresh "<Solution>/<Name>/<source>" --inline-in-flow \
 `memory add` reporting `SolutionResource.Status: NotDeclared` means the space is not
 linked: run the `resources add` line, then `memory add` again. Threshold, result count,
 search mode: `uip agent memory add --help`. Do not add items: they come from real runs
-after deploy (`uip agent memory item add --help`).
+after deploy (`uip agent memory item add --help`). Chat history is not a memory space: a
+conversational agent gets it through its conversation context ([conversational.md](conversational.md)).
 
 ## Evidence boundary
 
