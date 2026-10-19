@@ -13,6 +13,8 @@ tests/tasks/uipath-mcp-servers/
 ├── _shared/mock_template/mocks/uip    # shared Python mock dispatcher (mocked tasks)
 ├── _setup/cleanup_mcp_server.py       # e2e post_run cleanup
 ├── remote-create/                     # mocked
+├── remote-connection-create/          # mocked
+├── check-connection/                  # mocked
 ├── resource-create/                   # mocked
 ├── update-cross-folder-retarget/      # mocked
 │   ├── task.yaml
@@ -46,6 +48,8 @@ Rule numbers reference the SKILL.md Critical Rules (1-10).
 | Scenario | Tier | Rules | Key assertion |
 |---|---|---|---|
 | `remote-create`                | smoke (mock) | 1, 3, 4, 5, 7 | an Authorization header whose whole value is `%ASSETS/SLACK_BOT_TOKEN%`, via `--header` or a camelCase payload `headers` line, no `Bearer ` prefix (graded from the mock call log by `check_remote_create.py`); `refresh-tools`; inspection via `mcp get` / `mcp list` / `mcp-tools list` |
+| `remote-connection-create`     | smoke (mock) | 5, 7          | the executed `mcp create remote` sent the id of the enabled "Mock MCP OAuth" connection from `uip is connections list` (`--connection-id` or a camelCase `connectionId`), never the failed `(old)` one (graded by `check_remote_connection_create.py`); `refresh-tools`; no Integration Service connection changed |
+| `check-connection`             | smoke (mock) | Checking a Server | `uip is connections ping <ConnectionId>` for the id the server shows (the list's cached state says `Enabled`; the live check returns `Expired`); no server or connection changed; LLM judge: the answer says the owner has to sign in to the connection again |
 | `resource-create`              | smoke (mock) | Tools section | `candidates --category automation`; `mcp-tools create-resource ... --dry-run` scoped to the server (`template resource` is advisory) |
 | `update-cross-folder-retarget` | smoke (mock) | Tools section | `mcp-tools update` (not a new create) with `--target-identifier` + explicit `--target-folder-*` |
 | `e2e-command-server`           | e2e (live)   | 2, 7          | `mcp get` shows a command server running `npx` with `@modelcontextprotocol/server-everything`; async `refresh-tools` with a folder flag |

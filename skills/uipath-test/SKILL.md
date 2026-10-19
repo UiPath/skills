@@ -1,6 +1,6 @@
 ---
 name: uipath-test
-description: "UiPath Test Manager — manage test projects, requirements, cases, sets, executions, defects; AI-generate test cases from requirements, evaluate requirements, find obsolete test cases; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
+description: "UiPath Test Manager — manage test projects, requirements, cases, sets, executions, defects; schedule test sets on a recurring cadence; AI-generate test cases from requirements, evaluate requirements, find obsolete test cases; run every test in an uploaded package from CI; generate reports; package and run external Playwright test suites. For Orchestrator→uipath-platform. For Studio/RPA test automation authoring→uipath-rpa."
 allowed-tools: Bash, Read, Write, Glob, Grep
 user-invocable: true
 ---
@@ -11,7 +11,7 @@ Manage UiPath Test Manager projects, requirements (including AI test case genera
 
 ## Use For
 
-Test Manager CRUD; execution analysis, coverage, regression trends, failure rates, go/no-go summaries; failed-run triage; flaky-versus-regression analysis; failure evidence; and shareable QA-engineer, developer, or release-manager reports.
+Test Manager CRUD; CI runs of every test in an uploaded package; execution analysis, coverage, regression trends, failure rates, go/no-go summaries; failed-run triage; flaky-versus-regression analysis; failure evidence; and shareable QA-engineer, developer, or release-manager reports.
 
 ## Concepts and CLI
 
@@ -26,9 +26,15 @@ Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcom
 ### Projects, folders, and requirements
 
 - Projects: `uip tm project list --filter <NAME_OR_KEY>` finds by name/key; `project create --name <PROJECT_NAME> --project-key <PROJECT_KEY>` creates; `project update --project-key <PROJECT_KEY> --name <PROJECT_NAME>` updates name/description; `project delete --project-key <PROJECT_KEY>` deletes; `project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY>` sets the default Orchestrator folder; `project clear-default-folder --project-key <PROJECT_KEY>` clears it; `project owners list --project-key <PROJECT_KEY> [<PROJECT_KEY> ...]` lists owners.
+- Permissions: `uip tm project-permissions get` returns `Data.Permissions` (the permission names the **caller** holds on that project) and `Data.Count`. Gated on `Project.Read`, so a successful `get` always carries at least `Project.Read` (`Count >= 1`); no read access fails with a 403 (or 404 for a project you cannot see), never a `Success` with an empty array. Only `get` is exposed.
 - Project settings: `uip tm project settings get --project-key <PROJECT_KEY>` reads time zone, execution name format, step cap, default folder and governance; `project settings update --project-key <PROJECT_KEY> [--time-zone <IANA_NAME>] [--execution-name-format <TEMPLATE>]` writes only those first two. IANA names, placeholders, read-only fields and half-applied updates: [references/project-settings-guide.md](references/project-settings-guide.md).
 - Get folder keys with `uip or folders list -n <name> --all --output json`; it returns all folders visible to the current user.
 - Prefix with `uip tm requirements`: `list --project-key <PROJECT_KEY>`; `list-by-test-execution --project-key <PROJECT_KEY> --execution-id <uuid>`; `get --project-key <PROJECT_KEY> (--requirement-id <uuid> | --requirement-key <key>)` (mutually exclusive UUID/key); `create --project-key <PROJECT_KEY> --name <name>`; `update --project-key <PROJECT_KEY> --requirement-id <uuid>` (updates name/description and requires at least one of `--name` or `--description`); `delete --project-key <PROJECT_KEY> --requirement-ids <uuid...>` (variadic IDs); `export --project-key <PROJECT_KEY> --output-file <path>` (exports `.xlsx`); `list-testcase-ids --project-key <PROJECT_KEY> --requirement-id <uuid>`; `testcases --project-key <PROJECT_KEY> --requirement-id <uuid> (--add-testcase-ids <uuid...> | --remove-testcase-ids <uuid...>)` (mutually exclusive attach/detach selectors).
+- Move or back up a whole project with `uip tm project export` → `uip tm project import` (a `.tmh` package): [references/project-migration-guide.md](references/project-migration-guide.md). Jobs are read with `uip tm migration get|list|download`; package schemas with `uip tm migration schemas list|download`.
+  - Both are jobs of minutes. Pass `--wait` (export also `--output-file`); without it you get a job id for `migration get`. Never start a second export or import to check on one.
+  - Automation goes in by default (`--exclude automation` drops it); governance, project config (Test Cloud only, else 403) and prompts only with `--include`.
+  - Test sets travel only as `.tmh`; test cases and requirements can also go to Excel (`testcases export`, `requirements export`). "Export these" with no format or purpose: ask which.
+  - Before importing, ask: into an existing project, or a new one (`--create-project`)? A taken key: ask for `--new-project-key`.
 
 ### AI on requirements
 
@@ -70,10 +76,24 @@ Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcom
 
 Open a manual run with `uip tm testsets run --test-set-key <KEY> --execution-type manual` (id = `Data.ExecutionId`; there is **no `executions create`** verb), resolve each `--test-case-id` from the run's own logs via `uip tm executions testcaselogs list --execution-id <ID>`, then record each case with `testcaselog start`/`finish`. **A manual run self-closes when its last log finishes** — `executions finish` is the force-close for a run left with logs open, not the normal last step. `set-reporting-date` needs an already-**closed** run (`ExecutionFinished`, not `Status`). The manual-vs-automated distinction, filtered reads, every `cancel`/`delete`/`finish`/`export`/`set-reporting-date` caveat, and the exit-code contract live in [references/executions-guide.md](references/executions-guide.md); discover flags and enums with `-h`.
 
+### Test set schedules
+
+- Verbs (`--help` for flags): `uip tm schedules create|update|list|next-runs|enable|disable|delete`. `list` is the only read — no get by id — so recover values there before `update`, which replaces the **whole** definition (pass every flag you want kept; it cannot change the enabled state — use `enable`/`disable`). `delete` and `--all` need `--yes`.
+- `--cron` is **6 or 7 fields starting with seconds**, not Unix cron (daily at 02:00 is `0 0 2 1/1 * ? *`; the CLI refuses a five-field expression client-side). `--cron-details` is the recurrence JSON and is **required for every recurrence type**. `--start-time`/`--disable-time` are wall-clock `YYYY-MM-DDTHH:mm` read in `--timezone` — seconds or a `Z` are refused. Pass `next-runs` the ids `list` prints — the endpoint underneath is keyed by a different GUID and answers `200` with an empty list for a bad id. Cron/recurrence rules and gotchas: [references/schedules-guide.md](references/schedules-guide.md).
+### Run an uploaded package (CI)
+
+`uip tm run --type package --package-name <PACKAGE_NAME> --package-version <VERSION> --folder-path <FOLDER_PATH> --project-key <PROJECT_KEY> --output json` runs every test in a package already uploaded to Orchestrator, re-runs failures with `--max-retries <N>`, and writes a report. Pack and upload first with `uip rpa pack` / `uip or packages upload`.
+
+- Get `<VERSION>` from `uip or packages versions <PACKAGE_NAME> --folder-path <FOLDER_PATH> --output json`. An app version (`1.0`) runs its latest `1.0.x` patch; an exact version must be the latest patch, and an older one exits 3 with nothing created.
+- Under a CI step time limit, pass `--timeout <SECONDS>` below that limit (default 7200): a step killed first leaves no report.
+- Exit 1 with `RunPackageTestsFailed` or `RunPackageCancelled` is a test result: report it, see Rule 10(d). Exit 4 is a timeout: the execution may still be running and `Data.OutputPath` holds a partial report with unfinished tests marked skipped. Report the timeout; never count skipped tests as passed. Every other non-zero exit stops (Rule 10).
+- `--input-path` names that no test declares are listed in `Data.IgnoredInputs`; tell the user (usually a typo).
+
 ### Logs, reports, attachments, and results
 
-- `uip tm testcaselog start --project-key <PROJECT_KEY> --execution-id <EXECUTION_ID> --test-case-id <TEST_CASE_ID>` starts, optionally `--run-id <NUMBER>`. `finish --project-key <PROJECT_KEY> --execution-id <EXECUTION_ID> --test-case-id <TEST_CASE_ID> --result <None|Passed|Failed|Restricted> --has-error <true|false> --executed-by <EMAIL>` finishes and records the result (how a manual run's case is marked `Failed`). **`--executed-by` is validated non-empty then discarded** — the stored `ExecutedBy` is the authenticated caller, so never tell the user a result was attributed to whoever they named. <!-- Verified 2026-10-12, CLI 1.205.0 on alpha. --> Optionally `--detail-link <URL>`, `--run-id`, `--is-post-condition-met`, `--step-logs <json>` or `--step-logs-file <path>`.
-- `uip tm testcaselog list-assertions --project-key <PROJECT_KEY> --test-case-log-id <TEST_CASE_LOG_ID>` lists assertions; `uip tm teststeplog list --project-key <PROJECT_KEY> --test-case-log-id <TEST_CASE_LOG_ID>` lists step logs.
+- `uip tm testcaselog start --project-key <PROJECT_KEY> --execution-id <EXECUTION_ID> --test-case-id <TEST_CASE_ID>` starts, optionally `--run-id <NUMBER>`. `finish --project-key <PROJECT_KEY> --execution-id <EXECUTION_ID> --test-case-id <TEST_CASE_ID> --result <None|Passed|Failed|Restricted> --has-error <true|false> --executed-by <EMAIL>` finishes (all three of `--result`, `--has-error`, `--executed-by` required) and records the result — how a manual run's case is marked `Failed`. **`--executed-by` takes an email but is validated non-empty then discarded** — the stored `ExecutedBy` is the authenticated caller, so never tell the user a result was attributed to whoever they named. <!-- Verified 2026-10-12, CLI 1.205.0 on alpha. --> Optionally `--detail-link <URL>`, `--run-id`, `--is-post-condition-met`, `--step-logs <json>` or `--step-logs-file <path>`. `start` needs an existing execution — there is no `executions create`; open one with `uip tm testcases run … --execution-type manual` or `testsets run … --execution-type manual`.
+- Read logs: `testcaselog list` (filters `--results`/`--statuses`/`--labels`/`--search`/`--assignees`; no date/execution filter — narrow a run with `executions testcaselogs list`); `get --test-case-log-id <ID>` (`--include-assertions`); `latest --test-case-ids <ID...>` (newest per case). **A result is overridden only when `Result` and `OriginalResult` are both populated and differ — an empty `OriginalResult` means not overridden.** Correct a settled result with `override create|update|delete|get` (`create` needs `--result` and `--reason`). Assign a failure with `assign --assignee-email <EMAIL>` (CLI resolves it) or `--assignee-id <IDP_UUID>` (a UUID). Full surface + gotchas: [references/testcaselog-guide.md](references/testcaselog-guide.md).
+- `uip tm testcaselog list-assertions --project-key <PROJECT_KEY> --test-case-log-id <TEST_CASE_LOG_ID>` lists assertions; `render-assertions` returns them as markdown; `get-robot-logs` returns an expiring link (or downloads with `--output-file`); `uip tm teststeplog list --project-key <PROJECT_KEY> --test-case-log-id <TEST_CASE_LOG_ID>` lists step logs.
 - `uip tm report get --execution-id <EXECUTION_ID> (--project-key <KEY> | --test-set-key <KEY>)` summarizes a completed execution; exactly one project-identifying option is required. Passing only `--execution-id` exits with `Provide --project-key or --test-set-key`.
 - `uip tm attachment download --execution-id <EXECUTION_ID>` downloads testcase attachments; `attachment upload --object-id <UUID> --object-type <type> --file <path>` uploads to a Test Manager object, such as `--object-type testCaseLog`; `uip tm result download --execution-id <EXECUTION_ID>` downloads JUnit XML, optionally `--project-key`, `--test-set-key`, `--result-path <DIR>`.
 - Single files (`uip tm attachment`, `upload` returns `AttachmentId`): find the object first (`list --test-case-keys` / `--requirement-keys`), pick the file by `FileName`, then use its `AttachmentId`; no match or a duplicate name: ask.
@@ -81,6 +101,10 @@ Open a manual run with `uip tm testsets run --test-set-key <KEY> --execution-typ
   - `--object-type` is the parent object's type, not the file's; a wrong one can still succeed.
   - `download --attachment-id` writes to the current folder under the server name unless `--result-path`/`--output-file`, and never replaces a file: on `already exists`, stop and ask; pass `--overwrite` only when the user asked.
   - `update` only renames (`--file-name`). `--all` is one page per call; follow `Pagination`. Confirm deletes (Rule 5).
+- Files out: `uip tm testcases export` (test cases to `.xlsx`; `--test-case-ids`, else the whole project) and `uip tm report export` (an execution's report, `--execution-id --format excel|pdf|junit`, or chosen results as PDFs, `--test-case-log-ids`, two or more as one `.zip`):
+  - When the user wants the file, pass `--wait --output-file <path>`. Without `--wait` only a job starts: poll `uip tm export-jobs get --job-id` while `Initiated`/`InProgress`, stop on `Failed`/`Cancelled`, then `attachment download --attachment-id <AttachmentId>` as `Instructions` prints. Never start the same export twice to check on it.
+  - An existing `--output-file` is refused before anything starts: ask, and pass `--overwrite` only when told.
+  - `export-jobs get` needs the project that started the job (others return 404). JUnit off on the tenant (`feature is not enabled`) or a 403 on result PDFs (licence): report it, don't retry.
 
 ### Playwright pack
 
@@ -100,7 +124,7 @@ Project-scoped custom-field **definitions** (attach to Requirement/TestCase/Test
 
 ### Object labels
 
-Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet`, `TestExecution`, or `TestCaseLog`. Full list/get/add/remove surface, `--label-types`, and authoritative-set (`--remove-other-labels`) semantics: [references/object-labels-guide.md](references/object-labels-guide.md).
+Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet`, `TestExecution`, or `TestCaseLog`. Anti-patterns (label id vs object id; `--remove-other-labels` deleting hidden internal labels): [references/object-labels-guide.md](references/object-labels-guide.md).
 
 ## Critical Rules
 
@@ -113,7 +137,7 @@ Tag metadata via `uip tm objectlabel …` on `Requirement`, `TestCase`, `TestSet
 7. **Discover before assuming:** never guess automation names, folder keys, project IDs, or testcase keys; run the matching list first, such as `uip tm testcases list-automations` or `uip or folders list -n <folder-name> --all`.
 8. **Narrow named-entity list calls server-side:** when given a name, key, label, or tag, inspect `uip tm <resource> list --help` or `uip or <resource> list --help` for its narrowing flag and use it. Never list all then filter client-side; this applies to every entity across `uip tm` and `uip or`. Exception: `tm testcases list --filter` is prefix matching. If a mid-name term returns zero, retry with a broader contextual prefix; relist without `--filter` only if no workable prefix exists, walking every page (Rule 11) before concluding absence.
 9. **Default-folder recovery:** `uip tm testcases run` and `uip tm testsets run` require a project default folder. Attempt the run first. Only when failure text exactly includes `"Message": "HTTP 400: Please assign folder to project level before executing testcases."` and `errorCode: itemNotFound`, run `uip tm project set-default-folder --project-key <PROJECT_KEY> --folder-key <FOLDER_KEY> --output json`, then retry once. Get keys with `uip or folders list -n <folder-name> --all --output json`. Do not interpret other errors as missing folders: an unusable default gives opaque `HTTP 5xx`; a nonexistent folder key gives `"HTTP 400: Internal Server Error."` with `errorCode: unknown`. Both stop under Rule 10. Never overwrite a working default folder; an arbitrary folder may be rejected by Test Manager and break later runs. This is the only named run exception to Rule 10; all other run failures stop.
-10. **Any `uip` failure or ambiguity stops and asks the user:** this includes command errors, malformed output, unclear flags/values, multiple matches, missing identifiers, or unexpected schemas. Never fall back to REST. Exceptions are expected outcomes identified exactly: (a) the Rule 9 missing-folder error, handled there; (b) `uip tm wait` exit code 2 with `Timed out after <N>s waiting for execution '<EXECUTION_ID>'. Last status: <status>.`, which means bounded timeout worked—report non-finish and continue remaining steps. `Polling failed/interrupted/aborted ...` and exit code 1 are real wait failures; (c) a requirement AI command exiting 2 with `ErrorCode: timeout`: the job is still running, so resume it with the `--activity-id … --wait` command its `Instructions` name, never a new start. Every other failure stops.
+10. **Any `uip` failure or ambiguity stops and asks the user:** this includes command errors, malformed output, unclear flags/values, multiple matches, missing identifiers, or unexpected schemas. Never fall back to REST. Exceptions are expected outcomes identified exactly: (a) the Rule 9 missing-folder error, handled there; (b) `uip tm wait` exit code 2 with `Timed out after <N>s waiting for execution '<EXECUTION_ID>'. Last status: <status>.`, which means bounded timeout worked—report non-finish and continue remaining steps. `Polling failed/interrupted/aborted ...` and exit code 1 are real wait failures; (c) a requirement AI command exiting 2 with `ErrorCode: timeout`: the job is still running, so resume it with the `--activity-id … --wait` command its `Instructions` name, never a new start; (d) `uip tm run --type package` exit code 1 with `"Code": "RunPackageTestsFailed"` or `"RunPackageCancelled"` and `"ErrorCode": "execution_failed"`, which means the run finished with failed or no tests, or was cancelled—report `Data` (counts, `OutputPath`, `ExecutionUrl`) and do not retry. Every other failure stops.
 11. **Walk the pages before concluding an item is absent:** list responses carry only `Data`, with no total, cursor, or has-more flag. A page that returns exactly as many rows as `--limit` (default 50) may have more, so when the item you need is not on it, rerun the same list with `--offset` raised by the page size until a page comes back short. Page size is capped at 100: `--limit` above 100 fails with `HTTP 400 … Page size cannot be greater than 100.` For a list without `--limit`/`--offset`, such as `tm testcases list`, narrow with its filter flags instead (Rule 8).
 
 ## Quick Start
@@ -128,6 +152,8 @@ For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For an
 
 ## Navigate to a Workflow
 
+- Read, correct (`override`), assign, or manually record a test case log, and `Result` vs `OriginalResult`: [references/testcaselog-guide.md](references/testcaselog-guide.md)
+- Back up, copy or move a project, in one tenant or across tenants and environments (`uip tm project export` → `import`): [references/project-migration-guide.md](references/project-migration-guide.md)
 - Execution lifecycle (manual open/record/finish), filtered reads, cancel, delete, xlsx export, and reporting date (`uip tm executions`): [references/executions-guide.md](references/executions-guide.md)
 - Failed-run root cause, assertions, step logs, evidence, and flaky-versus-regression analysis: [references/failure-triage-guide.md](references/failure-triage-guide.md)
 - Raise a defect from a failed result, trace it to its test case/requirements, link it to a tracker issue (`uip tm defects`): [references/defects-guide.md](references/defects-guide.md)
@@ -135,6 +161,7 @@ For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For an
 - Shareable tester or release-manager report: [references/test-result-report-guide.md](references/test-result-report-guide.md)
 - Publish a project and link it to a Test Manager testcase (Studio/RPA): [references/publish-and-link-guide.md](references/publish-and-link-guide.md)
 - Pack, ingest, label, and run Playwright on serverless: [references/playwright-first-mile-guide.md](references/playwright-first-mile-guide.md)
+- Run a test set on a cadence, cron shapes, and single-vs-bulk batch semantics (`uip tm schedules`): [references/schedules-guide.md](references/schedules-guide.md)
 - Custom-field definitions, labels, and values (`uip tm customfield`): [references/custom-fields-guide.md](references/custom-fields-guide.md)
 - Object labels / tag metadata on test entities (`uip tm objectlabel`): [references/object-labels-guide.md](references/object-labels-guide.md)
 - Project time zone, execution name format, and what is read-only (`uip tm project settings`): [references/project-settings-guide.md](references/project-settings-guide.md)
@@ -143,4 +170,5 @@ For `401 Unauthorized` on a REST API, run `uip login` to re-authenticate. For an
 
 - **Do not proceed if authentication fails:** all Test Manager API calls require a valid bearer token; fail fast rather than causing later 401s.
 - **Do not guess command names:** verb-noun composites are required; bare verbs do not exist. Confirm with `uip tm <resource> --help --output json`.
+- **Do not hand-build a package run:** to run all tests of an uploaded package, use `uip tm run --type package`, not `link-package` → `testsets create` → `testcases add` → `testsets run` → `wait` → `result download`.
 - **Do not `link-automation` Playwright test cases:** ingestion links them automatically; manual linking is only for the Studio/RPA pipeline.

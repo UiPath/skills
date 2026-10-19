@@ -30,14 +30,20 @@ reference:
 
 pre_run:
   - command: >-
-      python3 _setup/req_ai_fixture.py seed --project HEALTH
+      python3 _setup/req_ai_fixture.py seed --project HEALTH --stamped-prefix EVFX-AIEVAL-
       --requirement EVFX-AIEVAL-REQ --require-access evaluate
       --description "Users can reset their password."
     timeout: 280
 
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
 initial_prompt: |
   Have Test Manager's AI review the quality of requirement EVFX-AIEVAL-REQ
-  in project HEALTH and suggest improvements. Once you have those, ask it for
+  in the project whose key is in project-key.txt and suggest improvements. Once you have those, ask it for
   a few more suggestions on top. Then apply the first suggestion to the
   requirement: add its proposed wording to the end of the current
   description.
