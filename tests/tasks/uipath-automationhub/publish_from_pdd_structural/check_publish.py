@@ -199,6 +199,8 @@ def submitted_answers(create: dict) -> dict:
         raise CheckFailed(f"create --file was not a readable JSON answers file: {captured}")
     # The CLI accepts the whole schema-get document or just the answers map.
     answers = document.get("user_inputs", document)
+    if not isinstance(answers, dict):
+        raise CheckFailed(f"user_inputs must be an assessment map, got {type(answers).__name__}")
     flat: dict = {}
     for assessment in answers.values():
         if not isinstance(assessment, dict):
@@ -342,7 +344,10 @@ def live_inventory() -> list[dict]:
 def attached_systems(apps: dict, by_system: dict[str, set[int]], seed: dict) -> set[str]:
     """The PDD systems the submitted inventory ids stand for; any other id is a decoy."""
     allowed = {app_id: system for system, ids in by_system.items() for app_id in ids}
-    ids = {as_int(i) for i in apps.get("value") or []}
+    value = apps.get("value") or []
+    if not isinstance(value, list):
+        raise CheckFailed(f"Applications used value must be a list of inventory ids, got {value!r}")
+    ids = {as_int(i) for i in value}
     snapshot = {as_int(app.get("Id")) for app in seed.get("inventory") or []}
     if ids - snapshot:
         for app in live_inventory():

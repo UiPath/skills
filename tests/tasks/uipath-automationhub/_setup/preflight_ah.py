@@ -167,7 +167,6 @@ def main(argv: list[str]) -> int:
         "new_applications_offered": offered,
         "tenant_url": tenant.get("Url"),
         "owner_email": user.get("Email"),
-        "is_admin": bool(user.get("IsAdmin") == 1 or roles & ADMIN_ROLES),
         "business_process_flow_id": flow.get("Id") if flow else None,
         "archive_phase": archive[0] if archive else None,
         "archive_status": archive[1] if archive else None,

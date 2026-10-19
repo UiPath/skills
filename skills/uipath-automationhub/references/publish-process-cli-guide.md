@@ -65,6 +65,8 @@ Both flags: `--search` keeps it server-side and off the page limit; `--invite-st
 - **Nothing named** → if the schema does **not** flag the application question `required`, **omit it entirely** — a process with no applications is valid. Never pad the answer with inventory entries to "fill it in". Only when the tenant flags it `required` and the material names no system, ask the user with `AskUserQuestion` (inventory entries as options, plus free text for a system not in the list).
 - **"Thin applications used" is never padded, even when the schema flags it `required`.** It only marks which of the answered applications are thin clients, so its answer is the systems the material explicitly calls thin, Citrix or virtual-desktop clients, and nothing else. When the material calls none of them that, send `{ "value": [] }` if the question is flagged `required` (an empty answer is accepted) and omit it otherwise. Never copy the "Applications used" ids into it to satisfy the flag.
 
+**UiPath itself is never one of them.** The automation is what the process becomes, not a system it uses, so leave out "UiPath" and its own components (Orchestrator, Action Center, robots, Maestro, Case Management, Document Understanding, Integration Service…) even when the PDD or SDD lists them as systems or future-state steps.
+
 #### Adding systems that are not in the inventory — `new_applications`
 
 Check the schema first: if the application question (`<ASSESSMENT>-COUNT_APPS`, "Applications used") has a **`new_applications`** property next to `value`, the submission itself can create applications — **no admin permission, no separate call, no `categoryIds`**. Send the new systems alongside any existing ids:
