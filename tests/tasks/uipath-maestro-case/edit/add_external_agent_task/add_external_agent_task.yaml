@@ -7,7 +7,7 @@ description: >
   inputs, the connection and folder root bindings, the bindings sidecar, and
   `validate --strict`. Offline, no debug. Needs a uip whose `case splice` writes
   external tasks (UiPath/cli#5240).
-tags: [uipath-maestro-case, smoke, mode:build, lifecycle:generate]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate]
 max_iterations: 1
 
 run_limits:
