@@ -9,7 +9,7 @@ Used by three:
 - [event trigger](plugins/triggers/event/impl-json.md) — case-level `Intsvc.EventTrigger` (target: trigger node `data.inputs`)
 - **connector-bound condition rule** — a `wait-for-connector` rule in any condition scope (target: `rule.uipath`) — see [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule)
 
-> **If you are here for an in-stage connector task (`execute-connector-activity`, `wait-for-connector`), stop reading this file.** `uip maestro case splice` writes its `data` and root bindings from the saved spec envelope — go to [connector-activity/impl-json.md § Step 5](plugins/tasks/connector-activity/impl-json.md) and nothing below applies. This file is for the case-level event-trigger node and connector-bound condition rules only, which `splice` does not target.
+> **If you are here for an in-stage connector task (`execute-connector-activity`, `wait-for-connector`, `external-agent`, `external-workflow`), stop reading this file.** `uip maestro case splice` writes its `data` and root bindings from the saved spec envelope — go to [connector-activity/impl-json.md § Step 5](plugins/tasks/connector-activity/impl-json.md) and nothing below applies. This file is for the case-level event-trigger node and connector-bound condition rules only, which `splice` does not target.
 
 ---
 

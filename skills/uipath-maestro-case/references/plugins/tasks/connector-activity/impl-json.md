@@ -1,6 +1,6 @@
 # connector-activity task — Implementation (Direct JSON Write)
 
-> **Node `type` value: `execute-connector-activity` (schema-kebab).** NEVER write `connector-activity` (plugin folder name) or `connector_activity` into the JSON `type` field. The CLI `--type connector-activity` flag is a separate concept — used only when calling `uip maestro case tasks describe` (legacy) or `uip maestro case spec --type activity` (current). See SKILL.md Rule 17 + Plugin Index.
+> **Node `type` value: `execute-connector-activity` (schema-kebab), or `external-agent` / `external-workflow` for an external agent or automation (Step 5.a).** NEVER write `connector-activity` (plugin folder name) or `connector_activity` into the JSON `type` field. The CLI `--type connector-activity` flag is a separate concept — used only when calling `uip maestro case tasks describe` (legacy) or `uip maestro case spec --type activity` (current). See SKILL.md Rule 17 + Plugin Index.
 
 > **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --input-details` once, reads the populated `caseShape`, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
@@ -182,7 +182,7 @@ uip maestro case splice "<caseplan.case>" \
   --output json
 ```
 
-It writes `data.serviceType`, `data.context` with the two sentinels resolved to `=bindings.<id>`, `data.inputs` / `data.outputs` with `id` / `var` / `elementId` minted, and the ConnectionId + FolderKey root bindings (each with its `default`; reused, not duplicated, when the connection already has a pair). Keys inside `body` are copied untouched. Re-running with the same arguments is byte-identical, so a Phase 4 repair may splice again after a fresh `case spec`. Read `Data.Summary` (`ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and record it in `build-issues.md`.
+It writes `data.serviceType`, `data.context` with the two sentinels resolved to `=bindings.<id>`, `data.inputs` / `data.outputs` with `id` / `var` / `elementId` minted, and the ConnectionId + FolderKey root bindings (each with its `default`; reused, not duplicated, when the connection already has a pair). Keys inside `body` are copied untouched. Re-running with the same arguments is byte-identical, so a Phase 4 repair may splice again after a fresh `case spec`. Read `Data.Summary` (`ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and record it in `build-issues.md`. A `Warning` on an external task means splice guessed the sync service type, because the spec's `executionType` was missing or not sync, async or hybrid: record it in `build-issues.md`, and check the activity type id came from the external-agent or external-automation catalog.
 
 Never hand-write `data.context`, `data.inputs`, `data.outputs`, or the connection's root bindings for a connector task — every field `splice` writes is CLI-authoritative. **Do not open `connector-trigger-impl.md`, `connector-trigger/impl-json.md`, `case-spec-input-details.md`, or `bindings/impl-json.md` for this task after splicing: nothing in them applies to a spliced task.** They describe the manual transport for the event-trigger node and connector-bound rules, and the binding shape splice already wrote. Never edit the spec envelope to make `splice` accept it; a rejected spec means it was saved without `caseShape` (run `case spec` again without `--skip-case-shape`). `--connection-id` must be the connection the spec was fetched for; splice refuses a mismatch and names both ids. Splice takes the folder key from the same spec, so pass no `--folder-key`; with two connector tasks, each splice reads its own spec's folder, never the other task's.
 
@@ -222,9 +222,9 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 
 ## Post-Write Verification
 
-1. `type` is `"execute-connector-activity"`
-2. `data.serviceType` is `"Intsvc.ActivityExecution"`
-3. `data.context[]` has: `connectorKey`, `connection`, `resourceKey`, `folderKey` (when applicable), `objectName`, `method`, `path`, `metadata` — but NOT `operation` or `_label`
+1. `type` is `"execute-connector-activity"`, or `"external-agent"` / `"external-workflow"` per Step 5.a
+2. `data.serviceType` is what `splice` wrote (`Intsvc.ActivityExecution`, or the sync or async agent or workflow type for an external task); never edit it
+3. `data.context[]` has: `connectorKey`, `connection`, `resourceKey`, `folderKey` (when applicable), `objectName`, `method`, `path`, `metadata`, and `executionType` on an external task whose spec carries one — but NOT `_label`, and NOT `operation` on an `execute-connector-activity` (an `external-workflow` carries the `operation` and `eventMode` splice wrote)
 4. `data.context[name="connection"].value` is `=bindings.<ConnectionBindingId from splice Summary>`; no `{{` sentinel remains anywhere in `data`
 5. `data.context[name="folderKey"].value` is `=bindings.<FolderBindingId from splice Summary>`; entry absent when `spec.connection.folderKey` was null
 6. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify)

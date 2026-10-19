@@ -37,6 +37,14 @@ def main():
     stage_id, task = tasks[0]
     data = task.get("data", {})
     check(stage_id == REVIEW_STAGE, f"external-agent task is in {stage_id}, not the Review stage")
+    check(task.get("isRequired") is False,
+          f"isRequired is {task.get('isRequired')!r}; Review must not wait on the task")
+    entry_rules = [rule.get("rule")
+                   for condition in task.get("entryConditions") or []
+                   for group in condition.get("rules") or []
+                   for rule in group if isinstance(rule, dict)]
+    check("current-stage-entered" in entry_rules,
+          f"entry rules are {entry_rules!r}, not one that runs the task when the stage is entered")
     check(data.get("serviceType") == "Intsvc.SyncAgentExecution",
           f"data.serviceType is {data.get('serviceType')!r}, not 'Intsvc.SyncAgentExecution'")
 
@@ -44,6 +52,7 @@ def main():
     for name, value in (("connectorKey", "uipath-snowflake-cortex"),
                         ("objectName", "databases::schemas::agents::run"),
                         ("executionType", "sync"),
+                        ("activityConfigurationVersion", "v2"),
                         ("resourceKey", CONNECTION_ID)):
         check(context.get(name, {}).get("value") == value,
               f"context[{name}] is {context.get(name, {}).get('value')!r}, not {value!r}")
