@@ -63,6 +63,8 @@ CASE_EXIT = {"selected-stage-completed", "selected-stage-exited",
              "wait-for-connector"}                                       # Marks: No
 EXIT_TYPES = {"exit-only", "wait-for-user", "return-to-origin"}
 RETURN_TO_ORIGIN_COMPLETION = {"required-tasks-completed", "wait-for-connector"}
+for _gate in (STAGE_ENTRY, STAGE_COMPLETION, STAGE_EXIT, TASK_ENTRY, CASE_COMPLETION, CASE_EXIT):
+    _gate.add("api-event")  # a business event: every gate the Designer offers, never a case trigger
 KNOWN_RULES = STAGE_ENTRY | STAGE_COMPLETION | STAGE_EXIT | TASK_ENTRY | CASE_COMPLETION | CASE_EXIT
 SUMMARY_ONLY_HEADINGS = {
     "Source", "Case Objective", "Actors And Systems", "Case Trigger", "Stages",
