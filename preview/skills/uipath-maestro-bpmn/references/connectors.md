@@ -123,7 +123,9 @@ Measured end to end on the Test Manager test-set lifecycle (seven operations): s
 An action `prepare` cannot find is refused with the activities Integration Service does list, as action ids; re-run with one of them.
 It never asks Integration Service for a connector the catalog does serve — a misspelt action on Jira gets the catalog's closest action, as before.
 
-Only when `prepare` cannot reach the tenant at all, fall back to **a hand-filled `.activity(id, 'Intsvc.ActivityExecution', …)`**, taking the identity from the catalog, never from the connector's OpenAPI document:
+Only when `prepare` cannot reach the tenant at all, fall back to **a hand-filled `.activity(id, 'Intsvc.ActivityExecution', …)`** — and only on evidence gathered while the tenant was reachable: the commands below are the same tenant reads `prepare` makes, so they fail for the same reason.
+Use a connection id, an activity row and a `registry get` template saved from an earlier session (or carried in the task), never a guess; with none of those, connector authoring waits for access, because an invented identity validates and dispatches to nothing.
+The identity comes from the catalog, never from the connector's OpenAPI document:
 
 ```bash
 uip is connections list <connector-key> --all-folders --output json      # the connection id
