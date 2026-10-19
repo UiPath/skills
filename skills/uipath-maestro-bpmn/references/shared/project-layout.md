@@ -80,7 +80,7 @@ In particular,
 `uip maestro bpmn pack <project-path> <OutputDir> --output json` does not create
 a missing descriptor from only the BPMN and `project.uiproj`.
 
-For the regeneration and drift-check contract, see [local-metadata-regeneration-guide.md](local-metadata-regeneration-guide.md).
+For the regeneration contract, see [local-metadata-regeneration-workflow.md](local-metadata-regeneration-workflow.md); for drift checks, [local-metadata-regeneration-rules.md](local-metadata-regeneration-rules.md#drift-handling).
 
 ## Package content
 

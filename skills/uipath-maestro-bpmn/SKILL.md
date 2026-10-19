@@ -391,7 +391,7 @@ For registry-evidence-only tasks, follow the command-first recipe in
    step before re-validating. If `format` reports `unknown command`, update the
    CLI (see [references/cli-conventions.md](references/cli-conventions.md)); if
    upgrading is unavailable, hand-author the fallback DI structure in
-   [references/structural-bpmn.md](references/structural-bpmn.md).
+   [references/structural-bpmn-validation.md](references/structural-bpmn-validation.md#diagram-interchange--bpmndi-registry-gap--always-generated).
 5. **Validate.** Check well-formedness first. `validate` tokenizes with a
    tolerant parser and reports `Valid` on XML with an unbound namespace
    prefix, so a `ParseError` here is a source defect to fix before anything
@@ -594,7 +594,7 @@ and honestly surfaced to the user as gaps when asked.
    Stopping after the owning skill hands the resource back is not done.**
    (A business rule skips step 4, and step 3's release and folder keys do
    not apply: it binds by `name` and `folderPath`, keyed `<folderPath>.<name>`, per
-   [registry-workflow.md](references/registry-workflow.md) § Business rule bindings.)
+   [registry-workflow-bindings.md](references/registry-workflow-bindings.md#4-bindings--from-bindinginfo-never-invented) § Business rule bindings.)
 <!--skill-flavor:delegated-resource-solution-first:start-->
    (1) Create or open the solution **first** (`uip solution init`; on
    `unknown command`, the older `uip solution new`), and

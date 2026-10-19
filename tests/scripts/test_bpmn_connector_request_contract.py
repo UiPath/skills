@@ -14,11 +14,10 @@ import xml.etree.ElementTree as ET
 
 import json
 
-from bpmn_doc_example import NS, REGISTRY_PARTS, REGISTRY_REFERENCE, ROOT, section_blocks
+from bpmn_doc_example import NS, REGISTRY_PARTS, REGISTRY_REFERENCE, ROOT, file_blocks, section_blocks
 
 SPEC = ROOT / "skills" / "uipath-maestro-bpmn" / "validator" / "bpmn-spec.json"
 
-BODY_SECTION = '## Body shape: hand-authored files need ONE `target="body"` input'
 PARAM_SECTION = "## Required `Parameters` are separate from the body"
 
 # integrationservice-sdk/src/dap/validation/rules.ts: METHOD_TO_OPERATION is a
@@ -31,11 +30,7 @@ def _inputs(block: ET.Element) -> list[ET.Element]:
 
 
 def _body_blocks() -> list[ET.Element]:
-    return [
-        block
-        for section in (BODY_SECTION, PARAM_SECTION)
-        for block in section_blocks(REGISTRY_REFERENCE, section)
-    ]
+    return file_blocks(REGISTRY_REFERENCE)
 
 
 def test_each_example_carries_exactly_one_whole_body_input() -> None:
@@ -99,11 +94,10 @@ def test_operation_stays_inside_the_closed_lexicon() -> None:
         assert operation in OPERATION_LEXICON, (
             f"--operation {operation} is outside METHOD_TO_OPERATION's lexicon"
         )
-    for section in (BODY_SECTION, PARAM_SECTION):
-        for block in section_blocks(REGISTRY_REFERENCE, section):
-            for item in _inputs(block):
-                if item.attrib.get("name") == "operation":
-                    assert item.attrib.get("value") in OPERATION_LEXICON, item.attrib
+    for block in _body_blocks():
+        for item in _inputs(block):
+            if item.attrib.get("name") == "operation":
+                assert item.attrib.get("value") in OPERATION_LEXICON, item.attrib
 
 
 def _spec_entries() -> list[dict]:

@@ -31,7 +31,7 @@ Before upload, publish, deploy, or debug:
 
    Treat `bindings_v2.json`, `entry-points.json`, `operate.json`, and `package-descriptor.json` as derived unless a
    CLI contract says otherwise. See
-   [local-metadata-regeneration-guide.md](../shared/local-metadata-regeneration-guide.md) for drift
+   [local-metadata-regeneration-rules.md](../shared/local-metadata-regeneration-rules.md) for drift
    checks that connect BPMN source, entry points, bindings, and `Intsvc.*` payload enrichment.
    When the BPMN references external Orchestrator processes, `uip solution
    resource refresh` expects a versioned `bindings_v2.json` object with a

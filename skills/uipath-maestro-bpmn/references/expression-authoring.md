@@ -90,7 +90,8 @@ Do not use assignment operators in these fields. Comparisons such as `==`,
 
 - A process-level variable is readable from anywhere in the root process, and is
   what `debug-instance variables-all` and `instance variables` surface. Declare
-  it scoped to the process — see [structural-bpmn.md](structural-bpmn.md). A
+  it scoped to the process — see
+  [Structural BPMN: Variables](structural-bpmn-variables.md#variables). A
   variable scoped to a node is bound to that node and is not surfaced as a
   process-level runtime variable.
 - Keep a mutable root `uipath:inputOutput` for each value used by decisions,

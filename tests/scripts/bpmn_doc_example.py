@@ -65,13 +65,23 @@ def section_blocks(reference: Path, section: str) -> list[ET.Element]:
     assert heading, f"{reference.name} is missing its {section!r} section"
     body = remainder.partition("\n## ")[0]
 
+    return _wrapped_blocks(reference, body, repr(section))
+
+
+def file_blocks(reference: Path) -> list[ET.Element]:
+    """Every XML block in the file, wrapped like `section_blocks`."""
+
+    return _wrapped_blocks(reference, reference.read_text(encoding="utf-8"), "file")
+
+
+def _wrapped_blocks(reference: Path, text: str, where: str) -> list[ET.Element]:
     blocks, broken = [], []
-    for xml in re.findall(r"```xml\n(.*?)\n```", body, re.DOTALL):
+    for xml in re.findall(r"```xml\n(.*?)\n```", text, re.DOTALL):
         wrapped = f'<doc xmlns:uipath="{NS["uipath"]}" xmlns:bpmn="{NS["bpmn"]}">{xml}</doc>'
         try:
             blocks.append(ET.fromstring(wrapped))
         except ET.ParseError as error:
             broken.append((xml.splitlines()[0][:80], str(error)))
-    assert not broken, f"{reference.name} {section!r} has XML that does not parse: {broken}"
-    assert blocks, f"{reference.name} has no XML block under {section!r}"
+    assert not broken, f"{reference.name} {where} has XML that does not parse: {broken}"
+    assert blocks, f"{reference.name} has no XML block in {where}"
     return blocks

@@ -69,7 +69,7 @@ The placeholders you fill are the obvious ones: `{id}`, `{name}`,
 per-context-field placeholders (`{releaseKey}`, `{queueName}`, `{appId}`, …) and
 the body CDATA. Leave the structural placeholders (`{incomingEdge}` /
 `{outgoingEdge}`) wired to the sequence-flow ids you create in
-[structural-bpmn.md](structural-bpmn.md).
+[structural-bpmn-flow.md](structural-bpmn-flow.md#sequence-flows-conditions-and-gateway-defaults-registry-gap).
 
 Treat each template output and its process variable as one contract. Replace
 `{varId}` with a stable id and declare a task-scoped `uipath:inputOutput` with
