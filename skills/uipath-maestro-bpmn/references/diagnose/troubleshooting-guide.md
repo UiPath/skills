@@ -5,9 +5,9 @@ Use this priority ladder for failed or misbehaving BPMN runs.
 > **Read-only boundary:** this guide diagnoses.
 > Retry, cancel, migrate, and cursor movement are Operate actions and require explicit user consent after root cause is known.
 >
-> **Folder context:** `uip maestro bpmn instance ...` commands require `--folder-key <FOLDER_KEY>` or
+> **Folder context:** `uip maestro bpmn instances ...` commands require `--folder-key <FOLDER_KEY>` or
 > `-f <FOLDER_KEY>`.
-> `uip maestro bpmn incident get` requires `--folder-key <FOLDER_KEY>`.
+> `uip maestro bpmn incidents get` requires `--folder-key <FOLDER_KEY>`.
 
 ## Step 1 - Confirm context
 
@@ -30,7 +30,7 @@ uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 
 Parse the instance ID, folder context, process key, final status, and any trace/run identifiers from the JSON output.
 For debug runs, prefer the `instanceId` returned by
-`uip maestro bpmn debug` and inspect it with `debug-instance` commands. Keep
+`uip maestro bpmn debug` and inspect it with `debug-instances` commands. Keep
 deployed-instance status reads and debug-session inspection separate.
 
 ## Step 2 - Read incidents
@@ -39,9 +39,9 @@ Find the incident category, message, and faulting BPMN element ID.
 If multiple incidents exist, start with the first root fault and avoid chasing downstream cancellation noise.
 
 ```bash
-uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
-uip maestro bpmn incident summary --output json
+uip maestro bpmn instances incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn incidents get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
+uip maestro bpmn incidents summary --output json
 ```
 
 For process-level incident overview:
@@ -60,8 +60,8 @@ run status is `Completed`; a completed run only proves control-flow completion,
 not semantic correctness.
 
 ```bash
-uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
+uip maestro bpmn instances variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
 ```
 
 For affected elements, confirm runtime inputs and outputs match the modeled
@@ -78,7 +78,7 @@ Fetch the deployed BPMN asset when local source may differ. Compare:
 - Diagram and sequence-flow structure when the failure is import or package related.
 
 ```bash
-uip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
 For failed-run triage, always run this deployed asset command before the final
@@ -95,8 +95,8 @@ If they differ, diagnose what actually ran and treat local edits as a future fix
 Element executions and cursors show where the runtime moved before it faulted or hung:
 
 ```bash
-uip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
 Use these to distinguish a modeling problem from a runtime-state problem:
@@ -142,8 +142,8 @@ Return a concise diagnosis:
 - Whether the fix belongs in BPMN source, CLI enrichment, generated package files, or cloud configuration.
 - Safe next action: name the repair owner from the line above and the read-only command that shows the run's state
   before any Operate decision, e.g. "`<OWNER>` fixes `<ELEMENT_ID>`, then re-read
-  `uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`" (for a debug run,
-  `uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json`). Name the read; do not run it now. If no repair is needed, the read alone is the next
+  `uip maestro bpmn instances incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json`" (for a debug run,
+  `uip maestro bpmn debug-instances incidents <INSTANCE_ID> --output json`). Name the read; do not run it now. If no repair is needed, the read alone is the next
   action.
   Retry, cancel, pause, resume, migrate, cursor movement, debug, process run, upload, publish, and deploy are never
   the next action. If one fits later, name it on its own line as an Operate decision outside this diagnosis. When the
@@ -154,15 +154,15 @@ Return a concise diagnosis:
 ```bash
 uip maestro bpmn job status <JOB_KEY> --output json
 uip maestro bpmn job traces <JOB_KEY> --output json
-uip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
-uip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
-uip maestro bpmn incident summary --output json
+uip maestro bpmn instances get <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
+uip maestro bpmn instances asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn incidents get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
+uip maestro bpmn incidents summary --output json
 uip maestro bpmn processes incidents <PROCESS_KEY> --output json
 ```
 

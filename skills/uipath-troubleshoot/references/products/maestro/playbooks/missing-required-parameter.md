@@ -28,9 +28,9 @@ What to look for:
 > Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
 
 
-1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json` — error message names the missing parameter
-2. Pull the activity inputs: `uip maestro <type> instance variables <instance-id> -f <folder-key> --output json`
-3. Compare to the activity's `inputDefinitions` in the BPMN/`.bpmn` asset: `uip maestro <type> instance asset <instance-id> -f <folder-key> --output json`
+1. Get the incident: `uip maestro <type> instances incidents <instance-id> -f <folder-key> --output json` — error message names the missing parameter
+2. Pull the activity inputs: `uip maestro <type> instances variables <instance-id> -f <folder-key> --output json`
+3. Compare to the activity's `inputDefinitions` in the BPMN/`.bpmn` asset: `uip maestro <type> instances asset <instance-id> -f <folder-key> --output json`
 4. Check the Maestro UI for the failing activity — is the missing field even visible? If not, suspect a Maestro frontend bug
 5. Verify the input JSON size — over 10,000 characters indicates truncation
 

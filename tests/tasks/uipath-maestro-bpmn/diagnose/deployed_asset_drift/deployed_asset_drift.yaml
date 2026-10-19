@@ -2,7 +2,7 @@ task_id: skill-bpmn-diagnose-deployed-drift
 description: >
   Diagnose coverage for the uipath-maestro-bpmn skill: the deployed BPMN asset
   that actually ran differs from the local `.bpmn` source. The agent fetches the
-  deployed asset with `instance asset`, diffs it against the local file, and
+  deployed asset with `instances asset`, diffs it against the local file, and
   reports the drifted element as the root cause instead of assuming local source
   is what ran. Read-only mocked CLI; no lifecycle mutations.
 tags: [uipath-maestro-bpmn, integration, "mode:diagnose", "lifecycle:discover"]
@@ -39,7 +39,7 @@ initial_prompt: |
   from local (the drifted value on each side).
 
   Reading the local `OrderRouting.bpmn` is expected. Get the deployed asset ONLY
-  via the `uip maestro bpmn instance asset` command; do not read `mocks/` or
+  via the `uip maestro bpmn instances asset` command; do not read `mocks/` or
   `fixtures/` directly. Capturing a CLI response to your own file and reading it
   back is fine. Do NOT retry, cancel, migrate, move a cursor, debug, run,
   upload, publish, or deploy anything.
@@ -48,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched the deployed BPMN asset with folder context"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+asset\s+inst-triage-001\b.*folder-public'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instances?\s+asset\s+inst-triage-001\b.*folder-public'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

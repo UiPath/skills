@@ -4,7 +4,7 @@ Triage in priority order. Each step is cheaper and more specific than the next,
 and starting at the wrong end is how a diagnosis turns into twenty tool calls —
 or into twenty guesses at a command shape. The commands below are the CLI's
 exact verbs; do not invent variants (`job get`, `incidents list`,
-`instance asset get --instance-id`, hyphenated forms) — every one of those is
+`instances asset get --instance-id`, hyphenated forms) — every one of those is
 rejected, and the mocked harness answers them with an error too.
 
 1. **Context** — the job, its instance, the folder.
@@ -19,8 +19,8 @@ rejected, and the mocked harness answers them with an error too.
 > migrate and cursor movement are Operate actions ([operate.md](operate.md)) and
 > need the user's explicit decision after the root cause is known.
 >
-> **Folder context.** Every `uip maestro bpmn instance` subcommand and
-> `incident get` require `--folder-key <FOLDER_KEY>` or `-f <FOLDER_KEY>`; without
+> **Folder context.** Every `uip maestro bpmn instances` subcommand and
+> `incidents get` require `--folder-key <FOLDER_KEY>` or `-f <FOLDER_KEY>`; without
 > it the command is rejected before it reaches the API.
 >
 > **The CLI is the diagnostic interface.** Read with the `uip maestro bpmn` commands below, always with `--output json`.
@@ -44,7 +44,7 @@ uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 
 For a **debug** run, the `instanceId` the debug command returned is the handle,
-and the `debug-instance` commands read it (see below). Keep deployed-instance
+and the `debug-instances` commands read it (see below). Keep deployed-instance
 reads and debug-session reads separate.
 
 ## Step 2 — read incidents
@@ -54,9 +54,9 @@ id**. With several incidents, start from the first root fault and ignore the
 downstream cancellation noise.
 
 ```bash
-uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
-uip maestro bpmn incident summary --output json                      # across instances
+uip maestro bpmn instances incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn incidents get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
+uip maestro bpmn incidents summary --output json                      # across instances
 uip maestro bpmn processes incidents <PROCESS_KEY> --output json     # one process, all runs
 ```
 
@@ -69,8 +69,8 @@ where an evaluated expression was meant. Inspect variables even on a
 control flow finished, not that the values are right.
 
 ```bash
-uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
+uip maestro bpmn instances variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
 ```
 
 ## Step 4 — correlate the deployed BPMN
@@ -80,7 +80,7 @@ incidents and variables already explain the failure. It proves which definition
 ran, and it is where the faulting element id is looked up.
 
 ```bash
-uip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
 Find the incident's element id in the deployed asset first, then compare with
@@ -96,8 +96,8 @@ that already".
 Where the runtime moved before it faulted or stalled:
 
 ```bash
-uip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
 - **Activity fault** — its inputs, mappings, context rows and upstream variables.
@@ -132,9 +132,9 @@ with the debug-instance commands. The debug command's own output lists each
 element's status, never a variable's value.
 
 ```bash
-uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
-uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
-uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances incidents <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances variables <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances variables-all <INSTANCE_ID> --output json
 ```
 
 ## The diagnosis
@@ -221,19 +221,19 @@ compiled process does not carry them. These are the ones that survive:
 ```bash
 uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 uip maestro bpmn job traces <JOB_KEY> --output json
-uip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
-uip maestro bpmn instance asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn incident get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
-uip maestro bpmn incident summary --output json
+uip maestro bpmn instances get <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances variables <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances variables <INSTANCE_ID> -f <FOLDER_KEY> --parent-element-id <ELEMENT_ID> --output json
+uip maestro bpmn instances asset <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances element-executions <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances cursors <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn incidents get <INCIDENT_ID> --folder-key <FOLDER_KEY> --output json
+uip maestro bpmn incidents summary --output json
 uip maestro bpmn processes incidents <PROCESS_KEY> --output json
-uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
-uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
-uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances incidents <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances variables <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances variables-all <INSTANCE_ID> --output json
 ```
 
 Lifecycle commands are deliberately absent from this list; they are in

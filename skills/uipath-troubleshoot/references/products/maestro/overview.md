@@ -57,33 +57,33 @@ Maestro CLI commands are namespaced by process type. Pick the subcommand that ma
 | Flow | `uip maestro flow ...` | `.flow` files | Lightweight node-and-edge orchestration; connector-heavy, lower ceremony than BPMN |
 | Case | `uip maestro case ...` | Case definition JSON | Case-centric work with stages, tasks, SLAs, escalations, and triggers |
 
-**Identify the process type first** — check the source artifact, the `processType` field on incidents/instances, or ask the user. Running `uip maestro bpmn instance get <id>` against a Flow instance returns no data. Substitute `<type>` below with `bpmn`, `flow`, or `case`.
+**Identify the process type first** — check the source artifact, the `processType` field on incidents/instances, or ask the user. Running `uip maestro bpmn instances get <id>` against a Flow instance returns no data. Substitute `<type>` below with `bpmn`, `flow`, or `case`.
 
 ```
 uip maestro <type> process list|get|run                          — list/get/run processes
 uip maestro <type> job traces|status <job-key>                   — stream traces or get status for a job
-uip maestro <type> instance list [-f <folder-key>]               — list instances. Filters: --process-key, --error-code, --limit, --offset
-uip maestro <type> instance get <id> [-f <folder-key>]           — get instance details
-uip maestro <type> instance incidents <id> [-f <fk>]             — full incidents with errorDetails and stack traces
-uip maestro <type> instance element-executions <id> [-f <fk>]    — element execution history
-uip maestro <type> instance variables <id> [-f <fk>]             — instance variables. Filter: --parent-element-id
-uip maestro <type> instance asset <id> [-f <fk>]                 — process definition asset (BPMN XML, Flow JSON, Case JSON)
-uip maestro <type> instance cursors <id> [-f <fk>]               — current execution cursor positions
-uip maestro <type> instance retry <id> [-f <fk>]                 — retry a faulted instance
-uip maestro <type> instance pause|resume|cancel <id> [-f <fk>]   — lifecycle control
+uip maestro <type> instances list [-f <folder-key>]              — list instances. Filters: --process-key, --error-code, --limit, --offset
+uip maestro <type> instances get <id> [-f <folder-key>]          — get instance details
+uip maestro <type> instances incidents <id> [-f <fk>]            — full incidents with errorDetails and stack traces
+uip maestro <type> instances element-executions <id> [-f <fk>]   — element execution history
+uip maestro <type> instances variables <id> [-f <fk>]            — instance variables. Filter: --parent-element-id
+uip maestro <type> instances asset <id> [-f <fk>]                — process definition asset (BPMN XML, Flow JSON, Case JSON)
+uip maestro <type> instances cursors <id> [-f <fk>]              — current execution cursor positions
+uip maestro <type> instances retry <id> [-f <fk>]                — retry a faulted instance
+uip maestro <type> instances pause|resume|cancel <id> [-f <fk>]  — lifecycle control
 uip maestro <type> processes incidents <key> [--folder-key <fk>] — incidents across all instances of a process
-uip maestro <type> incident summary                              — tenant-level incident SUMMARIES ONLY (no errorDetails)
-uip maestro <type> incident get <incident-id>                    — get a single incident by ID
+uip maestro <type> incidents summary                             — tenant-level incident SUMMARIES ONLY (no errorDetails)
+uip maestro <type> incidents get <incident-id>                   — get a single incident by ID
 ```
 
 Key commands for troubleshooting (substitute `<type>` with `bpmn`, `flow`, or `case`):
-- `uip maestro <type> instance incidents <instance-id> -f <folder-key>` — **full incident details** including `errorDetails` with stack traces. Use this, not `incident summary`.
-- `uip maestro <type> instance element-executions <instance-id> -f <folder-key>` — what each element did
+- `uip maestro <type> instances incidents <instance-id> -f <folder-key>` — **full incident details** including `errorDetails` with stack traces. Use this, not `incidents summary`.
+- `uip maestro <type> instances element-executions <instance-id> -f <folder-key>` — what each element did
 - `uip maestro <type> processes incidents <process-key> --folder-key <fk>` — incidents across all instances of a process
 
-**WARNING:** `uip maestro <type> incident summary` returns only aggregated summaries (counts, error codes) without `errorDetails`. It does NOT contain stack traces or full error messages. Always use instance-level or process-level incident commands for troubleshooting.
+**WARNING:** `uip maestro <type> incidents summary` returns only aggregated summaries (counts, error codes) without `errorDetails`. It does NOT contain stack traces or full error messages. Always use instance-level or process-level incident commands for troubleshooting.
 
-**WARNING:** There is no top-level `uip maestro instance` / `uip maestro process` / `uip maestro incident` command — every operation requires the `bpmn`, `flow`, or `case` segment. Running the old un-namespaced form fails.
+**WARNING:** There is no top-level `uip maestro instances` / `uip maestro process` / `uip maestro incidents` command — every operation requires the `bpmn`, `flow`, or `case` segment. Running the old un-namespaced form fails.
 
 ## Features
 

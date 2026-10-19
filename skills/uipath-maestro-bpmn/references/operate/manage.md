@@ -28,14 +28,14 @@ Lifecycle actions are cloud-side mutations and require explicit user consent for
 ## Commands
 
 ```bash
-uip maestro bpmn instance list --output json
-uip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance pause <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance resume <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance retry <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance migrate <INSTANCE_ID> <NEW_VERSION> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance goto <INSTANCE_ID> '[{"sourceElementId":"A","targetElementId":"B"}]' -f <FOLDER_KEY> --output json
+uip maestro bpmn instances list --output json
+uip maestro bpmn instances get <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances pause <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances resume <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances retry <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances migrate <INSTANCE_ID> <NEW_VERSION> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances goto <INSTANCE_ID> '[{"sourceElementId":"A","targetElementId":"B"}]' -f <FOLDER_KEY> --output json
 ```
 
 Use `goto` only when the user provides or approves explicit source and target BPMN element IDs.
@@ -55,7 +55,7 @@ Prefer a JSON file or carefully quoted JSON for non-trivial transition sets.
 After every lifecycle command, fetch the instance again and report the resulting status:
 
 ```bash
-uip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances get <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
 ## Handoff

@@ -623,7 +623,7 @@ and honestly surfaced to the user as gaps when asked.
    `folderKey` from an earlier deploy points at the old one. (5) Unless the task forbids
    live runs or asks for a draft or handoff, run the process
    (`uip maestro bpmn debug`) and read the node's output in
-   `debug-instance variables-all`. Map `=result.<key>` to the key that output
+   `debug-instances variables-all`. Map `=result.<key>` to the key that output
    used; a scalar can surface under a generic key instead of the schema
    property name. Without a run, use the schema name and report the mapping
    as unverified. A business rule maps its whole result as one `output` from

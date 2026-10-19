@@ -21,7 +21,7 @@ All commands output `{ "Result": "Success"|"Failure", "Code": "...", "Data": { .
 <!--skill-flavor:resources-row:end-->
 | `registry pull/list/search`, `get-connector`, `get-connection`, `tasks describe`, `is resources/triggers describe` | Registry + metadata discovery (read-only) | Yes (for `pull`) |
 | `validate` | Validate `caseplan.case` | No |
-| `instance`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
+| `instances`, `processes`, `incidents`, `process run`, `job traces`, `debug` | Query/manage live Orchestrator state | Yes |
 
 <!--skill-flavor:auth-column-note:start-->
 <!--skill-flavor:auth-column-note:end-->
@@ -555,44 +555,44 @@ Options for `status`:
 
 ---
 
-## uip maestro case instance
+## uip maestro case instances
 
 Manage live Case process instances. **Requires `uip login`.**
 
 ```bash
 # List instances
-uip maestro case instance list
-uip maestro case instance list --limit 20 --offset 0
-uip maestro case instance list --process-key <key> --folder-key <key>
-uip maestro case instance list --package-id <id> --error-code <code>
+uip maestro case instances list
+uip maestro case instances list --limit 20 --offset 0
+uip maestro case instances list --process-key <key> --folder-key <key>
+uip maestro case instances list --package-id <id> --error-code <code>
 
 # Get a specific instance
-uip maestro case instance get <instance-id>
-uip maestro case instance get <instance-id> --folder-key <key>
+uip maestro case instances get <instance-id>
+uip maestro case instances get <instance-id> --folder-key <key>
 
 # Lifecycle operations (all accept --folder-key and --comment)
-uip maestro case instance pause <instance-id>
-uip maestro case instance resume <instance-id>
-uip maestro case instance cancel <instance-id>
-uip maestro case instance retry <instance-id>
+uip maestro case instances pause <instance-id>
+uip maestro case instances resume <instance-id>
+uip maestro case instances cancel <instance-id>
+uip maestro case instances retry <instance-id>
 
 # Variables
-uip maestro case instance variables <instance-id>
-uip maestro case instance variables <instance-id> --parent-element-id <id>
+uip maestro case instances variables <instance-id>
+uip maestro case instances variables <instance-id> --parent-element-id <id>
 
 # Incidents for a specific instance
-uip maestro case instance incidents <instance-id>
+uip maestro case instances incidents <instance-id>
 
 # Get the Case definition (JSON) for a process instance
-uip maestro case instance asset <instance-id>
+uip maestro case instances asset <instance-id>
 
 # Migration: migrate instance to a different package version
-uip maestro case instance migrate <instance-id> <new-version>
+uip maestro case instances migrate <instance-id> <new-version>
 
 # Go-to: move execution cursor from one element to another
-uip maestro case instance goto <instance-id> '[{"sourceElementId":"A","targetElementId":"B"}]'
-uip maestro case instance cursors <instance-id>
-uip maestro case instance element-executions <instance-id>
+uip maestro case instances goto <instance-id> '[{"sourceElementId":"A","targetElementId":"B"}]'
+uip maestro case instances cursors <instance-id>
+uip maestro case instances element-executions <instance-id>
 ```
 
 ---
@@ -612,16 +612,16 @@ uip maestro case processes incidents <process-key> --folder-key <key>
 
 ---
 
-## uip maestro case incident
+## uip maestro case incidents
 
 View and retrieve Case incidents across all processes. **Requires `uip login`.**
 
 ```bash
 # Get incident summaries across all processes
-uip maestro case incident summary
+uip maestro case incidents summary
 
 # Get a single incident by ID
-uip maestro case incident get <incident-id> --folder-key <key>
+uip maestro case incidents get <incident-id> --folder-key <key>
 ```
 
 Options for `get`:

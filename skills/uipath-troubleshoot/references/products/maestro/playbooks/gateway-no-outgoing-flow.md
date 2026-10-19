@@ -30,11 +30,11 @@ What to look for:
 > Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
 
 
-1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
+1. Get the incident: `uip maestro <type> instances incidents <instance-id> -f <folder-key> --output json`
 2. **If `IncludeGatewayDebugInfoInIncidents` is enabled:** `errorDetails` already lists each outgoing flow's condition expression, the default flow config, and variable values at evaluation time — no further data gathering needed
-3. **If the flag is not enabled:** pull the BPMN XML to read gateway conditions: `uip maestro <type> instance asset <instance-id> -f <folder-key> --output json`
-4. Pull the variables snapshot just before the gateway element: `uip maestro <type> instance variables <instance-id> -f <folder-key> --parent-element-id <gateway-id> --output json`
-5. Walk element executions to confirm which gateway: `uip maestro <type> instance element-executions <instance-id> -f <folder-key> --output json`
+3. **If the flag is not enabled:** pull the BPMN XML to read gateway conditions: `uip maestro <type> instances asset <instance-id> -f <folder-key> --output json`
+4. Pull the variables snapshot just before the gateway element: `uip maestro <type> instances variables <instance-id> -f <folder-key> --parent-element-id <gateway-id> --output json`
+5. Walk element executions to confirm which gateway: `uip maestro <type> instances element-executions <instance-id> -f <folder-key> --output json`
 
 ## Resolution
 

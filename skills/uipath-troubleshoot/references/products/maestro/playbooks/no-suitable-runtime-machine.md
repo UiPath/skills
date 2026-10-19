@@ -29,7 +29,7 @@ What to look for:
 > Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
 
 
-1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
+1. Get the incident: `uip maestro <type> instances incidents <instance-id> -f <folder-key> --output json`
 2. List machines in the folder: `uip or machines list --folder-key <folder-key> --output json` — check runtime slot types
 3. Check tenant runtime license allocation: Orchestrator UI → **Tenant > License Management**
 4. Check the Maestro process's package requirements for the configured runtime type

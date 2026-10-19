@@ -2,7 +2,7 @@ task_id: skill-bpmn-diagnose-scoped-variables
 description: >
   Diagnose coverage for the uipath-maestro-bpmn skill: a run completed but a
   downstream value is semantically wrong. The agent inspects subprocess-scoped
-  runtime state with `instance variables --parent-element-id <id>` to find the
+  runtime state with `instances variables --parent-element-id <id>` to find the
   offending variable inside the child scope, proving that "completed" does not
   mean "semantically correct". Read-only mocked CLI; no lifecycle mutations.
 tags: [uipath-maestro-bpmn, integration, "mode:diagnose", "lifecycle:discover"]
@@ -48,7 +48,7 @@ success_criteria:
   - type: command_executed
     description: "Agent read subprocess-scoped variables via --parent-element-id"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instance\s+variables\s+inst-triage-001\b.*--parent-element-id\s+SubProcess_TaxCalc'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+bpmn\s+instances?\s+variables\s+inst-triage-001\b.*--parent-element-id\s+SubProcess_TaxCalc'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0

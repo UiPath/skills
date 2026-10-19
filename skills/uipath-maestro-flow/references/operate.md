@@ -102,7 +102,7 @@ Operational constraints, each of which has its own failure:
   completed run already returned.
 - **`Debug polling timed out after <N>s` is not a failure.** The run continues
   server-side. Take `instanceId` from stderr and poll
-  `uip maestro flow debug-instance status <INSTANCE_ID> --output json`.
+  `uip maestro flow debug-instances status <INSTANCE_ID> --output json`.
 - **An RPA step does not run under a headless debug** ([rpa-workflow.md](rpa-workflow.md#evidence-boundary)).
 - **Every process and connection node must resolve.** A node bound to a
   resource the tenant lacks (a placeholder key awaiting the real process, a stub
@@ -177,7 +177,7 @@ Emit the label with `<not returned by CLI>` rather than dropping a line.
 `Data.finalStatus: "Faulted"` means the cause is already in that same response.
 A projection can drop `Data.incidents`, but `--output-filter` never filters
 `Message` and `Instructions`: they summarize the incidents, when PIMS returned
-any, and name the `uip maestro flow debug-instance incidents <instanceId>`
+any, and name the `uip maestro flow debug-instances incidents <instanceId>`
 command. If `Data.incidents` is missing, or `null` in a projection, run that
 command. Do not re-run the flow. On the next run, add `incidents:incidents` to the projection,
 or redirect the unfiltered output to a file and search it:
@@ -210,8 +210,8 @@ reads the feed from the release.
 ## Inspect a job
 
 ```bash
-uip maestro flow job status <job-key> --output json
-uip maestro flow job traces <job-key> --output json
+uip maestro flow jobs status <job-key> --output json
+uip maestro flow jobs traces <job-key> --output json
 ```
 
 Traces are the full execution timeline and are verbose. They are a last resort,
@@ -219,22 +219,22 @@ not a starting point.
 
 ## Instance lifecycle
 
-Every `instance` command needs `--folder-key` (`-f`) or it is rejected before
+Every `instances` command needs `--folder-key` (`-f`) or it is rejected before
 reaching the API. Get one from `uip or folders list --output json`, or from the
 job or process context. The instance id comes from a debug run's
-`Data.instanceId`, a `job status` response, or `instance list`.
+`Data.instanceId`, a `jobs status` response, or `instances list`.
 
 ```bash
-uip maestro flow instance pause  <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro flow instance resume <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro flow instance cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro flow instance retry  <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro flow instances pause  <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro flow instances resume <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro flow instances cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro flow instances retry  <INSTANCE_ID> -f <FOLDER_KEY> --output json
 ```
 
 Never `retry` a faulted instance before reading why it faulted — the fault cause
 is in the debug response or the incident, and retrying without it repeats the
 failure. When each takes effect and what is recoverable is Orchestrator's
-lifecycle model, not this skill's; `uip maestro flow instance <sub> --help` has
+lifecycle model, not this skill's; `uip maestro flow instances <sub> --help` has
 the flags.
 
 ## Evidence boundary

@@ -28,8 +28,8 @@ What to look for:
 > Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
 
 
-1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json` — confirm `InvalidCastException` and `ExpressionList`
-2. Check the marker's "Items" expression language in the BPMN: `uip maestro <type> instance asset <instance-id> -f <folder-key> --output json`
+1. Get the incident: `uip maestro <type> instances incidents <instance-id> -f <folder-key> --output json` — confirm `InvalidCastException` and `ExpressionList`
+2. Check the marker's "Items" expression language in the BPMN: `uip maestro <type> instances asset <instance-id> -f <folder-key> --output json`
 
 ## Resolution
 
