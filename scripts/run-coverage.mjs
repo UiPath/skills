@@ -86,7 +86,9 @@ for (const target of pytestTargets()) {
   run(`pytest ${target}`, PYTHON, ["-m", "coverage", "run", "-m", "pytest", target, "-q", "-p", "no:cacheprovider"], testEnv);
 }
 
-run("npm run skills:test", "npm", ["run", "-s", "skills:test"], testEnv);
+// No `-s`: npm exports it as npm_config_loglevel=silent, which mutes the
+// `npm publish --dry-run` notices compose-skill-flavor.test.mjs asserts on.
+run("npm run skills:test", "npm", ["run", "skills:test"], testEnv);
 const dashboardTests = readdirSync(join(ROOT, DASHBOARD_TESTS))
   .filter((name) => name.endsWith(".test.mjs"))
   .map((name) => `${DASHBOARD_TESTS}/${name}`);
