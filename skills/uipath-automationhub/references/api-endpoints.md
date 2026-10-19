@@ -42,7 +42,7 @@ All idea flows (workflow types) on the tenant. Each element has `Idea flow name`
 
 #### Idea flow types
 
-Select a flow by `Idea flow type`, never by name (tenant-editable) or a remembered id (differs per tenant — Business Process is `7` on one tenant, `8` on another). An automation record's `process_submission_type` (CLI: `SubmissionType`) identifies the flow type it is in:
+Select a flow by `Idea flow type`, never by name (tenant-editable) or a remembered id (differs per tenant — Business Process is `7` on one tenant, `8` on another). The type comes from the flow's root `workflow_level_variable`, and every flow an admin creates (duplicate a default, copy, upload) is a deep copy that keeps it — so a tenant's copy of Business Process also reports `business-process`, and **several flows sharing a type is normal**. An automation record's `process_submission_type` (CLI: `SubmissionType`) identifies the flow **type** it is in, not which flow of that type:
 
 | `Idea flow type` | `process_submission_type` |
 |---|---|
@@ -54,7 +54,7 @@ Select a flow by `Idea flow type`, never by name (tenant-editable) or a remember
 | `change-request` | `6` |
 | `agentic-ai-idea` | `7` |
 | `business-process` | `8` |
-| `custom` (tenant-created flow) | `-1` |
+| `custom` (unknown or legacy root variable — rare) | `-1` on create; **not reliable after a move** (see PATCH below) |
 
 Phases differ between tenants even for the same type (an older tenant's Business Process flow has `IDEA`/`ASSESSMENT`/… phases, newer ones start at `DOCUMENTATION`/`NOT_STARTED`) — always read them from the flow's own entry.
 
@@ -168,9 +168,12 @@ Linked components for the process.
 ### PATCH `/idea-flows/automations/{automationId}/idea-flow`  *(RPANAV-19226)*
 Move an automation into another idea flow (e.g. convert an idea into a Business Process) — the same server logic as the profile page's **Change Idea Flow** action. Body: `{ "idea_flow_id": <id>, "phase_variable": "<P>", "status_variable": "<S>" }`, all three from the target's `/idea-flows` entry. *(Used by the change-idea-flow flow.)*
 
-- **400** — a phase/status not in the target flow, or a `change-request` target (a Change Request needs a parent automation). **403** — no **Change idea flow** permission (default: account owner, system admin, program manager) or no permission to submit into the target flow; don't retry. **404** — unknown `idea_flow_id`, or (for the route itself) a server without the capability.
-- Slow (~20 s+): it re-saves the whole automation. Never retry on a slow response or timeout — re-read the automation's `process_submission_type` first.
-- Data: answers carry over for assessment types both flows share (migrated to the target flow's version); assessments the target doesn't use are not shown; a parent-automation link is cleared.
+- **400** — a phase/status not in the target flow, a `change-request` target (a Change Request needs a parent automation), or the automation's *current* status no longer exists in its flow (UI-only fix). **403** — the **Change idea flow** action is missing at the automation's current phase/status (configurable per status) or the user's role lacks it (default: account owner, system admin, program manager), no permission to submit into the target flow, or a user with no tenant roles; don't retry. **404** — unknown automation or `idea_flow_id`, or (for the route itself) a server without the capability (such a server also sends no `Idea flow type`).
+- Slow (~20 s+): it re-saves the whole automation. Never retry on a slow response, a timeout or a 5xx — re-read the automation first. The new flow id is committed **before** the full re-save, so a failure can leave it half moved (new flow, old phase/type).
+- **A 200 is not proof:** a failed re-save can still answer 200 (an AH bug, to be fixed). Confirm with a read-back: `process_submission_type` matches the target type, `phase_key` / `phase_status_key` (`<PHASE>_<STATUS>`) match what was sent. `process_submission_type` is re-written from the Overview assessment's "Idea source (legacy)" answer (options 1–8 only), so a move into a `custom` flow most likely keeps the old value — check the phase keys instead.
+- No same-flow guard: moving into the flow the automation is already in re-saves it and returns 200. Check first; changing phase within a flow is a different operation, not this one.
+- Side effects: when the `phase_status_key` changes it counts as a phase change (followers/upvoters get the usual emails/notifications; user tasks are created); history shows the changed overview answers (no dedicated "flow changed" entry); collaborators and roles are not touched.
+- Data: answers carry over for assessment types both flows share, migrated to the target flow's version only when the saved version is the source flow's default (manually changed versions are left alone); assessments the target doesn't use are hidden, not deleted; a parent-automation link is cleared.
 
 ## Errors
 
