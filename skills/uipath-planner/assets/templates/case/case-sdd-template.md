@@ -410,8 +410,8 @@ its fields ⊆ the app schema (code-switched app); otherwise it is the substitut
 activity schema. Operation Configuration carries through as =jsonString: only here. A solution-resource
 picker (a Data Fabric entity) is an Inputs row holding the resource name; when that name can exist in
 more than one folder, add a `<picker>_folderKey` row with the folder key (and `entityScope` = `folder`).
-The task's own outputs are `response` and `Error`: name a response field `response.<field>`, in an
-Outputs row and in a later task's read (`"<Stage>"."<Task>".response.<field>`). -->
+The task's own outputs are `response` and `Error`; a later task reads a field as
+`"<Stage>"."<Task>".response.<field>`. -->
 
 **Inputs:**
 
@@ -423,7 +423,7 @@ Outputs row and in a later task's read (`"<Stage>"."<Task>".response.<field>`). 
 
 | Field | Binding / Value |
 |-------|------------------|
-| <schema field name> | -> <case variable> |
+| response.<field> | -> <case variable> |
 | — | <case variable> = <literal, =js:expression, or =js:vars.X.Y> |
 
 ###### Timer Task Detail (type: `wait-for-timer`)

@@ -165,15 +165,14 @@ attachment, takes the file under its file parameter in `bodyParameters`
 ```bash
 uip maestro bpmn registry get Intsvc.ActivityExecution \
     --connection-id <onedrive-connection> --object-name FileUploadV2 \
-    --input-details '{"queryParameters":{"referenceID":"<folder-id>"},"bodyParameters":{"file":"=js:vars.<download-var>"}}' \
+    --input-details '{"queryParameters":{"referenceID":"<drive-id> - <folder-item-id>"},"bodyParameters":{"file":"=js:vars.<download-var>"}}' \
     --solution-folder <solution-dir> --output json
 ```
 
 The rest of `bodyParameters` is the request body. Outlook's
 `message.toRecipients` is a comma-separated string, not a Graph array.
 
-OneDrive's `referenceID` is an item's `ReferenceID`, `<drive-id> - <item-id>`;
-a bare item id fails with `400 ... drive id appears to be malformed`. List a
+A bare item id as `referenceID` fails with `400 ... drive id appears to be malformed`. List a
 folder's files, each with `FullName`, `Type` and `ReferenceID`, with
 `uip is resources run list uipath-microsoft-onedrive CuratedFileAndFolder
 --connection-id <id> --query "id=<folder-item-id>" --output json`; the

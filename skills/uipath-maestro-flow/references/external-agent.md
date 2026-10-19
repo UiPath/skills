@@ -1,11 +1,11 @@
 # External agent and automation
 
-An agent or automation hosted outside UiPath (CrewAI, Snowflake Cortex, Salesforce Agentforce, Power Automate) is a connector node whose registry category is `external-agent` or `external-workflow`. Its node type is `uipath.connector.<connector-key>.<operation>`, and it runs on a connection of that connector.
+An agent or automation hosted outside UiPath (CrewAI, Snowflake Cortex, Salesforce Agentforce, Power Automate) is a connector node: identify it by its node type, `uipath.connector.<connector-key>.<operation>`. The registry's `Category` (`external-agent` / `external-workflow`) is only a hint; a tenant may list the node as `connector`. It runs on a connection of that connector.
 
 ## Find it
 
 ```bash
-uip maestro flow registry search '<agent or connector name>' --output json   # Category external-agent / external-workflow
+uip maestro flow registry search '<agent or connector name>' --output json   # the uipath.connector.<key>.<operation> node type
 uip maestro registry search '<agent or connector name>' --output json        # is it in the SDK connector library?
 uip is connections list <connector-key> --all-folders --output json           # an enabled connection and its FolderKey
 ```
@@ -13,7 +13,7 @@ uip is connections list <connector-key> --all-folders --output json           # 
 Search a short name (`'Cortex'`, not `'Snowflake Cortex'`): a full product name can match only a connector's HTTP-request tool.
 
 - **In the connector library** (Snowflake Cortex is): author it with `connector(...)` like any connector ([connector-params.md](connector-params.md)).
-- **Not in the library** (CrewAI returns `"total": 0`): build it on a `.flow` with the product CLI, below. `rawNode` is not an option for a `uipath.connector.*` type. `compile` from SDK source rewrites the `.flow`, so give these nodes a flow of their own, made with `flow init <Name>` (no `--sdk-source`).
+- **Not in the library** (CrewAI returns `"total": 0`): build it with the product CLI, below. `rawNode` is not an option for a `uipath.connector.*` type. Build the whole flow that holds it with the CLI too, from `flow init <Name>` (no `--sdk-source`), and give it no SDK source: `compile` from SDK source rewrites the `.flow`.
 
 ## Build it with the product CLI
 
@@ -28,5 +28,5 @@ uip maestro flow validate <Name>/<Name>.flow --output json
 
 - Required inputs are the `RequestFields` with `Required: true` from `is resources describe`; `registry get` may not list them (CrewAI's `inputs.email_content`). Keep a dotted field name as one key: `"inputs.email_content": "..."`.
 - Use the node id `nodes create` returns; it is not derived from the operation name.
-- The `.flow` stores `Intsvc.AsyncAgentExecution` for every agent node. A sync agent (`executionType: sync` in the configured detail) still runs as sync. Do not edit the service type.
-- Then `uip solution resources refresh` and `uip maestro flow debug <Name>` ([CLI-LOOP.md](CLI-LOOP.md)). A `500` at `prepare-custom-debug` is transient: retry once.
+- `nodes configure` may store `Intsvc.AsyncAgentExecution` even for a sync agent (seen on alpha); it still ran as sync, from `executionType: sync` in the configured detail. Leave the service type as configure wrote it.
+- Then `uip solution resources refresh` and `uip maestro flow debug <Name>` ([CLI-LOOP.md](CLI-LOOP.md)).
