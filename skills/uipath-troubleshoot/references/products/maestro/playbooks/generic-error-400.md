@@ -28,8 +28,8 @@ What to look for:
 > Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
 
 
-1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json` — capture any HTTP body returned upstream
-2. Pull the activity inputs to see what was actually sent: `uip maestro <type> instance variables <instance-id> -f <folder-key> --output json`
+1. Get the incident: `uip maestro <type> instances incidents <instance-id> -f <folder-key> --output json` — capture any HTTP body returned upstream
+2. Pull the activity inputs to see what was actually sent: `uip maestro <type> instances variables <instance-id> -f <folder-key> --output json`
 3. If the failing element is an Action App task with actionable messages enabled, jump straight to the actionable-messages resolution below
 4. For HA setups, request platform logs from the Maestro service — generic 400 here often points to token-signing certificate mismatch across nodes
 

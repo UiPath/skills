@@ -57,7 +57,7 @@ all but the reads need `uip login`.
 
 **Always include folder context on the runtime commands that require it**:
 `process run` takes `<FOLDER_KEY>` as a positional argument, and every
-`instance` subcommand and `incident get` take `--folder-key` or `-f`.
+`instances` subcommand and `incidents get` take `--folder-key` or `-f`.
 
 ## Package
 
@@ -115,9 +115,9 @@ output holds the expected value. Read the values in the same session, right
 after the run — a debug instance is ephemeral:
 
 ```bash
-uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
-uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
-uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances variables-all <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances variables <INSTANCE_ID> --output json
+uip maestro bpmn debug-instances incidents <INSTANCE_ID> --output json
 ```
 
 Never use `debug` as validation. `check`, `validate` and the local engine
@@ -139,12 +139,12 @@ the discovery output identifies them.
 ## Inspect a job or instance
 
 Status first, then incidents and variables when the status is faulted or
-ambiguous, traces last. Every `instance` command needs `-f <FOLDER_KEY>`.
+ambiguous, traces last. Every `instances` command needs `-f <FOLDER_KEY>`.
 
 ```bash
 uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
-uip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances get <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances incidents <INSTANCE_ID> -f <FOLDER_KEY> --output json
 uip maestro bpmn job traces <JOB_KEY> --output json
 ```
 
@@ -163,14 +163,14 @@ movement, diagnose first ([diagnose.md](diagnose.md)) and correlate the deployed
 asset.
 
 ```bash
-uip maestro bpmn instance list --output json
-uip maestro bpmn instance get <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance pause <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance resume <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance retry <INSTANCE_ID> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance migrate <INSTANCE_ID> <NEW_VERSION> -f <FOLDER_KEY> --output json
-uip maestro bpmn instance goto <INSTANCE_ID> '[{"sourceElementId":"A","targetElementId":"B"}]' -f <FOLDER_KEY> --output json
+uip maestro bpmn instances list --output json
+uip maestro bpmn instances get <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances pause <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances resume <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances cancel <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances retry <INSTANCE_ID> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances migrate <INSTANCE_ID> <NEW_VERSION> -f <FOLDER_KEY> --output json
+uip maestro bpmn instances goto <INSTANCE_ID> '[{"sourceElementId":"A","targetElementId":"B"}]' -f <FOLDER_KEY> --output json
 ```
 
 | Action | When |
@@ -193,5 +193,5 @@ When the action reveals a modeling or binding problem, the fix is in the
 - **Never fix a packaging error by editing the generated JSON.** Fix the source, recompile, `refresh`.
 - **Never treat package generation as authoring** — the four files are derived from the compiled BPMN.
 - **Never retry a faulted instance before reading its incidents and deployed asset.**
-- **Never omit the folder key** on `process run`, `instance …` and `incident get`.
+- **Never omit the folder key** on `process run`, `instances …` and `incidents get`.
 - **Never put tenant, folder, feed, connection or payload values in examples or summaries.**

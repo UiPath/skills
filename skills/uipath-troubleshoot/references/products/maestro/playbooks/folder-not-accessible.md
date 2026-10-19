@@ -27,7 +27,7 @@ What to look for:
 ## Investigation
 > Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
 
-1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
+1. Get the incident: `uip maestro <type> instances incidents <instance-id> -f <folder-key> --output json`
 2. Verify the folder exists: `uip or folders list --output json` — search by `Key`
 3. List users on that folder: `uip or users list-in-folder --folder-key <folder-key> --output json` — is the robot account assigned?
 4. Check the underlying bindings — request `bindings_v2.json` (deployed) or `debug_overwrites.json` (debug)

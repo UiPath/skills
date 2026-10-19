@@ -2,7 +2,7 @@ task_id: skill-bpmn-diagnose-incident-root-cause
 description: >
   Diagnose coverage for the uipath-maestro-bpmn skill: given multiple incidents
   on one failed BPMN instance, the agent distinguishes the FIRST root fault from
-  downstream cancellation noise using `incident get` and `incident summary`, and
+  downstream cancellation noise using `incidents get` and `incidents summary`, and
   names the true faulting element. Read-only mocked CLI; no lifecycle mutations.
 tags: [uipath-maestro-bpmn, integration, "mode:diagnose", "lifecycle:discover"]
 
@@ -26,8 +26,8 @@ initial_prompt: |
   - folder key: folder-public
 
   Two incidents were raised. Exactly one is the ROOT fault; the other is
-  downstream noise caused by it. Read the incidents, use `incident get` on the
-  candidate root and `incident summary` to confirm ordering, then decide which
+  downstream noise caused by it. Read the incidents, use `incidents get` on the
+  candidate root and `incidents summary` to confirm ordering, then decide which
   element is the true root cause.
 
   Write your conclusion to diagnosis.md. Include these EXACT labeled lines:

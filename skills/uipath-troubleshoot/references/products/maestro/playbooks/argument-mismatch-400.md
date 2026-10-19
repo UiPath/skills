@@ -27,9 +27,9 @@ What to look for:
 > Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
 
 
-1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
-2. Pull the inputs sent to the failing activity: `uip maestro <type> instance variables <instance-id> -f <folder-key> --parent-element-id <element-id> --output json`
-3. Compare against the activity's argument definitions in the BPMN: `uip maestro <type> instance asset <instance-id> -f <folder-key> --output json`
+1. Get the incident: `uip maestro <type> instances incidents <instance-id> -f <folder-key> --output json`
+2. Pull the inputs sent to the failing activity: `uip maestro <type> instances variables <instance-id> -f <folder-key> --parent-element-id <element-id> --output json`
+3. Compare against the activity's argument definitions in the BPMN: `uip maestro <type> instances asset <instance-id> -f <folder-key> --output json`
 
 ## Resolution
 

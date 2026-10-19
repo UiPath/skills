@@ -75,7 +75,7 @@ is not declared as an input variable in the flow`. Do not add inputs with
 `uip maestro flow variables create` — the next `compile -o` rewrites the `.flow`
 from the source, so the CLI edit either disappears or collides with the compiled
 input (`Variable '<name>' already exists`). To confirm what the compiled flow
-declares, pass the `.flow` file itself; `variable` takes no `--path`:
+declares, pass the `.flow` file itself; `variables` takes no `--path`:
 
 ```bash
 uip maestro flow variables list ./MySolution/MyFlow/MyFlow.flow --output json

@@ -30,10 +30,10 @@ What to look for:
 > Substitute `<type>` with `bpmn`, `flow`, or `case` per the [Maestro investigation guide](../investigation_guide.md) § Determine the Maestro process type.
 
 
-1. Get the incident: `uip maestro <type> instance incidents <instance-id> -f <folder-key> --output json`
-2. Pull variables scoped to the marker element: `uip maestro <type> instance variables <instance-id> -f <folder-key> --parent-element-id <marker-element-id> --output json` — verify the "Items" variable is null
-3. Walk element executions to find the upstream task that was supposed to produce the collection: `uip maestro <type> instance element-executions <instance-id> -f <folder-key> --output json`
-4. Inspect the marker's "Items" expression in the BPMN: `uip maestro <type> instance asset <instance-id> -f <folder-key> --output json`
+1. Get the incident: `uip maestro <type> instances incidents <instance-id> -f <folder-key> --output json`
+2. Pull variables scoped to the marker element: `uip maestro <type> instances variables <instance-id> -f <folder-key> --parent-element-id <marker-element-id> --output json` — verify the "Items" variable is null
+3. Walk element executions to find the upstream task that was supposed to produce the collection: `uip maestro <type> instances element-executions <instance-id> -f <folder-key> --output json`
+4. Inspect the marker's "Items" expression in the BPMN: `uip maestro <type> instances asset <instance-id> -f <folder-key> --output json`
 
 ## Resolution
 

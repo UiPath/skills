@@ -88,8 +88,8 @@ spells the paths its rows are relative to.
 | Any registry type, typed method or not | `activity` | [Registry extension types](references/bpmn-runtime.md#registry-extension-types) | `examples/InvoiceApproval.bpmn.ts` |
 | Existing BPMN | `bpmn decompile`, `compile`, `merge` | [Brownfield](references/bpmn-runtime.md#brownfield-editing) | `examples/NotifyChannel.bpmn.ts` |
 | Process metadata, package, and layout | `metadata`, project metadata, `bpmn format` | [Contract metadata](references/bpmn-runtime.md#contract-metadata) | `examples/NotifyChannel.bpmn.ts` |
-| Package, upload, publish, debug, run, manage an instance | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instance …` | [Operate](references/operate.md) | — |
-| A run failed or is stuck | `uip maestro bpmn job status` / `instance incidents` / `instance variables` / `instance asset` | [Diagnose](references/diagnose.md) | — |
+| Package, upload, publish, debug, run, manage an instance | `uip maestro bpmn refresh` / `pack` / `debug` / `process run` / `instances …` | [Operate](references/operate.md) | — |
+| A run failed or is stuck | `uip maestro bpmn job status` / `instances incidents` / `instances variables` / `instances asset` | [Diagnose](references/diagnose.md) | — |
 
 ## Minimal shape
 
@@ -189,7 +189,7 @@ user's decision for that action. Read
 
 Triage in order — job status, incidents, runtime variables, the deployed BPMN
 asset, element executions and cursors, the generated package files, traces last
-— with the CLI's exact verbs, every `instance` read carrying `-f <FOLDER_KEY>`.
+— with the CLI's exact verbs, every `instances` read carrying `-f <FOLDER_KEY>`.
 Never mutate while diagnosing, and never guess a command shape: the reference
 lists them. Read **[`references/diagnose.md`](references/diagnose.md)**.
 
