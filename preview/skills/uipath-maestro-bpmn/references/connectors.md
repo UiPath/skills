@@ -109,19 +109,19 @@ connector not in library: uipath.connector.uipath-uipath-testmanager.create-test
 ```
 
 **`uip maestro registry prepare <key> --action <name>` resolves it through the live connection and writes an overlay the compiler reads** — one call per operation, the action named the way the connector's activity catalog spells it in kebab case (`uip is activities list <key> --output json` lists the names: `CreateTestSet` → `create-test-set`, `GetAssignedTestCasesForTestSet` → `get-assigned-test-cases-for-test-set`).
-This covers a connector the Flow node catalog does not carry at all (Test Manager is one: `registry search uipath-uipath-testmanager` answers nothing): `prepare` then reads Integration Service itself — the activity catalog for the identity, `is resources describe` for the path, parameters and fields — and says so:
+This covers a connector the Flow node catalog does not carry at all (Test Manager is one): when `registry search <key>` answers nothing, `prepare` refreshes the local catalog copy once (`uip maestro flow registry pull --force`, since a stale copy answers nothing for any connector) and, if it still serves nothing, reads Integration Service itself, the activity catalog for the identity and `is resources describe` for the path, parameters and fields, and says so:
 
 ```
-  source: Integration Service activity CreateTestSet (TestSet POST) — the Flow node catalog serves no node for uipath-uipath-testmanager, so this operation compiles in BPMN only (a Flow step needs the registry's node definition).
+  source: Integration Service activity CreateTestSet (TestSet POST) — the Flow node catalog, refreshed with `uip maestro flow registry pull --force`, serves no node for uipath-uipath-testmanager, so this operation compiles in BPMN only (a Flow step or agent tool needs the registry's node definition).
 prepare-connector: uipath.connector.uipath-uipath-testmanager.create-test-set → connectors-local/ (overlay + …, 1 variant(s), 3 input field(s))
 prepare-connector: next: .connector("<id>", "uipath-uipath-testmanager", "create-test-set", { ProjectId: /* string, required */, name: /* string, required */ }, { connection: "testmanager", folder: "shared" })
 ```
 
-Author the call it prints; `bpmn check` then holds the inputs to the operation's real contract (a Test Manager update is a JSON-patch body — `path` and `value` — not the record's columns, and `execute-test-set` takes `testSetId`, `executionType` and `asyncMode`), and `compile` emits the task the platform matches on: `objectName` and `method` from the catalog, the path and its `target="path"` rows from the describe.
-Measured end to end on the Test Manager test-set lifecycle (seven operations): seven `prepare` calls, `check: ok`, `compile`, `tidy`, `validate` → `Valid`.
+Author the call it prints; `bpmn check` then holds the inputs to the operation's real contract (a Test Manager update is a JSON-patch body, `path` and `value`, not the record's columns, and `execute-test-set` takes `testSetId`, `executionType` and `asyncMode`), and `compile` emits the task the platform matches on: `objectName` and `method` from the catalog, the path and its `target="path"` rows from the describe.
+On a Flow project such an entry is refused (`CONNECTOR_NO_FLOW_DEFINITION`); if the source line says the pull failed, run `uip maestro flow registry pull --force` yourself and re-run `prepare` before trusting that the catalog lacks the connector.
 
 An action `prepare` cannot find is refused with the activities Integration Service does list, as action ids; re-run with one of them.
-It never asks Integration Service for a connector the catalog does serve — a misspelt action on Jira gets the catalog's closest action, as before.
+It never asks Integration Service for a connector the catalog does serve: a misspelt action on Jira gets the catalog's closest action.
 
 Only when `prepare` cannot reach the tenant at all, fall back to **a hand-filled `.activity(id, 'Intsvc.ActivityExecution', …)`** — and only on evidence gathered while the tenant was reachable: the commands below are the same tenant reads `prepare` makes, so they fail for the same reason.
 Use a connection id, an activity row and a `registry get` template saved from an earlier session (or carried in the task), never a guess; with none of those, connector authoring waits for access, because an invented identity validates and dispatches to nothing.
