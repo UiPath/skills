@@ -185,6 +185,27 @@ binding half, which is the same for every connector-backed node.
   so a type absent from them is not evidence the platform lacks it — ask the
   registry before concluding a node cannot be authored.
 
+<!-- RULE:bpmn.activity.snapshot-covers-registry -->
+- The snapshot carries the registry's whole list (51 types on uip 1.205), so every
+  type `registry list` prints compiles offline through `.activity()`. Two that had
+  no authorable form now do: `A2A.AgentExecution` with
+  `inputs: { agentUrl, skillId, input, authToken, agentName }`, and the throw side
+  of `.receiveMessage()`, `.activity(id, 'Maestro.SendMessageEvent', { context:
+  { name, inputSchema }, inputs: { Reference } })`. Both validate on uip 1.205.
+
+<!-- RULE:bpmn.activity.runtime-internal -->
+- Do not author the case manager's own nodes (`Maestro.UpdateCaseState`,
+  `RetrieveCaseState`, `CaseCyclePrepare`, `CaseCycleCommit`,
+  `CaseManagerPlaceholder`, `CaseManagerGuardrails`, `CaseRulesEvaluator`): the
+  platform writes them when it materializes a case plan, and `check` warns
+  `TYPE_RUNTIME_INTERNAL` on one. Author the case in the Case SDK instead.
+
+<!-- RULE:bpmn.activity.async-no-output -->
+- A fire-and-forget start (`async: true` on `.startAgenticProcess()` or
+  `.startCaseManagementProcess()`, `Orchestrator.StartFlowProcessAsync`) publishes
+  no output row, so `outputVar` on it is refused at build time. Use the waiting
+  form to read the response.
+
 <!-- RULE:bpmn.activity.two-registries -->
 - **This is not the connector library.** `uip maestro bpmn registry` serves the
   `uipath:*` EXTENSION TYPES; `uip maestro registry` (no family word) serves the
