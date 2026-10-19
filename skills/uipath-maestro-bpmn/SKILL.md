@@ -374,7 +374,9 @@ Nothing to do yet. Surface detection is future work.
   user rather than discovering against a half-registry. Local authoring and
   `validate` still work offline — see
   [references/cli-conventions.md](references/cli-conventions.md#login-boundary).
-- **1b Scan for a solution and project.** In the working directory:
+- **1b Scan for a solution and project.** Look for any `*.uipx` file up to two
+  levels below the working directory, with whatever file search the host
+  provides — for example:
 
   ```bash
   find . -maxdepth 2 -type f -name '*.uipx' -print
