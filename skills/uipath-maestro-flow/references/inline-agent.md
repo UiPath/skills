@@ -91,6 +91,14 @@ Tool signatures:
 - `{ kind: 'process' | 'agent' | 'api' | 'flow' | 'maestro', key, name, folderPath, inputs?, returns? }`
 - `{ kind: 'ixp', projectId, name, description?, versionTag?, attachment? }`
 
+For a sibling project of this solution, a `process` / `agent` / `api` /
+`flow` / `maestro` tool takes `key` = `resource.key` from
+`resources/solution_folder/process/*/<Project>.json` (the tail of its
+`uip maestro flow registry list --local` tool type) and
+`folderPath: 'solution_folder'`. A tool has no `location` or `projectId`.
+Declare it on `inlineAgent` so compile writes its `resource.json`; a node added
+with `uip maestro flow nodes create` gets none.
+
 A connector tool needs `connection` and `folder`, `bindings.json` labels
 resolved like `connector()`'s (see [bindings.md](bindings.md)). Missing either
 is `INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` from `check`. `prepare` does not
