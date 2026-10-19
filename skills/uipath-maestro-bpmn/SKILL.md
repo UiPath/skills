@@ -398,8 +398,9 @@ below, because it is the one step that depends on phase 1's scan.
   chain it after 1b in the same turn. Step 1b already answered whether a
   solution exists; adopt what it found rather than scanning again.
 
-  If one is found, stop and ask the user which to use (AskUserQuestion: one
-  option per solution found, plus "Create a new solution"). Never silently
+  If one is found, stop and ask the user which to use, as a pick list if the
+  host has one: one option per solution found, plus "Create a new solution".
+  Never silently
   adopt, initialize, or repair an existing solution. Say in that question that
   adopting one means a later `upload` overwrites its cloud copy, because this is
   the only point where that is still the user's choice to make. If it found
