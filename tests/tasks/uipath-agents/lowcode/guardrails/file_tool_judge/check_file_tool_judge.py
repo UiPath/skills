@@ -14,14 +14,13 @@ builtInValidator guardrail for llm_as_judge that:
   - left the fixture's Analyze Files tool resource in place with an empty
     guardrail.policies (autonomous agents keep guardrails at the root)
 """
-import json
 import os
 import sys
 import uuid
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-from _shared.file_guardrail_assertions import require_detection_scope, require_job_attachment_input  # noqa: E402
+from _shared.file_guardrail_assertions import find_param, load_json, require_detection_scope  # noqa: E402
 
 ROOT = Path(os.getcwd()) / "ContractIntakeSolution" / "ContractIntakeAgent"
 AGENT = ROOT / "agent.json"
@@ -29,24 +28,8 @@ TOOL = ROOT / "resources" / "Analyze Files" / "resource.json"
 VALID_SCOPES = {"Agent", "Llm", "Tool"}
 
 
-def load(path: Path) -> dict:
-    if not path.is_file():
-        sys.exit(f"FAIL: Missing {path}")
-    try:
-        return json.loads(path.read_text())
-    except json.JSONDecodeError as e:
-        sys.exit(f"FAIL: {path} is not valid JSON: {e}")
-
-
-def find_param(params: list, param_id: str) -> dict | None:
-    for p in params:
-        if isinstance(p, dict) and p.get("id") == param_id:
-            return p
-    return None
-
-
 def main() -> None:
-    agent = load(AGENT)
+    agent = load_json(AGENT)
     guardrails = agent.get("guardrails")
     if not isinstance(guardrails, list) or not guardrails:
         sys.exit(f"FAIL: agent.json.guardrails must be a non-empty array, got {guardrails!r}")
@@ -106,7 +89,7 @@ def main() -> None:
 
     require_detection_scope(params, "Files", "the user asked to judge the file contents, not the tool's text arguments")
 
-    tool = load(TOOL)
+    tool = load_json(TOOL)
     if tool.get("properties", {}).get("toolType") != "analyze-attachments":
         sys.exit(f"FAIL: fixture tool resource was altered: properties.toolType = {tool.get('properties', {}).get('toolType')!r}")
     policies = (tool.get("guardrail") or {}).get("policies")
