@@ -109,3 +109,8 @@ case-design-layers-guide.md's; the cells own the shape.)
      deterministic routing, so when the source says entry is automatic the picker row IS the defect:
      repair it per § Section 2 Authoring rules, stage-picker bullet, decision-routed branch (all four
      edits). Source silent on who launches the lane ⟹ keep what is authored.
+ 37. Every `api-event("<Name>")` WHEN cell quotes a Name declared verbatim in `### Business Events`
+     (a Section 1 `###` sibling of Case Variables, header `| Name | Description | Payload |`), and every
+     declared event is quoted by ≥1 cell. `api-event` stands only in Stage Entry, Stage Exit, Task Entry
+     and Case Exit tables — never in Case Triggers, and never in a task's Entry Conditions that also hold
+     `runs-sequentially`. A Payload cell is a JSON Schema object in one code span, or `—`.
