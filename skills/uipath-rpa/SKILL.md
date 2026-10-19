@@ -81,6 +81,15 @@ For dialog/form automation or UI tests from manual steps, defer authoring prereq
 
 Skip this path when the task has no UI surface (data transforms, IS connector calls, headless file/email automation). Also skip it when the task HAS a UI surface but no live app to capture against (app not installed, no GUI, capture deferred to a developer) — use the § Placeholder-Selector Stub Pattern instead. Window Baseline does not prove an app/GUI exists; verify separately or ask.
 
+## Recorded-Selector Fast Path (task recordings)
+
+A `uipath-task-recording` handoff can give a click step a `recorded selector`: the UiPath driver's selector of the element the user clicked, captured at the click. It identifies that element; it is not what `resolve-defaults` writes (often deeper, sometimes with a volatile title, `idx` or table position).
+
+1. **Working version first (coded).** Build the flow on selector-only targets (package coded authoring guide § Selector-Only Targets, where a recorded selector counts as captured): the window tag as the `TargetAppModel` selector, the tags after it as `Target.FromSelector`. Validate it. XAML starts at step 2.
+2. **Polish** with the Capture-First Fast Path, screen by screen. In `uia-configure-target`'s element step, run `selector-intelligence get-ancestors <eN> --selector "<recorded tags after the window tag>"` and `evaluate` on the candidates: the one the recorded selector matches is the clicked element. Then reference the registered descriptors instead.
+3. **No live app:** write the recorded selectors in place of placeholders (§ Placeholder-Selector Stub Pattern), marked `TODO Validate`, not `TODO Indicate`.
+4. Recorded selector no longer matches (the UI changed since the take) → use the step's element description, as for a step without one.
+
 ## Session Pre-warm
 
 When more than one heavy `uip rpa` call is expected, background at session start:
