@@ -26,6 +26,7 @@ uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
 
 uip maestro flow validate "$WORK/candidate/Deployed.flow" --output json
 cp -r "$WORK/candidate/." "$PROJECT/"
+# Then delete each directory merge listed as `flow-merge: remove <dir> ...`.
 uip maestro flow validate "$CANONICAL" --output json
 ```
 
@@ -58,13 +59,37 @@ Merge warns, does not carry, and refuses under `--strict` when:
   overwrote the baseline's `agent.json`, so merge cannot tell your edit from the
   round trip's own changes (`the edited <source>/agent.json differs from the
   original's ... The change is NOT carried`). Use separate directories.
-- the edit adds or removes an agent's resource (a context index or a tool).
+- the edit changes or removes an agent resource that merge cannot pair with
+  one of the project's: the canvas gave the resource node an id compile does
+  not reproduce, and its `resource.json` has fields compile does not write.
   Make that change on the canvas.
 - the agent node carries its prompts on the node itself (older canvas saves).
   The edited `agent.json` would not be what runs. Make that change on the canvas.
 
 Never copy `$WORK/edited/<source>/` into the project by hand: it carries the
 round trip's changes along with yours.
+
+### Agent resources: added, changed, removed
+
+An agent's context index or tool lives in
+`<source>/resources/<dir>/resource.json`.
+
+```
+flow-merge: wrote <source-uuid>/resources/<new-dir>/resource.json (carries added resource)
+flow-merge: wrote <source-uuid>/resources/<dir>/resource.json (carries settings.resultCount)
+flow-merge: remove <project>/<source-uuid>/resources/<dir> from the project: the edit removed this agent resource, and copying the candidate cannot delete it
+flow-merge: wrote bindings_v2.json (the changed agents' resource rows, re-derived as compile does)
+```
+
+- An added or changed resource is installed by `cp -r`. A changed one keeps its
+  original directory.
+- A removed one is not: delete every directory merge lists under `remove`
+  (`Data.Removed` in `--output json`). Otherwise the agent keeps that resource.
+- A resource another `.flow` in the project still uses is kept
+  (`flow-merge: kept <source>/resources/<dir>: <Other>.flow still references it`).
+  No action needed: do not delete it.
+- In a Flow project, merge also writes `bindings_v2.json` with the changed
+  agent's rows re-derived, so a removed index is no longer declared.
 
 ## The generated pipeline
 
@@ -128,6 +153,44 @@ including human tasks, agents and their attached resources, the published
 resource families, queue items, the AI patterns, document steps, conversational
 and voice steps, and connector event subscriptions. A recovered agent keeps its
 `source` uuid, so its `agent.json` sidecar still resolves.
+
+An agent's context index, tool or escalation node keeps its identity the same
+way. A decompiled resource entry may carry `nodeId` (the resource node's id),
+`source` (its `resources/<source>/` directory) or `label` (a context index's
+canvas label):
+
+```ts
+context: [{ name: "Example SOP Index", id: "11111111-2222-4333-8444-555555555555",
+  folderPath: "Shared/Example", label: "SOP lookup",
+  nodeId: "ctx_7f2a1b", source: "d84e2c17-6a3f-4c59-b0e2-7f1a9c5b3d28" }]
+```
+
+Leave these as they are. Removing them makes compile name the node
+`<agent>Context` / `Tool` / `Escalation` (with `2`, `3`, ... for more than one)
+with a new directory, so merge drops the original node and adds a different
+one. Do not add them to a resource you create, including one copied from a
+decompiled entry. `check` reports `INLINE_AGENT_RESOURCE_NODE_ID` for a blank
+`nodeId` or one another node has (or that compile derives for another
+resource), `INLINE_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
+uuid, and `INLINE_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
+with the same `source`: both would write one `resource.json`. Delete both
+`nodeId` and `source` from a copied entry. Needs `@uipath/maestro-builder-sdk`
+6.33.0 or later; an older SDK's decompile omits these fields and compile renames
+the node with a new directory, so upgrade with
+`npm install -g @uipath/maestro-builder-sdk@latest`.
+
+A step's node id is its name with every character other than a letter, digit
+or `_` turned into `_` (`a b` gets id `a_b`), and compile never renames a step
+to make it unique. A new step whose name a step in the same flow already has
+is refused, even with `--no-check`: `DUP_STEP` for the same name,
+`STEP_ID_COLLISION` for a name that gives the same id (`a b` vs `a_b`) or that
+equals the trigger's id. Give the new step a name of its own. (A child flow's
+steps are not checked against the caller's: a copy whose ids are taken is
+prefixed `<caller>_<step>`.) To send a
+second path to an existing step, end that path with `.stepToRef('<name>')`
+instead of adding the step again. Needs `@uipath/maestro-builder-sdk` 6.32.4 or
+later; an older SDK silently renames the second step `<name>2`, so upgrade with
+`npm install -g @uipath/maestro-builder-sdk@latest`.
 
 A node type the SDK has no factory for still round-trips: it comes back as
 `rawNode({ nodeType, version, manifest, inputs })`, carrying the definition the

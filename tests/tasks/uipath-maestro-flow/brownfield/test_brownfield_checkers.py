@@ -54,6 +54,10 @@ def layout(project: Path) -> int:
     return preserved.main(["--aspect", "layout", "--original", str(FIXTURE), "--project", str(project)])
 
 
+def merged(project: Path) -> int:
+    return preserved.main(["--aspect", "merged", "--original", str(FIXTURE), "--project", str(project)])
+
+
 def intent(project: Path, which: str) -> int:
     return edit.main([which, "--original", str(FIXTURE), "--project", str(project)])
 
@@ -80,6 +84,7 @@ CAP_EDGE = "logCreditAmount:success>financialPosting:input"
 def test_unedited_fixture_is_preserved(project: Path) -> None:
     assert graph(project) == 0
     assert layout(project) == 0
+    assert merged(project) == 1
     for which in ("credit-cap", "switch-route", "writer-prompt"):
         assert intent(project, which) == 1
 
@@ -163,6 +168,38 @@ def test_switch_route_rejects_a_renamed_original_case(project: Path) -> None:
 
     mutate(project, rename)
     assert intent(project, "switch-route") == 1
+
+
+def requote_cases(flow: dict) -> None:
+    for case in node(flow, "routeByAction")["inputs"]["cases"]:
+        case["expression"] = case["expression"].replace("'", '"')
+
+
+def test_switch_route_accepts_requoted_original_cases(project: Path) -> None:
+    mutate(project, lambda f: (add_route(f), requote_cases(f)))
+    assert intent(project, "switch-route") == 0
+
+
+def test_switch_route_rejects_a_renamed_switch(project: Path) -> None:
+    mutate(project, lambda f: (add_route(f), node(f, "routeByAction")["display"].update(label="routeByAction")))
+    assert intent(project, "switch-route") == 1
+
+
+def renumber_edges(flow: dict) -> None:
+    for i, edge in enumerate(flow["edges"]):
+        edge["id"] = f"edge_{i}"
+
+
+@pytest.mark.parametrize("edit", [insert_cap, add_route], ids=["credit-cap", "switch-route"])
+def test_hand_edit_fails_the_merge_check(project: Path, edit) -> None:
+    mutate(project, edit)
+    assert merged(project) == 1
+
+
+@pytest.mark.parametrize("edit", [insert_cap, add_route], ids=["credit-cap", "switch-route"])
+def test_merged_edit_passes_the_merge_check(project: Path, edit) -> None:
+    mutate(project, lambda f: (edit(f), renumber_edges(f)))
+    assert merged(project) == 0
 
 
 NEW_LINE = "- Say the credit appears on the next statement within 5 business days."

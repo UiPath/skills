@@ -80,6 +80,9 @@ OWNERS = {
     "MXEXP": "project_export_smoke.yaml",
     "MXASK": "project_import_ask_integration.yaml",
     "MXLIFE": "project_migration_e2e.yaml",
+    "PERF": "perf_scenario_cleanup_smoke.yaml",
+    "PERFSET": "perf_scenario_setup_integration.yaml",
+    "PERFDRY": "perf_scenario_dryrun_e2e.yaml",
 }
 
 

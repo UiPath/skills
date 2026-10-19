@@ -72,6 +72,9 @@ and therefore exact for this scheme.
 | `project_export_smoke` | its own project `EVMXEXP` (`EVFX-MXEXP-Project`) | test cases `MX Alpha`, `MX Beta` | Seeded once, never changed; `pre_run` removes duplicates a concurrent first seed leaves and fails if the shape drifted. The package goes to the run's own `backup/` |
 | `project_import_ask_integration` | its own project `EVMXASK` (`EVFX-MXASK-Project`) | test cases `MX Alpha`, `MX Beta` | Same as `EVMXEXP`; `package.tmh` comes from its latest completed export (one export if none) |
 | `project_migration_e2e` | source `EVMXLIF` (`EVFX-MXLIFE-Project`); a new project per run, key `EVMX<4 hex>`, name `EVFX-MXLIFE-<uuid8>` from the run's `seed.json` | test cases `MX Alpha`, `MX Beta` in the source | `post_run` deletes the run's project; `pre_run` sweeps `EVFX-MXLIFE-<uuid8>` projects older than 6 hours |
+| `perf_scenario_cleanup_smoke` | CLAIM | the `EVFX-PERF-*` namespace | `pre_run` creates two per-run scenarios, `EVFX-PERF-<YYYYMMDD-HHMMSS>-<hex>-OLD` (the agent deletes it; name in `old-scenario.txt`) and `-KEEP` (must survive; name in `keep-scenario.txt`), and sweeps `EVFX-PERF-` scenarios stamped more than 6 hours ago; `post_run` deletes whatever this run left |
+| `perf_scenario_setup_integration` | its own project per run (`EVFX-PERFSET-*`, key `EVPL<4 hex>`) | `EVFX-PERFSET-TC1` + a per-run scenario | `pre_run` runs `_setup/run_package_fixture.py seed` (see [Run-package fixtures](#run-package-fixtures)), then creates `EVFX-PERFSET-TC1` in the project, links it to `TestCase_CrossPlatform_VB_Tests` in `uipath-test-folder-feed` and writes the scenario name to `scenario-name.txt`; `post_run` deletes the project |
+| `perf_scenario_dryrun_e2e` | its own project per run (`EVFX-PERFDRY-*`, key `EVPD<4 hex>`) | `EVFX-PERFDRY-TC1` + a per-run scenario | As `perf_scenario_setup_integration`; the agent also dry-runs the scenario on the folder's serverless robot, and `post_run` stops a dry run still in flight before deleting the project. **Skipped** until a cross-platform package built with `UiPath.Testing.Activities` >= 25.10.0 exists: perf dry runs refuse older ones |
 
 The `requirement_ai_*` tasks share one helper, [`../_setup/req_ai_fixture.py`](../_setup/req_ai_fixture.py)
 (`seed`, `check`). It knows no names: each task passes its own `EVFX-` names
@@ -321,6 +324,8 @@ so packages uploaded to it stay out of the tenant feed.
 | `release_signoff_wait_report_e2e` | folder key, in `pre_run` | `Testcases.with.parameters` |
 | `run_package_ci_smoke` | folder name, in `pre_run` and the prompt | `TestCase_CrossPlatform_VB_Tests` |
 | `run_package_failing_smoke` | folder name, in `pre_run` and the prompt | `FailingTestCase_CrossPlatform_VB_Tests` |
+| `perf_scenario_setup_integration` | folder name, in `pre_run` and the prompt | `TestCase_CrossPlatform_VB_Tests` |
+| `perf_scenario_dryrun_e2e` | folder name, in `pre_run` and the prompt | `TestCase_CrossPlatform_VB_Tests` |
 
 `Testcases.with.parameters` is a Windows package. The folder's serverless
 robot runs cross-platform packages only, so runs of it start but never finish

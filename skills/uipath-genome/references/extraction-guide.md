@@ -15,7 +15,7 @@ Run source guide's Detection table against the given path. Decide:
 - **Level:** the projects the rebuild needs decide it ([genome-format-guide.md § Two Levels](genome-format-guide.md)). A solution or multi-project bundle → process genome; a single project or workflow → component genome, unless the source guide's § Component Detection maps its parts to two or more projects.
 - **Missing manifest:** proceed from artifact files; every value that would have come from the manifest is `*[Inferred]*`.
 
-**Ask for related resources** once, with the pack question when that is asked: "Besides the automation, do you have other resources for this process (PDD, SOP, runbooks, test evidence, recordings, tickets)? Paths or links, or none." Skip it when the request names them or says none; when the request says to proceed without questions, ask it in Step 7 instead. Never search for resources the user did not give.
+**Ask for related resources** once, with the pack question when that is asked: "Besides the automation, do you have other resources for this process (PDD, SOP, runbooks, test evidence, recordings, tickets)? Paths or links, or none." Skip it when the request names them or says none; when the request says to proceed without questions, ask it in Step 7 instead. Never search for resources the user did not give. For a UiPath source the same message asks where it runs: "Does it run in Orchestrator? Name the folder, and I will read its processes, triggers, bindings and job history without changing anything." That deployed state is source, not a related resource: the binding a process overrides is the value that runs ([uipath-source-guide.md § Deployed State](uipath-source-guide.md)).
 
 ### Step 2 — Inventory
 

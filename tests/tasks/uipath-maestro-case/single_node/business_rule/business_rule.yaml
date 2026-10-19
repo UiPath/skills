@@ -10,7 +10,7 @@ description: >
   Validates the case, then runs `uip maestro case debug` on the solution and
   requires the case and the rule task's own execution to complete. Case debug
   reports element executions, not variable values, so the band is not graded.
-tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, feature:registry]
+tags: [uipath-maestro-case, e2e, mode:build, lifecycle:generate, shape:single-node, feature:registry, path-to-ga]
 max_iterations: 1
 sandbox:
   template_sources:
