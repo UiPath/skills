@@ -1,0 +1,125 @@
+task_id: skill-test-prompts-create-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to add one prompt to a Test
+  Manager project's prompt library with `uip tm prompts create`, choosing the
+  mode of use (GenerateTestsFromRequirement) from a plain-language request.
+  Graded on the live library: exactly one user-defined prompt with that name,
+  mode and guidelines. pre_run creates a throwaway `EVFX-PROMPT-*` project per
+  run (key in project-key.txt) and sweeps orphans stamped more than 6 hours
+  ago; post_run deletes it. Per-run because the CLI has no prompt delete, so
+  only a project delete removes what the agent creates.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, outcome-graded]
+
+run_limits:
+  expected_turns: 8
+  max_turns: 20
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      PREFIX = "EVFX-PROMPT-"
+      now = datetime.datetime.now(datetime.timezone.utc)
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      # Orphan sweep: delete only EVFX-PROMPT-* projects stamped more than 6
+      # hours ago, so a concurrent run keeps its own.
+      for p in call("tm", "project", "list", "--filter", PREFIX).get("Data") or []:
+          nm, key = p.get("Name") or "", p.get("ProjectKey")
+          if not key or not nm.startswith(PREFIX):
+              continue
+          try:
+              stamp = datetime.datetime.strptime(nm[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
+          except ValueError:
+              continue
+          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+              call("tm", "project", "delete", "--project-key", key, "--yes")
+
+      key = "EVPR" + secrets.token_hex(2).upper()
+      name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      out = call("tm", "project", "create", "--name", name, "--project-key", key)
+      if out.get("Result") != "Success":
+          print(f"SEED FAILED: create {name}: {str(out)[:400]}")
+          sys.exit(1)
+      with open("project-key.txt", "w") as f:
+          f.write(key + "\n")
+      print(f"SEEDED {name} ({key})")
+      PYEOF
+    timeout: 120
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  The key of my Test Manager project is in project-key.txt. Add a prompt called
+  "Checkout edge cases" to its prompt library, for Autopilot to use when it
+  generates test cases from requirements. Guidelines: "Cover an empty cart, a
+  declined card, a coupon that expired yesterday and a cart above the
+  10,000 EUR limit."
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created the prompt with `uip tm prompts create … --mode-of-use …`"
+    tool_name: "Bash"
+    command_pattern: '(?=(?:[^&;|\r\n\\]|\\\r?\n|\\.)*--mode-of-use\s+\S)(uip|\$UIP)\s+tm\s+prompts\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent used --output json on uip commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Exactly one UserDefined 'Checkout edge cases' prompt exists, mode GenerateTestsFromRequirement, with the requested guidelines"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      r = subprocess.run(["uip", "tm", "prompts", "list", "--project-key", key,
+                          "--filter", "Checkout edge", "--limit", "100", "--output", "json"],
+                         capture_output=True, text=True)
+      out = json.loads(r.stdout[r.stdout.index("{"):])
+      rows = [p for p in out.get("Data") or [] if p.get("Name") == "Checkout edge cases"]
+      print([(p.get("ModeOfUse"), p.get("PromptType"), p.get("Guidelines")) for p in rows])
+      if len(rows) != 1:
+          sys.exit(1)
+      p = rows[0]
+      g = " ".join((p.get("Guidelines") or "").lower().split())
+      ok = (p.get("ModeOfUse") == "GenerateTestsFromRequirement"
+            and p.get("PromptType") == "UserDefined"
+            and all(t in g for t in ("empty cart", "declined card", "coupon", "10,000 eur")))
+      sys.exit(0 if ok else 1)
+      PYEOF
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
