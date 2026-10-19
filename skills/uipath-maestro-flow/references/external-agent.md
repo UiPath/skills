@@ -10,6 +10,8 @@ uip maestro registry search '<agent or connector name>' --output json        # i
 uip is connections list <connector-key> --all-folders --output json           # an enabled connection and its FolderKey
 ```
 
+Search a short name (`'Cortex'`, not `'Snowflake Cortex'`): a full product name can match only a connector's HTTP-request tool.
+
 - **In the connector library** (Snowflake Cortex is): author it with `connector(...)` like any connector ([connector-params.md](connector-params.md)).
 - **Not in the library** (CrewAI returns `"total": 0`): build it on a `.flow` with the product CLI, below. `rawNode` is not an option for a `uipath.connector.*` type. `compile` from SDK source rewrites the `.flow`, so give these nodes a flow of their own, made with `flow init <Name>` (no `--sdk-source`).
 
