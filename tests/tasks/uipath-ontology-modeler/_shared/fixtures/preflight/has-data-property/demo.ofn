@@ -1,0 +1,11 @@
+Prefix(:=<https://ontology.uipath.com/demo#>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+Ontology(<https://ontology.uipath.com/demo>
+Declaration(Class(:Order))
+Declaration(DataProperty(:Order.hasStatus))
+AnnotationAssertion(rdfs:label :Order "Order")
+AnnotationAssertion(rdfs:comment :Order "An order.")
+DataPropertyDomain(:Order.hasStatus :Order)
+DataPropertyRange(:Order.hasStatus xsd:string)
+)

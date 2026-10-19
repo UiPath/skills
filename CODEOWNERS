@@ -61,6 +61,15 @@
 /tests/tasks/uipath-platform/data-fabric/ @UiPath/DatafabricCodingAgent
 /tests/tasks/uipath-platform/licensing/ @biftime @mihai-stef-uipath @dinud-uipath @bogdan-alexandru-uipath @raresgrm @cristiansinescu7-uipath
 
+# Ontology skills (local solution: Ontology + local Entity resources)
+/skills/uipath-ontology-authoring/ @diwakar-jha3110
+/skills/uipath-ontology-modeler/ @diwakar-jha3110
+/tests/tasks/uipath-ontology-modeler/ @diwakar-jha3110
+/tests/scripts/test_ontology_entities.py @diwakar-jha3110
+/tests/scripts/test_ontology_preflight.py @diwakar-jha3110
+/tests/scripts/test_ontology_skill_structure.py @diwakar-jha3110
+/tests/scripts/test_ontology_solution_golden.py @diwakar-jha3110
+
 # Agents skill (coded + low-code)
 /skills/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip
 /tests/tasks/uipath-agents/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip

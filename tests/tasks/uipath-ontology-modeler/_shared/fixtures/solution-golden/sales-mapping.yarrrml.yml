@@ -1,0 +1,29 @@
+prefixes:
+  ont: https://ontology.uipath.com/sales#
+mappings:
+  Order:
+    sources:
+      - access: datafabric
+        table: Order
+        referenceFormulation: rr:SQL2008
+    s: ont:Order/$(Id)
+    po:
+      - [a, ont:Order]
+      - [ont:Order.orderNumber, $(orderNumber)]
+      - p: ont:placedBy
+        o:
+          mapping: Customer
+          condition:
+            function: equal
+            parameters:
+              - [str1, $(customer)]
+              - [str2, $(Id)]
+  Customer:
+    sources:
+      - access: datafabric
+        table: Customer
+        referenceFormulation: rr:SQL2008
+    s: ont:Customer/$(Id)
+    po:
+      - [a, ont:Customer]
+      - [ont:Customer.customerName, $(customerName)]

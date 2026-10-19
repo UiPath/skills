@@ -1,0 +1,1 @@
+{ "Name": "Orders", "DisplayName": "Orders", "Fields": [ { "Name": "status", "DisplayName": "status", "SqlType": { "Name": "NVARCHAR", "LengthLimit": 200 }, "IsRequired": false } ] }

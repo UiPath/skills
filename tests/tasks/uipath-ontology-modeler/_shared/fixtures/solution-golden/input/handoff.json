@@ -1,0 +1,8 @@
+{
+  "CLASS_MAP": {"Order": {"entityName": "Order"}, "Customer": {"entityName": "Customer"}},
+  "FIELD_METADATA": {
+    "Order": {"Id": {"identifier": true}, "orderNumber": {"type": "xsd:string", "required": true, "displayName": "Order Number"}, "customer": {"displayName": "Customer"}},
+    "Customer": {"Id": {"identifier": true}, "customerName": {"type": "xsd:string", "displayName": "Customer Name"}}
+  },
+  "RELATIONSHIPS": [{"from": "Order", "field": "customer", "to": "Customer"}]
+}

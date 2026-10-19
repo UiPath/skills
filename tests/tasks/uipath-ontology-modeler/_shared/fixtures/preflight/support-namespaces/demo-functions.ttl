@@ -1,0 +1,5 @@
+@prefix fn: <https://ontology.uipath.com/demo/function#> .
+@prefix ont: <https://ontology.uipath.com/ont#> .
+@prefix fno: <https://w3id.org/function/ontology#> .
+fn:findOrder a fno:Function ; fno:returns ( fn:out ) .
+fn:out a fno:Output ; fno:predicate ont:result .

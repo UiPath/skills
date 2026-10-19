@@ -1,0 +1,4 @@
+@prefix ont: <https://ontology.uipath.com/demo#> .
+@prefix fno: <https://w3id.org/function/ontology#> .
+ont:updateOrder a fno:Function ; ont:kind "ACTION" ; ont:statements """UPDATE {{ont:UnknownActionClass}} SET value = 1""" ; fno:returns ( ont:out ) .
+ont:out a fno:Output .

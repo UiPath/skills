@@ -1,0 +1,23 @@
+prefixes:
+  ont: https://ontology.uipath.com/demo#
+mappings:
+  Order:
+    sources: [{table: Orders}]
+    s: ont:Order/$(Id)
+    po:
+      - [a, ont:Order]
+      - [ont:Order.id, $(Id)]
+      - p: ont:placedBy
+        o:
+          mapping: Customer
+          condition:
+            function: equal
+            parameters:
+              - [str1, $(customerCode)]
+              - [str2, $(code)]
+  Customer:
+    sources: [{table: Customers}]
+    s: ont:Customer/$(Id)
+    po:
+      - [a, ont:Customer]
+      - [ont:Customer.code, $(code)]
