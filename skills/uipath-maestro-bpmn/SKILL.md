@@ -414,7 +414,9 @@ below, because it is the one step that depends on phase 1's scan.
   discovery-only, for brownfield/bare-`.bpmn` edits, and for an Integration
   Service draft or boundary handoff the user asked for (Rule 16). Otherwise
   chain it after 1b in the same turn. Step 1b already answered whether a
-  solution exists; adopt what it found rather than scanning again.
+  solution exists; adopt what it found rather than scanning again. When the
+  user named a project path, `mkdir -p` its parent and run `init` there with
+  the leaf as the name (4c gives the details).
 
   If one is found, stop and ask the user which to use, as a pick list if the
   host has one: one option per solution found, plus "Create a new solution".

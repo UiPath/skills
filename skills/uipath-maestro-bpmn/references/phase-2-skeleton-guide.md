@@ -23,8 +23,10 @@ in. It is not a working process and must never be reported as one.
    blank.
 3. **Make no registry calls.** No `registry pull`, `list`, `search`, or `get`.
    Element types are not being chosen yet.
-4. **Control flow is real.** Genuine `bpmn:startEvent` (with its timer or
-   message definition when the process starts that way),
+4. **Control flow is real.** Genuine `bpmn:startEvent` (with a plain
+   `bpmn:timerEventDefinition` or `bpmn:messageEventDefinition` when the
+   process starts that way; it needs no registry call, and phase 4 wires the
+   trigger),
    `bpmn:exclusiveGateway` and `bpmn:parallelGateway`, `bpmn:sequenceFlow`s,
    and end events: one that every branch converges on, unless the request
    names separate outcomes. Do not simplify the branch structure.
