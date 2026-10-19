@@ -630,17 +630,20 @@ Draft mode only.
    without one `refresh` fails the whole project `RetryWillNotFix` instead of
    writing an empty entry-point list. When the request names a trigger as the
    start and asks for no package-ready, upload, debug, publish, or deploy
-   deliverable, it is a trigger-start draft: turn the initializer's
-   `Event_start` into the trigger in place, keeping its id and its
-   `uipath:entryPointId` child, add no second start, and skip `refresh` (it
-   fails with no manual start), even after binding a connection;
-   `entry-points.json` stays valid. Any of those deliverables, including a
-   later one on such a draft, keeps the manual `Event_start`, gives the
-   trigger its own start id, joins the two per
-   [Gateways](references/structural-bpmn.md#gateways), and runs `refresh`.
-   A V2 connector trigger start is the exception: it carries its own
-   `uipath:entryPointId` and is an entry point, so it may be the only start
-   and `refresh` accepts it.
+   deliverable, it is a trigger-start draft. For a timer or V1 connector
+   start, turn the initializer's `Event_start` into the trigger in place,
+   keeping its id and its `uipath:entryPointId` child, add no second start,
+   and skip `refresh` (a timer or V1 start alone has no entry point, so it
+   fails), even after binding a connection; `entry-points.json` stays valid.
+   Any of those deliverables, including a later one on such a draft, keeps
+   the manual `Event_start`, gives the trigger its own start id, joins the
+   two per [Gateways](references/structural-bpmn.md#gateways), and runs
+   `refresh`. A V2 connector trigger start is the exception, and the usual
+   case, since every new trigger is V2: it carries its own
+   `uipath:entryPointId` and is an entry point. Paste its `Data.V2` element
+   with `{{ID}}` = `Event_start` in place of the manual start, add no second
+   start, and run `refresh`; skipping it leaves `entry-points.json` on the old
+   id and `validate` fails.
    A recurring timer is a `timeCycle` with an `R/` repeat (`R/P1D`), not the
    template's `timeDuration`. Clearing a stale-entry error by editing or
    deleting `entry-points.json` instead of running `refresh` passes

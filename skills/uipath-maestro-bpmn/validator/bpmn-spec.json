@@ -328,10 +328,9 @@
           "binding": false,
           "defaultValue": "v1",
           "enum": [
-            "v1",
-            "v2"
+            "v1"
           ],
-          "description": "Marks the Integration Service activity format: v1 for this template, v2 for an element from registry get --input-details"
+          "description": "Marks the Integration Service activity format used by this template"
         },
         {
           "name": "connectorKey",

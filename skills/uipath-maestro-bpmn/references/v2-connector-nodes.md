@@ -22,6 +22,10 @@
 
 A workflow with no connection yet keeps the registry template shell as a
 draft (the SKILL.md draft rule); do not fill it in as a configured V1 node.
+That shell is V1-shaped (`activityConfigurationVersion` `v1`), so the draft
+notes say so, and once a connection exists it is replaced by the element
+`registry get --input-details` builds. In a V2 workflow `validate` fails a V1
+trigger or wait shell until then.
 
 | Type | V2 element | Notes |
 | --- | --- | --- |
@@ -231,8 +235,9 @@ the run faults `102003 DebugTriggerNoMatches`:
 uip maestro bpmn debug <project-path> --entry-point <trigger-start-event-id>
 ```
 
-Without `--entry-point` the debug starts at the first entry point, which is
-the manual start when there is one. A wait is debugged from the manual start,
+Without `--entry-point` the debug starts at the first start in diagram
+order, which can be the trigger; pass `--entry-point <manual-start-id>` to
+debug from the manual start. A wait is debugged from the manual start,
 and its event has to happen while the wait is in progress. Debug's own
 progress lines can lag behind the run, so read where the instance is with
 `uip maestro bpmn debug-instance variables-all <instance-id>` (the instance id
@@ -241,8 +246,9 @@ event once the wait element shows as running.
 
 ### A CLI without V2 nodes
 
-When `registry get` fails `unknown option '--input-details'` (or `bpmn debug`
-rejects `--entry-point`), the CLI predates V2 nodes:
+When a `registry get` with `--input-details` fails with an error that names
+`--input-details`, or succeeds without a `Data.V2` (or `bpmn debug` rejects
+`--entry-point`), the CLI predates V2 nodes, or that node type's V2 build:
 
 - **Triggers, waits, HTTP requests and external agents or automations:**
   stop. Their V1 template faults at run time or has no allowed form. Tell the
