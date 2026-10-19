@@ -224,7 +224,7 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 
 1. `type` is `"execute-connector-activity"`, or `"external-agent"` / `"external-workflow"` per Step 5.a
 2. `data.serviceType` is what `splice` wrote (`Intsvc.ActivityExecution`, or the sync or async agent or workflow type for an external task); never edit it
-3. `data.context[]` has: `connectorKey`, `connection`, `resourceKey`, `folderKey` (when applicable), `objectName`, `method`, `path`, `metadata`, and `executionType` on an external task whose spec carries one — but NOT `_label`, and NOT `operation` on an `execute-connector-activity` (an `external-workflow` carries the `operation` and `eventMode` splice wrote)
+3. `data.context[]` has: `connectorKey`, `connection`, `resourceKey`, `folderKey` (when applicable), `objectName`, `method`, `path`, `metadata`, and `executionType` on an external task whose spec carries one — but NOT `_label`, and NOT `operation` on an `execute-connector-activity` (an async or hybrid external task carries the `operation` and `eventMode` splice wrote; a sync one carries neither)
 4. `data.context[name="connection"].value` is `=bindings.<ConnectionBindingId from splice Summary>`; no `{{` sentinel remains anywhere in `data`
 5. `data.context[name="folderKey"].value` is `=bindings.<FolderBindingId from splice Summary>`; entry absent when `spec.connection.folderKey` was null
 6. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify)
