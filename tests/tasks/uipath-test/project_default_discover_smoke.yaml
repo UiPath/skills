@@ -39,6 +39,9 @@ pre_run:
           if first.get("IsDefault") is True:
               return {"Key": first.get("ProjectKey"), "Id": first.get("Id")}
           return {"Key": "NONE", "Id": None}
+      # Version check for IsDefault on `project list`, which shipped with
+      # get-default in UiPath/cli#4844; without it every row reads as "not the
+      # default" and the task would pass on NONE. The agent never runs this.
       r = subprocess.run(["uip", "tm", "project", "get-default", "--help"],
                          capture_output=True, text=True)
       if r.returncode != 0:

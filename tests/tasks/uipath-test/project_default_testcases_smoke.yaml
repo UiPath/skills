@@ -1,5 +1,8 @@
 # Needs `uip tm project get-default` (UiPath/cli#4844, in `@uipath/cli@dev` and
 # every release after it); pre_run exits CLI TOO OLD on a CLI without it.
+# On a tenant with no default project, the agent's get-default creates one on
+# purpose; the eval tenant already has it (see fixtures/README.md,
+# Default-project tasks), so runs there only read it.
 task_id: skill-test-project-default-testcases-smoke
 description: >
   Smoke test: the user asks for test cases and names no Test Manager project,
@@ -122,12 +125,12 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "With no project named, got the tenant's default project with get-default"
+    description: "With no project named, got the default with get-default (advisory: reading an existing default from `project list` is fine too; the graders below prove the cases are in the default)"
     tool_name: "Bash"
     command_pattern: '(?:uip|\$UIP)\s+tm\s+project\s+get-default\b(?!(?:(?!(?<!\\)\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?:--help|-h)\b)'
     min_count: 1
     weight: 1.5
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: command_not_executed
     description: "Did not create a project of its own or move the default (no project create, no --set-default)"
