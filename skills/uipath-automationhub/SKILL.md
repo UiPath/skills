@@ -57,6 +57,8 @@ Classify what the user wants, then follow the matching reference. The **raw-API 
 | Shared **command / endpoint catalog** | [`references/cli-commands.md`](references/cli-commands.md) | [`references/api-endpoints.md`](references/api-endpoints.md) |
 | _(future AH Open API operation — add a row here)_ <!-- uip-check-skip --> | _add `references/<operation>.md` and route to it_ |
 
+**Out of scope — stop without writing.** Any other change to an automation — moving it to another phase/status *within* its flow, archiving, deleting, editing fields outside the flows above — has no guide or guards here. Don't improvise it with other `uip ah` write commands (e.g. `uip ah phases set`) or raw API calls, even when the CLI has them. Tell the user it isn't covered, and point them to the automation's profile page or name the command for them to run themselves. Read-only lookups are fine.
+
 **Extending this skill** (new AH operation, new field, new integration like the Studio Web link) — keep the shape, and put each kind of change in exactly one home:
 
 - **A new domain fact** (a field's format, a required rule, an id table): document it once in [`references/api-endpoints.md`](references/api-endpoints.md) — the transport-independent contract — and have the flow steps *reference* it rather than restate it. Never fork a fact across the CLI and API files.

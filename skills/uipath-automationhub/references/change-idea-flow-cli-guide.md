@@ -9,7 +9,7 @@ Moves an existing automation into another idea flow and places it in a phase/sta
 - An automation landed in the **wrong idea flow** — typically a Business Process that was submitted as a CoE-driven or Employee-driven idea (a known publish failure mode; [`publish-process-cli-guide.md`](publish-process-cli-guide.md) Step 7 detects it).
 - The user asks to **convert** an idea into a Business Process, or to move an automation into any other flow.
 
-This command **only changes flows.** Moving an automation to another phase/status of the flow it is already in (e.g. "move this to Assessment") is `uip ah phases set`, which this skill doesn't cover yet — tell the user so; never use `change-idea-flow` as a phase setter.
+This command **only changes flows.** Moving an automation to another phase/status of the flow it is already in (e.g. "move this to Assessment") is out of scope for this skill: **stop without writing** — never use `change-idea-flow` as a phase setter, and don't run `uip ah phases set` yourself either (this skill has no guide or guards for it). Tell the user they can change the status on the automation's profile page, or run `uip ah phases set <automation-id> --phase <PHASE_VARIABLE> --status <STATUS_VARIABLE>` themselves.
 
 Never delete and re-create the automation to "fix" its flow — that loses its id, documents, comments and history.
 
@@ -38,7 +38,7 @@ uip ah automations get <automation-id> --output json
 
 (Named by the user? Resolve the id with `uip ah automations list --search <name> --output json` first.) Nothing stops a move into the flow the automation is already in — the server re-saves it, sets the status directly and, if the status changes, notifies followers — so check first:
 
-- `Data.SubmissionType` already equals the target type's number ([`api-endpoints.md`](api-endpoints.md) → **Idea flow types**) and only one flow has that type → tell the user it is already in that flow and **stop**. If they wanted another phase, that is `uip ah phases set` (see above).
+- `Data.SubmissionType` already equals the target type's number ([`api-endpoints.md`](api-endpoints.md) → **Idea flow types**) and only one flow has that type → tell the user it is already in that flow and **stop**. If they wanted another phase, that is out of scope (see above) — stop.
 - It matches but several flows share the type → `SubmissionType` can't tell them apart; ask the user whether they mean a different flow of that type before going on.
 
 ## Step 3: Pick the phase and status from the target entry
