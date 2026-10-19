@@ -640,10 +640,12 @@ Draft mode only.
    two per [Gateways](references/structural-bpmn.md#gateways), and runs
    `refresh`. A V2 connector trigger start is the exception, and the usual
    case, since every new trigger is V2: it carries its own
-   `uipath:entryPointId` and is an entry point. Paste its `Data.V2` element
-   with `{{ID}}` = `Event_start` in place of the manual start, add no second
-   start, and run `refresh`; skipping it leaves `entry-points.json` on the old
-   id and `validate` fails.
+   `uipath:entryPointId` and is an entry point. In a draft, paste its
+   `Data.V2` element with `{{ID}}` = `Event_start` in place of the manual
+   start, add no second start, and run `refresh`; skipping it leaves
+   `entry-points.json` on the old id and `validate` fails. A deliverable may
+   do the same, or keep the manual `Event_start` beside it, joined as above,
+   to debug from either start.
    A recurring timer is a `timeCycle` with an `R/` repeat (`R/P1D`), not the
    template's `timeDuration`. Clearing a stale-entry error by editing or
    deleting `entry-points.json` instead of running `refresh` passes

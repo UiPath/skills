@@ -235,8 +235,9 @@ the run faults `102003 DebugTriggerNoMatches`:
 uip maestro bpmn debug <project-path> --entry-point <trigger-start-event-id>
 ```
 
-Without `--entry-point` the debug starts at the first start in diagram
-order, which can be the trigger; pass `--entry-point <manual-start-id>` to
+Without `--entry-point` the debug starts at the first entry in
+`entry-points.json`, the first start event in the `.bpmn` file (not the
+topmost on the canvas), which can be the trigger; pass `--entry-point <manual-start-id>` to
 debug from the manual start. A wait is debugged from the manual start,
 and its event has to happen while the wait is in progress. Debug's own
 progress lines can lag behind the run, so read where the instance is with
