@@ -7,7 +7,7 @@ Creates one process from a schema-driven payload and attaches its documents (PDD
 ## Step 1: Verify connectivity (and fetch the idea flows)
 
 ```bash
-uip ah idea-flows list --output json
+uip ah idea-flows list --limit 1000 --output json
 ```
 
 - `Result: Success` → keep `Data` (flow names + ids) and tell the user "Connected to Automation Hub."

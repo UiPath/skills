@@ -16,15 +16,18 @@ Never delete and re-create the automation to "fix" its flow — that loses its i
 ## Step 1: Pick the target flow by its TYPE
 
 ```bash
-uip ah idea-flows list --output json
+uip ah automations change-idea-flow --help    # unknown command → the installed uip is too old; see Not available yet
+uip ah idea-flows list --limit 1000 --output json
 ```
+
+Check the CLI first: an older `uip` drops `Type` from `idea-flows list` even when the server sends it, so a missing `Type` says nothing about the server until you know the CLI has `change-idea-flow`. Pass `--limit` — the list defaults to 20 entries, and `--output-filter` requires it.
 
 Each entry carries `Id`, `Name`, `Type` and `Phases`. Select the target by **`Type`** (`business-process` for a Business Process) — **never by `Name`, and never by an id you remember**: names are tenant-editable and ids differ per tenant (the Business Process flow is `7` on one tenant and `8` on another).
 
 - Exactly one entry of that type → take its `Id`.
 - Several → **normal**, not an edge case: every flow an admin creates from a default (duplicate, copy, upload) keeps that default's type. List their names + ids and ask the user which one.
 - None → that flow is not enabled on this tenant; say so and stop.
-- No entry carries `Type` → the server predates this capability; see [Not available yet](#not-available-yet).
+- No entry carries `Type` (with a CLI that has `change-idea-flow`) → the server predates this capability; see [Not available yet](#not-available-yet).
 - The target type is `change-request` → **stop**: an automation cannot be moved into a Change Request flow, because a Change Request needs a parent automation (the CLI also rejects it).
 
 ## Step 2: Check the automation isn't already there
@@ -92,4 +95,4 @@ The server can answer **200 even when the save failed**, so this read-back is th
 
 ## Not available yet
 
-The capability needs an Automation Hub server with **RPANAV-19226** and a `uip` that ships `automations change-idea-flow` with `--idea-flow-id`. If the CLI rejects the subcommand or `--idea-flow-id` as unknown, tell the user to update `uip`. If `idea-flows list` carries no `Type`, or the command fails with `ErrorCode: not_supported`, tell the user that changing an automation's idea flow isn't available on this tenant yet (they can use **Change Idea Flow** on the automation profile page in the browser). **Do not** fall back to UI automation or Playwright, and do not re-create the automation instead.
+The capability needs an Automation Hub server with **RPANAV-19226** and a `uip` that ships `automations change-idea-flow` with `--idea-flow-id`. If the CLI rejects the subcommand or `--idea-flow-id` as unknown, tell the user to update `uip` — and **don't** conclude anything about the server from that CLI's `idea-flows list` (an older `uip` hides `Type`). Only with an up-to-date CLI: if `idea-flows list` carries no `Type`, or the command fails with `ErrorCode: not_supported`, tell the user that changing an automation's idea flow isn't available on this tenant yet (they can use **Change Idea Flow** on the automation profile page in the browser). **Do not** fall back to UI automation or Playwright, and do not re-create the automation instead.
