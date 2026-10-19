@@ -61,6 +61,7 @@ A usage error saying no library is cached means `uip maestro registry pull` firs
 - `connection` and `folder` are symbolic names resolved through `bindings.json`, never ids pasted inline. The folder binding is the connection's companion — see [Connections and bindings](bpmn-runtime.md#connectors-and-bindings).
 - A field that takes an **id** takes a `lookup()`, not a pasted value. §3 resolves it.
 - An `=`-expression is left alone; a plain string is checked against the field's declared type.
+- The response lands in `outputVar` (default `<id>_response`) and the failure in `errorVar` (default `<id>_Error`); `outputs: { poCount: { source: '=response.length', name: 'POCount', type: 'integer' } }` adds a mapped output row per extra variable, each declared by the task like the two standard ones. These are what a decompiled import's `.connector()` calls carry, so an edit keeps the variables the process already reads.
 
 Authoring never waits on discovery beyond §1.
 Write the node from the task's own words and let `check` tell you what is missing.
