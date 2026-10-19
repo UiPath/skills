@@ -219,7 +219,7 @@ error only when the request says what should happen. The journeys, the
 scope gate for a request that names no steps, when to plan first, and the
 completion report are in
 **[`references/author.md`](references/author.md)**.
-A request that names a canvas arrangement, or a decompiled source that carries one, is `.layout()` with `at()` and `dim()` — [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim); never `format` such a file.
+A request that names a canvas arrangement is `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
 
 ## Operating a deployed flow
 

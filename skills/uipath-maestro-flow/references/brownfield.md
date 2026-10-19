@@ -326,7 +326,8 @@ Do not run `uip maestro flow format` on the merged file; it discards the author'
 
 Decompiled source carries that layout as a `.layout({ nodes })` block, one long-hand entry per node.
 Keep it.
-A step the edit adds has no entry, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), and `dim(width, height)` for a container the edit grew.
+Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), avoiding x = 256, 832, 1408, … on y = 144 or 304, which `merge` reads as unplaced and moves.
+An existing node's position and size come from the original whatever the source says, so moving one or resizing a container the edit grew in the source does nothing; set `layout.nodes.<id>.position` or `.size` (or the node's `ui`) in the merged `.flow` instead.
 A step the edit removes must lose its entry, or compile fails on the unknown key.
 Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim).
 
