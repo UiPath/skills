@@ -44,8 +44,8 @@ import sys
 TASK_TYPES = {
     "action", "agent", "rpa", "process", "api-workflow", "function",
     "business-rule", "execute-connector-activity", "wait-for-connector",
-    "external-agent", "external-workflow", "wait-for-timer", "case-management", "http-request",
-    "flow-process",
+    "wait-for-timer", "case-management", "http-request", "flow-process",
+    "external-agent", "external-workflow",
 }
 
 # Legal rule types per gate (mirrors case-tool schema-helpers VALID_*_RULE_TYPES).
@@ -79,8 +79,6 @@ TASK_DETAIL_MARKERS = {
     "action": ("Action Task Detail", "**HITL Implementation:**"),
     "wait-for-connector": ("Connector Task Detail", "**Connector:**", "**Trigger / Event:**"),
     "execute-connector-activity": ("Connector Task Detail", "**Connector:**", "**Resolved Resource:**"),
-    "external-agent": ("Connector Task Detail", "**Connector:**", "**Resolved Resource:**"),
-    "external-workflow": ("Connector Task Detail", "**Connector:**", "**Resolved Resource:**"),
     "wait-for-timer": ("Timer Task Detail", "**Timer Configuration:**", "**Duration:**", "**Timer:**"),
     "case-management": ("Child Case Task Detail", "**Child Case:**"),
     "http-request": ("HTTP Request Task Detail", "**Method:**", "**URL:**"),
@@ -92,6 +90,7 @@ TASK_DETAIL_MARKERS = {
     "business-rule": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "flow-process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
 }
+TASK_DETAIL_MARKERS |= dict.fromkeys(("external-agent", "external-workflow"), TASK_DETAIL_MARKERS["execute-connector-activity"])
 
 
 def _find_sdd() -> str:
