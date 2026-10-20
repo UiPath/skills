@@ -34,7 +34,7 @@ run_limits:
   turn_timeout: 4200
 
 # Inherit agent from the experiment; override only allowed_tools. The lane's
-# Template conformance gate runs its 35-item walk in ONE subagent when the
+# Template conformance gate runs its checklist walk in ONE subagent when the
 # Agent tool is present, keeping the read-only verdict out of the authoring
 # context. All seven case tasks carry this override: it began as a two-task
 # treatment against three controls, and the controls were retired once run
@@ -148,10 +148,15 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
+  # The verb sits on a command boundary and the SDD path must be one of its next two
+  # arguments. coder_eval also matches a shlex-normalized haystack where newlines become
+  # spaces, so the old `(mv|rm)\b[^\n]*sdd\.md` spanned whole scripts: it fired on
+  # `platform`, `def norm(` and `rm /tmp/...` followed by a later `sdd.md` read (runs
+  # 2026-10-15_04-22-10 and adhoc-2026-10-19_13-51-54), with the draft still on disk.
   - type: command_not_executed
     description: "Rule 13: the draft is never renamed or deleted (a cp seed is outcome-graded by sdd_check + inventory + draft-survives)"
     tool_name: "Bash"
-    command_pattern: '(mv|rm)\b[^\n]*(sdd\.draft\.md|sdd\.md)'
+    command_pattern: '(?:^|[\s;&|("''/])(?:mv|rm)(?:\s+-[A-Za-z-]+)*(?:\s+[^\s;&|<>]+)?\s+[^\s;&|<>]*sdd(?:\.draft)?\.md\b'
     weight: 1.0
     pass_threshold: 1.0
 
