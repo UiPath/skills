@@ -21,6 +21,8 @@ uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipe
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow"
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.flow"
+# Validate reads every <source>/ beside the flow; copy before merge so merge's writes win.
+find "$PROJECT" -mindepth 1 -maxdepth 1 -type d ! -name '.*' -exec cp -R {} "$WORK/candidate/" \;
 uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
   -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow"
 
