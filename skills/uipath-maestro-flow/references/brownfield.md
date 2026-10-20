@@ -4,6 +4,19 @@ Use this procedure when a task supplies a deployed `.flow` and no `.flow.ts`.
 Do not hand-transcribe the graph: decompile it to builder source, edit that
 source, and merge only the delta back into the original.
 
+An edit that adds one of the [patterns](author.md#patterns) (a review gate,
+triage, a batch loop, a chat or voice front door, a panel of agents) reads that
+pattern's guide first and inserts only the part the flow lacks, as its "Adapting
+it" says. Inserting a pattern is still a narrow edit through this loop.
+
+A pattern the canvas inserted arrives unfinished: `core.logic.mock` steps
+labelled "(replace with …)", agent prompts that start `PLACEHOLDER -`, and a
+sticky note listing the setup. Finishing it means replacing each mock with the
+real node (rule 1 in [author.md](author.md)), rewriting each placeholder prompt
+for the request, and doing what the note lists. A note item the builder cannot
+do (such as attaching a tool to a voice agent) goes under Open questions. Keep
+every other step, port and name the pattern inserted.
+
 ## The safe project loop
 
 Keep authored source beside the canonical Flow so relative sidecars still
