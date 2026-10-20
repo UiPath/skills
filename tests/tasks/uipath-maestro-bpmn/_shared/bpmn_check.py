@@ -280,22 +280,13 @@ def body_object(element: ET.Element) -> dict:
     return parsed
 
 
-def path_parameters(element: ET.Element) -> dict[str, str]:
-    """``element``'s path parameters by name, in either connector node shape.
-
-    A V1 template node writes one ``target="path"`` input per field. A V2
-    element from ``registry get --input-details`` writes one
-    ``target="pathParameters"`` input holding them all as a JSON object
-    (skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
-    from the V1 template"). A V2 payload that is not a JSON object adds
-    nothing, and neither does a non-string value.
-    """
+def _parameters(element: ET.Element, v1_target: str, v2_target: str) -> dict[str, str]:
     params: dict[str, str] = {}
     for inp in context_inputs(element):
         target = inp.attrib.get("target")
-        if target == "path" and inp.attrib.get("name"):
+        if target == v1_target and inp.attrib.get("name"):
             params[inp.attrib["name"]] = _input_payload(inp)
-        elif target == "pathParameters":
+        elif target == v2_target:
             try:
                 parsed = json.loads(_input_payload(inp) or "{}")
             except (json.JSONDecodeError, ValueError):
@@ -307,6 +298,26 @@ def path_parameters(element: ET.Element) -> dict[str, str]:
                     if isinstance(value, str)
                 )
     return params
+
+
+def path_parameters(element: ET.Element) -> dict[str, str]:
+    """``element``'s path parameters by name, in either connector node shape.
+
+    A V1 template node writes one ``target="path"`` input per field. A V2
+    element from ``registry get --input-details`` writes one
+    ``target="pathParameters"`` input holding them all as a JSON object
+    (skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
+    from the V1 template"). A V2 payload that is not a JSON object adds
+    nothing, and neither does a non-string value.
+    """
+    return _parameters(element, "path", "pathParameters")
+
+
+def query_parameters(element: ET.Element) -> dict[str, str]:
+    """``element``'s query parameters by name: V1 ``target="query"`` inputs or
+    the V2 ``target="queryParameters"`` JSON input, read as
+    :func:`path_parameters` reads path ones."""
+    return _parameters(element, "query", "queryParameters")
 
 
 def has_type(element: ET.Element, token: str) -> bool:

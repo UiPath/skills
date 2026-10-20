@@ -664,6 +664,21 @@ def test_path_parameters_reads_the_v2_json_input() -> None:
     }
 
 
+def test_query_parameters_reads_both_shapes() -> None:
+    task = _send_task(
+        '<uipath:input name="isAscending" type="boolean" target="query" value="false" />'
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"entityScope": "tenant", "tenantEntityName": "NonExistentEntity", "limit": 5}]]></uipath:input>'
+        '<uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA['
+        '{"entityName": "PathOnly"}]]></uipath:input>'
+    )
+    assert bpmn_check.query_parameters(task) == {
+        "isAscending": "false",
+        "entityScope": "tenant",
+        "tenantEntityName": "NonExistentEntity",
+    }
+
+
 @pytest.mark.parametrize(
     "payload",
     ["not json", '["NonExistentEntity"]', '{"entityName": 7}', ""],

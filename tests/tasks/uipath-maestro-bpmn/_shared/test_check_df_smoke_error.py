@@ -163,6 +163,29 @@ def test_entity_named_in_a_v2_path_parameters_input_counts(tmp_path):
     assert rc == 0, out
 
 
+def test_a_v3_create_naming_the_tenant_entity_in_its_query_counts(tmp_path):
+    """Agent loop 6: CreateEntityRecord_V3 names a tenant entity in its
+    `queryParameters` (`entityScope` tenant, `tenantEntityName`)."""
+    create = _v2_node("CreateEntityRecord_V3", "unused").replace(
+        '{"entityName":"unused"}', "{}"
+    ).replace(
+        '<uipath:input name="body"',
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"entityScope":"tenant","tenantEntityName":"NonExistentEntity"}]]></uipath:input>'
+        '<uipath:input name="body"',
+    )
+    shape = (
+        f'<bpmn:definitions {NS}><bpmn:process id="p">'
+        + create
+        + _v2_node("QueryEntityRecordsCurated", "FlowCodeEvalEntity")
+        + _v2_node("QueryEntityRecordsCurated", "FlowCodeEvalEntity")
+        + "</bpmn:process></bpmn:definitions>"
+    )
+    (tmp_path / "P.bpmn").write_text(shape, encoding="utf-8")
+    rc, out = _run(tmp_path)
+    assert rc == 0, out
+
+
 def test_a_v2_create_on_the_real_entity_is_not_the_error_path(tmp_path):
     shape = (
         f'<bpmn:definitions {NS}><bpmn:process id="p">'

@@ -16,6 +16,8 @@ node values live in BPMN" and its "CI run 35488848026" section on the two
 valid activity shapes). A node names its entity when any one of these
 equals it: the generic-form `objectName`, any input's value (path, query,
 body or untargeted), a value in a V2 element's `pathParameters` JSON input,
+an entity-naming key of its `queryParameters` (a `*_V3` object's
+`tenantEntityName` / `folderEntityName`),
 or a `/`-separated segment of the context `path` field.
 
 Assertion map (Flow -> BPMN):
@@ -73,6 +75,7 @@ from _shared.bpmn_check import (  # noqa: E402
     fail,
     has_typed_uipath_extension,
     path_parameters,
+    query_parameters,
 )
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
@@ -98,6 +101,13 @@ def mentions_entity(task: ET.Element, entity: str) -> bool:
         return True
     if entity in path_parameters(task).values():
         return True
+    # A *_V3 object names the entity in a query parameter instead
+    # (`tenantEntityName`, or `folderEntityName` for a picked folder entity).
+    if any(
+        key.lower() in _ENTITY_KEYS and value == entity
+        for key, value in query_parameters(task).items()
+    ):
+        return True
     # The entity may be a field of the request body rather than a flat input
     # (smoke run 36443527602: body {"entityName": "FlowCodeEvalEntity", ...});
     # body_object reads both registry body forms. Only entity-naming keys
@@ -106,7 +116,7 @@ def mentions_entity(task: ET.Element, entity: str) -> bool:
     return entity in _entity_values(body_object(task))
 
 
-_ENTITY_KEYS = {"entityname", "entity"}
+_ENTITY_KEYS = {"entityname", "entity", "tenantentityname", "folderentityname"}
 
 
 def _entity_values(value: object) -> list[str]:
