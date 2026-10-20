@@ -29,7 +29,7 @@ Use it only for independent arms; do not assume the local executor runs them con
 ## Options
 
 `.parallel(name, arms, options)` takes `version` and `label` for the Merge, as `.branch()` does, plus `fork`.
-Both below need `@uipath/maestro-builder-sdk` 6.42.0 or later.
+Both below need `@uipath/maestro-builder-sdk` 6.44.0 or later.
 
 ### A fork node
 
@@ -52,6 +52,8 @@ The fork's name is a node id like a step's; `check` reports `DUP_STEP` when a st
 The canvas also lets two steps feed one step directly, with no Merge node anywhere.
 Spell that with arms that each end in `.stepToRef('<step>')`, and that step after the `.parallel`.
 When no arm hands the join a tail, compile writes no Merge node, and the refs are the join.
+That step then has one incoming edge per arm, and the runtime starts a step once per arriving token (only a gateway waits for every incoming flow), so it runs once per arm — not once after all arms, as a Merge would.
+`check` says so (`PARALLEL_REF_JOIN`, a warning); for one run, end each arm on a step of its own and put the shared step after the `.parallel`.
 
 ```ts
 .parallel('prepareFork', [
@@ -61,5 +63,5 @@ When no arm hands the join a tail, compile writes no Merge node, and the refs ar
 .step('sendMessage', script({ code: 'return [$vars.script1.output, $vars.script2.output];' }))
 ```
 
-`prepareFork` names no node here (the `.parallel` creates none), but it still must not be a step's name: a read of `$vars.prepareFork` is a read of a Merge, which has no output.
-Decompile writes this shape as `<source>Fork`, and a merge node with one edge in and one out (a pass-through the designer left behind) as the `rawNode` of its own definition; leave both as written.
+`prepareFork` creates no node, but do not reuse it as a step or variable name: `check` treats `$vars.prepareFork` as a Merge read (`PARALLEL_HAS_NO_OUTPUT`).
+Decompile writes this shape as `<source>Fork`, and a merge node with one edge in and one out (a pass-through the designer left behind) as the `rawNode` of its own definition; leave both as written, warning included.
