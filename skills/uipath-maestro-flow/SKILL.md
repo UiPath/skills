@@ -108,13 +108,12 @@ For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which run
 ```bash
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts
 node .flow-sdk/<Name>.pipeline.mjs      # captures the pristine baseline
-# edit .flow-sdk/<Name>.flow.ts narrowly
+# edit .flow-sdk/<Name>.flow.ts narrowly; no .layout() for added steps (builder-sdk#1320)
 node .flow-sdk/<Name>.pipeline.mjs      # compiles the edit and merges it back
-uip maestro flow validate .flow-sdk/<Name>.merged.flow --output json
 ```
 
-Validate the merged artifact, never the intermediate edited compile.
-If the source must stay inside the Flow project (for example, to preserve relative sidecars), keep baseline, edited, and candidate `.flow` files in an external `.flow-work/` directory. Validate the candidate, replace the canonical artifact, and leave exactly one `.flow` under the project. The reference below contains the copyable safe-project sequence.
+Back up the project to `mktemp -d`, `cp` the merge output over it whole, validate it there (not the edited compile), then delete the backup. Never write or `compile` onto the canonical `.flow`.
+If the source must stay inside the Flow project (for example, to preserve relative sidecars), keep baseline, edited, and candidate `.flow` files in an external `.flow-work/` directory. Install the candidate, validate the canonical artifact, and leave exactly one `.flow` under the project. The reference below contains the copyable safe-project sequence.
 
 **True-brownfield procedure:**
 **[`references/brownfield.md`](references/brownfield.md)**.

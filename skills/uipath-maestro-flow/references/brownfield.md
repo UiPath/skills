@@ -18,22 +18,47 @@ WORK=.flow-work/Deployed
 mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
 
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
-uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow"
+uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow" --no-check
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
+# Leave added steps out of .layout(...): merge places them (builder-sdk#1320).
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.flow"
 uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
   -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow"
 
-uip maestro flow validate "$WORK/candidate/Deployed.flow" --output json
+BACKUP=$(mktemp -d) && echo "backup: $BACKUP" && cp -r "$PROJECT/." "$BACKUP/"
 cp -r "$WORK/candidate/." "$PROJECT/"
 # Then delete each directory merge listed as `flow-merge: remove <dir> ...`.
-uip maestro flow validate "$CANONICAL" --output json
+uip maestro flow validate "$CANONICAL" --output json && rm -rf "${BACKUP:?}"
 ```
 
-Replace the canonical artifact only after the candidate validates. Do not copy
-the `baseline/` or `edited/` directories into the project, and do not leave an
-earlier `*.merged.flow` there: the project validator treats every `.flow` below
-the project directory as a deliverable.
+Install the candidate whole with `cp`. Never write or patch the `.flow`
+yourself, and never copy only your change into the original. Merge renumbers
+every edge (`edge_0`, `edge_1`, ...), may reorder nodes, and adds default
+fields: that is its normal output, not drift to undo. The changes to act on
+are the [merge warnings](#merge-warnings-what-the-round-trip-changed).
+
+Validate in the project, not `candidate/` alone: it holds only the agent files
+merge changed, so an unchanged inline agent's `agent.json` is missing there
+([builder-sdk#1318](https://github.com/UiPath/builder-sdk/issues/1318)).
+If validate fails, restore the project before merging again:
+`test -d "${BACKUP:?}" && rm -rf "${PROJECT:?}" && mkdir "$PROJECT" && cp -r "$BACKUP/." "$PROJECT/" && rm -rf "$BACKUP"`.
+Keep the backup in `mktemp -d`, never under the working directory: a copy of
+the project there is a second Flow project.
+
+Compile the baseline before the edit, never after: merge diffs edited against
+it, so a baseline of the edited source drops your change.
+
+If the edited compile fails `check` only with `HTTP_READ_WITHOUT_RETURNS`, the
+deployed HTTP node has no body schema
+([builder-sdk#1319](https://github.com/UiPath/builder-sdk/issues/1319)).
+Add `--no-check` to the edited compile and leave that node alone.
+`uip maestro flow check --source "$PROJECT/Deployed.flow.ts"` must report no
+other error code. Never use `--no-check` on the edited compile for any other
+error.
+
+Do not copy the `baseline/` or `edited/` directories into the project, and do
+not leave an earlier `*.merged.flow` there: the project validator treats every
+`.flow` below the project directory as a deliverable.
 
 ### Why three directories: inline agents
 
@@ -137,9 +162,10 @@ uip maestro flow merge .flow-sdk/edited/Deployed.flow --original Deployed.flow \
   -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow
 ```
 
-Like the pipeline, this keeps every candidate in `.flow-sdk/`; validate
-`.flow-sdk/Deployed.merged.flow`, then replace the original with it and copy
-every `<source>/` file merge reports writing.
+Like the pipeline, this keeps every candidate in `.flow-sdk/`. Back up the
+project, replace the original with `.flow-sdk/Deployed.merged.flow`, copy every
+`<source>/` file merge reports writing, then validate the original, as in
+[the safe project loop](#the-safe-project-loop).
 
 The baseline must be compiled from the pristine decompiled source, before any
 edit. It lets merge distinguish authored changes from reconstructed content;
@@ -268,7 +294,9 @@ migrates it forward on open). Changing versions is `uip maestro flow migrate`'s
 job, not an edit to this call.
 
 These findings the source cannot carry are printed on stderr as
-`flow-decompile: warning: …`, and `--strict` turns each into an error:
+`flow-decompile: warning: …`, and `--strict` turns each into an error. Edit the
+`.flow` JSON directly only when decompile printed one of these warnings and
+its case below says to; every other edit goes through merge.
 
 - A node **no trigger reaches** — no edge leads to it, as when a designer or
   `node add` left it unconnected. The builder has no detached-node construct,
@@ -317,10 +345,9 @@ These findings the source cannot carry are printed on stderr as
   touch the project's copy: do not copy the compiled file over it. If that
   already happened, tell the user to set the setting again in Studio Web.
 
-Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
-placing it in a solution, copy it over the canonical artifact rather than next
-to it, together with every `<source>/` file merge reports writing, then
-validate the canonical project path again.
+Validate the merged file after installing it as in
+[the safe project loop](#the-safe-project-loop), never the intermediate edited
+compile.
 
 Do not run `uip maestro flow format` on the merged file; it discards the author's layout.
 
