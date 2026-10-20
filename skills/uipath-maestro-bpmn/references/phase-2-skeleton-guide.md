@@ -123,7 +123,10 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
 
 ## Iterating
 
-- **3a Edit the skeleton** from the user's feedback, then re-`format`.
+- **3a Edit the skeleton** from the user's feedback, then re-`format`. If you
+  uploaded it, download it first (as in 1c); when its `.bpmn` differs from
+  the local one, the user edited it online: edit the downloaded `.bpmn` and
+  say in one sentence that you kept their changes.
 - **3b Show the change** the same way as 2f. Each upload after the first
   reports `Data.Action: "Overwritten"` and reuses the same `SolutionId` and
   `DesignerUrl`, because `upload` writes the cloud solution id back into the
