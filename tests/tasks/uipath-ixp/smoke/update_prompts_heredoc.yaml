@@ -1,9 +1,9 @@
 task_id: skill-ixp-update-prompts-heredoc-smoke
 description: >
   Smoke: agent improves a per-field instruction with
-  `fields update-prompts --updates-file`. The skill writes the JSON with a
-  heredoc under payloads/ in the same Bash command as the call (Critical
-  Rule 5); the grader checks that command and the payload it wrote.
+  `fields update-prompts --updates-file`. The skill writes the JSON to a
+  payloads/ file in the same command as the call (Critical Rule 5); the
+  grader checks that command and the payload the CLI received.
 
   Harness is unauthenticated; CLI calls fail with auth errors.
   Grades command shape, not wire effect.
@@ -13,11 +13,10 @@ run_limits:
   expected_turns: 8
 
 sandbox:
-  record_cli:
-    - tool: uip
-      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
-    - tool: curl
-      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
+  python: {}
+  mock_path_dirs: [mocks]
+  template_sources:
+    - {type: template_dir, path: ../_shared/mock_template}
 
 initial_prompt: |
   The `Invoice Number` field in the `Invoice Header` field group on IXP
@@ -37,11 +36,10 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # The payload lives in a file, so the recorder sees only its path: the
-  # heredoc and its content are graded from the Bash command that wrote it.
-  # Same Bash command: a heredoc into a payloads/ file (or a $VAR), then
-  # update-prompts passes that SAME target. \1 ties the two paths; \2 is the
-  # heredoc delimiter. `\\?` allows the quote escaping of `/bin/bash -lc "…"`.
+  # Only the Bash text shows how the file was written: a heredoc into a
+  # payloads/ file (or a $VAR), then update-prompts passes that SAME target.
+  # \1 ties the two paths; \2 is the heredoc delimiter. `\\?` allows the quote
+  # escaping of `/bin/bash -lc "…"`.
   - type: command_executed
     description: "Agent wrote the payload with a heredoc and passed that same file to --updates-file in one command"
     tool_name: "Bash"
@@ -51,45 +49,40 @@ success_criteria:
     weight: 2.5
     pass_threshold: 1.0
 
-  - type: cli_called
+  # The rest grade what the CLI received: the mock logs the passed file's
+  # content right after its path, so a stale or missing file fails here.
+  - type: file_matches_regex
     description: "CLI received `fields update-prompts --updates-file` with a payloads/ file"
-    verb: "ixp fields update-prompts"
-    tool: "uip"
-    positional: ["my_invoices-f1afa9ef-ixp"]
-    flags:
-      updates-file: {matches_regex: '/payloads/[^/]+\.json$'}
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^uip\s+ixp\s+fields\s+update-prompts\s+my_invoices-f1afa9ef-ixp\s(?=[^\r\n]*--updates-file\s+\S*payloads/[^\s/]+\.json\s)[^\r\n]*$
     weight: 2.5
     pass_threshold: 1.0
 
   # An entry is addressed by `group` + `name`, and `update-prompts` fails when
   # either combination is not found. Both names are exact from
   # _setup/fixtures/taxonomy.json (`Invoice Header` > `Invoice Number`); the
-  # mock fails every read, so the prompt supplies them. Content is matched
-  # inside the heredoc body only (between `<< DELIM` and the DELIM line), so
-  # text in a comment or a later command can't satisfy it.
-  - type: command_executed
+  # mock fails every read, so the prompt supplies them.
+  - type: file_matches_regex
     description: "The payload addresses the `Invoice Header` group"
-    tool_name: "Bash"
-    command_pattern: >-
-      (?s)cat\s*>\s*\S+\s*<<-?\s*\\?['"]?(\w+)\\?['"]?[^\n]*\n(?:(?!\n\1\b).)*?Invoice Header(?:(?!\n\1\b).)*?\n\1\b.*--updates-file
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^uip\s+ixp\s+fields\s+update-prompts\b(?=[^\r\n]*--updates-file\s+\S+\s[^\r\n]*Invoice Header)[^\r\n]*$
     weight: 0.84
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "The payload addresses the `Invoice Number` field"
-    tool_name: "Bash"
-    command_pattern: >-
-      (?s)cat\s*>\s*\S+\s*<<-?\s*\\?['"]?(\w+)\\?['"]?[^\n]*\n(?:(?!\n\1\b).)*?Invoice Number(?:(?!\n\1\b).)*?\n\1\b.*--updates-file
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^uip\s+ixp\s+fields\s+update-prompts\b(?=[^\r\n]*--updates-file\s+\S+\s[^\r\n]*Invoice Number)[^\r\n]*$
     weight: 0.83
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: file_matches_regex
     description: "The payload carries the requested instruction"
-    tool_name: "Bash"
-    command_pattern: >-
-      (?s)cat\s*>\s*\S+\s*<<-?\s*\\?['"]?(\w+)\\?['"]?[^\n]*\n(?:(?!\n\1\b).)*?Do NOT use the Purchase Order(?:(?!\n\1\b).)*?\n\1\b.*--updates-file
-    min_count: 1
+    path: "mocks/calls.log"
+    pattern: >-
+      (?m)^uip\s+ixp\s+fields\s+update-prompts\b(?=[^\r\n]*--updates-file\s+\S+\s[^\r\n]*Do NOT use the Purchase Order)[^\r\n]*$
     weight: 0.83
     pass_threshold: 1.0
