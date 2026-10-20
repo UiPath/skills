@@ -39,13 +39,15 @@ def _page(name: str, cursor: str | None) -> dict:
         raise RuntimeError(proc.stderr.strip() or f"{LIST_LABEL} exited {proc.returncode} with no JSON")
 
     if proc.returncode != 0 or payload.get("Result") != RESULT_SUCCESS:
-        raise RuntimeError(f"{LIST_LABEL} failed: {payload.get('Message', payload)}")
+        reason = ": ".join(str(payload[k]) for k in ("Message", "Instructions") if payload.get(k))
+        raise RuntimeError(f"{LIST_LABEL} failed: {reason or payload}")
 
     return payload
 
 
 def _folders(name: str) -> list[str]:
     folders: list[str] = []
+    seen: set[str] = set()
     cursor = None
     while True:
         payload = _page(name, cursor)
@@ -54,6 +56,10 @@ def _folders(name: str) -> list[str]:
         cursor = (payload.get("Pagination") or {}).get("NextPage")
         if not cursor:
             return folders
+
+        if cursor in seen:
+            raise RuntimeError(f"{LIST_LABEL} repeated NextPage {cursor!r}")
+        seen.add(cursor)
 
 
 def main(selectors: list[str]) -> int:

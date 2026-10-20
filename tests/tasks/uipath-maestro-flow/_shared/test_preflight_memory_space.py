@@ -20,6 +20,7 @@ SPACE = "UiPathAgentsSupportMemory"
 FOLDER = "Shared/uipath-agents"
 SELECTOR = f"{SPACE}={FOLDER}"
 CURSOR = "eyJhdCI6InJlbW90ZSJ9"
+NOT_READY = "TENANT NOT READY"
 
 
 def _row(name: str, folder: str) -> dict:
@@ -55,8 +56,10 @@ def test_substring_match_does_not_count():
 def test_other_folder_is_reported(capsys):
     code, _ = _run([_listing([_row(SPACE, "Shared/elsewhere")])])
 
+    err = capsys.readouterr().err
     assert code == 1
-    assert "found in: Shared/elsewhere" in capsys.readouterr().err
+    assert NOT_READY in err
+    assert "found in: Shared/elsewhere" in err
 
 
 def test_follows_next_page():
@@ -66,12 +69,20 @@ def test_follows_next_page():
     assert run.call_args_list[1].args[0][-2:] == ["--next-page", CURSOR]
 
 
+def test_repeated_next_page_stops(capsys):
+    code, run = _run([_listing([], next_page=CURSOR)] * 3)
+
+    assert code == 1
+    assert run.call_count == 2
+    assert "repeated NextPage" in capsys.readouterr().err
+
+
 def test_cli_failure_is_not_ready(capsys):
-    failure = {"Result": "Failure", "Message": "Failed to authenticate"}
+    failure = {"Result": "Failure", "Message": "Failed to authenticate", "Instructions": "token expired"}
     code, _ = _run([mock.Mock(returncode=1, stdout=json.dumps(failure), stderr="")])
 
     assert code == 1
-    assert "Failed to authenticate" in capsys.readouterr().err
+    assert "Failed to authenticate: token expired" in capsys.readouterr().err
 
 
 def test_non_json_is_not_ready(capsys):
