@@ -52,7 +52,7 @@ Reading and building are checked apart, with you in between:
 | Gaps marked, not guessed | Unmapped steps flagged | No: filled with guesses | Yes | Yes |
 | Done means the source's outcomes, checked | It compiles | Its own tests | The spec's tests | Yes, a verdict on each |
 
-**Where another way is enough:** a step-by-step converter when the new automation must keep the old shape; a one-shot rewrite for a small automation someone knows well. The genome costs a review turn and hours of agent time. It pays off when the rules are many, hidden, or must be proven.
+**Where another way is enough:** a one-shot rewrite for a small automation someone knows well. Keeping the old shape is no reason to convert: a [rebuild as it is](#rebuilding-an-existing-automation) keeps the step names and the shape, hidden rules included. The genome costs a review turn and hours of agent time. It pays off when the rules are many, hidden, or must be proven.
 
 ## Rebuilding an existing automation
 
