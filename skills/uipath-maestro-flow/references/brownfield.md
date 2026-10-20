@@ -24,7 +24,7 @@ uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.f
 uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
   -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow"
 
-rm -rf "$WORK/backup" && cp -r "$PROJECT" "$WORK/backup"
+rm -rf "${WORK:?}/backup" && cp -r "$PROJECT" "$WORK/backup"
 cp -r "$WORK/candidate/." "$PROJECT/"
 # Then delete each directory merge listed as `flow-merge: remove <dir> ...`.
 uip maestro flow validate "$CANONICAL" --output json
@@ -37,16 +37,17 @@ fields: that is its normal output, not drift to undo. The changes to act on
 are the [merge warnings](#merge-warnings-what-the-round-trip-changed).
 
 Validate in the project, not `candidate/` alone: it holds only the agent files
-merge changed, so an unchanged inline agent's `agent.json` is missing there.
+merge changed, so an unchanged inline agent's `agent.json` is missing there
+([builder-sdk#1318](https://github.com/UiPath/builder-sdk/issues/1318)).
 If validate fails, restore the project before merging again:
-`rm -rf "$PROJECT" && cp -r "$WORK/backup" "$PROJECT"`.
+`test -d "${WORK:?}/backup" && rm -rf "${PROJECT:?}" && cp -r "$WORK/backup" "$PROJECT"`.
 
-If the pristine baseline compile fails `check` (for example
-`HTTP_READ_WITHOUT_RETURNS`), the deployed flow already has that error. Save
-the output of `uip maestro flow check --source "$PROJECT/Deployed.flow.ts"`
-before editing, and compile both baseline and edited with `--no-check`. After
-the edit, `check --source` must report no error the saved output lacks. Leave
-the existing error alone unless the task asks you to fix it.
+If the pristine baseline compile fails `check` only with
+`HTTP_READ_WITHOUT_RETURNS`, the deployed HTTP node has no body schema
+([builder-sdk#1319](https://github.com/UiPath/builder-sdk/issues/1319)).
+Compile both baseline and edited with `--no-check` and leave that node alone.
+After the edit, `uip maestro flow check --source "$PROJECT/Deployed.flow.ts"`
+must report no other error code. Never use `--no-check` for any other error.
 
 Do not copy the `baseline/` or `edited/` directories into the project, and do
 not leave an earlier `*.merged.flow` there: the project validator treats every
