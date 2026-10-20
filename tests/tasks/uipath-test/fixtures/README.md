@@ -44,6 +44,8 @@ and therefore exact for this scheme.
 | `project_settings_smoke` | its own throwaway project | the `EVFX-PSET-*` namespace | `pre_run` creates one `EVFX-PSET-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans stamped more than 6 hours ago (so a concurrent run's project is never touched); `post_run` deletes it. The deliverable is a settings change, not the project, so the project is scratch (Rule 2). Unlike the self-contained build tasks, project create/delete is not under test here, so the hooks own the project's lifecycle and the agent never deletes it |
 | `run_package_ci_smoke` | its own throwaway project | the `EVFX-RUNPKG-*` namespace | Same hooks as `project_settings_smoke`: `pre_run` creates one `EVFX-RUNPKG-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) and sweeps orphans older than 6 hours; `post_run` deletes it, which also removes the execution and hidden test set `tm run --type package` creates. Runs the package `TestCase_CrossPlatform_VB_Tests`, uploading it when the folder feed lacks it; exits TENANT NOT READY on a tenant that cannot run it (see [Run-package fixtures](#run-package-fixtures)) |
 | `run_package_failing_smoke` | its own throwaway project | the `EVFX-RUNPKGFAIL-*` namespace | Same hooks as `run_package_ci_smoke`, in its own namespace so the two never sweep each other's projects. Runs the package `FailingTestCase_CrossPlatform_VB_Tests` |
+| `project_default_testcases_smoke` | the tenant's default project | the `EVFX-DPTC-*` namespace | `pre_run` writes a per-run `EVFX-DPTC-<YYYYMMDD-HHMMSS>-<hex>` feature id to feature.md and `.run-tag`, records the visible default, and sweeps `EVFX-DPTC-*` test cases in it stamped more than 6 hours ago; `post_run` deletes the run's test cases. See [Default-project tasks](#default-project-tasks) |
+| `project_default_discover_smoke` | the tenant's default project | no EVFX- name | Read-only: records the visible default before the run and fails if it changed. See [Default-project tasks](#default-project-tasks) |
 | `testcase_parameters_bulk_add_smoke` | its own throwaway project | the `EVFX-PARAM-*` namespace | `pre_run` creates one `EVFX-PARAM-<YYYYMMDD-HHMMSS>-<hex>` project per run (key in `project-key.txt`) holding `EVFX-PARAM-Login` (no parameters) and `EVFX-PARAM-Transfer` (`Username=keepme`), sweeps orphans older than 6 hours, and `post_run` deletes it. Per-run because the agent mutates the cases and concurrent gate runs would corrupt a shared one |
 | `testcase_parameters_edit_integration` | HEALTH | `EVFX-PARAMEDIT-Login` | Created if absent; `pre_run` resets its parameters to `Username=admin` (with hint) and `Userid=u1` |
 | `testcase_parameters_lifecycle_e2e` | HEALTH | `EVFX-PARAMLIFE-Login` | Created if absent; `pre_run` clears its parameters |
@@ -364,3 +366,23 @@ The alpha `codereval` / `DefaultTenant` eval tenant is set up this way: the
 `Default Serverless` machine has one Unattended runtime and the robot account
 `tm-eval-robot` is in the folder. With one runtime, parallel runs queue for it;
 a run takes one to three minutes, well inside the prompts' 10-minute budget.
+
+## Default-project tasks
+
+`project_default_discover_smoke` and `project_default_testcases_smoke` use the
+tenant's default project (one per tenant, for work with no project named).
+Each `pre_run` records the default this login sees in `.default-before.json`,
+and each task fails if the default afterwards is a different project.
+
+The discover task never creates a default. The test-case task lets the agent
+run `uip tm project get-default`, which **creates** `Default Project` (key
+`TMDP`) when the tenant has none: a lasting change, owned by the org admins and
+open to the tenant's Everyone group as Test Managers. The alpha `codereval` /
+`DefaultTenant` eval tenant already has it (created by this task's first run),
+so runs there only read it. On a tenant without one, the first run creates it,
+and a discover task running at that moment can see the default appear and fail
+its unchanged check; re-run it.
+
+The default project is shared by every run, so it is never deleted; the
+test-case task deletes the test cases it adds.
+

@@ -1,0 +1,147 @@
+task_id: skill-case-single-business-event
+description: >
+  Build a Case Management definition from an sdd.md that declares three
+  business events in a `### Business Events` table and listens for them with
+  `api-event("<Name>")` WHEN cells: two on a stage exit (one completing, one
+  not) and one on a case exit. Exercises MST-16031: `uip maestro case sdd
+  convert` writes the events to `metadata.businessEvents` and each rule's
+  `businessEventType`. Validate-only, with `validate --strict --sdd` checked
+  for business-event findings; no debug, because nothing in the harness can
+  send a business event to a running case, so the stage would wait forever.
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:single-node]
+max_iterations: 1
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+run_limits:
+  task_timeout: 1200
+  max_turns: 100
+  turn_timeout: 1200
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  Build a UiPath Case Management solution named "BusinessEventCase"
+  containing a project also named "BusinessEventCase" from the sdd.md
+  below. Write the sdd.md to disk first, then build from it.
+
+  ```
+  # SDD — BusinessEventCase
+
+  Single-stage case that waits for the finance app to approve, reject or withdraw an invoice.
+
+  ## Section 1: Case Definition
+
+  ### Case Metadata
+  | Property | Value |
+  |---|---|
+  | Case Name | BusinessEventCase |
+  | Case Description | Holds an invoice in review until the finance app reports a decision. |
+  | Case Identifier | Prefix: BEC, Type: constant |
+  | Case-Level SLA | 5 d |
+  | SLA Type | Static |
+
+  ### Case Triggers
+  | T# | Trigger Type | Source | Configuration |
+  |---|---|---|---|
+  | T02 | Manual | Manual | N/A |
+
+  ### Case Exit Conditions
+  | WHEN | IF | THEN | Marks Case Complete | Display Name |
+  |---|---|---|---|---|
+  | required-stages-completed | — | Case exited | Yes | Done |
+  | api-event("Invoice Withdrawn") | — | Case exited | No | Withdrawn |
+
+  ### Case Variables
+  | Name | Category | Type | sourceTriggers | sourceFields | Default | Description |
+  |---|---|---|---|---|---|---|
+  | invoiceNumber | In | string | | | INV-1042 | The invoice under review. |
+
+  ### Business Events
+  | Name | Description | Payload |
+  |---|---|---|
+  | Invoice Approved | Sent by the finance app when the invoice is approved | `{"type": "object", "properties": {"amount": {"type": "number"}}}` |
+  | Invoice Rejected | Sent by the finance app when the invoice is rejected | — |
+  | Invoice Withdrawn | Sent by the finance app when the submitter withdraws the invoice | — |
+
+  ## Section 2: Stages & Tasks
+
+  ### Stage 1: Review (`review`)
+  **Type:** Stage
+  **Description:** Wait for the finance app's decision on the invoice.
+  **Required for Case Completion:** Yes
+
+  #### Stage Entry Conditions
+  | WHEN | IF | Interrupting | Display Name |
+  |---|---|---|---|
+  | case-entered | — | No | — |
+
+  #### Stage Exit Conditions
+  | WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+  |---|---|---|---|---|
+  | api-event("Invoice Approved") | — | exit-only | Yes | Approved |
+  | api-event("Invoice Rejected") | — | exit-only | No | Rejected |
+
+  #### Tasks
+  | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
+  |---|---|---|---|---|---|---|---|---|
+  | 1 | Hold For Decision | wait-for-timer | parallel | stage enters | No | Yes | system | — |
+
+  ##### Task 1.1: Hold For Decision
+
+  **Type:** wait-for-timer
+  **Activation Mode:** parallel
+  **Design Rationale:** Keeps the stage open while the decision event is pending.
+
+  **Entry Condition:**
+  | WHEN | IF | Display Name |
+  |---|---|---|
+  | current-stage-entered | — | — |
+
+  **Task envelope**
+  | Required | Run Only Once |
+  |---|---|
+  | No | Yes |
+
+  ###### Timer Task Detail (type: `wait-for-timer`)
+
+  **Timer:** timeDuration
+  **Value:** P5D
+  **Business Calendar:** —
+  ```
+
+  Treat all build gates as pre-approved — do NOT block on the
+  HARD STOP / AskUserQuestion approval step. Do NOT run `uip maestro case
+  debug`. Do NOT ask for approval, confirmation, or feedback. Build
+  end-to-end in a single pass and finish with `uip maestro case validate`
+  passing on the resulting case plan.
+success_criteria:
+  - type: run_command
+    description: "uip maestro case validate passes on the generated case plan"
+    command: "p=$(ls BusinessEventCase/BusinessEventCase/caseplan.case BusinessEventCase/BusinessEventCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
+    timeout: 60
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The three business events are declared, each api-event rule names its event on the right exit, and strict --sdd raises no business-event finding"
+    command: "python3 $REFERENCE_DIR/_shared/check_business_event_case.py"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not use mutating case-authoring CLI commands"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_solutions.py"
+    timeout: 120

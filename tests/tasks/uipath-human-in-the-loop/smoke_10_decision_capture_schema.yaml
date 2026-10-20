@@ -15,7 +15,9 @@ initial_prompt: |
   Approve or Deny with a confidence score, proposes a priority
   (High/Normal/Low) for the finance queue, and proposes reasons. A finance
   reviewer confirms or corrects these in a Coded Action App, and I want
-  each reviewer decision captured so the agent learns from corrections.
+  each reviewer decision captured. Corrections to the proposed priority are
+  routine; the agent's confidence is sometimes low, and claims over a set
+  amount are high-stakes.
 
   Write the app's `action-schema.json` at the sandbox root. The schema is
   an object with four top-level sections, `inputs`, `outputs`, `inOuts`
@@ -40,8 +42,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "the toggle's decision inputs are present: proposedOutcome, proposalConfidence, rationaleOptions, instructionOptions"
-    command: "python3 -c \"import json,sys; i=json.load(open('action-schema.json'))['inputs']['properties']; sys.exit(0 if all(k in i for k in ['proposedOutcome','proposalConfidence','rationaleOptions','instructionOptions']) else 1)\""
+    description: "the toggle's decision inputs are present: proposedOutcome, proposalConfidence, highStakes, rationaleOptions, counterfactualOptions"
+    command: "python3 -c \"import json,sys; i=json.load(open('action-schema.json'))['inputs']['properties']; sys.exit(0 if all(k in i for k in ['proposedOutcome','proposalConfidence','highStakes','rationaleOptions','counterfactualOptions']) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
@@ -64,8 +66,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "the reviewer's rationale, lesson and scope are outputs: rationale, instructionText, instructionScope"
-    command: "python3 -c \"import json,sys; o=json.load(open('action-schema.json'))['outputs']['properties']; sys.exit(0 if all(k in o for k in ['rationale','instructionText','instructionScope']) else 1)\""
+    description: "the reviewer's capture is outputs: rationale, fieldReasons, reviewerConfidence, decisiveReasonId, addedFactors, counterfactual"
+    command: "python3 -c \"import json,sys; o=json.load(open('action-schema.json'))['outputs']['properties']; sys.exit(0 if all(k in o for k in ['rationale','fieldReasons','reviewerConfidence','decisiveReasonId','addedFactors','counterfactual']) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
@@ -74,6 +76,14 @@ success_criteria:
   - type: run_command
     description: "no agent-named or telemetry fields: no agentRecommendedOutcome, signals, decision or action field anywhere"
     command: "python3 -c \"import json,sys; d=json.load(open('action-schema.json')); keys=[k.lower() for s in ('inputs','outputs','inOuts') for k in d.get(s,{}).get('properties',{})]; sys.exit(1 if {'agentrecommendedoutcome','signals','decision','action'}.intersection(keys) else 0)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "no field name or description says teach, train or lesson"
+    command: "python3 -c \"import json,re,sys; t=open('action-schema.json').read(); sys.exit(1 if re.search(r'\\b(teach(es|ing)?|train(ing)?|lessons?)\\b', t, re.I) else 0)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
