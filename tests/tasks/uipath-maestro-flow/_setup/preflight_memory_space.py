@@ -4,12 +4,6 @@
 Usage:
     preflight_memory_space.py <memory-space>=<folder> [<memory-space>=<folder> ...]
 
-`uip agent memory add` attaches an existing space; it cannot create one. With the
-space absent the agent correctly stops, and the task reads FAILURE:
-
-  skill-agent-inline-memory-space   UiPathAgentsSupportMemory missing from
-                                    Shared/uipath-agents, 2026-10-20
-
 `--search` is a substring match, so the row must match name and folder exactly.
 """
 
@@ -19,13 +13,16 @@ import json
 import subprocess
 import sys
 
+LIST_CMD = ["uip", "solution", "resources", "list"]
+LIST_LABEL = f"`{' '.join(LIST_CMD)}`"
 LIST_TIMEOUT_S = 90
+MEMORY_SPACE_KIND = "MemorySpace"
+RESULT_SUCCESS = "Success"
 
 
 def _page(name: str, cursor: str | None) -> dict:
-    cmd = [
-        "uip", "solution", "resources", "list",
-        "--source", "remote", "--kind", "MemorySpace", "--search", name,
+    cmd = LIST_CMD + [
+        "--source", "remote", "--kind", MEMORY_SPACE_KIND, "--search", name,
         "--output", "json",
     ]
     if cursor:
@@ -34,21 +31,20 @@ def _page(name: str, cursor: str | None) -> dict:
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=LIST_TIMEOUT_S)
     except subprocess.TimeoutExpired as exc:
-        raise RuntimeError(f"`uip solution resources list` did not answer within {exc.timeout:.0f}s") from exc
+        raise RuntimeError(f"{LIST_LABEL} did not answer within {exc.timeout:.0f}s") from exc
 
     try:
         payload = json.loads(proc.stdout)
     except json.JSONDecodeError:
-        raise RuntimeError(proc.stderr.strip() or f"`uip solution resources list` exited {proc.returncode} with no JSON")
+        raise RuntimeError(proc.stderr.strip() or f"{LIST_LABEL} exited {proc.returncode} with no JSON")
 
-    if proc.returncode != 0 or payload.get("Result") != "Success":
-        raise RuntimeError(f"`uip solution resources list` failed: {payload.get('Message', payload)}")
+    if proc.returncode != 0 or payload.get("Result") != RESULT_SUCCESS:
+        raise RuntimeError(f"{LIST_LABEL} failed: {payload.get('Message', payload)}")
 
     return payload
 
 
 def _folders(name: str) -> list[str]:
-    """Every folder holding a memory space named exactly ``name``."""
     folders: list[str] = []
     cursor = None
     while True:
@@ -70,7 +66,7 @@ def main(selectors: list[str]) -> int:
 
         try:
             folders = _folders(name)
-        except Exception as exc:  # noqa: BLE001 — any failure here is a blocked tenant
+        except Exception as exc:  # noqa: BLE001  any failure here is a blocked tenant
             broken.append(f"{name}: {exc}")
             continue
 
