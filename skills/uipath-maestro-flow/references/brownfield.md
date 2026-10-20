@@ -30,10 +30,6 @@ cp -r "$WORK/candidate/." "$PROJECT/"
 uip maestro flow validate "$CANONICAL" --output json
 ```
 
-With an edited `.flow.ts` and `--baseline-from`, `merge` runs `check` on the edited source and refuses the write only when `check` finds an error in a node or subflow the edit changed (`N error(s) in nodes merge takes from the edited flow`).
-An error on a node the edit did not touch prints as `DRAFT_NODE_KEPT` and the original node is kept; a finding `merge` cannot place on a node prints as `CHECK_FINDING_UNPLACED` when the original's own round trip reports it too, and is refused when the edit introduced it.
-Fix a finding when you edit its node (`@uipath/maestro-builder-sdk` 6.44.1 or later; an older SDK refuses the write for any error it cannot place on an untouched root node).
-
 Replace the canonical artifact only after the candidate validates. Do not copy
 the `baseline/` or `edited/` directories into the project, and do not leave an
 earlier `*.merged.flow` there: the project validator treats every `.flow` below
@@ -273,7 +269,8 @@ job, not an edit to this call.
 
 ## Designer shapes decompile keeps
 
-Leave each as decompile writes it (`@uipath/maestro-builder-sdk` 6.44.0 or later):
+Leave each as decompile writes it.
+Needs `@uipath/maestro-builder-sdk` 6.44.0 or later: an older SDK's decompile writes `js\`[object Object]\`` for the envelope, drops the fork's arms and the `variable` rows with a `has no spelling` / `cannot write back` warning, and compile then refuses the source — upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 
 - a decision or switch condition stored as a `jsExpression` envelope or as `=js: …`
 - a quick form's asked-field `variable` ([hitl.md](hitl.md))
@@ -349,7 +346,7 @@ Decompiled source carries that layout as a `.layout({ nodes })` block, one long-
 Keep it.
 Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), avoiding any x where (x − 256) is a multiple of 288 on y = 144 or 304, which `merge` reads as a compile placeholder and moves.
 At the root, an existing node's position and size come from the original whatever the source says, so moving one or resizing a container the edit grew in the source does nothing; set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
-Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.1 or later; an older SDK takes every subflow from the edited compile).
+Inside a subflow the source's entries land, because `merge` takes subflows from the edited compile whole.
 A step the edit removes must lose its entry, or compile fails on the unknown key.
 Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim).
 

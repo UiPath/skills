@@ -76,8 +76,10 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `EXPR_UNDECLARED_REF`. `check` reports `HITL_FIELD_VARIABLE` for a `vars.`
   prefix, a dotted path, or a `variable` on any field that is not
   `direction: 'output'`. The answer is always `out('<step>', '<id>')` too.
-  Needs `@uipath/maestro-builder-sdk` 6.44.0 or later; an older SDK's decompile
-  warns that it cannot write the row back.
+  Needs `@uipath/maestro-builder-sdk` 6.44.0 or later; an older SDK ignores
+  `variable` (the row is written as `vars.<id>`, so the reads fail
+  `EXPR_UNDECLARED_REF`) and its decompile warns that it cannot write the
+  designer's row back — upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 - A field's `type` is one of the platform's 11 quick-form types: `'string'`,
   `'number'`, `'integer'`, `'float'`, `'double'`, `'boolean'`, `'date'`,
   `'datetime'`, `'file'`, `'object'`, `'array'`. `'text'` and `'date-time'` are
