@@ -18,7 +18,7 @@ WORK=.flow-work/Deployed
 mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
 
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
-uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow"
+uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow" --no-check
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
 # Leave added steps out of .layout(...): merge places them (builder-sdk#1320).
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.flow"
@@ -44,12 +44,16 @@ If validate fails, restore the project before merging again:
 `test -d "${WORK:?}/backup" && rm -rf "${PROJECT:?}" && cp -r "$WORK/backup" "$PROJECT" && rm -rf "$WORK/backup"`.
 Leave no backup behind: it is a second Flow project.
 
-If the pristine baseline compile fails `check` only with
-`HTTP_READ_WITHOUT_RETURNS`, the deployed HTTP node has no body schema
+Compile the baseline before the edit, never after: merge diffs edited against
+it, so a baseline of the edited source drops your change.
+
+If the edited compile fails `check` only with `HTTP_READ_WITHOUT_RETURNS`, the
+deployed HTTP node has no body schema
 ([builder-sdk#1319](https://github.com/UiPath/builder-sdk/issues/1319)).
-Add `--no-check` to both compiles above and leave that node alone.
-After the edit, `uip maestro flow check --source "$PROJECT/Deployed.flow.ts"`
-must report no other error code. Never use `--no-check` for any other error.
+Add `--no-check` to the edited compile and leave that node alone.
+`uip maestro flow check --source "$PROJECT/Deployed.flow.ts"` must report no
+other error code. Never use `--no-check` on the edited compile for any other
+error.
 
 Do not copy the `baseline/` or `edited/` directories into the project, and do
 not leave an earlier `*.merged.flow` there: the project validator treats every
