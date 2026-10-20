@@ -423,6 +423,8 @@ like any other connector input:
 }, { connection: 'slack', folder: 'shared' }))
 ```
 
+Output field names are case-sensitive and `check` does not verify them: `out('upload', 'WebUrl')` compiles and reads `null` at run time when the field is `webUrl`. Copy each name from the operation's **Outputs** in the library Markdown (`uip maestro registry path --library-md`).
+
 The compiler emits the product's `multipartParameters` envelope. This is a Flow
 artifact transport; the separate `uip is resources run` command does not expose
 a multipart flag and is not the execution surface for this wiring.
@@ -476,6 +478,8 @@ channel: lookup(SendMessageToUser, 'channel').byEmail('dustin@example.com')
 Do not carry an alias from the first row into the second.
 There is no table to generate it from, so `lookup('k', 'a', 'f').byEmail(…)` throws.
 Write `.by('profile.email', …)` there instead — the names a field is searchable by are in the descriptor's `LOOKUP:` header and in every `check` diagnostic about the field.
+
+A folder-tree lookup (OneDrive's `referenceID` by `FullName`) matches a bare name only at the top of the tree or one level below. For anything deeper, give the path from the root picker's own top entry, `OneDrive/<folder>/<file>`, not from the drive root (`<folder>/<file>` fails at its first segment). Expect a resolving walk to take about four minutes; a wrong path fails within seconds and lists what the level holds.
 
 When the flow is written, `check` reports each token still unresolved
 (`LOOKUP_UNRESOLVED`) with exactly this command — one prepare records them all,

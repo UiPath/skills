@@ -57,7 +57,12 @@ them only when the scenario calls for different operational behavior.
 ## Managed authentication
 
 Managed HTTP has two authentication modes. Omit `connection` and `folder` for
-manual/implicit mode. To reuse an Integration Service HTTP connection, provide
+manual/implicit mode, but `uip maestro flow debug` refuses that node today
+(`Connection ImplicitConnection not found in Resource Catalog`), and the refusal
+blocks debug for every project in the solution. When the scenario does not
+name the managed node, send a URL that needs no connection as standalone
+(`managed: false`): it debugs, and its `HTTP_V1_RETIRED` warning from `check`
+is expected. When it does, say in your summary that debug refuses it. To reuse an Integration Service HTTP connection, provide
 both symbolic names from `bindings.json`; the compiler resolves them into the
 node detail and the emitted flow's resource bindings:
 
