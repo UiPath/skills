@@ -7,8 +7,10 @@ Creates one process from a schema-driven payload and attaches its documents (PDD
 ## Step 1: Verify connectivity (and fetch the idea flows)
 
 ```bash
-uip ah idea-flows list --limit 1000 --output json
+uip ah idea-flows list --limit 1000 --output json --output-filter "[].{Id: Id, Name: Name, Type: Type}"
 ```
+
+Keep the projection, and run this as its own command, not chained with other reads. Unprojected, each entry carries its flow's whole phase/status tree, about 20k tokens of output on a default tenant. Agents whose shell truncated that have lost the last entries, which is where Business Process sits, and published to the wrong flow. Publishing needs only `Id`, `Name` and `Type`; a `Type` of `null` means the CLI or server predates it (Step 2).
 
 - `Result: Success` → keep `Data` (flow names + ids) and tell the user "Connected to Automation Hub."
 - Auth failure → tell the user to run `uip login` (or, in Delegate, to sign in). Never ask for a raw token.
