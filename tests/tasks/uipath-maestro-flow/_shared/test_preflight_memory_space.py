@@ -99,6 +99,29 @@ def test_timeout_is_not_ready(capsys):
     assert "did not answer" in capsys.readouterr().err
 
 
+def test_page_timeout_fits_budget():
+    left = 5
+    clock = [0, 0, preflight.TOTAL_BUDGET_S - left]
+    responses = [_listing([], next_page=CURSOR), _listing([_row(SPACE, FOLDER)])]
+    with mock.patch.object(preflight, "monotonic", side_effect=clock):
+        code, run = _run(responses)
+
+    assert code == 0
+    assert [c.kwargs["timeout"] for c in run.call_args_list] == [preflight.LIST_TIMEOUT_S, left]
+
+
+def test_spent_budget_is_not_ready(capsys):
+    clock = [0, preflight.TOTAL_BUDGET_S]
+    with mock.patch.object(preflight, "monotonic", side_effect=clock):
+        code, run = _run([])
+
+    err = capsys.readouterr().err
+    assert code == 1
+    assert run.call_count == 0
+    assert NOT_READY in err
+    assert "budget" in err
+
+
 @pytest.mark.parametrize("selector", [SPACE, f"{SPACE}=", f"={FOLDER}"])
 def test_bad_selector_is_rejected(selector):
     with mock.patch.object(preflight.subprocess, "run") as run:

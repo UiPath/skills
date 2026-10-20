@@ -12,15 +12,22 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from time import monotonic
 
 LIST_CMD = ["uip", "solution", "resources", "list"]
 LIST_LABEL = f"`{' '.join(LIST_CMD)}`"
 LIST_TIMEOUT_S = 90
+# Under the task's pre_run timeout (120s), so TENANT NOT READY prints before the kill.
+TOTAL_BUDGET_S = 100
 MEMORY_SPACE_KIND = "MemorySpace"
 RESULT_SUCCESS = "Success"
 
 
-def _page(name: str, cursor: str | None) -> dict:
+def _page(name: str, cursor: str | None, deadline: float) -> dict:
+    remaining = deadline - monotonic()
+    if remaining <= 0:
+        raise RuntimeError(f"{LIST_LABEL} ran past the {TOTAL_BUDGET_S}s budget")
+
     cmd = LIST_CMD + [
         "--source", "remote", "--kind", MEMORY_SPACE_KIND, "--search", name,
         "--output", "json",
@@ -29,7 +36,7 @@ def _page(name: str, cursor: str | None) -> dict:
         cmd += ["--next-page", cursor]
 
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=LIST_TIMEOUT_S)
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=min(LIST_TIMEOUT_S, remaining))
     except subprocess.TimeoutExpired as exc:
         raise RuntimeError(f"{LIST_LABEL} did not answer within {exc.timeout:.0f}s") from exc
 
@@ -45,12 +52,12 @@ def _page(name: str, cursor: str | None) -> dict:
     return payload
 
 
-def _folders(name: str) -> list[str]:
+def _folders(name: str, deadline: float) -> list[str]:
     folders: list[str] = []
     seen: set[str] = set()
     cursor = None
     while True:
-        payload = _page(name, cursor)
+        payload = _page(name, cursor, deadline)
         folders += [str(r.get("Folder")) for r in payload.get("Data") or [] if r.get("Name") == name]
 
         cursor = (payload.get("Pagination") or {}).get("NextPage")
@@ -64,6 +71,7 @@ def _folders(name: str) -> list[str]:
 
 def main(selectors: list[str]) -> int:
     broken: list[str] = []
+    deadline = monotonic() + TOTAL_BUDGET_S
     for selector in selectors:
         name, _, folder = selector.partition("=")
         if not name or not folder:
@@ -71,7 +79,7 @@ def main(selectors: list[str]) -> int:
             continue
 
         try:
-            folders = _folders(name)
+            folders = _folders(name, deadline)
         except Exception as exc:  # noqa: BLE001  any failure here is a blocked tenant
             broken.append(f"{name}: {exc}")
             continue
