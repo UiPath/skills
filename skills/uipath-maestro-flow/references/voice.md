@@ -20,7 +20,7 @@ export default flow('support-line')
   .build();
 
 // Outbound: the flow places the call.
-.step('dial', createOutgoingCall({ from: '+15550001111', to: input('customerPhone') }))
+.step('dial', createOutgoingCall({ from: input('callerNumber'), to: input('customerPhone') }))
 .step('talk', voiceAgent({
   systemPrompt: 'Remind {{input.customerName}} about {{input.amount}}.',
   inputs: { customerName: input('customerName'), amount: input('amount') },
@@ -36,7 +36,7 @@ OBJECT — pass the whole thing, never a field inside it.
 Signatures: `.trigger(voiceTrigger())`; `createOutgoingCall({ from, to })`; `endCall({ callContext })`; `voiceAgent({ systemPrompt, inputs?, callContext, voice?, maxIterations? })`.
 
 ```ts
-.step('dial', createOutgoingCall({ from: '+15550001111', to: input('phone') }))
+.step('dial', createOutgoingCall({ from: input('callerNumber'), to: input('phone') }))
 .step('talk', voiceAgent({ systemPrompt: 'Confirm {{input.customerName}}\'s delivery window.',
   inputs: { customerName: input('customerName') },
   callContext: out('dial', 'callContext'),
@@ -55,8 +55,8 @@ what to pass. **Reaching inside it is the mistake this family invites**:
 the field as `object`, and a scalar there passes the file's schema and then
 fails at dispatch. `check` catches it (`VOICE_CALL_CONTEXT_NOT_OBJECT`).
 
-Both numbers on `createOutgoingCall` are E.164 — a leading `+` and 7–15 digits
-(`'+15551234567'`). `from` must be a number provisioned on the tenant's
+Both numbers on `createOutgoingCall` are E.164 — a leading `+`, then country
+code and subscriber number, 7–15 digits in all. `from` must be a number provisioned on the tenant's
 telephony provider; anything else is rejected when the call is placed, not when
 the flow is validated. `endCall` reads `out('<step>', 'ended')`.
 

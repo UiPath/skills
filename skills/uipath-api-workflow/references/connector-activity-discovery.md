@@ -44,7 +44,7 @@ When several connectors expose similar names, include the connector name in the 
 
 ### Step 2 — Verify a vendor connection (IntSvc only)
 
-Skip this step for `uipath-uipath-http`; HTTP uses `connectionId: "ImplicitConnection"` and needs no real connection. For every other connector, use the exact `ConnectorKey` from resolution.
+Skip this step for `uipath-uipath-http`; HTTP uses `connectionId: "ImplicitConnection"` and needs no real connection. Every other connector needs one, UiPath's own included: a Data Fabric (`uipath-uipath-dataservice`) activity sent with `ImplicitConnection` answers 404. Use the exact `ConnectorKey` from resolution.
 
 ```bash
 uip is connections list <connector-key> --output json
@@ -63,7 +63,12 @@ uip is connections list --all-folders --output json
 Search both results for the required `ConnectorKey`, try another UUID, and ping it. The unfiltered list can expose stale/orphaned records; `--all-folders` is required before concluding that no connection exists. It cannot be combined with `--folder` or `--folder-key`. Only after all three listings yield no UUID that pings successfully should you stop — see the connection-remediation note below.
 
 <!--skill-flavor:connection-remediation:start-->
-Only after the filtered, unfiltered, AND `--all-folders` listings have been exhausted (no UUID for that `ConnectorKey` pings cleanly) should you abort and tell the user to either re-authenticate (`uip is connections edit <connection-uuid>` opens a browser for OAuth) or create a fresh connection in the StudioWeb UI. **Do NOT author a workflow against a connection that hasn't pinged successfully** — it will 401 in cloud regardless of how correct the workflow JSON is.
+Only after the filtered, unfiltered, AND `--all-folders` listings have been exhausted (no UUID for that `ConnectorKey` pings cleanly) should you stop and have the user repair or create the connection. Both need the user's sign-in in a browser:
+
+- Re-authenticate a broken one: `uip is connections edit <connection-uuid>` opens a browser for OAuth.
+- Create one: give the user `uip is connections create <connector-key>` to run in their own terminal, where it opens a browser and waits for the consent. Run from your shell, it returns `Code: ConnectionAuthorizationPending` with `Data.AuthUrl` at once; don't hand the user that link, it expires within minutes. The command takes no folder, and after consent it prints the first connection listed for the connector, which may be an older one: find the new connection in `uip is connections list <connector-key> --output json` and check its `Folder` before using it.
+
+Ping the new or repaired connection before stubbing. **Do NOT author a workflow against a connection that hasn't pinged successfully** — it will 401 in cloud regardless of how correct the workflow JSON is.
 <!--skill-flavor:connection-remediation:end-->
 
 ### Step 3 — Stub the activity
@@ -157,15 +162,17 @@ Never use Http kind with a vendor UUID, the simple `call: "http"` form, or a ven
 
 `with.method` is always `POST`; `with.endpoint` is always `/http-request`. Put the actual request in `bodyParameters`: `authentication` (`"manual"` or `"connector"`), actual `method`, `url`, `headers`, `body`, and other inputs. Output is an envelope; use `Data.ExportBucketKey`, then `.content`, `.statusCode`, `.headers`, etc.
 
-Example: stub the HTTP Request activity with `--inputs '{"url":"https://catfact.ninja/fact","method":"GET"}'`.
+Example: stub the HTTP Request activity with `--inputs '{"url":"https://api.example.com/facts/random","method":"GET"}'`.
 
 <!--skill-flavor:http-example-execution-proof:start-->
-Verified end-to-end: `uip api-workflow run --no-auth` on the resulting workflow returns `statusCode: 200`, `content.fact: "..."`. StudioWeb's designer renders the activity as the unified HTTP Request card. See [../assets/templates/connector-call-example.json](../assets/templates/connector-call-example.json) for a complete stub-generated workflow.
+Against a live endpoint, `uip api-workflow run --no-auth` on the resulting workflow returns `statusCode: 200` with the parsed response body under `content`. StudioWeb's designer renders the activity as the unified HTTP Request card. See [../assets/templates/connector-call-example.json](../assets/templates/connector-call-example.json) for a complete stub-generated workflow.
 <!--skill-flavor:http-example-execution-proof:end-->
 
 ### IntSvc kind
 
 Use the vendor key, pinged UUID in both connection fields, IS method, full IS endpoint, and schema-derived `queryParameters`, `pathParameters`, `bodyParameters`, and optional `multipartParameters`. Do not supply a vendor API URL; the connector and IS proxy perform that routing.
+
+**Data Fabric's Query Entity Records** (`uipath-uipath-dataservice`) takes `entityScope` — `tenant` for a tenant-level entity — and `tenantEntityName`. `stub` returns no `ResponseFields` for it: the answer's `content` is a bare array of rows, the entity's own columns under their names and the system fields in PascalCase (`Id`, `CreateTime`, `UpdateTime`, `CreatedBy`, `UpdatedBy`, `RecordOwner`). One call returns at most 1000 rows, so a full read pages. A long-text (`MULTILINE_MAX`) column comes back as a preview: depending on the tenant, its first 10,000 characters with `...[Truncated]` appended, or a marker starting `HasValue=true Length=N`. Read such a row again with Get Entity Record by ID (`GetEntityRecord_V3`, `recordId` the row's `Id`), which returns the whole text, and never send a preview back in an update: the stored text is replaced by it.
 
 ### Generic activities
 
@@ -180,7 +187,7 @@ uip api-workflow registry stub <activity-type-id> --object-name <object-name> --
 Generic activities require `--object-name` unless the definition pins one, and require IS metadata to resolve verb and path; unlike Curated activities they hard-fail when metadata is unavailable or the object lacks the operation. Operation casing is normalized to lowercase in `metadata.configuration`. Prefer Curated activities because Generic operations are auto-generated and less thoroughly verified. Inspect describe metadata for path-parameter formats; on a 404, cross-check with the path-parameter diagnostic below, then fall back to a Curated activity or Http kind.
 
 <!--skill-flavor:export-bucket-stability:start-->
-- **Slot key carries the operation; export bucket does not**: slot `ListUserRepos_1`, export bucket `user_repos_1` (objectName-based, like every Curated example). The bucket intentionally matches the platform's own derivation — solution reconcile (`resource refresh`) regenerates `Workflow.json` and recomputes export buckets from the object name, so a divergent bucket would be renamed on regeneration. As always, copy `Data.ExportBucketKey` verbatim; and after ANY external rewrite of `Workflow.json` (reconcile, designer save), re-check that downstream `$context.outputs.<X>` reads still match the on-disk `export.as` keys — `validate` cannot catch dangling output references; they surface only at run time as `undefined`.
+- **Slot key carries the operation; export bucket does not**: slot `ListUserRepos_1`, export bucket `user_repos_1` (objectName-based, like every Curated example). The bucket intentionally matches the platform's own derivation — solution reconcile (`uip solution resources refresh`) regenerates `Workflow.json` and recomputes export buckets from the object name, so a divergent bucket would be renamed on regeneration. As always, copy `Data.ExportBucketKey` verbatim; and after ANY external rewrite of `Workflow.json` (reconcile, designer save), re-check that downstream `$context.outputs.<X>` reads still match the on-disk `export.as` keys — `validate` cannot catch dangling output references; they surface only at run time as `undefined`.
 <!--skill-flavor:export-bucket-stability:end-->
 <!--skill-flavor:generic-resource-runtime-diagnostic:start-->
 - **Path-parameter value formats are connector-specific.** `Retrieve`/`Update`/`Delete` endpoints take an id path param (e.g. `/repos/{repo}`) and the expected value format (name vs full name vs numeric id) varies and is sometimes wrong in the connector's own metadata — `uip is resources describe` shows the parameter's description and lookup hints. If the run 404s, cross-check by executing the same operation via `uip is resources run get <connector-key> <object-name> --connection-id <uuid> --query <param>=<value>`; if that also 404s, the connector's auto-generated metadata is broken upstream — pick a Curated activity or the Http kind instead.
@@ -204,7 +211,7 @@ Read the name and key from the corresponding Solution resource file. `Data.Solut
 
 ## Response shape and field rules
 
-Both Http and IntSvc outputs are envelopes: `{ statusCode, statusText, headers, ok, request, content, vendorProcessingTimeMs }`. Read payloads under `.content`; IntSvc list payloads may be arrays directly, not `.content.value[]`. Inspect `optionalConfiguration.fieldsContainer.outputJsonSchema`: `type: "object"` means a single item; `type: "array"` means a list. Local CLI may return `content` as a JSON string while cloud returns a parsed value; normalize defensively in scripts. Use optional chaining and log the full output once if the expected shape is absent.
+Both Http and IntSvc outputs are envelopes: `{ statusCode, statusText, headers, ok, request, content, vendorProcessingTimeMs }`, plus `page` on a paged IntSvc list ([paging](#paging-list-and-search-results)). Read payloads under `.content`; IntSvc list payloads may be arrays directly, not `.content.value[]`. Inspect `optionalConfiguration.fieldsContainer.outputJsonSchema`: `type: "object"` means a single item; `type: "array"` means a list. Local CLI may return `content` as a JSON string while cloud returns a parsed value; normalize defensively in scripts. Use optional chaining and log the full output once if the expected shape is absent.
 
 ### Rule (a) — flat dotted keys
 
@@ -222,6 +229,20 @@ Use `Data.SlotKey` for the activity key in `do` and `Data.ExportBucketKey` for `
 
 Use the IS Elements endpoint, which may include a hub prefix. `/<objectName>` is only a degraded fallback when `IsEnrichmentAvailable` is false; re-stub after IS access returns or inspect `uip is resources describe`.
 
+## Paging list and search results
+
+IntSvc list and search activities that take a `nextPage` parameter return one page per call. Studio Web hides `nextPage` and page size from users and offers "Max records" instead; do the same where the runtime allows it:
+
+1. **Let the runtime page a GET.** When the stub's `with.method` is `GET` and `.content` is an array, add `"maximumRecordsReturned": -1` to the stub's `with` object, next to `queryParameters`, and keep every other stub field as emitted. `-1` fetches every record into one list, so use it when the query bounds the result; a positive number caps the total. The stub does not emit the field and `--inputs` drops it, so add it by hand, as a literal number: the runtime does not evaluate an expression there, and a value it cannot parse turns paging off. The runtime requests the pages itself and returns one list in `.content`. For any other method it only truncates the first page to the cap, so loop instead.
+2. **Otherwise loop on `.page`.** Loop when the method is not `GET` or when each page needs its own processing, and leave `maximumRecordsReturned` unset on that activity: runtime paging or truncation removes the paging headers, so `.page` disappears. After each call, read `$context.outputs.<ExportBucketKey>.page`, which is `{ hasMorePages, nextPageToken }`. The runtime adds it when the response has both paging headers, `.content` is an array, and the token is not the end-of-results cursor; `hasMorePages` mirrors the `elements-has-more` header. Pass `page.nextPageToken` as the next call's `queryParameters.nextPage` (`uip api-workflow registry stub <activity-type-id> --connection-id <uuid> --inputs '{"nextPage":"${$context.variables.nextPage}"}' --output json` puts the reference in place), and stop when `.page` is absent or `page.hasMorePages` is false. If `.content` is not an array, there is no `.page`: send `headers['elements-next-page-token']` and stop when `headers['elements-has-more']` is not `"true"`.
+3. **Never decide on the raw `elements-next-page-token` header.** It is present on every page, including the last, where it decodes to `providerNextPage: "DONE"`. Sending it back returns the first page again or empty pages, so a loop on header presence never ends.
+4. **Do not stop on a short page.** Vendors may return fewer items than the page size while more remain.
+5. **Cap a manual loop.** Keep a page cap in the `doWhile` condition. When the loop ends with the cap reached and more pages remaining, fail the run with a clear error instead of returning partial data.
+
+The Studio Web designer manages `nextPage` itself and can drop it from the activity when it saves. It keeps `maximumRecordsReturned` only on List operations that take `nextPage`, where it shows "Max records"; `uip is resources describe` lists an object's operations. In a workflow edited in Studio Web, prefer `maximumRecordsReturned`, and after a designer save check that the paging field is still on the activity.
+
+Manual loop shape: [control-flow-patterns.md](control-flow-patterns.md#11-paging-a-connector-list-or-search).
+
 ## Multipart endpoints
 
 The stub detects `parameters[].type === "multipart"` and emits both flat `bodyParameters` and `multipartParameters`, commonly including `{ "name": "body", "dataType": "string" }` and a file part. Keep `multipartParameters` even without an attachment: the executor JSON-stringifies the entire `bodyParameters` object into the string part and expects file references in file parts. Removing the declaration causes `400 "Unable to parse multipart body"`.
@@ -232,7 +253,7 @@ Use exact schema names, flat dotted keys, bare literals or real `${$context...}`
 
 ## Limits
 
-1. Trigger types (`"CuratedTrigger"`, `"GenericTrigger"`, `"GenericPersistence"`, and similar) cannot be stubbed; escalate to manual authoring.
+1. **Triggers are a different flow.** `"CuratedTrigger"` / `"GenericTrigger"` live in a separate catalog (`resolve --kind trigger`) and stub into `call: "UiPath.IntSvcEvent"` plus an `EventTrigger` binding — see [trigger-authoring-guide.md](trigger-authoring-guide.md). Other event-shaped flavors (`"CuratedWaitFor"`, `"GenericWaitFor"`, `"GenericPersistence"`, …) are rejected with `Activity type 'X' is not supported` — escalate to manual authoring.
 2. `stub` does not validate `--inputs`; unknown fields are silently dropped. Check the IS schema.
 3. Subsequent designer saves can re-introduce Response-activity mangling; see [troubleshooting.md](troubleshooting.md#object-valued-response-gets-corrupted-fields-evaluate-to-literal-expression-text).
 
@@ -248,6 +269,7 @@ Use exact schema names, flat dotted keys, bare literals or real `${$context...}`
 - Do not read IntSvc output at the root; use `.content` and `Data.ExportBucketKey`.
 - Do not nest connector fields or wrap connector literals as `${'literal'}`.
 - Do not remove `multipartParameters` from multipart operations.
+- Do not hand-roll paging on the `elements-next-page-token` header or stop on a short page; set `maximumRecordsReturned` on a GET list, or loop on `.page` until it is absent or `hasMorePages` is false.
 - Do not leave `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` or any `<REPLACE_WITH_*>` placeholder in a generated workflow; stop and ask the user if no working UUID or URL is available.
 - Do not skip the required-field cross-check.
 

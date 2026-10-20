@@ -1,6 +1,6 @@
 # `case spec --input-details` — JSON shape reference
 
-> **Vendored from the CLI repo.** Canonical source: `packages/case-tool/docs/spec-input-details.md` in the `UiPath/cli` repo. Re-sync when the CLI's `--input-details` contract changes (the validators in `packages/case-tool/src/services/case-spec-input-validator.ts` are the source of truth).
+> **Vendored from the CLI repo.** Canonical source: `packages/maestro-sdk/docs/connector-input-details.md` in the `UiPath/cli` repo (shared with `uip maestro bpmn registry get --input-details`; its BPMN-only sections are left out). Re-sync when the CLI's `--input-details` contract changes (the validators in `packages/maestro-sdk/src/connector-spec/input-validator.ts` are the source of truth).
 
 `uip maestro case spec` accepts an optional `--input-details <json>` flag that pre-fills the generated `caseShape` with values the consumer already has on hand. Without the flag, `caseShape.inputs[*].body` are empty containers (default behavior); with it, they're populated and the filter (if any) is compiled and spliced into the FE-canonical sinks.
 
@@ -35,11 +35,24 @@ If you don't yet have values, omit the flag — the default empty `caseShape` is
 ```jsonc
 {
     "eventParameters": {},   // optional — design-time params scoping the trigger
+    "queryParameters": {},   // optional — trigger query params (scope selectors, resource pickers)
+    "pathParameters":  {},   // optional — trigger path params
     "filter":          {}    // optional — FilterTree (compiles to JMESPath)
 }
 ```
 
 Empty input details (`{}`) is valid and a no-op — equivalent to omitting the flag.
+
+#### `--trigger-kind` (trigger only)
+
+A case start trigger and a wait-for-connector task share one TypeCache entry; the runtime tells them apart only by `activityType`. Always pass it:
+
+| `--trigger-kind` | Use for |
+|---|---|
+| `start` | case-level start trigger (`Intsvc.EventTrigger` on the trigger node) |
+| `wait-for` (default) | in-stage `wait-for-connector` task, or a connector-bound condition rule |
+
+A start trigger spec'd without `--trigger-kind start` is typed as a wait and never fires.
 
 ---
 
@@ -83,9 +96,11 @@ Object keyed by field name. Dotted keys (`message.body.contentType`) get nested 
 
 A different Send Email-like operation (Microsoft Graph passthrough, Gmail API, custom connector) may declare its recipients via a different **field path** AND a different **leaf shape**. For example, the Graph passthrough POST `/messages` activity exposes `toRecipients[*].emailAddress.address` at the **top level** of `bodyParameters` (NOT under `message.`) with `dataType: string` per `[*]` array element; the wire result is `bodyParameters.toRecipients = [{"emailAddress":{"address":"…"}}]`. Always inspect `inputs.bodyFields[].name` AND `dataType` before authoring — do not assume path or shape from the field name alone.
 
+**Files.** A multipart activity (an upload, or Send Email with an attachment) takes its file under `bodyParameters.<file parameter>` — the parameter's name from `inputs.multipart.parameters[]` where `isFile` is true, usually `file`. The value reads the file variable of an earlier download, e.g. `{"bodyParameters": {"file": "=js:vars.<downloadVar>"}}`. It is moved out of the body onto that multipart parameter and onto the `file` input, where Studio Web reads it; the rest of `bodyParameters` stays the body.
+
 **Rejected for synthetic HTTP request activities** (`objectName === "httpRequest"` / `"http-request"`) — the synthetic activity has no curated body schema.
 
-### `queryParameters` (activity only)
+### `queryParameters` (activity)
 
 Object keyed by query-string param name. Merged into the existing query body (so `case spec` defaults are preserved unless you override them).
 
@@ -98,9 +113,11 @@ Object keyed by query-string param name. Merged into the existing query body (so
 }
 ```
 
-### `pathParameters` (activity only)
+### `pathParameters` (activity)
 
 Object keyed by path-template variable name. Used for endpoints like `/UpdateEvent/{id}`.
+
+Only names the operation declares as `type: "path"` are accepted; any other name is refused before the request is built, and a name the operation declares as a query parameter is named as such. Data Fabric's Get Entity Record by ID takes `recordId` as a **query** parameter, for example.
 
 ```json
 {
@@ -146,7 +163,19 @@ The same combined expression also lands at `caseShape.context[name="metadata"].b
 
 For Outlook 365 `EMAIL_RECEIVED`, `parentFolderId` is required. The connector contract is in `inputs.eventParameters[?required]`, a sibling of `caseShape` in the spec response — consult that array to know which event params your trigger needs.
 
-> **Note:** `body.parameters` is not emitted for triggers. The FE reserves that key for queryParameters/pathParameters, neither of which exists in the trigger input contract.
+> **Note:** event parameters never reach `body.parameters`. That key holds the trigger's query and path values — see the next section.
+
+### `queryParameters` / `pathParameters` (trigger)
+
+Some triggers are scoped by query or path parameters that are not event parameters, such as a scope selector or a resource picker. `case spec` lists them under `inputs.queryParameters` / `inputs.pathParameters`. A name the event object does not list is refused, with the names it does list (Data Fabric's folder entity is `folderEntityName` plus `folderEntityName_folderKey`, not `folderKey`). Their values land in `caseShape.inputs[name="body"].body.parameters` (merged) and in `caseShape.context[name="metadata"].body.inputMetadata.triggerQueryParameters` / `triggerPathParameters`.
+
+```jsonc
+{
+    "queryParameters": { "<scope field>": "<lookup value>", "<picker field>": "<resource name>" }
+}
+```
+
+A solution-resource picker among them is resolved into the solution as for activities ([connector-activity impl-json.md § Step 1](plugins/tasks/connector-activity/impl-json.md)): both copies become `=bindings.{{RESOURCE_BINDING_ID:<field>}}` and `resourceBindings` lists the rows to mint. When the trigger's fields load from a design action that reads the picker (e.g. a Data Fabric entity trigger), the `--input-details` call runs it and lists those fields in `outputs.responseFields`. The `--skip-case-shape` planning call never runs it and lists only base fields (often `Id`): plan this trigger's outputs and filter fields from the `--input-details` call. If the picker did not resolve, `diagnostics.fallbacks` names the action: run inside the solution or pass `--solution-folder`. A design action that fails fails the spec: fix the input or the connection rather than retrying.
 
 > **What NOT to do:** don't duplicate a connector-mandated event-param value in the freeform `filter` tree. The CLI AND-joins the mandatory expression automatically; duplicating the clause would double-apply it (e.g. `(parentFolderId == 'Inbox') && (parentFolderId == 'Inbox' && ...)`). Set required event-param values via `eventParameters` ONLY.
 
@@ -297,6 +326,20 @@ For string values, `rawString` includes outer quotes (`"\"Active\""`). For numbe
 
 ---
 
+## Key casing in the response
+
+`--output json` PascalCases the spec's own DTO field names — `Data.SpecVersion`, `Data.Identity`, `Data.Inputs.BodyFields[].Name`. It does **not** touch the subtrees you copy into an artifact:
+
+| Subtree | Casing |
+|---|---|
+| `Data.CaseShape` | verbatim — camelCase element keys (`inputs[].body`, `outputs[].displayName`, `context[].body`) plus the connector's own parameter names and JSON-Schema keywords inside the `body` containers |
+| `Data.Identity.TypecacheEntry` | verbatim — raw Studio Web descriptor |
+| `Data.EssentialConfiguration` | verbatim — embedded as-is |
+
+So read `Data.CaseShape.inputs[0].body`, not `Data.CaseShape.Inputs[0].Body`. Copy those subtrees into the plan unchanged; do not re-case them. The same rule applies to `tasks describe`, `tasks enrich` and `registry get-connector` / `get-connection`.
+
+---
+
 ## Where each input value ends up in `caseShape`
 
 ### Activity sinks
@@ -308,6 +351,7 @@ For string values, `rawString` includes outer quotes (`"\"Active\""`). For numbe
 | `pathParameters` | `caseShape.inputs[name="pathParameters"].body` (shallow-merged) |
 | `filter` — tree | `essentialConfiguration.savedFilterTrees.<filterParamName>` inside `caseShape.context[name="metadata"].body.activityPropertyConfiguration.configuration` (parsed-mutated-stringified) |
 | `filter` — compiled CEQL | `caseShape.inputs[name="queryParameters"].body.<filterParamName>` |
+| `bodyParameters.<file parameter>` | `caseShape.inputs[name="<file parameter>"].value` and the matching `activityPropertyConfiguration.multipartParameters[].value` |
 
 `<filterParamName>` is connector-specific (commonly `"where"`, Salesforce uses `"q"`). Resolved from IS metadata's `FilterBuilder` design component for the operation. If no FilterBuilder param exists, the filter is rejected.
 
@@ -320,12 +364,15 @@ For string values, `rawString` includes outer quotes (`"\"Active\""`). For numbe
 | `filter` — tree | `essentialConfiguration.filter` inside `caseShape.context[name="metadata"].body.activityPropertyConfiguration.configuration` |
 | `filter` — combined JMESPath (sink 1, FE projection) | `caseShape.context[name="metadata"].body.activityPropertyConfiguration.filterExpression` |
 | `filter` — combined JMESPath (sink 2, runtime) | `caseShape.inputs[name="body"].body.filters.expression` |
+| `queryParameters` + `pathParameters` (merged) | `caseShape.inputs[name="body"].body.parameters` |
+| `queryParameters` | `caseShape.context[name="metadata"].body.inputMetadata.triggerQueryParameters` |
+| `pathParameters` | `caseShape.context[name="metadata"].body.inputMetadata.triggerPathParameters` |
 
 The combined expression has the form `(mandatory) && (user)` when both are present, falling back to either side alone or omitted when both are empty. Mirrors flow-tool's `combinedFilterExpression` post uipcli #1880 (`packages/flow-tool/src/services/connector-service.ts:1051+`). Both sinks carry the same combined form so the design-time projection and runtime body don't drift.
 
 Required vs optional event params: only **required** fields (per the trigger metadata's `events[<op>].required` flag) contribute to the mandatory-filter expression. Optional event-param values are emitted at `body.queryParams` only.
 
-`body.parameters` is intentionally not emitted for triggers. The FE reserves that key for queryParameters/pathParameters merge, and the trigger input contract has neither.
+Event parameters never reach `body.parameters`; it holds only the query/path merge.
 
 ---
 
@@ -413,6 +460,7 @@ uip maestro case spec \
 ```bash
 uip maestro case spec \
   --type trigger \
+  --trigger-kind start \
   --activity-type-id 7dc57f24-894c-5ae2-a902-66056fa40609 \
   --connection-id <conn-uuid> \
   --input-details '{
@@ -462,6 +510,7 @@ Before constructing `--input-details`, run `case spec` once WITHOUT it (use `--s
 | Required body fields | `inputs.bodyFields[?required]` |
 | Required path/query params | `inputs.pathParameters[?required]`, `inputs.queryParameters[?required]` |
 | Required trigger event params | `inputs.eventParameters[?required]` |
+| Required trigger query/path params | `inputs.queryParameters[?required]`, `inputs.pathParameters[?required]` |
 | Filter field names | `filter.fields[*].name` (also `searchableOperators[]`, `searchableNames[]`, `enum[]`) |
 | Whether the activity supports filter | `filter` present in spec output → yes |
 

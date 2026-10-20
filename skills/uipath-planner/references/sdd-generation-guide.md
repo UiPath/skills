@@ -18,7 +18,7 @@ uip login status --output json
 
 | `Data.BaseUrl` host | Resolves to | Question 2 |
 |---|---|---|
-| `cloud.uipath.com` (or `alpha.uipath.com` / `staging.uipath.com`) | **Automation Cloud** — full catalog, entitlement-gated per tenant | skip (confidently resolved) |
+| `cloud.uipath.com` | **Automation Cloud** — full catalog, entitlement-gated per tenant | skip (confidently resolved) |
 | any other `*.uipath.com` host | **Automation Cloud variant** (Public Sector / Dedicated / Test Cloud / region-specific) — catalog is variant-, region-, and entitlement-gated | skip the platform question, but verify each gated product (Maestro, Agents, Coded Apps, API Workflows, Solutions) against the tenant's actual entitlements; unverifiable → `[SME REVIEW]` per product |
 | any other (customer / on-prem) host | **self-hosted — Automation Suite OR standalone Orchestrator (ambiguous)** | **do not skip** — ask the custom-host follow-up below |
 | `Status` ≠ `Logged in`, call errors, or no `BaseUrl` | unknown | ask Question 2 in full; tell the user that running `uip login` first lets the next run auto-detect |
@@ -293,7 +293,7 @@ The architectural core sections differ per template. For each product, generate 
 **Maestro BPMN:**
 - §3 Pools & Lanes (participants / roles)
 - §4 Activities Inventory (BPMN element type per activity)
-- §5 Gateways & Sequence Flows (gateway type, branch conditions)
+- §5 Gateways & Sequence Flows (gateway type, branch conditions, decision tables, reasoning list: [Business Rules Guide](business-rules-guide.md))
 - §6 Events (start / intermediate / boundary / end; message / timer / error definitions)
 - §7 Data Objects & Variables (direction, type, scope)
 - §8 Subprocesses & Call Activities
@@ -407,7 +407,7 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 **Phase 2 produces:** See Phase 2 Step 2 above (template-specific architectural core)
 
 **Phase 3 produces:** All remaining sections — typically:
-- Business Rules (RPA, Case)
+- Business Rules (RPA, Case). RPA §4: [Business Rules Guide](business-rules-guide.md)
 - Value Mappings (RPA)
 - Exception / Error Handling (all)
 - Credentials & Assets (RPA)

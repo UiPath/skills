@@ -72,6 +72,8 @@ The command uploads the contents of the build directory (default: `dist/`) to St
 - Static assets (images, fonts, etc.)
 - Any other files in the build output
 
+Alongside the build output, `push` uploads the app's source files from the project root (dotfiles and the build directory itself excepted). Files matched by the app's `.gitignore` or by a `.uipignore` are skipped. `.uipignore` uses the same `.gitignore` syntax (for example `fixtures/` or `*.map`) and is the one ignore file shared with `uip solution upload`; the build directory is always uploaded whole. The older `.uipathignore` name is still read but deprecated — rename it to `.uipignore`.
+
 The `--ignore-resources` flag skips importing referenced resources (connections, assets) that may be declared in the app.
 
 ## Pull Workflow

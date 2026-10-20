@@ -1,0 +1,182 @@
+task_id: skill-test-attachment-lifecycle-e2e
+description: >
+  E2E test: agent uses the uipath-test skill to take one attachment through
+  its life on a test case in HEALTH: upload a local file, rename the
+  attachment, download it into a folder, then delete it under the approval the
+  prompt grants. Graded on the downloaded file, on the final live state (no
+  attachments left) and on the upload, rename and delete commands succeeding.
+  pre_run makes sure the owned EVFX-ATTLIFE-Checkout test case exists with no
+  attachments and writes the local file; post_run clears its attachments.
+tags: [uipath-test, e2e, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 16
+  max_turns: 40
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, os, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def ensure_case(name):
+          projects = call("tm", "project", "list", "--filter", "HEALTH").get("Data") or []
+          if not any(p.get("ProjectKey") == "HEALTH" for p in projects):
+              need(call("tm", "project", "create", "--name", "HEALTH", "--project-key", "HEALTH"), "create HEALTH")
+          rows = call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else need(
+              call("tm", "testcases", "create", "--project-key", "HEALTH", "--name", name), f"create {name}")
+
+      def clear(case):
+          rows = call("tm", "attachment", "list", "--project-key", "HEALTH", "--test-case-keys", case["TestCaseKey"]).get("Data") or []
+          for att in [a for r in rows for a in (r.get("AttachmentIds") or [])]:
+              need(call("tm", "attachment", "delete", "--project-key", "HEALTH", "--attachment-id", att,
+                        "--object-type", "testCase", "--yes"), f"clear {att}")
+
+      def upload(case, fname, body):
+          with open(fname, "w") as f:
+              f.write(body)
+          need(call("tm", "attachment", "upload", "--project-key", "HEALTH", "--object-id", case["Id"],
+                    "--object-type", "testCase", "--file", fname), f"upload {fname}")
+          os.remove(fname)  # only Test Manager holds it now
+
+      clear(ensure_case("EVFX-ATTLIFE-Checkout"))
+      with open("release-notes.txt", "w") as f:
+          f.write("EVFX-ATTLIFE-MARKER release notes for build 42\n")
+      print("SEEDED EVFX-ATTLIFE-Checkout with no attachments; local release-notes.txt written")
+      PYEOF
+    timeout: 240
+
+post_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, os, subprocess, sys
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:500]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      def ensure_case(name):
+          projects = call("tm", "project", "list", "--filter", "HEALTH").get("Data") or []
+          if not any(p.get("ProjectKey") == "HEALTH" for p in projects):
+              need(call("tm", "project", "create", "--name", "HEALTH", "--project-key", "HEALTH"), "create HEALTH")
+          rows = call("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name).get("Data") or []
+          exact = [r for r in rows if r.get("Name") == name]
+          return exact[0] if exact else need(
+              call("tm", "testcases", "create", "--project-key", "HEALTH", "--name", name), f"create {name}")
+
+      def clear(case):
+          rows = call("tm", "attachment", "list", "--project-key", "HEALTH", "--test-case-keys", case["TestCaseKey"]).get("Data") or []
+          for att in [a for r in rows for a in (r.get("AttachmentIds") or [])]:
+              need(call("tm", "attachment", "delete", "--project-key", "HEALTH", "--attachment-id", att,
+                        "--object-type", "testCase", "--yes"), f"clear {att}")
+
+      def upload(case, fname, body):
+          with open(fname, "w") as f:
+              f.write(body)
+          need(call("tm", "attachment", "upload", "--project-key", "HEALTH", "--object-id", case["Id"],
+                    "--object-type", "testCase", "--file", fname), f"upload {fname}")
+          os.remove(fname)  # only Test Manager holds it now
+
+      clear(ensure_case("EVFX-ATTLIFE-Checkout"))
+      PYEOF
+    timeout: 180
+
+initial_prompt: |
+  on my EVFX-ATTLIFE-Checkout test case in Test Manager (HEALTH project):
+  attach release-notes.txt from this folder, rename the attachment to
+  notes-v2.txt, download it into a downloads/ folder, then delete it from the
+  test case. you've got my ok for that delete, no need to ask again.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uploaded the file (`attachment upload`, must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+attachment\s+upload\b'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent renamed it with `attachment update --file-name notes-v2.txt` (must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+attachment\s+update\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?--file-name[\s\\=]+["\x27]?notes-v2\.txt'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent deleted it with `attachment delete ... --yes` (must succeed)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+attachment\s+delete\b(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*?(--yes|-y)\b'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "downloads/notes-v2.txt holds the uploaded content"
+    command: "grep -qs 'EVFX-ATTLIFE-MARKER release notes' downloads/notes-v2.txt"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Final state: EVFX-ATTLIFE-Checkout has no attachments left"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      name = "EVFX-ATTLIFE-Checkout"
+      case = [t for t in uip("tm", "testcases", "list", "--project-key", "HEALTH", "--filter", name) if t.get("Name") == name][0]
+      rows = uip("tm", "attachment", "list", "--project-key", "HEALTH", "--test-case-keys", case["TestCaseKey"])
+      files = sorted(a["FileName"] for r in rows for a in (r.get("Attachments") or []))
+      print(files)
+      sys.exit(0 if files == [] else 1)
+      PYEOF
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

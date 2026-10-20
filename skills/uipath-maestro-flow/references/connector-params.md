@@ -9,9 +9,11 @@ Call a curated or generic Integration Service operation.
 key `uipath-uipath-dataservice` as *UiPath Data Fabric*. CRUD is NATIVE:
 `core.datafabric.*` has all four verbs (`dataFabricRead()`,
 `dataFabricCreate()`, `dataFabricUpdate()`, `dataFabricDelete()`), and the read
-verb covers filters, paging, sort, and get-by-id (filter on `Id`). What still
-routes here is the file record fields and the Record Created / Updated events;
-see [`data-fabric.md`](data-fabric.md) for the routing table.
+verb covers filters, paging and sort. What still routes here is get-by-id when
+the whole value of a long-text field is needed (a native read, even one filtered
+on `Id`, returns a 10,000-character preview), the file record fields, and the
+Record Created / Updated events; see [`data-fabric.md`](data-fabric.md) for the
+routing table.
 
 Signatures:
 
@@ -46,6 +48,17 @@ source. The loop is:
 3. **Check**: `uip maestro flow check .flow-sdk/<Name>.flow.ts --source`. It names each
    gap with the exact command — `LOOKUP_UNRESOLVED`, `OBJECT_UNPREPARED`,
    `CUSTOM_FIELDS_UNPREPARED`, `CONNECTOR_INPUT`.
+   Three codes say the operation itself does not resolve, so no prepare
+   fixes them; edit the source and re-run `check`:
+   - `CONNECTOR_NOT_IN_LIBRARY` — the library has no such operation (or
+     connector, or version). The message lists the connector's operations and
+     a `Closest:` match. The operation is the node type's slug, not the
+     tenant's `objectName` (`send-email`, not `send-mail-v2`). If the operation
+     is newer than the library, run `uip maestro registry pull`.
+   - `CONNECTOR_OBJECT_REQUIRED` — a generic operation covers many objects;
+     add `{ object: '<name>' }`. The message lists the objects.
+   - `CONNECTOR_OBJECT_NOT_GENERIC` — `object` on a single, non-generic
+     operation; drop the `object` option.
 4. **Prepare once** — `--object`, `--resolve` and `-f` compose in a single
    invocation, and it finds the connection itself and writes `bindings.json`.
    `prepare` repoints the import itself; it only asks when two flows
@@ -127,9 +140,9 @@ and a logged-in `uip`; without one, fall back to the curated operation in the
 markdown library.
 
 ```bash
-uip maestro registry prepare <connector-key> <action>
+uip maestro registry prepare <connector-key> --action <action>
 # Generic operation: materialize the one connected object the task uses.
-uip maestro registry prepare <connector-key> <action> --object <api-object-name>
+uip maestro registry prepare <connector-key> --action <action> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
 
@@ -197,7 +210,7 @@ case-insensitive on API name and display name, narrowed to objects that
 support the action's verb):
 
 ```bash
-uip maestro registry prepare <connector-key> <action> --object Company__C
+uip maestro registry prepare <connector-key> --action <action> --object Company__C
 #   object: matched "Company__C" -> Company__c
 ```
 
@@ -288,7 +301,7 @@ very value `-f` wants.** Do not run one prepare to resolve them and retype the
 ids into a second command: pass both flags together —
 
 ```bash
-uip maestro registry prepare uipath-atlassian-jira create-issue \
+uip maestro registry prepare uipath-atlassian-jira --action create-issue \
   --resolve fields.project.key:key=UIP --resolve fields.issuetype.id:name=Bug \
   -f fields.project.key=UIP -f fields.issuetype.id=10732
 ```
@@ -342,7 +355,7 @@ inputs (`entityName`, `expansionLevel`) — not one field of the entity — so
 parent when you omit it; the fix is always the entity name:
 
 ```bash
-uip maestro registry prepare uipath-uipath-dataservice create-entity-record \
+uip maestro registry prepare uipath-uipath-dataservice --action create-entity-record \
   -f entityName=FlowCodeEvalEntity
 # → 8 input field(s): entityName, expansionLevel + the entity's own fields
 ```
@@ -375,7 +388,7 @@ For Jira, `/project/{key}/issuetypes` has no object of its own; `project_statuse
 **3. Prepare with every parent.** Pass them all as `-f NAME=VALUE`:
 
 ```bash
-uip maestro registry prepare <connector-key> <action> \
+uip maestro registry prepare <connector-key> --action <action> \
   -f fields.project.key=IN -f fields.issuetype.id=10620
 ```
 
@@ -469,7 +482,7 @@ When the flow is written, `check` reports each token still unresolved
 and it is the only tenant call the whole loop needs:
 
 ```bash
-uip maestro registry prepare uipath-salesforce-slack send-message-to-user \
+uip maestro registry prepare uipath-salesforce-slack --action send-message-to-user \
   --resolve channel:profile.email=dustin@example.com
 ```
 
@@ -508,8 +521,9 @@ the one command that shows what the collection holds. Tenant discovery is still
 not a phase of this loop. When the candidates share a name, pick one
 by the `--connection-id <id>` each candidate line prints; `bindings.json` is
 written on that route too. The entries are named after the `connection:` and
-`folder:` labels your source already uses for this connector (for example
-`is-sandboxes`); a source that uses none gets `<connector's last segment>`
+`folder:` labels your source already uses for this connector, which
+[must differ](bindings.md#where-both-values-come-from); a source
+that uses none gets `<connector's last segment>`
 (`slack`) and `shared`; `--bind-connection` / `--bind-folder` override both.
 A label `prepare` cannot read without running the source (a computed value, or
 a step whose connector it cannot trace) is never guessed: `prepare` prints a

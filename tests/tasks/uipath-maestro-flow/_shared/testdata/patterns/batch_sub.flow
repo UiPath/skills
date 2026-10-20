@@ -1,0 +1,148 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "eachInvoice",
+   "type": "core.logic.loop",
+   "inputs": {
+    "collection": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.invoices",
+     "fieldType": "array"
+    },
+    "parallel": false,
+    "breakEnabled": false
+   }
+  },
+  {
+   "id": "perItem",
+   "type": "core.subflow",
+   "parentId": "eachInvoice",
+   "inputs": {
+    "inv": {
+     "type": "jsExpression",
+     "expression": "$vars.eachInvoice.currentItem",
+     "fieldType": "object"
+    },
+    "errorHandlingEnabled": true
+   }
+  },
+  {
+   "id": "summarize",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "ed180359-f2bd-400d-9d8e-ede138d652f5",
+    "agentInputVariables": [
+     {
+      "id": "eachInvoice__output",
+      "type": "string",
+      "binding": "=js:$vars.eachInvoice.output"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "summary",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "end2",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "eachInvoice",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "eachInvoice",
+   "sourcePort": "start",
+   "targetNodeId": "perItem",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "perItem",
+   "sourcePort": "error",
+   "targetNodeId": "eachInvoice",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "perItem",
+   "sourcePort": "output",
+   "targetNodeId": "eachInvoice",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "eachInvoice",
+   "sourcePort": "success",
+   "targetNodeId": "summarize",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "summarize",
+   "sourcePort": "success",
+   "targetNodeId": "end2",
+   "targetPort": "input"
+  }
+ ],
+ "subflows": {
+  "perItem": {
+   "nodes": [
+    {
+     "id": "perItemStart",
+     "type": "core.trigger.manual",
+     "inputs": {}
+    },
+    {
+     "id": "enrich",
+     "type": "uipath.agent.autonomous",
+     "inputs": {
+      "source": "ee53071b-c601-4ce1-85ad-b51beb215765",
+      "agentInputVariables": [
+       {
+        "id": "perItemStart__output__inv",
+        "type": "string",
+        "binding": "=js:$vars.perItemStart.output.inv"
+       }
+      ],
+      "agentOutputVariables": [
+       {
+        "id": "note",
+        "type": "string"
+       }
+      ]
+     }
+    },
+    {
+     "id": "end",
+     "type": "core.control.end",
+     "inputs": {}
+    }
+   ],
+   "edges": [
+    {
+     "sourceNodeId": "perItemStart",
+     "sourcePort": "output",
+     "targetNodeId": "enrich",
+     "targetPort": "input"
+    },
+    {
+     "sourceNodeId": "enrich",
+     "sourcePort": "success",
+     "targetNodeId": "end",
+     "targetPort": "input"
+    }
+   ]
+  }
+ }
+}

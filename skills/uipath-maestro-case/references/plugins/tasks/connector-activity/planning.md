@@ -12,6 +12,22 @@ For **connector-based triggers** inside a stage (wait for an external event), us
 
 For **case-level event triggers** (outside any stage), use [`plugins/triggers/event/`](../../triggers/event/planning.md).
 
+## External agents and automations
+
+An external agent (CrewAI, Snowflake Cortex, Salesforce Agentforce, Azure AI Foundry, Google Vertex…) or an external automation (Power Automate, Salesforce flows) is a task of its own type, built exactly like a connector activity:
+
+| `type` | TypeCache index (§ 1) |
+|---|---|
+| `external-agent` | `typecache-external-agent-activities-index.json` |
+| `external-workflow` | `typecache-external-automation-activities-index.json` |
+
+Differences from a connector activity:
+- **§ 1:** search the index in the table, not `typecache-activities-index.json`. Pass `--type typecache-external-agent-activities` (or `typecache-external-automation-activities`) to `registry get-connection` in § 2.
+- **§ 2:** the connection must be the agent's own connector's. Execute Salesforce Agent is `uipath-salesforce-agent`, not a `uipath-salesforce-sfdc` connection; `case spec` refuses another connector's with `invalid_argument`.
+- **§ 3:** `case spec --type activity` finds the entry in the external catalog by itself.
+
+If `sdd convert` drops the task as a type an SDD may not declare, or `splice` refuses it as `not a connector task`, the CLI predates external tasks: say so in one line, keep the task as an `<UNRESOLVED>` placeholder ([§ Unresolved Fallback](#unresolved-fallback)), and ask the user to update `uip`.
+
 ## Resolution Pipeline
 
 Run these steps during planning. Each step feeds into the resolved entry.
@@ -152,7 +168,7 @@ Dotted keys (`message.body.content`) get nested into structured objects via `nes
 | sdd.md cell | `\n` |
 | `input-values` in `registry-resolved.json` | `\\n` |
 | `--input-details` JSON | `\\n` |
-| `caseplan.json` on disk | `\\n` |
+| `caseplan.case` on disk | `\\n` |
 | the JavaScript the runtime parses | `\n` |
 
 `uip maestro case validate` returns `Valid` either way and the packer copies the broken form into the `.bpmn` unchanged, so nothing before the run reports it. A raw line break is legal inside a backtick template literal and between operands; only a `'` or `"` literal breaks.

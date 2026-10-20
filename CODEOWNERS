@@ -104,16 +104,21 @@
 /tests/tasks/activation/uipath-functions.jsonl @lucarachiteanu @UiPath/team-agents-cli
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
-/skills/uipath-planner/ @RaduAna-Maria
-/tests/tasks/uipath-planner/ @RaduAna-Maria
-/skills/uipath-planner/references/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
-/skills/uipath-planner/assets/templates/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
-/tests/tasks/uipath-planner/case/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
-/tests/tasks/uipath-planner/_shared/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/skills/uipath-planner/ @RaduAna-Maria @roberts-cliff
+/tests/tasks/uipath-planner/ @RaduAna-Maria @roberts-cliff
+/skills/uipath-planner/references/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @roberts-cliff
+/skills/uipath-planner/assets/templates/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @roberts-cliff
+/tests/tasks/uipath-planner/case/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin @roberts-cliff
+/tests/tasks/uipath-planner/_shared/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin @roberts-cliff
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
+
+# Genome skill (extract / author / execute automation blueprints)
+/skills/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
+/tests/tasks/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
+/tests/tasks/activation/uipath-genome.jsonl @danmunteanu1 @vlad-coteanu-uipath
 
 # Flow skill
 /skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
@@ -135,6 +140,7 @@
 # Rules skill
 /skills/uipath-rules/ @UiPath/maestro-cli-team
 /tests/tasks/uipath-rules/ @UiPath/maestro-cli-team
+/tests/tasks/activation/uipath-rules.jsonl @UiPath/maestro-cli-team
 
 # API Workflow skill
 /skills/uipath-api-workflow/ @rares-baesu-uipath @liviubobocu @mirastroie
@@ -163,6 +169,8 @@
 /skills/uipath-maestro-flow/references/event-trigger.md @chandusailella @UiPath/maestro-cli-team
 /skills/uipath-maestro-flow/references/agent.md @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @UiPath/maestro-cli-team
 /skills/uipath-maestro-flow/references/inline-agent.md @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @UiPath/maestro-cli-team
+# Inline-agent Flow tasks: Flow authoring prompts, agents-team resource.json contract.
+/tests/tasks/uipath-maestro-flow/inline_agent/ @UiPath/team-coded-agents @AlexandruCGhimisi @andreibalas-uipath @al3xanndru @andreitava-uip @UiPath/maestro-cli-team
 /skills/uipath-maestro-flow/references/data-fabric.md @UiPath/DatafabricCodingAgent @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/connector_features/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/connector_features/datafabric_connector @UiPath/DatafabricCodingAgent @UiPath/maestro-cli-team
@@ -222,6 +230,7 @@
 # MCP skill (UiPath AgentHub MCP server registration + tool authoring)
 /skills/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
 /tests/tasks/uipath-mcp-servers/ @cristipufu @UiPath/team-coded-agents
+/tests/tasks/activation/uipath-mcp-servers.jsonl @cristipufu @UiPath/team-coded-agents
 
 # Insights skill (job monitoring and analytics)
 /skills/uipath-insights/ @UiPath/insights
@@ -243,3 +252,8 @@
 # StudioAdmin AOps skill (SourceControl + CICD pipelines)
 /skills/uipath-aops/ @AndreiRR24 @UiPath/xworks
 /tests/tasks/uipath-aops/ @AndreiRR24 @UiPath/xworks
+
+# Vertical Solutions skill (uip vss deploy)
+/skills/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
+/tests/tasks/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers
+/skill-flavors/studioweb/uipath-vertical-solutions/ @sandeeprao-uipath @UiPath/vertical-service-approvers

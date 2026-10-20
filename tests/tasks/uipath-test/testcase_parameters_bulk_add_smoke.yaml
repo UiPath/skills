@@ -1,0 +1,159 @@
+task_id: skill-test-testcase-parameters-bulk-add-smoke
+description: >
+  Smoke test: agent uses the uipath-test skill to add the same parameters to
+  two test cases, one of which already has one of them. There is no bulk
+  command and `parameters add` rejects a name that already exists, so the agent
+  must add per test case and skip the existing parameter without overwriting
+  its value. The prompt does not say any already exist. Graded on the live
+  parameters: both test cases end up with the new parameters, and the
+  pre-existing `Username` keeps its value with no `update` or `delete` used to
+  force it. pre_run seeds a throwaway `EVFX-PARAM-*` project per run (key in
+  project-key.txt) holding EVFX-PARAM-Login (no parameters) and
+  EVFX-PARAM-Transfer (Username=keepme); post_run deletes it. Per-run isolation
+  because the agent mutates the cases and several models run the gate
+  concurrently on the same tenant — a shared case would corrupt the end state.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 15
+  max_turns: 40
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      PREFIX = "EVFX-PARAM-"
+      now = datetime.datetime.now(datetime.timezone.utc)
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:400]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      # Orphan sweep: a run that died before post_run strands its project. Delete
+      # only EVFX-PARAM-* projects stamped more than 6 hours ago, so a concurrent
+      # run (including one started just before UTC midnight) keeps its own.
+      for p in call("tm", "project", "list", "--filter", PREFIX).get("Data") or []:
+          nm, key = p.get("Name") or "", p.get("ProjectKey")
+          if not key or not nm.startswith(PREFIX):
+              continue
+          try:
+              stamp = datetime.datetime.strptime(nm[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
+          except ValueError:
+              continue
+          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+              call("tm", "project", "delete", "--project-key", key, "--yes")
+
+      key = "EVPM" + secrets.token_hex(2).upper()
+      name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      need(call("tm", "project", "create", "--name", name, "--project-key", key), f"create {name}")
+
+      def make_case(cname, seed):
+          d = need(call("tm", "testcases", "create", "--project-key", key, "--name", cname),
+                   f"create {cname}")
+          for pname, pval in seed:
+              need(call("tm", "testcases", "parameters", "add", "--project-key", key,
+                        "--test-case-key", d["TestCaseKey"], "--name", pname, "--default-value", pval),
+                   f"seed {pname} on {cname}")
+
+      make_case("EVFX-PARAM-Login", [])
+      make_case("EVFX-PARAM-Transfer", [("Username", "keepme")])
+      with open("project-key.txt", "w") as f:
+          f.write(key + "\n")
+      print(f"SEEDED {name} ({key}): EVFX-PARAM-Login (no params), "
+            f"EVFX-PARAM-Transfer (Username=keepme)")
+      PYEOF
+    timeout: 240
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  hey, the key of my Test Manager project is in project-key.txt in this folder.
+  can you add a Timeout param set to 30 and a Username param set to admin on
+  both my EVFX-PARAM-Login and EVFX-PARAM-Transfer test cases in that project?
+  just give me a quick summary per test case when you're done.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status (Critical Rule 1)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent added parameters with `uip tm testcases parameters add`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+add\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "EVFX-PARAM-Login now has Timeout=30 and Username=admin"
+    command: |
+      python3 - "EVFX-PARAM-Login" <<'PYEOF'
+      import json, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      name = sys.argv[1]
+      case = [t for t in uip("tm", "testcases", "list", "--project-key", key, "--filter", name) if t.get("Name") == name][0]
+      params = {p["Name"].lower(): p.get("DefaultValue") for p in
+                uip("tm", "testcases", "parameters", "list", "--project-key", key, "--test-case-key", case["TestCaseKey"])}
+      print(params)
+      sys.exit(0 if params == {"timeout": "30", "username": "admin"} else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "EVFX-PARAM-Transfer now has Timeout=30, and its pre-existing Username still has the value `keepme` (skipped, not overwritten)"
+    command: |
+      python3 - "EVFX-PARAM-Transfer" <<'PYEOF'
+      import json, subprocess, sys
+      key = open("project-key.txt").read().strip()
+      def uip(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          return json.loads(r.stdout[r.stdout.index("{"):]).get("Data") or []
+      name = sys.argv[1]
+      case = [t for t in uip("tm", "testcases", "list", "--project-key", key, "--filter", name) if t.get("Name") == name][0]
+      params = [(p["Name"].lower(), p.get("DefaultValue")) for p in
+                uip("tm", "testcases", "parameters", "list", "--project-key", key, "--test-case-key", case["TestCaseKey"])]
+      print(params)
+      sys.exit(0 if sorted(params) == [("timeout", "30"), ("username", "keepme")] else 1)
+      PYEOF
+    timeout: 90
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not update or delete a parameter to force the value in (`--help` lookups excluded)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+(update|delete)\b(?!(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--help)'
+    weight: 2.0
+    pass_threshold: 1.0

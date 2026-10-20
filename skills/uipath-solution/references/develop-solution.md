@@ -59,6 +59,8 @@ uip solution projects add ./InvoiceAutomation/Reporter ./InvoiceAutomation/Invoi
 
 The `.uipx` is auto-discovered by walking up from the project path if not specified. `Type` is auto-detected from `project.uiproj` / `project.json` — do not pass it.
 
+A library is not a solution project: `projects add` refuses one with `A library cannot be a project inside a solution`. Pack and publish it on its own (`uip rpa pack`, then `uip rpa publish <NUPKG_PATH>`, which sends a library to the tenant Libraries feed), and the projects that use it take it as a NuGet dependency. To make the published library part of the solution, add it as a resource: `uip solution resources add --source remote --kind Library --name <LIBRARY_NAME> --output json`.
+
 `add` is transactional: on success, both the `.uipx` entry and the matching `resources/solution_folder/{package,process}/<name>.json` files are created together; on failure, nothing is mutated.
 
 ## Step 3: Import External Projects
@@ -146,7 +148,9 @@ Refresh pulls in any choice set a Data Fabric `Entity` references automatically 
 
 Steps performed during refresh:
 
-1. **Discover bindings** — reads `bindings_v2.json` from each project (solution root copy is also read for agent projects).
+1. **Discover bindings** — reads `bindings_v2.json` at each project's root (solution root copy is also read for agent projects).
+
+   An RPA project built with `uip rpa build` has no root copy: the build writes its bindings to `.local/content/bindings_v2.json` and deletes a root `bindings_v2.json`, so refresh declares none of the project's queues, assets or connections. After the project's last build, copy `<project>/.local/content/bindings_v2.json` to `<project>/bindings_v2.json` and run refresh; the resources it creates or imports stay in the solution when a later build deletes the copy. The warning `Project '<name>' (Process) was not checked for resource contributions; update the tool that provides it ('uip tools install rpa')` comes with every RPA project and does not explain the empty result.
 2. **Discover cloud GUIDs** — for agent projects, supplements bindings with `<project>/resources/<X>/resource.json` files. These carry a `referenceKey` (GUID) for tools/escalations/contexts that the agent depends on; the GUID is the unambiguous cloud identity (binding names alone aren't unique across folders).
 3. **Reconcile in-solution projects (`.uipx`)** — generates project artefact files (`process/<type>/`, `package/`) from SDK templates. Internal to the solution; no debug overwrite written.
 4. **Sync external references** — for each cloud resource the solution depends on, calls Orchestrator/Apps APIs and writes:
@@ -304,11 +308,17 @@ uip solution resources add --source remote --kind Queue --name InvoiceQueue \
 
 `Status` is `"Added"` (newly created), `"Updated"` (cloud spec re-applied when SDK detects drift on `--source remote`), or `"Unchanged"` (idempotency hit). For local stubs `Folder` is always `solution_folder` and `Source` is `"local"`; for remote imports, the resource lands locally under `solution_folder` regardless of which cloud folder it came from (debug overwrites carry the cloud-folder context for deploy).
 
+A local stub starts from the kind's defaults: a queue has automatic retry on, `maxNumberOfRetries: 1` and `enforceUniqueReference: false`; an asset has an empty value, which deploy refuses until a value is set or an existing asset linked ([Local virtual asset § What happens at deploy](scenarios/virtual-resource.md#what-happens-at-deploy)). When the design needs other values, set them with [`resources edit`](#step-11-edit-a-resource) right after `add`.
+
 ### Data Fabric kinds
 
 **Folder-scoped `Entity` / `ChoiceSet`** — standard solution-resource flow. Create with `uip df entities create --folder-key <key>` (or `uip df choice-sets create`), then `uip solution resources add --source remote --kind Entity --name <name> --folder-path <folder>`. Pack, publish, deploy, upgrade all work like any other resource. Idempotent — re-run on drift; returns `Updated`.
 
-**Tenant-scoped `Entity` / `ChoiceSet`** (created without `--folder-key`) — NOT a solution resource. Reference the entity from the workflow via a DataService activity and pack the workflow project — the referencing runtime resolves it. Flow (Maestro `.flow`) and API workflows (`process:api`) use the DataService connector activity and are fully CLI-packable end-to-end (no special bundle in the nupkg). RPA (XAML) workflows use strongly-typed DataService activities that need a compiled `content/.entities/DataService.*.Entities.dll` bundle Studio Web builds at pack time — **Studio Web is required for RPA tenant-DF today**. In all cases, do not run `uip solution resources add` for tenant-scoped DF, and **the destination tenant must already have the same entity at tenant scope with matching schema** (name + fields + SQL types) — the solution does NOT provision it.
+**Tenant-scoped `Entity` / `ChoiceSet`** (created without `--folder-key`) — NOT a solution resource. Reference the entity from the workflow via a DataService activity; the referencing runtime resolves it. Flow (Maestro `.flow`) and API workflows (`process:api`) use the DataService connector activity and are fully CLI-packable end-to-end (no special bundle in the nupkg).
+<!--skill-flavor:tenant-df-rpa:start-->
+RPA (XAML) workflows use strongly-typed DataService activities: install the entities into the project (`uip rpa data-fabric-entities install --add "<ENTITY_NAME>" --project-dir "<PROJECT_DIR>" --output json`), and `uip solution pack` packs their generated types into the project's package; the deployed process reads the tenant entity.
+<!--skill-flavor:tenant-df-rpa:end-->
+In all cases, do not run `uip solution resources add` for tenant-scoped DF, and **the destination tenant must already have the same entity at tenant scope with matching schema** (name + fields + SQL types) — the solution does NOT provision it.
 
 > **Do not hand-write `configurations/default/configuration.json`.** `uip df entities get` returns `fieldDataType`-shaped fields — pack and publish succeed silently; upgrade fails with per-field `EntityConflict`. Only `uip solution resources add --source remote` writes the shape the deploy validator accepts.
 
@@ -511,6 +521,19 @@ The CLI probes Studio Web for the bundled `SolutionId` and picks the operation i
 | `--force` | Assert the solution exists and overwrite it without the probe. Not normally needed; fails `not_found` when the cloud solution is gone | Probe runs |
 | `--login-validity <minutes>` | Minimum minutes left on token before refresh | `10` |
 
+The bundle leaves out `.venv/`, `node_modules/`, `__pycache__/`, `.git/`, `.local/` and `.env*` files on its own. To leave more out, add a `.uipignore` file with `.gitignore` syntax — at the solution root (patterns relative to the solution) or inside a project next to its `project.uiproj` (patterns relative to that project, applying to it only):
+
+```gitignore
+# build output and logs anywhere in the solution
+dist/
+*.log
+!important.log
+# one project's generated code
+MyAgent/generated/
+```
+
+A pattern that would drop a project the `.uipx` lists is refused with `ErrorCode: invalid_argument` — take the project out with `uip solution projects remove` instead. `uip codedapp push` reads the same `.uipignore`; `uip solution pack` does not.
+
 > A project's target framework (platform) is fixed at creation and **cannot be mutated** — re-uploading or editing configuration will not change it. To target a different platform (e.g., Windows → Cross-platform), **recreate the project** with the correct target framework and upload that.
 
 ## Step 13: Delete from Studio Web
@@ -633,7 +656,7 @@ If a non-virtualizable resource isn't found in cloud, refresh emits a warning an
 ### `bindings_v2.json` locations
 
 Studio Web writes bindings in two places depending on project type:
-- `<project>/bindings_v2.json` — for flow / RPA projects
+- `<project>/bindings_v2.json` — for flow / RPA projects (an RPA project built with `uip rpa build` keeps it under `.local/content/` — [Step 7](#what-refresh-actually-does))
 - Solution root `bindings_v2.json` — added for agent projects (Studio Web mirrors them up)
 
 Refresh reads both. Don't hand-edit these — they're regenerated whenever Studio Web saves the project.

@@ -72,7 +72,7 @@ names it, never before the source exists:
 ```bash
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source
 # run each prepare the check names, with the exact command it prints:
-uip maestro registry prepare <key> <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
+uip maestro registry prepare <key> --action <action> [--object <name>] [--resolve <field>:<by>=<value>] [-f <parent>=<value>]
 uip maestro flow check .flow-sdk/<Name>.flow.ts --source    # re-check until clean
 uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow
 uip maestro flow validate <Name>.flow --output json
@@ -83,9 +83,12 @@ surrounding task or release policy.
 
 Layout is deliberately absent from this sequence. `uip maestro flow format`
 is not an authoring gate — `validate` passes without it and nothing upstream
-reads a position. It is required before the emitted file reaches anything that
-draws it: `solution upload`, `flow debug`, or a person opening the project in a
-designer. See [`operate.md`](operate.md#lay-out-the-emitted-flow-first).
+reads a position. For a greenfield file (one `compile` wrote from scratch), run
+it before the file reaches anything that draws it: `solution upload`,
+`flow debug`, or a person opening the project in a designer. Do not run it on a
+merged brownfield file, or on one whose source sets `.layout()`: `format`
+re-lays out every node, so it discards the positions the author chose. See
+[`operate.md`](operate.md#lay-out-the-emitted-flow-first).
 
 These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
 
@@ -109,7 +112,8 @@ detail a runtime-evidence bar needs.
 
 The JSON envelope has top-level `Result`; a successful validation also reports
 `Data.Status: "Valid"` and may carry `Data.Warnings`. Treat warnings as failures
-except for the reviewed shared-connection advisory. Preserve any exception's
+except for the reviewed shared-connection advisory and the `err()` read
+diagnostics in [`error-handling.md`](error-handling.md#reading-the-failure). Preserve any exception's
 exact code/text and rationale instead of broadening an allowlist.
 
 ### Bounded completion
@@ -154,6 +158,7 @@ compile. Omit both options only when manual/implicit authentication is intended.
 
 `flow debug` takes the project directory, not the `.flow` file, and resource
 refresh must run first. From the solution directory, `<Name>` names that project.
+A `500` at `prepare-custom-debug` is transient: retry once.
 These are the common flags; use only the ones the behavior claim needs:
 
 | Need | Exact form |
@@ -161,6 +166,7 @@ These are the common flags; use only the ones the behavior claim needs:
 | JSON inputs | `-i '{"name":"value"}'` or `--inputs @inputs.json` |
 | File input | `--attachment <input-name>=<path>`; repeat for multiple files |
 | Folder | one of `--folder-id`, `--folder-key`, or `--folder-path`; omit to auto-detect |
+| Start trigger | `--entry-point <trigger-node-id>`; omit to start at the default root |
 | Poll bound | `--timeout <seconds> --poll-interval <milliseconds>`; keep the stated task bound |
 | Compact read-back | `--output-filter "<JMESPath>" --output json` |
 | Quiet logs | `--log-level error`, or `--log-file <path>` to move them off the stream entirely |
@@ -197,12 +203,14 @@ read-back into seven tool calls.
 # Did it finish? The cheapest possible check.
 --output-filter "{status:finalStatus,instance:instanceId}"
 
-# The standard read-back: status, where to look, what did NOT complete, all globals.
+# The standard read-back: status, where to look, what did NOT complete, the
+# flow's declared outputs — one <Out>:variables.globals.<Out> pair per output —
+# and incidents.
 --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,\
 failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},\
-globals:variables.globals}"
+weatherVerdict:variables.globals.weatherVerdict,incidents:incidents}"
 
-# Just the values the flow produced.
+# Every global, including each step's raw output — diagnosis only (see below).
 --output-filter "variables.globals"
 
 # Every element's status, when you need the path the run actually took.
@@ -224,32 +232,49 @@ double quotes instead of single ones:
 --output-filter '{status:finalStatus,raw:variables.globals."multiply.output"}'
 ```
 
-**There is no `incidents` in this envelope.** `Data` carries exactly
-`finalStatus`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`, `folderKey`,
-`solutionId`, `variables` and `elementExecutions` — an `incidents:incidents`
-projection silently yields `null`. Incidents come from the separate
+**Name the globals the claim needs; never project all of them for a verdict.**
+Every step's output is in this map whole: an HTTP step carries its response
+body and headers, a connector step its full record. One geocoding call can make
+the read-back hundreds of lines. Trimming it with `tail` or `head` then drops
+`status` and `failed`, and the only way back is a second `flow debug` run
+(~30 s against the cloud). Name each declared output, and add a step's output
+only when the claim is about that step.
+
+**A completed run has no `incidents` in this envelope.** Its `Data` carries
+`finalStatus`, `entryPoint`, `instanceId`, `studioWebUrl`, `jobKey`, `runId`,
+`folderKey`, `solutionId`, `variables` and `elementExecutions`, plus
+`variablesFetch` when the variables read needed a retry; `variablesError`
+replaces `variables` when that read fails. So an `incidents:incidents`
+projection yields `null`. A faulted run usually carries `Data.incidents` (absent
+when PIMS returns none or the fetch fails), and `--output-filter` projects
+failure `Data` too, so add `incidents:incidents` to the projection to keep
+them. If `Data.incidents` is missing, fetch incidents with the separate
 `debug-instance incidents` call below, keyed by the `instanceId` you just read.
+With `variablesError`, the outputs are unknown, not empty: run the re-read
+command its `Instructions` give.
 
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
 
 ```bash
-( cd <Solution> && uip solution resources refresh --solution-folder . --output json )
-( cd <Solution> && uip maestro flow debug <Name> --log-level error \
+( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
+( cd "<Solution>" && uip maestro flow debug <Name> --log-level error \
   --inputs @inputs.json \
-  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},globals:variables.globals}" \
+  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>,incidents:incidents}" \
   --output json )
 ```
 
 The top-level envelope still carries `Result`; the projection above selects
 from `Data`. Read and retain `Result`, the projected status/instance/URL, the
-`failed` element executions, and the globals the claim needs.
+`failed` element executions, the declared outputs the claim needs (`<Out>` is
+each `direction: out` global, as in the standard read-back above), and
+`incidents` on a faulted run.
 `Completed` with the expected globals and an empty `failed` is evidence for the
 product-runtime path; a bare process exit code is not. Omit the filter only when
 diagnosing a field the projection did not retain.
 
-Incidents are **not** in this envelope — fetch them by the `instance` you just
-read, and only when something actually failed.
+Fetch incidents by `instance` only when a failed run has no `Data.incidents`
+(`null` in a projection) or your projection dropped it.
 
 For a fault, query the backend incident payload with the returned instance id:
 

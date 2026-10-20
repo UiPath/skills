@@ -37,7 +37,7 @@ export default flow('mail').trigger(onEvent(mail))
   .step('reply', script({ code: 'return $vars.start.output.subject;' })).build();
 ```
 
-An id-valued `where` parameter is a `lookup()` token: `registry prepare <key> <event>` resolves it, writes bindings, and stores the vocabulary `check` validates `where`/`filters` against (a wrong-case filter field is an error — the platform drops it silently).
+An id-valued `where` parameter is a `lookup()` token: `registry prepare <key> --action <event>` resolves it, writes bindings, and stores the vocabulary `check` validates `where`/`filters` against (a wrong-case filter field is an error — the platform drops it silently).
 A generic event (`record-created`/`record-updated`) needs `object: '<Entity>'` — never put it in `where`.
 Use the reference's completion contract before debugging: an injected start payload exercises downstream wiring but is not a subscription witness.
 
@@ -60,7 +60,7 @@ pasted id — and one `prepare` discharges everything `check` names:
 ```
 
 ```bash
-uip maestro registry prepare uipath-microsoft-outlook365 email-received \
+uip maestro registry prepare uipath-microsoft-outlook365 --action email-received \
   --resolve parentFolderId:displayName=Inbox
 ```
 
@@ -130,6 +130,27 @@ The emitted node carries the object as `inputs.detail.objectName` (and inside
 `configuration`), its event as `eventType`, and the platform-declared
 `eventMode`. A curated event (Outlook `email-received`, OneDrive `file-created`)
 has its object built in — passing `object` there is an error.
+
+## Started by an HTTP call
+
+A caller that starts the flow over HTTP, such as another system's webhook or a script, reaches it through the HTTP Webhook connector: `onEvent({ connector: 'uipath-http-webhook', event: 'http-webhook', connection, folder })`. The caller's authentication is set on the connection when it is created in Integration Service. With header authentication, Integration Service answers 401 to a request whose header is missing or wrong, and no run starts.
+
+The event is webhook-mode. Read the URL callers post to with:
+
+```bash
+uip is webhooks config uipath-http-webhook --connection-id <CONNECTION_ID> --element-instance-id <ELEMENT_INSTANCE_ID> --output json
+```
+
+Both ids come from `uip is connections list --all-folders --output json` (`Id`, `ElementInstanceId`). The URL answers 404 until the flow is deployed with its trigger active.
+
+The trigger's output holds the request. Read it with `out('start', …)`:
+
+- a JSON body's top-level fields, directly;
+- the parsed `body` and `headers` (header names lower-case);
+- `request_body` and `request_headers` as JSON text, which are also the fields `filters` take;
+- `eventType`.
+
+Query-string parameters are not delivered. The headers include the authentication header itself, so never log or return `headers` whole. The caller gets only the acceptance (200 with a `webhookEventId`), never the flow's output, so a caller that needs the run's result is not served by this trigger.
 
 ## Filter operators
 

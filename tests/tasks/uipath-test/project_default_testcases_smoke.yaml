@@ -1,0 +1,201 @@
+# Needs `uip tm project get-default` (UiPath/cli#4844, in `@uipath/cli@dev` and
+# every release after it); pre_run exits CLI TOO OLD on a CLI without it.
+# On a tenant with no default project, the agent's get-default creates one on
+# purpose; the eval tenant already has it (see fixtures/README.md,
+# Default-project tasks), so runs there only read it.
+task_id: skill-test-project-default-testcases-smoke
+description: >
+  Smoke test: the user asks for test cases and names no Test Manager project,
+  so the agent puts them in the tenant's default project (`project get-default`)
+  instead of asking, creating a project of its own, or moving the default.
+  pre_run writes the feature to test (feature.md, with a per-run
+  `EVFX-DPTC-<stamp>-<hex>` id the team prefixes test case names with) and
+  records the default this login sees. Graded on the tenant: at least three
+  test cases named with the run id are in the default project, and the default
+  is the same project as before, or, on a tenant that had none, the
+  `Default Project` that get-default creates. post_run deletes the test cases;
+  the default project itself stays.
+tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 25
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, secrets, subprocess, sys
+      PREFIX = "EVFX-DPTC-"
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          o = r.stdout or ""
+          try:
+              return r.returncode, json.loads(o[o.index("{"):])
+          except ValueError:
+              return r.returncode, {}
+
+      rc = subprocess.run(["uip", "tm", "project", "get-default", "--help"],
+                          capture_output=True, text=True).returncode
+      if rc != 0:
+          print("FIXTURE: CLI TOO OLD - `uip tm project get-default` is missing; "
+                "this task needs UiPath/cli#4844 (@uipath/cli@dev or a release after it).",
+                file=sys.stderr, flush=True)
+          sys.exit(1)
+
+      rc, d = call("tm", "project", "list", "--limit", "1")
+      rows = d.get("Data")
+      if rc != 0 or not isinstance(rows, list):
+          print("FIXTURE: PROVISIONING FAILED - could not read `tm project list`", file=sys.stderr, flush=True)
+          sys.exit(1)
+      first = rows[0] if rows else {}
+      before = ({"Key": first.get("ProjectKey"), "Id": first.get("Id")}
+                if first.get("IsDefault") is True else {"Key": "NONE", "Id": None})
+      json.dump(before, open(".default-before.json", "w"))
+      print(f"FIXTURE: visible default before the run: {before['Key']}", flush=True)
+
+      now = datetime.datetime.now(datetime.timezone.utc)
+      # A run that died before post_run strands its test cases in the default
+      # project. Sweep only ones stamped more than 6 hours ago, so a concurrent
+      # run keeps its own.
+      if before["Key"] != "NONE":
+          _, d = call("tm", "testcases", "list", "--project-key", before["Key"], "--filter", PREFIX)
+          for tc in d.get("Data") or []:
+              name = tc.get("Name") or ""
+              try:
+                  stamp = datetime.datetime.strptime(name[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
+              except ValueError:
+                  continue
+              if name.startswith(PREFIX) and now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+                  call("tm", "testcases", "delete", "--project-key", before["Key"],
+                       "--test-case-key", tc.get("TestCaseKey"), "--yes")
+
+      tag = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      open(".run-tag", "w").write(tag + "\n")
+      open("feature.md", "w").write(f"""# Password reset ({tag})
+
+      Our team starts every test case name with the feature id `{tag}`,
+      for example `{tag} Valid reset link sets a new password`.
+
+      Scenarios to cover:
+
+      - A valid reset link lets the user set a new password.
+      - An expired reset link is rejected with a clear message.
+      - An email address with no account gets the same generic message, so it
+        does not reveal which emails are registered.
+      """)
+      print(f"FIXTURE: feature {tag} written to feature.md", flush=True)
+      PYEOF
+    timeout: 120
+
+post_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import json, subprocess
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          o = r.stdout or ""
+          try: return json.loads(o[o.index("{"):])
+          except ValueError: return {}
+      try:
+          tag = open(".run-tag").read().strip()
+      except OSError:
+          raise SystemExit(0)
+      rows = call("tm", "project", "list", "--limit", "1").get("Data") or []
+      if not rows or rows[0].get("IsDefault") is not True:
+          raise SystemExit(0)
+      key = rows[0].get("ProjectKey")
+      for tc in call("tm", "testcases", "list", "--project-key", key, "--filter", tag).get("Data") or []:
+          if (tc.get("Name") or "").startswith(tag):
+              call("tm", "testcases", "delete", "--project-key", key,
+                   "--test-case-key", tc.get("TestCaseKey"), "--yes")
+      PYEOF
+    timeout: 120
+
+initial_prompt: |
+  I have to set up some Test Manager tests for the feature described in
+  feature.md in this folder. Can you create the test cases for me?
+
+success_criteria:
+  - type: skill_triggered
+    description: "Routed through the uipath-test skill"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "With no project named, got the default with get-default (advisory: reading an existing default from `project list` is fine too; the graders below prove the cases are in the default)"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+tm\s+project\s+get-default\b(?!(?:(?!(?<!\\)\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?:--help|-h)\b)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 0
+
+  - type: command_not_executed
+    description: "Did not create a project of its own or move the default (no project create, no --set-default)"
+    tool_name: "Bash"
+    command_pattern: '(?:uip|\$UIP)\s+tm\s+project\s+(?:create\b(?!(?:(?!(?<!\\)\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*\s(?:--help|-h)\b)|update\b(?:(?!(?<!\\)\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--set-default(?![\w-]))'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "At least three test cases named with the run's feature id are in the tenant's default project"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          o = r.stdout or ""
+          try: return json.loads(o[o.index("{"):])
+          except ValueError: return {}
+      tag = open(".run-tag").read().strip()
+      rows = call("tm", "project", "list", "--limit", "1").get("Data") or []
+      if not rows or rows[0].get("IsDefault") is not True:
+          print("NO_DEFAULT"); sys.exit(1)
+      key = rows[0].get("ProjectKey")
+      names = [tc.get("Name") or "" for tc in
+               call("tm", "testcases", "list", "--project-key", key, "--filter", tag).get("Data") or []]
+      n = sum(1 for x in names if x.startswith(tag))
+      print(f"IN_DEFAULT {key}: {n}" if n >= 3 else f"TOO_FEW in {key}: {n}")
+      sys.exit(0 if n >= 3 else 1)
+      PYEOF
+    expected_exit_code: 0
+    expected_stdout: "IN_DEFAULT"
+    stdout_match: contains
+    timeout: 90
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The default is the same project as before the run, or the Default Project get-default creates on a tenant that had none"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      before = json.load(open(".default-before.json"))
+      r = subprocess.run(["uip", "tm", "project", "list", "--limit", "1", "--output", "json"],
+                         capture_output=True, text=True)
+      o = r.stdout or ""
+      rows = json.loads(o[o.index("{"):]).get("Data") or []
+      first = rows[0] if rows and rows[0].get("IsDefault") is True else {}
+      if before["Key"] != "NONE":
+          ok = first.get("Id") == before["Id"]
+      else:
+          ok = first.get("Name") == "Default Project"
+      print("DEFAULT_OK" if ok else f"DEFAULT_CHANGED before={before} after={first.get('ProjectKey')}/{first.get('Name')}")
+      sys.exit(0 if ok else 1)
+      PYEOF
+    expected_exit_code: 0
+    expected_stdout: "DEFAULT_OK"
+    stdout_match: contains
+    timeout: 60
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Checked login status first (advisory convention)"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0

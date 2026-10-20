@@ -1,10 +1,10 @@
 # connector-activity task — Implementation (Direct JSON Write)
 
-> **Node `type` value: `execute-connector-activity` (schema-kebab).** NEVER write `connector-activity` (plugin folder name) or `connector_activity` into the JSON `type` field. The CLI `--type connector-activity` flag is a separate concept — used only when calling `uip maestro case tasks describe` (legacy) or `uip maestro case spec --type activity` (current). See SKILL.md Rule 17 + Plugin Index.
+> **Node `type` value: `execute-connector-activity` (schema-kebab), or `external-agent` / `external-workflow` for an external agent or automation (Step 5.a).** NEVER write `connector-activity` (plugin folder name) or `connector_activity` into the JSON `type` field. The CLI `--type connector-activity` flag is a separate concept — used only when calling `uip maestro case tasks describe` (legacy) or `uip maestro case spec --type activity` (current). See SKILL.md Rule 17 + Plugin Index.
 
 > **Phase split.** Runs across both phases. Phase 2 writes `data.typeId` + `data.connectionId` only — no `case spec` call in Phase 2. Phase 3 calls `case spec --input-details` once, reads the populated `caseShape`, and mints the task. See [`../../../phased-execution.md`](../../../phased-execution.md).
 
-Fetch the populated connector task scaffold via `uip maestro case spec --input-details`, then drop it into `caseplan.json`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `registry-resolved.json` and threads them through the spec call.
+Fetch the populated connector task scaffold via `uip maestro case spec --input-details`, then drop it into `caseplan.case`. Field discovery and reference resolution are done during [planning](planning.md) — implementation reads resolved values from `registry-resolved.json` and threads them through the spec call.
 
 ## Prerequisites from Planning
 
@@ -46,6 +46,8 @@ Construct the input-details object from `registry-resolved.json`, rewriting ever
 Synthetic HTTP request activities (`object-name === "httpRequest"` / `"http-request"`) reject `bodyParameters` — pass HTTP body via `queryParameters` instead, or omit. The CLI rejects bodyParameters at validation time.
 
 Full input-details contract: [`case-spec-input-details.md`](../../../case-spec-input-details.md).
+
+**Solution-resource pickers** (such as a Data Fabric entity). Pass the resource **name** as a plain string, like any value. `case spec` resolves it into the solution and returns what to bind (Step 2). If the name exists in more than one folder, the command lists the candidates: add `"<picker>_folderKey": "<folder key>"` and rerun. A scope selector gating the picker (for example `entityScope`) is a reference field: write its lookup `value` (`folder`), not its `displayName` (`Folder`).
 
 #### Step 1.a — Rewrite references to canonical sink form
 
@@ -93,8 +95,11 @@ uip maestro case spec --type activity \
   --activity-type-id "<type-id>" \
   --connection-id "<connection-id>" \
   --input-details '<json from Step 1>' \
+  --solution-folder "<SolutionDir>" \
   --output json > tasks/spec-cache.<elementId>.json
 ```
+
+`--solution-folder` is the solution a picker's resource is added to. It defaults to the solution containing the current folder.
 
 **Precondition.** `.Data.CaseShape.context` must resolve. If it is `null`, the CLI is too old to emit `caseShape` in its final shape — upgrade; never adapt the splice to an older response.
 
@@ -114,6 +119,7 @@ The Phase 3 call omits `--skip-case-shape` (incompatible with `--input-details` 
 | `spec.caseShape.outputs[]` | `.Data.CaseShape.outputs` — response (JSON Schema body) / curated / Error |
 | `spec.caseShape.context[]` | `.Data.CaseShape.context` — FE-canonical array; its `connection` / `folderKey` values are `{{CONN_BINDING_ID}}` / `{{FOLDER_BINDING_ID}}` sentinels that `splice` resolves |
 | `spec.diagnostics.fallbacks[]` | `.Data.Diagnostics.Fallbacks` — surface to `build-issues.md` when non-empty. |
+| `spec.resourceBindings[]` | `.Data.ResourceBindings` — only when a picker resolved: `resource`, `resourceKey`, and `rows[]` of `name`, `propertyAttribute`, `default`, `bindingIdPlaceholder` (kept camelCase, like `caseShape`). |
 
 > **Each connector task runs its own `case spec`.** Even when two tasks share the same `connection-id`, `caseShape` is task-shape-specific (different `objectName`, `httpMethod`, `inputs`, `outputs`). Never reuse another task's spec output.
 
@@ -161,6 +167,7 @@ If the field or exact value is unavailable or ambiguous, halt and ask; non-inter
 }
 ```
 
+- `type`: `external-agent` or `external-workflow` for an external agent or automation ([planning § External agents and automations](planning.md#external-agents-and-automations)); `splice` then writes its `serviceType`.
 - `description`: the task's `**Description:**` line from sdd.md, word for word. Do not shorten or reword it. `**Design Rationale:**` is a different line and goes to `tasks/build-issues.md`; use it here only when the block writes no `**Description:**`.
 
 Append the task to the target stage's `data.tasks` structure using `activation-mode` + `entry-rule`, not `lane` alone. Strict `sequential` tasks append as new single-task inner arrays in planned order. `parallel-after-predecessor` siblings share the planned same next inner array even though their entry rule is `runs-sequentially`. Adhoc, event-driven, fan-in, conditional-gate, and standalone tasks get their own single-task inner array. Only `activation-mode: parallel` or `parallel-after-predecessor` tasks with explicit same-lane intent and rationale may share an inner array. Add `runs-sequentially` to the task's entry conditions when the frontend toggle or ordered task-set rule is selected; if `lane` conflicts with mode, mode wins.
@@ -168,21 +175,22 @@ Append the task to the target stage's `data.tasks` structure using `activation-m
 **5.b — Splice (CLI-authored).** One call fills `data` from the saved spec and appends the connection's root bindings:
 
 ```bash
-uip maestro case splice "<caseplan.json>" \
+uip maestro case splice "<caseplan.case>" \
   --task-id "<taskId>" \
   --spec "tasks/spec-cache.<elementId>.json" \
   --connection-id "<connection-id from registry-resolved.json>" \
   --output json
 ```
 
-It writes `data.serviceType`, `data.context` with the two sentinels resolved to `=bindings.<id>`, `data.inputs` / `data.outputs` with `id` / `var` / `elementId` minted, and the ConnectionId + FolderKey root bindings (each with its `default`; reused, not duplicated, when the connection already has a pair). Keys inside `body` are copied untouched. Re-running with the same arguments is byte-identical, so a Phase 4 repair may splice again after a fresh `case spec`. Read `Data.Summary` (`ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and record it in `build-issues.md`.
+It writes `data.serviceType`, `data.context` with the two sentinels resolved to `=bindings.<id>`, `data.inputs` / `data.outputs` with `id` / `var` / `elementId` minted, and the ConnectionId + FolderKey root bindings (each with its `default`; reused, not duplicated, when the connection already has a pair). Keys inside `body` are copied untouched. Re-running with the same arguments is byte-identical, so a Phase 4 repair may splice again after a fresh `case spec`. Read `Data.Summary` (`ContextEntries`, `Inputs`, `Outputs`, `ConnectionBindingId`, `FolderBindingId`, `BindingsReused`) and record it in `build-issues.md`. A `Warning` on an external task means splice guessed the sync service type, because the spec's `executionType` was missing or not sync, async or hybrid: record it in `build-issues.md`, and check the activity type id came from the external-agent or external-automation catalog.
 
 Never hand-write `data.context`, `data.inputs`, `data.outputs`, or the connection's root bindings for a connector task — every field `splice` writes is CLI-authoritative. **Do not open `connector-trigger-impl.md`, `connector-trigger/impl-json.md`, `case-spec-input-details.md`, or `bindings/impl-json.md` for this task after splicing: nothing in them applies to a spliced task.** They describe the manual transport for the event-trigger node and connector-bound rules, and the binding shape splice already wrote. Never edit the spec envelope to make `splice` accept it; a rejected spec means it was saved without `caseShape` (run `case spec` again without `--skip-case-shape`). `--connection-id` must be the connection the spec was fetched for; splice refuses a mismatch and names both ids. Splice takes the folder key from the same spec, so pass no `--folder-key`; with two connector tasks, each splice reads its own spec's folder, never the other task's.
 
 **5.c — What stays with the agent after splice**, each as a narrow Edit on the spliced task:
 
 - **Output binding.** For every output the SDD references — bare name or first segment of a `->` path — apply [io-binding/impl-json.md § Output Binding Shapes](../../variables/io-binding/impl-json.md#output-binding-shapes) to the entry `splice` wrote, keeping its `id` / `var` / `elementId`. Outputs the SDD does not reference stay as splice minted them.
-- **Output name collisions.** `caseShape.outputs[]` returns `response` / `Error` for every connector task. Apply the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule) across all tasks already in `caseplan.json`: on a collision append a counter suffix starting at 2 to `var`, `id`, `value`, and `target` (as `=<new var>`); `name`, `displayName`, and `source` stay unchanged.
+- **Output ids are the output's name.** `splice` gives each new output `id` = `var` = its name in camelCase (`response`, `Error` → `error`), adds `2`, `3`, … on a clash with any id, var or case variable already in the plan, and keeps the id of an output the task already carries. Nothing to do. **If `splice` minted a `v…` output id instead** (an older CLI: the output's `id` starts with `v` and is not its name), apply the same rule yourself before anything reads the output: `id` / `var` / `value` = camelCase name, `target` = `=<new var>`, a counter suffix from 2 per the [uniqueness rule](../../variables/global-vars/impl-json.md#uniqueness-rule); `name`, `displayName` and `source` stay unchanged. Never rename an output id something already reads. The Case Designer keeps name-shaped output ids on save and rewrites `v…` ones without updating the reads, so a read of a `v…` output id breaks on the next Designer save (`CASE_MGMT_REFERENCE_UNBOUND` on the pulled plan).
+- **Solution-resource pickers: nothing to do.** When `spec.resourceBindings[]` is present, `splice` writes one root binding per `rows[]` item (reusing a root binding that already has the same `resource`, `resourceKey` and `propertyAttribute`), replaces each `bindingIdPlaceholder` with its id, and lists those picker rows on the task's `data.bindings[]`, as Studio Web saves them; its Summary reports them as `ResourceBindingIds`. If `splice` refuses with `This spec references {{RESOURCE_BINDING_ID:<field>}}, but its ResourceBindings define no row for it`, the spec is stale: run `case spec` again. On a CLI whose Summary has no `ResourceBindingIds` and leaves a `{{RESOURCE_BINDING_ID:` in `data.inputs`, mint the rows yourself: one id per `rows[]` item, a root binding for each (`id`, `type` = `"string"`, `resource` and `resourceKey` from the entry, `name`, `propertyAttribute`, `default` from the row), that id in place of the row's placeholder, and each of those root bindings listed on the task's `data.bindings[]`.
 - **Multipart file inputs** — 5.d below.
 
 #### Step 5.d — Multipart file inputs (after splice)
@@ -214,26 +222,30 @@ All issues appended to the shared issue list per [logging/impl-json.md](../../lo
 
 ## Post-Write Verification
 
-1. `type` is `"execute-connector-activity"`
-2. `data.serviceType` is `"Intsvc.ActivityExecution"`
-3. `data.context[]` has: `connectorKey`, `connection`, `resourceKey`, `folderKey` (when applicable), `objectName`, `method`, `path`, `metadata` — but NOT `operation` or `_label`
+1. `type` is `"execute-connector-activity"`, or `"external-agent"` / `"external-workflow"` per Step 5.a
+2. `data.serviceType` is what `splice` wrote (`Intsvc.ActivityExecution`, or the sync or async agent or workflow type for an external task); never edit it
+3. `data.context[]` has: `connectorKey`, `connection`, `resourceKey`, `folderKey` (when applicable), `objectName`, `method`, `path`, `metadata`, and `executionType` on an external task whose spec carries one — but NOT `_label`, and NOT `operation` on an `execute-connector-activity` (an external task keeps the `operation` and `eventMode` splice wrote, if any)
 4. `data.context[name="connection"].value` is `=bindings.<ConnectionBindingId from splice Summary>`; no `{{` sentinel remains anywhere in `data`
 5. `data.context[name="folderKey"].value` is `=bindings.<FolderBindingId from splice Summary>`; entry absent when `spec.connection.folderKey` was null
 6. `data.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify)
 7. Root bindings exist for ConnectionId + folderKey with the ids splice reported, each carrying `default`
-8. `data.bindings[]` carries no root-binding copies — omit the key or write `[]`; both are the same state
+8. `data.bindings[]` holds only the picker rows `splice` wrote (absent or `[]` without a picker); no connection or folder binding is copied there
 9. Each entry in `data.inputs[]` and `data.outputs[]` has `var` / `id` / `elementId` (written by splice; uniqueness rule applied for outputs in Step 5.c)
 10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 3–8 across every connector node
 11. `bindings_v2.json` `resources` array matches top-level `bindings[]` after the deferred sync
 12. **No literal `[*]` keys in `data.inputs[name="body"].body` (or any input body).** Scan recursively (JSON.stringify + regex `"[^"]*\\[\\*\\][^"]*"\\s*:`). If any key contains literal `[*]`, halt — Step 1.b translation was skipped or incomplete. The body MUST use real arrays under parent names (e.g., `"toRecipients": [{...}]`), never `"toRecipients[*]": {...}`. Validate passes regardless; runtime APIs reject with HTTP 400.
-13. **Lossless inputs (HARD GATE).** Every resolved `input-values` field must appear unchanged in the matching `data.inputs[].body`; a top-level `filter:` also requires `spec.filter` and successful compilation. Otherwise halt and repair—never warn and continue.
+13. **Lossless inputs (HARD GATE).** Every resolved `input-values` field must appear unchanged in the matching `data.inputs[].body` (a resolved picker and its `_folderKey` companion hold `=bindings.<id>` instead); a top-level `filter:` also requires `spec.filter` and successful compilation. Otherwise halt and repair—never warn and continue.
 14. **Spliced subtree is byte-identical to the cache (HARD GATE).** Compare the written `data.context` / `data.inputs` / `data.outputs` against `tasks/spec-cache.<elementId>.json` — identical apart from the placeholder substitutions and the minted `var`/`id`/`elementId`. `validate` does NOT catch content-level loss: a missing `multipartParameters` passes validate and fails at runtime with `400 "Unable to parse multipart body"`.
+15. **No placeholder left behind.** No `{{RESOURCE_BINDING_ID:` remains, and every `rows[]` item has a root binding with its id.
+
 ## What NOT to Do
+
+- **Do NOT resolve a picker yourself** (catalog search, `uip solution resources add`, hand-written rows). `case spec` does it.
 
 - **Do NOT add `operation` or `_label` to `data.context[]`.** The FE only adds `operation` for triggers; activity context must not have it.
 - **Do NOT add `designTimeMetadata` to the metadata body.** The FE does not include it for case management tasks.
 - **Do NOT add top-level `errorState` to the metadata body.** Error state belongs inside `activityPropertyConfiguration.errorState` only — that's already the shape in `caseShape.context`.
-- **Do NOT copy root bindings into `data.bindings[]`.** Connection and folder bindings are managed centrally in the root `bindings[]` and are never duplicated per-task. Omitting the key and writing `[]` are equivalent — the FE reads per-activity property bindings at `data.context[name="metadata"].bindings`, never at `data.bindings`, and `bindings` is optional in the schema. Only a non-empty copy is the defect.
+- **Do NOT copy connection or folder bindings into `data.bindings[]`.** They are managed centrally in the root `bindings[]` and are never duplicated per-task. The picker rows `splice` lists there are the only entries it holds; do not add or remove them by hand. Without a picker, omitting the key and writing `[]` are equivalent.
 - **Do NOT hand-write `data.context`, `data.inputs`, `data.outputs`, or the connection's root bindings.** `uip maestro case splice` writes them from the saved spec envelope (Step 5.b). Any agent-composed version is reconstruction from memory, which is where nested subtrees get dropped.
 - **Do NOT translate, drop, or reroute an SDD filter.** Use FilterTree only with `spec.filter`; otherwise preserve the exact SDD value in a declared plain sink or halt (Step 4).
 - **Do NOT pass `ceqlExpression` directly under `--input-details`.** Derived only.
