@@ -663,18 +663,24 @@ def baseline_plan() -> dict:
     return build()
 
 
-def run_checker(name: str, plan: dict, extra: dict | None = None) -> subprocess.CompletedProcess:
+def run_checker(
+    name: str,
+    plan: dict,
+    extra: dict | None = None,
+    plan_file: str = "caseplan.json",
+) -> subprocess.CompletedProcess:
     """Run one grader against `plan` in a scratch directory.
 
     `extra` maps a relative path to its text, for a checker that reads more of the build
     than the caseplan. `check_fieldnames.py` § 9 reads `tasks/spec-cache/` for the
     connector's own field names, and without it that section has nothing to compare
-    against and silently passes.
+    against and silently passes. `plan_file` is the name `case init` seeds: `caseplan.case`
+    from the current CLI, `caseplan.json` from an older one.
     """
     with tempfile.TemporaryDirectory() as tmp:
         nested = Path(tmp) / "Case" / "Case"
         nested.mkdir(parents=True)
-        with open(nested / "caseplan.json", "w", encoding="utf-8") as stream:
+        with open(nested / plan_file, "w", encoding="utf-8") as stream:
             json.dump(plan, stream)
         for relative, text in (extra or {}).items():
             target = Path(tmp) / relative
@@ -2473,6 +2479,26 @@ class RationaleAttributionTests(unittest.TestCase):
         with open(E.FIXTURE_SDD) as handle:
             sdd = handle.read()
         rationale, _described, _skips = E._sdd_task_envelopes(sdd)
+class PlanFileNameTests(unittest.TestCase):
+    """The plan is `caseplan.case` from the current CLI and `caseplan.json` from an older one."""
+
+    def test_every_grader_gives_the_same_verdict_on_either_name(self):
+        for name in CHECKERS:
+            old = run_checker(name, baseline_plan(), plan_file="caseplan.json")
+            new = run_checker(name, baseline_plan(), plan_file="caseplan.case")
+            self.assertEqual(
+                new.returncode,
+                old.returncode,
+                f"{name}: caseplan.case read differently from caseplan.json\n"
+                f"{new.stdout}{new.stderr}",
+            )
+
+    def test_a_plan_under_a_name_no_grader_knows_is_not_silently_accepted(self):
+        for name in CHECKERS:
+            result = run_checker(name, baseline_plan(), plan_file="plan.bin")
+            self.assertNotEqual(result.returncode, 0, f"{name} accepted a missing plan")
+
+
         self.assertEqual(len(rationale), 33)
         for name, text in rationale.items():
             self.assertNotIn(
