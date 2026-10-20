@@ -12,12 +12,12 @@ run_limits:
 
 initial_prompt: |
   Add a human review step for expense claims. An upstream agent proposes
-  Approve or Deny with a confidence score, proposes a priority
-  (High/Normal/Low) for the finance queue, and proposes reasons. A finance
-  reviewer confirms or corrects these in a Coded Action App, and I want
-  each reviewer decision captured. Corrections to the proposed priority are
-  routine; the agent's confidence is sometimes low, and claims over a set
-  amount are high-stakes.
+  Approve or Deny, proposes a cost center for the finance queue, and
+  proposes reasons for and against. A finance reviewer confirms or corrects
+  these in a Coded Action App, and I want each reviewer decision captured.
+  Corrections to the proposed cost center are routine. A claim can also be
+  partly approved, and the approved amount and the message to the employee
+  should follow whichever decision the reviewer picks.
 
   Write the app's `action-schema.json` at the sandbox root. The schema is
   an object with four top-level sections, `inputs`, `outputs`, `inOuts`
@@ -42,35 +42,59 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "the toggle's decision inputs are present: proposedOutcome, proposalConfidence, highStakes, rationaleOptions, counterfactualOptions"
-    command: "python3 -c \"import json,sys; i=json.load(open('action-schema.json'))['inputs']['properties']; sys.exit(0 if all(k in i for k in ['proposedOutcome','proposalConfidence','highStakes','rationaleOptions','counterfactualOptions']) else 1)\""
+    description: "the toggle's decision inputs are present: proposedOutcome, proposedBy, involvement, rationaleDraft, nextTimeOptions, conditionOptions"
+    command: "python3 -c \"import json,sys; i=json.load(open('action-schema.json'))['inputs']['properties']; sys.exit(0 if all(k in i for k in ['proposedOutcome','proposedBy','involvement','rationaleDraft','nextTimeOptions','conditionOptions']) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "the reasons are an inOut with a weight per item, and the reviewer's priority stays an inOut under its own name"
-    command: "python3 -c \"import json,sys; io=json.load(open('action-schema.json'))['inOuts']['properties']; ev=io.get('evidence',{}); props=ev.get('items',{}).get('properties',{}); sys.exit(0 if 'weight' in props and 'notRelevantWhy' in props and any('priority' in k.lower() for k in io) else 1)\""
+    description: "the reasons are an inOut with a weight, a source and a not-relevant why per item, and the cost center stays an inOut under its own name"
+    command: "python3 -c \"import json,sys; io=json.load(open('action-schema.json'))['inOuts']['properties']; props=io.get('reasons',{}).get('items',{}).get('properties',{}); sys.exit(0 if all(k in props for k in ['weight','proposedWeight','source','notRelevantWhy']) and any('cost' in k.lower() for k in io) else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "each resolution is its own outcome (Approve and Deny), never a single Submit"
-    command: "python3 -c \"import json,sys; o=[k.lower() for k in json.load(open('action-schema.json'))['outcomes']['properties']]; sys.exit(0 if 'approve' in o and 'deny' in o and 'submit' not in o else 1)\""
+    description: "the final details follow the decision: a fields inOut whose items carry byDecision and value"
+    command: "python3 -c \"import json,sys; io=json.load(open('action-schema.json'))['inOuts']['properties']; p=io.get('fields',{}).get('items',{}).get('properties',{}); sys.exit(0 if 'byDecision' in p and 'value' in p else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "each resolution is its own outcome (Approve, a partial approval and Deny), never a single Submit"
+    command: "python3 -c \"import json,sys; o=[k.lower() for k in json.load(open('action-schema.json'))['outcomes']['properties']]; sys.exit(0 if any(k.startswith('approve') for k in o) and 'deny' in o and 'submit' not in o and len(o)>=3 else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
     pass_threshold: 1.0
 
   - type: run_command
-    description: "the reviewer's capture is outputs: rationale, fieldReasons, reviewerConfidence, decisiveReasonId, addedFactors, counterfactual"
-    command: "python3 -c \"import json,sys; o=json.load(open('action-schema.json'))['outputs']['properties']; sys.exit(0 if all(k in o for k in ['rationale','fieldReasons','reviewerConfidence','decisiveReasonId','addedFactors','counterfactual']) else 1)\""
+    description: "the capture is outputs: rationaleText, decidingReasons, nextTimeScope, changes and record, with record rows carrying howMuch and lookedAt"
+    command: "python3 -c \"import json,sys; o=json.load(open('action-schema.json'))['outputs']['properties']; r=o.get('record',{}).get('items',{}).get('properties',{}); sys.exit(0 if all(k in o for k in ['rationaleText','decidingReasons','nextTimeScope','changes','record']) and 'howMuch' in r and 'lookedAt' in r else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the quiet record travels as outputs: changeLog and timeOnTaskSeconds"
+    command: "python3 -c \"import json,sys; o=json.load(open('action-schema.json'))['outputs']['properties']; sys.exit(0 if 'changeLog' in o and 'timeOnTaskSeconds' in o else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "no per-reason confirm or chip-bank fields: no confirmedItems, rationaleOptions, reasonChips, fieldReasons, counterfactual or highStakes anywhere"
+    command: "python3 -c \"import json,sys; d=json.load(open('action-schema.json')); keys=[k.lower() for s in ('inputs','outputs','inOuts') for k in d.get(s,{}).get('properties',{})]; sys.exit(1 if {'confirmeditems','rationaleoptions','reasonchips','fieldreasons','counterfactual','highstakes'}.intersection(keys) else 0)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
