@@ -23,11 +23,12 @@ uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed
 # Leave added steps out of .layout(...): merge places them (builder-sdk#1320).
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.flow"
 uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
-  -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow"
+  -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow" --strict
 ```
 
-Read the [merge warnings](#merge-warnings-what-the-round-trip-changed) before
-you install: once installed, the candidate is the next merge's `--original`.
+Install only after merge exits 0 and you have read its
+[warnings](#merge-warnings-what-the-round-trip-changed): once installed, the
+candidate is the next merge's `--original`.
 
 ```bash
 BACKUP=$(mktemp -d) && echo "backup: $BACKUP" && cp -r "${PROJECT:?}/." "$BACKUP/"
@@ -139,9 +140,8 @@ node .flow-sdk/Deployed.pipeline.mjs --strict   # compiles the edit, merges into
 instead of warning when the no-edit round trip changed something you did not
 author (see [Merge warnings](#merge-warnings-what-the-round-trip-changed)).
 The Node stack trace after `flow-merge: refused (--strict)` is expected; read
-the refusal above it. Leave `--strict` off to get the warnings and a merged
-file. A pipeline written by an SDK older than this option ignores `--strict`
-silently: if `grep -q STRICT .flow-sdk/Deployed.pipeline.mjs` fails, use the
+the refusal above it. A pipeline written by an SDK older than this option
+ignores `--strict` silently: if `grep -q STRICT .flow-sdk/Deployed.pipeline.mjs` fails, use the
 hand loop below with `merge --strict`.
 
 Re-running it after further edits repeats only the compile and merge — the
@@ -164,7 +164,7 @@ uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/baseline/Deploy
 # Edit .flow-sdk/Deployed.flow.ts narrowly; preserve existing step ids.
 uip maestro flow compile .flow-sdk/Deployed.flow.ts -o .flow-sdk/edited/Deployed.flow
 uip maestro flow merge .flow-sdk/edited/Deployed.flow --original Deployed.flow \
-  -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow
+  -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow --strict
 ```
 
 Like the pipeline, this keeps every candidate in `.flow-sdk/`. Back up the
@@ -249,25 +249,27 @@ merge restores the original.
 
 Merge prints `flow-merge: warning: …` for each change the merged file gets
 although you did not make it. With `--baseline` it also compares the baseline
-(the round trip with no edit) with the original. For example:
+(the round trip with no edit) with the original. With `--strict` it refuses
+instead, over each change that would make the merged file differ from the
+original where you made no edit, or drop an edit you made:
 
 ```
-flow-merge: warning: the round trip rewires logFailure1@success from forEachItem1@continue to callApi1ErrorEnd@input; merge will write the new target.
-flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves handle "case-case_1", which node "route1" (core.logic.switch) does not declare …
+flow-merge: refused (--strict): the merged file would differ from the original where the author made no edit, or would leave out an edit the author made:
+  - the round trip rewires logFailure1@success from forEachItem1@continue to callApi1ErrorEnd@input; merge will write the new target.
+  - the merged edge route1@case-case_1 -> review1@input leaves handle "case-case_1", which node "route1" (core.logic.switch) does not declare …
 ```
 
-- Each warning names a change you did not author: a node or edge added,
-  dropped or rewired, a node's type changed, a switch case id or human-task
-  outcome id renamed, or a binding row added or duplicated. Even on a node your
-  edit changed, do not copy the candidate over the canonical file; fix the
-  `.flow.ts` at the spot it names and merge again. A warning about a merged
-  edge's handle means `validate` will refuse the candidate.
-- A warning saying `not refused under --strict` needs no fix, for example
-  `the round trip appends End "<id>" after …` (compile adds an End where the
-  original path just stops) or `the round trip drops the binding row …` (merge
-  keeps the original's row). Neither does `agent "<id>" carries its prompts …`
-  (below), nor `node "<id>" moved …` when you told the user the edit moves that
-  unbundled version.
+- Fix each refused line in the `.flow.ts` at the spot it names, even on a node
+  your edit changed, and merge again. If decompile warned that the source
+  cannot carry that spot, follow
+  [its case](#the-files-schema-version-comes-back-out) instead. If the line
+  says to make the change on the canvas, take it out of the source and tell the
+  user.
+- A `flow-merge: warning:` line that `--strict` still prints does not block
+  the install; do what it says. `the round trip appends End "<id>" after …`
+  and any line saying `not refused under --strict` need nothing, nor does
+  `node "<id>" moved …` once you told the user the edit moves that unbundled
+  version.
 - `agent "<id>" carries its prompts, model and settings on the node (embedded) …`
   means that agent keeps its configuration in the `.flow`, not in
   `<source>/agent.json` (some canvas and `node add` saves do this). Merge keeps
@@ -277,12 +279,8 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
   input or output edit, and refuses a merged node that drops or changes that
   configuration, or whose kept prompt still uses `{{input.X}}` after your edit
   removed input `X`.
-- Pass `--strict` to make merge refuse (exit 1, no file written) instead of
-  warning. `--strict` needs `--baseline`:
-  run `node .flow-sdk/<Name>.pipeline.mjs --strict`, which always has one, or
-  add it to the merge in [the hand loop](#the-same-loop-by-hand). If
-  `uip maestro flow merge` rejects `--strict`, or the pipeline exits 2 with
-  `--strict was asked for, but …`,
+- `--strict` needs `--baseline`. If `uip maestro flow merge` rejects
+  `--strict`, or the pipeline exits 2 with `--strict was asked for, but …`,
   your CLI does not forward it yet; run the same merge through the globally
   installed SDK's `flow-sdk` bin instead:
 
