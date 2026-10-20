@@ -52,6 +52,7 @@ OWNERS = {
     "PSET": "project_settings_smoke.yaml",
     "RUNPKG": "run_package_ci_smoke.yaml",
     "RUNPKGFAIL": "run_package_failing_smoke.yaml",
+    "DPTC": "project_default_testcases_smoke.yaml",
     "PARAM": "testcase_parameters_bulk_add_smoke.yaml",
     "PARAMEDIT": "testcase_parameters_edit_integration.yaml",
     "PARAMLIFE": "testcase_parameters_lifecycle_e2e.yaml",
