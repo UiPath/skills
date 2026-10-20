@@ -62,7 +62,7 @@ Field                    | Verdict       | Reason
 -------------------------|---------------|-----------------------------------------------
 Invoice Number           | NOT CONFIRMED | OCR: predicted "MSIÓÓÓ601020/" but actual is "MSI0601020", top-right of page 1
 Invoice Date             | CONFIRMED     | Predicted "2018-02-28T00:00:00Z" matches "28-Feb-2018" (normalized Date)
-Vendor Address           | NOT CONFIRMED | Predicted "123 Main St" but actual is "456 Oak Ave", top-left of page 1
+Vendor Address           | NOT CONFIRMED | Predicted "<ADDRESS_A>" but actual is "<ADDRESS_B>", top-left of page 1
 Has Signature            | NOT CONFIRMED | Predicted "false" but signature visible bottom-right (boolean came back wrong)
 Total After Tax          | NOT CONFIRMED | Predicted "$1100.00" but Subtotal+Tax = "$1210.00" (inferred value wrong)
 Terms of Payment         | MISSING       | IXP predicted no value AND field not visible in document
@@ -208,5 +208,5 @@ Marked Missing (IXP predicted empty AND field absent from document):
 Not Confirmed (skipped):
   Doc <uid-1>: Invoice Number — OCR: predicted "MSIÓÓÓ601020/" but actual is "MSI0601020"
   Doc <uid-3>: Total Amount — predicted "500.00" but actual is "5000.00" (bottom-right, page 1)
-  Doc <uid-5>: Vendor Address — predicted "123 Main St" but actual is "456 Oak Ave"
+  Doc <uid-5>: Vendor Address — predicted "<ADDRESS_A>" but actual is "<ADDRESS_B>"
 ```

@@ -6,6 +6,8 @@ description: >
   Remove the formatSummary script node from the BellevueWeather flow and rewire
   the decision node to read temperature directly from the HTTP response.
   Exercises deleting a node and reconnecting edges.
+  Graded offline too: the edit must come out of the skill's decompile/merge
+  loop (a hand-edited .flow fails) and leave the rest of the flow unchanged.
 tags: [uipath-maestro-flow, e2e, lifecycle:edit, shape:multi-node]
 
 run_limits:
@@ -58,6 +60,23 @@ success_criteria:
     timeout: 600
     expected_exit_code: 0
     weight: 5.0
+    pass_threshold: 1.0
+
+  # ── Brownfield edit ───────────────────────────────────────────────────
+  - type: run_command
+    description: "The .flow was written by uip maestro flow merge (the skill's decompile/merge loop), not edited by hand"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect merged --original $REFERENCE_DIR/edit/templates/initial_flow/BellevueWeather/BellevueWeather --project BellevueWeather/BellevueWeather"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "start and getWeather, the edges that do not touch formatSummary, and every variable and definition still in use are unchanged"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/edit/templates/initial_flow/BellevueWeather/BellevueWeather --project BellevueWeather/BellevueWeather --removable-node formatSummary --changed-node checkTemperature --changed-node endNiceDay --changed-node endBringJacket"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
     pass_threshold: 1.0
 
 post_run:

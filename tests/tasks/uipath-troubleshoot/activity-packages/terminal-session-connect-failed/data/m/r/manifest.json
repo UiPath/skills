@@ -31,10 +31,6 @@
       "file": "e995b39aaa.json"
     },
     {
-      "match": "or jobs traces caf901ab-28a3-4621-bcfa-68a0447e49c8",
-      "file": "2d930e2440.json"
-    },
-    {
       "match": "traces spans get --job-key caf901ab-28a3-4621-bcfa-68a0447e49c8",
       "file": "56a91ad33d.json"
     },

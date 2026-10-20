@@ -82,7 +82,7 @@ That banner is the tell. GA UIA (`25.10.2`+) enforces licensing — without enti
 2. **Identify the UIAutomation.Activities version per job.** Read `project.json` if local. `24.10.x` = preview (detects/alerts unlicensed). `25.10.2`+ = GA (enforces license).
 3. **Read the job's HA state.** `uip or jobs get <job-key> --output json` — check `AutopilotForRobots.Enabled` and `AutopilotForRobots.HealingEnabled`. Cross-folder; no `--folder-path` flag.
 4. **Pull logs when the surface is a log line or notification.** `uip or jobs logs <job-key> --output json` (add `--level Error` for Surface 4's notice). Cross-folder.
-5. **Fetch the recovery archive to confirm engagement.** `uip or jobs healing-data <job-key> -o <out>.zip` — a populated archive corroborates HA produced detection/recommendation data; a 22-byte ZIP is empty (HA produced nothing).
+5. **Fetch the recovery archive to confirm engagement.** `uip or jobs healing-data <job-key> -d <out>.zip` — a populated archive corroborates HA produced detection/recommendation data; a 22-byte ZIP is empty (HA produced nothing).
 6. **Check entitlement.** `uip or licenses info --output json`: `Data.Allowed.AgentService > 0` with HA features in `Data.LicensedFeatures` → tenant is entitled. `== 0` with `LicensedFeatures: []` → no entitlement. `SubscriptionPlan` is the tier label only and does NOT encode Flex vs Unified — never branch on it alone.
 
 ## Resolution

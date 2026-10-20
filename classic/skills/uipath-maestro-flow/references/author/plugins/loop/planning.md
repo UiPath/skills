@@ -55,6 +55,6 @@ After the loop, `$vars.<loopId>.output` holds one entry per iteration, each keye
 
 - The loop body starts from the loop node's inner `start` port
 - The last node in the loop body connects back to the loop's inner `continue` port
-- After all iterations, execution continues from the outer `success` port
+- After all iterations, execution continues once from the outer `success` port. Per-item steps go in the body, never after `success`
 - Do not create cycles except through the `continue` handle
 - **Every node inside the loop body must have `"parentId": "<loopId>"`** — without this, variableUpdates will not fire per-iteration and loop variables will be inaccessible

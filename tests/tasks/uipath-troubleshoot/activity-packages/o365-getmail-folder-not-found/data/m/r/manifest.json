@@ -26,11 +26,6 @@
       "_doc": "No history raw was captured this session; fixture is the Pending -> Running -> Faulted transition set derived from the recorded job row's CreationTime/StartTime/EndTime and Id. Confirms a clean single execution — carries no diagnostic signal beyond jobs get."
     },
     {
-      "match": "or jobs traces e893a4d4-e061-4cba-a799-6ed4de6ee4e2",
-      "file": "6ac702a3fd.json",
-      "_doc": "Three recorded spans: RobotJob (full System.ArgumentNullException stack with the GetMailFolder faulting frame in Attributes), the Microsoft 365 Scope span (AuthenticationType=InteractiveToken, no Account/shared-mailbox override — Private.Account holds the designer placeholder 'Please select an account.'), and the faulting 'Get Mail' GetMail span with Private.MailFolder='NoSuchFolder-Repro-123' and Public.AuthScopesInvalid='False'. The MailFolder literal + AuthScopesInvalid=False + no account override are the cause-disambiguation evidence (folder absent vs insufficient-scope vs wrong-mailbox)."
-    },
-    {
       "match": "traces spans get --job-key e893a4d4-e061-4cba-a799-6ed4de6ee4e2",
       "file": "6ac702a3fd.json",
       "_doc": "Alternate trace-retrieval form (platform traces command). In the original session this form returned 'Error retrieving trace ID for job' and the agent re-fetched by TraceId; the replay serves the genuine spans for every retrieval form so the investigation does not depend on reproducing that transient lookup failure."

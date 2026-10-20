@@ -18,3 +18,23 @@ shared successor.
 
 Cases compare strictly (`===`) from top to bottom. Each case gets a generated
 `case-<id>` port; the optional final callback uses `default`.
+
+A decompiled switch the designer drew may carry `id: "default-1"` (and so on) on
+its cases. That keeps the case ids the original file has, so the merged edges
+match the original switch node. Leave those `id`s as they are; do not add one to
+a case you write yourself.
+
+## At a glance
+
+Split runtime control among cases of one discriminant.
+
+Signature: `.switch(name, on, [{ value, label?, body }], defaultFn?)`.
+
+```ts
+.switch('priority', input('priority'), [
+  { value: 'high', body: (b) => b.step('page', script({ code: 'return 1;' })) },
+  { value: 'low', body: (b) => b.step('queue', script({ code: 'return 2;' })) },
+])
+```
+
+Prefer switch when one value selects three or more paths; use branch for two.

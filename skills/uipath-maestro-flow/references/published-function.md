@@ -20,6 +20,21 @@ Signature: `publishedFunction({ key, name, folderPath, inputs?, returns? })`.
 .step('relay', script({ code: 'return $vars.echo.output.echoed;' }))
 ```
 
+## At a glance
+
+Run a deployed Orchestrator **Function** — a small unit of code published as its
+own resource — as one step.
+
+```ts
+.step('echo', publishedFunction({ key: functionKey,
+  name: 'acme-echo', folderPath: 'Shared/acme-echo',
+  inputs: { message: input('message') }, returns: { echoed: 'string' } }))
+```
+
+A function is usually deployed into a folder of its OWN name — read `folderPath`
+from the tenant rather than assuming `'Shared'`, since the binding's resourceKey
+is `<folderPath>.<name>`.
+
 ## Identity
 
 Three fields, none of them derivable:

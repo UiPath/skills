@@ -14,6 +14,12 @@ Signature:
   reference: input('invoiceId'), wait: false }))
 ```
 
+## At a glance
+
+Create an Orchestrator queue item, optionally waiting for its consumer.
+
+Check tenant uniqueness/schema settings; wait only when a consumer exists and its result is needed.
+
 ## Reading what the create returned
 
 The node's output carries the Orchestrator record of the item it created — `Id`,

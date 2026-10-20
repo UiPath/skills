@@ -151,6 +151,19 @@ def test_a_trigger_envelope_key_is_not_graded_as_a_contract_field():
     assert chk.FAILURES == []
 
 
+def test_a_compiled_trigger_filter_is_not_graded_as_a_request_field():
+    """The filter envelope carries `expression`, which no contract declares."""
+    body = {"filters": {"expression": "(contains(Title,'x'))"}}
+    chk.check_inputs("T", block(inputs=[{"body": body}]), ["calendarID"])
+    assert chk.FAILURES == []
+
+
+def test_a_filter_operand_written_as_a_request_field_is_reported():
+    body = {"filters": {"expression": "(contains(Title,'x'))"}, "Title": "x"}
+    chk.check_inputs("T", block(inputs=[{"body": body}]), ["calendarID"])
+    assert "input key 'Title' matches no field" in only()
+
+
 def test_a_request_that_wrote_nothing_is_reported():
     chk.check_inputs("T", block(inputs=[{"body": {}}]), ["message.subject"])
     assert "no request field was written at all" in only()
@@ -538,3 +551,15 @@ def test_a_run_where_every_name_matches_exits_zero(tmp_path, monkeypatch, capsys
     )
     assert chk.main() == 0
     assert "PASS: connector field names match" in capsys.readouterr().out
+
+
+def test_the_default_path_also_finds_a_plan_saved_as_caseplan_case(tmp_path, monkeypatch, capsys):
+    project = tmp_path / "ConnectorNaming" / "ConnectorNaming"
+    project.mkdir(parents=True)
+    (project / "caseplan.case").write_text(json.dumps({"bindings": [], "nodes": []}))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(sys, "argv", ["check"])
+    assert chk.main() == 1
+    out = capsys.readouterr().out
+    assert "not found" not in out
+    assert "expected 2 connector tasks" in out

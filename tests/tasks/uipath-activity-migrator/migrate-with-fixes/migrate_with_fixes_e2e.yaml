@@ -74,26 +74,27 @@ success_criteria:
   - type: command_not_executed
     description: "No uip rpa command ran without clearing UIPATH_STUDIO_PID (Rule 8)"
     command_pattern: '\A(?![\s\S]*UIPATH_STUDIO_PID)[\s\S]*?(?:^|[;&|(]\s*|\n\s*)(?:uip|\$UIP)\s+rpa\s+(?:build|validate|run|debug|instances|execution|activities|uia)\b'
+    tool_name: "Bash"
     weight: 1.0
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent ran analyze with --output-format sarif"
-    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+analyze(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--output-format\s+sarif)'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+analyze(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--output-format\s+sarif)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
     description: "Agent ran upgrade into a separate output path"
-    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+upgrade(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--output-path)'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+upgrade(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--output-path)'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_not_executed
     description: "No analyze or upgrade run without SARIF output"
-    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)"?\s+(analyze|upgrade)(?!(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*(--output-format\s+sarif|--help))'
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+(analyze|upgrade)(?!(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*(--output-format\s+sarif|--help))'
     weight: 1.5
     pass_threshold: 1.0
 
@@ -125,12 +126,28 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent validated edited files at error severity"
-    command_pattern: 'uip\s+rpa\s+validate(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?"?\s+(?:analyze|upgrade)\b).)*--min-severity\s+error)'
-    min_count: 1
+  # Per-file validate at error severity is graded as an outcome the harness runs
+  # itself: the agent's own validate may run inside the RPA authoring subagent the
+  # build guide tells it to spawn, and the record keeps no subagent commands (run
+  # 2026-10-16_04-22-10). `uip rpa validate` exits 0 with or without findings, so
+  # the check reads Data.message: "No diagnostics found." or "Found N error(s): …".
+  - type: run_command
+    description: "Edited files validate with 0 errors at error severity (harness-run)"
+    command: |-
+      python -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); run = lambda f: subprocess.run([uip, 'rpa', 'validate', '--project-dir', os.path.abspath('StaffDirectoryAudit_Upgraded'), '--file-path', f, '--min-severity', 'error', '--output', 'json'], env=env, capture_output=True, text=True, errors='replace'); sys.exit(0 if all(r.returncode == 0 and 'No diagnostics found.' in r.stdout for r in map(run, ('GetStaffRecords.xaml', 'VerifyHeadcount.xaml'))) else 1)"
+    timeout: 600
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
+
+  # Advisory, no weight: the agent's own validate call. Present when the agent
+  # edited in place, absent by design when it delegated the edit to a subagent.
+  - type: command_executed
+    description: "Advisory: agent itself ran validate at error severity (absent when the edit was delegated)"
+    command_pattern: 'uip\s+rpa\s+validate(?=(?:\\\r?\n|(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b).)*--min-severity\s+error)'
+    min_count: 1
+    weight: 0
+    pass_threshold: 0
 
   - type: file_check
     description: "Output project.json is a Windows project pinned to the requested UIAutomation 26.10.4"
@@ -158,7 +175,7 @@ success_criteria:
     description: "Fixed constructs in GetStaffRecords.xaml carry the Remediated annotation line"
     path: "StaffDirectoryAudit_Upgraded/GetStaffRecords.xaml"
     patterns:
-      - pattern: 'Remediated by uipath-activity-migrator on \d{4}-\d{2}-\d{2}'
+      - pattern: 'Annotation\.AnnotationText="[^"]*Remediated by uipath-activity-migrator on \d{4}-\d{2}-\d{2}'
         must_match: true
     weight: 2.0
     pass_threshold: 1.0
@@ -197,44 +214,6 @@ success_criteria:
     weight: 1.0
     pass_threshold: 1.0
 
-  # Report shape from SKILL.md Step 6. Deliberately low weight: the artifact
-  # checks above carry the grade; this only catches the padding anti-pattern.
-  - type: llm_judge
-    description: "Final report follows the Step 6 shape: status line with counts, grouped needs-attention, no per-activity lists"
-    weight: 1.0
-    pass_threshold: 0.7
-    include_dialog: false
-    include_agent_output: true
-    prompt: |
-      Grade only the agent's last [ASSISTANT] message. A [RESULT - ...] block
-      after it repeats that message verbatim and is harness output: ignore it,
-      it is not a duplicated report.
-
-      Report contract:
-        - It opens with a heading "Migration result: <status>" followed by ONE
-          line with counts of activities migrated, left classic and needing
-          attention, the build result, the output folder, and the UIAutomation
-          version change. A "Full list: ... · Tool report: ..." line may follow.
-        - Needs-attention items are grouped by reason and by file; activities
-          left classic appear only as a count, never as a list.
-        - A "Fixes applied (<F>)" block lists what the post-migration fix
-          changed, one line per fix. <F> counts the fixes only; one extra line
-          "<k> annotations rewritten to Verified healthy" belongs to the block
-          and is not a stray list.
-        - A "Next steps" block with at most three short lines belongs to the
-          contract. A "Runtime check" block appears only when the user agreed
-          to a run; this run declines it, so its absence is correct.
-        - The report is those blocks and nothing else. Tolerated: one short
-          lead-in line before the heading and one short closing line after
-          the last block, when each only restates what the report already
-          says. Padding is anything more: a second line before or after, any
-          sentence between blocks, or a line that adds detail the rules below
-          forbid.
-        - There is no table of what changed, no description of migration
-          mechanics, no speculation about runtime behaviour, and no lines
-          about checks that found nothing.
-      Score 1.0 when every point holds, 0.7 when the shape holds but padding
-      sentences or one stray list are present, 0.3 when the counts line is
-      missing or activities are listed one by one, 0.0 when the message is
-      free prose with no status line.
-      Return JSON: {"score": <float>, "rationale": "<one sentence>"}
+  # No llm_judge on the Step 6 report shape: this is the only Windows task that
+  # would need one, and the Windows runner does not install the litellm extra the
+  # judge route needs, so the judge errored the whole task every night.

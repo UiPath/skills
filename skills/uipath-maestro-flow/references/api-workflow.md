@@ -12,6 +12,14 @@ Signature: `apiWorkflow({ key, name, folderPath, inputs?, returns? })`.
   inputs: { name: input('name') }, returns: { age: 'integer' } }))
 ```
 
+## At a glance
+
+Run a deployed coded API workflow and wait for its job result.
+
+Confirm identity and exact argument casing on the tenant; `.onError(...)` is supported.
+
+**Finding the key: [`or-processes.md`](or-processes.md)**
+
 ## Tenant contract
 
 The workflow key, name, and folder must describe one deployed resource. Confirm

@@ -14,6 +14,16 @@ Signature:
   folderName: 'Shared', fileRef: out('start', 'invoiceFile') }))
 ```
 
+## At a glance
+
+Run a published Intelligent eXtraction Platform project on an attachment.
+
+Signature: `ixpExtract({ project, modelName, name, folderName, fileRef, pageRange?, versionTag?, folderPath? })`.
+
+Copy identity fields from a freshly pulled tenant registry; never construct them.
+
+Asking WHICH models exist ("what document extractors can I add?") is read-only Q&A, not a build: one `registry search 'uipath.ixp'` is the whole answer, and `registry get` is never fanned out across its hits.
+
 ## Listing published models
 
 "What document extractors can I add to this flow?", "what IxP models can I use here?", "list published extractors", "what extraction nodes are in the registry?" — these ask what the tenant publishes.

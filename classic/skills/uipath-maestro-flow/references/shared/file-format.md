@@ -114,7 +114,7 @@ A few per-instance identity fields live on the node instance:
 | Field | Used by | Purpose |
 |-------|---------|---------|
 | `inputs.entryPointId` | All trigger nodes (`core.trigger.manual`, `core.trigger.scheduled`, connector triggers) | Stable UUID identifying the entry point |
-| `inputs.isDefaultEntryPoint` | Trigger nodes in subflows | Boolean marking the default entry point when a subflow has multiple triggers |
+| `inputs.isDefaultEntryPoint` | Trigger nodes | Boolean marking the default entry point. `eval set add` stores it as `selectedEntrypoint` when you omit `--entry-point`; `process run` ignores it, so pass `--entry-point` there |
 | `inputs.source` | `uipath.agent.autonomous` and every attached `uipath.agent.resource.*` node (tool, escalation, context) | For `uipath.agent.autonomous`: the inline agent's `projectId`. For resource nodes: the attached resource UUID. Definitions declare `model.source: true`; flow-core hoists onto the instance — no instance `model` block. |
 | `inputs.color`, `inputs.content` | Sticky-note nodes | Visual content of the sticky note |
 
@@ -578,6 +578,19 @@ The value is in `default` for both forms. There is also no `<bindings.{name}>` p
 `folderKey` rather than `folderPath` is load-bearing. The platform's deploy-time override for an `Entity` resource carries `{ name, folderPath, folderKey }` and rewrites binding defaults by `propertyAttribute`; a `folderPath` row receives the Orchestrator FQN, which the Data Fabric query rejects even in the source org.
 
 Tenant-scoped entities need no bindings at all — they serialize as a dotted literal. See [data-fabric/impl.md — Folder-scoped entities and bindings](../author/plugins/data-fabric/impl.md#folder-scoped-entities-and-bindings) for the full JSON and when to hand-author it.
+
+This section covers the native `core.datafabric.*` nodes only. A Data Fabric **connector activity** is a different node — its type starts with `uipath.connector.` (e.g. `uipath.connector.uipath-uipath-dataservice.<activity>`), not `core.datafabric.` — and its entity picker gets its rows from `node configure`, keyed by the solution resource key, with a lowercase `entity` resource:
+
+```json
+[
+  { "id": "bA1B2C3D4", "name": "Entity", "type": "string", "resource": "entity",
+    "resourceKey": "<solution resource key>", "default": "Invoice", "propertyAttribute": "name" },
+  { "id": "bE5F6G7H8", "name": "Entity folder", "type": "string", "resource": "entity",
+    "resourceKey": "<solution resource key>", "default": "<folder key>", "propertyAttribute": "folderKey" }
+]
+```
+
+The picker field reads `=bindings.bA1B2C3D4` and its `_folderKey` companion `=bindings.bE5F6G7H8`. `node configure` writes and reuses these rows — do not hand-author them. See [connector/impl.md — Step 6d](../author/plugins/connector/impl.md#step-6d--solution-resource-picker-fields).
 
 ## Bindings — connector connection binding
 

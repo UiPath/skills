@@ -62,6 +62,7 @@ The repository ships skills covering authoring, platform operations, and diagnos
 | **uipath-planner** | Solution planner & designer — turn a Process Design Document into an implementation-ready Solution Design Document (SDD), then derive an executable multi-skill task list across the other skills. |
 | **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
 | **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
+| **uipath-genome** | Automation blueprints (`*-genome.md`) — extract one from an existing project, solution, or another framework's export; author one from a described idea; execute one to build or migrate the automation through the owning skills. |
 
 ### Platform & Operations
 
@@ -96,6 +97,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-connector-builder` | In-development |
 | `uipath-feedback` | Stable |
 | `uipath-functions` | Preview |
+| `uipath-genome` | Preview |
 | `uipath-governance` | Preview |
 | `uipath-human-in-the-loop` | Stable |
 | `uipath-insights` | Preview |
@@ -104,7 +106,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-maestro-bpmn` | In-development |
 | `uipath-maestro-case` | Preview |
 | `uipath-maestro-flow` | Stable |
-| `uipath-mcp-servers` | In-development |
+| `uipath-mcp-servers` | Preview |
 | `uipath-planner` | Stable |
 | `uipath-platform` | Stable |
 | `uipath-process-mining` | Preview |
@@ -115,6 +117,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-tasks` | Stable |
 | `uipath-test` | Preview |
 | `uipath-troubleshoot` | Preview |
+| `uipath-vertical-solutions` | Preview |
 
 **Status legend:**
 - **Stable** — Stable, production-ready surface; safe for production.
@@ -130,7 +133,20 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 
 ## Multi-Tool Support
 
-This repository works with **Claude Code**, **Google Gemini CLI**, **OpenAI Codex CLI**, and **Cursor IDE**.
+`uip skills install` supports these coding agents. It detects the installed ones automatically; pass `--agent <name>` to target one.
+
+| Agent | `--agent` |
+|-------|-----------|
+| Claude Code | `claude` |
+| Cursor | `cursor` |
+| GitHub Copilot | `copilot` |
+| Codex | `codex` |
+| OpenCode | `opencode` |
+| UiPath Autopilot | `autopilot` |
+| Kiro | `kiro` |
+| Windsurf | `windsurf` |
+| Antigravity CLI | `antigravity` |
+| Devin | `devin` |
 
 ### Claude Code
 
@@ -150,13 +166,9 @@ By default, Claude Code prompts for approval on every `uip` command, and a reali
 
 The command prints the recommended JSON and offers to merge it into your settings (`~/.claude/settings.json` for global, or project-local `.claude/settings.local.json`). You will also see a one-line nudge at session start until an allowlist is installed.
 
-### Google Gemini CLI
-
-Gemini CLI is supported by `uip skills install`. If the Gemini CLI is on your PATH, it's detected automatically and skills are wired up. If no agent is detected, pick **Gemini CLI** when prompted.
-
 ### OpenAI Codex CLI
 
-This repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
+`uip skills install --agent codex` is the recommended install. Alternatively, this repository is configured as a Codex CLI skill provider. The `AGENTS.md` file (symlinked to `CLAUDE.md`) provides project instructions, and skills are discovered via `.agents/skills/` (symlinked to `skills/`).
 
 This repository also includes Codex plugin metadata under `.codex-plugin/`. The Codex plugin manifest exposes the same `skills/` directory and shared session hooks.
 
@@ -213,6 +225,10 @@ For questions, ideas, or feedback, please [open an issue](https://github.com/UiP
 ### Running coder-eval on demand
 
 [**Run Coder Eval**](https://github.com/UiPath/skills/actions/workflows/run-coder-eval.yml) — GH-hosted workflow that runs `coder-eval` against the skills task tree (`tests/tasks/...`). Use for ad-hoc single-task verification or a folder-scoped sweep on the same infra as the nightly cron. Trigger from the Actions tab → "Run workflow" → fill in `task_globs`. Definition: [`.github/workflows/run-coder-eval.yml`](.github/workflows/run-coder-eval.yml).
+
+### Optimizing a skill's token use
+
+[**Optimize skill**](https://github.com/UiPath/skills/actions/workflows/optimize-skill.yml) — queues the [skill-trimming optimizer](https://github.com/UiPath/skill-trimming-optimizer), which shortens a skill's description, body and references, gates every cut on the skill's eval tasks, and opens a **draft PR** with the report (no PR if a cut regresses a task or the budget runs out). Trigger from the Actions tab → "Run workflow" **on `main`** → enter the skill folder name. You must be listed as a user in the skill's CODEOWNERS rule; team-only owners ask a listed user or an optimizer maintainer. Runs take several hours (up to a day for skills with `windows`-tagged tasks). Definition: [`.github/workflows/optimize-skill.yml`](.github/workflows/optimize-skill.yml).
 
 ## Resources
 
