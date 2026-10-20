@@ -264,7 +264,8 @@ flow-merge: refused (--strict): the merged file would differ from the original w
   cannot carry that spot, follow
   [its case](#the-files-schema-version-comes-back-out) instead. If the line
   says to make the change on the canvas, take it out of the source and tell the
-  user.
+  user. If no source change clears a line, stop and show it to the user; never
+  drop `--strict` to get a file.
 - A `flow-merge: warning:` line that `--strict` still prints does not block
   the install; do what it says. `the round trip appends End "<id>" after …`
   and any line saying `not refused under --strict` need nothing, nor does
