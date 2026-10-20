@@ -14,7 +14,7 @@ One root binding names the deployment: `resource: "ixpDeployment"`, `resourceKey
 
 ## Add the deployment to the solution
 
-After `uip solution init` and before the Step 9 `bindings sync`, import the deployment once per IXP Deployment:
+Once the solution exists and before the Step 9 `bindings sync`, import the deployment once per IXP Deployment, from the solution folder:
 
 ```bash
 uip solution resources add --source remote --kind IxpDeployment --name "<IXP_DEPLOYMENT>" --output json
