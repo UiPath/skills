@@ -30,6 +30,11 @@ cp -r "$WORK/candidate/." "$PROJECT/"
 uip maestro flow validate "$CANONICAL" --output json
 ```
 
+If the baseline compile fails `check` only on steps the task does not touch
+(e.g. `HTTP_READ_WITHOUT_RETURNS` on an existing HTTP step), and the edited
+compile reports no other error, rerun both compiles with `--no-check` and merge
+as usual. Never hand-edit the `.flow`.
+
 Replace the canonical artifact only after the candidate validates. Do not copy
 the `baseline/` or `edited/` directories into the project, and do not leave an
 earlier `*.merged.flow` there: the project validator treats every `.flow` below
