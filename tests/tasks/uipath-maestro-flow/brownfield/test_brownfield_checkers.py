@@ -160,6 +160,36 @@ def test_switch_route_rejects_wrong_routes(project: Path, change) -> None:
     assert intent(project, "switch-route") == 1
 
 
+def envelope(output: dict) -> None:
+    source = output["source"]
+    if source.startswith("=js:"):
+        output["source"] = {"type": "jsExpression", "expression": source[4:], "fieldType": "string"}
+    else:
+        output["source"] = {"type": "literal", "expression": source, "fieldType": "string"}
+
+
+def compiled_route(flow: dict, body: str = "=js:'More information was requested.'") -> None:
+    end = add_route(flow)
+    end["outputs"]["resolutionEmailBody"]["source"] = body
+    for output in end["outputs"].values():
+        envelope(output)
+
+
+@pytest.mark.parametrize("body", ["=js:'More information was requested.'", "More information was requested."], ids=["js", "literal"])
+def test_switch_route_accepts_compiled_envelopes(project: Path, body: str) -> None:
+    mutate(project, lambda f: compiled_route(f, body))
+    assert intent(project, "switch-route") == 0
+
+
+def test_switch_route_rejects_a_differing_envelope(project: Path) -> None:
+    def differ(flow: dict) -> None:
+        compiled_route(flow)
+        node(flow, "returnInfoRequest")["outputs"]["determination"]["source"]["expression"] = "'invalid'"
+
+    mutate(project, differ)
+    assert intent(project, "switch-route") == 1
+
+
 def test_switch_route_rejects_a_renamed_original_case(project: Path) -> None:
     def rename(flow: dict) -> None:
         cases = node(flow, "routeByAction")["inputs"]["cases"]
