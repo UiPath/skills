@@ -98,8 +98,8 @@ and `prepare` still writes both entries into `bindings.json`.
 `Shared/uipath-maestro-flow` is the row whose `Folder` is `uipath-maestro-flow`,
 not `Shared`. When the request names a folder, pass that last segment to
 `prepare` as `--connection-folder uipath-maestro-flow`; by hand, pick that row.
-If that name matches more than one row (`prepare` refuses and lists them), get
-the requested folder's `Data.Key` with
+If that name matches more than one of the connector's rows (`prepare` refuses
+and lists them), get the requested folder's `Data.Key` with
 `uip or folders get "Shared/uipath-maestro-flow" --output json`, then pass
 `--connection-folder <Key>` or pick the row whose `FolderKey` equals it.
 
