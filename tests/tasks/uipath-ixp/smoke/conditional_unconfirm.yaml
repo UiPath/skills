@@ -18,9 +18,11 @@ run_limits:
   expected_turns: 6
 
 sandbox:
-  mock_path_dirs: [mocks]
-  template_sources:
-    - {type: template_dir, path: ../_shared/mock_template}
+  record_cli:
+    - tool: uip
+      stderr: "uip (mock): not connected to a tenant in this sandbox; offline smoke mock.\n"
+    - tool: curl
+      stderr: "curl (mock): network egress is disabled in this offline smoke sandbox.\n"
 
 initial_prompt: |
   On project `crm_contacts-a7f3c1d2-ixp`, document `doc-contact-42`, these five
@@ -42,41 +44,61 @@ initial_prompt: |
   - Do NOT prompt the user for confirmation — this is an automated test.
 
 success_criteria:
-  # Targets: the three name/phone fields must be unconfirmed. (Project + document
-  # are pinned for a precise match, not to test selection — there is only one of
-  # each.) Field ids are matched after --fields, so one combined
-  # `--fields f-301 f-302 f-303` call or three separate calls both satisfy these.
-  - type: command_executed
+  # Targets: the three name/phone fields must be unconfirmed. `--fields` takes a
+  # comma-separated list, so one combined `--fields f-301,f-302,f-303` call or
+  # three separate calls both satisfy these.
+  - type: cli_called
     description: "Unconfirmed First Name (f-301)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\s+["'']?crm_contacts-a7f3c1d2-ixp["'']?\s+["'']?doc-contact-42["'']?[^|;&]*--fields[^|;&]*f-301'
-    min_count: 1
+    verb: "ixp labellings unconfirm"
+    tool: "uip"
+    positional: ["crm_contacts-a7f3c1d2-ixp", "doc-contact-42"]
+    flags:
+      fields: {contains: "f-301", aliases: ["f"]}
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: cli_called
     description: "Unconfirmed Last Name (f-302)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\s+["'']?crm_contacts-a7f3c1d2-ixp["'']?\s+["'']?doc-contact-42["'']?[^|;&]*--fields[^|;&]*f-302'
-    min_count: 1
+    verb: "ixp labellings unconfirm"
+    tool: "uip"
+    positional: ["crm_contacts-a7f3c1d2-ixp", "doc-contact-42"]
+    flags:
+      fields: {contains: "f-302", aliases: ["f"]}
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
+  - type: cli_called
     description: "Unconfirmed Phone Number (f-303)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\s+["'']?crm_contacts-a7f3c1d2-ixp["'']?\s+["'']?doc-contact-42["'']?[^|;&]*--fields[^|;&]*f-303'
-    min_count: 1
+    verb: "ixp labellings unconfirm"
+    tool: "uip"
+    positional: ["crm_contacts-a7f3c1d2-ixp", "doc-contact-42"]
+    flags:
+      fields: {contains: "f-303", aliases: ["f"]}
     weight: 1.5
     pass_threshold: 1.0
 
   # The crux: the two substring traps must stay confirmed — Account Number (f-304,
   # "Number" but not a phone) and Company Name (f-305, "name" but not a person's
-  # name). Pattern is anchored to the `unconfirm` verb + the specific ids, so a
-  # mere mention in prose/comment can't false-match.
-  - type: command_not_executed
-    description: "Did NOT unconfirm Account Number (f-304) or Company Name (f-305)"
-    tool_name: "Bash"
-    command_pattern: 'uip\s+ixp\s+labellings\s+unconfirm\b[^|;&]*(f-304|f-305)'
-    weight: 3.0
+  # name). One guard per id: on a max_count 0 guard, a predicate that silently
+  # matches nothing passes on the call it forbids.
+  - type: cli_called
+    description: "Did NOT unconfirm Account Number (f-304)"
+    verb: "ixp labellings unconfirm"
+    tool: "uip"
+    flags:
+      fields: {contains: "f-304", aliases: ["f"]}
+    min_count: 0
+    max_count: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: cli_called
+    description: "Did NOT unconfirm Company Name (f-305)"
+    verb: "ixp labellings unconfirm"
+    tool: "uip"
+    flags:
+      fields: {contains: "f-305", aliases: ["f"]}
+    min_count: 0
+    max_count: 0
+    weight: 1.5
     pass_threshold: 1.0

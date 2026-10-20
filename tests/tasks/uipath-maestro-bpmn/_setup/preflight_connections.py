@@ -42,12 +42,18 @@ import sys
 
 
 def _connections(key: str) -> list[dict]:
-    proc = subprocess.run(
-        ["uip", "is", "connections", "list", key, "--all-folders", "--output", "json"],
-        capture_output=True,
-        text=True,
-        timeout=90,
-    )
+    try:
+        proc = subprocess.run(
+            ["uip", "is", "connections", "list", key, "--all-folders", "--output", "json"],
+            capture_output=True,
+            text=True,
+            timeout=90,
+        )
+    except subprocess.TimeoutExpired as exc:
+        # Fatal, unlike a ping timeout: without the candidate list there is
+        # nothing to fall back to. Reported as a message rather than left to
+        # surface as a traceback from inside a pre_run step.
+        raise RuntimeError(f"`uip is connections list {key}` did not answer within {exc.timeout:.0f}s") from exc
     if proc.returncode != 0:
         raise RuntimeError(f"`uip is connections list {key}` exited {proc.returncode}: {proc.stderr.strip()}")
     payload = json.loads(proc.stdout)
@@ -56,21 +62,43 @@ def _connections(key: str) -> list[dict]:
     return payload.get("Data") or []
 
 
+#: How many times a single connection is pinged before it is called refused.
+PING_ATTEMPTS = 3
+PING_TIMEOUT_S = 60
+
+
 def _ping(connection_id: str) -> str | None:
-    """``None`` when the connection answers as active, else why it did not."""
-    proc = subprocess.run(
-        ["uip", "is", "connections", "ping", connection_id, "--output", "json"],
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
-    try:
-        payload = json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        return proc.stderr.strip() or f"ping exited {proc.returncode} with no JSON"
-    if payload.get("Result") == "Success" and (payload.get("Data") or {}).get("Status") == "Enabled":
-        return None
-    return str(payload.get("Message") or payload).strip()
+    """``None`` when the connection answers as active, else why it did not.
+
+    A ping that does not answer is RETRIED rather than believed. The call goes
+    out to the tenant, several tasks run in parallel, and one hung request is
+    not evidence about the connection — it stopped a whole suite once, on a
+    connector three sibling tasks pinged clean in the same run, and the
+    `TimeoutExpired` came out as a traceback from inside a `pre_run` step
+    rather than as a reason. Only a timeout is retried: a connection that
+    ANSWERS, saying it is disabled or revoked, is the thing this script exists
+    to catch, and asking it again would just be slower.
+    """
+    last: str | None = None
+    for attempt in range(1, PING_ATTEMPTS + 1):
+        try:
+            proc = subprocess.run(
+                ["uip", "is", "connections", "ping", connection_id, "--output", "json"],
+                capture_output=True,
+                text=True,
+                timeout=PING_TIMEOUT_S,
+            )
+        except subprocess.TimeoutExpired:
+            last = f"ping did not answer within {PING_TIMEOUT_S}s ({attempt} of {PING_ATTEMPTS} attempts)"
+            continue
+        try:
+            payload = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            return proc.stderr.strip() or f"ping exited {proc.returncode} with no JSON"
+        if payload.get("Result") == "Success" and (payload.get("Data") or {}).get("Status") == "Enabled":
+            return None
+        return str(payload.get("Message") or payload).strip()
+    return last
 
 
 def _first_live(candidates: list[dict]) -> tuple[dict | None, list[str]]:

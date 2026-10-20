@@ -34,9 +34,14 @@ initial_prompt: |
   do NOT pause between planning and implementation.
 
 success_criteria:
-  - type: file_exists
+  # Presence by the shared locator, not a root path: the v1 skill writes `PriorityRouting.bpmn`
+  # where it stands, the builder-SDK skill scaffolds `PriorityRouting/PriorityRouting.bpmn` — both are the
+  # task done. Same rule the grader below uses to find the file.
+  - type: run_command
     description: "BPMN source was authored"
-    path: "PriorityRouting.bpmn"
+    command: "python3 $REFERENCE_DIR/_shared/check_bpmn_present.py PriorityRouting"
+    timeout: 30
+    expected_exit_code: 0
     weight: 1.0
     pass_threshold: 1.0
 

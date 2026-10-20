@@ -18,6 +18,7 @@ All commands below are discovery/read-only. None mutate cloud state.
 | `uip maestro bpmn registry search <keyword>` | Find entries by keyword across extension type, label, connector name, process name. |
 | `uip maestro bpmn registry get <extensionType> [--connection-id <id>] [--object-name <name>]` | Get the full spec for one extension type: `xmlTemplate`, `contextFields`, `bindingInfo`, input/output patterns. `--connection-id`/`--object-name` add live Integration Service field metadata for `Intsvc.*` connector types. |
 | `uip is connections list --all-folders` | List live Integration Service connections (id + state) across all folders. Always pass `--all-folders`; a folder-scoped list silently misses connections. |
+| `uip rules list --all-folders` | List deployed business rules across all folders. `registry pull` does not discover rules. |
 
 These are the registry/discovery commands the skill verifies against the CLI
 source (`packages/maestro-tool/src/commands/registry.ts`). Do not invent flags.
@@ -38,7 +39,7 @@ the BPMN engine and cannot establish that public input/output bridges or
 business outputs produce the intended runtime values. Do not describe `Valid`
 as a successful business execution.
 
-> **Don't conclude "it doesn't exist" from truncated discovery output.** A row past a cutoff reads exactly like a missing row. Two cutoffs bite here: `registry list` defaults to **30** — pass `--limit -1` for the full set — and piping `registry search`/`is connections list` through `head`/`tail`/`grep -m`/a pager drops everything past the cap. To check existence, narrow the query (keyword to `registry search`, `--all-folders` to connection lists) rather than capping rows; cap only data already known complete.
+> **Don't conclude "it doesn't exist" from truncated discovery output.** A row past a cutoff reads exactly like a missing row. Two cutoffs bite here: `registry list` defaults to **30** — pass `--limit -1` for the full set — and piping `registry search`/`is connections list` through `head`/`tail`/`sed -n`/`grep -m`/a pager drops everything past the cap. To check existence, narrow the query (keyword to `registry search`, `--all-folders` to connection lists) rather than capping rows; cap only data already known complete.
 
 ## Output parsing
 
@@ -88,4 +89,5 @@ Connection IDs, `releaseKey`/process keys, queue keys, connector keys, app IDs,
 folder IDs/paths — every concrete identifier comes from discovery
 (`registry get`, `registry search`, `uip is connections list`) or from the user.
 Never invent one. When a required identifier is unknown, leave the placeholder
-in place, flag it as a draft binding, and ask the user.
+in place and flag it as a draft binding (SKILL.md step 1); ask only under
+Rule 4.

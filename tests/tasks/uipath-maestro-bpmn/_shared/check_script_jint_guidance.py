@@ -109,17 +109,28 @@ def one_variable(
     name: str,
     kind: str,
     element_id: str,
+    or_element_id: str | None = None,
 ) -> ET.Element:
-    # elementId is the scope: the owning element's id, never absent (#3211).
+    # elementId is the scope: the owning element's id, never absent (#3211). A public
+    # input or output has two legitimate owners: the canvas and the converter scope it
+    # to the start / end event, the builder SDK to the process it belongs to. Both
+    # validate and both resolve, so a caller names the alternative.
+    # `name` is matched against the id OR the display name. The wire has both: `id` is
+    # what expressions read (`vars.<id>`), `name` is what the designer shows. The v1
+    # skill writes them identically; the builder SDK defaults `name` to the id but lets
+    # an author give a display name (`.input('amount', …, { name: 'Amount' })`), and a
+    # grader keyed on `name` alone failed a correct process on capitalisation
+    # (skill-bpmn-script-jint-guidance, run 2026-09-25).
     return exactly_one(
         [
             variable
             for variable in variables
             if local_name(variable) == kind
-            and variable.attrib.get("name") == name
-            and variable.attrib.get("elementId") == element_id
+            and name in (variable.attrib.get("id"), variable.attrib.get("name"))
+            and variable.attrib.get("elementId") in {element_id, or_element_id}
         ],
-        f"{kind} variable named {name!r} scoped to {element_id!r}",
+        f"{kind} variable named {name!r} (by id or name) scoped to {element_id!r}"
+        + (f" or {or_element_id!r}" if or_element_id else ""),
     )
 
 
@@ -239,17 +250,22 @@ def strip_js_comments(script: str) -> str:
 def main() -> None:
     path, root = parse_bpmn("RiskScoreScriptBpmn")
     bpmn_path = Path(path)
-    project_path = bpmn_path.parent / "project.uiproj"
-    if not project_path.is_file():
-        fail(f"missing project descriptor beside BPMN: {project_path}")
-    try:
-        project = json.loads(project_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        fail(f"project.uiproj is not valid JSON: {exc}")
-    if project.get("Name") != "RiskScoreScriptBpmn":
-        fail("project.uiproj Name must be RiskScoreScriptBpmn")
-    if project.get("ProjectType") != "ProcessOrchestration":
-        fail("project.uiproj ProjectType must be ProcessOrchestration")
+    # The project descriptor `bpmn init` writes beside the artifact. A harness that
+    # builds the `.bpmn` on the grader's side (the SDK repo's ladder compiles the
+    # agent's `.bpmn.ts` into the workspace root) has no project to grade and sets
+    # BPMN_GRADER_SKIP_PROJECT=1; both arms of this suite scaffold one.
+    if os.environ.get("BPMN_GRADER_SKIP_PROJECT") != "1":
+        project_path = bpmn_path.parent / "project.uiproj"
+        if not project_path.is_file():
+            fail(f"missing project descriptor beside BPMN: {project_path}")
+        try:
+            project = json.loads(project_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            fail(f"project.uiproj is not valid JSON: {exc}")
+        if project.get("Name") != "RiskScoreScriptBpmn":
+            fail("project.uiproj Name must be RiskScoreScriptBpmn")
+        if project.get("ProjectType") != "ProcessOrchestration":
+            fail("project.uiproj ProjectType must be ProcessOrchestration")
 
     process = root.find("bpmn:process", NS)
     if process is None:
@@ -341,20 +357,24 @@ def main() -> None:
     if (end_incoming_ids != [end_flow_id]) or end_outgoing_ids:
         fail("EndEvent incoming/outgoing references do not match its sequence flow")
 
-    entry_point = exactly_one(
-        start.findall(
-            "bpmn:extensionElements/uipath:entryPointId",
-            NS,
-        ),
-        "manual-start entryPointId",
-    )
-    entry_point_id = entry_point.attrib.get("value", "").strip()
-    try:
-        UUID(entry_point_id)
-    except (ValueError, AttributeError):
-        fail("manual start entryPointId must be a valid UUID")
-    if entry_point_id == "00000000-0000-4000-8000-000000000001":
-        fail("manual start entryPointId copied the documentation example")
+    # The entryPointId is what `bpmn init` assigns and `decompile` carries into the
+    # source; like the project descriptor above, it is a product of the scaffold
+    # workflow, so the same harness flag skips it.
+    if os.environ.get("BPMN_GRADER_SKIP_PROJECT") != "1":
+        entry_point = exactly_one(
+            start.findall(
+                "bpmn:extensionElements/uipath:entryPointId",
+                NS,
+            ),
+            "manual-start entryPointId",
+        )
+        entry_point_id = entry_point.attrib.get("value", "").strip()
+        try:
+            UUID(entry_point_id)
+        except (ValueError, AttributeError):
+            fail("manual start entryPointId must be a valid UUID")
+        if entry_point_id == "00000000-0000-4000-8000-000000000001":
+            fail("manual start entryPointId copied the documentation example")
 
     if attr(task, "scriptFormat") != "JavaScript":
         fail('script task must set scriptFormat="JavaScript"')
@@ -368,10 +388,12 @@ def main() -> None:
     version_match = re.fullmatch(r"v(\d+)", script_version.attrib.get("value", ""))
     if version_match is None or int(version_match.group(1)) < 3:
         fail("script task must use a supported vars/metadata script version")
-    # These calls also enforce the StartEvent and EndEvent mapping contracts.
-    variables_mapping(start)
+    # The ScriptTask mapping is the contract; a StartEvent/EndEvent mapping is present
+    # only when the author bridged through one, and is then held to the same shape.
     task_mapping = variables_mapping(task)
-    variables_mapping(end)
+    for event in (start, end):
+        if event.findall("bpmn:extensionElements/uipath:mapping", NS):
+            variables_mapping(event)
 
     variables = root_variables(root)
     variable_ids = [variable.attrib.get("id", "") for variable in variables]
@@ -379,88 +401,150 @@ def main() -> None:
         fail("all root variables must have unique non-empty ids")
 
     public_amount = one_variable(
-        variables, name="amount", kind="input", element_id=start_id
+        variables, name="amount", kind="input", element_id=start_id, or_element_id=process_id
     )
     public_days = one_variable(
-        variables, name="daysOverdue", kind="input", element_id=start_id
+        variables, name="daysOverdue", kind="input", element_id=start_id, or_element_id=process_id
     )
     public_risk = one_variable(
-        variables, name="riskScore", kind="output", element_id=end_id
+        variables, name="riskScore", kind="output", element_id=end_id, or_element_id=process_id
     )
-    response = one_variable(
-        variables, name="scriptResponse", kind="inputOutput", element_id=task_id
-    )
-    error = one_variable(
-        variables, name="Error", kind="inputOutput", element_id=task_id
-    )
-    for variable, expected_type, description in (
-        # Public declarations reach entry-point schema derivation, so they use
-        # the refresh vocabulary (number), not the canvas float type.
-        (public_amount, "number", "public amount"),
-        (public_days, "integer", "public daysOverdue"),
-        (public_risk, "number", "public riskScore"),
-        # The canvas types scriptResponse from the script's inferred return
-        # (ScriptTaskProperties.tsx:347); this script returns a number.
-        (response, "double", "scriptResponse"),
-    ):
-        if variable.attrib.get("type") != expected_type:
-            fail(f"{description} variable must use type {expected_type!r}")
-
-    if error.attrib.get("type") != "jsonSchema":
-        fail("task-scoped Error must use type='jsonSchema'")
-    try:
-        error_schema = json.loads(text_content(error).strip())
-    except json.JSONDecodeError as exc:
-        fail(f"task-scoped Error schema is not valid JSON: {exc}")
-    if not isinstance(error_schema, dict) or error_schema.get("type") != "object":
-        fail("task-scoped Error schema must describe an object")
-    error_properties = error_schema.get("properties")
-    if not isinstance(error_properties, dict):
-        fail("task-scoped Error schema must declare properties")
-    for property_name, property_type in ERROR_SCHEMA_PROPERTIES.items():
-        property_schema = error_properties.get(property_name)
-        if (
-            not isinstance(property_schema, dict)
-            or property_schema.get("type") != property_type
-        ):
-            fail(
-                "task-scoped Error schema must declare "
-                f"{property_name!r} as {property_type!r}"
-            )
-
-    internal_amount_id = bridge_target(
-        start,
-        source=f"=vars.{attr(public_amount, 'id')}",
-    )
-    internal_days_id = bridge_target(
-        start,
-        source=f"=vars.{attr(public_days, 'id')}",
-    )
-    if internal_amount_id == internal_days_id:
-        fail("the amount and daysOverdue bridges must target distinct variables")
-    end_output = exactly_one(
+    # The script's result reaches a variable through the task's `=result.response`
+    # output row — that row IS the contract (ScriptActivities.DoInvokeScriptTaskAsync
+    # wraps a v2+ return as `{ response }`). Which variable it lands in, and what the
+    # row is called, are the author's: the canvas template names both `scriptResponse`
+    # and scopes the variable to the task, the SDK writes `outputs: { riskScore:
+    # '=result.response' }` and lands it in the public output directly. Grading the
+    # canvas spelling failed every SDK-authored process on a name (2026-09-25 run,
+    # arm-neutrality invariant 4 in README.md), so the variable is found from the row.
+    task_outputs = mapping_outputs(task)
+    response_row = exactly_one(
         [
             output
-            for output in mapping_outputs(end)
-            if output.attrib.get("var") == attr(public_risk, "id")
-            and re.fullmatch(
-                r"=vars\.[\w.-]+",
-                output.attrib.get("source", ""),
-            )
+            for output in task_outputs
+            if output.attrib.get("source") == "=result.response"
+            and output.attrib.get("var")
         ],
-        "numeric result to public riskScore output bridge",
+        "ScriptTask output row reading =result.response",
     )
-    result_variable_id = attr(end_output, "source").removeprefix("=vars.")
-
-    for variable_id, expected_type in (
-        (internal_amount_id, "double"),
-        (internal_days_id, "integer"),
+    response = variable_by_id(variables, attr(response_row, "var"))
+    if local_name(response) not in {"inputOutput", "output"}:
+        fail("the =result.response row must land in a mutable (inputOutput) or output variable")
+    if response.attrib.get("elementId") not in {task_id, process_id, end_id}:
+        fail(
+            "the =result.response variable must carry elementId of the script task, "
+            "the process, or the end event (#3211)"
+        )
+    for variable, expected_types, description in (
+        # Public declarations reach entry-point schema derivation, so they use
+        # the refresh vocabulary (number), not the canvas float type.
+        (public_amount, {"number"}, "public amount"),
+        (public_days, {"integer"}, "public daysOverdue"),
+        (public_risk, {"number"}, "public riskScore"),
+        # The canvas types the response from the script's inferred return
+        # (ScriptTaskProperties.tsx:347) as `double`; the refresh vocabulary for the
+        # same value is `number`. Both name a float, and this script returns one.
+        (response, {"double", "number"}, "script response"),
     ):
+        if variable.attrib.get("type") not in expected_types:
+            fail(f"{description} variable must use type {sorted(expected_types)!r}")
+
+    # The Error slot is OPTIONAL: the canvas template always writes a task-scoped
+    # `Error` variable and an `=Error` row; the SDK writes neither unless asked (a
+    # boundary or an event sub-process is how it reads a failure). When the author
+    # did write one, it must be the platform's error envelope.
+    error_rows = [
+        output
+        for output in task_outputs
+        if output.attrib.get("source") in {"=Error", "=result.Error"}
+    ]
+    error = None
+    if error_rows:
+        error_row = exactly_one(error_rows, "ScriptTask Error output row")
+        if not error_row.attrib.get("var"):
+            fail("the ScriptTask Error row must name the variable it writes")
+        error = variable_by_id(variables, attr(error_row, "var"))
+        if error.attrib.get("type") != "jsonSchema" or error_row.attrib.get("type") != "jsonSchema":
+            fail("the ScriptTask Error variable and row must use type='jsonSchema'")
+        try:
+            error_schema = json.loads(text_content(error).strip())
+        except json.JSONDecodeError as exc:
+            fail(f"task-scoped Error schema is not valid JSON: {exc}")
+        if not isinstance(error_schema, dict) or error_schema.get("type") != "object":
+            fail("task-scoped Error schema must describe an object")
+        error_properties = error_schema.get("properties")
+        if not isinstance(error_properties, dict):
+            fail("task-scoped Error schema must declare properties")
+        for property_name, property_type in ERROR_SCHEMA_PROPERTIES.items():
+            property_schema = error_properties.get(property_name)
+            if (
+                not isinstance(property_schema, dict)
+                or property_schema.get("type") != property_type
+            ):
+                fail(
+                    "task-scoped Error schema must declare "
+                    f"{property_name!r} as {property_type!r}"
+                )
+
+    # Public inputs reach the script one of two ways, and both are the platform's:
+    # the canvas template BRIDGES each public input into a process-scoped internal
+    # variable on the start event and the script reads the internal one; the SDK
+    # reads the public variable directly (`inputs: { amount: '=vars.amount' }`). The
+    # same on the way out — a bridge on the end event, or the `=result.response` row
+    # landing in the public output itself. Grade that the value flows, not which of
+    # the two spellings carried it.
+    def bridge_or_self(public_variable: ET.Element) -> str:
+        public_id = attr(public_variable, "id")
+        bridges = [
+            candidate
+            for candidate in mapping_outputs(start)
+            if candidate.attrib.get("source") == f"=vars.{public_id}"
+            and candidate.attrib.get("var")
+        ]
+        if not bridges and mapping_outputs(start):
+            # The author bridged SOME input on the start event — then every input must
+            # be bridged, or the script reads one that was never carried across.
+            exactly_one(bridges, f"variable bridge from =vars.{public_id}")
+        if not bridges:
+            return public_id
+        return attr(exactly_one(bridges, f"variable bridge from =vars.{public_id}"), "var")
+
+    internal_amount_id = bridge_or_self(public_amount)
+    internal_days_id = bridge_or_self(public_days)
+    if internal_amount_id == internal_days_id:
+        fail("the amount and daysOverdue bridges must target distinct variables")
+    end_bridges = [
+        output
+        for output in mapping_outputs(end)
+        if output.attrib.get("var") == attr(public_risk, "id")
+        and re.fullmatch(
+            r"=vars\.[\w.-]+",
+            output.attrib.get("source", ""),
+        )
+    ]
+    if end_bridges:
+        end_output = exactly_one(end_bridges, "numeric result to public riskScore output bridge")
+        result_variable_id = attr(end_output, "source").removeprefix("=vars.")
+    else:
+        # No bridge: the script's own row must land in the public output.
+        result_variable_id = attr(public_risk, "id")
+        if attr(response, "id") != result_variable_id:
+            fail(
+                "riskScore is neither bridged on the EndEvent nor written by the "
+                "ScriptTask's =result.response row"
+            )
+
+    for variable_id, public_variable, expected_types in (
+        (internal_amount_id, public_amount, {"double", "number"}),
+        (internal_days_id, public_days, {"integer"}),
+    ):
+        if variable_id == attr(public_variable, "id"):
+            continue  # read directly; the public declaration was typed above
         variable = variable_by_id(variables, variable_id)
         if local_name(variable) != "inputOutput":
             fail(f"{variable_id!r} must be a mutable inputOutput variable")
-        if variable.attrib.get("type") != expected_type:
-            fail(f"{variable_id!r} must use type {expected_type!r}")
+        if variable.attrib.get("type") not in expected_types:
+            fail(f"{variable_id!r} must use type {sorted(expected_types)!r}")
         if variable.attrib.get("elementId") != process_id:
             fail(
                 f"{variable_id!r} must be process-scoped via "
@@ -469,40 +553,20 @@ def main() -> None:
 
     response_id = attr(response, "id")
 
-    if len(mapping_outputs(start)) != 2:
-        fail("StartEvent mapping must contain exactly the two public-input bridges")
-    if len(mapping_outputs(end)) != 1:
-        fail("EndEvent mapping must contain exactly the public-output bridge")
+    start_bridge_count = len(mapping_outputs(start))
+    if start_bridge_count not in {0, 2}:
+        fail("StartEvent mapping must bridge both public inputs or neither")
+    if len(mapping_outputs(end)) > 1:
+        fail("EndEvent mapping must contain at most the public-output bridge")
 
-    input_schema = exactly_one(
-        task.findall(
-            "bpmn:extensionElements/uipath:mapping/uipath:context/uipath:inputSchema",
-            NS,
-        ),
-        "ScriptTask inputSchema",
-    )
-    if input_schema.attrib.get("type") != "jsonSchema":
-        fail("ScriptTask must declare a jsonSchema inputSchema")
-    exactly_one(
-        task_mapping.findall("uipath:context", NS),
-        "ScriptTask mapping context",
-    )
-    try:
-        schema = json.loads(input_body(input_schema))
-    except json.JSONDecodeError as exc:
-        fail(f"ScriptTask inputSchema is not valid JSON: {exc}")
-    properties = schema.get("properties", {}) if isinstance(schema, dict) else {}
-    if (
-        not isinstance(schema, dict)
-        or schema.get("type") != "object"
-        or schema.get("required", [])
-        or set(properties) != {"vars", "metadata"}
-    ):
-        fail("ScriptTask inputSchema must use the current vars/metadata schema")
-    for name in ("vars", "metadata"):
-        if not isinstance(properties.get(name), dict) or properties[name].get("type") != "object":
-            fail(f"ScriptTask inputSchema must declare {name!r} as an object")
-
+    # The script's inputs arrive through the one `args` row, and the platform writes
+    # them two ways: the canvas template passes the WHOLE state (`{"vars": "=vars",
+    # "metadata": "=metadata"}`, with a matching inputSchema) and the script reads
+    # `vars.<id>`; the SDK passes each input by name (`{"amount": "=vars.amount"}`) and
+    # the script reads `amount`. Both are the runtime's contract (`ScriptActivities`
+    # binds every args key as a script global). Grade that each input reaches the
+    # script under some name, and that an inputSchema, when written, describes the
+    # args it accompanies.
     task_inputs = task.findall(
         "bpmn:extensionElements/uipath:mapping/uipath:input",
         NS,
@@ -523,8 +587,53 @@ def main() -> None:
         args_value = json.loads(input_body(args))
     except json.JSONDecodeError as exc:
         fail(f"ScriptTask args is not valid JSON: {exc}")
-    if args_value != {"vars": "=vars", "metadata": "=metadata"}:
-        fail("ScriptTask args must pass exactly vars and metadata")
+    if not isinstance(args_value, dict) or not args_value:
+        fail("ScriptTask args must be a non-empty JSON object")
+    whole_state = args_value == {"vars": "=vars", "metadata": "=metadata"}
+    # arg name -> the variable id it reads, for the per-input form.
+    arg_sources: dict[str, str] = {}
+    if not whole_state:
+        for arg_name, arg_value in args_value.items():
+            match = re.fullmatch(r"=vars\.([A-Za-z0-9_]+)", str(arg_value))
+            if match is None:
+                fail(
+                    f"ScriptTask args entry {arg_name!r} must read one process variable "
+                    f"(=vars.<id>); got {arg_value!r}"
+                )
+            arg_sources[arg_name] = match.group(1)
+
+    input_schemas = task.findall(
+        "bpmn:extensionElements/uipath:mapping/uipath:context/uipath:inputSchema",
+        NS,
+    )
+    if whole_state and not input_schemas:
+        fail("a whole-state args row needs the vars/metadata inputSchema beside it")
+    if input_schemas:
+        input_schema = exactly_one(input_schemas, "ScriptTask inputSchema")
+        if input_schema.attrib.get("type") != "jsonSchema":
+            fail("ScriptTask must declare a jsonSchema inputSchema")
+        exactly_one(
+            task_mapping.findall("uipath:context", NS),
+            "ScriptTask mapping context",
+        )
+        try:
+            schema = json.loads(input_body(input_schema))
+        except json.JSONDecodeError as exc:
+            fail(f"ScriptTask inputSchema is not valid JSON: {exc}")
+        properties = schema.get("properties", {}) if isinstance(schema, dict) else {}
+        if not isinstance(schema, dict) or schema.get("type") != "object" or not isinstance(properties, dict):
+            fail("ScriptTask inputSchema must describe an object")
+        if whole_state:
+            if schema.get("required", []) or set(properties) != {"vars", "metadata"}:
+                fail("ScriptTask inputSchema must use the current vars/metadata schema")
+            for name in ("vars", "metadata"):
+                if not isinstance(properties.get(name), dict) or properties[name].get("type") != "object":
+                    fail(f"ScriptTask inputSchema must declare {name!r} as an object")
+        elif set(properties) != set(args_value):
+            fail(
+                "ScriptTask inputSchema must describe exactly the args it accompanies; "
+                f"schema has {sorted(properties)}, args has {sorted(args_value)}"
+            )
 
     script = task.find("bpmn:script", NS)
     if script is None or not text_content(script).strip():
@@ -538,32 +647,30 @@ def main() -> None:
     if not re.search(r"(^|[;{}]\s*)return\b", body, re.MULTILINE):
         fail("script must contain an executable return statement")
     for variable_id in (internal_amount_id, internal_days_id):
-        if f"vars.{variable_id}" not in body:
-            fail(f"script must read input through vars.{variable_id}")
+        # Whole-state args: the script reads `vars.<id>`. Per-input args: it reads the
+        # arg bound to `=vars.<id>`, as a bare identifier.
+        names = [name for name, source in arg_sources.items() if source == variable_id]
+        if whole_state:
+            if f"vars.{variable_id}" not in body:
+                fail(f"script must read input through vars.{variable_id}")
+        elif not names:
+            fail(f"ScriptTask args pass no entry reading =vars.{variable_id}")
+        elif not any(re.search(rf"(?<![\w.]){re.escape(name)}\b", body) for name in names):
+            fail(f"script must read {' or '.join(names)} (the args bound to vars.{variable_id})")
 
-    task_outputs = mapping_outputs(task)
-    error_id = attr(error, "id")
-    expected_outputs = (
-        ("scriptResponse", response_id, "=result.response", response.attrib.get("type")),
-        ("Error", error_id, "=Error", "jsonSchema"),
-    )
-    for name, variable_id, source, output_type in expected_outputs:
-        exactly_one(
-            [
-                output
-                for output in task_outputs
-                if output.attrib.get("name") == name
-                and output.attrib.get("var") == variable_id
-                and output.attrib.get("source") == source
-                and output.attrib.get("type") == output_type
-            ],
-            f"{name} output mapping",
-        )
+    # The response row's type must agree with the variable it writes — the runtime
+    # coerces by the row's type, so a float row landing in an integer variable (or the
+    # reverse) is the D1 hazard. `double` and `number` name the same float.
+    row_type = response_row.attrib.get("type")
+    var_type = response.attrib.get("type")
+    if not (row_type == var_type or {row_type, var_type} <= {"double", "number"}):
+        fail(f"the =result.response row is typed {row_type!r} but writes a {var_type!r} variable")
+    standard_rows = 1 + len(error_rows)
     if result_variable_id == response_id:
-        if len(task_outputs) != 2:
+        if len(task_outputs) != standard_rows:
             fail(
-                "a direct scriptResponse-to-EndEvent bridge requires exactly "
-                "the two standard ScriptTask outputs"
+                "a script result that reaches riskScore directly requires exactly "
+                "the standard ScriptTask outputs (=result.response, and Error when written)"
             )
     else:
         business_result = variable_by_id(variables, result_variable_id)
@@ -576,10 +683,10 @@ def main() -> None:
                 "the optional business result must carry elementId of the "
                 "script task or the process (#3211)"
             )
-        if len(task_outputs) != 3:
+        if len(task_outputs) != standard_rows + 1:
             fail(
                 "a distinct business-result variable requires exactly one "
-                "custom output in addition to scriptResponse and Error"
+                "custom output in addition to the standard ScriptTask outputs"
             )
         risk_mapping = exactly_one(
             [

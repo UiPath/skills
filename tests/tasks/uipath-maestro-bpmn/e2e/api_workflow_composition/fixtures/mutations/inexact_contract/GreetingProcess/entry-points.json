@@ -1,0 +1,28 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "entryPoints": [
+    {
+      "filePath": "/content/GreetingProcess.bpmn#Event_start",
+      "type": "ProcessOrchestration",
+      "input": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "number"
+          }
+        }
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "extra": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

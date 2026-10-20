@@ -1,0 +1,46 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "SimpleApprovalApp",
+    "kind": "app",
+    "type": "workflow Action",
+    "apiVersion": "apps.uipath.com/v1",
+    "isOverridable": true,
+    "dependencies": [
+      {
+        "kind": "appVersion",
+        "name": "CM-Golden-Expense-Reporting-Manual.webApp.SimpleApprovalApp"
+      },
+      {
+        "kind": "Process",
+        "name": "SimpleApprovalApp"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "name": "SimpleApprovalApp",
+      "description": "Created by UiPath",
+      "type": "Regular",
+      "appSystemName": "IDf7810a40f5e2446682758147c88e6112",
+      "version": "1.0.0",
+      "appVersionRef": {
+        "name": "CM-Golden-Expense-Reporting-Manual.webApp.SimpleApprovalApp",
+        "key": "IDc95d3e9ccb4c4feda1af2e3de8221eda"
+      },
+      "actionSchema": "{\"id\":\"IDeaf7e5ee14c44f938ab576fa7df67a9e\",\"name\":\"ActionSchema\",\"key\":\"7ee15f07-6845-46e9-9388-7eadd30f76b6\",\"description\":\"Feedback Submission\",\"inputs\":[{\"name\":\"Content\",\"key\":\"9ec248fd-8edc-4c6a-9813-c989600f3c68\",\"required\":false,\"customType\":null,\"properties\":[],\"version\":0,\"type\":\"System.String\",\"typeNamespace\":\"system\",\"isList\":false,\"collectionDataType\":null}],\"outputs\":[],\"inOuts\":[{\"name\":\"Comment\",\"description\":\"User's comments regarding the feedback\",\"required\":false,\"customType\":null,\"properties\":[],\"type\":\"System.String\",\"typeNamespace\":\"system\",\"isList\":false,\"collectionDataType\":null,\"key\":\"66e68bf2-df74-4d63-8ae6-9a62f5f8d8da\"}],\"outcomes\":[{\"name\":\"approve\",\"description\":\"Feedback was approved\",\"required\":false,\"customType\":null,\"properties\":[],\"type\":\"System.String\",\"typeNamespace\":\"system\",\"isList\":false,\"collectionDataType\":null,\"key\":\"f3566c5d-5ed3-483c-aa3a-d03b2dffcb00\"},{\"name\":\"reject\",\"description\":\"Feedback was rejected\",\"required\":false,\"customType\":null,\"properties\":[],\"type\":\"System.String\",\"typeNamespace\":\"system\",\"isList\":false,\"collectionDataType\":null,\"key\":\"cd0c6380-bd2b-468d-a2a7-8f8f29a2c89d\"}],\"version\":1,\"actionSchemaGenerationSource\":\"aiAssistedManual\",\"__isDeleted\":false,\"dateLastModified\":\"2026-07-10T00:50:50.284Z\"}",
+      "codeBehindProcess": {
+        "name": "SimpleApprovalApp",
+        "key": "7ed04359-0ed6-41dc-be03-a99f91a3932b",
+        "folderKey": ""
+      }
+    },
+    "locks": [],
+    "key": "d5102769-8bac-4afc-a727-77745c53181e",
+    "files": []
+  }
+}

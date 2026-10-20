@@ -5,7 +5,7 @@ Companion to [implementation.md § Step 12](implementation.md). Step 12 defines 
 For codes whose *names mislead* — the four that have sent repairs at the wrong element — see [phased-execution.md § Findings whose names mislead](phased-execution.md#findings-whose-names-mislead). Read that first when a finding does not match the element it names.
 
 ```bash
-uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json
+uip maestro case validate "<caseplan.case path>" --strict --sdd sdd.md --output json
 ```
 
 An unknown-option response means the installed CLI predates `--strict`/`--sdd` — see [case-commands.md § Version guard](case-commands.md#version-guard----strict----sdd-require-cli-1202).
@@ -14,7 +14,7 @@ An unknown-option response means the installed CLI predates `--strict`/`--sdd` �
 
 ### Check 4
 
-After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker resolution (Step 11.5), **first run `uip maestro case validate "<caseplan.json path>" --strict --sdd sdd.md --output json`** (unknown-option response → [case-commands.md § Version guard](case-commands.md#version-guard----strict----sdd-require-cli-1202)). Its `STRICT_*` codes are the machine-checked half of this pass: `CASE_MGMT_XREF_UNRESOLVED` (an error on every profile, as is `CASE_MGMT_PLANNING_NOTATION` for a `<-`/`->` input value) is Check 4
+After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker resolution (Step 11.5), **first run `uip maestro case validate "<caseplan.case path>" --strict --sdd sdd.md --output json`** (unknown-option response → [case-commands.md § Version guard](case-commands.md#version-guard----strict----sdd-require-cli-1202)). Its `STRICT_*` codes are the machine-checked half of this pass: `CASE_MGMT_XREF_UNRESOLVED` (an error on every profile, as is `CASE_MGMT_PLANNING_NOTATION` for a `<-`/`->` input value) is Check 4
 
 ### Check 1 — input bindings
 
@@ -59,5 +59,21 @@ After value bindings (Step 9.8), connector-rule upgrades (Step 10.5), and marker
 ### Rule 26 — stage and task names
 
 `STRICT_SDD_STAGE_RENAMED` and `STRICT_SDD_TASK_RENAMED` (error under `--sdd`: a stage or task the SDD declares is present under another name — `Stage 4 - return to origin` as `Stage 4`, `Wait for timer - S7` as `User-selected routing`) replace the `STRICT_SDD_*_MISSING` / `STRICT_SDD_*_EXTRA` pair a rename used to produce. The element is not absent: rename it back to the SDD's name, which the message gives. Never author a second element with the SDD's name beside the renamed one. A CLI that predates these codes reports the rename as that MISSING error plus an EXTRA warning on the same stage — read the pair as one rename.
+
+### Binding cleanup — unreferenced root bindings
+
+`STRICT_BINDINGS_UNREFERENCED` (warning under `--strict`, at `bindings[<id>]`: no node, rule, or trigger in the plan references `=bindings.<id>`) is what a removal leaves behind: a deleted task's `name`/`folderPath` pair, a connector's `connection`/`folderKey` pair, or a pair whose task stayed a placeholder. **A `Valid` that carries this warning is not done.** `bindings_v2.json` still declares the resource, and the solution keeps its declaration, so Studio Web provisions a resource nothing uses.
+
+Repair, in order:
+
+1. First confirm the binding really is unused. If a task that should reference it lost its `=bindings.<id>` value, restore the task's reference instead of deleting the binding.
+2. Delete each reported entry from the root `bindings[]`.
+3. Run `uip maestro case bindings sync "<caseplan.case>" --output json`.
+4. Prune the solution declaration the removal orphaned: [bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources) (`resources refresh`, `resources list --source local`, `resources remove` each unmatched entry, then `refresh` once more).
+5. Re-run `validate --strict` and confirm the warning is gone.
+
+### Brownfield — schema newer than the CLI
+
+`CASE_MGMT_VERSION_NEWER_THAN_SCHEMA` (the plan's `version` is newer than the case schema the installed CLI carries — typical of a plan Studio Web saved) belongs to no Step 12 check. Stop and report it per [brownfield.md](brownfield.md) item 6. Never lower `version` to pass validation.
 
 <!-- END: validator-codes.md -->

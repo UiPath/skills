@@ -16,13 +16,7 @@ uip function new <name> --language js       # JavaScript Function → ../js/
 
 `--empty` skips the hello-world function (JS/TS only).
 
-**The scaffold follows the installed packages.** With a framework package present in the environment (`uipath-langchain`, `llama-index`, `openai-agents`), `uip function new -l py` emits that framework's **agent** scaffold — `langgraph.json` plus an LLM `main.py` — not a function scaffold. Expected behaviour, not a broken flag. Recovery, in one pass:
-
-1. Delete the framework config (`langgraph.json` and equivalents).
-2. Replace `main.py` with the function template (Step 3).
-3. Keep `pyproject.toml`'s `[project]` metadata (Step 5) — swap `dependencies` for what the function needs.
-
-Do not re-run `new` with different flag spellings, and do not read CLI or SDK internals to explain the scaffold. Reshape the project and move on.
+**The Python scaffold is a function project:** `main.py` + `pyproject.toml` + `uipath.json` with a `functions` map, regardless of any agent framework package (`uipath-langchain`, `uipath-llamaindex`, `uipath-openai-agents`) installed in the venv. For a coded agent, use `uip codedagent new` and the [`uipath-agents`](/uipath:uipath-agents) skill instead.
 
 ## Step 2: Define Function Schema
 
@@ -132,7 +126,7 @@ No `[build-system]` section. The project is identified as a Coded Function by th
 uip function init
 ```
 
-Python only. Discovers entrypoints and generates `entry-points.json`, `bindings.json`, and `project.uiproj`. Must run before `pack` or `push`. Re-run whenever Input/Output schemas or the entrypoint registration in `uipath.json` changes.
+Python only. Discovers entrypoints and generates `entry-points.json` and `project.uiproj`; creates `bindings.json` as an empty skeleton (`{"version": "2.0", "resources": []}`) when absent and leaves an existing one untouched. It never derives bindings from code — that is Step 8. Must run before `pack` or `push`. Re-run whenever Input/Output schemas or the entrypoint registration in `uipath.json` changes.
 
 ## Step 7: SDK Capabilities
 
@@ -169,6 +163,8 @@ result = sdk().connections.invoke_activity(
 )
 ```
 
+Every resource the code reads this way (`assets`, `buckets`, `connections`, plus `queues`, `processes`, `context_grounding`, `mcp`, `tasks`) needs a matching `bindings.json` entry — Step 8.
+
 ### File attachment inputs
 
 To accept a runtime file, type an `Input` field as `Attachment` (pydantic model, not a dataclass):
@@ -183,7 +179,13 @@ class Input(BaseModel):
 
 `uip function init` recognizes the `Attachment` type and emits `x-uipath-resource-kind: JobAttachment` in `entry-points.json` — the schema Studio Web and Orchestrator read to render a file picker for that field. Access fields snake_case: `attachment.full_name`, `attachment.content`.
 
-## Step 8: Pack and Publish
+## Step 8: Sync `bindings.json`
+
+`bindings.json` is what lets Orchestrator remap the resources the function reads (assets, buckets, queues, processes, indexes, connections, MCP servers, Action Center apps) per execution environment. `init` only creates the empty skeleton; derive the entries from the code with [bindings-reference.md](bindings-reference.md): scan every `.py` file for SDK resource calls, resolve module-level constants, write one entry per unique resource, bind it to the entrypoint from `entry-points.json`, verify. Re-run after any SDK resource call changes.
+
+`uip function push` then resolves each entry against the Resource Catalog — virtual placeholders for `asset` / `queue` / `process` / `bucket` / `app` that do not exist yet, a skipped binding with a warning for `connection` / `index` / `mcpServer` that must already exist. The reference's § What `uip function push` does with bindings explains how to act on those warnings.
+
+## Step 9: Pack and Publish
 
 ```bash
 uip function pack                            # creates .nupkg
@@ -191,7 +193,7 @@ uip function publish                         # upload to Orchestrator (interacti
 uip function publish --feed-id <FEED_ID>     # CI/non-interactive
 ```
 
-To sync to Studio Web instead of publishing to Orchestrator:
+To sync to Studio Web instead of publishing to Orchestrator (`--ignore-resources` skips the `bindings.json` import):
 
 ```bash
 uip function push
@@ -199,7 +201,7 @@ uip function push
 
 ### What Goes Into the Package
 
-`.nupkg` produced by `pack` contains project files (source, `pyproject.toml`, `uipath.json`, `uv.lock` when present) and generated metadata (`entry-points.json`, `bindings_v2.json`, `package-descriptor.json`, `operate.json`). Control inclusion and exclusion via `packOptions` in `uipath.json` — keep local-only fixtures, test data, and caches out of the published artifact:
+`.nupkg` produced by `pack` contains project files (source, `pyproject.toml`, `uipath.json`, `uv.lock` when present) and generated metadata (`entry-points.json`, `bindings_v2.json` — `bindings.json` copied as-is, `package-descriptor.json`, `operate.json`). Control inclusion and exclusion via `packOptions` in `uipath.json` — keep local-only fixtures, test data, and caches out of the published artifact:
 
 | Property | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|

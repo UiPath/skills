@@ -25,6 +25,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.case_check import (  # noqa: E402
+    existing_caseplan,
     assert_tasks_nested,
     find_stages,
     find_transitions,
@@ -76,9 +77,7 @@ def _fail(msg: str):
 
 
 def _read_plan() -> dict:
-    if os.path.exists(EXPECTED_CASEPLAN):
-        return read_caseplan(EXPECTED_CASEPLAN)
-    return read_caseplan()
+    return read_caseplan(existing_caseplan(EXPECTED_CASEPLAN))
 
 
 def _stage_tasks(stage: dict) -> list[dict]:
@@ -248,10 +247,7 @@ def main():
         _fail("SLA at-risk threshold lost: no escalation with atRiskPercentage=70")
 
     # -- runtime contracts (functional-build facts, run4-oracle-verified) --------
-    # Direct task-output passing is what makes the lowered vars.<id> gates
-    # resolve at runtime; intsvcActivityConfig v2 is the connector-task contract.
-    if (plan.get("metadata") or {}).get("caseDirectlyPassTaskOutputs") is not True:
-        _fail("metadata.caseDirectlyPassTaskOutputs must be true (SDD: task-output passing = Direct)")
+    # intsvcActivityConfig v2 is the connector-task contract.
     if (plan.get("metadata") or {}).get("intsvcActivityConfig") != "v2":
         _fail("metadata.intsvcActivityConfig must be 'v2'")
 

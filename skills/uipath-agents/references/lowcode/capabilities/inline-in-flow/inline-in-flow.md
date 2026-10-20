@@ -4,6 +4,10 @@ Walkthrough for embedding a low-code autonomous agent directly inside a flow pro
 
 Flow authoring itself is the responsibility of the `uipath-maestro-flow` skill — this file covers only the inline-agent side (creating the agent subdirectory, configuring it, and the shape of the `uipath.agent.autonomous` flow node that references it).
 
+<!--skill-flavor:flow-sdk-inline-agent-gate:start-->
+**Builder-SDK Flow projects (`.flow.ts`) — the default:** the agent is one `inlineAgent({...})` step in `<Name>.flow.ts`, and `compile` emits the flow node and the `<source>/agent.json` sidecar — see [inline-agent.md](../../../../../uipath-maestro-flow/references/inline-agent.md). The directory, `agent.json` and node JSON steps below apply to a JSON-authored `.flow`.
+
+<!--skill-flavor:flow-sdk-inline-agent-gate:end-->
 ## When to Use
 
 - Agent is tightly coupled to this specific flow
@@ -142,7 +146,9 @@ This skill authors the **`agent.json` side** (flatten rule: `$vars.<trigger>.out
   "content": "Write a billing resolution email for this dispute:\n{{input.start__output__disputeSummary}}" }]
 ```
 
-The **flow side** — the trigger global and the node `agentInputVariables[]` binding (the only thing the converter turns into `JobArguments`) — is authored through the `uipath-maestro-flow` skill (Critical Rule 15). The full four-piece contract, the converter behavior, and the `content`↔`contentTokens` invariant + validator errors all live there: [inline-agent prompt-wiring guide § Wiring Flow Variables into Agent Prompts](../../../../../uipath-maestro-flow/references/author/plugins/inline-agent/impl.md#wiring-flow-variables-into-agent-prompts).
+<!--skill-flavor:flow-sdk-prompt-wiring:start-->
+The **flow side** is authored through the `uipath-maestro-flow` skill. In a builder-SDK (`.flow.ts`) project it is one `inlineAgent({ ..., userPrompt: '… {{input.<name>}} …', inputs: { <name>: <flow expression> } })` step: `compile` emits the node, its input bindings and the `agent.json` sidecar, so none of that is written by hand — see [inline-agent.md](../../../../../uipath-maestro-flow/references/inline-agent.md).
+<!--skill-flavor:flow-sdk-prompt-wiring:end-->
 
 ## Refresh and Validate Inline Agent
 
@@ -153,7 +159,9 @@ uip agent validate "<FlowProjectDir>/<projectId>" --inline-in-flow --output json
 
 `--inline-in-flow` skips the `entry-points.json` / `project.uiproj` checks. In inline mode `refresh` regenerates `messages[].contentTokens` (from `content`) and `bindings_v2.json` — **not** `entry-points.json` (standalone only). `validate` is read-only (it flags `contentTokens` drift but doesn't repair it — fix by re-running `refresh`).
 
-**Verify at `flow debug`, not after refresh:** `refresh` never fills `inputSchema` — it is non-empty only because you authored it (`DerivedFiles: 0` is normal and does **not** mean input is missing). The end-to-end check (run `uip maestro flow debug` and confirm the agent resolves the input rather than echoing the literal `input.<key>` token) is owned by the `uipath-maestro-flow` skill — see its [inline-agent guide § Debug](../../../../../uipath-maestro-flow/references/author/plugins/inline-agent/impl.md#debug).
+<!--skill-flavor:flow-sdk-inline-agent-debug:start-->
+**Verify with a real run:** the end-to-end check (run `uip maestro flow debug` and confirm the agent resolves its input rather than echoing the literal `{{input.<name>}}` token) is owned by the `uipath-maestro-flow` skill — see [operate.md](../../../../../uipath-maestro-flow/references/operate.md).
+<!--skill-flavor:flow-sdk-inline-agent-debug:end-->
 
 For inline agents with external capabilities (tools, contexts, memory spaces, or escalations), pass `--bindings-target` to **`refresh`** after all flow graph edits:
 
@@ -164,17 +172,17 @@ uip agent refresh "<FlowProjectDir>/<projectId>" --inline-in-flow \
 
 `--bindings-target` propagates the inline agent's bindings (process, connection, index, memorySpace, app, etc.) into the flow project's `bindings_v2.json`. This is required for `uip solution resources refresh` to discover the bindings and create solution-level resource files. Never hand-edit `bindings_v2.json`.
 
-> **Ordering constraint:** run the final `uip agent refresh --inline-in-flow --bindings-target …` after all flow graph edits are complete. The `uipath-maestro-flow` skill owns direct `.flow` authoring for the inline-agent node, capability-resource nodes, and edges; refresh last so the generated bindings land in the flow project's `bindings_v2.json` before `uip solution resources refresh`. See the [Walkthrough](#walkthrough--end-to-end) for the correct sequence.
+<!--skill-flavor:flow-sdk-inline-agent-ordering:start-->
+> **Builder-SDK Flow projects (`.flow.ts`):** the `inlineAgent({...})` step in `<Name>.flow.ts` IS the flow node, and `compile` emits it, its edges and the `<source>/agent.json` sidecar — see [inline-agent.md](../../../../../uipath-maestro-flow/references/inline-agent.md). Nothing is added to the compiled `.flow` by hand; the ordering rule below applies to a JSON-authored `.flow`.
+<!--skill-flavor:flow-sdk-inline-agent-ordering:end-->
 
 ## Flow Wiring
 
-After creating the inline agent, the flow needs a `uipath.agent.autonomous` node whose `inputs.source` is the inline agent's `projectId` UUID, plus edges connecting it to the rest of the flow.
+<!--skill-flavor:flow-sdk-inline-agent-wiring:start-->
+In a builder-SDK (`.flow.ts`) project, hand the agent's intent to the `uipath-maestro-flow` skill: it authors one `inlineAgent({...})` step and compiles, and that emits the `uipath.agent.autonomous` node and its edges. See [inline-agent.md](../../../../../uipath-maestro-flow/references/inline-agent.md).
 
-**Hand off to the `uipath-maestro-flow` skill for the actual node and edge authoring.** Per Critical Rule 15, this skill does not invoke flow operations directly. Tell the user:
-
-> The inline agent has been scaffolded at `<FlowProjectDir>/<projectId>/`. To wire it into the flow, use the `uipath-maestro-flow` skill — pass it `projectId = <uuid>` so it can add a `uipath.agent.autonomous` node with `inputs.source = <uuid>` and connect the input/success edges via direct `.flow` authoring. **After all flow graph edits are complete**, run `uip agent refresh --inline-in-flow`, then `uip agent validate --inline-in-flow`; for inline agents with external capabilities, include `--bindings-target <FlowProjectDir>/bindings_v2.json` on the refresh call.
-
-The node JSON shape that the flow skill must produce is documented in § Flow Node Structure below — keep it as a reference, not as a CLI walkthrough.
+The node JSON in § Flow Node Structure below is the compiled shape — for reading an emitted `.flow`, never for writing one.
+<!--skill-flavor:flow-sdk-inline-agent-wiring:end-->
 
 ## Inline-in-Flow Resource Paths
 
@@ -238,7 +246,9 @@ Resource body shape is identical to the standalone-agent docs — only the folde
 
 **Critical fields:**
 - `inputs.source` — The inline agent's `projectId` UUID. Must match the subdirectory name and `agent.json.projectId` inside the flow project. The definition still declares `model.source: true`, but flow-core hoists that identity field onto `inputs.source` for the `uipath.agent.autonomous` node instance.
-- `inputs.systemPrompt` / `inputs.userPrompt` — **do not write these keys.** A prompt string on the node makes the flow converter drop every `agentInputVariables[]` entry the prompt text does not reference. Empty strings fail `uip maestro flow validate`. The canonical prompts live in `agent.json.messages[]`. Validator behavior and the older-CLI fallback: [inline-agent guide § Refresh and Validate](../../../../../uipath-maestro-flow/references/author/plugins/inline-agent/impl.md#refresh-and-validate).
+<!--skill-flavor:flow-sdk-inline-agent-prompts:start-->
+- `inputs.systemPrompt` / `inputs.userPrompt` — in a builder-SDK project, set the prompts with `inlineAgent({ systemPrompt, userPrompt })`; `compile` emits the node and its `agent.json` sidecar from them, so edit neither by hand. See [inline-agent.md](../../../../../uipath-maestro-flow/references/inline-agent.md).
+<!--skill-flavor:flow-sdk-inline-agent-prompts:end-->
 - `definitions[]` — The `uipath.agent.autonomous` definition copied from the flow registry supplies `model.serviceType: "Orchestrator.StartInlineAgentJob"`, BPMN type, version, and context. Do not copy those fields into the node instance.
 - No node instance `model` block — the inline-agent source lives at `inputs.source`.
 

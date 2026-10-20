@@ -6,7 +6,8 @@ description: >
   Multi-branch Outlook→classify→decision escalation process, but driven by a
   simulated non-technical user who withholds requirements until asked. Tests the
   agent's ability to clarify a complex ambiguous ask before building.
-  Validate-only — the sandbox has no live Outlook/Slack tenant.
+  Validate-only: the tenant has Outlook and Slack connections, but no live
+  mailbox to trigger a run.
   Ported from Flow `interactive/customer_escalation_simulated/customer_escalation_simulated.yaml`;
   swapped the Flow/`.flow` vocabulary for Maestro BPMN process/`.bpmn`, and
   translated the behavioral grader from a JSON nodes[]/edges[] walk to an XML
@@ -23,6 +24,16 @@ run_limits:
   # build lands in a single turn — turn_timeout, not task_timeout, is what
   # bounds it, and 1200s cut the 2026-09-08 run off at `flow validate`.
   turn_timeout: 1800
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+pre_run:
+  - command: 'python3 "_setup/preflight_connections.py" uipath-microsoft-outlook365 uipath-salesforce-slack'
+    timeout: 120
 
 # No initial_prompt — the simulator generates turn 1 from its persona + goal.
 

@@ -33,9 +33,9 @@ If the port needs a construct BPMN lacks, STOP and report it as "parked: <reason
 | Scheduled trigger | `startEvent` + `timerEventDefinition` |
 | Subflow | `bpmn:subProcess` |
 | Terminate | `endEvent` + `terminateEventDefinition` |
-| Connector activity (`uipath.connector.<key>.<op>`) | `bpmn:sendTask` + `<uipath:activity type="Intsvc.ActivityExecution">` enriched via `uip maestro bpmn registry get Intsvc.ActivityExecution --connection-id <id> --object-name <object>`; connection via `=bindings.<id>` + process-level `<uipath:bindings>` (`resource="Connection" propertyAttribute="ConnectionId" resourceKey=default=<connection-id>`) |
+| Connector activity (`uipath.connector.<key>.<op>`) | `bpmn:sendTask` + `<uipath:type value="Intsvc.ActivityExecution" version="v1" />` in `<uipath:activity>`, enriched via `uip maestro bpmn registry get Intsvc.ActivityExecution --connection-id <id> --object-name <object>`; connection via `=bindings.<id>` + process-level `<uipath:bindings>` (`resource="Connection" propertyAttribute="ConnectionId" resourceKey=default=<connection-id>`) |
 | Connector trigger | `bpmn:startEvent` + `Intsvc.EventTrigger` (context `connectionId`) |
-| Wait-for-event | `bpmn:receiveTask` + `Intsvc.WaitForEvent` |
+| Wait-for-event | `Intsvc.WaitForEvent` on `bpmn:receiveTask`, or on `bpmn:intermediateCatchEvent` with a bare `<bpmn:messageEventDefinition />` |
 | Managed HTTP | `bpmn:sendTask` + `Intsvc.HttpExecution` |
 | HITL | `bpmn:userTask` + `Actions.HITL` |
 | RPA / agent / API workflow | `bpmn:serviceTask` + `Orchestrator.StartJob` / `StartAgentJob` / `ExecuteApiWorkflow` |

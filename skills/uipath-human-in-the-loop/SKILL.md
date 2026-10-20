@@ -1,6 +1,6 @@
 ---
 name: uipath-human-in-the-loop
-description: "UiPath Human-in-the-Loop / HITL node authoring — building approval gates, escalations, write-back validation, and data enrichment checkpoints in Flow, Maestro, Case Management, or Coded Agents. NOT for managing, reassigning, or monitoring tasks at runtime (use uipath-tasks for that)."
+description: "UiPath Human-in-the-Loop / HITL node authoring — building approval gates, escalations, write-back validation, and data enrichment checkpoints in Flow, Maestro, Case Management, or Coded Agents, plus a guided decision experience that captures reviewer corrections as decisions. NOT for managing, reassigning, or monitoring tasks at runtime (use uipath-tasks for that)."
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
@@ -23,6 +23,9 @@ Recognizes when a business process needs a human decision point, designs the tas
 - User describes **customer communication approval** — agent-drafted reply that needs human sign-off before sending
 - User explicitly asks to **add a HITL node**, human review step, or Action Center task
 - User is building any automation where **a human must act before the process can continue**
+- User asks to **capture, record or learn from a decision** (or to feed the Decision Ledger), or a reviewer **confirms or corrects a proposal**: use the guided decision experience below
+
+**Guided decision experience.** Before designing any Coded Action App schema, read [references/decision-capture-action-app-guide.md](references/decision-capture-action-app-guide.md). It sets a toggle from the request: on when the user asks to capture or learn from a decision, or when a reviewer confirms or corrects something an agent or automation proposed. On adds a fixed set of decision fields beside the author's own and switches the UI to a guided layout, without renaming the author's fields. Never ask a yes/no question about it; state it in one line when you turned it on unasked.
 
 **Do not use this skill for:** managing, reassigning, escalating, or monitoring existing Action Center tasks at runtime — use the `uipath-tasks` skill for those operations. When answering a runtime task management question, provide only administration guidance. Do NOT suggest adding a HITL node, flow, or automation as a follow-up tip or recommendation — even if delays or escalations are mentioned.
 
@@ -32,7 +35,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
 
 ## Critical Rules
 
-1. **Never block on schema confirmation.** Design the schema from the prompt and any upstream `.flow`/`caseplan.json` data, write the node, and record the chosen schema prominently in the final report so the user can adjust it afterward. Asking the user is never a precondition for proceeding — if the user is present and offers input, use it, but do not wait for it. Only stop and report the open decision when the request is genuinely too ambiguous to make any reasonable inference. (A prompt that already specifies the fields, outcomes, and output shape is never too ambiguous.)
+1. **Never block on schema confirmation.** Design the schema from the prompt and any upstream `.flow`/`caseplan.case` data, write the node, and record the chosen schema prominently in the final report so the user can adjust it afterward. Asking the user is never a precondition for proceeding — if the user is present and offers input, use it, but do not wait for it. Only stop and report the open decision when the request is genuinely too ambiguous to make any reasonable inference. (A prompt that already specifies the fields, outcomes, and output shape is never too ambiguous.)
 2. **Wire every QuickForm outcome's own port.** A QuickForm node has one output handle per outcome, named `outcome-<outcome.id>` — never a single `completed` handle. `outcome-completed` is a placeholder that exists only on a schema with zero outcomes; it disappears the instant `inputs.schema.outcomes` has any entry, including the shipped default `Submit`. A HITL node with any outcome port left unwired blocks the flow forever on that branch. App-based (`coded-action-app`) nodes are different: their port stays a static `completed` regardless of the app's own outcomes — do not add an `inputs.schema` block to an app-based node, which would wrongly flip it onto an outcome-derived port. Neither node type ever uses `output`, `success`, or any other name.
 3. **Always add the definition entry when inserting into an existing flow.** Before writing the node, check `workflow.definitions[]` for the correct `nodeType` for the selected path (`"uipath.human-in-the-loop.quick-form"` for QuickForm, `"uipath.human-in-the-loop.coded-action-app"` for app-based). If absent, append the full definition entry with its `handleConfiguration` block. Skipping the definition means the node's handles are invisible to the runtime and the wiring check fails.
 4. **Regenerate `variables.nodes` after adding the node.** Replace the entire `workflow.variables.nodes` array — do not append. See the reference docs for the algorithm.
@@ -48,6 +51,7 @@ See [references/hitl-patterns.md](references/hitl-patterns.md) for the full busi
     In every downstream script, use `$vars.<nodeId>.output.<fieldId>` where `<fieldId>` is the `id` you gave the field in the schema — never the `variable` name.
 11. **Input field binding paths use the upstream output key, not the HITL field's own `id`.** These are two different things: the HITL field `id` identifies the form field (always lowercase); the binding path key is the name used in the upstream script's `return` statement (preserves camelCase). If a script returns `{ supplierName: "Acme" }`, the correct binding is `vars.fetchSupplier.output.supplierName` — writing `suppliername` (the field `id`) produces a path that does not exist at runtime. The form field will be blank; `flow validate` will not catch it. Always derive the binding key from the upstream script source, not from the HITL schema you are designing.
 12. **Downstream scripts must access `$vars.<nodeId>.output`.** Any script node that runs after the HITL node must read `$vars.<nodeId>.output` (the result object) — do not rely solely on `$vars.<nodeId>.status`. Concrete example: `const output = $vars.reviewNode1.output; const reason = output.reason;`. This is required even when the primary routing uses `status`.
+13. **Read the guided decision guide before writing any Coded Action App `action-schema.json`.** Open [references/decision-capture-action-app-guide.md](references/decision-capture-action-app-guide.md) first; it sets the decision toggle from the request and, when on, lists the fields to add (`proposedOutcome`, `proposalConfidence`, `rationaleOptions`, `instructionOptions`, `evidence` with `weight`, `rationale`, `instructionText`, `instructionScope`). Writing the schema without it drops those fields.
 
 ---
 
@@ -74,8 +78,8 @@ find . -name "*.flow" -maxdepth 4 | head -5
 
 # Check for a Case Management project — detect by content marker, not by filename.
 # Project files are flat in the project dir (no content/ dir on disk). The generated
-# sibling caseplan.json.bpmn carries the same marker: exclude it, edit caseplan.json.
-find . -maxdepth 4 -iname "*.json*" ! -name "*.bpmn" -print0 2>/dev/null | xargs -0 grep -l '"case-management:root"' 2>/dev/null | head -3
+# sibling caseplan.case.bpmn carries the same marker; these patterns skip it. Edit caseplan.case.
+find . -maxdepth 4 \( -iname "*.json" -o -iname "*.case" \) -print0 2>/dev/null | xargs -0 grep -l '"case-management:root"' 2>/dev/null | head -3
 
 # Check for agent.json (Low-Code Agent project)
 find . -name "agent.json" -maxdepth 4 | head -3
@@ -86,11 +90,17 @@ find . -name "*.bpmn" -maxdepth 4 | head -3
 
 | Found | Surface | How HITL is added |
 |---|---|---|
-| `.flow` file | **Flow** | Write node JSON directly — see reference docs |
-| `caseplan.json` (any `*.json` whose `nodes[]` carry `data.parentElement.type: "case-management:root"` — the marker is per-node; there is no `root` node on disk) | **Case** | Write `action` task into stage — see [hitl-casetask-action.md](references/hitl-casetask-action.md) |
+<!--skill-flavor:flow-sdk-surface-row:start-->
+| `.flow.ts` or `.flow` file | **Flow** | Author with `hitl(...)` in `<Name>.flow.ts` through the `uipath-maestro-flow` skill ([hitl.md](../uipath-maestro-flow/references/hitl.md)); never write node JSON into the compiled `.flow` — `compile` overwrites it |
+<!--skill-flavor:flow-sdk-surface-row:end-->
+| `caseplan.case` (any `*.json` or `*.case` whose `nodes[]` carry `data.parentElement.type: "case-management:root"` — the marker is per-node; there is no `root` node on disk) | **Case** | Write `action` task into stage — see [hitl-casetask-action.md](references/hitl-casetask-action.md) |
 | `agent.json` | **Low Code Agent** | Escalation CLI in-flight — guide manually for now |
 | `.bpmn` (Maestro) | **Maestro** | Write the `UserTask` XML directly — see Step 5 Surface: Maestro |
 
+<!--skill-flavor:flow-sdk-hitl-stop:start-->
+**Flow surface (a `.flow.ts`, a `.flow`, or a new flow) — the default: stop here.** Hand the HITL request to the `uipath-maestro-flow` skill: it authors `hitl(...)` in `<Name>.flow.ts` — decompiling an existing `.flow` first — and compiles ([hitl.md](../uipath-maestro-flow/references/hitl.md)). Never read or hand-edit the compiled `.flow`; the next `compile` overwrites it. Steps 2–6 below cover the Case, Low-Code Agent and Maestro surfaces.
+
+<!--skill-flavor:flow-sdk-hitl-stop:end-->
 **If the user mentioned a specific file path**, use that directly.
 
 <!--skill-flavor:flow-project-creation:start-->
@@ -166,6 +176,7 @@ Infer the right option from the signals below and state your choice — do not p
 
 | Option chosen | Next step |
 |---|---|
+| Guided decision experience (the request asks to capture a decision, or a reviewer corrects a proposal) | Read [Guided decision experience](references/decision-capture-action-app-guide.md) to add the decision fields and guided layout, then wire it as a New Coded Action App |
 | QuickForm | Read [How to write a QuickForm HITL node](references/hitl-node-quickform.md) for Steps 1–2, then continue with Step 4 |
 | New Coded Action App | Read [How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md) for Step 4c details, then continue with Step 4 |
 | Existing Deployed App — the request must already name the app | Read [How to wire an existing deployed Action App](references/hitl-node-apptask.md) for Step 4b details, then continue with Step 4 |
@@ -187,7 +198,7 @@ Infer the right option from the description below — do not pull the registry f
 
 | # | Option | Fingerprint | Description |
 |---|---|---|---|
-| 1 | **QuickForm (file-based schema)** | separate `<TaskLabel>.hitl.json` file + `hitlType: "quick"` context entry in the action task | Structured form fields in a `.hitl.json` file alongside `caseplan.json`. Action Center renders fields at runtime. No deployed app needed. |
+| 1 | **QuickForm (file-based schema)** | separate `<TaskLabel>.hitl.json` file + `hitlType: "quick"` context entry in the action task | Structured form fields in a `.hitl.json` file alongside `caseplan.case`. Action Center renders fields at runtime. No deployed app needed. |
 | 2 | **App-based action task** | `data.name` and `data.folderPath` as `=bindings.<id>` references + `data.actionCatalogName` | Uses a deployed Action Center app with custom input/output fields. Requires the app to exist in Orchestrator. |
 
 > **Default: QuickForm.** Pick QuickForm unless the request explicitly names a deployed Action Center app. State the choice, do not ask: "I'll use QuickForm — it's the quickest to set up, supports structured form fields, and doesn't need a deployed app. You can upgrade to an app-based task later if you need a custom UI layout."
@@ -242,7 +253,7 @@ Use the JS/JSON type that fits the field: `string`, `number`, `boolean`, `date`,
 
 If the user says something like "just add some fields" or "use whatever makes sense":
 
-1. Infer sensible defaults from the upstream data and downstream needs visible in the `.flow` file (Flow) or in `caseplan.json` upstream task `outputs[]` and `root.data.uipath.variables` (Case).
+1. Infer sensible defaults from the upstream data and downstream needs visible in the `.flow` file (Flow) or in `caseplan.case` upstream task `outputs[]` and `root.data.uipath.variables` (Case).
 2. Show the proposed schema explicitly before writing: "Here's what I'm proposing — let me know if you want to change anything."
 3. If there is nothing upstream to bind to (Flow with only a trigger; Case with this as the first task), use output-direction fields only and note: "There are no upstream values to pull data from, so the reviewer will fill in all fields from scratch."
 
@@ -309,19 +320,19 @@ uip maestro flow validate <file> --output json
 
 ### Surface: Case
 
-Read the `caseplan.json` to identify the target stage. Write an `action` task directly into `stage.data.tasks[lane][]`. **Direct JSON write is the only supported method** — the `uipath-maestro-case` skill ships no `hitl` CLI subcommand (unlike Flow's `uip maestro flow hitl add`).
+Read the plan file the detection above found to identify the target stage: `caseplan.case`, or `caseplan.json` in a project an older CLI scaffolded. Edit and validate that file; never create a second plan beside it. Write an `action` task directly into `stage.data.tasks[lane][]`. **Direct JSON write is the only supported method** — the `uipath-maestro-case` skill ships no `hitl` CLI subcommand (unlike Flow's `uip maestro flow hitl add`).
 
 Full reference: **[references/hitl-casetask-action.md](references/hitl-casetask-action.md)** — three task JSON shapes (QuickForm, generic, app-based), field reference, assignee handling, post-write verification, and downstream output access.
 
 | Path chosen in Step 3 | What gets written |
 |---|---|
-| QuickForm | A `<TaskLabel>.hitl.json` schema file (unified `fields[]` with `direction`, `outcomes[]`) + action task in `caseplan.json` with `data.context[hitlType].value: "quick"`, `_schemaFileId` (placeholder UUID), and `hitlSchemaId` (matches `schemaId` in `.hitl.json`). `data.inputs[]` and `data.outputs[]` are empty arrays. No `root.data.uipath.bindings[]` entries. Apply Step 4b schema-design checks before writing. |
+| QuickForm | A `<TaskLabel>.hitl.json` schema file (unified `fields[]` with `direction`, `outcomes[]`) + action task in `caseplan.case` with `data.context[hitlType].value: "quick"`, `_schemaFileId` (placeholder UUID), and `hitlSchemaId` (matches `schemaId` in `.hitl.json`). `data.inputs[]` and `data.outputs[]` are empty arrays. No `root.data.uipath.bindings[]` entries. Apply Step 4b schema-design checks before writing. |
 | App-based | Action task with `data.actionCatalogName`, `data.name` and `data.folderPath` as `=bindings.<id>` references. Add 2 root-level bindings. |
 
 After writing, validate (build-time check — must pass before reporting success):
 
 ```bash
-uip maestro case validate <caseplan.json> --output json
+uip maestro case validate <caseplan.case> --output json
 ```
 
 > `uip maestro case validate` is the only `uip maestro case` CLI used by this skill on the Case surface. All authoring is direct JSON.
@@ -423,6 +434,7 @@ After completing the wiring:
 - **[How to write a QuickForm HITL node](references/hitl-node-quickform.md)** — Read this after the user confirms QuickForm in Step 3. Covers the complete node JSON, definition entry, edge wiring, `variables.nodes` regeneration algorithm, and four worked schema examples.
 - **[How to wire an existing deployed Action App](references/hitl-node-apptask.md)** — Read this when the user selects an existing deployed app in Step 3. Covers app lookup via the Orchestrator API, `inputs.app` field mapping, `appInputBindings`, and solution resource files.
 - **[How to scaffold a new Coded Action App](references/hitl-node-coded-action-app.md)** — Read this when the user wants to build a new React app inside the solution. Covers full project template, UUID generation, solution CLI commands, and post-creation build steps.
+- **[Guided decision experience](references/decision-capture-action-app-guide.md)** — Read this before designing any Coded Action App schema; it decides from the request whether the guided decision experience is on. Covers the toggle, the decision fields it adds beside the author's own, what the backend records, and the guided layout.
 - **[HITL business pattern recognition](references/hitl-patterns.md)** — Read this during Step 2 / Step 2b to identify whether a process needs a human checkpoint and which pattern applies. Includes proactive recommendation language and when NOT to recommend HITL.
 - **[Action Center URL patterns](../uipath-tasks/references/action-center-urls.md)** (in `uipath-tasks` skill) — Read this before surfacing any Action Center task URL to the user. Covers the missing-tenant-slug anti-pattern and the API-host vs UI-host mapping.
 - **[Case Action Task (HITL)](references/hitl-casetask-action.md)** — Case surface: action task JSON, QuickForm vs app-based paths, `.hitl` file format, context entries, field binding, and downstream output access.

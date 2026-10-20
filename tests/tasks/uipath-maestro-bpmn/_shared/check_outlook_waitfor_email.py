@@ -6,7 +6,8 @@ Ported from Flow
 process must be:
 
   manual start (bpmn:startEvent, no event definition)
-    -> mid-flow bpmn:receiveTask carrying the registry Intsvc.WaitForEvent
+    -> mid-flow bpmn:receiveTask, or bpmn:intermediateCatchEvent with a
+       messageEventDefinition, carrying the registry Intsvc.WaitForEvent
        wrapper (Outlook 365 email-received event), filtered to SUBJECT
        CONTAINS "TestWaitFor"
     -> end
@@ -57,6 +58,7 @@ from _shared.bpmn_check import (  # noqa: E402
 
 BPMN_NS = NS["bpmn"]
 EVENT_TYPE = "Intsvc.WaitForEvent"
+MESSAGE_EVENT_DEFINITION = "messageEventDefinition"
 CONNECTOR_KEY = "uipath-microsoft-outlook365"
 FILTER_VALUE = "TestWaitFor"
 _EMAIL_RECEIVED_STEM = "emailreceiv"
@@ -89,11 +91,27 @@ def manual_start_events(root: ET.Element) -> list[ET.Element]:
     return out
 
 
+def _event_definitions(el: ET.Element) -> list[str]:
+    return [
+        child.tag.split("}")[1] for child in el
+        if child.tag.startswith(f"{{{BPMN_NS}}}") and child.tag.endswith("EventDefinition")
+    ]
+
+
+def _wait_hosts(root: ET.Element) -> list[ET.Element]:
+    catches = [
+        e for e in elements(root, "intermediateCatchEvent")
+        if _event_definitions(e) == [MESSAGE_EVENT_DEFINITION]
+    ]
+    return [*elements(root, "receiveTask"), *catches]
+
+
 def wait_for_event_nodes(root: ET.Element) -> list[ET.Element]:
-    """bpmn:receiveTask carrying the registry Intsvc.WaitForEvent wrapper,
-    bound to the Outlook 365 connector, for its email-received event."""
+    """Registry Intsvc.WaitForEvent placements (receiveTask, or message
+    intermediateCatchEvent) bound to the Outlook 365 connector, for its
+    email-received event."""
     out = []
-    for task in elements(root, "receiveTask"):
+    for task in _wait_hosts(root):
         if not has_typed_uipath_extension(task, "event", EVENT_TYPE):
             continue
         if context_value(task, "connectorKey") != CONNECTOR_KEY:
@@ -167,27 +185,28 @@ def main() -> None:
     if not manual_start_events(root):
         fail(
             "no manual bpmn:startEvent (no event definition) -- the Wait-for-event "
-            "node must be added mid-flow as a bpmn:receiveTask, not replace the "
-            "process's manual start"
+            "node must be added mid-flow, not replace the process's manual start"
         )
 
     event_nodes = wait_for_event_nodes(root)
     if not event_nodes:
         fail(
-            f"no bpmn:receiveTask carrying {EVENT_TYPE} bound to connectorKey "
-            f"{CONNECTOR_KEY!r} for the email-received event"
+            "no bpmn:receiveTask or message bpmn:intermediateCatchEvent carrying "
+            f"{EVENT_TYPE} bound to connectorKey "
+            f"{CONNECTOR_KEY!r} for the email-received event (a boundaryEvent is "
+            "not a mid-flow wait)"
         )
 
     if not any(has_subject_contains_filter(task) for task in event_nodes):
         fail(
-            "Outlook email-received receiveTask found, but its target=\"body\" input "
+            "Outlook email-received wait found, but its target=\"body\" input "
             f"lacks a filters.expression clause contains(subject, {FILTER_VALUE!r}) "
             "scoped by queryParams.parentFolderId and its parentFolderId == clause"
         )
 
     print(
         f"OK: {path} keeps a manual start; mid-flow Outlook email-received "
-        f"receiveTask filters subject Contains {FILTER_VALUE!r}"
+        f"wait filters subject Contains {FILTER_VALUE!r}"
     )
 
 
