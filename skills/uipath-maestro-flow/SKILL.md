@@ -109,7 +109,7 @@ For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which run
 ```bash
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts
 node .flow-sdk/<Name>.pipeline.mjs      # captures the pristine baseline
-# edit .flow-sdk/<Name>.flow.ts narrowly; leave added steps out of .layout(...)
+# edit .flow-sdk/<Name>.flow.ts narrowly; leave added steps out of .layout(...) (builder-sdk#1320)
 node .flow-sdk/<Name>.pipeline.mjs      # compiles the edit and merges it back
 ```
 

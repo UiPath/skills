@@ -20,7 +20,7 @@ mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow"
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
-# Leave added steps out of .layout(...): merge places them.
+# Leave added steps out of .layout(...): merge places them (builder-sdk#1320).
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.flow"
 uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
   -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow"
