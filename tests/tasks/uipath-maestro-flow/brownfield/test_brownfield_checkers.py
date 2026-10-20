@@ -181,10 +181,17 @@ def test_switch_route_accepts_compiled_envelopes(project: Path, body: str) -> No
     assert intent(project, "switch-route") == 0
 
 
-def test_switch_route_rejects_a_differing_envelope(project: Path) -> None:
+@pytest.mark.parametrize(
+    "source",
+    [
+        pytest.param({"type": "jsExpression", "expression": "'invalid'", "fieldType": "string"}, id="differing-expression"),
+        pytest.param({"type": "literal", "expression": "=js:$vars.disputeAnalyst.output.determination", "fieldType": "string"}, id="literal-js-text"),
+    ],
+)
+def test_switch_route_rejects_a_differing_envelope(project: Path, source: dict) -> None:
     def differ(flow: dict) -> None:
         compiled_route(flow)
-        node(flow, "returnInfoRequest")["outputs"]["determination"]["source"]["expression"] = "'invalid'"
+        node(flow, "returnInfoRequest")["outputs"]["determination"]["source"] = source
 
     mutate(project, differ)
     assert intent(project, "switch-route") == 1

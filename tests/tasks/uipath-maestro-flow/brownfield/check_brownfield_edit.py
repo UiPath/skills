@@ -76,6 +76,8 @@ def unwrap_source(source: object) -> object:
 
 
 def evaluate_source(source: object, scope: dict) -> object:
+    if isinstance(source, dict) and source.get("type") == LITERAL:
+        return source.get("expression", "")
     text = str(unwrap_source(source))
     if text.startswith("=js:"):
         return run_js(f"return ({text[4:]});", scope)
