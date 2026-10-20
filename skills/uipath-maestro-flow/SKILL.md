@@ -12,6 +12,8 @@ The SDK provides a builder API to construct a Flow graph, allowing developers to
 The graph is "compiled" down to a Flow JSON, which is the artifact used for executing the Flow on the UiPath platform.
 An existing Flow JSON can also be decompiled back into TypeScript for editing.
 
+**Before writing or editing any flow source, read [`references/author.md`](references/author.md) in full.** It holds the critical rules this guide only summarizes, the scope gate, and the completion report the final response must follow.
+
 ## Project layout
 
 `@uipath/maestro-builder-sdk` is installed globally (`npm install -g`); `examples/` contains authored examples, and `references/` contains the details routed from this guide.
@@ -218,9 +220,7 @@ the request says no one will answer (headless, CI), map it to the most
 defensible stated value and list it under Open questions as
 **[REQUIRED]**); bind every declared output on every
 path (`check` misses a missing one, and the run returns `undefined`); handle an
-error only when the request says what should happen. The journeys, the
-scope gate for a request that names no steps, when to plan first, and the
-completion report are in
+error only when the request says what should happen. The rest is in
 **[`references/author.md`](references/author.md)**.
 A request that names a canvas arrangement is `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
 
