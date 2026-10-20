@@ -2,7 +2,8 @@ parameters:
   sonarServiceConnection: ''
   # Empty = Microsoft-hosted ubuntu-latest (ships Node, Python and JDK 21).
   poolName: ''
-  # Advisory like the nightly FOSSA scan: a failed quality gate does not fail the run.
+  # Advisory like the nightly FOSSA scan: neither a failed quality gate nor a
+  # failed setup step (missing key, connection, permission) fails the run.
   blockOnQualityGate: false
 
 # Kept out of ci.security.fossa.yml on purpose: release-gate.yml reuses that
@@ -14,6 +15,9 @@ stages:
     jobs:
       - job: Coverage
         displayName: Tests with coverage + SonarCloud analysis
+        # A failing step still stops this job, but the run ends partially
+        # succeeded instead of failed, so the nightly FOSSA result stays readable.
+        continueOnError: ${{ not(parameters.blockOnQualityGate) }}
         pool:
           ${{ if eq(parameters.poolName, '') }}:
             vmImage: ubuntu-latest

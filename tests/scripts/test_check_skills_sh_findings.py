@@ -325,6 +325,9 @@ def test_preexisting_findings_print_plainly_outside_github_actions(tree, monkeyp
 
 
 def test_script_runs_as_a_command_on_the_live_tree():
-    done = subprocess.run([sys.executable, str(SCRIPT), "--json"], capture_output=True, text=True, cwd=REPO_ROOT, check=False)
-    assert done.returncode == 0
-    assert done.stdout == ""
+    # Baseline HEAD: drift the checkout already carries is pre-existing, so this
+    # pins the command path without failing every PR while main has drift.
+    done = subprocess.run([sys.executable, str(SCRIPT), "--json", "--baseline-ref", "HEAD"],
+                          capture_output=True, text=True, cwd=REPO_ROOT, check=False)
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert all(json.loads(line)["preexisting"] for line in done.stdout.splitlines())

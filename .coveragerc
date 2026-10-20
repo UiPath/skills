@@ -4,12 +4,16 @@
 #
 # `source` is the code SonarCloud counts (see sonar-project.properties). The eval
 # grader Python under tests/ is test code and deliberately not measured.
+#
+# coverage.py resolves a relative `source` against each process's own cwd, so a
+# child started from a temp dir would measure nothing. run-coverage.mjs sets
+# COVERAGE_ROOT to the repo root; `.` keeps a plain `coverage run` from the root working.
 
 [run]
 source =
-    scripts
-    skills
-    hooks
+    ${COVERAGE_ROOT-.}/scripts
+    ${COVERAGE_ROOT-.}/skills
+    ${COVERAGE_ROOT-.}/hooks
 omit =
     */tests/*
 # Many tests/scripts suites run the checker as `python3 <script>`; without this

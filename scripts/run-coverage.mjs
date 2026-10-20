@@ -14,8 +14,9 @@
  * Node suites are `npm run skills:test` plus the coded-apps dashboard tests.
  *
  * NODE_V8_COVERAGE stays set for the Python suites too, so the node hooks those
- * tests spawn are measured; COVERAGE_FILE / COVERAGE_RCFILE are absolute so
- * Python children started from a temp cwd still report into coverage/.
+ * tests spawn are measured; COVERAGE_FILE / COVERAGE_RCFILE / COVERAGE_ROOT are
+ * absolute so Python children started from a temp cwd still measure the repo's
+ * sources and report into coverage/.
  *
  * The test steps run with Supply Chain Guard's safe-chain shims (npm, python,
  * python3, ...) removed from PATH. Their binary is a Node build without the
@@ -51,7 +52,7 @@ const DASHBOARD_TESTS = "skills/uipath-coded-apps/assets/scripts/dashboards/test
 const PATH_KEY = Object.keys(process.env).find((key) => /^path$/i.test(key)) ?? "PATH";
 const unshimmedPath = process.env[PATH_KEY]
   ?.split(delimiter)
-  .filter((dir) => !/[\\/]\.safe-chain[\\/]/.test(dir))
+  .filter((dir) => !/[\\/]\.safe-chain([\\/]|$)/.test(dir))
   .join(delimiter);
 
 const testEnv = {
@@ -60,6 +61,7 @@ const testEnv = {
   PYTHONUTF8: "1",
   COVERAGE_RCFILE: join(ROOT, ".coveragerc"),
   COVERAGE_FILE: join(OUT, ".coverage"),
+  COVERAGE_ROOT: ROOT,
   NODE_V8_COVERAGE: V8_DIR,
 };
 const reportEnv = { ...process.env };
@@ -120,6 +122,8 @@ run(`${C8} report`, "npx", [
   "--extension", ".mjs", "--extension", ".js", "--extension", ".cjs",
   "--include", "scripts/**", "--include", "hooks/**",
   "--include", ".github/workflows/scripts/**", "--include", "skills/**",
+  // --exclude replaces c8's defaults, so node_modules must be listed again.
+  "--exclude", "**/node_modules/**",
   "--exclude", "**/tests/**", "--exclude", "**/*.test.mjs",
   "--exclude", "skills/uipath-maestro-flow/examples/**",
 ], reportEnv);
