@@ -4,6 +4,10 @@
 Studio Web works on one open solution, already scaffolded as the workspace root (`/solution`); never create another. All projects live inside it.
 <!--skill-flavor:step-create-solution:end-->
 
+<!--skill-flavor:tenant-df-rpa:start-->
+RPA (XAML) workflows use strongly-typed DataService activities. `uip rpa` has no entity commands in Studio Web: the user adds the entities to the project in the Studio Web designer, and Studio Web builds their generated types when it publishes the solution.
+<!--skill-flavor:tenant-df-rpa:end-->
+
 <!--skill-flavor:e2e-lead-in:start-->
 Add two projects to the open solution, sync resources, and verify:
 <!--skill-flavor:e2e-lead-in:end-->

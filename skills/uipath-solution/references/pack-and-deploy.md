@@ -170,6 +170,14 @@ This holds on **every** feed. A `--feed` or `--personal-workspace` deploy goes t
 
 The rejected attempt stays behind as a **pending draft** under that `--name`, and its key is in `Instructions` — see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft) for how to finish or drop it.
 
+A Tests project rides in the solution package but gets no solution resource, so `deploy run` does not install it. Upload its package to the deployment folder's feed yourself — the `<SOLUTION>.Tests.<PROJECT>.<VERSION>.nupkg` under `files/` in the packed `.zip`:
+
+```bash
+uip or packages upload "<TESTS_NUPKG_PATH>" --folder-path "<FOLDER_PATH>" --output json
+```
+
+`<FOLDER_PATH>` is the `Data.FolderPath` that `deploy run` returned. Orchestrator creates the testing process from the upload, so skip `uip or processes create`: it is refused (`A testing process already exists for this package`).
+
 To skip auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`):
 
 ```bash
@@ -315,7 +323,13 @@ uip solution deploy config link config.json MyQueue \
   --name ProductionQueue --folder-path "Shared/Production"
 ```
 
-Effect on the file: appends `linkToResource: { name, folderPath }` to the matched resource entry. The `--name` / `--folder-path` arguments must point to a real Orchestrator/Apps resource — the deployment fails if it doesn't exist. An `Entity` resource cannot be linked: the deploy refuses it (`Resource kind 'entity' does not support linking.`), so every deployment provisions a new, empty entity in its folder; load its records after the deploy.
+Effect on the file: appends `linkToResource: { name, folderPath }` to the matched resource entry. The `--name` / `--folder-path` arguments must point to a real Orchestrator/Apps resource — the deployment fails if it doesn't exist. An `Entity` resource cannot be linked: the deploy refuses it (`Resource kind 'entity' does not support linking.`), so every deployment provisions a new, empty entity in its folder. Load its records after the deploy:
+
+```bash
+uip df records import "<ENTITY_ID>" --file "<CSV_PATH>" --folder-key "<FOLDER_KEY>" --output json
+```
+
+`<FOLDER_KEY>` is the deployment's `FolderKey` in `uip solution deploy list --output json`; `uip df entities list --folder-key "<FOLDER_KEY>" --output json` gives the entity's `id`.
 
 When the same resource name appears multiple times in the config (different kinds), pass `resourceKey` instead of `name` to disambiguate. The CLI surfaces the available keys in the error message.
 
@@ -436,7 +450,7 @@ Two ways around it:
 # A. Let deploy create the folder FIRST, then provision into it.
 uip solution deploy run --name my-deployment --package-name my-package \
   --package-version 1.0.0 --folder-name MySolution --output json
-# → read Data.FolderPath / Data.FolderKey from the response, then create the
+# → read Data.FolderPath from the response, then create the
 #   assets, folder-deploy IXP, and assign the robot into THAT folder.
 
 # B. Skip solution deploy and bind each piece into the existing folder.

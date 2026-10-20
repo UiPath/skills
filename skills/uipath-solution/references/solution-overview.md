@@ -8,7 +8,7 @@ Create, pack, publish, deploy, and manage UiPath solution packages.
 
 ## What is a Solution?
 
-A UiPath Solution is a container that groups multiple automation projects (processes, tests, agents, API workflows, apps) into a single deployable unit — not libraries ([develop-solution.md § Step 2](develop-solution.md#step-2-add-existing-projects)). A Tests project rides in the solution package but gets no solution resource, so a deploy does not install it: upload its package to the folder's feed, which creates its testing process. Solutions enable:
+A UiPath Solution is a container that groups multiple automation projects (processes, tests, agents, API workflows, apps) into a single deployable unit — not libraries ([develop-solution.md § Step 2](develop-solution.md#step-2-add-existing-projects)). A deploy does not install a Tests project ([pack-and-deploy.md § Step 4](pack-and-deploy.md#step-4-deploy-to-orchestrator)). Solutions enable:
 
 - **Bundled deployment** -- Deploy multiple projects together as one package
 - **Version management** -- Track and version the entire solution as a single entity
