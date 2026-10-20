@@ -1,0 +1,145 @@
+task_id: skill-ah-documents-roundtrip-smoke
+description: >
+  Smoke test: the document surface on its own — attach a PDD to a process the
+  caller already names by id, then list and download what is attached. This is
+  the Cartographer hand-off in miniature: a generated PDD lands on an existing AH
+  process through `documents create`, and is read back through `documents list` /
+  `documents download`. The publish tasks only ever attach to a process they just
+  created and never download, so this is the one place both are exercised. The
+  calls reach the live alpha tenant the CI login targets, where process 12345 does
+  not exist, so they come back not-found (the same honest shape as
+  smoke_get_process). The test grades the COMMAND SHAPE: the CLI transport, the
+  three document verbs on the given id, the file uploaded as bytes, a download
+  that takes a file id rather than the process id, and no admin-token headers.
+tags: [uipath-automationhub, smoke, mode:build, lifecycle:setup]
+
+run_limits:
+  expected_turns: 10
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../_shared/live_template
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+    - type: template_dir
+      path: fixtures
+  mock_path_dirs:
+    - .uip-recorder
+
+# A tenant outage or revoked login fails here as TENANT NOT READY, which the smoke
+# gate leaves out of the pass rate, instead of being scored against the skill.
+pre_run:
+  - command: "python3 _setup/preflight_ah.py"
+    timeout: 300
+
+initial_prompt: |
+  Using the `uipath-automationhub` skill, attach the PDD
+  `./pdd-invoice-reconciliation.md` to the EXISTING Automation Hub process
+  `12345`, then list the documents on that process and download the one you
+  just attached to `./downloaded-pdd.md`.
+
+  You already have the process id (`12345`) — use it directly; do not search
+  for the process by name.
+
+  The `uip` CLI is already available and authenticated against the target
+  tenant. Do NOT run `uip login` and do NOT handle a token yourself.
+
+  Process 12345 may not exist on this tenant. Issue the skill's sequence
+  (attach, list, download) once each and report what the tenant returns, even
+  if it is not found. If the tenant gives you no file id to download, use the
+  placeholder file id `777`.
+
+  Important:
+  - Run each command once and move on. Do NOT retry.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+  - Do NOT create a new process — process `12345` already exists.
+  - NEVER send the `x-ah-openapi-auth` or `x-ah-openapi-app-key` header — this
+    skill authenticates with the user's cloud session, not an admin OpenAPI token.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-automationhub skill"
+    skill_name: "uipath-automationhub"
+    expected_skill: "uipath-automationhub"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin-token header x-ah-openapi-auth (would 401 a cloud token)"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-auth'
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent NEVER sent the admin app-key header x-ah-openapi-app-key"
+    tool_name: "Bash"
+    command_pattern: '(?i)x-ah-openapi-app-key'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent attached the document to the given process (uip ah documents create 12345 …)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah documents create\s+12345\b'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # The skill uploads bytes and falls back to --embed-link only for a caller who has
+  # a URL and no file; here the caller has the file.
+  - type: command_executed
+    description: "Agent uploaded the file's bytes (documents create … --file), not a link"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah documents create[^\n]*--file\s'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed the documents on the given process (uip ah documents list 12345)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah documents list\s+12345\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent downloaded the document (uip ah documents download …)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah documents download\s'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # `documents download` takes the FileId from `documents list`, not the process
+  # (or document) id: passing 12345 is the mix-up the skill warns about.
+  - type: command_not_executed
+    description: "Agent did NOT pass the process id to documents download (it takes a file id)"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah documents download\s+12345\b'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # The prompt supplies the id, so any create here is the agent inventing work.
+  - type: command_not_executed
+    description: "Agent did NOT create a new process — the id was given"
+    tool_name: "Bash"
+    command_pattern: '(?i)uip ah automations create'
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "CLI transport means no hand-built auth: agent never constructed an Authorization header"
+    tool_name: "Bash"
+    command_pattern: '(?i)Authorization:\s*Bearer'
+    weight: 1.0
+    pass_threshold: 1.0
+
+# Safety net only: nothing here should create a process, but if the agent does, it
+# is archived like any smoke run's.
+post_run:
+  - command: 'python3 _setup/cleanup_ah.py --created'
+    timeout: 300
