@@ -338,7 +338,7 @@ the exact stage display name — never the case name. -->
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| flow-process \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
+| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| flow-process \| external-agent \| external-workflow \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
 
 ##### Task <N>.<M>: <TASK_NAME>
 
@@ -396,7 +396,7 @@ from whatever supplied them, never re-cased or convention-converted, and never r
 several action tasks is sanctioned only when each task carries a distinct actionType dispatch value AND
 its fields ⊆ the app schema (code-switched app); otherwise it is the substitute-app defect. -->
 
-###### Connector Task Detail (type: `wait-for-connector` or `execute-connector-activity`)
+###### Connector Task Detail (type: `wait-for-connector`, `execute-connector-activity`, `external-agent` or `external-workflow`)
 
 **Connector:** <connector name> · **Connector Key:** <connectorKey>
 **Connection:** <connection instance name or Tenant default> · **Connection ID:** <connectionId or <UNRESOLVED>>
@@ -577,7 +577,7 @@ Rule: case-design-layers-guide.md § Layer 3 (External names). -->
 
 | Agent | Service Type | Endpoint | Modeled As | Used By Tasks |
 |-------|-------------|----------|------------|---------------|
-| <agent name> | <CrewAI \| Salesforce \| Databricks \| Custom \| ...> | <endpoint URL or reference> | <api-workflow \| execute-connector-activity> | <task names> |
+| <agent name> | <CrewAI \| Salesforce \| Databricks \| Custom \| ...> | <endpoint URL or reference> | <external-agent \| external-workflow \| api-workflow> | <task names> |
 
 ### IXP / Document Understanding Models
 

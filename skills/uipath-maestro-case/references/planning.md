@@ -113,7 +113,7 @@ Otherwise, continue with the normal resolution path:
 
 ### 3.1 Task Type catalog
 
-> **Closed enum — 13 values.** sdd.md `Type:` and caseplan.case `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 17 + Plugin Index naming-asymmetry note. Any value outside this set (`external-agent`, `connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
+> **Closed enum — 15 values.** sdd.md `Type:` and caseplan.case `type` field both use the schema-kebab values in column 1. Plugin folder name (column 2) is what to open during planning + execution; it is NOT what gets written into JSON. See SKILL.md Rule 17 + Plugin Index naming-asymmetry note. Any value outside this set (`connector-activity`, `wait-for-event`, etc.) is invalid — write a `<UNRESOLVED>` placeholder instead.
 
 | sdd.md `Type:` / caseplan.case `type` | Plugin folder |
 |---|---|
@@ -129,6 +129,8 @@ Otherwise, continue with the normal resolution path:
 | `flow-process` | `plugins/tasks/flow-process/` |
 | `http-request` | `plugins/tasks/http-request/` |
 | `wait-for-connector` | `plugins/tasks/connector-trigger/` |
+| `external-agent` | `plugins/tasks/connector-activity/` (External agents and automations) |
+| `external-workflow` | `plugins/tasks/connector-activity/` (External agents and automations) |
 | `wait-for-timer` | `plugins/tasks/wait-for-timer/` |
 
 > **`agent`, `api-workflow` & `business-rule` — create-on-missing.** These kinds can be built inline at the Rule 18 gate — flow in [§ 3.4](#34-unresolved-resources); type specifics: [agent](plugins/tasks/agent/planning.md#creating-an-agent-inline) / [api-workflow](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline) / [business-rule](plugins/tasks/business-rule/planning.md#creating-a-business-rule-inline). All other kinds (regular RPA `process`, action, function, connectors, agentic process) use the §3.4 placeholder path.
