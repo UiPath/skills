@@ -267,6 +267,13 @@ reader pinned lower refuses the file; `SCHEMA_VERSION_BELOW_FLOOR`: every reader
 migrates it forward on open). Changing versions is `uip maestro flow migrate`'s
 job, not an edit to this call.
 
+Shapes Studio Web writes that the round trip keeps since `@uipath/maestro-builder-sdk` 6.42.0 — leave each as decompile writes it:
+a decision or switch condition stored as a `{ type: 'jsExpression' }` envelope, or as `=js: …`, comes back as the expression itself;
+a quick form's asked field keeps its `variable` (`vars.<Step>_<field>`), which later steps read as `v('<Step>_<field>')` ([hitl.md](hitl.md));
+a parallel split drawn as a merge node comes back as `{ fork }` on the `.parallel`, two steps feeding one step as arms ending in `.stepToRef`, and a merge node with one edge in and one out as a `rawNode` ([parallel-merge.md](parallel-merge.md));
+a `core.logic.loop@1.0` keeps its `output` / `loopBack` handles through the definition the file carries;
+a subflow's reads of its own Start node (`$vars.<caller>Start.output.<input>`) come back as `input('<input>')`, and an `.onError()` on the subflow step is kept.
+
 These findings the source cannot carry are printed on stderr as
 `flow-decompile: warning: …`, and `--strict` turns each into an error:
 
@@ -316,6 +323,13 @@ These findings the source cannot carry are printed on stderr as
   `resources/<source>/resource.json` beside the `-o` output. Merge does not
   touch the project's copy: do not copy the compiled file over it. If that
   already happened, tell the user to set the setting again in Studio Web.
+- A **fire-and-forget process start's output schema**. The designer keeps the
+  process's output fields on the definition whether or not the step waits, and
+  `agenticProcess()` refuses `returns` beside `completion: 'fire-and-forget'`
+  (nothing could read it), so the source omits it and the warning names the
+  fields. Recompiling writes the definition without the schema; `merge` keeps
+  the original's definition row, so a no-edit round trip loses nothing. To read
+  the result, set `completion: 'wait'` and declare `returns`.
 
 Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
 placing it in a solution, copy it over the canonical artifact rather than next

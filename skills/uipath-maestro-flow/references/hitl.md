@@ -67,6 +67,16 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
 - A field's `direction` is `'input'` (shown), `'output'` (asked), or `'inOut'`
   (pre-filled AND editable — give it a `value`; the reviewed value comes back
   at the field's own id).
+- An asked field's answer also lands in a Flow variable, named by `variable`
+  (the name only, no `vars.` prefix) and defaulting to the field id. Later steps
+  read it as `v('<variable>')`, or bind a shown field to it with
+  `value: v('<variable>')`. Studio Web names it `<Step>_<field>`
+  (`variable: 'P_comments'` writes `vars.P_comments`), and a decompiled canvas
+  form keeps that name — leave it as written, or every downstream read fails
+  `EXPR_UNDECLARED_REF`. `check` reports `HITL_FIELD_VARIABLE` for a `vars.`
+  prefix, a dotted path, or a `variable` on a shown field. The answer is always
+  `out('<step>', '<id>')` too. Needs `@uipath/maestro-builder-sdk` 6.42.0 or
+  later; an older SDK's decompile warns that it cannot write the row back.
 - A field's `type` is one of the platform's 11 quick-form types: `'string'`,
   `'number'`, `'integer'`, `'float'`, `'double'`, `'boolean'`, `'date'`,
   `'datetime'`, `'file'`, `'object'`, `'array'`. `'text'` and `'date-time'` are
