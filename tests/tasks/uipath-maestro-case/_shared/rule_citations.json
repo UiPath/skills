@@ -72,6 +72,7 @@
     "No authored edges": 1,
     "Resolution audit": 1,
     "Runnable resources and sidecars": 3,
+    "SDD is the sole post-design input, across sessions": 1,
     "The build is lossless against the SDD": 3,
     "Unresolved resources": 2
   },
