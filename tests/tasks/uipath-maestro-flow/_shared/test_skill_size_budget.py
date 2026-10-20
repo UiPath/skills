@@ -45,8 +45,9 @@ _REPO = os.path.normpath(os.path.join(_HERE, "..", "..", "..", ".."))
 SKILL_PATH = os.path.join(_REPO, "skills", "uipath-maestro-flow", "SKILL.md")
 
 # Whole file. Set at the #3718 trim (265 lines, 27,606 bytes, ~10.8K tok) with
-# ~5% byte headroom; the line cap is looser on purpose (see above).
-MAX_BYTES = 29_000
+# ~5% byte headroom; the line cap is looser on purpose (see above). Re-set
+# after #4040 and #4101 (29,219 bytes, ~11.4K tok) with ~5% headroom.
+MAX_BYTES = 30_700
 MAX_LINES = 320
 
 # Per H2, ported from flow-builder-sdk skill-router-docs.test.ts.
