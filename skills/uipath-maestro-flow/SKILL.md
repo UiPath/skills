@@ -198,7 +198,7 @@ The table is the authoritative router. Before writing a node, read its `Referenc
 | API workflow | `uipath.core.api-workflow.<key>` | `apiWorkflow(...)` | [api-workflow.md](references/api-workflow.md) | `examples/BirdCountLookup.flow.ts` |
 | Agentic process | `uipath.core.agentic-process.<key>` | `agenticProcess(...)` | [agentic-process.md](references/agentic-process.md) | `examples/NeighborhoodWalkPlanner.flow.ts` |
 | Agent resource | `uipath.core.agent.<key>` | `agent(...)` | [agent.md](references/agent.md) | `examples/PlantNameAdvisor.flow.ts` |
-| External agent or automation | `uipath.connector.<key>.<operation>` (registry category `external-agent` / `external-workflow`) | `connector(...)`, or the product CLI when the library lacks it | [external-agent.md](references/external-agent.md) | — |
+| External agent or automation | `uipath.connector.<key>.<operation>` | `connector(...)`, or the CLI when the library lacks it | [external-agent.md](references/external-agent.md) | — |
 | Inline agent | `uipath.agent.autonomous` | `inlineAgent(...)` | [inline-agent.md](references/inline-agent.md) | `examples/PostcardCaption.flow.ts` |
 | IxP extraction | `uipath.ixp.<project>.<version>-<folder>` | `ixpExtract(...)` | [ixp.md](references/ixp.md) | `examples/ArchiveCardExtract.flow.ts` |
 | Document classify | `uipath.document.classify` | `documentClassify(...)` | [document-pipeline.md](references/document-pipeline.md) | `examples/SeedPacketReader.flow.ts` |
