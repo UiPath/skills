@@ -18,7 +18,7 @@ Search a short name (`'Cortex'`, not `'Snowflake Cortex'`): a full product name 
 ## Build it with the product CLI
 
 ```bash
-uip maestro flow registry get <node-type> --output json        # method and path: connectorMethodInfo; objectName
+uip maestro flow registry get <node-type> --output json        # method and path: connectorMethodInfo; objectName for describe
 uip is resources describe <connector-key> <objectName> --operation Create --connection-id <id> --output json
 uip maestro flow nodes create <Name>/<Name>.flow <node-type> --label "<label>" --position <x>,<y> --output json
 uip maestro flow nodes configure <Name>/<Name>.flow <node-id> --detail '{"connectionId":"<id>","folderKey":"<folder-key>","method":"POST","endpoint":"<path>","bodyParameters":{"<field>":"<value>"}}' --output json
@@ -28,5 +28,6 @@ uip maestro flow validate <Name>/<Name>.flow --output json
 
 - Required inputs are the `RequestFields` with `Required: true` from `is resources describe`; `registry get` may not list them (CrewAI's `inputs.email_content`). Keep a dotted field name as one key: `"inputs.email_content": "..."`.
 - Use the node id `nodes create` returns; it is not derived from the operation name.
-- `nodes configure` may store `Intsvc.AsyncAgentExecution` even for a sync agent (seen on alpha); it still ran as sync, from `executionType: sync` in the configured detail. Leave the service type as configure wrote it.
+- Agent nodes are Curated activities, so `--detail` takes no `objectName`; only Generic activities need one.
+- The node definition from the registry may say `Intsvc.AsyncAgentExecution` even for a sync agent (Snowflake Cortex on alpha, 2026-10-19). The flow still ran it as sync, from `executionType: sync` in the configured detail. Leave the service type as the CLI wrote it.
 - Then `uip solution resources refresh` and `uip maestro flow debug <Name>` ([CLI-LOOP.md](CLI-LOOP.md)).
