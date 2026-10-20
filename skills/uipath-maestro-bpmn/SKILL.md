@@ -133,7 +133,9 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    adopted at 2a, or edited in place (brownfield) — because upload overwrites
    the cloud solution matching the local `.uipx` SolutionId. Confirm it where
    that solution is chosen (2a); when 2a did not run, confirm before the 4g
-   upload.
+   upload. After every `uip solution upload`, put `Data.DesignerUrl` in your
+   reply to the user as a clickable link on its own line. If the response has
+   no `DesignerUrl`, say so and show its `Data`.
 11. **Retry is node configuration, never canvas.** Handle transient failures
    with `uipath:retry` on the activity. Never draw a retry loop from gateways
    and timer events. See
@@ -415,8 +417,13 @@ below, because it is the one step that depends on phase 1's scan.
   Service draft or boundary handoff the user asked for (Rule 16). Otherwise
   chain it after 1b in the same turn. Step 1b already answered whether a
   solution exists; adopt what it found rather than scanning again. When the
-  user named a project path, `mkdir -p` its parent and run `init` there with
-  the leaf as the name (4c gives the details).
+  user named a project path (`A/B/B.bpmn` names project directory `A/B`),
+  `mkdir -p` that directory's parent, `cd` into it, and run
+  `uip maestro bpmn init <B> --skip-solution-registration --output json`
+  there; leave out the flag only when that parent is already a solution.
+  Without it, `init` adds a `<B>Solution/` level the path does not have.
+  Either way, author only into the `.bpmn` at the returned `Data.Path`;
+  never write a second `.bpmn` elsewhere.
 
   If one is found, stop and ask the user which to use, as a pick list if the
   host has one: one option per solution found, plus "Create a new solution".
@@ -743,7 +750,7 @@ Draft mode only.
 
 - **4g Show the finished process.** When the request allows an upload and the
   project has a solution (`.uipx`), `uip solution upload <SolutionDir> --output json`
-  returns the `Data.DesignerUrl` to report. When the project was not created in
+  returns the `Data.DesignerUrl`; give it to the user as a link (Rule 10). When the project was not created in
   this run (brownfield, or adopted at 2a without a confirmation), confirm before
   uploading (Rule 10). When the request forbids upload, or there is no
   solution, report the local `.bpmn` path instead.

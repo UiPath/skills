@@ -112,8 +112,8 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   trigger-start skeleton (timer or message start): `refresh` fails with no
   manual start, as in 4c.
 - **2f Make the shape visible.** When the request allows an upload, run
-  `uip solution upload <SolutionDir> --output json` and report the returned
-  `Data.DesignerUrl`. Do not ask first: a request to build the
+  `uip solution upload <SolutionDir> --output json` and give the user the
+  returned `Data.DesignerUrl` as a link (Rule 10). Do not ask first: a request to build the
   process authorizes the upload that shows it, and a consent gate per
   iteration would defeat the mode. The one case that still needs confirmation
   is adopting a solution the agent did not create, because `upload` overwrites
@@ -130,7 +130,8 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   local `.uipx`. `"Imported"` on a later upload means that id was lost and a
   second cloud solution was just created — stop and fix that before
   continuing. Repeat 3a–3b.
-- **3c Ask before building.** Show the shape, then ask exactly this, as a
+- **3c Ask before building.** Show the shape — the `DesignerUrl` link right
+  above the question when it was uploaded — then ask exactly this, as a
   pick list if the host has one, else as plain text:
 
   > Is this the process you want?
