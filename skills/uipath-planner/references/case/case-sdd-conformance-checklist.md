@@ -116,3 +116,8 @@ case-design-layers-guide.md's; the cells own the shape.)
      row of this table or `system`. `View, Act, Reassign` is prose, not permissions — `uip maestro case sdd
      convert` reports each such cell as a `case-role` Unresolved item and `validate --sdd` fails it. A
      condition on the persona goes in Notes and in a guarded cell (rule 32), never in Permissions or Stages.
+ 37. Every `api-event("<Name>")` WHEN cell quotes a Name declared verbatim in `### Business Events`
+     (a Section 1 `###` sibling of Case Variables, header `| Name | Description | Payload |`), and every
+     declared event is quoted by ≥1 cell. `api-event` stands only in Stage Entry, Stage Exit, Task Entry
+     and Case Exit tables — never in Case Triggers, and never in a task's Entry Conditions that also hold
+     `runs-sequentially`. A Payload cell is a JSON Schema object in one code span, or `—`.

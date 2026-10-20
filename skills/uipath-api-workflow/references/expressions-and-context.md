@@ -26,7 +26,7 @@ API workflows use **JavaScript** for all expressions (`evaluate.language: "javas
 | `"plain string"` | Literal string. |
 | `"${expr}"` | Single expression — result replaces the string. |
 | `"prefix-${expr}-suffix"` | String interpolation. |
-| `"${{ key: value }}"` | Object literal expression (note: double braces). |
+| `"${{ key: value }}"` | Object literal expression (note: double braces). It already supplies the object's braces; `"${{ { key: value } }}"` adds a second pair, which passes `validate` but fails at run time with `Unexpected token '{'`. |
 
 Examples:
 ```json

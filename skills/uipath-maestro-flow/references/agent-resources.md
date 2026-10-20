@@ -27,7 +27,7 @@ Context index: [inline-agent.md](inline-agent.md#context-grounding).
 | --- | --- | --- |
 | `builtin` | A platform tool (`summarize`, `analyzefiles`, `batchtransform`) | the tool name |
 | `connector` | An Integration Service operation | `connector` + `operation` (needs a library), plus `connection` + `folder` (`bindings.json` labels) — see [inline-agent.md](inline-agent.md#tools) |
-| `process` / `api` / `flow` / `maestro` / `agent` / `function` | A deployed resource | `key` (GUID) + `name` + `folderPath` |
+| `process` / `api` / `flow` / `maestro` / `agent` / `function` | A deployed resource, or a sibling project of this solution | `key` (GUID) + `name` + `folderPath` (`'solution_folder'` for a sibling, see [inline-agent.md](inline-agent.md#tools)) |
 | `ixp` | A published IxP project | `projectId` + `name` |
 | `mcp` | An MCP server's tools | `name` + `key`; `slug` is what the runtime resolves |
 | `a2a` | A remote agent to delegate to | `name` + `key` + `slug` (required) |
@@ -60,12 +60,27 @@ form INLINE instead — `fields` (the same rows a human task takes) and no `app`
 
 ## Memory
 
-Do not attach `memory`: the platform's autonomous agent declares no `memory`
-handle, so `check` refuses it (`AGENT_MEMORY_NOT_AUTHORABLE`). Give the agent
-knowledge to retrieve through a context index
-([inline-agent.md](inline-agent.md#context-grounding)); in a chat flow, the
-history reaches a conversational agent through its conversation context
-([conversational.md](conversational.md)).
+Do not give `inlineAgent` a `memory`; `check` refuses it (`AGENT_MEMORY_NOT_AUTHORABLE`).
+Find the space, declare it in the solution, then attach it to the sidecar after the
+last `compile`. `add` only attaches an existing space: an empty list means stop and
+report it. `--field` takes a sidecar `inputSchema` key, e.g. `start__output__userQuestion`.
+`<MEMORY_SPACE_NAME>` and `<MEMORY_SPACE_FOLDER>` are the list row's `Name` and `Folder`:
+
+```bash
+uip solution resources list --source remote --kind MemorySpace --search "<MEMORY_SPACE_NAME>" --output json
+uip solution resources add --source remote --kind MemorySpace --name "<MEMORY_SPACE_NAME>" \
+  --folder-path "<MEMORY_SPACE_FOLDER>" --solution-folder "<Solution>" --output json
+uip agent memory add <FeatureName> --memory-space "<MEMORY_SPACE_NAME>" \
+  --folder-path "<MEMORY_SPACE_FOLDER>" --field <inputSchema-key>=1 \
+  --path "<Solution>/<Name>/<source>" --output json
+uip agent refresh "<Solution>/<Name>/<source>" --inline-in-flow \
+  --bindings-target "<Solution>/<Name>/bindings_v2.json" --output json
+```
+
+`memory add` reporting `SolutionResource.Status: NotDeclared` means the space is not
+linked: run the `resources add` line, then `memory add` again. Threshold, result count,
+search mode: `uip agent memory add --help`. Do not add items: they come from real runs
+after deploy (`uip agent memory item add --help`).
 
 ## Evidence boundary
 

@@ -54,19 +54,25 @@ Field semantics deciding whether an offline file behaves:
 
 ## Screens — `TargetApp` definitions offline
 
-A screen's definition is a `uix:TargetApp`, obtained like an element's: write the seed below, mutate it only through `uip rpa uia target-app update-definition` (`--name`, `--description`, `--selector` — it also writes the `.metadata` sibling in the CLI's own shape, and prints nothing on success, § CLI behaviour observed offline), then register and link it in the order of § Order of commands, offline. The command exposes no launch URL or file path, so an application card linked to an offline screen can only *attach*: the launch itself is a Start Process ([ui-target-migration-guide.md § Composite interactions](ui-target-migration-guide.md), "actions without a control") and the live pass may move the open into the card. A window-level screen with no elements is the legitimate shape for maximise, close and "window exists" steps, and for the scope a Start Process-launched application is attached through.
+A screen's definition is a `uix:TargetApp`. Write the seed below, mutate it only through `uip rpa uia target-app update-definition`, then register and link it (§ Order of commands, offline). The command also writes the `.metadata` sibling and prints nothing on success (§ CLI behaviour observed offline).
 
-The whole seed `create-screen` accepts — `Area` zeros are fine offline, `Selector` is what `update-definition --selector` fills:
+The seed `create-screen` accepts:
 
 ```xml
-<uix:TargetApp Area="0, 0, 0, 0" Selector="&lt;html app='chrome.exe' url='https://host.example.com/*' /&gt;" Version="V3" />
+<uix:TargetApp Area="0, 0, 0, 0" Url="https://host.example.com/start" Selector="&lt;html app='chrome.exe' url='https://host.example.com/*' /&gt;" Version="V3" />
 ```
+
+- `Area`: zeros are fine offline.
+- `Selector`: set with `--selector`. A literal selector also sets `BrowserType`, so the seed carries none.
+- Launch settings, which the card opens the application with: `Url` on a browser screen; `FilePath`, `Arguments` and `WorkingDirectory` on a desktop one. Write them in the seed: `update-definition` leaves them unchanged and `create-screen` stores them. After `create-screen`, read the screen back with `object-repository get-screen-xaml` to check that it holds them.
+- A launch setting is a literal or one variable, written as an expression in the project's language (in a C# project the element form with a `CSharpValue`, as § Selector variables in number attributes shows). The variable must be in scope in every workflow with a card linked to the screen; where it is not, `link-screen` fails with `Failed to save the workflow after updating the activity.` and the file stays as it was.
+- `link-screen` copies the screen's launch settings into the card it links. A card linked before the screen changed keeps its copy until it is linked again.
 
 ## Order of commands, offline
 
 The run's target tool ([ui-target-migration-guide.md § UI targets](ui-target-migration-guide.md)) runs these steps. A success line is not proof: a batch past the shell's length limit reports success for the part that arrived. After each `create-*` and `link-*`, count the `TargetApp` / `TargetAnchorable` entries in the file it wrote to (the Object Repository file, the workflow) and stop when the count did not move.
 
-1. Screen seed → `target-app update-definition --name --description --selector`.
+1. Screen seed, launch settings included → `target-app update-definition --name --description --selector`.
 2. Element seeds, one copy per element → `target-anchorable update-definition --name --description --full-selector --scope-selector --semantic-selector --activity-type` per element; `--full-selector` on every element (§ Starting-point definition file, Seed leakage). `--description` is accepted and lands in the `.xaml.metadata` sibling. `--semantic-selector` adds the semantic step beside the strict one (`SearchSteps="Selector, SemanticSelector"`) and leaves the strict selector as it is, an interpolated expression included. On a registered element, the same call on its exported definition (`object-repository get-element-definition`) followed by `replace-elements` carries the semantic step and the description into the store and keeps the `referenceId` (checked).
 3. `object-repository create-app` → `create-screen` with the screen definition → `create-elements` with every new element definition of that screen in one call (`--definition-file-paths`, comma-separated). The ids the registry keeps come from what they print:
    - `create-app` prints the application's `referenceId`.

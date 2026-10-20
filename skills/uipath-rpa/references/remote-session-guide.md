@@ -20,21 +20,29 @@ The mode is set on `remote configure` with `--live-authoring` or `--remote-run-o
 | Connection | Persistent — one long-lived remote session job on the robot | None |
 | Debug / run with `--remote` | Executes on the remote machine, over the session | Each run/debug session is an Orchestrator job of its own |
 | `remote exec`, `remote upload-file`, `remote download-file` | Served by the session — return in seconds | Use Live Authoring |
-| Remote UI Automation (the `uip rpa uia` group in remote mode — syntax in the UIA package guide `ui-automation-guide.md` § Documentation), remote screen streaming | Available | Not available |
+| Remote UI Automation (the `uip rpa uia` group in remote mode — syntax in the UIA docs), remote screen streaming | Available | Not available |
 | `remote start` / `remote stop` | Open / close the session | Not applicable — `remote start` fails |
 | Default | — | Yes, for a target that never had a mode stored |
 
 Choose the mode:
 
-1. **Live Authoring** when the workflow is designed on the remote machine — UI elements must be captured, inspected, or exercised there, or the design work should not occupy the user's machine. It covers everything Remote Run Only does: debug/run with `--remote` executes on the remote machine over the session.
+1. **Live Authoring** when the workflow is designed on the remote machine — the target application exists only there, or the design work should not occupy the user's machine. It covers everything Remote Run Only does: debug/run with `--remote` executes on the remote machine over the session.
 2. **Remote Run Only** when the workflow is designed locally and only debug/run must happen on the robot.
 3. **Never downgrade Live Authoring to Remote Run Only to debug/run.** When the stored mode is Live Authoring, keep it — debug/run within it.
 
 The two flags are mutually exclusive. Passing neither keeps the stored mode. Switching from Live Authoring to Remote Run Only releases the session.
 
+### Live Authoring Known Limitations
+
+1. Live Authoring is unavailable on Serverless robots.
+2. Live Authoring is unavailable on attended robots.
+3. Live Authoring is unavailable on robots that can run only background jobs.
+
+When the intended target is one of these, tell the user Live Authoring is not supported on it and ask for a different target (Rule 3).
+
 ## Critical Rules
 
-1. **Run `uip rpa remote status` first, at the start of every task.** It is read-only. If the stored target already matches the intended folder/machine/robot/runtime and mode (a Live Authoring target also matches a debug/run-only task), do NOT reconfigure — in Live Authoring run `uip rpa remote start`; in Remote Run Only proceed directly to debug/run. Configure only when no target is stored or it differs (§ Session Lifecycle).
+1. **Run `uip rpa remote status` first, at the start of every task.** It is read-only. If the stored target already matches the intended folder/machine/robot/runtime and mode (a Live Authoring target also matches a debug/run-only task), do NOT reconfigure — in Live Authoring with `remoteSessionEnabled: true` the session is already open: proceed directly to the work, no `remote start`; in Live Authoring with `remoteSessionEnabled: false` run `uip rpa remote start`; in Remote Run Only proceed directly to debug/run. Configure only when no target is stored or it differs (§ Session Lifecycle).
 2. **IMPORTANT — always pass `--robot` on `configure`.** The CLI lists it as optional (falls back to the machine's default identity), but the remote connection does not work without it. In Live Authoring, `configure` itself fails with `Could not start remote debug session. Foreground process requires you to have an unattended robot with credentials defined`; in Remote Run Only, `configure` succeeds and every later operation fails with that error. Either way the broken target (`robot: null`) is stored — reconfigure with `--robot`.
 3. **Ask the user which target to use.** Unless the user already named the folder/machine/robot/runtime, look up the candidates from Orchestrator with the uip CLI and ask which to use — never silently pick one (§ Discovering Option Values).
 4. **Pass the mode flag explicitly on every `configure`.** Pick `--live-authoring` or `--remote-run-only` from § Remote Session Modes; do not rely on whatever mode is stored. Live Authoring is a superset of Remote Run Only — when the target is in Live Authoring, debug/run there and never reconfigure it to `--remote-run-only`.
@@ -54,7 +62,8 @@ The two flags are mutually exclusive. Passing neither keeps the stored mode. Swi
    ```
 
 2. **Already configured and matching** — `target` is `UnattendedRobot`; folder/machine/robot/runtime and `liveAuthoring` match the intent; `liveAuthoring: true` matches a debug/run-only task too (§ Reading `remote status`):
-   - Live Authoring → open the session (no-op when it is already open):
+   - Live Authoring, `remoteSessionEnabled: true` → the session is already open; trust `status` and proceed to step 4 — do NOT run `remote start`. If a later remote command reports that no session is open, run `remote start` then and retry the command.
+   - Live Authoring, `remoteSessionEnabled: false` → open the session:
 
      ```bash
      uip rpa remote start --project-dir "<PROJECT_DIR>" --output json
@@ -69,13 +78,13 @@ The two flags are mutually exclusive. Passing neither keeps the stored mode. Swi
    uip rpa remote stop --project-dir "<PROJECT_DIR>" --output json
    ```
 
-   The target stays stored. Next task: step 2 applies — `remote start` reopens the session without reconfiguring.
+   The target stays stored. Next task: step 2 applies — `status` shows `remoteSessionEnabled: false`, so `remote start` reopens the session without reconfiguring.
 
 | Command | Behavior |
 |---|---|
 | `configure` | Resolves and stores the target and mode, then connects. In Live Authoring it blocks until the session job is running — tens of seconds; do not wrap it in a short timeout. Reconfiguring replaces the stored target. A `configure` that fails to resolve a name (folder, machine, robot, runtime) keeps the previous target and leaves a running session untouched; one that fails while connecting (e.g. missing `--robot`) stores the new target |
-| `start` | Opens the Live Authoring session → `"Remote session ready."`. No-op when the session is already open. Does not start the UI Automation design host — the first remote UI Automation command sets it up. Fails with no target (`Remote debugging is not configured for an unattended robot…`) or in Remote Run Only (`The remote connection is in Remote Run Only mode, which has no remote UI Automation session…`) |
-| `stop` | Closes the session and releases the robot, including the UI Automation design host → `"Remote session stopped."`. Always succeeds — also when no session is running or no target is configured |
+| `start` | Opens the Live Authoring session → `"Remote session ready."`. No-op when the session is already open. Fails with no target (`Remote debugging is not configured for an unattended robot…`) or in Remote Run Only (`The remote connection is in Remote Run Only mode…`) |
+| `stop` | Closes the session and releases the robot → `"Remote session stopped."`. Always succeeds — also when no session is running or no target is configured |
 | `status` | Read-only — changes nothing, starts nothing |
 
 ## Reading `remote status`
@@ -100,7 +109,7 @@ The two flags are mutually exclusive. Passing neither keeps the stored mode. Swi
 | Field | Meaning |
 |---|---|
 | `target` | `UnattendedRobot` — a remote target is in effect. `LocalMachine` — no target (not configured, or the backend restarted); the other fields are then absent |
-| `remoteSessionEnabled` | `true` after `configure` / `start`; `false` after `stop` |
+| `remoteSessionEnabled` | `true` after `configure` / `start` — the session is open, skip `remote start`; `false` after `stop` — run `remote start` before remote work |
 | `liveAuthoring` | `true` — Live Authoring; `false` — Remote Run Only |
 | `folder`, `machine` | Resolved folder path and machine name |
 | `robot` | Resolved robot name — may differ from the account name passed to `--robot`. `null` means `--robot` was omitted: reconfigure with it (Rule 2) |
@@ -145,7 +154,7 @@ uip rpa remote configure \
 
 ### Discovering Option Values
 
-Look up each value the user has not named with these read-only commands, in order. Skip a step when the user already named that value.
+Look up each value the user has not named with these read-only commands, in order. Skip step 1 when the user already named the folder.
 
 1. **Folder** — the `--folder-path` value is `Path` (fully qualified, e.g. `Shared/Finance`), not `Name`:
 
@@ -155,31 +164,40 @@ Look up each value the user has not named with these read-only commands, in orde
 
    Lists the folders the signed-in user can access; add `--all` to list every folder in the tenant.
 
-2. **Machines in the folder** — the `--machine` value is `Name`:
+2. **Remote targets in the folder** — robots, machines, and hosts in one call:
 
    ```bash
-   uip or machines list --folder-path "<FOLDER_PATH>" --output json
+   uip rpa remote targets --folder-path "<FOLDER_PATH>" --project-dir "<PROJECT_DIR>" --output json
    ```
 
-   Skip machines with `UnattendedSlots: 0` — they cannot host an unattended session. `Scope: Serverless` means `--runtime` does not apply.
+   Example output (trimmed):
 
-3. **Robot accounts in the folder** — the `--robot` value is `UserEntity.UserName`:
-
-   ```bash
-   uip or users list-in-folder --folder-path "<FOLDER_PATH>" --all-fields --output json
+   ```json
+   {
+     "success": true,
+     "folder": "Shared",
+     "robots": [
+       { "name": "<ROBOT_NAME>", "enabled": true, "hasCredentials": true }
+     ],
+     "targets": [
+       { "machine": "<MACHINE_NAME>", "host": "<RUNTIME_NAME>", "status": "Available" },
+       { "machine": "<MACHINE_NAME>", "host": "<RUNTIME_NAME>", "status": "Disconnected" }
+     ]
+   }
    ```
 
-   `--all-fields` nests each entry's details under `UserEntity`. Offer only entries whose `UserEntity.MayHaveUnattended` is `true`; that excludes directory groups. `UserEntity.Type` `Robot` / `DirectoryRobot` is a robot account; `User` / `DirectoryUser` is a user account. Robots assigned to a parent folder appear only with `--include-inherited`.
+   | Field | Use |
+   |---|---|
+   | `robots[].name` | `--robot` value. Offer only robots with `enabled: true` and `hasCredentials: true` — a disabled or credential-less robot passes `configure` and fails at session start |
+   | `targets[].machine` | `--machine` value. One row per host, so a machine with several hosts appears in several rows |
+   | `targets[].host` | `--runtime` value, passed as-is |
+   | `targets[].status` | `Available` — usable host; `configure` takes only an `Available` host as `--runtime`. `Serverless` — serverless machine: Remote Run Only (§ Live Authoring Known Limitations), `--runtime` does not apply. `Busy`, `Disconnected`, `Unresponsive`, `NoSession`, `Unknown` — not usable now; `Disconnected` means that host's robot service is not connected to Orchestrator |
 
-4. **Connected hosts** — one row per host; the `--runtime` value is `HostMachineName`:
+   The number of `Available` hosts per machine decides whether to pass `--runtime` (§ When to Pass `--runtime`).
 
-   ```bash
-   uip or sessions unattended list --folder-path "<FOLDER_PATH>" --runtime-type Unattended --output json
-   ```
+   When the user already named the robot or machine, narrow the listing: `--robot "<ROBOT_NAME>"` lists only the machines that robot can use and the hosts that serve it — the same check `configure --robot` runs; `--machine "<MACHINE_NAME>"` lists only that machine's hosts.
 
-   Match rows to a machine from step 2 by `MachineName`. A usable host has `Status: Available` and `IsUnresponsive: false`; `Status: Disconnected` means that host's robot service is not connected to Orchestrator. The number of usable hosts per machine decides whether to pass `--runtime` (§ When to Pass `--runtime`).
-
-Then apply Rule 3: present the candidates and ask the user which to use. Offer only machines with at least one usable host — `configure` rejects a machine with no connected host. Empty results in step 2, 3, or 4 mean the folder has no usable machine, robot account, or connected host; ask the user for another folder. On `not authenticated` / `401` / `403`, sign in per Rule 6 and retry.
+Then apply Rule 3: present the candidates and ask the user which to use. Offer only machines with at least one `Available` host — `configure` rejects a machine with no connected host; for Remote Run Only, `Serverless` machines are usable too. Empty `robots`, or no usable row in `targets`, means the folder has no usable robot or host; ask the user for another folder. On `not authenticated` / `401` / `403`, sign in per Rule 6 and retry.
 
 ### Configure Errors
 
@@ -188,7 +206,7 @@ Then apply Rule 3: present the candidates and ask the user which to use. Offer o
 | `Folder '<FOLDER_PATH>' not found. Available folders: …` | Pick from the listed folders |
 | `Machine '<MACHINE_NAME>' not found in folder '<FOLDER_PATH>'. Available machines: …` | Pick from the listed machines, or correct `--folder-path` |
 | `Machine '<MACHINE_NAME>' has no available unattended session in folder '<FOLDER_PATH>' - last reported state: …` | No host of that machine is connected. Ask the user to start the machine and connect its robot service to Orchestrator, or pick another machine |
-| `Robot/user '<ROBOT_NAME>' not found in folder '<FOLDER_PATH>'.` | Re-list the robot accounts in that folder (§ Discovering Option Values, step 3) |
+| `Robot/user '<ROBOT_NAME>' not found in folder '<FOLDER_PATH>'.` | Re-list the robots in that folder (§ Discovering Option Values, step 2) |
 | `Connected runtime '<RUNTIME_NAME>' not found for machine '<MACHINE_NAME>'. Available runtimes: …` | Pick from the listed runtimes. An empty list means no host of that machine is connected — handle as the "no available unattended session" row |
 | `--live-authoring and --remote-run-only are the two modes of one connection; pass at most one.` | Pass exactly one mode flag |
 | `Could not start remote debug session. Foreground process requires you to have an unattended robot with credentials defined` — from `configure` in Live Authoring, or from later operations in Remote Run Only | `--robot` was omitted — reconfigure with it (Rule 2) |
@@ -312,11 +330,12 @@ uip rpa remote upload-file \
 
 ## Anti-patterns
 
-- **Reconfiguring a target that `remote status` already shows** — in Live Authoring run `remote start` instead (Rule 1).
+- **Reconfiguring a target that `remote status` already shows** — in Live Authoring run `remote start` instead when `remoteSessionEnabled` is `false`, or nothing when it is `true` (Rule 1).
+- **Running `remote start` when `remote status` shows `remoteSessionEnabled: true`** — the session is already open; trust `status` and go straight to the work (Rule 1).
 - **Leaving a Live Authoring session running after the work is done** — it holds a robot runtime; always `remote stop` (Rule 5).
 - **Running `exec` or a file transfer after `remote stop` and leaving** — the command reopens the session, which then holds the robot again; `stop` must be the last remote command (Rule 5).
 - **Running `remote start` in Remote Run Only** — there is no session to start; it fails. Switch to Live Authoring when a persistent session, shell/file commands, or remote UI Automation are needed.
-- **Choosing Remote Run Only for design work on the remote machine** — it has no remote UI Automation session.
+- **Choosing Remote Run Only for design work on the remote machine** — it has no remote session.
 - **Switching a Live Authoring target to Remote Run Only to debug/run** — Live Authoring already debugs/runs on the remote machine; switching releases the session and loses remote UI Automation, shell, and file commands (Rule 4).
 - **Omitting `--robot` on `configure`** — `configure` fails in Live Authoring, or succeeds in Remote Run Only and every later operation fails; the broken target is stored either way (Rule 2).
 - **Guessing folder/machine/robot/runtime names** — look them up from Orchestrator and ask the user (Rule 3).

@@ -33,15 +33,21 @@ reference:
 
 pre_run:
   - command: >-
-      python3 _setup/req_ai_fixture.py seed --project HEALTH
+      python3 _setup/req_ai_fixture.py seed --project HEALTH --stamped-prefix EVFX-AIGEN-
       --requirement EVFX-AIGEN-REQ --require-access generate-testcases
       --description "A signed-in customer can transfer money between their own accounts. The amount must be greater than zero and no more than the source account's available balance. Transfers above 10,000 need a one-time code sent by SMS. A completed transfer shows a confirmation with a reference number."
       --capture-generate-timeout nightly/generate-testcases.json
     timeout: 280
 
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
 initial_prompt: |
   Our nightly pipeline started Test Manager's AI test case generation for
-  requirement EVFX-AIGEN-REQ in project HEALTH, but it stopped waiting before
+  requirement EVFX-AIGEN-REQ in the project whose key is in project-key.txt, but it stopped waiting before
   the result came back. Its output is in nightly/generate-testcases.json.
   Show me what the AI proposed, then create just the first two of those test
   cases, linked to the requirement.
@@ -56,9 +62,9 @@ success_criteria:
     pass_threshold: 0   # advisory
 
   - type: command_executed
-    description: "Agent picked up the pipeline's job by id: `generate-testcases --project-key HEALTH --activity-id <uuid>`"
+    description: "Agent picked up the pipeline's job by id: `generate-testcases --project-key <key from project-key.txt> --activity-id <uuid>`"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--activity-id\s+["\x27]?[0-9a-fA-F]{8}-)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--project-(?:key\s+["\x27]?HEALTH\b|id\s+\S))(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--create\b)'
+    command_pattern: 'uip\s+tm\s+requirements?\s+generate-testcases(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--activity-id\s+["\x27]?[0-9a-fA-F]{8}-)(?=(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--project-(?:key|id)\s+\S)(?!(?:(?!\n|&&|\|\||;|\||\s(?:uip|\$UIP)\s).)*--create\b)'
     min_count: 1
     weight: 2.0
     pass_threshold: 1.0

@@ -23,11 +23,11 @@ A Business Rules project holds one DMN decision table. DMN and FEEL follow the O
 4. **No DOCTYPE, XML comments, or processing instructions.** Put notes in the annotation column or a `<description>` element.
 5. **Use the designer's types.** `string`, `number`, `boolean`, `Any`, `date`, `time`, `date and time`, `dayTimeDuration`, `yearMonthDuration`, for both columns and input arguments.
 <!--skill-flavor:lifecycle-rules:start-->
-6. **Scaffold a new project with `init`; after every edit, `refresh` then `validate`.** An existing project needs no `init`: edit its `.dmn` and run `refresh`. Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; edit the scaffolded `.dmn` in place, keeping its root element.
+6. **Scaffold a new project with `init`; after every edit, `refresh` then `validate`.** An existing project needs no `init`: edit its `.dmn` and run `refresh`. Fix what `validate` reports. Never hand-write or delete `project.uiproj`, `entry-points.json`, or `bindings_v2.json`; keep the scaffolded `.dmn` file and its root element.
 7. **A rule is done when `validate` passes and `debug` returns what the reviewed table expects.** On a wrong output, read the trace with `uip traces spans get <Data.traceId>`. Stop after 3 fix rounds and show the user the table and the failing inputs.
 <!--skill-flavor:lifecycle-rules:end-->
 8. **Stop on a tenant without Business Rules, and publish through `uip solution`.** When `rules debug` fails with `Business Rules is not enabled on tenant '<TENANT>'.`, stop and relay the CLI's instruction. Pack, publish, and deploy belong to the uipath-solution skill.
-9. **Name every rule.** Give each `<rule>` an `<annotationEntry>` with a short name for the case it covers; the review table's Annotation column is what goes there.
+9. **Name every rule.** Declare one `<annotation name="Annotation" />` after the table's last `<output>`, then give each `<rule>` one `<annotationEntry>` with a short name for the case it covers; the review table's Annotation column is what goes there. Never write an `<annotationEntry>` without that column.
 
 ## Quick Start
 
@@ -38,7 +38,7 @@ A Business Rules project holds one DMN decision table. DMN and FEEL follow the O
 uip rules init <RULE_NAME> --output json
 ```
 
-Run `init` from the solution folder when one exists; outside a solution it creates `<RULE_NAME>Solution/<RULE_NAME>/`. `Data.RuleStatus: "Preserved"` means the project already held a `.dmn` and `init` left it untouched. The rule is the one `.dmn` file in the project folder.
+Run `init` from the solution folder when one exists; outside a solution it creates `<RULE_NAME>Solution/<RULE_NAME>/`. `Data.RuleStatus: "Preserved"` means the project already held a `.dmn` and `init` left it untouched. The rule is the one `.dmn` file in the project folder. Treat whatever table the scaffolded `.dmn` holds as a placeholder; step 3 replaces it.
 <!--skill-flavor:scaffold:end-->
 
 ### 2. Design and review
