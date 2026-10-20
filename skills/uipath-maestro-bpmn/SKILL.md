@@ -539,7 +539,23 @@ Draft mode only.
    by the HITL template's `<uipath:output ... var="...">` (for example
    `=vars.Var_HitlResult == "approve"`), not only a copied or derived script
    variable.
-   For an `Intsvc.*` activity whose `inputTarget` is `body`
+   **Every new connector node is V2, in every workflow**, HTTP requests
+   (`Intsvc.UnifiedHttpRequest`) and external agents included: build it with
+   `registry get --input-details` and paste `Data.V2` as it is. In an existing
+   workflow without `<uipath:intsvcActivityConfig version="v2" />` never add
+   the marker, and leave its V1 nodes alone unless the task asks (a V1 trigger
+   or wait faults at run time, so rebuild one as V2 when the task touches it).
+   If `registry get` fails `unknown option '--input-details'`, the CLI
+   predates V2 nodes: stop on a trigger, wait, HTTP request or external agent
+   and tell the user to update `uip`; only a plain activity falls back to the
+   V1 template. See
+   [references/v2-connector-nodes.md](references/v2-connector-nodes.md).
+<!--skill-flavor:v2-solution-resources-refresh:start-->
+   After `bpmn refresh`, run `uip solution resources refresh` so the
+   connections become solution resources.
+<!--skill-flavor:v2-solution-resources-refresh:end-->
+   When filling the V1 template (an older CLI, or reading an existing V1 node)
+   for an `Intsvc.*` activity whose `inputTarget` is `body`
    (`Intsvc.ActivityExecution` and its async, agent, and workflow variants),
    these rules override the template's `InputNotes`, `DiscoveryNotes`, and
    `ContextFieldNotes`:
@@ -614,14 +630,22 @@ Draft mode only.
    without one `refresh` fails the whole project `RetryWillNotFix` instead of
    writing an empty entry-point list. When the request names a trigger as the
    start and asks for no package-ready, upload, debug, publish, or deploy
-   deliverable, it is a trigger-start draft: turn the initializer's
-   `Event_start` into the trigger in place, keeping its id and its
-   `uipath:entryPointId` child, add no second start, and skip `refresh` (it
-   fails with no manual start), even after binding a connection;
-   `entry-points.json` stays valid. Any of those deliverables, including a
-   later one on such a draft, keeps the manual `Event_start`, gives the
-   trigger its own start id, joins the two per
-   [Gateways](references/structural-bpmn.md#gateways), and runs `refresh`.
+   deliverable, it is a trigger-start draft. For a timer or V1 connector
+   start, turn the initializer's `Event_start` into the trigger in place,
+   keeping its id and its `uipath:entryPointId` child, add no second start,
+   and skip `refresh` (a timer or V1 start alone has no entry point, so it
+   fails), even after binding a connection; `entry-points.json` stays valid.
+   Any of those deliverables, including a later one on such a draft, keeps
+   the manual `Event_start`, gives the trigger its own start id, joins the
+   two per [Gateways](references/structural-bpmn.md#gateways), and runs
+   `refresh`. A V2 connector trigger start is the exception, and the usual
+   case, since every new trigger is V2: it carries its own
+   `uipath:entryPointId` and is an entry point. In a draft, paste its
+   `Data.V2` element with `{{ID}}` = `Event_start` in place of the manual
+   start, add no second start, and run `refresh`; skipping it leaves
+   `entry-points.json` on the old id and `validate` fails. A deliverable may
+   do the same, or keep the manual `Event_start` beside it, joined as above,
+   to debug from either start.
    A recurring timer is a `timeCycle` with an `R/` repeat (`R/P1D`), not the
    template's `timeDuration`. Clearing a stale-entry error by editing or
    deleting `entry-points.json` instead of running `refresh` passes
