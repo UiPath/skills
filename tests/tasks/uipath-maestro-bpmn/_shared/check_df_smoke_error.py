@@ -15,7 +15,8 @@ BPMN has no fixed home for `entityName` (BATCH1-ADDENDUM.md "Where connector
 node values live in BPMN" and its "CI run 35488848026" section on the two
 valid activity shapes). A node names its entity when any one of these
 equals it: the generic-form `objectName`, any input's value (path, query,
-body or untargeted), or a `/`-separated segment of the context `path` field.
+body or untargeted), a value in a V2 element's `pathParameters` JSON input,
+or a `/`-separated segment of the context `path` field.
 
 Assertion map (Flow -> BPMN):
   F check_smoke_error.py:29-31  entity_of(node) == NonExistentEntity on a
@@ -31,7 +32,8 @@ Assertion map (Flow -> BPMN):
   I                             parse each .bpmn                          -> ET.parse()
   T                             curated|generic entity-CRUD classification -> is_create_node()/is_query_node()
   T                             entity as the generic objectName, an exact -> mentions_entity()
-                                 input value on any target, an exact
+                                 input value on any target, a V2
+                                 `pathParameters` value, an exact
                                  context `path` segment, or the value of an
                                  entity-naming body key (either body form)
   DROPPED  topology/parallel-branch parsing    (Flow's own grader does not parse it either -- see its docstring)
@@ -70,6 +72,7 @@ from _shared.bpmn_check import (  # noqa: E402
     elements,
     fail,
     has_typed_uipath_extension,
+    path_parameters,
 )
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
@@ -92,6 +95,8 @@ def mentions_entity(task: ET.Element, entity: str) -> bool:
         (inp.attrib.get("value") or inp.text or "").strip() == entity
         for inp in context_inputs(task)
     ):
+        return True
+    if entity in path_parameters(task).values():
         return True
     # The entity may be a field of the request body rather than a flat input
     # (smoke run 36443527602: body {"entityName": "FlowCodeEvalEntity", ...});

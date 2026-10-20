@@ -280,6 +280,35 @@ def body_object(element: ET.Element) -> dict:
     return parsed
 
 
+def path_parameters(element: ET.Element) -> dict[str, str]:
+    """``element``'s path parameters by name, in either connector node shape.
+
+    A V1 template node writes one ``target="path"`` input per field. A V2
+    element from ``registry get --input-details`` writes one
+    ``target="pathParameters"`` input holding them all as a JSON object
+    (skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
+    from the V1 template"). A V2 payload that is not a JSON object adds
+    nothing, and neither does a non-string value.
+    """
+    params: dict[str, str] = {}
+    for inp in context_inputs(element):
+        target = inp.attrib.get("target")
+        if target == "path" and inp.attrib.get("name"):
+            params[inp.attrib["name"]] = _input_payload(inp)
+        elif target == "pathParameters":
+            try:
+                parsed = json.loads(_input_payload(inp) or "{}")
+            except (json.JSONDecodeError, ValueError):
+                continue
+            if isinstance(parsed, dict):
+                params.update(
+                    (str(key), value.strip())
+                    for key, value in parsed.items()
+                    if isinstance(value, str)
+                )
+    return params
+
+
 def has_type(element: ET.Element, token: str) -> bool:
     """True when ``token`` appears anywhere in ``element``'s serialised XML."""
     return token in ET.tostring(element, encoding="unicode")

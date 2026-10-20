@@ -639,6 +639,42 @@ def test_body_object_is_empty_without_body_inputs() -> None:
     assert bpmn_check.body_fields(task) == []
 
 
+def test_path_parameters_reads_v1_per_field_inputs() -> None:
+    task = _send_task(
+        '<uipath:input name="entityName" type="string" target="path" value="FlowCodeEvalEntity" />'
+        '<uipath:input name="recordId" type="string" target="path" value="=vars.Id" />'
+        '<uipath:input name="limit" type="number" target="query" value="100" />'
+    )
+    assert bpmn_check.path_parameters(task) == {
+        "entityName": "FlowCodeEvalEntity",
+        "recordId": "=vars.Id",
+    }
+
+
+def test_path_parameters_reads_the_v2_json_input() -> None:
+    task = _send_task(
+        '<uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA['
+        '{"entityName": "NonExistentEntity", "fieldName": " file "}]]></uipath:input>'
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"entityName": "QueryOnly"}]]></uipath:input>'
+    )
+    assert bpmn_check.path_parameters(task) == {
+        "entityName": "NonExistentEntity",
+        "fieldName": "file",
+    }
+
+
+@pytest.mark.parametrize(
+    "payload",
+    ["not json", '["NonExistentEntity"]', '{"entityName": 7}', ""],
+)
+def test_path_parameters_skips_a_v2_payload_that_names_nothing(payload: str) -> None:
+    task = _send_task(
+        f'<uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA[{payload}]]></uipath:input>'
+    )
+    assert bpmn_check.path_parameters(task) == {}
+
+
 def test_body_object_is_empty_for_an_empty_body_input() -> None:
     task = _send_task('<uipath:input name="body" type="json" target="body" />')
     assert bpmn_check.body_object(task) == {}
