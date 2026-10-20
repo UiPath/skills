@@ -32,6 +32,8 @@ WRITER_AGENT = "e6360c37-75b3-4315-b63e-afe9815dd65c"
 CAP_CASES = ((120, 120), (500, 500), (750, 500), (10000, 500))
 ACTIONS = ("escalate_to_manager", "auto_resolve", "reject", "request_more_info")
 ANALYST_STUB = {"determination": "valid", "creditAmount": 42, "rationale": "stub rationale"}
+JS_EXPRESSION = "jsExpression"
+LITERAL = "literal"
 
 
 class JsError(Exception):
@@ -63,8 +65,20 @@ def run_js(body: str, scope: dict) -> object:
     return json.loads(proc.stdout or "null")
 
 
+def unwrap_source(source: object) -> object:
+    if not isinstance(source, dict):
+        return source
+    if source.get("type") == JS_EXPRESSION:
+        return f"=js:{source.get('expression', '')}"
+    if source.get("type") == LITERAL:
+        return source.get("expression", "")
+    return source
+
+
 def evaluate_source(source: object, scope: dict) -> object:
-    text = str(source)
+    if isinstance(source, dict) and source.get("type") == LITERAL:
+        return source.get("expression", "")
+    text = str(unwrap_source(source))
     if text.startswith("=js:"):
         return run_js(f"return ({text[4:]});", scope)
     if text.startswith("="):
@@ -181,7 +195,7 @@ def check_switch_route(original: dict, final: dict, _original_agents: dict, _age
     if end is None:
         return fail(f"{port} does not lead to a new End node (targets: {targets})")
     outputs = end.get("outputs", {})
-    missing = [v for v in OUT_VARIABLES if not str(outputs.get(v, {}).get("source", "")).strip()]
+    missing = [v for v in OUT_VARIABLES if not str(unwrap_source(outputs.get(v, {}).get("source", ""))).strip()]
     if missing:
         return fail(f"End node {end['id']!r} does not map {missing}")
     reference = next(n for n in original["nodes"] if n["id"] == "returnRejection")["outputs"]
