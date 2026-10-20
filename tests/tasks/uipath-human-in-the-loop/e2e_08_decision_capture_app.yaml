@@ -39,8 +39,9 @@ initial_prompt: |
     change.
   - The agent also recommends approve or deny with a confidence score,
     shown but never pre-selected.
-  - The reviewer approves or denies, explains why, and tells the agent
-    what to do next time.
+  - The reviewer approves or denies. Agreeing is one click; when the
+    reviewer changes something, one tap says why. Claims over a set amount
+    or with low agent confidence are high-stakes and ask for more detail.
   - The app renders its own UI (no decision widget package).
   - When deployed, the form must bind to Action Center tasks (NOT a
     standalone Web App).
@@ -131,8 +132,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "action-schema.json carries the guided decision fields beside the claim fields: proposedOutcome/proposalConfidence/rationaleOptions/instructionOptions inputs, evidence with weight as an inOut, cost center as an inOut, Approve and Deny outcomes, rationale/instructionText/instructionScope outputs"
-    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); i=d['inputs']['properties']; io=d['inOuts']['properties']; o=d['outputs']['properties']; oc=[k.lower() for k in d['outcomes']['properties']]; ev=io.get('evidence',{}).get('items',{}).get('properties',{}); ok=all(k in i for k in ['proposedOutcome','proposalConfidence','rationaleOptions','instructionOptions']) and 'weight' in ev and any('cost' in k.lower() for k in io) and 'approve' in oc and 'deny' in oc and 'submit' not in oc and all(k in o for k in ['rationale','instructionText','instructionScope']); sys.exit(0 if ok else 1)\""
+    description: "action-schema.json carries the guided decision fields beside the claim fields: proposedOutcome/proposalConfidence/highStakes/rationaleOptions/counterfactualOptions inputs, evidence with weight as an inOut, cost center as an inOut, Approve and Deny outcomes, rationale/fieldReasons/reviewerConfidence/decisiveReasonId/addedFactors/counterfactual outputs"
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); i=d['inputs']['properties']; io=d['inOuts']['properties']; o=d['outputs']['properties']; oc=[k.lower() for k in d['outcomes']['properties']]; ev=io.get('evidence',{}).get('items',{}).get('properties',{}); ok=all(k in i for k in ['proposedOutcome','proposalConfidence','highStakes','rationaleOptions','counterfactualOptions']) and 'weight' in ev and any('cost' in k.lower() for k in io) and 'approve' in oc and 'deny' in oc and 'submit' not in oc and all(k in o for k in ['rationale','fieldReasons','reviewerConfidence','decisiveReasonId','addedFactors','counterfactual']); sys.exit(0 if ok else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
@@ -144,6 +145,14 @@ success_criteria:
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the app source never says teach, train or lesson, and holds the in-depth trigger in src/decision/depth.ts"
+    command: "find . -path '*/src/decision/depth.ts' -not -path '*/node_modules/*' -print -quit | grep -q . && ! find . -path '*/src/*' \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -print0 | xargs -0 grep -liwE 'teach(es|ing)?|train(ing)?|lessons?'"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command
