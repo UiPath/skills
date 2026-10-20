@@ -33,7 +33,7 @@ reference:
 
 pre_run:
   - command: >-
-      python3 _setup/req_ai_fixture.py seed --project HEALTH
+      python3 _setup/req_ai_fixture.py seed --project HEALTH --stamped-prefix EVFX-AIDEL-
       --requirement EVFX-AIDEL-REQ --require-access find-obsolete-testcases
       --description "A nurse records a patient's vital signs: temperature, pulse and blood pressure. Values outside the normal range are highlighted in red. A record can be corrected within 24 hours and keeps the previous value in its history."
       --case "EVFX-AIDEL-TC1 Record vital signs=Enter temperature, pulse and blood pressure for a patient and save the record."
@@ -42,8 +42,14 @@ pre_run:
       --case "EVFX-AIDEL-TC4 Export monthly invoice as PDF=Open the billing page, pick last month and download the invoice as a PDF file."
     timeout: 280
 
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
 initial_prompt: |
-  In project HEALTH, have Test Manager's AI find obsolete test cases among
+  In the project whose key is in project-key.txt, have Test Manager's AI find obsolete test cases among
   those linked to requirement EVFX-AIDEL-REQ, and show me what it flags.
   Delete only the one it ranks first (its #1); you have my go-ahead for that
   one delete, no need to ask again. Take any other flagged ones off the

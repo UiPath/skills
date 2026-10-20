@@ -9,6 +9,7 @@ Genome says *what* to build; build skills know *how*. Execution reads genome, co
 3. Every acceptance criterion carries a verdict (§ 3.1).
 4. The completion report is given (§ 3.3).
 5. When the target environment needs any setup — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite — [open-items-guide.md](open-items-guide.md) is read and the open-items files are written beside the solution or project folder (§ 3.4).
+6. A refactor also meets [refactor-guide.md § Done](refactor-guide.md).
 
 ## Phase 1 — Parse and configure
 
@@ -33,9 +34,11 @@ Gather facts the 1.3 scaffolding questions are built from before asking anything
 
 Ask before writing any code, creating any project, or installing any package. This step runs in every execution, including when the genome's Configuration Questions section is the stub line, because the scaffolding questions below do not come from the genome.
 
-Three groups of questions, asked in this order:
+Three groups of questions, asked in this order — four in a refactor:
 
 **Genome questions** — every numbered question in the genome's Configuration Questions section. Absent only when that section is the stub line.
+
+**Refactor questions** — when the Source Map names a UiPath source, or the request asks to refactor a genome extracted from another framework, after the genome questions: each component retired, folded or given its target, the rulings on its source defects, the run modes, the run record and the connections' identities, [refactor-guide.md § Refactor questions](refactor-guide.md). The targets decide which split and scaffolding questions follow.
 
 **Split questions** — asked once per flow when the genome's Transactional Shape is not the stub, after the genome questions and before any scaffolding question, because the project list depends on every flow's answers: [transactional-execution-guide.md § Split questions](transactional-execution-guide.md).
 
@@ -45,19 +48,22 @@ Three groups of questions, asked in this order:
 |---|---|---|
 | Location | Where to create the project? | Folder next to genome (1.2 step 4); reuse existing project found there (only when one exists and matches the primary skill); another path |
 | Library layout *(process genomes with a library component that one project consumes, directly or through libraries folded into that project)* | Build each such library as a package of its own, or its workflows as a folder of the project that consumes it (§ 1.4)? | One project (Recommended when the source kept the library's objects in its consumer's own project, so the library is the extraction's grouping and not the source's): the consumer invokes the library's workflows as workflow files, which the debugger steps into and a change reaches without a pack and an install, while the library's parts share the consumer's one owner and run after one another ([execution-parts-guide.md](execution-parts-guide.md) item 1); packages, as the genome lays them out (Recommended otherwise): versioned, reusable beyond this genome, the private workflows hidden behind the public ones; per library, the user naming which to fold |
-| Target framework (RPA projects) | Which target framework? | The one the host supports and an existing project uses; alternatives the host supports |
+| Target framework (RPA projects) | Which target framework? | The one the host supports and an existing project uses — in a refactor, Portable unless the Target answer kept Windows ([refactor-guide.md § Choosing the target](refactor-guide.md)); alternatives the host supports |
 | Expression language (RPA projects) | Which expression language? | The owning skill's default for a new project, unless the edit surface recorded in 1.2 step 2 cannot open it; the other language |
-| Settings store (every project with settings or constants) | Where do the genome's settings and constants live? | Settings as one Orchestrator asset each, read once per job — every Orchestrator connection is its own environment (dev, UAT, prod), so each environment sets its own value without a new package — and constants where the project keeps its configuration — the REFramework template's configuration file, the test project's shared configuration workflow, the owning skill's configuration for a non-RPA project — and in the code on a plain RPA project or a library (Recommended); every value as an Orchestrator asset; a configuration workbook in a storage bucket, loaded once, when the business edits many values together ([genome-format-guide.md § Configuration Questions](genome-format-guide.md)) |
+| Settings store (every project with settings or constants) | Where do the genome's settings and constants live? | Settings as one Orchestrator asset each, read once per job — every Orchestrator connection is its own environment (dev, UAT, prod), so each environment sets its own value without a new package — and constants where the project keeps its configuration — the REFramework template's configuration file, the test project's configuration (the Test Automation Framework template's configuration files, or a shared configuration workflow without the template), the owning skill's configuration for a non-RPA project — and in the code on a plain RPA project or a library (Recommended); every value as an Orchestrator asset; a configuration workbook in a storage bucket, loaded once, when the business edits many values together ([genome-format-guide.md § Configuration Questions](genome-format-guide.md)) |
 | Workflow type (RPA projects) | Author the workflows as XAML, as coded C#, or both? | The owning skill's default for a new project; coded workflows only; hybrid, each step in the type the owning skill's mode rules give it. An option that makes an earlier answer unusable — an activity package or connection whose API one type lacks, an edit surface recorded in 1.2 step 2 that cannot open the type — names that answer, and the question is asked again |
 | Installed packages | Which activity packages and versions are installed where this automation will run (Studio / Robot / tenant feed)? | Set discovered in 1.2 step 3, listed by name and version; versions declared by the existing project; user provides the list (free text) |
 | Package pinning | Pin the new project to those versions, or take the latest stable from the feed? | Pin to installed versions; latest stable |
 | Runtime (non-RPA projects) | Owning skill's scaffold choices — runtime version, framework, template (Python version and agent framework, Node and SDK version, Flow or BPMN template) | Value the owning skill's init defaults to; alternatives it lists |
 | Source export (extracted genomes only) | Where is the source export the Source Map names, for migrating UI targets and test data? | Recorded path when 1.2 step 5 found it there; another path (free text); no export available — build with live capture or placeholders and say so in the report |
 | Data Fabric *(once per run, when Platform Dependencies name an entity or the test data is kept in one, [test-execution-guide.md § Test data](test-execution-guide.md))* | Create the entities at tenant level in the connected tenant, and load the records the build holds for them (test data seeds)? | Create, and load where there are records (Recommended): a workflow that reads or writes an entity needs the type installing the entity into the project generates, the install needs the entity in the tenant, and a test case's data source reads tenant-level entities; create only — loading the records is an open item; neither — both are open items, and the workflows that use the entities are built once the entities exist |
+<!--skill-flavor:test-project-template-row:start-->
+| Test project template *(test projects)* | Start the test project from the Test Automation Framework template? | The template (Recommended): the configuration loaded, setup and teardown hooks run and a timeout applied around every case, and an exception recorded as a failed assertion with its screenshot (the owning skill's testing guidance), so the cases carry no failure wrapper and no configuration load, and cleanup after a failure, such as closing the application, goes into its teardown; a blank test project — each case carries its own failure capture and cleanup ([test-execution-guide.md § Result parity](test-execution-guide.md) rule 3), and a shared configuration workflow holds the constants |
+<!--skill-flavor:test-project-template-row:end-->
 | Test case status *(test projects)* | Mark the built test cases Publishable, so the package carries them and Test Manager can run them? | Publishable (Recommended when the suite is delivered to run): a test package carries only Publishable cases, and one with none is refused at upload (the owning skill's pack guidance); in progress — the open items mark them before the pack |
 | Comparable instance *(once per run, migrations only)* | Is the target application, or a comparable instance of it, reachable for verifying targets ([ui-target-migration-guide.md § Verifying targets](ui-target-migration-guide.md))? | Neither — every target `offline-unverified`; a comparable instance — its window or URL and what must never be closed; the target application — the same two details |
 | Framework migration guide (extracted genomes from a framework other than UiPath only) | Where is the framework migration guide ([SKILL.md § Source Frameworks](../SKILL.md))? | Path given in the request; another path or a git URL to clone (free text); not available — same outcome as "no export available", stated in the report |
-| Source fidelity *(once per run, extracted genomes from a framework other than UiPath only)* | How closely does the rebuild follow the source's steps and folder tree ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md))? | The source's names and shape, each difference a row of the correspondence table (Recommended); the source's names and shape without the table — recommended instead when the source's steps run to thousands, where writing the rows costs more than a reviewer gains from them; the build's own names and grouping — a refactor rather than a migration |
+| Source fidelity *(once per run, extracted genomes from a framework other than UiPath only, not in a refactor)* | How closely does the rebuild follow the source's steps and folder tree ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md))? | The source's names and shape, each difference a row of the correspondence table (Recommended); the source's names and shape without the table — recommended instead when the source's steps run to thousands, where writing the rows costs more than a reviewer gains from them; the build's own names and grouping |
 | Subagents *(once per run, when the build runs parts through subagents whose model the host lets the orchestrator choose)* | Which model do the parts run on, and how many parts run at once? | The orchestrator's model, as many parts at once as [execution-parts-guide.md](execution-parts-guide.md) lets run in parallel (Recommended); a smaller model, cheaper per token, held to the contract by each part's report and the orchestrator's check of it against the disk ([execution-parts-guide.md](execution-parts-guide.md) item 7); a cap on the parts running at once, the user's number. A part's forks ([execution-parts-guide.md](execution-parts-guide.md) item 1c) are not parts and do not count against the cap |
 
 Rules:
@@ -89,7 +95,7 @@ Every project is created with the `Scaffolding` answers from 1.3: location, targ
 <!--skill-flavor:process-genome-solution:end-->
    A **library** is never a solution project (`uipath-solution` states the refusal and how a published library joins the solution as a resource): create it in the solution folder anyway and consume it as a package (§ 1.5). A library the Library layout answer folds gets no project: its workflows are authored in its consumer, at their source paths when the run keeps the source's shape ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md)) and in a folder named after the library otherwise, the consumer invokes each public one as a workflow file with the arguments of the library genome's Interface, its targets join the consumer's Object Repository and its packages the consumer's manifest, and § 1.5 does not apply to it.
 <!--skill-flavor:process-genome-test-project:start-->
-3. **All test components share one test project** ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1). Create `<ProcessName>.Tests` once through `uipath-rpa`'s test-project creation step, register it once, and give every test component the same `PROJECT_DIR`: its test cases and data files in a folder named after it (`<ComponentSlug>/`), or at their source objects' paths when the run keeps the source's shape ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md)), plus a shared `Config/` folder for the configuration workflow.
+3. **All test components share one test project** ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1). Create `<ProcessName>.Tests` once through `uipath-rpa`'s test-project creation step, with the Test project template answer, register it once, and give every test component the same `PROJECT_DIR`: its test cases and data files in a folder named after it (`<ComponentSlug>/`), or at their source objects' paths when the run keeps the source's shape ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md)), plus, without the template, a shared `Config/` folder for the configuration workflow.
 <!--skill-flavor:process-genome-test-project:end-->
 4. Verify with `uip solution projects list --output json` after all components exist (libraries do not appear in it).
 
@@ -113,7 +119,7 @@ A component of type library is consumed by the other components as a package dep
 
 ### 2.1 Plan skill groups
 
-Component genome: read Build With top to bottom; merge consecutive rows with the same skill into one group. Process genome: one group per component in Components order, unless a Handoffs row requires a consumer to exist before its producer (queue definitions, entry points) — then reorder only as far as needed and say so. Test components remain separate groups but all target the single test project; the shared `Config/` workflow is built with the first test group. A split that materialises projects plans its groups per project, each step on the surface it lands on ([transactional-execution-guide.md § Groups and surfaces](transactional-execution-guide.md)).
+Component genome: read Build With top to bottom; merge consecutive rows with the same skill into one group. Process genome: one group per component in Components order, unless a Handoffs row requires a consumer to exist before its producer (queue definitions, entry points) — then reorder only as far as needed and say so. Test components remain separate groups but all target the single test project; without the Test Automation Framework template, the shared `Config/` workflow is built with the first test group. A split that materialises projects plans its groups per project, each step on the surface it lands on ([transactional-execution-guide.md § Groups and surfaces](transactional-execution-guide.md)).
 
 Plan large groups as sequential parts per [execution-parts-guide.md](execution-parts-guide.md) item 1a.
 
@@ -166,7 +172,7 @@ Before the first UI group, run [source-migration-guide.md § Migration preflight
 
 ### 2.2c Migrate test data (extracted genomes)
 
-After the test project exists, migrate each data set from the derived data catalog where the source kept it — the seed records of its entity, or its test case's variation file — per [test-execution-guide.md § Test data](test-execution-guide.md) and rules 1–2 there (scripted mapping, frozen argument set of a variation file) and the credential asset per account ([source-migration-guide.md § Credentials](source-migration-guide.md)), and report as that section states.
+After the test project exists, migrate each data set from the derived data catalog where the source kept it — its records in the project's test-data entity, or its test case's variation file — per [test-execution-guide.md § Test data](test-execution-guide.md) and rules 1–2 there (scripted mapping, frozen argument set of a variation file) and the credential asset per account ([source-migration-guide.md § Credentials](source-migration-guide.md)), and report as that section states.
 
 ### 2.3 Wire handoffs
 
@@ -207,7 +213,7 @@ Acceptance Criteria
 Result: 5/8 met, 1 partial, 1 not met, 1 not verifiable
 ```
 
-For each Partial or Not Met: state what is missing and the concrete change. Fix them when the user asks, or immediately in autonomous runs, then re-validate.
+For each Partial or Not Met: state what is missing and the concrete change. Fix them when the user asks, or immediately in autonomous runs, then re-validate the touched files and re-run every local run and test that exercises them: a fix to a shared workflow can break a criterion already Met. A fix that turns a Met criterion into Partial or Not Met is undone before another fix is tried, and the report gives the final build's verdicts.
 
 ### 3.3 Completion report
 
@@ -229,10 +235,13 @@ Scaffolding: <target framework>, <expression language>, <package@version, …> (
 Gate: validate + build per project (errors / warnings), libraries packed to <feed>, solution pack dry run <verdict>; runs performed or "compile only — no reachable application"
 <!--skill-flavor:report-gate:end-->
 Run: <the owning skill's run command for the entry point>
+Refactor: <the line of refactor-guide.md § Done> | not a refactor
 Open items: <top open-items file> (<n> setup steps for the target environment; open-items-guide.md)
 ```
 
-Extracted genomes add the healing-pass note: inferred targets are verified on the first run against the live application, and fixes go into the Object Repository element. They also name, as not built, the objects of the Source Map's `Not covered` row: building them is an extraction edit, then re-execution. Migrated test components add the checkpoint line per test case — `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` — and the path of the generated mapping tables ([test-execution-guide.md § Result parity](test-execution-guide.md)). The report does not claim results match the source; the tables make that comparison possible for whoever holds a source result.
+When a run the build made changed data in a target system or a store, the report lists each change with how to undo it, and nothing is undone unasked.
+
+Extracted genomes add the healing-pass note ([ui-target-migration-guide.md § Rules](ui-target-migration-guide.md), rule 2): the targets not yet verified live, listed by window, a target found only by its fallback counted as missed, and the healing pass offered to the user. They also name, as not built, the objects of the Source Map's `Not covered` row: building them is an extraction edit, then re-execution. Migrated test components add the checkpoint line per test case — `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` — and the path of the generated mapping tables ([test-execution-guide.md § Result parity](test-execution-guide.md)). The report does not claim results match the source; the tables make that comparison possible for whoever holds a source result.
 
 ### 3.4 Open items for the engineer
 
@@ -244,7 +253,7 @@ Execution ends by writing, beside the solution or project folder, what the targe
 2. **Pausing between skill groups.** "Shall I continue with the RPA part?" is wrong. Advance.
 3. **One project per skill group.** Component genome is one project. Process genome is one solution with one project per non-test component, a library the Library layout answer folds excepted, and exactly one test project holding every test component — never one test project per business area.
 4. **Reordering Build With or Components** except for the handoff-dependency case in 2.1.
-5. **Adding features the genome does not name, or dropping steps it does.** Gaps go to the user, not into improvised code.
+5. **Adding features the genome does not name, or dropping steps it does.** Gaps go to the user, not into improvised code. A refactor adds only what its answers ask for and drops only what they retire or fold ([refactor-guide.md](refactor-guide.md)).
 6. **Editing the genome during execution.** It is read-only.
 7. **Skipping acceptance validation** because "everything compiled". Criteria are the definition of done.
 8. **Building past the owning skill.** Activity XML written from memory, or a subagent dispatched without the skill's mandatory reads and authoring journey (2.2 step 2).

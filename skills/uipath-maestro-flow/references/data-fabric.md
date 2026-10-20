@@ -34,7 +34,7 @@ Reach for the connector when the flow needs something the family does not have.
 | Update a record | `dataFabricUpdate({ entity, record, set })` |
 | Delete a record | `dataFabricDelete({ entity, record })` |
 | Get a record by id, whole field values | `connector('uipath-uipath-dataservice', 'get-entity-record-by-id', …)` (see [Long text](#long-text-queries-return-a-10000-character-preview)) |
-| Upload / download / delete a file record field | `connector('uipath-uipath-dataservice', '…-file-…-record-field', …)` |
+| Upload / download / delete a file record field | `connector('uipath-uipath-dataservice', 'upload-file-to-record-field' / 'download-file-from-record-field' / 'delete-file-from-record-field', …)` ([example](#a-file-field-connector-example)) |
 | Record Created / Record Updated events | `onEvent(…)` on the same connector |
 
 Only the bottom three are connector work. A flow that needs one of them straddles
@@ -150,7 +150,7 @@ step as `input('<name>')`:
 | `STRING`, `MULTILINE_TEXT`, `UUID`, `DATE`, `DATETIME` | `types.string` |
 | `DECIMAL`, `INTEGER` | `types.number` |
 | `BOOLEAN` | `types.boolean` |
-| `FILE` | none — a file is not a create value; upload it with the connector's file-record-field operation (table above) |
+| `FILE` | none — declare `types.file` on the flow, upload it with the connector's `upload-file-to-record-field` operation ([example](#a-file-field-connector-example)) |
 
 **System columns are never writable.** `Id`, `CreateTime`, `CreatedBy`,
 `UpdateTime`, `UpdatedBy` are assigned by Data Fabric; a write to one is rejected
@@ -305,6 +305,62 @@ uip maestro registry prepare uipath-uipath-dataservice --action get-entity-recor
 
 Full rules, including the parent-field (`GenerateSchema` over `entityName`)
 shape these operations use: [`connector-params.md`](connector-params.md).
+
+### A file field: connector example
+
+File-record-field operations take the file as a Flow input — the shared pattern
+for every connector file field ([`connector-params.md` § file uploads](connector-params.md#file-uploads-are-multipart-flow-inputs)):
+
+```bash
+uip maestro registry prepare uipath-uipath-dataservice \
+  --action upload-file-to-record-field \
+  --resolve entityName:displayName=LoanApplication
+# → .flow-sdk/connectors-local/uipath-uipath-dataservice.ts with typed descriptors
+```
+
+```ts
+import { UploadFileToRecordField, DownloadFileFromRecordField }
+  from './connectors-local/uipath-uipath-dataservice.ts';
+const BIND = { connection: 'dataservice', folder: 'shared' } as const;
+
+.input({ recordId: types.string, doc: types.file })
+.step('attach', connector(UploadFileToRecordField, {
+  entityName: lookup(UploadFileToRecordField, 'entityName').byDisplayName('LoanApplication'),
+  recordId: input('recordId'),
+  _fieldName: 'Contract',   // the FILE column on the entity — note the leading underscore
+  file: input('doc'),
+}, BIND))
+.step('fetch', connector(DownloadFileFromRecordField, {
+  entityName: lookup(DownloadFileFromRecordField, 'entityName').byDisplayName('LoanApplication'),
+  recordId: input('recordId'),
+  _fieldName: 'Contract',
+}, BIND))
+```
+
+`entityName` is a LOOKUP (go through `lookup(...).byDisplayName(...)`, don't paste
+a system name). The FILE column is `_fieldName` — the leading underscore is
+intentional and `fieldName` fails `check`. The debug CLI uploads the local file
+with `--attachment doc=<path>` ([`operate.md` § types.file](operate.md)); download
+publishes the file reference under `output.Response`. Delete follows the same
+shape — only the action name changes.
+
+`file:` accepts ANY upstream file reference, not just `input('doc')`. Chain the
+download's `output.Response` straight into another upload — same shape as the
+Slack upload example ([`connector-params.md` § file uploads](connector-params.md#file-uploads-are-multipart-flow-inputs)):
+
+```ts
+.step('mirror', connector(UploadFileToRecordField, {
+  entityName: lookup(UploadFileToRecordField, 'entityName').byDisplayName('LoanApplication'),
+  recordId: input('mirrorId'),
+  _fieldName: 'Contract',
+  file: out('fetch', 'Response'),   // from the download step above
+}, BIND))
+```
+
+Same source rule for `documentClassify`, `dynamicExtract`, `ixpExtract`,
+`summarize`, `batchTransform`: the file field reads a `types.file` input, an
+upstream `out('<step>', '<fileField>')`, or any step whose declared output type
+is a file. The runtime is the file reference, never the bytes.
 
 **Read the operation's own doc before guessing anything.** The connector library
 ships a Markdown page per operation, and an environment that stages a library

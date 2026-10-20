@@ -12,6 +12,7 @@ Use this as a router: read only the capability reference you need, then let Type
 
 ## Workflow
 
+0. When the input is an approved `sdd.md` that names published resources, resolve them first: `registry pull`, then `sdd resolve` into `tasks/registry-resolved.json`, then ask the user about what it leaves ([Registry resolution](references/registry-resolution.md)). Stop there when the request is Phase 1 only.
 1. Scaffold once, running `case init` **from inside the solution dir**: `uip solution init <SolutionName> && cd <SolutionName> && uip maestro case init <CaseName>`. It walks UP for the enclosing `.uipx`; run from anywhere else it finds none, silently creates a SECOND solution `<CaseName>Solution/`, registers the project there, and leaves the first empty with two `project.uiproj` on disk — so check the reply carries no `Data.AutoCreatedSolution`. Exactly one `project.uiproj` declaring `ProjectType: "CaseManagement"` may survive, because `uip solution projects import` copies rather than moves and validators cannot choose between duplicates; if a bare `<CaseName>/` project already exists outside the solution, import it and delete the original rather than leaving both.
 2. Keep `<Name>.case.ts` beside this `SKILL.md` and the workspace `package.json`.
 3. If the request requires `tasks/tasks.md`, write it before code and treat explicit stage/task rules, required flags, routing, and unresolved resources as authoritative and pre-approved.
@@ -39,6 +40,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Manual, timer, and event starts | `manualTrigger`, `timerTrigger`, `eventTrigger` | [Trigger decisions](references/case-runtime.md#triggers-and-live-payloads) | `examples/NightlyRollup.case.ts` |
 | Entry, exit, and data gates | `rule`, `when` | [Rules](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
+| Resolving SDD resources against the tenant | `uip maestro case registry pull`, `uip maestro case sdd resolve` | [Registry resolution](references/registry-resolution.md) | — |
 | Human work | `action` | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
 | Connector work and waits | `connector`, `waitForConnector` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | External agents and workflows | `externalAgent`, `externalWorkflow` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
@@ -80,7 +82,8 @@ export default casePlan('loan-approval')
 ```bash
 uip maestro case check <Name>.case.ts --source
 uip maestro case compile <Name>.case.ts -o <project>/<plan>
-uip maestro case validate <project>/<plan> --output json
+uip maestro case validate <project>/<plan> --strict --sdd <sdd.md> --output json  # SDD supplied
+uip maestro case validate <project>/<plan> --strict --output json                 # no SDD
 uip solution resources remove <orphan-key> --solution-folder <solution> --output json
 uip solution resources refresh --solution-folder <solution> --output json
 ```
@@ -88,6 +91,26 @@ uip solution resources refresh --solution-folder <solution> --output json
 `check` owns source-level invariants and emits teaching diagnostics. Product
 validation owns the compiled Case contract. Do not repair emitted JSON by hand;
 change the TypeScript source and rebuild.
+
+The build is complete only when `validate --strict` passes. When the request
+supplies an `sdd.md`, add `--sdd <path>`: it audits the plan against the SDD.
+Without an SDD, run `--strict` alone. A default-profile `Valid` whose
+`Data.Suppressed.Errors` is above 0 is not completion; run the command its
+`Instructions` names. Fix each finding in the TypeScript source and recompile.
+If a finding persists after a source fix and recompile, stop and report its
+code as unfinished; never patch emitted JSON.
+
+`check` also reads the connector library, the same one `compile` resolves
+against: `$FLOW_SDK_LIBRARY_JSON`, else the `uip maestro registry pull`
+snapshot, plus `.flow-sdk/connectors-local` when `registry prepare` wrote it.
+A connector task, external task, event trigger or wait-for-connector that
+`compile` cannot resolve fails `check` first, with compile's code and text.
+
+Before `check` on a Case with connector work, run `uip maestro registry pull`:
+with no library cached these rules stay silent, so a clean `check` proves
+nothing about the connector. To use another library, set
+`$FLOW_SDK_LIBRARY_JSON` for both `check` and `compile`, not `--library`, so
+both resolve against the same one.
 
 Use `.unresolved('<kind>')` for an explicitly unresolved process, agent, RPA,
 API workflow, or sub-case; never fabricate a name or folder. A destination's
@@ -98,4 +121,5 @@ API workflow, or sub-case; never fabricate a name or folder. A destination's
 Static success proves the source and artifact contracts. It proves neither live
 behavior (resource resolution, human outcomes, timers, skipped-task completion,
 business calendars) nor the design decisions no schema checks: lane routing,
-non-completing exits, declared optionality, SDD fidelity. Read [Case runtime decisions](references/case-runtime.md) before authoring, not only when a rung fails.
+non-completing exits, declared optionality, and SDD intent beyond what the
+`--sdd` audit compares. Read [Case runtime decisions](references/case-runtime.md) before authoring, not only when a rung fails.

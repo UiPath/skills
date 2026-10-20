@@ -119,7 +119,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Applications match the PDD exactly: every one of its five systems answered, by inventory id where the start-of-run inventory had it and as new_applications where it did not; no decoy id, no out-of-scope Avaloq, no thin apps"
+    description: "Applications match the PDD exactly: every one of its five systems answered, by inventory id or as new_applications (an inventory-held system answered by name is tolerated); no decoy id, no out-of-scope Avaloq, no thin apps"
     command: "python3 $REFERENCE_DIR/check_publish.py applications"
     timeout: 30
     expected_exit_code: 0
@@ -156,6 +156,13 @@ success_criteria:
     description: "Agent did not read the harness's call log, snapshot or setup scripts instead of the tenant"
     tool_name: "Bash"
     command_pattern: '(cat|less|head|tail|grep|jq|python3?)\s+[\s\S]*(\.uip-recorder/|seed\.json|_setup/)'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not open the harness's call log, snapshot or setup scripts with the Read tool"
+    tool_name: "Read"
+    command_pattern: '(\.uip-recorder/|seed\.json|_setup/)'
     weight: 1.0
     pass_threshold: 1.0
 

@@ -87,7 +87,7 @@ The `uip maestro flow` commands delegate their semantics to the installed `@uipa
 ```bash
 ( cd "<Solution>/<Name>" && uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow )
 uip maestro flow validate "<Solution>/<Name>/<Name>.flow" --output json
-# Greenfield only (never a merged brownfield file), before upload/debug/a designer:
+# Greenfield only (never a merged or .layout() file), before upload/debug/a designer:
 uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 # Only for a stated runtime-behavior claim:
 ( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
@@ -213,12 +213,17 @@ The table is the authoritative router. Before writing a node, read its `Referenc
 ## Authoring a flow
 
 Choose each node from a registry search, never a brand name; ask when the
-request leaves a finite decision open; bind every declared output on every
+request leaves a finite decision open, including an input value, range, or
+combination no stated rule covers (never fold it into a stated value; when
+the request says no one will answer (headless, CI), map it to the most
+defensible stated value and list it under Open questions as
+**[REQUIRED]**); bind every declared output on every
 path (`check` misses a missing one, and the run returns `undefined`); handle an
 error only when the request says what should happen. The journeys, the
 scope gate for a request that names no steps, when to plan first, and the
 completion report are in
 **[`references/author.md`](references/author.md)**.
+A request that names a canvas arrangement is `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
 
 ## Operating a deployed flow
 

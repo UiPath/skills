@@ -534,6 +534,7 @@ The simple single-expression form is fine; the designer corruption only affects 
 <!--skill-flavor:response-object-roundtrip:start-->
 - **Object payload with `${...}` fields** (`"response": { "tier": "${$context.variables.tier}" }`) — runs locally, corrupted by StudioWeb on save. Use single-expression `${{ ... }}` instead.
 <!--skill-flavor:response-object-roundtrip:end-->
+- **Doubled braces** (`"response": "${{ { status: 'ok' } }}"`) — `validate` passes, the run fails with `Unexpected token '{'`. `${{ ... }}` already supplies the object's braces: write `"${{ status: 'ok' }}"`.
 - Missing `then: "end"` — workflow does not terminate
 - Nesting `markJobAsFailed` inside `response` — it MUST be a sibling
 - Placing Response in the middle of a sequence — it should be at the end of an execution path

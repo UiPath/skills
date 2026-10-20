@@ -26,7 +26,7 @@ Do not proceed until you have a 200.
 ## Step 2: Pick the idea flow
 
 From the saved `/idea-flows` `data` array:
-1. Default to the entry whose `Idea flow name` contains "Business Process" (case-insensitive) and take its `Idea flow ID`.
+1. Default to the entry whose `Idea flow type` is `business-process` and take its `Idea flow ID` — never match on the tenant-editable name or a remembered id. Only if no entry carries `Idea flow type` (older server), fall back to the entry whose `Idea flow name` contains "Business Process" (case-insensitive).
 2. If the caller specified a different flow, use that. If neither is found, list the available names + IDs and ask the user which to use. If none exist, tell the user Business Process flows may not be enabled and stop.
 
 Store `idea_flow_id`.
@@ -59,7 +59,7 @@ The six baseline inputs:
 | **Owner email** | The **signed-in identity is the default owner** — take it from the auth/identity call, not from a list. `GET /users` is optional; if you use it, do a targeted lookup with `?s=<email>&invite=all` (both parameters — the default filter hides users who can still own a process) and treat a miss as no signal. **Never block the publish on it** — submit and let the API decide. |
 | **Submitter email** | Same recipe as owner; usually the same person. |
 
-**Application questions** ("Applications used", "Thin applications used"): **answer from the material, one PDD at a time** — record exactly the systems it names. The inventory is `GET /appinventory` (paged; entries carry the app id, name, version, language).
+**Application questions** ("Applications used", "Thin applications used"): **answer from the material, one PDD at a time** — record exactly the systems it names. **UiPath itself is never one of them.** The automation is what the process becomes, not a system it uses, so leave out "UiPath" and its own components (Orchestrator, Action Center, robots, Maestro, Case Management, Document Understanding, Integration Service…) even when the PDD or SDD lists them as systems or future-state steps. The inventory is `GET /appinventory` (paged; entries carry the app id, name, version, language).
 - **Named and in the inventory** → their ids go in the question's `value` array.
 - **Named but not in the inventory** → add them in the same answer via `new_applications` (below). A missing system is never a reason to stop, to ask, or to pick a look-alike.
 - **Nothing named** → if the schema does **not** flag the question `required`, **omit it** — a process with no applications is valid; never pad it with inventory entries. Only when it is flagged `required` and the material names no system, `AskUserQuestion` (inventory entries plus free text).
@@ -105,7 +105,7 @@ Then build `user_inputs` using the template's **structure** but the **collected 
 
 Include only sections that have at least one populated field. Show the user a concise preview (name + key fields, and "show raw JSON" on request) and get a confirm before writing.
 
-**Preflight before creating:** validate the payload against the schema you fetched — every `required`-flagged question plus owner/submitter answered; every answer except user questions wrapped as `{ "value": … }` (a bare string reads as empty); every enum answer a code copied **verbatim** from that question's own `enum` (a code with a dropped segment is never selected: a `required` question then fails with `Please fill in all the required information`, and an optional one is silently dropped); no template placeholders left; applications exactly the systems the material names (ids in `value`, the rest in `new_applications` when the schema offers it, the question omitted when none are named and it isn't `required`). Requiredness comes from *this tenant's* schema, never a fixed list — the same flow requires `COUNT_APPS` on one tenant and rejects it on another.
+**Preflight before creating:** validate the payload against the schema you fetched — every `required`-flagged question plus owner/submitter answered; every answer except user questions wrapped as `{ "value": … }` (a bare string reads as empty); every enum answer a code copied **verbatim** from that question's own `enum` (a code with a dropped segment is never selected: newer builds reject it with a `400` naming the question; older builds fail a `required` question with `Please fill in all the required information` and silently drop an optional one); no template placeholders left; applications exactly the systems the material names (ids in `value`, the rest in `new_applications` when the schema offers it, the question omitted when none are named and it isn't `required`). Requiredness comes from *this tenant's* schema, never a fixed list — the same flow requires `COUNT_APPS` on one tenant and rejects it on another.
 
 ## Step 5: Create the process
 
@@ -120,7 +120,8 @@ where `$PAYLOAD` is `{ "idea_flow_id": <id>, "user_inputs": { … } }`.
 
 - **201** → the envelope is `{ "message": "Resource Created", "statusCode": 201, "data": { … } }` — read **`data.process_id`** (it is nested, NOT top-level). Keep it for Step 6. A 201 means the process WAS created: if a field read comes back undefined, re-read the response — **never re-POST** (that creates a duplicate and 409s).
 - **400** → fix and retry. The message shapes seen live:
-  - `errorDetails: { "<question>": ["An answer selection is required…"] }` → that required field is missing or empty, or its enum code isn't copied verbatim from that field's `enum`. Fix it.
+  - `errorDetails: { "<question>": ["An answer selection is required…"] }` → that required field is missing or empty, or (older builds) its enum code isn't copied verbatim from that field's `enum`. Fix it.
+  - `Question "<key>" has no answer option matching "<value>". Allowed values: …` (newer builds; the same text is in `errorDetails["<key>"]`) → that choice answer is a label, a slug, or a retyped code. Replace exactly that value with the matching code from the field's own `enum` in the schema — the message lists at most 25 codes, the schema has them all — keep every other answer, and retry once. `Question "<key>" expects an array of answer option values` → a multiple-choice answer was sent as a bare string: send `{"value": ["<code>"]}`.
   - `errorDetails: {}` with `"Please fill in all the required information"` → a required field the API **won't name** is missing. Check in order: (1) owner (`OVR-PROCESS_OWNER`) / submitter (`OVR-OVERVIEW_PROCESS_SUBMITTER`) — enforced but never flagged; (2) **diff your payload against every `required`-flagged question in the live schema** — tenant admins add required questions (e.g. "Applications used" / "Thin applications used"), and a payload missing any of them gets this same generic 400. Fill the gaps (Step 4 recipes), then retry once.
   - `"Cannot identify owner by email"` (`localizationKey: error_invalid_process_owner`) → **not a typo'd address; do not retry with a different email.** The account is authenticated but has never been activated on this tenant: AH creates a user row just-in-time on first authenticated call, and only an interactive web sign-in promotes it to the state owner/submitter assignment requires. Confirm the identity is real with the auth/identity call (`IsActive: 1` plus a role list), then tell them to open Automation Hub in a browser once and sign in, and retry unchanged:
 

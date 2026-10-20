@@ -17,6 +17,11 @@ tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case]
 run_limits:
   expected_turns: 18
   max_turns: 45
+  # The defect lifecycle syncs to an external tracker, which is slow enough to
+  # outrun the default 900s budget; give it the room the other slow-backend
+  # tasks get rather than fail the gate on an environment latency spike.
+  turn_timeout: 1500
+  task_timeout: 1800
 
 pre_run:
   - command: |
