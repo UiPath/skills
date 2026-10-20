@@ -338,7 +338,7 @@ the exact stage display name — never the case name. -->
 
 | # | Task Name | Type | Activation Mode | Starts When | Required | Run Only Once | Persona | SLA |
 |---|-----------|------|-----------------|-------------|----------|---------------|---------|-----|
-| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| flow-process \| external-agent \| external-workflow \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
+| 1 | <TASK_NAME> | <action \| process \| agent \| rpa \| api-workflow \| function \| business-rule \| wait-for-timer \| wait-for-connector \| execute-connector-activity \| http-request \| flow-process \| document-extraction \| external-agent \| external-workflow \| case-management> | <sequential \| parallel \| parallel-after-predecessor \| event-triggered \| adhoc \| fan-in \| conditional-gate> | <stage enters, sequential group, after tasks, connector event, etc.> | <Yes \| No> | <Yes \| No> | <persona or —> | <count unit or —> |
 
 ##### Task <N>.<M>: <TASK_NAME>
 
@@ -443,6 +443,40 @@ The task's own outputs are `response` and `Error`; a later task reads a field as
 **Connection ID:** <tenant connection id, or <UNRESOLVED>; only with Connector Key>
 
 Outputs are the response's `code`, `headers` and `body`, plus `Error`.
+
+###### Document Extraction Task Detail (type: `document-extraction`)
+
+<!-- Runs a deployed IXP model on one file. All five lines come from read-only tenant lookups:
+`uip solution resources list --kind IxpDeployment --source remote --output json` gives the
+deployment's Name (IXP Deployment), Key (Deployment Key), Folder (Folder Path) and FolderKey
+(Folder Key); `uip ixp deployments list <ixp-project-name> --output json` gives its DeploymentName
+(Model Name) on the row whose DeploymentTitle is that Name. Model Name is the deployment's name,
+never the IXP project's. A deployment not found yet → `<UNRESOLVED>` on Deployment Key and Folder Key
++ high review item. Inputs take only `fileRef` (the file, e.g. `=vars.invoiceFile`, required) and
+`pageRange` (optional). The outputs are fixed: `output` (the IXP result, `ExtractionResult` and
+`Taxonomy`) and `error`. Read the result downstream as `"<Stage>"."<Task>".output` and omit the
+Outputs table; an arrow row (`| output | -> extraction |`) needs a `jsonSchema` case variable with a
+body schema. No document-extraction deployment for the documents →
+the model build routes to `uipath-ixp` (Section 4 § IXP / Document Understanding Models). -->
+
+**IXP Deployment:** <deployment name as the solution lists it (DeploymentTitle)>
+**Model Name:** <the deployment's DeploymentName, e.g. `<name>-<hash>-ixp`>
+**Folder Path:** <folder the deployment is deployed to>
+**Deployment Key:** <solution resource Key, or <UNRESOLVED>>
+**Folder Key:** <deployment FolderKey, or <UNRESOLVED>>
+
+**Inputs:**
+
+| Field | Type | Binding |
+|-------|------|---------|
+| fileRef | file | <=vars.X holding the document> |
+| pageRange | string | <page range, or omit the row> |
+
+**Outputs:**
+
+| Field | Binding / Value |
+|-------|------------------|
+| output | -> <jsonSchema case variable, or omit this table> |
 
 ###### Child Case Task Detail (type: `case-management`)
 

@@ -20,6 +20,9 @@
         "Type": "case-management"
       },
       {
+        "Type": "document-extraction"
+      },
+      {
         "Type": "execute-connector-activity"
       },
       {
@@ -51,9 +54,6 @@
       }
     ],
     "StudioWebOnly": [
-      {
-        "Type": "document-extraction"
-      },
       {
         "Type": "script"
       }
