@@ -182,6 +182,8 @@ Check every entry in the **union** of `parameters[]` (Step 1b) and `EventParamet
 4. Only proceed after all required event parameters are resolved
 
 > Step 6 buckets each resolved value into `eventParameters`, `queryParameters`, or `pathParameters` based on the entry's `type` — see Step 6's `--detail` table.
+>
+> **Solution-resource pickers** on a trigger work as on an activity — see [connector/impl.md — Step 6d](../connector/impl.md#step-6d--solution-resource-picker-fields). A trigger's picker is usually a `query` parameter, so its name goes in `queryParameters`.
 
 ### Step 4b — Map trigger output fields for downstream nodes
 

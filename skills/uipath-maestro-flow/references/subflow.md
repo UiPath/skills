@@ -31,3 +31,10 @@ Read a child output by its declared name — `out('reverse', 'reversed')`, never
 `out('reverse')`. The compiler serializes each call's body under top-level `subflows`.
 The same child can be reused at any nesting depth; copied node ids and references
 are re-keyed together so every call site remains isolated.
+
+## At a glance
+
+Run a child Flow authored in the same file as one parent step.
+
+Use a child for a meaningful contract or reuse boundary, not arbitrary splitting or speed; children can be reused at any nesting depth.
+Read a child's inputs with `input(...)`: its start node is named `<callerStepId>Start`, so a bare `$vars.raw` is wrong.

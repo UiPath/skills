@@ -248,7 +248,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   }
   ```
 - **Why it works:** Inside the outer `${{ ... }}` you're already in JS expression scope. The body is a JS object literal where unquoted keys are identifiers (`tier:`, `count:`), references like `$context.variables.tier` evaluate directly, string literals use single quotes (`status: 'ok'`), and numbers/booleans are bare (`count: 0`, `flag: true`). The designer recognizes the whole thing as a single expression and leaves it alone — it doesn't try to reinterpret each field.
-- **Either expression-form works:** `"${ { ... } }"` (single-brace expression containing a JS object literal) and `"${{ ... }}"` (double-brace object-literal-expression form) evaluate to the same value. Pick one convention; this skill standardizes on the double-brace form, but you may see single-brace in the wild and they are interchangeable.
+- **Either expression-form works:** `"${ { ... } }"` (single-brace expression containing a JS object literal) and `"${{ ... }}"` (double-brace object-literal-expression form) evaluate to the same value. Pick one convention; this skill standardizes on the double-brace form, but you may see single-brace in the wild and they are interchangeable. Never combine them: `"${{ { ... } }}"` passes `validate` but fails at run time with `Unexpected token '{'`.
 - **Single-value responses are fine as-is:** `"response": "${$context.outputs.Javascript_1}"` or `"response": "${'done'}"` — the designer only mangles object payloads, not single expressions.
 <!--skill-flavor:designer-roundtrip-runtime-check:start-->
 - **On-disk is authoritative — re-validate after every designer save.** Even with the single-expression workaround, every StudioWeb designer save may re-trigger normalization passes that corrupt the Response shape. Treat the file on disk as the source of truth: after any designer roundtrip, re-run `uip api-workflow run --no-auth --output json` and inspect the Response output. If a field has become the literal text of its expression (a long string instead of the evaluated value), the file was re-corrupted — re-apply the single-expression workaround in the file directly, and consider keeping CLI-authored workflows out of designer save cycles until the designer fix ships.
@@ -362,7 +362,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   // ✗ Wrong — dropped on save
   "bodyParameters": {
     "message": {
-      "toRecipients": "andrei.hodoroaga@uipath.com",
+      "toRecipients": "<RECIPIENT_EMAIL>",
       "subject": "test",
       "body": { "content": "<p>hi</p>", "contentType": "Html" }
     },
@@ -371,7 +371,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
   // ✓ Correct — survives roundtrip
   "bodyParameters": {
-    "message.toRecipients": "andrei.hodoroaga@uipath.com",
+    "message.toRecipients": "<RECIPIENT_EMAIL>",
     "message.subject": "test",
     "message.body.content": "<p>hi</p>",
     "message.body.contentType": "Html",
@@ -383,20 +383,20 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 ### Connector `bodyParameters` literal cleared after StudioWeb save (`${'literal'}` read as expression)
 
 <!--skill-flavor:connector-literal-roundtrip-symptom:start-->
-- **Symptom:** Authored connector body with literals wrapped per the Assign rule — `"message.toRecipients": "${'andrei.hodoroaga@uipath.com'}"`. Workflow runs locally. After StudioWeb save, the field becomes empty (or shows a non-literal expression marker in the designer); the email goes out with no recipient.
+- **Symptom:** Authored connector body with literals wrapped per the Assign rule — `"message.toRecipients": "${'<RECIPIENT_EMAIL>'}"`. Workflow runs locally. After StudioWeb save, the field becomes empty (or shows a non-literal expression marker in the designer); the email goes out with no recipient.
 <!--skill-flavor:connector-literal-roundtrip-symptom:end-->
 - **Cause:** SKILL.md rule 5 (literal-wrap as `${'foo'}`) applies to **Assign / Response / If `when`**, NOT to connector params. StudioWeb's connector field detector treats `${...}` as a non-literal expression — it's looking for either a bare literal value or a real reference. `${'foo'}` looks like neither (it's a literal-disguised-as-expression), so the value isn't bound as a field literal and is dropped.
 - **Fix:** Bare literals in connector params:
   ```json
   // ✗ Wrong — cleared on save
   "bodyParameters": {
-    "message.toRecipients": "${'andrei.hodoroaga@uipath.com'}",
+    "message.toRecipients": "${'<RECIPIENT_EMAIL>'}",
     "message.subject": "${'this is a claude skill test'}"
   }
 
   // ✓ Correct — bare literals
   "bodyParameters": {
-    "message.toRecipients": "andrei.hodoroaga@uipath.com",
+    "message.toRecipients": "<RECIPIENT_EMAIL>",
     "message.subject": "this is a claude skill test"
   }
   ```
@@ -437,7 +437,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   "with": {
     "endpoint": "/hubs/productivity/send-mail-v2",
     "bodyParameters": {
-      "message.toRecipients": "andrei.hodoroaga@uipath.com",
+      "message.toRecipients": "<RECIPIENT_EMAIL>",
       "message.subject": "...",
       "message.body.content": "...",
       "message.body.contentType": "Text",
@@ -749,7 +749,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
 
 - **Symptom:** `validate` rejects an activity — `Unknown activityType 'X'. Valid types: ...`
 <!--skill-flavor:allowlist-versioning:start-->
-- **Cause:** The authorable set is closed and mirrors the Studio Web palette. It is also versioned: `CustomLog` was added 2026-08-11, so older CLIs list 13 types and newer ones 14. **Take the list from the error message — never memorise one.**
+- **Cause:** The authorable set is closed and mirrors the Studio Web palette. It is also versioned. **Take the list from the error message — never memorise one.**
 <!--skill-flavor:allowlist-versioning:end-->
 - **Fix:** Stay inside the list. Two task types the executor runs but `validate` refuses — do not author them:
 
@@ -766,7 +766,7 @@ These are issues that surface only when a workflow is opened or run in **StudioW
   2. **An unexpected field on a KNOWN task** — one stray key makes the whole task unmatchable, and the error text still says `Missing required property 'call'`. `set` on a `Break` is the documented instance: it produced **7797 errors** in this skill's own `nested-control-flow-example.json`, and deleting that one key made it Valid.
 
   So read the avalanche as "the schema cannot match this task", not "the task key is wrong". Diff the task against the shape in [task-types.md](task-types.md) field by field before concluding the type is unsupported.
-- **Logging:** `console.log` / `console.warn` inside a JavaScript activity are captured and emitted as `[Script <TaskName>]: ...`. Whether they reach Orchestrator job logs in cloud is unverified — a probe showed the Orchestrator job-log surface carrying only lifecycle lines — so put anything you must read after a run in the `Response`. `CustomLog` is on the list but no executor ships a handler for it; do not author one yet.
+- **Logging:** use Log Message ([task-types.md](task-types.md#4-log-message-logmessage)), never `console.*` inside a JavaScript activity. Each call becomes a job log entry at its level; `run` prints it as `[Script <TaskName>]: ...`.
 - **Do not** mislabel `metadata.activityType` to slip a type past the check — the validator cross-checks the label against the task's own keys (`has activityType 'DoWhile' but must contain 'for' with 'doWhile'`).
 
 ### Fixing in wrong order

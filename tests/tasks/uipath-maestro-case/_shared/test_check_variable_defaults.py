@@ -137,3 +137,24 @@ def test_unparseable_caseplan_fails(tmp_path):
                          capture_output=True, text=True)
     assert res.returncode == 1
     assert "unparseable" in res.stdout
+
+
+def test_a_plan_saved_as_caseplan_case_is_scanned(tmp_path):
+    d = tmp_path / "Sol" / "Proj"
+    d.mkdir(parents=True)
+    (d / "caseplan.case").write_text(json.dumps(caseplan(var("p", "jsonSchema", default={}))))
+    res = subprocess.run([sys.executable, str(CHECKER)], cwd=tmp_path,
+                         capture_output=True, text=True)
+    assert res.returncode == 1, res.stdout
+    assert "DELETED at serialization" in res.stdout
+
+
+def test_the_newest_name_wins_in_one_directory(tmp_path):
+    """A stale caseplan.json beside the caseplan.case Studio Web reads is not graded."""
+    d = tmp_path / "Sol" / "Proj"
+    d.mkdir(parents=True)
+    (d / "caseplan.json").write_text(json.dumps(caseplan(var("p", "jsonSchema", default={}))))
+    (d / "caseplan.case").write_text(json.dumps(caseplan(var("ok", "string", default="fine"))))
+    res = subprocess.run([sys.executable, str(CHECKER)], cwd=tmp_path,
+                         capture_output=True, text=True)
+    assert res.returncode == 0, res.stdout

@@ -17,6 +17,20 @@ from sdd_check import (  # noqa: E402
 )
 
 
+def _run_checker(text: str) -> tuple[int, str]:
+    checker = Path(__file__).with_name("sdd_check.py")
+    with tempfile.TemporaryDirectory() as workdir:
+        Path(workdir, "sdd.md").write_text(text, encoding="utf-8")
+        result = subprocess.run(
+            [sys.executable, str(checker)],
+            cwd=workdir,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    return result.returncode, result.stdout + result.stderr
+
+
 def test_stage_label_colon_is_rejected_but_heading_separator_is_allowed():
     text = "### Stage 1: Intake\n### Stage 2: Review: Legal"
     issues = _colon_issues(text)
@@ -219,23 +233,49 @@ def test_return_to_origin_requires_canonical_completion_pairing():
 |---|---|---|---|
 | required-stages-completed | — | Yes | Complete |
 """
-    checker = Path(__file__).with_name("sdd_check.py")
-    with tempfile.TemporaryDirectory() as workdir:
-        Path(workdir, "sdd.md").write_text(text, encoding="utf-8")
-        result = subprocess.run(
-            [sys.executable, str(checker)],
-            cwd=workdir,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+    returncode, output = _run_checker(text)
 
-    assert result.returncode != 0
+    assert returncode != 0
     assert (
         "return-to-origin requires 'required-tasks-completed' or "
         "'wait-for-connector' with Marks=Yes"
-        in result.stdout + result.stderr
+        in output
     )
+
+
+def test_api_event_is_legal_in_every_gate_the_designer_offers():
+    when = 'api-event("Claim Filed")'
+    text = f"""
+## Case Variables
+| Name | Category | Type | Source Trigger | Source Field | Default | Description |
+|---|---|---|---|---|---|---|
+| caseId | In | String | Manual | caseId | — | Case identifier |
+
+### Stage 1: Intake
+#### Entry Conditions
+| WHEN | IF |
+|---|---|
+| {when} | — |
+#### Exit Conditions
+| WHEN | IF | Exit Type | Marks Stage Complete | Display Name |
+|---|---|---|---|---|
+| {when} | — | exit-only | No | Withdrawn |
+| {when} | — | exit-only | Yes | Accepted |
+**Entry Conditions:**
+| WHEN | IF |
+|---|---|
+| {when} | — |
+
+### Case Exit Conditions
+| WHEN | IF | Marks Case Complete | Display Name |
+|---|---|---|---|
+| {when} | — | Yes | Closed |
+| {when} | — | No | Cancelled |
+"""
+    _, output = _run_checker(text)
+
+    assert "no §Case Variables" not in output, output
+    assert "'api-event'" not in output, output
 
 
 def test_return_to_origin_accepts_both_completing_triggers():

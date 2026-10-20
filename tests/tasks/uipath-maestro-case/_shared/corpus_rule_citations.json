@@ -29,6 +29,9 @@
   "connector_features/connector_activity/connector_activity.yaml": {
     "Never auto-debug or publish to Orchestrator": 1
   },
+  "connector_features/connector_activity_datafabric/connector_activity_datafabric.yaml": {
+    "Never auto-debug or publish to Orchestrator": 1
+  },
   "diagnose/fix_broken_caseplan/fix_broken_caseplan.yaml": {
     "Closed task types": 1
   },
@@ -46,6 +49,9 @@
   },
   "hitl/quality_04_skeleton_completion_report.yaml": {
     "The build is lossless against the SDD": 1
+  },
+  "pack/pack_only/pack_only.yaml": {
+    "Never auto-debug or publish to Orchestrator": 2
   },
   "publish/publish_upload/publish_upload.yaml": {
     "Runnable resources and sidecars": 1

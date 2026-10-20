@@ -20,7 +20,9 @@ sandbox:
       path: fixtures
 
 reference:
-  directory: .
+  # Case root, not `.`: the grader imports `_shared/`, which a task-only
+  # staging leaves out (ModuleNotFoundError at grade time).
+  directory: ../..
 
 initial_prompt: |
   The LinearThreeStages case under LinearThreeStages/ passes
@@ -49,7 +51,7 @@ success_criteria:
 
   - type: run_command
     description: "uip maestro case validate still passes after the repair"
-    command: "uip maestro case validate LinearThreeStages/LinearThreeStages/caseplan.json --output json"
+    command: "p=$(ls LinearThreeStages/LinearThreeStages/caseplan.case LinearThreeStages/LinearThreeStages/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"
     timeout: 60
     expected_exit_code: 0
     weight: 1.5
@@ -57,7 +59,7 @@ success_criteria:
 
   - type: run_command
     description: "Every task now carries a non-empty entry rule from the closed rule set; both Review tasks preserved"
-    command: "python3 $REFERENCE_DIR/check_missing_task_entry_rule.py"
+    command: "python3 $REFERENCE_DIR/diagnose/missing_task_entry_rule/check_missing_task_entry_rule.py"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0

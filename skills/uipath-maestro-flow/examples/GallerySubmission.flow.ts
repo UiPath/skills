@@ -21,9 +21,13 @@ export default flow('gallery-submission')
   .version('1.0.0')
   .input({ title: types.string, medium: types.string, widthCm: types.number, heightCm: types.number })
   .output({ outcome: types.string, note: types.string })
-  // The arms' shared state. Its names are NOT the outputs' names: inputs, outputs
-  // and vars share one list in the .flow, so `.var('outcome')` beside the `outcome`
-  // output would be two globals with one id (`check`: VARIABLE_NAME_COLLISION).
+  // The arms' shared state, under its own names, so what an arm records stays
+  // apart from what the flow returns; the single return maps it onto the
+  // outputs. A same-named `.var('outcome', types.string)` would also work: the
+  // SDK merges an output and a var with the same name and type into one output
+  // variable that keeps the var's default. A different type or default is a
+  // `check` error (OUTPUT_VAR_MISMATCH); reusing an input's name is still
+  // VARIABLE_NAME_COLLISION.
   .var('decision', types.string)
   .var('curatorReply', types.string)
 

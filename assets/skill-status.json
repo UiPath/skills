@@ -97,6 +97,14 @@
       },
       "last_synced": null
     },
+    "uipath-genome": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
     "uipath-governance": {
       "status": "preview",
       "confluence": {
@@ -162,7 +170,7 @@
       "last_synced": null
     },
     "uipath-mcp-servers": {
-      "status": "in-development",
+      "status": "preview",
       "confluence": {
         "page_id": null,
         "url": null
@@ -242,6 +250,14 @@
       "last_synced": null
     },
     "uipath-troubleshoot": {
+      "status": "preview",
+      "confluence": {
+        "page_id": null,
+        "url": null
+      },
+      "last_synced": null
+    },
+    "uipath-vertical-solutions": {
       "status": "preview",
       "confluence": {
         "page_id": null,

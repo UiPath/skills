@@ -15,7 +15,8 @@ Performs an activity or a series of activities on each element of an enumeration
 
 | Name | Display Name | Kind | Type | Required | Default | Description |
 |------|-------------|------|------|----------|---------|-------------|
-| `Values` | Values | `InArgument` | `System.Collections.IEnumerable` (non-generic) | No | — | The collection to iterate over. The element type `T` is set on the outer `<ui:ForEach x:TypeArguments="...">`, NOT on `Values`. Declare `xmlns:sc="clr-namespace:System.Collections;assembly=System.Private.CoreLib"` and bind as `<InArgument x:TypeArguments="sc:IEnumerable">`. |
+| `Values` | Values | `InArgument` | `System.Collections.IEnumerable` (non-generic) | Yes | — | The collection to iterate over. The element type `T` is set on the outer `<ui:ForEach x:TypeArguments="...">`, NOT on `Values`. Declare `xmlns:sc="clr-namespace:System.Collections;assembly=System.Private.CoreLib"` and bind as `<InArgument x:TypeArguments="sc:IEnumerable">`. |
+| `Condition` | Condition | `Activity` | `bool` | No | — | The loop continues while this is `True` (default `True`). Set directly inside `<ui:ForEach.Condition>` — `Condition` is an `Activity<bool>`, so no `<InArgument>` wrapper. |
 | `MaxIterations` | Max Iterations | `InArgument` | `int` | No | — | Maximum number of iterations. A value of `0` means unlimited. |
 
 ### Configuration
@@ -58,7 +59,7 @@ Performs an activity or a series of activities on each element of an enumeration
 ## Notes
 
 - **For Each** is a container/scope activity. Child activities are placed inside the `ActivityAction` body and can reference the iterator variable (e.g. `item`).
-- The activity is generic (`ForEach<T>`); the type argument `T` is inferred from the `Values` collection or set explicitly via the `TypeOfValues` type picker.
+- The activity is generic (`ForEach<T>`): `T` is set on the activity (`x:TypeArguments`, or the `TypeOfValues` type picker) and types the iterator variable, while `Values` stays a non-generic `IEnumerable`. A generic type such as `IEnumerable(x:String)` on `Values` fails to load.
 - The iterator variable name is auto-suggested based on the element type (e.g. `stringItem` for `String`) and can be renamed. If the suggested name was not changed manually, it is automatically updated when the type changes.
 - `TypeOfValues` is only visible when the designer supports the `TypePicker` widget; in other environments the type is set implicitly.
 - Use a `Break` activity inside the body to exit the loop early; use `Continue` to skip to the next element.
