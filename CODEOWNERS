@@ -104,12 +104,12 @@
 /tests/tasks/activation/uipath-functions.jsonl @lucarachiteanu @UiPath/team-agents-cli
 
 # Planner skill (PDD → SDD design + multi-skill task planning)
-/skills/uipath-planner/ @RaduAna-Maria
-/tests/tasks/uipath-planner/ @RaduAna-Maria
-/skills/uipath-planner/references/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
-/skills/uipath-planner/assets/templates/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25
-/tests/tasks/uipath-planner/case/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
-/tests/tasks/uipath-planner/_shared/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin
+/skills/uipath-planner/ @RaduAna-Maria @roberts-cliff
+/tests/tasks/uipath-planner/ @RaduAna-Maria @roberts-cliff
+/skills/uipath-planner/references/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @roberts-cliff
+/skills/uipath-planner/assets/templates/case/ @RaduAna-Maria @abhiram-vad @charlesliu9 @song-zhao-25 @roberts-cliff
+/tests/tasks/uipath-planner/case/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin @roberts-cliff
+/tests/tasks/uipath-planner/_shared/ @abhiram-vad @charlesliu9 @song-zhao-25 @jundayin @roberts-cliff
 
 # Solution skill (uip solution lifecycle)
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
