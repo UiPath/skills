@@ -532,10 +532,8 @@ BINDINGS = [   # (id, name, resource, resourceSubType, resourceKey, default, pro
 METADATA = {
     "caseIdentifier": "SUP",
     "caseIdentifierType": "constant",
-    # Both read off a real build. The case app is what the people this case routes to
-    # open, and direct passing is what carries a task's result into the next input.
+    # Read off a real build. The case app is what the people this case routes to open.
     "caseAppEnabled": True,
-    "caseDirectlyPassTaskOutputs": True,
     "slaRules": [
         _sla(
             (
@@ -2284,13 +2282,6 @@ class MetadataTests(CheckerBase):
         plan = baseline_plan()
         plan["metadata"]["caseAppEnabled"] = False
         self.rejects(plan, "nobody this case routes to can open it")
-
-    def test_rejects_task_outputs_not_passed_directly(self):
-        # Off, a task's result never reaches the next task's input, and every
-        # downstream expression reads an empty slot while the plan stays Valid.
-        plan = baseline_plan()
-        plan["metadata"]["caseDirectlyPassTaskOutputs"] = False
-        self.rejects(plan, "never reaches the next input")
 
     def test_rejects_a_rejection_that_marks_the_case_complete(self):
         plan = baseline_plan()

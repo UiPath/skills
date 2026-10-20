@@ -211,10 +211,9 @@ success_criteria:
   - type: run_command
     description: >
       the case shell carries the settings the SDD asks for: the case name, the constant
-      `SUP` identifier prefix, the case app enabled, task outputs passed directly, and
-      three exit conditions on the stages the SDD names of which only the onboarded one
-      marks the case complete. A rejection that marks the case complete reports an
-      onboarding that never happened
+      `SUP` identifier prefix, the case app enabled, and three exit conditions on the
+      stages the SDD names of which only the onboarded one marks the case complete. A
+      rejection that marks the case complete reports an onboarding that never happened
     command: "python3 $TASK_DIR/check_metadata.py"
     timeout: 120
     expected_exit_code: 0

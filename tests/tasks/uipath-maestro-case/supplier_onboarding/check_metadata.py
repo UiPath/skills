@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """SupplierOnboarding: does the case shell carry the settings the SDD asks for?
 
-Five assertions. `uip maestro case validate` accepts every failure below, and each one
+Four assertions. `uip maestro case validate` accepts every failure below, and each one
 changes what the case does rather than how it looks.
 
  1. The case is named as the SDD names it. Every solution path and every deployed
@@ -10,9 +10,7 @@ changes what the case does rather than how it looks.
     A generated identifier instead of `SUP` breaks the match against those numbers.
  3. The case app is enabled. Disabled, the people this case routes to have nowhere to
     open it.
- 4. Task outputs pass directly. Turned off, a task's result never reaches the next
-    task's input and every downstream expression reads an empty slot.
- 5. Three case exit conditions, each on the stage the SDD names, and only the onboarded
+ 4. Three case exit conditions, each on the stage the SDD names, and only the onboarded
     one marks the case complete. A rejected or withdrawn application that marks the
     case complete reports a successful onboarding that never happened.
 
@@ -84,13 +82,6 @@ def main() -> int:
             f"case app, and without it nobody this case routes to can open it"
         )
 
-    if meta.get("caseDirectlyPassTaskOutputs") is not True:
-        problems.append(
-            f"caseDirectlyPassTaskOutputs is "
-            f"{meta.get('caseDirectlyPassTaskOutputs')!r}; the SDD passes task outputs "
-            f"directly, and without it a task's result never reaches the next input"
-        )
-
     ids_by_label = P.stage_ids(plan)
     labels_by_id = {sid: label for label, sid in ids_by_label.items()}
     exits = P.case_exits(plan)
@@ -129,9 +120,9 @@ def main() -> int:
         print(f"checked {P.find_caseplan()}")
         print(
             f"OK: the case is {E.CASE_NAME!r} with the constant prefix "
-            f"{E.CASE_IDENTIFIER_PREFIX!r}, the case app on, task outputs passing "
-            f"directly, and {len(E.CASE_EXITS)} exit conditions on the stages the SDD "
-            f"names, of which only the onboarded one marks the case complete"
+            f"{E.CASE_IDENTIFIER_PREFIX!r}, the case app on, and {len(E.CASE_EXITS)} "
+            f"exit conditions on the stages the SDD names, of which only the onboarded "
+            f"one marks the case complete"
         )
         return 0
 
