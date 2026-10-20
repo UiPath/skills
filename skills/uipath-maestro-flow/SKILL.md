@@ -100,7 +100,7 @@ uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 
 ## Editing an existing flow
 
-In brownfield work, preserve the supplied source, step names, and unaffected wiring. Insert a step by moving the old edge through it, not by creating a second path. If only emitted `.flow` JSON exists, decompile it, compile the pristine baseline, edit narrowly, and merge the delta back into the original.
+In brownfield work, preserve the supplied source, step names, and unaffected wiring (same edges, not same edge ids). Insert a step by moving the old edge through it, not by creating a second path. If only emitted `.flow` JSON exists, decompile it, compile the pristine baseline, edit narrowly, and merge the delta back into the original.
 These are before/after judgments; no final-artifact checker can prove them.
 
 For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which runs the loop in two invocations and gets the baseline ordering right. It keeps its baseline, edited and merged `.flow` files in `.flow-sdk/` too:
@@ -113,7 +113,7 @@ node .flow-sdk/<Name>.pipeline.mjs      # compiles the edit and merges it back
 ```
 
 Back up the project to `mktemp -d`, `cp` the merge output over it whole, validate it there (not the edited compile), then delete the backup. Never write or `compile` onto the canonical `.flow`.
-If the source must stay inside the Flow project (for example, to preserve relative sidecars), keep baseline, edited, and candidate `.flow` files in an external `.flow-work/` directory. Install the candidate, validate the canonical artifact, and leave exactly one `.flow` under the project. The reference below contains the copyable safe-project sequence.
+If the source must stay inside the Flow project (for example, to preserve relative sidecars), keep baseline, edited, and candidate `.flow` files in an external `.flow-work/` directory. Install the candidate, validate the canonical artifact, and leave exactly one `.flow` under the project.
 
 **True-brownfield procedure:**
 **[`references/brownfield.md`](references/brownfield.md)**.
