@@ -2,9 +2,11 @@
 
 uipath-genome turns a project, or an idea, into a genome: a markdown blueprint of the automation. The agent then builds the UiPath automation from it, runs it against the real applications and fixes what fails. You make a few decisions; the agent, with helper agents it starts in parallel, does the rest.
 
+Use it to document an automation you run, in words people review and agents act on; to design a new one from an idea, an SOP or a meeting transcript; or to rebuild an existing automation onto the UiPath products that fit it.
+
 ## What a genome holds
 
-Every genome has the same sections; one that does not apply carries a one-line stub, never a gap. The body reads as a specification in plain words, with no activity, variable or file names, so someone who knows the process can review it. The build reads every section:
+A genome is a PDD and an SDD in one, written for the agent that builds it. A person reviews it, so it is in plain words, with no activity, variable or file names. An agent builds from it, so every section is there for something the build does:
 
 | Question | Sections | What the build does with them |
 | --- | --- | --- |
@@ -18,19 +20,18 @@ One project gives a component genome. Two or more give a process genome, with th
 
 ## Not a one-to-one translation
 
-A genome says what the automation does, not how the source did it, so the build writes each part the UiPath way:
+A genome says what the automation does, not how the source did it. However closely a rebuild follows the source's steps, the mechanics underneath are written the UiPath way:
 
 | In the source | In the UiPath build |
 | --- | --- |
-| One automation that coordinates the work and drives the screens | A coordinator and the processes it starts, each built by its own UiPath skill |
-| The same procedure copied into several automations | One library, published to a feed and installed as a package |
+| One automation whose parts need different UiPath products, such as a flow that starts robot work | A project per product: a coordinator and the processes it starts, each built by its own UiPath skill |
+| The same procedure copied into several automations | One library, published to a feed and installed as a package, when no single activity does the job |
 | A loop over items with hand-made retries and status | Split as you choose: one process, a producer and a consumer, or one process with a queue; REFramework when picked |
 | A target recorded per step or per window | One Object Repository element per field, shared by every step that uses it |
-| A wait-and-check step after each action | Verification on the action itself; a separate check only where the outcome changes what happens next |
-| Jumps to labels | Branches and loops |
+| A wait-and-check step after each action | Verification on the action itself; a separate check only where the outcome changes what happens next. A test's checkpoints stay assertions |
 | Passwords and hosts in files or code | One credential asset per account; per-environment values as settings |
 
-Kept as the source has it: every business rule, outcome and log line, and the step names, so a reviewer can match each step to its source. Every departure is listed with its reason.
+Kept as the source has it: every business rule, outcome and log line, the schedule and every output. What changes is listed with its reason: a source defect you ruled to fix, a refactor answer, or a platform limit. So the build is a rebuild, not a translation, yet easy to compare with the source: a [rebuild as it is](#rebuilding-an-existing-automation) also keeps the step names and the shape, and by default a correspondence table records every step renamed, merged, split or dropped.
 
 ## Why it holds up
 
@@ -40,6 +41,7 @@ Reading and building are checked apart, with you in between:
 2. **Hidden rules written down.** Rules that live in error handlers, default values and settings files are read like any step and written at the step where they act, so the review sees them.
 3. **Judged against the genome.** Expected outcomes come from the genome and, for an existing project, its source, never from what the build produced, so the build cannot grade its own work.
 4. **Every fix checked again.** After a fix, every run and test it touches runs again. A fix that breaks a criterion already met is undone, and the report gives the final build's verdicts.
+5. **Nothing left behind unseen.** Every part of the source is rebuilt or listed under *Not covered* for your review, and a test suite's checkpoints all stay in its tests.
 
 ## How it compares
 
@@ -56,7 +58,7 @@ Reading and building are checked apart, with you in between:
 
 ## Rebuilding an existing automation
 
-A genome extracted from an existing automation is rebuilt in one of two ways. Either way, every rule, outcome and message is kept, with the schedule and every output.
+A genome extracted from an existing automation is rebuilt in one of two ways, both keeping what [the source has](#not-a-one-to-one-translation).
 
 **As it is.** The build keeps the source's step names, order and folders, so whoever knows the old automation can check the new one side by side. Every difference (a step renamed, merged, split, dropped or added) is a row of a correspondence table with its reason. The build asks how closely to follow:
 
@@ -64,7 +66,7 @@ A genome extracted from an existing automation is rebuilt in one of two ways. Ei
 2. Names and shape, without the table: for sources of thousands of steps, where the table costs more than a reviewer gains.
 3. The build's own names and grouping.
 
-**As a refactor.** Every part is re-authored on the UiPath product its shape fits, and the build names its steps in the business's words. A UiPath project is rebuilt only as a refactor; a smaller change is made in the project itself. The product is chosen for the shape, never as an upgrade, and every capability it relies on is checked first:
+**As a refactor.** Every part is re-authored on the UiPath product its shape fits, and the build names its steps in the business's words. A UiPath project is rebuilt as a refactor; a smaller change is made in the project itself. The product is chosen for the shape, never as an upgrade, and every capability it relies on is checked first:
 
 | Its steps | UiPath product |
 | --- | --- |
@@ -93,7 +95,7 @@ How far it is proven: target plans checked on small cases, and one component reb
 
 *Session logs of one run · 7–8 Oct 2026 · agents per 10 minutes of active time*
 
-This run was compile-only: no app was reachable. The live-run loop comes from a smaller run (7 steps, three live runs), where the agent fixed every failure itself and your part was under a minute of decisions.
+This run was checked in code, not on screen: no app was reachable. The live-run loop comes from a smaller run (7 steps, three live runs), where the agent fixed every failure itself and your part was under a minute of decisions.
 
 The chart is measured from the session logs of one run: an 84-case test suite and 2 shared libraries, rebuilt from an existing test suite. Your 7 minutes count only the time from each question to your answer. Not counted: the notes and answers files prepared before the run, the time spent reviewing the genome, and the decisions handed back after.
 
