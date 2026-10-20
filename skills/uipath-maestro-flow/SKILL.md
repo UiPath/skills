@@ -85,7 +85,6 @@ Pick one loop before any build command; never mix them in one workspace or use o
 The `uip maestro flow` commands delegate their semantics to the installed `@uipath/maestro-builder-sdk`. Emit-only belongs to the project, not the directory you run from: the nearest `package.json` up the tree that declares `flowSdk.emitOnly` decides it, a nested one that does not mention `flowSdk` inherits, and `emitOnly: false` opts out. In that mode `compile` only serializes source, both `flow check` modes refuse, and product `validate` owns structural verification. The base pass is emit, any required artifact bindings, then validate:
 
 ```bash
-# Never compile onto a .flow you decompiled; merge into it (Editing an existing flow).
 ( cd "<Solution>/<Name>" && uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow )
 uip maestro flow validate "<Solution>/<Name>/<Name>.flow" --output json
 # Greenfield only (never a merged or .layout() file), before upload/debug/a designer:
@@ -109,11 +108,11 @@ For a narrow edit, `decompile` writes `.flow-sdk/<Name>.pipeline.mjs`, which run
 ```bash
 uip maestro flow decompile <Name>.flow -o .flow-sdk/<Name>.flow.ts
 node .flow-sdk/<Name>.pipeline.mjs      # captures the pristine baseline
-# edit .flow-sdk/<Name>.flow.ts narrowly; leave added steps out of .layout(...) (builder-sdk#1320)
+# edit .flow-sdk/<Name>.flow.ts narrowly; no .layout() for added steps (builder-sdk#1320)
 node .flow-sdk/<Name>.pipeline.mjs      # compiles the edit and merges it back
 ```
 
-Back up the project to `mktemp -d`, install the merged artifact whole with `cp`, validate it there (never the intermediate edited compile), then delete the backup. Never write or `compile` onto the canonical `.flow`; only merge output goes there.
+Back up the project to `mktemp -d`, `cp` the merge output over it whole, validate it there (not the edited compile), then delete the backup. Never write or `compile` onto the canonical `.flow`.
 If the source must stay inside the Flow project (for example, to preserve relative sidecars), keep baseline, edited, and candidate `.flow` files in an external `.flow-work/` directory. Install the candidate, validate the canonical artifact, and leave exactly one `.flow` under the project. The reference below contains the copyable safe-project sequence.
 
 **True-brownfield procedure:**
