@@ -20,6 +20,7 @@ mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow"
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
+# Leave added steps out of .layout(...): merge places them.
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.flow"
 uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
   -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow"
@@ -27,7 +28,7 @@ uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
 rm -rf "${WORK:?}/backup" && cp -r "$PROJECT" "$WORK/backup"
 cp -r "$WORK/candidate/." "$PROJECT/"
 # Then delete each directory merge listed as `flow-merge: remove <dir> ...`.
-uip maestro flow validate "$CANONICAL" --output json
+uip maestro flow validate "$CANONICAL" --output json && rm -rf "${WORK:?}/backup"
 ```
 
 Install the candidate whole with `cp`. Never write or patch the `.flow`
@@ -40,12 +41,13 @@ Validate in the project, not `candidate/` alone: it holds only the agent files
 merge changed, so an unchanged inline agent's `agent.json` is missing there
 ([builder-sdk#1318](https://github.com/UiPath/builder-sdk/issues/1318)).
 If validate fails, restore the project before merging again:
-`test -d "${WORK:?}/backup" && rm -rf "${PROJECT:?}" && cp -r "$WORK/backup" "$PROJECT"`.
+`test -d "${WORK:?}/backup" && rm -rf "${PROJECT:?}" && cp -r "$WORK/backup" "$PROJECT" && rm -rf "$WORK/backup"`.
+Leave no backup behind: it is a second Flow project.
 
 If the pristine baseline compile fails `check` only with
 `HTTP_READ_WITHOUT_RETURNS`, the deployed HTTP node has no body schema
 ([builder-sdk#1319](https://github.com/UiPath/builder-sdk/issues/1319)).
-Compile both baseline and edited with `--no-check` and leave that node alone.
+Add `--no-check` to both compiles above and leave that node alone.
 After the edit, `uip maestro flow check --source "$PROJECT/Deployed.flow.ts"`
 must report no other error code. Never use `--no-check` for any other error.
 
