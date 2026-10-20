@@ -30,7 +30,7 @@ Read the [merge warnings](#merge-warnings-what-the-round-trip-changed) before
 you install: once installed, the candidate is the next merge's `--original`.
 
 ```bash
-BACKUP=$(mktemp -d) && echo "backup: $BACKUP" && cp -r "$PROJECT/." "$BACKUP/"
+BACKUP=$(mktemp -d) && echo "backup: $BACKUP" && cp -r "${PROJECT:?}/." "$BACKUP/"
 cp -r "$WORK/candidate/." "$PROJECT/"
 # Then delete each directory merge listed as `flow-merge: remove <dir> ...`.
 uip maestro flow validate "$CANONICAL" --output json && rm -rf "${BACKUP:?}"
@@ -265,7 +265,8 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
 - A warning saying `not refused under --strict` needs no fix, for example
   `the round trip appends End "<id>" after …` (compile adds an End where the
   original path just stops) or `the round trip drops the binding row …` (merge
-  keeps the original's row).
+  keeps the original's row). Neither does `node "<id>" moved …` when you told
+  the user the edit moves that unbundled version.
 - `agent "<id>" carries its prompts, model and settings on the node (embedded) …`
   means that agent keeps its configuration in the `.flow`, not in
   `<source>/agent.json` (some canvas and `node add` saves do this). Merge keeps
@@ -319,8 +320,7 @@ its case below says to; every other edit goes through merge.
   with the file's definition, as long as you leave it untouched; a node you
   edit moves to the SDK's version. If it is your edit target, edit that
   node's JSON in the `.flow` directly, or tell the user the edit moves it from
-  the file's version (here `1.6`) to the SDK's default; merge then warns
-  `node "<id>" moved …`, which is that change. A type the SDK bundles
+  the file's version (here `1.6`) to the SDK's default. A type the SDK bundles
   at no version (a connector, a published process or agent) keeps its pin.
   A pin like that written back by hand is still refused by `compile`, which
   names the bundled versions; for a registered family `check` reports it first
