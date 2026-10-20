@@ -30,10 +30,11 @@ cp -r "$WORK/candidate/." "$PROJECT/"
 uip maestro flow validate "$CANONICAL" --output json
 ```
 
-If the baseline compile fails `check` only on steps the task does not touch
-(e.g. `HTTP_READ_WITHOUT_RETURNS` on an existing HTTP step), and the edited
-compile reports no other error, rerun both compiles with `--no-check` and merge
-as usual. Never hand-edit the `.flow`.
+If `check` fails the baseline compile only on steps the task does not touch
+(e.g. `HTTP_READ_WITHOUT_RETURNS` on an existing HTTP step), compile the
+baseline with `--no-check`. Compile the edit without it first: when its `✗`
+lines are exactly the baseline's, compile it again with `--no-check` and merge;
+otherwise fix the new errors. Do not edit the `.flow` instead.
 
 Replace the canonical artifact only after the candidate validates. Do not copy
 the `baseline/` or `edited/` directories into the project, and do not leave an
@@ -145,6 +146,8 @@ uip maestro flow merge .flow-sdk/edited/Deployed.flow --original Deployed.flow \
 Like the pipeline, this keeps every candidate in `.flow-sdk/`; validate
 `.flow-sdk/Deployed.merged.flow`, then replace the original with it and copy
 every `<source>/` file merge reports writing.
+Handle a baseline that fails `check` as in
+[the safe project loop](#the-safe-project-loop).
 
 The baseline must be compiled from the pristine decompiled source, before any
 edit. It lets merge distinguish authored changes from reconstructed content;
