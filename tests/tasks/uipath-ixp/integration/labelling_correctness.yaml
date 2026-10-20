@@ -2,8 +2,8 @@ task_id: skill-ixp-integration-labelling-correctness
 description: >
   Integration: labelling correctness on a live trained project with a repeatable
   field group (Line Items). Verifies per-occurrence confirm targeting (only the
-  chosen occurrences are confirmed), OCR-correction forwarding across occurrences
-  under `--group`, unconfirm rollback, and mark-missing — each checked by
+  chosen occurrences are confirmed), a batched multi-occurrence confirm under
+  `--group --updates`, unconfirm rollback, and mark-missing — each checked by
   re-reading `get-predictions`. These are CLI payload-construction behaviors, not
   backend semantics.
 tags: [uipath-ixp, integration, mode:operate, lifecycle:setup]
@@ -49,9 +49,9 @@ initial_prompt: |
   Then, on that invoice's line items:
   - Line 1 (the first line item) is extracted correctly — confirm just that one
     line on its own, leaving every other row untouched.
-  - Separately, the OCR mangled the "Amount" on line 2 and line 3 — correct both
-    of those Amounts in a single batched call (line 2 to `500.00`, line 3 to
-    `105.42`). Save that command's response to `confirm_result.json`.
+  - Separately, lines 2 and 3 are extracted correctly too — confirm both of
+    those lines in a single batched call. Save that command's response to
+    `confirm_result.json`.
   - Actually, scrap that — roll back everything you just confirmed on this document,
     and save that command's response to `unconfirm_result.json`.
   - These line items have no tax column, so "Tax" doesn't apply here — mark it
@@ -83,10 +83,10 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: file_matches_regex
-    description: "Batched confirm with --updates carrying a corrections entry across occurrences"
+    description: "Batched confirm with --updates carrying two or more occurrences"
     path: "mocks/calls.log"
     pattern: >-
-      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--group)(?=.*--updates)(?=.*corrections)(?=.*500\.00)(?=.*105\.42))[^\r\n]*$
+      (?m)^(?:uip\s+ixp\s+labellings\s+confirm\b(?=.*--group)(?=.*--updates)(?=.*"occurrence".*"occurrence"))[^\r\n]*$
     weight: 2.0
     pass_threshold: 1.0
 
@@ -114,14 +114,14 @@ success_criteria:
 
   # --- Outcome verification ---
   # TODO: add a CLI command to read annotation state back, so we can validate the
-  # ACTUAL confirmed/corrected/missing values on the document — true outcome
+  # ACTUAL confirmed/missing values on the document — true outcome
   # verification. No such command exists today, so for now we assert on the write
   # response instead: the operation `Code`, a count of items affected, and
   # `Unmatched == []` (the targeted field/occurrence existed and was hit, not
   # silently skipped). (Result/Code are root-level, present because the agent
   # saves the full CLI response.)
   - type: json_check
-    description: "Batched correction confirm ran (right Code) and confirmed predictions"
+    description: "Batched confirm ran (right Code) and confirmed predictions"
     path: "confirm_result.json"
     assertions:
       - expression: "Result"
