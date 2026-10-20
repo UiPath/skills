@@ -30,11 +30,12 @@ cp -r "$WORK/candidate/." "$PROJECT/"
 uip maestro flow validate "$CANONICAL" --output json
 ```
 
-If `check` fails the baseline compile only on steps the task does not touch
-(e.g. `HTTP_READ_WITHOUT_RETURNS` on an existing HTTP step), compile the
-baseline with `--no-check`. Compile the edit without it first: when its `✗`
-lines are exactly the baseline's, compile it again with `--no-check` and go on;
-otherwise fix the new errors. Do not edit the `.flow` instead.
+If `check` fails the pristine baseline compile (e.g. `HTTP_READ_WITHOUT_RETURNS`
+on an existing HTTP step), compile the baseline with `--no-check`. Compile the
+edit without it first. If that fails and each `✗` line matches a baseline line
+apart from its `(read in "<step>")` part, compile it again with `--no-check`
+and go on; otherwise fix the lines that match none. Do not edit the `.flow`
+instead.
 
 Replace the canonical artifact only after the candidate validates. Do not copy
 the `baseline/` or `edited/` directories into the project, and do not leave an
