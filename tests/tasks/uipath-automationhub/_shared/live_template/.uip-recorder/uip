@@ -12,9 +12,10 @@ tenant's normalized read-back cannot show:
      "captured": {"path": "./ah-answers.json", "sha256": ..., "json": {...}}}
 
 `captured` snapshots the `--file` argument before the call runs, so a file the
-agent rewrites afterwards does not change the grade. `result`, `data_id` and
-`data_idea_flow_id` come from the CLI's JSON envelope (`Result`, `Data.Id`,
-`Data.IdeaFlowId`) when it printed one.
+agent rewrites afterwards does not change the grade. `result`, `data_id`,
+`data_idea_flow_id` and `message` come from the CLI's JSON envelope (`Result`,
+`Data.Id`, `Data.IdeaFlowId`, and a failure's `Message`, cut to 300 characters)
+when it printed one.
 
 Two switches, both set by the harness, never by the agent:
   AH_EVAL_NO_RECORD=1   run without recording (setup and grading scripts' own calls)
@@ -195,6 +196,8 @@ def main(argv: list[str]) -> int:
             record["data_id"] = data["Id"]
         if isinstance(data, dict) and data.get("IdeaFlowId") is not None:
             record["data_idea_flow_id"] = data["IdeaFlowId"]
+        if parsed.get("Result") != "Success" and parsed.get("Message"):
+            record["message"] = str(parsed["Message"])[:300]
     log(record)
     return proc.returncode
 

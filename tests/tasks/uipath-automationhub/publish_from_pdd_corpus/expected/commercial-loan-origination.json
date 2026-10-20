@@ -12,9 +12,6 @@
    "dnb"
   ],
   "Plaid": [],
-  "IXP": [
-   "ixp"
-  ],
   "Databricks": [],
   "Snowflake": [],
   "DocuSign": [],
@@ -24,6 +21,9 @@
   ]
  },
  "optional_systems": {
+  "IXP": [
+   "ixp"
+  ],
   "Core banking": [
    "core banking"
   ],
