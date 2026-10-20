@@ -20,13 +20,13 @@ The mode is set on `remote configure` with `--live-authoring` or `--remote-run-o
 | Connection | Persistent — one long-lived remote session job on the robot | None |
 | Debug / run with `--remote` | Executes on the remote machine, over the session | Each run/debug session is an Orchestrator job of its own |
 | `remote exec`, `remote upload-file`, `remote download-file` | Served by the session — return in seconds | Use Live Authoring |
-| Remote UI Automation (the `uip rpa uia` group in remote mode — syntax in the UIA package guide `ui-automation-guide.md` § Documentation), remote screen streaming | Available | Not available |
+| Remote UI Automation (the `uip rpa uia` group in remote mode — syntax in the UIA docs), remote screen streaming | Available | Not available |
 | `remote start` / `remote stop` | Open / close the session | Not applicable — `remote start` fails |
 | Default | — | Yes, for a target that never had a mode stored |
 
 Choose the mode:
 
-1. **Live Authoring** when the workflow is designed on the remote machine — UI elements must be captured, inspected, or exercised there, or the design work should not occupy the user's machine. It covers everything Remote Run Only does: debug/run with `--remote` executes on the remote machine over the session.
+1. **Live Authoring** when the workflow is designed on the remote machine — the target application exists only there, or the design work should not occupy the user's machine. It covers everything Remote Run Only does: debug/run with `--remote` executes on the remote machine over the session.
 2. **Remote Run Only** when the workflow is designed locally and only debug/run must happen on the robot.
 3. **Never downgrade Live Authoring to Remote Run Only to debug/run.** When the stored mode is Live Authoring, keep it — debug/run within it.
 
@@ -83,8 +83,8 @@ When the intended target is one of these, tell the user Live Authoring is not su
 | Command | Behavior |
 |---|---|
 | `configure` | Resolves and stores the target and mode, then connects. In Live Authoring it blocks until the session job is running — tens of seconds; do not wrap it in a short timeout. Reconfiguring replaces the stored target. A `configure` that fails to resolve a name (folder, machine, robot, runtime) keeps the previous target and leaves a running session untouched; one that fails while connecting (e.g. missing `--robot`) stores the new target |
-| `start` | Opens the Live Authoring session → `"Remote session ready."`. No-op when the session is already open. Does not start the UI Automation design host — the first remote UI Automation command sets it up. Fails with no target (`Remote debugging is not configured for an unattended robot…`) or in Remote Run Only (`The remote connection is in Remote Run Only mode, which has no remote UI Automation session…`) |
-| `stop` | Closes the session and releases the robot, including the UI Automation design host → `"Remote session stopped."`. Always succeeds — also when no session is running or no target is configured |
+| `start` | Opens the Live Authoring session → `"Remote session ready."`. No-op when the session is already open. Fails with no target (`Remote debugging is not configured for an unattended robot…`) or in Remote Run Only (`The remote connection is in Remote Run Only mode…`) |
+| `stop` | Closes the session and releases the robot → `"Remote session stopped."`. Always succeeds — also when no session is running or no target is configured |
 | `status` | Read-only — changes nothing, starts nothing |
 
 ## Reading `remote status`
@@ -335,7 +335,7 @@ uip rpa remote upload-file \
 - **Leaving a Live Authoring session running after the work is done** — it holds a robot runtime; always `remote stop` (Rule 5).
 - **Running `exec` or a file transfer after `remote stop` and leaving** — the command reopens the session, which then holds the robot again; `stop` must be the last remote command (Rule 5).
 - **Running `remote start` in Remote Run Only** — there is no session to start; it fails. Switch to Live Authoring when a persistent session, shell/file commands, or remote UI Automation are needed.
-- **Choosing Remote Run Only for design work on the remote machine** — it has no remote UI Automation session.
+- **Choosing Remote Run Only for design work on the remote machine** — it has no remote session.
 - **Switching a Live Authoring target to Remote Run Only to debug/run** — Live Authoring already debugs/runs on the remote machine; switching releases the session and loses remote UI Automation, shell, and file commands (Rule 4).
 - **Omitting `--robot` on `configure`** — `configure` fails in Live Authoring, or succeeds in Remote Run Only and every later operation fails; the broken target is stored either way (Rule 2).
 - **Guessing folder/machine/robot/runtime names** — look them up from Orchestrator and ask the user (Rule 3).
