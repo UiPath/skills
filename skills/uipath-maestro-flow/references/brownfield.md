@@ -31,6 +31,9 @@ Install only after merge exits 0 and you have read its
 candidate is the next merge's `--original`.
 
 ```bash
+PROJECT=Solution/Deployed
+CANONICAL="$PROJECT/Deployed.flow"
+WORK=.flow-work/Deployed
 BACKUP=$(mktemp -d) && echo "backup: $BACKUP" && cp -r "${PROJECT:?}/." "$BACKUP/"
 cp -r "$WORK/candidate/." "$PROJECT/"
 # Then delete each directory merge listed as `flow-merge: remove <dir> ...`.
@@ -260,8 +263,8 @@ flow-merge: refused (--strict): the merged file would differ from the original w
 ```
 
 - Fix each refused line in the `.flow.ts` at the spot it names, even on a node
-  your edit changed, and merge again. If decompile warned that the source
-  cannot carry that spot, follow
+  your edit changed, then recompile the edit and merge again. If decompile
+  warned that the source cannot carry that spot, follow
   [its case](#the-files-schema-version-comes-back-out) instead. If the line
   says to make the change on the canvas, take it out of the source and tell the
   user. If no source change clears a line, stop and show it to the user; never
