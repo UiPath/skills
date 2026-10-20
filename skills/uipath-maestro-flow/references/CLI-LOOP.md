@@ -158,6 +158,7 @@ compile. Omit both options only when manual/implicit authentication is intended.
 
 `flow debug` takes the project directory, not the `.flow` file, and resource
 refresh must run first. From the solution directory, `<Name>` names that project.
+A `500` at `prepare-custom-debug` is transient: retry once.
 These are the common flags; use only the ones the behavior claim needs:
 
 | Need | Exact form |
