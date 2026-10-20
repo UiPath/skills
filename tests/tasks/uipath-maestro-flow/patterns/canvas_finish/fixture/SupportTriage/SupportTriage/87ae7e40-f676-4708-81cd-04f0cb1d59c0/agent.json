@@ -1,0 +1,65 @@
+{
+  "version": "1.2.0",
+  "settings": {
+    "model": "gpt-5.4",
+    "maxTokens": 16384,
+    "temperature": 0,
+    "engine": "basic-v2",
+    "mode": "standard"
+  },
+  "projectId": "87ae7e40-f676-4708-81cd-04f0cb1d59c0",
+  "id": "87ae7e40-f676-4708-81cd-04f0cb1d59c0",
+  "name": "classifyItem",
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string"
+      },
+      "confidence": {
+        "type": "number"
+      },
+      "reason": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "category",
+      "confidence",
+      "reason"
+    ]
+  },
+  "metadata": {
+    "storageVersion": "50.0.0",
+    "isConversational": false,
+    "showProjectCreationExperience": false
+  },
+  "type": "lowCode",
+  "guardrails": [],
+  "messages": [
+    {
+      "role": "system",
+      "content": "PLACEHOLDER - replace with your classification instructions. This agent reads an incoming item and must return a category (one of the routes this process handles), a confidence between 0 and 1, and a one-sentence reason, matching its declared output schema.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "PLACEHOLDER - replace with your classification instructions. This agent reads an incoming item and must return a category (one of the routes this process handles), a confidence between 0 and 1, and a one-sentence reason, matching its declared output schema."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "Classify the item and return category, confidence, and reason. Add the item variable here.",
+      "contentTokens": [
+        {
+          "type": "simpleText",
+          "rawString": "Classify the item and return category, confidence, and reason. Add the item variable here."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+task_id: skill-flow-pattern-canvas-finish
+description: >
+  Finishing a triage pattern inserted from the Flow canvas pattern library and
+  left unconfigured: mock handlers labelled "(replace with ...)", a classifier
+  whose prompt is the canvas PLACEHOLDER seed, and a setup sticky note. Grades
+  that every mock becomes the real step, the placeholder prompt is rewritten,
+  the classifier reads the item, the pattern's routing and confidence floor
+  survive, and nothing else changes. The fixture is the canvas variant's
+  definition (flow-workbench routing-triage/ai) emitted through the SDK and
+  rewired to the canvas's edges; it validates. Graded offline.
+  Validate-only by design: the person's choice suspends a headless debug run,
+  and the category endpoints are placeholders (`*.example.test`).
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:edit, shape:multi-node, node:decision, node:switch, node:hitl, feature:http]
+
+run_limits:
+  turn_timeout: 2400
+  task_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  SupportTriage/ is a solution with one Flow project of the same name. I started
+  the flow on the Flow canvas: I inserted the triage pattern and configured
+  nothing. Finish it so it is ready to publish.
+
+  The item is the flow's input email (`subject`, `body`), sorted into billing,
+  technical or account. Billing items go to POST
+  https://billing.example.test/tickets, technical to POST
+  https://support.example.test/tickets, and account to POST
+  https://accounts.example.test/requests, over plain HTTP (no connector), each
+  with the email's subject and body as the JSON body. Keep everything else the
+  pattern set up, including the layout.
+
+  The change is done when `uip maestro flow validate` passes on
+  SupportTriage/SupportTriage/SupportTriage.flow. The flow does not need a run
+  against the tenant.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the finished flow"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py SupportTriage/SupportTriage/SupportTriage.flow"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "No mock or placeholder prompt is left, the classifier reads the email, and each category reaches its own endpoint through the pattern's switch and the person's choice"
+    command: "python3 $REFERENCE_DIR/patterns/canvas_finish/check_canvas_finish.py --project SupportTriage/SupportTriage"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The pattern's shape survives: a confidence floor sends only low-confidence items to the person, whose choice reaches the same category ends"
+    command: "python3 $REFERENCE_DIR/patterns/routing_triage/check_greenfield.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every original node, edge, binding, variable and definition is unchanged except the classifier, its sidecar, and the three handlers it replaces"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/patterns/canvas_finish/fixture/SupportTriage/SupportTriage --project SupportTriage/SupportTriage --changed-node classifyItem --changed-agent 87ae7e40-f676-4708-81cd-04f0cb1d59c0 --removable-node handleBilling --removable-node handleTechnical --removable-node handleAccount --removed-edge 'handleBilling:output>endBilling:input' --removed-edge 'handleTechnical:output>endTechnical:input' --removed-edge 'handleAccount:output>endAccount:input'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Original nodes keep their canvas positions and the new nodes overlap none of them"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect layout --original $REFERENCE_DIR/patterns/canvas_finish/fixture/SupportTriage/SupportTriage --project SupportTriage/SupportTriage --removable-node handleBilling --removable-node handleTechnical --removable-node handleAccount"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The .flow was written by uip maestro flow merge (the skill's decompile/merge loop), not edited by hand"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect merged --original $REFERENCE_DIR/patterns/canvas_finish/fixture/SupportTriage/SupportTriage --project SupportTriage/SupportTriage"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
