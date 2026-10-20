@@ -415,8 +415,13 @@ below, because it is the one step that depends on phase 1's scan.
   Service draft or boundary handoff the user asked for (Rule 16). Otherwise
   chain it after 1b in the same turn. Step 1b already answered whether a
   solution exists; adopt what it found rather than scanning again. When the
-  user named a project path, `mkdir -p` its parent and run `init` there with
-  the leaf as the name (4c gives the details).
+  user named a project path (`A/B/B.bpmn` names project directory `A/B`),
+  `mkdir -p` that directory's parent, `cd` into it, and run
+  `uip maestro bpmn init <B> --skip-solution-registration --output json`
+  there; leave out the flag only when that parent is already a solution.
+  Without it, `init` adds a `<B>Solution/` level the path does not have.
+  Either way, author only into the `.bpmn` at the returned `Data.Path`;
+  never write a second `.bpmn` elsewhere.
 
   If one is found, stop and ask the user which to use, as a pick list if the
   host has one: one option per solution found, plus "Create a new solution".
