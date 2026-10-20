@@ -95,9 +95,10 @@ For a sibling project of this solution, a `process` / `agent` / `api` /
 `flow` / `maestro` / `function` tool takes `key` = `resource.key` from
 `resources/solution_folder/process/*/<Project>.json` (the tail of its
 `uip maestro flow registry list --local` tool type) and
-`folderPath: 'solution_folder'`. `kind` is that tool type's namespace, except
-`…tool.processorchestration.*` is `maestro`. A tool has no `location` or
-`projectId`.
+`folderPath: 'solution_folder'`. A `ProcessOrchestration` project (folder
+`processOrchestration`, tool type `…tool.processorchestration.*`) is
+`kind: 'maestro'`, never `'process'`; any other kind is its tool type's
+namespace. A tool has no `location` or `projectId`.
 Declare it on `inlineAgent` so compile writes its `resource.json`; a node added
 with `uip maestro flow nodes create` gets none.
 
