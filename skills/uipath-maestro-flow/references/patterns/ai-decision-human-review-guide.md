@@ -96,5 +96,5 @@ The commonest reduction: the flow already has an agent that scores the item and
 an action step after it. Insert only `confidenceGate` and `reviewDecision`. Bind
 the gate to the existing confidence field, keep the existing action as
 `applyDecision`, and retarget its inbound edge at the gate. Do not add a second
-analyzer or a second copy of the action. Keep `endRejected` separate from
-`endApplied`.
+analyzer or a second copy of the action. Keep `endRejected` as its own End; a
+rejection never reaches the action.
