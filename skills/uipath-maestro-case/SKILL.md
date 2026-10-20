@@ -163,7 +163,9 @@ Provide the completion report, then hard-stop AskUserQuestion: `Publish to Studi
 
 ### Phase 6 — Debug
 
+<!--skill-flavor:phase-six-debug-gate:start-->
 Hard-stop AskUserQuestion (Step 15): `Run debug session` / `Continue to publish`. On Run, refresh resources, run `uip maestro case debug`, and loop after completion until `Continue to publish`. Never run debug automatically.
+<!--skill-flavor:phase-six-debug-gate:end-->
 
 ### Phase 7 — Publish to Orchestrator
 
