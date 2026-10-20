@@ -265,8 +265,9 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
 - A warning saying `not refused under --strict` needs no fix, for example
   `the round trip appends End "<id>" after …` (compile adds an End where the
   original path just stops) or `the round trip drops the binding row …` (merge
-  keeps the original's row). Neither does `node "<id>" moved …` when you told
-  the user the edit moves that unbundled version.
+  keeps the original's row). Neither does `agent "<id>" carries its prompts …`
+  (below), nor `node "<id>" moved …` when you told the user the edit moves that
+  unbundled version.
 - `agent "<id>" carries its prompts, model and settings on the node (embedded) …`
   means that agent keeps its configuration in the `.flow`, not in
   `<source>/agent.json` (some canvas and `node add` saves do this). Merge keeps
