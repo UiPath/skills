@@ -113,7 +113,7 @@ node .flow-sdk/<Name>.pipeline.mjs      # captures the pristine baseline
 node .flow-sdk/<Name>.pipeline.mjs      # compiles the edit and merges it back
 ```
 
-Back up the project, install the merged artifact whole with `cp`, validate it there (never the intermediate edited compile), then delete the backup. Never write or `compile` onto the canonical `.flow`; only merge output goes there.
+Back up the project to `mktemp -d`, install the merged artifact whole with `cp`, validate it there (never the intermediate edited compile), then delete the backup. Never write or `compile` onto the canonical `.flow`; only merge output goes there.
 If the source must stay inside the Flow project (for example, to preserve relative sidecars), keep baseline, edited, and candidate `.flow` files in an external `.flow-work/` directory. Install the candidate, validate the canonical artifact, and leave exactly one `.flow` under the project. The reference below contains the copyable safe-project sequence.
 
 **True-brownfield procedure:**

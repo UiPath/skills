@@ -25,10 +25,10 @@ uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.f
 uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
   -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow"
 
-rm -rf "${WORK:?}/backup" && cp -r "$PROJECT" "$WORK/backup"
+BACKUP=$(mktemp -d) && echo "backup: $BACKUP" && cp -r "$PROJECT/." "$BACKUP/"
 cp -r "$WORK/candidate/." "$PROJECT/"
 # Then delete each directory merge listed as `flow-merge: remove <dir> ...`.
-uip maestro flow validate "$CANONICAL" --output json && rm -rf "${WORK:?}/backup"
+uip maestro flow validate "$CANONICAL" --output json && rm -rf "${BACKUP:?}"
 ```
 
 Install the candidate whole with `cp`. Never write or patch the `.flow`
@@ -41,8 +41,9 @@ Validate in the project, not `candidate/` alone: it holds only the agent files
 merge changed, so an unchanged inline agent's `agent.json` is missing there
 ([builder-sdk#1318](https://github.com/UiPath/builder-sdk/issues/1318)).
 If validate fails, restore the project before merging again:
-`test -d "${WORK:?}/backup" && rm -rf "${PROJECT:?}" && cp -r "$WORK/backup" "$PROJECT" && rm -rf "$WORK/backup"`.
-Leave no backup behind: it is a second Flow project.
+`test -d "${BACKUP:?}" && rm -rf "${PROJECT:?}" && mkdir "$PROJECT" && cp -r "$BACKUP/." "$PROJECT/" && rm -rf "$BACKUP"`.
+Keep the backup in `mktemp -d`, never under the working directory: a copy of
+the project there is a second Flow project.
 
 Compile the baseline before the edit, never after: merge diffs edited against
 it, so a baseline of the edited source drops your change.
