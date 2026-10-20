@@ -92,7 +92,7 @@ Tool signatures:
 - `{ kind: 'ixp', projectId, name, description?, versionTag?, attachment? }`
 
 For a sibling project of this solution, a `process` / `agent` / `api` /
-`flow` / `maestro` tool takes `key` = `resource.key` from
+`flow` / `maestro` / `function` tool takes `key` = `resource.key` from
 `resources/solution_folder/process/*/<Project>.json` (the tail of its
 `uip maestro flow registry list --local` tool type) and
 `folderPath: 'solution_folder'`. A tool has no `location` or `projectId`.
