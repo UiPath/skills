@@ -47,11 +47,16 @@ def main() -> None:
         if not errors or not all(moves_on(g, e, loop) for e in errors):
             fail(f"{agent}'s failure is unwired, leaves the loop, or ends the run: one failed item stops the batch")
 
+        # One apply step both routes reach. A route may record something first,
+        # but at least one route must reach it with nothing but routing between,
+        # or each route has an apply step of its own.
         shared = [
             n for n in body - set(people) - set(gates) - {agent}
             if not g.type_of(n).startswith(CONTROL)
-            and any(g.reaches(gate, n, blocked=people) and only_control_between(g, gate, n, people) for gate in gates)
-            and any(g.reaches(p, n) and only_control_between(g, p, n, ()) for p in people)
+            and any(g.reaches(gate, n, blocked=people) for gate in gates)
+            and any(g.reaches(p, n) for p in people)
+            and (any(only_control_between(g, gate, n, people) for gate in gates)
+                 or any(only_control_between(g, p, n, ()) for p in people))
         ]
         if not shared:
             fail("no single step in the loop body is reached by both the confident route and the reviewer's approval")

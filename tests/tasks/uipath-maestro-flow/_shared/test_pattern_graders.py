@@ -200,6 +200,7 @@ CASES = [
     ("voice_agents/check_greenfield.py", "router ignores triage", voice_blind_router, 1),
     ("composition/check_batch_review.py", "batch review", lambda: fixture("batch_review"), 0),
     ("composition/check_batch_review.py", "recorded rejection", lambda: fixture("review_record"), 0),
+    ("composition/check_batch_review.py", "approval recorded before the shared apply", lambda: fixture("review_recorded_before_apply"), 0),
     ("composition/check_batch_review.py", "review in a subflow", lambda: fixture("review_sub"), 0),
     ("composition/check_batch_review.py", "nested subflows", lambda: fixture("nested_subflows"), 0),
     ("composition/check_batch_review.py", "rejection still applied", lambda: fixture("reject_applies"), 1),
