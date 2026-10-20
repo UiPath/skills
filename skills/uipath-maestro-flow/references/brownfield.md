@@ -24,7 +24,12 @@ uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.flow"
 uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
   -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow"
+```
 
+Read the [merge warnings](#merge-warnings-what-the-round-trip-changed) before
+you install: once installed, the candidate is the next merge's `--original`.
+
+```bash
 BACKUP=$(mktemp -d) && echo "backup: $BACKUP" && cp -r "$PROJECT/." "$BACKUP/"
 cp -r "$WORK/candidate/." "$PROJECT/"
 # Then delete each directory merge listed as `flow-merge: remove <dir> ...`.
@@ -253,12 +258,14 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
 
 - Each warning names a change you did not author: a node or edge added,
   dropped or rewired, a node's type changed, a switch case id or human-task
-  outcome id renamed, or a binding row added, dropped or duplicated. If the
-  spot is one you did not mean to change, do not copy the candidate over the
-  canonical file; fix the `.flow.ts` there and merge again. A warning about a
-  merged edge's handle means `validate` will refuse the candidate.
-- `the round trip appends End "<id>" after …` is the one benign line: compile
-  adds an End where the original path just stops. It does not change behaviour.
+  outcome id renamed, or a binding row added or duplicated. Even on a node your
+  edit changed, do not copy the candidate over the canonical file; fix the
+  `.flow.ts` at the spot it names and merge again. A warning about a merged
+  edge's handle means `validate` will refuse the candidate.
+- A warning saying `not refused under --strict` needs no fix, for example
+  `the round trip appends End "<id>" after …` (compile adds an End where the
+  original path just stops) or `the round trip drops the binding row …` (merge
+  keeps the original's row).
 - `agent "<id>" carries its prompts, model and settings on the node (embedded) …`
   means that agent keeps its configuration in the `.flow`, not in
   `<source>/agent.json` (some canvas and `node add` saves do this). Merge keeps
@@ -269,7 +276,7 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
   configuration, or whose kept prompt still uses `{{input.X}}` after your edit
   removed input `X`.
 - Pass `--strict` to make merge refuse (exit 1, no file written) instead of
-  warning. The benign End line never refuses. `--strict` needs `--baseline`:
+  warning. `--strict` needs `--baseline`:
   run `node .flow-sdk/<Name>.pipeline.mjs --strict`, which always has one, or
   add it to the merge in [the hand loop](#the-same-loop-by-hand). If
   `uip maestro flow merge` rejects `--strict`, or the pipeline exits 2 with
@@ -301,8 +308,9 @@ its case below says to; every other edit goes through merge.
 - A node **no trigger reaches** — no edge leads to it, as when a designer or
   `node add` left it unconnected. The builder has no detached-node construct,
   so the source omits it and marks the spot with `// TODO: node "<id>" … is not
-  reachable`; recompiling drops that node. If it is your edit target, connect
-  it in the `.flow` first or edit that node's JSON directly.
+  reachable`; recompiling drops that node wherever your edit is. Make your edit
+  in the `.flow` JSON directly, or, if that node is your edit target, connect it
+  in the `.flow` first.
 - A `(type, typeVersion)` **this SDK does not bundle**, for a type it bundles
   at other versions — for example `uipath.human-in-the-loop.quick-form@1.6`
   (written by `node add`) when the SDK ships `1.0` and `1.1`. Versions resolve
@@ -311,7 +319,8 @@ its case below says to; every other edit goes through merge.
   with the file's definition, as long as you leave it untouched; a node you
   edit moves to the SDK's version. If it is your edit target, edit that
   node's JSON in the `.flow` directly, or tell the user the edit moves it from
-  the file's version (here `1.6`) to the SDK's default. A type the SDK bundles
+  the file's version (here `1.6`) to the SDK's default; merge then warns
+  `node "<id>" moved …`, which is that change. A type the SDK bundles
   at no version (a connector, a published process or agent) keeps its pin.
   A pin like that written back by hand is still refused by `compile`, which
   names the bundled versions; for a registered family `check` reports it first
@@ -325,9 +334,8 @@ its case below says to; every other edit goes through merge.
   warning names it as `<source>@<port> -> <target>@<port>`, and the source marks
   the spot with a `/* TODO: edge(s) … are NOT in this source */` comment (or a
   `// TODO: edge …` line near the top when no step leads to it). Recompiling
-  drops that edge, and `merge` writes the loss into the original. If your edit
-  touches that part of the flow, change the `.flow` JSON there directly instead
-  of round-tripping it through the source.
+  drops that edge, and `merge` writes the loss into the original wherever your
+  edit is, so make your edit in the `.flow` JSON directly.
 - A **switch whose cases carry their own conditions** — for example `High:
   amount > 100` and `Low: amount <= 100`. `.switch(name, on, cases)` models
   only `on === value`, so the decompiled `on` and `value`s are placeholders
@@ -354,7 +362,7 @@ Do not run `uip maestro flow format` on the merged file; it discards the author'
 Decompiled source carries that layout as a `.layout({ nodes })` block, one long-hand entry per node.
 Keep it.
 Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), avoiding any x where (x − 256) is a multiple of 288 on y = 144 or 304, which `merge` reads as a compile placeholder and moves.
-At the root, an existing node's position and size come from the original whatever the source says, so moving one or resizing a container the edit grew in the source does nothing; set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
+At the root, an existing node's position and size come from the original whatever the source says, so moving one or resizing a container the edit grew in the source does nothing; set `layout.nodes.<id>.position` or `.size` in the candidate before you install it, and only when the file has no `layout.nodes` map, the node's `ui`.
 Inside a subflow the source's entries land, because `merge` takes subflows from the edited compile whole.
 A step the edit removes must lose its entry, or compile fails on the unknown key.
 Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim).
