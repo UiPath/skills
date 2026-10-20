@@ -170,13 +170,15 @@ This holds on **every** feed. A `--feed` or `--personal-workspace` deploy goes t
 
 The rejected attempt stays behind as a **pending draft** under that `--name`, and its key is in `Instructions` — see [A deploy that stops in `Draft`](#a-deploy-that-stops-in-draft) for how to finish or drop it.
 
-A Tests project rides in the solution package but gets no solution resource, so `deploy run` does not install it. Upload its package to the deployment folder's feed yourself — the `<SOLUTION>.Tests.<PROJECT>.<VERSION>.nupkg` under `files/` in the packed `.zip`:
+<!--skill-flavor:tests-upload:start-->
+A Tests project rides in the solution package but gets no solution resource, so `deploy run` does not install it. Upload its package to the deployment folder's feed yourself — the `<SOLUTION>.Tests.<PROJECT>.<VERSION>.nupkg` under `files/` in the packed `.zip`. The upload is refused (`A testing project should contain at least one entry point.`) unless at least one of its test cases has `editingStatus` `Publishable` in `project.json`:
 
 ```bash
 uip or packages upload "<TESTS_NUPKG_PATH>" --folder-path "<FOLDER_PATH>" --output json
 ```
 
 `<FOLDER_PATH>` is the `Data.FolderPath` that `deploy run` returned. Orchestrator creates the testing process from the upload, so skip `uip or processes create`: it is refused (`A testing process already exists for this package`).
+<!--skill-flavor:tests-upload:end-->
 
 To skip auto-activation (legacy behaviour — leaves the deployment in `Inactive (Ready to activate)`):
 
@@ -329,7 +331,7 @@ Effect on the file: appends `linkToResource: { name, folderPath }` to the matche
 uip df records import "<ENTITY_ID>" --file "<CSV_PATH>" --folder-key "<FOLDER_KEY>" --output json
 ```
 
-`<FOLDER_KEY>` is the deployment's `FolderKey` in `uip solution deploy list --output json`; `uip df entities list --folder-key "<FOLDER_KEY>" --output json` gives the entity's `id`.
+`<FOLDER_KEY>` is the deployment's `FolderKey` in `uip solution deploy list --output json`; `uip df entities list --folder-key "<FOLDER_KEY>" --output json` gives the entity's `Id`, and the CSV's header row names each field by its `DisplayName` from that listing — a field's `Name` is refused as `Invalid column header`.
 
 When the same resource name appears multiple times in the config (different kinds), pass `resourceKey` instead of `name` to disambiguate. The CLI surfaces the available keys in the error message.
 
