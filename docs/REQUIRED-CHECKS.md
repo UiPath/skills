@@ -169,6 +169,7 @@ This table is machine-read. `scripts/parse-required-checks.py` is its only parse
 | `skills.sh grouping checker unit tests` | `test-helpers.yml` |
 | `telemetry hook contract guard` | `test-helpers.yml` |
 | `task/experiment gate unit tests` | `test-helpers.yml` |
+| `repo script checker unit tests` | `test-helpers.yml` |
 | `required-check contract guard` | `test-helpers.yml` |
 | `Skill activation gate` | `activation-gate.yml` (aggregator) |
 | `CLI verb gate` | `verb-gate.yml` (aggregator) |
