@@ -480,7 +480,10 @@ Draft mode only.
    `validate` does not prove that mapping is right. For the compatibility
    fallback and its scope, see
    [references/structural-bpmn.md#script-tasks--jint-authoring-contract](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
-- **4c Assemble.** For greenfield, edit the `.bpmn` that 2a's `init`
+- **4c Assemble.** If this run uploaded the shape, download it first (as in
+   1c); when its `.bpmn` differs from the local one, build on the downloaded
+   one and say in one sentence that you kept the user's changes. For
+   greenfield, edit the `.bpmn` that 2a's `init`
    generated in place; never replace the whole file.
    Editing in place preserves the four generated JSON files, the initializer's
    `Event_start` id, and its `uipath:entryPointId`. Author from the complete minimal file in
