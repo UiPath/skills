@@ -88,6 +88,12 @@ uip maestro bpmn registry get Intsvc.EventTrigger \
   `invalid_argument`, `A resource picker in --input-details did not resolve`,
   and lists each folder key; add `"<field>_folderKey": "<FolderKey>"` next to
   the name and run it again.
+- A `*_V3` object's `RequestFields` (the folder entity's columns, for
+  `bodyParameters`) are empty until `describe` gets the picker the same way:
+  `uip is resources describe uipath-uipath-dataservice <Object>_V3
+  --connection-id <id> --operation Create -f entityScope=folder
+  -f folderEntityName=<entity> -f folderEntityName_folderKey=<FolderKey>`.
+  Without the folder key it fails when the name is in several folders.
 - The activity type is looked up from the Studio Web catalog by object (and
   operation for triggers). When an object carries several activities the
   command lists them; pass `--activity-type-id <id>` with the one you mean.
@@ -187,6 +193,9 @@ marker). Beyond it:
 - An output other than `response` / `Error` writes `{{VAR_ID}}_<name>` (an
   HTTP request's `code`, `headers`, `body`). A trigger has no
   `{{INCOMING_EDGE}}`.
+- A trigger's `response` output is the record the event carries. A later
+  node reads one of its fields as `=js:vars.<response-var>.<Field>`; a Data
+  Fabric record's id is `Id`.
 - If `Data.V2.MissingRequired` lists inputs (e.g. `bodyParameters.prompt`),
   run `registry get` again with them in `--input-details` before pasting.
 - Do not edit the element's `uipath:context` or its `metadata`. To change a
