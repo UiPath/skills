@@ -96,13 +96,15 @@ and `prepare` still writes both entries into `bindings.json`.
 
 `Folder` is the folder's own name, not its path. A requested
 `Shared/uipath-maestro-flow` is the row whose `Folder` is `uipath-maestro-flow`,
-not the one whose `Folder` is `Shared`: match the last path segment. Only when
-two rows share that name, run `uip or folders get <FolderKey> --output json` on
-each and pick the row whose `Path` is the requested one.
+not `Shared`. When the request names a folder, pass that last segment to
+`prepare` as `--connection-folder uipath-maestro-flow`; by hand, pick that row.
+If two folders share the name, get the requested one's `Key` with
+`uip or folders get "Shared/uipath-maestro-flow" --output json`, then pass
+`--connection-folder <Key>` or pick the row whose `FolderKey` equals it.
 
-**Do not go looking in Orchestrator for the folder.** `uip or folders list` is a
-different resource with different keys, and a folder binding wants the one the
-CONNECTION lives in — which you already have. Measured on the eval corpus: an
+**Do not go looking in Orchestrator for the folder** beyond that one
+`folders get`. A folder binding wants the folder the CONNECTION lives in, which
+you already have. Measured on the eval corpus: an
 agent that had already listed the connection went on to spend three to four
 further calls on `uip or --help`, `uip or folders --help` and `folders list`,
 searching for a folder matching the symbolic name in its prompt. The symbolic
