@@ -331,7 +331,9 @@ These findings the source cannot carry are printed on stderr as
   process's output fields on the definition whether or not the step waits, and
   `agenticProcess()` refuses `returns` beside `completion: 'fire-and-forget'`
   (nothing could read it), so the source omits it and the warning names the
-  fields. Recompiling writes the definition without the schema; `merge` keeps
+  fields. Needs `@uipath/maestro-builder-sdk` 6.44.0 or later; an older SDK's
+  decompile writes `returns` and compile refuses it — upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest`. Recompiling writes the definition without the schema; `merge` keeps
   the original's definition row, so a no-edit round trip loses nothing. To read
   the result, set `completion: 'wait'` and declare `returns`.
 
