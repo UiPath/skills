@@ -94,6 +94,12 @@ pick one: `prepare … --connection <name>` lists each candidate with its
 `--connection-id <id>` and folder — pass the id of the one in the folder you mean,
 and `prepare` still writes both entries into `bindings.json`.
 
+`Folder` is the folder's own name, not its path. A requested
+`Shared/uipath-maestro-flow` is the row whose `Folder` is `uipath-maestro-flow`,
+not the one whose `Folder` is `Shared`: match the last path segment. Only when
+two rows share that name, run `uip or folders get <FolderKey> --output json` on
+each and pick the row whose `Path` is the requested one.
+
 **Do not go looking in Orchestrator for the folder.** `uip or folders list` is a
 different resource with different keys, and a folder binding wants the one the
 CONNECTION lives in — which you already have. Measured on the eval corpus: an
