@@ -61,6 +61,11 @@ the project there is a second Flow project.
 Compile the baseline before the edit, never after: merge diffs edited against
 it, so a baseline of the edited source drops your change.
 
+With an edited `.flow.ts` and `--baseline-from`, `merge` runs `check` on the edited source and refuses the write on an error in a node or subflow the edit changed (`N error(s) in nodes merge takes from the edited flow`), and on one it cannot place that the edit introduced.
+An error on a node, or in a subflow, the edit did not touch prints as `DRAFT_NODE_KEPT` and the original is kept; a finding `merge` cannot place on a node prints as `CHECK_FINDING_UNPLACED` when the original's own round trip reports it too.
+Fix a finding when you edit its node.
+Needs `@uipath/maestro-builder-sdk` 6.44.4 or later; an older SDK refuses the write for any error it cannot place on an untouched root node, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+
 If the edited compile fails `check` only with `HTTP_READ_WITHOUT_RETURNS`, the
 deployed HTTP node has no body schema
 ([builder-sdk#1319](https://github.com/UiPath/builder-sdk/issues/1319)).
@@ -388,7 +393,7 @@ Decompiled source carries that layout as a `.layout({ nodes })` block, one long-
 Keep it.
 Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), avoiding any x where (x − 256) is a multiple of 288 on y = 144 or 304, which `merge` reads as a compile placeholder and moves.
 At the root, an existing node's position and size come from the original whatever the source says, so moving one or resizing a container the edit grew in the source does nothing; set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
-Inside a subflow the source's entries land, because `merge` takes subflows from the edited compile whole.
+Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.4 or later; an older SDK takes every subflow from the edited compile, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).
 A step the edit removes must lose its entry, or compile fails on the unknown key.
 Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim).
 
