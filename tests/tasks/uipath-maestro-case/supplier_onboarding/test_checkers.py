@@ -2479,6 +2479,15 @@ class RationaleAttributionTests(unittest.TestCase):
         with open(E.FIXTURE_SDD) as handle:
             sdd = handle.read()
         rationale, _described, _skips = E._sdd_task_envelopes(sdd)
+        self.assertEqual(len(rationale), 33)
+        for name, text in rationale.items():
+            self.assertNotIn(
+                "keeps the source's proportions multiplied by",
+                text,
+                f"{name!r} was credited with an SLA rationale",
+            )
+
+
 class PlanFileNameTests(unittest.TestCase):
     """The plan is `caseplan.case` from the current CLI and `caseplan.json` from an older one."""
 
@@ -2497,15 +2506,6 @@ class PlanFileNameTests(unittest.TestCase):
         for name in CHECKERS:
             result = run_checker(name, baseline_plan(), plan_file="plan.bin")
             self.assertNotEqual(result.returncode, 0, f"{name} accepted a missing plan")
-
-
-        self.assertEqual(len(rationale), 33)
-        for name, text in rationale.items():
-            self.assertNotIn(
-                "keeps the source's proportions multiplied by",
-                text,
-                f"{name!r} was credited with an SLA rationale",
-            )
 
 
 if __name__ == "__main__":
