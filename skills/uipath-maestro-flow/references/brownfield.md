@@ -15,13 +15,14 @@ it recursively.
 PROJECT=Solution/Deployed
 CANONICAL="$PROJECT/Deployed.flow"
 WORK=.flow-work/Deployed
-mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
+mkdir -p "$WORK/baseline" "$WORK/edited"
 
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow"
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.flow"
-# Validate reads every <source>/ beside the flow; copy before merge so merge's writes win.
+# Fresh each merge: validate reads <source>/agent.json beside the flow; merge overwrites what it changes.
+rm -rf "$WORK/candidate" && mkdir -p "$WORK/candidate"
 find "$PROJECT" -mindepth 1 -maxdepth 1 -type d ! -name '.*' -exec cp -R {} "$WORK/candidate/" \;
 uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
   -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow"
