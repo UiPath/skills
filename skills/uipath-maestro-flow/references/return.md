@@ -74,8 +74,13 @@ upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
   (`DUP_END_NAME`; `compile --no-check` throws). They are not renamed
   `failed2`. Identical repeats in one scope are one End. Prefer one `.return`
   and `.stepToRef('<name>')` on the other paths.
-- `check` refuses a `.stepToRef` to a name a step and an End share. Give each
-  End a name no step uses.
+- An End's `name` is its node id and is never renamed. A name that a step,
+  the trigger or an entry point already uses is refused (`STEP_ID_COLLISION`;
+  `compile --no-check` throws). For example, `.step('x', ...).return({}, { name: 'x' })`
+  fails `check`. Give the End its own name, such as `endX`. Needs
+  `@uipath/maestro-builder-sdk` 6.32.3 or later; an older SDK renames the End
+  `x2` with no error, so upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest`.
 - A decompiled brownfield flow uses this form when a path (an HTTP `branch-*`,
   a human-task `outcome-*`, a `.stepSwitch` arm, an error handler, an
   `.entryPoint` prefix) runs into an End another path already ends at. Keep the
