@@ -186,6 +186,33 @@ def test_a_v3_create_naming_the_tenant_entity_in_its_query_counts(tmp_path):
     assert rc == 0, out
 
 
+def test_a_folder_entity_query_picked_through_a_binding_counts(tmp_path):
+    """A picked folder entity reads as `=bindings.<id>`; the name is the
+    root binding's default."""
+    query = _v2_node("QueryEntityRecords_V3", "unused").replace(
+        '{"entityName":"unused"}', "{}"
+    ).replace(
+        '<uipath:input name="body"',
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"entityScope":"folder","folderEntityName":"=bindings.bEnt"}]]></uipath:input>'
+        '<uipath:input name="body"',
+    )
+    shape = (
+        f'<bpmn:definitions {NS}><bpmn:process id="p">'
+        '<bpmn:extensionElements><uipath:bindings>'
+        '<uipath:binding id="bEnt" name="Entity" type="string" resource="entity" '
+        'propertyAttribute="name" default="FlowCodeEvalEntity" resourceKey="k-1"/>'
+        "</uipath:bindings></bpmn:extensionElements>"
+        + _v2_node("CreateEntityRecordCurated", "NonExistentEntity")
+        + query
+        + query.replace('id="T_QueryEntityRecords_V3_unused"', 'id="T_Q2"')
+        + "</bpmn:process></bpmn:definitions>"
+    )
+    (tmp_path / "P.bpmn").write_text(shape, encoding="utf-8")
+    rc, out = _run(tmp_path)
+    assert rc == 0, out
+
+
 def test_a_v2_create_on_the_real_entity_is_not_the_error_path(tmp_path):
     shape = (
         f'<bpmn:definitions {NS}><bpmn:process id="p">'

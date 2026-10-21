@@ -76,6 +76,8 @@ from _shared.bpmn_check import (  # noqa: E402
     has_typed_uipath_extension,
     path_parameters,
     query_parameters,
+    resolved_values,
+    root_bindings,
 )
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
@@ -89,7 +91,9 @@ _CREATE_OP_RE = re.compile(r"^create$", re.IGNORECASE)
 _LIST_OP_RE = re.compile(r"^list$", re.IGNORECASE)
 
 
-def mentions_entity(task: ET.Element, entity: str) -> bool:
+def mentions_entity(
+    task: ET.Element, entity: str, bindings: dict[str, dict[str, str]] | None = None
+) -> bool:
     if is_generic_entity_object(context_value(task, "objectName"), entity):
         return True
     if entity in context_value(task, "path").strip().split("/"):
@@ -102,9 +106,10 @@ def mentions_entity(task: ET.Element, entity: str) -> bool:
     if entity in path_parameters(task).values():
         return True
     # A *_V3 object names the entity in a query parameter instead
-    # (`tenantEntityName`, or `folderEntityName` for a picked folder entity).
+    # (`tenantEntityName`, or `folderEntityName` for a picked folder entity,
+    # whose value is a `=bindings.<id>` read of the root binding).
     if any(
-        key.lower() in _ENTITY_KEYS and value == entity
+        key.lower() in _ENTITY_KEYS and entity.lower() in resolved_values(value, bindings or {})
         for key, value in query_parameters(task).items()
     ):
         return True
@@ -206,11 +211,12 @@ def candidate_files() -> tuple[list[Path], list[Path]]:
 def shape_of(root: ET.Element) -> tuple[int, int]:
     error_creates = 0
     good_queries = 0
+    bindings = root_bindings(root)
     for task in connector_nodes(root):
         object_name = context_value(task, "objectName")
-        if is_create_node(task, object_name, CREATE_ENTITY) and mentions_entity(task, CREATE_ENTITY):
+        if is_create_node(task, object_name, CREATE_ENTITY) and mentions_entity(task, CREATE_ENTITY, bindings):
             error_creates += 1
-        if is_query_node(task, object_name, QUERY_ENTITY) and mentions_entity(task, QUERY_ENTITY):
+        if is_query_node(task, object_name, QUERY_ENTITY) and mentions_entity(task, QUERY_ENTITY, bindings):
             good_queries += 1
     return error_creates, good_queries
 

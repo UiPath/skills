@@ -320,6 +320,25 @@ def query_parameters(element: ET.Element) -> dict[str, str]:
     return _parameters(element, "query", "queryParameters")
 
 
+def root_bindings(root: ET.Element) -> dict[str, dict[str, str]]:
+    """Every ``uipath:binding`` in the file, by id, as its attributes."""
+    return {
+        b.attrib["id"]: dict(b.attrib)
+        for b in root.iter(f"{{{NS['uipath']}}}binding")
+        if b.attrib.get("id")
+    }
+
+
+def resolved_values(value: str, bindings: dict[str, dict[str, str]]) -> set[str]:
+    """``value`` itself, and for ``=bindings.<id>`` the binding's default and
+    resource key, lowercased: a V2 picker stores its pick as a binding read."""
+    values = {value.lower()}
+    if value.startswith("=bindings."):
+        binding = bindings.get(value[len("=bindings.") :], {})
+        values |= {binding.get(k, "").lower() for k in ("default", "resourceKey")}
+    return values - {""}
+
+
 def has_type(element: ET.Element, token: str) -> bool:
     """True when ``token`` appears anywhere in ``element``'s serialised XML."""
     return token in ET.tostring(element, encoding="unicode")
