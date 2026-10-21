@@ -63,6 +63,26 @@ is only a routing index.
 If a target skill is not installed, still deliver the strategy, the decisive signal, and a concrete
 node-and-binding specification, and name the missing dependency.
 
+## Which Extract node — inline schema or a published project
+
+<!--skill-flavor:extract-node-choice:start-->
+Both are EX; the two Extract rows above split on one question. **Does a published, trained IxP project
+already exist for these documents?**
+
+1. **It does** — use it: `ixpExtract`, an `uipath.ixp.*` node. The fields are trained and named, and the
+   model's taxonomy can be looked up when the Flow must select particular extracted fields.
+2. **It does not** — author the schema inline: `dynamicExtract`
+   (`uipath.ixp.extract-document-builder`). The schema is a JSON-Schema object written in the node, so a
+   new document type ships without a training cycle. Execution still runs against a model deployment:
+   `model.modelName` and `model.folderKey` are required, and both are copied from the tenant — never
+   constructed.
+3. **Do not author inline to avoid publishing a project** when the same document type recurs at volume
+   and its fields need calibrated review. An inline schema carries no taxonomy and no trained field
+   evaluation, so that is a training decision deferred, not removed.
+
+Confirm whichever node type you name against the registry first — § Registry before labels above.
+<!--skill-flavor:extract-node-choice:end-->
+
 ## Flow-owned versus agent-owned placement
 
 Several capabilities exist at both levels. The choice is whether the step is fixed and visible in the

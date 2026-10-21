@@ -5,6 +5,11 @@
 <!--skill-flavor:handoff-document-pipeline:start-->
 <!--skill-flavor:handoff-document-pipeline:end-->
 
+<!--skill-flavor:extract-node-choice:start-->
+Extract inside a Flow is always `ixpExtract` against a published IxP project. This host documents no
+inline-schema extraction node, so there is no choice to make here.
+<!--skill-flavor:extract-node-choice:end-->
+
 <!--skill-flavor:handoff-summarize:start-->
 | Summarize, as a fixed Flow step | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/summarize/planning.md](../../uipath-maestro-flow/references/author/plugins/summarize/planning.md) |
 <!--skill-flavor:handoff-summarize:end-->
