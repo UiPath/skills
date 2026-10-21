@@ -431,7 +431,6 @@ jobs:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ vars.AWS_REGION }}
           BEDROCK_MODEL:            ${{ vars.BEDROCK_MODEL }}
-          ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           E2E_PROCESS_KEY:          ${{ vars.E2E_PROCESS_KEY }}
           E2E_LONG_PROCESS_KEY:     ${{ vars.E2E_LONG_PROCESS_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.linux_globs }}
@@ -482,7 +481,7 @@ jobs:
           # the model if agent.model is unset. Values must be single-line.
           env_lines=()
           for name in SKILLS_REPO_PATH API_BACKEND AWS_BEARER_TOKEN_BEDROCK AWS_REGION \
-                      BEDROCK_MODEL ANTHROPIC_API_KEY E2E_PROCESS_KEY E2E_LONG_PROCESS_KEY \
+                      BEDROCK_MODEL E2E_PROCESS_KEY E2E_LONG_PROCESS_KEY \
                       TASK_GLOBS TASK_COUNT TASK_PARALLELISM AGENT AGENT_MODEL \
                       CLAUDE_CODE_MODEL CODEX_MODEL ANTIGRAVITY_MODEL DELEGATE_MODEL \
                       CODEX_API_KEY CODEX_BASE_URL GEMINI_API_KEY; do
@@ -673,7 +672,6 @@ jobs:
         if: always()
         env:
           AWS_BEARER_TOKEN_BEDROCK:  ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
           CODEX_API_KEY:             ${{ secrets.CODEX_API_KEY }}
           GEMINI_API_KEY:            ${{ secrets.GEMINI_API_KEY }}
           E2E_PROCESS_KEY:           ${{ vars.E2E_PROCESS_KEY }}
@@ -685,13 +683,12 @@ jobs:
           import os
           import pathlib
 
-          # Every secret this job forwards into the run, not just the three
+          # Every secret this job forwards into the run, not just the ones
           # smoke-skills.yml strips. It matters more here than there: this report
           # is uploaded twice (a GitHub artifact and, when the identity is wired,
           # an evalboard blob) and its run.md is echoed into the job summary.
           names = (
               "AWS_BEARER_TOKEN_BEDROCK",
-              "ANTHROPIC_API_KEY",
               "CODEX_API_KEY",
               "GEMINI_API_KEY",
               "E2E_PROCESS_KEY",
@@ -978,15 +975,13 @@ jobs:
           esac
           python -c 'from importlib.metadata import version; print("coder-eval resolved to", version("coder-eval"))'
 
+      # The feed allows anonymous reads, so it is added without credentials.
       - name: Configure NuGet feed for Helm packages
         shell: bash
         run: |
           dotnet nuget add source \
             "https://uipath.pkgs.visualstudio.com/Public.Feeds/_packaging/UiPath-Internal/nuget/v3/index.json" \
-            --name UiPath-Internal \
-            --username az \
-            --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
-            --store-password-in-clear-text
+            --name UiPath-Internal
 
       # Single-feed install: `@uipath/cli` AND the RPA tool plugins come from the
       # internal GitHub Packages feed on the same prerelease train (default `dev`),
@@ -1188,7 +1183,6 @@ jobs:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION:               ${{ vars.AWS_REGION }}
           BEDROCK_MODEL:            ${{ vars.BEDROCK_MODEL }}
-          ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_GLOBS:               ${{ needs.partition.outputs.windows_globs }}
           AGENT:                    ${{ inputs.agent }}
           AGENT_MODEL:              ${{ inputs.agent_model }}
@@ -1364,7 +1358,6 @@ jobs:
         shell: bash
         env:
           AWS_BEARER_TOKEN_BEDROCK:  ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
           CODEX_API_KEY:             ${{ secrets.CODEX_API_KEY }}
           GEMINI_API_KEY:            ${{ secrets.GEMINI_API_KEY }}
           E2E_PROCESS_KEY:           ${{ vars.E2E_PROCESS_KEY }}
@@ -1381,7 +1374,6 @@ jobs:
 
           names = (
               "AWS_BEARER_TOKEN_BEDROCK",
-              "ANTHROPIC_API_KEY",
               "CODEX_API_KEY",
               "GEMINI_API_KEY",
               "E2E_PROCESS_KEY",
