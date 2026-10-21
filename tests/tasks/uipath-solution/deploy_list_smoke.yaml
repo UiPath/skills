@@ -21,4 +21,3 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-# temporary: triggers the task lint for #4154
