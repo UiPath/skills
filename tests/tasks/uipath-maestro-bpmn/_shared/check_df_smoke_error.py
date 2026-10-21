@@ -109,7 +109,8 @@ def mentions_entity(
     # (`tenantEntityName`, or `folderEntityName` for a picked folder entity,
     # whose value is a `=bindings.<id>` read of the root binding).
     if any(
-        key.lower() in _ENTITY_KEYS and entity.lower() in resolved_values(value, bindings or {})
+        key.lower() in _ENTITY_KEYS
+        and entity in resolved_values(value, bindings or {}, fold_case=False)
         for key, value in query_parameters(task).items()
     ):
         return True

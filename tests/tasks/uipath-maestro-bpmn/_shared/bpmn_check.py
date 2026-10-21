@@ -329,13 +329,18 @@ def root_bindings(root: ET.Element) -> dict[str, dict[str, str]]:
     }
 
 
-def resolved_values(value: str, bindings: dict[str, dict[str, str]]) -> set[str]:
+def resolved_values(
+    value: str, bindings: dict[str, dict[str, str]], fold_case: bool = True
+) -> set[str]:
     """``value`` itself, and for ``=bindings.<id>`` the binding's default and
-    resource key, lowercased: a V2 picker stores its pick as a binding read."""
-    values = {value.lower()}
+    resource key (lowercased unless ``fold_case`` is False): a V2 picker stores
+    its pick as a binding read."""
+    values = {value}
     if value.startswith("=bindings."):
         binding = bindings.get(value[len("=bindings.") :], {})
-        values |= {binding.get(k, "").lower() for k in ("default", "resourceKey")}
+        values |= {binding.get(k, "") for k in ("default", "resourceKey")}
+    if fold_case:
+        values = {v.lower() for v in values}
     return values - {""}
 
 
