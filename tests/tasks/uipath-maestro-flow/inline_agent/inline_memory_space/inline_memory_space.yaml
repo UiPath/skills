@@ -16,6 +16,16 @@ run_limits:
 reference:
   directory: ../..
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../_setup
+      mount_point: _setup
+
+pre_run:
+  - command: 'python3 "_setup/preflight_memory_space.py" UiPathAgentsSupportMemory=Shared/uipath-agents'
+    timeout: 120
+
 initial_prompt: |
   Create a UiPath solution "MemoryFlowSol" with a flow project "MemoryFlow"
   that runs an inline low-code agent. The agent takes a required
