@@ -15,5 +15,5 @@ uip rules get <RULE_NAME> --folder-path <FOLDER_PATH> --output json
 uip rules versions <RULE_NAME> --folder-path <FOLDER_PATH> --output json
 ```
 
-Each command takes `--folder-path` or `--folder-key`, never both. `uip rules describe` is not available in Studio Web, so a deployed rule's inputs and outputs cannot be read here. Binding a rule into a process, workflow, or case belongs to that artifact's skill.
+Each command takes `--folder-path` or `--folder-key`, never both. `uip rules describe` is not available in Studio Web, so a deployed rule's inputs and outputs cannot be read here.
 <!--skill-flavor:deployed-rules:end-->

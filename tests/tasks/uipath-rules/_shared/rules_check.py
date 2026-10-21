@@ -5,7 +5,8 @@
 RiskRules project. `rules_check.py policy` grades a freshly authored RiskRules
 rule: the authoring profile `validate` does not enforce, the entry-point
 contract `uip rules refresh` writes, and the table's risk band for each POLICY
-case. DMN files are authored by the agent under test and parsed with stdlib
+case. `rules_check.py names` passes when every rule carries a non-empty
+annotation. DMN files are authored by the agent under test and parsed with stdlib
 ElementTree.
 """
 
@@ -119,6 +120,12 @@ def check_annotations_in_order(table: ET.Element, expected: list[str]) -> None:
     remaining = iter(annotations(table))
     if not all(text in remaining for text in expected):
         fail(f"the rows' annotations read {annotations(table)}, expected {expected} among them in that order")
+
+
+def check_named_rules(table: ET.Element) -> None:
+    unnamed = [index + 1 for index, text in enumerate(annotations(table)) if not text]
+    if unnamed:
+        fail(f"rows {unnamed} have no annotation; every rule needs a name")
 
 
 def check_input_data(root: ET.Element, inputs: dict[str, str]) -> None:
@@ -251,5 +258,8 @@ if __name__ == "__main__":
         print("OK: uip rules validate passes")
     elif mode == "policy":
         grade_policy()
+    elif mode == "names":
+        check_named_rules(table_of(load_rule(find_project())[1]))
+        print("OK: every rule carries an annotation")
     else:
         fail(f"unknown mode {mode!r}")

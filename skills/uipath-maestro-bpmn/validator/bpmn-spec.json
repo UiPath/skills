@@ -237,7 +237,7 @@
           "defaultValue": null,
           "bindingInfo": {
             "resource": "BusinessRule",
-            "resourceKeyPattern": "${metadata.key}",
+            "resourceKeyPattern": "${metadata.folderPath}.${metadata.name}",
             "propertyAttribute": "name"
           }
         },
@@ -251,7 +251,7 @@
           "defaultValue": null,
           "bindingInfo": {
             "resource": "BusinessRule",
-            "resourceKeyPattern": "${metadata.key}",
+            "resourceKeyPattern": "${metadata.folderPath}.${metadata.name}",
             "propertyAttribute": "folderPath"
           }
         },
@@ -268,23 +268,32 @@
       "inputPattern": "mergedBody",
       "inputName": "JobArguments",
       "inputTarget": "bodyField",
-      "outputSource": null,
-      "outputType": null,
+      "outputName": "output",
+      "outputSource": "=result",
+      "outputType": "jsonSchema",
+      "additionalOutputs": [
+        {
+          "name": "Error",
+          "type": "jsonSchema",
+          "source": "=Error",
+          "required": true
+        }
+      ],
       "useRelativeSource": true,
       "bindingPattern": "businessRule",
       "bindingInfo": {
         "resource": "BusinessRule",
-        "resourceKeyPattern": "${metadata.key}",
+        "resourceKeyPattern": "${metadata.folderPath}.${metadata.name}",
         "propertyAttribute": "name",
         "contextField": "name"
       },
       "requiresDiscovery": true,
       "isDynamic": true,
-      "xmlTemplate": "<bpmn:BusinessRuleTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.BusinessRules\" version=\"v2\" />\n      <uipath:context>\n        <uipath:input name=\"name\" type=\"string\" value=\"=bindings.{nameBindingId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"=bindings.{folderPathBindingId}\" />\n        <uipath:input name=\"_label\" type=\"string\" value=\"{_label}\" />\n        <uipath:inputSchema type=\"jsonSchema\"><![CDATA[{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{},\"required\":[]}]]></uipath:inputSchema>\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"Error\" type=\"jsonSchema\" source=\"=Error\" var=\"{errorVarId}\" />\n      <uipath:output name=\"{outputName}\" type=\"{outputType}\" source=\"={outputName}\" var=\"{outputVarId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:BusinessRuleTask>",
-      "discoveryNotes": "Uses getOrchestratorBusinessRules() to list available business rules",
+      "xmlTemplate": "<bpmn:BusinessRuleTask id=\"{id}\" name=\"{name}\">\n  <bpmn:extensionElements>\n    <uipath:activity version=\"v1\">\n      <uipath:type value=\"Orchestrator.BusinessRules\" version=\"v3\" />\n      <uipath:context>\n        <uipath:input name=\"name\" type=\"string\" value=\"=bindings.{nameBindingId}\" />\n        <uipath:input name=\"folderPath\" type=\"string\" value=\"=bindings.{folderPathBindingId}\" />\n        <uipath:input name=\"_label\" type=\"string\" value=\"{_label}\" />\n        <uipath:inputSchema type=\"jsonSchema\"><![CDATA[{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{},\"required\":[]}]]></uipath:inputSchema>\n      </uipath:context>\n      <uipath:input name=\"JobArguments\" type=\"json\" target=\"bodyField\"><![CDATA[{}]]></uipath:input>\n      <uipath:output name=\"output\" type=\"jsonSchema\" source=\"=result\" var=\"{outputVarId}\" />\n      <uipath:output name=\"Error\" type=\"jsonSchema\" source=\"=Error\" var=\"{errorVarId}\" />\n    </uipath:activity>\n  </bpmn:extensionElements>\n  <bpmn:incoming>{incomingEdge}</bpmn:incoming>\n  <bpmn:outgoing>{outgoingEdge}</bpmn:outgoing>\n</bpmn:BusinessRuleTask>",
+      "discoveryNotes": "Uses `uip rules list --all-folders --output json` to list deployed business rules; it returns 50 rows by default, so keep raising --offset while Pagination.HasMore is true",
       "inputNotes": "isSplitInputs=true in design schema: the canvas shows one input per rule argument and serialization merges them into the single JobArguments JSON body. The uipath:context inputSchema lists each argument with its type, and its required array names the required ones.",
-      "contextFieldNotes": "name and folderPath each point to a root binding with resource=\"BusinessRule\" and propertyAttribute name or folderPath; the engine runs the rule by these two. resourceKey is the rule's entity key, which for a rule in the solution folder is its name; the name and folderPath defaults are the rule name and its folder path. The folderPath binding default is an empty string when the rule lives in the running job's folder. _label holds the rule name as a plain value.",
-      "outputNotes": "One uipath:output per rule output, named after the output with source =<output name>, plus an Error output (type jsonSchema, source =Error). Each var names a process variable declared as uipath:inputOutput on this element."
+      "contextFieldNotes": "name and folderPath each point to a root binding for a BusinessRule resource. Both bindings share one resourceKey. Use propertyAttribute name for name and folderPath for folderPath. _label is not bound and holds the rule name.",
+      "outputNotes": "One output named output (type jsonSchema, source =result) holding the whole result keyed by decision, so a decision's column reads as vars.<outputVarId>.<decision>.<column>; plus an Error output (type jsonSchema, source =Error). Each var names a process variable declared as uipath:inputOutput on this element. Only a decision-keyed rule fits this output: its `uip rules describe` OutputArguments carry \"x-uipath-decision-keyed\": true; run `uip rules refresh` and redeploy a rule that does not."
     },
     "Intsvc.ActivityExecution": {
       "extensionType": "Intsvc.ActivityExecution",
