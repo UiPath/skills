@@ -358,7 +358,8 @@ conversion step before re-ingestion, not a change to search. Repeated queries ca
 never entered the index, and rebuilding the corpus per request wastes the ingestion work.
 
 **Boundary.** Verify ingestion and freshness before interpreting an empty result. If a question requires
-dependent searches, one retrieval cannot answer it — say so rather than returning a partial answer.
+dependent searches, one retrieval cannot answer it: a chain of known length is a deterministic sequence
+of scoped lookups, and an open-ended one — where the agent decides how many hops it needs — is AH.
 Live system data is not necessarily current in indexed documents.
 
 ### PS2 Look up a provision in plan documents
@@ -384,7 +385,8 @@ majority of questions. Output agreement is not accuracy. A later report also fou
 timeouts and tool-call limits — neither route is universally reliable.
 
 **Boundary.** If exclusions and related provisions require dependent searches, one scoped retrieval is
-not enough — flag it rather than answering from a partial read. If the conclusion
+not enough: chain the lookups deterministically when the chain is of known length, and escalate to AH
+when the agent has to work out for itself what to look up next. If the conclusion
 requires proving no contrary provision exists, use SU1. Do not select a heavier path merely because the
 surrounding business process is complex.
 
@@ -614,7 +616,7 @@ Direct jumps when the symptom is already known. Do not scan the library.
 | Symptom | Read first | Counter-boundary |
 |---|---|---|
 | A simple lookup sent through a heavy reasoning path | PS2 | SU1 when the claim is complete review |
-| One semantic hit misses related rules or identifiers | PS1 — repair ingestion and metadata first | Dependent retrieval is not covered by a strategy here |
+| One semantic hit misses related rules or identifiers | PS1 — repair ingestion and metadata first | AH when the agent must work out each next lookup from the last; a fixed-length chain stays deterministic |
 | "All impacted documents" or "nothing contradicts" | SU1 | A result limit is not a coverage test |
 | A long task times out or cannot resume | Orchestration — a durable store plus polling. Not a harness feature | AH1 only if the run also needs dozens of lookups over material exceeding one prompt |
 | An agent loops until the runtime terminates it (`170002`) | AH3 — cap and stop-rule every tool and context handle | A missing cap, not a missing harness feature |
