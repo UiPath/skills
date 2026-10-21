@@ -9,7 +9,8 @@ import os
 import re
 import sys
 import xml.etree.ElementTree as ET
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
+from enum import Enum
 from pathlib import Path
 from typing import TypeVar
 
@@ -381,6 +382,68 @@ def has_typed_uipath_extension(
         ):
             return True
     return False
+
+
+ACTIVITY_EXECUTION = "Intsvc.ActivityExecution"
+UNIFIED_HTTP_REQUEST = "Intsvc.UnifiedHttpRequest"
+HTTP_CONNECTOR_KEY = "uipath-uipath-http"
+_JS_OPERAND_RE = re.compile(r"'([^']*)'|\"([^\"]*)\"|`([^`]*)`|([^+'\"`]+)")
+_TEMPLATE_SLOT_RE = re.compile(r"\$\{[^}]*\}")
+
+
+class RequestShape(Enum):
+    ACTIVITY = ACTIVITY_EXECUTION
+    HTTP = UNIFIED_HTTP_REQUEST
+
+
+def _literal_path(value: str) -> str:
+    """``value`` with each non-literal operand as ``{}``:
+    ``=js:('/v2/' + vars.P + '/items')`` -> ``/v2/{}/items``."""
+    if not value.startswith("="):
+        return value
+
+    expression = value.removeprefix("=js:").removeprefix("=")
+    parts: list[str] = []
+    for single, double, template, other in _JS_OPERAND_RE.findall(expression):
+        if other.strip("() \t\n"):
+            parts.append("{}")
+            continue
+        parts.append(single or double or _TEMPLATE_SLOT_RE.sub("{}", template))
+    return "".join(parts)
+
+
+def connector_requests(
+    root: ET.Element, connector_key: str
+) -> Iterator[tuple[ET.Element, str, str, RequestShape]]:
+    """Every sendTask that calls ``connector_key``, as ``(task, method, path, shape)``.
+
+    ``RequestShape.ACTIVITY``: an ``Intsvc.ActivityExecution`` on the
+    connector, method and path from context. ``RequestShape.HTTP``: a
+    connector-mode ``Intsvc.UnifiedHttpRequest`` through its connection,
+    method and ``url`` (else ``path``) from the body. A manual-mode request,
+    or one to another connector, is not yielded.
+    """
+    for task in elements(root, "sendTask"):
+        key = context_value(task, "connectorKey")
+        if key == connector_key and has_type(task, ACTIVITY_EXECUTION):
+            method, path = context_value(task, "method"), context_value(task, "path")
+            yield task, method, path, RequestShape.ACTIVITY
+            continue
+
+        if key != HTTP_CONNECTOR_KEY or not has_type(task, UNIFIED_HTTP_REQUEST):
+            continue
+        try:
+            body = body_object(task)
+        except BodyShapeError:
+            continue
+        if body.get("authentication") != "connector":
+            continue
+        if str(body.get("targetConnector", "")).lower() != connector_key:
+            continue
+
+        method = str(body.get("method", "")).strip()
+        path = str(body.get("url") or body.get("path") or "").strip()
+        yield task, method, _literal_path(path), RequestShape.HTTP
 
 
 def require_di_for_visible_elements(root: ET.Element) -> None:
