@@ -760,7 +760,7 @@ Draft mode only.
   <Name>: built, validated<, uploaded><, run>. <One sentence if you kept the user's online changes.>
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 
-  - <what changed, up to 5 bullets>
+  - <what changed, one line each, up to 5>
 
   Assumed: <...>  Unverified: <...>
   ```
