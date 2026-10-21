@@ -154,7 +154,7 @@ Check `project.json` `expressionLanguage` (new projects default to VB.NET). **CS
 
 ### Activity Property Surface and Starter XAML
 
-Off-card: never author from memory or the starter alone; `<Activity>.md` is the property surface, the starter adds namespaces/references. Read the MD path directly (a failed Read is the existence check). No doc anywhere → flag the package third-party, use find + starter, warn the surface may be incomplete.
+Off-card: never author from memory or the starter alone; `<Activity>.md` is the property surface, the starter adds namespaces/references. Read the MD path directly (a failed Read is the existence check); if you cannot name its required properties, you read the wrong file. No doc anywhere → flag the package third-party, use find + starter, warn the surface may be incomplete.
 
 **Skip-tax:** starters omit `null`/`0`/`false`/unset properties (`NTypeInto` hides 2 of 20, `NClick` ~3; hidden: `ClickType`, `KeyModifiers`, `WaitForReady`, `EmptyFieldMode`). `NGetText`'s starter is `<uix:NGetText HealingAgentBehavior="SameAsCard" />`: bind output to `TextString` (`OutArgument<string>`); `NGetText.Value` gives `Cannot set unknown member 'UiPath.UIAutomationNext.Activities.NGetText.Value'`, breaking Object Repository linking. Legacy `Text="..."` is valid; never "correct" it.
 
@@ -164,7 +164,18 @@ Every body/branch slot is a `<Sequence>` (Rule 24): `If.Then`/`If.Else` (`Displa
 
 ## Property Binding: Attributes vs Child Elements
 
-Attributes for strings, enums, booleans, VB `[expr]`; child elements (`<X.Result><OutArgument …>[v]</OutArgument></X.Result>`) for complex objects, outputs when the attribute fails, and literal `[k(enter)]` strings (attributes run but don't render; [common-pitfalls.md § NTypeInto `Text`](common-pitfalls.md#ntypeinto-text-with-literal-k-special-key-tokens)).
+Attributes for strings, enums, booleans, VB `[expr]`:
+```xml
+<ui:LogMessage Message="[myVar]" Level="Info" />
+```
+Child elements for complex objects, outputs when the attribute fails, and literal `[k(enter)]` strings (attributes run but don't render; [common-pitfalls.md § NTypeInto `Text`](common-pitfalls.md#ntypeinto-text-with-literal-k-special-key-tokens)):
+```xml
+<ui:SomeActivity>
+  <ui:SomeActivity.Result>
+    <OutArgument x:TypeArguments="x:String">[outputVar]</OutArgument>
+  </ui:SomeActivity.Result>
+</ui:SomeActivity>
+```
 
 ### Version-Sensitive Properties
 
