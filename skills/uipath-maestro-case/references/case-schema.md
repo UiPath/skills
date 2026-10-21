@@ -156,7 +156,7 @@ No `position`, `style`, `measured`, `width`, `zIndex`, or `parentElement` on Tri
 |-------|------|-------------|
 | `typeVersion` | string | Manifest type version — literal `"1.0.0"`. |
 | `display` | `{ label?, icon? }` ? | Presentation. `display.label` is the trigger's display name (was `data.label` pre-v24). |
-| `inputs` | object? | Runtime config bag (passthrough). Holds `serviceType` plus per-kind fields. Absent on a manual trigger. |
+| `inputs` | object? | Runtime config bag (passthrough). Holds `serviceType`, `entryPointId` and per-kind fields. Always write it, including on a manual trigger (`serviceType: "None"`). Older schemas may omit it on a manual trigger, so accept that form when reading. |
 | `description` | string? | Free-text description — stays at `data.description` (only `label` moved to `display`). |
 
 > **`data.inputs.entryPointId` (every trigger kind).** Set it to the `uniqueId` of this trigger's `entry-points.json` entry — the Case Designer pairs node and entry through this field; if it is missing, the first open mints a new one and rewrites the entry's `uniqueId`. `validate --strict` reports a missing or mismatched value as `STRICT_TRIGGER_ENTRY_POINT_ID`. `uip maestro case init` scaffolds `trigger_1` with it already set: when you rewrite `trigger_1`'s `data.inputs`, keep the scaffolded value. For a new trigger, mint the `uniqueId` once and write the same GUID to both files.
