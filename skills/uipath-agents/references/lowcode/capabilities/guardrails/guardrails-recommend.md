@@ -195,9 +195,8 @@ Generate a fresh UUID for each guardrail `id`.
 
 **`detectionScope` decision** (only when the matched list entry's `Parameters` contains `Id: "detectionScope"`; BYO entries never do):
 1. The agent has a file surface (Step 1) and the threat lives in file contents (PII in uploaded documents, licensed code in a generated file, an injection inside a PDF) → add `{"$parameterType": "enum", "id": "detectionScope", "value": "Files"}`; use `"Both"` only when the text payload is also a threat surface the same guardrail must cover.
-2. No file surface → omit the parameter (the default is `Text`, except `llm_as_judge` which defaults to `Both`).
+2. No file surface → omit the parameter (the default is `Text`).
 3. The list entry lacks `detectionScope` → omit it and tell the user file inspection is not enabled for that validator on this tenant.
-4. `llm_as_judge` on a file-taking agent → set `"Files"` explicitly unless the rule needs the text, so surrounding text cannot sway the verdict.
 
 Semantics and recipes: [guardrails.md § Files and attachments](guardrails.md#files-and-attachments-detectionscope) → [files-guide.md](files-guide.md).
 
@@ -265,7 +264,6 @@ Check that every parameter object has a `$parameterType` discriminator. Missing 
 3. If the agent matches a `when_not_to_use` condition, flag the guardrail as potentially misapplied and explain why.
 4. **File coverage gap** — the agent has a `job-attachment` input or output the guardrail is meant to protect, the matched list entry offers `detectionScope`, and the guardrail omits it or sets `"Text"` → flag it: the file contents are never inspected; fix with `detectionScope: "Files"` (or `"Both"` when the text must stay covered).
 5. **Misapplied file scope** — `detectionScope: "Files"` on an agent with no `job-attachment` field and no file tool → nothing to evaluate; fix: remove the parameter or add the file input.
-6. **`Both` on `llm_as_judge` over a file-taking agent** where surrounding text can sway the verdict → suggest `"Files"`.
 
 ### Report and Fix
 

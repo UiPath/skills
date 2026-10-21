@@ -288,16 +288,14 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 
 > **These are all `builtInValidator` guardrails — autonomous-only. NONE are usable on conversational agents** (see [../../critical-rules/conversational-critical-rules.md](../../critical-rules/conversational-critical-rules.md) Critical Rule 1); the conversational runtime runs only Custom deterministic `Tool` guardrails. The table below describes autonomous support.
 
-| Validator | Scopes (autonomous) | Conversational | Stages | Supported Actions | Files (`detectionScope` default) |
-|-----------|---------------------|----------------|--------|-------------------|-----------------------------|
-| `pii_detection` | Agent, Llm, Tool | **Not usable** (autonomous-only) | Pre + Post | Block, Log, Escalate | `Text` |
-| `prompt_injection` | Llm | **Not usable** (autonomous-only) | Pre only | Block, Log, Escalate | `Text` |
-| `harmful_content` | Agent, Llm, Tool | **Not usable** (autonomous-only) | Pre + Post | Block, Log, Escalate | `Text` |
-| `intellectual_property` | Llm, Agent | **Not usable** (autonomous-only) | Post only | Block, Log, Escalate | `Text` |
-| `user_prompt_attacks` | Llm | **Not usable** (autonomous-only) | Pre only | Block, Log, Escalate | `Text` |
-| `llm_as_judge` | Agent, Llm, Tool | **Not usable** (autonomous-only) | Pre + Post | Block, Log, Escalate | `Both` |
-
-> **Files column** = what the validator evaluates when `detectionScope` is omitted, and only when the tenant's `guardrails list` entry exposes that parameter — see [Files and attachments](#files-and-attachments-detectionscope).
+| Validator | Scopes (autonomous) | Conversational | Stages | Supported Actions |
+|-----------|---------------------|----------------|--------|-------------------|
+| `pii_detection` | Agent, Llm, Tool | **Not usable** (autonomous-only) | Pre + Post | Block, Log, Escalate |
+| `prompt_injection` | Llm | **Not usable** (autonomous-only) | Pre only | Block, Log, Escalate |
+| `harmful_content` | Agent, Llm, Tool | **Not usable** (autonomous-only) | Pre + Post | Block, Log, Escalate |
+| `intellectual_property` | Llm, Agent | **Not usable** (autonomous-only) | Post only | Block, Log, Escalate |
+| `user_prompt_attacks` | Llm | **Not usable** (autonomous-only) | Pre only | Block, Log, Escalate |
+| `llm_as_judge` | Agent, Llm, Tool | **Not usable** (autonomous-only) | Pre + Post | Block, Log, Escalate |
 
 > **`llm_as_judge` needs an LLM Gateway model.** Its `model` parameter comes back with an **empty** `Options` list from `uip agent guardrails list` — the valid values live in LLM Gateway, not the catalog. Run `uip agent guardrails llm-as-judge-models --output json` and use a `ModelId` from the result for the `model` parameter (prefer a non-preview model; a small/fast model such as a Haiku / mini class is a sound judge default). If the command returns no models or fails (no LLM Gateway access), tell the user and ask them to configure a model in their LLM Gateway or supply a model ID. Its other parameters are `guardrailText` (`text`, required), `positiveExamples` / `negativeExamples` (`text-list`, optional), and `threshold` (`number`, optional).
 
@@ -323,7 +321,7 @@ Run `uip agent guardrails list --output json` to get the authoritative list. Onl
 File-capable built-in validators take an optional `{ "$parameterType": "enum", "id": "detectionScope", "value": "Text" | "Files" | "Both" }` parameter that decides whether the provider evaluates the text payload, the run's files (`job-attachment` inputs, files tools return, files the agent produces), or both.
 
 1. Add it only when the validator's `Parameters` in `uip agent guardrails list --output json` contains `Id: "detectionScope"` — absent means text only on this tenant.
-2. Omitted = `Text` for every validator except `llm_as_judge` (= `Both`). Allowed scopes and stages do not change.
+2. The default is always `Text` ("Text only"): omitted means text only for every validator. Allowed scopes and stages do not change.
 3. Guard attached input files at Agent scope with `Files` ([Example 6](#example-6-block-pii-inside-attached-files)); guard a produced output file with a Post validator at Agent scope and `Files`.
 4. Custom guardrails never read file contents (the `always` rule's `applyTo` picks input or output, not text or files). BYO guardrails have no file support.
 
@@ -586,7 +584,7 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 22. **Do not leave a key in `harmfulContentEntityThresholds` (or any `map-enum` threshold parameter, e.g. `entityThresholds`) that is not in the corresponding entities list** — threshold keys must exactly match the selected entities: no extra keys, no missing keys. `uip agent validate` does NOT flag the mismatch, so a stale extra key passes validation and silently misconfigures the guardrail. When editing the entities list, prune the thresholds map in the same edit.
 23. **Do not reverse-engineer guardrail schemas from the CLI installation or SDK packages** — never grep `/usr/lib/node_modules/@uipath/**/dist/*.js`, read minified bundles, or import-probe packages to confirm a field. This reference is the schema authority (see [Overview](#overview)); write the guardrail from the complete examples here and let `uip agent validate` confirm the shape.
 24. **Do not add `detectionScope` to a validator whose `uip agent guardrails list` `Parameters` lacks it, to any `custom` guardrail, or to a guardrail pinned with `byoValidatorName`** — validate may pass, but the runtime ignores it and the guardrail checks text only. See [files-guide.md](files-guide.md).
-25. **Do not expect a `Text` guardrail (the default for every validator except `llm_as_judge`) to inspect an attached file** — file contents reach the provider only with `detectionScope: "Files"` or `"Both"`.
+25. **Do not expect a `Text` guardrail (the default) to inspect an attached file** — file contents reach the provider only with `detectionScope: "Files"` or `"Both"`.
 26. **Do not confuse `detectionScope` (`Text` / `Files` / `Both`, what a built-in validator reads) with `selector.scopes` (`Agent` / `Llm` / `Tool`, where it runs).**
 
 ## References

@@ -19,10 +19,10 @@ Optional `validatorParameters` entry on file-capable built-in validators (the **
 | `Both` | Text and files | Text payload plus files |
 
 1. Set `detectionScope` only when the validator's entry in `uip agent guardrails list --output json` has a `Parameters[]` item with `Id: "detectionScope"`. Absent means file inspection is not enabled for that validator on this tenant (the Studio Web card reads "Text prompts only"); the runtime evaluates text only. Do not add the parameter anyway.
-2. Omitted `detectionScope` defaults to `Text` for `pii_detection`, `prompt_injection`, `harmful_content`, `intellectual_property`, `user_prompt_attacks`, and to `Both` for `llm_as_judge`. Any unrecognised value narrows to `Text`.
+2. The default is always `Text` ("Text only") for every validator: an omitted, blank, or unrecognised `detectionScope` evaluates text only.
 3. `detectionScope` changes nothing about `selector.scopes` or stages: `prompt_injection` and `user_prompt_attacks` stay Llm · Pre; `intellectual_property` stays Agent/Llm · Post; the others stay Agent/Llm/Tool · Pre+Post. There is no stage picker — the runtime decides per validator.
 4. Custom guardrails have no `validatorParameters`, so no `detectionScope`; the `always` rule's `applyTo` (`input` | `output` | `inputAndOutput`) in [custom-rules-guide.md](custom-rules-guide.md) picks input or output, not text or files.
-5. Values are exact: `Text`, `Files`, `Both` — never lowercase.
+5. Write the values as `Text`, `Files`, `Both`.
 
 ## Choosing Text, Files, or Both
 
@@ -32,7 +32,6 @@ Optional `validatorParameters` entry on file-capable built-in validators (the **
 | Guard the contents of attached input files; surrounding text is irrelevant or could sway a judge | `Files` |
 | Guard a file the agent produces (`job-attachment` output) | `Files` at Agent scope — Recipe 3 |
 | Text and files are both threat surfaces and one guardrail should cover both | `Both` |
-| `llm_as_judge` on a file-taking agent | `Files` unless the rule needs the text — its default `Both` feeds text that can change the verdict |
 
 ## What each scope and stage inspects
 
@@ -47,8 +46,7 @@ Files sent to the provider when `detectionScope` is `Files` or `Both`:
 | Tool · Pre | Only files named in that tool call's arguments (for example Analyze Files `attachments[]`) |
 | Tool · Post | Only files the tool result references; a prose result (Analyze Files `analysis`) carries none |
 
-<!-- transitional: remove when output-file verification is generally available -->
-> Runtimes that predate output-file verification send every registered file at Agent · Post and Llm · Post, and a `Files` guardrail with nothing to read falls back to evaluating the text payload. Current runtimes pass that evaluation without a provider call (`Allowed: no files were supplied to evaluate.`).
+A `Files` guardrail with nothing to read passes without a provider call (`Allowed: no files were supplied to evaluate.`).
 
 ## How each validator consumes files
 
@@ -178,11 +176,10 @@ A tenant-wide AI Trust Layer policy (`uip gov aops-policy`, product `AITrustLaye
 1. **Do not add `detectionScope` when the validator's `Parameters` lacks it** — `uip agent validate` passes, the runtime ignores it, and the guardrail silently checks text only.
 2. **Do not set `detectionScope` on `$guardrailType: "custom"` or on validators that do not list it** — invalid parameter.
 3. **Do not set `detectionScope: "Files"` or `"Both"` on a guardrail pinned with `byoValidatorName`** — BYO guardrails have no file support; the provider receives text only.
-4. **Do not expect `Text` (the default outside `llm_as_judge`) to catch content inside an attachment** — file contents never reach the provider.
+4. **Do not expect `Text` (the default) to catch content inside an attachment** — file contents never reach the provider.
 5. **Do not rely on a `Files` guardrail at Llm scope to inspect a produced file** — the model emits it as text until Create File stores it; use Agent scope.
 6. **Do not put a `Files` guardrail at Tool scope on a tool whose arguments carry no files** — Tool · Pre sends only files named in the call, so it evaluates nothing.
 7. **Do not let the model judge by file name** — require Analyze Files in the system prompt; `{{input.<FILE_FIELD>}}` is metadata only.
-8. **Do not write `files` / `both` in lowercase** — the enum values are `Text`, `Files`, `Both`.
 
 ## References
 

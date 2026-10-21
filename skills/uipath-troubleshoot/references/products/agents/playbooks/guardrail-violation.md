@@ -105,8 +105,7 @@ What can cause it:
 
 **Block + legitimate violation:** Fix caller payload (pre/input-side container span) so it does not contain prohibited content before sending. For post/output-side violations, tighten system prompt in `agent.json → messages[0].content` to constrain LLM output (e.g., "Respond only in JSON. Do not include names or email addresses.").
 
-<!-- transitional: remove when output-file verification is generally available -->
-**Flagged file:** `reason` ending in `Flagged files:` names the attributed files — fix or remove the file, or narrow the entities / thresholds; unreadable, oversize, or unsupported files are skipped, never faulted. A `Files` guardrail that blocks on a run with no attachment means an older runtime fell back to evaluating the text — set `Both` if that is wanted, otherwise expect a pass once the runtime is updated.
+**Flagged file:** `reason` ending in `Flagged files:` names the attributed files — fix or remove the file, or narrow the entities / thresholds; unreadable, oversize, or unsupported files are skipped, never faulted.
 
 **Rule too broad:** Narrow the pattern in AgentBuilder or Flow → Guardrails. For centralized guardrails enforced by a tenant admin: Automation Ops → Governance → AI Trust Layer → find policy by name from step 3. Replace the overly broad expression with a more specific match. Re-test with the previously blocked input.
 
