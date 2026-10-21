@@ -34,7 +34,9 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 | **3 — Implementation** | Connector task schemas, task I/O value binding, resolved connector-rule stub upgrades | `caseplan.case` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, summarize `build-issues.md` (journal already on disk) | `caseplan.case` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Skip to Debug` |
+<!--skill-flavor:phase-table-six-row:start-->
 | **6 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Continue to publish`; a re-publish after a fix is confirmed separately |
+<!--skill-flavor:phase-table-six-row:end-->
 <!--skill-flavor:phase-table-seven-row:start-->
 | **7 — Publish to Orchestrator** | Optional `case pack` + `solution pack` + `solution publish` to the tenant solution feed | `.zip` packed; publish result printed | `Publish to Orchestrator` / `Done` |
 <!--skill-flavor:phase-table-seven-row:end-->
@@ -291,12 +293,16 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 
 After Phase 5 (whether published or skipped), prompt via **AskUserQuestion**:
 
+<!--skill-flavor:phase-six-run-option:start-->
 - `Run debug session` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json`. Streams results.
+<!--skill-flavor:phase-six-run-option:end-->
 - `Continue to publish` — proceed to Phase 7 without debugging.
 
 > **Debug executes case for real — sends emails, posts messages, calls APIs, writes to databases. Only run when user explicitly asks. Never auto-run** (Rule 13).
 
+<!--skill-flavor:phase-six-requirements:start-->
 Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams results.
+<!--skill-flavor:phase-six-requirements:end-->
 
 After debug completes, return to Phase 6 prompt so user can re-run or move on. Leave the phase only on `Continue to publish`.
 
