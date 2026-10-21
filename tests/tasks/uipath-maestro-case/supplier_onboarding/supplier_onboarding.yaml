@@ -55,6 +55,10 @@ sandbox:
     - type: template_dir
       path: fixtures
 
+reference:
+  # Case root: check_tasks_io.py imports `_shared/`, which a task-only copy leaves out.
+  directory: ..
+
 initial_prompt: |
   I have an approved SDD for our supplier-onboarding case-management solution. It is
   staged as `sdd.md` in this folder. Build a UiPath Case Management solution named
@@ -128,7 +132,7 @@ success_criteria:
       corrections loop back into the checks, the withdrawal picker in exactly the three
       review phases and not in setup, 3 case exits with one completion, and three
       terminal stages nothing re-enters
-    command: "python3 $TASK_DIR/check_topology.py"
+    command: "python3 $REFERENCE_DIR/supplier_onboarding/check_topology.py"
     timeout: 120
     expected_exit_code: 0
     weight: 4.0
@@ -143,7 +147,7 @@ success_criteria:
       `=js:` expression in the plan parses as JavaScript (validate checks the variable
       names and stops there, so an unbalanced paren is reported Valid and throws on its
       first evaluation)
-    command: "python3 $TASK_DIR/check_guards.py"
+    command: "python3 $REFERENCE_DIR/supplier_onboarding/check_guards.py"
     timeout: 120
     expected_exit_code: 0
     weight: 4.0
@@ -156,7 +160,7 @@ success_criteria:
       rule, which validate does not reject but which re-runs the whole stage), one
       non-interrupting oversight lane, three notify-only wrap-ups, and each phase's
       revised date confined to its own slot
-    command: "python3 $TASK_DIR/check_sla.py"
+    command: "python3 $REFERENCE_DIR/supplier_onboarding/check_sla.py"
     timeout: 120
     expected_exit_code: 0
     weight: 4.0
@@ -170,7 +174,7 @@ success_criteria:
       profile does NOT check data.recipient), ten run-once tasks, the child case task
       present, and four
       on-demand tasks each locked to its own stage
-    command: "python3 $TASK_DIR/check_tasks_io.py"
+    command: "python3 $REFERENCE_DIR/supplier_onboarding/check_tasks_io.py"
     timeout: 120
     expected_exit_code: 0
     weight: 3.0
@@ -182,7 +186,7 @@ success_criteria:
       read the lowercase `response.status` into lastEmailStatus, and every dotted
       dereference resolves to a variable the plan holds. Output display labels are
       deliberately NOT part of this contract
-    command: "python3 $TASK_DIR/check_fieldnames.py"
+    command: "python3 $REFERENCE_DIR/supplier_onboarding/check_fieldnames.py"
     timeout: 120
     expected_exit_code: 0
     weight: 2.0
@@ -195,7 +199,7 @@ success_criteria:
       puts one, and every file slot defaults empty. A non-string default is dropped
       silently on the way to BPMN, so the slot starts undefined and the first route to
       read it faults
-    command: "python3 $TASK_DIR/check_variables.py"
+    command: "python3 $REFERENCE_DIR/supplier_onboarding/check_variables.py"
     timeout: 120
     expected_exit_code: 0
     weight: 2.0
@@ -207,7 +211,7 @@ success_criteria:
       `SUP` identifier prefix, the case app enabled, and three exit conditions on the
       stages the SDD names of which only the onboarded one marks the case complete. A
       rejection that marks the case complete reports an onboarding that never happened
-    command: "python3 $TASK_DIR/check_metadata.py"
+    command: "python3 $REFERENCE_DIR/supplier_onboarding/check_metadata.py"
     timeout: 120
     expected_exit_code: 0
     weight: 2.0
