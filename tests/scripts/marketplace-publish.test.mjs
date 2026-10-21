@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { directoryManifest } from "../../.github/workflows/scripts/codex-directory-manifest.mjs";
 import { bumpEntry } from "../../.github/workflows/scripts/bump-awesome-copilot-entry.mjs";
 import { buildChecklist } from "../../.github/workflows/scripts/marketplace-release-checklist.mjs";
+import { GEMINI_PLATFORMS, releaseAssetNames } from "../../.github/workflows/scripts/release-assets.mjs";
 
 const SHA = "0123456789abcdef0123456789abcdef01234567";
 const BUMP_SCRIPT = new URL("../../.github/workflows/scripts/bump-awesome-copilot-entry.mjs", import.meta.url);
@@ -103,4 +104,28 @@ test("checklist tracks an opened awesome-copilot PR, or flags a failed one", () 
 
   const failed = buildChecklist({ ...checklistInput, copilot: { result: "failure", prUrl: "" } });
   assert.match(failed.body, /bump PR was not opened \(job failure\); see the \[workflow run\]\(https:\/\/github\.com\/UiPath\/skills\/actions\/runs\/1\)/);
+});
+
+// Mirror of findReleaseAsset in google-gemini/gemini-cli
+// packages/cli/src/config/extensions/github.ts — how Gemini picks the asset it
+// installs from our latest release.
+function geminiPicks(assetNames, platform, arch) {
+  const names = assetNames.map((name) => name.toLowerCase());
+  const byPrefix = (prefix) => assetNames[names.findIndex((name) => name.startsWith(prefix))];
+  return (
+    byPrefix(`${platform}.${arch}.`) ??
+    byPrefix(`${platform}.`) ??
+    (assetNames.length === 1 && !/darwin|linux|win32/.test(names[0]) ? assetNames[0] : undefined)
+  );
+}
+
+test("Gemini installs its own archive on every platform, never the Codex ZIP", () => {
+  const { codex, gemini } = releaseAssetNames("1.206.0");
+  const assets = [codex, ...gemini];
+  for (const platform of GEMINI_PLATFORMS) {
+    for (const arch of ["x64", "arm64"]) {
+      assert.equal(geminiPicks(assets, platform, arch), `${platform}.uipath-gemini-extension-1.206.0.zip`);
+    }
+  }
+  assert.doesNotMatch(codex, /darwin|linux|win32/i, "a platform name would let Gemini match the Codex ZIP");
 });

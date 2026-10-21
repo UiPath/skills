@@ -218,8 +218,8 @@ Add `-f dry_run=true` to build the ZIP without creating anything.
 
 | Job | What it does | Permissions |
 |---|---|---|
-| `codex-zip` | Builds `uipath-codex-plugin-<version>.zip` for the OpenAI plugin directory. The ZIP holds the marker-free default skill tree plus `.codex-plugin/` without `hooks`/`apps` (the directory rejects both), and has no `hooks/` directory. | read |
-| `release` | Creates the immutable tag `v<version>` on the released commit and a GitHub Release with the ZIP attached. It stops if the tag already points elsewhere. Gemini detects new versions from Releases, and awesome-copilot pins the tag plus its SHA. | `contents: write` |
+| `archives` | Builds two archives, both holding the marker-free default skill tree and **no `hooks/` directory**. `uipath-codex-plugin-<version>.zip` is for the OpenAI plugin directory and carries `.codex-plugin/` without `hooks`/`apps` (the directory rejects both). The Gemini CLI extension has `gemini-extension.json` at the archive root and is uploaded as `darwin.`, `linux.` and `win32.uipath-gemini-extension-<version>.zip`. Gemini picks the asset by platform prefix and falls back to a release's only asset, so the platform names keep it off the Codex ZIP (`scripts/release-assets.mjs`). The Gemini archive is skipped for a line without `gemini-extension.json`. | read |
+| `release` | Creates the immutable tag `v<version>` on the released commit and a GitHub Release with the archives attached. It stops if the tag already points elsewhere. Gemini installs and updates from the latest release, and awesome-copilot pins the tag plus its SHA. | `contents: write` |
 | `awesome-copilot` | Forks `github/awesome-copilot` and opens a PR that bumps our entry's `version`/`ref`/`sha` in `plugins/external.json` and `.github/plugin/marketplace.json`. It runs only when the repo variable `AWESOME_COPILOT_PLUGIN_NAME` is set. | `AWESOME_COPILOT_TOKEN` |
 | `checklist` | Opens one issue per version, `Marketplace follow-ups for v<version>`, for the steps no API covers: the OpenAI ZIP upload, the Cursor re-index request, the Anthropic Directory review, and the awesome-copilot merge. | `issues: write` |
 

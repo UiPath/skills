@@ -15,9 +15,12 @@ name: Publish to coding-agent marketplaces
 #                           gh workflow run publish-marketplaces.yml --ref main -f ref=release/v<M.N>
 #
 # For one stable version it:
-#   1. builds the hook-free Codex ZIP for the OpenAI plugin directory
-#   2. creates the immutable tag `v<M.N.P>` and a GitHub Release with the ZIP
-#      attached (Gemini detects releases; awesome-copilot needs a tag + SHA)
+#   1. builds two hook-free archives: the Codex ZIP for the OpenAI plugin
+#      directory, and the Gemini CLI extension (uploaded under one
+#      `<platform>.` name per platform, see scripts/release-assets.mjs)
+#   2. creates the immutable tag `v<M.N.P>` and a GitHub Release with the
+#      archives attached (Gemini installs and updates from the latest release;
+#      awesome-copilot needs a tag + SHA)
 #   3. opens the awesome-copilot bump PR — only when the repo variable
 #      AWESOME_COPILOT_PLUGIN_NAME names our approved listing; the
 #      AWESOME_COPILOT_TOKEN secret (a classic PAT with `public_repo`, owned by
@@ -123,13 +126,15 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "Publishing @uipath/skills@$version from $ref ($sha) as v$version."
 
-  codex-zip:
-    name: Build the Codex directory ZIP
+  archives:
+    name: Build the release archives
     needs: [resolve]
     if: needs.resolve.outputs.publish == 'true'
     runs-on: uipath-ubuntu-latest
+    outputs:
+      codex_zip: ${{ steps.names.outputs.codex }}
     env:
-      ZIP_NAME: uipath-codex-plugin-${{ needs.resolve.outputs.version }}.zip
+      VERSION: ${{ needs.resolve.outputs.version }}
     steps:
       # Scripts come from the ref this workflow runs on; the skills, manifest
       # and icon come from the released commit, so a line cut before this
@@ -146,32 +151,68 @@ jobs:
         with:
           node-version: "22.x"
 
-      # The directory gets the marker-free default skill tree (the same one the
-      # npm package ships), the Codex manifest without hooks/apps, and no
-      # hooks/ directory at all.
-      - name: Stage and zip the plugin
+      - name: Name the release assets
+        id: names
+        run: node .github/workflows/scripts/release-assets.mjs
+
+      # Both archives ship the marker-free default skill tree (the same one the
+      # npm package ships) and no hooks/ directory: the OpenAI directory
+      # rejects hooks, and the repo's Claude-format hooks.json would misfire
+      # under Gemini (unknown event names, `timeout` read as milliseconds).
+      - name: Build the skill tree
+        run: node line/scripts/compose-skill-flavor.mjs build-default "$RUNNER_TEMP/skills"
+
+      - name: Build the Codex directory ZIP
+        env:
+          CODEX_ZIP: ${{ steps.names.outputs.codex }}
         run: |
           set -euo pipefail
           stage="$RUNNER_TEMP/codex-plugin"
-          mkdir -p "$stage/.codex-plugin"
-          node line/scripts/compose-skill-flavor.mjs build-default "$stage/skills"
+          mkdir -p "$stage/.codex-plugin" "$RUNNER_TEMP/dist"
+          cp -R "$RUNNER_TEMP/skills" "$stage/skills"
           cp -R line/.codex-plugin/assets "$stage/.codex-plugin/assets"
           cp line/README.md line/LICENSE "$stage/"
           node .github/workflows/scripts/codex-directory-manifest.mjs \
             line/.codex-plugin/plugin.json "$stage/.codex-plugin/plugin.json"
-          (cd "$stage" && python3 -m zipfile -c "$RUNNER_TEMP/$ZIP_NAME" .codex-plugin skills README.md LICENSE)
-          echo "Built $ZIP_NAME ($(du -h "$RUNNER_TEMP/$ZIP_NAME" | cut -f1))."
+          (cd "$stage" && python3 -m zipfile -c "$RUNNER_TEMP/dist/$CODEX_ZIP" .codex-plugin skills README.md LICENSE)
+          echo "Built $CODEX_ZIP ($(du -h "$RUNNER_TEMP/dist/$CODEX_ZIP" | cut -f1))."
+
+      # Gemini wants gemini-extension.json at the archive root and finds skills
+      # in skills/. A line cut before the manifest existed is skipped: such a
+      # release is not installable in Gemini either way, so nothing regresses.
+      - name: Build the Gemini extension archive
+        env:
+          GEMINI_ZIPS: ${{ steps.names.outputs.gemini }}
+        run: |
+          set -euo pipefail
+          if [ ! -f line/gemini-extension.json ]; then
+            echo "::notice::No gemini-extension.json on the released commit; skipping the Gemini archive."
+            exit 0
+          fi
+          manifest_version=$(node -p 'require("./line/gemini-extension.json").version')
+          if [ "$manifest_version" != "$VERSION" ]; then
+            echo "::error::gemini-extension.json is at $manifest_version, expected $VERSION (run npm run version:sync)."
+            exit 1
+          fi
+          stage="$RUNNER_TEMP/gemini-extension"
+          mkdir -p "$stage"
+          cp -R "$RUNNER_TEMP/skills" "$stage/skills"
+          cp line/gemini-extension.json line/README.md line/LICENSE "$stage/"
+          read -r -a names <<< "$GEMINI_ZIPS"
+          (cd "$stage" && python3 -m zipfile -c "$RUNNER_TEMP/dist/${names[0]}" gemini-extension.json skills README.md LICENSE)
+          for name in "${names[@]:1}"; do cp "$RUNNER_TEMP/dist/${names[0]}" "$RUNNER_TEMP/dist/$name"; done
+          echo "Built ${names[*]} ($(du -h "$RUNNER_TEMP/dist/${names[0]}" | cut -f1) each)."
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
-          name: codex-plugin-zip
-          path: ${{ runner.temp }}/${{ env.ZIP_NAME }}
+          name: release-assets
+          path: ${{ runner.temp }}/dist/
           if-no-files-found: error
           retention-days: 7
 
   release:
     name: Tag and create the GitHub Release
-    needs: [resolve, codex-zip]
+    needs: [resolve, archives]
     runs-on: uipath-ubuntu-latest
     # The only job with write access to this repo. It runs no repository code —
     # just gh against the artifact the read-only job built.
@@ -184,19 +225,18 @@ jobs:
       REPO: ${{ github.repository }}
       TAG: ${{ needs.resolve.outputs.tag }}
       SHA: ${{ needs.resolve.outputs.sha }}
-      ZIP_NAME: uipath-codex-plugin-${{ needs.resolve.outputs.version }}.zip
       DRY_RUN: ${{ inputs.dry_run == true }}
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
         with:
-          name: codex-plugin-zip
+          name: release-assets
           path: ${{ runner.temp }}/dist
 
-      - name: Create the tag, release and ZIP asset
+      - name: Create the tag, release and assets
         id: release
         run: |
           set -euo pipefail
-          zip="$RUNNER_TEMP/dist/$ZIP_NAME"
+          assets=("$RUNNER_TEMP"/dist/*)
 
           # Tags are immutable: catalogs pin them by SHA. An existing tag on a
           # different commit means the version was reused — stop for a human.
@@ -207,19 +247,24 @@ jobs:
           fi
 
           if [ "$DRY_RUN" = true ]; then
-            echo "Dry run: would release $TAG at $SHA with $ZIP_NAME."
+            echo "Dry run: would release $TAG at $SHA with: ${assets[*]##*/}"
             echo "url=https://github.com/$REPO/releases/tag/$TAG" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
+          # gh uploads every asset to a draft and publishes it after, so no
+          # client ever sees the release with only some of its assets.
           if gh release view "$TAG" -R "$REPO" > /dev/null 2>&1; then
-            if gh release view "$TAG" -R "$REPO" --json assets --jq '.assets[].name' | grep -qxF "$ZIP_NAME"; then
-              echo "Release $TAG already has $ZIP_NAME."
-            else
-              gh release upload "$TAG" "$zip" -R "$REPO"
-            fi
+            existing=$(gh release view "$TAG" -R "$REPO" --json assets --jq '.assets[].name')
+            for asset in "${assets[@]}"; do
+              if grep -qxF "${asset##*/}" <<< "$existing"; then
+                echo "Release $TAG already has ${asset##*/}."
+              else
+                gh release upload "$TAG" "$asset" -R "$REPO"
+              fi
+            done
           else
-            gh release create "$TAG" "$zip" -R "$REPO" --target "$SHA" --title "$TAG" --generate-notes
+            gh release create "$TAG" "${assets[@]}" -R "$REPO" --target "$SHA" --title "$TAG" --generate-notes
           fi
           echo "url=$(gh release view "$TAG" -R "$REPO" --json url --jq .url)" >> "$GITHUB_OUTPUT"
 
@@ -299,7 +344,7 @@ jobs:
 
   checklist:
     name: Open the manual follow-up issue
-    needs: [resolve, release, awesome-copilot]
+    needs: [resolve, archives, release, awesome-copilot]
     # Runs whether the awesome-copilot job succeeded, failed or was skipped;
     # the issue records which.
     if: always() && needs.release.result == 'success' && inputs.dry_run != true
@@ -320,7 +365,7 @@ jobs:
         env:
           VERSION: ${{ needs.resolve.outputs.version }}
           RELEASE_URL: ${{ needs.release.outputs.url }}
-          ZIP_NAME: uipath-codex-plugin-${{ needs.resolve.outputs.version }}.zip
+          ZIP_NAME: ${{ needs.archives.outputs.codex_zip }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           COPILOT_RESULT: ${{ needs.awesome-copilot.result }}
           COPILOT_PR_URL: ${{ needs.awesome-copilot.outputs.pr_url }}
