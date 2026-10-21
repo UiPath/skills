@@ -15,7 +15,8 @@ the static two-branch shape only; it does not run `flow debug`.
 
 Static assertions (read from the `.flow` source):
   1. The start trigger is preserved (`core.trigger.*`) and fans out to >=2
-     branches (the event wait and the HTTP request).
+     branches (the event wait and the HTTP request), directly or through a
+     `core.logic.merge` fork.
   2. A Wait-for-event node of the HTTP Webhook connector event exists
      (`uipath.connector.event.uipath-http-webhook.http-webhook`).
   3. A `core.action.http` or `core.action.http.v2` node is a MANUAL `GET` whose
@@ -32,6 +33,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from _shared.flow_check import find_flow_file  # noqa: E402
+from _shared.flow_graph import FlowGraph  # noqa: E402
 
 FLOW_GLOB = "**/WebhookSelfTest*.flow"
 EVENT_MARKERS = ("uipath.connector.event", "uipath-http-webhook")
@@ -76,7 +78,7 @@ def main() -> None:
     if not triggers:
         _fail(f"no start trigger (core.trigger.*). Types seen: {types_seen}")
     start_id = triggers[0].get("id")
-    out_edges = [e for e in edges if e.get("sourceNodeId") == start_id]
+    out_edges = FlowGraph(flow).fan_out(start_id)
     if len(out_edges) < 2:
         _fail(
             f"start trigger {start_id!r} must fan out into >=2 branches; "
