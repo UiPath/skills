@@ -17,3 +17,7 @@ Phase 1 (the open Studio Web solution already exists; project creation happens a
 <!--skill-flavor:phase-seven-publish:start-->
 Hard-stop AskUserQuestion (Step 16): `Publish to Orchestrator` / `Done`. On publish, run `uip solution publish --output json` from `/solution` — Studio Web packages and publishes the open solution; `resources refresh`, `case pack`, and `solution pack` are Node-CLI-only and are not run here. With several destinations the command lists them without publishing: ask the user which to use, then rerun with `--location "<key or name>"` or `--personal-workspace`. `Done` exits.
 <!--skill-flavor:phase-seven-publish:end-->
+
+<!--skill-flavor:phase-six-debug-gate:start-->
+Hard-stop AskUserQuestion (Step 15): `Debug in the Case Designer` / `Continue to publish`. `uip maestro case debug` is not in the Studio Web CLI, so never run it here: on Debug, tell the user to start the run from the Case Designer's Debug control, wait for the outcome they report, and loop until `Continue to publish`. Never start a run yourself.
+<!--skill-flavor:phase-six-debug-gate:end-->

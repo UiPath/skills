@@ -38,6 +38,7 @@ Emit the canonical first-trigger shape with the timer `uipath` block:
     "display": { "label": "<displayName or \"Trigger 1\">" },
     "inputs": {
       "serviceType": "timer",
+      "entryPointId": "<entry-points.json uniqueId>",
       "timerType": "timeCycle",
       "timeCycle": "<timeCycle from sdd.md>"
     }
@@ -62,6 +63,7 @@ Emit a secondary trigger with `data.parentElement` included:
     "display": { "label": "<displayName or \"Trigger <N>\">" },
     "inputs": {
       "serviceType": "timer",
+      "entryPointId": "<entry-points.json uniqueId>",
       "timerType": "timeCycle",
       "timeCycle": "<timeCycle from sdd.md>"
     }
@@ -85,7 +87,7 @@ Locate `entry-points.json` adjacent to `caseplan.case` (same directory). Append 
 ```
 
 - `<caseplan-basename>` — the literal filename of the case file (typically `caseplan.case`), producing a path like `/content/caseplan.case.bpmn#trigger_xxxxxx`.
-- `<UUID v4>` — fresh `crypto.randomUUID()` per write. Non-deterministic; normalizer strips in golden diff.
+- `<UUID v4>` — fresh `crypto.randomUUID()` per write. Non-deterministic; normalizer strips in golden diff. Write the same GUID to the node's `data.inputs.entryPointId` (on the scaffolded `trigger_1`, keep its existing pair instead). See [case-schema.md § Trigger Node](../../../case-schema.md#a-trigger-node--uipathcasetrigger) for the `entryPointId` rule.
 - `displayName` matches `node.data.display.label` (including the `Trigger <N>` default if `displayName` absent).
 - Leave this entry's `input`/`output` schemas (the `entry-points.json` fields above — not the trigger node's I/O) empty here — Step 6.3 back-fills them from the case's In/Out args ([entry-points-sync.md](../../../entry-points-sync.md)).
 
