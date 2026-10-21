@@ -183,7 +183,8 @@
 /skills/uipath-maestro-flow/references/ixp.md @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/ixp/ @UiPath/communications-mining @constantinmuraru @vlad-crisan @UiPath/maestro-cli-team
 
-# Extract v2 — the taxonomy an Extract v2 node carries inline
+# Extract v2 — the node and the taxonomy it carries inline
+/skills/uipath-maestro-flow/references/extract-v2-node.md @UiPath/communications-mining @UiPath/maestro-cli-team
 /skills/uipath-maestro-flow/references/extract-v2-taxonomy.md @UiPath/communications-mining @UiPath/maestro-cli-team
 /tests/tasks/uipath-maestro-flow/extract-v2/ @UiPath/communications-mining @UiPath/maestro-cli-team
 
