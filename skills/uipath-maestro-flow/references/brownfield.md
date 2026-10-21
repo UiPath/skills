@@ -157,7 +157,9 @@ loop above.
 
 - `--baseline-from <original.flow>` builds the baseline in memory; skip the
   baseline compile. A `.flow.ts` edited input is compiled by merge too. Both
-  compiles tolerate draft nodes.
+  compiles tolerate draft nodes. Needs `@uipath/maestro-builder-sdk` 6.28.0 or
+  later; an older `flow-sdk` answers `unknown option '--baseline-from'`, so
+  upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 - A draft node you did **not** touch is restored exactly as saved, with
   `[DRAFT_NODE_KEPT]` on stderr. So is a draft inside a subflow the edit did
   not change: merge keeps that subflow from the original (6.44.4 or later; an
