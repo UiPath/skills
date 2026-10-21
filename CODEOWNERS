@@ -28,9 +28,9 @@
 /skills/uipath-rpa/references/activity-docs/ @DragosUnguru
 
 # RPA skill (coded + XAML workflows)
-/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
+/skills/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii @danmunteanu1 @alexandru-petrescu
 /skills/uipath-rpa/references/coded/integration-service-guide.md @baishalighosh @ojalkumar-pixel @shyamgupta52
-/tests/tasks/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
+/tests/tasks/uipath-rpa/ @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii @danmunteanu1 @alexandru-petrescu
 
 # Activity Migrator skill (Windows-Legacy → Windows, classic → modern activities)
 /skills/uipath-activity-migrator/ @costin-uipath @MarinRzv @liviusanduuip @dmorosanu
@@ -197,7 +197,7 @@
 /tests/tasks/uipath-review/ @AlvinStanescu @gabrielavaduva @roalexandru
 
 # Legacy RPA — merged into uipath-rpa
-/skills/uipath-rpa/references/legacy/ @roalexandru @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii
+/skills/uipath-rpa/references/legacy/ @roalexandru @DragosUnguru @RaduAna-Maria @gabrielavaduva @AlvinStanescu @Mihaiii @danmunteanu1 @alexandru-petrescu
 
 # Troubleshooting
 /skills/uipath-troubleshoot/ @MarinRzv @dmorosanu @vladimir-cozma @costin-uipath @Stefan-Virgil
