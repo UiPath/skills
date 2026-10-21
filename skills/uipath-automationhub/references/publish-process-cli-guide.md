@@ -4,9 +4,9 @@ Creates one process from a schema-driven payload and attaches its documents (PDD
 
 > **Use this flow only after the preflight in [`cli-commands.md`](cli-commands.md) passed.** All commands: append `--output json`. The domain contract (required fields, wrapping rules, document types) is the same one [`api-endpoints.md`](api-endpoints.md) documents — the CLI only changes the transport.
 
-**Budget: about 12–15 commands end to end.** That covers preflight, flows, schema, one batched discovery call, reading the material, writing the answers, the create, one upload per document and one verification call. A run that wanders past that tends to run out of turns before the create. Everything the answers need comes from the caller's material, this tenant's schema and the discovery calls below:
-- **Don't study other automations on the tenant** to copy how they were filled. On a shared tenant they're someone else's data, and `automations schema get <id>` returns the template's placeholders, not that automation's answers.
-- **Read each supplied document whole, in one command** (`cat ./pdd.md`), not page by page.
+**Expect about 12–15 commands end to end** (more for a large document set or a clarifying round). That covers preflight, flows, schema, one batched discovery call, reading the material, writing the answers, the create, one upload per document and one verification call. A run that wanders well past that tends to run out of turns before the create. This is a pace, not a cap: never skip the preflight check, an upload or the Step 7 verification to save commands. Everything the answers need comes from the caller's material, this tenant's schema and the discovery calls below:
+- **Don't study other automations on the tenant** to copy how they were filled, unless the caller asks you to base the process on one. On a shared tenant they're someone else's data, and `automations schema get <id>` returns the template's placeholders, not that automation's answers.
+- **Read each supplied document once, front to back, in as few reads as your tools show in full.** Don't page through it in many small slices or re-read sections already read. A large PDD runs to 2,000 lines, more than one tool output shows, so use a few large ranges (e.g. `sed -n '1,700p'`) rather than one `cat` whose output gets cut.
 - **Resolve the category with the one-call recipe** in Step 4, not by walking the tree by hand.
 
 ## Step 1: Verify connectivity (and fetch the idea flows)
@@ -59,10 +59,10 @@ The discovery commands are independent — run the ones you need (`auth-info get
 
 ```bash
 uip ah categories get --output json | jq -r 'def nodes(p): .[] | (p + (if p == "" then "" else " > " end) + .CategoryName) as $path | (select(.CategoryIsActive == 1 and (.CategoryIsOther // 0) != 1 and (.CategoryScope // 3) != 1) | "\(.CategoryId)\t\($path)"), ((.Subcategories // []) | nodes($path)); .Data.Categories | nodes("")' > ./ah-categories.tsv
-grep -i -E 'lease|invoic|billing' ./ah-categories.tsv
+grep -i -E '<word>|<word>|<word>' ./ah-categories.tsv
 ```
 
-No match → grep for a broader word once (e.g. the department). Still nothing → that branch's "Other", as the table says. Without `jq`, do the same walk in one Python call.
+Use words from the material (its department, function or subject), not the placeholders. If `./ah-categories.tsv` is **empty**, this CLI names the fields differently: read the tree instead, don't conclude nothing fits. If the grep finds no match, list the branches once (`cut -f2 ./ah-categories.tsv | cut -d'>' -f1-2 | sort -u`) and pick the closest node under the best branch. Use "Other" only when nothing there fits, as the table says. Without `jq`, do the same walk in one Python call.
 
 **Never block the publish on an owner lookup.** If you look the owner up at all, do a targeted search and treat a miss as no signal:
 
