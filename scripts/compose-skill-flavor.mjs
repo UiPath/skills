@@ -675,6 +675,22 @@ export function isWorkingDocument(basename) {
   return basename === "CASE-MEMO-MAP.md" || basename.endsWith("-LOCATIONS.md");
 }
 
+/**
+ * Private working material, identified by path rather than basename.
+ *
+ * Working documents live under `skills/` and are excluded at the canonical
+ * walk. Memo sources do not: they sit under `assets/`, which is a whole-root
+ * `files` entry copied wholesale, so nothing in the skill plan ever sees them.
+ * They are kept out of the repository entirely, and this predicate is the
+ * second line — a pack run on a machine that still has a copy fails instead of
+ * publishing it.
+ */
+export function isPrivateWorkingPath(relativePath) {
+  const parts = relativePath.split("/").filter((part) => part && part !== ".");
+  if (parts.includes("memos")) return true;
+  return isWorkingDocument(parts[parts.length - 1] ?? "");
+}
+
 export function materializeComposition(plan, outputDir) {
   outputDir = validateOutputDirectory(outputDir);
   for (const item of plan.files) {
@@ -855,6 +871,7 @@ function copyPayload(source, destination, label) {
   const stats = safeLstat(source);
   if (!stats) throw new Error(`${label} is neither a file nor directory: ${source}`);
   if (stats.isFile()) {
+    if (isPrivateWorkingPath(path.basename(source))) return;
     mkdirSync(path.dirname(destination), { recursive: true });
     copyFilePreservingTimes(source, destination);
     return;
@@ -864,6 +881,7 @@ function copyPayload(source, destination, label) {
   chmodSync(destination, stats.mode);
   for (const entry of walkTree(source)) {
     const relative = path.relative(source, entry.path);
+    if (isPrivateWorkingPath(posixRelative(source, entry.path))) continue;
     const target = path.join(destination, relative);
     if (entry.stats.isDirectory()) {
       mkdirSync(target, { recursive: true });
@@ -1414,7 +1432,7 @@ export function verifyTarball(tarball, packageDir, expectedName, expectedVersion
       name.startsWith("package/tests/") ||
       (name.startsWith("package/scripts/") &&
         name !== "package/scripts/npm-package-lifecycle.mjs") ||
-      isWorkingDocument(path.posix.basename(name)),
+      isPrivateWorkingPath(name.replace(/^package\//, "")),
   );
   if (forbidden.length) throw new Error(`npm tarball contains source-only paths: ${forbidden.slice(0, 5).join(", ")}`);
 }

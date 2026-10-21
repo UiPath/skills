@@ -29,6 +29,7 @@ import {
   createAllVariants,
   createCompositionPlan,
   createDefaultPlan,
+  isPrivateWorkingPath,
   isWorkingDocument,
   materializeComposition,
   packageName,
@@ -1926,4 +1927,54 @@ test("this repository packages no memo and composes away every working document"
     .files.map((file) => file.relativePath)
     .filter((relativePath) => isWorkingDocument(basename(relativePath)));
   assert.deepEqual(leaked, [], "the default plan must compose away every working document");
+});
+
+test("a pack on a machine that still holds memo sources ships none of them", (t) => {
+  // `assets` is a whole-root `files` entry copied wholesale, so memo sources
+  // under it are invisible to the skill plan: .gitignore does not stop a pack,
+  // and nothing else looked at them. Keeping them out of the repository is the
+  // first line; this is the second, and it has to fail closed on a machine that
+  // still has a copy.
+  const repo = fixtureRepo(t);
+  addSkill(repo, "uipath-example");
+  addPackageManifest(repo);
+  mkdirSync(join(repo, "assets", "memos"), { recursive: true });
+  writeFileSync(join(repo, "assets", "memos", "2026-04-engagement.pdf"), "%PDF-1.4 fixture\n");
+  writeFileSync(join(repo, "assets", "memos", "notes.md"), "Acme Corp · TICKET-4821\n");
+
+  const packages = withNpmCache(repo, () => packAllVariants(repo));
+  for (const { variant, tarball } of packages) {
+    const names = [...readTarballEntries(tarball).keys()];
+    assert.ok(
+      names.includes("package/assets/shared.txt") || variant !== DEFAULT_VARIANT,
+      `${variant} must still carry its ordinary assets`,
+    );
+    assert.deepEqual(
+      names.filter((name) => /(^|\/)memos\//.test(name)),
+      [],
+      `${variant} tarball shipped memo sources`,
+    );
+  }
+});
+
+test("tarball verification rejects private working material whatever staged it", () => {
+  // copyPayload is the path that drops these, so verification would pass
+  // vacuously if it only ever saw copyPayload's output. These are the names it
+  // must reject on sight.
+  for (const name of [
+    "package/assets/memos/2026-04-engagement.pdf",
+    "package/skills/uipath-example/CASE-MEMO-MAP.md",
+    "package/skills/uipath-example/PA-LOCATIONS.md",
+  ]) {
+    assert.ok(
+      isPrivateWorkingPath(name.replace(/^package\//, "")),
+      `${name} must be denied by the tarball check`,
+    );
+  }
+  for (const name of ["package/assets/shared.txt", "package/skills/uipath-example/SKILL.md"]) {
+    assert.ok(
+      !isPrivateWorkingPath(name.replace(/^package\//, "")),
+      `${name} must not be denied`,
+    );
+  }
 });
