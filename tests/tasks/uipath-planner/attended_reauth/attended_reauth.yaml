@@ -28,7 +28,7 @@ sandbox:
       path: fixtures
 
 initial_prompt: |
-  I've saved the Process Design Document for our VAT Return Submission process
+  I've saved the Process Definition Document for our VAT Return Submission process
   as `pdd.md` in the current directory. Read it and produce the complete
   Solution Design Document.
 

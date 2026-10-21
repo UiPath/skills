@@ -45,6 +45,7 @@ TASK_TYPES = {
     "action", "agent", "rpa", "process", "api-workflow", "function",
     "business-rule", "execute-connector-activity", "wait-for-connector",
     "wait-for-timer", "case-management", "http-request", "flow-process",
+    "external-agent", "external-workflow", "document-extraction",
 }
 
 # Legal rule types per gate (mirrors case-tool schema-helpers VALID_*_RULE_TYPES).
@@ -63,6 +64,8 @@ CASE_EXIT = {"selected-stage-completed", "selected-stage-exited",
              "wait-for-connector"}                                       # Marks: No
 EXIT_TYPES = {"exit-only", "wait-for-user", "return-to-origin"}
 RETURN_TO_ORIGIN_COMPLETION = {"required-tasks-completed", "wait-for-connector"}
+for _gate in (STAGE_ENTRY, STAGE_COMPLETION, STAGE_EXIT, TASK_ENTRY, CASE_COMPLETION, CASE_EXIT):
+    _gate.add("api-event")  # a business event: every gate the Designer offers, never a case trigger
 KNOWN_RULES = STAGE_ENTRY | STAGE_COMPLETION | STAGE_EXIT | TASK_ENTRY | CASE_COMPLETION | CASE_EXIT
 SUMMARY_ONLY_HEADINGS = {
     "Source", "Case Objective", "Actors And Systems", "Case Trigger", "Stages",
@@ -79,6 +82,7 @@ TASK_DETAIL_MARKERS = {
     "wait-for-timer": ("Timer Task Detail", "**Timer Configuration:**", "**Duration:**", "**Timer:**"),
     "case-management": ("Child Case Task Detail", "**Child Case:**"),
     "http-request": ("HTTP Request Task Detail", "**Method:**", "**URL:**"),
+    "document-extraction": ("Document Extraction Task Detail", "**IXP Deployment:**", "**Model Name:**"),
     "process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "agent": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "rpa": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
@@ -87,6 +91,7 @@ TASK_DETAIL_MARKERS = {
     "business-rule": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "flow-process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
 }
+TASK_DETAIL_MARKERS |= dict.fromkeys(("external-agent", "external-workflow"), TASK_DETAIL_MARKERS["execute-connector-activity"])
 
 
 def _find_sdd() -> str:

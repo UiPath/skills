@@ -1,0 +1,154 @@
+# Phase 2 — Skeleton
+
+Author a skeleton of blank boxes, arrows and labels, show it to the user, and
+stop for their approval. It makes **no registry calls**.
+
+**Draft mode only.** Draft mode stops afterwards and asks the user to agree
+the shape (phase 3); phase 4 then pastes real payloads into these same boxes.
+Auto mode skips 2b–2f and phase 3 and authors real nodes directly in phase 4.
+Brownfield edits (the shape already exists) and discovery-only tasks (nothing
+is authored) skip this phase too.
+
+## What a skeleton is
+
+A skeleton exists so the shape can be read end to end — so a user can say "yes,
+that's it" or "drop that step", and so phase 4 has a validated structure to fill
+in. It is not a working process and must never be reported as one.
+
+1. **Every activity is a bare `<bpmn:task>`** carrying only an `id` and a
+   `name`. No `uipath:activity`, no `uipath:event`, no payloads, no resource
+   identities, no connections.
+2. **Do not use `serviceTask` or `sendTask`.** Their icons (a gear, an
+   envelope) make a box look like a decided product choice. Keep every box
+   blank.
+3. **Make no registry calls.** No `registry pull`, `list`, `search`, or `get`.
+   Element types are not being chosen yet.
+4. **Control flow is real.** Genuine `bpmn:startEvent` (with a plain
+   `bpmn:timerEventDefinition` or `bpmn:messageEventDefinition` when the
+   process starts that way; it needs no registry call, and phase 4 wires the
+   trigger),
+   `bpmn:exclusiveGateway` and `bpmn:parallelGateway`, `bpmn:sequenceFlow`s,
+   and end events: one that every branch converges on, unless the request
+   names separate outcomes. Do not simplify the branch structure.
+5. **Label each box with the action first and the intended element family last,
+   in brackets** — `Classify ticket [Agent]`, `Notify approvals team [Slack]`,
+   `Prepare ticket summary [Script]`. The label carries the meaning a blank box
+   cannot.
+6. **Name each branch flow** with the outcome it carries (`approve`, `reject`,
+   `escalate`) via the flow's `name` attribute, so the routing reads off the
+   picture.
+7. **Declare variables and gateway conditions for real.** The basis a gateway
+   routes on is part of what the user is approving — three branches out of a
+   diamond with no stated basis could mean anything. See
+   [Gateways cost more than boxes](#gateways-cost-more-than-boxes).
+
+Element families come from the bundled catalog, not the registry: the
+login-free table in
+[registry-workflow.md](registry-workflow.md#ootb-extension-types-29-login-free)
+and the `label` field of each entry in `validator/bpmn-spec.json`. Those labels
+distinguish the families a user's wording leaves ambiguous — "Start and wait for
+RPA workflow" versus "Start and wait for agent" versus "Start and wait for
+agentic process" versus "Start and wait for external agent". Family is enough
+for a label; the specific type, its template and its resource are resolved later.
+
+## Gateways cost more than boxes
+
+Boxes are free. A gateway is not, and the three costs always arrive together:
+
+1. An exclusive gateway needs `default="<flow id>"` on the gateway and a
+   `conditionExpression` on **every other** outgoing flow, or validation fails
+   `MISSING_CONDITION_EXPRESSION`.
+2. A condition referencing a variable needs that variable declared in the
+   process's `<uipath:variables>` block, or validation fails
+   `VARIABLE_DOES_NOT_EXIST`:
+   `<uipath:inputOutput id="Classification" name="Classification" type="string" elementId="Process_1" />`
+3. A `conditionExpression` uses `xsi:type="bpmn:tFormalExpression"`, and older
+   `init` scaffolds do not declare that namespace. Add
+   `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"` to
+   `bpmn:definitions` before writing any `xsi:type`, or the file is not
+   well-formed XML and fails at parse with
+   `XML_NOT_WELL_FORMED: Unbound namespace prefix: "xsi"`.
+
+A skeleton can express **reads but not writes**. The gateway reads the variable
+through its conditions, which is plain structural BPMN. What *assigns* the
+variable is a `uipath:output` mapping inside a node's registry payload, which a
+skeleton deliberately does not have. So the producer is implied by position — the
+box upstream of the gateway is understood to be what will assign it. Naming it
+in the label helps: `Classify ticket [Agent] → Classification`.
+
+## Expected findings — do not chase them
+
+A skeleton validates as **Valid** with warnings, and those warnings are correct
+for a skeleton. Fix nothing that appears here:
+
+- `Variable "vars.<id>" is read but never assigned; it will be empty at run
+  time` — one, at process level.
+- `VARIABLE_NOT_SET: Variable '<name>' is not set at this point in the flow` —
+  one per conditioned branch flow. These read like errors and are not.
+
+Treat a skeleton as validating cleanly when there are **zero errors**. Act only on
+error-severity findings, and only when they block import.
+
+## Steps
+
+Phases 0 and 1 run first, and 2a has created or adopted the project — see
+[SKILL.md](../SKILL.md#workflow). Then:
+
+- **2b Author the skeleton** into the `.bpmn` that `init` generated, editing in
+  place. Preserve the generated start event's `id`, its
+  `<uipath:entryPointId>`, and the four generated JSON files. **Do not rename
+  the start event**: its name feeds the entry-point schema, so renaming it
+  makes `refresh` rewrite `entry-points.json` for no benefit.
+- **2c `uip maestro bpmn format <file>.bpmn`** — generates the diagram. Without
+  it no box renders on the canvas (Rule 5).
+- **2d `uip maestro bpmn validate <file>.bpmn --output json`** — must reach
+  `Status: Valid`. This is an import-readiness check, not a design review:
+  act on errors, ignore the expected warnings above.
+- **2e `uip maestro bpmn refresh <project-path> --output json`** — run it from the
+  solution directory. `refresh` validates internally and refuses to write
+  anything while validation fails, so 2d must pass first. On a skeleton that
+  preserved the start event it reports `WrittenFiles: []`, which is the
+  drift check passing rather than a no-op to skip. Skip 2e for a
+  trigger-start skeleton (timer or message start): `refresh` fails with no
+  manual start, as in 4c.
+- **2f Make the shape visible.** When the request allows an upload, run
+  `uip solution upload <SolutionDir> --output json` and give the user the
+  returned `Data.DesignerUrl` as a link (Rule 10). Do not ask first: a request to build the
+  process authorizes the upload that shows it, and a consent gate per
+  iteration would defeat the mode. The one case that still needs confirmation
+  is adopting a solution the agent did not create, because `upload` overwrites
+  the cloud solution matching the local `.uipx` SolutionId. Confirm that at
+  2a, not here. When the request forbids upload, skip it: report the laid-out
+  local `.bpmn` path and a short text outline of the shape instead.
+
+## Iterating
+
+- **3a Edit the skeleton** from the user's feedback, then re-`format`. If you
+  uploaded it, download it first (as in 1c); when its `.bpmn` differs from
+  the local one, the user edited it online: edit the downloaded `.bpmn` and
+  say in one sentence that you kept their changes.
+- **3b Show the change** the same way as 2f. Each upload after the first
+  reports `Data.Action: "Overwritten"` and reuses the same `SolutionId` and
+  `DesignerUrl`, because `upload` writes the cloud solution id back into the
+  local `.uipx`. `"Imported"` on a later upload means that id was lost and a
+  second cloud solution was just created — stop and fix that before
+  continuing. Repeat 3a–3b.
+- **3c Ask before building.** Show the shape — the `DesignerUrl` link right
+  above the question when it was uploaded — then ask exactly this, as a
+  pick list if the host has one, else as plain text:
+
+  > Is this the process you want?
+  > 1. **Build it**: make every step work.
+  > 2. **Change it**: tell me what to add, remove, or move.
+  > 3. **Keep it**: stop here with this outline.
+
+  *Build it* goes to phase 4. *Change it* goes back to 3a. *Keep it* ends
+  the run with the skeleton reported as an outline.
+
+Removing a box is the common edit: delete the task, delete its two sequence
+flows, add one replacement flow, then `format`. Since entry points are
+untouched, `refresh` stays a no-op.
+
+Only *Build it* authorizes phase 4 — registry pull, element disambiguation, live
+connections, and payloads pasted into the existing boxes. Until then the
+skeleton is an outline, and calling it a finished process misreports it.

@@ -274,7 +274,7 @@ Output: `Code: CaseBindingsSync` with `Data.BindingsPath`, `Data.ResourceCount`,
 
 ## uip maestro case splice
 
-Write a connector task's `data` and the connection's root bindings from a saved `case spec` envelope. The only sanctioned writer of `data.context` / `data.inputs` / `data.outputs` on `execute-connector-activity` and `wait-for-connector` tasks; never hand-author them.
+Write a connector task's `data` and the connection's root bindings from a saved `case spec` envelope. The only sanctioned writer of `data.context` / `data.inputs` / `data.outputs` on `execute-connector-activity`, `wait-for-connector`, `external-agent` and `external-workflow` tasks; never hand-author them.
 
 ```bash
 uip maestro case splice <caseplan.case> --task-id <taskId> --spec tasks/spec-cache.<elementId>.json \

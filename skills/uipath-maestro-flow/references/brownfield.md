@@ -4,6 +4,19 @@ Use this procedure when a task supplies a deployed `.flow` and no `.flow.ts`.
 Do not hand-transcribe the graph: decompile it to builder source, edit that
 source, and merge only the delta back into the original.
 
+An edit that adds one of the [patterns](author.md#patterns) (a review gate,
+triage, a batch loop, a chat or voice front door, a panel of agents) reads that
+pattern's guide first and inserts only the part the flow lacks, as its "Adapting
+it" says. Inserting a pattern is still a narrow edit through this loop.
+
+A pattern the canvas inserted arrives unfinished: `core.logic.mock` steps
+labelled "(replace with …)", agent prompts that start `PLACEHOLDER -`, and a
+sticky note listing the setup. Finishing it means replacing each mock with the
+real node (rule 1 in [author.md](author.md)), rewriting each placeholder prompt
+for the request, and doing what the note lists. A note item the builder cannot
+do (such as attaching a tool to a voice agent) goes under Open questions. Keep
+every other step, port and name the pattern inserted.
+
 ## The safe project loop
 
 Keep authored source beside the canonical Flow so relative sidecars still
@@ -18,22 +31,52 @@ WORK=.flow-work/Deployed
 mkdir -p "$WORK/baseline" "$WORK/edited" "$WORK/candidate"
 
 uip maestro flow decompile "$CANONICAL" -o "$PROJECT/Deployed.flow.ts" --no-pipeline
-uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow"
+uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/baseline/Deployed.flow" --no-check
 # Edit $PROJECT/Deployed.flow.ts narrowly; preserve existing step ids.
+# Leave added steps out of .layout(...): merge places them (builder-sdk#1320).
 uip maestro flow compile "$PROJECT/Deployed.flow.ts" -o "$WORK/edited/Deployed.flow"
 uip maestro flow merge "$WORK/edited/Deployed.flow" --original "$CANONICAL" \
   -o "$WORK/candidate/Deployed.flow" --baseline "$WORK/baseline/Deployed.flow"
 
-uip maestro flow validate "$WORK/candidate/Deployed.flow" --output json
+BACKUP=$(mktemp -d) && echo "backup: $BACKUP" && cp -r "$PROJECT/." "$BACKUP/"
 cp -r "$WORK/candidate/." "$PROJECT/"
 # Then delete each directory merge listed as `flow-merge: remove <dir> ...`.
-uip maestro flow validate "$CANONICAL" --output json
+uip maestro flow validate "$CANONICAL" --output json && rm -rf "${BACKUP:?}"
 ```
 
-Replace the canonical artifact only after the candidate validates. Do not copy
-the `baseline/` or `edited/` directories into the project, and do not leave an
-earlier `*.merged.flow` there: the project validator treats every `.flow` below
-the project directory as a deliverable.
+Install the candidate whole with `cp`. Never write or patch the `.flow`
+yourself, and never copy only your change into the original. Merge renumbers
+every edge (`edge_0`, `edge_1`, ...), may reorder nodes, and adds default
+fields: that is its normal output, not drift to undo. The changes to act on
+are the [merge warnings](#merge-warnings-what-the-round-trip-changed).
+
+Validate in the project, not `candidate/` alone: it holds only the agent files
+merge changed, so an unchanged inline agent's `agent.json` is missing there
+([builder-sdk#1318](https://github.com/UiPath/builder-sdk/issues/1318)).
+If validate fails, restore the project before merging again:
+`test -d "${BACKUP:?}" && rm -rf "${PROJECT:?}" && mkdir "$PROJECT" && cp -r "$BACKUP/." "$PROJECT/" && rm -rf "$BACKUP"`.
+Keep the backup in `mktemp -d`, never under the working directory: a copy of
+the project there is a second Flow project.
+
+Compile the baseline before the edit, never after: merge diffs edited against
+it, so a baseline of the edited source drops your change.
+
+With an edited `.flow.ts` and `--baseline-from`, `merge` runs `check` on the edited source and refuses the write on an error in a node or subflow the edit changed (`N error(s) in nodes merge takes from the edited flow`), and on one it cannot place that the edit introduced.
+An error on a node, or in a subflow, the edit did not touch prints as `DRAFT_NODE_KEPT` and the original is kept; a finding `merge` cannot place on a node prints as `CHECK_FINDING_UNPLACED` when the original's own round trip reports it too.
+Fix a finding when you edit its node.
+Needs `@uipath/maestro-builder-sdk` 6.44.4 or later; an older SDK refuses the write for any error it cannot place on an untouched root node, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+
+If the edited compile fails `check` only with `HTTP_READ_WITHOUT_RETURNS`, the
+deployed HTTP node has no body schema
+([builder-sdk#1319](https://github.com/UiPath/builder-sdk/issues/1319)).
+Add `--no-check` to the edited compile and leave that node alone.
+`uip maestro flow check --source "$PROJECT/Deployed.flow.ts"` must report no
+other error code. Never use `--no-check` on the edited compile for any other
+error.
+
+Do not copy the `baseline/` or `edited/` directories into the project, and do
+not leave an earlier `*.merged.flow` there: the project validator treats every
+`.flow` below the project directory as a deliverable.
 
 ### Why three directories: inline agents
 
@@ -137,9 +180,10 @@ uip maestro flow merge .flow-sdk/edited/Deployed.flow --original Deployed.flow \
   -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow
 ```
 
-Like the pipeline, this keeps every candidate in `.flow-sdk/`; validate
-`.flow-sdk/Deployed.merged.flow`, then replace the original with it and copy
-every `<source>/` file merge reports writing.
+Like the pipeline, this keeps every candidate in `.flow-sdk/`. Back up the
+project, replace the original with `.flow-sdk/Deployed.merged.flow`, copy every
+`<source>/` file merge reports writing, then validate the original, as in
+[the safe project loop](#the-safe-project-loop).
 
 The baseline must be compiled from the pristine decompiled source, before any
 edit. It lets merge distinguish authored changes from reconstructed content;
@@ -267,8 +311,21 @@ reader pinned lower refuses the file; `SCHEMA_VERSION_BELOW_FLOOR`: every reader
 migrates it forward on open). Changing versions is `uip maestro flow migrate`'s
 job, not an edit to this call.
 
+## Designer shapes decompile keeps
+
+Leave each as decompile writes it.
+Needs `@uipath/maestro-builder-sdk` 6.44.0 or later: an older SDK's decompile writes `js\`[object Object]\`` for the envelope, drops the fork's arms and the `variable` rows with a `has no spelling` / `cannot write back` warning, and compile then refuses the source — upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+
+- a decision or switch condition stored as a `jsExpression` envelope or as `=js: …`
+- a quick form's asked-field `variable` ([hitl.md](hitl.md))
+- `{ fork }`, arms that end in `.stepToRef`, and a pass-through merge as `rawNode` ([parallel-merge.md](parallel-merge.md))
+- a `core.logic.loop@1.0` on its `output` / `loopBack` handles, through the definition the file carries
+- a subflow's reads of its own Start node as `input('<name>')`, and the `.onError()` on the subflow step
+
 These findings the source cannot carry are printed on stderr as
-`flow-decompile: warning: …`, and `--strict` turns each into an error:
+`flow-decompile: warning: …`, and `--strict` turns each into an error. Edit the
+`.flow` JSON directly only when decompile printed one of these warnings and
+its case below says to; every other edit goes through merge.
 
 - A node **no trigger reaches** — no edge leads to it, as when a designer or
   `node add` left it unconnected. The builder has no detached-node construct,
@@ -276,18 +333,40 @@ These findings the source cannot carry are printed on stderr as
   reachable`; recompiling drops that node. If it is your edit target, connect
   it in the `.flow` first or edit that node's JSON directly.
 - A `(type, typeVersion)` **this SDK does not bundle**, for a type it bundles
-  at other versions — for example `uipath.human-in-the-loop.quick-form@1.6`
-  (written by `node add`) when the SDK ships `1.0` and `1.1`. Versions resolve
-  exactly, so the source **omits** that `{ version }` and the node compiles at
-  the SDK's default. `merge --baseline` keeps the node at the file's version,
-  with the file's definition, as long as you leave it untouched; a node you
-  edit moves to the SDK's version. If it is your edit target, edit that
-  node's JSON in the `.flow` directly, or tell the user the edit moves it from
-  the file's version (here `1.6`) to the SDK's default. A type the SDK bundles
-  at no version (a connector, a published process or agent) keeps its pin.
-  A pin like that written back by hand is still refused by `compile`, which
-  names the bundled versions; for a registered family `check` reports it first
-  as `NODE_VERSION_UNREGISTERED`.
+  at other versions, **and the file holds no definition for it**. Versions
+  resolve exactly, so the source **omits** that `{ version }` and the node
+  compiles at the SDK's default. `merge --baseline` keeps an untouched node at
+  the file's version; a node you edit moves to the SDK's version, and merge
+  warns `node "<id>" moved <type>@<old> -> <new>`. If it is your edit target,
+  edit that node's JSON in the `.flow` directly, or tell the user the edit
+  moves it to the SDK's default. A type the SDK bundles at no version (a
+  connector, a published process or agent) keeps its pin.
+
+  When the file *does* hold the definition (the normal case: every `.flow`
+  carries one per node type and version it uses), the node does not move.
+  Decompile copies that definition into a `const`, passes it to
+  `.definitions([...])`, and keeps the pin; compile resolves the pin against
+  it. For example `uipath.human-in-the-loop.quick-form@1.6`, written by
+  `node add`, when the SDK ships `1.0` and `1.1`:
+
+  ```ts
+  const quickFormV1_6Definition = { nodeType: "uipath.human-in-the-loop.quick-form", version: "1.6", ... };
+  export default flow("review")
+    .definitions([quickFormV1_6Definition])
+    .step("review1", hitl({ ... }), { version: "1.6" })
+  ```
+
+  The node keeps `1.6` even when you edit it. Leave the `const` and the
+  `.definitions([...])` call as decompile wrote them: without them, `compile`
+  refuses the pin and names the versions it can resolve (for a registered
+  family, `check` reports it first as `NODE_VERSION_UNREGISTERED`). The SDK
+  still writes an edited node's inputs from its own factory (`hitl()` here).
+  When the carried definition's inputs differ from that factory's version,
+  decompile warns `node "<id>" keeps <type>@<version> from the file's
+  definitions[]; its inputs differ from <sdk-version> (<fields>)`. If that
+  node is your edit target, edit its inputs in the merged `.flow` JSON
+  directly. `rawNode` is not a substitute here: it cannot yet route a human
+  task's outcome exits.
 - A **file-format version outside the writable band** (below `1.6`) — the source
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and
@@ -300,12 +379,6 @@ These findings the source cannot carry are printed on stderr as
   drops that edge, and `merge` writes the loss into the original. If your edit
   touches that part of the flow, change the `.flow` JSON there directly instead
   of round-tripping it through the source.
-- A **switch whose cases carry their own conditions** — for example `High:
-  amount > 100` and `Low: amount <= 100`. `.switch(name, on, cases)` models
-  only `on === value`, so the decompiled `on` and `value`s are placeholders
-  (with a `/* TODO: this switch's case expressions are not a uniform … */`
-  comment). Recompiling fails or picks a different case, even when your edit is
-  somewhere else in the flow, so make the change in the `.flow` JSON directly.
 - A **context-index setting `context: [...]` cannot express**. Decompile reads
   an index's retrieval settings (mode, query, threshold, result count, file
   extension) from `<agent source>/resources/<source>/resource.json`, so keep the
@@ -316,13 +389,29 @@ These findings the source cannot carry are printed on stderr as
   `resources/<source>/resource.json` beside the `-o` output. Merge does not
   touch the project's copy: do not copy the compiled file over it. If that
   already happened, tell the user to set the setting again in Studio Web.
+- A **fire-and-forget process start's output schema**. The designer keeps the
+  process's output fields on the definition whether or not the step waits, and
+  `agenticProcess()` refuses `returns` beside `completion: 'fire-and-forget'`
+  (nothing could read it), so the source omits it and the warning names the
+  fields. Needs `@uipath/maestro-builder-sdk` 6.44.0 or later; an older SDK's
+  decompile writes `returns` and compile refuses it — upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest`. Recompiling writes the definition without the schema; `merge` keeps
+  the original's definition row, so a no-edit round trip loses nothing. To read
+  the result, set `completion: 'wait'` and declare `returns`.
 
-Validate `Deployed.merged.flow`, not the intermediate edited compile. Before
-placing it in a solution, copy it over the canonical artifact rather than next
-to it, together with every `<source>/` file merge reports writing, then
-validate the canonical project path again.
+Validate the merged file after installing it as in
+[the safe project loop](#the-safe-project-loop), never the intermediate edited
+compile.
 
 Do not run `uip maestro flow format` on the merged file; it discards the author's layout.
+
+Decompiled source carries that layout as a `.layout({ nodes })` block, one long-hand entry per node.
+Keep it.
+Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), avoiding any x where (x − 256) is a multiple of 288 on y = 144 or 304, which `merge` reads as a compile placeholder and moves.
+At the root, an existing node's position and size come from the original whatever the source says, so moving one or resizing a container the edit grew in the source does nothing; set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
+Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.4 or later; an older SDK takes every subflow from the edited compile, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).
+A step the edit removes must lose its entry, or compile fails on the unknown key.
+Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim).
 
 ## Split (`$ref`) artifacts
 

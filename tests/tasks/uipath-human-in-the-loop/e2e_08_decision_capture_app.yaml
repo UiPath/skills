@@ -32,15 +32,19 @@ initial_prompt: |
 
   - Each claim comes with: an employee name, a claim amount, and a policy
     reference. These are read-only context for the reviewer.
-  - The upstream agent proposes 2 to 4 reasons (evidence) for and against
-    the claim, each with a relevance and a proposed verdict, which the
-    reviewer can accept or change.
-  - The agent proposes the claim's cost center, which the reviewer can
-    change.
-  - The agent also recommends approve or deny with a confidence score,
-    shown but never pre-selected.
-  - The reviewer approves or denies, explains why, and tells the agent
-    what to do next time.
+  - The upstream agent proposes 2 to 4 reasons for and against the claim,
+    each with the outcome it supports and a proposed weight, which the
+    reviewer can change.
+  - The agent proposes the claim's cost center and the approved amount,
+    which the reviewer can change, and which should follow whichever
+    decision the reviewer picks.
+  - The agent also recommends approve or deny, marked as recommended but
+    never pre-selected.
+  - The reviewer approves, partly approves or denies. Agreeing is one
+    click; changing a reason's weight is one more. Why a reason is not
+    relevant is optional.
+  - The app records what the reviewer changed, quietly, and offers a rule
+    for next time with a scope.
   - The app renders its own UI (no decision widget package).
   - When deployed, the form must bind to Action Center tasks (NOT a
     standalone Web App).
@@ -131,19 +135,51 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "action-schema.json carries the guided decision fields beside the claim fields: proposedOutcome/proposalConfidence/rationaleOptions/instructionOptions inputs, evidence with weight as an inOut, cost center as an inOut, Approve and Deny outcomes, rationale/instructionText/instructionScope outputs"
-    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); i=d['inputs']['properties']; io=d['inOuts']['properties']; o=d['outputs']['properties']; oc=[k.lower() for k in d['outcomes']['properties']]; ev=io.get('evidence',{}).get('items',{}).get('properties',{}); ok=all(k in i for k in ['proposedOutcome','proposalConfidence','rationaleOptions','instructionOptions']) and 'weight' in ev and any('cost' in k.lower() for k in io) and 'approve' in oc and 'deny' in oc and 'submit' not in oc and all(k in o for k in ['rationale','instructionText','instructionScope']); sys.exit(0 if ok else 1)\""
+    description: "action-schema.json carries the guided decision fields beside the claim fields: proposedOutcome, proposedBy, involvement, nextTimeOptions inputs; reasons with weight and fields with byDecision as inOuts; Approve, a partial approval and Deny outcomes; rationaleText, decidingReasons, nextTimeScope, changes and record outputs"
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); i=d['inputs']['properties']; io=d['inOuts']['properties']; o=d['outputs']['properties']; oc=[k.lower() for k in d['outcomes']['properties']]; rp=io.get('reasons',{}).get('items',{}).get('properties',{}); fp=io.get('fields',{}).get('items',{}).get('properties',{}); ok=all(k in i for k in ['proposedOutcome','proposedBy','involvement','nextTimeOptions']) and 'weight' in rp and 'byDecision' in fp and any(k.startswith('approve') for k in oc) and 'deny' in oc and 'submit' not in oc and len(oc)>=3 and all(k in o for k in ['rationaleText','decidingReasons','nextTimeScope','changes','record']); sys.exit(0 if ok else 1)\""
     timeout: 10
     expected_exit_code: 0
     weight: 3.0
     pass_threshold: 1.0
 
   - type: run_command
-    description: "no telemetry or split-proposal outputs: no signals/decision/action/selectedResolutionId output field"
-    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; o=[k.lower() for k in json.load(open('$F'))['outputs']['properties']]; sys.exit(1 if {'signals','decision','action','selectedresolutionid'}.intersection(o) else 0)\""
+    description: "the quiet record is in the outputs: changeLog and timeOnTaskSeconds, and no per-reason confirm or chip-bank field"
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); o=d['outputs']['properties']; keys=[k.lower() for s in ('inputs','outputs','inOuts') for k in d[s]['properties']]; sys.exit(0 if 'changeLog' in o and 'timeOnTaskSeconds' in o and not {'confirmeditems','rationaleoptions','reasonchips','highstakes'}.intersection(keys) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the app source never pre-selects the outcome: no useState or defaultValue seeded from proposedOutcome"
+    command: "! find . -path '*/src/*' \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -print0 | xargs -0 grep -nE '(useState|defaultValue|selected[A-Za-z]*\\s*[:=])[^;]*proposedOutcome'"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the app source has the weight menu, marks the recommendation and builds the changeLog for the outputs"
+    command: "find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'Not relevant' | grep -q . && find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'Recommended' | grep -q . && find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'changeLog' | grep -q ."
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "no telemetry or decision outputs: no signals/decision/action output field"
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; o=[k.lower() for k in json.load(open('$F'))['outputs']['properties']]; sys.exit(1 if {'signals','decision','action'}.intersection(o) else 0)\""
     timeout: 10
     expected_exit_code: 0
     weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the app source never says teach, train or lesson"
+    command: "! find . -path '*/src/*' \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -print0 | xargs -0 grep -liwE 'teach(es|ing)?|train(ing)?|lessons?'"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.0
     pass_threshold: 1.0
 
   - type: run_command

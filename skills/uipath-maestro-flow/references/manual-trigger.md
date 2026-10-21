@@ -89,7 +89,8 @@ default root still omits `.trigger(...)`.
 
 - **The SDK declares the variable** once, unless a `.var('refundAmount', …)` or
   `.output({ refundAmount })` already exists. Declare the `.var()` yourself to give
-  it a default.
+  it a default. When the input feeds an output, the copy writes the output's
+  backing Variable, `refundAmountValue` ([return.md](return.md)).
 - **The copy is one row per root on its TRIGGER node**, in
   `variables.variableUpdates[<triggerId>]`. This is the same construct `{ updates }`
   writes for a step. Here `start` gets `refundAmount ← $vars.start.output.amount`

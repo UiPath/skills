@@ -16,10 +16,13 @@ env -u UIPATH_STUDIO_PID uip rpa build "<OUTPUT_DIR>" --output json
 
 Build compiles every workflow, applies project-scope analyzer rules, and restores packages.
 
+The build result is the `Result` value in its JSON output; a command the host handed back before it finished has no result yet, so wait for it before writing the report.
+
 | Build result | Action |
 |---|---|
 | Success, no errors | Verified. Continue to Step 6 |
 | Success with `[WARN]` lines | Verified. Apply the two rules under Build warnings below |
+| `Retry: RetryLater`, another WorkflowCompiler holds the project | A build on this output is still running, usually one the host handed back early. Wait for that command to return and read its result; with no handle on it, wait 15 s and rerun this build, at most 4 times. Still `RetryLater` after the last: `build not verified` on the status line. Not a fix-loop iteration |
 | Fails in `Restoring nuget packages` with `SharedAppConfiguration` and `String '<value>' was not recognized as a valid Boolean` | The CLI's headless Studio host crashes on the user's `UIPATH_TELEMETRY_DISABLED` value; the project is not at fault. Rerun this build, and every later `uip rpa` command, with `UIPATH_TELEMETRY_DISABLED=true` after Rule 8's prefix (`env -u UIPATH_STUDIO_PID UIPATH_TELEMETRY_DISABLED=true uip rpa ...`), or `=false` when the value was `0`, `no` or `off`. Never unset it. Not a fix-loop iteration |
 | Errors | Enter the fix loop |
 

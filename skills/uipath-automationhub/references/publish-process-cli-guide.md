@@ -7,8 +7,10 @@ Creates one process from a schema-driven payload and attaches its documents (PDD
 ## Step 1: Verify connectivity (and fetch the idea flows)
 
 ```bash
-uip ah idea-flows list --output json
+uip ah idea-flows list --limit 1000 --output json --output-filter "[].{Id: Id, Name: Name, Type: Type}"
 ```
+
+Keep the projection, and run this as its own command, not chained with other reads. Unprojected, each entry carries its flow's whole phase/status tree, about 20k tokens of output on a default tenant. Agents whose shell truncated that have lost the last entries, which is where Business Process sits, and published to the wrong flow. Publishing needs only `Id`, `Name` and `Type`; a `Type` of `null` means the CLI or server predates it (Step 2).
 
 - `Result: Success` → keep `Data` (flow names + ids) and tell the user "Connected to Automation Hub."
 - Auth failure → tell the user to run `uip login` (or, in Delegate, to sign in). Never ask for a raw token.
@@ -16,7 +18,7 @@ uip ah idea-flows list --output json
 
 ## Step 2: Pick the idea flow
 
-Default to the entry whose `Name` contains "Business Process" (case-insensitive); take its `Id`. If the caller named a different flow, use that. Several candidates → ask. None → say Business Process flows may not be enabled and stop. Store `IDEA_FLOW_ID`.
+Default to the Business Process flow, picked by **type**: take the `Id` of the entry whose `Type` is `business-process` — names are tenant-editable and ids differ per tenant. If the caller named a different flow, use that. Several candidates → ask. None → say Business Process flows may not be enabled and stop. Only when no entry carries `Type` (older server or CLI), fall back to the entry whose `Name` contains "Business Process" (case-insensitive). Store `IDEA_FLOW_ID` and the expected type.
 
 ## Step 3: Fetch the schema
 
@@ -34,7 +36,7 @@ Read `./ah-schema.json`: the field catalog is under `properties.schema.propertie
 
 **Collect every required input BEFORE creating** — same rules as the API flow, with CLI discovery:
 
-First **enumerate the tenant's actual required set from the schema file**: every `required`-flagged question, plus owner + submitter (enforced but never flagged). Tenant admins add required questions (commonly "Applications used"/"Thin applications used") — the baseline table is a minimum, never the whole list. Resolve each: from the caller's material, the recipes below, or `AskUserQuestion` — never by inventing.
+First **enumerate the tenant's actual required set from the schema file**: every `required`-flagged question, plus owner + submitter (enforced but never flagged). Tenant admins add required questions (commonly "Applications used"/"Thin applications used"; a required thin-apps question still takes `[]` when the material names no thin client, see [Applications](#applications)) — the baseline table is a minimum, never the whole list. Resolve each: from the caller's material, the recipes below, or `AskUserQuestion` — never by inventing.
 
 | Input | Recipe |
 |---|---|
@@ -60,9 +62,12 @@ Both flags: `--search` keeps it server-side and off the page limit; `--invite-st
 
 **Answer from the material, one PDD at a time.** Record exactly the systems the PDD/SDD names — no more, no fewer:
 
-- **Named and in the inventory** → put their ids in the question's `value` array.
+- **Named and in the inventory** → put their ids in the question's `value` array. Take each id from the `Id` of its `uip ah applications list` record (`--search "<name>"` per system keeps it exact), **never by counting positions** in the schema's `enum`/`enumNames` arrays: the inventory runs past 100 entries, and an off-by-one there attaches a neighbouring application (asking for `eTrail/Salesforce` and getting `Excel`).
 - **Named but not in the inventory** → add them in the same answer (below). A missing system is never a reason to stop, to ask the user, or to pick a look-alike.
 - **Nothing named** → if the schema does **not** flag the application question `required`, **omit it entirely** — a process with no applications is valid. Never pad the answer with inventory entries to "fill it in". Only when the tenant flags it `required` and the material names no system, ask the user with `AskUserQuestion` (inventory entries as options, plus free text for a system not in the list).
+- **"Thin applications used" is never padded, even when the schema flags it `required`.** It only marks which of the answered applications are thin clients, so its answer is the systems the material explicitly calls thin, Citrix or virtual-desktop clients, and nothing else. When the material calls none of them that, send `{ "value": [] }` if the question is flagged `required` (an empty answer is accepted) and omit it otherwise. Never copy the "Applications used" ids into it to satisfy the flag.
+
+**UiPath itself is never one of them.** The automation is what the process becomes, not a system it uses, so leave out "UiPath" and its own components (Orchestrator, Action Center, robots, Maestro, Case Management, Document Understanding, Integration Service…) even when the PDD or SDD lists them as systems or future-state steps.
 
 #### Adding systems that are not in the inventory — `new_applications`
 
@@ -119,7 +124,7 @@ Then re-read `uip ah applications list` and use the new ids in the answer.
 {"Result":"Failure","Message":"This user is not permitted to perform this action based on their role. (403 Forbidden)"}
 ```
 
-**If creating fails for any reason — 403, a validation error, a bad category id, anything — fall through; never retry it and never stop.** Answer with the systems that *are* in the inventory; if that leaves a **required** question empty, pick the closest entries from `applications list` to satisfy it (an optional one stays empty). Either way, name the real systems in `OVERVIEW_DESCRIPTION` (e.g. "Systems per PDD: Salesforce, CREDILEX, SUNAT Portal — not in tenant inventory"). The process record is what matters; applications are editable afterwards. **Never abandon a publish because an application is missing or uncreatable, and never silently pass off an unrelated application as the real one — say what you substituted.**
+**If creating fails for any reason — 403, a validation error, a bad category id, anything — fall through; never retry it and never stop.** Answer with the systems that *are* in the inventory; if that leaves a **required** "Applications used" empty, pick the closest entries from `applications list` to satisfy it (an optional one stays empty; "Thin applications used" is never filled this way, see [Applications](#applications)). Either way, name the real systems in `OVERVIEW_DESCRIPTION` (e.g. "Systems per PDD: Salesforce, CREDILEX, SUNAT Portal — not in tenant inventory"). The process record is what matters; applications are editable afterwards. **Never abandon a publish because an application is missing or uncreatable, and never silently pass off an unrelated application as the real one — say what you substituted.**
 
 Write the answers to `./ah-answers.json` as the filled `user_inputs` structure (the CLI accepts the whole schema-get document or just the answers map). Wrapping rules unchanged: every field is `{ "value": <v> }` except **user questions**: owner, submitter, and any user picker the tenant adds (the schema marks them `format: email`). Those take the email as a **direct string**; the server also accepts `{ "value": <email> }` for them (a bare string on any other question reads as empty); enum codes from that field's own `enum`; integers as numbers. Show the user a concise preview and get a confirm before writing.
 
@@ -131,7 +136,7 @@ Write the answers to `./ah-answers.json` as the filled `user_inputs` structure (
 2. **Every answer wrapped** — each answer except user questions (owner, submitter, any `format: email` user picker) is an object with a `value` key. A bare string is read as empty: on `OVR-OVERVIEW_NAME` that fails as `Automation name cannot be empty.`, elsewhere as a missing answer.
 3. **Enum codes verbatim** — every enum answer (Documentation, application questions, any select) is a code that appears exactly in that question's own `enum`. Copy it; never retype it. A code with a dropped segment (`…-ovrbp-0-3-5` instead of `…-ovrbp-0-3-0-5`) is never selected. Newer builds reject it with a `400` that names the question and lists its codes; older builds fail a `required` question with `Please fill in all the required information` and **silently drop** an optional one, so run this check on every build.
 4. **No placeholders left** — no `Sample input`, no `First.last@example.com`, no template category `1` unless the tenant's tree really has it.
-5. **Applications match the material** — every system the PDD names is either an id in `value` or an entry in `new_applications` (only if the schema has that property); nothing the PDD doesn't name; no application question at all when the PDD names none and it isn't `required`.
+5. **Applications match the material** — every system the PDD names is either an id in `value` or an entry in `new_applications` (only if the schema has that property); nothing the PDD doesn't name; no application question at all when the PDD names none and it isn't `required`. Check the ids by **name**, not by count: map every id in `value` back to its `Name` in `applications list` and compare that list with the PDD's systems. An id whose name is not one of them is a wrong pick, even when the count matches. "Thin applications used" holds only the systems the material calls thin clients, or `[]`.
 
 Fix anything found locally, then create. This costs nothing on a correct payload and catches most of the `400`s below before they happen.
 
@@ -142,6 +147,8 @@ uip ah automations create --from-schema --idea-flow-id $IDEA_FLOW_ID --file ./ah
 ```
 
 The create can take 20–30 s. Run it as its own command, not chained behind the preflight checks, and wait for its envelope. If your shell hands back before the command finishes, wait on that same command; never start a second create and never read the silence as a failure.
+
+**Run `automations create` once per process, whatever happens next.** If you lost its envelope, find the record instead: `uip ah automations list --search "<reference code or 2–3 distinctive words>" --limit 20 --output json`. Don't search on the full title: punctuation such as `:` can make that search miss a record that exists, and a record created seconds ago may not be listed yet. An empty result is not proof the create failed. Search again with a shorter term after a few seconds; if the record still doesn't show, tell the user the create's outcome is unknown rather than creating again.
 
 - `Result: Success` → **`Data.Id`** is the new process id. A success means it WAS created — never re-run on a confusing field read (that duplicates).
 - `ValidationError`/`Failure` → the `Message`/`Instructions` carry the service's validation text; the same causes as the API flow apply (unnamed `Please fill in all the required information` → re-run the preflight: a missing required answer or an enum code that is not verbatim from the schema; `Invalid Category Id`; `Automation name cannot be empty.` → `OVR-OVERVIEW_NAME` is missing, empty, or a bare string instead of `{ "value": … }`; `errorDetails` with `An answer selection is required for submission` on a field → that field's enum code isn't copied verbatim from its `enum`; on newer builds `Question "<key>" has no answer option matching "<value>". Allowed values: …` → replace exactly that answer with the matching code from that field's own `enum` in `ah-schema.json` (the message lists at most 25), and `… expects an array of answer option values` → wrap the multiple-choice answer as `{"value": ["<code>"]}`). Fix and retry **once**.
@@ -185,6 +192,8 @@ uip ah automations get $PROCESS_ID --all-fields --output json   # read process_s
 ```
 
 Every attached document id must appear in the documents list (file-backed ones with a `FileId`). Missing → report it failed; never claim an attach you didn't see in this list.
+
+**Check the process landed in the intended flow:** the `--all-fields` record's `process_submission_type` must match the flow type you chose in Step 2 (`business-process` = `8`; mapping in [`api-endpoints.md`](api-endpoints.md) → **Idea flow types**). A Business Process that came back as `1`/`2` (Employee-/CoE-driven idea) is a known failure mode — the agent picked the flow by name instead of by type, which Step 2 now prevents at the source; this check is the backstop. **Don't re-create it**; tell the user and fix it with [`change-idea-flow-cli-guide.md`](change-idea-flow-cli-guide.md). The payload was built from the wrong flow's schema, so after the move re-fetch the schema for the process (`uip ah automations schema get $PROCESS_ID --destination ./ah-schema-moved.json --output json`; its `user_inputs` holds the current answers) and check the required questions are answered: answer the missing ones from the source with `automations update`, or tell the user which are still empty. Only then report the corrected flow.
 
 The report **MUST end with both View deep links** — the URL segment is `process_slug` from the `--all-fields` record.
 

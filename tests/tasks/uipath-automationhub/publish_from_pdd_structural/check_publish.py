@@ -184,12 +184,37 @@ def the_create(calls: list[dict]) -> dict:
     return success
 
 
-def created_id(calls: list[dict]) -> str:
+# The gateway can fail a create the service has already committed: the agent sees a
+# 503 for a process that exists. The skill says to look the record up rather than
+# create again, so such a create counts when exactly one process carries the run's
+# token on the tenant.
+GATEWAY_FAILURE = re.compile(r"\b50[234]\b|service unavailable|upstream connect error|gateway time-?out", re.I)
+
+
+def is_gateway_failure(create: dict) -> bool:
+    return create.get("result") != "Success" and bool(GATEWAY_FAILURE.search(str(create.get("message") or "")))
+
+
+def processes_named_with(token: str) -> list[str]:
+    """Ids of the tenant's processes whose name carries `token`, read by the harness (never recorded)."""
+    sys.path.insert(0, str(SETUP_DIR))
+    from ah_cli import items, succeeded, uip_json  # noqa: PLC0415
+
+    listing = uip_json(["ah", "automations", "list", "--search", token, "--limit", "50"])
+    return [str(p.get("Id")) for p in items(listing) if token in str(p.get("Name", ""))] if succeeded(listing) else []
+
+
+def created_id(calls: list[dict], seed: dict) -> str:
     create = the_create(calls)
-    if create.get("result") != "Success" or create.get("data_id") is None:
-        raise CheckFailed(f"the create did not succeed on the tenant (exit {create.get('exit_code')}, "
-                          f"result {create.get('result')!r})")
-    return str(create["data_id"])
+    if create.get("result") == "Success" and create.get("data_id") is not None:
+        return str(create["data_id"])
+    token = seed.get("run_token")
+    if token and is_gateway_failure(create):
+        landed = processes_named_with(token)
+        if len(landed) == 1:
+            return landed[0]
+    raise CheckFailed(f"the create did not succeed on the tenant (exit {create.get('exit_code')}, "
+                      f"result {create.get('result')!r})")
 
 
 def submitted_answers(create: dict) -> dict:
@@ -199,6 +224,8 @@ def submitted_answers(create: dict) -> dict:
         raise CheckFailed(f"create --file was not a readable JSON answers file: {captured}")
     # The CLI accepts the whole schema-get document or just the answers map.
     answers = document.get("user_inputs", document)
+    if not isinstance(answers, dict):
+        raise CheckFailed(f"user_inputs must be an assessment map, got {type(answers).__name__}")
     flat: dict = {}
     for assessment in answers.values():
         if not isinstance(assessment, dict):
@@ -258,12 +285,31 @@ def check_create_once(calls: list[dict], seed: dict) -> str:
     if "--from-schema" not in create["args"]:
         raise CheckFailed("create did not use --from-schema")
     flow_id = str(seed.get("business_process_flow_id"))
-    if flag(create, "--idea-flow-id") != flow_id:
-        raise CheckFailed(f"create targeted idea flow {flag(create, '--idea-flow-id')}, "
+    if created_flow_id(create) != flow_id:
+        raise CheckFailed(f"create targeted idea flow {created_flow_id(create)}, "
                           f"not the Business Process flow ({flow_id})")
-    retries = len(calls_matching(calls, "ah automations create")) - 1
+    creates = calls_matching(calls, "ah automations create")
+    retries = len(creates) - 1
+    token = seed.get("run_token")
+    gateway_failed_before = any(is_gateway_failure(c) for c in creates[:-1])
+    if token and gateway_failed_before and create.get("result") == "Success" and len(processes_named_with(token)) > 1:
+        raise CheckFailed("a create the gateway failed had landed, and the retry made a second process "
+                          "(look the record up before creating again)")
     note = f" after {retries} rejected attempt(s)" if retries else ""
-    return f"one successful create on the Business Process flow (process {created_id(calls)}){note}"
+    return f"one successful create on the Business Process flow (process {created_id(calls, seed)}){note}"
+
+
+def created_flow_id(create: dict) -> str | None:
+    """The flow by --idea-flow-id, else the one the service reports creating on.
+
+    `--idea-flow "<name>"` is the CLI's other way to pick the flow; only the
+    envelope's `Data.IdeaFlowId` says which flow that name resolved to.
+    """
+    by_flag = flag(create, "--idea-flow-id")
+    if by_flag is not None:
+        return by_flag
+    reported = create.get("data_idea_flow_id")
+    return None if reported is None else str(reported)
 
 
 def check_payload(calls: list[dict], seed: dict) -> str:
@@ -342,7 +388,10 @@ def live_inventory() -> list[dict]:
 def attached_systems(apps: dict, by_system: dict[str, set[int]], seed: dict) -> set[str]:
     """The PDD systems the submitted inventory ids stand for; any other id is a decoy."""
     allowed = {app_id: system for system, ids in by_system.items() for app_id in ids}
-    ids = {as_int(i) for i in apps.get("value") or []}
+    value = apps.get("value") or []
+    if not isinstance(value, list):
+        raise CheckFailed(f"Applications used value must be a list of inventory ids, got {value!r}")
+    ids = {as_int(i) for i in value}
     snapshot = {as_int(app.get("Id")) for app in seed.get("inventory") or []}
     if ids - snapshot:
         for app in live_inventory():
@@ -392,7 +441,7 @@ def check_applications(calls: list[dict], seed: dict) -> str:
 
 
 def check_documents(calls: list[dict], seed: dict) -> str:
-    process_id = created_id(calls)
+    process_id = created_id(calls, seed)
     uploads = calls_matching(calls, "ah documents create")
     digests = seed.get("fixtures") or {}
     expected = {DOCUMENT_LABELS[role]: (digests.get(path), DOCUMENT_TYPE_IDS[role])
@@ -417,7 +466,7 @@ def check_documents(calls: list[dict], seed: dict) -> str:
 
 
 def check_verify(calls: list[dict], seed: dict) -> str:
-    process_id = created_id(calls)
+    process_id = created_id(calls, seed)
     created_at = the_create(calls)["ts"]
     reads = {
         "documents list": [c for c in calls_matching(calls, "ah documents list")
@@ -472,7 +521,7 @@ def check_fallback(calls: list[dict], seed: dict) -> str:
     if attempts[0].get("result") == "Success":
         raise CheckFailed("environment: the applications upsert succeeded, so this identity is not the "
                           "non-admin the scenario needs")
-    created_id(calls)
+    created_id(calls, seed)
 
     answers = submitted_answers(create)
     apps = applications_answer(answers)

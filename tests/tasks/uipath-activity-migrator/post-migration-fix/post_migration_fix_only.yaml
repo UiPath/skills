@@ -166,7 +166,7 @@ success_criteria:
   - type: run_command
     description: "uip rpa build exits 0 against the fixed project"
     command: |-
-      python -c "import subprocess, os, sys, shutil; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); sys.exit(subprocess.call([uip, 'rpa', 'build', os.path.abspath('StaffDirectoryAudit_Upgraded'), '--output', 'json'], env=env))"
+      python -c "import subprocess, os, sys, shutil, time; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); run = lambda: subprocess.run([uip, 'rpa', 'build', os.path.abspath('StaffDirectoryAudit_Upgraded'), '--output', 'json'], env=env, capture_output=True); r = next((r for r in (time.sleep(10 * bool(i)) or run() for i in range(12)) if r.returncode == 0 or b'RetryLater' not in r.stdout), None) or run(); sys.stdout.buffer.write(r.stdout); sys.stderr.buffer.write(r.stderr); sys.exit(r.returncode)"
     timeout: 600
     expected_exit_code: 0
     weight: 3.0

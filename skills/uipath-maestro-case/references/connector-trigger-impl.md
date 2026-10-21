@@ -9,7 +9,7 @@ Used by three:
 - [event trigger](plugins/triggers/event/impl-json.md) — case-level `Intsvc.EventTrigger` (target: trigger node `data.inputs`)
 - **connector-bound condition rule** — a `wait-for-connector` rule in any condition scope (target: `rule.uipath`) — see [§ Target: connector-bound condition rule](#target-connector-bound-condition-rule)
 
-> **If you are here for an in-stage connector task (`execute-connector-activity`, `wait-for-connector`), stop reading this file.** `uip maestro case splice` writes its `data` and root bindings from the saved spec envelope — go to [connector-activity/impl-json.md § Step 5](plugins/tasks/connector-activity/impl-json.md) and nothing below applies. This file is for the case-level event-trigger node and connector-bound condition rules only, which `splice` does not target.
+> **If you are here for an in-stage connector task (`execute-connector-activity`, `wait-for-connector`, `external-agent`, `external-workflow`), stop reading this file.** `uip maestro case splice` writes its `data` and root bindings from the saved spec envelope — go to [connector-activity/impl-json.md § Step 5](plugins/tasks/connector-activity/impl-json.md) and nothing below applies. This file is for the case-level event-trigger node and connector-bound condition rules only, which `splice` does not target.
 
 ---
 
@@ -110,7 +110,7 @@ The CLI emits placeholders the skill resolves at write-time:
 
 Read it and copy those three **unchanged** — keys, connector field names, nesting and `$ref`s are already final.
 
-They are written as **siblings on the target**, each under its own key. There is no `caseShape` key on disk: the disk shape is `data.context`, `data.inputs`, `data.outputs` (plus `serviceType` and `bindings: []`) for a task, and the same three under `data.inputs` for a trigger node. Writing `data.caseShape = {...}` produces a node the runtime cannot read, and `validate` accepts it.
+They are written as **siblings on the target**, each under its own key. There is no `caseShape` key on disk: the disk shape is `data.context`, `data.inputs`, `data.outputs` (plus `serviceType`, and `bindings` holding the picker rows `splice` writes, else `[]`) for a task, and the same three under `data.inputs` for a trigger node. Writing `data.caseShape = {...}` produces a node the runtime cannot read, and `validate` accepts it.
 
 **Every `caseShape.outputs[]` entry must be present**, `body` included — `response`, `Error`, and any curated scalar such as `ts`. SDD output-binding rows bind INTO that schema and never replace an entry: a node whose bound leaves appear as standalone outputs with no `response` is a failed build. (Those bound leaves are additionally emitted as bodyless extract entries carrying `source` / `target` / `originalVar` — see [io-binding/impl-json.md § Output Binding Shapes](plugins/variables/io-binding/impl-json.md#output-binding-shapes). That is expected; only a MISSING spec entry is a defect.) The only permitted modifications are the placeholders above and the ids minted in [§ Step 5](#step-5--mint-var--id--elementid-on-inputs-and-outputs).
 

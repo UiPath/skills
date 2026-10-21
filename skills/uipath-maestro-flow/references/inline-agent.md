@@ -91,6 +91,17 @@ Tool signatures:
 - `{ kind: 'process' | 'agent' | 'api' | 'flow' | 'maestro', key, name, folderPath, inputs?, returns? }`
 - `{ kind: 'ixp', projectId, name, description?, versionTag?, attachment? }`
 
+For a sibling project of this solution, a `process` / `agent` / `api` /
+`flow` / `maestro` / `function` tool takes `key` = `resource.key` from
+`resources/solution_folder/process/*/<Project>.json` (the tail of its
+`uip maestro flow registry list --local` tool type) and
+`folderPath: 'solution_folder'`. A `ProcessOrchestration` project (folder
+`processOrchestration`, tool type `…tool.processorchestration.*`) is
+`kind: 'maestro'`, never `'process'`; any other kind is its tool type's
+namespace. A tool has no `location` or `projectId`.
+Declare it on `inlineAgent` so compile writes its `resource.json`; a node added
+with `uip maestro flow nodes create` gets none.
+
 A connector tool needs `connection` and `folder`, `bindings.json` labels
 resolved like `connector()`'s (see [bindings.md](bindings.md)). Missing either
 is `INLINE_AGENT_TOOL_CONNECTOR_NO_CONNECTION` from `check`. `prepare` does not
@@ -141,7 +152,13 @@ sidecar. Each rail is `$guardrailType: 'custom'` (with `rules`) or
 (`block` with a reason, `filter` over fields, or `log` with a severity), and
 `enabledForEvals`. Custom rules are `$ruleType: 'word' | 'number' | 'boolean'`
 over a field selector, or `'always'`. A rail with no scopes or an empty rules
-array can never fire — `check` rejects both.
+array can never fire — `check` rejects both. File-capable built-in validators
+take an extra `validatorParameters` entry `{ $parameterType: 'enum', id:
+'detectionScope', value: 'Text' | 'Files' | 'Both' }` that decides whether
+the validator reads the text, the run's files, or both; inline agents inherit
+the standalone low-code behaviour unchanged (the sidecar is a projected
+`agent.json`). Scope coverage, caps and recipes live in the low-code
+guardrails files guide of [/uipath:uipath-agents](/uipath:uipath-agents).
 
 `mode: 'standard' | 'advanced'` picks the harness; naming it selects the
 node's 1.3 definition (omitting it keeps 1.2 byte-identically) and lands on

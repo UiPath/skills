@@ -1,0 +1,115 @@
+{
+ "nodes": [
+  {
+   "id": "start",
+   "type": "core.trigger.manual",
+   "inputs": {}
+  },
+  {
+   "id": "processBatch",
+   "type": "core.logic.loop",
+   "inputs": {
+    "collection": {
+     "type": "jsExpression",
+     "expression": "$vars.start.output.items",
+     "fieldType": "array"
+    },
+    "parallel": false,
+    "breakEnabled": false
+   }
+  },
+  {
+   "id": "processItem",
+   "type": "uipath.agent.autonomous",
+   "parentId": "processBatch",
+   "inputs": {
+    "source": "ef0dcd41-13fa-4331-943e-0e69f9b16039",
+    "agentInputVariables": [
+     {
+      "id": "processBatch__currentItem",
+      "type": "string",
+      "binding": "=js:$vars.processBatch.currentItem"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "result",
+      "type": "string"
+     },
+     {
+      "id": "status",
+      "type": "string"
+     }
+    ],
+    "errorHandlingEnabled": true
+   }
+  },
+  {
+   "id": "synthesize",
+   "type": "uipath.agent.autonomous",
+   "inputs": {
+    "source": "8c0ebc6f-a48e-4ffd-83e4-34fbe85646a5",
+    "agentInputVariables": [
+     {
+      "id": "processBatch__output",
+      "type": "string",
+      "binding": "=js:$vars.processBatch.output"
+     }
+    ],
+    "agentOutputVariables": [
+     {
+      "id": "summary",
+      "type": "string"
+     },
+     {
+      "id": "exceptions",
+      "type": "string"
+     }
+    ]
+   }
+  },
+  {
+   "id": "end",
+   "type": "core.control.end",
+   "inputs": {}
+  }
+ ],
+ "edges": [
+  {
+   "sourceNodeId": "start",
+   "sourcePort": "output",
+   "targetNodeId": "processBatch",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "processBatch",
+   "sourcePort": "start",
+   "targetNodeId": "processItem",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "processItem",
+   "sourcePort": "error",
+   "targetNodeId": "processBatch",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "processItem",
+   "sourcePort": "success",
+   "targetNodeId": "processBatch",
+   "targetPort": "continue"
+  },
+  {
+   "sourceNodeId": "processBatch",
+   "sourcePort": "success",
+   "targetNodeId": "synthesize",
+   "targetPort": "input"
+  },
+  {
+   "sourceNodeId": "synthesize",
+   "sourcePort": "success",
+   "targetNodeId": "end",
+   "targetPort": "input"
+  }
+ ]
+}

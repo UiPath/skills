@@ -7,7 +7,7 @@
     "Empty lookup gate": 5,
     "Handoff contract": 2,
     "Phase 1 registry gate": 6,
-    "Read references to EOF before mutation": 1,
+    "Read the passage a mutation uses before making it": 1,
     "Resolution audit": 1,
     "SDD is the sole post-design input, across sessions": 1,
     "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 4,
@@ -34,7 +34,6 @@
     "Runnable resources and sidecars": 4
   },
   "references/case-schema.md": {
-    "Closed task types": 1,
     "Layout": 4,
     "No authored edges": 3
   },
@@ -50,7 +49,7 @@
     "Empty lookup gate": 2
   },
   "references/edit-recipes-guide.md": {
-    "Read references to EOF before mutation": 1
+    "Read the passage a mutation uses before making it": 1
   },
   "references/entry-points-sync.md": {
     "The build is lossless against the SDD": 1
@@ -72,6 +71,7 @@
     "No authored edges": 1,
     "Resolution audit": 1,
     "Runnable resources and sidecars": 3,
+    "SDD is the sole post-design input, across sessions": 1,
     "The build is lossless against the SDD": 3,
     "Unresolved resources": 2
   },
@@ -153,6 +153,14 @@
   "references/plugins/tasks/create-inline-common.md": {
     "Empty lookup gate": 1
   },
+  "references/plugins/tasks/document-extraction/impl-json.md": {
+    "Runnable resources and sidecars": 1
+  },
+  "references/plugins/tasks/document-extraction/planning.md": {
+    "Cross-task references": 1,
+    "Empty lookup gate": 1,
+    "SDD is the sole post-design input, across sessions": 1
+  },
   "references/plugins/tasks/flow-process/planning.md": {
     "Empty lookup gate": 2,
     "Resolution audit": 1
@@ -208,7 +216,6 @@
   },
   "references/registry-discovery.md": {
     "Artifact I/O": 1,
-    "Closed task types": 2,
     "Empty lookup gate": 2,
     "Handoff contract": 2,
     "Phase 1 registry gate": 2,

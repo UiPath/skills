@@ -95,6 +95,16 @@ generated packages to invent the missing live schema.
 
 ## 3. Connector (`Intsvc.*`) enrichment
 
+> Author every new connector node as a V2 element from `registry get
+> --input-details` instead of filling the template below, in new and existing
+> workflows alike — see [v2-connector-nodes.md](v2-connector-nodes.md). The
+> template stays the reference for reading existing V1 nodes. On a CLI that
+> rejects `--input-details` (`unknown option`), only a plain activity falls
+> back to it ([A CLI without V2 nodes](v2-connector-nodes.md#a-cli-without-v2-nodes)):
+> fill it by every rule in this section, including
+> [one `target="body"` input](#body-shape-hand-authored-files-need-one-targetbody-input)
+> holding the whole request body.
+
 For connector **activity** types (`requiresDiscovery: Yes`, e.g.
 `Intsvc.ActivityExecution`), resolve a live connection and object, then enrich.
 `Intsvc.EventTrigger` and `Intsvc.WaitForEvent` also require discovery but
@@ -177,9 +187,12 @@ uip is resources describe <connectorKey> <object> --connection-id <id> \
 query parameter it is ignored. Always set `isAscending`: omitted, the query
 sorts ascending, whatever its `DefaultValue` says.
 
-No `uip maestro bpmn` command compiles a filter tree, so write the filter in
-`queryExpression` as a CEQL string yourself, even when the request asks for a
-FilterBuilder tree and no raw CEQL. CEQL supports `=`, `!=`, `<`, `<=`, `>`,
+A V2 element takes the filter as a FilterTree in `--input-details` `filter`,
+and `registry get` compiles it into `queryExpression`
+([reference](v2-connector-nodes.md#--input-details-reference)). In a V1 node
+nothing compiles a filter tree, so write the filter in `queryExpression` as a
+CEQL string yourself, even when the request asks for a FilterBuilder tree and
+no raw CEQL. CEQL supports `=`, `!=`, `<`, `<=`, `>`,
 `>=`, `LIKE`, `NOT LIKE`, `IN`, `NOT IN`, `IS NULL`, `IS NOT NULL`, joined by
 `AND` / `OR`; "contains" is `LIKE '%<text>%'`. A tree in `queryExpression`
 fails with `400 Error parsing query`.
@@ -196,11 +209,17 @@ and say in your summary that the runtime filter is the CEQL string.
 
 For a Data Fabric operation not listed, drop objects whose display name ends
 in `(Preview)` or `(Deprecated)`, then prefer a path starting with `/v2/`.
+A **folder** entity is the exception: only the `*_V3` objects pick one, so
+author those as V2 elements — see
+[v2-connector-nodes.md](v2-connector-nodes.md#1-get-the-element).
 
 `send-mail-v2` defaults its `saveAsDraft` query parameter to `true`, which
-saves a draft instead of sending. Add a `target="query"` `saveAsDraft` input
-set to `false`. Its `body` parameter is `multipart`: keep the message in the
-one `target="body"` input and set the context `metadata` input to
+saves a draft instead of sending. For a V2 element pass
+`"queryParameters":{"saveAsDraft":false}` in `--input-details`; `registry get`
+writes the multipart metadata itself. In a V1 node, add a `target="query"`
+`saveAsDraft` input set to `false`, keep the message in the one
+`target="body"` input (its `body` parameter is `multipart`), and set the
+context `metadata` input to
 `{"inputMetadata":{"type":"multipart","multipart":{"bodyFieldName":"body"}}}`.
 Without it the runtime sends the body as JSON.
 
@@ -588,6 +607,13 @@ through `registry get` like a §3 activity, but their object and operation come
 from the **trigger** catalogue, not from `uip is resources`. Omit `--operation`
 and the call fails with `Event enrichment requires --operation`.
 
+For a new trigger or wait, build the V2 element instead: its scoping
+parameters (Data Fabric's `entityScope`, `folderEntityName`,
+`folderEntityName_folderKey`) go under `--input-details.queryParameters`, and
+the CLI refuses a name the event object does not list. See
+[v2-connector-nodes.md](v2-connector-nodes.md). The `queryParams` /
+`filters.expression` body below is the V1 shape.
+
 ```bash
 uip is activities list <connectorKey> --triggers --output json   # Name + ObjectName + IsCurated
 uip is triggers objects <connectorKey> <OPERATION> --connection-id <id> --output json  # generic rows only
@@ -609,9 +635,10 @@ schema. That comes from `uip is triggers describe`: build the filter from its
 the trigger's scoping inputs, `OutputFields` the event payload.
 
 The runtime reads only a `target="body"` input; the template's `filter` and
-`parameters` fields, and any sibling input without `target`, are dropped. Write one
-`body` input as a sibling of `uipath:context`: `queryParams` holds the
-`EventParameters`; `filters.expression` AND-joins one equality clause per event
+`parameters` fields, and any sibling input without `target`, are dropped. In
+the V1 template, write one `body` input as a sibling of `uipath:context`:
+`queryParams` holds the `EventParameters` (a V2 element carries them in
+`body.parameters`; do not move them); `filters.expression` AND-joins one equality clause per event
 parameter with the `FilterFields` conditions. No filter tree; only the
 expression is evaluated.
 
@@ -636,9 +663,10 @@ Curated pairs already confirmed:
 A hand-authored connector trigger shell stays **draft** until the CLI supplies
 the concrete trigger properties, connection binding, and schemas.
 
-For `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` the connection is referenced
-from the node context as **`connectionId`** = `=bindings.<bindingId>` (activities
-use `connection`); the timer trigger binds no connection. After authoring the
+In the V1 template, `Intsvc.EventTrigger` / `Intsvc.WaitForEvent` reference
+the connection from the node context as **`connectionId`** =
+`=bindings.<bindingId>` (activities use `connection`; a V2 element uses
+`connection` for all three, see [v2-connector-nodes.md](v2-connector-nodes.md)); the timer trigger binds no connection. After authoring the
 connection binding, lay the diagram out (`uip maestro bpmn format <file.bpmn>`)
 and then run `uip maestro bpmn refresh <project>` so the binding is
 materialized into a `Connection` resource in `bindings_v2.json` — a trigger whose
@@ -658,11 +686,15 @@ package-ready, upload, debug, publish, or deploy deliverable runs it.
   — are **connection binding**, **dynamic schemas**, generated **package
   metadata** (`bindings_v2.json`, `entry-points.json`, `operate.json`,
   `package-descriptor.json`). Do not hand-author any of these (§3).
-- **Connectionless / manual HTTP** (`Intsvc.HttpExecution`, or
-  `Intsvc.UnifiedHttpRequest` when current tooling exposes the unified shape):
-  use when the workflow itself owns the URL, method, payload, and response
-  parsing (no connection). Author `mode="manual"`, `method`, `url`, `headers`,
-  `parameters`, `body` directly from the registry template.
+- **HTTP request** — always `Intsvc.UnifiedHttpRequest`, whether the
+  workflow owns the URL, method, payload and response parsing (`manual`) or the
+  call goes through a connector's connection (`connector`). Build it with
+  `uip maestro bpmn registry get Intsvc.UnifiedHttpRequest --input-details
+  '<request>'` (add `--connection-id` for connector mode) — see
+  [v2-connector-nodes.md](v2-connector-nodes.md#http-requests). A service with
+  no connector of its own goes through a `uipath-uipath-http` connection in
+  connector mode. Never author `Intsvc.HttpExecution` (legacy) or a
+  connector's own `httpRequest` object for a new node.
 
 Status vocabulary for an IS node in a summary: **executable** (activity, inputs,
 output variable, and downstream mappings present, runtime-verified if a run was
@@ -705,7 +737,7 @@ exact template for any of them with `registry get <type>`.
 | `Orchestrator.StartAgenticProcess[Async]` | `bpmn:callActivity` | activity |
 | `Orchestrator.StartCaseMgmtProcess[Async]` | `bpmn:callActivity` | activity |
 | `Intsvc.ActivityExecution` | `bpmn:sendTask` | activity |
-| `Intsvc.HttpExecution` / `Intsvc.UnifiedHttpRequest` | `bpmn:sendTask` | activity |
+| `Intsvc.UnifiedHttpRequest` (`Intsvc.HttpExecution` is legacy) | `bpmn:sendTask` | activity |
 | `Intsvc.WaitForEvent` | `bpmn:receiveTask`; or its `uipath:event` block on a `bpmn:intermediateCatchEvent` (incoming + outgoing) or a `bpmn:boundaryEvent` (`attachedToRef`, outgoing only), with a bare `<bpmn:messageEventDefinition />` after the flows | event |
 | `Intsvc.EventTrigger` | `bpmn:startEvent` | event |
 | `Intsvc.TimerTrigger` | `bpmn:startEvent` | activity |

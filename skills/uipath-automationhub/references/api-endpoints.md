@@ -38,7 +38,25 @@ Cloud access tokens are short-lived. If any call returns **401** and the token c
 ## Endpoints used by this skill
 
 ### GET `/idea-flows`
-All idea flows (workflow types) on the tenant. Each element has `Idea flow name` (e.g. "Business Process") and `Idea flow ID` (number). Response wrapped as `{ message, statusCode, data: [...] }`. *(Used by the publish flow.)*
+All idea flows (workflow types) on the tenant. Each element has `Idea flow name` (e.g. "Business Process"), `Idea flow ID` (number), on servers with RPANAV-19226 `Idea flow type` (see **Idea flow types** below), and one key per phase whose statuses carry `phase_variable` / `status_variable`. Response wrapped as `{ message, statusCode, data: [...] }`. *(Used by the publish and change-idea-flow flows.)*
+
+#### Idea flow types
+
+Select a flow by `Idea flow type`, never by name (tenant-editable) or a remembered id (differs per tenant — Business Process is `7` on one tenant, `8` on another). The type comes from the flow's root `workflow_level_variable`, and every flow an admin creates (duplicate a default, copy, upload) is a deep copy that keeps it — so a tenant's copy of Business Process also reports `business-process`, and **several flows sharing a type is normal**. An automation record's `process_submission_type` (CLI: `SubmissionType`) identifies the flow **type** it is in, not which flow of that type:
+
+| `Idea flow type` | `process_submission_type` |
+|---|---|
+| `idea` (Employee-driven) | `1` |
+| `top-down` (CoE-driven) | `2` |
+| `automation` (Citizen developer) | `3` |
+| `process-mining` | `4` |
+| `task-mining` | `5` |
+| `change-request` | `6` |
+| `agentic-ai-idea` | `7` |
+| `business-process` | `8` |
+| `custom` (unknown or legacy root variable — rare) | `-1` on create; **not reliable after a move** (see PATCH below) |
+
+Phases differ between tenants even for the same type (an older tenant's Business Process flow has `IDEA`/`ASSESSMENT`/… phases, newer ones start at `DOCUMENTATION`/`NOT_STARTED`) — always read them from the flow's own entry.
 
 ### GET `/idea-schema?idea_flow_id={id}`
 Full JSON schema for an idea flow + a ready-made `user_inputs` template. Response wrapped as `{ status: "success", data: {...} }`:
@@ -130,7 +148,7 @@ The Automation Hub users on the tenant (verified live): paged envelope with the 
 **It is not the ground truth for who can own a process, and must never gate a publish.** Two defaults make it under-report: `invite` defaults to **activated users only**, so a user who has only ever used the API or CLI is missing from it while being perfectly able to own a process; and results are paged (default 20) under an ordering that is not deterministic when no search text is given, so a user can be absent from one page and present in another. Pass **`?s=<email>&invite=all`** for a scoped, server-side lookup — both parameters, since search alone still hides a not-invited user. The authority for the signed-in identity is the auth/identity call, and the authority for whether an owner is acceptable is the create response. *(Optional in the publish flow.)*
 
 ### GET `/appinventory?limit=<n>`
-The tenant's application inventory (paged; entries carry the application id, name, version, language). **These ids are the `value` answers for the application questions** ("Applications used", "Thin applications used"); systems not listed go in `new_applications` (see `POST /idea-from-schema`). *(Used by the publish flow whenever the material names systems.)*
+The tenant's application inventory (paged; entries carry the application id, name, version, language). **These ids are the `value` answers for the application questions** ("Applications used", "Thin applications used"; thin-apps holds only the answered systems the material calls thin/Citrix clients, so `[]` when none, even when the schema flags it `required`); systems not listed go in `new_applications` (see `POST /idea-from-schema`). *(Used by the publish flow whenever the material names systems.)*
 
 ### GET `/automations?search=<text>&limit=<n>&offset=<n>`
 Search/list processes. Returns a paged list (results under a resource key, e.g. `processes`, or a bare array). Use to resolve a name → `process_id`. *(Used by the get flow.)*
@@ -146,6 +164,22 @@ Download a file-backed document's **bytes**. `{file_id}` is the `file_id` from t
 
 ### GET `/automations/{id}/components`  *(optional)*
 Linked components for the process.
+
+### PATCH `/idea-flows/automations/{automationId}/idea-flow`  *(RPANAV-19226)*
+Move an automation into another idea flow (e.g. convert an idea into a Business Process) — the same server logic as the profile page's **Change Idea Flow** action. Body: `{ "idea_flow_id": <id>, "phase_variable": "<P>", "status_variable": "<S>" }`, all three from the target's `/idea-flows` entry. *(Used by the change-idea-flow flow.)*
+
+- **400** — a phase/status not in the target flow, a `change-request` target (a Change Request needs a parent automation), or the automation's *current* status no longer exists in its flow (UI-only fix). **403** — the **Change idea flow** action is missing at the automation's current phase/status (configurable per status) or the user's role lacks it (default: account owner, system admin, program manager), no permission to submit into the target flow, or a user with no tenant roles; don't retry. **404** — unknown automation or `idea_flow_id`, or (for the route itself) a server without the capability (such a server also sends no `Idea flow type`).
+- Slow (~20 s+): it re-saves the whole automation. Never retry on a slow response, a timeout or a 5xx — re-read the automation first. The new flow id is committed **before** the full re-save, so a failure can leave it half moved (new flow, old phase/type).
+- **A 200 is not proof:** a failed re-save can still answer 200 (an AH bug, to be fixed). Confirm with a read-back: `process_submission_type` matches the target type, `phase_key` / `phase_status_key` (`<PHASE>_<STATUS>`) match what was sent. `process_submission_type` is re-written from the Overview assessment's "Idea source (legacy)" answer (options 1–8 only), so a move into a `custom` flow most likely keeps the old value — check the phase keys instead.
+- No same-flow guard: moving into the flow the automation is already in re-saves it and returns 200. Check first; changing phase within a flow is a different operation, not this one.
+- Side effects: when the `phase_status_key` changes it counts as a phase change (followers/upvoters get the usual emails/notifications; user tasks are created); history shows the changed overview answers (no dedicated "flow changed" entry); collaborators and roles are not touched.
+- Data: answers carry over for assessment types both flows share, migrated to the target flow's version only when the saved version is the source flow's default (manually changed versions are left alone); assessments the target doesn't use are hidden, not deleted; a parent-automation link is cleared.
+
+### GET `/automations/{id}/comments?page=<n>&limit=<n>`  *(RPANAV-19227)*
+The comments on an idea or Business Process, as they appear in its Comments section. Paged by **top-level** comment, newest first; each carries all its replies (one level deep). `page` is 1-based (default 1). `limit` is up to 100 (default 20) — a valid `limit` of **5 or less is served as 20**, and `page` ≤ 0, `limit` ≤ 0, a non-integer, or `limit` > 100 is a **400** `error_invalid_pagination`. Response `data`: `{ page, pageIndex, pageSize, totalItems, totalPages, comments: [...] }`. `pageSize` is the number of comments **on this page**, not the requested limit. Each comment: `comment_id`, `parent_comment_id` (null at top level), `text` (plain), `text_draftjs` (stored rich text), `author` `{ user_id, email, first_name, last_name }`, `created_epoch` / `updated_epoch` (ms), `num_replies`, `replies`. With a user token, the user must be able to view the automation (else **403**). A token with no associated user can read any automation in the tenant. An unknown id is **404**. *(Used by the comments flow.)*
+
+### POST `/automations/{id}/comments`  *(RPANAV-19227)*
+Post a comment or a reply. Body: `{ "text": "<plain text>", "parent_comment_id": <top-level comment id, optional>, "submitter": "<email, optional>" }`. `text` must contain a non-whitespace character and be at most **2000** characters. Line breaks (LF or CRLF) are kept, and Markdown is not rendered. A `parent_comment_id` that is a reply, or belongs to another automation, is a **400**. The author is the token's user. Only a token with **no** associated user uses `submitter`, which must be an active AH user who can view the automation. It notifies followers exactly as a UI comment does. Not idempotent: re-read before re-posting after a timeout. Returns the created comment (same shape as above). *(Used by the comments flow.)*
 
 ## Errors
 
