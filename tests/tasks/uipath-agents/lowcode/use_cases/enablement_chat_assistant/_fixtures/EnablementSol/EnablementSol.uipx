@@ -7,6 +7,11 @@
       "Type": "Agent",
       "ProjectRelativePath": "AgentsEnablementAssistant/project.uiproj",
       "Id": "a4e726d4-07a6-4702-b9a7-ba7f56084784"
+    },
+    {
+      "Type": "Agent",
+      "ProjectRelativePath": "CustomerFollowUpDrafter/project.uiproj",
+      "Id": "992071dc-efa5-4f30-a25f-3682f08a1482"
     }
   ]
 }

@@ -2,16 +2,17 @@ task_id: skill-agent-usecase-enablement-chat-assistant
 description: >
   Use-case pattern "conversational assistant that answers from knowledge and
   takes actions". Studio Web context: the user has an empty conversational
-  agent project open in an existing solution. A chat assistant answers sales-engineer questions from the
-  existing "UiPathAgentsProductKnowledge" index and, on request, hands off
-  to the existing deployed "CustomerFollowUpDrafter" agent to draft a
-  customer follow-up email.
-  Graded on the final project only: conversational variant constraints
+  agent project open in an existing solution. The assistant answers
+  sales-engineer questions from the existing "UiPathAgentsProductKnowledge"
+  index and, on request, hands off to the solution's own
+  "CustomerFollowUpDrafter" agent (the real Studio Web project, in the
+  fixture) to draft a customer follow-up email. Graded on the final project
+  only: the existing project is reused, conversational variant constraints
   (engine, empty outputSchema, no reserved inputs, blank user message, no
-  built-in validators), index context + binding, external agent tool,
-  read-only `uip agent validate`, and an LLM judge on the system prompt.
-  Cloud auth required — the staging tenant must have the index and the
-  CustomerFollowUpDrafter agent in Shared/uipath-agents.
+  built-in validators), index context + binding, a solution-local agent tool
+  mirroring the drafter's schemas, read-only `uip agent validate`, and an LLM
+  judge on the system prompt. Cloud auth required — the tenant must have the
+  index in Shared/uipath-agents.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, context-grounding, feature:conversational]
 
 run_limits:
@@ -32,7 +33,8 @@ initial_prompt: |
   You are a coding agent running in Studio Web. The user is in an empty
   low-code agent project in that solution with the name
   AgentsEnablementAssistant. The agent is in a UiPath solution called
-  EnablementSol.
+  EnablementSol. We already have the "CustomerFollowUpDrafter" agent in the
+  current solution.
 
   I want to build a chat agent that answers questions such as "can an agent
   read scanned PDFs?" or "how do escalations work?" for sales engineers. The

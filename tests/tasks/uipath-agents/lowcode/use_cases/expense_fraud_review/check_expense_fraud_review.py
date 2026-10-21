@@ -3,12 +3,13 @@
 
 Final-state only. Validates:
   1. Autonomous agent; schemas in sync with entry-points.json.
-  2. `receipt` is a job-attachment input, `claim` is an object, both
+  2. `receipt` is a job-attachment input and `claim` is declared, both
      templated into the messages; a file-reading built-in tool is enabled.
   3. An enabled escalation resource has an actionCenter channel bound to the
-     deployed "ExpenseFraudReview" Workflow Action app (appName, folderName
-     from discovery, resourceKey), with at least one recipient, and channel
-     schemas that mirror the app's ActionSchema exactly: form inputs =
+     solution-local "ExpenseFraudReview" Workflow Action app (appName,
+     folderName=solution_folder, the app's Key as resourceKey), with at least
+     one recipient, and channel schemas that mirror the app's action schema
+     (its .app/schemas file) exactly: form inputs =
      inputs + inOuts, outputs = inOuts + outputs, outcomeMapping keys =
      outcomes, each mapped to "continue" / "end". Invented form fields —
      what happened when the app exposed no schema — fail here.
@@ -18,6 +19,7 @@ Final-state only. Validates:
   Brownfield: the agent must be built inside the existing (fixture) project.
 """
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -41,20 +43,24 @@ from _shared.use_case_assertions import (  # noqa: E402
 AGENT_DIR = Path(os.getcwd()) / "ExpenseAuditSol" / "ExpenseAuditAgent"
 FIXTURE_AGENT_DIR = Path(__file__).resolve().parent / "_fixtures" / "ExpenseAuditSol" / "ExpenseAuditAgent"
 APP_NAME = "ExpenseFraudReview"
-APP_FOLDER = "Shared/uipath-agents/ExpenseFraudReviewSol"
-# ActionSchema of the deployed app, from `uip solution resources get <KEY>`.
-APP_INPUTS = {"EmployeeId", "ClaimSummary", "ReceiptFindings", "FraudSignals", "AgentRecommendation"}
-APP_INOUTS = {"ReviewerComment"}
-APP_OUTCOMES = {"approve", "reject"}
+APP_FOLDER = "solution_folder"
+# Ground truth from the fixture copy of the solution-local app. For a local app
+# `uip solution resources get` returns ActionSchema=null; the form lives in the
+# project's .app/schemas/*.json and the app's Key in its solution declaration.
+FIXTURE_SOL = Path(__file__).resolve().parent / "_fixtures" / "ExpenseAuditSol"
+_SCHEMA = json.loads(next((FIXTURE_SOL / APP_NAME / ".app" / "schemas").glob("*.json")).read_text())
+APP_INPUTS = {f["name"] for f in _SCHEMA["inputs"]}
+APP_INOUTS = {f["name"] for f in _SCHEMA["inOuts"]} | {f["name"] for f in _SCHEMA["outputs"]}
+APP_OUTCOMES = {o["name"] for o in _SCHEMA["outcomes"]}
+APP_KEY = json.loads((FIXTURE_SOL / "resources" / "solution_folder" / "app" / "workflow Action" / f"{APP_NAME}.json").read_text())["resource"]["key"]
 
 
 def check_inputs(in_schema: dict) -> None:
     if "receipt" not in attachment_fields(in_schema):
         fail("receipt must be a job-attachment input")
-    claim = (in_schema.get("properties") or {}).get("claim")
-    if not isinstance(claim, dict) or claim.get("type") != "object":
-        fail(f"claim must be an object input, got {claim!r}")
-    print("OK: receipt is a job-attachment and claim is an object")
+    if "claim" not in (in_schema.get("properties") or {}):
+        fail("inputSchema must declare the claim input")
+    print("OK: receipt is a job-attachment and claim is declared")
 
 
 def check_escalation() -> None:
@@ -71,8 +77,8 @@ def check_escalation() -> None:
         fail(f"{path.parent.name}: no actionCenter channel bound to appName {APP_NAME!r}")
     ch = channels[0]
     props = ch.get("properties") or {}
-    if not props.get("resourceKey"):
-        fail(f"channel must carry the app's resourceKey from discovery, got {props!r}")
+    if props.get("resourceKey") != APP_KEY:
+        fail(f"channel resourceKey must be the in-solution app's Key {APP_KEY!r} (from discovery), got {props.get('resourceKey')!r}")
     if props.get("folderName") != APP_FOLDER:
         fail(f"channel folderName must be the app's Folder {APP_FOLDER!r}, got {props.get('folderName')!r}")
     recipients = [r for r in ch.get("recipients") or [] if isinstance(r, dict) and r.get("value")]

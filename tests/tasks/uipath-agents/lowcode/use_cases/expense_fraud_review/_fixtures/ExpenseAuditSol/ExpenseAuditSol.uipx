@@ -7,6 +7,11 @@
       "Type": "Agent",
       "ProjectRelativePath": "ExpenseAuditAgent/project.uiproj",
       "Id": "88a2da6f-3298-4f31-bedf-bb001e2e195f"
+    },
+    {
+      "Type": "WebApp",
+      "ProjectRelativePath": "ExpenseFraudReview/project.uiproj",
+      "Id": "3cefb52e-0c62-457c-a8bb-c847ccc5f1ab"
     }
   ]
 }

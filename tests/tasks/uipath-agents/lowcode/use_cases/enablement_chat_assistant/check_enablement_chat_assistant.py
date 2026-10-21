@@ -9,21 +9,23 @@ Final-state only. Validates:
   2. An index context on "UiPathAgentsProductKnowledge" in
      "Shared/uipath-agents" with a valid lowercase retrievalMode, plus its
      bindings_v2.json index binding.
-  3. "CustomerFollowUpDrafter" is wired as an external agent tool
-     (type=agent, location=external, processName, folderPath of the deployed
-     agent, release key as referenceKey) whose input/output schemas mirror
-     the agent's InputArgumentsSchemaV2 / OutputArgumentsSchemaV2
-     (descriptions ignored).
+  3. "CustomerFollowUpDrafter" — a project in the same solution — is wired
+     as a solution-local agent tool (type=agent, location=solution,
+     folderPath=solution_folder, the local resource Key as referenceKey)
+     whose input/output schemas mirror the drafter project's
+     entry-points.json (descriptions ignored).
   4. The assistant was built inside the existing (fixture) project.
 """
 
+import json
 import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
-    UUID_RE,
+    entry_point_schemas,
+    strip_schema,
     assert_existing_project,
     assert_index_context,
     assert_project_id,
@@ -40,27 +42,9 @@ FIXTURE_AGENT_DIR = Path(__file__).resolve().parent / "_fixtures" / "EnablementS
 INDEX_NAME = "UiPathAgentsProductKnowledge"
 INDEX_FOLDER = "Shared/uipath-agents"
 DRAFTER = "CustomerFollowUpDrafter"
-DRAFTER_FOLDER = "Shared/uipath-agents/CustomerFollowUpDrafterSol"
-# V2 argument schemas of the deployed agent, from `uip solution resources get`.
-DRAFTER_INPUT = {
-    "type": "object",
-    "properties": {k: {"type": "string"} for k in ("customerName", "context", "keyPoints", "tone")},
-}
-DRAFTER_OUTPUT = {
-    "type": "object",
-    "properties": {"subject": {"type": "string"}, "body": {"type": "string"}},
-}
-
-
-def strip(node):
-    if isinstance(node, dict):
-        return {
-            k: strip(v) for k, v in node.items()
-            if k not in ("description", "title") and not (k == "required" and v == [])
-        }
-    if isinstance(node, list):
-        return [strip(i) for i in node]
-    return node
+# Ground truth from the fixture copy of the solution-local drafter project.
+FIXTURE_SOL = Path(__file__).resolve().parent / "_fixtures" / "EnablementSol"
+DRAFTER_KEY = json.loads((FIXTURE_SOL / "resources" / "solution_folder" / "process" / "agent" / f"{DRAFTER}.json").read_text())["resource"]["key"]
 
 
 def check_conversational(agent: dict) -> None:
@@ -107,21 +91,18 @@ def check_drafter_tool() -> None:
         and (d.get("properties") or {}).get("processName") == DRAFTER,
         f"agent tool for {DRAFTER!r}",
     )
-    if tool.get("location") != "external":
-        fail(f"{DRAFTER} is deployed outside this solution — location must be 'external', got {tool.get('location')!r}")
+    if tool.get("location") != "solution":
+        fail(f"{DRAFTER} is a project in this solution — location must be 'solution', got {tool.get('location')!r}")
     folder = (tool.get("properties") or {}).get("folderPath")
-    if folder != DRAFTER_FOLDER:
-        fail(f"{DRAFTER} tool folderPath should be {DRAFTER_FOLDER!r} (from discovery), got {folder!r}")
-    rkey = tool.get("referenceKey")
-    if not isinstance(rkey, str) or not UUID_RE.match(rkey):
-        fail(f"{DRAFTER} tool referenceKey must be the deployed release Key GUID, got {rkey!r}")
-    for label, mine, truth in (
-        ("inputSchema", tool.get("inputSchema"), DRAFTER_INPUT),
-        ("outputSchema", tool.get("outputSchema"), DRAFTER_OUTPUT),
-    ):
-        if strip(mine) != truth:
-            fail(f"{DRAFTER} tool {label} does not mirror the deployed agent's V2 schema (descriptions ignored): {mine!r}")
-    print(f"OK: {DRAFTER} wired as an external agent tool ({folder})")
+    if folder != "solution_folder":
+        fail(f"{DRAFTER} tool folderPath should be 'solution_folder' (Folder of a local resource), got {folder!r}")
+    if tool.get("referenceKey") != DRAFTER_KEY:
+        fail(f"{DRAFTER} tool referenceKey must be the local resource Key {DRAFTER_KEY!r} from discovery, got {tool.get('referenceKey')!r}")
+    want_in, want_out = entry_point_schemas(FIXTURE_SOL / DRAFTER)
+    for label, mine, truth in (("inputSchema", tool.get("inputSchema"), want_in), ("outputSchema", tool.get("outputSchema"), want_out)):
+        if strip_schema(mine) != strip_schema(truth):
+            fail(f"{DRAFTER} tool {label} does not mirror {DRAFTER}/entry-points.json (descriptions ignored): {mine!r}")
+    print(f"OK: {DRAFTER} wired as a solution-local agent tool mirroring its project's schemas")
 
 
 def main() -> None:

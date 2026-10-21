@@ -9,8 +9,8 @@ by role. Final-state only. Validates:
      service_not_received, other) and a sentiment field (positive, neutral,
      negative, angry); declares no tools.
   3. Drafter: outputs subject and body; declares no tools.
-  4. Coordinator: takes the customer's message (string) and the invoice
-     (object), both templated; returns disputeType, sentiment,
+  4. Coordinator: takes the customer's message and the invoice (types are
+     the agent's choice), both templated; returns disputeType, sentiment,
      proposedResolution, replySubject, replyBody; declares one
      solution-internal agent tool per child (type=agent, location=solution,
      processName=<child project>, folderPath=solution_folder) whose schemas
@@ -109,8 +109,9 @@ def check_children(classifier: Path, drafter: Path) -> None:
 def check_coordinator(coord: Path, children: list[Path]) -> None:
     agent = load(coord / "agent.json")
     in_schema, out_schema = assert_schema_sync(agent, load(coord / "entry-points.json"))
-    msg = require_input(in_schema, "customer message", "customerMessage", "message", "customerMessageText", "disputeMessage", type_="string")
-    inv = require_input(in_schema, "invoice", "invoice", "invoiceDetails", "invoiceData", type_="object")
+    # The prompt says only "the customer's message and invoice" — types are the agent's choice.
+    msg = require_input(in_schema, "customer message", "customerMessage", "message", "customerMessageText", "disputeMessage")
+    inv = require_input(in_schema, "invoice", "invoice", "invoiceDetails", "invoiceData")
     assert_inputs_referenced(agent, [msg, inv])
     assert_has_fields(
         out_schema,

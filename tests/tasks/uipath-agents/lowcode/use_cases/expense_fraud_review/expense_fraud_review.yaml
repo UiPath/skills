@@ -3,13 +3,14 @@ description: >
   Use-case pattern "document validation with human-in-the-loop escalation".
   The agent reads an expense receipt (job-attachment + file-reading built-in
   tool), checks the claim against a written policy, and hands suspicious or
-  uncertain claims to a human through the EXTERNAL "ExpenseFraudReview"
-  Workflow Action app, using the reviewer's outcome as the final decision. Graded on
+  uncertain claims to a human through the solution's own "ExpenseFraudReview"
+  Workflow Action app (the real Studio Web project, in the fixture), using the
+  reviewer's outcome as the final decision. Graded on
   the final project only: structure check (attachment, tool, escalation
   wiring, output contract), read-only `uip agent validate`, and an LLM judge
-  on the system prompt. The channel must mirror the app's real action
-  schema, so invented form fields fail. Cloud auth required — the tenant
-  must have ExpenseFraudReview in Shared/uipath-agents/ExpenseFraudReviewSol.
+  on the system prompt. The channel must mirror the app's action schema
+  (its .app/schemas file — `uip solution resources get` returns no
+  ActionSchema for a local app), so invented form fields fail.
   Studio Web context: the user has the empty agent project open in an
   existing solution (_fixtures/), and the checker requires the agent to be
   built inside it. Text between the helper markers is lower-tier guidance
@@ -33,7 +34,8 @@ reference:
 initial_prompt: |
   You are a coding agent running in Studio Web. The user is in an empty
   low-code agent project in that solution with the name ExpenseAuditAgent.
-  The agent is in a UiPath solution called ExpenseAuditSol.
+  The agent is in a UiPath solution called ExpenseAuditSol. We already have
+  the "ExpenseFraudReview" Action Center app in the current solution.
 
   I want to build an agent to assist with claims. For each claim, it gets the
   `receipt` (a photo or PDF of the receipt) and the `claim` itself

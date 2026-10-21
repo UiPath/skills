@@ -3,8 +3,8 @@
 
 Final-state only. Validates:
   1. Autonomous agent; schemas in sync with entry-points.json.
-  2. The invoice file is a job-attachment input and the purchase order an
-     object input (names are the agent's choice).
+  2. The invoice file is a job-attachment input and the purchase order
+     another input (names and the PO's type are the agent's choice).
   3. A file-reading built-in tool (analyze-attachments / load-attachments /
      deep-rag) is enabled — the only way a low-code agent reads file contents.
   4. Both inputs reach the LLM via templated messages with contentTokens.
@@ -43,7 +43,7 @@ def check_inputs(in_schema: dict) -> list[str]:
     files = attachment_fields(in_schema)
     if len(files) != 1:
         fail(f"expected exactly one job-attachment input for the invoice file, found {files}")
-    po = require_input(in_schema, "purchase order", "purchaseOrder", "po", "purchaseOrderData", "sapPurchaseOrder", type_="object")
+    po = require_input(in_schema, "purchase order", "purchaseOrder", "po", "purchaseOrderData", "sapPurchaseOrder")
     print(f"OK: invoice file input {files[0]!r} is a job-attachment")
     return [files[0], po]
 
