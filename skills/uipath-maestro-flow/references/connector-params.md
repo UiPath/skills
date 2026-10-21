@@ -479,7 +479,7 @@ Do not carry an alias from the first row into the second.
 There is no table to generate it from, so `lookup('k', 'a', 'f').byEmail(…)` throws.
 Write `.by('profile.email', …)` there instead — the names a field is searchable by are in the descriptor's `LOOKUP:` header and in every `check` diagnostic about the field.
 
-A folder-tree lookup (OneDrive's `referenceID` by `FullName`) matches a bare name only at the top of the tree or one level below. For anything deeper, give the path from the root picker's own top entry, `OneDrive/<folder>/<file>`, not from the drive root (`<folder>/<file>` fails at its first segment). Expect a resolving walk to take about four minutes; a wrong path fails within seconds and lists what the level holds.
+A folder-tree lookup (OneDrive's `referenceID` by `FullName`) matches a bare name only at the top of the tree or one level below. For anything deeper, give the path from the root picker's own top entry, `OneDrive/<folder>/<file>`, not from the drive root (`<folder>/<file>` fails at its first segment). Expect a walk to take four to six minutes. A wrong first segment fails within seconds, but a wrong file name fails only after that walk, naming the segment it stopped at (`stops at segment 3, '<file>'`), so check the name before you run it.
 
 When the flow is written, `check` reports each token still unresolved
 (`LOOKUP_UNRESOLVED`) with exactly this command — one prepare records them all,
