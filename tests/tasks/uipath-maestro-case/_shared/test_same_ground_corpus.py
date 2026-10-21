@@ -60,6 +60,12 @@ _CONNECTOR_HELP_PROBES = (
     "uip maestro registry prepare --help",
     "uip maestro registry pull -h | sed -n 1,80p",
 )
+_MUTATING_PROBE = "uip maestro case tasks add --stage-id s1 --type process --output json"
+_HELP_PROBES = (
+    "uip maestro case tasks add --help",
+    "uip maestro case tasks add -h | sed -n 1,80p",
+    "uip maestro case stages add-connector --help",
+)
 
 
 def _command_patterns(criterion: str) -> list[str]:
@@ -94,6 +100,31 @@ def test_connector_resolution_criteria_accept_either_loop() -> None:
                 offenders.extend(
                     f"{relative}: /{pattern}/ matches {probe!r}"
                     for probe in _CONNECTOR_HELP_PROBES
+                    if compiled.search(probe)
+                )
+    assert offenders == []
+
+
+def test_mutating_verb_guards_ignore_help_calls() -> None:
+    """A `--help` / `-h` call reads usage; it mutates nothing.
+
+    The SDK loop checks a verb's flags before deciding not to use it, so a
+    guard that counts `tasks add --help` fails a loop that never mutated.
+    Every negative criterion that catches a real case-authoring mutation must
+    let the same verb's help call through, in the same command segment.
+    """
+    offenders = []
+    for relative, text in _tagged_tasks():
+        for criterion_type, criterion in _criterion_blocks(text):
+            if criterion_type != "command_not_executed":
+                continue
+            for pattern in _command_patterns(criterion):
+                compiled = re.compile(pattern, re.DOTALL)
+                if not compiled.search(_MUTATING_PROBE):
+                    continue
+                offenders.extend(
+                    f"{relative}: /{pattern}/ matches {probe!r}"
+                    for probe in _HELP_PROBES
                     if compiled.search(probe)
                 )
     assert offenders == []
