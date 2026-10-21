@@ -13,7 +13,7 @@ run_limits:
   turn_timeout: 1800  # 30-min per-turn cap
 
 initial_prompt: |
-  I have a Process Design Document I want to turn into a UiPath solution
+  I have a Process Definition Document I want to turn into a UiPath solution
   architecture. Load the appropriate UiPath skill for this work.
 
   Do NOT analyze any PDD. Do NOT generate any architecture or SDD. Do NOT
