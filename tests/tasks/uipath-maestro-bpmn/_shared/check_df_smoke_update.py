@@ -66,6 +66,7 @@ from _shared.bpmn_check import (  # noqa: E402
     fail,
     has_typed_uipath_extension,
     parse_bpmn,
+    query_parameters,
 )
 
 ENTITY = "FlowCodeEvalEntity"
@@ -87,6 +88,7 @@ EXPECTED_SCORE = "9.0"
 _CREATE_OP_RE = re.compile(r"^create$", re.IGNORECASE)
 _RETRIEVE_OP_RE = re.compile(r"^retrieve$", re.IGNORECASE)
 _LIST_OP_RE = re.compile(r"^list$", re.IGNORECASE)
+ID_FILTER_KEYS = ("where", "filter", "queryexpression")
 _UPDATE_OP_RE = re.compile(r"^(update|replace)$", re.IGNORECASE)
 _DELETE_OP_RE = re.compile(r"^delete$", re.IGNORECASE)
 
@@ -122,7 +124,8 @@ def connector_nodes(root: ET.Element) -> list[ET.Element]:
 
 
 def has_id_filter(task: ET.Element) -> bool:
-    """An `id` input at any target, or a `where`/`filter` input mentioning Id.
+    """An `id` input at any target, or a `where`/`filter`/`queryExpression` input mentioning Id,
+    or the same key in a V2 element's `target="queryParameters"` JSON input.
 
     Covers a Get-by-Id done through List/GET (the shape a real CI artifact
     used: `=js:"'Id' = '" + vars.X.Id + "'"`).
@@ -131,11 +134,14 @@ def has_id_filter(task: ET.Element) -> bool:
         name = (inp.attrib.get("name") or "").lower()
         if name == "id":
             return True
-        if name in ("where", "filter"):
+        if name in ID_FILTER_KEYS:
             text = (inp.attrib.get("value") or "") + (inp.text or "")
             if re.search(r"\bid\b", text, re.IGNORECASE):
                 return True
-    return False
+    params = {key.lower(): value for key, value in query_parameters(task).items()}
+    if "id" in params:
+        return True
+    return any(re.search(r"\bid\b", params.get(key, ""), re.IGNORECASE) for key in ID_FILTER_KEYS)
 
 
 def is_generic_entity_object(object_name: str, entity: str) -> bool:

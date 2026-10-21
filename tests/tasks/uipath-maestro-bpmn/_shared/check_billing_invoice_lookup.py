@@ -141,6 +141,7 @@ from _shared.bpmn_check import (  # noqa: E402
     find_bpmn_file,
     has_typed_uipath_extension,
     parse_bpmn,
+    query_parameters,
     resolve_project,
 )
 from _shared import bpmn_live  # noqa: E402
@@ -383,7 +384,10 @@ def has_nonempty_filter(task: ET.Element) -> bool:
         parsed = parse_json_maybe(value)
         if parsed is not None and structured_filter_leaves(parsed):
             return True
-    return False
+    return any(
+        name.strip().lower() in FILTER_INPUT_NAMES and value not in ("", "{}", "[]")
+        for name, value in query_parameters(task).items()
+    )
 
 
 def server_side_filter() -> None:
