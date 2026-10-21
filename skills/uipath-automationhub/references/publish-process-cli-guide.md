@@ -33,7 +33,19 @@ uip ah automations schema get --idea-flow-id $IDEA_FLOW_ID --destination ./ah-sc
 
 > 📁 **Working files (`ah-schema.json`, `ah-answers.json`, and any document files you generate for upload) go in the current working directory — never `/tmp`.** Hosted runtimes (e.g. the Delegate) sandbox their file tools to the session workspace: a file written to `/tmp` is readable by the CLI but every file-tool access to it fails with an access-denied error.
 
-Read `./ah-schema.json`: the field catalog is under `properties.schema.properties` (Assessment Type > Section > Question; enums carry `answer_option` codes) and `user_inputs` is the payload template.
+Read `./ah-schema.json`: the field catalog is under `properties.schema.properties` (Assessment Type > Section > Question; enums carry `answer_option` codes) and `user_inputs` is the payload template. Don't explore it by hand; two calls give you what you need. First, every question, with whether it is required:
+
+```bash
+jq -r '.properties.schema.properties | to_entries[] as $a | $a.value.properties | to_entries[] as $s | $s.value.properties | to_entries[] | [$a.key, $s.key, .key, (.value.properties.value.title // ""), (if ((.value.required // []) | index("value")) != null then "REQUIRED" else "optional" end), (.value.properties.value.format // ""), ((.value.properties.value.enum // .value.properties.value.items.enum // []) | length | tostring) + " options"] | @tsv' ./ah-schema.json
+```
+
+Then, for each question with options, its codes next to their labels (an application question lists each id beside its name):
+
+```bash
+jq -r --arg q OVR-PROCESS_DOCUMENTS '[.properties.schema.properties[].properties[].properties[$q] | select(. != null)][0].properties.value | (.items // .) | if .enum then ([.enum, (.enumNames // .enum)] | transpose[] | @tsv) else "(free value: \(.type))" end' ./ah-schema.json
+```
+
+Owner and submitter show as `optional` with format `email`, but the backend enforces both (Step 4).
 
 > ⚠️ **Do NOT submit `user_inputs` verbatim** — its example values are placeholders the API rejects (category `1`, placeholder answer codes, example emails). Shape only.
 
@@ -55,14 +67,19 @@ First **enumerate the tenant's actual required set from the schema file**: every
 
 The discovery commands are independent — run the ones you need (`auth-info get`, `categories get`, `applications list`) **in a single shell invocation** rather than one per turn; each is fast, the round-trips between them are not.
 
-**Category in one call.** The tree is several hundred nodes on a real tenant, too long to read in full. Flatten it to `id<TAB>path` rows of usable nodes (active, not "Other", not Idea-only), then grep for two or three words from the material:
+**Category in one call.** The tree is several hundred nodes on a real tenant, too long to read in full. Flatten it to `id<TAB>path` rows of the nodes a Business Process can use (active, not Idea-only), with "Other" nodes marked `[Other]`, then grep for two or three words from the material:
 
 ```bash
-uip ah categories get --output json | jq -r 'def nodes(p): .[] | (p + (if p == "" then "" else " > " end) + .CategoryName) as $path | (select(.CategoryIsActive == 1 and (.CategoryIsOther // 0) != 1 and (.CategoryScope // 3) != 1) | "\(.CategoryId)\t\($path)"), ((.Subcategories // []) | nodes($path)); .Data.Categories | nodes("")' > ./ah-categories.tsv
+uip ah categories get --output json | jq -r 'def nodes(p): .[] | (p + (if p == "" then "" else " > " end) + .CategoryName) as $path | (select(.CategoryIsActive == 1 and (.CategoryScope // 3) != 1) | "\(.CategoryId)\t\($path)\(if (.CategoryIsOther // 0) == 1 then "\t[Other]" else "" end)"), ((.Subcategories // []) | nodes($path)); .Data.Categories | nodes("")' > ./ah-categories.tsv
 grep -i -E '<word>|<word>|<word>' ./ah-categories.tsv
 ```
 
-Use words from the material (its department, function or subject), not the placeholders. If `./ah-categories.tsv` is **empty**, this CLI names the fields differently: read the tree instead, don't conclude nothing fits. If the grep finds no match, list the branches once (`cut -f2 ./ah-categories.tsv | cut -d'>' -f1-2 | sort -u`) and pick the closest node under the best branch. Use "Other" only when nothing there fits, as the table says. Without `jq`, do the same walk in one Python call.
+Use words from the material (its department, function or subject), not the placeholders. If `./ah-categories.tsv` is **empty**, this CLI names the fields differently: read the tree instead, don't conclude nothing fits. Then decide in one more step at most:
+- **A non-`[Other]` row fits** → take its id; several plausible → ask with the names.
+- **No match** → list the branches once (`cut -f2 ./ah-categories.tsv | cut -d'>' -f1-2 | sort -u`) and take the closest node under the best branch.
+- **Nothing fits** (the default taxonomy has no healthcare, banking or telco branch) → take that branch's `[Other]` row, or the top-level one (`grep -P '^\d+\t[^>]*\t\[Other\]$' ./ah-categories.tsv`).
+
+Stop there; never look at other automations' categories to decide. Without `jq`, do the same walk in one Python call.
 
 **Never block the publish on an owner lookup.** If you look the owner up at all, do a targeted search and treat a miss as no signal:
 
