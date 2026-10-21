@@ -42,6 +42,34 @@ HTTP_NODE = """
       </bpmn:extensionElements>
     </bpmn:sendTask>"""
 
+SDK_HTTP_NODE = """
+    <bpmn:sendTask id="Task_{index}">
+      <bpmn:extensionElements>
+        <uipath:activity version="v1">
+          <uipath:type value="Intsvc.ActivityExecution" version="v1" />
+          <uipath:context>
+            <uipath:input name="connectorKey" type="string" value="uipath-uipath-testmanager" />
+            <uipath:input name="objectName" type="string" value="http-request" />
+            <uipath:input name="method" type="string" value="POST" />
+            <uipath:input name="path" type="string" value="/http-request" />
+          </uipath:context>
+          <uipath:input name="body" type="json" target="body"><![CDATA[{body}]]></uipath:input>
+        </uipath:activity>
+      </bpmn:extensionElements>
+    </bpmn:sendTask>"""
+
+IS_PATHS = [
+    "/v2/{projectId}/testexecutions/{id}",
+    "/v2/{projectId}/testexecutions/{id}",
+    "/v2/{projectId}/testcaselogs/testexecution/{testExecutionId}/paged",
+    "/v2/{projectId}/testcaselogs/{id}",
+    "/v2/{projectId}/orchestrator/testexecution/{id}/robotlogs/paged",
+    "/v2/{projectId}/testcaselogartifacts/{id}/assertions",
+    "/v2/{projectId}/testcaselogartifacts/{id}/assertions/{assertionId}/downloadscreenshot",
+    "/v2/{ProjectId}/teststeps/testcase/{Id}",
+    "/v2/{projectId}/teststeplogs",
+]
+
 V1_OPERATIONS = [
     ("TestExecution", "GETBYID"),
     ("TestExecution", "DELETE"),
@@ -122,9 +150,9 @@ def _v1_nodes() -> list[str]:
     ]
 
 
-def _http_nodes(**overrides: str) -> list[str]:
+def _http_nodes(template: str = HTTP_NODE, **overrides: str) -> list[str]:
     return [
-        HTTP_NODE.format(index=i, body=_http_body(m, p, **overrides))
+        template.format(index=i, body=_http_body(m, p, **overrides))
         for i, (m, p) in enumerate(HTTP_OPERATIONS)
     ]
 
@@ -198,3 +226,41 @@ def test_http_url_with_query_or_host_passes(tmp_path: Path, url: str) -> None:
     nodes[-1] = HTTP_NODE.format(index=len(nodes) - 1, body=_http_body("GET", url))
     result = _run(tmp_path, nodes, "--all-ops")
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        lambda path: path,
+        lambda path: "https://x/api" + path.replace("{", "%7B").replace("}", "%7D"),
+    ],
+    ids=["raw", "url-encoded"],
+)
+def test_http_with_unfilled_placeholders_fails(tmp_path: Path, url) -> None:
+    nodes = [
+        HTTP_NODE.format(index=i, body=_http_body(m, url(p)))
+        for i, ((m, _), p) in enumerate(zip(HTTP_OPERATIONS, IS_PATHS))
+    ]
+    result = _run(tmp_path, nodes, "--all-ops")
+    assert result.returncode != 0
+    assert _missing(result.stderr) == LABELS
+
+
+def test_wrong_v1_object_name_fails_all_ops(tmp_path: Path) -> None:
+    nodes = _v1_nodes()
+    nodes[3] = V1_NODE.format(index=3, object_name="TestCase", method="GETBYID")
+    result = _run(tmp_path, nodes, "--all-ops")
+    assert result.returncode != 0
+    assert _missing(result.stderr) == ["get a test case log"]
+
+
+def test_sdk_connector_http_passes_all_ops(tmp_path: Path) -> None:
+    result = _run(tmp_path, _http_nodes(SDK_HTTP_NODE), "--all-ops")
+    assert result.returncode == 0, result.stderr
+
+
+def test_sdk_connector_http_to_other_connector_fails(tmp_path: Path) -> None:
+    nodes = _http_nodes(SDK_HTTP_NODE, targetConnector="uipath-salesforce-slack")
+    result = _run(tmp_path, nodes)
+    assert result.returncode != 0
+    assert "no bpmn:sendTask calls the Test Manager connector" in result.stderr

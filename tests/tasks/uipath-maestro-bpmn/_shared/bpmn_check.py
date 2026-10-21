@@ -387,6 +387,7 @@ def has_typed_uipath_extension(
 ACTIVITY_EXECUTION = "Intsvc.ActivityExecution"
 UNIFIED_HTTP_REQUEST = "Intsvc.UnifiedHttpRequest"
 HTTP_CONNECTOR_KEY = "uipath-uipath-http"
+HTTP_REQUEST_OBJECT = "http-request"
 _JS_OPERAND_RE = re.compile(r"'([^']*)'|\"([^\"]*)\"|`([^`]*)`|([^+'\"`]+)")
 _TEMPLATE_SLOT_RE = re.compile(r"\$\{[^}]*\}")
 
@@ -412,6 +413,31 @@ def _literal_path(value: str) -> str:
     return "".join(parts)
 
 
+def _http_carrier(task: ET.Element, key: str, connector_key: str) -> bool:
+    if key == HTTP_CONNECTOR_KEY and has_type(task, UNIFIED_HTTP_REQUEST):
+        return True
+    return (
+        key == connector_key
+        and has_type(task, ACTIVITY_EXECUTION)
+        and context_value(task, "objectName") == HTTP_REQUEST_OBJECT
+    )
+
+
+def _http_request(task: ET.Element, connector_key: str) -> tuple[str, str] | None:
+    try:
+        body = body_object(task)
+    except BodyShapeError:
+        return None
+    if body.get("authentication") != "connector":
+        return None
+    if str(body.get("targetConnector", "")).lower() != connector_key:
+        return None
+
+    method = str(body.get("method", "")).strip()
+    path = str(body.get("url") or body.get("path") or "").strip()
+    return method, _literal_path(path)
+
+
 def connector_requests(
     root: ET.Element, connector_key: str
 ) -> Iterator[tuple[ET.Element, str, str, RequestShape]]:
@@ -419,31 +445,24 @@ def connector_requests(
 
     ``RequestShape.ACTIVITY``: an ``Intsvc.ActivityExecution`` on the
     connector, method and path from context. ``RequestShape.HTTP``: a
-    connector-mode ``Intsvc.UnifiedHttpRequest`` through its connection,
-    method and ``url`` (else ``path``) from the body. A manual-mode request,
-    or one to another connector, is not yielded.
+    connector-mode request through its connection, method and ``url`` (else
+    ``path``) from the body, carried by an ``Intsvc.UnifiedHttpRequest`` on
+    ``uipath-uipath-http`` or by an ``Intsvc.ActivityExecution`` on the
+    connector's ``http-request`` object (builder SDK ``.http(..., { connection,
+    connectorKey })``). A manual-mode request, or one to another connector, is
+    not yielded.
     """
     for task in elements(root, "sendTask"):
         key = context_value(task, "connectorKey")
+        if _http_carrier(task, key, connector_key):
+            request = _http_request(task, connector_key)
+            if request is not None:
+                yield task, *request, RequestShape.HTTP
+            continue
+
         if key == connector_key and has_type(task, ACTIVITY_EXECUTION):
             method, path = context_value(task, "method"), context_value(task, "path")
             yield task, method, path, RequestShape.ACTIVITY
-            continue
-
-        if key != HTTP_CONNECTOR_KEY or not has_type(task, UNIFIED_HTTP_REQUEST):
-            continue
-        try:
-            body = body_object(task)
-        except BodyShapeError:
-            continue
-        if body.get("authentication") != "connector":
-            continue
-        if str(body.get("targetConnector", "")).lower() != connector_key:
-            continue
-
-        method = str(body.get("method", "")).strip()
-        path = str(body.get("url") or body.get("path") or "").strip()
-        yield task, method, _literal_path(path), RequestShape.HTTP
 
 
 def require_di_for_visible_elements(root: ET.Element) -> None:

@@ -12,9 +12,10 @@ connector (``bpmn_check.connector_requests``), in either shape:
 
 - ``Intsvc.ActivityExecution`` with ``connectorKey`` ``uipath-uipath-testmanager``
   (see skills/uipath-maestro-bpmn/references/registry-workflow.md §3).
-- connector-mode ``Intsvc.UnifiedHttpRequest`` with ``targetConnector``
-  ``uipath-uipath-testmanager``. A manual-mode request, or one through
-  another connector, does not count.
+- connector-mode HTTP with ``targetConnector`` ``uipath-uipath-testmanager``:
+  an ``Intsvc.UnifiedHttpRequest``, or an ``Intsvc.ActivityExecution`` on
+  object ``http-request``. A manual-mode request, or one through another
+  connector, does not count.
 
 Flow distinguished operations by node ``type``
 (``uipath.connector.uipath-uipath-testmanager.<op>``). BPMN carries no
@@ -23,7 +24,8 @@ way the Test Manager activity catalog
 (``uip is activities list uipath-uipath-testmanager --output json``)
 distinguishes operations, by ``objectName`` + ``method``. An HTTP node is
 matched by ``method`` + the operation's IS enrichment path
-(``registry get`` without ``--input-details``):
+(``registry get`` without ``--input-details``), every placeholder filled
+(``/v2/{projectId}/teststeplogs`` does not count).
 
     get a test execution                        TestExecution                   GETBYID  /v2/{projectId}/testexecutions/{id}
     delete a test execution                     TestExecution                   DELETE   /v2/{projectId}/testexecutions/{id}
@@ -87,7 +89,7 @@ from _shared.bpmn_check import (  # noqa: E402
 )
 
 CONNECTOR_KEY = "uipath-uipath-testmanager"
-_SEGMENT = r"[^/]+"
+_SEGMENT = r"(?!\{[^/}]+\}|%7B[^/]*%7D)[^/]+"
 CATALOG_ONLY_METHODS = {"getbyid"}
 
 

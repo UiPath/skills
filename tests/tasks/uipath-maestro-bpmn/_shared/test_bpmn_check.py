@@ -860,3 +860,22 @@ def test_connector_requests_skips_unreadable_body() -> None:
         '<uipath:input name="body" type="json" target="body" value="=vars.Body" /></uipath:activity>',
     )
     assert _requests(task) == []
+
+
+def test_connector_requests_reads_sdk_connector_http_as_http() -> None:
+    body = {
+        "authentication": "connector",
+        "targetConnector": "uipath-uipath-testmanager",
+        "method": "GET",
+        "url": "=js:'/v2/' + vars.P + '/teststeplogs'",
+    }
+    context = (
+        '<uipath:input name="connectorKey" type="string" value="uipath-uipath-testmanager" />'
+        '<uipath:input name="objectName" type="string" value="http-request" />'
+        '<uipath:input name="method" type="string" value="POST" />'
+    )
+    task = _connector_task("Intsvc.ActivityExecution", context, body)
+    assert _requests(task) == [
+        ("Task_Intsvc.ActivityExecution", "GET", "/v2/{}/teststeplogs", bpmn_check.RequestShape.HTTP)
+    ]
+    assert _requests(task.replace('"connector"', '"manual"')) == []
