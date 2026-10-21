@@ -86,3 +86,16 @@ actions are `AvailableOnTenant: false` and ship bundled from the workbench
 manifests. Nothing local dials a phone: a green ladder proves the node types,
 the call-context threading and the voice settings. A real call, real audio, and
 what the caller heard are platform evidence.
+
+`uip maestro flow debug` rejects a flow that starts from `voiceTrigger()`: only
+a real call raises that trigger, so do not run it. Tell the user the test loop
+instead: deploy the solution to Orchestrator ([operate.md](operate.md#publish)),
+route an inbound-enabled number to the release, then call that number:
+
+```bash
+uip conversational trunks list --direction inbound --output json
+uip conversational trunks assign <number> --process-key <Key> --folder-key <folderKey> --output json
+```
+
+`<Key>` is the release `Key` from `uip or processes list`. A number is added or
+inbound-enabled in Instance Management under Phone numbers, never from the CLI.
