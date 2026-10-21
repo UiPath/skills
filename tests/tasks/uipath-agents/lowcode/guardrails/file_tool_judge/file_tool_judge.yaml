@@ -1,0 +1,77 @@
+task_id: skill-agent-guardrail-file-tool-judge
+description: >
+  LLM-as-judge guardrail that inspects the file a tool reads. The sandbox is
+  pre-seeded with the Contract Intake solution (shared _fixtures copy): an
+  agent with a job-attachment input and the Analyze Files built-in tool, no
+  guardrails. The user asks for a judge rule on the uploaded contract that
+  is evaluated on the Analyze Files tool and must read the file contents,
+  not the tool's text arguments. Verifies the skill scopes the judge to the
+  tool (Tool scope with matchNames "Analyze Files"), discovers a model via
+  `uip agent guardrails llm-as-judge-models`, and sets the file-support
+  parameter detectionScope to Files, with a block action and PascalCase shape.
+tags: [uipath-agents, e2e, mode:build, lifecycle:edit, low-code, guardrail]
+
+run_limits:
+  expected_turns: 18
+  max_turns: 30
+  turn_timeout: 1200
+
+sandbox:
+  template_sources:
+    - {type: template_dir, path: ../_fixtures/ContractIntakeSolution}
+
+reference:
+  directory: ../../..
+
+initial_prompt: |
+  My contract intake agent at ContractIntakeSolution/ContractIntakeAgent reads
+  the uploaded contract with its Analyze Files tool. Add an LLM-as-judge
+  guardrail on that tool that blocks the run when the uploaded contract
+  contains a non-compete clause longer than 12 months, with the message
+  "Non-compete exceeds 12 months." The judge must evaluate the contents of the
+  file itself, not the tool's text arguments. Validate when done.
+
+  Do NOT publish, upload, or deploy. Do NOT ask for approval,
+  confirmation, or feedback. Do NOT pause between planning and
+  implementation. Complete the entire task end-to-end in a single pass.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent fetched the validator catalog via uip agent guardrails list"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+list'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent discovered the LLM-as-judge models via the CLI"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+guardrails\s+llm-as-judge-models'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent refreshed the project to regenerate derived files"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+refresh'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent validated the project"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+agent\s+validate'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Judge guardrail on Analyze Files reads the file (Tool scope, matchNames, enum model, text rule, detectionScope Files, block)"
+    command: "python3 $REFERENCE_DIR/lowcode/guardrails/file_tool_judge/check_file_tool_judge.py"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0

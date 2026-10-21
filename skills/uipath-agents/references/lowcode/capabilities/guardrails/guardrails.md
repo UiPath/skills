@@ -2,11 +2,11 @@
 
 ## Overview
 
-Guardrails are safeguards that inspect agent inputs and outputs for policy violations (PII, harmful content, prompt injection, intellectual property, custom rules). They are configured at the **agent.json root level** as a `guardrails` array.
+Guardrails are safeguards that inspect agent inputs and outputs — text and, for built-in validators carrying `detectionScope`, attached or produced files — for policy violations (PII, harmful content, prompt injection, intellectual property, custom rules). They are configured at the **agent.json root level** as a `guardrails` array.
 
 Two types exist:
 - **`custom`** — deterministic rules you define (word matching, number comparison, boolean checks, universal triggers)
-- **`builtInValidator`** — UiPath Guardrails API validators (PII detection, harmful content, prompt injection, IP protection, user prompt attacks)
+- **`builtInValidator`** — UiPath Guardrails API validators (PII detection, harmful content, prompt injection, IP protection, user prompt attacks, LLM-as-judge)
 
 > **Autonomous agents:** All guardrails are configured at the `agent.json` root `guardrails` array. **Conversational agents:** the `agent.json` root `guardrails[]` is **authoritative** (source for the Studio Web UI and both runtimes); each Tool-scoped guardrail is also mirrored into the tool's `resources/<Tool>/resource.json` → `guardrail.policies[]` — see § Conversational Support below.
 
@@ -16,7 +16,7 @@ Two types exist:
 
 Use when adding input/output safeguards (PII detection, harmful content blocking, custom word rules) to a low-code agent. Guardrails are configured at the agent.json root `guardrails` array.
 
-> **Read only what the task needs.** For guardrail work this file (plus [escalation-guide.md](escalation-guide.md) or [custom-rules-guide.md](custom-rules-guide.md) when those types apply) is sufficient — do not read the model-selection, prompting, or evals references for a guardrail task. Run `uip agent guardrails list` directly: the CLI handles authentication itself, so never run a login/auth/config preflight command first — react only to an actual authentication error from the command itself.
+> **Read only what the task needs.** For guardrail work this file (plus [escalation-guide.md](escalation-guide.md), [custom-rules-guide.md](custom-rules-guide.md), or [files-guide.md](files-guide.md) when those apply — files-guide.md whenever the agent has a `job-attachment` input or output, an Analyze Files or Create File tool, or the request mentions files or attachments) is sufficient — do not read the model-selection, prompting, or evals references for a guardrail task. Run `uip agent guardrails list` directly: the CLI handles authentication itself, so never run a login/auth/config preflight command first — react only to an actual authentication error from the command itself.
 
 > **MANDATORY: Read this file BEFORE writing any guardrail JSON.** The guardrail schema uses discriminator fields (`$actionType`, `$parameterType`, `$ruleType`, `$selectorType`) that cannot be guessed. PII detection uses `$guardrailType: "builtInValidator"` with `validatorType: "pii_detection"` — NOT `$guardrailType: "pii"`. Parameters use `id` (not `name`) and require `$parameterType`. Actions use `$actionType` (not `type`). PII entities are PascalCase (`"Email"`, not `"email_address"`). There is no `pattern`, `target`, or `message` field.
 >
@@ -50,7 +50,7 @@ For each tool name you plan to put in `matchNames`:
 
 ### Step 3 — Add a guardrail to agent.json
 
-For built-in validators, see [Built-in Validator Guardrails](#built-in-validator-guardrails-guardrailtype-builtinvalidator) for the full schema and worked examples (Examples 1–5). For the `escalate` action (Action Center app + recipient), follow [escalation-guide.md](escalation-guide.md).
+For built-in validators, see [Built-in Validator Guardrails](#built-in-validator-guardrails-guardrailtype-builtinvalidator) for the full schema and worked examples (Examples 1–6). For the `escalate` action (Action Center app + recipient), follow [escalation-guide.md](escalation-guide.md).
 
 For custom rules (word/number/boolean/always), see [custom-rules-guide.md](custom-rules-guide.md) for the full schema, rule types, field selectors, and worked examples.
 
@@ -280,7 +280,7 @@ Built-in validators call the UiPath Guardrails API. They have a `validatorType` 
 | `"enum-list"` | Array parameters (e.g., `entities`, `harmfulContentEntities`, `ipEntities`) | string[] |
 | `"map-enum"` | Threshold maps (e.g., `entityThresholds`, `harmfulContentEntityThresholds`) | object (keys = entity names, values = numbers) |
 | `"number"` | Scalar numbers (e.g., `threshold`) | number |
-| `"enum"` | Scalar single-choice (e.g., `model` for `llm_as_judge`) | string |
+| `"enum"` | Scalar single-choice (e.g., `model` for `llm_as_judge`; `detectionScope` — `Text` / `Files` / `Both` — on file-capable validators, see [Files and attachments](#files-and-attachments-detectionscope)) | string |
 | `"text"` | Free text (e.g., `guardrailText` for `llm_as_judge`) | string |
 | `"text-list"` | Text arrays (e.g., `positiveExamples`, `negativeExamples` for `llm_as_judge`) | string[] |
 
@@ -310,15 +310,28 @@ Run `uip agent guardrails list --output json` to get the authoritative list. Onl
 | `GuardrailStages[scope]` | Valid execution stages for that scope |
 | `Parameters[].Id` | `validatorParameters[].id` |
 | `Parameters[].Type` | `validatorParameters[].$parameterType` |
+| `Parameters[]` contains `Id: "detectionScope"` | The validator can inspect files on this tenant — set `validatorParameters` `detectionScope` (`Text` / `Files` / `Both`) when the agent handles files. Absent → text only; do not add the parameter. See [Files and attachments](#files-and-attachments-detectionscope). |
 | `IsByo` | Disambiguates a bring-your-own (BYOG) entry from a built-in one — see [BYO (bring-your-own) guardrails](#byo-bring-your-own-guardrails) below. Not itself a JSON field. |
 | `ByoValidatorName` | `byoValidatorName` value — include this field to pin the guardrail to this exact BYO configuration. Required whenever more than one entry shares this `Validator` name (a built-in plus one or more BYOG configurations). |
 
 > **Important:** PII entity names use PascalCase (`"Email"`, not `"email_address"`). Harmful content categories use PascalCase (`"Hate"`, not `"hate"`). Scope values use PascalCase (`"Agent"`, `"Llm"`, `"Tool"`).
 
+### Files and attachments (`detectionScope`)
+
+File-capable built-in validators take an optional `{ "$parameterType": "enum", "id": "detectionScope", "value": "Text" | "Files" | "Both" }` parameter that decides whether the provider evaluates the text payload, the run's files (`job-attachment` inputs, files tools return, files the agent produces), or both.
+
+1. Add it only when the validator's `Parameters` in `uip agent guardrails list --output json` contains `Id: "detectionScope"` — absent means text only on this tenant.
+2. The default is always `Text` ("Text only"): omitted means text only for every validator. Allowed scopes and stages do not change.
+3. Guard attached input files at Agent scope with `Files` ([Example 6](#example-6-block-pii-inside-attached-files)); guard a produced output file with a Post validator at Agent scope and `Files`.
+4. Custom guardrails never read file contents (the `always` rule's `applyTo` picks input or output, not text or files). BYO guardrails have no file support.
+
+Scope × stage coverage, supported types and caps, Tool scope on Analyze Files, the output-file recipe, Flow inline agents, testing, and degradation behaviour: [files-guide.md](files-guide.md).
+
 ## BYO (bring-your-own) guardrails
 
 A validator can be fulfilled by a tenant-registered **external** provider (a "BYOG" configuration — e.g. Azure AI Content Safety, Databricks AI Guardrails) instead of, or alongside, UiPath's own built-in implementation. A tenant admin registers these at Admin → AI Trust Layer → Guardrails Configurations or via `uip guardrails byo-configurations create`; see [uipath-platform § BYO Guardrail Configurations](/uipath:uipath-platform) for the admin-side lifecycle commands (`uip guardrails byo-configurations list|create|update|delete`).
 
+- **No file support for BYO guardrails.** BYO entries carry no `detectionScope` parameter and the external provider receives the text payload only — do not set `detectionScope: "Files"` / `"Both"` on a guardrail pinned with `byoValidatorName`.
 - **`Validator` is not unique.** A tenant with a BYOG `harmful_content` configuration sees **two** entries named `harmful_content` in `uip agent guardrails list` output — one built-in, one BYO. Use `IsByo` to tell them apart; never assume a single match.
 - **Filter to BYO-only entries** with `uip agent guardrails list --byo --output json` when the user specifically wants to see or target a BYO-backed validator.
 - **BYO entries carry extra fields**: `ByoValidatorName`, `ByoConnectionId`, `ByoConfigurationId`, `ByoConnectorName`, `ByoConnectorKey`, `FolderKey` — alongside the same `Parameters`/`AllowedScopes`/`GuardrailStages`/`Status` shape a built-in entry has.
@@ -431,7 +444,7 @@ A validator can be fulfilled by a tenant-registered **external** provider (a "BY
 
 ### Example 4: User Prompt Attack Detection — Block Jailbreaks
 
-No parameters required — binary detection via Azure Prompt Shield. Llm PreExecution only.
+No required parameters — binary detection via Azure Prompt Shield; `detectionScope` is the only optional one (see [Files and attachments](#files-and-attachments-detectionscope)). Llm PreExecution only.
 
 ```json
 {
@@ -454,7 +467,7 @@ No parameters required — binary detection via Azure Prompt Shield. Llm PreExec
 
 ### Example 5: Intellectual Property Detection — Block Copyrighted Text and Code
 
-PostExecution only — no content exists to check before the LLM generates output.
+PostExecution only — no content exists to check before the LLM generates output. To check a file the agent produces instead of its text, see [files-guide.md § Recipe 3](files-guide.md#recipe-3--guard-a-file-the-agent-produces).
 
 ```json
 {
@@ -478,6 +491,27 @@ PostExecution only — no content exists to check before the LLM generates outpu
   "selector": {
     "scopes": ["Llm"]
   }
+}
+```
+
+### Example 6: Block PII Inside Attached Files
+
+`detectionScope: "Files"` — only the run's attachments are evaluated; Agent PreExecution blocks before the model runs. Requires a `job-attachment` input field ([../../agent-definition.md](../../agent-definition.md) § File Attachments). Full recipe and variants: [files-guide.md](files-guide.md).
+
+```json
+{
+  "$guardrailType": "builtInValidator",
+  "id": "<UUID>",
+  "name": "PII in uploaded documents",
+  "description": "Blocks runs whose attached files contain customer identifiers",
+  "validatorType": "pii_detection",
+  "validatorParameters": [
+    { "$parameterType": "enum-list", "id": "entities", "value": ["Email", "CreditCardNumber"] },
+    { "$parameterType": "enum", "id": "detectionScope", "value": "Files" }
+  ],
+  "action": { "$actionType": "block", "reason": "An attached file contains personal data." },
+  "enabledForEvals": true,
+  "selector": { "scopes": ["Agent"] }
 }
 ```
 
@@ -549,6 +583,9 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 21. **Do not assume `Validator` is unique** — a tenant can have both a built-in and one or more bring-your-own (BYOG) entries sharing the same `Validator` name. Always check `IsByo` before treating two same-named entries as a duplicate or conflict, and set `byoValidatorName` when targeting a specific BYO entry. See [BYO (bring-your-own) guardrails](#byo-bring-your-own-guardrails).
 22. **Do not leave a key in `harmfulContentEntityThresholds` (or any `map-enum` threshold parameter, e.g. `entityThresholds`) that is not in the corresponding entities list** — threshold keys must exactly match the selected entities: no extra keys, no missing keys. `uip agent validate` does NOT flag the mismatch, so a stale extra key passes validation and silently misconfigures the guardrail. When editing the entities list, prune the thresholds map in the same edit.
 23. **Do not reverse-engineer guardrail schemas from the CLI installation or SDK packages** — never grep `/usr/lib/node_modules/@uipath/**/dist/*.js`, read minified bundles, or import-probe packages to confirm a field. This reference is the schema authority (see [Overview](#overview)); write the guardrail from the complete examples here and let `uip agent validate` confirm the shape.
+24. **Do not add `detectionScope` to a validator whose `uip agent guardrails list` `Parameters` lacks it, to any `custom` guardrail, or to a guardrail pinned with `byoValidatorName`** — validate may pass, but the runtime ignores it and the guardrail checks text only. See [files-guide.md](files-guide.md).
+25. **Do not expect a `Text` guardrail (the default) to inspect an attached file** — file contents reach the provider only with `detectionScope: "Files"` or `"Both"`.
+26. **Do not confuse `detectionScope` (`Text` / `Files` / `Both`, what a built-in validator reads) with `selector.scopes` (`Agent` / `Llm` / `Tool`, where it runs).**
 
 ## References
 
@@ -557,3 +594,6 @@ Add the `guardrails` array at the agent.json root level alongside `settings`, `m
 - [../../agent-definition.md](../../agent-definition.md) § Guardrails — root-level placement in `agent.json`
 - [escalation-guide.md](escalation-guide.md) — `escalate` action schema, app verification workflow, worked example
 - [custom-rules-guide.md](custom-rules-guide.md) — custom (deterministic) guardrail schema, rule types, field selectors, worked examples
+- [files-guide.md](files-guide.md) — `detectionScope`, scope × stage file coverage, supported types and caps, input/output-file recipes
+- [../../agent-definition.md](../../agent-definition.md) § File Attachments — `job-attachment` schema the file guardrails inspect
+- [../built-in-tools/analyze-attachments.md](../built-in-tools/analyze-attachments.md) — the tool whose `attachments[]` a Tool-scoped file guardrail sees

@@ -60,6 +60,7 @@ For process tools (RPA / agent / API / agentic), see [../process/process.md](../
 | Tool | `toolType` | Walkthrough |
 |---|---|---|
 | Analyze Files | `analyze-attachments` | [analyze-attachments.md](analyze-attachments.md) |
+| Create File | `create-file` | [create-file.md](create-file.md) |
 | Deep RAG | `deep-rag` | [deeprag/impl-json.md](deeprag/impl-json.md) |
 | Batch Transform | `batch-transform` | [batch-transform/impl-json.md](batch-transform/impl-json.md) |
 
