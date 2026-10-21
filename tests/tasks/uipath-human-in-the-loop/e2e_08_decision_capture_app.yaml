@@ -1,0 +1,225 @@
+task_id: skill-hitl-e2e-decision-capture-app
+description: >
+  E2E scenario (cloud auth required): agent builds a complete Decision
+  Action App for finance to approve or deny expense claims, from scratch.
+  Given only a business goal, the agent must write the field table
+  table, author action-schema.json so a completed task persists as a
+  complete Decision, build the instructional UI with Apollo Wind (no widget
+  dependency),
+  build, pack, publish with `-t Action`, and deploy to a fresh per-run
+  Orchestrator folder. Tests the full decision-app lifecycle that no
+  smoke test covers end-to-end. Deploys into an isolated
+  `decisionapp-e2e-*` folder so `post_run` can delete it cleanly.
+
+tags: [uipath-human-in-the-loop, e2e, mode:build, lifecycle:setup]
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _setup
+      mount_point: _setup
+run_limits:
+  expected_turns: 40
+  max_turns: 60
+  turn_timeout: 1200
+
+initial_prompt: |
+  Build a UiPath Coded Action App that finance reviewers will use to
+  approve or deny expense claims flagged by an upstream agent. Turn on
+  the guided decision experience so every reviewer decision is recorded
+  in the Decision Ledger.
+
+  Business requirements:
+
+  - Each claim comes with: an employee name, a claim amount, and a policy
+    reference. These are read-only context for the reviewer.
+  - The upstream agent proposes 2 to 4 reasons for and against the claim,
+    each with the outcome it supports and a proposed weight, which the
+    reviewer can change.
+  - The agent proposes the claim's cost center and the approved amount,
+    which the reviewer can change, and which should follow whichever
+    decision the reviewer picks.
+  - The agent also recommends approve or deny, marked as recommended but
+    never pre-selected.
+  - The reviewer approves, partly approves or denies. Agreeing is one
+    click; changing a reason's weight is one more. Why a reason is not
+    relevant is optional.
+  - The app records what the reviewer changed, quietly, and offers a rule
+    for next time with a scope.
+  - The app renders its own UI (no decision widget package).
+  - When deployed, the form must bind to Action Center tasks (NOT a
+    standalone Web App).
+
+  Confirm the field table with the user before writing code —
+  for this automated test, print the table and proceed without waiting.
+
+  Use the app name `ExpenseClaimApp_<EPOCH>` (Unix epoch seconds suffix —
+  e.g. `ExpenseClaimApp_1716163200`) with version `0.1.0`.
+
+  Deploy to a FRESH per-run Orchestrator folder — do NOT reuse `Shared`:
+    1. Create a new folder named `decisionapp-e2e-claim-<EPOCH>` via
+       `uip or folders create <name> --output json`. Capture the `Key`
+       from the response.
+    2. Pass that key to `uip codedapp deploy` non-interactively — as
+       `--folder-key <key>`, or as a `UIPATH_FOLDER_KEY=<key>` env-var
+       prefix — do NOT let deploy go interactive.
+  This isolates the deployment so `post_run` cleanup can delete the
+  folder afterwards.
+
+  When you finish, write `report.json` at the sandbox root with:
+    {
+      "app_name": "<the exact app name you used>",
+      "deployment_id": "<the deploymentId from .uipath/app.config.json (or its systemName if deploymentId is absent)>",
+      "app_url": "<the appUrl from .uipath/app.config.json>",
+      "folder": "<the decisionapp-e2e-claim-<EPOCH> folder name you created>"
+    }
+  The `folder` field is REQUIRED — `post_run` reads it to clean up.
+
+  Use `--output json` on every `uip` command. Do not prompt for
+  confirmation — this is an automated test.
+
+success_criteria:
+  - type: command_executed
+    description: "Agent verified login status before cloud commands"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+login\s+status'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent created a fresh per-run folder via `uip or folders create`"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+(or|orchestrator)\s+folders\s+create\b'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `npm run build`"
+    tool_name: "Bash"
+    command_pattern: 'npm\s+run\s+build'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp pack` with --output json"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+pack\b.*--output\s+json'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp publish` with `-t Action` or `--type Action`"
+    tool_name: "Bash"
+    command_pattern: '(?s)uip\s+codedapp\s+publish\b.*(?:-t\s+Action|--type\s+Action)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran `uip codedapp deploy` with the folder key passed non-interactively"
+    tool_name: "Bash"
+    command_pattern: '(?s)(UIPATH_FOLDER_KEY=\S+.*\buip\s+codedapp\s+deploy\b|uip\s+codedapp\s+deploy\b.*--folder-key)'
+    min_count: 1
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "action-schema.json was authored (anywhere in the project tree)"
+    command: "find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit | grep -q ."
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "action-schema.json carries the guided decision fields beside the claim fields: proposedOutcome, proposedBy, involvement, rationaleDraft, nextTimeOptions inputs; reasons with weight and fields with byDecision as inOuts; Approve, a partial approval and Deny outcomes; rationaleText, decidingReasons, nextTimeScope, changes and record outputs"
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); i=d['inputs']['properties']; io=d['inOuts']['properties']; o=d['outputs']['properties']; oc=[k.lower() for k in d['outcomes']['properties']]; rp=io.get('reasons',{}).get('items',{}).get('properties',{}); fp=io.get('fields',{}).get('items',{}).get('properties',{}); ok=all(k in i for k in ['proposedOutcome','proposedBy','involvement','rationaleDraft','nextTimeOptions']) and 'weight' in rp and 'byDecision' in fp and any(k.startswith('approve') for k in oc) and 'deny' in oc and 'submit' not in oc and len(oc)>=3 and all(k in o for k in ['rationaleText','decidingReasons','nextTimeScope','changes','record']); sys.exit(0 if ok else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the quiet record is in the outputs: changeLog and timeOnTaskSeconds, and no per-reason confirm or chip-bank field"
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); o=d['outputs']['properties']; keys=[k.lower() for s in ('inputs','outputs','inOuts') for k in d[s]['properties']]; sys.exit(0 if 'changeLog' in o and 'timeOnTaskSeconds' in o and not {'confirmeditems','rationaleoptions','reasonchips','highstakes'}.intersection(keys) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the app source never pre-selects the outcome: no useState or defaultValue seeded from proposedOutcome"
+    command: "! find . -path '*/src/*' \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -print0 | xargs -0 grep -nE '(useState|defaultValue|selected[A-Za-z]*\\s*[:=])[^;]*proposedOutcome'"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the app source has the weight menu, marks the recommendation and renders a collapsed record drawer"
+    command: "find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'Not relevant' | grep -q . && find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'Recommended' | grep -q . && find . -path '*/src/*' -name '*.tsx' -not -path '*/node_modules/*' -print0 | xargs -0 grep -l 'What gets recorded' | grep -q ."
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "no telemetry or decision outputs: no signals/decision/action output field"
+    command: "F=$(find . -name 'action-schema.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; o=[k.lower() for k in json.load(open('$F'))['outputs']['properties']]; sys.exit(1 if {'signals','decision','action'}.intersection(o) else 0)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the app source never says teach, train or lesson"
+    command: "! find . -path '*/src/*' \\( -name '*.ts' -o -name '*.tsx' \\) -not -path '*/node_modules/*' -print0 | xargs -0 grep -liwE 'teach(es|ing)?|train(ing)?|lessons?'"
+    timeout: 20
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the app does not depend on a decision widget package (builds its own UI per Step 3)"
+    command: "F=$(find . -name 'package.json' -not -path '*/node_modules/*' -maxdepth 3 -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); deps={**d.get('dependencies',{}),**d.get('devDependencies',{})}; sys.exit(1 if any('decisions-and-reasons' in k for k in deps) else 0)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "publish wrote a .uipath/app.config.json somewhere in the project tree, with appType == Action"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if d.get('appType','').lower() == 'action' else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "app.config.json proves a tenant round-trip: deploymentId or systemName present"
+    command: "F=$(find . -path '*/.uipath/app.config.json' -not -path '*/node_modules/*' -print -quit) && test -n \"$F\" && python3 -c \"import json,sys; d=json.load(open('$F')); sys.exit(0 if (d.get('deploymentId') or d.get('systemName')) else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.5
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "report.json was written at the sandbox root so post-run cleanup can find the deployed app"
+    path: "report.json"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "report.json records the decisionapp-e2e-claim-* folder name so post_run can clean it up"
+    command: "python3 -c \"import json,sys; f=str(json.load(open('report.json')).get('folder','')); sys.exit(0 if f.startswith('decisionapp-e2e-claim-') else 1)\""
+    timeout: 5
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+post_run:
+  - command: "python3 _setup/cleanup_decision_app_folder.py"
+    timeout: 60
