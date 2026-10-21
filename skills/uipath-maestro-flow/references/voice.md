@@ -94,9 +94,11 @@ route an inbound-enabled number to the release, then call that number:
 
 ```bash
 uip conversational trunks list --direction inbound --output json
-uip conversational trunks assign <number> --process-key <Key> --folder-key <FolderKey> --output json
+uip conversational trunks assign <PHONE_NUMBER> --process-key <PROCESS_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 
-`<Key>` and `<FolderKey>` come from `uip or processes list`; `Key`, not
-`ProcessKey`. A number is added or inbound-enabled in Instance Management under
-Phone numbers, never from the CLI.
+`<PROCESS_KEY>` is `Key` from `uip or processes list`, not `ProcessKey`;
+`<FOLDER_KEY>` is its `FolderKey`. A number is added or inbound-enabled in
+Instance Management under Phone numbers, never from the CLI. Run `assign` only
+when the user asks: it routes live callers to the release, and re-routing a
+bound number takes it from whatever it served.
