@@ -133,9 +133,7 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    adopted at 2a, or edited in place (brownfield) — because upload overwrites
    the cloud solution matching the local `.uipx` SolutionId. Confirm it where
    that solution is chosen (2a); when 2a did not run, confirm before the 4g
-   upload. After every `uip solution upload`, put `Data.DesignerUrl` in your
-   reply to the user as a clickable link on its own line. If the response has
-   no `DesignerUrl`, say so and show its `Data`.
+   upload.
 11. **Retry is node configuration, never canvas.** Handle transient failures
    with `uipath:retry` on the activity. Never draw a retry loop from gateways
    and timer events. See
@@ -482,7 +480,7 @@ Draft mode only.
    [references/structural-bpmn.md#script-tasks--jint-authoring-contract](references/structural-bpmn.md#script-tasks--jint-authoring-contract).
 - **4c Assemble.** If this run uploaded the shape, download it first (as in
    1c); when its `.bpmn` differs from the local one, build on the downloaded
-   one and say in one sentence that you kept the user's changes. For
+   one (4g says so). For
    greenfield, edit the `.bpmn` that 2a's `init`
    generated in place; never replace the whole file.
    Editing in place preserves the four generated JSON files, the initializer's
@@ -753,10 +751,19 @@ Draft mode only.
 
 - **4g Show the finished process.** When the request allows an upload and the
   project has a solution (`.uipx`), `uip solution upload <SolutionDir> --output json`
-  returns the `Data.DesignerUrl`; give it to the user as a link (Rule 10). When the project was not created in
+  returns the `Data.DesignerUrl`. When the project was not created in
   this run (brownfield, or adopted at 2a without a confirmation), confirm before
   uploading (Rule 10). When the request forbids upload, or there is no
-  solution, report the local `.bpmn` path instead.
+  solution, skip it. Then reply in this shape, dropping lines that do not apply:
+
+  ```text
+  <Name>: built, validated<, uploaded><, run>. <One sentence if you kept the user's online changes.>
+  <DesignerUrl as a link on its own line, or the local .bpmn path>
+
+  - <what changed, one line each, up to 5>
+
+  Assumed: <...>  Unverified: <...>
+  ```
 
 ## Operate and diagnose
 

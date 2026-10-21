@@ -112,35 +112,40 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   trigger-start skeleton (timer or message start): `refresh` fails with no
   manual start, as in 4c.
 - **2f Make the shape visible.** When the request allows an upload, run
-  `uip solution upload <SolutionDir> --output json` and give the user the
-  returned `Data.DesignerUrl` as a link (Rule 10). Do not ask first: a request to build the
+  `uip solution upload <SolutionDir> --output json`; 3c shows the returned
+  `Data.DesignerUrl`. Do not ask first: a request to build the
   process authorizes the upload that shows it, and a consent gate per
   iteration would defeat the mode. The one case that still needs confirmation
   is adopting a solution the agent did not create, because `upload` overwrites
   the cloud solution matching the local `.uipx` SolutionId. Confirm that at
-  2a, not here. When the request forbids upload, skip it: report the laid-out
-  local `.bpmn` path and a short text outline of the shape instead.
+  2a, not here. When the request forbids upload, skip it.
 
 ## Iterating
 
 - **3a Edit the skeleton** from the user's feedback, then re-`format`. If you
   uploaded it, download it first (as in 1c); when its `.bpmn` differs from
-  the local one, the user edited it online: edit the downloaded `.bpmn` and
-  say in one sentence that you kept their changes.
+  the local one, the user edited it online: edit the downloaded `.bpmn` (3c
+  says so).
 - **3b Show the change** the same way as 2f. Each upload after the first
   reports `Data.Action: "Overwritten"` and reuses the same `SolutionId` and
   `DesignerUrl`, because `upload` writes the cloud solution id back into the
   local `.uipx`. `"Imported"` on a later upload means that id was lost and a
   second cloud solution was just created — stop and fix that before
   continuing. Repeat 3a–3b.
-- **3c Ask before building.** Show the shape — the `DesignerUrl` link right
-  above the question when it was uploaded — then ask exactly this, as a
-  pick list if the host has one, else as plain text:
+- **3c Ask before building.** Reply in this shape, dropping lines that do
+  not apply; the question is fixed and becomes a pick list if the host has one:
 
-  > Is this the process you want?
-  > 1. **Build it**: make every step work.
-  > 2. **Change it**: tell me what to add, remove, or move.
-  > 3. **Keep it**: stop here with this outline.
+  ```text
+  <Name>: outline ready<, uploaded>. <One sentence if you kept the user's online changes.>
+  <DesignerUrl as a link on its own line, or the local .bpmn path>
+
+  - <each box, in order>
+
+  Is this the process you want?
+  1. **Build it**: make every step work.
+  2. **Change it**: tell me what to add, remove, or move.
+  3. **Keep it**: stop here with this outline.
+  ```
 
   *Build it* goes to phase 4. *Change it* goes back to 3a. *Keep it* ends
   the run with the skeleton reported as an outline.
