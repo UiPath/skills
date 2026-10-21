@@ -8,7 +8,7 @@ name: Lint coder-eval Tasks
 # draft/ready.
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review, synchronize]
     paths:
       - 'tests/tasks/**/*.yaml'
 
@@ -26,7 +26,6 @@ jobs:
     # Skip drafts (only run when the PR is ready for review) and skip forks
     # (the Bedrock key is required and not available to forked PRs).
     if: |
-      github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository
 
     permissions:
