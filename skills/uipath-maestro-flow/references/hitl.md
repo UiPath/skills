@@ -119,7 +119,7 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   }]
   ```
 
-  If `flow decompile` warns that a form field "has a key the SDK cannot write
+  If `flow decompile` warns that a form field has a key the SDK "cannot write
   back" (for example a `variable` other than `vars.<id>`, or a key the
   platform's schema does not define), editing that node drops the key. Leave
   that node untouched so merge keeps the original, or edit its JSON in the
