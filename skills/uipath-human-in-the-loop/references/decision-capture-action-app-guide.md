@@ -1,4 +1,6 @@
-# Guided Decision Experience
+# Preview: Decision Capture (Guided Decision Experience)
+
+This guidance is in preview. It applies only when the request asks for decision capture or describes a reviewer confirming or correcting a proposal (see the toggle below). A request to build an ordinary Coded Action App, QuickForm or validation task, with no mention of capturing decisions, reviewing a proposal or reasons, is built on the normal path and gets none of the fields, outputs or layout in this guide.
 
 Read this before designing any Coded Action App, QuickForm or document-validation task where a reviewer confirms or corrects something a process proposed. It decides whether the guided decision experience is on (see "Decide the toggle from what the developer wants") and, when it is, what to build.
 
@@ -22,7 +24,7 @@ Never open with a yes/no question. Read the request and set the toggle yourself:
 | Asks to capture or record a decision, or names the Decision Ledger | On |
 | An agent, automation or model proposes a value, label, route or verdict that a reviewer confirms or corrects | On |
 | The reviewer picks between named resolutions backed by reasons (approve/deny, triage, route, accept/reject) | On |
-| The reviewer only enters data nothing proposed, or only acknowledges (sign a form, upload a file) | Off |
+| The request does not mention capturing decisions, reviewing a proposal or reasons, or the reviewer only enters data nothing proposed, or only acknowledges (sign a form, upload a file) | Off |
 
 When the toggle is on and the user did not ask for it by name, say in one line what you turned on and why, then proceed without waiting. When it is off but a proposal is close to the surface, mention it once in the final report as a one-line option.
 
