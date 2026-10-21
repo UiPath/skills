@@ -200,6 +200,9 @@ debug uploads, returns
 `--timeout` does nothing. Chat from Studio Web (`--open-in-browser` opens it) or
 the Maestro VS Code extension.
 
+**An inbound voice flow cannot be debugged at all.** Do not run debug on a
+`voiceTrigger()` flow; [voice.md](voice.md#evidence-boundary) has the test loop.
+
 ### Reporting a debug run
 
 `Data.studioWebUrl` and `Data.instanceId` are the **first two lines** of any
