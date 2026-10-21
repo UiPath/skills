@@ -4,6 +4,11 @@ Creates one process from a schema-driven payload and attaches its documents (PDD
 
 > **Use this flow only after the preflight in [`cli-commands.md`](cli-commands.md) passed.** All commands: append `--output json`. The domain contract (required fields, wrapping rules, document types) is the same one [`api-endpoints.md`](api-endpoints.md) documents — the CLI only changes the transport.
 
+**Budget: about 12–15 commands end to end.** That covers preflight, flows, schema, one batched discovery call, reading the material, writing the answers, the create, one upload per document and one verification call. A run that wanders past that tends to run out of turns before the create. Everything the answers need comes from the caller's material, this tenant's schema and the discovery calls below:
+- **Don't study other automations on the tenant** to copy how they were filled. On a shared tenant they're someone else's data, and `automations schema get <id>` returns the template's placeholders, not that automation's answers.
+- **Read each supplied document whole, in one command** (`cat ./pdd.md`), not page by page.
+- **Resolve the category with the one-call recipe** in Step 4, not by walking the tree by hand.
+
 ## Step 1: Verify connectivity (and fetch the idea flows)
 
 ```bash
@@ -42,13 +47,22 @@ First **enumerate the tenant's actual required set from the schema file**: every
 |---|---|
 | Process **name** | Ask. Non-empty; duplicates fail with a 409-style error. |
 | **Description** | Ask, or derive from the material and confirm. |
-| **Category id** | `uip ah categories get` → pick from `Data.Categories` (**`category_is_active: 1` only**): the most specific one that fits the material, and **"Other" only when nothing fits**. "Other" is any node with `CategoryIsOther: 1`, and each branch can carry its own (e.g. *Finance & Accounting › Other*), so skip those too; several plausible → ask with names. Never the template's `1`. |
+| **Category id** | `uip ah categories get` → pick from `Data.Categories` (**`category_is_active: 1` only**, and never an Idea-only node: `CategoryScope` 1 is Idea, 2 Process, 3 Both, and a Business Process needs 2 or 3; the recipe below applies both filters): the most specific one that fits the material, and **"Other" only when nothing fits**. "Other" is any node with `CategoryIsOther: 1`, and each branch can carry its own (e.g. *Finance & Accounting › Other*), so skip those too; several plausible → ask with names. Never the template's `1`. |
 | **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by label, send its `answer_option` code. |
 | **Owner email** | **`uip ah auth-info get`** → `Data.User.Email` is the signed-in identity and the default owner. That call is the authority; do not substitute an address from any list. |
 | **Submitter email** | Same as owner; usually the same person. |
 | **Application questions** | Driven by **what the material names** — see [Applications](#applications) below. `uip ah applications list` → select the systems that exist; send the ones that don't as `new_applications`. None named and the question not required → leave it out. Never block the publish on applications. |
 
 The discovery commands are independent — run the ones you need (`auth-info get`, `categories get`, `applications list`) **in a single shell invocation** rather than one per turn; each is fast, the round-trips between them are not.
+
+**Category in one call.** The tree is several hundred nodes on a real tenant, too long to read in full. Flatten it to `id<TAB>path` rows of usable nodes (active, not "Other", not Idea-only), then grep for two or three words from the material:
+
+```bash
+uip ah categories get --output json | jq -r 'def nodes(p): .[] | (p + (if p == "" then "" else " > " end) + .CategoryName) as $path | (select(.CategoryIsActive == 1 and (.CategoryIsOther // 0) != 1 and (.CategoryScope // 3) != 1) | "\(.CategoryId)\t\($path)"), ((.Subcategories // []) | nodes($path)); .Data.Categories | nodes("")' > ./ah-categories.tsv
+grep -i -E 'lease|invoic|billing' ./ah-categories.tsv
+```
+
+No match → grep for a broader word once (e.g. the department). Still nothing → that branch's "Other", as the table says. Without `jq`, do the same walk in one Python call.
 
 **Never block the publish on an owner lookup.** If you look the owner up at all, do a targeted search and treat a miss as no signal:
 

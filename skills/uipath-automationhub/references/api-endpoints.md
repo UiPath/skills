@@ -140,7 +140,7 @@ A **409 `Duplicate document with title found`** is **not** about the title, desp
 A separate byte-upload route taking the same `EncodedFileValidator` shape. Documents do **not** need it — `/documents` accepts `file` directly.
 
 ### GET `/hierarchy`
-The tenant's category tree (verified live): `data.levels` (level names) + `data.categories[]`, each with `category_id`, `category_name`, `category_is_active`, and nested `subcategories`. **This is how to resolve a valid `OVERVIEW_CATEGORY` id** — it works even on a tenant with zero processes. Only pick nodes with **`category_is_active: 1`** — `0` means archived and the write will be rejected or hidden. *(Used by the publish flow.)*
+The tenant's category tree (verified live): `data.levels` (level names) + `data.categories[]`, each with `category_id`, `category_name`, `category_is_active`, and nested `subcategories`. **This is how to resolve a valid `OVERVIEW_CATEGORY` id** — it works even on a tenant with zero processes. Only pick nodes with **`category_is_active: 1`** — `0` means archived and the write will be rejected or hidden. Each node also carries `category_scope`: `1` Idea only, `2` Process only, `3` both (an older server omits it; treat that as both). A Business Process needs `2` or `3`; the server rejects an Idea-only category on submission. *(Used by the publish flow.)*
 
 ### GET `/users?limit=<n>`
 The Automation Hub users on the tenant (verified live): paged envelope with the list under **`data.users[]`**; each entry carries **`user_email`**, `user_first_name`/`user_last_name`, and `user_is_active`.
