@@ -5,8 +5,8 @@ written `sdd.md` BEFORE the `Status: ready` flip, in every mode — normally ins
 § Template conformance gate allows ([case-design-lane-guide.md](case-design-lane-guide.md)).
 
 This file is NOT part of the design reading set. Authoring reads the template for the render contract;
-only the gate reads the item list. Keeping the two apart keeps 35 items of checker detail out of the
-turn that is writing the document.
+only the gate reads the item list. Keeping the two apart keeps the checker detail out of the turn that
+is writing the document.
 
 Answer every item PASS or FAIL with one verbatim quote from the file — the line that violates (FAIL) or
 the line that satisfies (PASS). Judge structure by the ROLE and POSITION of a block (which heading level,
@@ -14,7 +14,7 @@ which table, which column), not by prose wording. The enforcement detail behind 
 template's cell rules, which are COMPLETE for the render contract; design semantics stay
 [case-design-layers-guide.md](case-design-layers-guide.md)'s.
 
-CONFORMANCE CHECKLIST — 35 items in 10 families. Items 30–33 apply only when finalizing a draft. Each item
+CONFORMANCE CHECKLIST — 37 items in 10 families. Items 30–33 apply only when finalizing a draft. Each item
 names only what to LOOK AT; the enforcement detail behind it is the cell rules above, and for the render
 contract those cells are COMPLETE — there is no third location, and nothing outside this template states a
 shape rule they do not. (Design semantics — which response, which gate, which default — stay
@@ -56,7 +56,9 @@ case-design-layers-guide.md's; the cells own the shape.)
  11. No stage label and no task display name contains `:`.
  12. Stage labels are unique case-wide; task display names are unique case-wide, across every stage.
  SLA references + selectors
- 13. Every `sla-status-change(...)` has 2 or 3 quoted args; arg 1 is the literal `root` or a declared stage
+ 13. Every WHEN cell that holds `sla-status-change` is the full call form — a bare `sla-status-change`
+     WHEN, or one that names its SLA in the IF cell (`slaId = …`), is a FAIL. Every
+     `sla-status-change(...)` has 2 or 3 quoted args; arg 1 is the literal `root` or a declared stage
      display name; arg 2 is an SLA Title that target declares (the `SLA Title` row of Case Metadata for
      root; `**SLA Title:**` under the stage's `#### Stage SLA`); every SLA Response Map row has its
      `sla-status-change` row and vice versa.
@@ -109,6 +111,15 @@ case-design-layers-guide.md's; the cells own the shape.)
      deterministic routing, so when the source says entry is automatic the picker row IS the defect:
      repair it per § Section 2 Authoring rules, stage-picker bullet, decision-routed branch (all four
      edits). Source silent on who launches the lane ⟹ keep what is authored.
+ 36. Every task's Entry Condition WHEN matches its `**Activation Mode:**`: `sequential` and
+     `parallel-after-predecessor` → exactly one `runs-sequentially` row; `parallel` →
+     `current-stage-entered`; `adhoc` → `adhoc`; `event-triggered` → `wait-for-connector`,
+     `sla-status-change(...)` or `api-event(...)`; `fan-in` / `conditional-gate` →
+     `selected-tasks-completed(...)` rows (a convergence task may add one `current-stage-entered` +
+     inverse-guard row). A sequential or parallel-after-predecessor task gated on
+     `selected-tasks-completed("<the task before it>")` is a FAIL even when Starts When reads "after
+     <task>" — order comes from the task-set position, and on two siblings that gate is the duplicate
+     selected-task defect. `runs-sequentially` under any other mode is a FAIL.
  37. Every `api-event("<Name>")` WHEN cell quotes a Name declared verbatim in `### Business Events`
      (a Section 1 `###` sibling of Case Variables, header `| Name | Description | Payload |`), and every
      declared event is quoted by ≥1 cell. `api-event` stands only in Stage Entry, Stage Exit, Task Entry
