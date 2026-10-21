@@ -75,6 +75,7 @@ Copy `context` / `inputs` / `outputs` out of the spec-cache unchanged per [commo
   "display": { "label": "<display-name>" },
   "inputs": {
     "serviceType": "Intsvc.EventTrigger",
+    "entryPointId": "<entry-points.json uniqueId>",
     "context": "<caseShape.context — placeholders substituted in Step 5>",
     "inputs":  "<caseShape.inputs  — var/id minted in Step 6; NO elementId>",
     "outputs": [],
@@ -138,12 +139,15 @@ When the resolved entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or
     "description": "<description from sdd.md>",
     "typeVersion": "1.0.0",
     "display": { "label": "<display-name>" },
-    "inputs": { "serviceType": "Intsvc.EventTrigger" }
+    "inputs": {
+      "serviceType": "Intsvc.EventTrigger",
+      "entryPointId": "<entry-points.json uniqueId>"
+    }
   }
 }
 ```
 
-`data.inputs` carries **only** `serviceType` — no `context[]`, `inputs[]`, `outputs[]`, `bindings[]`, `metadata`. Equivalent intent to a connector-task `data: {}` placeholder; trigger nodes need `label` / `description` / `parentElement` to render at all.
+`data.inputs` carries **only** `serviceType` and `entryPointId` — no `context[]`, `inputs[]`, `outputs[]`, `bindings[]`, `metadata`. `entryPointId` is the node↔entry pairing, not connector config: keep the value `case init` scaffolded on `trigger_1`, or the `uniqueId` you mint for the `entry-points.json` entry below. See [case-schema.md § Trigger Node](../../../case-schema.md#a-trigger-node--uipathcasetrigger) for the `entryPointId` rule. Equivalent intent to a connector-task `data: {}` placeholder; trigger nodes need `label` / `description` / `parentElement` to render at all.
 
 **Sibling artifacts:** append the matching `entry-points.json` entry per [manual/impl-json.md § Recipe — entry-points.json](../manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints). No trigger-edge is created (Rule 21) — the first stage's `case-entered` entry condition starts the case. No root bindings, no `inputOutputs[]` entries from this trigger.
 
