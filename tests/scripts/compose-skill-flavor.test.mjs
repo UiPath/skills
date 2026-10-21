@@ -556,7 +556,7 @@ test("Studio Web inherits API Workflow authoring guidance and applies its host c
   );
   assert.match(defaultCliReference, /^uip api-workflow init <name>/m);
   assert.match(defaultCliReference, /^uip api-workflow run <file>/m);
-  assert.match(defaultCliReference, /^uip solution publish <packagePath>/m);
+  assert.match(defaultCliReference, /^uip solution publish <package-path>/m);
   assert.match(
     readFileSync(
       join(

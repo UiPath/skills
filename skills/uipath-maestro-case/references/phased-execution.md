@@ -291,7 +291,7 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 
 After Phase 5 (whether published or skipped), prompt via **AskUserQuestion**:
 
-- `Run debug session` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json`. Streams results.
+- `Run debug session` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip maestro case debug "<directory>/<solution-name>/<projectName>" --log-level debug --output json`. Streams results.
 - `Continue to publish` — proceed to Phase 7 without debugging.
 
 > **Debug executes case for real — sends emails, posts messages, calls APIs, writes to databases. Only run when user explicitly asks. Never auto-run** (Rule 13).
@@ -326,7 +326,7 @@ Requires `uip login`.
 uip solution resources refresh --solution-folder "<SolutionDir>" --output json
 uip maestro case pack "<SolutionDir>/<ProjectName>" "<SolutionDir>/dist" --output json
 uip solution pack "<SolutionDir>" "<SolutionDir>/dist" --output json
-uip solution publish "<packagePath>" --wait --output json
+uip solution publish "<package-path>" --wait --output json
 ```
 
 1. **`resources refresh`** — same Rule 15 requirement as publish and debug: syncs artefact files and debug overwrites from `bindings_v2.json` before they are bundled into the package.
@@ -334,7 +334,7 @@ uip solution publish "<packagePath>" --wait --output json
 3. **`solution pack`** — packs the **solution directory** (the folder containing the `.uipx`), not the case project. It packs each contained project into a `.nupkg` and bundles them into a single `.zip` under `<SolutionDir>/dist`. Add `--version <version>` when the user names one; default is `1.0.0`. Republishing an existing `name+version` pair is rejected by the feed — bump `--version` on a re-deploy.
 4. **`solution publish`** — uploads the packed `.zip` to the tenant solution feed. `--wait` blocks until the package reaches `Ready`/`Active`. Add `--personal-workspace` only when the user asks for their Personal Workspace feed instead of the tenant feed. Flags: [case-commands.md § uip solution publish](case-commands.md#uip-solution-publish).
 
-**Read `<packagePath>` from the `solution pack` response `Data.Packages`, or list `<SolutionDir>/dist` — never guess the filename.** The name is `<name>_<version>.zip` — underscore, not dot. `solution pack` writes `<SolutionName>_<version>.zip`; `case pack` writes `<Name>.case.Case.<version>.nupkg` — never confuse the two, and never hand the `.nupkg` to `publish`.
+**Read `<package-path>` from the `solution pack` response `Data.Packages`, or list `<SolutionDir>/dist` — never guess the filename.** The name is `<name>_<version>.zip` — underscore, not dot. `solution pack` writes `<SolutionName>_<version>.zip`; `case pack` writes `<Name>.case.Case.<version>.nupkg` — never confuse the two, and never hand the `.nupkg` to `publish`.
 
 ### Why `case pack` is mandatory
 

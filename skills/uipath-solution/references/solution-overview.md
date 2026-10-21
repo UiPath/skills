@@ -111,8 +111,8 @@ uip solution
   ├── pack <solution> <output>            Pack into a deployable .zip package
   ├── publish <package>                   Upload packed solution to UiPath
   ├── projects                              (`project` still works as a hidden, deprecated alias)
-  │     ├── add <project-path> [solutionFile]   Register an existing subfolder in .uipx
-  │     ├── remove <project-path> [solutionFile] Unregister a project from .uipx
+  │     ├── add <project-path> [solution-file]   Register an existing subfolder in .uipx
+  │     ├── remove <project-path> [solution-file] Unregister a project from .uipx
   │     ├── import <path>                       Copy external project into solution and register
   │     ├── list                                List projects registered in the local .uipx (no backend call)
   │     ├── publish                             Publish a cloud solution project as a package (--project-name, --package-name, --package-version)

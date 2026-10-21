@@ -70,7 +70,7 @@ Output: `{ "Result": "Success", "Code": "ApiWorkflowBuild", "Data": { "Success":
 Pack a single API workflow project into a `.nupkg`. Use to verify one project in isolation; full solution packaging still goes through `uip solution pack`.
 
 ```bash
-uip api-workflow pack <project-path> <destinationPath> \
+uip api-workflow pack <project-path> <output-path> \
   [--package-id <id>] \
   [--package-version <version>] \
   [--signing-certificate-path <path>] \
@@ -82,7 +82,7 @@ uip api-workflow pack <project-path> <destinationPath> \
 | Argument / Flag | Required | Description |
 |-----------------|----------|-------------|
 | `<project-path>` | yes | API workflow project directory or `.uip` file. |
-| `<destinationPath>` | yes | Directory where the `.nupkg` is written. |
+| `<output-path>` | yes | Directory where the `.nupkg` is written. |
 | `--package-id <id>` | no | NuGet package ID. |
 | `--package-version <version>` | no | NuGet package version. |
 | `--signing-*` | no | Optional package signing (certificate path/password, timestamp server). |
@@ -448,12 +448,12 @@ For every entry with `required: true`, confirm the stub's emitted activity has a
 Initialize a new empty solution. Required before adding API workflow projects. (Formerly `uip solution new` — that verb was retired; `new` now errors `unknown command 'new'`.)
 
 ```bash
-uip solution init <solutionName> [--output json]
+uip solution init <solution-name> [--output json]
 ```
 
 | Argument | Description |
 |----------|-------------|
-| `<solutionName>` | Solution name or path. Creates a directory with this name containing a `.uipx` manifest (empty `Projects` array) plus `AGENTS.md`/`CLAUDE.md` briefing files. |
+| `<solution-name>` | Solution name or path. Creates a directory with this name containing a `.uipx` manifest (empty `Projects` array) plus `AGENTS.md`/`CLAUDE.md` briefing files. |
 
 Output: `{ "Result": "Success", "Code": "SolutionInit", "Data": { "Status": "Created successfully", ... } }`.
 
@@ -466,7 +466,7 @@ For **new** API workflow projects, prefer `uip api-workflow init <name>` run ins
 Pack a solution folder into a `.zip` containing one `.nupkg` per project. Auto-detects projects with `Type: "Api"` and dispatches to `@uipath/tool-apiworkflow`.
 
 ```bash
-uip solution pack <solutionPath> <outputPath> \
+uip solution pack <solution-path> [output-path] \
   [--name <name>] \
   [--version <version>] \
   [--login-validity <minutes>] \
@@ -475,8 +475,8 @@ uip solution pack <solutionPath> <outputPath> \
 
 | Argument / Flag | Required | Description |
 |-----------------|----------|-------------|
-| `<solutionPath>` | yes | Path to solution folder or `.uis`/`.uipx` file. |
-| `<outputPath>` | yes | Output directory for the `.zip`. The file lands as `<outputPath>/<name>_<version>.zip` — underscore, not a dot. |
+| `<solution-path>` | yes | Path to solution folder or `.uis`/`.uipx` file. |
+| `[output-path]` | yes | Output directory for the `.zip`. The file lands as `<output-path>/<name>_<version>.zip` — underscore, not a dot. |
 | `-n, --name <name>` | no | Package name. Defaults to solution folder name. |
 | `-v, --version <version>` | no | Package version. Default `1.0.0`. |
 | `--author <author>` | no | Package author. Default `UiPath`. |
@@ -500,7 +500,7 @@ Do NOT commit `operate.json` or `package-descriptor.json` — they are generated
 Upload a packed solution `.zip` to UiPath Pipelines for tenant deployment.
 
 ```bash
-uip solution publish <packagePath> \
+uip solution publish <package-path> \
   [--tenant <tenant-name>] \
   [--login-validity <minutes>] \
   [--output json]
@@ -508,7 +508,7 @@ uip solution publish <packagePath> \
 
 | Argument / Flag | Required | Description |
 |-----------------|----------|-------------|
-| `<packagePath>` | yes | Path to `.zip` from `uip solution pack`. Non-zip files reject. |
+| `<package-path>` | yes | Path to `.zip` from `uip solution pack`. Non-zip files reject. |
 | `-t, --tenant <tenant>` | no | Tenant name. Defaults to the tenant chosen during `uip login`. |
 | `--login-validity <minutes>` | no | Min minutes before token refresh. Default `10`. |
 
