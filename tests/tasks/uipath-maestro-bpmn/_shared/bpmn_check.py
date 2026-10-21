@@ -280,6 +280,70 @@ def body_object(element: ET.Element) -> dict:
     return parsed
 
 
+def _parameters(element: ET.Element, v1_target: str, v2_target: str) -> dict[str, str]:
+    params: dict[str, str] = {}
+    for inp in context_inputs(element):
+        target = inp.attrib.get("target")
+        if target == v1_target and inp.attrib.get("name"):
+            params[inp.attrib["name"]] = _input_payload(inp)
+        elif target == v2_target:
+            try:
+                parsed = json.loads(_input_payload(inp) or "{}")
+            except (json.JSONDecodeError, ValueError):
+                continue
+            if isinstance(parsed, dict):
+                params.update(
+                    (str(key), value.strip())
+                    for key, value in parsed.items()
+                    if isinstance(value, str)
+                )
+    return params
+
+
+def path_parameters(element: ET.Element) -> dict[str, str]:
+    """``element``'s path parameters by name, in either connector node shape.
+
+    A V1 template node writes one ``target="path"`` input per field. A V2
+    element from ``registry get --input-details`` writes one
+    ``target="pathParameters"`` input holding them all as a JSON object
+    (skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
+    from the V1 template"). A V2 payload that is not a JSON object adds
+    nothing, and neither does a non-string value.
+    """
+    return _parameters(element, "path", "pathParameters")
+
+
+def query_parameters(element: ET.Element) -> dict[str, str]:
+    """``element``'s query parameters by name: V1 ``target="query"`` inputs or
+    the V2 ``target="queryParameters"`` JSON input, read as
+    :func:`path_parameters` reads path ones."""
+    return _parameters(element, "query", "queryParameters")
+
+
+def root_bindings(root: ET.Element) -> dict[str, dict[str, str]]:
+    """Every ``uipath:binding`` in the file, by id, as its attributes."""
+    return {
+        b.attrib["id"]: dict(b.attrib)
+        for b in root.iter(f"{{{NS['uipath']}}}binding")
+        if b.attrib.get("id")
+    }
+
+
+def resolved_values(
+    value: str, bindings: dict[str, dict[str, str]], fold_case: bool = True
+) -> set[str]:
+    """``value`` itself, and for ``=bindings.<id>`` the binding's default and
+    resource key (lowercased unless ``fold_case`` is False): a V2 picker stores
+    its pick as a binding read."""
+    values = {value}
+    if value.startswith("=bindings."):
+        binding = bindings.get(value[len("=bindings.") :], {})
+        values |= {binding.get(k, "") for k in ("default", "resourceKey")}
+    if fold_case:
+        values = {v.lower() for v in values}
+    return values - {""}
+
+
 def has_type(element: ET.Element, token: str) -> bool:
     """True when ``token`` appears anywhere in ``element``'s serialised XML."""
     return token in ET.tostring(element, encoding="unicode")

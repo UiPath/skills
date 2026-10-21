@@ -31,6 +31,9 @@ from _shared.bpmn_check import (  # noqa: E402
     fail,
     has_typed_uipath_extension,
     parse_bpmn,
+    query_parameters,
+    resolved_values,
+    root_bindings,
 )
 
 CONNECTOR_KEY = "uipath-uipath-dataservice"
@@ -47,43 +50,14 @@ def connector_nodes(root: ET.Element) -> list[ET.Element]:
     ]
 
 
-def root_bindings(root: ET.Element) -> dict[str, dict[str, str]]:
-    return {
-        b.attrib["id"]: dict(b.attrib)
-        for b in root.iter("{http://uipath.org/schema/bpmn}binding")
-        if b.attrib.get("id")
-    }
-
-
-def json_input(task: ET.Element, target: str) -> dict:
-    """The JSON object of ``task``'s ``uipath:input`` with ``target``, else ``{}``."""
-    for inp in context_inputs(task):
-        if inp.attrib.get("target") == target:
-            try:
-                parsed = json.loads((inp.text or "").strip() or "{}")
-            except ValueError:
-                return {}
-            return parsed if isinstance(parsed, dict) else {}
-    return {}
-
-
-def resolved(value: str, bindings: dict[str, dict[str, str]]) -> set[str]:
-    """``value`` itself, and for ``=bindings.<id>`` what that binding points at."""
-    values = {value.lower()}
-    if value.startswith("=bindings."):
-        binding = bindings.get(value[len("=bindings.") :], {})
-        values |= {binding.get(k, "").lower() for k in ("default", "resourceKey")}
-    return values - {""}
-
-
 def picker_values(task: ET.Element, bindings: dict[str, dict[str, str]], field: str = "folderEntityName") -> set[str]:
     """Every value ``task`` gives ``field``, V1 input or V2 JSON input, bindings resolved."""
     raw = [
         context_value(task, field),
-        str(json_input(task, "queryParameters").get(field) or ""),
+        query_parameters(task).get(field, ""),
         str((body_parameters(task)).get(field) or ""),
     ]
-    return set().union(*(resolved(v, bindings) for v in raw if v))
+    return set().union(*(resolved_values(v, bindings) for v in raw if v))
 
 
 def body_parameters(task: ET.Element) -> dict:
