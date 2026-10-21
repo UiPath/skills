@@ -40,7 +40,7 @@ jobs:
           fetch-depth: 0
 
       - name: Claude Code Action
-        uses: anthropics/claude-code-action@86180fa9e4d311eed10c9cc49854c53dab5d517a  # v1.0.184
+        uses: anthropics/claude-code-action@a26b07d8c778b0c43f64618e5fd29fd0f8af72e8  # v1.0.250
         env:
           AWS_REGION: ${{ vars.AWS_REGION }}
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
