@@ -15,7 +15,7 @@ Optional `validatorParameters` entry on file-capable built-in validators (the **
 | `value` | Studio Web label | Provider receives |
 |---|---|---|
 | `Text` | Text only | Text payload only; no files |
-| `Files` | Files only | Files only; the text payload is dropped server-side |
+| `Files` | Files only | Files only; the text is not evaluated |
 | `Both` | Text and files | Text payload plus files |
 
 1. Set `detectionScope` only when the validator's entry in `uip agent guardrails list --output json` has a `Parameters[]` item with `Id: "detectionScope"`. Absent means file inspection is not enabled for that validator on this tenant (the Studio Web card reads "Text prompts only"); the runtime evaluates text only. Do not add the parameter anyway.
@@ -35,7 +35,7 @@ Optional `validatorParameters` entry on file-capable built-in validators (the **
 
 ## What each scope and stage inspects
 
-Files sent to the provider when `detectionScope` is `Files` or `Both`:
+Files evaluated when `detectionScope` is `Files` or `Both`:
 
 | Scope · stage | Files evaluated |
 |---|---|
@@ -46,28 +46,21 @@ Files sent to the provider when `detectionScope` is `Files` or `Both`:
 | Tool · Pre | Only files named in that tool call's arguments (for example Analyze Files `attachments[]`) |
 | Tool · Post | Only files the tool result references; a prose result (Analyze Files `analysis`) carries none |
 
-A `Files` guardrail with nothing to read passes without a provider call (`Allowed: no files were supplied to evaluate.`).
-
-## How each validator consumes files
-
-| Validator | File handling |
-|---|---|
-| `llm_as_judge` | Text files inlined into the judge prompt; PDF and images sent as vision parts — images are judged only when `model` is vision-capable |
-| `user_prompt_attacks` | Each file is a `documents[]` entry (indirect-injection check) |
-| `pii_detection` | One document per file; entity thresholds apply per document |
-| `harmful_content`, `intellectual_property`, `prompt_injection` | Extracted text appended to the input as `[file: <FILE_NAME>] …` |
+A `Files` guardrail with no file to read passes (`Allowed: no files were supplied to evaluate.`).
 
 ## Supported types and caps
 
 | Category | Types |
 |---|---|
-| Decoded directly | `txt`, `csv`, `md`, `tsv`, `json`, `xml` |
+| Read as text | `txt`, `csv`, `md`, `tsv`, `json`, `xml` |
 | Text extraction (when enabled on the tenant) | `pdf`, `jpeg` / `png` / `bmp` / `tiff` / `heif`, `docx` / `xlsx` / `pptx`, `html` |
 | Unsupported | Legacy `doc` / `xls`; files whose content is binary |
 
 Caps per evaluation: 5 files; 5 MB per text file, 10 MB of binaries in total; 100,000 extracted characters in total; 20 pages per document. Hidden text (white-on-white PDF text) is dropped by extraction; images embedded in Office files are not read.
 
-Files never fail the run. An unreadable, oversize, or unsupported file is skipped and the guardrail evaluates what remains. When the provider can attribute a hit, the Block reason ends with `Flagged files: <FILE_NAME>, <FILE_NAME>`.
+Every validator reads these types the same way. With a vision-capable `model`, `llm_as_judge` also sees PDF pages and images as images (layout, pictures); with any other model it reads their extracted text.
+
+Files never fail the run. An unreadable, oversize, or unsupported file is skipped and the guardrail evaluates what remains. When the guardrail can tell which file triggered it, the Block reason ends with `Flagged files: <FILE_NAME>, <FILE_NAME>`.
 
 ## Recipes
 
