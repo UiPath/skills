@@ -48,7 +48,7 @@ jobs:
           use_bedrock: "true"
           github_token: ${{ secrets.GITHUB_TOKEN }}
           track_progress: true
-          claude_args: "--model us.anthropic.claude-opus-4-6-v1"
+          claude_args: "--model us.anthropic.claude-opus-5-5"
           prompt: |
             You are running an **advisory** lint on coder-eval task YAMLs added or
             modified by this PR. Never fail the check. Post exactly ONE comment on

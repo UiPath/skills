@@ -78,7 +78,7 @@ jobs:
           # AWS_BEARER_TOKEN_BEDROCK are env vars, not files) or mutate the repo.
           # Residual: readable repo content could be echoed into the PR comment.
           claude_args: >-
-            --model us.anthropic.claude-opus-4-6-v1
+            --model us.anthropic.claude-opus-5-5
             --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(gh pr view:*),Bash(ls:*),Bash(cat:*),mcp__github_comment__update_claude_comment"
           prompt: |
             You are reviewing a PR for a Claude Code plugin repository that contains
