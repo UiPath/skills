@@ -423,8 +423,6 @@ like any other connector input:
 }, { connection: 'slack', folder: 'shared' }))
 ```
 
-Output field names are case-sensitive and `check` does not verify them: `out('upload', 'WebUrl')` compiles and reads `null` at run time when the field is `webUrl`. Copy each name from the operation's **Outputs** in the library Markdown (`uip maestro registry path --library-md`).
-
 The compiler emits the product's `multipartParameters` envelope. This is a Flow
 artifact transport; the separate `uip is resources run` command does not expose
 a multipart flag and is not the execution surface for this wiring.
@@ -479,7 +477,13 @@ Do not carry an alias from the first row into the second.
 There is no table to generate it from, so `lookup('k', 'a', 'f').byEmail(…)` throws.
 Write `.by('profile.email', …)` there instead — the names a field is searchable by are in the descriptor's `LOOKUP:` header and in every `check` diagnostic about the field.
 
-A folder-tree lookup (OneDrive's `referenceID` by `FullName`) matches a bare name only at the top of the tree or one level below. For anything deeper, give the path from the root picker's own top entry, `OneDrive/<folder>/<file>`, not from the drive root (`<folder>/<file>` fails at its first segment). Expect a walk to take four to six minutes. A wrong first segment fails within seconds, but a wrong file name fails only after that walk, naming the segment it stopped at (`stops at segment 3, '<file>'`), so check the name before you run it.
+A folder-tree lookup (OneDrive's `referenceID` by `FullName`) matches a bare name only at the top of the tree or one level below. For anything deeper, give the path from the root picker's own top entry, not from the drive root (`<folder>/<file>` fails at its first segment):
+
+```ts
+referenceID: lookup(DownloadFile, 'referenceID').by('FullName', 'OneDrive/<folder>/<file>')
+```
+
+Expect a walk to take four to six minutes. A wrong first segment fails within seconds, but a wrong file name fails only after that walk, naming the segment it stopped at (`stops at segment 3, '<file>'`). So confirm the name first: list the folder through the picker's `childPath`, `uip is resources run list uipath-microsoft-onedrive EventFolderPicker --connection-id <connection-id> --query '{"parentReference":"<folder ReferenceID>","includeFiles":"true"}' --output json` (drop `parentReference` for the top level).
 
 When the flow is written, `check` reports each token still unresolved
 (`LOOKUP_UNRESOLVED`) with exactly this command — one prepare records them all,
@@ -628,6 +632,11 @@ the record does not exist. The parameter name is `nextPage`, not
 
 A get-by-id not-found is a service error. Add `.onError(...)` when the scenario
 wants a not-found answer; otherwise failing loud can be intentional.
+
+Output field names are case-sensitive and `check` does not verify them:
+`out('upload', 'WebUrl')` compiles and reads `null` at run time when the field is
+`webUrl`. Copy each name from the operation's `## Outputs` in
+`$FLOW_SDK_LIBRARY_MD`.
 
 For a response with no declared fields, read the whole output into a script
 local before inspecting service-specific properties:
