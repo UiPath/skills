@@ -29,7 +29,7 @@ def _check_parallel_branches(project_dir):
     trigger_ids = {n["id"] for n in flow.get("nodes", []) if "trigger" in n.get("type", "")}
     outgoing = [e for t in trigger_ids for e in graph.fan_out(t)]
     if len(outgoing) < 2:
-        sys.exit(f"FAIL: Expected 2+ edges from trigger for parallel branches, found {len(outgoing)}")
+        sys.exit(f"FAIL: Expected 2+ parallel branches from trigger, found {len(outgoing)}")
 
     print("OK: Parallel branches from trigger verified")
 

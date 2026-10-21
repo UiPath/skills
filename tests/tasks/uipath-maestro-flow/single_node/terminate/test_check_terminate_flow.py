@@ -43,5 +43,5 @@ def test_accepts_parallel_branches(tmp_path, edges):
 def test_rejects_single_branch(tmp_path, edges):
     _write_flow(tmp_path, edges)
 
-    with pytest.raises(SystemExit, match="Expected 2\\+ edges from trigger"):
+    with pytest.raises(SystemExit, match="Expected 2\\+ parallel branches from trigger"):
         CHECKER._check_parallel_branches(str(tmp_path))
