@@ -108,6 +108,7 @@ After writing, confirm:
 - `node.data.inputs.serviceType == "timer"`
 - `node.data.inputs.timerType == "timeCycle"`
 - `node.data.inputs.timeCycle` is byte-identical to the input string
+- `node.data.inputs.entryPointId` equals the new entry's `uniqueId`
 - Node has NO `position`, `style`, `measured`, `width`, `height`, `zIndex` (Rule 19 layout-strip)
 - Case A: no `data.parentElement`. Case B: `data.parentElement == {id: "root", type: "case-management:root"}`
 - **`schema.edges` is still `[]`** (Rule 21) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
