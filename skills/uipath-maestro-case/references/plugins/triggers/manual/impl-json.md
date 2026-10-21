@@ -147,7 +147,7 @@ After writing, confirm:
 - `nodes[].data.typeVersion === "1.0.0"`.
 - `nodes[].data.parentElement` present in Case B, absent in Case A. No `position`, `style`, `measured`, `width`, `height`, `zIndex` at the node level (Rule 19).
 - `nodes[].data.inputs.serviceType === "None"` (or `inputs` absent in older schemas — both are valid).
-- `nodes[].data.inputs.entryPointId` equals the new entry's `uniqueId`.
+- `nodes[].data.inputs.entryPointId` equals the `uniqueId` of this trigger's `entry-points.json` entry.
 - **`schema.edges` is still `[]`** (Rule 21) — the trigger connects to nothing; the case starts via the first stage's `case-entered` entry condition. If an edge was authored, remove it before proceeding.
 - `entry-points.json.entryPoints` contains a new entry with `filePath` ending in `#<trigger_XXXXXX>` and `displayName === <displayName>`.
 
