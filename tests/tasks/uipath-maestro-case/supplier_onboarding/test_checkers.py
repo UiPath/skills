@@ -2497,5 +2497,49 @@ class PlanFileNameTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0, f"{name} accepted a missing plan")
 
 
+class ScriptEditCriterionTests(unittest.TestCase):
+    """The criterion that forbids scripted plan edits must catch every way Rule 14
+    bans, not only `perl -pi` and a Python write. A build that rewrote the plan with
+    `jq ... > caseplan.case.next && mv ...` scored full marks while breaking the rule."""
+
+    @classmethod
+    def setUpClass(cls):
+        import yaml
+
+        spec = yaml.safe_load((HERE / "supplier_onboarding.yaml").read_text(encoding="utf-8"))
+        criterion = next(
+            c for c in spec["success_criteria"]
+            if c["type"] == "command_not_executed" and "rewrite the case plan" in c["description"]
+        )
+        cls.pattern = re.compile(criterion["command_pattern"])
+
+    def test_catches_every_scripted_write_onto_the_plan(self):
+        plan = "SupplierOnboarding/SupplierOnboarding/caseplan.case"
+        for command in (
+            f"jq '.a = 1' {plan} > {plan}.next && mv {plan}.next {plan}",
+            f"cat > {plan} <<EOF",
+            f"echo '{{}}' >> {plan}",
+            f"cp /tmp/plan.json {plan}",
+            f"echo x | tee {plan}",
+            f"sed -i s/a/b/ {plan}",
+            f"python3 -c \"import pathlib; pathlib.Path('/tmp/x').write_text(open('{plan}').read())\"",
+        ):
+            with self.subTest(command=command):
+                self.assertTrue(self.pattern.search(command))
+
+    def test_lets_every_read_and_sanctioned_command_through(self):
+        plan = "SupplierOnboarding/SupplierOnboarding/caseplan.case"
+        for command in (
+            f"jq . {plan}",
+            f"jq . {plan} > /tmp/view.json",
+            f"uip maestro case validate {plan} --strict --sdd sdd.md 2>&1",
+            f"uip maestro case format {plan} --output json",
+            f"ls {plan} 2>/dev/null | head -1",
+            "uip maestro case spec --output json > tasks/spec-cache.t1.json",
+        ):
+            with self.subTest(command=command):
+                self.assertFalse(self.pattern.search(command))
+
+
 if __name__ == "__main__":
     unittest.main()

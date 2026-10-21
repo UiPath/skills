@@ -225,9 +225,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not edit caseplan.json in place with a script (SKILL.md Rule 14: Write/Edit only; validator findings are repaired by hand, not perl -pi)"
+    description: "Agent did not rewrite the case plan with a script (SKILL.md Rule 14: Write/Edit only; no perl -pi, no jq or shell redirect into the plan, no mv/cp/tee onto it)"
     tool_name: "Bash"
-    command_pattern: '(perl|sed)\s+-\S*i\S*\s[^\n]*caseplan\.(json|case)|(python3?|node|ruby)\b[^\n]*(write_text|writeFile|File\.write|open\([^\n]*[''"]w[''"])[^\n]*caseplan\.(json|case)'
+    command_pattern: '(perl|sed)\s+-\S*i\S*\s[^\n]*caseplan\.(json|case)|(python3?|node|ruby)\b[^\n]*(write_text|writeFile|File\.write|open\([^\n]*[''"]w[''"])[^\n]*caseplan\.(json|case)|(^|[^2&0-9])>>?\s*\S*caseplan\.(json|case)|\b(mv|cp|tee|install|rsync)\b[^\n]*caseplan\.(json|case)'
     weight: 2.0
     pass_threshold: 1.0
 
