@@ -46,13 +46,30 @@ APP_NAME = "ExpenseFraudReview"
 APP_FOLDER = "solution_folder"
 # Ground truth from the fixture copy of the solution-local app. For a local app
 # `uip solution resources get` returns ActionSchema=null; the form lives in the
-# project's .app/schemas/*.json and the app's Key in its solution declaration.
+# project's .app/schemas/*.json; the app's Key is read from the solution at
+# grading time (see current_app_key).
 FIXTURE_SOL = Path(__file__).resolve().parent / "_fixtures" / "ExpenseAuditSol"
 _SCHEMA = json.loads(next((FIXTURE_SOL / APP_NAME / ".app" / "schemas").glob("*.json")).read_text())
 APP_INPUTS = {f["name"] for f in _SCHEMA["inputs"]}
 APP_INOUTS = {f["name"] for f in _SCHEMA["inOuts"]} | {f["name"] for f in _SCHEMA["outputs"]}
 APP_OUTCOMES = {o["name"] for o in _SCHEMA["outcomes"]}
-APP_KEY = json.loads((FIXTURE_SOL / "resources" / "solution_folder" / "app" / "workflow Action" / f"{APP_NAME}.json").read_text())["resource"]["key"]
+SOLUTION_DIR = AGENT_DIR.parent
+
+
+def current_app_key() -> str:
+    """Key of the app's declaration as it is NOW in the solution. `uip solution
+    resources refresh` re-registers a Studio Web app under a new key (and moves
+    it out of app/workflow Action/), so the fixture's key goes stale; the
+    channel must match whatever the solution currently declares."""
+    keys = [
+        r["key"]
+        for p in (SOLUTION_DIR / "resources" / "solution_folder" / "app").rglob("*.json")
+        for r in [json.loads(p.read_text()).get("resource") or {}]
+        if r.get("name") == APP_NAME and r.get("kind") == "app"
+    ]
+    if len(keys) != 1:
+        fail(f"expected one app declaration for {APP_NAME} under resources/solution_folder/app/, found {len(keys)}")
+    return keys[0]
 
 
 def check_inputs(in_schema: dict) -> None:
@@ -77,8 +94,9 @@ def check_escalation() -> None:
         fail(f"{path.parent.name}: no actionCenter channel bound to appName {APP_NAME!r}")
     ch = channels[0]
     props = ch.get("properties") or {}
-    if props.get("resourceKey") != APP_KEY:
-        fail(f"channel resourceKey must be the in-solution app's Key {APP_KEY!r} (from discovery), got {props.get('resourceKey')!r}")
+    app_key = current_app_key()
+    if props.get("resourceKey") != app_key:
+        fail(f"channel resourceKey must be the in-solution app's current Key {app_key!r} (from discovery), got {props.get('resourceKey')!r}")
     if props.get("folderName") != APP_FOLDER:
         fail(f"channel folderName must be the app's Folder {APP_FOLDER!r}, got {props.get('folderName')!r}")
     recipients = [r for r in ch.get("recipients") or [] if isinstance(r, dict) and r.get("value")]

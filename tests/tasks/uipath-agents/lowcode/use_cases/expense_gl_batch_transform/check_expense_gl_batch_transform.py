@@ -15,7 +15,8 @@ Final-state only. Validates:
          agent's choice, so they are graded here rather than by the judge.
        - webSearchGrounding disabled ("it shouldn't look anything up")
        - an output destination under `expense-coding`
-  3. Analyze Files is not the row processor (no analyze-attachments tool).
+  3. (Other tools are allowed — e.g. Analyze Files on Batch Transform's
+     result to count rows; the revised prompt does not restrict them.)
   4. Output contract: outputLocation, rowsProcessed (numeric), summary.
   Brownfield: the agent must be built inside the existing (fixture) project.
 """
@@ -37,7 +38,6 @@ from _shared.use_case_assertions import (  # noqa: E402
     assert_unique_resource_ids,
     attachment_fields,
     fail,
-    find_resources,
     load,
     require_resource,
 )
@@ -131,11 +131,6 @@ def main() -> None:
     print(f"OK: the CSV arrives as job-attachment input {files[0]!r}")
     assert_inputs_referenced(agent, files)
     check_batch_transform()
-    analyze = find_resources(
-        AGENT_DIR, lambda d: (d.get("properties") or {}).get("toolType") == "analyze-attachments"
-    )
-    if analyze:
-        fail("Analyze Files is the tool the prompt says couldn't cope with the CSV — row processing belongs to Batch Transform")
     assert_unique_resource_ids(AGENT_DIR)
     check_outputs(out_schema)
 

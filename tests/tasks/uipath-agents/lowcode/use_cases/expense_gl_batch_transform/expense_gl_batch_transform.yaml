@@ -91,11 +91,12 @@ success_criteria:
       Score three rubric items, each worth 1/3:
 
         R1. Tool use — tells the agent to run Batch Transform once over the
-            provided transactions file instead of reading or coding rows
-            itself (and not to use Analyze Files on the CSV).
+            provided transactions file instead of reading or coding the rows
+            itself. (Other tools used for a different purpose, such as
+            counting rows in the result, are fine.)
         R2. Row framing — gives the per-row task context: GL-code each card
-            transaction from its merchant and description against the
-            company chart of accounts, without web lookups.
+            transaction against the company chart of accounts, without web
+            lookups.
         R3. Honest result — `outputLocation`, `rowsProcessed` and `summary`
             must come from the tool's result; the agent must not invent row
             counts or a location, and reports a failure if the tool fails.

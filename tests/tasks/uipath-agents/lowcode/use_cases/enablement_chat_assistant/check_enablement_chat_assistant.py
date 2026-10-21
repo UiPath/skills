@@ -17,7 +17,6 @@ Final-state only. Validates:
   4. The assistant was built inside the existing (fixture) project.
 """
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -44,7 +43,9 @@ INDEX_FOLDER = "Shared/uipath-agents"
 DRAFTER = "CustomerFollowUpDrafter"
 # Ground truth from the fixture copy of the solution-local drafter project.
 FIXTURE_SOL = Path(__file__).resolve().parent / "_fixtures" / "EnablementSol"
-DRAFTER_KEY = json.loads((FIXTURE_SOL / "resources" / "solution_folder" / "process" / "agent" / f"{DRAFTER}.json").read_text())["resource"]["key"]
+# The drafter's Key is read from the solution's declaration at grading time, in
+# case a refresh re-keys it (it does for Studio Web apps).
+DRAFTER_DECL = AGENT_DIR.parent / "resources" / "solution_folder" / "process" / "agent" / f"{DRAFTER}.json"
 
 
 def check_conversational(agent: dict) -> None:
@@ -96,8 +97,9 @@ def check_drafter_tool() -> None:
     folder = (tool.get("properties") or {}).get("folderPath")
     if folder != "solution_folder":
         fail(f"{DRAFTER} tool folderPath should be 'solution_folder' (Folder of a local resource), got {folder!r}")
-    if tool.get("referenceKey") != DRAFTER_KEY:
-        fail(f"{DRAFTER} tool referenceKey must be the local resource Key {DRAFTER_KEY!r} from discovery, got {tool.get('referenceKey')!r}")
+    drafter_key = (load(DRAFTER_DECL).get("resource") or {}).get("key")
+    if tool.get("referenceKey") != drafter_key:
+        fail(f"{DRAFTER} tool referenceKey must be the local resource Key {drafter_key!r} from discovery, got {tool.get('referenceKey')!r}")
     want_in, want_out = entry_point_schemas(FIXTURE_SOL / DRAFTER)
     for label, mine, truth in (("inputSchema", tool.get("inputSchema"), want_in), ("outputSchema", tool.get("outputSchema"), want_out)):
         if strip_schema(mine) != strip_schema(truth):
