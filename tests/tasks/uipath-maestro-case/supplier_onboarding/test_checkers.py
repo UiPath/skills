@@ -2498,7 +2498,7 @@ class PlanFileNameTests(unittest.TestCase):
 
 
 class ScriptEditCriterionTests(unittest.TestCase):
-    """The criterion that forbids scripted plan edits must catch every way Rule 14
+    """The criterion that forbids scripted plan edits must catch every way the skill
     bans, not only `perl -pi` and a Python write. A build that rewrote the plan with
     `jq ... > caseplan.case.next && mv ...` scored full marks while breaking the rule."""
 
