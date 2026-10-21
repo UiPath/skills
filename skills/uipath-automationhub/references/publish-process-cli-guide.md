@@ -67,17 +67,21 @@ First **enumerate the tenant's actual required set from the schema file**: every
 
 The discovery commands are independent — run the ones you need (`auth-info get`, `categories get`, `applications list`) **in a single shell invocation** rather than one per turn; each is fast, the round-trips between them are not.
 
-**Category in one call.** The tree is several hundred nodes on a real tenant, too long to read in full. Flatten it to `id<TAB>path` rows of the nodes a Business Process can use (active, not Idea-only), with "Other" nodes marked `[Other]`, then grep for two or three words from the material:
+**Category in one call.** The tree is several hundred nodes on a real tenant, too long to read in full. Flatten it to `id<TAB>path` rows of the nodes a Business Process can use (active, not "Other", not Idea-only), then grep for two or three words from the material:
 
 ```bash
-uip ah categories get --output json | jq -r 'def nodes(p): .[] | (p + (if p == "" then "" else " > " end) + .CategoryName) as $path | (select(.CategoryIsActive == 1 and (.CategoryScope // 3) != 1) | "\(.CategoryId)\t\($path)\(if (.CategoryIsOther // 0) == 1 then "\t[Other]" else "" end)"), ((.Subcategories // []) | nodes($path)); .Data.Categories | nodes("")' > ./ah-categories.tsv
+uip ah categories get --output json | jq -r 'def nodes(p): .[] | (p + (if p == "" then "" else " > " end) + .CategoryName) as $path | (select(.CategoryIsActive == 1 and (.CategoryIsOther // 0) != 1 and (.CategoryScope // 3) != 1) | "\(.CategoryId)\t\($path)"), ((.Subcategories // []) | nodes($path)); .Data.Categories | nodes("")' > ./ah-categories.tsv
 grep -i -E '<word>|<word>|<word>' ./ah-categories.tsv
 ```
 
-Use words from the material (its department, function or subject), not the placeholders. If `./ah-categories.tsv` is **empty**, this CLI names the fields differently: read the tree instead, don't conclude nothing fits. Then decide in one more step at most:
-- **A non-`[Other]` row fits** → take its id; several plausible → ask with the names.
-- **No match** → list the branches once (`cut -f2 ./ah-categories.tsv | cut -d'>' -f1-2 | sort -u`) and take the closest node under the best branch.
-- **Nothing fits** (the default taxonomy has no healthcare, banking or telco branch) → take that branch's `[Other]` row, or the top-level one (`grep -P '^\d+\t[^>]*\t\[Other\]$' ./ah-categories.tsv`).
+Use words from the material (its department, function or subject), not the placeholders. If `./ah-categories.tsv` is **empty**, this CLI names the fields differently: read the tree instead, don't conclude nothing fits. Then decide:
+- **A row fits** → take its id; several plausible → ask with the names.
+- **No match** → list the branches once (`cut -f2 ./ah-categories.tsv | cut -d'>' -f1-2 | sort -u`) and take the closest node under the best branch. Most processes fit somewhere: try a synonym or the business function before giving up on a branch.
+- **Only when no branch fits the process at all** → "Other", the last resort. List the "Other" nodes once and take the one under the closest branch, or the top-level one:
+
+```bash
+uip ah categories get --output json | jq -r 'def nodes(p): .[] | (p + (if p == "" then "" else " > " end) + .CategoryName) as $path | (select(.CategoryIsActive == 1 and (.CategoryIsOther // 0) == 1 and (.CategoryScope // 3) != 1) | "\(.CategoryId)\t\($path)"), ((.Subcategories // []) | nodes($path)); .Data.Categories | nodes("")'
+```
 
 Stop there; never look at other automations' categories to decide. Without `jq`, do the same walk in one Python call.
 
