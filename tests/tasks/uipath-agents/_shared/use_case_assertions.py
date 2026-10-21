@@ -395,6 +395,61 @@ def assert_solution_registers(solution_dir: Path, project_names: Iterable[str]) 
     print(f"OK: {uipx.name} registers {list(project_names)}")
 
 
+
+# --- Brownfield (Studio Web) fixtures -------------------------------------
+
+
+def assert_existing_project(agent_dir: Path, fixture_agent_dir: Path) -> None:
+    """The agent edited the empty project the user had open instead of creating
+    a new one: same projectId as the fixture, and the solution still registers
+    exactly the fixture's projects (no extra agent project alongside it)."""
+    want = load(fixture_agent_dir / "agent.json").get("projectId")
+    got = load(agent_dir / "agent.json").get("projectId")
+    if got != want:
+        fail(f"{agent_dir.name}/agent.json projectId {got!r} != the existing project's {want!r} — the project was re-created")
+    fixture_sol, sol = fixture_agent_dir.parent, agent_dir.parent
+    want_projects = {p["ProjectRelativePath"] for p in load(fixture_sol / f"{fixture_sol.name}.uipx").get("Projects") or []}
+    got_projects = {p.get("ProjectRelativePath") for p in load(sol / f"{sol.name}.uipx").get("Projects") or []}
+    extra = sorted(got_projects - want_projects)
+    missing = sorted(want_projects - got_projects)
+    if extra or missing:
+        fail(f"{sol.name}.uipx projects changed — added {extra}, removed {missing}; the request was to build inside the existing project")
+    print(f"OK: built inside the existing {agent_dir.name} project (projectId {got})")
+
+
+def require_input(schema: dict, label: str, *aliases: str, type_: str | None = None) -> str:
+    """Find a top-level input by any alias (case / separator insensitive) and
+    return its actual name. The revised prompts describe inputs in prose
+    ("the supplier name"), so names are the agent's choice."""
+    props = schema.get("properties") or {}
+    hit = find_property({k: v for k, v in props.items() if isinstance(v, dict)}, *aliases)
+    if hit is None:
+        fail(f"inputSchema has no {label} input (looked for {list(aliases)}); found {sorted(props)}")
+    name, node = hit
+    if type_ and _resolve(schema, node).get("type") != type_:
+        fail(f"{label} input {name!r} must be {type_}, got {node!r}")
+    print(f"OK: {label} input is {name!r}")
+    return name
+
+
+def strip_schema(node):
+    """Drop LLM-facing text and empty `required` lists before comparing schemas."""
+    if isinstance(node, dict):
+        return {
+            k: strip_schema(v) for k, v in node.items()
+            if k not in ("description", "title") and not (k == "required" and v == [])
+        }
+    if isinstance(node, list):
+        return [strip_schema(i) for i in node]
+    return node
+
+
+def entry_point_schemas(project_dir: Path) -> tuple[dict, dict]:
+    """input / output of a solution-local project's first entry point — what
+    `uip solution resources get` returns for a Local process."""
+    ep = (load(project_dir / "entry-points.json").get("entryPoints") or [{}])[0]
+    return ep.get("input") or {}, ep.get("output") or {}
+
 if __name__ == "__main__":
     # `python3 use_case_assertions.py validate <AGENT_DIR> [<AGENT_DIR> ...]`
     # Paths are relative to the sandbox root (the criterion's cwd).

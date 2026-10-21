@@ -8,6 +8,10 @@ description: >
   location. Graded on the final project only: CSV attachment input, Batch
   Transform output columns / web grounding / destination, output contract,
   read-only `uip agent validate`, and an LLM judge on the system prompt.
+  Studio Web context: the user has the empty agent project open in an
+  existing solution (_fixtures/), and the checker requires the agent to be
+  built inside it. Text between the helper markers is lower-tier guidance
+  (experiments/use-case-tiers.yaml) and is not graded.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, context-grounding]
 
 run_limits:
@@ -15,53 +19,44 @@ run_limits:
   turn_timeout: 1200
   task_timeout: 1500
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/ExpenseCodingSol
+      mount_point: ExpenseCodingSol
+    - type: template_dir
+      path: _fixtures/attachments
+      mount_point: attachments
+
 reference:
   directory: ../../..
 
 initial_prompt: |
-  Every month finance exports all corporate-card transactions as a CSV —
-  usually a few thousand rows with date, cardholder, merchant, description
-  and amount — and someone assigns a GL account to each line by hand. We
-  tried pointing an agent at the file with Analyze Files and it couldn't
-  cope with a spreadsheet that size.
+  You are a coding agent running in Studio Web. The user is in an empty
+  low-code agent project in that solution with the name ExpenseCodingAgent.
+  The agent is in a UiPath solution called ExpenseCodingSol. The user attached
+  a sample export to this request: `attachments/card-transactions-2026-09.csv`.
 
-  Build a UiPath low-code agent, "ExpenseCodingAgent", in a solution called
-  "ExpenseCodingSol". It gets the export as `transactionsFile` and has to
-  add three columns to every row:
+  I need you to build an Agent that reads a very big CSV file with
+  corporate-card transactions and assigns a GL account to each line. Add three
+  columns to every line:
+      - GL Account — one of 6100 Travel, 6200 Meals, 6300 Software,
+        6400 Office Supplies, 6500 Professional Services, or 6999 Unclassified
+        when it can't tell
+      - Confidence — HIGH, MEDIUM or LOW
+      - Review Flag — YES when confidence is LOW, the account is 6999, or the
+        amount is over 5,000; otherwise NO
 
-    - GL Account — one of 6100 Travel, 6200 Meals, 6300 Software,
-      6400 Office Supplies, 6500 Professional Services, or 6999 Unclassified
-      when it can't tell
-    - Confidence — HIGH, MEDIUM or LOW
-    - Review Flag — YES when confidence is LOW, the account is 6999, or the
-      amount is over 5,000; otherwise NO
-
-  The merchant and description are enough to decide — it shouldn't look
-  anything up on the web. Write the enriched file to the `expense-coding`
-  output folder. The agent returns `outputLocation` (where the enriched file
-  went), `rowsProcessed` and a short `summary` for the finance team.
+  Don't browse the web to decide on the allocation.
+  Write the enriched file to the `expense-coding` folder. The agent returns
+  `outputLocation`, `rowsProcessed` and a short `summary` for the finance
+  team.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
   or feedback. Do NOT pause between planning and implementation. Complete the
   entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
-    description: "ExpenseCodingAgent/agent.json exists"
-    path: "ExpenseCodingSol/ExpenseCodingAgent/agent.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent project is registered in the ExpenseCodingSol solution"
-    path: "ExpenseCodingSol/ExpenseCodingSol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Final project passes read-only uip agent validate (derived files current)"
     command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate ExpenseCodingSol/ExpenseCodingAgent"

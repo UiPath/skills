@@ -1,7 +1,8 @@
 task_id: skill-agent-usecase-enablement-chat-assistant
 description: >
   Use-case pattern "conversational assistant that answers from knowledge and
-  takes actions". A chat assistant answers sales-engineer questions from the
+  takes actions". Studio Web context: the user has an empty conversational
+  agent project open in an existing solution. A chat assistant answers sales-engineer questions from the
   existing "UiPathAgentsProductKnowledge" index and, on request, hands off
   to the existing deployed "CustomerFollowUpDrafter" agent to draft a
   customer follow-up email.
@@ -18,36 +19,35 @@ run_limits:
   turn_timeout: 1200
   task_timeout: 1500
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/EnablementSol
+      mount_point: EnablementSol
+
 reference:
   directory: ../../..
 
 initial_prompt: |
-  Our CoE wants a chat assistant for sales engineers who get questions about
-  UiPath Agents from customers. Build it as a UiPath low-code agent,
-  "AgentsEnablementAssistant", in a solution called "EnablementSol".
+  You are a coding agent running in Studio Web. The user is in an empty
+  low-code agent project in that solution with the name
+  AgentsEnablementAssistant. The agent is in a UiPath solution called
+  EnablementSol.
 
-  In the chat, sales engineers ask things like "can an agent read scanned
-  PDFs?" or "how do escalations work?". The assistant should answer from our
-  existing "UiPathAgentsProductKnowledge" knowledge index (already in our
-  tenant), keep answers short, mention which docs it used, and say plainly
+  I want to build a chat agent that answers questions such as "can an agent
+  read scanned PDFs?" or "how do escalations work?" for sales engineers. The
+  agent should get its answers from the "UiPathAgentsProductKnowledge"
+  knowledge index. Keep answers short, mention which docs it used, and say
   when the docs don't cover something instead of guessing.
-
-  When a sales engineer asks for help writing a follow-up email to a
-  customer, the assistant should get the draft from our existing
-  "CustomerFollowUpDrafter" agent (already deployed in our tenant) and show it in the
-  chat so they can tweak it.
+  If a sales engineer asks for help writing a follow-up email, the assistant
+  should get the draft from our existing "CustomerFollowUpDrafter" agent and
+  allow the sales engineer to review the draft before sending it.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
   or feedback. Do NOT pause between planning and implementation. Complete the
   entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
-    description: "AgentsEnablementAssistant/agent.json exists"
-    path: "EnablementSol/AgentsEnablementAssistant/agent.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: json_check
     description: "Agent is a conversational low-code agent with no structured output"
     path: "EnablementSol/AgentsEnablementAssistant/agent.json"
@@ -73,7 +73,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Conversational constraints, index context + binding, CustomerFollowUpDrafter wired as an external agent tool mirroring its schemas"
+    description: "Existing project reused; conversational constraints, index context + binding, CustomerFollowUpDrafter wired as an external agent tool mirroring its schemas"
     command: "python3 $REFERENCE_DIR/lowcode/use_cases/enablement_chat_assistant/check_enablement_chat_assistant.py"
     timeout: 30
     expected_exit_code: 0

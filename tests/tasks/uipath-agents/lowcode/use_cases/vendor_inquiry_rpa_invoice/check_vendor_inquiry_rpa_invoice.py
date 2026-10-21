@@ -2,19 +2,18 @@
 """Vendor inquiry — document + RPA (file returned by an RPA tool) check.
 
 Final-state only. Validates:
-  1. Autonomous agent; schemas in sync; vendorName / inquiry templated.
-  2. An external RPA process tool for the deployed "DownloadVendorInvoice"
-     (type=process, location=external, processName, folderPath from
-     discovery, UUID referenceKey) whose input/output schemas mirror the
-     process's own V2 argument schemas (descriptions ignored). In
-     particular the `invoiceFile` File output must be a job-attachment
-     ($ref to a definition with x-uipath-resource-kind JobAttachment) —
+  1. Autonomous agent; schemas in sync; vendor-name and inquiry inputs
+     (names are the agent's choice) templated.
+  2. A solution-local RPA process tool for the "DownloadVendorInvoice"
+     project already in the solution (type=process, location=solution,
+     folderPath=solution_folder, UUID referenceKey) whose input/output schemas
+     mirror that project's entry-points.json (descriptions ignored). In
+     particular the `invoiceFile` File output must be a job-attachment —
      mapping it to a string is the attachment-passing failure under test.
-  3. bindings_v2.json carries the process binding, and the solution declares
-     the process under resources/solution_folder/process/.
-  4. A file-reading built-in tool is enabled to read the returned PDF.
-  5. Output contract: invoiceNumber, invoiceFound (boolean), invoiceAmount,
+  3. A file-reading built-in tool is enabled to read the returned PDF.
+  4. Output contract: invoiceNumber, invoiceFound (boolean), invoiceAmount,
      dueDate, reply, needsHumanFollowUp (boolean).
+  Brownfield: the agent must be built inside the existing (fixture) project.
 """
 
 import os
@@ -23,6 +22,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
+    assert_existing_project,
+    entry_point_schemas,
+    require_input,
+    strip_schema,
     UUID_RE,
     assert_autonomous,
     assert_has_fields,
@@ -38,47 +41,10 @@ from _shared.use_case_assertions import (  # noqa: E402
 
 SOLUTION_DIR = Path(os.getcwd()) / "VendorInquirySol"
 AGENT_DIR = SOLUTION_DIR / "VendorInquiryAgent"
+FIXTURE_AGENT_DIR = Path(__file__).resolve().parent / "_fixtures" / "VendorInquirySol" / "VendorInquiryAgent"
 PROCESS = "DownloadVendorInvoice"
-FOLDER_PATH = "Shared/uipath-agents/DownloadVendorInvoiceSol"
-INPUTS = ["vendorName", "inquiry"]
-
-JOB_ATTACHMENT = {
-    "type": "object",
-    "properties": {
-        "ID": {"type": "string"},
-        "FullName": {"type": "string"},
-        "MimeType": {"type": "string"},
-        "Metadata": {"type": "object", "additionalProperties": {"type": "string"}},
-    },
-    "required": ["ID"],
-    "x-uipath-resource-kind": "JobAttachment",
-}
-# InputArgumentsSchemaV2 / OutputArgumentsSchemaV2 of the deployed process,
-# as returned by `uip solution resources get` (descriptions stripped).
-PROCESS_INPUT = {
-    "type": "object",
-    "properties": {"invoiceNumber": {"type": "string"}},
-    "required": ["invoiceNumber"],
-}
-PROCESS_OUTPUT = {
-    "type": "object",
-    "properties": {
-        "invoiceFile": {"$ref": "#/definitions/job-attachment"},
-        "found": {"type": "boolean"},
-    },
-    "definitions": {"job-attachment": JOB_ATTACHMENT},
-}
-
-
-def strip(node):
-    if isinstance(node, dict):
-        return {
-            k: strip(v) for k, v in node.items()
-            if k not in ("description", "title") and not (k == "required" and v == [])
-        }
-    if isinstance(node, list):
-        return [strip(i) for i in node]
-    return node
+# Ground truth from the fixture copy, so editing the RPA project can't move the target.
+RPA_PROJECT_DIR = Path(__file__).resolve().parent / "_fixtures" / "VendorInquirySol" / PROCESS
 
 
 def check_rpa_tool() -> None:
@@ -90,14 +56,14 @@ def check_rpa_tool() -> None:
     )
     if tool.get("type") != "process":
         fail(f"{PROCESS} is an RPA process — tool type must be 'process', got {tool.get('type')!r}")
-    if tool.get("location") != "external":
-        fail(f"{PROCESS} is deployed outside this solution — location must be 'external', got {tool.get('location')!r}")
+    if tool.get("location") != "solution":
+        fail(f"{PROCESS} is a project in this solution — location must be 'solution', got {tool.get('location')!r}")
     folder = (tool.get("properties") or {}).get("folderPath")
-    if folder != FOLDER_PATH:
-        fail(f"{PROCESS} tool folderPath should be {FOLDER_PATH!r} (literal Folder from discovery), got {folder!r}")
+    if folder != "solution_folder":
+        fail(f"{PROCESS} tool folderPath should be 'solution_folder' (Folder of a local resource), got {folder!r}")
     rkey = tool.get("referenceKey")
     if not isinstance(rkey, str) or not UUID_RE.match(rkey):
-        fail(f"{PROCESS} tool referenceKey must be the release Key GUID from discovery, got {rkey!r}")
+        fail(f"{PROCESS} tool referenceKey must be the local resource Key GUID from discovery, got {rkey!r}")
 
     out_props = ((tool.get("outputSchema") or {}).get("properties") or {})
     file_node = out_props.get("invoiceFile")
@@ -110,30 +76,11 @@ def check_rpa_tool() -> None:
         )
     print("OK: the RPA tool's File output is typed as a job-attachment")
 
-    for label, mine, truth in (
-        ("inputSchema", tool.get("inputSchema"), PROCESS_INPUT),
-        ("outputSchema", tool.get("outputSchema"), PROCESS_OUTPUT),
-    ):
-        if strip(mine) != truth:
-            fail(f"{PROCESS} tool {label} does not mirror the process's V2 argument schema (descriptions ignored): {mine!r}")
-    print(f"OK: {PROCESS} tool schemas mirror the deployed process ({FOLDER_PATH})")
-
-
-def check_binding_and_declaration() -> None:
-    bindings = load(AGENT_DIR / "bindings_v2.json")
-    hits = [
-        r for r in bindings.get("resources") or []
-        if isinstance(r, dict) and r.get("resource") == "process" and r.get("key") == PROCESS
-    ]
-    if not hits:
-        fail(f"bindings_v2.json has no process binding keyed {PROCESS!r}")
-    folder = ((hits[0].get("value") or {}).get("folderPath") or {}).get("defaultValue")
-    if folder != FOLDER_PATH:
-        fail(f"process binding folderPath should be {FOLDER_PATH!r}, got {folder!r}")
-    decl = list((SOLUTION_DIR / "resources" / "solution_folder" / "process").rglob(f"{PROCESS}.json"))
-    if not decl:
-        fail(f"solution has no process declaration for {PROCESS} under resources/solution_folder/process/ — solution resources were not refreshed")
-    print(f"OK: process binding and solution declaration present ({decl[0].relative_to(SOLUTION_DIR)})")
+    want_in, want_out = entry_point_schemas(RPA_PROJECT_DIR)
+    for label, mine, truth in (("inputSchema", tool.get("inputSchema"), want_in), ("outputSchema", tool.get("outputSchema"), want_out)):
+        if strip_schema(mine) != strip_schema(truth):
+            fail(f"{PROCESS} tool {label} does not mirror {PROCESS}/entry-points.json (descriptions ignored): {mine!r}")
+    print(f"OK: {PROCESS} tool schemas mirror the solution's {PROCESS} project")
 
 
 def check_outputs(out_schema: dict) -> None:
@@ -158,12 +105,15 @@ def main() -> None:
     agent = load(AGENT_DIR / "agent.json")
     entry = load(AGENT_DIR / "entry-points.json")
     assert_project_id(agent)
+    assert_existing_project(AGENT_DIR, FIXTURE_AGENT_DIR)
     assert_autonomous(agent)
     in_schema, out_schema = assert_schema_sync(agent, entry)
-    assert_has_fields(in_schema, "inputSchema", {f: [] for f in INPUTS})
-    assert_inputs_referenced(agent, INPUTS)
+    inputs = [
+        require_input(in_schema, "vendor name", "vendorName", "vendor", "supplierName", "name"),
+        require_input(in_schema, "inquiry", "inquiry", "inquiryText", "emailText", "email", "emailBody", "query", "message", "body"),
+    ]
+    assert_inputs_referenced(agent, inputs)
     check_rpa_tool()
-    check_binding_and_declaration()
     require_resource(AGENT_DIR, is_file_reading_tool, "file-reading built-in tool")
     assert_unique_resource_ids(AGENT_DIR)
     check_outputs(out_schema)

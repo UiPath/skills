@@ -7,10 +7,11 @@ Final-state only. Validates:
      "Shared/uipath-agents" with a valid lowercase retrievalMode.
   3. bindings_v2.json carries the index binding, and the solution provisions
      the index manifest under resources/solution_folder/index/.
-  4. Inputs caseSubject / caseDescription / customerTier are templated into
-     the messages with contentTokens.
+  4. Subject, description and tier inputs (names are the agent's
+     choice) are templated into the messages with contentTokens.
   5. Output contract: resolutionType enum (5 values), suggestedReply,
      docReferences (array), escalateToEngineering (boolean), confidence.
+  Brownfield: the agent must be built inside the existing (fixture) project.
 """
 
 import os
@@ -19,6 +20,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
+    assert_existing_project,
+    require_input,
     assert_autonomous,
     assert_enum,
     assert_has_fields,
@@ -34,9 +37,9 @@ from _shared.use_case_assertions import (  # noqa: E402
 
 SOLUTION_DIR = Path(os.getcwd()) / "CaseTriageSol"
 AGENT_DIR = SOLUTION_DIR / "AgentsCaseTriageAgent"
+FIXTURE_AGENT_DIR = Path(__file__).resolve().parent / "_fixtures" / "CaseTriageSol" / "AgentsCaseTriageAgent"
 INDEX_NAME = "UiPathAgentsProductKnowledge"
 FOLDER_PATH = "Shared/uipath-agents"
-INPUTS = ["caseSubject", "caseDescription", "customerTier"]
 
 
 def check_index_binding_and_manifest() -> None:
@@ -80,10 +83,15 @@ def main() -> None:
     agent = load(AGENT_DIR / "agent.json")
     entry = load(AGENT_DIR / "entry-points.json")
     assert_project_id(agent)
+    assert_existing_project(AGENT_DIR, FIXTURE_AGENT_DIR)
     assert_autonomous(agent)
     in_schema, out_schema = assert_schema_sync(agent, entry)
-    assert_has_fields(in_schema, "inputSchema", {f: [] for f in INPUTS})
-    assert_inputs_referenced(agent, INPUTS)
+    inputs = [
+        require_input(in_schema, "case subject", "caseSubject", "subject", "title"),
+        require_input(in_schema, "case description", "caseDescription", "description", "details"),
+        require_input(in_schema, "tier", "customerTier", "tier", "caseTier", "supportTier"),
+    ]
+    assert_inputs_referenced(agent, inputs)
     _, ctx = require_resource(AGENT_DIR, is_index_context(INDEX_NAME), f"index context on {INDEX_NAME!r}")
     assert_index_context(ctx, FOLDER_PATH)
     check_index_binding_and_manifest()

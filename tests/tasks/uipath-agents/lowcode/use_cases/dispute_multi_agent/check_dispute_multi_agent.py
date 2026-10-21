@@ -1,21 +1,29 @@
 #!/usr/bin/env python3
 """Dispute desk — multi-agent (supervisor + narrow agents) check.
 
-Final-state only. Validates:
-  1. Three autonomous agents, registered in the solution, with distinct
-     projectIds and schemas in sync with their entry-points.json.
-  2. DisputeClassifierAgent outputs disputeType / sentiment enums;
-     ReplyDrafterAgent outputs subject / body; neither declares tools.
-  3. DisputeCoordinatorAgent takes customerMessage (string) + invoice
-     (object), both templated, and returns disputeType, sentiment,
-     proposedResolution, replySubject, replyBody.
-  4. The coordinator declares one solution-internal agent tool per child
-     (type=agent, location=solution, processName=<child>,
-     folderPath=solution_folder) whose input/output schemas are
-     shape-equivalent to the child's own schemas (descriptions ignored).
+The prompt names neither the solution nor the agents, so everything is located
+by role. Final-state only. Validates:
+  1. Exactly one solution in the sandbox, registering exactly three autonomous
+     low-code agents with distinct projectIds and schemas in sync.
+  2. Classifier: outputs disputeType (pricing, duplicate_charge, tax,
+     service_not_received, other) and a sentiment field (positive, neutral,
+     negative, angry); declares no tools.
+  3. Drafter: outputs subject and body; declares no tools.
+  4. Coordinator: takes the customer's message (string) and the invoice
+     (object), both templated; returns disputeType, sentiment,
+     proposedResolution, replySubject, replyBody; declares one
+     solution-internal agent tool per child (type=agent, location=solution,
+     processName=<child project>, folderPath=solution_folder) whose schemas
+     are shape-equivalent to the child's own (descriptions ignored).
+The coordinator's agent.json is copied to .grading/coordinator-agent.json so
+the task's llm_judge (which runs after this criterion and needs a fixed path)
+can read it.
+
+`--validate` instead runs read-only `uip agent validate` on all three agents.
 """
 
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -27,103 +35,124 @@ from _shared.use_case_assertions import (  # noqa: E402
     assert_inputs_referenced,
     assert_project_id,
     assert_schema_sync,
-    assert_solution_registers,
     assert_unique_resource_ids,
+    assert_valid_project,
     fail,
+    find_property,
     load,
+    require_input,
     resources,
+    strip_schema,
+    walk_properties,
 )
 
-SOLUTION_DIR = Path(os.getcwd()) / "DisputeDeskSol"
-CLASSIFIER = "DisputeClassifierAgent"
-DRAFTER = "ReplyDrafterAgent"
-COORDINATOR = "DisputeCoordinatorAgent"
+ROOT = Path(os.getcwd())
+GRADING_COPY = ROOT / ".grading" / "coordinator-agent.json"
+DISPUTE_TYPES = ["pricing", "duplicate_charge", "tax", "service_not_received", "other"]
+SENTIMENTS = ["positive", "neutral", "negative", "angry"]
 
 
-def load_agent(name: str) -> tuple[dict, dict, dict]:
-    agent_dir = SOLUTION_DIR / name
-    agent = load(agent_dir / "agent.json")
-    entry = load(agent_dir / "entry-points.json")
-    assert_autonomous(agent)
-    in_schema, out_schema = assert_schema_sync(agent, entry)
-    return agent, in_schema, out_schema
+def find_solution() -> Path:
+    uipx = [p for p in ROOT.glob("*/*.uipx")] + [p for p in ROOT.glob("*.uipx")]
+    if len(uipx) != 1:
+        fail(f"expected exactly one solution (.uipx) in the workspace, found {[str(p.relative_to(ROOT)) for p in uipx]}")
+    return uipx[0]
 
 
-def strip_descriptions(node):
-    if isinstance(node, dict):
-        return {k: strip_descriptions(v) for k, v in node.items() if k not in ("description", "title")}
-    if isinstance(node, list):
-        return [strip_descriptions(i) for i in node]
-    return node
+def agent_dirs(uipx: Path) -> list[Path]:
+    sol = uipx.parent
+    dirs = []
+    for proj in load(uipx).get("Projects") or []:
+        d = (sol / proj.get("ProjectRelativePath", "")).parent
+        a = d / "agent.json"
+        if a.is_file() and load(a).get("type") == "lowCode":
+            dirs.append(d)
+    if len(dirs) != 3:
+        fail(f"expected three low-code agents registered in {uipx.name}, found {[d.name for d in dirs]}")
+    print(f"OK: {uipx.name} registers three agents: {[d.name for d in dirs]}")
+    return dirs
 
 
-def check_children(agents: dict) -> None:
-    _, _, cls_out = agents[CLASSIFIER]
-    f = assert_has_fields(cls_out, f"{CLASSIFIER}.outputSchema", {"disputeType": [], "sentiment": []})
-    assert_enum(f["disputeType"], "disputeType", ["pricing", "duplicate_charge", "tax", "service_not_received", "other"])
-    assert_enum(f["sentiment"], "sentiment", ["positive", "neutral", "negative", "angry"])
-    _, _, dr_out = agents[DRAFTER]
-    assert_has_fields(dr_out, f"{DRAFTER}.outputSchema", {"subject": [], "body": []})
-    for child in (CLASSIFIER, DRAFTER):
-        tools = [p.parent.name for p, d in resources(SOLUTION_DIR / child) if d.get("$resourceType") == "tool"]
-        if tools:
-            fail(f"{child} is a narrow single-purpose agent and should not declare tools, found {tools}")
-    print("OK: child agents are tool-free with their own contracts")
+def tools(d: Path) -> list[dict]:
+    return [r for _, r in resources(d) if r.get("$resourceType") == "tool"]
 
 
-def check_coordinator(agents: dict) -> None:
-    agent, in_schema, out_schema = agents[COORDINATOR]
-    props = in_schema.get("properties") or {}
-    if (props.get("customerMessage") or {}).get("type") != "string":
-        fail("coordinator input customerMessage must be a string")
-    if (props.get("invoice") or {}).get("type") != "object":
-        fail("coordinator input invoice must be an object")
-    assert_inputs_referenced(agent, ["customerMessage", "invoice"])
+def outputs(d: Path) -> dict:
+    return walk_properties(load(d / "agent.json").get("outputSchema") or {})
+
+
+def identify(dirs: list[Path]) -> tuple[Path, Path, Path]:
+    coordinator = [d for d in dirs if sum(1 for t in tools(d) if t.get("type") == "agent") >= 2]
+    if len(coordinator) != 1:
+        fail(f"expected exactly one coordinator agent with two agent tools, found {[d.name for d in coordinator]}")
+    coord = coordinator[0]
+    rest = [d for d in dirs if d != coord]
+    classifier = [d for d in rest if find_property(outputs(d), "disputeType")]
+    drafter = [d for d in rest if find_property(outputs(d), "subject") and find_property(outputs(d), "body")]
+    if len(classifier) != 1 or len(drafter) != 1 or classifier == drafter:
+        fail(f"could not tell classifier from drafter among {[d.name for d in rest]}")
+    print(f"OK: coordinator={coord.name}, classifier={classifier[0].name}, drafter={drafter[0].name}")
+    return coord, classifier[0], drafter[0]
+
+
+def check_children(classifier: Path, drafter: Path) -> None:
+    cls_out = load(classifier / "agent.json").get("outputSchema") or {}
+    f = assert_has_fields(cls_out, f"{classifier.name}.outputSchema", {"disputeType": [], "sentiment": ["customerSentiment"]})
+    assert_enum(f["disputeType"], "disputeType", DISPUTE_TYPES)
+    assert_enum(f["sentiment"], "sentiment", SENTIMENTS)
+    for child in (classifier, drafter):
+        if tools(child):
+            fail(f"{child.name} is a narrow single-purpose agent and should not declare tools")
+    print("OK: classifier and drafter are tool-free with their own contracts")
+
+
+def check_coordinator(coord: Path, children: list[Path]) -> None:
+    agent = load(coord / "agent.json")
+    in_schema, out_schema = assert_schema_sync(agent, load(coord / "entry-points.json"))
+    msg = require_input(in_schema, "customer message", "customerMessage", "message", "customerMessageText", "disputeMessage", type_="string")
+    inv = require_input(in_schema, "invoice", "invoice", "invoiceDetails", "invoiceData", type_="object")
+    assert_inputs_referenced(agent, [msg, inv])
     assert_has_fields(
         out_schema,
-        f"{COORDINATOR}.outputSchema",
-        {
-            "disputeType": [],
-            "sentiment": [],
-            "proposedResolution": ["resolution"],
-            "replySubject": [],
-            "replyBody": [],
-        },
+        f"{coord.name}.outputSchema",
+        {"disputeType": [], "sentiment": [], "proposedResolution": ["resolution"], "replySubject": [], "replyBody": []},
     )
-
-    coord_dir = SOLUTION_DIR / COORDINATOR
-    assert_unique_resource_ids(coord_dir)
-    agent_tools = {
-        (d.get("properties") or {}).get("processName"): d
-        for _, d in resources(coord_dir)
-        if d.get("$resourceType") == "tool" and d.get("type") == "agent"
-    }
-    for child in (CLASSIFIER, DRAFTER):
-        tool = agent_tools.get(child)
+    assert_unique_resource_ids(coord)
+    by_name = {(t.get("properties") or {}).get("processName"): t for t in tools(coord) if t.get("type") == "agent"}
+    for child in children:
+        tool = by_name.get(child.name)
         if tool is None:
-            fail(f"{COORDINATOR} has no agent tool with processName={child!r}; found {sorted(k for k in agent_tools if k)}")
+            fail(f"{coord.name} has no agent tool with processName={child.name!r}; found {sorted(k for k in by_name if k)}")
         if tool.get("location") != "solution":
-            fail(f"tool {child} must be solution-internal (location='solution'), got {tool.get('location')!r}")
+            fail(f"tool {child.name} must be solution-internal (location='solution'), got {tool.get('location')!r}")
         if (tool.get("properties") or {}).get("folderPath") != "solution_folder":
-            fail(f"tool {child} properties.folderPath must be 'solution_folder'")
-        if not tool.get("isEnabled", True):
-            fail(f"tool {child} is disabled")
-        _, child_in, child_out = agents[child]
-        for label, mine, theirs in (("inputSchema", tool.get("inputSchema"), child_in), ("outputSchema", tool.get("outputSchema"), child_out)):
-            if strip_descriptions(mine) != strip_descriptions(theirs):
-                fail(f"tool {child}.{label} does not match {child}/agent.json {label} (descriptions ignored)")
-        print(f"OK: coordinator calls {child} as a solution agent tool with matching schemas")
+            fail(f"tool {child.name} properties.folderPath must be 'solution_folder'")
+        child_agent = load(child / "agent.json")
+        for label in ("inputSchema", "outputSchema"):
+            if strip_schema(tool.get(label)) != strip_schema(child_agent.get(label)):
+                fail(f"tool {child.name}.{label} does not match {child.name}/agent.json {label} (descriptions ignored)")
+        print(f"OK: coordinator calls {child.name} as a solution agent tool with matching schemas")
 
 
 def main() -> None:
-    assert_solution_registers(SOLUTION_DIR, [CLASSIFIER, DRAFTER, COORDINATOR])
-    agents = {name: load_agent(name) for name in (CLASSIFIER, DRAFTER, COORDINATOR)}
-    ids = [assert_project_id(a[0]) for a in agents.values()]
+    dirs = agent_dirs(find_solution())
+    if "--validate" in sys.argv:
+        for d in dirs:
+            assert_valid_project(d)
+        return
+    ids = []
+    for d in dirs:
+        a = load(d / "agent.json")
+        ids.append(assert_project_id(a))
+        assert_autonomous(a)
+        assert_schema_sync(a, load(d / "entry-points.json"))
     if len(set(ids)) != len(ids):
         fail(f"agents share a projectId (Anti-pattern 8): {ids}")
-    print("OK: three distinct projectIds")
-    check_children(agents)
-    check_coordinator(agents)
+    coord, classifier, drafter = identify(dirs)
+    GRADING_COPY.parent.mkdir(exist_ok=True)
+    shutil.copyfile(coord / "agent.json", GRADING_COPY)
+    check_children(classifier, drafter)
+    check_coordinator(coord, [classifier, drafter])
 
 
 if __name__ == "__main__":

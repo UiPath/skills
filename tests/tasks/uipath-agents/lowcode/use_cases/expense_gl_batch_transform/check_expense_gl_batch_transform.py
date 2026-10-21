@@ -2,8 +2,9 @@
 """Expense GL coding — CSV + Batch Transform check.
 
 Final-state only. Validates:
-  1. Autonomous agent; schemas in sync; `transactionsFile` is a
-     job-attachment input templated into the messages.
+  1. Autonomous agent; schemas in sync; the CSV export is a
+     job-attachment input (name is the agent's choice) templated into the
+     messages.
   2. An enabled built-in `batch-transform` tool with:
        - outputColumns covering GL Account, Confidence and Review Flag, each
          with a valid name (regex ^[\\w\\s\\.,!?-]+$) and a non-empty
@@ -16,6 +17,7 @@ Final-state only. Validates:
        - an output destination under `expense-coding`
   3. Analyze Files is not the row processor (no analyze-attachments tool).
   4. Output contract: outputLocation, rowsProcessed (numeric), summary.
+  Brownfield: the agent must be built inside the existing (fixture) project.
 """
 
 import os
@@ -25,6 +27,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
+    assert_existing_project,
     _norm,
     assert_autonomous,
     assert_has_fields,
@@ -40,6 +43,7 @@ from _shared.use_case_assertions import (  # noqa: E402
 )
 
 AGENT_DIR = Path(os.getcwd()) / "ExpenseCodingSol" / "ExpenseCodingAgent"
+FIXTURE_AGENT_DIR = Path(__file__).resolve().parent / "_fixtures" / "ExpenseCodingSol" / "ExpenseCodingAgent"
 COLUMN_NAME_RE = re.compile(r"^[\w\s\.,!?-]+$")
 GL_CODES = ["6100", "6200", "6300", "6400", "6500", "6999"]
 COLUMNS = {
@@ -118,11 +122,14 @@ def main() -> None:
     agent = load(AGENT_DIR / "agent.json")
     entry = load(AGENT_DIR / "entry-points.json")
     assert_project_id(agent)
+    assert_existing_project(AGENT_DIR, FIXTURE_AGENT_DIR)
     assert_autonomous(agent)
     in_schema, out_schema = assert_schema_sync(agent, entry)
-    if "transactionsFile" not in attachment_fields(in_schema):
-        fail("transactionsFile must be a job-attachment input")
-    assert_inputs_referenced(agent, ["transactionsFile"])
+    files = attachment_fields(in_schema)
+    if len(files) != 1:
+        fail(f"expected exactly one job-attachment input for the CSV export, found {files}")
+    print(f"OK: the CSV arrives as job-attachment input {files[0]!r}")
+    assert_inputs_referenced(agent, files)
     check_batch_transform()
     analyze = find_resources(
         AGENT_DIR, lambda d: (d.get("properties") or {}).get("toolType") == "analyze-attachments"

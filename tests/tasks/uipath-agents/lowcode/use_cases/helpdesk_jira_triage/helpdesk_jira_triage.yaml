@@ -11,6 +11,10 @@ description: >
   and an LLM judge on the system prompt. Cloud auth required — the staging
   tenant must have a Jira connection whose Jira site has project AB, and
   the memory space in Shared/uipath-agents.
+  Studio Web context: the user has the empty agent project open in an
+  existing solution (_fixtures/), and the checker requires the agent to be
+  built inside it. Text between the helper markers is lower-tier guidance
+  (experiments/use-case-tiers.yaml) and is not graded.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, connector, feature:connections]
 
 run_limits:
@@ -18,51 +22,47 @@ run_limits:
   turn_timeout: 1200
   task_timeout: 1500
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/HelpdeskSol
+      mount_point: HelpdeskSol
+    - type: template_dir
+      path: _fixtures/attachments
+      mount_point: attachments
+
 reference:
   directory: ../../..
 
 initial_prompt: |
-  IT helpdesk requests come in through a web form and someone retypes each
-  one into Jira. Build a UiPath low-code agent, "HelpdeskTriageAgent", in a
-  solution called "HelpdeskSol", that takes over that step. The form gives
-  it `requesterEmail`, `title` and `description`.
+  You are a coding agent running in Studio Web. The user is in an empty
+  low-code agent project in that solution with the name HelpdeskTriageAgent.
+  The agent is in a UiPath solution called HelpdeskSol. The user attached
+  examples of submitted forms to this request:
+  `attachments/form-submissions.json`.
+
+  I need an agent that reads helpdesk requests submitted through an online
+  form and creates JIRA tickets from them. The form gives it
+  `requesterEmail`, `title` and `description`.
 
   The agent should work out a `category` (access, hardware, software,
   network or other) and a `priority` (P1 to P4 — P1 means a whole team or a
-  production system is down, P4 is a nice-to-have), then file the request as
-  a Jira issue in our helpdesk project (key AB) through the Jira connection
-  we already have in Integration Service. The issue needs a clean one-line summary, and a description that includes the
+  production system is down, P4 is a nice-to-have), then create a Jira issue
+  in our helpdesk project (key AB) using the existing JIRA Connection. The
+  issue needs a one-line summary and a description that includes the
   requester and why the agent picked that category and priority.
 
   We want it to get more consistent over time, so give it memory backed by
-  our existing "HelpdeskTriageMemory" memory space (also in
-  Shared/uipath-agents) so it recalls how requests with a similar
-  description were triaged before.
+  our existing "HelpdeskTriageMemory" memory space so it recalls how requests
+  with a similar description were triaged before.
 
-  It returns `category`, `priority`, `jiraIssueKey` (the key of the issue it
-  created) and `summary`.
+  The agent returns `category`, `priority`, `jiraIssueKey` and `summary`.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
   or feedback. Do NOT pause between planning and implementation. Complete the
   entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
-    description: "HelpdeskTriageAgent/agent.json exists"
-    path: "HelpdeskSol/HelpdeskTriageAgent/agent.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent project is registered in the HelpdeskSol solution"
-    path: "HelpdeskSol/HelpdeskSol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Final project passes read-only uip agent validate (derived files current)"
     command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate HelpdeskSol/HelpdeskTriageAgent"

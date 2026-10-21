@@ -9,6 +9,10 @@ description: >
   read-only `uip agent validate`, and an LLM judge on the system prompt.
   Cloud auth required — the staging tenant must have the
   `uipath-uipath-airdk` (GenAI Activities) connector.
+  Studio Web context: the user has the empty agent project open in an
+  existing solution (_fixtures/), and the checker requires the agent to be
+  built inside it. Text between the helper markers is lower-tier guidance
+  (experiments/use-case-tiers.yaml) and is not graded.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, connector, feature:connections]
 
 run_limits:
@@ -16,53 +20,45 @@ run_limits:
   turn_timeout: 1200
   task_timeout: 1500
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/SupplierResearchSol
+      mount_point: SupplierResearchSol
+
 reference:
   directory: ../../..
 
 initial_prompt: |
-  Procurement wants a quick background check before we onboard a new
-  supplier. Build a UiPath low-code agent, "SupplierResearchAgent", in a
-  solution called "SupplierResearchSol". It gets the `supplierName`, and
-  optionally the supplier's `country` and `website`.
+  You are a coding agent running in Studio Web. The user is in an empty
+  low-code agent project in that solution with the name SupplierResearchAgent.
+  The agent is in a UiPath solution called SupplierResearchSol.
 
-  It should research the supplier on the public web — use UiPath's GenAI
-  web search for that — and look at what the company does, news from the
-  last 12 months, and red flags: sanctions, lawsuits, bankruptcy or
-  insolvency, data breaches, and serious negative press.
+  Build an agent for background checking on our suppliers. The agent will get
+  as inputs the supplier name and, optionally, their country and official
+  website.
+  The agent needs to search the public web for information on the supplier.
+  It can use specific UiPath web search tools for that.
+  The agent should look at what the company does, news from the last 12
+  months, and red flags: sanctions, lawsuits, bankruptcy or insolvency, data
+  breaches, and serious negative press.
 
   It returns:
+      - `companyOverview`: a short paragraph
+      - `recentNews`: a list of notable items
+      - `riskFlags`: a list, each with a type, a description and the URL of
+        the source
+      - `overallRisk`: low, medium, high or unknown
+      - `sources`: every URL it relied on
 
-    - `companyOverview`: a short paragraph
-    - `recentNews`: a list of notable items
-    - `riskFlags`: a list, each with a type, a description and the URL of
-      the source
-    - `overallRisk`: low, medium, high or unknown
-    - `sources`: every URL it relied on
-
-  Every claim must be traceable to a URL the search actually returned. If
-  the search finds too little to judge, the risk is "unknown" — not "low".
+  Every claim must be traceable to a URL the search actually returned. If the
+  search finds too little to judge, the risk is "unknown", not "low".
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
   or feedback. Do NOT pause between planning and implementation. Complete the
   entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
-    description: "SupplierResearchAgent/agent.json exists"
-    path: "SupplierResearchSol/SupplierResearchAgent/agent.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent project is registered in the SupplierResearchSol solution"
-    path: "SupplierResearchSol/SupplierResearchSol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Final project passes read-only uip agent validate (derived files current)"
     command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate SupplierResearchSol/SupplierResearchAgent"

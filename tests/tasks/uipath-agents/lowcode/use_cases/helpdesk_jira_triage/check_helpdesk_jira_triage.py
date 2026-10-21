@@ -19,6 +19,7 @@ Final-state only. Validates:
      (`spec` holds only `name`, no `isOverridable`); a stub fails here.
   6. Output contract: category enum (5), priority enum P1–P4, jiraIssueKey,
      summary.
+  Brownfield: the agent must be built inside the existing (fixture) project.
 """
 
 import json
@@ -29,6 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
+    assert_existing_project,
     assert_autonomous,
     assert_connection_provisioned,
     assert_enum,
@@ -46,6 +48,7 @@ from _shared.use_case_assertions import (  # noqa: E402
 
 SOLUTION_DIR = Path(os.getcwd()) / "HelpdeskSol"
 AGENT_DIR = SOLUTION_DIR / "HelpdeskTriageAgent"
+FIXTURE_AGENT_DIR = Path(__file__).resolve().parent / "_fixtures" / "HelpdeskSol" / "HelpdeskTriageAgent"
 CONNECTOR = "uipath-atlassian-jira"
 PROJECT_KEY = "AB"
 MEMORY_SPACE = "HelpdeskTriageMemory"
@@ -123,6 +126,7 @@ def main() -> None:
     agent = load(AGENT_DIR / "agent.json")
     entry = load(AGENT_DIR / "entry-points.json")
     assert_project_id(agent)
+    assert_existing_project(AGENT_DIR, FIXTURE_AGENT_DIR)
     assert_autonomous(agent)
     in_schema, out_schema = assert_schema_sync(agent, entry)
     assert_has_fields(in_schema, "inputSchema", {f: [] for f in INPUTS})

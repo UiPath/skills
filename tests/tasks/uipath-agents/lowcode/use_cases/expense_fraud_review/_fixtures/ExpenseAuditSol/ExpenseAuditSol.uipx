@@ -1,0 +1,12 @@
+{
+  "DocVersion": "1.0.0",
+  "StudioMinVersion": "2025.10.0",
+  "SolutionId": "95a78b7b-e1b3-4038-9749-2fd0bc992bd8",
+  "Projects": [
+    {
+      "Type": "Agent",
+      "ProjectRelativePath": "ExpenseAuditAgent/project.uiproj",
+      "Id": "88a2da6f-3298-4f31-bedf-bb001e2e195f"
+    }
+  ]
+}

@@ -11,7 +11,10 @@ from _shared.use_case_assertions import (  # noqa: E402
     assert_enum,
     assert_has_fields,
     assert_inputs_referenced,
+    assert_existing_project,
     assert_integration_wiring,
+    require_input,
+    strip_schema,
     attachment_fields,
     find_property,
     is_file_reading_tool,
@@ -141,3 +144,37 @@ def test_integration_wiring_rejects_placeholder_connection_id():
     assert_integration_wiring(_is_tool("f5273a4d-d492-4bcd-a106-5a20bf89a3ef"))
     with pytest.raises(SystemExit):
         assert_integration_wiring(_is_tool("00000000-0000-0000-0000-000000000000"))
+
+
+def _project(root, sol, agent, project_id, projects):
+    (root / sol / agent).mkdir(parents=True)
+    (root / sol / agent / "agent.json").write_text(json.dumps({"projectId": project_id}))
+    (root / sol / f"{sol}.uipx").write_text(json.dumps({"Projects": [{"ProjectRelativePath": p} for p in projects]}))
+    return root / sol / agent
+
+
+def test_assert_existing_project(tmp_path):
+    fixture = _project(tmp_path / "fx", "Sol", "Agent", "id-1", ["Agent/project.uiproj"])
+    same = _project(tmp_path / "ok", "Sol", "Agent", "id-1", ["Agent/project.uiproj"])
+    assert_existing_project(same, fixture)
+    recreated = _project(tmp_path / "re", "Sol", "Agent", "id-2", ["Agent/project.uiproj"])
+    with pytest.raises(SystemExit):
+        assert_existing_project(recreated, fixture)
+    extra = _project(tmp_path / "ex", "Sol", "Agent", "id-1", ["Agent/project.uiproj", "Agent2/project.uiproj"])
+    with pytest.raises(SystemExit):
+        assert_existing_project(extra, fixture)
+
+
+def test_require_input_matches_aliases_and_type():
+    schema = {"type": "object", "properties": {"supplier_name": {"type": "string"}, "po": {"type": "object"}}}
+    assert require_input(schema, "supplier", "supplierName") == "supplier_name"
+    assert require_input(schema, "po", "purchaseOrder", "po", type_="object") == "po"
+    with pytest.raises(SystemExit):
+        require_input(schema, "po", "po", type_="string")
+    with pytest.raises(SystemExit):
+        require_input(schema, "country", "country")
+
+
+def test_strip_schema_ignores_text_and_empty_required():
+    a = {"type": "object", "properties": {"x": {"type": "string", "description": "d", "title": "t"}}, "required": []}
+    assert strip_schema(a) == {"type": "object", "properties": {"x": {"type": "string"}}}

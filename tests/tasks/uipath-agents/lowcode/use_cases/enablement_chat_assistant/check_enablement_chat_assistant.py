@@ -14,6 +14,7 @@ Final-state only. Validates:
      agent, release key as referenceKey) whose input/output schemas mirror
      the agent's InputArgumentsSchemaV2 / OutputArgumentsSchemaV2
      (descriptions ignored).
+  4. The assistant was built inside the existing (fixture) project.
 """
 
 import os
@@ -23,6 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
     UUID_RE,
+    assert_existing_project,
     assert_index_context,
     assert_project_id,
     assert_unique_resource_ids,
@@ -34,6 +36,7 @@ from _shared.use_case_assertions import (  # noqa: E402
 )
 
 AGENT_DIR = Path(os.getcwd()) / "EnablementSol" / "AgentsEnablementAssistant"
+FIXTURE_AGENT_DIR = Path(__file__).resolve().parent / "_fixtures" / "EnablementSol" / "AgentsEnablementAssistant"
 INDEX_NAME = "UiPathAgentsProductKnowledge"
 INDEX_FOLDER = "Shared/uipath-agents"
 DRAFTER = "CustomerFollowUpDrafter"
@@ -124,6 +127,7 @@ def check_drafter_tool() -> None:
 def main() -> None:
     agent = load(AGENT_DIR / "agent.json")
     assert_project_id(agent)
+    assert_existing_project(AGENT_DIR, FIXTURE_AGENT_DIR)
     check_conversational(agent)
     check_index()
     check_drafter_tool()

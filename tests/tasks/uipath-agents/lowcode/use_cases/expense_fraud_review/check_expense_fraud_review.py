@@ -13,8 +13,9 @@ Final-state only. Validates:
      outcomes, each mapped to "continue" / "end". Invented form fields —
      what happened when the app exposed no schema — fail here.
   4. The solution declares the app under resources/solution_folder/app/.
-  5. Output contract: decision enum {approve, reject}, policyViolations and
-     fraudSignals arrays, reviewedByHuman boolean, explanation.
+  5. Output contract: decision, policyViolations, fraudSignals,
+     reviewedByHuman and explanation are declared (types are helper-only).
+  Brownfield: the agent must be built inside the existing (fixture) project.
 """
 
 import os
@@ -23,8 +24,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
+    assert_existing_project,
     assert_autonomous,
-    assert_enum,
     assert_has_fields,
     assert_inputs_referenced,
     assert_project_id,
@@ -38,6 +39,7 @@ from _shared.use_case_assertions import (  # noqa: E402
 )
 
 AGENT_DIR = Path(os.getcwd()) / "ExpenseAuditSol" / "ExpenseAuditAgent"
+FIXTURE_AGENT_DIR = Path(__file__).resolve().parent / "_fixtures" / "ExpenseAuditSol" / "ExpenseAuditAgent"
 APP_NAME = "ExpenseFraudReview"
 APP_FOLDER = "Shared/uipath-agents/ExpenseFraudReviewSol"
 # ActionSchema of the deployed app, from `uip solution resources get <KEY>`.
@@ -111,7 +113,9 @@ def check_app_declaration() -> None:
 
 
 def check_outputs(out_schema: dict) -> None:
-    f = assert_has_fields(
+    # The user prompt names these fields; their values / types (approve-reject,
+    # lists, boolean) are lower-tier helper guidance and are not graded.
+    assert_has_fields(
         out_schema,
         "outputSchema",
         {
@@ -122,19 +126,13 @@ def check_outputs(out_schema: dict) -> None:
             "explanation": [],
         },
     )
-    assert_enum(f["decision"], "decision", ["approve", "reject"])
-    for name in ("policyViolations", "fraudSignals"):
-        if f[name].get("type") != "array":
-            fail(f"{name} must be an array, got {f[name]!r}")
-    if f["reviewedByHuman"].get("type") != "boolean":
-        fail(f"reviewedByHuman must be a boolean, got {f['reviewedByHuman']!r}")
-    print("OK: list fields are arrays and reviewedByHuman is a boolean")
 
 
 def main() -> None:
     agent = load(AGENT_DIR / "agent.json")
     entry = load(AGENT_DIR / "entry-points.json")
     assert_project_id(agent)
+    assert_existing_project(AGENT_DIR, FIXTURE_AGENT_DIR)
     assert_autonomous(agent)
     in_schema, out_schema = assert_schema_sync(agent, entry)
     check_inputs(in_schema)

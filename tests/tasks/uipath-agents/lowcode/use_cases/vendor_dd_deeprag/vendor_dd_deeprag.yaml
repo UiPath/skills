@@ -9,6 +9,10 @@ description: >
   Files. Graded on the final project only: attachment input, a DeepRAG tool
   or attachments context, output contract, read-only `uip agent validate`,
   and an LLM judge on the system prompt.
+  Studio Web context: the user has the empty agent project open in an
+  existing solution (_fixtures/), and the checker requires the agent to be
+  built inside it. Text between the helper markers is lower-tier guidance
+  (experiments/use-case-tiers.yaml) and is not graded.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, context-grounding]
 
 run_limits:
@@ -16,26 +20,49 @@ run_limits:
   turn_timeout: 1200
   task_timeout: 1500
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/VendorRiskSol
+      mount_point: VendorRiskSol
+    - type: template_dir
+      path: _fixtures/attachments
+      mount_point: attachments
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+# Sample documents are kept as *.pdf.txt in the repo; render them into the
+# user's attachments and remove the generator before the agent starts.
+pre_run:
+  - command: "python3 _setup/make_pdfs.py attachments && rm -rf _setup"
+    timeout: 60
+
 reference:
   directory: ../../..
 
 initial_prompt: |
-  Third-party risk reviews take our analysts days. For every new vendor we
-  send a due-diligence questionnaire and the vendor sends back their
-  evidence: a SOC 2 report, security and privacy policies, a business
-  continuity plan — usually several PDFs of 50 to 300 pages each.
+  You are a coding agent running in Studio Web. The user is in an empty
+  low-code agent project in that solution with the name
+  VendorDueDiligenceAgent. The agent is in a UiPath solution called
+  VendorRiskSol. The user attached an example filled-in questionnaire and its
+  evidence files to this request: `attachments/questionnaires.json` and
+  `attachments/evidence/`.
 
-  Build a UiPath low-code agent, "VendorDueDiligenceAgent", in a solution
-  called "VendorRiskSol". Each run gets the vendor's documents as
-  `vendorDocuments` (a list of files) and our `questions` (a list of
-  strings). For every question it should research the answer across all of
-  that vendor's documents — the answer often sits in a different document
-  than you'd expect — and return `answers`, one entry per question with:
+  I need you to build a Due Diligence Agent. The vendors fill in a form in
+  which they attach evidence: a SOC 2 report, security and privacy policies,
+  a business continuity plan — usually several PDFs of 50 to 300 pages each.
 
-    - the `question`
-    - the `answer`
-    - a `status`: answered, partially_answered or not_found
-    - the `sources` it relied on (document and location)
+  The agent receives the form's questions and the evidence documents the
+  vendor provided.
+
+  For every question, it should research the answer across all that vendor's
+  documents — the answer often sits in a different document than you'd
+  expect — and return `answers`, one entry per question with:
+      - the `question`
+      - the `answer`
+      - a `status`: answered, partially_answered or not_found
+      - the `sources` it relied on (document and location)
 
   Analysts must be able to trust every answer, so nothing may come from
   general knowledge: if the documents don't cover a question, the status is
@@ -47,22 +74,6 @@ initial_prompt: |
   entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
-    description: "VendorDueDiligenceAgent/agent.json exists"
-    path: "VendorRiskSol/VendorDueDiligenceAgent/agent.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent project is registered in the VendorRiskSol solution"
-    path: "VendorRiskSol/VendorRiskSol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Final project passes read-only uip agent validate (derived files current)"
     command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate VendorRiskSol/VendorDueDiligenceAgent"

@@ -9,6 +9,10 @@ description: >
   output contract, read-only `uip agent validate`, and an LLM judge on the
   system prompt. Cloud auth required — the staging tenant must have the
   index in Shared/uipath-agents.
+  Studio Web context: the user has the empty agent project open in an
+  existing solution (_fixtures/), and the checker requires the agent to be
+  built inside it. Text between the helper markers is lower-tier guidance
+  (experiments/use-case-tiers.yaml) and is not graded.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, context-grounding]
 
 run_limits:
@@ -16,30 +20,35 @@ run_limits:
   turn_timeout: 1200
   task_timeout: 1500
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/CaseTriageSol
+      mount_point: CaseTriageSol
+
 reference:
   directory: ../../..
 
 initial_prompt: |
-  Our UiPath Agents support engineers lose hours on cases the product docs
-  already answer. Build a UiPath low-code autonomous agent,
-  "AgentsCaseTriageAgent", in a solution called "CaseTriageSol", that does a
-  first pass on every new case. It gets `caseSubject`, `caseDescription` and
-  `customerTier` (enterprise or standard).
+  You are a coding agent running in Studio Web. The user is in an empty
+  low-code agent project in that solution with the name AgentsCaseTriageAgent.
+  The agent is in a UiPath solution called CaseTriageSol.
 
+  Build an agent that generates automation responses to support cases based on
+  existing documentation. The agent receives the case Subject, Description and
+  Tier (enterprise or standard).
   The decision has to be based on our existing "UiPathAgentsProductKnowledge"
-  knowledge index (already set up in our tenant) — not on what the model
-  happens to know about UiPath. It returns:
+  knowledge index. It returns:
+      - `resolutionType`: how_to, known_limitation, configuration_issue,
+        probable_defect or needs_more_info
+      - `suggestedReply`: a reply the engineer can send the customer
+      - `docReferences`: the documentation sources it relied on
+      - `escalateToEngineering`: true or false
+      - `confidence`: 0 to 1
 
-    - `resolutionType`: how_to, known_limitation, configuration_issue,
-      probable_defect or needs_more_info
-    - `suggestedReply`: a reply the engineer can send the customer
-    - `docReferences`: the documentation sources it relied on
-    - `escalateToEngineering`: true or false
-    - `confidence`: 0 to 1
-
-  If the docs don't cover the case, it should only call it a probable defect
-  when the customer reports an error or a regression; otherwise it asks for
-  more information. Probable defects always go to engineering, and so do
+  If the docs don't cover the case, it should call it a probable defect only
+  when the customer reports an error or regression; otherwise, it should ask
+  for more information. Probable defects always go to engineering, and so do
   enterprise cases it's less than 70% sure about.
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
@@ -47,22 +56,6 @@ initial_prompt: |
   entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
-    description: "AgentsCaseTriageAgent/agent.json exists"
-    path: "CaseTriageSol/AgentsCaseTriageAgent/agent.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent project is registered in the CaseTriageSol solution"
-    path: "CaseTriageSol/CaseTriageSol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Final project passes read-only uip agent validate (derived files current)"
     command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate CaseTriageSol/AgentsCaseTriageAgent"

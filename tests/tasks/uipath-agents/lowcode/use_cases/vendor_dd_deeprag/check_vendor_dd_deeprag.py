@@ -3,15 +3,16 @@
 
 Final-state only. Validates:
   1. Autonomous agent; schemas in sync with entry-points.json.
-  2. `vendorDocuments` is a list of job-attachments (array whose items are the
-     canonical JobAttachment definition); `questions` is an array; both are
-     templated into the messages.
+  2. The evidence documents are a list of job-attachments and the questions
+     an array (names are the agent's choice); both are templated into the
+     messages.
   3. The run's documents are grounded just-in-time: an enabled built-in
      `deep-rag` tool, or a context with contextType "attachments". A
      pre-built index context does not satisfy the prompt ("we don't keep
      these documents in any index").
   4. Output contract: `answers` array whose items carry question, answer,
      status enum {answered, partially_answered, not_found}, sources (array).
+  Brownfield: the agent must be built inside the existing (fixture) project.
 """
 
 import os
@@ -20,6 +21,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
+    assert_existing_project,
+    require_input,
     assert_autonomous,
     assert_enum,
     assert_has_fields,
@@ -35,6 +38,7 @@ from _shared.use_case_assertions import (  # noqa: E402
 )
 
 AGENT_DIR = Path(os.getcwd()) / "VendorRiskSol" / "VendorDueDiligenceAgent"
+FIXTURE_AGENT_DIR = Path(__file__).resolve().parent / "_fixtures" / "VendorRiskSol" / "VendorDueDiligenceAgent"
 
 
 def is_jit_grounding(d: dict) -> bool:
@@ -43,16 +47,14 @@ def is_jit_grounding(d: dict) -> bool:
     return d.get("$resourceType") == "context" and d.get("contextType") == "attachments"
 
 
-def check_inputs(in_schema: dict) -> None:
+def check_inputs(in_schema: dict) -> list[str]:
     props = in_schema.get("properties") or {}
-    docs = props.get("vendorDocuments")
-    if not isinstance(docs, dict) or docs.get("type") != "array":
-        fail(f"vendorDocuments must be an array of files, got {docs!r}")
-    if "vendorDocuments" not in attachment_fields(in_schema):
-        fail("vendorDocuments items must be job-attachments")
-    if (props.get("questions") or {}).get("type") != "array":
-        fail(f"questions must be an array, got {props.get('questions')!r}")
-    print("OK: vendorDocuments is a list of job-attachments and questions is an array")
+    docs = [f for f in attachment_fields(in_schema) if (props.get(f) or {}).get("type") == "array"]
+    if len(docs) != 1:
+        fail(f"expected one input holding a list of evidence files (array of job-attachments), found {docs}")
+    questions = require_input(in_schema, "questions", "questions", "formQuestions", "questionnaire", "questionnaireQuestions", "questionList", type_="array")
+    print(f"OK: evidence files arrive as {docs[0]!r} (list of job-attachments)")
+    return [docs[0], questions]
 
 
 def check_grounding() -> None:
@@ -86,10 +88,10 @@ def main() -> None:
     agent = load(AGENT_DIR / "agent.json")
     entry = load(AGENT_DIR / "entry-points.json")
     assert_project_id(agent)
+    assert_existing_project(AGENT_DIR, FIXTURE_AGENT_DIR)
     assert_autonomous(agent)
     in_schema, out_schema = assert_schema_sync(agent, entry)
-    check_inputs(in_schema)
-    assert_inputs_referenced(agent, ["vendorDocuments", "questions"])
+    assert_inputs_referenced(agent, check_inputs(in_schema))
     check_grounding()
     assert_unique_resource_ids(AGENT_DIR)
     check_outputs(out_schema)

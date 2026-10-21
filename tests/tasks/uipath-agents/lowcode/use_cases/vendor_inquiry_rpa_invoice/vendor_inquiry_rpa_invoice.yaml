@@ -2,16 +2,19 @@ task_id: skill-agent-usecase-vendor-inquiry-rpa-invoice
 description: >
   Use-case pattern "document + RPA" — the single most common capability
   combination. The agent answers a vendor's invoice inquiry by calling the
-  deployed "DownloadVendorInvoice" RPA process, which returns the invoice PDF
-  as a File output argument, and then reads that returned file. Exercises the
-  recurring attachment-passing failure: the RPA tool's output schema must
-  carry the File as a job-attachment (from the process's V2 argument
-  schemas), and the returned attachment must be handed to a file-reading
-  built-in tool. Graded on the final project only: RPA tool wiring + schemas,
-  bindings, solution-level process declaration, file-reading tool, output
-  contract, read-only `uip agent validate`, and an LLM judge on the system
-  prompt. Cloud auth required — the tenant must have DownloadVendorInvoice in
-  Shared/uipath-agents/DownloadVendorInvoiceSol.
+  solution's own "DownloadVendorInvoice" RPA process (the real Studio Web
+  project, in the fixture), which returns the invoice PDF as a File output
+  argument, and then reads that returned file. Exercises the recurring
+  attachment-passing failure: the RPA tool's output schema must carry the File
+  as a job-attachment (mirroring the project's entry-points.json), and the
+  returned attachment must be handed to a file-reading built-in tool. Graded
+  on the final project only: solution-local RPA tool wiring + schemas,
+  file-reading tool, output contract, read-only `uip agent validate`, and an
+  LLM judge on the system prompt.
+  Studio Web context: the user has the empty agent project open in an
+  existing solution (_fixtures/), and the checker requires the agent to be
+  built inside it. Text between the helper markers is lower-tier guidance
+  (experiments/use-case-tiers.yaml) and is not graded.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code]
 
 run_limits:
@@ -19,53 +22,56 @@ run_limits:
   turn_timeout: 1200
   task_timeout: 1500
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/VendorInquirySol
+      mount_point: VendorInquirySol
+    - type: template_dir
+      path: _fixtures/attachments
+      mount_point: attachments
+    - type: template_dir
+      path: ../_setup
+      mount_point: _setup
+
+# Sample documents are kept as *.pdf.txt in the repo; render them into the
+# user's attachments and remove the generator before the agent starts.
+pre_run:
+  - command: "python3 _setup/make_pdfs.py attachments && rm -rf _setup"
+    timeout: 60
+
 reference:
   directory: ../../..
 
 initial_prompt: |
-  Vendors constantly email accounts payable asking about an invoice: what we
-  have on file, the amount, when it's due. The invoices only live in our
-  legacy AP archive, which has no API — we already have an RPA process,
-  "DownloadVendorInvoice", deployed in our tenant, that takes an invoice
-  number, fetches the invoice PDF from the archive and hands back the file
-  (and whether it found one).
+  You are a coding agent running in Studio Web. The user is in an empty
+  low-code agent project in that solution with the name VendorInquiryAgent.
+  The agent is in a UiPath solution called VendorInquirySol. We already have
+  an RPA process, "DownloadVendorInvoice" in the current solution, that takes
+  an invoice number, fetches the invoice PDF from the archive and hands back
+  the file (and whether it found one). The user attached a sample of the
+  legacy archive records and two archived invoices to this request:
+  `attachments/legacy-ap-records.json` and `attachments/invoices/`.
 
-  Build a UiPath low-code agent, "VendorInquiryAgent", in a solution called
-  "VendorInquirySol". It gets the `vendorName` and the vendor's `inquiry`
-  (the email text). It should find the invoice number in the inquiry, get
-  the invoice through DownloadVendorInvoice, read the PDF it gets back, and
-  answer from what's actually on the invoice.
+  I need you to build an agent that automatically answers queries related to
+  accounts payable: what we have on file, the amount, when it's due.
+  Queries typically have the vendor's name and their inquiry (email text).
+  The Agent should use the RPA process to pull the invoice, read the PDF and
+  answer the query based on what's in the invoice.
 
   It returns:
-
-    - `invoiceNumber` (empty if the email doesn't mention one)
-    - `invoiceFound` (true or false)
-    - `invoiceAmount` and `dueDate` as read from the invoice
-    - `reply`: a short answer to the vendor
-    - `needsHumanFollowUp`: true when there's no invoice number, the
-      invoice isn't found, or the PDF doesn't answer the question
+      - `invoiceNumber` (empty if the email doesn't mention one)
+      - `invoiceFound` (true or false)
+      - `invoiceAmount` and `dueDate` as read from the invoice
+      - `reply`: a short answer to the vendor
+      - `needsHumanFollowUp`: true when there's no invoice number, the
+        invoice isn't found, or the PDF doesn't answer the question
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
   or feedback. Do NOT pause between planning and implementation. Complete the
   entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
-    description: "VendorInquiryAgent/agent.json exists"
-    path: "VendorInquirySol/VendorInquiryAgent/agent.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent project is registered in the VendorInquirySol solution"
-    path: "VendorInquirySol/VendorInquirySol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Final project passes read-only uip agent validate (derived files current)"
     command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate VendorInquirySol/VendorInquiryAgent"

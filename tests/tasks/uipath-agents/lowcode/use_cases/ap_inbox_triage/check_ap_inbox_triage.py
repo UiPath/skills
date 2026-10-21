@@ -8,19 +8,20 @@ Final-state only. Validates:
   3. Output contract: `category` enum (6 values), `priority` enum (4 values),
      `referenceNumbers` array, `summary` string, `needsHumanReview` boolean.
   4. No tool / context / escalation resources — a pure completion agent.
-  5. Evaluation sets hold at least one test case per category, and every
-     test case only uses declared input fields.
+  5. Evaluation sets hold at least three test cases ("add a few test
+     cases"), each using only declared input fields. One case per category is
+     lower-tier helper guidance and is not graded.
+  6. The agent was built inside the existing (fixture) project.
 """
 
-import json
 import os
-import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from _shared.use_case_assertions import (  # noqa: E402
     assert_autonomous,
+    assert_existing_project,
     assert_enum,
     assert_has_fields,
     assert_inputs_referenced,
@@ -32,6 +33,8 @@ from _shared.use_case_assertions import (  # noqa: E402
 )
 
 AGENT_DIR = Path(os.getcwd()) / "APTriageSol" / "APInboxTriageAgent"
+FIXTURE_AGENT_DIR = Path(__file__).resolve().parent / "_fixtures" / "APTriageSol" / "APInboxTriageAgent"
+MIN_TEST_CASES = 3
 INPUTS = ["from", "subject", "body"]
 CATEGORIES = [
     "invoice_submission",
@@ -84,23 +87,16 @@ def check_evals(in_schema: dict) -> None:
         extra = set((case.get("inputs") or {}).keys()) - declared
         if extra:
             fail(f"test case {case.get('name')!r} uses undeclared input keys {sorted(extra)}")
-    blobs = [
-        json.dumps(c.get("expectedOutput") or {}) + " " + str(c.get("expectedAgentBehavior") or "")
-        for c in cases
-    ]
-    # Word-boundary match so "other" does not hit "another" or "other_x".
-    uncovered = [
-        c for c in CATEGORIES if not any(re.search(rf"\b{re.escape(c)}\b", b) for b in blobs)
-    ]
-    if uncovered:
-        fail(f"{len(cases)} test case(s) do not cover categories {uncovered}")
-    print(f"OK: {len(cases)} evaluation test case(s) cover all {len(CATEGORIES)} categories")
+    if len(cases) < MIN_TEST_CASES:
+        fail(f"expected at least {MIN_TEST_CASES} test cases, found {len(cases)}")
+    print(f"OK: {len(cases)} evaluation test case(s) on declared inputs")
 
 
 def main() -> None:
     agent = load(AGENT_DIR / "agent.json")
     entry = load(AGENT_DIR / "entry-points.json")
     assert_project_id(agent)
+    assert_existing_project(AGENT_DIR, FIXTURE_AGENT_DIR)
     assert_autonomous(agent)
     in_schema, out_schema = assert_schema_sync(agent, entry)
     assert_has_fields(in_schema, "inputSchema", {f: [] for f in INPUTS})

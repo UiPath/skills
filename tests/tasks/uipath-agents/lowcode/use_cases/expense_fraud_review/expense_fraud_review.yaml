@@ -10,6 +10,10 @@ description: >
   on the system prompt. The channel must mirror the app's real action
   schema, so invented form fields fail. Cloud auth required — the tenant
   must have ExpenseFraudReview in Shared/uipath-agents/ExpenseFraudReviewSol.
+  Studio Web context: the user has the empty agent project open in an
+  existing solution (_fixtures/), and the checker requires the agent to be
+  built inside it. Text between the helper markers is lower-tier guidance
+  (experiments/use-case-tiers.yaml) and is not graded.
 tags: [uipath-agents, e2e, mode:build, lifecycle:generate, low-code, feature:escalation]
 
 run_limits:
@@ -17,59 +21,54 @@ run_limits:
   turn_timeout: 1200
   task_timeout: 1500
 
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/ExpenseAuditSol
+      mount_point: ExpenseAuditSol
+
 reference:
   directory: ../../..
 
 initial_prompt: |
-  Finance wants to stop rubber-stamping expense claims. Build a UiPath
-  low-code agent, "ExpenseAuditAgent", in a solution called
-  "ExpenseAuditSol". For each claim it gets the `receipt` (a photo or PDF of
-  the receipt) and the `claim` itself as an object (employeeId, amount,
-  currency, expenseDate, category, merchant, businessPurpose).
+  You are a coding agent running in Studio Web. The user is in an empty
+  low-code agent project in that solution with the name ExpenseAuditAgent.
+  The agent is in a UiPath solution called ExpenseAuditSol.
+
+  I want to build an agent to assist with claims. For each claim, it gets the
+  `receipt` (a photo or PDF of the receipt) and the `claim` itself
+  (employeeId, amount, currency, expenseDate, category, merchant,
+  businessPurpose).
 
   It should read the receipt, compare it with what the employee claimed and
   apply our expense policy:
+      - meals are capped at 75 USD per person per day
+      - alcohol is never reimbursable
+      - receipts older than 60 days are rejected
+      - weekend expenses need a business purpose
+      - the receipt amount must match the claimed amount within 5%
 
-    - meals are capped at 75 USD per person per day
-    - alcohol is never reimbursable
-    - receipts older than 60 days are rejected
-    - weekend expenses need a business purpose
-    - the receipt amount must match the claimed amount within 5%
+  Clear compliant claims are approved. Clear policy violations are rejected
+  with the reason. Anything that looks like possible fraud — an altered or
+  duplicate-looking receipt, a merchant or amount that doesn't match the claim
+  — or any claim the agent isn't confident about must go to the fraud team for
+  a decision through our existing "ExpenseFraudReview" Action Centre app. The
+  reviewer's decision is final. Assign those review tasks to me for now.
 
-  Clearly compliant claims are approved and clear policy violations are
-  rejected with the reason. Anything that looks like possible fraud — an
-  altered or duplicate-looking receipt, a merchant or amount that doesn't
-  match the claim — or any claim the agent isn't confident about must go to
-  the fraud team for a decision through our existing "ExpenseFraudReview"
-  Action Center app (it's already deployed in Orchestrator, not part of this
-  solution). The reviewer's decision is final. Assign those review tasks to
-  me for now.
+  The result needs `decision`, `policyViolations`, `fraudSignals`,
+  `reviewedByHuman` and a short `explanation` for the employee.
 
+  <!-- helper:start -->
   The result needs `decision` (approve or reject), `policyViolations` (a
-  list), `fraudSignals` (a list), `reviewedByHuman` (true when the fraud team
-  decided) and a short `explanation` for the employee.
+  list), `fraudSignals` (a list), `reviewedByHuman` (true when the fraud
+  team decided) and a short `explanation` for the employee.
+  <!-- helper:end -->
 
   Do NOT publish, upload, or deploy. Do NOT ask for approval, confirmation,
   or feedback. Do NOT pause between planning and implementation. Complete the
   entire task end-to-end in a single pass.
 
 success_criteria:
-  - type: file_exists
-    description: "ExpenseAuditAgent/agent.json exists"
-    path: "ExpenseAuditSol/ExpenseAuditAgent/agent.json"
-    weight: 1.0
-    pass_threshold: 1.0
-
-  - type: json_check
-    description: "Agent project is registered in the ExpenseAuditSol solution"
-    path: "ExpenseAuditSol/ExpenseAuditSol.uipx"
-    assertions:
-      - expression: "length(Projects)"
-        operator: "gte"
-        expected: 1
-    weight: 1.0
-    pass_threshold: 1.0
-
   - type: run_command
     description: "Final project passes read-only uip agent validate (derived files current)"
     command: "python3 $REFERENCE_DIR/_shared/use_case_assertions.py validate ExpenseAuditSol/ExpenseAuditAgent"
