@@ -1,4 +1,4 @@
-# Process Design Document — Retail Account Onboarding {{RUN_TOKEN}}
+# Process Definition Document — Retail Account Onboarding {{RUN_TOKEN}}
 
 **Organisation:** Fjordline Savings Bank (fictional)
 **Department:** Retail Banking Operations

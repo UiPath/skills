@@ -8,7 +8,7 @@ description: >
   schema) and the independent Attendance/Initiation project-mode dimensions.
 tags: [uipath-planner, integration, mode:build, lifecycle:generate]
 initial_prompt: |
-  Analyze the following Process Design Document and generate a Solution Design
+  Analyze the following Process Definition Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints. Assume
   UiPath Automation Cloud as the delivery model.
 
@@ -16,7 +16,7 @@ initial_prompt: |
 
   --- BEGIN PDD ---
 
-  # Process Design Document: Payment Exception Rework
+  # Process Definition Document: Payment Exception Rework
 
   ## Process Overview
   - **Process Name:** Payment Exception Rework

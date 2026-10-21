@@ -6,7 +6,7 @@ description: >
   instead of defaulting to RPA Process.
 tags: [uipath-planner, integration, lifecycle:generate]
 initial_prompt: |
-  Analyze the following Process Design Document and generate a Solution Design
+  Analyze the following Process Definition Document and generate a Solution Design
   Document (SDD). Use Autonomous mode — do not pause for checkpoints.
 
   For any gap-filling questions about the agent, use these defaults:
@@ -19,7 +19,7 @@ initial_prompt: |
 
   --- BEGIN PDD ---
 
-  # Process Design Document: Customer Support Agent
+  # Process Definition Document: Customer Support Agent
 
   ## Process Overview
   - **Process Name:** Customer Support Agent
