@@ -89,8 +89,9 @@ what the caller heard are platform evidence.
 
 `uip maestro flow debug` rejects a flow that starts from `voiceTrigger()`: only
 a real call raises that trigger, so do not run it. Tell the user the test loop
-instead: deploy the solution to Orchestrator ([operate.md](operate.md#publish)),
-route an inbound-enabled number to the release, then call that number:
+instead: pack and publish ([operate.md](operate.md#publish)), deploy with
+`uip solution deploy run` (uipath-solution skill), route an inbound-enabled
+number to the release, then call that number:
 
 ```bash
 uip conversational trunks list --direction inbound --output json
@@ -100,5 +101,5 @@ uip conversational trunks assign <PHONE_NUMBER> --process-key <PROCESS_KEY> --fo
 `<PROCESS_KEY>` is `Key` from `uip or processes list`, not `ProcessKey`;
 `<FOLDER_KEY>` is its `FolderKey`. A number is added or inbound-enabled in
 Instance Management under Phone numbers, never from the CLI. Run `assign` only
-when the user asks: it routes live callers to the release, and re-routing a
-bound number takes it from whatever it served.
+when the user asks: it routes live callers to the release. A bound number needs
+`--yes` and loses whatever it served, so get the user's OK for that number first.
