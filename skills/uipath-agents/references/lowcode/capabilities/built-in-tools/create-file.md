@@ -35,7 +35,6 @@ One `job-attachment` output field on the agent ([../../agent-definition.md](../.
         "description": "Name of the file to create, including its extension (e.g., 'summary.md' or 'accounts.csv'). The extension sets the file type, so it must match the content."
       },
       "content": { "type": "string", "description": "Text content of the file." },
-      // description depends on settings.mode — see the note below the schema
       "filePath": {
         "type": "string",
         "description": "Not available for this agent. Leave this empty and put the file's text in content."

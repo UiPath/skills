@@ -21,7 +21,7 @@ sandbox:
     - {type: template_dir, path: ../_fixtures/ContractIntakeSolution}
 
 reference:
-  directory: ../../..   # uipath-agents test root, so the checker can import _shared/
+  directory: ../../..
 
 initial_prompt: |
   My contract intake agent at ContractIntakeSolution/ContractIntakeAgent reads

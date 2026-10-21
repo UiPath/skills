@@ -20,7 +20,7 @@ import uuid
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-from _shared.file_guardrail_assertions import find_param, load_json, require_detection_scope  # noqa: E402
+from _shared.file_guardrail_assertions import find_param, load_json, require_detection_scope
 
 ROOT = Path(os.getcwd()) / "ContractIntakeSolution" / "ContractIntakeAgent"
 AGENT = ROOT / "agent.json"
