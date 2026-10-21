@@ -30,6 +30,13 @@ UI Automation control type → `role` (same values across UI languages):
 
 Chromium-rendered content reached through UI Automation (an Electron renderer window, browser chrome, a web view without the browser driver) exposes the page's **accessibility tree**, not its DOM: `role` is the control type Chromium derives from the element's implicit or explicit ARIA role, `name` its accessible name (associated label, `aria-label`, own text, placeholder as the last fallback). DOM `class`, `data-*`, `name` and `type` attributes are not accessibility properties and never reach the element; whether `automationid` mirrors the DOM `id` is settled by the live attribute listing (rule 15), never assumed. A locator built on such attributes translates to role plus accessible name or to a no-selector outcome (rule 13). Framework side: the framework pack's selectors guide, section for renderer windows reached through UI Automation.
 
+## Rule 8 — desktop lists
+
+A Windows Forms list view (`SysListView32`) reached through UI Automation exposes each row as a `list item` whose cells are `text` children, its column headers as `header item`s outside the rows, and the window's other captions as `text` elements outside the list. The Find Elements filter that collects the cells, in Find Descendants mode, depends on the search context:
+
+- **The list as Target:** `<uia role='text' />` takes only the cells.
+- **No Target, the whole window searched** (only the application card's scope): the filter names the row first, `<uia role='list item' /><uia role='text' />`. A bare `<uia role='text' />` here also takes every caption of the window, so a source that reads the cells in groups by position (four per row) reads the wrong cell of every row, or overruns the collection.
+
 ## `ctrl` — Active Accessibility element
 
 | Attribute | Tier / role |
