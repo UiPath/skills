@@ -36,5 +36,5 @@ Not used in Studio Web: there is no `.uipx` on disk and Studio Web owns project 
 <!--skill-flavor:resources-row:end-->
 
 <!--skill-flavor:auth-column-note:start-->
-> **Auth column — not applicable in Studio Web.** The host injects your session on every call; `uip login` / `logout` / `auth` / `config` are no-ops.
+> **Auth column — not applicable in Studio Web.** The host injects your session on every call. `uip login` / `logout` / `auth` / `config` are not in the Studio Web CLI — never run them, and never check login state.
 <!--skill-flavor:auth-column-note:end-->
