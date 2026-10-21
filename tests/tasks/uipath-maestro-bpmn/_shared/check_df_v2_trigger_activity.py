@@ -33,10 +33,10 @@ from _shared.bpmn_check import (  # noqa: E402
     fail,
     has_typed_uipath_extension,
     parse_bpmn,
+    root_bindings,
 )
 from _shared.check_df_picker_folder_entity import (  # noqa: E402
     picker_values,
-    root_bindings,
     title_of,
 )
 

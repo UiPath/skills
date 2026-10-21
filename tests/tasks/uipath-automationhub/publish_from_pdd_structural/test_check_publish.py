@@ -254,6 +254,33 @@ def test_create_after_the_success_fails(sandbox: Path, tmp_path: Path) -> None:
     assert "never re-run" in grade(sandbox, "create-once").stdout
 
 
+CREATE_ON_FLOW = r'''#!/usr/bin/env python3
+import json, sys
+if " automations create" in " " + " ".join(sys.argv[1:]):
+    print(json.dumps({"Result": "Success", "Data": {"Id": %d, "IdeaFlowId": %%d}})); sys.exit(0)
+print(json.dumps({"Result": "Success", "Data": {}}))
+''' % PROCESS_ID
+
+
+def create_by_flow_name(sandbox: Path) -> None:
+    (sandbox / "ah-answers.json").write_text(json.dumps(good_answers()))
+    uip(sandbox, "ah", "automations", "create", "--from-schema", "--idea-flow", "Business Process",
+        "--file", "./ah-answers.json", "--output", "json")
+
+
+def test_create_by_flow_name_on_the_business_process_flow_passes(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(CREATE_ON_FLOW % 8)
+    create_by_flow_name(sandbox)
+    result = grade(sandbox, "create-once")
+    assert result.returncode == 0, result.stdout
+
+
+def test_create_by_flow_name_on_another_flow_fails(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(CREATE_ON_FLOW % 9)
+    create_by_flow_name(sandbox)
+    assert "targeted idea flow 9" in grade(sandbox, "create-once").stdout
+
+
 def test_template_placeholders_fail(sandbox: Path) -> None:
     answers = good_answers()
     section(answers, "OVR-OVERVIEW_DESCRIPTION")["OVR-OVERVIEW_DESCRIPTION"] = {"value": "Sample input for the description field"}
@@ -650,6 +677,55 @@ def test_id_added_during_the_run_that_the_pdd_does_not_name_is_a_decoy(sandbox: 
     section(answers, "OVR-COUNT_APPS")["OVR-COUNT_APPS"]["value"] = [21, 22, 78]
     publish(sandbox, answers)
     assert "78" in grade_on_stub(sandbox, "applications").stdout
+
+
+# The first create gets the gateway's 503 although the service committed it; a later
+# create (if any) succeeds. `automations list --search` shows how many processes carry
+# the run's token on the tenant.
+GATEWAY_503_CREATE = r'''#!/usr/bin/env python3
+import json, os, sys
+args = " ".join(sys.argv[1:])
+if " automations create" in " " + args and not os.path.exists("first-create-done"):
+    open("first-create-done", "w").close()
+    print(json.dumps({"Result": "Failure", "Message": "API request failed: 503 Service Unavailable - "
+                      "upstream connect error or disconnect/reset before headers"})); sys.exit(1)
+if " automations create" in " " + args:
+    print(json.dumps({"Result": "Success", "Data": {"Id": %(pid)d, "IdeaFlowId": 8}})); sys.exit(0)
+if " automations list" in " " + args:
+    print(json.dumps({"Result": "Success", "Data": [{"Id": %(pid)d + i, "Name": "Retail Account Onboarding %(token)s"}
+                                                    for i in range(%%d)]})); sys.exit(0)
+if " documents create" in " " + args:
+    print(json.dumps({"Result": "Success", "Data": {"Id": 901, "FileId": 77}})); sys.exit(0)
+print(json.dumps({"Result": "Success", "Data": {}}))
+''' % {"pid": PROCESS_ID, "token": TOKEN}
+
+
+@pytest.mark.parametrize("check", ["create-once", "documents", "verify"])
+def test_create_the_gateway_failed_but_that_landed_counts(sandbox: Path, tmp_path: Path, check: str) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(GATEWAY_503_CREATE % 1)
+    publish(sandbox, good_answers())
+    result = grade_on_stub(sandbox, check)
+    assert result.returncode == 0, result.stdout
+
+
+def test_create_the_gateway_failed_that_never_landed_fails(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(GATEWAY_503_CREATE % 0)
+    publish(sandbox, good_answers())
+    assert "did not succeed" in grade_on_stub(sandbox, "create-once").stdout
+
+
+def test_recreating_after_a_gateway_failure_that_landed_fails(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(GATEWAY_503_CREATE % 2)
+    publish(sandbox, good_answers(), creates=2)
+    assert "second process" in grade_on_stub(sandbox, "create-once").stdout
+
+
+def test_recorder_keeps_a_failure_message(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(GATEWAY_503_CREATE % 1)
+    publish(sandbox, good_answers())
+    calls = [json.loads(line) for line in (sandbox / ".uip-recorder" / ".calls.jsonl").read_text().splitlines()]
+    create = next(c for c in calls if "automations create" in " ".join(c["args"]))
+    assert "503 Service Unavailable" in create["message"]
 
 
 def test_alias_matches_whole_tokens_only(sandbox: Path) -> None:

@@ -16,7 +16,7 @@ initial_prompt: |
   Use the exact content; do not modify, summarise, or add anything.
 
   --- BEGIN PDD CONTENT ---
-  # Process Design Document: ZEBRACAKE-7472
+  # Process Definition Document: ZEBRACAKE-7472
   ## Process Overview
   - **Process Name:** ZEBRACAKE-7472
   - **Sentinel:** QXR-9118-PURPLE

@@ -7,13 +7,15 @@ PLACEHOLDER event trigger rather than fabricate connector IDs. This grader
 asserts the placeholder shape and its sibling-file coupling:
 
   1. A trigger node carries `data.inputs.serviceType == "Intsvc.EventTrigger"`.
-  2. It is a true placeholder — `data.inputs` carries ONLY `serviceType`
-     (no `context` / `inputs` / `outputs` / `bindings` / `metadata`).
+  2. It is a true placeholder — `data.inputs` carries ONLY `serviceType` plus
+     the optional `entryPointId` node↔entry pairing (no `context` / `inputs` /
+     `outputs` / `bindings` / `metadata`).
   3. No trigger edge is created (edges retired) — `schema.edges` stays `[]`.
   4. The case still starts: some stage has a `case-entered` entry condition
      (the placeholder event trigger does not itself edge into a stage).
   5. `entry-points.json` (sibling of caseplan.json) has an entry whose
-     `filePath` references the event trigger node id.
+     `filePath` references the event trigger node id; when the node carries
+     `entryPointId`, it equals that entry's `uniqueId`.
 """
 
 from __future__ import annotations
@@ -58,13 +60,14 @@ def main():
     trig = event_triggers[0]
     trig_id = trig.get("id")
 
-    # 2. True placeholder — only serviceType under data.inputs.
+    # 2. True placeholder — only serviceType (+ entryPointId pairing) under data.inputs.
     uipath = (trig.get("data") or {}).get("inputs") or {}
-    extra = [k for k in uipath if k != "serviceType"]
+    extra = [k for k in uipath if k not in ("serviceType", "entryPointId")]
     if extra:
         _fail(
-            f"placeholder event trigger data.inputs must carry ONLY 'serviceType'; "
-            f"found extra keys {extra} (Rule 9 — no fabricated connector config)"
+            f"placeholder event trigger data.inputs must carry ONLY 'serviceType' "
+            f"(+ 'entryPointId'); found extra keys {extra} "
+            f"(Rule 9 — no fabricated connector config)"
         )
 
     # 3. No trigger edge.
@@ -94,15 +97,22 @@ def main():
     with open(ep_path) as f:
         ep = json.load(f)
     entries = ep.get("entryPoints") or []
-    if not any(f"#{trig_id}" in (e.get("filePath") or "") for e in entries):
+    linked = [e for e in entries if f"#{trig_id}" in (e.get("filePath") or "")]
+    if not linked:
         filepaths = [e.get("filePath") for e in entries]
         _fail(
             f"entry-points.json has no entry referencing the event trigger "
             f"{trig_id!r}; filePaths present: {filepaths}"
         )
+    entry_point_id = uipath.get("entryPointId")
+    if entry_point_id is not None and entry_point_id != linked[0].get("uniqueId"):
+        _fail(
+            f"trigger {trig_id!r} data.inputs.entryPointId {entry_point_id!r} does not "
+            f"match its entry-points.json uniqueId {linked[0].get('uniqueId')!r}"
+        )
 
     print(
-        f"OK: placeholder event trigger {trig_id!r} (serviceType only); "
+        f"OK: placeholder event trigger {trig_id!r} (serviceType + entryPointId only); "
         f"edges=[]; case-entered start present; entry-points.json entry linked"
     )
 

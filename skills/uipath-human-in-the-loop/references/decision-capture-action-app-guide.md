@@ -1,4 +1,6 @@
-# Guided Decision Experience
+# Preview: Decision Capture (Guided Decision Experience)
+
+This guidance is in preview. It applies only when the request asks for decision capture or describes a reviewer confirming or correcting a proposal (see the toggle below). A request to build an ordinary Coded Action App, QuickForm or validation task, with no mention of capturing decisions, reviewing a proposal or reasons, is built on the normal path and gets none of the fields, outputs or layout in this guide.
 
 Read this before designing any Coded Action App, QuickForm or document-validation task where a reviewer confirms or corrects something a process proposed. It decides whether the guided decision experience is on (see "Decide the toggle from what the developer wants") and, when it is, what to build.
 
@@ -22,7 +24,7 @@ Never open with a yes/no question. Read the request and set the toggle yourself:
 | Asks to capture or record a decision, or names the Decision Ledger | On |
 | An agent, automation or model proposes a value, label, route or verdict that a reviewer confirms or corrects | On |
 | The reviewer picks between named resolutions backed by reasons (approve/deny, triage, route, accept/reject) | On |
-| The reviewer only enters data nothing proposed, or only acknowledges (sign a form, upload a file) | Off |
+| The request does not mention capturing decisions, reviewing a proposal or reasons, or the reviewer only enters data nothing proposed, or only acknowledges (sign a form, upload a file) | Off |
 
 When the toggle is on and the user did not ask for it by name, say in one line what you turned on and why, then proceed without waiting. When it is off but a proposal is close to the surface, mention it once in the final report as a one-line option.
 
@@ -42,9 +44,9 @@ All UI text is plain English; never "teach", "train" or "lesson". Capture reads 
 2. Agreeing costs nothing. Correcting costs at most one tap more. A changed part shows "Proposed: <old>".
 3. Never pre-select the outcome. Mark the proposal "Recommended". Pre-fill every other part.
 4. Ask why only after a change, in one optional step. A skipped why stays absent and never blocks completion. Only the decision is required.
-5. Keep the detailed capture quiet. Source, version, how much each part changed, whether the reviewer looked at it, scope, order of changes and time on task are recorded but shown only in a collapsed drawer.
+5. Keep the detailed capture quiet. Source, version, how much each part changed, whether the reviewer looked at it, scope, order of changes and time on task are written to the task outputs and never shown to the reviewer.
 6. Every correction counts for future cases by default. "Just this claim" (or the use case's equivalent) is a scope choice on Next time, never an extra toggle per change.
-7. The rationale is not a second input. It is composed from the reasons the reviewer weighted and the decision they chose, and the reviewer may edit it.
+7. The reasons are the rationale. There is no separate rationale section, textarea or note box. The reviewer states their own reasoning by adding a reason, and the app generates the rationale text from the deciding reasons and the decision without showing it.
 
 ## Coded Action App layout
 
@@ -53,18 +55,17 @@ One column of cards, in this order. Build with Apollo Wind (`@uipath/apollo-wind
 | Card | Reviewer sees | Reviewer does |
 |---|---|---|
 | Context | Read-only facts (3 lines) and "Proposed by <name and version> · <involvement>" | Reads |
-| Reasons | At most 4. Each: title, one-line detail, "Supports <outcome>", and a weight menu with bar marks: High, Medium, Low, Not relevant. The menu footer reads "From <source and version> · <confidence>%". Not relevant opens "Why is it not relevant?" with Wrong, Outdated, Other; Other opens one short note. The why is optional. | Opens a menu, sets a weight |
+| Reasons | At most 4 proposed. Each: title, one-line detail, "Supports <outcome>", and a weight menu with bar marks: High, Medium, Low, Not relevant. The menu footer reads "From <source and version> · <confidence>%". Not relevant opens "Why is it not relevant?" with Wrong, Outdated, Other; Other opens one short note. The why is optional. A "+ Add a reason" row at the bottom takes a one-line title and the outcome it supports, and starts at High. | Opens a menu, sets a weight, optionally adds a reason |
 | Decision | One card per outcome, none selected, the proposal marked Recommended. Under it, "Final details": the `fields` entries, pre-filled from the proposal and re-filled to follow the chosen decision until the reviewer edits one, then the author's own editable fields at their proposed value. An edited field shows "Proposed: <value>". | Picks a card, edits a field |
-| Rationale | One composed sentence: the High-weight reasons that support the decision, and any reason set aside as not relevant. Edit, Reset to my reasons, one optional note. | Edits or leaves it |
 | Next time | Shown once something changed. One or two drafted rules built from the changes, each with its basis line. Picking one reveals "Applies to": Just this claim, Claims like this (with 2 or 3 condition chips), Always. | Picks a draft, a scope, conditions |
 | What changed | One row per change, each ending with how much it changed (Kept, Lightly edited, Rewritten, Rejected, Added). The decision row also carries its scope. | Reads |
 | Complete | One button, "Complete as <decision>". Disabled only until a decision is picked. | Presses it |
-| What gets recorded | Collapsed by default, under Complete. | Optionally opens |
 
 Rules:
 
 - Weight is the only per-reason control. There are no per-reason Confirm buttons, verdict controls, confidence pills or evidence accordions. Evidence detail goes in the reason's one-line detail; longer evidence opens in the platform's own task view, never in an iframe.
-- Compose the rationale in the app from `reasons` and the decision: reasons weighted High that support the decision (or the top two when none is High), then reasons weighted Not relevant. For a partial outcome every live reason counts.
+- Generate `rationaleText` in the app from `reasons` and the decision: reasons weighted High that support the decision (or the top two when none is High), then reasons weighted Not relevant. For a partial outcome every live reason counts. Never show it, and never offer a field to edit it.
+- A reason the reviewer adds is a reason like any other: it has a weight menu, can be removed, and counts toward the rationale. It is recorded with `howMuch` = `Added` and `source` = `Reviewer`, and its item carries `added: true`.
 - A reason counts as looked at when the reviewer opens its weight menu or clicks its text, even if the weight is kept. "Kept after looking" and "Untouched" stay separate.
 - How much a value changed: Kept (looked at, same), Untouched (never looked at, same), Lightly edited (text edit under about 30% of the characters, or a weight moved one step), Rewritten (more than that), Rejected (cleared, set to Not relevant, or the outcome differs from the proposal).
 - Honour `task.isReadOnly`: render the saved values and never complete.
@@ -79,13 +80,12 @@ Proposals can come from an agent, an automation or a person, so the fields say "
 | `inputs` | `proposedOutcome` | string | The outcome the process recommends; equals one outcome name |
 | `inputs` | `proposedBy` | string | Name and version of the proposer |
 | `inputs` | `involvement` | string | `Sign-off`, `Added judgment` or `Peer review` |
-| `inputs` | `rationaleDraft` | string | The proposer's draft rationale; the baseline for how much the rationale changed |
 | `inputs` | `nextTimeOptions` | array | `{ "id", "text", "basis" }` rules drafted by the process, 1 or 2 |
 | `inputs` | `conditionOptions` | array | `{ "id", "label" }` conditions that define "claims like this", 2 or 3 |
 | `inOuts` | `reasons` | array | The reasons: proposed in, weights and why out (item shape below) |
 | `inOuts` | `fields` | array | Only the final details whose right value depends on the decision: `{ "id", "label", "kind", "byDecision", "value" }`. `byDecision` maps each outcome name to the proposed value; `value` is the reviewer's final value |
 | `inOuts` | the author's own fields | as declared | A value the process proposes that does not depend on the decision (a cost center, a priority) stays its own `inOuts` field under its own name, never an entry in `fields` |
-| `outputs` | `rationaleText` | string | The composed rationale as the reviewer left it, with any note |
+| `outputs` | `rationaleText` | string | The rationale generated from the deciding reasons and the decision |
 | `outputs` | `decidingReasons` | string[] | Ids of the reasons that carried the decision |
 | `outputs` | `nextTimeId`, `nextTimeText` | string | The drafted rule picked; empty when none |
 | `outputs` | `nextTimeScope` | string | `this-claim`, `similar-claims` or `all-claims`; name the scopes after the use case |
@@ -110,6 +110,7 @@ Proposals can come from an agent, an automation or a person, so the fields say "
 | `sourceConfidence` | number | 0 to 100, shown only in the menu footer |
 | `notRelevantWhy` | string | `Wrong`, `Outdated` or `Other`; only when `weight` is `Not relevant` and answered |
 | `notRelevantNote` | string | Free text, only when `notRelevantWhy` is `Other` |
+| `added` | boolean | `true` only for a reason the reviewer added; absent otherwise |
 
 **Outcomes are the decision.** The author's outcome buttons stay as they are and the reviewer's click is the decision. Add no `decision` output. If the app has a single `Submit` outcome, ask the user for the real choices (Approve, Deny, ...) and make each one an outcome. Rename an existing outcome only with the user's yes, and update every flow port that reads it.
 
@@ -171,8 +172,8 @@ Interaction signals Action Center already captures (changes of mind, abandoned o
 3. Return every `inOuts` value in exactly the shape it arrived in, adding only the keys this guide names. Never add counters or UI state beyond `record`, `changeLog` and `timeOnTaskSeconds`.
 4. Treat every input and `inOuts` value as possibly absent. Render an empty state, and never return a field the task did not receive.
 5. Never pre-select the outcome. Mark the proposal "Recommended" and pre-fill every other part.
-6. Require only a decision. Never require free text, a why, a rationale or a note; every optional prompt is answered by a tap and a skipped prompt stays absent from the data.
-7. Reasons, drafted rules and conditions are written by the process that creates the task, never templated in the app. The composed rationale is the one text the app builds, from the reasons and the decision.
+6. Require only a decision. Never require free text, a why or an added reason; every optional prompt is answered by a tap and a skipped prompt stays absent from the data.
+7. Reasons, drafted rules and conditions are written by the process that creates the task, never templated in the app. The generated `rationaleText` is the one text the app builds, from the reasons and the decision, and it is never shown or edited.
 8. Show source, version and confidence only in a reason's weight-menu footer and in the collapsed record. Never put them on the row.
 9. Never add per-reason Confirm buttons, confidence pills, verdict controls, evidence accordions, side panels or a chip bank of rationale options.
 10. Never use "teach", "train" or "lesson" in UI text, labels or field names you add.
@@ -204,7 +205,7 @@ Guidance, not a contract. Use it to pick what to propose on screen and which par
 4. Add the fields from this guide to the schema.
 5. Build the layout. For a Coded Action App write `sample-task-data.json` with realistic values for every field: 3 or 4 reasons covering more than one outcome, each with a source, the final details with `byDecision` values for every outcome, one or two drafted rules and 2 or 3 conditions.
 6. Build (`npm run build`) and fix type errors. Do not loosen types to silence them.
-7. Run the app against the sample data and look at it: the untouched state with no outcome selected, a changed-weight state with a Not relevant reason, a decision change that re-fills the final details, the composed rationale, Next time with a scope, What changed, and the open record drawer. Do not report done before this.
+7. Run the app against the sample data and look at it: the untouched state with no outcome selected, a changed-weight state with a Not relevant reason, a decision change that re-fills the final details, Add a reason, Next time with a scope, and What changed. Check that `record`, `changeLog` and `timeOnTaskSeconds` are in the data passed to `completeTask`. Do not report done before this.
 8. Follow `uipath-coded-apps` for pack, publish (`-t Action`) and deploy.
 
 ## Anti-patterns
@@ -212,8 +213,9 @@ Guidance, not a contract. Use it to pick what to propose on screen and which par
 - Asking "do you want decision capture?" instead of reading the request.
 - Turning it on for pure data entry, where nothing was proposed.
 - Free-text boxes as the main input.
+- A separate Rationale card, rationale textarea or "Add a note" box next to the reasons.
 - Making an override ask more than agreeing does.
-- Blocking Complete on a why, a rationale or a note.
+- Blocking Complete on a why or an added reason.
 - Source, version or confidence on every row, Confirm buttons, or an evidence accordion per reason.
 - A separate rationale chip bank that restates the reasons.
 - Final fields that ignore the chosen decision.
@@ -221,4 +223,4 @@ Guidance, not a contract. Use it to pick what to propose on screen and which par
 - Pre-selecting the proposed outcome, or a separate "Agree" button that skips the outcome cards.
 - A hand-written Why field per QuickForm select, or a required one.
 - Writing untouched document fields to the outputs.
-- Showing the record by default.
+- Showing the record to the reviewer. It goes to the outputs; a record drawer is for demos only.

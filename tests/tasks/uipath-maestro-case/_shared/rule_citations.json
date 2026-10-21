@@ -7,7 +7,7 @@
     "Empty lookup gate": 5,
     "Handoff contract": 2,
     "Phase 1 registry gate": 6,
-    "Read references to EOF before mutation": 1,
+    "Read the passage a mutation uses before making it": 1,
     "Resolution audit": 1,
     "SDD is the sole post-design input, across sessions": 1,
     "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 4,
@@ -49,7 +49,7 @@
     "Empty lookup gate": 2
   },
   "references/edit-recipes-guide.md": {
-    "Read references to EOF before mutation": 1
+    "Read the passage a mutation uses before making it": 1
   },
   "references/entry-points-sync.md": {
     "The build is lossless against the SDD": 1
@@ -71,6 +71,7 @@
     "No authored edges": 1,
     "Resolution audit": 1,
     "Runnable resources and sidecars": 3,
+    "SDD is the sole post-design input, across sessions": 1,
     "The build is lossless against the SDD": 3,
     "Unresolved resources": 2
   },

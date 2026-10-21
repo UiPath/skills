@@ -306,6 +306,17 @@ reader pinned lower refuses the file; `SCHEMA_VERSION_BELOW_FLOOR`: every reader
 migrates it forward on open). Changing versions is `uip maestro flow migrate`'s
 job, not an edit to this call.
 
+## Designer shapes decompile keeps
+
+Leave each as decompile writes it.
+Needs `@uipath/maestro-builder-sdk` 6.44.0 or later: an older SDK's decompile writes `js\`[object Object]\`` for the envelope, drops the fork's arms and the `variable` rows with a `has no spelling` / `cannot write back` warning, and compile then refuses the source — upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+
+- a decision or switch condition stored as a `jsExpression` envelope or as `=js: …`
+- a quick form's asked-field `variable` ([hitl.md](hitl.md))
+- `{ fork }`, arms that end in `.stepToRef`, and a pass-through merge as `rawNode` ([parallel-merge.md](parallel-merge.md))
+- a `core.logic.loop@1.0` on its `output` / `loopBack` handles, through the definition the file carries
+- a subflow's reads of its own Start node as `input('<name>')`, and the `.onError()` on the subflow step
+
 These findings the source cannot carry are printed on stderr as
 `flow-decompile: warning: …`, and `--strict` turns each into an error. Edit the
 `.flow` JSON directly only when decompile printed one of these warnings and
@@ -357,6 +368,15 @@ its case below says to; every other edit goes through merge.
   `resources/<source>/resource.json` beside the `-o` output. Merge does not
   touch the project's copy: do not copy the compiled file over it. If that
   already happened, tell the user to set the setting again in Studio Web.
+- A **fire-and-forget process start's output schema**. The designer keeps the
+  process's output fields on the definition whether or not the step waits, and
+  `agenticProcess()` refuses `returns` beside `completion: 'fire-and-forget'`
+  (nothing could read it), so the source omits it and the warning names the
+  fields. Needs `@uipath/maestro-builder-sdk` 6.44.0 or later; an older SDK's
+  decompile writes `returns` and compile refuses it — upgrade with
+  `npm install -g @uipath/maestro-builder-sdk@latest`. Recompiling writes the definition without the schema; `merge` keeps
+  the original's definition row, so a no-edit round trip loses nothing. To read
+  the result, set `completion: 'wait'` and declare `returns`.
 
 Validate the merged file after installing it as in
 [the safe project loop](#the-safe-project-loop), never the intermediate edited

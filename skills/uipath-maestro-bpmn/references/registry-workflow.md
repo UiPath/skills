@@ -187,9 +187,12 @@ uip is resources describe <connectorKey> <object> --connection-id <id> \
 query parameter it is ignored. Always set `isAscending`: omitted, the query
 sorts ascending, whatever its `DefaultValue` says.
 
-No `uip maestro bpmn` command compiles a filter tree, so write the filter in
-`queryExpression` as a CEQL string yourself, even when the request asks for a
-FilterBuilder tree and no raw CEQL. CEQL supports `=`, `!=`, `<`, `<=`, `>`,
+A V2 element takes the filter as a FilterTree in `--input-details` `filter`,
+and `registry get` compiles it into `queryExpression`
+([reference](v2-connector-nodes.md#--input-details-reference)). In a V1 node
+nothing compiles a filter tree, so write the filter in `queryExpression` as a
+CEQL string yourself, even when the request asks for a FilterBuilder tree and
+no raw CEQL. CEQL supports `=`, `!=`, `<`, `<=`, `>`,
 `>=`, `LIKE`, `NOT LIKE`, `IN`, `NOT IN`, `IS NULL`, `IS NOT NULL`, joined by
 `AND` / `OR`; "contains" is `LIKE '%<text>%'`. A tree in `queryExpression`
 fails with `400 Error parsing query`.
@@ -211,9 +214,12 @@ author those as V2 elements — see
 [v2-connector-nodes.md](v2-connector-nodes.md#1-get-the-element).
 
 `send-mail-v2` defaults its `saveAsDraft` query parameter to `true`, which
-saves a draft instead of sending. Add a `target="query"` `saveAsDraft` input
-set to `false`. Its `body` parameter is `multipart`: keep the message in the
-one `target="body"` input and set the context `metadata` input to
+saves a draft instead of sending. For a V2 element pass
+`"queryParameters":{"saveAsDraft":false}` in `--input-details`; `registry get`
+writes the multipart metadata itself. In a V1 node, add a `target="query"`
+`saveAsDraft` input set to `false`, keep the message in the one
+`target="body"` input (its `body` parameter is `multipart`), and set the
+context `metadata` input to
 `{"inputMetadata":{"type":"multipart","multipart":{"bodyFieldName":"body"}}}`.
 Without it the runtime sends the body as JSON.
 

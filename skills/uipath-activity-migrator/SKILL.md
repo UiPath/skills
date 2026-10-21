@@ -250,6 +250,7 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Pre-scanning the XAML for classic activities (`grep` on `<ui:` prefixes) before or after `analyze`; the SARIF is the only complete inventory, and the `ui:` prefix also covers System and Excel activities
 - Skipping the package guides and passing no package flags for a project that uses Outlook classic or GSuite classic activities
 - Declaring success because `upgrade` finished, without `uip rpa build` on the output
+- Reporting `build passed` before `uip rpa build` returned its JSON, for instance when the host handed a long-running command back before it finished
 - Running the migrated project without the user's yes, or repairing and rerunning outside the runtime guide's fix and rerun loop; every fix and every rerun sits behind one yes/no. The runtime check's other anti-patterns are in [runtime-verification-guide.md § Anti-patterns](references/runtime-verification-guide.md#anti-patterns), read with that guide
 - Editing the SARIF summary by hand instead of rerunning the summarizer after a rerun
 - Researching a fix on the web, in a cached package version the project did not resolve, or by reading binaries; the resolved packages' docs and the annotation's own page are the only sources (Rule 14)
