@@ -29,7 +29,9 @@ about it moved:
   persist as files; independent parts; material exceeding one prompt. AH is the taxonomy's fallback for
   work whose shape is not known in advance.
 - **Dependent retrieval currently routes to AH.** PS's reject cell says "evidence must be joined across
-  dependent lookups, which is AH". That was PA's shape, and AH is holding it only because PA is absent.
+  dependent lookups the agent has to work out as it goes, which is AH". That was PA's shape, and AH is
+  holding it only because PA is absent. The qualifier matters: a chain of known length was never PA
+  either — it is a deterministic sequence of scoped lookups, per Critical Rule 3.
 
 **When PA returns, it takes dependent retrieval back from AH.** Specifically:
 
@@ -37,7 +39,11 @@ about it moved:
 - AH's row keeps the two-signal rule — PA does not displace AH, it narrows it. A dependent-lookup
   workload over a *reusable indexed corpus* is PA; one that also needs a file workspace, sub-agents or a
   run spanning dozens of calls over material exceeding a prompt stays AH.
-- `search-strategy-guide.md` § What one retrieval cannot reach is the other place that names this shape.
+- Six other sites name this shape and each points at AH today. All six take PA back when it returns:
+  `search-strategy-guide.md` § What one retrieval cannot reach (the Dependent retrieval bullet, and the
+  closing Cases line); `agent-harness-guide.md` § Every tool and context handle needs a cap; and in
+  `case-library-guide.md`, the PS1 boundary, the PS2 boundary, the BT2 boundary, and the Boundary Lookup
+  row "One semantic hit misses related rules or identifiers".
 - `agent-harness-guide.md` § Selecting advanced does **not** change — its signals are about run shape,
   not corpus lifetime.
 
