@@ -138,12 +138,17 @@ When the resolved entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or
     "description": "<description from sdd.md>",
     "typeVersion": "1.0.0",
     "display": { "label": "<display-name>" },
-    "inputs": { "serviceType": "Intsvc.EventTrigger" }
+    "inputs": {
+      "serviceType": "Intsvc.EventTrigger",
+      "context": [
+        { "name": "objectName", "type": "string", "value": "<Source from the sdd.md Case Triggers row>" }
+      ]
+    }
   }
 }
 ```
 
-`data.inputs` carries **only** `serviceType` — no `context[]`, `inputs[]`, `outputs[]`, `bindings[]`, `metadata`. Equivalent intent to a connector-task `data: {}` placeholder; trigger nodes need `label` / `description` / `parentElement` to render at all.
+`data.inputs` carries **only** `serviceType` and a one-entry `context[]` holding `objectName`. It carries no other `context[]` entries, and no `inputs[]`, `outputs[]`, `bindings[]` or `metadata`. `objectName` is the SDD's **Source** column, which is document data rather than tenant config. `sdd convert` emits exactly this entry: keep it, and never strip it to match an older bare-`serviceType` shape. Omit `context[]` only when the SDD row has no Source. Equivalent intent to a connector-task `data: {}` placeholder; trigger nodes need `label` / `description` / `parentElement` to render at all.
 
 **Sibling artifacts:** append the matching `entry-points.json` entry per [manual/impl-json.md § Recipe — entry-points.json](../manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints). No trigger-edge is created (Rule 21) — the first stage's `case-entered` entry condition starts the case. No root bindings, no `inputOutputs[]` entries from this trigger.
 
@@ -171,7 +176,7 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 2. **Fully configured** (all under `data.inputs`): `context[]`, `inputs[]` (CONFIG inputs only — no `elementId`), `outputs[]` (empty array — populated later by variables plugin Step 6.2), and `bindings[] = []` all present per §7b. `data.typeVersion` is `"1.0.0"`; `data.display.label` set.
 3. **`tasks/trigger-spec-cache.json` exists** with this trigger's T-number as a top-level key, containing un-minted `context`, `inputs`, `outputs` from `caseShape`.
 4. **`id-map.json`** contains `"T<N>": { "kind": "trigger", "id": "<triggerId>" }` for this trigger.
-5. **Placeholder:** all four `data.inputs` fields beyond `serviceType` **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
+5. **Placeholder:** `context[]` holds exactly the `objectName` entry carrying the SDD Source, and `inputs[]`, `outputs[]` and `bindings[]` are **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
 6. `data.inputs.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify).
 7. When the trigger has event parameters: `data.inputs.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
 8. `schema.edges` stays `[]` (Rule 21) — no edge from this trigger.

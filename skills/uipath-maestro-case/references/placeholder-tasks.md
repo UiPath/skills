@@ -75,7 +75,7 @@ Timers are a built-in type — they are never placeholders because they have no 
 
 ### Case-level event triggers
 
-Case-level event triggers (`type: "uipath.case.trigger"` with `data.inputs.serviceType: "Intsvc.EventTrigger"`) follow the same pattern but use a different shape — trigger nodes need `data.display.label` / `description` / `parentElement` / `typeVersion` to render at all, so the placeholder keeps those plus `data.inputs: { serviceType: "Intsvc.EventTrigger" }`. Full spec in [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md). Manual and timer triggers are never placeholders (no registry dependency).
+Case-level event triggers (`type: "uipath.case.trigger"` with `data.inputs.serviceType: "Intsvc.EventTrigger"`) follow the same pattern but use a different shape — trigger nodes need `data.display.label` / `description` / `parentElement` / `typeVersion` to render at all, so the placeholder keeps those plus `data.inputs` with `serviceType: "Intsvc.EventTrigger"` and a one-entry `context[]` carrying `objectName` (the SDD Source, which `sdd convert` emits; keep it). Full spec in [`plugins/triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md). Manual and timer triggers are never placeholders (no registry dependency).
 
 ### Connector condition rules
 

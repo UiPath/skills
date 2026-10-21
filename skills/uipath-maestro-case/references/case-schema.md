@@ -161,7 +161,7 @@ No `position`, `style`, `measured`, `width`, `zIndex`, or `parentElement` on Tri
 
 `data.inputs.serviceType` values: `"None"`, `"Intsvc.EventTrigger"`, `"timer"`. The specific binding/config shape for each trigger kind lives in the corresponding trigger plugin's `impl-json.md`.
 
-> **Placeholder form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.inputs` carries `serviceType` only — no `context[]`, `metadata`, `inputs[]`, `outputs[]`, or `bindings[]`. See [`triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md).
+> **Placeholder form (`Intsvc.EventTrigger` only):** when an event trigger's IS connection is unresolved, `data.inputs` carries `serviceType` and a one-entry `context[]` holding `objectName` (the SDD Source, which `sdd convert` emits; keep it). It carries no `metadata`, `inputs[]`, `outputs[]` or `bindings[]`. See [`triggers/event/impl-json.md` § Placeholder fallback](plugins/triggers/event/impl-json.md).
 
 ### b) Stage Node — `"case-management:Stage"`
 
