@@ -159,8 +159,9 @@ loop above.
   baseline compile. A `.flow.ts` edited input is compiled by merge too. Both
   compiles tolerate draft nodes.
 - A draft node you did **not** touch is restored exactly as saved, with
-  `[DRAFT_NODE_KEPT]` on stderr. A draft inside a subflow is always refused,
-  touched or not: merge takes subflows from the edited source whole.
+  `[DRAFT_NODE_KEPT]` on stderr. So is a draft inside a subflow the edit did
+  not change: merge keeps that subflow from the original (6.44.4 or later; an
+  older SDK takes every subflow from the edited source and refuses the draft).
 - A draft node you **changed** gets the refusal a normal compile gives
   (`[BINDING_MISSING]`, `[CONNECTOR_INPUT_MISSING]` or
   `[CONNECTOR_OBJECT_REQUIRED]`) and nothing is written. Finish that node or
