@@ -283,7 +283,7 @@ The HITL node exposes two outputs (`output`, `status`). After adding it, **compl
 
 Include entries for **all** nodes in the flow, not just the HITL node. Replace the entire array — do not append. Add one `output` entry and one `status` entry per HITL node — no per-field entries. Output and inOut field values from the task are accessible via `$vars.<nodeId>.output.<fieldId>` at runtime (fields are embedded in the output object, not exposed as separate node variables).
 
-> **Scripts must always use `$vars.<nodeId>.output.<fieldId>`.** The `field.variable` property declares a name for the global alias — do NOT use that name directly in scripts. `$vars.decision` (global alias) and `$vars.<nodeId>.output.decision` (field ID access) are different paths and only the field ID path is reliable in script nodes. See Critical Rule 10 in SKILL.md.
+> **Scripts must always use `$vars.<nodeId>.output.<fieldId>`.** The `field.variable` property declares a name for the global alias — do NOT use that name directly in scripts. `$vars.decision` (global alias) and `$vars.<nodeId>.output.decision` (field ID access) are different paths and only the field ID path is reliable in script nodes. See Critical Rule 9 in SKILL.md.
 
 ---
 
