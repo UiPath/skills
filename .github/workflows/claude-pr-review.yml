@@ -49,8 +49,11 @@ jobs:
         # Pinned to a full commit SHA (not @v1) so a moved tag cannot run
         # untrusted action code with our token/secrets. SHA = v1.0.160.
         uses: anthropics/claude-code-action@4633baf5267540f3f8cb58b684f79901d564c280  # v1.0.160
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          use_bedrock: "true"
           github_token: ${{ secrets.GITHUB_TOKEN }}
           track_progress: true
           # Comment-source allowlist (public repo). Only comments authored by
@@ -72,10 +75,10 @@ jobs:
           # Bash, network tools (WebFetch/WebSearch/curl/wget), git push, and
           # `gh api`/`gh secret` are NOT in the list and therefore blocked —
           # an injected instruction cannot reach env secrets (GITHUB_TOKEN /
-          # ANTHROPIC_API_KEY are env vars, not files) or mutate the repo.
+          # AWS_BEARER_TOKEN_BEDROCK are env vars, not files) or mutate the repo.
           # Residual: readable repo content could be echoed into the PR comment.
           claude_args: >-
-            --model claude-opus-4-6
+            --model us.anthropic.claude-opus-4-6-v1
             --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(gh pr view:*),Bash(ls:*),Bash(cat:*),mcp__github_comment__update_claude_comment"
           prompt: |
             You are reviewing a PR for a Claude Code plugin repository that contains

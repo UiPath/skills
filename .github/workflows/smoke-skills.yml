@@ -492,18 +492,10 @@ jobs:
           # Route the agent through AWS Bedrock. The Anthropic workspace
           # hit its API usage limit (resets 2026-05-01), so DirectRoute
           # is blocked. Bedrock has a separate quota.
-          #
-          # ANTHROPIC_API_KEY stays set for the LLM reviewer (lightweight
-          # token spend — coder_eval's reviewer only supports Anthropic
-          # direct or UiPath LLM Gateway, not Bedrock). If the shared
-          # workspace quota is still drained when the reviewer fires,
-          # orchestrator._run_final_llm_review swallows the error and
-          # the task still records its deterministic criteria result.
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION: ${{ vars.AWS_REGION }}
           BEDROCK_MODEL: ${{ vars.BEDROCK_MODEL }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TASK_PARALLELISM: ${{ vars.TASK_PARALLELISM || '1' }}
           # Codex auth: the key + the endpoint the codex binary talks to. Same secrets
           # the nightly and run-coder-eval.yml use.
@@ -579,7 +571,6 @@ jobs:
         if: always()
         env:
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           python - <<'PY'
           import os
@@ -588,7 +579,6 @@ jobs:
           names = (
               "UIPATH_CLI_AUTH_TOKEN",
               "AWS_BEARER_TOKEN_BEDROCK",
-              "ANTHROPIC_API_KEY",
           )
           values = [os.environ[name] for name in names if len(os.environ.get(name, "")) >= 8]
           if not values:

@@ -144,15 +144,13 @@ jobs:
             "coder-eval==${{ steps.ceref.outputs.version }}"
           python3 -c "import pathlib, sys, claude_agent_sdk as s; exe = pathlib.Path(s.__file__).parent / '_bundled' / 'claude.exe'; print(f'claude-agent-sdk {s.__version__}: {exe}'); sys.exit(0 if exe.is_file() else f'::error::claude-agent-sdk {s.__version__} has no bundled claude.exe')"
 
+      # The feed allows anonymous reads, so it is added without credentials.
       - name: Configure NuGet feed for Helm packages
         shell: bash
         run: |
           dotnet nuget add source \
             "https://uipath.pkgs.visualstudio.com/Public.Feeds/_packaging/UiPath-Internal/nuget/v3/index.json" \
-            --name UiPath-Internal \
-            --username az \
-            --password "${{ secrets.UV_INDEX_UIPATH_PASSWORD }}" \
-            --store-password-in-clear-text
+            --name UiPath-Internal
 
       # Install from GitHub Packages `@dev` — the live prerelease train
       # published on every push to `cli/main`. Public npm mirrors the same
@@ -309,18 +307,10 @@ jobs:
           # Route the agent through AWS Bedrock. The Anthropic workspace
           # hit its API usage limit (resets 2026-05-01), so DirectRoute
           # is blocked. Bedrock has a separate quota.
-          #
-          # ANTHROPIC_API_KEY stays set for the LLM reviewer (lightweight
-          # token spend — coder_eval's reviewer only supports Anthropic
-          # direct or UiPath LLM Gateway, not Bedrock). If the shared
-          # workspace quota is still drained when the reviewer fires,
-          # orchestrator._run_final_llm_review swallows the error and
-          # the task still records its deterministic criteria result.
           API_BACKEND: bedrock
           AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
           AWS_REGION: ${{ vars.AWS_REGION }}
           BEDROCK_MODEL: ${{ vars.BEDROCK_MODEL }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # The gate's agent model, passed on the command line rather than pinned in
           # experiments/smoke-windows.yaml (see smoke-skills.yml for why). No literal
           # fallback: an unset variable fails the guard step above rather than gating a

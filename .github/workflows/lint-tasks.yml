@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 15
 
     # Skip drafts (only run when the PR is ready for review) and skip forks
-    # (Anthropic API key is required and not available to forked PRs).
+    # (the Bedrock key is required and not available to forked PRs).
     if: |
       github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository
@@ -41,11 +41,14 @@ jobs:
 
       - name: Claude Code Action
         uses: anthropics/claude-code-action@86180fa9e4d311eed10c9cc49854c53dab5d517a  # v1.0.184
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_BEARER_TOKEN_BEDROCK: ${{ secrets.AWS_BEARER_TOKEN_BEDROCK }}
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          use_bedrock: "true"
           github_token: ${{ secrets.GITHUB_TOKEN }}
           track_progress: true
-          claude_args: "--model claude-opus-4-6"
+          claude_args: "--model us.anthropic.claude-opus-4-6-v1"
           prompt: |
             You are running an **advisory** lint on coder-eval task YAMLs added or
             modified by this PR. Never fail the check. Post exactly ONE comment on
