@@ -80,7 +80,7 @@ def _js_syntax_findings(caseplan) -> list[str]:
     compiles under the same Script grammar as the CLI's own `--strict` JS-syntax check
     (`strict-js-source.ts`), so this reports the same findings that check would. Wrapping
     the text in `new Function('return (' + text + ')')` instead would accept `return 1`
-    and reject the multi-statement form Jint runs — the reverse of what `--strict` says.
+    and reject the multi-statement form Jint runs: the reverse of what `--strict` says.
     """
     expressions = P.js_expressions(caseplan)
     if not expressions:
@@ -116,7 +116,7 @@ def main() -> int:
     guards = _guard_expressions(caseplan)
     if not guards:
         problems.append(
-            "the plan carries no guarded conditions at all — every routing decision in "
+            "the plan carries no guarded conditions at all: every routing decision in "
             "this case is guarded, so this is a build that dropped them"
         )
 
@@ -182,7 +182,7 @@ def main() -> int:
         if overlap:
             problems.append(
                 f"{E.BUYER!r}: literal(s) {sorted(overlap)} appear on both the completing "
-                "exit and a diverting exit — one decision would fire into two destinations"
+                "exit and a diverting exit: one decision would fire into two destinations"
             )
         if approving and approving != {"approve"}:
             problems.append(
@@ -213,16 +213,15 @@ def main() -> int:
 
     # ---- 5. every guard subject names something a task actually writes ------
     # `vars.X` resolves against what the output rows write, and each row shape writes a
-    # different name. Read off four runs and confirmed on all 28: a custom output (no `id`,
+    # different name. Confirmed against real builds: a custom output (no `id`,
     # `value` holding an expression) writes its own `name`; an extract writes its `id`, not
     # its `var`. So an equal-name extract whose id was suffixed writes only the suffixed
     # name, and a guard reading the bare one reads nothing.
     #
-    # 34686998522 is what proves it: its guards read `vars.directorSignOffRequired2` and
-    # `vars.bankVerificationStatus2`, which no variable declares, and all six of its routes
-    # completed with the right outcome. 34694676530 has the same two rows suffixed the same
-    # way and its guards read the bare names; it lost three routes to a gate that never
-    # opened, and so did 34670963139.
+    # A plan whose guards read the suffixed names (`vars.directorSignOffRequired2`,
+    # `vars.bankVerificationStatus2`), which no variable declares, still routes correctly.
+    # The same rows with guards reading the bare names lose their routes to a gate that
+    # never opens.
     #
     # Accepting a reassign's `var` as well is a margin, not a detection: removing that one
     # line changes nothing across the 28 runs, because no guard in this SDD reads a

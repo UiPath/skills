@@ -10,7 +10,7 @@ Asserting on the message, not only the exit code, is deliberate: a mutation that
 trips some *other* assertion would otherwise pass this suite while the assertion
 under test stayed dead.
 
-The plan comes from `build()` below — built in code, generated from a real
+The plan comes from `build()` below: built in code, generated from a real
 build, so the suite is self-contained and runs in CI. Committing a real caseplan.json
 is not how this suite works: every grader unit test here builds its plan the same way.
 
@@ -49,8 +49,8 @@ import expected as E  # noqa: E402
 #
 #
 # `test_checkers.py` needs a plan it can break one fact at a time. Committing a real
-# `caseplan.json` is not how this suite works — every grader unit test here builds its
-# plan in code (see `sla_from_sdd/test_check_sla_from_sdd.py`) — so this module is that
+# `caseplan.json` is not how this suite works: every grader unit test here builds its
+# plan in code (see `sla_from_sdd/test_check_sla_from_sdd.py`), so this module is that
 # plan for a case of this size.
 #
 # **The tables below were generated from a real build, not written from memory.** Every
@@ -67,7 +67,7 @@ import expected as E  # noqa: E402
 #     `resourceKey` of `<folderPath>.<name>`.
 #   * An output's reassign target is `var` alone. `target` and `originalVar` hold the
 #     wire's own id and are deliberately outside the case's variable namespace.
-#   * `selected-tasks-completed` names its tasks in `selectedTasksIds` — plural on BOTH
+#   * `selected-tasks-completed` names its tasks in `selectedTasksIds`: plural on BOTH
 #     words.
 #   * `sla-status-change` names the SLA in `slaId` and carries no stage reference.
 #   * The case's own SLA lives at `metadata.slaRules`; its exits at
@@ -106,7 +106,7 @@ def T(
 
     `reads` becomes one `=js:(...)` input carrying exactly those references, plus a
     `body`-nested copy for connector tasks so both input placements are exercised.
-    `literals` becomes plain-string inputs — that is how `stageName` is carried.
+    `literals` becomes plain-string inputs: that is how `stageName` is carried.
     `raw` carries a whole expression verbatim, for the one task whose real expression
     shape is itself under assertion (the guarded walk over the supporting documents).
     """
@@ -1023,9 +1023,9 @@ class GuardTests(CheckerBase):
     def test_rejects_a_guarded_equal_name_extract_whose_id_was_suffixed(self):
         """An extract is readable by its id, so suffixing the id hides it from the guard.
 
-        34670963139 and 34694676530 did this to two names each and lost three routes apiece
-        to a gate that never opened. 34686998522 suffixed the same two names and routed
-        correctly, because its guards read the suffixed spelling.
+        Builds that did this to two names and guarded on the bare names lost three routes
+        apiece to a gate that never opened. A build that suffixed the same two names and
+        guarded on the suffixed spelling routed correctly.
         """
         plan = baseline_plan()
         guarded = set()
@@ -1045,8 +1045,8 @@ class GuardTests(CheckerBase):
         self.fail("the baseline has no guarded equal-name extract to suffix")
 
     def test_accepts_a_guard_reading_the_suffixed_spelling(self):
-        """The suffix alone is not the defect. 34686998522 carries it on
-        `directorSignOffRequired` and `bankVerificationStatus` and completed six routes,
+        """The suffix alone is not the defect. A plan can carry it on
+        `directorSignOffRequired` and `bankVerificationStatus` and still route every case,
         because every guard reading them reads the suffixed name."""
         plan = baseline_plan()
         guarded = set()
@@ -1079,8 +1079,8 @@ class GuardTests(CheckerBase):
 
 
     def test_accepts_single_quoted_guard_literals(self):
-        """Run 34613299132 wrote every guard with single quotes and carried all seven
-        routes to completion. A double-quote-only reader saw 19 guards and no literals."""
+        """A plan that writes every guard with single quotes routes exactly like one that
+        uses double quotes. A double-quote-only reader sees guards and no literals."""
         plan = baseline_plan()
         swapped = 0
 
@@ -1149,7 +1149,7 @@ class GuardTests(CheckerBase):
     def test_rejects_signoff_threshold_misplaced_under_data(self):
         # skipCondition is a sibling of data, never a key inside it (case-schema.md).
         # A copy left under data validates clean and is dead config the platform never
-        # reads — the same runtime failure as the dropped-threshold mutation above, just
+        # reads: the same runtime failure as the dropped-threshold mutation above, just
         # reached by misplacement instead of deletion.
         plan = baseline_plan()
         for node in plan["nodes"]:
@@ -1658,9 +1658,9 @@ class TasksIoTests(CheckerBase):
     def test_rejects_the_design_rationale_in_place_of_the_description(self):
         """The SDD writes both lines per task; `description` takes the Description one.
 
-        34873903981 copied all 33 Description lines word for word and was reported as
-        carrying a fragment on every one, because the check compared them with the Design
-        Rationale. Swapping the two is the shape that has to stay red.
+        A build that copies every Description line word for word must not be reported as
+        carrying a fragment, which is what comparing them with the Design Rationale did.
+        Swapping the two is the shape that has to stay red.
         """
         plan = baseline_plan()
         swapped = 0
@@ -1769,9 +1769,8 @@ class TasksIoTests(CheckerBase):
 
         The engine keeps a file entry only when its value parses as a file reference
         (`IntSvcSendTaskArgs.cs:187`), so `""` is filtered out exactly as an absent key
-        is. Run 34049629743 shipped eight of them and delivered mail on four routes;
-        34632354461 shipped eight and carried all seven. An assertion here fired on 9 of
-        32 runs and docked three that worked.
+        is. Builds that ship the empty entry on every send deliver mail like those that
+        omit it, so an assertion here would dock builds that work.
         """
         plan = baseline_plan()
         item = task(plan, "Notify buyer of application")
@@ -1902,10 +1901,9 @@ class FieldNameTests(CheckerBase):
         return task(plan, name), literal
 
     def test_rejects_a_capitalised_request_body_field(self):
-        """34728302533 wrote `Message.ToRecipients` and Outlook answered every send with
-        `Property ToRecipients in payload has a value that does not match schema`. All
-        seven routes faulted; `validate` reported nothing, because only the spelling is
-        wrong."""
+        """A build that writes `Message.ToRecipients` gets `Property ToRecipients in payload
+        has a value that does not match schema` from Outlook on every send, so every route
+        faults; `validate` reports nothing, because only the spelling is wrong."""
         plan = baseline_plan()
         renamed = []
 
@@ -2017,8 +2015,8 @@ class FieldNameTests(CheckerBase):
 
     def test_accepts_a_row_reading_an_earlier_output_on_its_own_task(self):
         """A task output publishes its own slot, so a later row on the same task can read
-        it. Run 33981915823 ships eight connector tasks shaped this way, and checking
-        against the declared variables alone called all sixteen reads undefined."""
+        it. Checking against the declared variables alone calls every such read
+        undefined."""
         plan = baseline_plan()
         item, outs = self._task_with_outputs(plan)
         outs.append({
@@ -2054,8 +2052,8 @@ class FieldNameTests(CheckerBase):
         self.fail("the baseline has no connector task")
 
     def test_rejects_a_container_whose_field_names_are_dotted(self):
-        """Run 34558832471 shipped four dotted sibling keys on all eight sends, and
-        Integration Services answered `The missing parameters are: Message.`"""
+        """Dotted sibling keys on a send make Integration Services answer
+        `The missing parameters are: Message.`"""
         plan = baseline_plan()
         _item, data = self._connector_task(plan)
         for entry in data.get("inputs") or []:
@@ -2082,8 +2080,8 @@ class FieldNameTests(CheckerBase):
         self.rejects(plan, "the whole path")
 
     def test_rejects_a_probe_value_left_in_a_container(self):
-        """Run 34613296008 shipped `message.body.content: "test"` on one of eight sends,
-        left over from asking the validator what shape it wanted."""
+        """A send that still carries `message.body.content: "test"`, left over from asking the
+        validator what shape it wanted."""
         plan = baseline_plan()
         _item, data = self._connector_task(plan)
         for entry in data.get("inputs") or []:
@@ -2160,7 +2158,7 @@ class FieldNameTests(CheckerBase):
         """The build's guarded array walk reads the same four variables and must pass.
 
         An assertion that pinned the SDD's literal `vars.X.FullName` spelling would fail
-        this — and this shape is strictly better, since it survives a missing document.
+        this, and this shape is strictly better, since it survives a missing document.
         """
         self.accepts(baseline_plan())
 

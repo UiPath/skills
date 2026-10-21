@@ -12,7 +12,7 @@ Seven assertions:
     wire path `response.status`.
  2. That path lands in the one variable the SDD names for it.
  3. `displayName` is NOT part of this contract. This build labels the output
-    `Response` while wiring `response`, which is correct — a grader that scanned for
+    `Response` while wiring `response`, which is correct: a grader that scanned for
     PascalCase anywhere in the plan would fail it. This assertion states the rule so
     a later edit does not reintroduce that mistake.
  4. Every dotted dereference in an expression reads a property whose root the plan
@@ -45,7 +45,7 @@ _PROBE_VALUES = frozenset({
     "dummy", "sample", "example", "changeme", "asdf", "lorem",
 })
 
-# `vars.<root>.<prop>` — a dereference off a case variable inside an expression.
+# `vars.<root>.<prop>`: a dereference off a case variable inside an expression.
 _DOTTED_RE = re.compile(r"vars\.([A-Za-z_]\w*)\.([A-Za-z_]\w*)")
 
 
@@ -142,7 +142,7 @@ def main() -> int:
         if entry.get("displayName")
     }
     # Only a re-cased variant of a path the fixture declares is a defect. The
-    # connector's own contract also exposes `Error`, which is genuinely PascalCase —
+    # connector's own contract also exposes `Error`, which is genuinely PascalCase:
     # a blanket "no uppercase root" rule fails a correct build on that one.
     fixture_paths = {path for path, _target in fixture_extracts}
     lowered = {p.lower(): p for p in fixture_paths}
@@ -181,7 +181,7 @@ def main() -> int:
                 f"task {task_name!r} sets {E.STAGE_NAME_INPUT}={sorted(values)}; it should "
                 f"be {literal!r}"
                 + (
-                    f" — the task lives in {home!r}, so the supplier would be told the "
+                    f": the task lives in {home!r}, so the supplier would be told the "
                     "wrong phase ran late"
                     if home and home != literal
                     else ""
@@ -204,22 +204,22 @@ def main() -> int:
     }
     if crossed:
         problems.append(
-            f"escalation task(s) name another phase: {crossed} — one phase's escalation "
+            f"escalation task(s) name another phase: {crossed}. One phase's escalation "
             "must never carry a sibling's name"
         )
 
     # ---- 5. dotted dereferences resolve ------------------------------------
     # A task output row publishes its own slot as well as the case variable it feeds, so
     # a later row on the same task may read `vars.<slot>.field`. Checking against the
-    # declared variables alone reported all eight of those reads on run 33981915823 as
-    # undefined, 16 findings, every one of them a legal shape.
+    # declared variables alone reports every one of those reads as undefined, though each
+    # is a legal shape.
     declared = P.runtime_readable_names(caseplan)
     for path, expr in P.expressions(caseplan):
         for root, prop in _DOTTED_RE.findall(expr):
             if root not in declared:
                 problems.append(
                     f"{path}: expression dereferences vars.{root}.{prop}, but {root!r} is "
-                    "not a variable the plan holds — the read yields undefined"
+                    "not a variable the plan holds: the read yields undefined"
                 )
 
     # ---- 6. a connector container's field names are nested, never dotted ----
@@ -259,10 +259,10 @@ def main() -> int:
 
     # ---- 8. no probe value survives into a container -----------------------
     # A build that appends test entries to ask the validator what it wants can leave one
-    # behind: run 34613296008 shipped `message.body.content: "test"` on one of eight
-    # sends. `string` is deliberately absent from the list below, because 11883 legitimate
-    # `bindings[].type` values carry it; scoped to container field values, the remaining
-    # tokens matched exactly the one real case across 31 runs.
+    # behind, for example `message.body.content: "test"` on a send. `string` is
+    # deliberately absent from the list below, because legitimate `bindings[].type` values
+    # carry it; scoped to container field values, the remaining tokens match only a real
+    # probe leftover.
     for _stage, task in connector_tasks:
         for entry in P.task_inputs(task):
             body = entry.get("body")
@@ -298,11 +298,10 @@ def main() -> int:
 
     # ---- 9. a request body's own field names keep the connector's casing ----
     # The response side of this contract is section 1; the request side fails the same way
-    # and costs more. Run 34728302533 wrote `Message.ToRecipients` where the other 32 runs
-    # write `message.toRecipients`, and Outlook answered every send with
-    # `Property ToRecipients in payload has a value that does not match schema`. All seven
-    # routes faulted and the run scored 0.420. `validate` reports none of it: the shape is
-    # well formed, only the spelling is wrong.
+    # and costs more. A build that writes `Message.ToRecipients` where the connector
+    # expects `message.toRecipients` gets `Property ToRecipients in payload has a value
+    # that does not match schema` from Outlook on every send, so every route faults.
+    # `validate` reports none of it: the shape is well formed, only the spelling is wrong.
     #
     # Judged against the connector's own field catalogue rather than a casing convention.
     # The cached spec carries both spellings: the catalogue names the contract

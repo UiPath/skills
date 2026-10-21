@@ -3,13 +3,13 @@
 
 Two kinds of constant live here:
 
-1. **Transcribed from `fixtures/sdd.md`** — stage labels, task sets, SLA durations,
+1. **Transcribed from `fixtures/sdd.md`**: stage labels, task sets, SLA durations,
    guard literals, resource identities. Re-sweep these whenever the fixture changes;
    `sdd_facts()` below re-derives the volatile subset from the fixture at grade time
    and fails loudly when its parse comes up short, so a fixture reshuffle cannot
    silently turn an assertion into a no-op.
 
-2. **Read off the deployed tenant** — the twenty resource identities and the Outlook
+2. **Read off the deployed tenant**: the twenty resource identities and the Outlook
    connection. A tenant reinstall re-mints every one of them; re-sweep the fixture,
    then re-run `sweep_guids.py` and paste the result here.
 
@@ -86,7 +86,7 @@ NO_SLA_STAGES = {SLA_REVIEW}
 # Breach answered by starting a task INSIDE the breached stage: the task carries the
 # `sla-status-change` rule on its OWN entry. `validate` does not reject the same
 # trigger on a stage-entry rule instead, but that shape re-enters the stage and
-# re-runs its other tasks — a defect, not a second legal form (sla-response-shapes.md
+# re-runs its other tasks: a defect, not a second legal form (sla-response-shapes.md
 # defect 4).
 START_TASK_ON_BREACH = {
     "Escalate delayed application check": (CHECKING, "Application check SLA"),
@@ -131,7 +131,7 @@ DELAY_NOTE_OF_PHASE = {
 
 # --- Literal fidelity ---------------------------------------------------------
 # Each escalation task names its own phase as a plain string. Cross two of them and the
-# supplier is told the wrong phase missed its deadline — the same failure the per-phase
+# supplier is told the wrong phase missed its deadline: the same failure the per-phase
 # revised-date slots guard against, one field over. No indirection here, so the
 # assertion is exact.
 
@@ -153,7 +153,7 @@ STAGE_NAME_INPUT = "stageName"
 # review decision", 1229c1ed-... for "Record compliance review decision").
 #
 # BANK_VERIFIED_VALUE: the SDD's own account of SupplierErpRegistration's behavior
-# (an api-workflow, not an Action App — `tasks describe --type api-workflow --id
+# (an api-workflow, not an Action App: `tasks describe --type api-workflow --id
 # d5c07b08-...` confirms it, but its `bankVerificationStatus` output is a free
 # string with no enum to check against). The source states plainly that this
 # workflow answers "verified" unconditionally today, so this value documents a
@@ -239,7 +239,7 @@ RUN_ONCE_TASKS: set[str] = set()    # filled with STAGE_TASKS, below
 # --- Output reassigns ---------------------------------------------------------
 # Every `-> <variable>` row in the fixture's task Output tables, keyed by the variable
 # and listing the task(s) the SDD makes responsible for writing it. Asserting in this
-# direction — "each declared target IS written by its task" — catches a dropped output.
+# direction: "each declared target IS written by its task": catches a dropped output.
 # The reverse direction does not work: a task also carries auto-minted output slots
 # whose `var` equals their own `id` and which deliberately live outside the case's
 # variable namespace, so requiring every `var` to be a declared variable false-fails
@@ -264,7 +264,7 @@ EXPRESSION_RECIPIENT_TYPE = 3
 # --- Wire-path casing ---------------------------------------------------------
 # The connector's output path is lowercase `response.status`. A build that PascalCases
 # it validates clean and then dies at runtime. `displayName` is a human label and is
-# NOT part of this contract — asserting on it false-fails a correct build.
+# NOT part of this contract: asserting on it false-fails a correct build.
 
 CONNECTOR_OUTPUT_PATH = "response.status"
 CONNECTOR_OUTPUT_ROOT = "response"
@@ -307,15 +307,15 @@ _VARS_RE = re.compile(r"vars\.([A-Za-z_]\w*)")
 
 
 # A task's `**Inputs:**` table, keyed by the task display name its detail block sits under.
-# Both binding kinds count. An expression is the obvious one; a literal is not safer — the
+# Both binding kinds count. An expression is the obvious one; a literal is not safer: the
 # escalation task's `stageName | String | Checking the application` came out `""` in the
 # same build that dropped the expressions, so a delay note would have named no phase.
-# `—` is the only cell that means there is nothing to bind.
+# The dash placeholder (U+2014) is the only cell that means there is nothing to bind.
 _TASK_HEADING_RE = re.compile(r"^#{5}\s+Task\s+\S+:\s+(.+?)\s*$", re.M)
 _INPUT_ROW_RE = re.compile(
     r"^\|\s*([A-Za-z][\w.]*)\s*\|\s*[A-Za-z][\w\[\] ]*\s*\|\s*([^|]*?)\s*\|", re.M
 )
-_NO_BINDING = {"", "—", "-", "n/a"}
+_NO_BINDING = {"", "\u2014", "-", "n/a"}
 
 
 
@@ -554,8 +554,8 @@ def _bound_inputs(sdd: str) -> dict[str, set[str]]:
         if marker < 0:
             continue
         # Only the run of table lines that follows the marker. Reading to the end of the
-        # block swallows the next table — a persona roster and a connector roll-up both
-        # follow — and every header cell then reads as a field name.
+        # block swallows the next table (a persona roster and a connector roll-up both
+        # follow) and every header cell then reads as a field name.
         fields: set[str] = set()
         seen_row = False
         for line in block[marker:].splitlines()[1:]:
@@ -599,14 +599,14 @@ def _sdd_recipients(sdd: str) -> dict[str, str]:
 
 
 _CUSTOM_OUTPUT_RE = re.compile(
-    r"^\|\s*(?:—|-|\s)*\s*\|\s*([A-Za-z][\w]*)\s*=\s*([^|]+?)\s*\|", re.M
+    r"^\|\s*(?:\u2014|-|\s)*\s*\|\s*([A-Za-z][\w]*)\s*=\s*([^|]+?)\s*\|", re.M
 )
 
 
 def _sdd_custom_outputs(sdd: str) -> dict[str, list[str]]:
     """Task name -> the case variables its Outputs table assigns with `=`.
 
-    An Outputs row shaped `| — | someVar = <expr> |` is a custom output: it writes a case
+    An Outputs row shaped `| <placeholder> | someVar = <expr> |` is a custom output: it writes a case
     variable rather than extracting a task field into one. `->` rows are the other kind and
     are covered elsewhere.
     """
@@ -751,7 +751,7 @@ def sdd_facts() -> dict:
         )
     # A floor, not a count. An agent shipped this case with all three of its agent task's
     # inputs emitted as "", the job faulted on `Field required [input_value={}]`, and every
-    # grader stayed green — nothing was reading the input side at all.
+    # grader stayed green: nothing was reading the input side at all.
     if len(bound_inputs) < 10:
         _fail(
             "fixture parse error: expected >=10 tasks with an `**Inputs:**` table binding an "

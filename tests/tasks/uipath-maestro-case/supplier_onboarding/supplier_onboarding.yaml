@@ -1,7 +1,7 @@
 task_id: skill-case-supplier-onboarding-build-only
 description: >
-  GREENFIELD BUILD FROM AN SDD, LIVE TENANT, BUILD-ONLY — build the SupplierOnboarding
-  case from a 2083-line approved SDD whose twenty resource identities and Outlook
+  GREENFIELD BUILD FROM AN SDD, LIVE TENANT, BUILD-ONLY: build the SupplierOnboarding
+  case from a 2150-line approved SDD whose twenty resource identities and Outlook
   connection are real, then assert five things the build can get wrong while
   `uip maestro case validate` still reports Valid. The withdrawal scope is the
   centrepiece: the source allows a supplier to withdraw during the three review phases
@@ -10,7 +10,7 @@ description: >
   enums rather than invented business labels, four phase breaches that each start a
   task inside the breached stage, per-phase revised-date slots that must not cross, and
   connector wire paths whose casing is load-bearing at runtime. Stops at validate; no
-  debug, no publish — this task grades only what `sdd convert` + hand-authoring
+  debug, no publish. This task grades only what `sdd convert` + hand-authoring
   produce against the generated caseplan.json, never a live debug session.
 tags:
   - uipath-maestro-case
@@ -27,21 +27,14 @@ tags:
   - feature:api-workflow
 
 # Sized from the two existing golden-rebuild tasks: cm_golden_expense (8 stages / 15
-# tasks) measures ~60 min healthy, contract_execution (8 / 30) measures 92-150 min.
-# This case is 8 / 32 with twenty resources to describe, so it sits at the upper end —
-# confirmed directly: a hand-authored build with no sdd convert path available (run
-# 35542776064, published CLI, no PR overlay) hit 5400s mid-build at 501 commands with
-# no crash and no auth failure, the same "healthy long build killed" failure mode this
-# comment already warned about. 9000s covers contract_execution's own measured upper
-# bound with headroom.
+# tasks) measures about 60 min healthy, contract_execution (8 / 30) measures 92 to 150
+# min. This case is 8 / 33 with twenty resources to describe, so it sits at the upper end,
+# and 9000s covers contract_execution's measured upper bound with headroom.
 #
-# turn_timeout MUST NOT be smaller than task_timeout. One harness "turn" is the ENTIRE
-# agent query stream, so turn_timeout caps the whole session and is the binding limit.
-# A smaller value silently makes task_timeout dead config and kills a healthy long
-# build with status=ERROR / score 0.0 regardless of work completed (observed by the
-# contract_execution author 2026-08-21: killed at 9000s after 492 turns and 297
-# commands, mid-caseplan, nothing graded). cm_golden_expense on main still carries
-# that mismatch — do not copy its numbers.
+# turn_timeout must not be smaller than task_timeout. One harness "turn" is the entire
+# agent query stream, so turn_timeout caps the whole session and is the binding limit. A
+# smaller value silently makes task_timeout dead config and kills a healthy long build
+# with status=ERROR and score 0.0, regardless of the work completed.
 #
 # Launch with CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000 so a caseplan-sized
 # extended-thinking response is not fatal.
@@ -52,7 +45,7 @@ run_limits:
 
 # The case skill delegates heavy legs (reference reading, per-resource schema pulls)
 # to sub-agents; without Agent the whole build runs inline in one context and dies to
-# "Prompt is too long". Extends the experiment's allowed_tools — keep the base list in
+# "Prompt is too long". Extends the experiment's allowed_tools; keep the base list in
 # sync with experiments/default.yaml.
 agent:
   allowed_tools: ["Skill", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "Agent"]
@@ -63,7 +56,7 @@ sandbox:
       path: fixtures
 
 initial_prompt: |
-  I have an approved SDD for our supplier-onboarding case-management solution — it is
+  I have an approved SDD for our supplier-onboarding case-management solution. It is
   staged as `sdd.md` in this folder. Build a UiPath Case Management solution named
   "SupplierOnboarding" containing a project also named "SupplierOnboarding" from it.
 
@@ -72,7 +65,7 @@ initial_prompt: |
 
   The tenant is LIVE and already hosts every referenced resource: the folder paths,
   resource identities, connection ID, and connector activity type ID in the SDD are
-  real. Resolve every task and connector rule against them — skeleton or placeholder
+  real. Resolve every task and connector rule against them. Skeleton or placeholder
   bindings are NOT acceptable.
 
   Important:
@@ -81,19 +74,19 @@ initial_prompt: |
   - Treat all hard stops after the SDD as pre-approved, including Phase 1 planning
     approval, Phase 2 publish-for-review, and Phase 5 publish. Choose the continue /
     skip-publish path and keep going.
-  - Do NOT call AskUserQuestion — it is not available in this harness.
+  - Do NOT call AskUserQuestion. It is not available in this harness.
   - Do NOT edit `sdd.md`. It is the input, not a working file.
   - Do NOT publish the solution and do NOT run `uip maestro case debug` (this case
     suspends on fourteen human tasks and seven SLA clocks).
   - Persist each connector's `case spec` response before writing it into
-    the case plan — never reconstruct it from memory.
+    the case plan. Never reconstruct it from memory.
   - Finish with
     `uip maestro case validate <case plan file in SupplierOnboarding/SupplierOnboarding/> --output json`
     passing on the resulting case plan.
 
 success_criteria:
   - type: command_executed
-    description: "Agent ran uip maestro case validate on the built case (advisory — outcome graded below)"
+    description: "Agent ran uip maestro case validate on the built case (advisory; outcome graded below)"
     tool_name: "Bash"
     command_pattern: 'uip\s+maestro\s+case\s+validate[^\n]*SupplierOnboarding/SupplierOnboarding/caseplan\.(json|case)'
     min_count: 1
@@ -109,7 +102,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd — a plain-profile Valid does not close the build (SKILL.md Rule 7)"
+    description: "caseplan is complete against the staged sdd.md under validate --strict --sdd: a plain-profile Valid does not close the build (SKILL.md Rule 7)"
     command: >-
       p=$(ls SupplierOnboarding/SupplierOnboarding/caseplan.case SupplierOnboarding/SupplierOnboarding/caseplan.json 2>/dev/null | head -1); uip maestro case validate "$p"
       --strict --sdd $(find . -name sdd.md -not -path '*/.venv/*' | head -1) --output json
@@ -120,7 +113,7 @@ success_criteria:
 
   - type: run_command
     description: >
-      sdd.md is byte-identical to the staged fixture — the SDD is the input, and a build
+      sdd.md is byte-identical to the staged fixture: the SDD is the input, and a build
       that edits its own input has moved the goalposts rather than met them
     command: "test \"$(shasum -a 256 sdd.md | cut -d' ' -f1)\" = 9c1939b9d44dd3dd3a5f421cddbbbc37defbe8166dc8a658323cd9e89dc44fde"
     timeout: 15
@@ -171,7 +164,7 @@ success_criteria:
 
   - type: run_command
     description: >
-      32 tasks in their declared stages and classes, all 21 resource keys bound with no
+      33 tasks in their declared stages and classes, all 21 resource keys bound with no
       skeletons, every declared output written by the task the SDD assigns it to, the
       three expression recipients carrying the {Type,Value} object (validate's full
       profile does NOT check data.recipient), ten run-once tasks, the child case task

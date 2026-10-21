@@ -10,7 +10,7 @@ Seven assertions. `uip maestro case validate` accepts every failure below.
     none.
  3. Four phase breaches start a task INSIDE the breached stage: the task holds the
     `sla-status-change` rule on its OWN entry. `uip maestro case validate` does not
-    reject a stage-entry rule carrying the same trigger instead — but that shape
+    reject a stage-entry rule carrying the same trigger instead: but that shape
     re-enters the stage and re-runs its other tasks, a real defect the skill's own
     references name (`sla-response-shapes.md` defect 4), not a second legal form.
  4. The case breach enters the oversight lane, exactly once, non-interruptively.
@@ -57,7 +57,7 @@ def main() -> int:
     root = P.sla_rules(caseplan)
     if not root:
         problems.append(
-            "the plan root carries no slaRules — the overall 15-day target was dropped, "
+            "the plan root carries no slaRules: the overall 15-day target was dropped, "
             "and with it every overall-target response"
         )
     else:
@@ -91,7 +91,7 @@ def main() -> int:
             continue
         rules = P.sla_rules(node)
         if not rules:
-            problems.append(f"stage {label!r} carries no slaRules — its {count}{unit} target was dropped")
+            problems.append(f"stage {label!r} carries no slaRules: its {count}{unit} target was dropped")
             continue
         actual = [(r.get("count"), str(r.get("unit"))) for r in rules]
         if (count, unit) not in actual:
@@ -114,7 +114,7 @@ def main() -> int:
         node = by_label.get(label)
         if node is not None and P.sla_rules(node):
             problems.append(
-                f"stage {label!r} declares an SLA; the SDD gives it none — it is the "
+                f"stage {label!r} declares an SLA; the SDD gives it none: it is the "
                 "response to a breach, not a thing that can breach"
             )
 
@@ -143,9 +143,9 @@ def main() -> int:
             }
             problems.append(
                 f"task {task_name!r} has no `sla-status-change` entry rule (rules: "
-                f"{sorted(names)}) — it never activates when the phase misses its deadline"
+                f"{sorted(names)}): it never activates when the phase misses its deadline"
             )
-        # The rule names the SLA by id, not the stage — so "own stage's SLA" means the
+        # The rule names the SLA by id, not the stage: so "own stage's SLA" means the
         # id has to be one this stage declares.
         own = P.sla_ids_of(node)
         listened = {
@@ -167,7 +167,7 @@ def main() -> int:
             }
             all_slas.update({sid: "root" for sid in P.sla_ids_of(caseplan)})
             problems.append(
-                f"task {task_name!r} listens to SLA(s) {sorted(foreign)} — owned by "
+                f"task {task_name!r} listens to SLA(s) {sorted(foreign)}: owned by "
                 f"{sorted({all_slas.get(s, 'unknown') for s in foreign})}, not by "
                 f"{stage_label!r}. A phase's escalation must fire on its own breach, or "
                 "the note names a phase that did not run late."
@@ -229,7 +229,7 @@ def main() -> int:
                 if action and action not in ("notify", "notification", ""):
                     problems.append(
                         f"stage {label!r} breach escalation acts by {action!r}; a wrap-up "
-                        "phase notifies only — a delay apology promising a new expected "
+                        "phase notifies only: a delay apology promising a new expected "
                         "date is wrong for an application that is already closed"
                     )
         started = [
@@ -302,10 +302,10 @@ def main() -> int:
                 f"{phase!r}: delay note {E.DELAY_NOTE_OF_PHASE[phase]!r} does not read "
                 f"{slot!r}"
                 + (
-                    f" — it reads {sorted(others)}, which belongs to another phase, so the "
+                    f": it reads {sorted(others)}, which belongs to another phase, so the "
                     "supplier is told a date this phase never committed to"
                     if others
-                    else " — the note would go out with the new expected date blank"
+                    else ": the note would go out with the new expected date blank"
                 )
             )
 
@@ -316,7 +316,7 @@ def main() -> int:
     )
     if not problems:
         print(
-            f"OK: SLA responses survived — {E.CASE_SLA[0]}{E.CASE_SLA[1]} case target "
+            f"OK: SLA responses survived: {E.CASE_SLA[0]}{E.CASE_SLA[1]} case target "
             f"warning at {E.CASE_AT_RISK_PERCENT}%, {len(E.STAGE_SLA)} stage SLAs at "
             f"{E.STAGE_AT_RISK_PERCENT}%, {len(E.START_TASK_ON_BREACH)} phase breaches "
             "starting a task on that stage's own event, one non-interrupting oversight "

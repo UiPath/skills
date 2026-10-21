@@ -109,7 +109,7 @@ def task_skip_condition(task: dict) -> str:
     `skipCondition` is a sibling of `data`, not a key inside it (case-schema.md §
     Envelope fields). A copy left under `data` is NOT a second legal spelling: the
     platform reads the task envelope for this field and never looks inside `data` for
-    it, so a `data.skipCondition` is dead config `validate` does not reject — reading it
+    it, so a `data.skipCondition` is dead config `validate` does not reject: reading it
     here would make this function report the guard as present and enforced when at
     runtime it never fires at all.
     """
@@ -206,7 +206,7 @@ def stage_selector_spellings(plan: dict) -> list[tuple]:
 def selected_task_ids(cond: dict) -> set[str]:
     """Task ids a `selected-tasks-completed` rule points at.
 
-    The emitted key is `selectedTasksIds` — plural on BOTH words. Reading only
+    The emitted key is `selectedTasksIds`: plural on BOTH words. Reading only
     `selectedTaskIds` matches nothing and every task-selector assertion silently
     passes (verified against a built plan: 11 rules, all spelled `selectedTasksIds`).
     """
@@ -224,7 +224,7 @@ def selected_task_ids(cond: dict) -> set[str]:
 def sla_ids_referenced(cond: dict) -> set[str]:
     """SLA ids an `sla-status-change` rule listens to.
 
-    The rule names the SLA directly via `slaId` — it carries no stage reference at
+    The rule names the SLA directly via `slaId`: it carries no stage reference at
     all (verified against a built plan: 5 rules, all `{id, rule, slaId}`). An
     assertion written against a stage selector here can never fire.
     """
@@ -368,10 +368,9 @@ def activity_type_ids(task: dict) -> set[str]:
     levels down inside `data.context[].body`, under a different parent per context
     entry. Walking for the key is what keeps this independent of that nesting.
 
-    Builds write `uiPathActivityTypeId` and `UiPathActivityTypeId`, 290 and 32 of the
-    340 connector tasks on hand, and both reach the runtime: four runs delivered mail
-    with the lowercase spelling and run 34632354461 carried all seven routes with the
-    capital one. Matching one spelling reported the other as no activity type at all.
+    Builds write `uiPathActivityTypeId` and `UiPathActivityTypeId`, and both reach the
+    runtime: mail is delivered with the lowercase spelling and with the capital one.
+    Matching one spelling reported the other as no activity type at all.
     """
     found: set[str] = set()
 
@@ -393,7 +392,7 @@ def output_targets(task: dict) -> set[str]:
 
     A task's `data.outputs` holds two kinds of entry. One declares the task's raw
     output surface (`name`, `type: "jsonSchema"`, no `var`) and writes nowhere. The
-    other is a reassign wire and carries `var` — the case variable the value lands in.
+    other is a reassign wire and carries `var`: the case variable the value lands in.
     Only the second kind has a target.
 
     `target` and `originalVar` are NOT targets: they hold the wire's own output id
@@ -414,8 +413,8 @@ def runtime_readable_names(plan: dict) -> set[str]:
     Wider than the case's variable namespace. A task output row also publishes its own
     slot: the row carries `var` and `target` (`=response2`), and the engine writes that
     name back before later rows on the same task evaluate, so a row reading
-    `=js:vars.response2.status` resolves. Run 33981915823 ships eight connector tasks
-    shaped that way, each with a `response` row and a later row reading it.
+    `=js:vars.response2.status` resolves. A connector task is shaped that way, with a
+    `response` row and a later row reading it.
 
     `variable_names` and `variable_ids` answer the narrower question, which stays the
     right one wherever the assertion is about the case's declared variables.
@@ -448,7 +447,7 @@ def output_wire_paths(task: dict) -> set[str]:
 def resource_keys(plan: dict) -> set[str]:
     """Every composite resource key the plan's bindings carry.
 
-    The caseplan holds no raw resource GUIDs — a non-connector task binds through
+    The caseplan holds no raw resource GUIDs: a non-connector task binds through
     `<folderPath>.<name>`, and the connector binds its connection UUID.
     """
     return {
@@ -461,7 +460,7 @@ def resource_keys(plan: dict) -> set[str]:
 def output_wire_names(task: dict) -> set[str]:
     """Wire-level names only.
 
-    `displayName` is a human label the skill leaves free — reading it here would
+    `displayName` is a human label the skill leaves free: reading it here would
     false-fail a build that labels an output `Response` while wiring `response`.
     """
     out = set()
@@ -489,9 +488,8 @@ def binding_defaults(plan: dict) -> set[str]:
 
 _VARS_RE = re.compile(r"vars\.([A-Za-z_]\w*)")
 # Either quote style. A build that writes `=== 'approve'` routes exactly as one that
-# writes `=== "approve"`, and a double-quote-only pattern read run 34613299132 as
-# having no literals at all: 19 guards, zero recognised, on a plan whose seven routes
-# had just completed.
+# writes `=== "approve"`, and a double-quote-only pattern would read such a plan as
+# having no literals at all.
 _LITERAL_RE = re.compile(r"([!=])==\s*(['\"])(.*?)\2")
 
 

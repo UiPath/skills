@@ -50,7 +50,7 @@ def main() -> int:
     if missing:
         problems.append(f"missing stage(s) {missing}")
     if extra:
-        problems.append(f"unexpected stage(s) {extra} — the SDD declares exactly 8")
+        problems.append(f"unexpected stage(s) {extra}: the SDD declares exactly 8")
 
     for lbl, _slug, kind in E.STAGES:
         node = by_label.get(lbl)
@@ -61,7 +61,7 @@ def main() -> int:
             problems.append(
                 f"stage {lbl!r} is {actual}, the SDD makes it {kind}"
                 + (
-                    " — a primary stage is required for case completion, so a normal "
+                    ": a primary stage is required for case completion, so a normal "
                     "application would never close"
                     if kind == "secondary"
                     else ""
@@ -80,7 +80,7 @@ def main() -> int:
                 "oversight so the application still runs on to its own disposition"
             )
         if not P.entry_conditions(lane):
-            problems.append(f"{E.SLA_REVIEW!r} has no entry condition — it can never open")
+            problems.append(f"{E.SLA_REVIEW!r} has no entry condition: it can never open")
 
     for lbl in E.INTERRUPTING_SECONDARY:
         node = by_label.get(lbl)
@@ -103,7 +103,7 @@ def main() -> int:
         if set(origins) != wanted:
             problems.append(
                 f"{E.REJECTED!r} entry origins are {sorted(origins)}; the SDD reaches it "
-                f"from {sorted(wanted)} — three phases producing one disposition"
+                f"from {sorted(wanted)}: three phases producing one disposition"
             )
         for origin, expr in origins.items():
             if not expr:
@@ -121,7 +121,7 @@ def main() -> int:
         ]
         if not loop:
             problems.append(
-                f"{E.CHECKING!r} has no entry from {E.BUYER!r} — send-back for "
+                f"{E.CHECKING!r} has no entry from {E.BUYER!r}: send-back for "
                 "corrections cannot return the application to the checks"
             )
         else:
@@ -133,7 +133,7 @@ def main() -> int:
                     )
         if not any("case-entered" in P.rule_names(c) for c in conds):
             problems.append(
-                f"{E.CHECKING!r} has no `case-entered` entry — a new application never "
+                f"{E.CHECKING!r} has no `case-entered` entry: a new application never "
                 "reaches the first phase"
             )
 
@@ -144,7 +144,7 @@ def main() -> int:
         if "user-selected-stage" not in names:
             problems.append(
                 f"{E.WITHDRAWN!r} is not entered by `user-selected-stage` (rules: "
-                f"{sorted(names)}) — no connector, app or event in the source signals a "
+                f"{sorted(names)}): no connector, app or event in the source signals a "
                 "withdrawal, so a person has to pick it"
             )
 
@@ -173,8 +173,8 @@ def main() -> int:
     completing = [c for c in exits if c.get("marksCaseComplete") or c.get("marksComplete")]
     if len(completing) != 1:
         problems.append(
-            f"{len(completing)} case exit(s) mark the case complete; exactly one should "
-            "— rejection and withdrawal close the application without completing it"
+            f"{len(completing)} case exit(s) mark the case complete; exactly one should"
+            ": rejection and withdrawal close the application without completing it"
         )
     else:
         names = P.rule_names(completing[0])
@@ -287,7 +287,7 @@ def main() -> int:
     print(f"stages: {sorted(by_label)}")
     if not problems:
         print(
-            "OK: lifecycle survived — 8 stages (5 primary / 3 secondary), the oversight "
+            "OK: lifecycle survived: 8 stages (5 primary / 3 secondary), the oversight "
             "lane parallel and non-interrupting, rejection guarded from three origins, "
             "the corrections loop back into the checks, withdrawal from the stage picker "
             f"in exactly {sorted(E.WAIT_FOR_USER_STAGES)}, 3 case exits with one "

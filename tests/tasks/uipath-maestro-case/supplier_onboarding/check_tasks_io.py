@@ -11,14 +11,14 @@
     names is a separate, misattributed-write finding.
  4. The three expression-recipient tasks carry `data.recipient` as the object
     `{Type: 3, Value: "=vars.assignedBuyerEmail"}`. **`uip maestro case validate`
-    in its default (full) profile does not check `data.recipient` at all** — a
+    in its default (full) profile does not check `data.recipient` at all**: a
     bare string, or a dropped field, passes validation and then the task reaches
     nobody. (`--strict` does check two specific malformed shapes; this task's
     prompt never asks for `--strict`, so the default-profile gap is what the
     build is graded against.) The eleven role-assigned tasks are not required to
     carry one: the skill's own references disagree on whether a role becomes
     `Type 1` or no recipient at all, so a grader must not pick a side. It can
-    still reject the one shape both readings rule out — a role name sitting in
+    still reject the one shape both readings rule out: a role name sitting in
     `Type 2`, which is the email type, so the platform reads "Procurement
     Operations Lead" as a literal mailbox and the task reaches nobody.
  5. ERP registration and the child case run only once. A re-entered setup phase
@@ -32,7 +32,7 @@
     the case in its first stage. `validate` accepts an empty input, and until this
     check existed nothing else read the input side at all.
  8. A role-routed task's `data.recipient` is neither a placeholder value (the
-    SDD's own em-dash) nor, for a `Role:`-prefixed target, the wrong Type — the
+    SDD's own dash placeholder) nor, for a `Role:`-prefixed target, the wrong Type: the
     engine's own assignment criteria (`AllUsers` for Type 1, `SingleUser`
     otherwise) means the wrong Type silently narrows a group task to one person
     or nobody, and `validate` never reads this field either way.
@@ -45,15 +45,15 @@
     (`Task has no entry rules`) so a ruleless task still reports `Valid`; at
     runtime the task never starts, its stage's exit condition is never
     satisfiable, and `case debug` hangs with no incident and nothing to read.
-11. A custom output's own expression does not read the case variable it writes —
+11. A custom output's own expression does not read the case variable it writes:
     that variable is produced by nothing else, so the expression evaluates empty
     on every run regardless of how the task ends.
 13. Every task's `description` carries the SDD's own `**Description:**` line (or,
     absent that, its `**Design Rationale:**`) word for word, and every task's
-    Skip Condition matches the SDD's `**Task envelope**` table exactly — a
+    Skip Condition matches the SDD's `**Task envelope**` table exactly: a
     dropped or truncated field is invisible to `validate`.
 14. Every connector task names an activity type, and every one of them names the
-    same Outlook operation the SDD declares — a different `uiPathActivityTypeId`
+    same Outlook operation the SDD declares: a different `uiPathActivityTypeId`
     calls a different Outlook endpoint with this task's own payload, and the
     plan still validates.
 15. A task's optional `actionCatalogName` names a resource the plan actually
@@ -101,14 +101,14 @@ def main() -> int:
             if P.task_type(task) != ttype:
                 problems.append(
                     f"task {name!r} is type {P.task_type(task)!r}; the SDD makes it "
-                    f"{ttype!r} — a different class runs on a different runtime"
+                    f"{ttype!r}: a different class runs on a different runtime"
                 )
             if bool(task.get("isRequired")) != required:
                 problems.append(
                     f"task {name!r} isRequired={bool(task.get('isRequired'))}; the SDD "
                     f"says {required}"
                     + (
-                        " — a required escalation task stops the stage completing unless "
+                        ": a required escalation task stops the stage completing unless "
                         "the phase breached"
                         if not required
                         else ""
@@ -154,7 +154,7 @@ def main() -> int:
     ]
     if skeletons:
         problems.append(
-            f"{len(skeletons)} task(s) are skeletons — every resource in this SDD is "
+            f"{len(skeletons)} task(s) are skeletons: every resource in this SDD is "
             f"deployed, so none should be unresolved: {skeletons}"
         )
 
@@ -176,7 +176,7 @@ def main() -> int:
         if not actual:
             problems.append(
                 f"nothing in the plan writes {target!r}; the SDD assigns it to "
-                f"{expected_tasks} — every task that reads it gets nothing"
+                f"{expected_tasks}: every task that reads it gets nothing"
             )
             continue
         dropped = sorted(set(expected_tasks) - actual)
@@ -213,7 +213,7 @@ def main() -> int:
         if not isinstance(recipient, dict):
             problems.append(
                 f"task {name!r} `data.recipient` is {type(recipient).__name__} "
-                f"{recipient!r}; it must be the object {{Type, Value}} — Studio Web's canvas "
+                f"{recipient!r}; it must be the object {{Type, Value}}: Studio Web's canvas "
                 "fails silently on any other shape and `validate` misses it"
             )
             continue
@@ -300,7 +300,7 @@ def main() -> int:
     # ---- 8b. a routed task reaches a real recipient -------------------------
     # The engine logs `Recipient=---` and reports the assignment a success, so the task
     # exists, sits in nobody's queue, and the run waits for a person who was never asked.
-    # `validate` does not read this field. The SDD's own em-dash means "not applicable"
+    # `validate` does not read this field. The SDD's own dash placeholder means "not applicable"
     # and never reaches a task it routes.
     placeholders = {"", "-", "--", "---", "\u2014", "\u2013", "n/a", "none", "null"}
     for name, routed_to in sorted(facts["recipients"].items()):
@@ -334,7 +334,7 @@ def main() -> int:
                 )
 
     # ---- 8c. the SDD's `=` custom outputs are emitted ----------------------
-    # An Outputs row shaped `| — | buyerDecision = <expr> |` writes a case variable when
+    # An Outputs row shaped `| <placeholder> | buyerDecision = <expr> |` writes a case variable when
     # the task completes. A run where the task was completed by hand and the variable
     # stayed None showed `taskCompletedOutputs: null` for that task while an agent task in
     # the same instance returned its outputs in full, so the channel works and the entry
@@ -399,8 +399,8 @@ def main() -> int:
     # What belongs in `description` is the SDD's own `**Description:**` line, word for
     # word. `implementation.md` Check 18 falls back to the Design Rationale only for a
     # task that writes no description, so a task carrying both is graded against the
-    # description. Grading every task against the rationale reported all 33 of
-    # 34873903981 as fragments while every one of them matched its description exactly.
+    # description. Grading every task against the rationale reports every one of them as
+    # a fragment although each matches its description exactly.
     no_description, partial = [], []
     for _stage, task in P.all_tasks(caseplan):
         name = P.task_name(task)
