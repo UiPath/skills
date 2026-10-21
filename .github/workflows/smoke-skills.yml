@@ -381,16 +381,9 @@ jobs:
       - name: Verify Docker is available
         run: docker info > /dev/null
 
-      # Host coder-eval CLI = pinned wheel from the Azure Artifacts `coder_eval`
-      # feed; its UiPath deps resolve from the ml-packages feed (both as extra
-      # indexes). No source checkout. The [codex] extra is required even though the
-      # agent itself runs inside the container: the docker driver imports the selected
-      # agent class on the HOST before dispatching work.
-      - name: Install coder-eval
-        run: uv pip install --system --prerelease=allow "coder-eval[codex,litellm]==${{ steps.ceref.outputs.version }}"
-
       # Pull the pinned agent image from GHCR (never built from source); the
-      # skills smoke image extends it below. Needs read:packages only —
+      # skills smoke image extends it below, and its frozen deps constrain the
+      # host install. Needs read:packages only —
       # GH_PACKAGES_TOKEN, never the repo-write PAT: this workflow is
       # `pull_request`-triggered, so anyone who can push a branch to this
       # public repo can read the secret it is handed.
@@ -398,6 +391,21 @@ jobs:
         run: |
           echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker pull ghcr.io/uipath/coder-eval-agent:${{ steps.ceref.outputs.version }}
+
+      # Host coder-eval CLI = pinned wheel from the Azure Artifacts `coder_eval`
+      # feed; its UiPath deps resolve from the ml-packages feed (both as extra
+      # indexes). No source checkout. Constrained to the image's frozen deps so
+      # host and container resolve the same versions. The [codex] extra is
+      # required even though the agent itself runs inside the container: the
+      # docker driver imports the selected agent class on the HOST before
+      # dispatching work.
+      - name: Install coder-eval
+        env:
+          VERSION: ${{ steps.ceref.outputs.version }}
+        run: |
+          set -euo pipefail
+          docker run --rm --entrypoint pip "ghcr.io/uipath/coder-eval-agent:$VERSION" freeze --exclude-editable | grep -vE '^coder-eval| @ ' > "$RUNNER_TEMP/ce-constraints.txt"
+          uv pip install --system --prerelease=allow -c "$RUNNER_TEMP/ce-constraints.txt" "coder-eval[codex,litellm]==$VERSION"
 
       # Build custom smoke image extending coder-eval-agent with @uipath/cli,
       # every whitelisted tool plugin from GitHub Packages @dev, and the latest
@@ -773,9 +781,21 @@ jobs:
       - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a  # v4.2.0
 
       # Host coder-eval CLI = pinned wheel (coder_eval feed + ml-packages for
-      # deps). `coder-eval plan` validates schemas on the runner -- no image.
+      # deps), constrained to the dependency set frozen into the pinned agent
+      # image so the schema check resolves the same deps the tasks run under.
+      # `coder-eval plan` itself validates on the runner -- the image is only
+      # the constraints source. GH_PACKAGES_TOKEN (read:packages) only; see
+      # the e2e job's pull step for why never the repo-write PAT.
       - name: Install coder-eval
-        run: uv pip install --system "coder-eval[litellm]==${{ steps.ceref.outputs.version }}"
+        env:
+          VERSION: ${{ steps.ceref.outputs.version }}
+        run: |
+          set -euo pipefail
+          img="ghcr.io/uipath/coder-eval-agent:$VERSION"
+          echo "${{ secrets.GH_PACKAGES_TOKEN || secrets.GH_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull "$img"
+          docker run --rm --entrypoint pip "$img" freeze --exclude-editable | grep -vE '^coder-eval| @ ' > "$RUNNER_TEMP/ce-constraints.txt"
+          uv pip install --system -c "$RUNNER_TEMP/ce-constraints.txt" "coder-eval[litellm]==$VERSION"
 
       - name: Validate every task YAML against the pinned coder_eval schema
         # `coder-eval plan` exits non-zero if any file fails to load under the
