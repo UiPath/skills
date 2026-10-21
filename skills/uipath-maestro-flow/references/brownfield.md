@@ -61,6 +61,11 @@ the project there is a second Flow project.
 Compile the baseline before the edit, never after: merge diffs edited against
 it, so a baseline of the edited source drops your change.
 
+With an edited `.flow.ts` and `--baseline-from`, `merge` runs `check` on the edited source and refuses the write on an error in a node or subflow the edit changed (`N error(s) in nodes merge takes from the edited flow`), and on one it cannot place that the edit introduced.
+An error on a node, or in a subflow, the edit did not touch prints as `DRAFT_NODE_KEPT` and the original is kept; a finding `merge` cannot place on a node prints as `CHECK_FINDING_UNPLACED` when the original's own round trip reports it too.
+Fix a finding when you edit its node.
+Needs `@uipath/maestro-builder-sdk` 6.44.4 or later; an older SDK refuses the write for any error it cannot place on an untouched root node, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+
 If the edited compile fails `check` only with `HTTP_READ_WITHOUT_RETURNS`, the
 deployed HTTP node has no body schema
 ([builder-sdk#1319](https://github.com/UiPath/builder-sdk/issues/1319)).
@@ -328,18 +333,40 @@ its case below says to; every other edit goes through merge.
   reachable`; recompiling drops that node. If it is your edit target, connect
   it in the `.flow` first or edit that node's JSON directly.
 - A `(type, typeVersion)` **this SDK does not bundle**, for a type it bundles
-  at other versions — for example `uipath.human-in-the-loop.quick-form@1.6`
-  (written by `node add`) when the SDK ships `1.0` and `1.1`. Versions resolve
-  exactly, so the source **omits** that `{ version }` and the node compiles at
-  the SDK's default. `merge --baseline` keeps the node at the file's version,
-  with the file's definition, as long as you leave it untouched; a node you
-  edit moves to the SDK's version. If it is your edit target, edit that
-  node's JSON in the `.flow` directly, or tell the user the edit moves it from
-  the file's version (here `1.6`) to the SDK's default. A type the SDK bundles
-  at no version (a connector, a published process or agent) keeps its pin.
-  A pin like that written back by hand is still refused by `compile`, which
-  names the bundled versions; for a registered family `check` reports it first
-  as `NODE_VERSION_UNREGISTERED`.
+  at other versions, **and the file holds no definition for it**. Versions
+  resolve exactly, so the source **omits** that `{ version }` and the node
+  compiles at the SDK's default. `merge --baseline` keeps an untouched node at
+  the file's version; a node you edit moves to the SDK's version, and merge
+  warns `node "<id>" moved <type>@<old> -> <new>`. If it is your edit target,
+  edit that node's JSON in the `.flow` directly, or tell the user the edit
+  moves it to the SDK's default. A type the SDK bundles at no version (a
+  connector, a published process or agent) keeps its pin.
+
+  When the file *does* hold the definition (the normal case: every `.flow`
+  carries one per node type and version it uses), the node does not move.
+  Decompile copies that definition into a `const`, passes it to
+  `.definitions([...])`, and keeps the pin; compile resolves the pin against
+  it. For example `uipath.human-in-the-loop.quick-form@1.6`, written by
+  `node add`, when the SDK ships `1.0` and `1.1`:
+
+  ```ts
+  const quickFormV1_6Definition = { nodeType: "uipath.human-in-the-loop.quick-form", version: "1.6", ... };
+  export default flow("review")
+    .definitions([quickFormV1_6Definition])
+    .step("review1", hitl({ ... }), { version: "1.6" })
+  ```
+
+  The node keeps `1.6` even when you edit it. Leave the `const` and the
+  `.definitions([...])` call as decompile wrote them: without them, `compile`
+  refuses the pin and names the versions it can resolve (for a registered
+  family, `check` reports it first as `NODE_VERSION_UNREGISTERED`). The SDK
+  still writes an edited node's inputs from its own factory (`hitl()` here).
+  When the carried definition's inputs differ from that factory's version,
+  decompile warns `node "<id>" keeps <type>@<version> from the file's
+  definitions[]; its inputs differ from <sdk-version> (<fields>)`. If that
+  node is your edit target, edit its inputs in the merged `.flow` JSON
+  directly. `rawNode` is not a substitute here: it cannot yet route a human
+  task's outcome exits.
 - A **file-format version outside the writable band** (below `1.6`) — the source
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and
@@ -352,12 +379,6 @@ its case below says to; every other edit goes through merge.
   drops that edge, and `merge` writes the loss into the original. If your edit
   touches that part of the flow, change the `.flow` JSON there directly instead
   of round-tripping it through the source.
-- A **switch whose cases carry their own conditions** — for example `High:
-  amount > 100` and `Low: amount <= 100`. `.switch(name, on, cases)` models
-  only `on === value`, so the decompiled `on` and `value`s are placeholders
-  (with a `/* TODO: this switch's case expressions are not a uniform … */`
-  comment). Recompiling fails or picks a different case, even when your edit is
-  somewhere else in the flow, so make the change in the `.flow` JSON directly.
 - A **context-index setting `context: [...]` cannot express**. Decompile reads
   an index's retrieval settings (mode, query, threshold, result count, file
   extension) from `<agent source>/resources/<source>/resource.json`, so keep the
@@ -388,7 +409,7 @@ Decompiled source carries that layout as a `.layout({ nodes })` block, one long-
 Keep it.
 Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), avoiding any x where (x − 256) is a multiple of 288 on y = 144 or 304, which `merge` reads as a compile placeholder and moves.
 At the root, an existing node's position and size come from the original whatever the source says, so moving one or resizing a container the edit grew in the source does nothing; set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
-Inside a subflow the source's entries land, because `merge` takes subflows from the edited compile whole.
+Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.4 or later; an older SDK takes every subflow from the edited compile, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).
 A step the edit removes must lose its entry, or compile fails on the unknown key.
 Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim).
 

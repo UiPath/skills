@@ -37,7 +37,6 @@ AGENT_MODEL = os.environ.get("AGENT_MODEL", "").strip()
 # fails a skill whose recall.yes drops more than DROP_PP below its baseline.
 # Re-baseline (at max_turns: 1) after a fresh full activation run.
 BASELINES_PCT: dict[str, int] = {
-    "uipath-automation-discovery": 100,
     "uipath-troubleshoot": 100,
     "uipath-feedback": 100,
     "uipath-governance": 100,

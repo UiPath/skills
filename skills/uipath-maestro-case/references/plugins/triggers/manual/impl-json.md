@@ -79,7 +79,7 @@ Emit the canonical first-trigger shape:
     "description": "<description from sdd.md or LLM-inferred>",
     "typeVersion": "1.0.0",
     "display": { "label": "<displayName or \"Trigger 1\">" },
-    "inputs": { "serviceType": "None" }
+    "inputs": { "serviceType": "None", "entryPointId": "<entry-points.json uniqueId>" }
   }
 }
 ```
@@ -99,12 +99,12 @@ Emit a secondary trigger with `data.parentElement` included:
     "description": "<description from sdd.md or LLM-inferred>",
     "typeVersion": "1.0.0",
     "display": { "label": "<displayName>" },
-    "inputs": { "serviceType": "None" }
+    "inputs": { "serviceType": "None", "entryPointId": "<entry-points.json uniqueId>" }
   }
 }
 ```
 
-**`data.inputs.serviceType` is `"None"` for manual triggers.** Older schemas may omit `inputs` entirely — both forms are valid when reading. Always emit `"inputs": {"serviceType": "None"}` when writing.
+**`data.inputs.serviceType` is `"None"` for manual triggers.** Older schemas may omit `inputs` entirely — both forms are valid when reading. Always emit `"inputs": {"serviceType": "None", "entryPointId": "<uniqueId>"}` when writing — `entryPointId` equals the `uniqueId` of the entry-points.json entry below. See [case-schema.md § Trigger Node](../../../case-schema.md#a-trigger-node--uipathcasetrigger) for the `entryPointId` rule.
 
 ## Recipe — `entry-points.json` (append to `entryPoints`)
 
