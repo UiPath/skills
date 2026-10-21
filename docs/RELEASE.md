@@ -178,7 +178,7 @@ Stable (`latest`) is **not** published automatically — the sprint cut publishe
    gh workflow run publish.yml --ref release/v<minor> -f channel=latest
    ```
    This publishes the exact committed `package.json` version to npm `latest` via OIDC + `--provenance`. The run then waits until npmjs actually serves the version (`npm publish` returns as soon as the registry *accepts* the tarball; availability follows minutes later, or never if held for review) and posts the "Published to npm (stable)" announcement to `#team-coding-agents` as Skills Buddy (`announce-stable.yml`, skill list in the thread). A red `Announce stable publish` job means the version is still not installable — check npmjs before telling anyone. To (re)announce a line by hand: `gh workflow run announce-stable.yml --ref main -f ref=release/v<minor>` (the branch's committed `package.json` is the version).
-2. (Optional) Create a GitHub Release tagged `v<version>` as a durable changelog record. This is **just a record** — there is no `release:` trigger, so it does **not** publish anything to npm; the dispatch in step 1 is what publishes.
+2. Once the publish run succeeds, `publish-marketplaces.yml` creates the GitHub Release `v<version>` by itself (see [Publishing to coding-agent marketplaces](#publishing-to-coding-agent-marketplaces)). The release does **not** publish anything to npm: there is no `release:` trigger, and the dispatch in step 1 is what publishes.
 
 > **Lockstep note.** The CLI resolves `@uipath/skills` from npm `latest` for its own minor line. Because stable is now manual, **promote the matching skills line to stable before the CLI cuts that minor**, or the CLI will resolve the previous skills minor.
 
@@ -199,6 +199,33 @@ Off-cadence or ad-hoc cut: dispatch manually with `minor_override` (e.g. `1.198`
 > **Repo setup:** branch protection must allow the Actions identity (`github-actions[bot]`) to push `release/v*` branches. `main` is intentionally **not** pushable by the bot — the cut opens a PR for it (below).
 
 > **Automating the bump (optional).** `main` is protected (PR + 1 approval + smoke-test checks) on a public repo, so the cut opens a bump PR that a maintainer merges — no bypass credential is introduced. A PR opened by the built-in `GITHUB_TOKEN` does **not** trigger the required check workflows, so a maintainer may need to reopen/re-run them before merge. To make the bump fully hands-off, create a scoped **GitHub App**, add it to the `main` ruleset bypass, and have step 3 mint a short-lived token (`actions/create-github-app-token`) to open the PR (its checks run) and `gh pr merge --auto` it — App tokens are short-lived and repo-scoped, unlike a personal PAT. This is the only safe route to full automation; do **not** store a long-lived PAT for it.
+
+## Publishing to coding-agent marketplaces
+
+`publish-marketplaces.yml` carries a stable release to the coding-agent catalogs that read from a git tag, a GitHub Release or a pull request. `publish.yml` is not modified. The new workflow runs on `workflow_run` after **Publish skills package** completes, and acts only when all three hold:
+
+- the run was a successful manual dispatch;
+- it ran from a `release/v<M.N>` branch;
+- npmjs serves that branch's committed version.
+
+Preview dispatches and pushes therefore exit without publishing anything. To (re)publish a line by hand, run:
+
+```bash
+gh workflow run publish-marketplaces.yml --ref main -f ref=release/v<minor>
+```
+
+Add `-f dry_run=true` to build the ZIP without creating anything.
+
+| Job | What it does | Permissions |
+|---|---|---|
+| `codex-zip` | Builds `uipath-codex-plugin-<version>.zip` for the OpenAI plugin directory. The ZIP holds the marker-free default skill tree plus `.codex-plugin/` without `hooks`/`apps` (the directory rejects both), and has no `hooks/` directory. | read |
+| `release` | Creates the immutable tag `v<version>` on the released commit and a GitHub Release with the ZIP attached. It stops if the tag already points elsewhere. Gemini detects new versions from Releases, and awesome-copilot pins the tag plus its SHA. | `contents: write` |
+| `awesome-copilot` | Forks `github/awesome-copilot` and opens a PR that bumps our entry's `version`/`ref`/`sha` in `plugins/external.json` and `.github/plugin/marketplace.json`. It runs only when the repo variable `AWESOME_COPILOT_PLUGIN_NAME` is set. | `AWESOME_COPILOT_TOKEN` |
+| `checklist` | Opens one issue per version, `Marketplace follow-ups for v<version>`, for the steps no API covers: the OpenAI ZIP upload, the Cursor re-index request, the Anthropic Directory review, and the awesome-copilot merge. | `issues: write` |
+
+Every job reuses an existing tag, release asset, PR or issue for the version, so a failed run is safe to re-dispatch.
+
+> **awesome-copilot setup.** Set `AWESOME_COPILOT_PLUGIN_NAME` (repo variable) only after the first listing is approved through the awesome-copilot external-plugin issue form. Store `AWESOME_COPILOT_TOKEN` as a classic PAT with `public_repo` scope, owned by a dedicated bot account with **no access to UiPath repositories**. It needs to fork and open PRs on a repository outside this org, which a GitHub App installed here cannot do. Keeping the token on an account with no UiPath access limits a leak to that bot's public forks.
 
 ## Required setup
 
