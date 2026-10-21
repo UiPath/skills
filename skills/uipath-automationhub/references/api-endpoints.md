@@ -151,7 +151,7 @@ The Automation Hub users on the tenant (verified live): paged envelope with the 
 The tenant's application inventory (paged; entries carry the application id, name, version, language). **These ids are the `value` answers for the application questions** ("Applications used", "Thin applications used"; thin-apps holds only the answered systems the material calls thin/Citrix clients, so `[]` when none, even when the schema flags it `required`); systems not listed go in `new_applications` (see `POST /idea-from-schema`). *(Used by the publish flow whenever the material names systems.)*
 
 ### GET `/automations?search=<text>&limit=<n>&offset=<n>`
-Search/list processes. Returns a paged list (results under a resource key, e.g. `processes`, or a bare array). Use to resolve a name → `process_id`. *(Used by the get flow.)*
+Search/list processes. Returns a paged list (results under a resource key, e.g. `processes`, or a bare array). Use to resolve a name → `process_id`. **A `search` containing `:` matches nothing**, even a process whose name contains exactly that text ("Motor Claims STP" finds it, "Motor Claims STP: Automated" doesn't). Search on a reference code or a few words without a colon, never on a full title. *(Used by the get flow, and by the publish flows to find a create whose response was lost.)*
 
 ### GET `/automations/{id}`
 Fetch one process by numeric id (or slug). Returns the full process record (can be ~300 fields; project to the ones you need for display). *(Used by the get flow.)*
