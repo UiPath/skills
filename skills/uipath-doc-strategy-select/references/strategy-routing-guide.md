@@ -22,8 +22,11 @@ and have pulled.
 | Strategy selected | Owner | Build guide |
 |---|---|---|
 <!--skill-flavor:handoff-ixp:start-->
-| Extract, inside a Flow | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — ixp.md](../../uipath-maestro-flow/references/ixp.md) |
+| Extract, inside a Flow — a published IxP project's trained fields | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — ixp.md](../../uipath-maestro-flow/references/ixp.md) |
 <!--skill-flavor:handoff-ixp:end-->
+<!--skill-flavor:handoff-document-pipeline:start-->
+| Extract, inside a Flow — a schema authored inline, no published IxP project | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — document-pipeline.md](../../uipath-maestro-flow/references/document-pipeline.md) |
+<!--skill-flavor:handoff-document-pipeline:end-->
 | Extract — taxonomy, labelling, model training, publishing | `uipath-ixp` | [/uipath:uipath-ixp — SKILL.md](../../uipath-ixp/SKILL.md) |
 <!--skill-flavor:handoff-summarize:start-->
 | Summarize, as a fixed Flow step | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — summarize.md](../../uipath-maestro-flow/references/summarize.md) |

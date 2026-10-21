@@ -1,14 +1,23 @@
 # Reinstating CS — Classify & Split
 
-Classify & Split is withheld from this release. The capability exists — IxP publishes classifier models
-and they appear in the Flow registry — but its node configuration and output shape are not documented,
-so an agent routed to CS cannot finish the build. Rather than ship a strategy that dead-ends, CS comes
-out, and this file holds everything that was removed, verbatim, with where each piece goes back.
+Classify & Split is withheld from this release because the capability will not be available to the
+audience this release ships to. That is a product-availability decision, and it is the only reason.
+This file holds everything that was removed, verbatim, with where each piece goes back.
+
+**It is not withheld for lack of documentation.** `uipath.document.classify` is documented today in
+`/uipath:uipath-maestro-flow — document-pipeline.md → ../uipath-maestro-flow/references/document-pipeline.md`:
+signature `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`, physical splitting via
+`splitPages`, classification landing at `out('classify', ...)`, and no published IxP project required.
 
 Work top to bottom. The counts at the end of each file section are the part no script checks.
 
-> **Prerequisite.** Reinstate only once the classifier node's configuration and `output` shape are
-> documented. That is the single fact whose absence caused the withdrawal; nothing else about CS changed.
+> **Prerequisite.** Reinstate once Classify & Split is available to the target audience.
+
+> **[STALE] The archived prose below is a verbatim snapshot and parts of it are now wrong.** It was
+> written before `document-pipeline.md` landed, so several passages assert that the classifier node's
+> configuration and output shape are undocumented. Do not paste those back unchanged — rewrite each
+> against `document-pipeline.md` as you restore it. Every affected block is flagged **[STALE]** in the
+> prose directly above it.
 
 > **Links in this file are deliberately de-linked**, rendered as `` `text → target` ``. A live Markdown
 > link to a file this release no longer contains fails `npm run skills:check-links`. Restore them to real
@@ -73,6 +82,8 @@ Restore to:
 
 Deleted rather than retargeted; the guide it pointed at did not survive.
 
+**[STALE]** — "what is not yet documented" is no longer true. Reword the row when you restore it.
+
 ```markdown
 | Classification and physical splitting, and what is not yet documented | `classify-split-guide.md → references/classify-split-guide.md` |
 ```
@@ -87,8 +98,12 @@ not CS ships, so do not add it again.
 ## 2. `references/classify-split-guide.md` — restore the whole file
 
 Unlike PA's `search-strategy-guide.md`, which was shared with PS and so rewritten, this file was 100% CS
-and was deleted outright. Recreate it exactly as below. **Both `skill-flavor` marker blocks must come
+and was deleted outright. Recreate it as below. **Both `skill-flavor` marker blocks must come
 back with it** — a sparse override binds to them and the flavor build fails if either side is missing.
+
+**[STALE]** — the "capability exists; its configuration is not yet documented" section is obsolete.
+Replace it with the `documentClassify` signature, `splitPages`, and the `out('classify', ...)` port
+from `document-pipeline.md`, and keep the marker blocks exactly where they are.
 
 ````markdown
 # Classify & Split Guide
@@ -211,6 +226,9 @@ Path: `skill-flavors/studioweb/uipath-doc-strategy-select/references/classify-sp
 ## 3. `references/case-library-guide.md`
 
 ### 3a. Reinsert the whole CS section between `## AF` and `## SU`
+
+**[STALE]** — the section's opening line says the node configuration is not yet documented. Point it
+at `document-pipeline.md` instead.
 
 ````markdown
 ## CS Classify & Split
@@ -387,9 +405,12 @@ than "unparseable", but can never be *expected*.
 | prompt vocabulary | `one of AH, AF, SU, PS, EX, BT` | `one of AH, AF, CS, SU, PS, EX, BT` |
 | threshold comment | `0.78 x 6 rows = 4.68, so 5 of 6 must pass` | `0.78 x 7 rows = 5.46, so 6 of 7 must pass` |
 
-Restore the paragraph explaining why a CS miss is tolerable. It is the only place in `tests/` citing the
-unpublished-configuration fact, and `skills:check-links` does not scan task YAML, so nothing reports it
-missing:
+Restore the paragraph explaining why a CS miss is tolerable, and `skills:check-links` does not scan
+task YAML, so nothing reports it missing:
+
+**[STALE]** — the "no published Classify & Split node configuration" premise is gone. If a CS miss is
+still tolerable on reinstatement it is for an availability reason, not a documentation one; say that,
+or drop the paragraph.
 
 ```text
 CS is the strategy most likely to miss. There is no published Classify & Split node

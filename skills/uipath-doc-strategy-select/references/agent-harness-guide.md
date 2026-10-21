@@ -129,9 +129,12 @@ An agent given a grounding tool and no call limit re-queries with new phrasings 
 terminates it (`AGENT_RUNTIME.TERMINATION_MAX_ITERATIONS`; in a Flow, a failed node with incident
 `170002`). Raising `settings.maxIterations` moves the failure rather than fixing it.
 
-State a numeric cap and a fallback per grounding tool. When the workload genuinely needs several
-dependent lookups, one retrieval cannot answer it — see
-[search-strategy-guide.md](search-strategy-guide.md); no strategy here covers that shape yet.
+State a numeric cap and a fallback per grounding tool. The cap bounds the loop; it is not a reason to
+route away from a workload that genuinely needs several dependent lookups. That shape — where the next
+lookup is not known until the previous one returns — **is** advanced harness work, and it is where the
+per-run workspace earns its cost. Cap the chain all the same: give a hop ceiling and a stop rule saying
+what the agent reports when it reaches that ceiling without an answer. See
+[search-strategy-guide.md](search-strategy-guide.md) § What one retrieval cannot reach.
 
 ## Handing off
 

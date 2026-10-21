@@ -30,11 +30,19 @@ is not.
 
 ## What one retrieval cannot reach
 
-Three shapes need more than a single scoped lookup, and **no strategy in this skill covers them yet**.
-Recognise them and say so rather than answering from a partial read:
+Three shapes need more than a single scoped lookup. Recognise each one and route it, rather than
+answering from a partial read:
 
 - **Dependent retrieval** — evidence returned by one lookup determines what to look up next. An
   identifier, code, or cross-reference found in the first result is the input to the second query.
+  Widening the query does not help: the second query is not known until the first has returned. When the
+  chain is open-ended — the agent decides how many hops it needs and when it has enough — **this is
+  AH**. The advanced harness plans its own next step, and the per-run file workspace carries each hop's
+  evidence into the next, which is the two-signal bar in
+  [agent-harness-guide.md](agent-harness-guide.md) met by a long run plus persisted intermediate work.
+  Bound it even so: a stated numeric ceiling on lookups and a stop rule naming what the agent reports
+  when it hits that ceiling. A chain of fixed, known length — look up the code, then look up that
+  code's record — is not AH; that is a deterministic sequence of two scoped lookups.
 - **Enumerative deliverable** — "list all X", "which of the N documents reference Y". Top-k from a single
   query structurally cannot cover the answer set; that needs deterministic enumeration, and where the
   deliverable is a written review of a defined set, SU1 is the route.
@@ -51,4 +59,5 @@ Where the needed metadata was never ingested, no amount of querying recovers it 
 | Creating, ingesting, and inspecting the index | [/uipath:uipath-platform — index-management.md](../../uipath-platform/references/context-grounding/index-management.md) |
 | Choosing among the context-grounding patterns | [/uipath:uipath-agents — context-grounding-patterns.md](../../uipath-agents/references/context-grounding-patterns.md) |
 
-Cases: [PS1–PS3](case-library-guide.md#ps-persistent-index--semantic-search).
+Cases: [PS1–PS3](case-library-guide.md#ps-persistent-index--semantic-search). For a dependent chain,
+[AH1–AH3](case-library-guide.md#ah-advanced-harness).

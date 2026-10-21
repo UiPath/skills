@@ -1,6 +1,9 @@
 <!--skill-flavor:handoff-ixp:start-->
-| Extract, inside a Flow | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/ixp/planning.md](../../uipath-maestro-flow/references/author/plugins/ixp/planning.md) |
+| Extract, inside a Flow — a published IxP project's trained fields | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/ixp/planning.md](../../uipath-maestro-flow/references/author/plugins/ixp/planning.md) |
 <!--skill-flavor:handoff-ixp:end-->
+
+<!--skill-flavor:handoff-document-pipeline:start-->
+<!--skill-flavor:handoff-document-pipeline:end-->
 
 <!--skill-flavor:handoff-summarize:start-->
 | Summarize, as a fixed Flow step | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/summarize/planning.md](../../uipath-maestro-flow/references/author/plugins/summarize/planning.md) |

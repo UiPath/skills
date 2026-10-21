@@ -568,8 +568,8 @@ against. Category and reference-data quality gated the outcome harder than model
 amount of prompt work substitutes for a matrix whose ownership and correctness are unsettled.
 
 **Boundary.** If the reference table cannot be condensed to fit a row, this becomes a grounded lookup —
-PS2 when one scoped retrieval answers it; when resolution depends on what an earlier lookup returned, no
-strategy here covers it yet. If the label is a routing decision over whole documents rather than a column
+PS2 when one scoped retrieval answers it; when resolution depends on what an earlier lookup returned,
+that is a dependent chain and belongs in AH. If the label is a routing decision over whole documents rather than a column
 on a row, this is not BT at all and the documents must be separated first. If categories must be assigned
 by exact keyed mapping, use a deterministic lookup and skip the model.
 

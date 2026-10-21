@@ -29,6 +29,7 @@ import {
   createAllVariants,
   createCompositionPlan,
   createDefaultPlan,
+  isWorkingDocument,
   materializeComposition,
   packageName,
   packAllVariants,
@@ -1501,7 +1502,7 @@ test("root npm pack emits one marker-free default package and restores canonical
     `Before.\n\n${block("host", "Canonical default guidance.")}\nAfter.\n`,
   );
   addSkill(repo, "uipath-pass-through");
-  writeOverride(
+  const studio = writeOverride(
     repo,
     "studioweb",
     "uipath-example/SKILL.md",
@@ -1854,4 +1855,75 @@ test("recovery preserves unexpected overlay edits while restoring canonical sour
     ),
     /Unexpected edit during packaging/,
   );
+});
+
+test("working documents never reach a plan, a built tree, or a packaged path", (t) => {
+  const repo = fixtureRepo(t);
+  const skill = addSkill(repo, "uipath-example", block("host", "Canonical default guidance."));
+  // The two shapes that carry withheld or customer-identifying material: the
+  // provenance map, and a reinstatement spec for a strategy held out of a release.
+  writeFileSync(join(skill, "CASE-MEMO-MAP.md"), "account | ticket\n");
+  writeFileSync(join(skill, "PA-LOCATIONS.md"), "# Reinstating PA\n");
+  mkdirSync(join(skill, "references"), { recursive: true });
+  writeFileSync(join(skill, "references", "CS-LOCATIONS.md"), "# Reinstating CS\n");
+  writeFileSync(join(skill, "references", "guide.md"), "Shipped guidance.\n");
+  const studio = writeOverride(
+    repo,
+    "studioweb",
+    "uipath-example/SKILL.md",
+    block("host", "Studio Web guidance."),
+  );
+
+  const withheld = ["CASE-MEMO-MAP.md", "PA-LOCATIONS.md", "CS-LOCATIONS.md"];
+  const plans = [
+    ["default", createDefaultPlan(repo)],
+    ["studioweb", createCompositionPlan(repo, studio)],
+  ];
+  for (const [label, plan] of plans) {
+    const paths = plan.files.map((file) => file.relativePath);
+    assert.ok(
+      paths.some((relativePath) => relativePath.endsWith("uipath-example/references/guide.md")),
+      `${label} plan must still carry the shipped reference`,
+    );
+    for (const name of withheld) {
+      assert.ok(
+        !paths.some((relativePath) => basename(relativePath) === name),
+        `${label} plan leaked ${name}`,
+      );
+    }
+  }
+
+  const output = join(repo, "build", "default");
+  materializeComposition(plans[0][1], output);
+  const built = [...treeFileBytes(output).keys()];
+  for (const name of withheld) {
+    assert.ok(!built.some((relativePath) => basename(relativePath) === name), `built tree leaked ${name}`);
+  }
+});
+
+test("this repository packages no memo and composes away every working document", () => {
+  // Guards the real tree, not a fixture. Two different mechanisms, both of which
+  // have leaked before:
+  //   - memo sources are kept out of the repository entirely, because npm's
+  //     `files` allowlist overrides .gitignore — being untracked is not enough;
+  //   - working documents may live under skills/, but the composer must strip
+  //     them, since every package is built from a plan.
+  const manifest = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"));
+  const memos = [];
+  const walk = (absolute, relativePath) => {
+    if (!existsSync(absolute)) return;
+    if (!statSync(absolute).isDirectory()) {
+      if (/(^|\/)memos\//.test(relativePath)) memos.push(relativePath);
+      return;
+    }
+    if (basename(absolute) === "node_modules") return;
+    for (const entry of readdirSync(absolute)) walk(join(absolute, entry), `${relativePath}/${entry}`);
+  };
+  for (const entry of manifest.files) walk(join(REPO_ROOT, entry), entry);
+  assert.deepEqual(memos, [], "packaged paths must not carry memo sources");
+
+  const leaked = createDefaultPlan(REPO_ROOT)
+    .files.map((file) => file.relativePath)
+    .filter((relativePath) => isWorkingDocument(basename(relativePath)));
+  assert.deepEqual(leaked, [], "the default plan must compose away every working document");
 });
