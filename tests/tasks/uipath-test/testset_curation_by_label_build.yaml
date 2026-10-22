@@ -3,14 +3,22 @@ description: >
   Integration test: agent uses the uipath-test skill to assemble a regression
   test set from labelled test cases, inside a throwaway project it creates and
   deletes. Asserts that the agent (a) checks login status with --output json,
-  (b) applies the tier labels with `objectlabel add`, (c) populates the set with
-  `testcases add --test-set-key --labels`, passing BOTH tier labels in one
-  space-separated variadic call, (d) never uses the comma-joined `--labels A,B`
-  form, which the CLI reads as a single label and which therefore matches
-  nothing, (e) does not fall back to enumerating `--test-case-keys`, which
-  defeats the selector the request asks for, and (f) deletes the project with
-  --yes. The skill — not the prompt — must teach the label selector, its
-  space-separated shape, and that label matching is OR, exact and case-sensitive.
+  (b) applies the tier labels — `objectlabel add` after creation, or at
+  creation time through `testcases bulk-create --file` (labels live in the
+  JSON payload, which codex writes with its file tool, so the command stream
+  cannot see them; claude and codex both took this path 2026-10-22) — (c)
+  populates the set by
+  label — either `testcases add --test-set-key --labels [--dynamic]` or
+  `testsets create --dynamic-labels` — passing BOTH tier labels in one
+  space-separated variadic call, (d) never uses the comma-joined `A,B` form,
+  which the CLI reads as a single label and which therefore matches nothing,
+  (e) does not fall back to enumerating `--test-case-keys`, which defeats the
+  selector the request asks for, and (f) deletes the project with --yes. The
+  prompt says new cases get tagged all the time, so the dynamic shape is the
+  better answer and every model picks it (5/5 nightlies 2026-10-21/22); the
+  grader must accept both. The skill — not the prompt — must teach the label
+  selector, its space-separated shape, and that label matching is OR, exact
+  and case-insensitive.
 tags: [uipath-test, integration, mode:build, lifecycle:setup, feature:test-case]
 
 run_limits:
@@ -80,25 +88,25 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent applied the tier labels to its test cases with `objectlabel add`"
+    description: "Agent applied the tier labels to its test cases — `objectlabel add`, or `testcases bulk-create --file` (labels in the JSON payload)"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--object-type\s+TestCase)(?=[\s\S]*--object-ids\s+\S)(?=[\s\S]*--labels\s+\S)uip\s+tm\s+objectlabel\s+add\b'
+    command_pattern: '(?:(?=[\s\S]*--object-type\s+TestCase)(?=[\s\S]*--object-ids\s+\S)(?=[\s\S]*--labels\s+\S)uip\s+tm\s+objectlabel\s+add\b|uip\s+tm\s+testcases?\s+bulk-create\b(?=[\s\S]*--file\s+\S))'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent populated the set with the --labels selector rather than explicit keys"
+    description: "Agent populated the set by label — `testcases add --test-set-key --labels` or `testsets create --dynamic-labels` — rather than explicit keys"
     tool_name: "Bash"
-    command_pattern: '(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--labels\s+\S)uip\s+tm\s+testcases?\s+add\b'
+    command_pattern: '(?=[\s\S]*EVFX-CURATE-tier1\b)(?=[\s\S]*EVFX-CURATE-tier2\b)(?:(?=[\s\S]*--test-set-key\s+\S)(?=[\s\S]*--labels\s+\S)uip\s+tm\s+testcases?\s+add\b|(?=[\s\S]*--dynamic-labels\s+\S)uip\s+tm\s+testsets?\s+create\b)'
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
 
   - type: command_not_executed
-    description: "Agent did not comma-join --labels — the CLI reads `A,B` as one label and silently matches nothing"
+    description: "Agent did not comma-join the label selector — the CLI reads `A,B` as one label and silently matches nothing"
     tool_name: "Bash"
-    command_pattern: 'uip\s+tm\s+testcases?\s+add[\s\S]*--labels\s+\S+,'
+    command_pattern: '(?:uip\s+tm\s+testcases?\s+add[\s\S]*--labels\s+\S+,|uip\s+tm\s+testsets?\s+create[\s\S]*--dynamic-labels\s+\S+,)'
     weight: 2.0
     pass_threshold: 0   # advisory: records the anti-pattern without gating the score
 

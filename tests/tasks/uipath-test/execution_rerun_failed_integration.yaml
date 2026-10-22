@@ -83,6 +83,30 @@ pre_run:
                   return x
           return None
 
+      def key_num(row):
+          k = pick(row, "TestSetKey", "Key", "ObjKey") or ""
+          try:
+              return int(str(k).rsplit(":", 1)[-1])
+          except ValueError:
+              return 1 << 30
+
+      # 0. collapse duplicate sets. Two nightlies (codex + claude) seed this
+      #    fixture at the same minute; both can miss on `list` and both create,
+      #    after which the agent sees two `EVFX-RERUN-SET` rows and -- correctly,
+      #    under Critical Rule 10 -- stops to ask which one (2026-10-22 codex).
+      #    Keep the oldest key, delete the rest: the set is owned by this task.
+      dups = [x for x in (call("set.dups", "tm", "testsets", "list", "--project-key", P,
+                               "--filter", SET).get("Data") or []) if x.get("Name") == SET]
+      if len(dups) > 1:
+          dups.sort(key=key_num)
+          for extra in dups[1:]:
+              k = pick(extra, "TestSetKey", "Key", "ObjKey")
+              call(f"set.dedupe.{k}", "tm", "testsets", "delete", "--test-set-key", k, "--yes")
+          print(f"FIXTURE: removed {len(dups) - 1} duplicate {SET} set(s)", flush=True)
+          if len([x for x in (call("set.recheck", "tm", "testsets", "list", "--project-key", P,
+                                   "--filter", SET).get("Data") or []) if x.get("Name") == SET]) > 1:
+              fail(f"{SET} still has duplicates after dedupe")
+
       # 1. test set — create if absent, never delete
       ts = by_name("set.find", "testsets", SET)
       if not ts:
