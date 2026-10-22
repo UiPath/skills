@@ -52,6 +52,15 @@ _PREVIEW_SKILLS = os.path.join(_REPO, "preview", "skills")
 # Promoted out of preview/ (the SDK Flow skill); still held to the same window.
 _PROMOTED_SKILLS = [os.path.join(_REPO, "skills", "uipath-maestro-flow", "SKILL.md")]
 
+# Flavor markers are build-only: scripts/compose-skill-flavor.mjs strips every
+# marker line from each package, so budgets measure the SKILL.md that ships.
+_FLAVOR_MARKER_LINE = re.compile(r"^<!--skill-flavor:[a-z0-9]+(?:-[a-z0-9]+)*:(?:start|end)-->\r?\n", re.M)
+
+
+def _shipped(text: str) -> str:
+    return _FLAVOR_MARKER_LINE.sub("", text)
+
+
 ROUTER_WINDOW = 220
 POINTER_WINDOW = 240
 WINDOW_BYTES = 32 * 1024
@@ -245,7 +254,7 @@ def test_every_required_skill_is_present():
 def test_real_preview_skills_fit_read_window(path):
     skill = _skill_id(path)
     with open(path, encoding="utf-8") as f:
-        text = f.read()
+        text = _shipped(f.read())
     problems = window_problems(text, REQUIRED.get(skill, ()))
     assert not problems, (
         f"{os.path.relpath(path, _REPO)}:\n  "

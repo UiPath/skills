@@ -44,6 +44,15 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.normpath(os.path.join(_HERE, "..", "..", "..", ".."))
 SKILL_PATH = os.path.join(_REPO, "skills", "uipath-maestro-flow", "SKILL.md")
 
+# Flavor markers are build-only: scripts/compose-skill-flavor.mjs strips every
+# marker line from each package, so budgets measure the SKILL.md that ships.
+_FLAVOR_MARKER_LINE = re.compile(r"^<!--skill-flavor:[a-z0-9]+(?:-[a-z0-9]+)*:(?:start|end)-->\r?\n", re.M)
+
+
+def _shipped(text: str) -> str:
+    return _FLAVOR_MARKER_LINE.sub("", text)
+
+
 # Whole file. Set at the #3718 trim (265 lines, 27,606 bytes, ~10.8K tok) with
 # ~5% byte headroom; the line cap is looser on purpose (see above). Re-set
 # after #4040 and #4101 (29,219 bytes, ~11.4K tok) with ~5% headroom.
@@ -163,7 +172,7 @@ def budget_slack(text: str) -> dict[str, int]:
 
 def test_flow_skill_fits_budget():
     with open(SKILL_PATH, encoding="utf-8") as f:
-        text = f.read()
+        text = _shipped(f.read())
     problems = budget_problems(text)
     assert not problems, (
         f"{os.path.relpath(SKILL_PATH, _REPO)}:\n  "
@@ -176,7 +185,7 @@ def test_every_named_budget_is_a_real_section():
     # A renamed section would otherwise fall back to 1300 bytes silently, or a
     # stale name would keep a large budget nobody uses.
     with open(SKILL_PATH, encoding="utf-8") as f:
-        titles = {s.title for s in h2_sections(_lines(f.read()))}
+        titles = {s.title for s in h2_sections(_lines(_shipped(f.read())))}
     stale = sorted(set(SECTION_BUDGETS) - titles)
     assert not stale, f"SECTION_BUDGETS names sections SKILL.md does not have: {stale}"
 
