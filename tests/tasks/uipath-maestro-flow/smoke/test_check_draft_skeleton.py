@@ -25,7 +25,7 @@ def _box(i, label):
 
 GOOD = [
     {"id": "start", "type": "core.trigger.manual"},
-    _box("record", "Record invoice [Data Fabric]"),
+    _box("record", "Record invoice [Data Fabric] → invoiceId"),
     {"id": "large", "type": "core.logic.decision",
      "inputs": {"trueLabel": "review", "falseLabel": "auto-approve"}},
     _box("review", "Manager review [Human task]"),

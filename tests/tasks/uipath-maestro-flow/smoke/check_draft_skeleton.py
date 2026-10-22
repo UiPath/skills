@@ -7,7 +7,7 @@ Usage (cwd = sandbox root):
 A skeleton passes when the discovered ``<FlowName>.flow``:
   - starts with the requested trigger type;
   - has at least three ``core.logic.mock`` boxes, each labelled
-    ``<action> [<Type>]``;
+    ``<action> [<Type>]``, optionally ``→ <value it produces>``;
   - has a real decision or switch whose arms carry outcome labels, not the
     ``True`` / ``False`` defaults;
   - uses no real activity node (connector, agent, HTTP, script, ...): the
@@ -36,7 +36,7 @@ ALLOWED = {
     "core.control.end",
     "stickyNote",
 }
-BOX_LABEL = re.compile(r"\S.*\[[^\]]+\]")
+BOX_LABEL = re.compile(r"\S.*\[[^\]]+\](\s*→\s*\S.*)?")
 
 
 def fail(msg: str) -> int:
