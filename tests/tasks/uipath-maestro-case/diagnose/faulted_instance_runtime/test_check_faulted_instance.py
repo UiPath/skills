@@ -70,3 +70,20 @@ def test_a_completed_task_under_the_wrapper_is_not_the_answer(grader, monkeypatc
     ])
 
     assert grader.truth()["i1"][0]["taskNames"] == []
+
+
+def test_camel_cased_executions_are_read_too(grader, monkeypatch):
+    # A CLI that camelCases the payload must grade the same as one that PascalCases it.
+    calls = _stub(grader, monkeypatch, "tasksEventSubProcess", executions=[])
+    camel = [{"elementId": TASK_ID, "status": "Failed", "parentElementId": "tasksEventSubProcess"}]
+    real = grader.uip
+
+    def fake(*args):
+        if args[:4] == ("maestro", "case", "instance", "element-executions"):
+            return {"elementExecutions": camel}
+        return real(*args)
+
+    monkeypatch.setattr(grader, "uip", fake)
+
+    assert grader.truth()["i1"][0]["taskNames"] == ["Post ledger entry"]
+    assert calls

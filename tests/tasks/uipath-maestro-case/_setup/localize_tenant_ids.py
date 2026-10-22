@@ -132,6 +132,44 @@ def _resolve_app(cloud_id: str, spec: dict, apps: list[dict]) -> str | None:
     return str(named[0]["id"]) if len(named) == 1 else None
 
 
+def _snapshot(directory: Path) -> dict[Path, bytes] | None:
+    if not directory.is_dir():
+        return None
+    return {path: path.read_bytes() for path in directory.iterdir() if path.is_file()}
+
+
+def _restore(directory: Path, snapshot: dict[Path, bytes] | None) -> None:
+    """Put the registry cache back as the task staged it.
+
+    Some tasks grade the agent's own registry pull or a stale cache they start with,
+    so the pull this script needs must not leave a fresh cache behind."""
+    if not directory.is_dir():
+        return
+    for path in directory.iterdir():
+        if path.is_file() and (snapshot is None or path not in snapshot):
+            path.unlink()
+    for path, data in (snapshot or {}).items():
+        if not path.is_file() or path.read_bytes() != data:
+            path.write_bytes(data)
+    if snapshot is None and not any(directory.iterdir()):
+        directory.rmdir()
+
+
+def _load_registry() -> tuple[list[dict], list[dict], str | None]:
+    """Process and app index entries from a fresh pull; the cache is restored afterwards."""
+    snapshot = _snapshot(RESOURCE_DIR)
+    try:
+        # A failed resource type is reported in Data.Errors and leaves the others usable,
+        # so a partial pull is enough.
+        _uip(["maestro", "case", "registry", "pull", "--force"], 240)
+        processes = [entry for name in PROCESS_INDEXES for entry in _load_index(name)]
+        return processes, _load_index("action-apps"), None
+    except (RuntimeError, subprocess.TimeoutExpired, json.JSONDecodeError) as exc:
+        return [], [], str(exc)
+    finally:
+        _restore(RESOURCE_DIR, snapshot)
+
+
 def main() -> int:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     files = {path: text for path in _sandbox_files() if (text := _read_text(path)) is not None}
@@ -146,12 +184,11 @@ def main() -> int:
         print("OK: no pinned tenant IDs in this task")
         return 0
 
+    processes: list[dict] = []
+    apps: list[dict] = []
+    registry_error = None
     if any(kind != "connections" for kind, _ in pinned.values()):
-        # Writes the indexes the process and app lookups read. A failed resource type is
-        # reported in Data.Errors and leaves the others usable, so a partial pull is enough.
-        _uip(["maestro", "case", "registry", "pull", "--force"], 300)
-    processes = [entry for name in PROCESS_INDEXES for entry in _load_index(name)]
-    apps = _load_index("action-apps")
+        processes, apps, registry_error = _load_registry()
 
     mapping: dict[str, str] = {}
     unresolved: list[str] = []
@@ -167,6 +204,8 @@ def main() -> int:
             live = None
             spec = {**spec, "error": str(exc)}
         if live is None:
+            if kind != "connections" and registry_error:
+                spec = {**spec, "error": f"registry pull failed: {registry_error}"}
             unresolved.append(f"{KIND_LABELS[kind]} {cloud_id} {json.dumps(spec)}")
             continue
         mapping[cloud_id] = live.lower()

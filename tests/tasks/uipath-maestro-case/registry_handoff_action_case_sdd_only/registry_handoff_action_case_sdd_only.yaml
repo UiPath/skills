@@ -44,7 +44,7 @@ sandbox:
 # Rewrites the cloud-tenant IDs the fixtures pin to this tenant's IDs.
 pre_run:
   - command: "python3 _setup/localize_tenant_ids.py"
-    timeout: 360
+    timeout: 300
 
 reference:
   # `..`, not `.`: the grader imports the shared ledger adapter from `_shared/`,

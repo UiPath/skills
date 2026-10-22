@@ -50,7 +50,7 @@ sandbox:
 # Rewrites the cloud-tenant IDs the fixtures pin to this tenant's IDs.
 pre_run:
   - command: "python3 _setup/localize_tenant_ids.py"
-    timeout: 360
+    timeout: 300
 
 reference:
   # Case root: the grader imports `_shared/`, which a task-only copy leaves out.

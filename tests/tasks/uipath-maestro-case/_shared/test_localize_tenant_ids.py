@@ -171,3 +171,43 @@ def test_the_manifest_covers_every_pinned_id_the_catalog_reports():
     manifest = json.loads((CASE_ROOT / "_setup" / "tenant_ids.json").read_text())
     known = {pid for kind in manifest.values() for pid in kind}
     assert pinned <= known, sorted(pinned - known)
+
+
+def test_the_registry_cache_is_left_as_the_task_staged_it(module, sandbox, monkeypatch):
+    """Tasks grade the agent's own pull or a stale cache, so the lookup pull leaves no trace."""
+    (sandbox / "sdd.md").write_text(f"{HELPDESK}\n")
+    cache = sandbox / "cache"
+    (cache / "process-index.json").write_text("[]")
+    (cache / "agent-index.json").write_text('["stale"]')
+
+    def fake(args, timeout):
+        if args[:4] == ["maestro", "case", "registry", "pull"]:
+            (cache / "process-index.json").write_text(json.dumps([
+                _process(LIVE_HELPDESK, "HelpDeskLookup", "Shared/uipath-maestro-flow/HelpDeskLookup RPA"),
+            ]))
+            (cache / "agent-index.json").write_text("[]")
+            (cache / "api-index.json").write_text("[]")
+        return {"Result": "Success", "Data": {}}
+
+    monkeypatch.setattr(module, "_uip", fake)
+
+    assert module.main() == 0
+
+    assert LIVE_HELPDESK in (sandbox / "sdd.md").read_text()
+    assert sorted(p.name for p in cache.iterdir()) == ["agent-index.json", "process-index.json"]
+    assert (cache / "process-index.json").read_text() == "[]"
+    assert (cache / "agent-index.json").read_text() == '["stale"]'
+
+
+def test_a_failed_registry_pull_leaves_ids_unresolved_instead_of_failing_the_task(module, sandbox, monkeypatch, capsys):
+    (sandbox / "sdd.md").write_text(f"{HELPDESK}\n")
+
+    def fake(args, timeout):
+        raise RuntimeError("`uip maestro case registry pull --force` failed: boom")
+
+    monkeypatch.setattr(module, "_uip", fake)
+
+    assert module.main() == 0
+
+    assert (sandbox / "sdd.md").read_text() == f"{HELPDESK}\n"
+    assert "registry pull failed" in capsys.readouterr().err

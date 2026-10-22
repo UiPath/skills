@@ -45,6 +45,16 @@ def tasks_by_id(asset):
     return found
 
 
+def _get_ci(obj, key):
+    """Case-insensitive read of a runtime payload key (the CLI may PascalCase or camelCase it)."""
+    if not isinstance(obj, dict):
+        return None
+    for actual, value in obj.items():
+        if str(actual).lower() == key.lower():
+            return value
+    return None
+
+
 def failed_tasks_under(element_id, executions, names):
     """Names of the failed tasks that ran inside ``element_id``.
 
@@ -53,9 +63,11 @@ def failed_tasks_under(element_id, executions, names):
     wrapper, ``SourceElementId`` is null). The element executions still record which
     task inside it failed, so that task is the one the incident is about."""
     return sorted(
-        names[e["ElementId"]]
+        names[_get_ci(e, "ElementId")]
         for e in executions
-        if e.get("ParentElementId") == element_id and e.get("Status") == "Failed" and e.get("ElementId") in names
+        if _get_ci(e, "ParentElementId") == element_id
+        and _get_ci(e, "Status") == "Failed"
+        and _get_ci(e, "ElementId") in names
     )
 
 
@@ -90,7 +102,7 @@ def truth():
             # makes the same calls as before.
             if "rows" not in cache:
                 data = uip("maestro", "case", "instance", "element-executions", instance_id, "--folder-key", proc["FolderKey"])
-                cache["rows"] = (data or {}).get("ElementExecutions") or []
+                cache["rows"] = _get_ci(data, "ElementExecutions") or []
             return cache["rows"]
 
         faulted[inst["InstanceId"]] = [
