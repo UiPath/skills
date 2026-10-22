@@ -174,8 +174,8 @@ PRE_JOIN_ACCEPTED = {
 }
 
 PRE_JOIN_MESSAGE = (
-    "whose exits that skip the join stay out of the joined chain and end only at "
-    "process-level terminate ends or caught error ends"
+    "whose exits that skip the join end only at terminate ends or caught error ends, "
+    "and share the joined chain only to merge and notify, before its side effects"
 )
 PRE_JOIN_REJECTED = {
     "plain-end": (PRE_JOIN, {}, "", frozenset()),

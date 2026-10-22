@@ -277,9 +277,9 @@ def main() -> None:
             fail(
                 f"{review_id} is reachable from {join_id} without an exclusive gateway "
                 "that can exit to an end past every later review, or its own gate on each parallel review before "
-                f"{join_id} whose exits that skip the join stay out of the joined chain and end only at "
-                "process-level terminate ends or caught error ends, so a parallel rejection still reaches it "
-                "or leaves the join waiting"
+                f"{join_id} whose exits that skip the join end only at terminate ends or caught error ends, "
+                "and share the joined chain only to merge and notify, before its side effects, "
+                "so a parallel rejection still reaches it or leaves the join waiting"
             )
 
         # And each later review's own verdict is gated before the process can end.
