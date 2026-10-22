@@ -60,6 +60,10 @@ pre_run:
               call(f"set.dedupe.{extra['TestSetKey']}", "tm", "testsets", "delete",
                    "--test-set-key", extra["TestSetKey"], "--yes")
           print(f"FIXTURE: removed {len(dups) - 1} duplicate {SET} set(s)", flush=True)
+          left = [x for x in call("set.recheck", "tm", "testsets", "list", "--project-key", P,
+                                  "--filter", SET).get("Data") or [] if x.get("Name") == SET]
+          if len(left) > 1:
+              fail(f"{SET} still has {len(left)} rows after dedupe")
 
       ts = by_name("set.find", "testsets", SET)
       if not ts:
@@ -158,3 +162,11 @@ success_criteria:
     min_count: 1
     weight: 3.0
     pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent narrowed the history to failures server-side (`list-result-history --only-failed`, Critical Rule #8)"
+    tool_name: "Bash"
+    command_pattern: '(?=[\s\S]*--test-case-id\s+\S)(?=[\s\S]*--only-failed\b)uip\s+tm\s+testcases?\s+list-result-history\b'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0   # advisory: the ratio read without --only-failed is also a valid flake check
