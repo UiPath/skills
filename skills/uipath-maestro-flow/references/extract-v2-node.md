@@ -2,7 +2,7 @@
 
 *Commands: `uip maestro flow nodes create`, `uip maestro flow edges create`, `uip maestro flow validate`.*
 
-An Extract v2 node (`uipath.ixp.extract-document-builder`) pulls named fields out of a document using a taxonomy it carries inline, in the `.flow` file itself. The product calls it **Extract document**, which is the name to use when talking to the user; Extract v2 is the internal name for the feature and appears in the CLI's own output. There is no trained model and no IXP project behind it, so a user who has never built one can add extraction to a flow in a single session. This guide covers getting the node into the flow: establishing that the tenant has it, adding it, wiring the file it reads, and validating. Designing what it extracts is the taxonomy, in [extract-v2-taxonomy.md](extract-v2-taxonomy.md).
+An Extract v2 node (`uipath.ixp.extract-document-builder`) pulls named fields out of a document using a taxonomy it carries inline, in the `.flow` file itself. The product calls it **Extract document**, which is the name to use when talking to the user; Extract v2 is the internal name for the feature. There is no trained model and no IXP project behind it, so a user who has never built one can add extraction to a flow in a single session. This guide covers getting the node into the flow: establishing that the tenant has it, adding it, wiring the file it reads, and validating. Designing what it extracts is the taxonomy, in [extract-v2-taxonomy.md](extract-v2-taxonomy.md).
 
 ```bash
 uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label '<name>' --input '{"fileRef":"=js:$vars.<upstream>.output.<field>"}' --output json
@@ -38,11 +38,13 @@ A created node arrives complete apart from the file it reads. `fileRef` is the o
 ## The loop
 
 1. **Establish whether the tenant has the node.** The CLI cannot tell you — ask the user, under [Checking availability](#checking-availability). Where the answer is no, go to [When Extract v2 is not available](#when-extract-v2-is-not-available) and do not add it.
-2. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef` when the upstream node already exists.
-3. **Connect it in the graph** with `edges create`, so it runs in the right place.
-4. **Write the taxonomy** — [extract-v2-taxonomy.md](extract-v2-taxonomy.md).
-5. **Validate:** `uip maestro flow validate <file> --output json` must come back `Valid`.
-6. **Report** what was added, where it reads its file from, and what it extracts — and tell the user to open the flow in Studio Web and save it, because until they do the node extracts nothing ([Making it actually extract](#making-it-actually-extract)). Taking it live is their step too.
+2. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. This is what makes `$vars.start.output.invoice` resolve, so it comes before the node that reads it.
+3. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`.
+4. **Connect it in the graph** with `edges create`, remembering `--source-port success` on the edge leaving it ([Wiring the file it reads](#wiring-the-file-it-reads)).
+5. **Write the taxonomy** — [extract-v2-taxonomy.md](extract-v2-taxonomy.md).
+6. **Bind the result to a flow output** so the extraction leaves the flow — [Returning the result](#returning-the-result).
+7. **Validate:** `uip maestro flow validate <file> --output json` must come back `Valid`.
+8. **Report** what was added, where it reads its file from, and what it extracts — and tell the user to open the flow in Studio Web and save it, because until they do the node extracts nothing ([Making it actually extract](#making-it-actually-extract)). Taking it live is their step too.
 
 ## Checking availability
 
@@ -55,7 +57,7 @@ uip maestro flow registry search 'extract-document-builder' --output json
 ```
 
 ```json
-{ "NodeType": "uipath.ixp.extract-document-builder", "DisplayName": "Extract v2", "AvailableOnTenant": false }
+{ "NodeType": "uipath.ixp.extract-document-builder", "DisplayName": "Extract document", "AvailableOnTenant": false }
 ```
 
 That `false` says nothing about the tenant. A tenant manifest is built from the out-of-the-box node catalogue, and this node is not in it — Studio Web adds it to the canvas from a builder, behind a feature flag. The CLI knows the node from its own bundled catalogue, which is why the row exists at all, and marks it unavailable because the tenant did not serve it. Every tenant answers the same way, enabled or not. Do not gate on it and do not report it to the user as a finding.
@@ -64,7 +66,7 @@ That `false` says nothing about the tenant. A tenant manifest is built from the 
 
 So until the CLI grows a real check, ask instead of guessing. Tell the user you cannot verify it from here, and ask whether **Extract document** appears in their node picker in Studio Web. Their answer is the check. If they do not know, say plainly that you are building on the assumption it is enabled and that they should confirm before relying on the flow — then build, rather than stalling on a question they may not be able to answer.
 
-**Ask about "Extract document", not "Extract v2".** The node is named Extract document in the product, and that is the only name the user sees. "Extract v2" is what the CLI's bundled catalogue still calls it, which is why the registry row above reads that way, and it is what the team calls the feature. A user looking at a picker that says Extract document will answer no to a question about Extract v2, and the node will be refused on a tenant that has it.
+**Ask about "Extract document", not "Extract v2".** The node is named Extract document everywhere the user can see it, and Extract v2 is only the internal name for the feature. A user looking at a picker that says Extract document will answer no to a question about Extract v2, and the node will be refused on a tenant that has it.
 
 Treat the feature as unavailable without asking in one case: a deployment on Automation Suite, where structured extraction ships switched off. Go to [When Extract v2 is not available](#when-extract-v2-is-not-available).
 
@@ -106,28 +108,78 @@ uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label
 
 Two shapes are accepted — the plain `=js:$vars.…` string above, and the structured form `{"type":"jsExpression","expression":"$vars.start.output.invoice"}` with no `=js:` prefix inside it. Prefer the plain string: it is what Studio Web writes for this node family. Anything else, including a literal file name or a hand-built attachment object, reaches the runtime as a literal and the upstream output never resolves.
 
-Where the file comes from depends on the trigger. A flow started with a file input reads `$vars.start.output.<input name>`. A connector event carries its own file-reference field, named in the trigger's output definition — a SharePoint-backed event declaring `ReferenceID` is wired as `$vars.start.output.ReferenceID`. Read the trigger's contract rather than guessing the field name, and do not insert a download step to change the shape; this node takes the reference directly.
+Where the file comes from depends on the trigger. A connector event carries its own file-reference field, named in the trigger's output definition — a SharePoint-backed event declaring `ReferenceID` is wired as `$vars.start.output.ReferenceID`. Read the trigger's contract rather than guessing the field name, and do not insert a download step to change the shape; this node takes the reference directly.
+
+A flow that simply takes a document in needs that input declared before anything can reference it:
+
+```bash
+uip maestro flow variables create <file> invoice -d in -t file --description 'The invoice document to extract' --output json
+```
+
+That is what makes `$vars.start.output.invoice` resolve. Declaring it on the trigger is a separate step from wiring it into the node, and a `fileRef` pointing at an input that was never declared validates as a broken expression.
 
 Then connect the node in the graph:
 
 ```bash
 uip maestro flow edges create <file> <upstream-id> <extract-id> --output json
-uip maestro flow edges create <file> <extract-id> <downstream-id> --output json
+uip maestro flow edges create <file> <extract-id> <downstream-id> --source-port success --output json
 ```
+
+**The edge leaving this node needs `--source-port success`.** `edges create` defaults to a port called `output`, which this node does not have, and the command refuses with `Source port "output" not found on node "<id>". Available source ports: success, error`. The names are close enough to mislead: `success` and `error` are the graph ports you draw edges from, while `output` and `error` are the variable outputs you read with `$vars`. The incoming edge needs no flag, because the target port is the default `input`.
 
 Adding the same edge twice is safe — the command reports the existing edge rather than creating a duplicate.
 
 ## Reading what it extracts
 
-The result arrives on the node's `output` port, under `processedDocument`:
+The extracted fields arrive two levels down the node's `output` port, one property per taxonomy field:
 
 ```js
-$vars.<extract-node-id>.output.processedDocument
+$vars.<extract-node-id>.output.result.output
 ```
 
-**`ExtractionResult` is the published-model node's output, not this one.** The two nodes emit different shapes, and a downstream step written against the wrong one reads a key that is not there. `ExtractionResult.ResultsDocument.Fields[]` belongs to the node in [ixp.md](ixp.md); Extract v2 emits `processedDocument`, whose contents follow the taxonomy the node carries.
+The port carries a whole processed document, of which the extracted values are one part. Its top level has `version`, `type`, `result`, `taxonomy` and `metadata`. Inside `result` sit `output` (the values, keyed by field name), `attribution` (where on the page each value came from, keyed by a JSON Pointer into `output`) and `traceContext`. Reach for `result.output` when a downstream step wants the data, and for the port itself when something wants the document whole.
+
+The flow file embeds the definition it was created with, so `uip maestro flow registry get uipath.ixp.extract-document-builder --output-filter 'keys(Node.outputDefinition.output.schema.properties)' --output json` can confirm the actual output schema should that evolve over time.
+
+**`ExtractionResult` is the published-model node's output, not this one.** The two nodes emit different shapes, and a downstream step written against the wrong one reads a key that is not there. `ExtractionResult.ResultsDocument.Fields[]` belongs to the node in [ixp.md](ixp.md).
 
 The `error` port carries failures. Wire it with `edges create --source-port error` when an unreadable document should follow a recovery path; leaving it unwired means the flow fails loudly instead, which is often the right behaviour.
+
+## Returning the result
+
+Extraction that nothing reads is not much use, so the flow usually declares an output carrying it. That takes three steps, and the last one has no CLI command — write it into the `.flow` file directly rather than going looking for a verb that does it.
+
+Declare the output global, then add an End node and wire the extract node to it:
+
+```bash
+uip maestro flow variables create <file> extractedData -d out -t object --description 'The structured data extracted from the document' --output json
+uip maestro flow nodes create <file> core.control.end --label 'End' --output json
+uip maestro flow edges create <file> <extract-id> <end-id> --source-port success --output json
+```
+
+The binding itself lives in the End node's own `outputs` block, keyed by the output's name:
+
+```json
+{
+  "id": "end1",
+  "type": "core.control.end",
+  "typeVersion": "1.0",
+  "display": { "label": "End" },
+  "inputs": {},
+  "outputs": {
+    "extractedData": {
+      "type": "object",
+      "description": "",
+      "source": "=js:$vars.<extract-id>.output.result.output",
+      "var": "extractedData"
+    }
+  }
+}
+```
+
+`var` names the declared global and `source` is the expression that fills it. Returning the extracted values means pointing `source` at `result.output`; a flow that returns only part of them, or reshapes them, puts a script between the extract node and the End node and binds that script's output instead.
+
+**There is no `variableUpdates` block on an End node.** That shape belongs elsewhere in the format and `validate` rejects it here, so a flow output written that way fails with no obvious cause.
 
 ## Validating
 

@@ -20,7 +20,7 @@ Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? }
   model: { modelName: 'invoiceixp-cef0d447-ixp',
     folderKey: 'c4359cde-55f0-4f0e-9322-c6cdce74ab4c' },
 }))
-.step('total', script({ code: 'return $vars.extract.output.processedDocument;' }))
+.step('total', script({ code: 'return $vars.extract.output.result.output;' }))
 ```
 
 ## At a glance
@@ -71,8 +71,10 @@ rejects a node whose `schemaDocument` is any other shape, so a bare JSON-Schema
 object with `properties` alone does not work here. The format, with a worked
 example, is in [extract-v2-taxonomy.md](extract-v2-taxonomy.md).
 
-Classification lands at `out('classify', ...)`. Extraction results land at
-`out('extract')` under `processedDocument` — `ExtractionResult` is the
+Classification lands at `out('classify', ...)`. The extracted values land at
+`out('extract')` under `result.output`, one property per taxonomy field; the
+port itself carries the whole processed document, with the values' page
+provenance alongside them under `result.attribution`. `ExtractionResult` is the
 published-model node's output shape ([ixp.md](ixp.md)), not this one's.
 
 ## Evidence boundary
