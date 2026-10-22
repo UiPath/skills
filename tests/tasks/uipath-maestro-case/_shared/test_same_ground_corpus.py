@@ -61,6 +61,12 @@ _CONNECTOR_HELP_PROBES = (
     "uip maestro registry pull -h | sed -n 1,80p",
 )
 _MUTATING_PROBE = "uip maestro case tasks add --stage-id s1 --type process --output json"
+# A real mutation chained before a help call: the help exclusion must stay in
+# its own command segment, so this still has to match.
+_CHAINED_MUTATING_PROBE = (
+    "uip maestro case tasks add --stage-id s1 --type process"
+    " && uip maestro case tasks add --help"
+)
 _HELP_PROBES = (
     "uip maestro case tasks add --help",
     "uip maestro case tasks add -h | sed -n 1,80p",
@@ -122,6 +128,10 @@ def test_mutating_verb_guards_ignore_help_calls() -> None:
                 compiled = re.compile(pattern, re.DOTALL)
                 if not compiled.search(_MUTATING_PROBE):
                     continue
+                if not compiled.search(_CHAINED_MUTATING_PROBE):
+                    offenders.append(
+                        f"{relative}: /{pattern}/ misses {_CHAINED_MUTATING_PROBE!r}"
+                    )
                 offenders.extend(
                     f"{relative}: /{pattern}/ matches {probe!r}"
                     for probe in _HELP_PROBES
