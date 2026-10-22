@@ -443,7 +443,7 @@ the field-level evaluation and correction process the requirement actually names
 threshold without validating it creates review load and still misses errors.
 
 **Boundary.** A low-volume incidental read with no review requirement is a bounded read — AF2, not
-Extract. Packets need their document boundaries established first. Zero observed
+Extract. Packets need Classify & Split to separate them first. Zero observed
 errors in a small sample is not a guarantee of zero production errors — release decisions need ongoing
 validation.
 
@@ -572,7 +572,7 @@ amount of prompt work substitutes for a matrix whose ownership and correctness a
 **Boundary.** If the reference table cannot be condensed to fit a row, this becomes a grounded lookup —
 PS2 when one scoped retrieval answers it; when resolution depends on what an earlier lookup returned,
 that is a dependent chain and belongs in AH. If the label is a routing decision over whole documents rather than a column
-on a row, this is not BT at all and the documents must be separated first. If categories must be assigned
+on a row, this is not BT at all and the documents need Classify & Split first. If categories must be assigned
 by exact keyed mapping, use a deterministic lookup and skip the model.
 
 ### BT3 Independent per-row judgements feeding a case-level decision
@@ -624,7 +624,7 @@ Direct jumps when the symptom is already known. Do not scan the library.
 | The same control produces different computed results | AH3 | Deterministic tools before judgment |
 | A file read has grown into bulk spreadsheet processing | AF1 | EX2 when field review is required |
 | Confidence-based approval misses critical errors | EX1 — calibrated field-level review | A looser threshold is not a fix when a critical error is unacceptable |
-| Header groups or signatures come from the wrong document | Establish the document boundaries before extracting — this release routes no strategy for that | EX3 when boundaries are already reliable and only entity density is the problem |
+| Header groups or signatures come from the wrong document | Classify & Split the packet into separate documents before extracting — not routed in this release, so name it as the prerequisite | EX3 when boundaries are already reliable and only entity density is the problem |
 | Partial results or missing repeated entities | EX3 | AH1 when precedence is also required |
 | Search misses files or source metadata | PS1 | Repair ingestion and metadata; do not loop blindly |
 | A "summary" task also requires research and external actions | SU3 | Separate collection and orchestration from synthesis |
