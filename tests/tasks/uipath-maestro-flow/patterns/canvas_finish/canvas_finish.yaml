@@ -5,7 +5,8 @@ description: >
   whose prompt is the canvas PLACEHOLDER seed, and a setup sticky note. Grades
   that every mock becomes the real step, the placeholder prompt is rewritten,
   the classifier reads the item, the pattern's routing and confidence floor
-  survive, and nothing else changes. The fixture is the canvas variant's
+  survive, and nothing else changes but the setup note.
+  The fixture is the canvas variant's
   definition (flow-workbench routing-triage/ai) emitted through the SDK and
   rewired to the canvas's edges; it validates. Graded offline.
   Validate-only by design: the person's choice suspends a headless debug run,
@@ -79,8 +80,8 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Every original node, edge, binding, variable and definition is unchanged except the classifier, its sidecar, and the three handlers it replaces"
-    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/patterns/canvas_finish/fixture/SupportTriage/SupportTriage --project SupportTriage/SupportTriage --changed-node classifyItem --changed-agent 87ae7e40-f676-4708-81cd-04f0cb1d59c0 --removable-node handleBilling --removable-node handleTechnical --removable-node handleAccount --removed-edge 'handleBilling:output>endBilling:input' --removed-edge 'handleTechnical:output>endTechnical:input' --removed-edge 'handleAccount:output>endAccount:input'"
+    description: "Every original node, edge, binding, variable and definition is unchanged except the classifier, its sidecar, the three handlers it replaces, and the setup sticky note"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/patterns/canvas_finish/fixture/SupportTriage/SupportTriage --project SupportTriage/SupportTriage --changed-node classifyItem --changed-node stickyNote_1 --changed-agent 87ae7e40-f676-4708-81cd-04f0cb1d59c0 --removable-node handleBilling --removable-node handleTechnical --removable-node handleAccount --removed-edge 'handleBilling:output>endBilling:input' --removed-edge 'handleTechnical:output>endTechnical:input' --removed-edge 'handleAccount:output>endAccount:input'"
     timeout: 30
     expected_exit_code: 0
     weight: 3.0
