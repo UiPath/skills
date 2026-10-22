@@ -18,12 +18,6 @@
  * absolute so Python children started from a temp cwd still measure the repo's
  * sources and report into coverage/.
  *
- * The test steps run with Supply Chain Guard's safe-chain shims (npm, python,
- * python3, ...) removed from PATH. Their binary is a Node build without the
- * inspector, and such a Node blanks NODE_V8_COVERAGE for every process it
- * starts, so nothing run through a shim was measured. The tests install
- * nothing; the c8 download still goes through the shims.
- *
  * A failing suite does not stop the run: both reports are always written, and
  * the exit code is 1 if any suite failed.
  *
@@ -38,7 +32,7 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { delimiter, dirname, join, relative, sep } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -49,15 +43,8 @@ const PYTHON = process.env.PYTHON ?? (WIN ? "python" : "python3");
 const C8 = "c8@10.1.3";
 const DASHBOARD_TESTS = "skills/uipath-coded-apps/assets/scripts/dashboards/tests";
 
-const PATH_KEY = Object.keys(process.env).find((key) => /^path$/i.test(key)) ?? "PATH";
-const unshimmedPath = process.env[PATH_KEY]
-  ?.split(delimiter)
-  .filter((dir) => !/[\\/]\.safe-chain([\\/]|$)/.test(dir))
-  .join(delimiter);
-
 const testEnv = {
   ...process.env,
-  [PATH_KEY]: unshimmedPath,
   PYTHONUTF8: "1",
   COVERAGE_RCFILE: join(ROOT, ".coveragerc"),
   COVERAGE_FILE: join(OUT, ".coverage"),
