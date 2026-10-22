@@ -28,6 +28,7 @@ KINDS = {
     "RejM": "endEvent",
     "EndF": "endEvent",
     "BodyEnd": "endEvent",
+    "BodyRej": "endEvent",
     "BodyStart": "startEvent",
     "Agent": "serviceTask",
 }
@@ -78,12 +79,18 @@ ERROR_ENDS = _ends(ERROR, "RejC", "RejF")
 TERMINATE_ENDS = _ends(TERMINATE, "RejC", "RejF")
 
 
-def _handler(start_attrs: str = "", error: str = ERROR, sub_attrs: str = ' triggeredByEvent="true"', inner: str = "") -> str:
+def _handler(
+    start_attrs: str = "",
+    error: str = ERROR,
+    sub_attrs: str = ' triggeredByEvent="true"',
+    inner: str = "",
+    key: str = "OnReject",
+) -> str:
     return (
-        f'<bpmn:subProcess id="OnReject"{sub_attrs}>'
-        f'<bpmn:startEvent id="Caught"{start_attrs}>{error}</bpmn:startEvent>{inner}'
-        '<bpmn:endEvent id="Handled" />'
-        '<bpmn:sequenceFlow id="H0" sourceRef="Caught" targetRef="Handled" />'
+        f'<bpmn:subProcess id="{key}"{sub_attrs}>'
+        f'<bpmn:startEvent id="{key}Start"{start_attrs}>{error}</bpmn:startEvent>{inner}'
+        f'<bpmn:endEvent id="{key}End" />'
+        f'<bpmn:sequenceFlow id="{key}Flow" sourceRef="{key}Start" targetRef="{key}End" />'
         "</bpmn:subProcess>"
     )
 
@@ -143,7 +150,10 @@ PRE_JOIN_ACCEPTED = {
     "subprocess-error-boundary": (SUBPROCESS_BOUNDARY, {**ERROR_ENDS, **_boundary()}, "", BODY),
 }
 
-PRE_JOIN_MESSAGE = "whose exits that skip the join all end only at process-level terminate ends or caught error ends"
+PRE_JOIN_MESSAGE = (
+    "whose exits that skip the join stay out of the joined chain and end only at "
+    "process-level terminate ends or caught error ends"
+)
 PRE_JOIN_REJECTED = {
     "plain-end": (PRE_JOIN, {}, "", frozenset()),
     "uncaught-error-end": (PRE_JOIN, ERROR_ENDS, "", frozenset()),
@@ -299,6 +309,63 @@ PRE_JOIN_REJECTED = {
         "",
         BODY,
     ),
+    "escalate-splits-to-manager": (
+        PRE_JOIN + [("GateC", "X2", '=vars.Var_C == "Escalate"'), ("X2", "Join"), ("X2", "Manager", '=vars.Var_X == 1')],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "escalate-splits-to-plain-end": (
+        PRE_JOIN + [("GateC", "X2", '=vars.Var_C == "Escalate"'), ("X2", "Join"), ("X2", "EndF", '=vars.Var_X == 1')],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "approve-forks-to-manager": (
+        _without(PRE_JOIN, ("GateC", "Join"))
+        + [("GateC", "P2", '=vars.Var_C == "Approve"'), ("P2", "Join"), ("P2", "Manager")],
+        {**ERROR_ENDS, "P2": '<bpmn:parallelGateway id="P2" />'},
+        _handler(),
+        frozenset(),
+    ),
+    "pre-review-gate-to-plain-end": (
+        _without(PRE_JOIN, ("Fork", "Finance")) + [("Fork", "Pre"), ("Pre", "Finance"), ("Pre", "EndF", '=vars.Var_P == 1')],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "hold-provisions-terminate": (
+        PRE_JOIN + [("GateC", "Provision", '=vars.Var_C == "Hold"')],
+        {**ERROR_ENDS, **_ends(TERMINATE, "EndOk")},
+        _handler(),
+        frozenset(),
+    ),
+    "inner-handler-hides-outer": (
+        _without(SUBPROCESS_BOUNDARY, ("Caught", "RejectMerge")),
+        ERROR_ENDS,
+        _handler(),
+        BODY,
+        _handler(key="InnerReject"),
+    ),
+    "inner-handler-hides-boundary": (
+        SUBPROCESS_BOUNDARY,
+        {**ERROR_ENDS, **_boundary()},
+        "",
+        BODY,
+        _handler(key="InnerReject"),
+    ),
+    "boundary-to-manager-hides-handler": (
+        _without(SUBPROCESS_BOUNDARY, ("Caught", "RejectMerge")) + [("Caught", "Manager")],
+        {**ERROR_ENDS, **_boundary()},
+        _handler(),
+        BODY,
+    ),
+    "branch-never-joins": (
+        _without(PRE_JOIN, ("GateF", "Join")) + [("GateF", "RejF2", '=vars.Var_F == "Approve"')],
+        {**ERROR_ENDS, **_ends(ERROR, "RejF2")},
+        _handler(),
+        frozenset(),
+    ),
     "terminate-in-subprocess": (WHOLE_BODY, {**TERMINATE_ENDS, **_ends(TERMINATE, "RejM")}, "", WHOLE_BODY_NODES),
     "handler-in-subprocess": (
         WHOLE_BODY,
@@ -441,6 +508,52 @@ SHAPES_REJECTED = {
 }
 
 
+# The stock stage gate with every review and end inside Body, then one process end.
+SUBPROCESS_END_ACCEPTED = {
+    "stock-shape-in-subprocess": (
+        [("Start", "Body"), ("Body", "EndOk"), ("BodyStart", "Fork")]
+        + PARALLEL_STAGE[1:]
+        + STAGE_GATE
+        + MANAGER_VERDICT
+        + [("Provision", "NotifyOk"), ("NotifyOk", "BodyEnd"), ("NotifyRej", "BodyRej")],
+        frozenset(
+            {"BodyStart", "Fork", "Compliance", "Finance", "Join", "Stage", "Manager", "Decision"}
+            | {"Provision", "NotifyOk", "NotifyRej", "BodyEnd", "BodyRej"}
+        ),
+        "",
+    ),
+}
+
+# A plain end inside an embedded subprocess is not final: the subprocess
+# completes and its outgoing flow runs.
+SUBPROCESS_END_REJECTED = {
+    "stage-gate-in-subprocess": (
+        [
+            ("Start", "Body"),
+            ("Body", "Manager"),
+            ("BodyStart", "Fork"),
+            ("Fork", "Compliance"),
+            ("Fork", "Finance"),
+            ("Compliance", "Join"),
+            ("Finance", "Join"),
+            ("Join", "Stage"),
+            ("Stage", "BodyEnd"),
+            ("Stage", "BodyRej", PARALLEL_REJECT),
+        ]
+        + MANAGER_VERDICT
+        + APPROVED_TAIL,
+        frozenset({"BodyStart", "Fork", "Compliance", "Finance", "Join", "Stage", "BodyEnd", "BodyRej"}),
+        "",
+        "without an exclusive gateway that can exit to an end past every later review",
+    ),
+    "manager-reject-in-subprocess": (
+        WHOLE_BODY,
+        WHOLE_BODY_NODES,
+        _handler(),
+        "offers a second route to an end",
+    ),
+}
+
 def _load():
     spec = importlib.util.spec_from_file_location("check_near_miss", _CHECKER)
     module = importlib.util.module_from_spec(spec)
@@ -514,3 +627,21 @@ def test_pre_join_rejected(tmp_path, monkeypatch, name) -> None:
     with pytest.raises(SystemExit) as excinfo:
         checker.main()
     assert PRE_JOIN_MESSAGE in str(excinfo.value)
+
+
+@pytest.mark.parametrize("name", sorted(SUBPROCESS_END_REJECTED))
+def test_subprocess_end_rejected(tmp_path, monkeypatch, name) -> None:
+    flows, scoped, extra, message = SUBPROCESS_END_REJECTED[name]
+    _write(tmp_path, flows, ERROR_ENDS, extra, scoped)
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(SystemExit) as excinfo:
+        checker.main()
+    assert message in str(excinfo.value)
+
+
+@pytest.mark.parametrize("name", sorted(SUBPROCESS_END_ACCEPTED))
+def test_subprocess_end_accepted(tmp_path, monkeypatch, name) -> None:
+    flows, scoped, extra = SUBPROCESS_END_ACCEPTED[name]
+    _write(tmp_path, flows, {}, extra, scoped)
+    monkeypatch.chdir(tmp_path)
+    checker.main()
