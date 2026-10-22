@@ -13,9 +13,9 @@ import sys
 
 STRATEGIES = ("AH", "AF", "SU", "PS", "EX", "BT")
 # CS, NONE and PA are recognised but never expected. CS and PA are withheld from this
-# release (see the skill's CS-LOCATIONS.md and PA-LOCATIONS.md); NONE so an agent that reaches for
-# it is reported as "selected NONE" rather than "unparseable", PA because agentic
-# search is withheld from this release and a stale answer should be legible.
+# release, and their reinstatement specs are held internally rather than in this
+# repository. A withheld label stays answerable so a stale answer reads "selected CS"
+# rather than "unparseable"; NONE does the same for an agent that reaches for it.
 STRATEGY_ANSWERS = STRATEGIES + ("CS", "NONE", "PA")
 
 ANSWER_FILE = pathlib.Path("routing.txt")

@@ -5,8 +5,8 @@ description: >
   Trimmed for cost. The measured set was 42 rows — 21 workloads, each written twice
   in different words, six rows per strategy across all seven — and it is what the
   routing claims in the scorecard rest on. Classify & Split has since been withheld
-  from the release (skills/uipath-doc-strategy-select/CS-LOCATIONS.md), so the
-  scorecard's CS column describes a strategy this build no longer ships.
+  from the release, so the scorecard's CS column describes a strategy this build no
+  longer ships.
 
   This 6-row cut keeps one row per shipped strategy so a regression in any single one
   still shows, and drops everything the larger set was built to measure beyond that.

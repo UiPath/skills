@@ -116,8 +116,12 @@ customer-escalation-live/
 #
 # .local/       — working copies of the above, kept outside every packaged root
 # assets/memos/ — source meeting memos the case library was derived from
-# CASE-MEMO-MAP.md — maps case IDs to real accounts and ticket IDs. Unanchored
-#   on purpose: the filename must stay ignored wherever it is recreated.
+# CASE-MEMO-MAP.md — maps case IDs to real accounts and ticket IDs
+# *-LOCATIONS.md   — reinstatement specs for strategies withheld from a release
+#
+# The last two are unanchored on purpose: the filename shape must stay ignored
+# wherever it is recreated, not only at the path it sits at today.
 .local/
 assets/memos/
 CASE-MEMO-MAP.md
+*-LOCATIONS.md
