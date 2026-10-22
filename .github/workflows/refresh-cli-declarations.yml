@@ -41,8 +41,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # --limit: the default 30 covers only about a day of this repo's open
+          # PRs, and these PRs are never auto-merged, so an older one would
+          # fall out of the check and a duplicate would open.
           EXISTING=$(gh pr list \
             --state open \
+            --limit 1000 \
             --json number,url,headRefName \
             --jq '[.[] | select(.headRefName | startswith("auto/refresh-cli-declarations"))] | .[0] // empty')
 
