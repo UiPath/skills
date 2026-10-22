@@ -88,10 +88,22 @@ on:
       # Overrides the model for ANY agent. Blank keeps that harness's own repo
       # variable (CLAUDE_CODE_MODEL / CODEX_MODEL / ANTIGRAVITY_MODEL) — which is
       # where the default model lives, so it stays correct whichever agent is picked.
+      # With `delegate` it is the model Autopilot runs on; under the autopilot-golden
+      # experiment a blank value keeps that experiment's own model (gpt-5-6-luna).
       agent_model:
-        description: 'Model override (blank = default).'
+        description: 'Model override (blank = default; autopilot-golden on delegate: gpt-5-6-luna).'
         type: string
         default: ''
+      # The Linux job's experiment file. autopilot-golden runs
+      # experiments/autopilot-golden.yaml with --include-skipped, because its Jira and
+      # Salesforce scenarios ship `skip: true` until a tenant has their connections.
+      experiment:
+        description: 'Experiment (autopilot-golden also runs skipped tasks).'
+        type: choice
+        options:
+          - nightly
+          - autopilot-golden
+        default: nightly
 
 # No concurrency group: this is a manual, on-demand workflow — allow any number
 # of runs (e.g. the same task across claude / codex / antigravity) at once.
@@ -438,6 +450,7 @@ jobs:
           TASK_PARALLELISM:         ${{ inputs.parallelism }}
           AGENT:                    ${{ inputs.agent }}
           AGENT_MODEL:              ${{ inputs.agent_model }}
+          EXPERIMENT:               ${{ inputs.experiment }}
           # The model when agent_model is blank: one repo variable per harness, named the
           # same as the nightly runner's, and no hardcoded fallback — an unset variable
           # fails the run (guard below) rather than evaluating a model nobody chose.
@@ -482,7 +495,7 @@ jobs:
           env_lines=()
           for name in SKILLS_REPO_PATH API_BACKEND AWS_BEARER_TOKEN_BEDROCK AWS_REGION \
                       BEDROCK_MODEL E2E_PROCESS_KEY E2E_LONG_PROCESS_KEY \
-                      TASK_GLOBS TASK_COUNT TASK_PARALLELISM AGENT AGENT_MODEL \
+                      TASK_GLOBS TASK_COUNT TASK_PARALLELISM AGENT AGENT_MODEL EXPERIMENT \
                       CLAUDE_CODE_MODEL CODEX_MODEL ANTIGRAVITY_MODEL DELEGATE_MODEL \
                       CODEX_API_KEY CODEX_BASE_URL GEMINI_API_KEY; do
             env_lines+=("$name=${!name}")
@@ -491,15 +504,24 @@ jobs:
           # Args appended to `coder-eval run`, ONE PER LINE, each verbatim — no
           # word splitting, no pathname expansion. That is what the delegate `-D`
           # override needs: to bash its `[...]` list is a character class.
-          args=(-e experiments/nightly.yaml)
+          # Blank on a non-dispatch trigger, which keeps the nightly experiment.
+          case "${EXPERIMENT:-nightly}" in
+            nightly)          args=(-e experiments/nightly.yaml) ;;
+            autopilot-golden) args=(-e experiments/autopilot-golden.yaml --include-skipped) ;;
+            *)
+              echo "::error::unknown experiment '$EXPERIMENT'"
+              exit 1
+              ;;
+          esac
 
           # Agent selection. codex authenticates via CODEX_API_KEY/CODEX_BASE_URL,
           # antigravity via GEMINI_API_KEY (SDK baked into the agent image),
-          # delegate via the ROPC user token minted above. The model always
-          # comes from the harness's own variable above, with the agent_model input
-          # overriding any of them for a one-off run. Passed explicitly because the
-          # experiment YAML pins no model (it is shared by all harnesses). Driver
-          # is unchanged (docker here).
+          # delegate via the ROPC user token minted above. The model comes from
+          # the harness's own variable above, with the agent_model input
+          # overriding any of them for a one-off run. Passed explicitly because
+          # nightly.yaml pins no model (it is shared by all harnesses); only the
+          # delegate run of autopilot-golden, which pins its own, can omit it.
+          # Driver is unchanged (docker here).
           #
           # `extras` are the agent's host-side SDK plus the litellm judge
           # transport. They go into the install requirement, not a second
@@ -519,8 +541,13 @@ jobs:
             # it to the backend's underscored form); the optional DELEGATE_MODEL
             # repo variable or the agent_model input overrides it. The inherited
             # claude default is rejected by the alpha Delegate backend, so a
-            # model must always be passed.
-            model="${AGENT_MODEL:-${DELEGATE_MODEL:-kimi-k2-7-code}}"
+            # model must always be set: autopilot-golden.yaml sets its own, so a
+            # blank agent_model leaves that one in place.
+            if [ "${EXPERIMENT:-nightly}" = "autopilot-golden" ] && [ -z "$AGENT_MODEL" ]; then
+              model=""
+            else
+              model="${AGENT_MODEL:-${DELEGATE_MODEL:-kimi-k2-7-code}}"
+            fi
             args+=(--type delegate)
             # Alpha backend rate limits: the reference pipeline caps delegate
             # at -j 6 (eval_runner cli.py HARNESS_CONCURRENCY — at -j 20 retry
@@ -599,7 +626,10 @@ jobs:
           fi
 
           # After the clamp, so a delegate run reports the -j it will actually use.
-          args+=(-j "$j" -v --model "$model")
+          args+=(-j "$j" -v)
+          if [ -n "$model" ]; then
+            args+=(--model "$model")
+          fi
 
           # Task globs are `args` entries like everything else: the action
           # promotes none of the CLI's flags to named inputs, so there is no
