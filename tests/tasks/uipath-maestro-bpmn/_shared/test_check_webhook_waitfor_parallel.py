@@ -30,25 +30,36 @@ def _root(activity: str) -> ET.Element:
 
 
 # Trimmed from skill-bpmn-webhook-waitfor-parallel 2026-10-22.
-def _v2(body: dict, query: str = "{}") -> ET.Element:
+def _v2(body: dict, query: str | None = "{}", raw_body: str | None = None) -> ET.Element:
+    query_input = (
+        ""
+        if query is None
+        else f'<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA[{query}]]></uipath:input>'
+    )
     return _root(
         f'<uipath:type value="{grader.UNIFIED_HTTP_REQUEST}" version="v1" /><uipath:context>'
         f'<uipath:input name="connectorKey" type="string" value="uipath-uipath-http" />'
         f'<uipath:input name="method" type="string" value="POST" />'
         f'<uipath:input name="path" type="string" value="/http-request" />'
         f"</uipath:context>"
-        f'<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA[{query}]]></uipath:input>'
-        f'<uipath:input name="body" type="json" target="body"><![CDATA[{json.dumps(body)}]]></uipath:input>'
+        f"{query_input}"
+        f'<uipath:input name="body" type="json" target="body"><![CDATA[{raw_body or json.dumps(body)}]]></uipath:input>'
     )
 
 
-def _v1(url: str = WEBHOOK_URL, headers: str = "", activity_type: str = grader.HTTP_TYPE) -> ET.Element:
+def _v1(
+    url: str = WEBHOOK_URL,
+    headers: str = "",
+    activity_type: str = grader.HTTP_TYPE,
+    parameters: str = "",
+) -> ET.Element:
     return _root(
         f'<uipath:type value="{activity_type}" version="v1" /><uipath:context>'
         f'<uipath:input name="mode" type="string" value="manual" />'
         f'<uipath:input name="method" type="string" value="GET" />'
         f'<uipath:input name="url" type="string" value="{url}" />'
         f'<uipath:input name="headers" type="json" value=\'{headers}\' />'
+        f'<uipath:input name="parameters" type="json" value=\'{parameters}\' />'
         f"</uipath:context>"
     )
 
@@ -95,6 +106,33 @@ def test_webhook_config_endpoint_is_skipped() -> None:
     assert grader.http_get_nodes(_v2({**V2_BODY, "url": url})) == []
 
 
+@pytest.mark.parametrize("sep", ["?", "#"])
+def test_webhook_path_outside_url_path_is_skipped(sep: str) -> None:
+    url = f"https://example.com/x{sep}r=/elements_/v1/webhooks/events/abc123"
+    assert grader.http_get_nodes(_v2({**V2_BODY, "url": url})) == []
+
+
+def test_example_host_webhook_url_passes() -> None:
+    url = "https://webhook.example.invalid/elements_/v1/webhooks/events/abc123?x=1"
+    assert len(grader.http_get_nodes(_v2({**V2_BODY, "url": url}))) == 1
+
+
+def test_expression_url_fails_with_hint() -> None:
+    message = _fails(_v2({**V2_BODY, "url": "=vars.webhookUrl"}))
+    assert "literal webhook URL" in message
+    assert "uip is webhooks config" in message
+
+
+def test_manual_casing_passes() -> None:
+    assert len(grader.http_get_nodes(_v2({**V2_BODY, "authentication": "Manual"}))) == 1
+
+
+def test_body_not_json_fails_with_shape_error() -> None:
+    message = _fails(_v2({}, raw_body="{not json"))
+    assert "'T'" in message
+    assert "not valid JSON" in message
+
+
 def test_other_url_is_skipped() -> None:
     body = {**V2_BODY, "url": "https://example.com/webhook"}
     assert grader.http_get_nodes(_v2(body)) == []
@@ -121,6 +159,19 @@ def test_v2_headers_or_query_fail(body: dict, query: str, field: str) -> None:
     assert f"must not set {field}" in _fails(_v2(body, query))
 
 
+@pytest.mark.parametrize(
+    "query",
+    ["=js:vars.q", "foo=bar", '{"a":{"b":1}}', '{"a":["x"]}', '{"a":null}'],
+)
+def test_v2_filled_query_parameters_fail(query: str) -> None:
+    assert "must not set queryParameters" in _fails(_v2(V2_BODY, query))
+
+
+@pytest.mark.parametrize("query", ["{}", "", None])
+def test_v2_empty_query_parameters_pass(query: str | None) -> None:
+    assert len(grader.http_get_nodes(_v2(V2_BODY, query))) == 1
+
+
 def test_v2_empty_headers_and_query_pass() -> None:
     body = {**V2_BODY, "headers": {}, "query": ""}
     assert len(grader.http_get_nodes(_v2(body))) == 1
@@ -128,3 +179,7 @@ def test_v2_empty_headers_and_query_pass() -> None:
 
 def test_v1_headers_fail() -> None:
     assert "must not set headers" in _fails(_v1(headers='{"X-Test":"1"}'))
+
+
+def test_v1_parameters_fail() -> None:
+    assert "must not set query parameters" in _fails(_v1(parameters='{"a":"1"}'))

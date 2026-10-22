@@ -15,8 +15,9 @@ description: >
   `bpmn debug`).
   Ported from Flow `connector_trigger/webhook_waitfor_parallel.yaml`; the
   Flow JSON node/edge walk becomes an XML walk over the registry-driven
-  `Intsvc.WaitForEvent` / `Intsvc.UnifiedHttpRequest` wrappers, and the trigger's
-  raw outgoing-edge fan-out becomes a manual-start-or-parallelGateway fan-out
+  `Intsvc.WaitForEvent` / `Intsvc.UnifiedHttpRequest` or `Intsvc.HttpExecution`
+  wrappers, and the trigger's raw outgoing-edge fan-out becomes a
+  manual-start-or-parallelGateway fan-out
   (BPMN forks via a dedicated gateway node; either shape is accepted).
 tags:
   [

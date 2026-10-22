@@ -56,6 +56,7 @@ import os
 import re
 import sys
 import xml.etree.ElementTree as ET
+from urllib.parse import urlsplit
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
@@ -65,12 +66,13 @@ from _shared.bpmn_check import (  # noqa: E402
     attr,
     body_fields,
     body_object,
+    context_inputs,
     context_value,
     elements,
     fail,
     has_typed_uipath_extension,
     parse_bpmn,
-    query_parameters,
+    text_content,
 )
 from _shared.graph import reachable, reaches  # noqa: E402
 
@@ -158,8 +160,16 @@ def _json_text(value: object) -> str:
     return "" if value in (None, "") else json.dumps(value)
 
 
-def _request_fields(task: ET.Element) -> tuple[str, str, str, dict[str, str]]:
-    """(mode, method, url, {field: text that must be empty}) from the V2 body,
+def _query_payloads(task: ET.Element) -> list[tuple[str, str]]:
+    return [
+        ("queryParameters", text_content(inp).strip() or attr(inp, "value").strip())
+        for inp in context_inputs(task)
+        if attr(inp, "target") == "queryParameters"
+    ]
+
+
+def _request_fields(task: ET.Element) -> tuple[str, str, str, list[tuple[str, str]]]:
+    """(mode, method, url, [(field, text that must be empty)]) from the V2 body,
     else from the V1 context (HttpExecution, or a UnifiedHttpRequest with no
     body input, as builder-sdk's manual `.http()` writes)."""
     v2 = has_typed_uipath_extension(task, "activity", UNIFIED_HTTP_REQUEST) and body_fields(task)
@@ -168,10 +178,10 @@ def _request_fields(task: ET.Element) -> tuple[str, str, str, dict[str, str]]:
             context_value(task, "mode").lower(),
             context_value(task, "method").upper(),
             context_value(task, "url"),
-            {
-                "headers": context_value(task, "headers"),
-                "query parameters": context_value(task, "parameters"),
-            },
+            [
+                ("headers", context_value(task, "headers")),
+                ("query parameters", context_value(task, "parameters")),
+            ],
         )
 
     try:
@@ -182,11 +192,11 @@ def _request_fields(task: ET.Element) -> tuple[str, str, str, dict[str, str]]:
         str(body.get("authentication", "")).lower(),
         str(body.get("method", "")).upper(),
         str(body.get("url", "")).strip(),
-        {
-            "headers": _json_text(body.get("headers")),
-            "query parameters": _json_text(body.get("query")),
-            "queryParameters": _json_text(query_parameters(task)),
-        },
+        [
+            ("headers", _json_text(body.get("headers"))),
+            ("query parameters", _json_text(body.get("query"))),
+            *_query_payloads(task),
+        ],
     )
 
 
@@ -206,9 +216,15 @@ def http_get_nodes(root: ET.Element) -> list[ET.Element]:
                 f"get the webhook URL from `uip is webhooks config {CONNECTOR_KEY} "
                 "--connection-id <id> --element-instance-id <id> --output json`"
             )
-        if not WEBHOOK_URL_PATH.search(url):
+        if url.startswith("="):
+            fail(
+                f"HTTP node url {url!r} is an expression; the task wants the literal webhook URL. "
+                f"Run `uip is webhooks config {CONNECTOR_KEY} --connection-id <id> "
+                "--element-instance-id <id> --output json` and write its Data.WebhookUrl as the url"
+            )
+        if not WEBHOOK_URL_PATH.search(urlsplit(url).path):
             continue
-        for field, text in must_be_empty.items():
+        for field, text in must_be_empty:
             if not _is_empty_json_field(text):
                 fail(f"HTTP node must not set {field}; found: {text!r}")
         good.append(task)
