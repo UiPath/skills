@@ -245,24 +245,36 @@ def cmd_seed(a):
         # the agent then has to WAIT for that job to finish, and when the AI
         # Trust Layer / LLM gateway is slow the job outruns the agent's budget
         # and the run fails on an environment problem, not an agent one. So
-        # pre-warm the SAME job here within a generous budget: if it finishes,
-        # the agent's resume is instant; if it is still running after the
-        # budget, the backend is too slow for this run — exclude the task as
-        # tenant-not-ready (the pass-rate gate drops a pre_run that exits non
-        # zero with TENANT NOT READY on stderr) rather than let it fail closed.
+        # pre-warm the SAME job here: if it finishes, the agent's resume is
+        # instant; if it is still running after the budget, the backend is too
+        # slow for this run — exclude the task as tenant-not-ready (the
+        # pass-rate gate drops a pre_run that exits non-zero with TENANT NOT
+        # READY on stderr) rather than let it fail closed. The budget is the
+        # skill's own single-wait bound (`--timeout 540`): a job the agent could
+        # have waited out is not a slow backend. Jobs usually finish in 1-2 min;
+        # a 240 s budget turned merely slow jobs into nightly ERRORs.
+        health_wait = 540
         rc, henv = call("backend.health", "tm", "requirements", "generate-testcases",
                         "--project-key", a.project, "--activity-id", activity,
-                        "--wait", "--timeout", "240", "--poll-interval", "5",
-                        timeout=300, check=False)
+                        "--wait", "--timeout", str(health_wait), "--poll-interval", "5",
+                        timeout=health_wait + 60, check=False)
         timed_out = (rc == 2 or (henv.get("ErrorCode") or "").lower() == "timeout"
                      or "timed out" in (henv.get("Message") or "").lower())
         if timed_out:
             print("TENANT NOT READY — the AI generate backend did not finish job "
-                  f"{activity} within 240s on project {a.project}; the AI Trust "
-                  "Layer / LLM gateway is too slow for this run. Not an agent "
+                  f"{activity} within {health_wait}s on project {a.project}; the AI "
+                  "Trust Layer / LLM gateway is too slow for this run. Not an agent "
                   "failure.", file=sys.stderr, flush=True)
             sys.exit(1)
         if rc != 0:
+            # A 5xx while polling (ErrorCode server_error) is the backend
+            # wobbling, not a fixture bug: same exclusion as a slow job.
+            if (henv.get("ErrorCode") or "").lower() == "server_error":
+                print("TENANT NOT READY — the AI generate backend answered a server "
+                      f"error while polling job {activity} on project {a.project}: "
+                      f"{(henv.get('Message') or '')[:160]}. Not an agent failure.",
+                      file=sys.stderr, flush=True)
+                sys.exit(1)
             fail(f"backend.health on job {activity} failed (rc={rc}): "
                  f"{json.dumps(henv)[:300]}")
 
@@ -354,7 +366,8 @@ def main():
     s.add_argument("--require-access", action="append", default=[], metavar="VERB",
                    help="exit TENANT NOT READY when this AI verb answers 403 (repeatable)")
     s.add_argument("--capture-generate-timeout", metavar="OUT",
-                   help="start generate-testcases with a 3 s wait and save its output")
+                   help="start generate-testcases with a 3 s wait, save its output, then "
+                        "pre-warm the job for up to 540 s (TENANT NOT READY if slower)")
     s.add_argument("--stamped-prefix", metavar="PREFIX",
                    help="seed into a fresh per-run project <PREFIX><stamp>-<hex> "
                         "(key written to project-key.txt) instead of --project, so "
