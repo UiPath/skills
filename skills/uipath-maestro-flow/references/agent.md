@@ -72,6 +72,7 @@ at author time.
 
 ## Task-created in-solution coded agent
 
+<!--skill-flavor:agent-scaffold:start-->
 1. Scaffold the solution and Flow project.
 2. Scaffold and implement the coded agent as a sibling directory.
 3. Register the sibling with `uip solution projects add`.
@@ -80,7 +81,6 @@ at author time.
 5. Compile into the nested Flow project, validate, refresh resources, and
    debug the Flow.
 
-<!--skill-flavor:agent-scaffold:start-->
 ```bash
 uip solution init <SolutionName> --output json
 ( cd <SolutionName> && uip maestro flow init <FlowName> --output json )
@@ -92,7 +92,6 @@ mkdir -p <SolutionName>/<AgentProject>
   && uip codedagent setup --force --output json \
   && uip codedagent new <AgentName> )
 ```
-<!--skill-flavor:agent-scaffold:end-->
 
 **Install the framework package BEFORE `new`.**
 `new` defaults to `--type auto`, which picks the template from whichever
@@ -165,6 +164,7 @@ resolved to.
 wiring: re-adding the project or hand-editing `uipath.json` will not change it,
 so read the identifiers and wire the Flow rather than trying to correct it
 first.
+<!--skill-flavor:agent-scaffold:end-->
 
 ```ts
 .step('analyze', agent({

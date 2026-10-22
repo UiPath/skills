@@ -1,0 +1,105 @@
+<!--skill-flavor:operate-auth:start-->
+Everything that touches the cloud: publish, deploy, debug, trigger, inspect,
+and instance lifecycle. Studio Web signs you in to the tenant of the user, so
+there is no login step.
+<!--skill-flavor:operate-auth:end-->
+
+<!--skill-flavor:operate-format:start-->
+**Never run `format` on a merged file.** In Studio Web almost every write is a
+merge into the canvas of the user. The `layout` of the original holds the
+positions of the user, and `merge` keeps them and places each added node.
+`format` lays out every node again and discards them.
+
+A new `.flow` that `compile` wrote straight, with no merge, is different.
+`compile` writes a placeholder `ui.position` on each node, all on one flat row,
+and no top-level `layout` block. So run `format` once on such a file, before
+the user opens it, unless its source sets `.layout()` (below):
+
+```bash
+uip maestro flow format <Name>.flow --output json
+```
+<!--skill-flavor:operate-format:end-->
+
+<!--skill-flavor:layout-sdk-version:start-->
+5. **`at` and `dim` need `@uipath/maestro-builder-sdk` 6.36.0 or later** — check that `dist/api-index.md` of the SDK that Studio Web ships lists them. If not, write the entry long-hand, `{ position: { x, y } }` with an optional `size: { width, height }`.
+<!--skill-flavor:layout-sdk-version:end-->
+
+<!--skill-flavor:operate-publish:start-->
+"Publish" means the open solution, with `uip solution publish`. Studio Web
+packages the solution and signs in, so there is no pack or upload step:
+
+```bash
+uip solution publish --output json
+uip solution publish --location "<key or name>" --output json
+uip solution publish --personal-workspace --output json
+```
+
+With no destination flag and one destination, it publishes there. With
+several destinations, it publishes nothing and lists them: ask the user, then
+run it again with `--location`. Offer exactly the choices the command returned.
+Publish is asynchronous: tell the user to check the result in the Publish
+history of Studio Web. A personal-workspace publish deploys itself. A
+shared-location publish does not: deploy it with `uip solution deploy run`
+(the `uipath-solution` skill has the contract).
+<!--skill-flavor:operate-publish:end-->
+
+<!--skill-flavor:operate-debug:start-->
+```bash
+uip flow debug <Project> --output json
+```
+
+`<Project>` is a project name in the open solution, not a path; it defaults to
+the open project. In Studio Web the verb is `uip flow debug`:
+`uip maestro flow debug` fails here with `FlowDebugService is not a
+constructor`. Debug runs the saved project, so there is no pack or upload step.
+
+`flow debug` executes the flow for real: it sends the emails, posts the
+messages, calls the APIs. It is not a validation step — `validate` is. Run it
+when the request is for a flow that works; ask when the request stops at build
+or validate; and with nobody to ask, report the flow as unverified rather than
+letting a passing `validate` stand as the result.
+<!--skill-flavor:operate-debug:end-->
+
+<!--skill-flavor:operate-debug-scratch-copy:start-->
+- **Every process and connection node must resolve.** A node bound to a
+  resource the tenant lacks (a placeholder key awaiting the real process, a stub
+  connection) fails provisioning and starts no instance; `Data.missingResources`
+  names it, though `check` and `validate` pass it. Each connection must also be
+  in the solution ([SKILL.md](../SKILL.md#the-connector-loop-in-studio-web),
+  step 7). Name the blocking node to the user. Do not debug a copy of the
+  project: Studio Web cannot delete the copy afterwards.
+<!--skill-flavor:operate-debug-scratch-copy:end-->
+
+<!--skill-flavor:operate-debug-inputs:start-->
+```bash
+uip flow debug <Project> --output json --inputs '{"numberA": 5, "numberB": 7}'
+```
+<!--skill-flavor:operate-debug-inputs:end-->
+
+<!--skill-flavor:operate-debug-attachment:start-->
+`uip flow debug` in Studio Web cannot pass a file: it ignores `--attachment`.
+To run a flow with a `types.file` input, ask the user to run it from the
+designer.
+<!--skill-flavor:operate-debug-attachment:end-->
+
+<!--skill-flavor:operate-debug-entry-point:start-->
+**A flow with more than one root starts at the default root.** That is the
+trigger marked `isDefaultEntryPoint`, else the first trigger. `uip flow debug`
+in Studio Web takes no `--entry-point`: to run another root, ask the user to
+run it from the designer. `Data.entryPoint` names the trigger the run started
+from.
+<!--skill-flavor:operate-debug-entry-point:end-->
+
+<!--skill-flavor:operate-debug-redirect:start-->
+```bash
+uip flow debug <Project> --output json > /tmp/flow-debug.json
+```
+<!--skill-flavor:operate-debug-redirect:end-->
+
+<!--skill-flavor:refresh-when:start-->
+Run this before `uip solution publish` or `uip flow debug`, every time. It
+syncs connection and process resource declarations from the project's
+`bindings_v2.json` into the solution, and a stale declaration fails at run time
+with a binding error even when the emitted `.flow` is correct — so the symptom
+never points at the cause. In Studio Web, `<SolutionDir>` is `/solution`.
+<!--skill-flavor:refresh-when:end-->
