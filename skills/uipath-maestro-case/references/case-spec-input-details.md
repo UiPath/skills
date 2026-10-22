@@ -231,7 +231,7 @@ In              NotIn              Like            NotLike
 IsNull          IsNotNull
 ```
 
-This is every value the builder knows, not what a field accepts. When `case spec` lists `filter.fields[].operators[]` (or `filter.freeformOperators[]`), pick the row's `operator` from there.
+This is every value the builder knows, not what a field accepts. When `case spec` lists `filter.fields[].operators[]` (or `filter.freeformOperators[]`), pick the row's `operator` from there. A field with `operators: []` takes no row.
 
 ### `WorkflowValue`
 
