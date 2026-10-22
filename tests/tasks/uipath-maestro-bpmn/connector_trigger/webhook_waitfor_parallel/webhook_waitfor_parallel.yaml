@@ -4,9 +4,10 @@ description: >
   branches. Branch 1 is a mid-flow Wait-for-event node (bpmn:receiveTask,
   registry `Intsvc.WaitForEvent`) bound to the HTTP Webhook connector
   (connectorKey `uipath-http-webhook`). Branch 2 is a Managed HTTP Request
-  (bpmn:sendTask, registry `Intsvc.HttpExecution`, manual mode, GET) whose
-  URL is the webhook URL of that same HTTP Webhook connection, with nothing
-  in headers or query. The GET self-delivers the event that completes the
+  (bpmn:sendTask, registry `Intsvc.UnifiedHttpRequest` or
+  `Intsvc.HttpExecution`, manual mode, GET) whose URL is the webhook URL of
+  that same HTTP Webhook connection, never its base URL, with nothing in
+  headers or query. The GET self-delivers the event that completes the
   wait at runtime.
   Exercises the connector-trigger plugin's "Wait for events" variant,
   parallel branch fan-out from the manual start, manual-mode HTTP, and the
@@ -14,7 +15,7 @@ description: >
   `bpmn debug`).
   Ported from Flow `connector_trigger/webhook_waitfor_parallel.yaml`; the
   Flow JSON node/edge walk becomes an XML walk over the registry-driven
-  `Intsvc.WaitForEvent` / `Intsvc.HttpExecution` wrappers, and the trigger's
+  `Intsvc.WaitForEvent` / `Intsvc.UnifiedHttpRequest` wrappers, and the trigger's
   raw outgoing-edge fan-out becomes a manual-start-or-parallelGateway fan-out
   (BPMN forks via a dedicated gateway node; either shape is accepted).
 tags:

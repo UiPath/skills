@@ -9,9 +9,10 @@ Ported from Flow `connector_trigger/webhook_waitfor_parallel.yaml`'s
          |-- branch 1: bpmn:receiveTask carrying the registry Intsvc.WaitForEvent
          |   wrapper, bound to the HTTP Webhook connector (connectorKey
          |   uipath-http-webhook) -> end
-         `-- branch 2: bpmn:sendTask carrying the registry Intsvc.HttpExecution
-             wrapper, manual (connectionless) GET whose url is that connection's
-             webhook URL, with nothing in headers or query parameters -> end
+         `-- branch 2: bpmn:sendTask carrying the registry Intsvc.UnifiedHttpRequest
+             or Intsvc.HttpExecution wrapper, manual (connectionless) GET whose url
+             is that connection's webhook URL, with nothing in headers or query
+             parameters -> end
 
 Branch 2's GET hits the webhook URL, which delivers the event that completes
 branch 1's wait -- so the process self-triggers at runtime. This checker
@@ -37,11 +38,11 @@ Assertion map (Flow -> BPMN):
      == "uipath-http-webhook" -- the same connector-key literal Flow's own node-type marker
      embeds.
   T  Flow's `core.action.http` / `core.action.http.v2` manual-GET-to-webhook-URL node shape ->
-     bpmn:sendTask carrying the registry Intsvc.HttpExecution wrapper (uipath:activity, per
-     the registry's own xmlTemplate: context fields mode/method/url/headers/parameters/body)
-     with mode=manual, method=GET, url containing "webhook", and no populated "headers" or
-     "parameters" context field -- the same "nothing in headers or query" rule Flow enforced,
-     read from the BPMN context fields instead of a JSON body dict.
+     bpmn:sendTask carrying Intsvc.UnifiedHttpRequest (body authentication/method/url/
+     headers/query, plus the queryParameters input) or Intsvc.HttpExecution (context
+     mode/method/url/headers/parameters), with a manual GET to the URL
+     `uip is webhooks config` returns (WEBHOOK_URL_PATH, never the connection base
+     URL), and nothing in headers or query.
   DROPPED  require_no_private_connector_values / require_sequence_integrity /
            require_di_for_visible_elements / connection-binding check (not in Flow; the
            `bpmn validate` criterion in the task YAML covers structure, and this connector has
@@ -52,18 +53,23 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
     NS,
+    UNIFIED_HTTP_REQUEST,
+    BodyShapeError,
     attr,
+    body_object,
     context_value,
     elements,
     fail,
     has_typed_uipath_extension,
     parse_bpmn,
+    query_parameters,
 )
 from _shared.graph import reachable, reaches  # noqa: E402
 
@@ -72,8 +78,14 @@ WAIT_TYPE = "Intsvc.WaitForEvent"
 HTTP_TYPE = "Intsvc.HttpExecution"
 # registry-workflow.md lists both wrappers for the managed HTTP sendTask; the
 # eval agent emitted UnifiedHttpRequest on CI run 35538279757.
-HTTP_TYPES = (HTTP_TYPE, "Intsvc.UnifiedHttpRequest")
+HTTP_TYPES = (HTTP_TYPE, UNIFIED_HTTP_REQUEST)
 CONNECTOR_KEY = "uipath-http-webhook"
+# `uip is webhooks config` URL paths:
+#   /<org>/<tenant>/elements_/v1/webhooks/events/<id>
+#   /elements_/scaleunit_/<unit>/v1/webhooks/connectors/<key>/events/<id>
+WEBHOOK_URL_PATH = re.compile(r"/elements_/(?:[^?#]*/)?v1/webhooks/(?:[^?#]*/)?events/[^/?#]+")
+# `uip is connections base-url` host, e.g. http://gallupx-webhook-server.cloudelements.svc.cluster.local
+BASE_URL_HOST = ".svc.cluster.local"
 
 
 def manual_start_events(root: ET.Element) -> list[ET.Element]:
@@ -141,26 +153,61 @@ def wait_for_event_nodes(root: ET.Element) -> list[ET.Element]:
     return out
 
 
+def _json_text(value: object) -> str:
+    return "" if value in (None, "") else json.dumps(value)
+
+
+def _request_fields(task: ET.Element) -> tuple[str, str, str, dict[str, str]]:
+    """(mode, method, url, {field: text that must be empty}) from the V2 body,
+    else from the V1 context."""
+    if not has_typed_uipath_extension(task, "activity", UNIFIED_HTTP_REQUEST):
+        return (
+            context_value(task, "mode").lower(),
+            context_value(task, "method").upper(),
+            context_value(task, "url"),
+            {
+                "headers": context_value(task, "headers"),
+                "query parameters": context_value(task, "parameters"),
+            },
+        )
+
+    try:
+        body = body_object(task)
+    except BodyShapeError as exc:
+        fail(f"HTTP node {attr(task, 'id')!r}: {exc}")
+    return (
+        str(body.get("authentication", "")).lower(),
+        str(body.get("method", "")).upper(),
+        str(body.get("url", "")).strip(),
+        {
+            "headers": _json_text(body.get("headers")),
+            "query parameters": _json_text(body.get("query")),
+            "queryParameters": _json_text(query_parameters(task)),
+        },
+    )
+
+
 def http_get_nodes(root: ET.Element) -> list[ET.Element]:
-    """bpmn:sendTask carrying Intsvc.HttpExecution, manual GET to a webhook
-    URL, with nothing in headers or query parameters."""
+    """bpmn:sendTask carrying an HTTP wrapper, manual GET to the connection's
+    webhook URL, with nothing in headers or query parameters."""
     good = []
     for task in elements(root, "sendTask"):
         if not any(has_typed_uipath_extension(task, "activity", t) for t in HTTP_TYPES):
             continue
-        mode = context_value(task, "mode").lower()
-        method = context_value(task, "method").upper()
-        url = context_value(task, "url")
+        mode, method, url, must_be_empty = _request_fields(task)
         if mode != "manual" or method != "GET":
             continue
-        if "webhook" not in url.lower():
+        if BASE_URL_HOST in url.lower():
+            fail(
+                f"HTTP node url {url!r} is the connection base URL, not its webhook URL; "
+                f"get the webhook URL from `uip is webhooks config {CONNECTOR_KEY} "
+                "--connection-id <id> --element-instance-id <id> --output json`"
+            )
+        if not WEBHOOK_URL_PATH.search(url):
             continue
-        headers = context_value(task, "headers")
-        params = context_value(task, "parameters")
-        if not _is_empty_json_field(headers):
-            fail(f"HTTP node must not set headers; found: {headers!r}")
-        if not _is_empty_json_field(params):
-            fail(f"HTTP node must not set query parameters; found: {params!r}")
+        for field, text in must_be_empty.items():
+            if not _is_empty_json_field(text):
+                fail(f"HTTP node must not set {field}; found: {text!r}")
         good.append(task)
     return good
 
@@ -196,10 +243,10 @@ def main() -> None:
     if not http_nodes:
         fail(
             f"no bpmn:sendTask carrying {' or '.join(HTTP_TYPES)} configured as a manual GET to the "
-            "webhook URL (mode=manual, method=GET, url containing 'webhook', "
-            "no populated headers/parameters context field)"
+            "webhook URL (manual GET, url like https://<host>/<org>/<tenant>/elements_/v1/webhooks/"
+            f"events/<id> from `uip is webhooks config {CONNECTOR_KEY}`, no headers or query)"
         )
-    print("OK: manual GET HttpExecution sendTask to webhook URL, no headers/query")
+    print("OK: manual GET sendTask to the webhook URL, no headers/query")
 
     from_start = reachable(root, start_id)
     pairs = [
