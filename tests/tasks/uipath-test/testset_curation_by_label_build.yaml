@@ -4,8 +4,10 @@ description: >
   test set from labelled test cases, inside a throwaway project it creates and
   deletes. Asserts that the agent (a) checks login status with --output json,
   (b) applies the tier labels — `objectlabel add` after creation, or at
-  creation time through `testcases bulk-create --file` with `labels` in the
-  payload (claude's path, 2026-10-22) — (c) populates the set by
+  creation time through `testcases bulk-create --file` (labels live in the
+  JSON payload, which codex writes with its file tool, so the command stream
+  cannot see them; claude and codex both took this path 2026-10-22) — (c)
+  populates the set by
   label — either `testcases add --test-set-key --labels [--dynamic]` or
   `testsets create --dynamic-labels` — passing BOTH tier labels in one
   space-separated variadic call, (d) never uses the comma-joined `A,B` form,
@@ -86,9 +88,9 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent applied the tier labels to its test cases — `objectlabel add`, or `testcases bulk-create --file` carrying `labels` in the payload"
+    description: "Agent applied the tier labels to its test cases — `objectlabel add`, or `testcases bulk-create --file` (labels in the JSON payload)"
     tool_name: "Bash"
-    command_pattern: '(?:(?=[\s\S]*--object-type\s+TestCase)(?=[\s\S]*--object-ids\s+\S)(?=[\s\S]*--labels\s+\S)uip\s+tm\s+objectlabel\s+add\b|labels[\s\S]*uip\s+tm\s+testcases?\s+bulk-create\b(?=[\s\S]*--file\s+\S)|uip\s+tm\s+testcases?\s+bulk-create\b(?=[\s\S]*--file\s+\S)(?=[\s\S]*labels))'
+    command_pattern: '(?:(?=[\s\S]*--object-type\s+TestCase)(?=[\s\S]*--object-ids\s+\S)(?=[\s\S]*--labels\s+\S)uip\s+tm\s+objectlabel\s+add\b|uip\s+tm\s+testcases?\s+bulk-create\b(?=[\s\S]*--file\s+\S))'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
