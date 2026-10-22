@@ -48,7 +48,7 @@ uip maestro bpmn registry get <extensionType> --output json
 
 Fill `{id}`, `{name}`, `{incomingEdge}`, `{outgoingEdge}`, `{varId}`, per-context placeholders (`{releaseKey}`, `{queueName}`, `{appId}`, …), and body CDATA. Wire structural placeholders to the sequence-flow IDs from [structural-bpmn.md](structural-bpmn.md).
 
-Treat each template output and its process variable as one contract. Replace `{varId}` with a stable ID and declare task-scoped `uipath:inputOutput` with the template output's exact `type` and `elementId="<node-id>"`, including opaque `custom` and product-specific `Actions.HITL`; never coerce them to `string`, `object`, or `jsonSchema`. Leave the opaque type in place; enrichment replaces it with concrete typed rows later, so do not pre-empt it.
+Treat each template output and its process variable as one contract. Replace `{varId}` with a stable ID and declare task-scoped `uipath:inputOutput` with the template output's exact `type` and `elementId="<node-id>"`, including opaque `custom` and product-specific `Actions.HITL`; do not search examples for a guessed schema or coerce them to `string`, `object`, or `jsonSchema`. Leave the opaque type in place; enrichment replaces it with concrete typed rows later, so do not pre-empt it.
 
 For a dynamic unresolved node (SKILL.md step 4a: draft/placeholders requested or no candidate pings `Enabled`), use escaped public placeholders `&lt;TENANT_URL&gt;`, `&lt;FOLDER_KEY&gt;`, and `&lt;CONNECTION_NAME&gt;` in resource identity slots; retain retrieved context/output shape and only user-supplied body/configurable-context values. Report **draft** and name the CLI-owned blocker literally, including `connection binding` when applicable. Do not inspect sibling skills, fixtures, or generated packages to invent live schema.
 
@@ -136,19 +136,19 @@ For every `Intsvc.*` type whose `inputTarget` is `body`—`ActivityExecution`, `
 
 Use names from `RequestFields` in `uip is resources describe`, not provider docs. `=vars.<id>` and `=js:` resolve inside that CDATA at runtime, so build the body from variables rather than literals. In XML attributes escape `&&` as `&amp;&amp;` and `<` as `&lt;`; `>` need not be escaped; CDATA needs no such escaping. `target="bodyField"` is not valid here; it belongs to merged arguments on `JobArguments` (`Orchestrator.*` starts), `HitlTaskArguments` (`Actions.HITL`), and `args` (`BPMN.ScriptTask`). Read `inputTarget` per manifest type. Five of fourteen `mergedBody` types use `body`: `Orchestrator.CreateQueueItem`, `Orchestrator.CreateAndWaitForQueueItem`, `A2A.AgentExecution`, `Maestro.CaseRulesEvaluator`, and `Maestro.CaseManagerGuardrails`.
 
-The single-input form is canonical: Studio Web sets `isSplitInputs:false` and one `jsonBody`; the Jira round-trip fixture asserts one nested body CDATA parse→serialize identity. The serializer preserves existing separate inputs but never generates them. Copy the example above; ignore any `operation="CreateIssue"` you see elsewhere. Treat the manifest's `InputNotes` as stale here rather than as the contract. Local `validateInputs` does not catch wrong targets/names/counts: `usesCanvasOwnedDynamicPayload` (`project-validator.ts:1602`) returns after `validateDynamicDirectInputs`, which checks only input names and parses `type="json"`; therefore `validate` and `pack` are not evidence of correct runtime shape.
+The single-input form is canonical: Studio Web sets `isSplitInputs:false` and one `jsonBody`. The serializer preserves existing separate inputs but never generates them. Copy the example above; ignore any `operation="CreateIssue"` you see elsewhere. Treat the manifest's `InputNotes` as stale here rather than as the contract. **Local validation will not catch a wrong target or a wrong input name here:** for this type it checks only that each input has a `name` and that `type="json"` payloads parse, so several `target="body"` inputs, a `bodyField` input, and an unrecognized input name all pass. A clean `validate` or `pack` is not evidence of correct runtime shape.
 
-Nest dotted names (`fields.project.key` → `{"fields":{"project":{"key":…}}}`), not a literal dotted key. Take `operation` from described `Operation.Name` (for example `Create`), and `path`/`objectName` from that object. The catalogue activity name such as `CreateIssue` cannot resolve: `METHOD_TO_OPERATION` (`integrationservice-sdk/src/dap/validation/rules.ts:74`) permits only `List`, `Retrieve`, `Create`, `Update`, `Delete`, `Replace` plus raw HTTP verbs. Use `--operation Create`.
+Nest dotted names yourself (`fields.project.key` → `{"fields":{"project":{"key":…}}}`): a literal `"fields.project.key"` key is sent as-is, and the provider never sees `fields.project`. Take `operation` from the `Operation.Name` that `uip is resources describe` reports (for example `Create`), and `path`/`objectName` from the same described object. The catalogue's per-activity `Name` (`CreateIssue`) can never resolve: `METHOD_TO_OPERATION` permits only `List`, `Retrieve`, `Create`, `Update`, `Delete`, `Replace` plus raw HTTP verbs. Pass the same `Operation.Name` to `--operation` (here `--operation Create`).
 
 ### Set every required `RequestFields` entry
 
-Put every `RequestFields` row with `Required: true` in the body under its described name. Discover them with:
+Put every `RequestFields` row with `Required: true` in the body under its described name. List them by piping the `uip is resources describe ... --output json` result into:
 
 ```bash
 jq '.Data | with_entries(.key |= ascii_downcase) | .requestfields | map(with_entries(.key |= ascii_downcase) | select(.required) | .name)'
 ```
 
-Never filter by expected names. A missing Slack `messageToSend` causes `invalid_blocks`; set Jira `fields.summary` even when describe omits it.
+Never filter `RequestFields` by the names you expect. A missing Slack `messageToSend` causes `invalid_blocks`. On Jira `curated_create_issue`, set `fields.summary` even though describe omits it.
 
 ### Required `Parameters` are separate from the body — emit every one
 
@@ -162,7 +162,7 @@ Never filter by expected names. A missing Slack `messageToSend` causes `invalid_
 <uipath:input name="file"       target="multipart" type="file"   value="=vars.Var_DownloadedFile" />
 ```
 
-A path parameter is required even if context shows a `{placeholder}`. A `body` parameter is the exception: place it as a field in the one complete body input; a second body input loses the object. Omitting a required parameter passes local validation/pack and fails at runtime with `400` and `Value for required parameter '<name>' not found`. Check each activity; `Parameters` may be empty.
+A path parameter is required even though the context `path` field already shows it as a `{placeholder}`: the placeholder is the template, the input is the value. A `body` parameter is the exception: carry it as a field inside the one complete body input, under the name describe gives it; a second body input does not merge (the last wins as a bare scalar). Omitting a required parameter passes local validation and `pack`, then fails only at runtime with `400` and `Value for required parameter '<name>' not found`. A `Parameters` list can be empty (Jira's `curated_create_issue`) or carry a required entry (Slack's `send_message_to_channel_v2` requires `send_as`), so check it per activity rather than assuming.
 
 ### A `Reference` entry takes a looked-up value, never the display name
 
@@ -229,7 +229,7 @@ Fix, do not drop `releaseKey`:
 
 For the other listed types apply step 1 only; apply step 2 after a live `key:FolderKey` fault, otherwise report unverified.
 
-Map requested API workflow invocation/status/result fields as `uipath:output` rows on the service task, using discovered names/types and `source` expressions such as `=invocation`, `=status`, and `=result`; use exact schema fields. For `=result.<key>`, use a debug-run key when available (SKILL.md rule 17 step 5), otherwise schema name and report unverified. Do not add a downstream script solely to split the service-task result.
+Map requested API workflow invocation/status/result fields as `uipath:output` rows on the service task, using discovered names/types and `source` expressions such as `=invocation`, `=status`, and `=result`, or the exact schema fields discovery returns. For `=result.<key>`, use a debug-run key when available (SKILL.md rule 17 step 5), otherwise schema name and report unverified. Do not add a downstream script solely to split the service-task result.
 
 ## Integration Service triggers
 
@@ -254,6 +254,8 @@ Prefer `IsCurated: Yes`. If absent, use generic `CREATED`/`UPDATED`/`DELETED` (`
 ```
 
 `uip is triggers` and `registry get` uppercase operations; mixed-case Test Manager operations (`Created`, `Updated`, `Finished`) therefore return HTTP 404 / `IS enrichment error` and are unreachable in CLI 1.204.0.
+
+Confirmed curated pairs:
 
 | Connector key | Trigger operation | Object |
 | --- | --- | --- |
