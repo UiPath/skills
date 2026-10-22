@@ -30,7 +30,7 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 ## Critical Rules
 
 1. **Windows only.** Check the OS before anything else. On macOS or Linux, stop and tell the user to run the migration from a Windows machine that holds the project. The tool is a .NET 8 desktop process and cannot run elsewhere.
-2. **Never run the tool in console mode.** Always pass `--output-format sarif` and redirect stdout to a file. Console mode opens an HTML report in the browser and prints no machine-readable result.
+2. **Never run the tool in console mode.** Always pass `--output-format sarif` and redirect stdout to a file. Console mode opens an HTML report in the browser and prints no machine-readable result. This holds for diagnostic runs too: to look into a result, read the SARIF, the `.err` file and the `project-<id>.log` the tool writes under `<PROJECT_DIR>/.upgrade`, never a console or `-v` rerun.
 3. **Never trust the exit code.** The tool exits 0 whether the migration succeeded, partially succeeded, or failed. Status comes only from the SARIF results, classified per [sarif-triage-guide.md](references/sarif-triage-guide.md).
 4. **Analyze before upgrade, every time.** Run `analyze`, triage it, and only then run `upgrade`. When the analyze triage shows no stop condition, proceed to `upgrade` without asking, unless the user asked only for an analysis, a report or a plan: then stop after the triage, present the findings with the proposed treatment of each needs-attention item, and run `upgrade` only on the user's go. Any request whose deliverable is information rather than a migrated project counts as that: analysis, report, plan, dry run, "can this be migrated", "what would change"; when the wording leaves it open, ask one yes/no before `upgrade`. Rule 13 governs a treatment the user chooses there. One exception: a Step 4 rerun that the build guide or a package guide prescribes with an added flag reuses the Step 3 analyze; it counts as one build-fix iteration (Rule 10), and the skill deletes the `<OUTPUT_DIR>` it created in this session without asking.
 5. **Never write into the source project.** `upgrade` writes to a fresh sibling folder. Never point `--output-path` at `<PROJECT_DIR>`, never copy the output back over the source, never delete the source, and never edit a file in it, `project.json` included. This holds for every source project the task touches, including a library's source project. Two folders inside the source are the only exception: `.upgrade/`, which holds the tool's reports and the logs, summaries and config files this skill's steps write there, and `.local/`, the tool's restore cache.
@@ -40,8 +40,9 @@ Do not use for: authoring or editing Legacy workflows (uipath-rpa, Legacy mode),
 9. **Libraries first.** When analyze reports `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED`, stop. Tell the user to migrate and publish that library to the feed before migrating this project. The tool cannot order dependencies.
 10. **Bounded loops.** At most 3 build-fix iterations in Step 5. Then report what remains.
 11. **Never run the migrated project unasked.** The runtime check of Step 6 runs only after the user answers yes to its one question. An earlier explicit request to run the migrated project, given in the same task, counts as that yes, and the question is then not asked. Every fix and every rerun after it happens only through the runtime guide's fix and rerun loop, each behind one yes/no; outside that loop the check only observes. It runs in the headless Studio, never in the Studio the user has open (Rule 8).
-12. **Mark every edit.** Every construct the skill edits or adds outside the tool, in the post-migration fix guide, the build loop, the runtime loop, a plan treatment or an edit delegated to the RPA authoring skill, carries the annotation line `Remediated by uipath-activity-migrator on <YYYY-MM-DD>: <what changed>`. It replaces the matching `[PostMigration Action Required]` line when there is one and is added as a new annotation otherwise. Write it as part of the edit itself, so an undone fix loses it with the backup restore and a standing fix keeps it whatever happens next. One exception: a construct whose only edit is the fix guide's rewrite of an annotation line to `Verified healthy by uipath-activity-migrator` carries that line as its mark and gets no Remediated line. A later failure at a construct carrying either line is this skill's to diagnose.
-13. **Plan-mode treatments.** When the user asked for a plan (Rule 4), the treatment their go names is the edit, even when it differs from the one proposed. A proposal leaves open any name only a run can reveal, such as the exception an activity actually throws ("retype the Catch to the exception the run reports"); it never guesses one. [Step 5a](#step-5a--apply-a-plan-chosen-treatment) applies the chosen treatment.
+12. **Mark every edit.** Every construct the skill edits or adds outside the tool, in the post-migration fix guide, the build loop, the runtime loop, a plan treatment or an edit delegated to the RPA authoring skill, carries the annotation line `Remediated by uipath-activity-migrator on <YYYY-MM-DD>: <what changed>` in its `sap2010:Annotation.AnnotationText` attribute, never in an XML comment, which Studio drops on save. It replaces the matching `[PostMigration Action Required]` line when there is one and is added as a new annotation otherwise; when the edit removes a construct, the construct that takes its place carries the line. Write it as part of the edit itself, so an undone fix loses it with the backup restore and a standing fix keeps it whatever happens next. One exception: a construct whose only edit is the fix guide's rewrite of an annotation line to `Verified healthy by uipath-activity-migrator` carries that line as its mark and gets no Remediated line. A later failure at a construct carrying either line is this skill's to diagnose.
+13. **Plan-mode treatments.** When the user asked for a plan (Rule 4), the treatment their go names is the edit, even when it differs from the one proposed, and the go is its yes: it goes through the runtime guide's fix and rerun loop as a `requested` fix, edit 1, applied before the first run when the go names everything it needs ([Step 5a](#step-5a--apply-a-plan-chosen-treatment-before-the-run)) and right after the run that supplies a missing name otherwise. A proposal leaves open any name only a run can reveal, such as the exception an activity actually throws ("retype the Catch to the exception the run reports"); it never guesses one, and a treatment no run informs is reported as a needs-attention item. The plan names the remaining steps as this file names them, upgrade, build, the opt-in runtime check with `uip rpa run`, and never calls any of them a debug run or a debug session.
+14. **Sources.** A name or fact a proposal or an edit needs beyond the two projects' files, the run log and this skill's guides comes from two places only: the packages the latest analyze or upgrade run resolved, read as documentation and file names under `%USERPROFILE%\.nuget\packages\<package>\<version>\` for `<UIA_VERSION>` and the versions in that run's `.local/AllDependencies.json` (`<PROJECT_DIR>/.local/` after analyze, `<OUTPUT_DIR>/.local/` after upgrade); and the one page a `[PostMigration Action Required]` annotation on the construct links, that page alone and nothing it links to. Never another cached version, never the web beyond that page, never the contents of a binary, never a program written to read assembly metadata. Validate and build confirm every name an edit introduces, so a candidate is enough to propose. This holds from the first proposal, a plan treatment included.
 
 ## Workflow
 
@@ -76,7 +77,7 @@ Summarize to the user in one line: tool version and location.
 
 ### Step 1 — Discover the project
 
-1. Resolve `<PROJECT_DIR>`: the folder containing `project.json`. If several exist under the working directory, ask which one, unless the user named it. For "migrate everything in this repo", see [tool-behavior-guide.md § bulk](references/tool-behavior-guide.md#bulk).
+1. Resolve `<PROJECT_DIR>`: the folder containing `project.json`. If several exist under the working directory, ask which one, unless the user named it. Several projects, named by the user or surveyed with bulk, run Steps 2 to 5 one project at a time, libraries first, and end in one Step 6 report in its several-projects shape. For "migrate everything in this repo", see [tool-behavior-guide.md § bulk](references/tool-behavior-guide.md#bulk).
 2. Read `project.json` and record: `targetFramework`, `expressionLanguage`, `dependencies`. `Legacy` (or absent) is the primary case. `Windows` projects still qualify when they hold classic activities; tell the user the framework step will be a no-op.
 3. Match `dependencies` against the [Package Routing](#package-routing) table. Read every matching package guide in full now.
 4. Pick `<OUTPUT_DIR>`: the user's choice, else `<PROJECT_DIR>_Upgraded`. If it already exists, ask whether to delete it or use a different name. Never reuse it silently: the tool merges into an existing folder.
@@ -125,7 +126,7 @@ Then apply the stop conditions:
 
 | Analyze outcome | Action |
 |---|---|
-| No stop condition | Continue to Step 4 without asking. When the user asked only for an analysis, a report or a plan (Rule 4), stop here instead: present the summary with the proposed treatment of each needs-attention item, and continue to Step 4 only on the user's go. A treatment the user chose there that edits the output follows Rule 13 and Step 5a. |
+| No stop condition | Continue to Step 4 without asking. When the user asked only for an analysis, a report or a plan (Rule 4), stop here instead: present the summary with the proposed treatment of each needs-attention item, and continue to Step 4 only on the user's go. A treatment the user chose there that edits the output follows Rule 13. |
 | `RESTORE-MISSING-PACKAGE` / `RESTORE-INCOMPATIBLE-PACKAGE` | Stop. Explain which package, offer the Orchestrator-feed command with placeholders (Rule 6) or `--ignore-missing-dependencies` with its consequences. Rerun analyze after the user acts. |
 | `RESTORE-CUSTOM-LIBRARY-MIGRATION-REQUIRED` | Rule 9. Stop. |
 | Package guide stop condition | Follow the guide. |
@@ -153,22 +154,21 @@ env -u UIPATH_STUDIO_PID uip rpa build "<OUTPUT_DIR>" --output json
 
 Build passes: continue. Build fails: validate the offending files, fix per the guide's rules, rebuild, at most 3 iterations (Rule 10). Package guides list build errors that call for a rerun of Step 4 with an extra flag rather than a hand fix. If `uip` is unavailable, skip verification and say so prominently in the report.
 
-### Step 5a — Apply a plan-chosen treatment
+### Step 5a — Apply a plan-chosen treatment before the run
 
-Only when Rule 13 applies; otherwise continue to Step 6.
+Only when the plan's go named a treatment the output can carry before any run (Rule 13); a treatment that needs a name the run reveals waits for Step 6's run and enters the loop there. Before touching the file:
 
-1. Read [runtime-verification-guide.md § Fix and rerun loop](references/runtime-verification-guide.md#fix-and-rerun-loop). Its Evidence, Limits and Sources sub-steps and its subagent brief govern the edit.
-2. Back the file up as edit 1 under `<PROJECT_DIR>/.upgrade/runtime-fixes/1/`, make the edit, then validate and build with that loop's step 3 commands. The edit does not count toward the loop's limit of 3 fixes.
-3. Nothing runs here, even when the user already asked for a run: the run happens in Step 6, where that earlier request counts as its yes (Rule 11).
-4. The edit carries its Remediated line as Rule 12 says, written with the edit itself, never after validate and build pass. The line records the change made; the run in Step 6 is what verifies it.
-5. Report the edit under Fixes applied with the source `requested`.
+1. Open [runtime-verification-guide.md § Fix and rerun loop](references/runtime-verification-guide.md#fix-and-rerun-loop): the treatment is its row (a), edit 1, source `requested`.
+2. Back the file up to `<PROJECT_DIR>/.upgrade/runtime-fixes/1/<relative path>` as that loop's step 3 says.
+3. An edit that adds or replaces an activity or changes control flow is authoring: it goes to the RPA authoring skill's subagent with the brief the loop's Limits sub-step defines, and comes back checked as that sub-step says. Any other edit is made directly.
+4. Validate and build with the loop's step 3 commands. Nothing runs here; the run is Step 6's.
 
 ### Step 6 — Post-migration and report
 
 1. Run every matching package guide's Hook 3 section (annotations, delegated fix skills, manual follow-ups).
-2. Offer the runtime check when the conditions in [runtime-verification-guide.md](references/runtime-verification-guide.md) hold: one yes/no question, default no, no time limit proposed. On yes, run it as the guide says, attribute a failure with its table, offer the guide's fix and rerun loop for a migration-related failure, and fill the Runtime check block below.
+2. A treatment the plan's go named that needed nothing from the run was applied in Step 5a. Offer the runtime check when the conditions in [runtime-verification-guide.md](references/runtime-verification-guide.md) hold: one yes/no question, default no, no time limit proposed. On yes, run it as the guide says, attribute a failure with its table, offer the guide's fix and rerun loop for a migration-related failure, and fill the Runtime check block below.
 3. Report once, at the end: after the runtime check's question was answered and any run and its fix loop ended. Report only what the reader must act on or decide, under these rules:
-   1. Success is one line with counts. Detail exists only for what needs attention, grouped, never one line per activity.
+   1. Success is one line with counts. Detail exists only for what needs attention, grouped, never one line per activity, and only under Needs attention: no other block restates an item, Next steps included.
    2. `<L>` is the summarizer's left-classic count. Activities the tool left classic are not defects: they compile and run as classic, so they are the `<L>` count on the status line and entries in the full list, never lines. No left-classic activity is named anywhere in the report: not as a Needs attention item, not in a Next steps line, not in a sentence after the last block that lists or explains them. The full list the status line points to is where the reader finds them.
    3. `<M>` is built in this order:
       1. Start from the summarizer's needs-attention items.
@@ -191,17 +191,19 @@ Full list: <PROJECT_DIR>/.upgrade/upgrade-latest.md · Tool report: <PROJECT_DIR
 <items inline only when M ≤ 10: - <file>: <activity> — <what to do>>
 
 ### Fixes applied (<F>)              <- only when the post-migration fix or the runtime loop edited the output
-- <file>: <activity> — <what was changed>   <- one line per fix, no sub-bullets; loop fixes end with (fix <n>, fix guide | annotation | hypothesis | requested)
+- <file>: <activity> — <what was changed>   <- one line per construct changed, no sub-bullets; constructs one confirmation covered share the fix number; loop fixes end with (fix <n>, fix guide | annotation | hypothesis | requested)
 - <k> annotations rewritten to Verified healthy (no structural change)   <- one line, only when k > 0
 
 ### Runtime check                    <- only when the user said yes
 <Passed in <duration> | Passed on run <n> after <k> <fix or fixes> | Failed at <file>: <activity> — <exception type>: <first line of message>, after <k> <fix or fixes>, <u> undone | Stopped at <last logged step> | Not started: <reason>>   <- this line only; no workflow output
 - <migration-related | not migration-related>: <why>. <what to do>     <- only when failed
 
-### Next steps                       <- these lines only; when the runtime check did not run, one more line saying what makes it possible
+### Next steps                       <- these lines only; when the runtime check did not run, one line saying so and why (declined, build failed, `uip` missing, routing, library); never a Needs attention item restated
 - Open <OUTPUT_DIR> with Studio 2024.10 or later and run the main workflow once in Debug.   <- drop the Debug clause when the runtime check passed
 - <package-specific runtime prerequisites, only when a package guide lists one>
 ```
+
+Several projects in one task: one report, the block above repeated per project in the order migrated, with the project folder name on the heading, `## Migration result: <project>: <status>`. Status line, Full list, Needs attention, Fixes applied and Runtime check stay per project. One `### Next steps` closes the report, its Studio line naming every `<OUTPUT_DIR>`, and a package line appears once however many projects it applies to.
 
 ## Package Routing
 
@@ -211,7 +213,7 @@ Match `project.json` dependencies to guides; the dependency is the only routing 
 |---|---|---|
 | `UiPath.UIAutomation.Activities` | `UiAutomationActivities` | [packages/uia-guide.md](references/packages/uia-guide.md) |
 | `UiPath.Mail.Activities` | `MailActivities` | [packages/mail-guide.md](references/packages/mail-guide.md) |
-| `UiPath.GSuite.Activities` (classic line) | `GSuiteActivities` (preview-gated) | [packages/gsuite-guide.md](references/packages/gsuite-guide.md) |
+| `UiPath.GSuite.Activities` | `GSuiteActivities` | [packages/gsuite-guide.md](references/packages/gsuite-guide.md) |
 | `Microsoft.Activities.Extensions`, `Microsoft.Activities` | `MicrosoftActivitiesExtension` | [packages/microsoft-activities-guide.md](references/packages/microsoft-activities-guide.md) |
 
 The framework flip, package restore, reference fixing, and type checking are core steps and run for every project with no routing.
@@ -248,6 +250,8 @@ The framework flip, package restore, reference fixing, and type checking are cor
 - Pre-scanning the XAML for classic activities (`grep` on `<ui:` prefixes) before or after `analyze`; the SARIF is the only complete inventory, and the `ui:` prefix also covers System and Excel activities
 - Skipping the package guides and passing no package flags for a project that uses Outlook classic or GSuite classic activities
 - Declaring success because `upgrade` finished, without `uip rpa build` on the output
+- Reporting `build passed` before `uip rpa build` returned its JSON, for instance when the host handed a long-running command back before it finished
 - Running the migrated project without the user's yes, or repairing and rerunning outside the runtime guide's fix and rerun loop; every fix and every rerun sits behind one yes/no. The runtime check's other anti-patterns are in [runtime-verification-guide.md § Anti-patterns](references/runtime-verification-guide.md#anti-patterns), read with that guide
 - Editing the SARIF summary by hand instead of rerunning the summarizer after a rerun
+- Researching a fix on the web, in a cached package version the project did not resolve, or by reading binaries; the resolved packages' docs and the annotation's own page are the only sources (Rule 14)
 - Padding the report with checks that found nothing, a classic-to-modern mapping table, or guesses about how the migrated activities will behave at runtime. Typical offenders: "both edited files validate with 0 errors", "left alone (valid cross-window probes)", "the project now mixes two package lines", "the framework step was a no-op", a closing paragraph that names the activities left classic and explains why they stayed classic

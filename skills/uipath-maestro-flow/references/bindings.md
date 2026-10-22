@@ -49,7 +49,7 @@ the resource kind and emitted binding purpose explicit.
 ## Where both values come from
 
 **Usually you do not fill these in at all.**
-`uip maestro registry prepare <connector-key> <action>` discovers the connection and writes both entries into `bindings.json` for you — see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values).
+`uip maestro registry prepare <connector-key> --action <action>` discovers the connection and writes both entries into `bindings.json` for you — see [connector-params.md](connector-params.md#resolving-connection-scoped-reference-values).
 Reach for the manual route below only when you are authoring bindings without
 running `prepare`.
 
@@ -94,9 +94,18 @@ pick one: `prepare … --connection <name>` lists each candidate with its
 `--connection-id <id>` and folder — pass the id of the one in the folder you mean,
 and `prepare` still writes both entries into `bindings.json`.
 
-**Do not go looking in Orchestrator for the folder.** `uip or folders list` is a
-different resource with different keys, and a folder binding wants the one the
-CONNECTION lives in — which you already have. Measured on the eval corpus: an
+`Folder` is the folder's own name, not its path. A requested
+`Shared/uipath-maestro-flow` is the row whose `Folder` is `uipath-maestro-flow`,
+not `Shared`. When the request names a folder, pass that last segment to
+`prepare` as `--connection-folder uipath-maestro-flow`; by hand, pick that row.
+If that name matches more than one of the connector's rows (`prepare` refuses
+and lists them), get the requested folder's `Data.Key` with
+`uip or folders get "Shared/uipath-maestro-flow" --output json`, then pass
+`--connection-folder <Key>` or pick the row whose `FolderKey` equals it.
+
+**Do not go looking in Orchestrator for the folder** beyond that one
+`folders get`. A folder binding wants the folder the CONNECTION lives in, which
+you already have. Measured on the eval corpus: an
 agent that had already listed the connection went on to spend three to four
 further calls on `uip or --help`, `uip or folders --help` and `folders list`,
 searching for a folder matching the symbolic name in its prompt. The symbolic

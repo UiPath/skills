@@ -6,51 +6,37 @@
 <!--skill-flavor:host-scope:end-->
 ## Studio Desktop vs headless Studio
 
-`uip rpa` runs against a **headless Studio** by default (codename Helm — ships as the `UiPath.Studio.Helm.{Platform}` NuGet package, auto-launched the first time a command needs it). **Studio Desktop is not required** for the standard authoring loop — `init`, `run`, `debug start`, `validate`, `build`, `activities find`, `packages install`, the `uia` group (indication, capture, interaction), etc. all work headless.
+`uip rpa` uses headless Studio (Helm, shipped as `UiPath.Studio.Helm.{Platform}` NuGet package and auto-launched when needed) by default. Studio Desktop is unnecessary for the standard authoring loop (`init`, `run`, `debug start`, `validate`, `build`, `activities find`, `packages install`, and `uia` indication/capture/interaction). It is required only for `uip rpa files diff` and `uip rpa focus-activity`; see [§ Edge case: requiring Studio Desktop](#edge-case-requiring-studio-desktop).
 
-Studio Desktop is only required for two interactive UI tools:
-- `uip rpa files diff` — opens an interactive diff window in Studio's UI.
-- `uip rpa focus-activity` — selects an activity in Studio's active workflow designer.
-
-For these two, see [§ Edge case: requiring Studio Desktop](#edge-case-requiring-studio-desktop) below.
-
-> **First call is slow.** On a cold NuGet cache, the very first `uip rpa` invocation triggers a silent `dotnet restore` of the headless Studio package and may sit near-silent for 30–90 seconds (longer behind a slow feed). A heartbeat line every 15s confirms it's still working. The default shell timeout covers this; bump `timeoutSeconds` only behind a slow feed.
+The first invocation may silently restore Helm for 30–90 seconds (longer behind a slow feed); a heartbeat every 15s confirms progress. The default shell timeout covers this; increase `timeoutSeconds` only behind a slow feed.
 
 ## Step 0.1: Establish Project Root
 
-The `uip rpa` commands use `--project-dir` to target a specific project (defaults to current working directory). **If the current working directory is NOT the UiPath project root, all commands will fail or target the wrong project.**
+`uip rpa` targets the current directory unless `--project-dir` is supplied; a non-root CWD causes failure or targets the wrong project. Resolve in order:
 
-**Resolution order** (use the first rule that matches):
-1. **Explicit path** — The user provided a directory path → use it as-is.
-2. **Project name reference** — The user mentioned a project by name → search for a folder with that name containing `project.json`.
-3. **Fall back to current working directory** — If neither is given.
+1. User-provided directory: use it as-is.
+2. Named project: search for a same-named folder containing `project.json`.
+3. Otherwise use the CWD.
 
-If the CWD is not the project root:
-- Locate the project root by finding `project.json`: `Glob: pattern="**/project.json"`
-- **Pass `--project-dir` explicitly** to every `uip rpa` command
-- Store the project root path and use it consistently as `{projectRoot}`
+If the CWD is not the root, locate it with `Glob: pattern="**/project.json"`, pass `--project-dir` explicitly to every `uip rpa` command, and store it consistently as `{projectRoot}`.
 
 ## Step 0.2: Authentication (If Needed)
 
-Some commands (IS connections, workflow examples, cloud features) require authentication:
+For IS connections, workflow examples, or cloud features, run:
 
 ```bash
 uip login
 ```
 
-If you encounter auth errors (401, 403, "not authenticated") during any phase, prompt the user to run `uip login` to authenticate against their UiPath Cloud tenant.
+For 401, 403, or “not authenticated” errors, prompt the user to run `uip login` against their UiPath Cloud tenant.
 
 ## Step 0.3: Creating a New Project
 
-**ALWAYS use `uip rpa init`** — never write `project.json`, `project.uiproj`, or other scaffolding files manually.
+**ALWAYS use `uip rpa init`; never manually write `project.json`, `project.uiproj`, or scaffolding files.** `init` always scaffolds XAML: `BlankTemplate` → `Main.xaml`, `TestAutomationProjectTemplate` → `TestCase.xaml`, and `LibraryProcessTemplate` → XAML library workflows. No flag changes scaffolding to coded. `--expression-language` controls VB/C# syntax inside XAML, not coded workflows; `.cs` workflows with `[Workflow]`/`[TestCase]` work in both `VisualBasic` and `CSharp` projects.
 
-**`init` always scaffolds XAML.** Regardless of flags, the templates produce XAML files: `BlankTemplate` → `Main.xaml`, `TestAutomationProjectTemplate` → `TestCase.xaml`, `LibraryProcessTemplate` → XAML library workflows. There is no flag that flips the scaffolding to coded.
+For coded mode, run the same XAML `init`, then add `.cs` workflows using [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) and update `entryPoints` in `project.json`. XAML and coded workflows may coexist; retain scaffolded `Main.xaml`/`TestCase.xaml` unless the user explicitly requests coded-only.
 
-**`--expression-language` is independent of coded vs XAML.** It controls VB vs C# syntax inside XAML activity expressions — not whether the project has `.cs` workflow files. Coded workflows (`.cs` with `[Workflow]` / `[TestCase]`) work fine in both `VisualBasic` and `CSharp` projects.
-
-**To work in coded mode**, scaffold the project (always XAML), then add `.cs` workflow files following [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) and update `entryPoints` in `project.json`. The scaffolded `Main.xaml` / `TestCase.xaml` can stay alongside your `.cs` files — `.xaml` and `.cs` workflows coexist freely.
-
-**First, decide which template to use** — see [§ Template selection](#template-selection) below **before** running any `init` command. Defaulting to `--template-id BlankTemplate` is correct only when the user did not name a template or domain pattern.
+Choose the template using [§ Template selection](#template-selection) **before** `init`; use `BlankTemplate` only when no template or domain pattern was named.
 
 ### For XAML Projects (default for new projects)
 
@@ -65,67 +51,59 @@ uip rpa init \
   --output json
 ```
 
-**Decide `--target-framework` and `--expression-language` before running — never omit them.** Both are immutable after creation; omitting `--target-framework` silently produces a **Windows** project. The placeholder shows the two new-project options (`Windows`, `Portable`). Windows - Legacy is a last resort (explicit ask or hard .NET 4.6.1 need) and is created/authored in **Legacy mode**, not via this command. Choose from runtime / host-OS signals per SKILL.md Common Rule 2a.
+Decide and pass both `--target-framework` and `--expression-language`; never omit them. They are immutable after creation. Omitting `--target-framework` silently creates **Windows**. The new-project options shown here are `Windows` and `Portable`; `Windows - Legacy` is a last resort for an explicit ask or hard .NET 4.6.1 need and must be created/authored in **Legacy mode**, not through this command. Choose from runtime/host-OS signals per SKILL.md Common Rule 2a.
 
-**Expression language:** Default `VisualBasic`. Use `CSharp` only when the user explicitly asks for C# expressions inside XAML activities.
-
-**`--studio-dir`:** Optional. Headless Studio does not need it. Pass it only when you have explicitly forced Studio Desktop (`UIPATH_RPA_TOOL_USE_STUDIO=1`, or invoking `diff`/`focus-activity`) and Studio's auto-detection from the registry fails.
+`--expression-language` defaults to `VisualBasic`; use `CSharp` only when explicitly requested for C# expressions in XAML. Headless Studio needs no `--studio-dir`; pass it only when Studio Desktop is explicitly forced (`UIPATH_RPA_TOOL_USE_STUDIO=1`, or `diff`/`focus-activity`) and registry auto-detection fails.
 
 ### For Coded Projects (only when the user explicitly requested coded)
 
-Run the **same** `init` command as for an XAML project (above) — there is no separate coded form. After it scaffolds, add `.cs` workflow files per [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) and update `entryPoints` in `project.json`. The scaffolded `Main.xaml` / `TestCase.xaml` can stay — remove it only if the user explicitly asks for a coded-only project.
+Run the same command above; there is no separate coded form. Then add `.cs` workflows per [coded/operations-guide.md § Add a Workflow File](coded/operations-guide.md#add-a-workflow-file-to-existing-project) and update `entryPoints`.
 
 #### Parameters
 
 | Parameter | Options | Default | Notes |
-|-----------|---------|---------|-------|
-| `--name` | Any string | (required) | Project folder name |
-| `--location` | Directory path | (current dir) | Parent directory where project folder is created |
+|---|---|---|---|
+| `--name` | Any string | required | Project folder name |
+| `--location` | Directory path | current dir | Parent directory |
 | `--template-id` | `BlankTemplate`, `LibraryProcessTemplate`, `TestAutomationProjectTemplate` | `BlankTemplate` | Project template |
-| `--expression-language` | `VisualBasic`, `CSharp` | none — set explicitly | Expression syntax for XAML workflows. Immutable after creation |
-| `--target-framework` | `Windows`, `Portable` (Cross-platform), `Legacy` (Windows - Legacy) | none — set explicitly (omitting → Windows) | .NET target framework. Immutable after creation. `Legacy` is a last resort for new projects (explicit ask or hard .NET 4.6.1 need only). Decide per Rule 2a |
-| `--description` | Any string | (none) | Project description in project.json |
+| `--expression-language` | `VisualBasic`, `CSharp` | none—set explicitly | XAML expression syntax; immutable |
+| `--target-framework` | `Windows`, `Portable` (Cross-platform), `Legacy` (Windows - Legacy) | none—set explicitly (omitting → Windows) | Immutable; `Legacy` only as a last resort per Rule 2a |
+| `--description` | Any string | none | Description in `project.json` |
 
-**Note:** `uip rpa init` may return `success: false` but still create the project files (partial success). If it fails, check whether the project directory and `project.json` were created before retrying.
+`uip rpa init` may return `success: false` while creating files. On failure, check for the project directory and `project.json` before retrying.
 
 ### Template selection
 
-Before running `init`, decide which template to use.
-
-**1. Trigger keywords**
+Before `init`, apply these rules:
 
 | User says... | Action |
 |---|---|
 | "REFramework", "ERP template", "SAP template", "based on X template", or any specific template name | Run `uip rpa templates search --query "<term>" --output json` (see § "Search and select" below) |
 | "library", "library project" | Use `--template-id LibraryProcessTemplate` (built-in, no search) |
-| "test project", "test automation" | Use `--template-id TestAutomationProjectTemplate` (built-in, no search) |
+| "test project", "test automation" | Run `uip rpa templates search --query "Test Automation Framework" --output json` and create from the Official Test Automation Framework template ([testing-guide.md § Test Automation Framework](testing-guide.md#test-automation-framework)); `--template-id TestAutomationProjectTemplate` (built-in, no search) only when the user asks for a blank test project |
 | Nothing template-related | Use `--template-id BlankTemplate` (default) |
 
-**2. Search and select**
+**Search and select**
 
-Run `uip rpa templates search --query "<term>" --output json`. Apply this rule against `Data[*]`, top-down:
+Run `uip rpa templates search --query "<term>" --output json` and evaluate `Data[*]` top-down:
 
-- **User named a specific non-Official template** (e.g. "Enhanced REFramework", "Lite ReFrameWork", a specific package name) AND a `Marketplace` item's `title` or `packageId` substring-matches the user's specific qualifier ("Enhanced", "Lite", etc.) → ask the user (treat Official + that Marketplace item as candidates). Do NOT auto-pick.
-- **Exactly one item with `source == "Official"`** AND user did not name a non-Official template → pick it. No user prompt.
+- If the user named a specific non-Official template (e.g. "Enhanced REFramework", "Lite ReFrameWork", a specific package name) and a `Marketplace` item’s `title` or `packageId` substring-matches that qualifier ("Enhanced", "Lite", etc.), ask the user and treat the Official item plus that Marketplace item as candidates; do not auto-pick.
+- If exactly one `source == "Official"` item exists and no non-Official template was named, pick it without prompting.
 - **Multiple `Official` items** → present candidates (`packageId`, `version`, `title`, `description`) and ask the user.
 - **Zero `Official` items, ≥1 `Marketplace` item** → present and ask. Never silently pick a Marketplace template.
-- **No results** → tell the user, then create with `--template-id BlankTemplate`.
+- For no results, tell the user and create with `--template-id BlankTemplate`.
 
-**3. Create from package**
-
-For Official/Marketplace templates, pass `--template-package-id` (and optionally `--template-package-version` — omit for latest) to `init`. When `--template-package-id` is set, `--template-id` is ignored.
+For a selected Official/Marketplace template, pass `--template-package-id` and optionally `--template-package-version` (omit it for latest) to `init`; when `--template-package-id` is set, `--template-id` is ignored.
 
 ### From a NuGet Template Package
 
-Use when the user asks for a domain-specific template, references a specific template package by name, or wants to browse available templates.
-
-**1. Search for available templates:**
+Use this when the user requests a domain-specific or named package, or wants to browse templates. Run:
 
 ```bash
 uip rpa templates search --query "<SEARCH_TERM>" --output json
 ```
 
-Does not require a project to be open. Returns a JSON array of `TemplateSearchResult` objects:
+This needs no open project and returns a JSON array of `TemplateSearchResult` objects with fields `packageId`, `version`, `title`, `description`, `authors`, `source`, and `tags` (an array). `--query` is a string filter (omit to list all); `--limit` is an integer, default `20`; `--include-prerelease` is a flag, default `false`.
 
 ```json
 [
@@ -141,13 +119,7 @@ Does not require a project to be open. Returns a JSON array of `TemplateSearchRe
 ]
 ```
 
-| Parameter | Type | Default | Notes |
-|-----------|------|---------|-------|
-| `--query` | string | (none) | Filter by name or description. Omit to list all |
-| `--limit` | integer | 20 | Maximum results |
-| `--include-prerelease` | flag | false | Include prerelease versions |
-
-**2. Create from the chosen template:**
+Create from the chosen package with:
 
 ```bash
 uip rpa init \
@@ -160,40 +132,33 @@ uip rpa init \
   --output json
 ```
 
-Pass `--target-framework` and `--expression-language` here too (Rule 2a) — a template package does not exempt you from the explicit-framework decision.
-
-| Parameter | Type | Default | Notes |
-|-----------|------|---------|-------|
-| `--template-package-id` | string | (none) | NuGet package ID from `templates search` results. **Overrides `--template-id` when set** |
-| `--template-package-version` | string | (latest) | Omit to use the latest available version |
+Pass `--target-framework` and `--expression-language` here too (Rule 2a). `--template-package-id` is a NuGet ID and overrides `--template-id`; `--template-package-version` defaults to latest and may be omitted.
 
 ### After Creation
 
-1. Open the project in Studio: `uip rpa project open --project-dir "/path/to/MyAutomation"`
-2. **Read the scaffolded files** — the command generates starter files. Read them before making changes so you build on valid defaults
-3. Proceed with the skill workflow using the new project root
+1. Run `uip rpa project open --project-dir "/path/to/MyAutomation"`.
+2. Read the scaffolded files before editing.
+3. Continue with the new project root.
 
-> **Batch the post-`init` prerequisites.** Step 2 here, `packages install` for known-needed packages, and the first `activities find` all depend only on the project existing — emit them as parallel tool calls in one message, not one per turn. They share the warmed Studio host. See SKILL.md § Execution Maps and [execution-maps-guide.md](execution-maps-guide.md).
+Batch reading scaffolded files, `packages install` for known-needed packages, and the first `activities find` as parallel tool calls in one message; they depend only on project existence and share the warmed host. See SKILL.md § Execution Maps and [execution-maps-guide.md](execution-maps-guide.md).
 
 ## Edge case: requiring Studio Desktop
 
-Two `uip rpa` commands need a running Studio Desktop instance — they have UI side effects that Helm cannot render:
+Only these commands require a running Studio Desktop instance:
 
-| Command | Why it needs Studio |
-|---------|---------------------|
-| `uip rpa files diff` | Opens an interactive diff window in Studio's UI; finishes when the user closes the window. |
-| `uip rpa focus-activity` | Selects/highlights an activity in Studio's active workflow designer. ⚠️ Against headless it **silently succeeds without doing anything** (there is no designer) — a `success: true` from a headless session does NOT mean anything was focused. |
+| Command | Behavior |
+|---|---|
+| `uip rpa files diff` | Opens an interactive diff window and finishes when the user closes it |
+| `uip rpa focus-activity` | Selects/highlights an activity in the active designer; against headless it silently succeeds without doing anything, so `success: true` does not prove focus |
 
-When (and only when) you need to run one of these, ensure Studio Desktop is up:
+When needed, run:
 
 ```bash
 uip rpa instances list --output json   # hidden diagnostic — confirms a Studio Desktop instance is running
 uip rpa studio start --project-dir "{projectRoot}" --output json   # launches Studio Desktop if none is running
 ```
 
-If `studio start` cannot resolve Studio's install directory from the registry, pass `--studio-dir` pointing to the Studio installation root.
-
-You can also force Studio Desktop for any other command by setting `UIPATH_RPA_TOOL_USE_STUDIO=1`, but this is not needed for the standard authoring loop and gives up the headless benefits.
+If registry resolution fails, pass `--studio-dir` with the Studio installation root. You may force Studio for any command with `UIPATH_RPA_TOOL_USE_STUDIO=1`, but this is unnecessary for standard authoring and loses headless benefits.
 
 ---
 
@@ -234,16 +199,11 @@ MyProject/
 
 #### Coded-Only Elements
 
-- `.cs` files with `[Workflow]`/`[TestCase]` attributes — executable coded automations
-- `.cs.json` metadata files — auto-generated by Studio for each coded workflow/test case (do not create manually)
-- `.codedworkflows/` — auto-generated support files (only when project has `.cs` files)
-- `.local/.codedworkflows/` — auto-generated `ObjectRepository.cs`, `CodedWorkflow.cs`, etc.
-- `.variations/` — data-driven test parameters (Tests projects only)
+`.cs` files with `[Workflow]`/`[TestCase]`; auto-generated `.cs.json` files (never create manually); `.codedworkflows/` and `.local/.codedworkflows/` support files when `.cs` exists; and `.variations/` data-driven test parameters for Tests projects.
 
 #### XAML-Only Elements
 
-- `.xaml` workflow files — visual workflow definitions
-- Expression language configured in `project.json` (`VisualBasic` or `CSharp`)
+`.xaml` workflow files and `project.json` expression language (`VisualBasic` or `CSharp`).
 
 ### project.json Key Fields
 
@@ -286,80 +246,58 @@ MyProject/
 }
 ```
 
-#### Important Fields
-
-| Field | Description |
-|-------|-------------|
-| `name` | Project name (used in package output) |
-| `main` | Entry point workflow file (relative path) |
-| `dependencies` | NuGet package dependencies with version constraints |
-| `expressionLanguage` | `CSharp` or `VisualBasic` — determines expression syntax in XAML. Default `VisualBasic`. Immutable after creation (decide at init — SKILL.md Rule 2a) |
-| `designOptions.outputType` | `Process`, `Library`, or `Tests` |
-| `targetFramework` | `Windows` (.NET 6 Windows-only), `Portable` (Cross-platform .NET 6+), or `Legacy` (Windows - Legacy, .NET Framework 4.6.1). Set explicitly at init (Rule 2a); omitting `--target-framework` yields `Windows` |
-| `entryPoints` | Per-workflow metadata: filePath, uniqueId, input/output definitions (**Process projects only** — Tests and Library projects use empty `[]`) |
+Important meanings: `name` is the package-output name; `main` is the relative default workflow; `dependencies` contains NuGet constraints; `expressionLanguage` is immutable `CSharp` or `VisualBasic` and defaults to `VisualBasic`; `designOptions.outputType` is `Process`, `Library`, or `Tests`; `targetFramework` is `Windows` (.NET 6 Windows-only), `Portable` (Cross-platform .NET 6+), or `Legacy` (Windows - Legacy, .NET Framework 4.6.1), selected explicitly at init; and `entryPoints` contains per-workflow metadata only for **Process** projects—Tests and Library projects use empty `[]`.
 
 ### Rules
 
-1. **Use CLI for dependencies**: Always use `uip rpa packages install` to add/update dependencies. Do not manually edit `dependencies` in `project.json`.
-2. **Do not edit `.local/` or `.objects/`**: These are cache directories managed by the build system.
-3. **`main` entry point**: The default entrypoint that gets run if not specified otherwise. `entryPoints` array is only populated for **Process** projects — Tests and Library projects leave it empty (`[]`).
-4. **`--project-dir` awareness and project creation**: [§ Step 0.1](#step-01-establish-project-root) and [§ Step 0.3](#step-03-creating-a-new-project) above.
+1. **Use CLI for dependencies:** Always use `uip rpa packages install` to add/update dependencies; never manually edit `dependencies` in `project.json`.
+2. **Do not edit `.local/` or `.objects/`:** They are build-managed.
+3. **`main` entry point:** It runs by default when unspecified; `entryPoints` is populated only for **Process** projects, while Tests and Library use `[]`.
+4. **`--project-dir` awareness and project creation:** See [§ Step 0.1](#step-01-establish-project-root) and [§ Step 0.3](#step-03-creating-a-new-project).
 
 ### Common Activity Packages
 
 | Package ID | Description | Key Activities |
-|------------|-------------|----------------|
-| `UiPath.System.Activities` | Core system activities | Assign, If, ForEach, While, Invoke Workflow, Log Message, Delay |
+|---|---|---|
+| `UiPath.System.Activities` | Core system | Assign, If, ForEach, While, Invoke Workflow, Log Message, Delay |
 | `UiPath.UIAutomation.Activities` | UI interaction | Click, Type Into, Get Text, Open Browser, Use Application/Browser |
-| `UiPath.Excel.Activities` | Excel automation | Read Range, Write Range, Read Cell, Write Cell, Format Range |
-| `UiPath.Mail.Activities` | Email operations | Send Mail, Get Mail, Save Attachments, Forward Mail |
-| `UiPath.Database.Activities` | Database operations | Execute Query, Execute Non Query, Connect, Disconnect |
-| `UiPath.WebAPI.Activities` | HTTP/REST calls | HTTP Request, Deserialize JSON, Serialize JSON |
-| `UiPath.PDF.Activities` | PDF processing | Read PDF Text, Read PDF with OCR, Extract Data From PDF |
-| `UiPath.Word.Activities` | Word automation | Read Text, Replace Text, Insert Image, Export to PDF |
-| `UiPath.Testing.Activities` | Testing and assertions | Verify Expression, Verify Are Equal, Generate Test Data |
-| `UiPath.Presentations.Activities` | PowerPoint automation | Add Slide, Replace Text, Insert Image |
+| `UiPath.Excel.Activities` | Excel | Read Range, Write Range, Read Cell, Write Cell, Format Range |
+| `UiPath.Mail.Activities` | Email | Send Mail, Get Mail, Save Attachments, Forward Mail |
+| `UiPath.Database.Activities` | Database | Execute Query, Execute Non Query, Connect, Disconnect |
+| `UiPath.WebAPI.Activities` | HTTP/REST | HTTP Request, Deserialize JSON, Serialize JSON |
+| `UiPath.PDF.Activities` | PDF | Read PDF Text, Read PDF with OCR, Extract Data From PDF |
+| `UiPath.Word.Activities` | Word | Read Text, Replace Text, Insert Image, Export to PDF |
+| `UiPath.Testing.Activities` | Testing/assertions | Verify Expression, Verify Are Equal, Generate Test Data |
+| `UiPath.Presentations.Activities` | PowerPoint | Add Slide, Replace Text, Insert Image |
 | `UiPath.IntegrationService.Activities` | Integration Service connector runtime | Generic connector activities for Salesforce, ServiceNow, HubSpot, etc. |
 | `UiPath.Cryptography.Activities` | Encryption/hashing | Encrypt Text, Decrypt Text, Hash File |
 
 ### Version Constraints
 
-Dependencies use NuGet version constraint syntax:
-
-| Syntax | Meaning |
-|--------|---------|
-| `[1.0.0]` | Exact version 1.0.0 |
-| `[1.0.0, )` | Version 1.0.0 or higher |
-| `[1.0.0, 2.0.0)` | Between 1.0.0 (inclusive) and 2.0.0 (exclusive) |
-
----
+Dependencies use NuGet constraints: `[1.0.0]` means exact version; `[1.0.0, )` means 1.0.0 or higher; `[1.0.0, 2.0.0)` means 1.0.0 inclusive through below 2.0.0.
 
 ## Designing Project Structure
 
-When creating a project, **proactively design the right file structure** based on the task complexity. Do not put everything into a single root workflow file. Use your best judgment to split the project into multiple files following good software engineering practices.
-
-For the coded vs XAML decision, see [coded-vs-xaml-guide.md](coded-vs-xaml-guide.md). For new projects, the default is XAML — examples below lead with XAML and note where the coded equivalent differs.
+Proactively design files for task complexity; do not put everything in one root workflow. For coded versus XAML, see [coded-vs-xaml-guide.md](coded-vs-xaml-guide.md); new projects default to XAML.
 
 ### Guidelines
 
-- **Single simple task** (e.g. "read a CSV and log it") — one workflow file (`Main.xaml` for XAML projects, `Main.cs` for coded) is fine
-- **Multi-step process** (e.g. "read invoices, validate, post to system") — split into multiple workflow files, each handling one step. The root workflow invokes each step
-- **Shared data structures** — extract into a Coded Source File (e.g. `Models.cs`, `InvoiceData.cs`). XAML cannot define types, so a Coded Source File is the right home even in an otherwise XAML project
-- **Repeated logic** — in XAML projects, extract into a reusable XAML workflow. In coded or hybrid projects, extract into a helper Coded Source File (e.g. `ValidationHelpers.cs`)
-- **Test project** — one test case per scenario. Coded test projects optionally use `partial class CodedWorkflow : CodedWorkflowBase, IBeforeAfterRun` in `CodedWorkflowHooks.cs` for shared setup. XAML test projects use Test Activities for shared setup
-- **Complex domain logic** — isolate business rules so they can be unit-tested and reused (Coded Source File for typed logic, or a separate workflow for activity-driven logic)
+- One simple task may use one root workflow (`Main.xaml` or `Main.cs`).
+- A multi-step process uses a root orchestrator plus one workflow per step.
+- Put shared data structures in Coded Source Files such as `Models.cs` or `InvoiceData.cs`; XAML cannot define types.
+- Put repeated logic in reusable XAML workflows, or helper Coded Source Files in coded/hybrid projects.
+- Use one test case per scenario. Coded tests may use `partial class CodedWorkflow : CodedWorkflowBase, IBeforeAfterRun` in `CodedWorkflowHooks.cs`; XAML tests use Test Activities for shared setup.
+- Isolate complex business rules in typed Coded Source Files or activity-driven workflows for reuse and testing.
 
 ### Designing for Reuse
 
-Structure decisions that keep components extractable later.
-
 #### Single responsibility
 
-One workflow file = one meaningful action, named for it (`ProcessInvoice.xaml`, `LoginToApplication.xaml`). Split a workflow when it exceeds ~20-30 activities. What stays inline instead of becoming a file: SKILL.md Common Rule 4b.
+One workflow file performs one meaningful action and is named for it (`ProcessInvoice.xaml`, `LoginToApplication.xaml`). Split at roughly 20–30 activities. What remains inline follows SKILL.md Common Rule 4b.
 
 #### Standard folder shape
 
-For multi-step processes, organize by layer:
+For multi-step processes use this shape:
 
 ```
 Project/
@@ -372,25 +310,19 @@ Project/
 
 #### Separate business logic from UI components
 
-UI workflows interact with applications and carry zero business rules; business-logic workflows decide and never touch the UI. Make read and write distinct invocable components — `GetCustomerInfo.xaml` and `ChangeCustomerInfo.xaml`, not one `HandleCustomer.xaml`. When the target application's UI changes, only the UI workflows need fixing; when a business rule changes, the UI workflows are untouched. Process-agnostic UI components are also the ones worth promoting to a shared library later.
+UI workflows interact with applications and contain no business rules; business workflows decide and never touch UI. Keep reads and writes distinct (for example, `GetCustomerInfo.xaml` and `ChangeCustomerInfo.xaml`) so UI changes and business-rule changes remain independent. Promote process-agnostic UI components to shared libraries when useful.
 
 #### Composition and argument naming
 
-Compose via `Invoke Workflow File` (coded: `workflows.StepName()`). Process workflow arguments use directional prefixes — `in_InvoiceId`, `out_Result`, `io_Browser` — so data flow is visible at every invocation site. Exception: library public workflows drop the prefixes ([library-authoring-guide.md § The Public-Workflow Contract](library-authoring-guide.md)).
+Compose with `Invoke Workflow File` (coded: `workflows.StepName()`). Use directional process argument prefixes `in_InvoiceId`, `out_Result`, and `io_Browser`; library public workflows omit prefixes ([library-authoring-guide.md § The Public-Workflow Contract](library-authoring-guide.md)).
 
 #### Layout and scale-out
 
-- Sequence vs Flowchart vs State Machine per workflow: [xaml/xaml-basics-and-rules.md § Workflow Types](xaml/xaml-basics-and-rules.md)
-- High-volume transactional work: dispatcher/performer split via queues — [reframework-guide.md § Execution Mode: Queue-Driven](reframework-guide.md)
+Choose Sequence, Flowchart, or State Machine per [xaml/xaml-basics-and-rules.md § Workflow Types](xaml/xaml-basics-and-rules.md). Use dispatcher/performer queues for high-volume transactions: [reframework-guide.md § Execution Mode: Queue-Driven](reframework-guide.md).
 
 #### Promotion ladder
 
-Promote logic only as reuse materializes:
-
-1. **Inline** — used once in one workflow
-2. **Separate workflow file** — reused within the project
-3. **Shared library** — reused across projects ([library-authoring-guide.md](library-authoring-guide.md))
-4. **UI Library** — selectors shared across projects ([uia-starter-guide.md § Object Repository as a Published UI Library](uia-starter-guide.md#object-repository-as-a-published-ui-library))
+Promote only as reuse appears: inline → separate workflow file → shared library ([library-authoring-guide.md](library-authoring-guide.md)) → UI Library for shared selectors ([uia-starter-guide.md § Object Repository as a Published UI Library](uia-starter-guide.md#object-repository-as-a-published-ui-library)).
 
 ### Example — Invoice Processing Project (XAML)
 
@@ -480,78 +412,48 @@ OrderProcessing/
 
 ### Project Structure Decision Tree
 
-**First — coded or XAML?** For new projects, default to XAML unless the user explicitly said "coded" or named a coded-specific trigger (custom data models, complex algorithms, unit tests on business logic). See [coded-vs-xaml-guide.md](coded-vs-xaml-guide.md). The root workflow is `Main.xaml` for XAML projects and `Main.cs` for coded projects — substitute accordingly below.
+For new projects default to XAML unless the user explicitly says “coded” or names coded-specific triggers such as custom data models, complex algorithms, or unit tests on business logic. Use `Main.xaml` for XAML and `Main.cs` for coded. Then apply:
 
-**Is it a single, simple task?**
-- ✅ Yes → Single root workflow
-
-**Is it a multi-step process?**
-- ✅ Yes → A root workflow that invokes each step + separate workflow files for each step
-
-**Does it involve repeated data structures?**
-- ✅ Yes → Extract to Coded Source File (e.g. `Models.cs`, `InvoiceData.cs`). Required even in XAML projects — XAML cannot define types
-
-**Is there shared logic across workflows?**
-- ✅ Yes → Extract to a reusable XAML workflow (XAML projects) or a helper Coded Source File (coded or hybrid projects)
-
-**Is it a test project?**
-- ✅ Yes → One test case file per scenario. Coded test projects optionally use `CodedWorkflowHooks.cs` (partial class CodedWorkflow) for shared setup/teardown
-
-**Does it have complex business rules?**
-- ✅ Yes → Isolate in Coded Source Files for reusability and testability (extract from XAML via `Invoke Workflow File` if needed)
-
-**Does it need both UI automation AND complex non-UI logic?**
-- ✅ Yes → Hybrid: XAML for UI automation + orchestration, Coded for business logic + data models. See [coded-vs-xaml-guide.md](coded-vs-xaml-guide.md)
+- Single simple task → one root workflow.
+- Multi-step process → root invoking separate step files.
+- Repeated data structures → Coded Source File, including in XAML projects.
+- Shared logic → reusable XAML workflow or helper Coded Source File.
+- Test project → one case per scenario; coded tests may use `CodedWorkflowHooks.cs` and partial class `CodedWorkflow`.
+- Complex business rules → isolate in Coded Source Files.
+- UI automation plus complex non-UI logic → hybrid: XAML UI/orchestration, coded business logic/data models; see [coded-vs-xaml-guide.md](coded-vs-xaml-guide.md).
 
 ## Project Conversion (expressionLanguage / targetFramework)
 
-Rule 23 (SKILL.md) forbids changing either field on an existing project — both are fixed at creation and apply to every XAML file: flipping `expressionLanguage` (VisualBasic ↔ CSharp) invalidates every expression; flipping `targetFramework` (Windows ↔ Portable, or Legacy) invalidates package references and activity compatibility.
+Rule 23 (SKILL.md) forbids changing either field in an existing project. Both are fixed at creation for every XAML file: changing `expressionLanguage` invalidates expressions; changing `targetFramework` invalidates package references and activity compatibility.
 
-**Do not attempt in-place conversion.** When the user wants to convert an existing project:
-
-1. Confirm the conversion with the user.
-2. Copy the project to a temporary folder.
-3. Create a new project via `uip rpa init --expression-language <VisualBasic|CSharp> --target-framework <Windows|Portable>`. For a target of Windows - Legacy, create it in Legacy mode instead — modern `init` is not the legacy creation path.
-4. Recreate every workflow defined in the old project as an equivalent in the new project.
-5. Delete the temporary copy only after the new project is generated successfully and the user agrees with the changes.
+Do not convert in place. When conversion is requested: (1) confirm with the user; (2) copy the project to a temporary folder; (3) create a new project with `uip rpa init --expression-language <VisualBasic|CSharp> --target-framework <Windows|Portable>`; for Windows - Legacy create it in Legacy mode instead, not through modern `init`; (4) recreate every old workflow equivalently; (5) delete the temporary copy only after successful generation and user agreement.
 
 ## Project Context Discovery
 
-Before doing any work in a project, check if `.claude/rules/project-context.md` exists in the project directory.
+Before project work, check `.claude/rules/project-context.md`.
 
-**If the file exists** → check for staleness:
+If it exists, read its first-line metadata `<!-- discovery-metadata: cs=N xaml=N deps=N -->`; count `**/*.cs` excluding `.local/` and `.codedworkflows/`, `**/*.xaml`, and dependency keys in `project.json`. For each count compute `abs(current - stored) / max(stored, 1) * 100`. If **any individual count differs by 60–70% or more**, run discovery; otherwise proceed.
 
-1. Read the first line to extract the metadata comment: `<!-- discovery-metadata: cs=N xaml=N deps=N -->`
-2. Count current files: Glob `**/*.cs` (excluding `.local/` and `.codedworkflows/`) and `**/*.xaml` in the project directory
-3. Count current dependencies: read `project.json` and count keys in the `.dependencies` object
-4. For each count (cs, xaml, deps), compute the percentage difference: `abs(current - stored) / max(stored, 1) * 100`
-5. If **any individual count differs by 60–70% or more** → run the discovery flow below
-6. If all counts are within the threshold → context is fresh, proceed with the skill workflow
-
-**If the file does NOT exist** → run the skip gate below; if it does not trip, run the discovery flow.
+If absent, run the skip gate below; if it does not trip, run the discovery flow.
 
 ### Skip gate: nothing to discover yet
 
-Discovery on a project with no authored content returns empty tables and costs a subagent round-trip. **Do NOT spawn the discovery agent** when any row matches:
+**Do NOT spawn the discovery agent** when any condition holds:
 
-| Condition | How to check |
-|-----------|--------------|
-| Greenfield — no `project.json` (you are about to create the project) | SKILL.md Step 0 found no `project.json` |
-| Empty project — 0 authored workflow files | Glob `**/*.xaml` + `**/*.cs`, excluding dot-directories and `obj/`, `bin/` → count 0 |
-| Freshly scaffolded — only the untouched entry point | Count 1; file is a scaffold entry point (`Main.xaml` process/template, `NewActivity*.xaml` library, `TestCase.xaml` test, `Main.cs` coded); no authored logic — root `Sequence` empty or only `Comment` activities (XAML) / empty `Execute` body (coded) |
+| Condition | Check |
+|---|---|
+| Greenfield | Step 0 found no `project.json` |
+| Empty | `**/*.xaml` + `**/*.cs`, excluding dot-directories and `obj/`, `bin/`, counts 0 |
+| Fresh scaffold | Count 1 and it is untouched `Main.xaml` process/template, `NewActivity*.xaml` library, `TestCase.xaml` test, or `Main.cs` coded, with no authored logic: empty root `Sequence` or only `Comment` activities, or empty coded `Execute` body |
 
-Gate tripped: write no context files now, proceed with the skill workflow. **After the build**, write both context files yourself from what you just created — same paths and `AGENTS.md` marker logic as discovery-flow step 3.
+For a tripped gate, write no context files now; proceed, then **after the build** write both context files yourself using the discovery-flow paths and `AGENTS.md` marker logic.
 
 ### Discovery flow
 
-Used for both missing and stale context:
+For missing or stale context:
 
-1. Spawn the project discovery agent and wait for it to complete. Its definition lives inside this skill at [`../agents/uipath-project-discovery-agent.md`](../agents/uipath-project-discovery-agent.md). Use whichever spawn mechanism your host supports:
-   - **Host registers plugin agents by name** (e.g., Claude Code) → trigger the registered `uipath-project-discovery-agent` agent.
-   - **Host only spawns its own predefined subagents** (e.g., UiPath Autopilot) → spawn a subagent and pass it that file (relative to this skill) as its instructions / custom skill. Grant it write access so it can produce the context files itself; a read-only subagent still works via step 3.
-2. The agent writes the context files itself and returns a `context-files:` status line followed by the context document. Use the returned document as this session's project context — do NOT re-read the files it just wrote, and do NOT rewrite them.
-3. **Only when the agent reports `context-files: not-written`** (read-only subagent host, or a write error) → write the returned content to **both**:
-   - `.claude/rules/project-context.md` (create `.claude/rules/` directory if needed) — auto-loaded by Claude Code in future sessions
-   - `AGENTS.md` at project root — the shared cross-agent context convention (read by UiPath Autopilot in Studio Desktop and other AGENTS.md-aware hosts). If `AGENTS.md` already exists, look for `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->` markers and replace only between them; if no markers exist, append the fenced block at the end
-4. If the agent returns `SKIP: <reason>` instead of a document, treat it as a gate trip: no context files now, write them yourself after the build.
-5. Then proceed with the skill workflow
+1. Spawn the project discovery agent and wait. Its definition is [`../agents/uipath-project-discovery-agent.md`](../agents/uipath-project-discovery-agent.md). Use the registered `uipath-project-discovery-agent` when available; otherwise spawn a subagent with that file as instructions/custom skill and write access. Read-only is allowed via step 3.
+2. The agent writes context files and returns a `context-files:` status line plus the document. Use that document for this session; do **not** reread or rewrite files it wrote.
+3. Only when it returns `context-files: not-written` (read-only host or write error), write the returned content to both `.claude/rules/project-context.md` (create `.claude/rules/`) and root `AGENTS.md`. If `AGENTS.md` has `<!-- PROJECT-CONTEXT:START -->` / `<!-- PROJECT-CONTEXT:END -->`, replace only the marked content; otherwise append the fenced block.
+4. If it returns `SKIP: <reason>`, treat it as a gate trip: write no context files now and write them yourself after the build.
+5. Proceed with the skill workflow.

@@ -20,6 +20,7 @@ from bpmn_check import (  # noqa: E402
     has_type,
     has_typed_uipath_extension,
     has_uipath_extension,
+    tag_case_hint,
 )
 
 
@@ -45,22 +46,58 @@ def test_typed_extension_accepts_nested_type_child() -> None:
     assert has_uipath_extension(task, "Orchestrator.StartJob")
 
 
-def test_typed_extension_accepts_registry_direct_type_attribute() -> None:
-    task = _service_task(
-        '<uipath:activity type="Orchestrator.StartAgentJob" version="v1" />'
-    )
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '<bpmn:extensionElements><uipath:activity type="Orchestrator.StartAgentJob" '
+        'version="v1" /></bpmn:extensionElements>',
+        '<uipath:activity version="v1">'
+        '<uipath:type value="Orchestrator.StartAgentJob" version="v2" /></uipath:activity>',
+        '<bpmn:extensionElements><uipath:activity type="Orchestrator.StartAgentJob" '
+        'version="v1"><uipath:type value="Orchestrator.StartAgentJob" version="v2" />'
+        "</uipath:activity></bpmn:extensionElements>",
+    ],
+)
+def test_typed_extension_rejects_shapes_the_runtime_ignores(payload: str) -> None:
+    task = _service_task(payload)
 
-    assert has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
-    assert has_uipath_extension(task, "Orchestrator.StartAgentJob")
+    assert not has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
 
 
 def test_typed_extension_rejects_wrong_wrapper_or_type() -> None:
     task = _service_task(
-        '<uipath:event type="Orchestrator.StartAgentJob" version="v1" />'
+        '<bpmn:extensionElements><uipath:event version="v1">'
+        '<uipath:type value="Orchestrator.StartAgentJob" version="v2" />'
+        "</uipath:event></bpmn:extensionElements>"
     )
 
+    assert has_typed_uipath_extension(task, "event", "Orchestrator.StartAgentJob")
     assert not has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
     assert not has_typed_uipath_extension(task, "event", "Orchestrator.StartJob")
+
+
+def test_typed_extension_accepts_the_requested_type_version() -> None:
+    task = _service_task(
+        '<bpmn:extensionElements><uipath:activity version="v1">'
+        '<uipath:type value="Orchestrator.StartAgentJob" version="v2" />'
+        "</uipath:activity></bpmn:extensionElements>"
+    )
+
+    assert has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob", version="v2")
+
+
+@pytest.mark.parametrize("type_attrs", ['version="v1"', ""])
+def test_typed_extension_rejects_another_type_version(type_attrs: str) -> None:
+    task = _service_task(
+        '<bpmn:extensionElements><uipath:activity version="v2">'
+        f'<uipath:type value="Orchestrator.StartAgentJob" {type_attrs} />'
+        "</uipath:activity></bpmn:extensionElements>"
+    )
+
+    assert has_typed_uipath_extension(task, "activity", "Orchestrator.StartAgentJob")
+    assert not has_typed_uipath_extension(
+        task, "activity", "Orchestrator.StartAgentJob", version="v2"
+    )
 
 
 def test_bundled_start_agent_contract_matches_runtime_registry() -> None:
@@ -74,10 +111,17 @@ def test_bundled_start_agent_contract_matches_runtime_registry() -> None:
         "folderPath",
     ]
     assert start_agent["bindingInfo"]["contextField"] == "name"
-    assert '<uipath:activity type="Orchestrator.StartAgentJob"' in start_agent[
-        "xmlTemplate"
-    ]
-    assert "<bpmn:extensionElements>" not in start_agent["xmlTemplate"]
+    template = ET.fromstring(
+        start_agent["xmlTemplate"].replace(
+            "<bpmn:ServiceTask",
+            f'<bpmn:ServiceTask xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}"',
+            1,
+        )
+    )
+    type_elem = template.find("bpmn:extensionElements/uipath:activity/uipath:type", NS)
+    assert type_elem is not None
+    assert type_elem.attrib == {"value": "Orchestrator.StartAgentJob", "version": "v2"}
+    assert "type" not in template.find("bpmn:extensionElements/uipath:activity", NS).attrib
     assert "releaseKey" not in start_agent["xmlTemplate"]
 
 
@@ -595,6 +639,57 @@ def test_body_object_is_empty_without_body_inputs() -> None:
     assert bpmn_check.body_fields(task) == []
 
 
+def test_path_parameters_reads_v1_per_field_inputs() -> None:
+    task = _send_task(
+        '<uipath:input name="entityName" type="string" target="path" value="FlowCodeEvalEntity" />'
+        '<uipath:input name="recordId" type="string" target="path" value="=vars.Id" />'
+        '<uipath:input name="limit" type="number" target="query" value="100" />'
+    )
+    assert bpmn_check.path_parameters(task) == {
+        "entityName": "FlowCodeEvalEntity",
+        "recordId": "=vars.Id",
+    }
+
+
+def test_path_parameters_reads_the_v2_json_input() -> None:
+    task = _send_task(
+        '<uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA['
+        '{"entityName": "NonExistentEntity", "fieldName": " file "}]]></uipath:input>'
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"entityName": "QueryOnly"}]]></uipath:input>'
+    )
+    assert bpmn_check.path_parameters(task) == {
+        "entityName": "NonExistentEntity",
+        "fieldName": "file",
+    }
+
+
+def test_query_parameters_reads_both_shapes() -> None:
+    task = _send_task(
+        '<uipath:input name="isAscending" type="boolean" target="query" value="false" />'
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"entityScope": "tenant", "tenantEntityName": "NonExistentEntity", "limit": 5}]]></uipath:input>'
+        '<uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA['
+        '{"entityName": "PathOnly"}]]></uipath:input>'
+    )
+    assert bpmn_check.query_parameters(task) == {
+        "isAscending": "false",
+        "entityScope": "tenant",
+        "tenantEntityName": "NonExistentEntity",
+    }
+
+
+@pytest.mark.parametrize(
+    "payload",
+    ["not json", '["NonExistentEntity"]', '{"entityName": 7}', ""],
+)
+def test_path_parameters_skips_a_v2_payload_that_names_nothing(payload: str) -> None:
+    task = _send_task(
+        f'<uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA[{payload}]]></uipath:input>'
+    )
+    assert bpmn_check.path_parameters(task) == {}
+
+
 def test_body_object_is_empty_for_an_empty_body_input() -> None:
     task = _send_task('<uipath:input name="body" type="json" target="body" />')
     assert bpmn_check.body_object(task) == {}
@@ -612,3 +707,21 @@ def test_body_object_fails_a_malformed_body_blob() -> None:
     )
     with pytest.raises(bpmn_check.BodyShapeError, match="must be an object"):
         bpmn_check.body_object(not_object)
+
+
+def _process(nodes: str) -> ET.Element:
+    return ET.fromstring(f'<bpmn:definitions xmlns:bpmn="{NS["bpmn"]}"><bpmn:process id="P">{nodes}</bpmn:process></bpmn:definitions>')
+
+
+def test_tag_case_hint_names_the_pascal_case_tag() -> None:
+    hint = tag_case_hint(_process('<bpmn:UserTask id="T" />'), "userTask")
+    assert hint == " (found bpmn:UserTask; tags are case-sensitive, expected bpmn:userTask)"
+
+
+@pytest.mark.parametrize(
+    "nodes",
+    ['<bpmn:userTask id="T" />', '<bpmn:userTask id="T" /><bpmn:UserTask id="U" />', '<bpmn:serviceTask id="S" />'],
+    ids=["exact-case", "both-cases", "absent"],
+)
+def test_tag_case_hint_silent(nodes) -> None:
+    assert tag_case_hint(_process(nodes), "userTask") == ""

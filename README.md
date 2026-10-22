@@ -59,7 +59,7 @@ The repository ships skills covering authoring, platform operations, and diagnos
 
 | Skill | Description |
 |-------|-------------|
-| **uipath-planner** | Solution planner & designer — turn a Process Design Document into an implementation-ready Solution Design Document (SDD), then derive an executable multi-skill task list across the other skills. |
+| **uipath-planner** | Solution planner & designer — turn a Process Definition Document into an implementation-ready Solution Design Document (SDD), then derive an executable multi-skill task list across the other skills. |
 | **uipath-solution** | Solution lifecycle (`.uipx`) — `uip solution init/pack/publish/deploy/activate`. |
 | **uipath-review** | Read-only auditor — structural, quality, and best-practice review across RPA, agents, flows, BPMN, coded apps, and solutions. |
 | **uipath-genome** | Automation blueprints (`*-genome.md`) — extract one from an existing project, solution, or another framework's export; author one from a described idea; execute one to build or migrate the automation through the owning skills. |
@@ -91,7 +91,6 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-agents` | Stable |
 | `uipath-aops` | Preview |
 | `uipath-api-workflow` | Stable |
-| `uipath-automation-discovery` | Preview |
 | `uipath-automationhub` | Stable |
 | `uipath-coded-apps` | Stable |
 | `uipath-connector-builder` | In-development |
@@ -117,6 +116,7 @@ Every skill's maturity is tracked in [`assets/skill-status.json`](assets/skill-s
 | `uipath-tasks` | Stable |
 | `uipath-test` | Preview |
 | `uipath-troubleshoot` | Preview |
+| `uipath-vertical-solutions` | Preview |
 
 **Status legend:**
 - **Stable** — Stable, production-ready surface; safe for production.

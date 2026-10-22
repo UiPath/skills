@@ -34,7 +34,9 @@ Decisions are front-loaded so the build can run unattended; the gates that remai
 | **3 — Implementation** | Connector task schemas, task I/O value binding, resolved connector-rule stub upgrades | `caseplan.case` ready for authoritative validation | None — proceeds to Phase 4 |
 | **4 — Validate** | Run authoritative `uip maestro case validate`, summarize `build-issues.md` (journal already on disk) | `caseplan.case` passes full validation | On 3rd validate failure: `Retry with fix` / `Pause for manual edit` / `Abort` |
 | **5 — Publish** | Optional Studio Web upload | `DesignerUrl` printed | `Publish to Studio Web` / `Skip to Debug` |
+<!--skill-flavor:phase-table-six-row:start-->
 | **6 — Debug** | Optional CLI debug run (real execution — emails, API calls, etc.) | Debug output streamed | `Run debug session` / `Continue to publish`; a re-publish after a fix is confirmed separately |
+<!--skill-flavor:phase-table-six-row:end-->
 <!--skill-flavor:phase-table-seven-row:start-->
 | **7 — Publish to Orchestrator** | Optional `case pack` + `solution pack` + `solution publish` to the tenant solution feed | `.zip` packed; publish result printed | `Publish to Orchestrator` / `Done` |
 <!--skill-flavor:phase-table-seven-row:end-->
@@ -55,7 +57,7 @@ Run it **after** the Phase 1 registry gate and [planning.md Step 4](planning.md#
 
 **Version guard.** If the response names `sdd` or `convert` as an unknown command (typically `ErrorCode: "invalid_argument"`, exit 3), author Phase 2 by hand exactly as described below, say so in one line, and continue. Exit 3 *without* that command-specific message is a real failure — report it and do not fall back.
 
-**`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). There are **25 kinds** (the authoritative list is the `UnresolvedItem` union in the CLI's `sdd-convert/types.ts` — read it there, never retype it). The four below are the ones with a *named downstream closer*; every other kind is closed by the Phase 4 repair loop acting on the entry's own `detail`. Each is closed by a later step, not by re-deriving it from the SDD.
+**`Data.Unresolved[]` is the work list.** Each entry carries `kind`, `where` (the element path) and `detail` (what the document cannot supply). The authoritative list of kinds is the `UnresolvedItem` union in the CLI's `sdd-convert/types.ts` — read it there, never retype it. The rows below are the kinds with a *named downstream closer*, plus `placeholder`, which needs none; every other kind is closed by the Phase 4 repair loop acting on the entry's own `detail`. Each is closed by a later step, not by re-deriving it from the SDD.
 
 > This table is the only place in this skill that names an `Unresolved` kind. That makes it the sole definition **and** the sole opportunity for an error — a kind added here and nowhere else has nothing to contradict it. Check a name against `types.ts` before trusting it.
 
@@ -64,9 +66,13 @@ Run it **after** the Phase 1 registry gate and [planning.md Step 4](planning.md#
 | `resource-binding` | which tenant resource a task runs | Phase 1 bindings — project `selected` into root bindings (Step 12 Check 7) |
 | `output-type` | an output's shape, which comes from the resolved resource's schema | Step 9, via `uip maestro case tasks describe` or `case spec` |
 | `connector-context` | `folderKey` and the connector version `metadata` | Phase 3 connector context (Step 12 Check 12) |
+| `case-role` | a Personas row convert cannot map (scope, stage, permission key, stage-scope permission, name, description, duplicate, nothing left to grant, no name); a permission the Case Designer publishes only under a tenant flag (`Assign`, the `Tasks*` / `TaskAssignment*` / `TaskSelfAssignment*` keys), written as stated; on a re-convert, a row that differs from the plan's role, a plan role the table does not declare or could not be read, or one convert could not carry; or a plan on a case app with no roles (`v1`) | The row is the user's design, so never change it on your own (SKILL.md Rule 2). A row convert cannot map: show the user the entry's `detail` and the fix (the planner template's Personas comment lists the keys); with their go-ahead, edit the row and re-run convert. A gated permission: ask whether the target tenant has the flag; keep the key if it does, and remove it from the row only if the user agrees. Any other: act on the entry's `detail` the same way — edit the row with the user's go-ahead, or remove the role or move the case to the V2 app in the Case Designer. In a non-interactive run, leave every row as written and list each entry in `build-issues.md`. Never hand-edit `metadata.caseRoles` to a guess |
 | `task-grouping` | whether a stage's shared `runs-sequentially` tasks are parallel siblings or a strict chain (the stage declares no Activation Mode or Task set) | Phase 2 — read the stage's intent in the SDD; for a strict chain, move each named task into its own consecutive single-task set, keeping `runs-sequentially` as its only entry rule ([case-schema.md § Positioning](case-schema.md)); for siblings, leave the set as emitted |
+| `placeholder` | nothing — the ledger defers this task (`gateDecision: "resolve-at-build"`, or an `<UNRESOLVED: …>` identity slot per SKILL.md Rule 10), so convert already wrote it as the Rule 9 placeholder: `data: {}`, entry conditions kept, no binding | Nothing. The task is done; do not edit it into a placeholder again or add `data`. If `where` names an expression (a skip condition, input or condition) instead of a task, that expression reads the placeholder's output, which has no value until the resource exists — list it in `build-issues.md` |
 
-**The sidecar is not convert's job.** Convert emits the root `bindings[]` — two entries per resource, `name` and `folderPath` sharing one `resourceKey` — but never `bindings_v2.json`. That sidecar is still derived from those entries by `uip maestro case bindings sync` at the end of Step 9 and again at Step 12 Check 7, after resource resolution can still change them. Do not sync it here.
+**Personas become `metadata.caseRoles`.** Convert maps each Personas row to a case role — name, description, `case` or `stages` scope with the stage ids, and the permission literals — and sets `caseAppVersion: v2`, the case app that honours roles. Permissions do not travel in the package: `bindings sync` writes one `Role` entry per role, `uip solution pack` mints the role resource from it and writes `spec.actions`, and pack refuses a role with no `Role` entry (`case_role_unbound`) until the sync has run. Phase 4's `--strict --sdd` compares the roles against the table and fails a template-shape persona the plan does not honour.
+
+**The sidecar is not convert's job.** Convert emits the root `bindings[]` — two entries per resource, `name` and `folderPath` sharing one `resourceKey` — but never `bindings_v2.json`. That sidecar is still derived from those entries, and from `metadata.caseRoles`, by `uip maestro case bindings sync` at the end of Step 9 and again at Step 12 Check 7, after resource resolution can still change them. Do not sync it here.
 
 **`Unresolved[]` is a floor, not a ceiling.** It reports what convert knew it was skipping — never what convert emitted wrongly, and never what it omitted silently. Phase 4's `--strict --sdd` stays the authority, and a plain-profile `Status: Valid` on convert output is not a finished plan.
 
@@ -93,7 +99,7 @@ The sections below define what Phase 2 must contain either way. With convert, re
 | Non-connector (`process`, `agent`, `rpa`, `action`, `api-workflow`, `function`, `business-rule`, `case-management`, `wait-for-timer`) | `task-type-id` resolved | Full `data.inputs[]` schema written (from `uip maestro case tasks describe`). Each input's `value` field is empty (`""`). Outputs and task-specific scalar fields (e.g. `action`'s `taskTitle`/`priority`/`recipient`/`labels`) populated per plugin — these are final at Step 2; only input `value`s defer to Phase 3. |
 | Connector (`connector-activity`, `connector-trigger`) | `type-id` + `connection-id` resolved | `data.typeId` + `data.connectionId` set. `data.inputs` omitted or empty. **No `case spec` call in Phase 2** — schema discovery is deferred to Phase 3. |
 | Any task | Unresolved (`<UNRESOLVED: …>` in `tasks/registry-resolved.json`) | Placeholder task per Rule 9 of `SKILL.md` — empty `data: {}` (plus `data.taskTitle` / `data.priority` / `data.recipient` for `action`). Marker preserved. See [placeholder-tasks.md](placeholder-tasks.md). |
-| `agent` / `api-workflow` built inline | Built + bound in Phase 1 at the Rule 18 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
+| `agent` / `api-workflow` / `business-rule` built inline | Built + bound in Phase 1 at the Rule 18 gate | **Not a placeholder** — fully resolved task (name+folder binding, `resourceKey="solution_folder.<name>"`, **`folderPath` binding `default` = `""`** — co-located runtime folder; `solution_folder` stays only in `resourceKey`). Phase 2 treats it like any resolved resource. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery). |
 
 ### Rules, SLA, and connector-rule stubs
 
@@ -274,7 +280,7 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 1. File path of `caseplan.case`.
 2. What was built — summary of stages, tasks, conditions, SLA.
 3. Validation status — `validate` pass / remaining warnings.
-4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + `wiringNotes` from `tasks/registry-resolved.json`. Also list, under **Not covered**, anything `sdd.md` referenced that is outside the scope of `caseplan.case` (e.g. Data Fabric entity schemas). Also list **agents / API workflows built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
+4. Placeholder tasks + unresolved resources — list every placeholder (TaskId, type, display-name, stage) + external resource user must register (task-type-id / connection-id) + `wiringNotes` from `tasks/registry-resolved.json`. Also list, under **Not covered**, anything `sdd.md` referenced that is outside the scope of `caseplan.case` (e.g. Data Fabric entity schemas). Also list **agents / API workflows / business rules built inline** (built as in-solution siblings, already bound) and any **built but unreferenced** (reject case) separately — they need no user action. See [placeholder-tasks.md § Completion-Report Shape](placeholder-tasks.md#completion-report-shape).
 5. Missing connections — connector tasks needing IS connections that don't exist yet.
 6. Suggested next steps — one short line before the prompt (the publish/skip-to-debug line above). If placeholders or missing connections exist, mention fixing/registering those before publish.
 
@@ -290,12 +296,16 @@ Before this prompt, include `Suggested next steps: publish to Studio Web when yo
 
 After Phase 5 (whether published or skipped), prompt via **AskUserQuestion**:
 
+<!--skill-flavor:phase-six-run-option:start-->
 - `Run debug session` — run `uip solution resources refresh --solution-folder "<SolutionDir>" --output json` then `uip maestro case debug "<directory>/<solutionName>/<projectName>" --log-level debug --output json`. Streams results.
+<!--skill-flavor:phase-six-run-option:end-->
 - `Continue to publish` — proceed to Phase 7 without debugging.
 
 > **Debug executes case for real — sends emails, posts messages, calls APIs, writes to databases. Only run when user explicitly asks. Never auto-run** (Rule 13).
 
+<!--skill-flavor:phase-six-requirements:start-->
 Requires `uip login`. Uploads to Studio Web, runs in Orchestrator, streams results.
+<!--skill-flavor:phase-six-requirements:end-->
 
 After debug completes, return to Phase 6 prompt so user can re-run or move on. Leave the phase only on `Continue to publish`.
 
@@ -305,7 +315,7 @@ Before this prompt, include `Suggested next steps: run a debug session if you ar
 
 - `uip solution resources refresh` MUST run before debug — syncs resources from `bindings_v2.json` so Studio Web can resolve connector dependencies (Rule 15).
 - Debug verifies the build actually runs end-to-end. If debug surfaces a fixable issue, see [Step 15a — Troubleshoot failed case](implementation.md#step-15a--troubleshoot-failed-case) and re-run; if the case was already published, re-publish afterwards so the published build carries the fix.
-- **Inline-built api-workflow siblings are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found") by design; agent siblings do resolve in debug. Verifying that task's runtime needs a full solution deploy (`uip maestro case pack` → `uip solution pack` → `uip solution publish` → `uip solution deploy run` — `case pack` first, always, per [§ Phase 7](#why-case-pack-is-mandatory)) — an Orchestrator install that goes beyond [§ Phase 7](#phase-7--publish-to-orchestrator) (which stops at publish), so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline).
+- **Inline-built siblings (agent, api-workflow, business-rule) are NOT provisioned by `case debug`** — that task faults with incident `170007` ("job's associated process could not be found"; agent and api-workflow) or `300400` ("the job carries no debug session properties"; business rule) by design. Verifying that task's runtime needs a full solution deploy (`uip maestro case pack` → `uip solution pack` → `uip solution publish` → `uip solution deploy run` — `case pack` first, always, per [§ Phase 7](#why-case-pack-is-mandatory)) — an Orchestrator install that goes beyond [§ Phase 7](#phase-7--publish-to-orchestrator) (which stops at publish), so **offer it via AskUserQuestion, never run it unprompted** (options — `Run full solution deploy` / `Skip (mark debug-unverifiable)`); if declined, report the task as debug-unverifiable and continue. See [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline) / [business-rule/planning.md § Creating a business rule inline](plugins/tasks/business-rule/planning.md#creating-a-business-rule-inline).
 
 ## Phase 7 — Publish to Orchestrator
 
@@ -374,7 +384,7 @@ For further authoring changes (add task, tweak condition, etc.), user updates `s
 
 Placeholder tasks (empty `data: {}` for unresolved resources) behave the same in all phases. Phase 2 creates them; Phase 3 does **not** upgrade them to typed tasks — upgrading requires user to register missing resource externally. See [placeholder-tasks.md](placeholder-tasks.md).
 
-> **Agents / API workflows built inline are not placeholders.** When the user picks **Create** at the Rule 18 gate, Phase 1 builds the resource (a side effect — spawns a sub-agent invoking `uipath-agents` / `uipath-api-workflow`, registers the sibling, binds it) so it enters Phase 2 as a fully resolved task. Phase 3 never upgrades it (nothing to upgrade). Only resources the user declined/skipped or whose build failed become placeholders. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery).
+> **Agents / API workflows / business rules built inline are not placeholders.** When the user picks **Create** at the Rule 18 gate, Phase 1 builds the resource (a side effect — spawns a sub-agent invoking `uipath-agents` / `uipath-api-workflow` / `uipath-rules`, registers the sibling, binds it) so it enters Phase 2 as a fully resolved task. Phase 3 never upgrades it (nothing to upgrade). Only resources the user declined/skipped or whose build failed become placeholders. See [registry-discovery.md § Create-on-Missing](registry-discovery.md#create-on-missing-build-and-rediscovery).
 
 Phase 3 still wires placeholder TaskIds into:
 - Task-entry conditions that reference the placeholder.

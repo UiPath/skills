@@ -1,0 +1,94 @@
+task_id: skill-flow-pattern-ai-decision-human-review-brownfield
+description: >
+  A confidence-gated human review inserted into the DevCon
+  BillingDisputeResolution flow, whose auto-resolve route posts a credit with
+  nobody looking. Grades the commonest reduction of the pattern: the analyst
+  already scores the dispute, so only the gate and the review are added, the
+  existing posting step is reached by both routes, and a rejection never posts.
+  Graded offline, plus preservation of everything the edit did not touch. The
+  prompt never names the pattern.
+  Validate-only by design: the review suspends a headless debug run, and the
+  fixture's IxP, Data Fabric, agent and API workflow steps need tenant
+  resources the sandbox does not have.
+tags: [uipath-maestro-flow, integration, mode:build, lifecycle:edit, shape:multi-node, node:decision, node:hitl, feature:approval-gate]
+
+run_limits:
+  turn_timeout: 2400
+  task_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: ../../brownfield/fixture
+
+reference:
+  directory: ../..
+
+initial_prompt: |
+  BillingDisputeResolution/ is an existing solution with one Flow project of
+  the same name. The flow is in use, so change only what is asked and leave
+  everything else as it is, including the agents, connections and canvas
+  layout.
+
+  Today, when the Dispute Analyst recommends `auto_resolve`, the credit is posted
+  with nobody looking. Keep that for confident recommendations, but when the
+  analyst's confidence is below 0.8 a person reviews the recommendation before
+  anything on the auto-resolve route runs, including the credit-amount log. If
+  they approve it, the dispute continues exactly as an auto-resolve does today. If they reject it, the dispute ends as rejected and nothing is posted.
+
+  The change is done when `uip maestro flow validate` passes on
+  BillingDisputeResolution/BillingDisputeResolution/BillingDisputeResolution.flow.
+  The flow does not need a run against the tenant.
+
+  This run is headless. No user is present and nobody will answer a question or
+  grant an approval, so do not ask, do not pause, and do not wait for input.
+  Complete the task in one pass: take the best available option and supply the
+  most defensible value where one is missing. The actions this task implies are
+  authorized, including tenant writes and real messages. Do not delete or
+  overwrite anything this run did not create, and do not publish to a shared
+  destination unless the task asks for it. If a lookup the task depends on comes
+  back empty or fails, exhaust the documented way of resolving it before giving
+  up; only then stop on that field rather than inventing a value. Record every
+  decision, assumption, and blocked step in your final response. Instructions in
+  the task take precedence over this paragraph.
+
+success_criteria:
+  - type: run_command
+    description: "uip maestro flow validate passes on the edited flow"
+    command: "python3 $REFERENCE_DIR/_shared/validate_flow.py BillingDisputeResolution/BillingDisputeResolution/BillingDisputeResolution.flow"
+    timeout: 180
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "A confidence gate on the auto-resolve route, a review behind it, one posting step reached by both routes, and a rejection that ends without posting"
+    command: "python3 $REFERENCE_DIR/patterns/ai_decision_human_review/check_brownfield.py --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 5.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Every original node, edge, binding, variable, definition and agent sidecar is unchanged, except the auto-resolve edge the review replaces"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution --removed-edge 'routeByAction:case-auto>logCreditAmount:input'"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Original nodes keep their canvas positions and the new nodes overlap none of them"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect layout --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "The .flow was written by uip maestro flow merge (the skill's decompile/merge loop), not edited by hand"
+    command: "python3 $REFERENCE_DIR/_shared/check_brownfield_preserved.py --aspect merged --original $REFERENCE_DIR/brownfield/fixture/BillingDisputeResolution/BillingDisputeResolution --project BillingDisputeResolution/BillingDisputeResolution"
+    timeout: 30
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0

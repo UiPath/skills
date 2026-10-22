@@ -19,7 +19,7 @@ Checks (domain-agnostic):
   1. Mapping integrity — every ``=vars.<name>`` resolves to a §Case Variables row.
   2. Lineage closure  — every consumed variable is produced before use (In /
      Default / sourceTriggers / task Output ``-> name`` / button ``name = ...``).
-  3. Task-type enum   — every task ``Type`` is one of the 9 legal types.
+  3. Task-type enum   — every task ``Type`` is one of the 11 legal types.
   4. Per-gate rule legality — each Entry / Completion / Exit / Case-exit rule is
      legal **for its gate**, with the correct Marks-Complete pairing.
   5. Conditions present — each stage section has Entry + Exit conditions, and the
@@ -42,9 +42,10 @@ import re
 import sys
 
 TASK_TYPES = {
-    "action", "agent", "rpa", "process", "api-workflow",
-    "execute-connector-activity", "wait-for-connector", "wait-for-timer",
-    "case-management",
+    "action", "agent", "rpa", "process", "api-workflow", "function",
+    "business-rule", "execute-connector-activity", "wait-for-connector",
+    "wait-for-timer", "case-management", "http-request", "flow-process",
+    "external-agent", "external-workflow", "document-extraction",
 }
 
 # Legal rule types per gate (mirrors case-tool schema-helpers VALID_*_RULE_TYPES).
@@ -63,6 +64,8 @@ CASE_EXIT = {"selected-stage-completed", "selected-stage-exited",
              "wait-for-connector"}                                       # Marks: No
 EXIT_TYPES = {"exit-only", "wait-for-user", "return-to-origin"}
 RETURN_TO_ORIGIN_COMPLETION = {"required-tasks-completed", "wait-for-connector"}
+for _gate in (STAGE_ENTRY, STAGE_COMPLETION, STAGE_EXIT, TASK_ENTRY, CASE_COMPLETION, CASE_EXIT):
+    _gate.add("api-event")  # a business event: every gate the Designer offers, never a case trigger
 KNOWN_RULES = STAGE_ENTRY | STAGE_COMPLETION | STAGE_EXIT | TASK_ENTRY | CASE_COMPLETION | CASE_EXIT
 SUMMARY_ONLY_HEADINGS = {
     "Source", "Case Objective", "Actors And Systems", "Case Trigger", "Stages",
@@ -78,11 +81,17 @@ TASK_DETAIL_MARKERS = {
     "execute-connector-activity": ("Connector Task Detail", "**Connector:**", "**Resolved Resource:**"),
     "wait-for-timer": ("Timer Task Detail", "**Timer Configuration:**", "**Duration:**", "**Timer:**"),
     "case-management": ("Child Case Task Detail", "**Child Case:**"),
+    "http-request": ("HTTP Request Task Detail", "**Method:**", "**URL:**"),
+    "document-extraction": ("Document Extraction Task Detail", "**IXP Deployment:**", "**Model Name:**"),
     "process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "agent": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "rpa": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
     "api-workflow": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "function": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "business-rule": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
+    "flow-process": ("Process / Agent / RPA / API Workflow Task Detail", "**Resolved Resource:**"),
 }
+TASK_DETAIL_MARKERS |= dict.fromkeys(("external-agent", "external-workflow"), TASK_DETAIL_MARKERS["execute-connector-activity"])
 
 
 def _find_sdd() -> str:
@@ -389,7 +398,7 @@ def main() -> None:
     # 3. task-type enum
     # Per-stage **Type:** is always "Stage" post-consolidation; "ExceptionStage"
     # stays whitelisted for back-compat with un-migrated SDDs. Task rows carry the
-    # 9 legal task types. The new **Stage Kind:** field is matched separately below.
+    # 11 legal task types. The new **Stage Kind:** field is matched separately below.
     bad_types = sorted(
         {t for t in re.findall(r"^\*\*Type:\*\*\s*(\S+)", text, re.M)
          if t not in ("Stage", "ExceptionStage") and t not in TASK_TYPES}

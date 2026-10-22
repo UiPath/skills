@@ -28,7 +28,7 @@ Define an autonomous agent inside this Flow project, with optional resources.
     rules: [{ $ruleType: 'always', applyTo: 'inputAndOutput' }] }] }))
 ```
 
-`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds; `memory: { name, id }` attaches an episodic memory; `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
+`tools` also takes `mcp`, `a2a`, `clientside`, `httpRequest` and `function` kinds, each with its own identity ([agent-resources.md](agent-resources.md#tool-kinds)); memory is attached with the CLI, not `inlineAgent` ([agent-resources.md](agent-resources.md#memory)); `escalation` takes `variant: 'quick-form'` for an inline form. `mode: 'advanced'` selects the Advanced harness.
 
 ## Model and answer judgment
 
@@ -59,6 +59,7 @@ uip solution resources list --kind Index --source remote --search "<index-name>"
 Maps onto the signature as `Key` → `id`, `Name` → `name`, `Folder` → `folderPath`, `FolderKey` → `folderKey`.
 `id` is the index's GUID (`Key`): it is the tail of the resource node's type. `check` reports `AGENT_CONTEXT_NO_ID` for a blank or non-GUID `id`, and compile refuses it even with `--no-check`.
 Give `folderPath`: the resource file carries no index id, so the type and the folder together locate the index.
+Resource entries may carry `nodeId` / `source` / `label` from decompile; see [brownfield.md](brownfield.md). Omit them in new flows.
 
 Local execution has no semantic retrieval service, so an inline-agent answer is ungrounded even when the resource wiring is present.
 Platform evidence must establish that the intended index was used and that its retrieved knowledge influenced the answer.
@@ -89,6 +90,17 @@ Tool signatures:
 - `{ kind: 'connector', connector, operation, connection, folder, version?, object?, name?, description? }`
 - `{ kind: 'process' | 'agent' | 'api' | 'flow' | 'maestro', key, name, folderPath, inputs?, returns? }`
 - `{ kind: 'ixp', projectId, name, description?, versionTag?, attachment? }`
+
+For a sibling project of this solution, a `process` / `agent` / `api` /
+`flow` / `maestro` / `function` tool takes `key` = `resource.key` from
+`resources/solution_folder/process/*/<Project>.json` (the tail of its
+`uip maestro flow registry list --local` tool type) and
+`folderPath: 'solution_folder'`. A `ProcessOrchestration` project (folder
+`processOrchestration`, tool type `…tool.processorchestration.*`) is
+`kind: 'maestro'`, never `'process'`; any other kind is its tool type's
+namespace. A tool has no `location` or `projectId`.
+Declare it on `inlineAgent` so compile writes its `resource.json`; a node added
+with `uip maestro flow nodes create` gets none.
 
 A connector tool needs `connection` and `folder`, `bindings.json` labels
 resolved like `connector()`'s (see [bindings.md](bindings.md)). Missing either
@@ -140,7 +152,13 @@ sidecar. Each rail is `$guardrailType: 'custom'` (with `rules`) or
 (`block` with a reason, `filter` over fields, or `log` with a severity), and
 `enabledForEvals`. Custom rules are `$ruleType: 'word' | 'number' | 'boolean'`
 over a field selector, or `'always'`. A rail with no scopes or an empty rules
-array can never fire — `check` rejects both.
+array can never fire — `check` rejects both. File-capable built-in validators
+take an extra `validatorParameters` entry `{ $parameterType: 'enum', id:
+'detectionScope', value: 'Text' | 'Files' | 'Both' }` that decides whether
+the validator reads the text, the run's files, or both; inline agents inherit
+the standalone low-code behaviour unchanged (the sidecar is a projected
+`agent.json`). Scope coverage, caps and recipes live in the low-code
+guardrails files guide of [/uipath:uipath-agents](/uipath:uipath-agents).
 
 `mode: 'standard' | 'advanced'` picks the harness; naming it selects the
 node's 1.3 definition (omitting it keeps 1.2 byte-identically) and lands on

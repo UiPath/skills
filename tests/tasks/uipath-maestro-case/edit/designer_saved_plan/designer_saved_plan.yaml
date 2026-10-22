@@ -16,7 +16,7 @@ description: >
   skill as it stands (2026-10-09, one run each with and without #3817's
   brownfield commit): the guard is against regressions in edits to Designer
   plans, not a test of that commit.
-tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node]
+tags: [uipath-maestro-case, integration, mode:build, lifecycle:generate, shape:multi-node, path-to-ga]
 max_iterations: 1
 
 run_limits:

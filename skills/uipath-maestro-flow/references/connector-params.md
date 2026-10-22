@@ -140,9 +140,9 @@ and a logged-in `uip`; without one, fall back to the curated operation in the
 markdown library.
 
 ```bash
-uip maestro registry prepare <connector-key> <action>
+uip maestro registry prepare <connector-key> --action <action>
 # Generic operation: materialize the one connected object the task uses.
-uip maestro registry prepare <connector-key> <action> --object <api-object-name>
+uip maestro registry prepare <connector-key> --action <action> --object <api-object-name>
 # Use --all-objects only when the task truly needs the full connected catalog.
 ```
 
@@ -210,7 +210,7 @@ case-insensitive on API name and display name, narrowed to objects that
 support the action's verb):
 
 ```bash
-uip maestro registry prepare <connector-key> <action> --object Company__C
+uip maestro registry prepare <connector-key> --action <action> --object Company__C
 #   object: matched "Company__C" -> Company__c
 ```
 
@@ -301,7 +301,7 @@ very value `-f` wants.** Do not run one prepare to resolve them and retype the
 ids into a second command: pass both flags together —
 
 ```bash
-uip maestro registry prepare uipath-atlassian-jira create-issue \
+uip maestro registry prepare uipath-atlassian-jira --action create-issue \
   --resolve fields.project.key:key=UIP --resolve fields.issuetype.id:name=Bug \
   -f fields.project.key=UIP -f fields.issuetype.id=10732
 ```
@@ -355,7 +355,7 @@ inputs (`entityName`, `expansionLevel`) — not one field of the entity — so
 parent when you omit it; the fix is always the entity name:
 
 ```bash
-uip maestro registry prepare uipath-uipath-dataservice create-entity-record \
+uip maestro registry prepare uipath-uipath-dataservice --action create-entity-record \
   -f entityName=FlowCodeEvalEntity
 # → 8 input field(s): entityName, expansionLevel + the entity's own fields
 ```
@@ -388,7 +388,7 @@ For Jira, `/project/{key}/issuetypes` has no object of its own; `project_statuse
 **3. Prepare with every parent.** Pass them all as `-f NAME=VALUE`:
 
 ```bash
-uip maestro registry prepare <connector-key> <action> \
+uip maestro registry prepare <connector-key> --action <action> \
   -f fields.project.key=IN -f fields.issuetype.id=10620
 ```
 
@@ -477,12 +477,20 @@ Do not carry an alias from the first row into the second.
 There is no table to generate it from, so `lookup('k', 'a', 'f').byEmail(…)` throws.
 Write `.by('profile.email', …)` there instead — the names a field is searchable by are in the descriptor's `LOOKUP:` header and in every `check` diagnostic about the field.
 
+A folder-tree lookup (OneDrive's `referenceID` by `FullName`) matches a bare name only at the top of the tree or one level below. For anything deeper, give the path from the root picker's own top entry, not from the drive root (`<folder>/<file>` fails at its first segment):
+
+```ts
+referenceID: lookup(DownloadFile, 'referenceID').by('FullName', 'OneDrive/<folder>/<file>')
+```
+
+Expect a walk to take four to six minutes. A wrong first segment fails within seconds, but a wrong file name fails only after that walk, naming the segment it stopped at (`stops at segment 3, '<file>'`). So confirm the name first: list the folder through the picker's `childPath`, `uip is resources run list uipath-microsoft-onedrive EventFolderPicker --connection-id <connection-id> --query '{"parentReference":"<folder ReferenceID>","includeFiles":"true"}' --output json` (drop `parentReference` for the top level).
+
 When the flow is written, `check` reports each token still unresolved
 (`LOOKUP_UNRESOLVED`) with exactly this command — one prepare records them all,
 and it is the only tenant call the whole loop needs:
 
 ```bash
-uip maestro registry prepare uipath-salesforce-slack send-message-to-user \
+uip maestro registry prepare uipath-salesforce-slack --action send-message-to-user \
   --resolve channel:profile.email=dustin@example.com
 ```
 
@@ -624,6 +632,11 @@ the record does not exist. The parameter name is `nextPage`, not
 
 A get-by-id not-found is a service error. Add `.onError(...)` when the scenario
 wants a not-found answer; otherwise failing loud can be intentional.
+
+Output field names are case-sensitive and `check` does not verify them:
+`out('upload', 'WebUrl')` compiles and reads `null` at run time when the field is
+`webUrl`. Copy each name from the operation's `## Outputs` in
+`$FLOW_SDK_LIBRARY_MD`.
 
 For a response with no declared fields, read the whole output into a script
 local before inspecting service-specific properties:

@@ -22,6 +22,9 @@ wheels/
 **/uipath.db
 **/.uipath
 **/**.nupkg
+# Checked-in test fixtures that eval pre_run hooks upload (see
+# tests/tasks/uipath-test/fixtures/README.md, Run-package fixtures).
+!tests/tasks/uipath-test/_setup/packages/*.nupkg
 **/__uipath/
 
 **/playground.py

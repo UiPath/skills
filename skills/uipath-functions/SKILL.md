@@ -18,7 +18,7 @@ Atomic, deterministic units of business logic — no LLM reasoning, no agent loo
 - Error handling: returned error fields (Python), `FunctionError`/status codes and job fault semantics (JS/TS)
 - Call UiPath platform APIs from inside a function (Python SDK; `@uipath/uipath-typescript` with `ctx` tokens)
 - Wire a Coded App frontend to a JS/TS function backend (tokens, CORS, timeout budget, local dev loop)
-- Pack, publish, invoke in production; register in a solution; resource bindings
+- Pack, publish, invoke in production; register in a solution; derive `bindings.json` resource bindings from SDK calls
 - Debug deployed failures: cold-start hangs, errorCode 4801/4804/1623, missing tokens, entrypoint errors
 
 Do NOT use this skill for:
@@ -53,10 +53,11 @@ Job-startable functions are invoked from Maestro BPMN/Flow (Service Task), coded
 
 1. **`UiPath()` must never be instantiated at module level** — lazy singleton inside a getter.
 2. **Errors are returned, not raised**: populate `error_type`/`error_message` output fields; never let exceptions bubble out of the entrypoint.
-3. **`uip function init` must run before `pack` or `push`** — it generates `entry-points.json`, `bindings.json`, `project.uiproj`; re-run after any schema or entrypoint change.
+3. **`uip function init` must run before `pack` or `push`** — it generates `entry-points.json` and `project.uiproj` and creates `bindings.json` as an empty skeleton when the file is absent; re-run after any schema or entrypoint change. It never derives bindings from code (Rule 7).
 4. **Typed I/O is mandatory** — Pydantic `BaseModel`, `pydantic.dataclasses.dataclass`, stdlib `@dataclass`, or a thin typed class; apply `@traced(name=..., run_type="uipath")` to the entrypoint for LLM Ops Traces.
 5. **`pyproject.toml` needs `authors`** (else `pack` rejects: `Project authors cannot be empty`) and no `[build-system]` section.
 6. **`uip function new -l py` produces a function scaffold** — `uipath.json` with a `functions` map, no `langgraph.json` — regardless of any agent framework package (`uipath-langchain`, `uipath-llamaindex`, `uipath-openai-agents`) installed in the venv.
+7. **Bindings are derived from `uipath` SDK calls — never left empty, never guessed.** `init` leaves `"resources": []`. Every `sdk().assets` / `queues` / `processes` / `buckets` / `context_grounding` / `connections` / `mcp` / `tasks` call needs a matching `bindings.json` entry, produced by the sync workflow in [references/python/bindings-reference.md](references/python/bindings-reference.md). Without it the project packs and publishes cleanly, surfaces no resource for mapping at deploy time, and fails at runtime. `uip function push` resolves the entries against the Resource Catalog exactly as `uip codedagent push` does.
 
 ### JS/TS
 
@@ -81,7 +82,8 @@ Job-startable functions are invoked from Maestro BPMN/Flow (Service Task), coded
 ```bash
 uip function new <NAME> -l py    # scaffold a Python function project
 # author: Pydantic Input/Output + @traced entrypoint, lazy UiPath() singleton, errors returned not raised
-uip function init                # generate entry-points.json / bindings.json / project.uiproj
+uip function init                # generate entry-points.json / project.uiproj; bindings.json starts empty
+# sync bindings.json from the SDK resource calls — references/python/bindings-reference.md
 uip function run <ENTRYPOINT> '{"document_id": "42"}'
 uip function pack && uip function publish
 ```
@@ -130,12 +132,12 @@ Authoring detail, local dev, HTTP semantics, deployment, bindings, Coded App wir
 
 ```bash
 uip function new <NAME> -l py|ts|js [--empty]   # scaffold (TypeScript default; --empty is JS/TS only)
-uip function init                    # Python only — entry-points.json, bindings.json, project.uiproj
+uip function init                    # Python only — entry-points.json, project.uiproj, empty bindings.json skeleton
 uip function serve [--port 7070] [--runtime node|deno]   # JS/TS only — local HTTP server, hot reload
 uip function run                     # both languages — one-shot local execution
 uip function pack [--nolock]         # build the .nupkg
 uip function publish [--feed-id <FEED_ID>]      # upload package to a process feed
-uip function push --project-id <PROJECT_ID>     # sync sources to a Studio Web project
+uip function push --project-id <PROJECT_ID> [--ignore-resources]   # sync sources to Studio Web and import bindings.json resources
 uip function runtime-install         # JS/TS — one-time runtime pre-install (otherwise downloaded on first serve/run)
 ```
 
@@ -146,6 +148,7 @@ uip function runtime-install         # JS/TS — one-time runtime pre-install (o
 | I need to… | Read |
 |---|---|
 | Python: full workflow — scaffold, schema, template, registration, dependencies, init, SDK calls, attachments, pack | [python/workflow-guide.md](references/python/workflow-guide.md) |
+| Python: derive and sync `bindings.json` from SDK resource calls — per-resource schema, SubType, entrypoint binding, what `push` does | [python/bindings-reference.md](references/python/bindings-reference.md) |
 | JS/TS: write handlers, contracts, ctx, errors, logging | [js/authoring-guide.md](references/js/authoring-guide.md) |
 | JS/TS: run and test locally (serve, run, env, tokens) | [js/local-dev-guide.md](references/js/local-dev-guide.md) |
 | JS/TS: routing, status codes, deployed limits | [js/http-semantics-guide.md](references/js/http-semantics-guide.md) |
@@ -162,6 +165,7 @@ uip function runtime-install         # JS/TS — one-time runtime pre-install (o
 1. **Instantiating `UiPath()` at module level** — always a lazy singleton inside a getter (Python Rule 1).
 2. **Raising exceptions from the entrypoint** — populate the error output fields and return (Python Rule 2).
 3. **Skipping `uip function init` after a schema change** — stale `entry-points.json` ships wrong contracts (Python Rule 3).
+4. **Shipping `bindings.json` with `"resources": []` while the code calls SDK resources** — `init` only creates the skeleton; derive the entries (Python Rule 7).
 
 ### JS/TS
 
