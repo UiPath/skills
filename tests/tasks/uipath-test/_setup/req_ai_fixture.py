@@ -8,6 +8,9 @@ YAML where fixtures/check-collisions.py sees them; this file knows no names.
     seed   — create-if-absent one requirement and the test cases linked to it,
              reset its description, and remove what an earlier run of the task
              produced (test cases the AI created and linked, extra links).
+    warm   — wait on the generate job `seed --capture-generate-timeout` saved, so
+             the agent's resume is instant; TENANT NOT READY when the backend
+             is too slow (run as pre_run legs: coder_eval caps each at 300 s).
     check  — exit 0 when the requirement / test cases are in the asserted state.
 
 `uip` is the CLI on PATH; set UIP_CMD (for example "node /path/to/index.js")
@@ -238,47 +241,76 @@ def cmd_seed(a):
         os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
         with open(out, "w", encoding="utf-8") as fh:
             json.dump(env, fh, indent=2)
-        log(f"saved the timed-out output of job {activity} to {out}")
-
-        # Backend health gate. The saved envelope above is the timed-out state
-        # the task needs (the agent must resume the job by --activity-id). But
-        # the agent then has to WAIT for that job to finish, and when the AI
-        # Trust Layer / LLM gateway is slow the job outruns the agent's budget
-        # and the run fails on an environment problem, not an agent one. So
-        # pre-warm the SAME job here: if it finishes, the agent's resume is
-        # instant; if it is still running after the budget, the backend is too
-        # slow for this run — exclude the task as tenant-not-ready (the
-        # pass-rate gate drops a pre_run that exits non-zero with TENANT NOT
-        # READY on stderr) rather than let it fail closed. The budget is the
-        # skill's own single-wait bound (`--timeout 540`): a job the agent could
-        # have waited out is not a slow backend. Jobs usually finish in 1-2 min;
-        # a 240 s budget turned merely slow jobs into nightly ERRORs.
-        health_wait = 540
-        rc, henv = call("backend.health", "tm", "requirements", "generate-testcases",
-                        "--project-key", a.project, "--activity-id", activity,
-                        "--wait", "--timeout", str(health_wait), "--poll-interval", "5",
-                        timeout=health_wait + 60, check=False)
-        timed_out = (rc == 2 or (henv.get("ErrorCode") or "").lower() == "timeout"
-                     or "timed out" in (henv.get("Message") or "").lower())
-        if timed_out:
-            print("TENANT NOT READY — the AI generate backend did not finish job "
-                  f"{activity} within {health_wait}s on project {a.project}; the AI "
-                  "Trust Layer / LLM gateway is too slow for this run. Not an agent "
-                  "failure.", file=sys.stderr, flush=True)
-            sys.exit(1)
-        if rc != 0:
-            # A 5xx while polling (ErrorCode server_error) is the backend
-            # wobbling, not a fixture bug: same exclusion as a slow job.
-            if (henv.get("ErrorCode") or "").lower() == "server_error":
-                print("TENANT NOT READY — the AI generate backend answered a server "
-                      f"error while polling job {activity} on project {a.project}: "
-                      f"{(henv.get('Message') or '')[:160]}. Not an agent failure.",
-                      file=sys.stderr, flush=True)
-                sys.exit(1)
-            fail(f"backend.health on job {activity} failed (rc={rc}): "
-                 f"{json.dumps(henv)[:300]}")
+        log(f"saved the timed-out output of job {activity} to {out}; run `warm` next")
 
     log(f"{a.requirement} ready: {rid}, {len(wanted)} linked test case(s)")
+
+
+def cmd_warm(a):
+    """Backend health gate for the job `seed --capture-generate-timeout` saved.
+
+    The saved envelope is the timed-out state the task needs (the agent must
+    resume the job by --activity-id). But the agent then has to WAIT for that
+    job, and when the AI Trust Layer / LLM gateway is slow the job outruns the
+    agent's budget and the run fails on an environment problem, not an agent
+    one. So pre-warm the SAME job here (reading a job by id spends no AI
+    units): if it finishes, the agent's resume is instant; if it is still
+    running when the LAST leg ends, the backend is too slow for this run —
+    exclude the task as tenant-not-ready (the pass-rate gate drops a pre_run
+    that exits non-zero with TENANT NOT READY on stderr) rather than let it
+    fail closed. The total budget is the skill's own single-wait bound
+    (`--timeout 540`): a job the agent could have waited out is not a slow
+    backend. coder_eval caps each pre_run command at 300 s, so the task runs
+    this as two legs of `--timeout 270`, the second with `--last`. Jobs
+    usually finish in 1-2 min; a 240 s budget turned merely slow jobs into
+    nightly ERRORs."""
+    project = a.project
+    try:
+        with open("project-key.txt", encoding="utf-8") as fh:
+            project = fh.read().strip() or project
+    except FileNotFoundError:
+        pass
+    if not project:
+        fail("warm: no project key (project-key.txt missing and no --project)")
+    try:
+        with open(a.saved, encoding="utf-8") as fh:
+            env = json.load(fh)
+    except (OSError, ValueError) as exc:
+        fail(f"warm: cannot read the saved envelope {a.saved}: {exc}")
+    activity = activity_id(env)
+    if not activity:
+        fail(f"warm: {a.saved} names no AI activity")
+    try:
+        rc, henv = call("backend.health", "tm", "requirements", "generate-testcases",
+                        "--project-key", project, "--activity-id", activity,
+                        "--wait", "--timeout", str(a.timeout), "--poll-interval", "5",
+                        timeout=a.timeout + 20, check=False)
+    except subprocess.TimeoutExpired:
+        rc, henv = 2, {"ErrorCode": "timeout", "Message": "wait subprocess timed out"}
+    timed_out = (rc == 2 or (henv.get("ErrorCode") or "").lower() == "timeout"
+                 or "timed out" in (henv.get("Message") or "").lower())
+    if timed_out:
+        if not a.last:
+            log(f"job {activity} still running after {a.timeout}s; the next warm leg continues")
+            return 0
+        print("TENANT NOT READY — the AI generate backend did not finish job "
+              f"{activity} within the pre-warm budget on project {project}; the AI "
+              "Trust Layer / LLM gateway is too slow for this run. Not an agent "
+              "failure.", file=sys.stderr, flush=True)
+        sys.exit(1)
+    if rc != 0:
+        # A 5xx while polling (ErrorCode server_error) is the backend
+        # wobbling, not a fixture bug: same exclusion as a slow job.
+        if (henv.get("ErrorCode") or "").lower() == "server_error":
+            print("TENANT NOT READY — the AI generate backend answered a server "
+                  f"error while polling job {activity} on project {project}: "
+                  f"{(henv.get('Message') or '')[:160]}. Not an agent failure.",
+                  file=sys.stderr, flush=True)
+            sys.exit(1)
+        fail(f"backend.health on job {activity} failed (rc={rc}): "
+             f"{json.dumps(henv)[:300]}")
+    log(f"job {activity} finished; the agent's resume will be instant")
+    return 0
 
 
 def cmd_check(a):
@@ -366,12 +398,21 @@ def main():
     s.add_argument("--require-access", action="append", default=[], metavar="VERB",
                    help="exit TENANT NOT READY when this AI verb answers 403 (repeatable)")
     s.add_argument("--capture-generate-timeout", metavar="OUT",
-                   help="start generate-testcases with a 3 s wait, save its output, then "
-                        "pre-warm the job for up to 540 s (TENANT NOT READY if slower)")
+                   help="start generate-testcases with a 3 s wait and save its output "
+                        "(then pre-warm that job with `warm`)")
     s.add_argument("--stamped-prefix", metavar="PREFIX",
                    help="seed into a fresh per-run project <PREFIX><stamp>-<hex> "
                         "(key written to project-key.txt) instead of --project, so "
                         "concurrent gate runs do not share the requirement")
+
+    w = sub.add_parser("warm")
+    w.add_argument("--saved", required=True, metavar="FILE",
+                   help="the envelope seed --capture-generate-timeout wrote")
+    w.add_argument("--project", help="fallback when project-key.txt is absent")
+    w.add_argument("--timeout", type=int, default=270, metavar="SECONDS",
+                   help="this leg's wait (keep the pre_run command under 300 s)")
+    w.add_argument("--last", action="store_true",
+                   help="a job still running at the end of this leg is TENANT NOT READY")
 
     c = sub.add_parser("check")
     c.add_argument("--project", required=True)
@@ -387,6 +428,8 @@ def main():
     if a.cmd == "seed":
         cmd_seed(a)
         return 0
+    if a.cmd == "warm":
+        return cmd_warm(a)
     return cmd_check(a)
 
 

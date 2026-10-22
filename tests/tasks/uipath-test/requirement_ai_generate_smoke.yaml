@@ -18,7 +18,9 @@ description: >
   earlier run created. Spends one AI job per run, started in pre_run; a job
   takes 1–5 min, hence the longer turn limit. pre_run then pre-warms that same
   job for up to 540 s (the skill's own single-wait bound) so the agent's resume
-  is instant, and exits TENANT NOT READY when the backend is slower than that.
+  is instant, and exits TENANT NOT READY when the backend is slower than that;
+  coder_eval caps each pre_run command at 300 s, so the warm-up runs as two
+  270 s legs (reading a job by id spends no AI units).
 tags: [uipath-test, smoke, mode:operate, lifecycle:setup, feature:test-case]
 
 run_limits:
@@ -42,7 +44,14 @@ pre_run:
       --requirement EVFX-AIGEN-REQ --require-access generate-testcases
       --description "A signed-in customer can transfer money between their own accounts. The amount must be greater than zero and no more than the source account's available balance. Transfers above 10,000 need a one-time code sent by SMS. A completed transfer shows a confirmation with a reference number."
       --capture-generate-timeout nightly/generate-testcases.json
-    timeout: 660
+    timeout: 280
+  # Pre-warm legs: see req_ai_fixture.py cmd_warm. Each pre_run command must stay
+  # under coder_eval's 300 s cap; only the --last leg turns a still-running job
+  # into TENANT NOT READY.
+  - command: python3 _setup/req_ai_fixture.py warm --saved nightly/generate-testcases.json --timeout 270
+    timeout: 300
+  - command: python3 _setup/req_ai_fixture.py warm --saved nightly/generate-testcases.json --timeout 270 --last
+    timeout: 300
 
 post_run:
   - command: |
