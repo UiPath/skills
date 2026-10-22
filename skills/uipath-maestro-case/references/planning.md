@@ -63,7 +63,9 @@ Registry discovery happens during build planning, so login is required first. Th
 **Negative trigger — tenant work overrides it.** The exception defers tenant lookup; it does not describe where a run stops. It does NOT fire when the same request asks to resolve resources or identities, pull or refresh the registry, replace a stale registry audit, or produce `tasks/registry-resolved.json` / `tasks/recipients-resolved.json` — even when that request also says to stop before `caseplan.case`, a solution, or Phase 2. Such a run is a normal resolution run: run this gate in full, resolve every identity, write the ledger, and stop before Phase 2.
 
 ```bash
+<!--skill-flavor:planning-login-command:start-->
 uip login status --output json
+<!--skill-flavor:planning-login-command:end-->
 uip maestro case registry pull
 ```
 
