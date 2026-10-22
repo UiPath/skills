@@ -405,12 +405,27 @@
     }
   },
   "uipath-maestro-case": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "login",
+        "reason": "Studio Web override note: the host is authenticated and there is no `uip login` here."
+      },
+      {
+        "file": "references/connector-integration.md",
+        "command": "login",
+        "reason": "Studio Web override note: the host is already signed in; there is no `uip login` to run."
+      },
+      {
+        "file": "references/registry-discovery.md",
+        "command": "login",
+        "reason": "Studio Web override note: the host is authenticated and there is no `uip login` here."
+      }
+    ],
     "ceiling": {
       "codedagent": 3,
       "codedagent init": 1,
-      "login": 15,
-      "login status": 3,
+      "login": 14,
       "maestro case debug": 17,
       "maestro case incident": 2,
       "maestro case incident get": 2,
@@ -429,9 +444,9 @@
       "maestro case instance resume": 1,
       "maestro case instance retry": 1,
       "maestro case instance variables": 4,
-      "maestro case pack": 7,
+      "maestro case pack": 6,
       "rules debug": 1,
-      "solution pack": 13
+      "solution pack": 12
     }
   },
   "uipath-maestro-flow": {
