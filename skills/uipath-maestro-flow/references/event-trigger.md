@@ -104,6 +104,7 @@ say which one with `object`. It is not an event parameter: these operations
 take none, so `where` stays empty and `check` refuses a subscription that
 omits `object` (`EVENT_GENERIC_NO_OBJECT`) or puts the object in `where`.
 
+<!--skill-flavor:generic-event-import:start-->
 ```ts
 import { RecordCreated, RecordUpdated } from './connectors/uipath-uipath-dataservice.ts';
 
@@ -119,6 +120,7 @@ import { RecordCreated, RecordUpdated } from './connectors/uipath-uipath-dataser
   object: 'FileUploadVerify_20260618', connection: 'dataFabric', folder: 'shared',
 }))
 ```
+<!--skill-flavor:generic-event-import:end-->
 
 The objects come from the bound connection, never from a guess:
 

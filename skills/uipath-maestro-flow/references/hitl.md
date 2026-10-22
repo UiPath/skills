@@ -76,10 +76,12 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `EXPR_UNDECLARED_REF`. `check` reports `HITL_FIELD_VARIABLE` for a `vars.`
   prefix, a dotted path, or a `variable` on any field that is not
   `direction: 'output'`. The answer is always `out('<step>', '<id>')` too.
+<!--skill-flavor:field-variable-sdk-version:start-->
   Needs `@uipath/maestro-builder-sdk` 6.44.0 or later; an older SDK ignores
   `variable` (the row is written as `vars.<id>`, so the reads fail
   `EXPR_UNDECLARED_REF`) and its decompile warns that it cannot write the
   designer's row back — upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:field-variable-sdk-version:end-->
 - A field's `type` is one of the platform's 11 quick-form types: `'string'`,
   `'number'`, `'integer'`, `'float'`, `'double'`, `'boolean'`, `'date'`,
   `'datetime'`, `'file'`, `'object'`, `'array'`. `'text'` and `'date-time'` are
@@ -94,10 +96,12 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   multi-select (an `array` answer). Never change one to `'string'` or
   `'array'`: the form loses its picker. A decompiled canvas form keeps these
   spellings and their `options`, and you can edit the node unless
-  `flow decompile` warns about one of its fields (see below). Needs
-  `@uipath/maestro-builder-sdk` 6.31.9 or later; an older SDK reports
+  `flow decompile` warns about one of its fields (see below).
+<!--skill-flavor:field-type-sdk-version:start-->
+  Needs `@uipath/maestro-builder-sdk` 6.31.9 or later; an older SDK reports
   `HITL_FIELD_TYPE_UNKNOWN` (do not follow its `type: 'string'` hint), so
   upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:field-type-sdk-version:end-->
 
   ```ts
   fields: [{
@@ -119,9 +123,12 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   keeps all of these, and you can edit the node like any other. `check`
   reports a value the platform refuses as `HITL_FIELD_SETTING_INVALID`
   (`INLINE_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an agent's quick-form
-  escalation). These keys need `@uipath/maestro-builder-sdk` 6.35.0 or later;
+  escalation).
+<!--skill-flavor:field-settings-sdk-version:start-->
+  These keys need `@uipath/maestro-builder-sdk` 6.35.0 or later;
   an older SDK drops them on decompile and does not write them on compile, so
   upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:field-settings-sdk-version:end-->
 
   ```ts
   fields: [{

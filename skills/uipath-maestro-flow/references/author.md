@@ -211,10 +211,12 @@ When authoring is done, report:
 5. **Missing connections or pending prepares** — per connector.
 6. **Open questions** — every decision the request left open, each marked
    **[REQUIRED]** or **[OPTIONAL]**.
+<!--skill-flavor:completion-next:start-->
 7. **What's next** — when the request did not already say, ask with rule 9:
    upload to Studio Web, debug the flow, deploy to Orchestrator, or "Something
    else". Each hands off to [`operate.md`](operate.md). A request that already
    named the next step ("publish it", "debug it") is the selection; act on it.
+<!--skill-flavor:completion-next:end-->
 
 ## Narration and progress
 
