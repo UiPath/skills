@@ -15,6 +15,38 @@ Nothing in the app builds the Decision. When the task completes, the backend tur
 
 Lifecycle commands (scaffold, `uip codedapp pack`, `publish -t Action`, `deploy --folder-key`) come from the `uipath-coded-apps` skill. Read its `references/create-action-app.md` and `references/pack-publish-deploy.md` before running them. Its Critical Rules still apply, especially: never call `sdk.initialize()` in an action app.
 
+## Principles this guide enforces
+
+The Human Context Capture Design Principles (Confluence, "Human Context Capture Design Principles") define 11 patterns. Every app this guide generates must satisfy the rule in the second column through the UI element in the third. A pattern marked "not yet" has no UI in this guide: do not invent one, and do not add a field for it.
+
+| # | Pattern | Rule the generated app satisfies | UI element it requires | Status |
+|---|---|---|---|---|
+| 1 | Decompose the decision | The proposal's reasoning is broken into parts the reviewer weighs, never one outcome field. | Reasons card: at most 4 reasons, each with a weight menu (High, Medium, Low, Not relevant). | Implemented |
+| 2 | Capture in the flow | Everything is captured on the task surface while the reviewer decides, never in a follow-up form or survey. | Reasons, the optional Why, Add a reason and Next time all sit in the task's own cards, and nothing is asked after Complete. | Implemented. Marking evidence as notes: not yet |
+| 3 | Propose, then let people react | The reviewer reacts to a pre-filled proposal, and the outcome is never pre-selected. | Every part pre-filled, the proposed outcome card marked "Recommended" with none selected, and "Proposed: <old>" on a changed part. | Implemented |
+| 4 | Make overriding as cheap as accepting | Correcting a part costs at most one tap more than keeping it, and an override carries an optional reason code. | The weight menu, and "Why is it not relevant?" with the chips Wrong, Outdated and Other. | Implemented |
+| 5 | Ask for confidence, not just direction | The reviewer can mark a decision a close call. | A close-call control on the Decision card. | Not yet |
+| 6 | Leave room for the unmodeled | The reviewer can add a reason the process did not propose. | The "+ Add a reason" row, which starts at High and is recorded with `howMuch` = `Added` and `source` = `Reviewer`. | Implemented |
+| 7 | Ask for counterfactuals | The reviewer states what should happen next time, not only what happened. | Next time card: drafted rules from the process, then "Applies to" with a scope. | Implemented as Next time. Per-case "what would have changed your decision" questions: not yet |
+| 8 | Preserve edits | The record says who said what for every part: process draft or reviewer edit. | `record` rows with `source`, `howMuch` and `lookedAt` per part, and `added: true` on a reviewer's reason. | Implemented |
+| 9 | Scale depth to stakes | The default stays light and the app asks for more only when stakes are high. | A stakes-driven extra step. | Not yet |
+| 10 | Let vocabulary evolve from use | Reason codes start small and keep an escape hatch whose text can be counted. | The Not relevant chips plus Other, which opens one short note. Promoting recurring Other text into chips: not yet. | Implemented. Promotion: not yet |
+| 11 | Be transparent about how it's used | The reviewer is told what the captured data feeds and what it never feeds. | A usage line on the task. | Not yet |
+
+Each pattern also yields interaction signals (what the reviewer's use of the controls reveals). The app does not build those by hand: see "Intrinsic signals".
+
+## Layers
+
+Each layer owns one contract. An app built from this guide renders its own UI and imports only the intrinsic signals layer; the Widgets layer carries the same payload for apps that use the widget package instead.
+
+| Layer | Lives in | The one contract it owns |
+|---|---|---|
+| Skill | This guide | Generated apps follow the principles above and attach the intrinsic signals script |
+| Widgets | `uipath-ui-widgets` `decisions-and-reasons` | `DecisionCaptureCodedActionAppPayload`, which includes `intrinsicSignals` |
+| Intrinsic signals | `@uipath/intrinsic-signals` | `attachIntrinsicSignals(root, options)` returns a handle with `snapshot()`, `clear()` and `detach()` |
+| Persistence | Action Center Service spans and llm-observability `SpanDecisionBuilder` | The completed task's `intrinsicSignals` key goes to `Decision.ImplicitSignals`, never to a Data field |
+| Read | Decisions API, TypeScript SDK Decisions service, `uip traces decisions` | `DecisionResp.implicitSignals` |
+
 ## Decide the toggle from what the developer wants
 
 Never open with a yes/no question. Read the request and set the toggle yourself:
@@ -93,6 +125,7 @@ Proposals can come from an agent, an automation or a person, so the fields say "
 | `outputs` | `changes` | string[] | One line per change, ending with how much it changed |
 | `outputs` | `record` | array | One row per part: `{ "part", "proposed", "submitted", "howMuch", "source", "lookedAt", "scope" }` |
 | `outputs` | `timeOnTaskSeconds` | number | Open to completion |
+| `outputs` | `intrinsicSignals` | object | The derived signals from `@uipath/intrinsic-signals`; see "Intrinsic signals" |
 | `outputs` | `changeLog` | array | `{ "step", "what", "atSecond", "lookedAt" }` in the order the changes happened; `lookedAt` lists what the reviewer had opened |
 | `outputs` | `reviewerId` | string | Only when the host provides one; otherwise absent and the backend records the completing user |
 
@@ -113,6 +146,50 @@ Proposals can come from an agent, an automation or a person, so the fields say "
 | `added` | boolean | `true` only for a reason the reviewer added; absent otherwise |
 
 **Outcomes are the decision.** The author's outcome buttons stay as they are and the reviewer's click is the decision. Add no `decision` output. If the app has a single `Submit` outcome, ask the user for the real choices (Approve, Deny, ...) and make each one an outcome. Rename an existing outcome only with the user's yes, and update every flow port that reads it.
+
+## Intrinsic signals
+
+Coded Action App only. QuickForm and document validation run no app code, so they yield none of these signals.
+
+The app imports `@uipath/intrinsic-signals`. The package watches the app's own controls with delegated DOM events and derives signals from how the reviewer uses them. The app never counts hovers, clicks, pastes or timings itself.
+
+1. Mark the elements with these attributes. The script finds nothing that is not marked.
+
+| Attribute | Put it on |
+|---|---|
+| `data-signal-outcome="<outcome name>"` | Each outcome card or button on the Decision card |
+| `data-signal-recommended` | The outcome card the process recommended |
+| `data-signal-field="<id>"` | Each weight menu (`<reasonId>`), each final-details field (`<fieldId>`) and the Next time scope control |
+| `data-signal-evidence="<id>"` | The Context card facts, and each reason's row that opens its detail |
+| `data-signal-rationale` | The Not relevant "Other" note, the one free-text field in the guide |
+| `data-signal-add-factor` | The "+ Add a reason" row |
+
+`data-signal-override-start` and `data-signal-override-cancel` belong on a button that opens and abandons an override flow. The layout in this guide has no such flow, because changing a weight is one tap, so the app does not use them.
+
+2. On mount, call `attachIntrinsicSignals(root, { taskKey })` once, with the app's root element and the task key, and keep the returned handle. Call `handle.detach()` on unmount.
+3. When the reviewer presses Complete, call `handle.snapshot({ submitted: true })` and pass the result as the `intrinsicSignals` key of the task outputs: `completeTask(<OUTCOME_NAME>, { ...outputs, intrinsicSignals: handle.snapshot({ submitted: true }) })`. Call `handle.clear()` after `completeTask` resolves, never before.
+4. Declare `intrinsicSignals` in `action-schema.json` as an `outputs` property of type `object`, because Action Center may drop undeclared keys. Never show it to the reviewer.
+
+The script keeps its counters in the browser's local storage per task, so a reload or draft save keeps them, and it falls back to memory when storage is unavailable.
+
+Signals this yields, from the catalog in the principles page:
+
+| Catalog signal | Where it comes from in `IntrinsicSignals` |
+|---|---|
+| Alternatives considered | `alternativesConsidered`: outcome cards hovered 700 ms or longer and not chosen |
+| Changes of mind | `outcomeSelections` above 1, and `fieldChanges` per marked field |
+| Decision order | `decisionOrder`: `outcomeFirst` or `evidenceFirst`, from the outcome and evidence marks |
+| Edits after deciding | `editsAfterDeciding` |
+| Fast acceptance | `fastAcceptance` and `keptRecommendation`: the recommendation kept and submitted in under 10 seconds |
+| Read but not recorded | `evidenceOpened` set against `fieldChanges` |
+| Considered, left empty | `addFactorHoveredUnused` |
+| Typed then deleted | `typedThenDeletedChars` |
+| Pasted text | `pastedChars` |
+| Time and attention | `timeOnTaskMs`, `hiddenMs`, `timeToFirstInputMs` |
+
+Catalog signals not in this table are not derived yet: Abandoned override, Stated vs observed certainty, Pivotal facts, Unedited model share, Fatigue, Nothing fit and Defensive phrasing.
+
+Only derived signals are stored: counts, durations, flags and the ids of marked elements. Raw cursor paths, keystrokes and typed text are never stored.
 
 ## QuickForm
 
@@ -161,15 +238,16 @@ When the task completes with `completeTask('<OUTCOME_NAME>', data)`:
 | `rationaleText`, `decidingReasons` | Rationale in the Decision Ledger |
 | `nextTimeId`, `nextTimeText`, `nextTimeScope`, `nextTimeConditions` | Instruction in the Decision Ledger |
 | `record`, `changeLog`, `timeOnTaskSeconds` | `Data.<field>`, the quiet record of how the decision was reached |
+| `intrinsicSignals` | `Decision.ImplicitSignals`, merged with what the backend already puts there, and never a `Data` field |
 | The user who completed the task | `Actor` |
 
-Interaction signals Action Center already captures (changes of mind, abandoned overrides) are never rebuilt in the app. The app does record its own `record`, `changeLog` and `timeOnTaskSeconds`, because they describe parts of the form the platform cannot see.
+Interaction signals Action Center already captures (changes of mind, abandoned overrides) are never rebuilt in the app. The app does record its own `record`, `changeLog` and `timeOnTaskSeconds`, because they describe parts of the form the platform cannot see, and it passes `intrinsicSignals` from the script in "Intrinsic signals" instead of counting interactions itself.
 
 ## Critical Rules
 
 1. Set the toggle from the request's signals, state it in one line when you turned it on unasked, and never block on a question about it.
 2. Never rename, retype or redirect the author's own fields or outcomes without the user's yes. A proposed value that does not depend on the decision stays its own `inOuts` field under its own name; only decision-dependent details go in `fields`.
-3. Return every `inOuts` value in exactly the shape it arrived in, adding only the keys this guide names. Never add counters or UI state beyond `record`, `changeLog` and `timeOnTaskSeconds`.
+3. Return every `inOuts` value in exactly the shape it arrived in, adding only the keys this guide names. Never add counters or UI state beyond `record`, `changeLog`, `timeOnTaskSeconds` and `intrinsicSignals`.
 4. Treat every input and `inOuts` value as possibly absent. Render an empty state, and never return a field the task did not receive.
 5. Never pre-select the outcome. Mark the proposal "Recommended" and pre-fill every other part.
 6. Require only a decision. Never require free text, a why or an added reason; every optional prompt is answered by a tap and a skipped prompt stays absent from the data.
@@ -181,6 +259,9 @@ Interaction signals Action Center already captures (changes of mind, abandoned o
 12. Name the Next time scopes after the use case, and show the condition chips only for the "like this" scope.
 13. A QuickForm Why field is optional, rule-driven and added to every select field by one function, not written by hand per field.
 14. Document validation writes only edited fields to the outputs.
+15. A Coded Action App imports `@uipath/intrinsic-signals`, marks its outcome cards, recommended card, weight menus, final-details fields, evidence, Other note and "+ Add a reason" row with the `data-signal-*` attributes, attaches on mount, and passes `intrinsicSignals: handle.snapshot({ submitted: true })` in the `completeTask` outputs, with `intrinsicSignals` declared as an object output in the schema. It never counts hovers, clicks, pastes or timings itself.
+16. Only derived signals are stored. Never write raw cursor paths, keystrokes or typed text into `intrinsicSignals`, `record` or `changeLog`.
+17. A pattern in "Principles this guide enforces" marked "not yet" gets no invented UI and no field.
 
 ## Task kinds
 
@@ -205,7 +286,7 @@ Guidance, not a contract. Use it to pick what to propose on screen and which par
 4. Add the fields from this guide to the schema.
 5. Build the layout. For a Coded Action App write `sample-task-data.json` with realistic values for every field: 3 or 4 reasons covering more than one outcome, each with a source, the final details with `byDecision` values for every outcome, one or two drafted rules and 2 or 3 conditions.
 6. Build (`npm run build`) and fix type errors. Do not loosen types to silence them.
-7. Run the app against the sample data and look at it: the untouched state with no outcome selected, a changed-weight state with a Not relevant reason, a decision change that re-fills the final details, Add a reason, Next time with a scope, and What changed. Check that `record`, `changeLog` and `timeOnTaskSeconds` are in the data passed to `completeTask`. Do not report done before this.
+7. Run the app against the sample data and look at it: the untouched state with no outcome selected, a changed-weight state with a Not relevant reason, a decision change that re-fills the final details, Add a reason, Next time with a scope, and What changed. Check that `record`, `changeLog`, `timeOnTaskSeconds` and `intrinsicSignals` are in the data passed to `completeTask`, and that the outcome cards carry `data-signal-outcome`. Do not report done before this.
 8. Follow `uipath-coded-apps` for pack, publish (`-t Action`) and deploy.
 
 ## Anti-patterns
@@ -223,4 +304,5 @@ Guidance, not a contract. Use it to pick what to propose on screen and which par
 - Pre-selecting the proposed outcome, or a separate "Agree" button that skips the outcome cards.
 - A hand-written Why field per QuickForm select, or a required one.
 - Writing untouched document fields to the outputs.
+- Counting hovers, clicks or timings in the app instead of attaching `@uipath/intrinsic-signals`, or putting `intrinsicSignals` in a Data field.
 - Showing the record to the reviewer. It goes to the outputs; a record drawer is for demos only.
