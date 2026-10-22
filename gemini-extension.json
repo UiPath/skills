@@ -1,0 +1,5 @@
+{
+  "name": "uipath",
+  "version": "1.205.0",
+  "description": "UiPath skills for building, validating, deploying, and operating UiPath automations, agents, coded apps, and platform resources from Gemini CLI."
+}
