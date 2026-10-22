@@ -7,7 +7,8 @@
 # Vendored into this repo so run-coder-eval.yml doesn't depend on coder_eval's
 # internal script layout (it formerly ran coder_eval/dashboard/scripts/ci/
 # refresh-auth.sh, which moved out of coder_eval). Mirrors the VM cron's ROPC
-# flow; keep in sync if the upstream token request changes.
+# flow; keep in sync if the upstream token request changes. It also sends Studio
+# Web's RefreshGovernance after the mint, which the VM cron copy still lacks.
 #
 # Required env (provide via the workflow's `env:` block or `set -a && source`):
 #   UIPATH_URL UIPATH_ORGANIZATION_NAME UIPATH_ORGANIZATION_ID
@@ -96,9 +97,10 @@ for service in backend typecache; do
         -H "Authorization: Bearer ${access_token}" \
         -H "X-Uipath-Tenantid: ${UIPATH_TENANT_ID}" \
         -H "Content-Length: 0") || status="curl failed"
-    if [ "$status" != "200" ]; then
-        echo "WARN: Studio Web ${service} RefreshGovernance returned ${status}; the bot's Automation Ops policy may be stale" >&2
-    fi
+    case "$status" in
+        2??) ;;
+        *) echo "WARN: Studio Web ${service} RefreshGovernance returned ${status}; the bot's Automation Ops policy may be stale" >&2 ;;
+    esac
 done
 
 echo "Done. Token written to $AUTH_FILE"
