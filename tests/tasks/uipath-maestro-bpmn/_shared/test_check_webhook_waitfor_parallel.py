@@ -42,9 +42,9 @@ def _v2(body: dict, query: str = "{}") -> ET.Element:
     )
 
 
-def _v1(url: str = WEBHOOK_URL, headers: str = "") -> ET.Element:
+def _v1(url: str = WEBHOOK_URL, headers: str = "", activity_type: str = grader.HTTP_TYPE) -> ET.Element:
     return _root(
-        f'<uipath:type value="{grader.HTTP_TYPE}" version="v1" /><uipath:context>'
+        f'<uipath:type value="{activity_type}" version="v1" /><uipath:context>'
         f'<uipath:input name="mode" type="string" value="manual" />'
         f'<uipath:input name="method" type="string" value="GET" />'
         f'<uipath:input name="url" type="string" value="{url}" />'
@@ -65,6 +65,16 @@ def test_v2_manual_get_to_webhook_url_passes() -> None:
 
 def test_v1_manual_get_to_webhook_url_passes() -> None:
     assert len(grader.http_get_nodes(_v1())) == 1
+
+
+# builder-sdk manual `.http()`: UnifiedHttpRequest in the V1 context layout.
+def test_unified_http_v1_layout_passes() -> None:
+    assert len(grader.http_get_nodes(_v1(activity_type=grader.UNIFIED_HTTP_REQUEST))) == 1
+
+
+def test_unified_http_v1_layout_base_url_fails() -> None:
+    node = _v1(url=BASE_URL, activity_type=grader.UNIFIED_HTTP_REQUEST)
+    assert "webhooks config" in _fails(node)
 
 
 def test_v2_base_url_fails() -> None:

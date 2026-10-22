@@ -39,8 +39,8 @@ Assertion map (Flow -> BPMN):
      embeds.
   T  Flow's `core.action.http` / `core.action.http.v2` manual-GET-to-webhook-URL node shape ->
      bpmn:sendTask carrying Intsvc.UnifiedHttpRequest (body authentication/method/url/
-     headers/query, plus the queryParameters input) or Intsvc.HttpExecution (context
-     mode/method/url/headers/parameters), with a manual GET to the URL
+     headers/query, plus the queryParameters input) or, with no body input, either
+     wrapper's context mode/method/url/headers/parameters, with a manual GET to the URL
      `uip is webhooks config` returns (WEBHOOK_URL_PATH, never the connection base
      URL), and nothing in headers or query.
   DROPPED  require_no_private_connector_values / require_sequence_integrity /
@@ -63,6 +63,7 @@ from _shared.bpmn_check import (  # noqa: E402
     UNIFIED_HTTP_REQUEST,
     BodyShapeError,
     attr,
+    body_fields,
     body_object,
     context_value,
     elements,
@@ -159,8 +160,10 @@ def _json_text(value: object) -> str:
 
 def _request_fields(task: ET.Element) -> tuple[str, str, str, dict[str, str]]:
     """(mode, method, url, {field: text that must be empty}) from the V2 body,
-    else from the V1 context."""
-    if not has_typed_uipath_extension(task, "activity", UNIFIED_HTTP_REQUEST):
+    else from the V1 context (HttpExecution, or a UnifiedHttpRequest with no
+    body input, as builder-sdk's manual `.http()` writes)."""
+    v2 = has_typed_uipath_extension(task, "activity", UNIFIED_HTTP_REQUEST) and body_fields(task)
+    if not v2:
         return (
             context_value(task, "mode").lower(),
             context_value(task, "method").upper(),
