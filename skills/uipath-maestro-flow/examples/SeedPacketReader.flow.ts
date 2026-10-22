@@ -6,9 +6,16 @@
  * the pair: it carries its own `schema` instead of a published IxP project's
  * trained fields, which is what makes it "dynamic".
  *
- * Dynamic Extract still needs a model DEPLOYMENT identity. `modelName` and
- * `folderKey` below are placeholders in the shape the tenant serves — copy the
- * real pair from the tenant; never construct them.
+ * The `model` block below is the SDK factory's requirement, not the node's: the
+ * node runs the taxonomy it carries and never reads the deployment. `modelName`
+ * and `folderKey` are placeholders in the shape the tenant serves — copy the
+ * real pair from the tenant; never construct them. Without a published IxP
+ * project there is no pair to copy, and the CLI route is the one that works —
+ * see references/extract-v2-node.md.
+ *
+ * `schema` below is illustrative only. The format the node reads is
+ * { prompt, outputSchema } with a stable id on every group and field; see
+ * references/extract-v2-taxonomy.md.
  *
  * Generic scenario: read the sowing details off a scanned seed packet.
  */

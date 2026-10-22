@@ -11,7 +11,9 @@ uip maestro flow nodes schema set <file> --node-id <id> --file <taxonomy.json> -
 
 Both edit the `.flow` on disk and need no login. `--schema '<json>'` takes the document inline instead of `--file`.
 
-For the node itself — adding it, wiring `fileRef`, choosing it over a published IXP model — see [document-pipeline.md](document-pipeline.md). This guide assumes the node already exists.
+Because they edit the `.flow`, they do not survive a project that generates it from TypeScript source: if the project has a `.flow-sdk/` directory, the next compile overwrites the taxonomy. See [extract-v2-node.md](extract-v2-node.md) for which authoring mode to pick.
+
+For the node itself — checking the tenant has it, adding it, wiring `fileRef`, choosing it over a published IXP model — see [extract-v2-node.md](extract-v2-node.md). This guide assumes the node already exists.
 
 ## At a glance
 

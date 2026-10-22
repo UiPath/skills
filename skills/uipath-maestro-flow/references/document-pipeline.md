@@ -4,9 +4,9 @@
 
 Two document steps that need no published IxP project: classification
 (`uipath.document.classify`) labels a document, and Dynamic Extract
-(`uipath.ixp.extract-document-builder`) pulls fields against a schema you
-author INLINE. For a published project's trained fields, use `ixpExtract`
-([ixp.md](ixp.md)) instead.
+(`uipath.ixp.extract-document-builder`, also called Extract v2) pulls fields
+against a taxonomy you author INLINE. For a published project's trained fields,
+use `ixpExtract` ([ixp.md](ixp.md)) instead.
 
 Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
 `dynamicExtract({ fileRef, schema, model, pageRange?, modelConfig? })`.
@@ -16,50 +16,70 @@ Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? }
 .step('classify', documentClassify({ fileRef: input('file'), splitPages: true }))
 .step('extract', dynamicExtract({
   fileRef: input('file'),
-  schema: { type: 'object', properties: {
-    invoiceTotal: { type: 'string', description: 'Grand total' } } },
+  schema: invoiceTaxonomy,
   model: { modelName: 'invoiceixp-cef0d447-ixp',
     folderKey: 'c4359cde-55f0-4f0e-9322-c6cdce74ab4c' },
 }))
-.step('total', script({ code: 'return $vars.extract.output.ExtractionResult;' }))
+.step('total', script({ code: 'return $vars.extract.output.result.output;' }))
 ```
 
 ## At a glance
 
 Classify a document (`uipath.document.classify`), or extract fields against an
-INLINE schema (`uipath.ixp.extract-document-builder`) instead of a published
+INLINE taxonomy (`uipath.ixp.extract-document-builder`) instead of a published
 IxP project's trained fields.
 Signatures: `documentClassify({ fileRef, pageRange?, splitPages?, modelConfig? })`;
 `dynamicExtract({ fileRef, schema, model: { modelName, folderKey, ... }, pageRange? })`.
 
 ```ts
 .step('classify', documentClassify({ fileRef: input('file'), splitPages: true }))
-.step('extract', dynamicExtract({ fileRef: input('file'),
-  schema: { type: 'object', properties: { total: { type: 'string' } } },
+.step('extract', dynamicExtract({ fileRef: input('file'), schema: invoiceTaxonomy,
   model: { modelName: 'invoiceixp-cef0d447-ixp', folderKey: '<folder-guid>' } }))
 ```
 
-Dynamic Extract still needs a model deployment identity — copy `modelName` and
-`folderKey` from the tenant; never construct them.
+Two routes author Dynamic Extract, and they are not equivalent — see
+[Two ways to author Dynamic Extract](#two-ways-to-author-dynamic-extract).
 
-## The model identity
+## Two ways to author Dynamic Extract
 
-Dynamic Extract authors its SCHEMA inline, but execution still runs against a
-model deployment: `model.modelName` and `model.folderKey` are REQUIRED (the
-platform validator rejects the node without them), with optional `projectId`,
-`projectName`, `folderName`, and `versionTag`. Copy them from the tenant —
-never construct them.
+**The SDK factory**, `dynamicExtract()`, is the route above. It requires a
+`model` with `modelName` and `folderKey` — copy them from the tenant, never
+construct them. The node itself does not use them: it runs the taxonomy it
+carries, and the runtime picks what to run from `inputs.processorKey`. The
+requirement is the factory's, inherited from `ixpExtract`'s shape, so a user
+with no published IxP project cannot call it at all.
+
+**The CLI commands** author the same node with no model deployment, which is the
+only route open to a user who has never trained one. Use
+[extract-v2-node.md](extract-v2-node.md) to establish the tenant has the node,
+add it, and wire `fileRef`.
+
+Both routes need the same taxonomy, and
+[extract-v2-taxonomy.md](extract-v2-taxonomy.md) is where it is designed and
+written. One difference matters when choosing: every field group and field in
+the taxonomy must carry a stable id, and `nodes schema set` mints those for
+you, while a `schema` passed to the factory is emitted verbatim and must
+already have them or `flow validate` fails. Reach for the CLI when the user is
+starting from documents rather than from a trained model.
 
 ## Schema and outputs
 
-`schema` is a JSON-Schema object (`type: 'object'` with `properties`, each
-usually carrying a `description` the model reads). It is emitted as the node's
-`schemaDocument`. Classification lands at `out('classify', ...)`; extraction
-results at `out('extract', 'ExtractionResult')`.
+`schema` is the extraction taxonomy: an object with `prompt` (the overall
+instructions) and `outputSchema` (the field groups and the field types they
+reference). It is emitted as the node's `schemaDocument`, and `flow validate`
+rejects a node whose `schemaDocument` is any other shape, so a bare JSON-Schema
+object with `properties` alone does not work here. The format, with a worked
+example, is in [extract-v2-taxonomy.md](extract-v2-taxonomy.md).
+
+Classification lands at `out('classify', ...)`. The extracted values land at
+`out('extract')` under `result.output`, one property per taxonomy field; the
+port itself carries the whole processed document, with the values' page
+provenance alongside them under `result.attribution`. `ExtractionResult` is the
+published-model node's output shape ([ixp.md](ixp.md)), not this one's.
 
 ## Evidence boundary
 
 Both calls hit real document-understanding services — no local rung runs a
-model. Offline `validate` proves the emitted shape (fileRef wiring, schema,
-model identity, the classify `success` port); classification quality and
-extraction values are platform evidence.
+model. Offline `validate` proves the emitted shape (fileRef wiring, the
+taxonomy, the classify `success` port); classification quality and extraction
+values are platform evidence.
