@@ -22,10 +22,10 @@ and have pulled.
 | Strategy selected | Owner | Build guide |
 |---|---|---|
 <!--skill-flavor:handoff-ixp:start-->
-| Extract, inside a Flow — a published IxP project's trained fields | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — ixp.md](../../uipath-maestro-flow/references/ixp.md) |
+| Extract, inside a Flow — a project's trained taxonomy fields | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — ixp.md](../../uipath-maestro-flow/references/ixp.md) |
 <!--skill-flavor:handoff-ixp:end-->
 <!--skill-flavor:handoff-document-pipeline:start-->
-| Extract, inside a Flow — a schema authored inline, no published IxP project | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — document-pipeline.md](../../uipath-maestro-flow/references/document-pipeline.md) |
+| Extract, inside a Flow — a JSON Schema authored inline in the node | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — document-pipeline.md](../../uipath-maestro-flow/references/document-pipeline.md) |
 <!--skill-flavor:handoff-document-pipeline:end-->
 | Extract — taxonomy, labelling, model training, publishing | `uipath-ixp` | [/uipath:uipath-ixp — SKILL.md](../../uipath-ixp/SKILL.md) |
 <!--skill-flavor:handoff-summarize:start-->
@@ -63,22 +63,29 @@ is only a routing index.
 If a target skill is not installed, still deliver the strategy, the decisive signal, and a concrete
 node-and-binding specification, and name the missing dependency.
 
-## Which Extract node — inline schema or a published project
+## Which Extract node — trained taxonomy or an inline schema
 
 <!--skill-flavor:extract-node-choice:start-->
-Both are EX; the two Extract rows above split on one question. **Does a published, trained IxP project
-already exist for these documents?**
+Both are EX. The two Extract rows above split on one question: **where do the field definitions come
+from?**
 
-1. **It does** — use it: `ixpExtract`, an `uipath.ixp.*` node. The fields are trained and named, and the
-   model's taxonomy can be looked up when the Flow must select particular extracted fields.
-2. **It does not** — author the schema inline: `dynamicExtract`
-   (`uipath.ixp.extract-document-builder`). The schema is a JSON-Schema object written in the node, so a
-   new document type ships without a training cycle. Execution still runs against a model deployment:
-   `model.modelName` and `model.folderKey` are required, and both are copied from the tenant — never
-   constructed.
-3. **Do not author inline to avoid publishing a project** when the same document type recurs at volume
-   and its fields need calibrated review. An inline schema carries no taxonomy and no trained field
+1. **A trained taxonomy** — use `ixpExtract`, an `uipath.ixp.*` node. The fields are trained and named,
+   and the model's taxonomy can be looked up when the Flow must select particular extracted fields.
+2. **A schema you write** — use `dynamicExtract` (`uipath.ixp.extract-document-builder`). The schema is
+   a JSON-Schema object authored in the node, so a new document type ships without a training cycle.
+3. **Do not author inline to avoid a training cycle** when the same document type recurs at volume and
+   its fields need calibrated review. An inline schema carries no taxonomy and no trained field
    evaluation, so that is a training decision deferred, not removed.
+
+**Neither choice avoids IXP.** Both nodes address the model by `{FolderKey, DeploymentName}`, so both
+need a trained version deployed to an Orchestrator folder (`uip ixp deployments create --folder-key`).
+For `dynamicExtract` that identity is `model.modelName` and `model.folderKey`, both required and both
+copied from the tenant — never constructed.
+
+Deploying is not publishing. `uip ixp projects publish` pins a version and makes it usable inside the
+project; it is a separate operation and is not what supplies the folder identity these nodes resolve.
+Treat "is there a project for this?" as a question about deployment, and route the deployment itself to
+`uipath-ixp`.
 
 Confirm whichever node type you name against the registry first — § Registry before labels above.
 <!--skill-flavor:extract-node-choice:end-->

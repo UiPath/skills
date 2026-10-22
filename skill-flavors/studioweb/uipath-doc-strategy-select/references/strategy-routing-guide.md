@@ -1,13 +1,15 @@
 <!--skill-flavor:handoff-ixp:start-->
-| Extract, inside a Flow — a published IxP project's trained fields | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/ixp/planning.md](../../uipath-maestro-flow/references/author/plugins/ixp/planning.md) |
+| Extract, inside a Flow — a project's trained taxonomy fields | `uipath-maestro-flow` | [/uipath:uipath-maestro-flow — plugins/ixp/planning.md](../../uipath-maestro-flow/references/author/plugins/ixp/planning.md) |
 <!--skill-flavor:handoff-ixp:end-->
 
 <!--skill-flavor:handoff-document-pipeline:start-->
 <!--skill-flavor:handoff-document-pipeline:end-->
 
 <!--skill-flavor:extract-node-choice:start-->
-Extract inside a Flow is always `ixpExtract` against a published IxP project. This host documents no
-inline-schema extraction node, so there is no choice to make here.
+Extract inside a Flow is always `ixpExtract` against a project's trained taxonomy. This host documents
+no inline-schema extraction node, so there is no choice to make here. The model is still addressed by
+`{FolderKey, DeploymentName}`, so the version has to be deployed to an Orchestrator folder — publishing
+a version is a separate IXP operation and does not supply that identity.
 <!--skill-flavor:extract-node-choice:end-->
 
 <!--skill-flavor:handoff-summarize:start-->
