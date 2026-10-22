@@ -128,7 +128,8 @@ named external service goes through rule 1.
 A plan states: a one-line summary, the node table (step name, node, why), the
 wiring, the inputs and outputs, every connector and its connection, and open
 questions. Get it approved before building (rule 9, with "proceed"
-recommended).
+recommended). In draft mode ([SKILL.md — Phases](../SKILL.md#phases)) the
+skeleton is the plan: follow [`phase-2-skeleton-guide.md`](phase-2-skeleton-guide.md) instead.
 
 **Is Maestro the right home?** A flow earns its place with several waits,
 branching or parallel paths, SLAs, cross-product composition, or per-case
