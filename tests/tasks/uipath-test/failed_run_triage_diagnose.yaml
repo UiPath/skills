@@ -44,6 +44,23 @@ pre_run:
                   return x
           return None
 
+      # Collapse duplicate sets first. Parallel nightlies can both miss on
+      # `list` and both create; a second `EVFX-TRIAGE-SET` row makes the agent
+      # stop and ask under Critical Rule 10. Keep the oldest key.
+      def key_num(row):
+          try:
+              return int(str(row.get("TestSetKey") or "").rsplit(":", 1)[-1])
+          except ValueError:
+              return 1 << 30
+      dups = [x for x in call("set.dups", "tm", "testsets", "list", "--project-key", P,
+                              "--filter", SET).get("Data") or [] if x.get("Name") == SET]
+      if len(dups) > 1:
+          dups.sort(key=key_num)
+          for extra in dups[1:]:
+              call(f"set.dedupe.{extra['TestSetKey']}", "tm", "testsets", "delete",
+                   "--test-set-key", extra["TestSetKey"], "--yes")
+          print(f"FIXTURE: removed {len(dups) - 1} duplicate {SET} set(s)", flush=True)
+
       ts = by_name("set.find", "testsets", SET)
       if not ts:
           call("set.create", "tm", "testsets", "create", "--project-key", P, "--name", SET)
@@ -127,7 +144,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: command_executed
-    description: "Agent narrowed to the failed test case logs server-side with --only-failed (Critical Rule #9)"
+    description: "Agent narrowed to the failed test case logs server-side with --only-failed (Critical Rule #8)"
     tool_name: "Bash"
     command_pattern: '(?=[\s\S]*--execution-id\s+\S)(?=[\s\S]*--only-failed\b)uip\s+tm\s+(executions?\s+testcaselogs\s+list|execution\s+list-testcaselogs)\b'
     min_count: 1
