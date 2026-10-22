@@ -36,6 +36,8 @@ reference:
   directory: .
 
 pre_run:
+  - command: "python3 _setup/localize_tenant_ids.py"
+    timeout: 360
   - command: "python3 _setup/seed_outcome.py"
     timeout: 60
 

@@ -24,6 +24,12 @@ sandbox:
     - type: template_dir
       path: ../_setup
       mount_point: _setup
+
+# Rewrites the cloud-tenant IDs the fixtures pin to this tenant's IDs.
+pre_run:
+  - command: "python3 _setup/localize_tenant_ids.py"
+    timeout: 360
+
 reference:
   directory: ..
 

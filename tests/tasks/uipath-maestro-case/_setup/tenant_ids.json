@@ -1,0 +1,85 @@
+{
+  "connections": {
+    "dd657127-91f5-4568-a3a3-c024bc03fb0f": {
+      "connector": "uipath-microsoft-outlook365",
+      "folder": "uipath-maestro-flow"
+    },
+    "e03f734e-0f80-4e8a-a7c1-0ece309b0ca4": {
+      "connector": "uipath-salesforce-slack",
+      "folder": "Shared"
+    },
+    "f5273a4d-d492-4bcd-a106-5a20bf89a3ef": {
+      "connector": "uipath-atlassian-jira",
+      "folder": "uipath-maestro-flow"
+    },
+    "6a817d24-cbbd-4389-b10d-4329214ffb8d": {
+      "connector": "uipath-http-webhook",
+      "folder": "uipath-maestro-flow"
+    },
+    "bad8a81c-410f-4ee6-a642-c5679acf0c98": {
+      "connector": "uipath-http-webhook",
+      "folder": "uipath-maestro-flow"
+    }
+  },
+  "processes": {
+    "0bc08e50-b45a-401c-aec8-a720e1d190e3": {
+      "name": "RPA Workflow",
+      "folder": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106"
+    },
+    "19677045-6c7c-406f-be8b-48bd1eb06414": {
+      "name": "CountLetters",
+      "folder": "Shared/uipath-maestro-flow/CountLetters CodedAgent"
+    },
+    "486edc26-0658-4ac1-92c9-1ef953927151": {
+      "name": "ProjectEuler",
+      "folder": "Shared/uipath-maestro-flow/ProjectEuler RPA"
+    },
+    "4d5c6aa7-a1a6-4dd9-aa4d-6304a22014e8": {
+      "name": "HelpDeskLookup",
+      "folder": "Shared/uipath-maestro-flow/HelpDeskLookup RPA"
+    },
+    "4da52e5b-b314-43a4-b500-982ebdbb32c3": {
+      "name": "ContractAnalysisAgent",
+      "folder": "Shared/uipath-maestro-case/ContractAnalysisAgentSolution"
+    },
+    "4fc450ab-89be-4462-8fc8-21ac4c1d6fb9": {
+      "name": "ProcurementProcess",
+      "folder": "Shared/uipath-agents/ProcurementProcess"
+    },
+    "70c4fa91-5aa7-47b0-8bfa-bb550fbeee6c": {
+      "name": "ContractOperationsApi",
+      "folder": "Shared/uipath-maestro-case/ContractOperationsSolution"
+    },
+    "7d01a11a-c8a3-41b0-b30f-f65c4d7ddbb9": {
+      "name": "Agentic Process",
+      "folder": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106"
+    },
+    "b9e4f81a-a2c5-4e6d-ab72-a819649c7666": {
+      "name": "API Workflow",
+      "folder": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106"
+    },
+    "be88b8d6-ec4d-484c-9474-805dd82d8d68": {
+      "name": "WeatherAPI",
+      "folder": "Shared/uipath-agents/WeatherAPI"
+    },
+    "ccf5793f-54ab-4262-bf44-fcd09a52ed4e": {
+      "name": "Agent",
+      "folder": "Shared/uipath-maestro-case/CM-Golden-Expense-Reporting-106"
+    },
+    "dc377f10-090c-43a9-9e19-2ab935ba0489": {
+      "name": "Maestro Case",
+      "folder": "Shared/uipath-maestro-case/CaseTest"
+    }
+  },
+  "apps": {
+    "878ec349-922a-4394-8dd0-31deeac0301a": {
+      "name": "ContractCaseActionApp"
+    },
+    "b20c471c-adef-4b37-a884-897f56ca53bc": {
+      "name": "purchaseorderapp-1782974854"
+    },
+    "d5102769-8bac-4afc-a727-77745c53181e": {
+      "name": "SimpleApprovalApp"
+    }
+  }
+}
