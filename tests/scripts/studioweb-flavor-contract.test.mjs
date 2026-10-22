@@ -286,3 +286,40 @@ test("the default uipath-planner keeps its task tools (the guard is not vacuous)
 
   assert.ok(plannerBodyLinesNaming(output, TASK_TOOLS).length > 0);
 });
+
+// Studio Web runs the Flow builder SDK inside the page: no npm, no Node, no
+// local connector-library cache, no pipeline helper and no `flow-sdk` bin.
+// Guidance that tells the agent to run any of these fails there, so the built
+// studioweb Flow skill must never contain them.
+const FLOW_TERMINAL_ONLY = [
+  "npm install",
+  "FLOW_SDK_LIBRARY",
+  "registry path --library",
+  "pipeline.mjs",
+  "flow-sdk flow merge",
+  "/tmp/flow-sdk",
+  "from './connectors/",
+];
+
+function flowLinesNaming(root, needles) {
+  const flowRoot = join(root, "uipath-maestro-flow");
+  return markdownFiles(flowRoot).flatMap((file) =>
+    readFileSync(file, "utf8")
+      .split("\n")
+      .flatMap((line, index) =>
+        needles.filter((needle) => line.includes(needle)).map((needle) => `${relative(flowRoot, file)}:${index + 1}: ${needle}`),
+      ),
+  );
+}
+
+test("the built studioweb uipath-maestro-flow skill names no terminal-only command", (t) => {
+  assert.deepEqual(flowLinesNaming(buildStudioweb(t), FLOW_TERMINAL_ONLY), []);
+});
+
+test("the default uipath-maestro-flow skill keeps its terminal commands (the guard is not vacuous)", (t) => {
+  const hits = flowLinesNaming(buildDefault(t), FLOW_TERMINAL_ONLY).map((hit) => hit.split(": ").pop());
+  assert.deepEqual(
+    [...new Set(hits)].sort(),
+    FLOW_TERMINAL_ONLY.filter((needle) => needle !== "/tmp/flow-sdk").sort(),
+  );
+});
