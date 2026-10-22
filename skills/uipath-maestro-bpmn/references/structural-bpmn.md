@@ -238,7 +238,7 @@ inert); a V1 connector start from the registry template has no
 neither kind of root start `refresh` throws `BPMN file must contain a root
 manual start event or connector trigger start event with a
 uipath:entryPointId`. A trigger that replaces the manual start keeps the id
-`Event_start` (SKILL.md step 3), so the scaffolded `entry-points.json` stays
+`Event_start` (SKILL.md step 4c), so the scaffolded `entry-points.json` stays
 valid; under any other id it goes stale, failing `validate` and `pack`.
 
 Public entry-point variables have a two-layer runtime contract:
