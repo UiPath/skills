@@ -81,9 +81,11 @@ Rules:
 
 ## Refresh solution resources first
 
+<!--skill-flavor:refresh-command:start-->
 ```bash
 uip solution resources refresh --solution-folder <SolutionDir> --output json
 ```
+<!--skill-flavor:refresh-command:end-->
 
 <!--skill-flavor:refresh-when:start-->
 Run this before `solution upload`, `solution publish` or `flow debug`, every

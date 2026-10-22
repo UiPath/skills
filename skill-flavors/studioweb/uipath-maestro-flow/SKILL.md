@@ -109,7 +109,7 @@ Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` a
 - **A baseline compile that refuses a draft node** (a connector with no connection, an empty required input) stops the round trip: see [`references/brownfield.md`](references/brownfield.md#flows-with-draft-nodes-let-merge-compile).
 - **A flow with connectors** needs each connection in the solution after the merge ([the connector loop](#the-connector-loop-in-studio-web), step 7).
 
-Run the flow only for a stated runtime-behavior claim. `uip flow debug <Project> --output json` is a real run of up to 5 minutes. Run `uip solution resources refresh --solution-folder /solution --output json` first. You can also ask the user to run it from the designer.
+Run the flow only for a stated runtime-behavior claim. `uip flow debug <Project> --output json` is a real run of up to 5 minutes. First make sure each connection is in the solution ([the connector loop](#the-connector-loop-in-studio-web), step 7). Do not run `uip solution resources refresh`: it fails in this host. You can also ask the user to run it from the designer.
 <!--skill-flavor:sdk-lifecycle:end-->
 
 <!--skill-flavor:sdk-editing:start-->
@@ -132,8 +132,9 @@ In brownfield work, preserve the supplied source, step names, and unaffected wir
 
 <!--skill-flavor:sdk-operate:start-->
 Debug, publish, deploy, trigger, inspect a job, and drive an instance's
-lifecycle. You are already signed in to the tenant of the user. Run
-`uip solution resources refresh` before every publish or debug. Run the flow
+lifecycle. You are already signed in to the tenant of the user. Before every
+publish or debug, make sure each connection is in the solution; never run
+`uip solution resources refresh` here. Run the flow
 with `uip flow debug <Project>`; `uip maestro flow debug` fails in this host.
 Publish the open solution with `uip solution publish` (the destination is the
 user's choice). `flow debug` is a REAL run, not a validation step. Read

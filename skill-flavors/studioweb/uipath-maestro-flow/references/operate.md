@@ -96,10 +96,17 @@ uip flow debug <Project> --output json > /tmp/flow-debug.json
 ```
 <!--skill-flavor:operate-debug-redirect:end-->
 
+<!--skill-flavor:refresh-command:start-->
+```bash
+uip solution resources list --source local --output json
+uip solution resources add --source remote --kind connection --cloud-key <ConnectionId> --output json
+```
+<!--skill-flavor:refresh-command:end-->
+
 <!--skill-flavor:refresh-when:start-->
-Run this before `uip solution publish` or `uip flow debug`, every time. It
-syncs connection and process resource declarations from the project's
-`bindings_v2.json` into the solution, and a stale declaration fails at run time
-with a binding error even when the emitted `.flow` is correct — so the symptom
-never points at the cause. In Studio Web, `<SolutionDir>` is `/solution`.
+Do not run `uip solution resources refresh` in Studio Web. The solution has no
+local `.uipx`, so the command fails with "no .uipx manifest found". Before
+`uip solution publish` or `uip flow debug`, list the solution's local
+resources. Add each connection the flow uses that is not in the list. A
+connection that is not in the solution fails at run time with a binding error.
 <!--skill-flavor:refresh-when:end-->

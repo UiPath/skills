@@ -43,7 +43,6 @@ read the same fields from the full envelope.
 
 <!--skill-flavor:debug-example:start-->
 ```bash
-uip solution resources refresh --solution-folder /solution --output json
 uip flow debug <Project> --inputs '{"name":"value"}' \
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>,incidents:incidents}" \
   --output json
