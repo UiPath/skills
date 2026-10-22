@@ -17,6 +17,7 @@ const FILES = {
   codexPlugin: ".codex-plugin/plugin.json",
   codexMarketplace: ".agents/plugins/marketplace.json",
   cursorPlugin: ".cursor-plugin/plugin.json",
+  geminiExtension: "gemini-extension.json",
 };
 
 /** A fixture repo whose manifests all agree with `pkgVersion`, unless overridden. */
@@ -30,6 +31,7 @@ function makeRepo({ pkgVersion, pluginVersion = pkgVersion.split("-")[0], overri
     codexPlugin: { name: "p", version: pluginVersion },
     codexMarketplace: { plugins: [{ name: "p", version: pluginVersion }] },
     cursorPlugin: { name: "p", version: pluginVersion },
+    geminiExtension: { name: "p", version: pluginVersion },
     ...overrides,
   };
   const write = (rel, doc) => {
@@ -71,6 +73,7 @@ test("--list-paths prints every owned file as one repo-relative POSIX path per l
     ".codex-plugin/plugin.json",
     ".agents/plugins/marketplace.json",
     ".cursor-plugin/plugin.json",
+    "gemini-extension.json",
   ]);
 });
 
@@ -112,7 +115,7 @@ test("rewrites every derived manifest to the package base version, stripping the
     (root) => {
       const result = run(root);
       assert.equal(result.status, 0, result.stderr);
-      assert.match(result.stdout, /Synced 6 manifest\(s\)/);
+      assert.match(result.stdout, /Synced 7 manifest\(s\)/);
       assert.deepEqual(readDoc(root, FILES.manifest), {
         skillsVersion: "1.206.1-alpha.20260713.42",
         targetCli: "^1.206.0",
@@ -122,6 +125,7 @@ test("rewrites every derived manifest to the package base version, stripping the
       assert.equal(readDoc(root, FILES.codexPlugin).version, "1.206.1");
       assert.equal(readDoc(root, FILES.codexMarketplace).plugins[0].version, "1.206.1");
       assert.equal(readDoc(root, FILES.cursorPlugin).version, "1.206.1");
+      assert.equal(readDoc(root, FILES.geminiExtension).version, "1.206.1");
       assert.ok(readFileSync(join(root, FILES.plugin), "utf8").endsWith("}\n"), "trailing newline kept");
 
       const again = run(root, "--check");

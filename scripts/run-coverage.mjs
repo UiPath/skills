@@ -37,8 +37,8 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
-import { delimiter, dirname, join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { delimiter, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -95,6 +95,33 @@ function pytestTargets() {
   return [...targets];
 }
 
+// coverage.py lists each `source` dir from .coveragerc under <sources>, but after
+// `combine` the filenames are repo-relative (scripts/x.py). Sonar joins every
+// filename to every <source> and drops a file that resolves under none, so the
+// report would carry no Python coverage. Point <sources> at the repo root and make
+// every filename repo-relative.
+function rootCoberturaSources(xmlPath) {
+  const xml = readFileSync(xmlPath, "utf8");
+  const sources = [...xml.matchAll(/<source>([^<]*)<\/source>/g)].map(([, dir]) => dir).filter(Boolean);
+  const unresolved = [];
+  const rewritten = xml
+    .replace(/filename="([^"]+)"/g, (match, file) => {
+      if (existsSync(join(ROOT, file))) return match;
+      const dir = sources.find((source) => existsSync(join(source, file)));
+      if (!dir) {
+        unresolved.push(file);
+        return match;
+      }
+      return `filename="${relative(ROOT, join(dir, file)).split(sep).join("/")}"`;
+    })
+    .replace(/<sources>[\s\S]*?<\/sources>/, `<sources>\n\t\t<source>${ROOT.split(sep).join("/")}</source>\n\t</sources>`);
+  writeFileSync(xmlPath, rewritten);
+  if (unresolved.length) {
+    console.error(`✗ coverage.xml: ${unresolved.length} file(s) not under the repo root: ${unresolved.join(", ")}`);
+    failed.push("coverage.xml paths");
+  }
+}
+
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(V8_DIR, { recursive: true });
 
@@ -112,7 +139,9 @@ run("node --test (coded-apps dashboards)", process.execPath, ["--test", ...dashb
 
 // Reports: failures here mean a report is missing, which Sonar would read as 0%.
 run("coverage combine", PYTHON, ["-m", "coverage", "combine", "--quiet"], testEnv);
-run("coverage xml", PYTHON, ["-m", "coverage", "xml", "--quiet", "-o", join(OUT, "coverage.xml")], testEnv);
+if (run("coverage xml", PYTHON, ["-m", "coverage", "xml", "--quiet", "-o", join(OUT, "coverage.xml")], testEnv)) {
+  rootCoberturaSources(join(OUT, "coverage.xml"));
+}
 run("coverage report", PYTHON, ["-m", "coverage", "report", "--sort=cover"], testEnv);
 run(`${C8} report`, "npx", [
   "--yes", C8, "report",
