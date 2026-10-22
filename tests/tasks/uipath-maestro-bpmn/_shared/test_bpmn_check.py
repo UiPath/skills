@@ -725,3 +725,157 @@ def test_tag_case_hint_names_the_pascal_case_tag() -> None:
 )
 def test_tag_case_hint_silent(nodes) -> None:
     assert tag_case_hint(_process(nodes), "userTask") == ""
+
+
+def _connector_task(type_value: str, context: str, body: dict | None = None) -> str:
+    body_input = (
+        f'<uipath:input name="body" type="json" target="body"><![CDATA[{json.dumps(body)}]]></uipath:input>'
+        if body is not None
+        else ""
+    )
+    return (
+        f'<bpmn:sendTask id="Task_{type_value}"><bpmn:extensionElements><uipath:activity version="v1">'
+        f'<uipath:type value="{type_value}" version="v1" /><uipath:context>{context}</uipath:context>'
+        f"{body_input}</uipath:activity></bpmn:extensionElements></bpmn:sendTask>"
+    )
+
+
+def _requests(*tasks: str) -> list[tuple[str, str, str, bpmn_check.RequestShape]]:
+    root = ET.fromstring(
+        f'<bpmn:definitions xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}">'
+        f'<bpmn:process id="P">{"".join(tasks)}</bpmn:process></bpmn:definitions>'
+    )
+    return [
+        (task.attrib["id"], method, path, shape)
+        for task, method, path, shape in bpmn_check.connector_requests(root, "uipath-uipath-testmanager")
+    ]
+
+
+HTTP_CONTEXT = '<uipath:input name="connectorKey" type="string" value="uipath-uipath-http" />'
+
+
+def test_connector_requests_reads_activity_execution_context() -> None:
+    task = _connector_task(
+        "Intsvc.ActivityExecution",
+        '<uipath:input name="connectorKey" type="string" value="uipath-uipath-testmanager" />'
+        '<uipath:input name="method" type="string" value="GETBYID" />'
+        '<uipath:input name="path" type="string" value="/v2/{projectId}/testexecutions/{id}" />',
+    )
+    assert _requests(task) == [
+        (
+            "Task_Intsvc.ActivityExecution",
+            "GETBYID",
+            "/v2/{projectId}/testexecutions/{id}",
+            bpmn_check.RequestShape.ACTIVITY,
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "url, expected",
+    [
+        ("=js:'/v2/' + vars.P + '/testexecutions/' + vars.Id", "/v2/{}/testexecutions/{}"),
+        ('=js:"/v2/" + vars.P + "/teststeplogs"', "/v2/{}/teststeplogs"),
+        ("=js:`/v2/${vars.P}/testcaselogs/${vars.Id}`", "/v2/{}/testcaselogs/{}"),
+        ("=js:'/v2/' + vars.P + `/testcaselogs/${vars.Id}`", "/v2/{}/testcaselogs/{}"),
+        ("=js:('/v2/' + vars.P + '/teststeplogs')", "/v2/{}/teststeplogs"),
+        ("=vars.Url", "{}"),
+        ("/v2/{projectId}/teststeplogs", "/v2/{projectId}/teststeplogs"),
+    ],
+)
+def test_connector_requests_reads_connector_mode_http_body(url: str, expected: str) -> None:
+    body = {
+        "authentication": "connector",
+        "targetConnector": "uipath-uipath-testmanager",
+        "method": "GET",
+        "url": url,
+    }
+    task = _connector_task("Intsvc.UnifiedHttpRequest", HTTP_CONTEXT, body)
+    assert _requests(task) == [
+        ("Task_Intsvc.UnifiedHttpRequest", "GET", expected, bpmn_check.RequestShape.HTTP)
+    ]
+
+
+def test_connector_requests_falls_back_to_body_path() -> None:
+    body = {
+        "authentication": "connector",
+        "targetConnector": "uipath-uipath-testmanager",
+        "method": "DELETE",
+        "path": "/v2/p/testexecutions/1",
+    }
+    task = _connector_task("Intsvc.UnifiedHttpRequest", HTTP_CONTEXT, body)
+    assert _requests(task) == [
+        (
+            "Task_Intsvc.UnifiedHttpRequest",
+            "DELETE",
+            "/v2/p/testexecutions/1",
+            bpmn_check.RequestShape.HTTP,
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"authentication": "manual"},
+        {"targetConnector": "uipath-salesforce-slack"},
+        {"targetConnector": None},
+    ],
+)
+def test_connector_requests_skips_other_http_requests(overrides: dict) -> None:
+    body = {
+        "authentication": "connector",
+        "targetConnector": "uipath-uipath-testmanager",
+        "method": "GET",
+        "url": "/v2/p/teststeplogs",
+    }
+    body.update(overrides)
+    body = {k: v for k, v in body.items() if v is not None}
+    task = _connector_task("Intsvc.UnifiedHttpRequest", HTTP_CONTEXT, body)
+    assert _requests(task) == []
+
+
+def test_connector_requests_skips_mismatched_shells() -> None:
+    body = {
+        "authentication": "connector",
+        "targetConnector": "uipath-uipath-testmanager",
+        "method": "GET",
+        "url": "/v2/p/teststeplogs",
+    }
+    other_connector = _connector_task(
+        "Intsvc.ActivityExecution",
+        '<uipath:input name="connectorKey" type="string" value="uipath-salesforce-slack" />',
+    )
+    http_on_tm_key = _connector_task(
+        "Intsvc.UnifiedHttpRequest",
+        '<uipath:input name="connectorKey" type="string" value="uipath-uipath-testmanager" />',
+        body,
+    )
+    assert _requests(other_connector, http_on_tm_key) == []
+
+
+def test_connector_requests_skips_unreadable_body() -> None:
+    task = _connector_task("Intsvc.UnifiedHttpRequest", HTTP_CONTEXT).replace(
+        "</uipath:activity>",
+        '<uipath:input name="body" type="json" target="body" value="=vars.Body" /></uipath:activity>',
+    )
+    assert _requests(task) == []
+
+
+def test_connector_requests_reads_sdk_connector_http_as_http() -> None:
+    body = {
+        "authentication": "connector",
+        "targetConnector": "uipath-uipath-testmanager",
+        "method": "GET",
+        "url": "=js:'/v2/' + vars.P + '/teststeplogs'",
+    }
+    context = (
+        '<uipath:input name="connectorKey" type="string" value="uipath-uipath-testmanager" />'
+        '<uipath:input name="objectName" type="string" value="http-request" />'
+        '<uipath:input name="method" type="string" value="POST" />'
+    )
+    task = _connector_task("Intsvc.ActivityExecution", context, body)
+    assert _requests(task) == [
+        ("Task_Intsvc.ActivityExecution", "GET", "/v2/{}/teststeplogs", bpmn_check.RequestShape.HTTP)
+    ]
+    assert _requests(task.replace('"connector"', '"manual"')) == []
