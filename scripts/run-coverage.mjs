@@ -83,13 +83,14 @@ function run(label, cmd, args, env) {
 function pytestTargets() {
   const workflow = readFileSync(join(ROOT, ".github/workflows/test-helpers.yml"), "utf8");
   const targets = new Set(["tests/scripts"]);
-  for (const [, args] of workflow.matchAll(/^\s*run:\s*pytest\s+(.+)$/gm)) {
+  // `run: pytest …` (with or without a leading `- `), or a `pytest …` line inside a `run: |` block.
+  for (const [, args] of workflow.matchAll(/^\s*(?:-\s+)?(?:run:\s*)?pytest\s+(.+)$/gm)) {
     for (const arg of args.trim().split(/\s+/)) {
-      if (!arg.startsWith("-") && !arg.startsWith("tests/scripts/")) targets.add(arg);
+      if (!arg.startsWith("-") && arg !== "\\" && !arg.startsWith("tests/scripts/")) targets.add(arg);
     }
   }
   if (targets.size < 2) {
-    throw new Error("found no `run: pytest <target>` lines in test-helpers.yml — has the job shape changed?");
+    throw new Error("found no `pytest <target>` lines in test-helpers.yml — has the job shape changed?");
   }
   return [...targets];
 }

@@ -5,10 +5,10 @@ import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
-import { installFakeTools, fakeEnv, readFakeLog } from './fake-tools.mjs'
+import { installFakeTools, fakeEnv, readFakeLog } from './support/coded-apps-dashboards-fake-tools.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const SCRIPT = resolve(__dirname, '../setup-admin-folder.mjs')
+const SCRIPT = resolve(__dirname, '../../skills/uipath-coded-apps/assets/scripts/dashboards/setup-admin-folder.mjs')
 
 // execFileSync('uip') cannot resolve a .cmd shim on Windows; the fake `uip` is a POSIX launcher.
 const skip = process.platform === 'win32' ? 'fake uip launcher is POSIX-only' : false

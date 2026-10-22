@@ -349,7 +349,7 @@ jobs:
       # The nightly SonarCloud run (.pipelines/jobs/ci.quality.sonar.yml)
       # measures their coverage; this job keeps them passing on every PR.
       - name: Run repo script tests
-        run: pytest tests/scripts/test_build_uip_catalog.py tests/scripts/test_check_cli_verbs.py tests/scripts/test_check_connection_parity.py tests/scripts/test_check_skill_status.py tests/scripts/test_check_skill_verbs.py tests/scripts/test_check_skills_sh_findings.py tests/scripts/test_check_task_driver_edges.py tests/scripts/test_check_task_host_paths.py tests/scripts/test_parse_required_checks.py tests/scripts/test_prune_task_defaults.py -v
+        run: pytest tests/scripts/test_build_uip_catalog.py tests/scripts/test_check_cli_verbs.py tests/scripts/test_check_connection_parity.py tests/scripts/test_check_skill_status.py tests/scripts/test_check_skill_verbs.py tests/scripts/test_check_skills_sh_findings.py tests/scripts/test_check_task_driver_edges.py tests/scripts/test_check_task_host_paths.py tests/scripts/test_parse_required_checks.py tests/scripts/test_prune_task_defaults.py tests/scripts/test_script_tests_run_in_ci.py -v
 
   required-checks-contract:
     runs-on: uipath-ubuntu-latest

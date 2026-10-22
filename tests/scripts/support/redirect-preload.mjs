@@ -38,7 +38,7 @@ const origin = process.env.REDIRECT_FETCH_ORIGIN;
 if (origin) {
   const realFetch = globalThis.fetch;
   globalThis.fetch = (input, init) => {
-    const url = new URL(typeof input === "string" ? input : input.url);
+    const url = new URL(input instanceof Request ? input.url : String(input));
     return realFetch(`${origin}${url.pathname}${url.search}`, init);
   };
 }

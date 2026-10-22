@@ -7,9 +7,9 @@ import { spawn } from 'node:child_process'
 import {
   readScaffoldVersion, buildVersions, scaffoldDrift, runIntentMigrations,
   checkSdkVersion, runPrewarm, waitForPrewarm, killPreviousDevServer,
-} from '../lifecycle.mjs'
-import { MIN_SDK_VERSION, SKILL_VERSION, INTENT_SCHEMA_VERSION } from '../build-dashboard.mjs'
-import { installFakeTools, readFakeLog, pathKey } from './fake-tools.mjs'
+} from '../../skills/uipath-coded-apps/assets/scripts/dashboards/lifecycle.mjs'
+import { MIN_SDK_VERSION, SKILL_VERSION, INTENT_SCHEMA_VERSION } from '../../skills/uipath-coded-apps/assets/scripts/dashboards/build-dashboard.mjs'
+import { installFakeTools, readFakeLog, pathKey } from './support/coded-apps-dashboards-fake-tools.mjs'
 
 const tmp = prefix => mkdtempSync(join(tmpdir(), prefix))
 

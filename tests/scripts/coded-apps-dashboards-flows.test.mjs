@@ -1,8 +1,8 @@
 // End-to-end tests for the three use-case flows (fresh build, incremental edit, upgrade).
 // They run build-dashboard.mjs as a child process against a real starter-kit scaffold
-// extracted from the committed fixture archive. `npm`/`npx` are fakes (see fake-tools.mjs),
-// so the Stage-A metric check and the full-app `tsc` are steered by environment variables
-// instead of installing the real toolchain.
+// extracted from the committed fixture archive. `npm`/`npx` are fakes
+// (see support/coded-apps-dashboards-fake-tools.mjs), so the Stage-A metric check and the
+// full-app `tsc` are steered by environment variables instead of installing the real toolchain.
 
 import { test, before } from 'node:test'
 import assert from 'node:assert/strict'
@@ -13,11 +13,11 @@ import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import { spawnSync, execFileSync } from 'node:child_process'
-import { installFakeTools, fakeEnv, readFakeLog } from './fake-tools.mjs'
+import { installFakeTools, fakeEnv, readFakeLog } from './support/coded-apps-dashboards-fake-tools.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const SCRIPT = resolve(__dirname, '../build-dashboard.mjs')
-const ARCHIVE = resolve(__dirname, '../../../fixtures/governance-dashboard-starter-kit.tar.gz')
+const SCRIPT = resolve(__dirname, '../../skills/uipath-coded-apps/assets/scripts/dashboards/build-dashboard.mjs')
+const ARCHIVE = resolve(__dirname, '../../skills/uipath-coded-apps/assets/fixtures/governance-dashboard-starter-kit.tar.gz')
 const TAR = process.platform === 'win32'
   ? join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')
   : 'tar'
