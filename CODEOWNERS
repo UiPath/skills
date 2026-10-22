@@ -19,6 +19,9 @@
 
 # Studio Web flavor overrides
 /skill-flavors/studioweb/ @astridstaicu
+/skill-flavors/studioweb/uipath-maestro-bpmn/ @astridstaicu @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-maestro-flow/ @astridstaicu @UiPath/maestro-cli-team
+/skill-flavors/studioweb/uipath-rules/ @astridstaicu @UiPath/maestro-cli-team
 
 # preview skills
 /preview/skills/uipath-maestro-case/ @dmetzgar @tmatup
