@@ -43,7 +43,7 @@ Reason the shape from the process — never reach for the template first. Build 
 
 <!-- named by case-sdd-conformance-checklist.md — do not rename this heading or reshape this table/fence; the checklist sends authors here by heading name -->
 
-The enum is closed — exactly these sixteen literals, used verbatim as the SDD `Type:` value. The `type` says **how the work gets done**, not what it is about — read the verb + the actor:
+The enum is closed, and the CLI declares it: the legal SDD `Type:` values are the `Authorable` types that `uip maestro case task-types list --output json` returns ([lane § Entry](case-design-lane-guide.md#entry) runs it), used verbatim. Today that is exactly these sixteen literals, and the table says when to pick each. A type the command returns that this table lacks may be authored only after saying so in Decisions I Made. A type in this table that the command does not return is never authored. The `type` says **how the work gets done**, not what it is about — read the verb + the actor:
 
 | Type | Pick when the work is… |
 |---|---|

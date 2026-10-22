@@ -26,6 +26,12 @@ Spawn nothing except the conformance-gate subagent (§Template conformance gate)
 
 Request already describes the case (any stages, work, trigger, domain, or attached docs) → skip every entry prompt, go straight to work; the request IS the first Listen input. Bare request ("create a case", nothing else) → the Listen opener. No entry menu. Abort is always a free-text away. Tenant work never blocks entry (§Tenant grounding owns when the pull starts).
 
+**Task-type declaration — first command, every mode.** Run `uip maestro case task-types list --output json` once per session at lane entry, in the same batch as the opening reads. It needs no login and no tenant, so it runs in design-only and plan-only requests too, and it is not the registry pull. Its `Data.Authorable[].Type` values are this session's only legal SDD `Type:` values ([layers § Task types](case-design-layers-guide.md#task-types)). If `Result` is not `Success`, or `Data.Authorable` is missing or empty, stop the lane before Sketch and write nothing. In one message, quote the command and its `Message`, then:
+<!--skill-flavor:task-types-stop-remedy:start-->
+run `uip --version`, quote its output, and tell the user to update with `npm install -g @uipath/cli@latest` and ask again.
+<!--skill-flavor:task-types-stop-remedy:end-->
+Never fall back to the layers guide's table when the command fails, and never write an SDD without the declaration.
+
 ## Tenant grounding — full resolution at design time
 
 Resolve identities at design time — registry pull, per-resource cache lookups, connection checks, ONE batched gate — so a confirmed design carries resolved identities and the build verifies instead of re-discovering.
@@ -315,6 +321,7 @@ If the user asks how something works, explain in their language (cases, stages, 
 | User says "skip" / "I don't know" during the one clarifying call | Best assumption + decision line. Optional field with no basis → `—`. |
 | Required field with no basis even for assumption | `<UNRESOLVED: <question>>` in the model + ⚠ flagged line in the confirmation. The build's phases revisit. |
 | AskUserQuestion unavailable / unresponsive (Delegate needs this) | One-line notice, continue best-assumption: every would-have-asked value gets a decision line; gate items default to `resolve at build` with NO `gateDecision` recorded (the build's gate re-asks them); promotion scoped to the request — draft request → draft file only; design-only → the final SDD on a clean Finalization pass, stop; build handoff → the final SDD on a clean Finalization pass, then the build continues with its default straight-through preference. |
+| `uip maestro case task-types list` fails or returns no `Authorable` | Stop before Sketch, write nothing ([§ Entry](#entry)). Never substitute the layers guide's table. |
 | Registry pull fails (CLI error, no auth) | One plain-language line immediately. Keep concrete portable names; mark identities/folders `resolve at build` (`<UNRESOLVED>` in the file) with paired review items. The build's planning pass retries discovery. |
 | `sdd.md` already exists at the working root (build handoff) | The handoff should not have happened — surface it; the build skill consumes that file trust-as-written (§Terminal step). |
 | Context compaction mid-render | Re-render from the design source — the on-disk partial (split path), `sdd.draft.md`, or the model summary in the Case Review. Do NOT re-invoke skills, re-read applied references, search the filesystem, or spawn background tasks: the source plus the template are sufficient. |
