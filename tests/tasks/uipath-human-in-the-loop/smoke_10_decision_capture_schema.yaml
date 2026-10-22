@@ -90,6 +90,14 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
+    description: "intrinsicSignals is declared as an object output"
+    command: "python3 -c \"import json,sys; o=json.load(open('action-schema.json'))['outputs']['properties']; sys.exit(0 if o.get('intrinsicSignals',{}).get('type')=='object' else 1)\""
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
     description: "no per-reason confirm or chip-bank fields: no confirmedItems, rationaleOptions, reasonChips, fieldReasons, counterfactual or highStakes anywhere"
     command: "python3 -c \"import json,sys; d=json.load(open('action-schema.json')); keys=[k.lower() for s in ('inputs','outputs','inOuts') for k in d.get(s,{}).get('properties',{})]; sys.exit(1 if {'confirmeditems','rationaleoptions','reasonchips','fieldreasons','counterfactual','highstakes'}.intersection(keys) else 0)\""
     timeout: 10

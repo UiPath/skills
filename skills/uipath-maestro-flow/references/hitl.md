@@ -93,11 +93,11 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   `'enum'` are a single-choice dropdown (a `string` answer), `'multiSelect'` a
   multi-select (an `array` answer). Never change one to `'string'` or
   `'array'`: the form loses its picker. A decompiled canvas form keeps these
-  spellings and their `options`, and you can edit the node unless a field has
-  one of the keys below. Needs `@uipath/maestro-builder-sdk` 6.31.9 or later;
-  an older SDK reports `HITL_FIELD_TYPE_UNKNOWN` (do not follow its
-  `type: 'string'` hint), so upgrade with
-  `npm install -g @uipath/maestro-builder-sdk@latest`.
+  spellings and their `options`, and you can edit the node unless
+  `flow decompile` warns about one of its fields (see below). Needs
+  `@uipath/maestro-builder-sdk` 6.31.9 or later; an older SDK reports
+  `HITL_FIELD_TYPE_UNKNOWN` (do not follow its `type: 'string'` hint), so
+  upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
 
   ```ts
   fields: [{
@@ -106,11 +106,37 @@ Every outcome is its own exit (`outcome-<slug>`); the SDK never emits `completed
   }]
   ```
 
-  A canvas field row can also carry `controlType`, `defaultValue`, `colSpan`,
-  `rules`, `requiredMessage` or `description`. Decompile does not keep those
-  yet, so editing the node drops them from every field on the form. If any
-  field in the `.flow` has one of them, leave that node untouched so merge
-  keeps the original, or edit that node's JSON in the `.flow` directly.
+- A field also takes the platform's settings keys, with the platform's names
+  and shapes: `controlType` (how it renders: `'text'`, `'textarea'`,
+  `'numberInput'`, `'datePicker'`, `'dateAndTimePicker'`, `'checkbox'`,
+  `'dropdown'`, `'radioGroup'`, `'multiSelect'`, `'checkboxGroup'`,
+  `'fileUpload'`), `defaultValue` (a string, or a list for a multi-select),
+  `colSpan` (width on the 12-column grid, 1 to 12), `rules`
+  (`{ id, conditions: [{ when, is?, ... }], operator?, effects }`),
+  `requiredMessage`, and `description`. A canvas dropdown is often
+  `type: 'string', controlType: 'dropdown'`: keep both keys. Removing
+  `controlType` turns the dropdown into a text box. A decompiled canvas form
+  keeps all of these, and you can edit the node like any other. `check`
+  reports a value the platform refuses as `HITL_FIELD_SETTING_INVALID`
+  (`INLINE_AGENT_ESCALATION_FIELD_SETTING_INVALID` on an agent's quick-form
+  escalation). These keys need `@uipath/maestro-builder-sdk` 6.35.0 or later;
+  an older SDK drops them on decompile and does not write them on compile, so
+  upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+
+  ```ts
+  fields: [{
+    id: 'priority', label: 'Priority', type: 'string', direction: 'output', required: true,
+    requiredMessage: 'Pick one', colSpan: 6, controlType: 'dropdown',
+    options: [{ id: 'o1', value: 'high', label: 'High' }, { id: 'o2', value: 'low', label: 'Low' }],
+    defaultValue: 'high',
+  }]
+  ```
+
+  If `flow decompile` warns that a form field has a key the SDK "cannot write
+  back" (for example a `variable` other than `vars.<id>`, or a key the
+  platform's schema does not define), editing that node drops the key. Leave
+  that node untouched so merge keeps the original, or edit its JSON in the
+  `.flow` directly. `flow decompile --strict` refuses such a file.
 - **Every outcome is its own exit — the SDK never emits `completed` on a task
   that has outcomes.** Each outcome gets `outcome-<slug>` (the name lowercased,
   non-alphanumerics to `-`). This holds on the default node and on quick-form,

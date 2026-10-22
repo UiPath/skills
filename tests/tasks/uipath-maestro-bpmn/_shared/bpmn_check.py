@@ -9,7 +9,8 @@ import os
 import re
 import sys
 import xml.etree.ElementTree as ET
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
+from enum import Enum
 from pathlib import Path
 from typing import TypeVar
 
@@ -280,6 +281,107 @@ def body_object(element: ET.Element) -> dict:
     return parsed
 
 
+def _scalar(value: object) -> str | None:
+    """A V2 JSON value in its V1 attribute spelling: ``false`` -> ``"false"``,
+    ``1`` -> ``"1"``. ``None`` for null, objects and arrays."""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, bool):
+        return json.dumps(value)
+    if isinstance(value, (int, float)):
+        return str(value)
+    return None
+
+
+def _v2_object(inp: ET.Element) -> dict:
+    try:
+        parsed = json.loads(_input_payload(inp) or "{}")
+    except (json.JSONDecodeError, ValueError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _parameters(element: ET.Element, v1_target: str, v2_target: str) -> dict[str, str]:
+    params: dict[str, str] = {}
+    for inp in context_inputs(element):
+        target = inp.attrib.get("target")
+        if target == v1_target and inp.attrib.get("name"):
+            params[inp.attrib["name"]] = _input_payload(inp)
+        elif target == v2_target:
+            for key, value in _v2_object(inp).items():
+                scalar = _scalar(value)
+                if scalar is not None:
+                    params[str(key)] = scalar
+    return params
+
+
+def path_parameters(element: ET.Element) -> dict[str, str]:
+    """``element``'s path parameters by name, in either connector node shape.
+
+    A V1 template node writes one ``target="path"`` input per field. A V2
+    element from ``registry get --input-details`` writes one
+    ``target="pathParameters"`` input holding them all as a JSON object
+    (skills/uipath-maestro-bpmn/references/v2-connector-nodes.md, "V2 differs
+    from the V1 template"). A V2 payload that is not a JSON object adds
+    nothing, and neither does a null, object or array value. A V2 boolean or
+    number reads as V1 spells it: ``"false"``, ``"1"``.
+    """
+    return _parameters(element, "path", "pathParameters")
+
+
+def query_parameters(element: ET.Element) -> dict[str, str]:
+    """``element``'s query parameters by name: V1 ``target="query"`` inputs or
+    the V2 ``target="queryParameters"`` JSON input, read as
+    :func:`path_parameters` reads path ones."""
+    return _parameters(element, "query", "queryParameters")
+
+
+def query_values(element: ET.Element, name: str) -> list[str]:
+    """Every value ``element`` gives query field ``name``, one per occurrence, unstripped.
+
+    The ``value`` attribute of each V1 input named ``name``, then the ``name``
+    key of each V2 ``target="queryParameters"`` input, so a node carrying both
+    shapes yields two values where :func:`query_parameters` keeps one. A V2
+    value that is not a string counts as its JSON text.
+    """
+    inputs = context_inputs(element)
+    values = [inp.attrib.get("value", "") for inp in inputs if inp.attrib.get("name") == name]
+
+    for inp in inputs:
+        if inp.attrib.get("target") != "queryParameters":
+            continue
+        params = _v2_object(inp)
+        if name not in params:
+            continue
+        value = params[name]
+        values.append(value if isinstance(value, str) else json.dumps(value))
+    return values
+
+
+def root_bindings(root: ET.Element) -> dict[str, dict[str, str]]:
+    """Every ``uipath:binding`` in the file, by id, as its attributes."""
+    return {
+        b.attrib["id"]: dict(b.attrib)
+        for b in root.iter(f"{{{NS['uipath']}}}binding")
+        if b.attrib.get("id")
+    }
+
+
+def resolved_values(
+    value: str, bindings: dict[str, dict[str, str]], fold_case: bool = True
+) -> set[str]:
+    """``value`` itself, and for ``=bindings.<id>`` the binding's default and
+    resource key (lowercased unless ``fold_case`` is False): a V2 picker stores
+    its pick as a binding read."""
+    values = {value}
+    if value.startswith("=bindings."):
+        binding = bindings.get(value[len("=bindings.") :], {})
+        values |= {binding.get(k, "") for k in ("default", "resourceKey")}
+    if fold_case:
+        values = {v.lower() for v in values}
+    return values - {""}
+
+
 def has_type(element: ET.Element, token: str) -> bool:
     """True when ``token`` appears anywhere in ``element``'s serialised XML."""
     return token in ET.tostring(element, encoding="unicode")
@@ -317,6 +419,87 @@ def has_typed_uipath_extension(
         ):
             return True
     return False
+
+
+ACTIVITY_EXECUTION = "Intsvc.ActivityExecution"
+UNIFIED_HTTP_REQUEST = "Intsvc.UnifiedHttpRequest"
+HTTP_CONNECTOR_KEY = "uipath-uipath-http"
+HTTP_REQUEST_OBJECT = "http-request"
+_JS_OPERAND_RE = re.compile(r"'([^']*)'|\"([^\"]*)\"|`([^`]*)`|([^+'\"`]+)")
+_TEMPLATE_SLOT_RE = re.compile(r"\$\{[^}]*\}")
+
+
+class RequestShape(Enum):
+    ACTIVITY = ACTIVITY_EXECUTION
+    HTTP = UNIFIED_HTTP_REQUEST
+
+
+def _literal_path(value: str) -> str:
+    """``value`` with each non-literal operand as ``{}``:
+    ``=js:('/v2/' + vars.P + '/items')`` -> ``/v2/{}/items``."""
+    if not value.startswith("="):
+        return value
+
+    expression = value.removeprefix("=js:").removeprefix("=")
+    parts: list[str] = []
+    for single, double, template, other in _JS_OPERAND_RE.findall(expression):
+        if other.strip("() \t\n"):
+            parts.append("{}")
+            continue
+        parts.append(single or double or _TEMPLATE_SLOT_RE.sub("{}", template))
+    return "".join(parts)
+
+
+def _http_carrier(task: ET.Element, key: str, connector_key: str) -> bool:
+    if key == HTTP_CONNECTOR_KEY and has_type(task, UNIFIED_HTTP_REQUEST):
+        return True
+    return (
+        key == connector_key
+        and has_type(task, ACTIVITY_EXECUTION)
+        and context_value(task, "objectName") == HTTP_REQUEST_OBJECT
+    )
+
+
+def _http_request(task: ET.Element, connector_key: str) -> tuple[str, str] | None:
+    try:
+        body = body_object(task)
+    except BodyShapeError:
+        return None
+    if body.get("authentication") != "connector":
+        return None
+    if str(body.get("targetConnector", "")).lower() != connector_key:
+        return None
+
+    method = str(body.get("method", "")).strip()
+    path = str(body.get("url") or body.get("path") or "").strip()
+    return method, _literal_path(path)
+
+
+def connector_requests(
+    root: ET.Element, connector_key: str
+) -> Iterator[tuple[ET.Element, str, str, RequestShape]]:
+    """Every sendTask that calls ``connector_key``, as ``(task, method, path, shape)``.
+
+    ``RequestShape.ACTIVITY``: an ``Intsvc.ActivityExecution`` on the
+    connector, method and path from context. ``RequestShape.HTTP``: a
+    connector-mode request through its connection, method and ``url`` (else
+    ``path``) from the body, carried by an ``Intsvc.UnifiedHttpRequest`` on
+    ``uipath-uipath-http`` or by an ``Intsvc.ActivityExecution`` on the
+    connector's ``http-request`` object (builder SDK ``.http(..., { connection,
+    connectorKey })``). A manual-mode request, or one to another connector, is
+    not yielded.
+    """
+    for task in elements(root, "sendTask"):
+        key = context_value(task, "connectorKey")
+        if _http_carrier(task, key, connector_key):
+            request = _http_request(task, connector_key)
+            if request is not None:
+                yield task, *request, RequestShape.HTTP
+            continue
+
+        if key == connector_key and has_type(task, ACTIVITY_EXECUTION):
+            method, path = context_value(task, "method"), context_value(task, "path")
+            yield task, method, path, RequestShape.ACTIVITY
 
 
 def require_di_for_visible_elements(root: ET.Element) -> None:

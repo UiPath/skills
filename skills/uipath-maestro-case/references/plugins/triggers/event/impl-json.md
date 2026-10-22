@@ -141,13 +141,16 @@ When the resolved entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or
     "display": { "label": "<display-name>" },
     "inputs": {
       "serviceType": "Intsvc.EventTrigger",
-      "entryPointId": "<entry-points.json uniqueId>"
+      "entryPointId": "<entry-points.json uniqueId>",
+      "context": [
+        { "name": "objectName", "type": "string", "value": "<Source from the sdd.md Case Triggers row>" }
+      ]
     }
   }
 }
 ```
 
-`data.inputs` carries **only** `serviceType` and `entryPointId` — no `context[]`, `inputs[]`, `outputs[]`, `bindings[]`, `metadata`. `entryPointId` is the node↔entry pairing, not connector config: keep the value `case init` scaffolded on `trigger_1`, or the `uniqueId` you mint for the `entry-points.json` entry below. See [case-schema.md § Trigger Node](../../../case-schema.md#a-trigger-node--uipathcasetrigger) for the `entryPointId` rule. Equivalent intent to a connector-task `data: {}` placeholder; trigger nodes need `label` / `description` / `parentElement` to render at all.
+`data.inputs` carries **only** `serviceType`, `entryPointId` and a one-entry `context[]` holding `objectName`. It carries no other `context[]` entries, and no `inputs[]`, `outputs[]`, `bindings[]` or `metadata`. `entryPointId` is the node↔entry pairing, not connector config: keep the value `case init` scaffolded on `trigger_1`, or the `uniqueId` you mint for the `entry-points.json` entry below. See [case-schema.md § Trigger Node](../../../case-schema.md#a-trigger-node--uipathcasetrigger) for the `entryPointId` rule. `objectName` is the SDD's **Source** column, which is document data rather than tenant config. `sdd convert` emits exactly this entry: keep it, and never strip it to match an older bare-`serviceType` shape. Omit `context[]` only when the SDD row has no Source. Equivalent intent to a connector-task `data: {}` placeholder; trigger nodes need `label` / `description` / `parentElement` to render at all.
 
 **Sibling artifacts:** append the matching `entry-points.json` entry per [manual/impl-json.md § Recipe — entry-points.json](../manual/impl-json.md#recipe--entry-pointsjson-append-to-entrypoints). No trigger-edge is created (Rule 21) — the first stage's `case-entered` entry condition starts the case. No root bindings, no `inputOutputs[]` entries from this trigger.
 
@@ -172,14 +175,14 @@ All issues appended per [logging/impl-json.md](../../logging/impl-json.md).
 ## Post-Write Verification
 
 1. `data.inputs.serviceType` is `"Intsvc.EventTrigger"` (not `WaitForEvent` or `CuratedTrigger`).
-2. **Fully configured** (all under `data.inputs`): `context[]`, `inputs[]` (CONFIG inputs only — no `elementId`), `outputs[]` (empty array — populated later by variables plugin Step 6.2), and `bindings[] = []` all present per §7b. `data.typeVersion` is `"1.0.0"`; `data.display.label` set.
+2. **Fully configured** (all under `data.inputs`): `context[]`, `inputs[]` (CONFIG inputs only — no `elementId`), `outputs[]` (empty array — populated later by variables plugin Step 6.2), `bindings[] = []` and `entryPointId` all present per §7b. `data.typeVersion` is `"1.0.0"`; `data.display.label` set.
 3. **`tasks/trigger-spec-cache.json` exists** with this trigger's T-number as a top-level key, containing un-minted `context`, `inputs`, `outputs` from `caseShape`.
 4. **`id-map.json`** contains `"T<N>": { "kind": "trigger", "id": "<triggerId>" }` for this trigger.
-5. **Placeholder:** `data.inputs` holds exactly `serviceType` and `entryPointId` (equal to this trigger's `entry-points.json` `uniqueId`); `context`, `inputs`, `outputs`, `bindings`, `metadata` **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
+5. **Placeholder:** `data.inputs` holds exactly `serviceType` and `entryPointId` (equal to this trigger's `entry-points.json` `uniqueId`); `context[]` holds exactly the `objectName` entry carrying the SDD Source, and `inputs[]`, `outputs[]` and `bindings[]` are **absent** (not empty arrays); no root bindings entries from this trigger; no `trigger-spec-cache.json` entry from this trigger; `[SKIPPED]` log entry present.
 6. `data.inputs.context[name="metadata"].body.activityPropertyConfiguration.configuration` is a `=jsonString:…` string (CLI-produced; do not modify).
 7. When the trigger has event parameters: `data.inputs.context[name="metadata"].body.bindings[Property].metadata.ParentResourceKey` is `EventTrigger.<eventTriggerKey>` (substituted from `EventTrigger.{{TRIGGER_REGISTRATION_KEY}}`).
 8. `schema.edges` stays `[]` (Rule 21) — no edge from this trigger.
-9. `entry-points.json` has a matching entry referencing the trigger node ID.
+9. `entry-points.json` has a matching entry referencing the trigger node ID, and its `uniqueId` equals `data.inputs.entryPointId`.
 10. At Phase 3 exit, [implementation.md § Step 12 Check 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass) re-asserts 2–7 for a resolved trigger.
 
 Run `uip maestro case validate <file> --output json` after all triggers for this plugin's batch are added. A default-profile `Valid` here is a batch check, not completion: the build ends only on `validate --strict --sdd sdd.md` at [Step 12](../../../implementation.md#step-12--end-of-phase-3-validator-pass).

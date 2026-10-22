@@ -48,13 +48,23 @@ When access is expected to arrive through a group, run:
 uip admin groups list --output json
 ```
 
-For each relevant group, run:
+Then resolve the user's groups from the **account** side — one call, no paging:
 
 ```bash
-uip admin groups members list <GROUP_ID> --output json
+uip admin users list --search "<email>" --output json   # read GroupIDs on the match
 ```
 
-If the user is absent from the group that carries the role, the gap is membership — not the role or its scope.
+If the group that carries the role is absent from `GroupIDs`, the gap is membership —
+not the role or its scope.
+
+Do **not** decide this from `groups members list <GROUP_ID>`: it returns a single
+50-entry page and gives no sign that more members exist, so a user on a later page
+reads as a non-member. If you use it anyway, page with `--limit`/`--offset` to the end
+before drawing any conclusion ([group-management.md](group-management.md#pagination-for-members)).
+
+Reporting the gap is where this ends. Adding the user to the group is a change the
+user decides on and asks for — never something you do to clear the error (SKILL.md
+Critical Rule 34).
 
 ### Step 4 — Branch: missing permission, or right permission at the wrong scope
 

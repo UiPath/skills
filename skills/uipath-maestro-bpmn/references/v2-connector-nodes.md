@@ -88,6 +88,12 @@ uip maestro bpmn registry get Intsvc.EventTrigger \
   `invalid_argument`, `A resource picker in --input-details did not resolve`,
   and lists each folder key; add `"<field>_folderKey": "<FolderKey>"` next to
   the name and run it again.
+- A `*_V3` object's `RequestFields` (the folder entity's columns, for
+  `bodyParameters`) are empty until `describe` gets the picker the same way:
+  `uip is resources describe uipath-uipath-dataservice <Object>_V3
+  --connection-id <id> --operation Create -f entityScope=folder
+  -f folderEntityName=<entity> -f folderEntityName_folderKey=<FolderKey>`.
+  Without the folder key it fails when the name is in several folders.
 - The activity type is looked up from the Studio Web catalog by object (and
   operation for triggers). When an object carries several activities the
   command lists them; pass `--activity-type-id <id>` with the one you mean.
@@ -138,10 +144,14 @@ external-agent and external-automation catalogs:
 
 ```bash
 uip maestro bpmn registry get Intsvc.AsyncExecution \
-    --connection-id <id> --object-name <ObjectName> \
+    --connection-id <id> --object-name <ObjectName> --operation Create \
     --input-details '{"bodyParameters":{"prompt":"=js:vars.Var_Question"}}' \
     --solution-folder <solution-dir> --output json
 ```
+
+Pass `--operation Create`: CrewAI's `startCrewAgent` without it fails with
+`IS enrichment returned no data`, and `MissingRequired` only lists its inputs
+once the operation is named.
 
 The connection must be the agent connector's own: Execute Salesforce Agent
 is `uipath-salesforce-agent`, not a `uipath-salesforce-sfdc` connection. Find
@@ -187,6 +197,9 @@ marker). Beyond it:
 - An output other than `response` / `Error` writes `{{VAR_ID}}_<name>` (an
   HTTP request's `code`, `headers`, `body`). A trigger has no
   `{{INCOMING_EDGE}}`.
+- A trigger's `response` output is the record the event carries. A later
+  node reads one of its fields as `=js:vars.<response-var>.<Field>`; a Data
+  Fabric record's id is `Id`.
 - If `Data.V2.MissingRequired` lists inputs (e.g. `bodyParameters.prompt`),
   run `registry get` again with them in `--input-details` before pasting.
 - Do not edit the element's `uipath:context` or its `metadata`. To change a
@@ -236,9 +249,11 @@ uip solution resources refresh --solution-folder <solution-dir>
 To debug from the trigger, name its start event. A trigger debug replays a
 recent event rather than waiting for one, so cause the event (create or
 update a record in the picked entity) **just before** you start; with none
-the run faults `102003 DebugTriggerNoMatches`:
+the run faults `102003 DebugTriggerNoMatches`. For a Data Fabric record
+event, the entity id is the picker binding's `resourceKey`:
 
 ```bash
+uip df records insert <entity-id> --folder-key <folder-key> --body '{"<column>":"<value>"}'
 uip maestro bpmn debug <project-path> --entry-point <trigger-start-event-id>
 ```
 
@@ -279,7 +294,14 @@ The contract is shared with `uip maestro case spec`:
 | `filter` | yes | yes | a FilterTree the design-time client compiles into the connector's filter field (activity) or `body.filters.expression` (trigger, wait) |
 
 A FilterTree is `{"groupOperator":"And","filters":[{"id":"<field>","operator":"<operator>","value":{"isLiteral":true,"rawString":"\"x\"","value":"x"}}],"groups":[]}`;
-take the field names and operators from the spec's `filter.fields`, emit
+take the field names from `uip is resources describe` `ResponseFields` with
+`Searchable: true`. `operator` is the designer's name for one of that field's
+`SearchableOperators`, never the symbol (`=` fails `Operator not supported`):
+`=` `Equals`, `!=` `NotEquals`, `<` `LessThan`, `<=` `LessThanOrEqual`, `>`
+`GreaterThan`, `>=` `GreaterThanOrEqual`, `in` `In`, `not in` `NotIn`,
+`contains` `Contains`, `not contains` `NotContains`, `starts with`
+`StartsWith`, `ends with` `EndsWith`, `is null` `IsNull`, `is not null`
+`IsNotNull`; a boolean field takes `Is` / `IsNot`. Emit
 `"And"` even for one condition, and never put a raw CEQL or JMESPath string in
 `queryParameters` for a field the connector filters with (`where`,
 `queryExpression`) — the designer re-renders the filter only from the tree.

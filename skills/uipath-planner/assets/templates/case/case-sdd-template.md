@@ -547,9 +547,26 @@ runtime metadata (agent prompts, package versions, endpoints) stays out of the S
 
 ### Personas
 
-| Persona | Stage Scope | Permissions | Description |
-|---------|-------------|-------------|-------------|
-| <persona name> | <comma-separated stage names, or All> | <View, Act, Reassign, etc.> | <description of this persona's role> |
+<!-- Each row becomes a case role (`metadata.caseRoles[]`) at `uip maestro case sdd convert`, and a
+     role resource carrying these permissions at `uip solution pack`. The cells are read, not interpreted:
+     Scope is `Case` or `Stages`; Stages lists exact stage display names from Section 2 (`—` for a
+     `Case` persona); Permissions lists permission keys only, comma-separated, from this set —
+     View, Create, Edit, Close, Reopen, Assign, ManageSLA, RunAdhocTasks, SelectStage, ViewSummary,
+     LogsView, TasksView, TasksCreate, TasksEdit, TasksDelete, TaskAssignmentView, TaskAssignmentCreate,
+     TaskAssignmentEdit, TaskAssignmentDelete, TaskSelfAssignmentCreate, TaskSelfAssignmentEdit,
+     TaskSelfAssignmentDelete. A `Stages` persona may hold only View, Assign, ManageSLA and
+     RunAdhocTasks. Assign and the Tasks* / TaskAssignment* / TaskSelfAssignment* keys are published
+     by the Case Designer only when a tenant flag is on (off by default): convert writes them as
+     stated and reports each as a `case-role` item naming the flag, so grant them only when the
+     target tenant has the flag. Names are unique, at most 64 characters, with none of < > " % ; & '. Description
+     is required (at most 500 characters) and ships as the role's description. A condition on the
+     persona ("loans > $5M only") is not a permission: write it in Notes and encode it as a guarded
+     cell on the owning task (checklist rule 32). A cell convert cannot map is reported as a
+     `case-role` Unresolved item, never guessed at. -->
+
+| Persona | Scope | Stages | Permissions | Description | Notes |
+|---------|-------|--------|-------------|-------------|-------|
+| <persona name> | <Case \| Stages> | <comma-separated stage display names, or —> | <permission keys, comma-separated> | <what this persona does> | <conditions or prose; not read> |
 
 ### Process App Views
 
@@ -730,7 +747,7 @@ ship a summary SDD (top-level headings like ## Source / ## Case Objective / ## S
 build-mode/path narration) even if a later caseplan.json would validate — rewrite from the model and
 this template.
 
-CONFORMANCE CHECKLIST — 35 items in 10 families, held in
+CONFORMANCE CHECKLIST — 37 items in 10 families, held in
 references/case/case-sdd-conformance-checklist.md. Items 30–33 apply only when finalizing a draft.
 The gate reads that file; authoring does not — the cell rules above are the render contract and are
 COMPLETE, and nothing outside this template states a shape rule they do not. (Design semantics — which

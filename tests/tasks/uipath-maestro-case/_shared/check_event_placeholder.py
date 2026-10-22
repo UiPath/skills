@@ -7,9 +7,11 @@ PLACEHOLDER event trigger rather than fabricate connector IDs. This grader
 asserts the placeholder shape and its sibling-file coupling:
 
   1. A trigger node carries `data.inputs.serviceType == "Intsvc.EventTrigger"`.
-  2. It is a true placeholder — `data.inputs` carries ONLY `serviceType` plus
-     the optional `entryPointId` node↔entry pairing (no `context` / `inputs` /
-     `outputs` / `bindings` / `metadata`).
+  2. It is a true placeholder — `data.inputs` carries ONLY `serviceType`, the
+     optional `entryPointId` node↔entry pairing, and an optional one-entry
+     `context[]` holding `objectName` (the SDD Source, which `sdd convert`
+     emits). No other `context` entries and no `inputs` / `outputs` /
+     `bindings` / `metadata`.
   3. No trigger edge is created (edges retired) — `schema.edges` stays `[]`.
   4. The case still starts: some stage has a `case-entered` entry condition
      (the placeholder event trigger does not itself edge into a stage).
@@ -60,15 +62,24 @@ def main():
     trig = event_triggers[0]
     trig_id = trig.get("id")
 
-    # 2. True placeholder — only serviceType (+ entryPointId pairing) under data.inputs.
+    # 2. True placeholder — only serviceType (+ entryPointId pairing, + the
+    #    objectName context entry) under data.inputs.
     uipath = (trig.get("data") or {}).get("inputs") or {}
-    extra = [k for k in uipath if k not in ("serviceType", "entryPointId")]
+    extra = [k for k in uipath if k not in ("serviceType", "entryPointId", "context")]
     if extra:
         _fail(
             f"placeholder event trigger data.inputs must carry ONLY 'serviceType' "
-            f"(+ 'entryPointId'); found extra keys {extra} "
+            f"(+ 'entryPointId', + an objectName 'context'); found extra keys {extra} "
             f"(Rule 9 — no fabricated connector config)"
         )
+    if "context" in uipath:
+        context = uipath["context"]
+        names = [(c or {}).get("name") for c in context] if isinstance(context, list) else None
+        if names != ["objectName"]:
+            _fail(
+                f"placeholder event trigger data.inputs.context must hold exactly one "
+                f"'objectName' entry; found names {names}"
+            )
 
     # 3. No trigger edge.
     edges = plan.get("edges") or []
@@ -112,7 +123,7 @@ def main():
         )
 
     print(
-        f"OK: placeholder event trigger {trig_id!r} (serviceType + entryPointId only); "
+        f"OK: placeholder event trigger {trig_id!r} (serviceType + entryPointId + objectName context only); "
         f"edges=[]; case-entered start present; entry-points.json entry linked"
     )
 

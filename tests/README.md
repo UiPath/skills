@@ -11,11 +11,12 @@ Tests that verify AI agents can correctly use skills from this repository. Tests
    ```
    The Makefile composes these into `UV_EXTRA_INDEX_URL` for `uv pip install`. If either variable is empty, install continues against public PyPI only and prints a notice.
 
-2. **coder-eval** — install from GitHub (creates a local `.venv`, requires Python 3.13+):
+2. **coder-eval** — install the version pinned in `.coder-eval-version` (creates a local `.venv`, requires Python 3.13+):
    ```bash
    cd tests
    make install
    ```
+   Dependencies are constrained to the `pip freeze` of the pinned `ghcr.io/uipath/coder-eval-agent` image, the same constraints CI uses. Needs Docker; without it the install prints a warning and runs unconstrained.
 
 3. **uip CLI** — the UiPath CLI must be available:
    ```bash
