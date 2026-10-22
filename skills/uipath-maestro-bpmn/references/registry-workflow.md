@@ -48,7 +48,7 @@ uip maestro bpmn registry get <extensionType> --output json
 
 Fill `{id}`, `{name}`, `{incomingEdge}`, `{outgoingEdge}`, `{varId}`, per-context placeholders (`{releaseKey}`, `{queueName}`, `{appId}`, …), and body CDATA. Wire structural placeholders to the sequence-flow IDs from [structural-bpmn.md](structural-bpmn.md).
 
-Treat each template and process variable as one contract. Replace `{varId}` with a stable ID and declare task-scoped `uipath:inputOutput` with the template output's exact `type` and `elementId="<node-id>"`, including opaque `custom` and product-specific `Actions.HITL`; never coerce them to `string`, `object`, or `jsonSchema`. Enrichment supplies concrete typed rows later.
+Treat each template output and its process variable as one contract. Replace `{varId}` with a stable ID and declare task-scoped `uipath:inputOutput` with the template output's exact `type` and `elementId="<node-id>"`, including opaque `custom` and product-specific `Actions.HITL`; never coerce them to `string`, `object`, or `jsonSchema`. Leave the opaque type in place; enrichment replaces it with concrete typed rows later, so do not pre-empt it.
 
 For a dynamic unresolved node (SKILL.md step 4a: draft/placeholders requested or no candidate pings `Enabled`), use escaped public placeholders `&lt;TENANT_URL&gt;`, `&lt;FOLDER_KEY&gt;`, and `&lt;CONNECTION_NAME&gt;` in resource identity slots; retain retrieved context/output shape and only user-supplied body/configurable-context values. Report **draft** and name the CLI-owned blocker literally, including `connection binding` when applicable. Do not inspect sibling skills, fixtures, or generated packages to invent live schema.
 
@@ -68,7 +68,7 @@ uip maestro bpmn registry get Intsvc.ActivityExecution \
 
 ### Picking the object: the table first, then the parameters
 
-Use this table, not display names or inferred object types: four Jira objects create an issue, and describe prints `Curated: "Create Issue"` for two of them because its summary drops the `curated.isHidden` flag that marks the live one. Confirm with `uip is resources describe <connectorKey> <object> --connection-id <id> --operation <Operation.Name>` and read `RequestFields` and `Parameters` from that call.
+Use this table, not display names or inferred object types; `describe` cannot rank candidates. Four Jira objects create an issue, and describe prints `Curated: "Create Issue"` for two of them because its summary drops the `curated.isHidden` flag that marks the live one; ranking on `Type: curated` or the display name picks a hidden legacy object. Confirm with `uip is resources describe <connectorKey> <object> --connection-id <id> --operation <Operation.Name>` and read `RequestFields` and `Parameters` from that call.
 
 | Connector key | Object | Activity | Operation |
 | --- | --- | --- | --- |
@@ -215,7 +215,7 @@ Choose by resource `ProcessType`, not display label. Run `uip or processes list 
 
 ## API workflow invocation: `ExecuteApiWorkflowAsync` waits, despite the name
 
-Use the sole API-workflow type, `Orchestrator.ExecuteApiWorkflowAsync`, on `bpmn:serviceTask`; its label `Start and wait for API workflow` means it waits and exposes the result to later nodes. Do not model fire-and-forget. Resolve release key, folder key, request schema, and response schema before runnable status; the served template is broken as described next.
+Use the sole API-workflow type, `Orchestrator.ExecuteApiWorkflowAsync`, on `bpmn:serviceTask`; its label `Start and wait for API workflow` means it waits and exposes the result to later nodes. There is no separate fire-and-forget API-workflow wrapper; do not model one. Resolve release key, folder key, request schema, and response schema before runnable status; the served template is broken as described next.
 
 ## Job-wrapper v1 trap — `releaseKey` templates are unrunnable
 
@@ -266,7 +266,7 @@ A hand-authored connector trigger is **draft** until CLI supplies trigger proper
 
 ## Connectionless vs connector HTTP
 
-- **Connector activity** (`Intsvc.ActivityExecution` or connector-authenticated operation): use for tenant connections, dynamic connector schemas, or connector objects; keep **draft** until enriched. Explicit CLI-owned blockers are **connection binding**, **dynamic schemas**, and generated package metadata (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`); do not hand-author them (§3).
+- **Connector activity** (`Intsvc.ActivityExecution` or connector-authenticated operation): use for tenant connections, dynamic connector schemas, or connector objects; keep **draft** until enriched. CLI-owned blockers, which must be resolved before upload or run and named explicitly in boundary notes, are **connection binding**, **dynamic schemas**, and generated package metadata (`bindings_v2.json`, `entry-points.json`, `operate.json`, `package-descriptor.json`); do not hand-author them (§3).
 - **HTTP request**: always `Intsvc.UnifiedHttpRequest`, for both `manual` and `connector` modes. Build with `uip maestro bpmn registry get Intsvc.UnifiedHttpRequest --input-details '<request>'` and add `--connection-id` for connector mode; see [v2-connector-nodes.md](v2-connector-nodes.md#http-requests). A service with no connector of its own goes through a `uipath-uipath-http` connection in connector mode. Never author legacy `Intsvc.HttpExecution` or a connector's `httpRequest` object for a new node.
 
 IS summary statuses: **executable** (activity, inputs, output variable, downstream mappings, and runtime verification if run), **draft** (shape/intent but enrichment missing), **mock** (fixed sample data), **blocked** (required URL, auth, schema, or enrichment decision missing).
