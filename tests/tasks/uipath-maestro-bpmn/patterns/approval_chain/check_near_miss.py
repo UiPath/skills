@@ -22,11 +22,13 @@ from bpmn_assertions import (  # noqa: E402
     fail,
     load_bpmn,
 )
-from graph import edges, ids, reachable, reaches  # noqa: E402
+from graph import edges, ids, parent_map, reachable, reaches  # noqa: E402
 
 BPMN = "VendorOnboarding/VendorOnboarding.bpmn"
 OUTCOME_RE = re.compile(r"vars\.([A-Za-z_][A-Za-z0-9_]*)")
 SIDE_EFFECT_KINDS = ("serviceTask", "sendTask")
+ERROR_DEF = f"{{{BPMN_NS}}}errorEventDefinition"
+TERMINATE_DEF = f"{{{BPMN_NS}}}terminateEventDefinition"
 
 
 def gates_stage(
@@ -37,6 +39,81 @@ def gates_stage(
     if review_id in reachable(root, join_id, blocked={gate_id}):
         return False
     return bool(reachable(root, gate_id, blocked=reviews) & end_ids)
+
+
+def catches(definition, error_ref: str | None) -> bool:
+    handled = definition.attrib.get("errorRef")
+    return not handled or handled == error_ref
+
+
+def error_caught(root, end, parents, later: set[str]) -> bool:
+    error_ref = end.find(ERROR_DEF).attrib.get("errorRef")
+    scopes = []
+    node = end
+    while node in parents:
+        node = parents[node]
+        scopes.append(node)
+
+    for sub in elements(root, "subProcess"):
+        if sub.attrib.get("triggeredByEvent") != "true" or sub in scopes or parents.get(sub) not in scopes:
+            continue
+        for start in sub.findall(f"{{{BPMN_NS}}}startEvent"):
+            definition = start.find(ERROR_DEF)
+            if definition is None or start.attrib.get("isInterrupting") == "false":
+                continue
+            if catches(definition, error_ref):
+                return True
+
+    scope_ids = ids(scopes)
+    for boundary in elements(root, "boundaryEvent"):
+        definition = boundary.find(ERROR_DEF)
+        if definition is None or boundary.attrib.get("attachedToRef") not in scope_ids:
+            continue
+        if boundary.attrib.get("cancelActivity") == "false" or not catches(definition, error_ref):
+            continue
+        if not reachable(root, boundary.attrib.get("id", "")) & later:
+            return True
+    return False
+
+
+def stopping_ends(root, later: set[str]) -> set[str]:
+    # A plain end in one parallel branch leaves the join waiting on the other,
+    # and an uncaught error end faults the instance instead of rejecting it.
+    parents = parent_map(root)
+    stopping = set()
+    for end in elements(root, "endEvent"):
+        if end.find(TERMINATE_DEF) is not None:
+            stopping.add(end.attrib.get("id", ""))
+        elif end.find(ERROR_DEF) is not None and error_caught(root, end, parents, later):
+            stopping.add(end.attrib.get("id", ""))
+    return stopping
+
+
+def rejects_before_join(
+    root, review_id: str, join_id: str, gate_ids: set[str], task_ids: set[str], later: set[str], stop_ids: set[str]
+) -> bool:
+    if join_id in reachable(root, review_id, blocked=gate_ids):
+        return False
+    end_ids = ids(elements(root, "endEvent"))
+    for gate_id in verdict_gates(root, review_id, gate_ids, task_ids):
+        for source, exit_id in edges(root):
+            if source != gate_id:
+                continue
+            after = {exit_id} | reachable(root, exit_id)
+            ends = after & end_ids
+            if join_id not in after and not after & later and ends and ends <= stop_ids:
+                return True
+    return False
+
+
+def gated_before_join(
+    root, fork_id: str, join_id: str, gate_ids: set[str], task_ids: set[str], later: set[str]
+) -> bool:
+    branch = {t for t in reachable(root, fork_id, blocked={join_id}) & task_ids if reaches(root, t, join_id)}
+    if not branch:
+        return False
+    stop_ids = stopping_ends(root, later)
+    return all(rejects_before_join(root, r, join_id, gate_ids, task_ids, later, stop_ids) for r in branch)
 
 
 def verdict_gates(root, review_id: str, gate_ids: set[str], reviews: set[str]) -> set[str]:
@@ -112,16 +189,21 @@ def main() -> None:
         fail("no review task follows the join — the third approver does not act after the other two")
 
     # The chain can stop at any step: between the join and each later review,
-    # an exclusive gateway must be able to exit to an end without any later review.
+    # an exclusive gateway must be able to exit to an end without any later review,
+    # or every parallel review is gated before the join on an exit that stops the instance.
     exclusive = elements(root, "exclusiveGateway")
     gate_ids = ids(exclusive)
     end_ids = ids(elements(root, "endEvent"))
     side_effect_ids = ids([e for kind in SIDE_EFFECT_KINDS for e in elements(root, kind)])
+    fork_id = forks[0].attrib.get("id", "")
+    pre_join = gated_before_join(root, fork_id, join_id, gate_ids, task_ids, sequential)
     for review_id in sorted(sequential):
-        if not any(gates_stage(root, join_id, g, review_id, sequential, end_ids) for g in gate_ids):
+        if not pre_join and not any(gates_stage(root, join_id, g, review_id, sequential, end_ids) for g in gate_ids):
             fail(
                 f"{review_id} is reachable from {join_id} without an exclusive gateway "
-                "that can exit to an end past every later review, so a parallel rejection still reaches it"
+                "that can exit to an end past every later review, or a gate on each parallel review before "
+                f"{join_id} whose reject exit ends only at terminate ends or caught error ends, "
+                "so a parallel rejection still reaches it or leaves the join waiting"
             )
 
         # And each later review's own verdict is gated before the process can end.
