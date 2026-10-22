@@ -31,6 +31,7 @@ KINDS = {
     "BodyRej": "endEvent",
     "BodyStart": "startEvent",
     "Agent": "serviceTask",
+    "Audit": "serviceTask",
 }
 PARALLEL_REJECT = '=vars.Var_C == "Reject" || vars.Var_F == "Reject"'
 MANAGER_REJECT = '=vars.Var_M == "Reject"'
@@ -77,6 +78,19 @@ def _without(flows: list[tuple], *pairs: tuple) -> list[tuple]:
 
 ERROR_ENDS = _ends(ERROR, "RejC", "RejF")
 TERMINATE_ENDS = _ends(TERMINATE, "RejC", "RejF")
+MESSAGE = "<bpmn:messageEventDefinition />"
+ESCALATION = "<bpmn:escalationEventDefinition />"
+
+# The guide's route: every reject edge into reject_merge, one notify, one end.
+GUIDE_REJECTS = (
+    _without(PRE_JOIN, ("GateC", "RejC"), ("GateF", "RejF"), ("Decision", "NotifyRej"))
+    + [
+        ("GateC", "RejectMerge", '=vars.Var_C == "Reject"'),
+        ("GateF", "RejectMerge", '=vars.Var_F == "Reject"'),
+        ("Decision", "RejectMerge", MANAGER_REJECT),
+        ("RejectMerge", "NotifyRej"),
+    ]
+)
 
 
 def _handler(
@@ -141,6 +155,15 @@ PRE_JOIN_ACCEPTED = {
     "error-end-event-subprocess": (PRE_JOIN, ERROR_ENDS, _handler(), frozenset()),
     "catch-all-handler": (PRE_JOIN, ERROR_ENDS, _handler(error=CATCH_ALL), frozenset()),
     "terminate-end": (PRE_JOIN, TERMINATE_ENDS, "", frozenset()),
+    "guide-reject-merge-terminate": (GUIDE_REJECTS, _ends(TERMINATE, "EndRej"), "", frozenset()),
+    "guide-reject-merge-throw-notify": (
+        GUIDE_REJECTS,
+        {**_ends(TERMINATE, "EndRej"), "NotifyRej": f'<bpmn:intermediateThrowEvent id="NotifyRej">{MESSAGE}</bpmn:intermediateThrowEvent>'},
+        "",
+        frozenset(),
+    ),
+    "guide-reject-merge-caught-error": (GUIDE_REJECTS, _ends(ERROR, "EndRej"), _handler(), frozenset()),
+    "redo-loop": (PRE_JOIN + [("GateC", "Compliance", '=vars.Var_C == "Redo"')], ERROR_ENDS, _handler(), frozenset()),
     "review-on-reject-path": (
         _without(PRE_JOIN, ("GateC", "RejC")) + [("GateC", "Ack", '=vars.Var_C == "Reject"'), ("Ack", "RejC")],
         {**ERROR_ENDS, "Ack": '<bpmn:userTask id="Ack" />'},
@@ -334,6 +357,61 @@ PRE_JOIN_REJECTED = {
         _handler(),
         frozenset(),
     ),
+    "hold-via-merge-to-provision": (
+        PRE_JOIN + [("GateC", "HoldMerge", '=vars.Var_C == "Hold"'), ("HoldMerge", "Provision")],
+        {**ERROR_ENDS, **_ends(TERMINATE, "EndOk")},
+        _handler(),
+        frozenset(),
+    ),
+    "hold-to-script-provision": (
+        _without(PRE_JOIN, ("Decision", "Provision"))
+        + [("Decision", "Record"), ("Record", "NotifyOk"), ("GateC", "Record", '=vars.Var_C == "Hold"')],
+        {**ERROR_ENDS, **_ends(TERMINATE, "EndOk")},
+        _handler(),
+        frozenset(),
+    ),
+    "hold-to-approved-notify": (
+        PRE_JOIN + [("GateC", "NotifyOk", '=vars.Var_C == "Hold"')],
+        {**ERROR_ENDS, **_ends(TERMINATE, "EndOk")},
+        _handler(),
+        frozenset(),
+    ),
+    "reject-merge-reaches-manager": (
+        GUIDE_REJECTS + [("RejectMerge", "Manager", '=vars.Var_X == 1')],
+        _ends(TERMINATE, "EndRej", "EndOk"),
+        "",
+        frozenset(),
+    ),
+    "reject-merge-reaches-provision": (
+        GUIDE_REJECTS + [("RejectMerge", "Provision", '=vars.Var_X == 1')],
+        _ends(TERMINATE, "EndRej", "EndOk"),
+        "",
+        frozenset(),
+    ),
+    "escalate-into-other-review": (
+        PRE_JOIN + [("GateC", "Finance", '=vars.Var_C == "Escalate"')],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "escalate-into-other-gate": (
+        PRE_JOIN + [("GateC", "GateF", '=vars.Var_C == "Escalate"')],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "approve-into-other-review": (
+        _without(PRE_JOIN, ("GateF", "Join")) + [("GateF", "Compliance", '=vars.Var_F == "Approve"')],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "skip-exit-loops": (
+        PRE_JOIN + [("GateC", "Loop", '=vars.Var_C == "Hold"'), ("Loop", "Loop")],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
     "hold-provisions-terminate": (
         PRE_JOIN + [("GateC", "Provision", '=vars.Var_C == "Hold"')],
         {**ERROR_ENDS, **_ends(TERMINATE, "EndOk")},
@@ -497,6 +575,19 @@ SHAPES_REJECTED = {
         + APPROVED_TAIL,
         "no exclusive gateway after Manager offers a second route",
     ),
+    "second-gate-on-one-exit": (
+        PARALLEL_STAGE
+        + STAGE_GATE
+        + [
+            ("NotifyRej", "EndRej"),
+            ("Manager", "Decision"),
+            ("Decision", "Audit", '=vars.Var_M == "Audit"'),
+            ("Decision", "Gate2", '=vars.Var_M == "Go"'),
+            ("Gate2", "EndOk", '=vars.Var_X == 1'),
+            ("Gate2", "EndRej", '=vars.Var_X == 0'),
+        ],
+        "no exclusive gateway after Manager offers a second route",
+    ),
     "rejection-reconverges": (
         PARALLEL_STAGE
         + [("Join", "Stage"), ("Stage", "Manager"), ("Stage", "EndRej", PARALLEL_REJECT)]
@@ -507,6 +598,18 @@ SHAPES_REJECTED = {
     ),
 }
 
+
+# The risk-tiered layout: the chain in subprocess Chain, both Manager exits end
+# inside it, and gate Approved after Chain re-reads the verdicts.
+RISK_TIERED = (
+    [("Start", "Body"), ("Body", "Approved"), ("BodyStart", "Fork")]
+    + PARALLEL_STAGE[1:]
+    + [("Join", "Stage"), ("Stage", "Manager"), ("Stage", "BodyRej", PARALLEL_REJECT)]
+    + [("Manager", "Decision"), ("Decision", "BodyEnd"), ("Decision", "RejM", MANAGER_REJECT)]
+    + [("Approved", "Provision"), ("Approved", "NotifyRej", MANAGER_REJECT)]
+    + APPROVED_TAIL
+)
+RISK_TIERED_NODES = frozenset(n for flow in RISK_TIERED[2:-5] for n in flow[:2])
 
 # The stock stage gate with every review and end inside Body, then one process end.
 SUBPROCESS_END_ACCEPTED = {
@@ -522,37 +625,125 @@ SUBPROCESS_END_ACCEPTED = {
         ),
         "",
     ),
+    "risk-tiered-approved-gate": (RISK_TIERED, RISK_TIERED_NODES, ""),
 }
 
 # A plain end inside an embedded subprocess is not final: the subprocess
 # completes and its outgoing flow runs.
+STAGE_IN_BODY = (
+    [
+        ("Start", "Body"),
+        ("Body", "Manager"),
+        ("BodyStart", "Fork"),
+        ("Fork", "Compliance"),
+        ("Fork", "Finance"),
+        ("Compliance", "Join"),
+        ("Finance", "Join"),
+        ("Join", "Stage"),
+        ("Stage", "BodyEnd"),
+        ("Stage", "BodyRej", PARALLEL_REJECT),
+    ]
+    + MANAGER_VERDICT
+    + APPROVED_TAIL
+)
+STAGE_IN_BODY_NODES = frozenset({"BodyStart", "Fork", "Compliance", "Finance", "Join", "Stage", "BodyEnd", "BodyRej"})
+STAGE_MESSAGE = "without an exclusive gateway that can exit to an end past every later review"
+VERDICT_MESSAGE = "offers a second route to an end"
+
 SUBPROCESS_END_REJECTED = {
-    "stage-gate-in-subprocess": (
-        [
-            ("Start", "Body"),
-            ("Body", "Manager"),
-            ("BodyStart", "Fork"),
-            ("Fork", "Compliance"),
-            ("Fork", "Finance"),
-            ("Compliance", "Join"),
-            ("Finance", "Join"),
-            ("Join", "Stage"),
-            ("Stage", "BodyEnd"),
-            ("Stage", "BodyRej", PARALLEL_REJECT),
-        ]
-        + MANAGER_VERDICT
-        + APPROVED_TAIL,
-        frozenset({"BodyStart", "Fork", "Compliance", "Finance", "Join", "Stage", "BodyEnd", "BodyRej"}),
+    "stage-gate-in-subprocess": (STAGE_IN_BODY, ERROR_ENDS, STAGE_IN_BODY_NODES, "", STAGE_MESSAGE),
+    "stage-gate-message-end-in-subprocess": (
+        STAGE_IN_BODY,
+        _ends(MESSAGE, "BodyRej"),
+        STAGE_IN_BODY_NODES,
         "",
-        "without an exclusive gateway that can exit to an end past every later review",
+        STAGE_MESSAGE,
     ),
-    "manager-reject-in-subprocess": (
+    "stage-gate-terminate-in-subprocess": (
+        STAGE_IN_BODY,
+        _ends(TERMINATE, "BodyRej"),
+        STAGE_IN_BODY_NODES,
+        "",
+        STAGE_MESSAGE,
+    ),
+    "manager-reject-in-subprocess": (WHOLE_BODY, ERROR_ENDS, WHOLE_BODY_NODES, _handler(), VERDICT_MESSAGE),
+    "manager-message-end-in-subprocess": (
         WHOLE_BODY,
+        {**ERROR_ENDS, **_ends(MESSAGE, "RejM")},
         WHOLE_BODY_NODES,
         _handler(),
-        "offers a second route to an end",
+        VERDICT_MESSAGE,
+    ),
+    "manager-terminate-in-subprocess": (
+        WHOLE_BODY,
+        {**ERROR_ENDS, **_ends(TERMINATE, "RejM")},
+        WHOLE_BODY_NODES,
+        _handler(),
+        VERDICT_MESSAGE,
+    ),
+    "manager-escalation-end-in-subprocess": (
+        WHOLE_BODY,
+        {**ERROR_ENDS, **_ends(ESCALATION, "RejM")},
+        WHOLE_BODY_NODES,
+        _handler(),
+        VERDICT_MESSAGE,
     ),
 }
+
+
+
+def _nested_boundary(reject_end: str) -> str:
+    """The codex shape one level deeper: the error boundary sits on Inner, inside Outer."""
+    branch = "".join(
+        f'<bpmn:userTask id="{r}" /><bpmn:exclusiveGateway id="Gate{r[0]}" />'
+        f'<bpmn:endEvent id="Rej{r[0]}">{ERROR}</bpmn:endEvent>'
+        for r in ("Compliance", "Finance")
+    )
+    flows = [
+        ("InnerStart", "Fork"),
+        ("Fork", "Compliance"),
+        ("Fork", "Finance"),
+        ("Compliance", "GateC"),
+        ("GateC", "Join", '=vars.Var_C == "Approve"'),
+        ("GateC", "RejC", '=vars.Var_C == "Reject"'),
+        ("Finance", "GateF"),
+        ("GateF", "Join", '=vars.Var_F == "Approve"'),
+        ("GateF", "RejF", '=vars.Var_F == "Reject"'),
+        ("Join", "InnerEnd"),
+    ]
+    inner_flows = "".join(
+        f'<bpmn:sequenceFlow id="I{i}" sourceRef="{f[0]}" targetRef="{f[1]}">'
+        + (f"<bpmn:conditionExpression>{f[2]}</bpmn:conditionExpression>" if len(f) > 2 else "")
+        + "</bpmn:sequenceFlow>"
+        for i, f in enumerate(flows)
+    )
+    outer_flows = [("Start", "Outer"), ("Outer", "Manager")] + MANAGER_VERDICT + APPROVED_TAIL
+    process_flows = "".join(
+        f'<bpmn:sequenceFlow id="P{i}" sourceRef="{f[0]}" targetRef="{f[1]}">'
+        + (f"<bpmn:conditionExpression>{f[2]}</bpmn:conditionExpression>" if len(f) > 2 else "")
+        + "</bpmn:sequenceFlow>"
+        for i, f in enumerate(outer_flows)
+    )
+    process_nodes = "".join(
+        f'<bpmn:{KINDS.get(n, "exclusiveGateway")} id="{n}" />'
+        for n in ("Start", "Manager", "Decision", "Provision", "NotifyOk", "NotifyRej", "EndOk", "EndRej")
+    )
+    return (
+        '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" '
+        'xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI">'
+        '<bpmn:error id="Err" errorCode="REJECTED" /><bpmn:process id="P">'
+        f'{process_nodes}<bpmn:subProcess id="Outer"><bpmn:startEvent id="OuterStart" />'
+        '<bpmn:subProcess id="Inner"><bpmn:startEvent id="InnerStart" /><bpmn:parallelGateway id="Fork" />'
+        f'{branch}<bpmn:parallelGateway id="Join" /><bpmn:endEvent id="InnerEnd" />{inner_flows}</bpmn:subProcess>'
+        f'<bpmn:boundaryEvent id="Caught" attachedToRef="Inner">{ERROR}</bpmn:boundaryEvent>'
+        f'<bpmn:endEvent id="OuterRej">{reject_end}</bpmn:endEvent><bpmn:endEvent id="OuterEnd" />'
+        '<bpmn:sequenceFlow id="O0" sourceRef="OuterStart" targetRef="Inner" />'
+        '<bpmn:sequenceFlow id="O1" sourceRef="Inner" targetRef="OuterEnd" />'
+        '<bpmn:sequenceFlow id="O2" sourceRef="Caught" targetRef="OuterRej" />'
+        f"</bpmn:subProcess>{process_flows}</bpmn:process>"
+        '<bpmndi:BPMNDiagram id="D" /></bpmn:definitions>'
+    )
+
 
 def _load():
     spec = importlib.util.spec_from_file_location("check_near_miss", _CHECKER)
@@ -631,8 +822,8 @@ def test_pre_join_rejected(tmp_path, monkeypatch, name) -> None:
 
 @pytest.mark.parametrize("name", sorted(SUBPROCESS_END_REJECTED))
 def test_subprocess_end_rejected(tmp_path, monkeypatch, name) -> None:
-    flows, scoped, extra, message = SUBPROCESS_END_REJECTED[name]
-    _write(tmp_path, flows, ERROR_ENDS, extra, scoped)
+    flows, bodies, scoped, extra, message = SUBPROCESS_END_REJECTED[name]
+    _write(tmp_path, flows, bodies, extra, scoped)
     monkeypatch.chdir(tmp_path)
     with pytest.raises(SystemExit) as excinfo:
         checker.main()
@@ -645,3 +836,14 @@ def test_subprocess_end_accepted(tmp_path, monkeypatch, name) -> None:
     _write(tmp_path, flows, {}, extra, scoped)
     monkeypatch.chdir(tmp_path)
     checker.main()
+
+
+@pytest.mark.parametrize("reject_end", [MESSAGE, TERMINATE])
+def test_nested_boundary_to_completing_end(tmp_path, monkeypatch, reject_end) -> None:
+    project = tmp_path / "VendorOnboarding"
+    project.mkdir()
+    (project / "VendorOnboarding.bpmn").write_text(_nested_boundary(reject_end), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(SystemExit) as excinfo:
+        checker.main()
+    assert PRE_JOIN_MESSAGE in str(excinfo.value)

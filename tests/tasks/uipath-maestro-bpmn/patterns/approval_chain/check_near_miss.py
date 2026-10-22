@@ -29,6 +29,7 @@ from graph import edges, ids, parent_map, reachable, reaches  # noqa: E402
 BPMN = "VendorOnboarding/VendorOnboarding.bpmn"
 OUTCOME_RE = re.compile(r"vars\.([A-Za-z_][A-Za-z0-9_]*)")
 SIDE_EFFECT_KINDS = ("serviceTask", "sendTask")
+REJECT_ROUTE_KINDS = ("exclusiveGateway", "sendTask", "intermediateThrowEvent")
 ERROR_DEF = f"{{{BPMN_NS}}}errorEventDefinition"
 TERMINATE_DEF = f"{{{BPMN_NS}}}terminateEventDefinition"
 
@@ -94,7 +95,7 @@ def stopping_ends(root, later: set[str]) -> set[str]:
     parents = parent_map(root)
     stopping = set()
     for end in elements(root, "endEvent"):
-        if end.find(TERMINATE_DEF) is not None and local(parents[end].tag) == "process":
+        if end.find(TERMINATE_DEF) is not None:
             stopping.add(end.attrib.get("id", ""))
         elif end.find(ERROR_DEF) is not None and error_caught(root, end, parents, later):
             stopping.add(end.attrib.get("id", ""))
@@ -127,37 +128,66 @@ def gated_before_join(
     if not branch:
         return False
 
-    # Everything the fork reaches before the join must stay out of the joined
-    # chain and finish only at ends that stop the instance.
+    # Everything the fork reaches before the join finishes only at ends that
+    # stop the instance. Where it shares the joined chain, that part may only
+    # merge and notify, before any of the chain's side effects (the guide's
+    # shared reject_merge, not fulfilment).
     stop_ids = stopping_ends(root, later)
     end_ids = _terminal_ends(root)
     region = reachable(root, fork_id, blocked={join_id})
     joined = reachable(root, join_id) - ids(elements(root, "endEvent"))
-    if region & joined or not (region & end_ids) <= stop_ids:
+    reject_route = ids([e for kind in REJECT_ROUTE_KINDS for e in elements(root, kind)])
+    effects = ids([e for kind in SIDE_EFFECT_KINDS for e in elements(root, kind)])
+    after_effects = reachable(root, joined & effects)
+    if not (region & joined) <= reject_route - after_effects or not (region & end_ids) <= stop_ids:
         return False
 
+    gates_of = {r: verdict_gates(root, r, gate_ids, task_ids) for r in branch}
     seen: set[str] = set()
-    for review_id in branch:
+    for review_id, gates in gates_of.items():
         if join_id in reachable(root, review_id, blocked=gate_ids):
             return False
-        gates = verdict_gates(root, review_id, gate_ids, task_ids)
         if not gates or gates & seen:
             return False
         seen |= gates
         if not all(rejects_before_join(root, g, join_id, end_ids) for g in gates):
             return False
+        others = set().union(*(g for r, g in gates_of.items() if r != review_id))
+        if _crosses_branch(root, gates, join_id, others):
+            return False
     return True
 
 
+def _crosses_branch(root, gates: set[str], join_id: str, others: set[str]) -> bool:
+    # An exit into another branch's gate sends two tokens down one join input.
+    for source, exit_id in edges(root):
+        if source in gates and ({exit_id} | reachable(root, exit_id, blocked={join_id})) & others:
+            return True
+    return False
+
+
 def _add_completion_flows(root) -> None:
-    # Reachability then follows an embedded subprocess past its own plain end.
+    # Only an error end leaves an embedded subprocess without completing it;
+    # any other end lets reachability follow the subprocess's outgoing flow.
     for sub in elements(root, "subProcess"):
         targets = [t for source, t in edges(root) if source == sub.attrib.get("id")]
         for end in sub.findall(f"{{{BPMN_NS}}}endEvent"):
-            if any(local(child.tag).endswith("EventDefinition") for child in end):
+            if end.find(ERROR_DEF) is not None:
                 continue
             for target in targets:
                 ET.SubElement(sub, f"{{{BPMN_NS}}}sequenceFlow", sourceRef=end.attrib.get("id", ""), targetRef=target)
+
+
+def _common_next_gates(root, verdicts: set[str], gate_ids: set[str]) -> set[str]:
+    # A gate every verdict exit reaches re-reads the verdict, as the risk-tiered
+    # layout's approved gate does after its chain subprocess.
+    shared = set()
+    for gate_id in verdicts:
+        exits = [t for source, t in edges(root) if source == gate_id]
+        if not exits:
+            continue
+        shared |= set.intersection(*({t} | reachable(root, t) for t in exits)) & gate_ids
+    return shared
 
 
 def verdict_gates(root, review_id: str, gate_ids: set[str], reviews: set[str]) -> set[str]:
@@ -256,6 +286,7 @@ def main() -> None:
         if reachable(root, review_id, blocked=gate_ids) & end_ids:
             fail(f"{review_id} reaches an end without an exclusive gateway, so its rejection cannot stop the chain")
         verdicts = verdict_gates(root, review_id, gate_ids, sequential)
+        verdicts |= _common_next_gates(root, verdicts, gate_ids)
         if not any(can_reject(root, g, end_ids, side_effect_ids) for g in verdicts):
             fail(f"no exclusive gateway after {review_id} offers a second route to an end, so its rejection has no exit")
         acted_before_verdict = reachable(root, review_id, blocked=gate_ids) & side_effect_ids
