@@ -50,6 +50,15 @@ _CASE_SPEC_PROBE = "uip maestro case spec --type activity --activity-type-id t1 
 _SDK_CONNECTOR_PROBES = (
     "uip maestro registry pull --output json",
     "uip maestro registry prepare uipath-salesforce-slack --action send-message-to-channel --connection-id c1",
+    # A real resolution chained before a help call still counts: the help
+    # exclusion stays inside its own command segment.
+    "uip maestro registry pull --output json && uip maestro registry prepare --help",
+)
+# Reading usage resolves nothing, so a help call must not earn the criterion.
+_CONNECTOR_HELP_PROBES = (
+    "uip maestro case spec --help",
+    "uip maestro registry prepare --help",
+    "uip maestro registry pull -h | sed -n 1,80p",
 )
 
 
@@ -64,7 +73,9 @@ def test_connector_resolution_criteria_accept_either_loop() -> None:
 
     A required criterion that names only `case spec` grades the JSON loop's
     mechanism, not the outcome; the typeId/connectionId the task needs is
-    checked by the task's caseplan grader.
+    checked by the task's caseplan grader. A `--help` / `-h` call on those
+    verbs reads usage and resolves nothing, so it must not satisfy the
+    criterion.
     """
     offenders = []
     for relative, text in _tagged_tasks():
@@ -79,5 +90,10 @@ def test_connector_resolution_criteria_accept_either_loop() -> None:
                     f"{relative}: /{pattern}/ misses {probe!r}"
                     for probe in _SDK_CONNECTOR_PROBES
                     if not compiled.search(probe)
+                )
+                offenders.extend(
+                    f"{relative}: /{pattern}/ matches {probe!r}"
+                    for probe in _CONNECTOR_HELP_PROBES
+                    if compiled.search(probe)
                 )
     assert offenders == []

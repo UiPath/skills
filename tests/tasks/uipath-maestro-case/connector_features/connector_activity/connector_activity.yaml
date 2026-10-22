@@ -139,7 +139,7 @@ success_criteria:
   - type: command_executed
     description: "Agent fetched the connector definition to resolve typeId/connectionId (case spec, or the SDK connector library via maestro registry pull/prepare)"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)"?\s+maestro\s+(case\s+spec|registry\s+(pull|prepare))\b'
+    command_pattern: '(uip|\$UIP)"?\s+maestro\s+(case\s+spec|registry\s+(pull|prepare))\b(?![^;&|\n]*\s(?:--help|-h)(?![\w-]))'
     min_count: 1
     weight: 1.5
     pass_threshold: 1.0
