@@ -67,7 +67,8 @@ DECLARATIONS: tuple[Declaration, ...] = (
         copies=(
             "skills/uipath-planner/references/case/case-design-layers-guide.md (§ Task types table and count)",
             "skills/uipath-planner/references/case/case-sdd-conformance-checklist.md (item 8 count, item 6 detail markers)",
-            "tests/tasks/uipath-maestro-case/_shared/sdd_check.py and tests/tasks/uipath-planner/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS)",
+            "tests/tasks/uipath-maestro-case/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS)",
+            "tests/tasks/uipath-planner/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS)",
         ),
     ),
 )
@@ -108,10 +109,10 @@ def failing_tests(paths: tuple[str, ...]) -> tuple[bool, list[str]]:
     if not paths:
         return True, []
     result = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", "-rf", "--no-header", *paths],
+        [sys.executable, "-m", "pytest", "-q", "-rfE", "--no-header", *paths],
         capture_output=True, text=True, cwd=REPO,
     )
-    failed = re.findall(r"^FAILED (\S+)", result.stdout, re.M)
+    failed = re.findall(r"^(?:FAILED|ERROR) (\S+)", result.stdout, re.M)
     return result.returncode == 0, [f.replace(str(REPO) + os.sep, "") for f in failed]
 
 
@@ -123,7 +124,11 @@ def refresh(decl: Declaration, write: bool) -> dict:
         return {"decl": decl, "error": f"`{decl.command}` is not available in the installed CLI"}
     significant = getattr(module, decl.significant)
     old = module.load()
-    if significant(old) == significant(live):
+    try:
+        moved = significant(live)
+    except (KeyError, TypeError) as e:  # the CLI dropped or reshaped a part a copy restates
+        return {"decl": decl, "error": f"`{decl.command}` no longer has the shape the snapshot records ({type(e).__name__}: {e})"}
+    if significant(old) == moved:
         return {"decl": decl, "changed": False}
     result = {"decl": decl, "changed": True, "diff": list_diff(significant(old), significant(live))}
     if write:
@@ -131,7 +136,9 @@ def refresh(decl: Declaration, write: bool) -> dict:
         payload["Data"] = live
         decl.snapshot.write_text(json.dumps(payload, indent=2) + "\n")
         for argv in decl.generators:
-            subprocess.run(argv, check=True, cwd=REPO, capture_output=True, text=True)
+            gen = subprocess.run(argv, cwd=REPO, capture_output=True, text=True)
+            if gen.returncode != 0:
+                sys.exit(f"generator {' '.join(argv)} failed:\n{gen.stdout}{gen.stderr}")
         result["passed"], result["failing"] = failing_tests(decl.tests)
     return result
 

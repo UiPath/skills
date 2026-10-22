@@ -12,6 +12,7 @@ Run from repo root:
 
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -96,7 +97,7 @@ def test_check_mode_reports_drift_but_writes_nothing(tmp_path):
 
 
 def test_drift_the_copies_still_match_says_so(tmp_path):
-    # The snapshot had an extra field the copy does not care about; the lists agree after.
+    # The CLI adds type c and no copy restates the list, so the refresh is snapshot-only.
     decl = make_decl(tmp_path, {**SNAPSHOT_DATA, "Kinds": [{"Type": "a"}, {"Type": "b"}, {"Type": "c"}]})
     (tmp_path / "test_copy.py").write_text("def test_nothing_restated():\n    pass\n")
     result = refresh.refresh(decl, write=True)
@@ -156,4 +157,21 @@ def test_every_registered_declaration_resolves(decl):
     # The significant part of the committed snapshot is computable.
     assert getattr(module, decl.significant)(module.load())
     for copy in decl.copies:
-        assert (REPO_ROOT / copy.split(" ", 1)[0]).exists(), copy
+        for path in re.findall(r"(?:skills|tests)/\S+", copy):
+            assert (REPO_ROOT / path).exists(), path
+
+
+def test_a_copy_that_errors_at_import_is_named(tmp_path):
+    decl = make_decl(tmp_path, {**SNAPSHOT_DATA, "Kinds": [{"Type": "a"}]})
+    (tmp_path / "test_copy.py").write_text("import not_a_module_anywhere\n\ndef test_x():\n    pass\n")
+    result = refresh.refresh(decl, write=True)
+    assert not result["passed"]
+    assert any("test_copy.py" in f for f in result["failing"])
+
+
+def test_a_reshaped_declaration_is_an_error_and_writes_nothing(tmp_path):
+    decl = make_decl(tmp_path, {"Version": "1.0", "Renamed": []})
+    before = decl.snapshot.read_text()
+    result = refresh.refresh(decl, write=True)
+    assert "no longer has the shape" in result["error"]
+    assert decl.snapshot.read_text() == before
