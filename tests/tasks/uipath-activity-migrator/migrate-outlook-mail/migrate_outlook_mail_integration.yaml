@@ -1,0 +1,269 @@
+task_id: skill-migrator-migrate-outlook-mail-integration
+description: >
+  Integration on the Mail extension: the agent uses the uipath-activity-migrator
+  skill on a committed Windows-framework project whose five workflows use the
+  classic Outlook desktop activities (MailMigration: Send Outlook Mail, Get
+  Outlook Mail Messages, Move Outlook Message, Delete Outlook Mail Message, and
+  the Outlook Mail Messages Trigger, which the tool does not migrate and leaves
+  in place as action required; Studio's own Upgrade test workflows, re-pinned to
+  release packages). Runs the Mail guide's three hooks without user questions:
+  the prompt supplies the Outlook 365 connection and the target Microsoft 365
+  package, so the agent writes the connection config, passes it to analyze and
+  upgrade in SARIF mode, summarizes, and builds the output. Measured on UiPath
+  Upgrade Tool 25.10.1 with Mail 2.12.10, Microsoft 365 3.9.12 to 3.12.10 and
+  System 25.10.5: 12 activities migrate, 0 are left classic, 3 need attention
+  (the two Get filters and the trigger), and every migrated activity carries
+  the configured ConnectionId. Graded on the migrated artifact (package pins,
+  modern tags, no classic Outlook tags, the trigger still in place, the
+  ConnectionId on every migrated activity), an untouched source, and a build
+  the harness runs itself. Windows only: the migrator is a .NET 8 desktop tool
+  and the build needs Helm. The runtime check is declined in the prompt because
+  the connection is synthetic. Nightly only: the windows tag routes it to
+  daily-windows.ps1, and the PR gate filters on smoke.
+
+tags: [uipath-activity-migrator, integration, mode:build, lifecycle:generate, windows]
+
+run_limits:
+  expected_turns: 45
+  max_turns: 90
+  task_timeout: 2400
+  turn_timeout: 2400
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: fixture
+
+# Grading-only copy of the fixture, exposed to run_command as REFERENCE_DIR.
+reference:
+  directory: fixture
+
+initial_prompt: |
+  Migrate the UiPath project in ./MailMigration with the Activity Migrator.
+  Use the Integration Service connection 4f1c9a2e-7b3d-4e58-9c61-a0d2f8b6e713
+  for Outlook 365 and target Microsoft 365 Activities 3.12.10. Do not run the
+  migrated project.
+
+  The `uip` CLI is available and authenticated in this sandbox.
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent invoked the uipath-activity-migrator skill"
+    skill_name: "uipath-activity-migrator"
+    expected_skill: "uipath-activity-migrator"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Rule 8: every `uip rpa` command clears the host Studio pin, `env -u
+  # UIPATH_STUDIO_PID` in bash or `$env:UIPATH_STUDIO_PID = $null` in PowerShell.
+  # Flagged: a bare `uip rpa` at the start of a command, or after ;, &&, | or a
+  # line break, in a command that never mentions UIPATH_STUDIO_PID at all; inside
+  # Studio's terminal such a command opens the project in the user's Studio.
+  - type: command_not_executed
+    description: "No uip rpa command ran without clearing UIPATH_STUDIO_PID (Rule 8)"
+    command_pattern: '\A(?![\s\S]*UIPATH_STUDIO_PID)[\s\S]*?(?:^|[;&|(]\s*|\n\s*)(?:uip|\$UIP)\s+rpa\s+(?:build|validate|run|debug|instances|execution|activities|uia)\b'
+    tool_name: "Bash"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Rule 2: every analyze/upgrade run uses SARIF output. The segment idiom keeps
+  # the lookahead inside this one command: it stops at a shell operator, at the
+  # next analyze/upgrade, or at a newline that does not continue the option list
+  # (coder-eval also matches a shell-normalized haystack in which a backslash
+  # continuation survives as a bare newline). `--help` invocations are exempt.
+  - type: command_executed
+    description: "Agent ran analyze with --output-format sarif"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+analyze(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--output-format\s+sarif)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ran upgrade into a separate output path"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+upgrade(?=(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*--output-path)'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "No analyze or upgrade run without SARIF output (console mode opens a browser and prints nothing machine-readable)"
+    command_pattern: '(?:UiPath\.Upgrade\.exe|\$\{?\w+\}?)["'']?\s+(analyze|upgrade)(?!(?:\\\r?\n|(?!\n(?!\s*-)|&&|\|\||;|\||\s(?:uip|\$UIP)\s|UiPath\.Upgrade\.exe|\$\{?\w+\}?["'']?\s+(?:analyze|upgrade)\b)[\s\S])*(--output-format\s+sarif|--help))'
+    weight: 1.5
+    pass_threshold: 1.0
+
+  # Mail guide Hook 1: the connection reaches the tool through a config file.
+  # Either spelling the tool accepts; the binding form is not graded because on
+  # 25.10.1 the mail options bind space-separated too (measured), and the outcome
+  # is graded below on the output XAML.
+  - type: command_executed
+    description: "Agent passed a mail connection config to the migrator"
+    command_pattern: '--(?:mail-)?config[=\s]'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent classified the SARIF with the skill's summarizer"
+    command_pattern: 'summarize-sarif\.mjs'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Analyze SARIF was written under the source's .upgrade folder"
+    path: "MailMigration/.upgrade/analyze-latest.sarif"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_exists
+    description: "Upgrade SARIF was written under the source's .upgrade folder"
+    path: "MailMigration/.upgrade/upgrade-latest.sarif"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The modern XAML has to come from this run's tool, not from a hand edit: the
+  # upgrade SARIF carries at least one Mail migration result for every migrated
+  # workflow (the trigger is reported too, but is not required here). The file is
+  # decoded as UTF-8 or UTF-16, whichever the agent's shell redirect produced.
+  - type: run_command
+    description: "Upgrade SARIF names a migration result in each of the four migrated workflows"
+    command: |-
+      python -c "import json, sys; raw = open('MailMigration/.upgrade/upgrade-latest.sarif', 'rb').read(); text = raw.decode('utf-16') if raw[:2] in (bytes([255, 254]), bytes([254, 255])) else raw.decode('utf-8-sig'); doc = json.loads(text[text.find('{'):text.rfind('}') + 1]); hits = {}; [hits.__setitem__(f, hits.get(f, 0) + 1) for f in (str((((r.get('locations') or [{}])[0].get('physicalLocation') or {}).get('artifactLocation') or {}).get('uri') or '').replace(chr(92), '/').split('/')[-1] for r in doc['runs'][0]['results'] if (r.get('ruleId') or '').endswith('-ACTIVITY-MIGRATION'))]; print(sorted(hits.items())); sys.exit(0 if set(['GetOutlookMailMessagesMigration.xaml', 'GoldenPath.xaml', 'MoveOutlookMessageMigration.xaml', 'SendOutlookMailMigration.xaml']) <= set(hits) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The requested Microsoft 365 version proves --mail-o365-package-version bound:
+  # the source already sits above the tool's 3.6.10 minimum, so without the flag
+  # the pin would stay at 3.9.12. Mail stays at its release pin (the tool treats
+  # 2.0.11 as a floor, not a target).
+  - type: file_check
+    description: "Output project.json is a Windows project with Microsoft 365 at the requested 3.12.10 and Mail untouched"
+    path: "MailMigration_Upgraded/project.json"
+    patterns:
+      - pattern: '"targetFramework"\s*:\s*"Windows"'
+        must_match: true
+      - pattern: '"UiPath\.MicrosoftOffice365\.Activities"\s*:\s*"\[3\.12\.10\]"'
+        must_match: true
+      - pattern: '"UiPath\.Mail\.Activities"\s*:\s*"\[2\.12\.10\]"'
+        must_match: true
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # The tool rewrote each classic Outlook activity into its Microsoft 365
+  # connector activity; `ui:ForEach` and `ui:LogMessage` stay (System activities).
+  # Namespace prefixes are the tool's choice, so the element name is matched
+  # under any prefix.
+  - type: file_check
+    description: "Send Outlook Mail became Send Mail (Microsoft 365)"
+    path: "MailMigration_Upgraded/SendOutlookMailMigration.xaml"
+    patterns:
+      - pattern: '<[a-z0-9]+:SendMailConnections\s'
+        must_match: true
+      - pattern: '<[a-z0-9]+:SendOutlookMail\s'
+        must_match: false
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Get Outlook Mail Messages became Get Email List (Microsoft 365)"
+    path: "MailMigration_Upgraded/GetOutlookMailMessagesMigration.xaml"
+    patterns:
+      - pattern: '<[a-z0-9]+:GetEmailListConnections\s'
+        must_match: true
+      - pattern: '<[a-z0-9]+:GetOutlookMailMessages\s'
+        must_match: false
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Move Outlook Message became Move Email (Microsoft 365)"
+    path: "MailMigration_Upgraded/MoveOutlookMessageMigration.xaml"
+    patterns:
+      - pattern: '<[a-z0-9]+:MoveEmailConnections\s'
+        must_match: true
+      - pattern: '<[a-z0-9]+:MoveOutlookMessage\s'
+        must_match: false
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_check
+    description: "Delete Outlook Mail Message became Delete Email (Microsoft 365)"
+    path: "MailMigration_Upgraded/GoldenPath.xaml"
+    patterns:
+      - pattern: '<[a-z0-9]+:DeleteEmailConnections\s'
+        must_match: true
+      - pattern: '<[a-z0-9]+:DeleteOutlookMailMessage\s'
+        must_match: false
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # The trigger has no Microsoft 365 equivalent: the tool reports it as action
+  # required and leaves the classic activity in place (Mail guide Hook 2).
+  - type: file_check
+    description: "Outlook Mail Messages Trigger was left in place"
+    path: "MailMigration_Upgraded/OutlookMailMessagesTriggerMigration.xaml"
+    patterns:
+      - pattern: '<[a-z0-9]+:OutlookMailMessagesTrigger\s'
+        must_match: true
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Mail guide Hook 3, graded as an outcome: every migrated activity carries the
+  # connection from the prompt; an empty or placeholder ConnectionId is a runtime
+  # failure. Regex quotes are \x22 so the command survives cmd.exe and /bin/sh.
+  - type: run_command
+    description: "Every ConnectionId in the output XAML is the connection from the prompt"
+    command: |-
+      python -c "import re, glob, sys; ids = [m for f in glob.glob('MailMigration_Upgraded/*.xaml') for m in re.findall(r'ConnectionId=\x22([^\x22]*)\x22', open(f, encoding='utf-8-sig').read())]; print(sorted(set(ids)), len(ids)); sys.exit(0 if ids and set(ids) == {'4f1c9a2e-7b3d-4e58-9c61-a0d2f8b6e713'} else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 5: the source project is never written to (only its .upgrade folder).
+  # REFERENCE_DIR is read inside Python so the check works under cmd.exe and /bin/sh.
+  - type: run_command
+    description: "Source project.json and the five XAMLs are byte-identical to the fixture"
+    command: |-
+      python -c "import filecmp, os, sys; t = os.path.join(os.environ['REFERENCE_DIR'], 'MailMigration'); sys.exit(0 if all(filecmp.cmp(os.path.join(t, f), os.path.join('MailMigration', f), shallow=False) for f in ('GoldenPath.xaml', 'SendOutlookMailMigration.xaml', 'GetOutlookMailMessagesMigration.xaml', 'MoveOutlookMessageMigration.xaml', 'OutlookMailMessagesTriggerMigration.xaml', 'project.json')) else 1)"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  # Rule 8, graded as an outcome: the harness builds the output itself with the
+  # host Studio pin cleared. Absolute path per the rpa-tool double-resolve bug;
+  # `shutil.which` resolves the `uip.cmd` shim on Windows.
+  - type: run_command
+    description: "uip rpa build exits 0 against the migrated output"
+    command: |-
+      python -c "import subprocess, os, sys, shutil, time; uip = shutil.which('uip') or 'uip'; env = dict(os.environ); env.pop('UIPATH_STUDIO_PID', None); run = lambda: subprocess.run([uip, 'rpa', 'build', os.path.abspath('MailMigration_Upgraded'), '--output', 'json'], env=env, capture_output=True); r = next((r for r in (time.sleep(10 * bool(i)) or run() for i in range(12)) if r.returncode == 0 or b'RetryLater' not in r.stdout), None) or run(); sys.stdout.buffer.write(r.stdout); sys.stderr.buffer.write(r.stderr); sys.exit(r.returncode)"
+    timeout: 600
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  # Rule 11: the prompt declined the run; the agent must not start one.
+  - type: command_not_executed
+    description: "Agent did not run or debug the migrated project"
+    command_pattern: 'uip\s+rpa\s+(run|debug)\b'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent did not resolve package versions through the headless Studio (refuses Legacy projects, starts Helm for nothing)"
+    command_pattern: 'uip\s+rpa\s+packages\s+versions'
+    weight: 1.0
+    pass_threshold: 1.0
+
+  # Advisory (weight 0, so informational: excluded from the score and the gate).
+  # Step 2 says to omit the UIAutomation flag when the project has no UIAutomation
+  # dependency. The tool accepts and ignores it, so the outcome is invisible; this
+  # only records the convention.
+  - type: command_not_executed
+    description: "Advisory: no --uia-package-version on a project without UIAutomation"
+    command_pattern: '--uia-package-version'
+    weight: 0
+    pass_threshold: 0
