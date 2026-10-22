@@ -32,8 +32,13 @@ names no node, and nothing may follow the `.parallel`:
 ])
 ```
 
-Decompile writes a canvas fan-out whose arms never meet again this way, naming
-the `.parallel` `<node>Fork` after the node the arms leave.
+A `.terminate` must be the arm's first call: `check` refuses one behind a step
+in a `.parallel` arm (`TERMINATE_NOT_ARM_HEAD`).
+
+Decompile (SDK 6.46.6 or later) writes a canvas fan-out whose arms never meet
+again this way, naming the `.parallel` `<node>Fork` after the node the arms
+leave. A canvas arm that runs a step before its Terminate is the exception: it
+stays an unstructured fan-out (see [brownfield.md](brownfield.md)).
 
 ## At a glance
 
