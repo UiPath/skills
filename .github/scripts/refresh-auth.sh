@@ -8,7 +8,7 @@
 # internal script layout (it formerly ran coder_eval/dashboard/scripts/ci/
 # refresh-auth.sh, which moved out of coder_eval). Mirrors the VM cron's ROPC
 # flow; keep in sync if the upstream token request changes. It also sends Studio
-# Web's RefreshGovernance after the mint, which the VM cron copy still lacks.
+# Web's RefreshGovernance after the mint.
 #
 # Required env (provide via the workflow's `env:` block or `set -a && source`):
 #   UIPATH_URL UIPATH_ORGANIZATION_NAME UIPATH_ORGANIZATION_ID
@@ -86,11 +86,8 @@ UIPATH_TENANT_ID=${UIPATH_TENANT_ID}
 EOF
 mv -f "$tmp" "$AUTH_FILE"
 
-# TypeCache serves each user a stored copy of their Automation Ops policy and
-# reloads it only on this call, which Studio Web makes after a browser login.
-# The bot never opens Studio Web, so without it a policy change (for example
-# enabling preview activities) never reaches its catalog. The reload runs as a
-# queued job; a failure here only warns, so the token mint still succeeds.
+# Studio Web reloads a user's Automation Ops policy only on this call (sent after browser login).
+# The reload is queued, so a run right after a policy change can still see the old catalog.
 for service in backend typecache; do
     status=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 -X PUT \
         "${UIPATH_URL}/${UIPATH_ORGANIZATION_ID}/studio_/${service}/api/Settings/RefreshGovernance" \
@@ -99,7 +96,10 @@ for service in backend typecache; do
         -H "Content-Length: 0") || status="curl failed"
     case "$status" in
         2??) ;;
-        *) echo "WARN: Studio Web ${service} RefreshGovernance returned ${status}; the bot's Automation Ops policy may be stale" >&2 ;;
+        *)
+            msg="Studio Web ${service} RefreshGovernance returned ${status}; the bot's Automation Ops policy may be stale"
+            if [ -n "${GITHUB_ACTIONS:-}" ]; then echo "::warning::${msg}"; else echo "WARN: ${msg}" >&2; fi
+            ;;
     esac
 done
 
