@@ -412,10 +412,24 @@ its case below says to; every other edit goes through merge.
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and
   merge into it: `merge` preserves the original's declared version.
-- An **edge the builder cannot spell** — for example a second edge leaving a
-  decision's `true` port, which no builder construct produces. The
-  warning names it as `<source>@<port> -> <target>@<port>`, and the source marks
-  the spot with a `/* TODO: edge(s) … are NOT in this source */` comment (or a
+- An **edge the builder cannot spell** — for example two edges out of one
+  port where one path stops on a step with no successor and no End. Other
+  fan-outs do come back as a `.parallel`, see
+  [parallel-merge.md](parallel-merge.md):
+  - paths that meet again at a plain step: each arm ends in
+    `.stepToRef(<step>)` (SDK 6.44.0 or later);
+  - paths that each end at an End or a Terminate: the arms all end, and the
+    fork is named `<node>Fork` after the node it leaves (SDK 6.46.6 or later).
+
+  Two shapes of the second kind still get the TODO below: an arm that runs a
+  step before its Terminate (`check` allows a Terminate only at an arm's head,
+  `TERMINATE_NOT_ARM_HEAD`), and a fan-out inside a loop body whose arms leave
+  by `.break()` or `.continue()`. A fan-out decompile cannot spell keeps its
+  first arm behind a `/* TODO: unstructured fan-out … */` marker.
+
+  The warning names each dropped edge as `<source>@<port> -> <target>@<port>`,
+  and the source marks the spot with a
+  `/* TODO: edge(s) … are NOT in this source */` comment (or a
   `// TODO: edge …` line near the top when no step leads to it). Recompiling
   drops that edge, and `merge` writes the loss into the original. If your edit
   touches that part of the flow, change the `.flow` JSON there directly instead
