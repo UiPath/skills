@@ -668,7 +668,8 @@ def test_query_parameters_reads_both_shapes() -> None:
     task = _send_task(
         '<uipath:input name="isAscending" type="boolean" target="query" value="false" />'
         '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
-        '{"entityScope": "tenant", "tenantEntityName": "NonExistentEntity", "limit": 5}]]></uipath:input>'
+        '{"entityScope": "tenant", "tenantEntityName": "NonExistentEntity", "limit": 5, '
+        '"ratio": 0.5, "count": true}]]></uipath:input>'
         '<uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA['
         '{"entityName": "PathOnly"}]]></uipath:input>'
     )
@@ -676,18 +677,107 @@ def test_query_parameters_reads_both_shapes() -> None:
         "isAscending": "false",
         "entityScope": "tenant",
         "tenantEntityName": "NonExistentEntity",
+        "limit": "5",
+        "ratio": "0.5",
+        "count": "true",
     }
 
 
 @pytest.mark.parametrize(
     "payload",
-    ["not json", '["NonExistentEntity"]', '{"entityName": 7}', ""],
+    [
+        "not json",
+        '["NonExistentEntity"]',
+        '{"entityName": null}',
+        '{"entityName": {"name": "X"}}',
+        '{"entityName": ["X"]}',
+        "",
+    ],
 )
 def test_path_parameters_skips_a_v2_payload_that_names_nothing(payload: str) -> None:
     task = _send_task(
         f'<uipath:input name="pathParameters" type="json" target="pathParameters"><![CDATA[{payload}]]></uipath:input>'
     )
     assert bpmn_check.path_parameters(task) == {}
+
+
+QUERY_V2_SEND_AS = (
+    '<uipath:input name="queryParameters" type="json" target="queryParameters">'
+    '<![CDATA[{{"send_as": {}}}]]></uipath:input>'
+)
+QUERY_V1_SEND_AS = '<uipath:input name="send_as" type="string" target="query" value="user" />'
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        (QUERY_V1_SEND_AS, ["user"]),
+        (QUERY_V2_SEND_AS.format('"user"'), ["user"]),
+        (QUERY_V2_SEND_AS.format('"bot"'), ["bot"]),
+        (QUERY_V1_SEND_AS.replace('"user"', '"user "'), ["user "]),
+        (QUERY_V2_SEND_AS.format('" user"'), [" user"]),
+        (QUERY_V2_SEND_AS.format("true"), ["true"]),
+        (QUERY_V2_SEND_AS.format("null"), ["null"]),
+        (QUERY_V1_SEND_AS + QUERY_V2_SEND_AS.format('"user"'), ["user", "user"]),
+        (QUERY_V2_SEND_AS.format('"user"') * 2, ["user", "user"]),
+        (QUERY_V2_SEND_AS.format('"user"').replace("send_as", "other"), []),
+        (QUERY_V2_SEND_AS.format('"user"').replace('{"send_as": "user"}', "not json"), []),
+        (
+            '<uipath:input name="pathParameters" type="json" target="pathParameters">'
+            '<![CDATA[{"send_as": "user"}]]></uipath:input>',
+            [],
+        ),
+    ],
+    ids=[
+        "v1",
+        "v2",
+        "v2-bot",
+        "v1-unstripped",
+        "v2-unstripped",
+        "v2-bool",
+        "v2-null",
+        "both-shapes",
+        "two-v2-inputs",
+        "v2-other-key",
+        "v2-not-json",
+        "v2-path",
+    ],
+)
+def test_query_values_counts_every_occurrence(payload: str, expected: list[str]) -> None:
+    assert bpmn_check.query_values(_send_task(payload), "send_as") == expected
+
+
+def test_query_filter_text_reads_a_v2_query_expression() -> None:
+    grader = _load("check_df_smoke_query_filter")
+    task = _send_task(
+        '<uipath:input name="queryParameters" type="json" target="queryParameters"><![CDATA['
+        '{"queryExpression": "title = \'FilterFixture-Matrix\' ORDER BY score DESC", '
+        '"folderKey": "=bindings.Binding_DataFabricFolder"}]]></uipath:input>'
+    )
+    pairs, text = grader.node_representation(task)
+
+    assert "=bindings" not in text
+    assert grader.has_expected_filter(text, *grader.EXPECTED["string"])
+    assert grader.sorted_field(pairs, text) == "score"
+    assert grader.is_descending(pairs, text)
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ('{"queryExpression": "=js:\'InvoiceNumber = \' + vars.Var_Invoice"}', True),
+        ('{"queryExpression": ""}', False),
+        ('{"limit": 100}', False),
+    ],
+    ids=["v2-expression", "v2-empty", "v2-no-filter"],
+)
+def test_billing_filter_reads_a_v2_query_expression(query: str, expected: bool) -> None:
+    grader = _load("check_billing_invoice_lookup")
+    task = _send_task(
+        '<uipath:input name="queryParameters" type="json" target="queryParameters">'
+        f"<![CDATA[{query}]]></uipath:input>"
+    )
+    assert grader.has_nonempty_filter(task) is expected
 
 
 def test_body_object_is_empty_for_an_empty_body_input() -> None:
