@@ -25,6 +25,11 @@ KINDS = {
     "EndRej": "endEvent",
     "RejC": "endEvent",
     "RejF": "endEvent",
+    "RejM": "endEvent",
+    "EndF": "endEvent",
+    "BodyEnd": "endEvent",
+    "BodyStart": "startEvent",
+    "Agent": "serviceTask",
 }
 PARALLEL_REJECT = '=vars.Var_C == "Reject" || vars.Var_F == "Reject"'
 MANAGER_REJECT = '=vars.Var_M == "Reject"'
@@ -57,6 +62,7 @@ PRE_JOIN_GATES = [
 ]
 PRE_JOIN = PRE_JOIN_GATES + MANAGER_VERDICT + APPROVED_TAIL
 ERROR = '<bpmn:errorEventDefinition errorRef="Err" />'
+CATCH_ALL = "<bpmn:errorEventDefinition />"
 TERMINATE = "<bpmn:terminateEventDefinition />"
 
 
@@ -64,22 +70,52 @@ def _ends(definition: str, *names: str) -> dict[str, str]:
     return {n: f'<bpmn:endEvent id="{n}">{definition}</bpmn:endEvent>' for n in names}
 
 
+def _without(flows: list[tuple], *pairs: tuple) -> list[tuple]:
+    return [f for f in flows if f[:2] not in pairs]
+
+
 ERROR_ENDS = _ends(ERROR, "RejC", "RejF")
 TERMINATE_ENDS = _ends(TERMINATE, "RejC", "RejF")
 
 
-def _handler(start_attrs: str = "", error: str = ERROR) -> str:
+def _handler(start_attrs: str = "", error: str = ERROR, sub_attrs: str = ' triggeredByEvent="true"', inner: str = "") -> str:
     return (
-        '<bpmn:subProcess id="OnReject" triggeredByEvent="true">'
-        f'<bpmn:startEvent id="Caught"{start_attrs}>{error}</bpmn:startEvent>'
+        f'<bpmn:subProcess id="OnReject"{sub_attrs}>'
+        f'<bpmn:startEvent id="Caught"{start_attrs}>{error}</bpmn:startEvent>{inner}'
         '<bpmn:endEvent id="Handled" />'
         '<bpmn:sequenceFlow id="H0" sourceRef="Caught" targetRef="Handled" />'
         "</bpmn:subProcess>"
     )
 
 
-BOUNDARY = {"Caught": f'<bpmn:boundaryEvent id="Caught" attachedToRef="Body">{ERROR}</bpmn:boundaryEvent>'}
-BODY = frozenset(n for flow in PRE_JOIN for n in flow[:2]) - {"Start", "NotifyRej", "EndRej"}
+def _boundary(attached: str = "Body", attrs: str = "") -> dict[str, str]:
+    return {"Caught": f'<bpmn:boundaryEvent id="Caught" attachedToRef="{attached}"{attrs}>{ERROR}</bpmn:boundaryEvent>'}
+
+
+# The parallel stage sits in embedded subprocess Body and completes at BodyEnd;
+# Manager follows Body, and an error boundary on Body routes the rejection.
+IN_BODY = [("BodyStart", "Fork")] + PRE_JOIN_GATES[1:-1] + [("Join", "BodyEnd")]
+BODY = frozenset(n for flow in IN_BODY for n in flow[:2])
+SUBPROCESS_BOUNDARY = (
+    [("Start", "Body"), ("Body", "Manager"), ("Caught", "RejectMerge")]
+    + IN_BODY
+    + [
+        ("Manager", "Decision"),
+        ("Decision", "Provision"),
+        ("Decision", "RejectMerge", MANAGER_REJECT),
+        ("RejectMerge", "NotifyRej"),
+    ]
+    + APPROVED_TAIL
+)
+
+# Fork, reviews, join and Manager all sit in Body, which goes on to Provision.
+WHOLE_BODY = (
+    [("Start", "Body"), ("Body", "Provision"), ("BodyStart", "Fork")]
+    + PRE_JOIN_GATES[1:]
+    + [("Manager", "Decision"), ("Decision", "BodyEnd", '=vars.Var_M == "Approve"'), ("Decision", "RejM", MANAGER_REJECT)]
+    + APPROVED_TAIL[:2]
+)
+WHOLE_BODY_NODES = frozenset(n for flow in WHOLE_BODY[2:-2] for n in flow[:2])
 
 PRE_JOIN_ACCEPTED = {
     "vendor-onboarding-run": (
@@ -96,16 +132,18 @@ PRE_JOIN_ACCEPTED = {
         frozenset(),
     ),
     "error-end-event-subprocess": (PRE_JOIN, ERROR_ENDS, _handler(), frozenset()),
+    "catch-all-handler": (PRE_JOIN, ERROR_ENDS, _handler(error=CATCH_ALL), frozenset()),
     "terminate-end": (PRE_JOIN, TERMINATE_ENDS, "", frozenset()),
-    "error-end-boundary": (
-        PRE_JOIN + [("Caught", "NotifyRej")],
-        {**ERROR_ENDS, **BOUNDARY},
-        "",
-        BODY,
+    "review-on-reject-path": (
+        _without(PRE_JOIN, ("GateC", "RejC")) + [("GateC", "Ack", '=vars.Var_C == "Reject"'), ("Ack", "RejC")],
+        {**ERROR_ENDS, "Ack": '<bpmn:userTask id="Ack" />'},
+        _handler(),
+        frozenset(),
     ),
+    "subprocess-error-boundary": (SUBPROCESS_BOUNDARY, {**ERROR_ENDS, **_boundary()}, "", BODY),
 }
 
-PRE_JOIN_MESSAGE = "without an exclusive gateway that can exit to an end past every later review"
+PRE_JOIN_MESSAGE = "whose exits that skip the join all end only at process-level terminate ends or caught error ends"
 PRE_JOIN_REJECTED = {
     "plain-end": (PRE_JOIN, {}, "", frozenset()),
     "uncaught-error-end": (PRE_JOIN, ERROR_ENDS, "", frozenset()),
@@ -116,6 +154,26 @@ PRE_JOIN_REJECTED = {
         _handler(error='<bpmn:errorEventDefinition errorRef="Other" />'),
         frozenset(),
     ),
+    "handler-not-event-subprocess": (PRE_JOIN, ERROR_ENDS, _handler(sub_attrs=""), frozenset()),
+    "handler-in-sibling-subprocess": (
+        PRE_JOIN,
+        ERROR_ENDS,
+        f'<bpmn:subProcess id="Other">{_handler()}</bpmn:subProcess>',
+        frozenset(),
+    ),
+    "error-end-without-errorref": (PRE_JOIN, _ends(CATCH_ALL, "RejC", "RejF"), _handler(error=CATCH_ALL), frozenset()),
+    "undeclared-error": (
+        PRE_JOIN,
+        _ends('<bpmn:errorEventDefinition errorRef="Ghost" />', "RejC", "RejF"),
+        _handler(error=CATCH_ALL),
+        frozenset(),
+    ),
+    "error-without-code": (
+        PRE_JOIN,
+        _ends('<bpmn:errorEventDefinition errorRef="NoCode" />', "RejC", "RejF"),
+        _handler(error=CATCH_ALL),
+        frozenset(),
+    ),
     "one-branch-ungated": (
         [f for f in PRE_JOIN if f[0] != "GateF" and f[1] != "GateF"] + [("Finance", "Join")],
         ERROR_ENDS,
@@ -124,17 +182,130 @@ PRE_JOIN_REJECTED = {
     ),
     "branch-bypasses-gate": (PRE_JOIN + [("Finance", "Join")], ERROR_ENDS, _handler(), frozenset()),
     "reject-reaches-manager": (
-        [f for f in PRE_JOIN if f[:2] != ("GateC", "RejC")]
+        _without(PRE_JOIN, ("GateC", "RejC"))
         + [("GateC", "RejectRoute", '=vars.Var_C == "Reject"'), ("RejectRoute", "RejC"), ("RejectRoute", "Manager")],
         {**ERROR_ENDS, **_ends(TERMINATE, "EndOk", "EndRej")},
         _handler(),
         frozenset(),
     ),
-    "boundary-reaches-manager": (
-        PRE_JOIN + [("Caught", "Manager")],
-        {**ERROR_ENDS, **BOUNDARY},
+    "escalate-to-manager": (
+        PRE_JOIN + [("GateC", "Manager", '=vars.Var_C == "Escalate"')],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "reject-provisions": (
+        PRE_JOIN + [("GateC", "Provision", '=vars.Var_C == "Hold"')],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "reject-exit-without-end": (
+        _without(PRE_JOIN, ("GateC", "RejC")) + [("GateC", "Loop", '=vars.Var_C == "Reject"'), ("Loop", "Loop")],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "approve-to-plain-end": (
+        _without(PRE_JOIN, ("GateF", "Join")) + [("GateF", "EndF", '=vars.Var_F == "Approve"')],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "service-task-ungated": (
+        _without(PRE_JOIN, ("Fork", "Finance"), ("Finance", "GateF"), ("GateF", "Join"), ("GateF", "RejF"))
+        + [("Fork", "Agent"), ("Agent", "Join")],
+        ERROR_ENDS,
+        _handler(inner='<bpmn:userTask id="Ack" />'),
+        frozenset(),
+    ),
+    "shared-verdict-gate": (
+        _without(PRE_JOIN, ("Compliance", "GateC"), ("Finance", "GateF"), ("GateF", "Join"), ("GateF", "RejF"))
+        + [("Compliance", "GateC"), ("Finance", "GateC")],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "no-review-before-join": (
+        [
+            ("Start", "Intake"),
+            ("Intake", "Fork"),
+            ("Fork", "GateC"),
+            ("GateC", "Join"),
+            ("GateC", "RejC", '=vars.Var_C == "Reject"'),
+            ("Fork", "GateF"),
+            ("GateF", "Join"),
+            ("GateF", "RejF", '=vars.Var_F == "Reject"'),
+            ("Join", "Manager"),
+            ("Manager", "Decision"),
+            ("Decision", "Director"),
+            ("Decision", "NotifyRej", MANAGER_REJECT),
+            ("Director", "Decision2"),
+            ("Decision2", "Provision"),
+            ("Decision2", "NotifyRej", '=vars.Var_D == "Reject"'),
+        ]
+        + APPROVED_TAIL,
+        {**ERROR_ENDS, "Intake": '<bpmn:userTask id="Intake" />'},
+        _handler(),
+        frozenset(),
+    ),
+    "handler-with-message-start": (
+        PRE_JOIN,
+        ERROR_ENDS,
+        _handler(error="<bpmn:messageEventDefinition />"),
+        frozenset(),
+    ),
+    "gate-without-reject-exit": (
+        _without(PRE_JOIN, ("GateC", "RejC")) + [("GateC", "Join", '=vars.Var_C == "Reject"')],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "bypass-behind-gate": (
+        _without(PRE_JOIN, ("Fork", "Finance"))
+        + [("Fork", "Pre"), ("Pre", "Finance"), ("Pre", "RejF", '=vars.Var_P == "Reject"'), ("Finance", "Join")],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "review-feeds-review": (
+        _without(PRE_JOIN, ("Finance", "GateF"), ("GateF", "Join"), ("GateF", "RejF")) + [("Finance", "Compliance")],
+        ERROR_ENDS,
+        _handler(),
+        frozenset(),
+    ),
+    "timer-boundary": (
+        SUBPROCESS_BOUNDARY,
+        {**ERROR_ENDS, "Caught": '<bpmn:boundaryEvent id="Caught" attachedToRef="Body"><bpmn:timerEventDefinition /></bpmn:boundaryEvent>'},
         "",
         BODY,
+    ),
+    "boundary-catches-other-error": (
+        SUBPROCESS_BOUNDARY,
+        {**ERROR_ENDS, "Caught": '<bpmn:boundaryEvent id="Caught" attachedToRef="Body"><bpmn:errorEventDefinition errorRef="Other" /></bpmn:boundaryEvent>'},
+        "",
+        BODY,
+    ),
+    "subprocess-boundary-reaches-manager": (
+        _without(SUBPROCESS_BOUNDARY, ("Caught", "RejectMerge")) + [("Caught", "Manager")],
+        {**ERROR_ENDS, **_boundary()},
+        "",
+        BODY,
+    ),
+    "boundary-on-review": (SUBPROCESS_BOUNDARY, {**ERROR_ENDS, **_boundary("Compliance")}, "", BODY),
+    "non-interrupting-boundary": (
+        SUBPROCESS_BOUNDARY,
+        {**ERROR_ENDS, **_boundary(attrs=' cancelActivity="false"')},
+        "",
+        BODY,
+    ),
+    "terminate-in-subprocess": (WHOLE_BODY, {**TERMINATE_ENDS, **_ends(TERMINATE, "RejM")}, "", WHOLE_BODY_NODES),
+    "handler-in-subprocess": (
+        WHOLE_BODY,
+        {**ERROR_ENDS, **_ends(TERMINATE, "RejM")},
+        "",
+        WHOLE_BODY_NODES,
+        _handler(),
     ),
 }
 
@@ -281,23 +452,32 @@ checker = _load()
 
 
 def _write(
-    tmp_path: Path, flows: list[tuple], bodies: dict | None = None, extra: str = "", scoped: frozenset = frozenset()
+    tmp_path: Path,
+    flows: list[tuple],
+    bodies: dict | None = None,
+    extra: str = "",
+    scoped: frozenset = frozenset(),
+    body_extra: str = "",
 ) -> None:
-    node_ids = sorted({node for flow in flows for node in flow[:2]})
+    node_ids = sorted({node for flow in flows for node in flow[:2]} - {"Body"})
     xml = {n: (bodies or {}).get(n, f'<bpmn:{KINDS.get(n, "exclusiveGateway")} id="{n}" />') for n in node_ids}
-    nodes = "".join(xml[n] for n in node_ids if n not in scoped) + extra
-    if scoped:
-        nodes += '<bpmn:subProcess id="Body">' + "".join(xml[n] for n in node_ids if n in scoped) + "</bpmn:subProcess>"
-    flow_xml = ""
+    flow_xml = {True: "", False: ""}
     for i, flow in enumerate(flows):
         condition = f"<bpmn:conditionExpression>{flow[2]}</bpmn:conditionExpression>" if len(flow) > 2 else ""
-        flow_xml += f'<bpmn:sequenceFlow id="F{i}" sourceRef="{flow[0]}" targetRef="{flow[1]}">{condition}</bpmn:sequenceFlow>'
+        flow_xml[flow[0] in scoped] += (
+            f'<bpmn:sequenceFlow id="F{i}" sourceRef="{flow[0]}" targetRef="{flow[1]}">{condition}</bpmn:sequenceFlow>'
+        )
+    nodes = "".join(xml[n] for n in node_ids if n not in scoped) + extra
+    if scoped:
+        inner = "".join(xml[n] for n in sorted(scoped))
+        nodes += f'<bpmn:subProcess id="Body">{inner}{body_extra}{flow_xml[True]}</bpmn:subProcess>'
     project = tmp_path / "VendorOnboarding"
     project.mkdir()
     (project / "VendorOnboarding.bpmn").write_text(
         '<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" '
         'xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI">'
-        f'<bpmn:process id="P">{nodes}{flow_xml}</bpmn:process>'
+        '<bpmn:error id="Err" errorCode="REJECTED" /><bpmn:error id="Other" errorCode="OTHER" /><bpmn:error id="NoCode" />'
+        f'<bpmn:process id="P">{nodes}{flow_xml[False]}</bpmn:process>'
         '<bpmndi:BPMNDiagram id="D" /></bpmn:definitions>',
         encoding="utf-8",
     )
