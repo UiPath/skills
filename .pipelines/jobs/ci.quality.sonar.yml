@@ -2,12 +2,12 @@ parameters:
   sonarServiceConnection: ''
   # Empty = Microsoft-hosted ubuntu-latest (ships Node, Python and JDK 21).
   poolName: ''
-  # Advisory like the nightly FOSSA scan: neither a failed quality gate nor a
-  # failed setup step (missing key, connection, permission) fails the run.
+  # Advisory: a failed quality gate does not fail the run. A failed setup step
+  # (missing key, connection, permission) still does, so it shows up red.
   blockOnQualityGate: false
 
-# Kept out of ci.security.fossa.yml on purpose: release-gate.yml reuses that
-# template, and a publish must not wait on Sonar.
+# Run by .pipelines/quality.yml, its own nightly pipeline: the FOSSA scan
+# (security.yml) and the release gate (release-gate.yml) never wait on Sonar.
 stages:
   - stage: Quality_Sonar
     displayName: SonarCloud
@@ -15,9 +15,6 @@ stages:
     jobs:
       - job: Coverage
         displayName: Tests with coverage + SonarCloud analysis
-        # A failing step still stops this job, but the run ends partially
-        # succeeded instead of failed, so the nightly FOSSA result stays readable.
-        continueOnError: ${{ not(parameters.blockOnQualityGate) }}
         pool:
           ${{ if eq(parameters.poolName, '') }}:
             vmImage: ubuntu-latest
@@ -30,7 +27,7 @@ stages:
           # variables are not mapped to env, so it must be a plain variable.
           - bash: |
               if [ -z "${SONAR_PROJECT_KEY:-}" ]; then
-                echo "##vso[task.logissue type=error]Pipeline variable SONAR_PROJECT_KEY is not set (or is marked secret). Add it under Pipelines > UiPath.skills > Edit > Variables."
+                echo "##vso[task.logissue type=error]Pipeline variable SONAR_PROJECT_KEY is not set (or is marked secret). Add it under Pipelines > ${BUILD_DEFINITIONNAME:-the pipeline running .pipelines/quality.yml} > Edit > Variables."
                 exit 1
               fi
             displayName: Check SONAR_PROJECT_KEY is set
