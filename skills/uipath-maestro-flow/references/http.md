@@ -57,8 +57,16 @@ them only when the scenario calls for different operational behavior.
 ## Managed authentication
 
 Managed HTTP has two authentication modes. Omit `connection` and `folder` for
-manual/implicit mode. To reuse an Integration Service HTTP connection, provide
-both symbolic names from `bindings.json`; the compiler resolves them into the
+manual/implicit mode. For a URL that needs no connection, prefer standalone
+(`managed: false`) unless the scenario names the managed node: implicit managed
+HTTP goes out through Integration Service's shared egress, which public APIs
+often rate-limit. Standalone draws an `HTTP_V1_RETIRED` warning from `check`;
+that is expected. CLI builds before cli#5384 also refuse implicit managed HTTP
+in `uip maestro flow debug` (`Connection ImplicitConnection not found in
+Resource Catalog`).
+
+To reuse an Integration Service HTTP connection, provide both symbolic names
+from `bindings.json`; the compiler resolves them into the
 node detail and the emitted flow's resource bindings:
 
 ```ts
