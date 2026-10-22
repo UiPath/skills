@@ -130,3 +130,65 @@ def test_package_message_no_shape_parses_stays_on_the_packages_line_verbatim(tmp
         result("OFFICE365-PACKAGE-MIGRATION", "Added UiPath.MicrosoftOffice365.Activities package dependency to the project.", level="note"),
     ])
     assert re.search(r"Packages: UiPath\.UIAutomation\.Activities 24\.10\.19 → 26\.10\.4; Added UiPath\.MicrosoftOffice365\.Activities package dependency to the project\.", summarize(file))
+
+# The Microsoft.Activities.Extensions extension reports one …-SUCCESS per rewritten activity, one UNSUPPORTED-… error per
+# unsupported activity type (the activity is named only in the message; the workflow is then copied unchanged), one
+# namespace note per file and two package notes without a file. Shapes from a 25.10.1 run on Studio's test project.
+def test_microsoft_activities_results_count_as_migrated_and_unsupported_types_need_attention(tmp_path):
+    j = summary(sarif(tmp_path, [
+        VALIDATED,
+        result("MICROSOFT-ACTIVITY-MIGRATION-SUCCESS", "Replaced Microsoft Activity 'AddToDictionary`2' with InvokeCode in workflow: DictAct.xaml", level="note", **at("DictAct.xaml")),
+        result("MICROSOFT-ACTIVITY-MIGRATION-SUCCESS", "Replaced Microsoft Activity 'ClearDictionary`2' with InvokeCode in workflow: DictAct.xaml", level="note", **at("DictAct.xaml")),
+        result("MICROSOFT-ACTIVITY-MIGRATION-SUCCESS", "Replaced Microsoft Activity 'RemoveFromDictionary`2' with InvokeCode in workflow: DictActInt.xaml", level="note", **at("DictActInt.xaml")),
+        result("MICROSOFT-NAMESPACE-UPDATE", "Updated namespace from 'clr-namespace:Microsoft.Activities.Extensions.Statements;assembly=Microsoft.Activities.Extensions' to 'clr-namespace:Microsoft.Activities.Extensions.Statements;assembly=UiPath.Upgrade.MicrosoftActivitiesExtensions'", level="note", **at("DictAct.xaml")),
+        result("UNSUPPORTED-MICROSOFT-ACTIVITY", "Found 1 instance(s) of unsupported activity GetInstanceId", level="error", **at("Main.xaml")),
+        result("UNSUPPORTED-MICROSOFT-ACTIVITY", "Found 1 instance(s) of unsupported activity LoadAssembly", level="error", **at("Main.xaml")),
+        result("MICROSOFT-ACTIVITIES-EXTENSIONS-PACKAGE-REMOVAL", "Removed Microsoft.Activities.Extensions package from project dependencies", level="note"),
+        result("ADD-OR-UPDATE-UIPATH-SYSTEM", "Updated UiPath.System.Activities package version from [24.10.7] to 25.10.3", level="note"),
+    ]))
+    assert j["totals"]["migrated"] == 3
+    assert j["status"] == "partial"
+    assert j["totals"]["leftClassic"] == 0
+    assert j["attention"]["total"] == 2
+    assert {a["activity"] for a in j["attention"]["items"]} == {"GetInstanceId", "LoadAssembly"}
+    assert any("Removed Microsoft.Activities.Extensions" in p for p in j["packages"])
+    assert any("UiPath.System.Activities" in p for p in j["packages"])
+    assert "outside the known families" not in summarize(sarif(tmp_path, [VALIDATED, result("MICROSOFT-ACTIVITY-MIGRATION-SUCCESS", "Replaced Microsoft Activity 'GetFromDictionary`2' with InvokeCode in workflow: DictAct.xaml", level="note", **at("DictAct.xaml"))]))
+
+
+def test_microsoft_activities_run_with_only_rewrites_is_a_success(tmp_path):
+    j = summary(sarif(tmp_path, [
+        VALIDATED,
+        result("MICROSOFT-ACTIVITY-MIGRATION-SUCCESS", "Replaced Microsoft Activity 'AddToDictionary`2' with InvokeCode in workflow: DictAct.xaml", level="note", **at("DictAct.xaml")),
+        result("MICROSOFT-ACTIVITIES-EXTENSIONS-PACKAGE-REMOVAL", "Removed Microsoft.Activities.Extensions package from project dependencies", level="note"),
+    ]))
+    assert j["status"] == "success"
+    assert j["totals"]["migrated"] == 1
+    assert j["attention"]["total"] == 0
+
+# Mail and GSuite runs carry a config-load note and an extension summary line without a level or a file. Both are
+# project-level information: known rules, no finding, no effect on the status.
+def test_mail_config_load_and_general_reporting_are_known_rules_and_do_not_affect_the_status(tmp_path):
+    file = sarif(tmp_path, [
+        VALIDATED,
+        result("LOAD-USER-CONFIGURATION", "Successfully loaded user configuration.", level="note"),
+        result("GENERAL-REPORTING", "Migration completed: 12 successful, 2 partially successful, 0 failed."),
+    ])
+    assert "outside the known families" not in summarize(file)
+    assert summary(file)["status"] == "success"
+
+# Mail/GSuite outcome levels as measured on 25.10.1: a rewritten activity with a caveat arrives at note level with the
+# [PostMigration Action Required] prefix and counts as migrated AND as needing attention; an unsupported activity type
+# arrives at error level, is not migrated, and lands under needs attention (left classic is a UIA-only count).
+def test_productivity_action_required_note_counts_as_migrated_and_attention_and_error_as_not_migrated(tmp_path):
+    j = summary(sarif(tmp_path, [
+        VALIDATED,
+        result("SEND-OUTLOOK-MAIL-ACTIVITY-MIGRATION", "Successfully migrated activity `Send` to `Migrated Send`.", level="note", **at("Send.xaml")),
+        result("GET-OUTLOOK-MAIL-MESSAGES-ACTIVITY-MIGRATION", "[PostMigration Action Required]: Filter migration is not currently supported and should be manually migrated.", level="note", **at("Get.xaml")),
+        result("OUTLOOK-MAIL-MESSAGES-TRIGGER-ACTIVITY-MIGRATION", "[PostMigration Action Required]: Migration of 'OutlookMailMessagesTrigger' is currently not supported.", level="error", **at("Trigger.xaml")),
+    ]))
+    assert j["totals"]["migrated"] == 2
+    assert j["totals"]["leftClassic"] == 0
+    assert j["attention"]["total"] == 2
+    assert j["status"] == "partial"
+

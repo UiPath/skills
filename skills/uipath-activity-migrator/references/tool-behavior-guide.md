@@ -11,7 +11,7 @@ Core options come first, then one block per active extension. A flag named anywh
 ## Option binding
 
 - Core options (`--project-path`, `--output-path`, `--output-format`, `--orchestrator-*`, `--enabled-extensions`) accept both `--name value` and `--name=value`.
-- Extension options (`--uia-*`, `--mail-*`, `--config`, `--gsuite-*`) bind only as `--name=value`. The space-separated form parses without error and is silently ignored. Verified: `--uia-package-version 25.10.39` left the default in place; `--uia-package-version=25.10.39` bound. The symptom is the `UIAUTOMATION-PACKAGE-UPGRADE` message naming the default version.
+- Extension options: pass them as `--name=value`, the one form every extension accepts. The UIA options bind only that way: `--uia-package-version 25.10.39` parses without error and is silently ignored (the default stays; the symptom is the `UIAUTOMATION-PACKAGE-UPGRADE` message naming the default version), `--uia-package-version=25.10.39` binds. The Mail and GSuite options also bind space-separated (measured on 25.10.1: `--config`, `--mail-o365-package-version`, `--gsuite-package-version`); `--gsuite-config` could not be observed either way on a scope-based project (see the GSuite guide, Hook 3).
 
 ## Exit code
 
