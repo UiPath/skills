@@ -117,7 +117,7 @@ SDD input fields don't map 1:1 to the connector's schema. Cross-reference each S
 - **eventParameters** → configure *what* the trigger monitors. Values must be **static** — resolved to IDs at planning time. Go into `input-values`.
 - **filter fields** → narrow *which* events fire the trigger. Values can be **static** literals (filter tree `isLiteral: true`) or **dynamic** `=vars.X` references compiled into `` =js:`...${vars.X}...` `` at impl time (see § Dynamic variable limitation). Go into `filter`.
 
-If an SDD input matches an `eventParameters` field name, it's an event parameter. If it matches a `filter.fields[].name`, it's a filter. If it matches neither, **AskUserQuestion** — the SDD may use different naming than the connector.
+If an SDD input matches an `eventParameters` field name, it's an event parameter. If it matches a `filter.fields[].name`, it's a filter. When `spec.filter.freeformOperators` is present, the trigger's filter takes any field name (`filter.fields[]` may be empty), so an SDD input naming an event-payload field is a filter. If it matches none of these, **AskUserQuestion** — the SDD may use different naming than the connector.
 
 ### 7. Build input-values and filter
 
@@ -128,7 +128,7 @@ If an SDD input matches an `eventParameters` field name, it's an event parameter
 
 A field listed under `inputs.queryParameters` / `inputs.pathParameters` (Step 3) goes in `queryParameters` / `pathParameters` instead. Scope selectors and resource pickers often sit there.
 
-**filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operator table, anti-patterns, worked examples (single / multi-AND / nested AND-OR): [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs (JMESPath instead of CEQL). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values.
+**filter** — translate SDD filter criteria using `spec.filter.fields[]` from Step 3. Build a **structured filter tree** (NOT a flat JMESPath string). The CLI compiles the tree to JMESPath at Phase 3 mint time. Tree shape, operator table, anti-patterns, worked examples (single / multi-AND / nested AND-OR): [/uipath:uipath-platform — Filter Trees (CEQL)](../../uipath-platform/references/integration-service/activities.md#filter-trees-ceql). Same shape applies to triggers — only the compiler output differs (JMESPath instead of CEQL). `spec.filter.fields[].name` (Step 3) supplies the valid `id` values, and each row's `operator` is one of that field's `operators[]` (with `freeformOperators`, one of those). Older CLI builds list no `operators[]`; then pick from the operator table.
 
 `groupOperator` accepts both string (`"And"` / `"Or"`) and numeric (`0` / `1`) — the case-tool normalizes string→numeric before threading to the SDK. Use either form; the platform examples use string.
 
@@ -242,7 +242,7 @@ Both `body.filters.expression` and `activityPropertyConfiguration.filterExpressi
 
 > **Mandatory-filter clauses survive the rewrite.** The CLI's mandatory-filter expression (derived from required event-param values, see § Mandatory-filter contract above) is computed at `case spec` time. When impl writes the canonical template-literal form, it preserves the mandatory prefix: `` =js:`(<mandatory>) && (<your-vars-clause>)` ``. Overwriting the whole expression strips the required event-param matching and the trigger fires on a wider event set than intended.
 
-Only use field names that appear in `spec.filter.fields[]`. If a filter cannot be translated unambiguously, **AskUserQuestion**.
+Only use field names that appear in `spec.filter.fields[]`, or any event-payload field when `spec.filter.freeformOperators` is present. If a filter cannot be translated unambiguously, **AskUserQuestion**.
 
 Full per-sink rule and FE source-of-truth: [bindings-and-expressions.md § Canonical form per sink](bindings-and-expressions.md#canonical-form-per-sink).
 
