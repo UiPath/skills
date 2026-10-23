@@ -4,7 +4,7 @@ Read § Reading the Project through § Component Detection, § Call Graph Rules,
 
 ## Reading the Project
 
-A UiPath project is its own raw form. No inventory script renders it: extraction reads the files, and a suspected source defect is verified in one pass — the cited workflow re-read in full with its disabled activities, both directions of its argument bindings and the workflow it invokes ([defect-verification-guide.md](defect-verification-guide.md)). Read in this order:
+A UiPath project is its own raw form. No inventory script renders it: extraction reads the files, and a suspected source defect is verified in one pass — the cited workflow re-read in full with its disabled activities, both directions of its argument bindings and the workflow it invokes (extraction's defect verification). Read in this order:
 
 1. **Manifest** — `project.json` (fields: § Signals — XAML; test registrations: § Signals — Test projects), or the solution's `.uipx` (§ Detection) and each project's manifest.
 2. **Inventory** with Glob per § Inventory and Exclusions — files per folder and per artifact type, the counts § Provenance names.
@@ -173,7 +173,7 @@ A **dispatcher** is recognised the other way round: a plain project (Sequence or
 | Execution template: a workflow holding a placeholder activity, named by the entries' `executionTemplatePath` | `.templates/*.xaml` | Steps each case whose entry names it runs around its own — preparation, finalization, a timeout, a skip — written once in the shared component, never per case; an entry naming no template runs its case bare |
 | A skip or filter deciding by the case's name, folder, machine or Orchestrator folder | the template or a helper it calls | Where each case runs: replay the rule over every registered case and state the outcome per group of cases; the folder then carries behaviour, and a rebuild that moves a case changes where it runs |
 | Verification activities (Verify Expression, Verify Control Attribute, …), `testing.Verify…` calls, xUnit `Assert` in coded cases, a throw under a condition | case bodies, helpers | Checkpoints: what is asserted, the operator and the expected literal |
-| Attach Document, `testing.AttachDocument`, screenshot activities | case bodies, template | Evidence policy ([extraction-guide.md](extraction-guide.md) Step 3) |
+| Attach Document, `testing.AttachDocument`, screenshot activities | case bodies, template | Evidence policy (extraction's Step 3) |
 | Data variations | `.variations/` | § Test Data |
 
 ## Signals — Flow
@@ -384,7 +384,7 @@ What the Source Map rows of [extracted-genome-guide.md § Source Map](extracted-
 | Deployed state | The folder and the date read; per process its package version, runtime and triggers, and each binding override with the package value it replaces; the other processes read, and each name another package builds from an expression; or "not read" (§ Deployed State) |
 | Runtime | The job-history window: per process the runs, the faults grouped by message and step, the durations; an entry point with no run named |
 
-No inventory script derives a process inventory or a recordset list, so the genome check runs without the export check, and [extraction-guide.md](extraction-guide.md) Step 6b's Glob check takes its place.
+No inventory script derives a process inventory or a recordset list, so the genome check runs without the export check, and extraction's Step 6b Glob check takes its place.
 
 ## Framework Pitfalls
 

@@ -1,15 +1,13 @@
-task_id: skill-genome-extract-component
+task_id: skill-planner-extract-component
 description: >
-  Smoke: the uipath-genome skill extracts one component genome from a staged three-workflow
+  Smoke: the uipath-planner skill extracts one component genome from a staged three-workflow
   XAML project (mailbox intake, PDF field extraction, vendor validation, ERP queue handoff).
   Gates on the genome contract (core profile): one component genome, every section, valid skill
   names, steps and criteria, a Transactional Shape that is not the stub and names its unit of work
   (the per-email loop that queues each invoice), a Source Map naming the three workflows, and the
   source's business facts. The full format rules (strict profile: split options or the
-  consumer-outside line, outcome rows) are graded as an advisory criterion. Tagged windows only so the Windows smoke
-  workflow runs it: the Linux smoke workflow skips every skill that owns a windows-tagged task
-  (execute_component), so without the tag no PR would run it.
-tags: [uipath-genome, windows, smoke, mode:build, lifecycle:generate]
+  consumer-outside line, outcome rows) are graded as an advisory criterion.
+tags: [uipath-planner, smoke, mode:build, lifecycle:generate]
 
 sandbox:
   template_sources:
@@ -20,7 +18,7 @@ sandbox:
 # through `python -c` and reads REFERENCE_DIR (the skill's scripts folder) from the environment. The
 # genome's file name is the agent's choice: the checker resolves the "*-genome.md" pattern itself.
 reference:
-  directory: ../../../../skills/uipath-genome/scripts
+  directory: ../../../../skills/uipath-planner/scripts
 
 initial_prompt: |
   The UiPath Studio project in `InvoiceIntake/` was inherited from another team.
@@ -30,9 +28,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent engaged the uipath-genome skill"
-    skill_name: "uipath-genome"
-    expected_skill: "uipath-genome"
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
     weight: 2.0
     pass_threshold: 1.0
 

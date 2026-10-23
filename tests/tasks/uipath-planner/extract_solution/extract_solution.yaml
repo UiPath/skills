@@ -1,13 +1,13 @@
-task_id: skill-genome-extract-solution
+task_id: skill-planner-extract-solution
 description: >
-  E2E: the uipath-genome skill extracts a process genome plus one component genome per project
+  E2E: the uipath-planner skill extracts a process genome plus one component genome per project
   from a staged three-project solution (Flow orchestrator → RPA intake robot → API workflow ERP
   posting, joined by an Orchestrator queue and a Slack alert connection). Tests the two-level
   layout, so it gates on the core contract at both levels without the Transactional Shape (which
   author_component gates; here it is graded by the advisory strict criterion): the Components table naming the three skills and linking component
   genomes that exist, the Handoffs table, and the solution's queue, channel, schedule, folder and
   ERP facts. The full format rules (strict profile) are graded as an advisory criterion.
-tags: [uipath-genome, e2e, mode:build, lifecycle:generate]
+tags: [uipath-planner, e2e, mode:build, lifecycle:generate]
 
 run_limits:
   expected_turns: 30
@@ -23,7 +23,7 @@ sandbox:
 # names are the agent's choice, so the process genome is the top-level *-genome.md and its
 # components sit in its folder.
 reference:
-  directory: ../../../../skills/uipath-genome/scripts
+  directory: ../../../../skills/uipath-planner/scripts
 
 initial_prompt: |
   The UiPath solution in `InvoiceOps/` runs our nightly accounts-payable intake.
@@ -35,9 +35,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent engaged the uipath-genome skill"
-    skill_name: "uipath-genome"
-    expected_skill: "uipath-genome"
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
     weight: 2.0
     pass_threshold: 1.0
 

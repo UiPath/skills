@@ -2,6 +2,22 @@
 
 Step-by-step instructions for transforming a PDD into an SDD. Follow the 3-phase interaction model described in SKILL.md.
 
+## SDD-only design (migration and refactor)
+
+Entered when the Entry Guard routes an extracted genome (one with a `## Source Map`) bound to a Map of Work (its `Map binding:` line) here — usually right after this skill's Extract lane seeded the Map ([extraction-guide.md](extraction-guide.md) Step 8). A migration changes how the work is automated, not the work, so it needs an SDD and no PDD. Without a Map the SDD is optional: the extracted genome alone is enough for the build. Run the phases below with these changes:
+
+1. **Step 0 as usual** — execution mode and delivery model; the source's deployed state, when the genome's Source Map records it, may resolve the delivery model.
+2. **Steps 1–2 read the genome and the Map instead of a PDD.** Read the extracted genome whole — its components, steps, platform dependencies, configuration questions, transactional shape, acceptance criteria and Source Map — and, when the Cartographer MCP is available, the Map's AS-IS records and open items through it for the snapshot the genome's `Map binding:` line names. The source framework is named in the Source Map.
+3. **Kind.** **Migration** (the default): every component keeps its shape — the genome's Build With / Components skill per project is the product, and Levels 1–2.5 are not re-run; only the Constraint Gate runs, and a blocked product takes the matrix's alternative with the consequence named. **Refactor** — only when the request asks to refactor, re-platform or modernize: Step 3.5 and the Levels run on the genome's steps as the need profile, and the refactor answers (retire, fold, target per component, run modes) are recorded in Decisions Made. Record the kind in Decisions Made row 2.
+4. **Record the decisions the build reads as answered**: the split and queue design per flow of the Transactional Shape, the implementation mode, the package pins, and for a refactor the refactor answers. `uipath-genome` asks none of them again.
+5. **Level 0 is `proceed`.** A migration has already been decided; record it in the Recommended Scope reasoning. An automation the source holds that nobody runs (the deployed state shows no runs) is named for retirement as an `[SME REVIEW]` item, never designed.
+6. **No process change.** The SDD adds, removes or changes no process record — step, rule, decision, exception path, owner, business object or human-in-the-loop point. A design that needs one gets an `[SME REVIEW]` row, Blocking = yes: "process change — needs a change proposal and a PDD delta". A behaviour the source tolerated that the target does not (a missing key, a blank retry count) is a default-carried `[SME REVIEW]` row for the process owner, not a silent fix.
+7. **Seeded records are not confirmed.** Every open item the Map holds (CONFIRM, GAP, CONFLICT) becomes one default-carried `[SME REVIEW]` row naming the record id; without the MCP, every `*[Inferred]*` line of the genome that carries a record id does. Process sections cite the record ids they draw on (`per RULE-003`).
+8. **Testing Strategy is equivalence.** Every acceptance criterion of the genome is a scenario; add the parallel (shadow) run against the source and the cutover steps (switch triggers, retire the source) in Next Steps.
+9. **Handoff rows.** Add `| **Design input** | migration (map-seeded) | refactor (map-seeded) |`, `| **Genome** | <path to the extracted genome> |` and `| **Map** | <Map snapshot id> |` after `SDD scope`.
+
+Then Phase 3 runs unchanged: skeleton write, remaining sections, SME resolution, superset check, `ready` flip. The extracted genome then gets its `Designed in:` line through the Edit lane, and its build runs through `uipath-genome` (Pattern 7).
+
 ## Phase 1 — PDD Analysis & Scope Selection
 
 ### Step 0: Determine Execution Mode & Delivery Model
@@ -618,4 +634,6 @@ The SDD is the deliverable of Phase D. **Do not generate an Implementation Plan 
 Then continue based on the user's intent:
 
 - If the user's intent implies implementation ("create / build / implement / set up / make") → on the next turn, continue into Lane A with `<sdd-path>`. Lane A reads the `## Planner Handoff` header you wrote, derives tasks, writes `<process-kebab>-tasks.md` alongside the SDD, and emits live tasks routing to specialist skills — see [pdd-driven-lane-guide.md](pdd-driven-lane-guide.md).
-- If the user only asked to "design / architect / generate an SDD" → stop here; the SDD is enough.
+- If the user only asked to "design / architect / generate an SDD" → stop here; the SDD is enough. Offer the genome (the coding-agent spec a later build starts from) in one line of the summary.
+
+**Genome from the agreed SDD.** On the next turn with build intent, before Lane A derives tasks: run the Author lane on the `ready` SDD ([authoring-guide.md](authoring-guide.md) Step 1b). It writes `<PROCESS_NAME_KEBAB>-genome.md` beside the SDD with a `Designed in:` line, and adds `| **Genome** | <path> |` to the Planner Handoff table after `Tasks file`; for an SDD-only design the extracted genome is that genome, and only its `Designed in:` line is added. Lane A then routes the build through Pattern 7 ([multi-skill-patterns-guide.md](multi-skill-patterns-guide.md)): `uipath-genome` is the only builder of a planned solution. When `uipath-genome` is not installed, write the genome anyway, say the build needs `uipath-genome`, and Lane A derives per-skill tasks from the SDD as before.

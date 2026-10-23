@@ -1,19 +1,17 @@
-task_id: skill-genome-author-component
+task_id: skill-planner-author-component
 description: >
-  Smoke: the uipath-genome skill authors one component genome from a described sheet-to-web-client
+  Smoke: the uipath-planner skill authors one component genome from a described sheet-to-web-client
   process worked by a pool of robots. Gates on the genome contract (core profile) and on the
   Transactional Shape it must describe: one flow whose unit of work is a sheet row. The full format
   rules (strict profile: outcome rows, split options per unit, retry and consecutive-failure stop,
-  configuration question kinds) are graded as an advisory criterion. Tagged windows only so the
-  Windows smoke workflow runs it: the Linux smoke workflow skips every skill that owns a
-  windows-tagged task (execute_component), so without the tag no PR would run it.
-tags: [uipath-genome, windows, smoke, mode:build, lifecycle:generate]
+  configuration question kinds) are graded as an advisory criterion.
+tags: [uipath-planner, smoke, mode:build, lifecycle:generate]
 
 # run_command goes through cmd.exe on Windows, so every check calls the skill's check-genome.py
 # through `python -c` and reads REFERENCE_DIR (the skill's scripts folder) from the environment. The
 # genome's file name is the agent's choice: the checker resolves the "*-genome.md" pattern itself.
 reference:
-  directory: ../../../../skills/uipath-genome/scripts
+  directory: ../../../../skills/uipath-planner/scripts
 
 initial_prompt: |
   Write a genome for an automation called "Customer Address Sync" and save it in the
@@ -35,9 +33,9 @@ initial_prompt: |
 
 success_criteria:
   - type: skill_triggered
-    description: "Agent engaged the uipath-genome skill"
-    skill_name: "uipath-genome"
-    expected_skill: "uipath-genome"
+    description: "Agent engaged the uipath-planner skill"
+    skill_name: "uipath-planner"
+    expected_skill: "uipath-planner"
     weight: 2.0
     pass_threshold: 1.0
 

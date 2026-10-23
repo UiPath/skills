@@ -1,6 +1,6 @@
 # Execution Guide — build an automation from a genome
 
-Genome says *what* to build; build skills know *how*. Execution reads genome, collects configuration answers, builds skill group by skill group through owning skills, wires pieces, checks result against acceptance criteria. Genome is read-only throughout: spec fixes are a separate authoring or extraction edit, then re-execution. Companion guides open only when their condition holds, and the build's only once the configuration answers exist ([SKILL.md § Read Plans](../SKILL.md)).
+Genome says *what* to build; build skills know *how*. Execution reads genome, collects configuration answers, builds skill group by skill group through owning skills, wires pieces, checks result against acceptance criteria. Genome is read-only throughout: a spec fix is an edit in `uipath-planner`, then re-execution. Companion guides open only when their condition holds, and the build's only once the configuration answers exist ([SKILL.md § Read Plans](../SKILL.md)).
 
 **Done when** — execution is finished only when all of these hold; a passing build alone is not the end:
 
@@ -10,6 +10,7 @@ Genome says *what* to build; build skills know *how*. Execution reads genome, co
 4. The completion report is given (§ 3.3).
 5. When the target environment needs any setup — a package to deploy, an asset, a queue, a trigger, a connection, a machine prerequisite — [open-items-guide.md](open-items-guide.md) is read and the open-items files are written beside the solution or project folder (§ 3.4).
 6. A refactor also meets [refactor-guide.md § Done](refactor-guide.md).
+7. A genome with a `Map binding:` line has its proposed changeset handed over or reported (§ 3.5).
 
 ## Phase 1 — Parse and configure
 
@@ -18,6 +19,13 @@ Genome says *what* to build; build skills know *how*. Execution reads genome, co
 Read whole file. Identify level from preamble comment (`component` or `process`). For a process genome, read every component genome linked in the Components table before anything else. A missing linked component file stops execution: report the missing path and ask the user to supply it — the one question about the source an executor asks.
 
 Required sections (component): Overview, Target Applications, Build With, Workflow, Acceptance Criteria, Complexity. Optional (may be stubs): Platform Dependencies, Interface, Configuration Questions, Business Rules, Error Handling, Source Map. Genome missing a required section is malformed: report which section and stop.
+
+Check the genome before anything is asked: `python3 "<SKILL_DIR>/scripts/check-genome.py" <process|component> "<GENOME_MD>" --profile core` (`python` on Windows). A `FAIL` the build cannot work around stops execution like a missing section; the report names it as a fix for `uipath-planner`'s Edit lane.
+
+When the genome carries the design links ([genome-format-guide.md § Design Links](genome-format-guide.md)):
+
+- **`Designed in:`** — read the SDD's Planner Handoff and project list. The SDD's delivery model is a constraint on every build step, and its project list is the project list of § 1.4 — in a refactor it is the target choice, so [refactor-guide.md § Choosing the target](refactor-guide.md) is not run again. What the SDD decided — the split and queue design, the implementation mode, the package pins, the refactor answers — is answered: § 1.3 states it in the Configuration Answers as `(from the SDD)` and does not ask it again; the scaffolding and environment questions the SDD leaves open are asked as usual. The genome never reads the SDD's PDD.
+- **`Map binding:`** — the build runs against that snapshot and records it in the completion report. When the Cartographer MCP is available, the cited record ids are resolved through it, and a record's wording decides where it and the genome disagree; the report names each disagreement. Without the MCP, the genome's wording holds and the report says the binding was not resolved.
 
 ### 1.2 Preflight discovery
 
@@ -239,16 +247,27 @@ Gate: validate + build per project (errors / warnings), libraries packed to <fee
 <!--skill-flavor:report-gate:end-->
 Run: <the owning skill's run command for the entry point>
 Refactor: <the line of refactor-guide.md § Done> | not a refactor
+Changeset: <snapshot id> — <n> links, <m> deviations, <k> additional changes — <proposed through the Cartographer MCP | listed here, MCP not available> | no Map binding (§ 3.5)
 Open items: <top open-items file> (<n> setup steps for the target environment; open-items-guide.md)
 ```
 
 When a run the build made changed data in a target system or a store, the report lists each change with how to undo it, and nothing is undone unasked.
 
-Extracted genomes add the healing-pass note ([ui-target-migration-guide.md § Rules](ui-target-migration-guide.md), rule 2): the targets not yet verified live, listed by window, a target found only by its fallback counted as missed, and the healing pass offered to the user. They also name, as not built, the objects of the Source Map's `Not covered` row: building them is an extraction edit, then re-execution. Migrated test components add the checkpoint line per test case — `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` — and the path of the generated mapping tables ([test-execution-guide.md § Result parity](test-execution-guide.md)). The report does not claim results match the source; the tables make that comparison possible for whoever holds a source result.
+Extracted genomes add the healing-pass note ([ui-target-migration-guide.md § Rules](ui-target-migration-guide.md), rule 2): the targets not yet verified live, listed by window, a target found only by its fallback counted as missed, and the healing pass offered to the user. They also name, as not built, the objects of the Source Map's `Not covered` row: building them is a `uipath-planner` extraction edit, then re-execution. Migrated test components add the checkpoint line per test case — `Checkpoints: <source> / <asserted> / <not asserted: reasons> / <added>` — and the path of the generated mapping tables ([test-execution-guide.md § Result parity](test-execution-guide.md)). The report does not claim results match the source; the tables make that comparison possible for whoever holds a source result.
 
 ### 3.4 Open items for the engineer
 
 Execution ends by writing, beside the solution or project folder, what the target environment needs before the automation runs there — one file per project plus the solution's — whenever it needs at least one setup step: [open-items-guide.md](open-items-guide.md).
+
+### 3.5 Back to the Map of Work
+
+When the genome carries a `Map binding:` line, the build proposes what it implemented and never edits the Map. The Cartographer MCP owns the Map's schema and its changeset shape; this skill names what goes in and lets the MCP write it:
+
+1. **Implementation links** — per built step: its record ids, and the project and the workflow, flow or node that implements it.
+2. **Deviations** — each place the build differs from a cited record (a criterion Partial or Not Met, a user ruling, a platform limit), with its reason.
+3. **Additional changes** found while building that no record holds.
+
+With the MCP available, hand these to it as a proposed changeset for the bound snapshot; the process owner merges it, and during a cutover the merge carries both links, the retiring one and the new one. Without the MCP, the completion report lists them under its Changeset line, and nothing is written into a Map folder.
 
 ## Anti-patterns
 

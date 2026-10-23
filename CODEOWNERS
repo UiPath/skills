@@ -115,10 +115,32 @@
 /skills/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
 
-# Genome skill (extract / author / execute automation blueprints)
+# Genome skill (execute automation blueprints) — the genome owners also own the planner's genome
+# lanes (Author, Extract, Edit), the shared-core copies and the genome-writing tests
 /skills/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
 /tests/tasks/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
 /tests/tasks/activation/uipath-genome.jsonl @danmunteanu1 @vlad-coteanu-uipath
+/scripts/check-genome-core.py @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/CLAUDE.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/authoring-guide.md @danmunteanu1 @vlad-coteanu-uipath @RaduAna-Maria
+/skills/uipath-planner/references/extraction-guide.md @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/references/extraction-parts-guide.md @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/references/editing-guide.md @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/references/defect-verification-guide.md @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/references/genome-format-guide.md @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/references/extracted-genome-guide.md @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/references/transactional-shape-guide.md @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/references/skill-mapping-guide.md @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/references/parts-guide.md @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/references/uipath-source-guide.md @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/scripts/check-genome.py @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/assets/templates/component-genome-template.md @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/assets/templates/process-genome-template.md @danmunteanu1 @vlad-coteanu-uipath
+/skills/uipath-planner/assets/examples/ @danmunteanu1 @vlad-coteanu-uipath
+/tests/tasks/uipath-planner/author_component/ @danmunteanu1 @vlad-coteanu-uipath
+/tests/tasks/uipath-planner/extract_component/ @danmunteanu1 @vlad-coteanu-uipath
+/tests/tasks/uipath-planner/extract_solution/ @danmunteanu1 @vlad-coteanu-uipath
+/tests/tasks/uipath-planner/genome_from_sdd/ @danmunteanu1 @vlad-coteanu-uipath
 
 # Flow skill
 /skills/uipath-maestro-flow/ @chandusailella @mukundbayyaram @UiPath/maestro-cli-team

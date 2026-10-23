@@ -3,7 +3,7 @@
 <!--skill-flavor:plan-job:end-->
 
 <!--skill-flavor:plan-design-only-outputs:start-->
-1. **Plan & design only — never author automation code.** Outputs: SDD markdown (Phase D), plan/tasks markdown (Lanes A/B), and the host plan authored in plan mode when the plan is reviewed. NEVER write XAML, C#, Python, JSON, or project/scaffold files. Implementation always routes to a specialist. (SDD/plan authoring is the *only* file authoring this skill does.)
+1. **Plan & design only — never author automation code.** Outputs: SDD markdown (Phase D), plan/tasks markdown (Lanes A/B), and the host plan authored in plan mode when the plan is reviewed. NEVER write XAML, C#, Python, JSON, or project/scaffold files. Implementation always routes to a specialist. (SDD, plan and genome markdown are the *only* files this skill writes.)
 <!--skill-flavor:plan-design-only-outputs:end-->
 
 <!--skill-flavor:sdd-no-task-lists:start-->

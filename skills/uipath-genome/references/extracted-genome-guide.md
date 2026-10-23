@@ -4,7 +4,7 @@ What a genome extracted from an existing automation carries beyond the sections 
 
 ## Source Map
 
-Where every part of the genome came from: a table of contract rows — one row per component in a process genome — and, in each component genome, the step table below. Names files and source objects, never activity names or variables. Also records dead code found, unresolved invocations, and steps whose intent was inferred, plus `Related resources` and `Resource discrepancies` rows when the user gave resources ([extraction-guide.md](extraction-guide.md) Step 3). Authored genomes have no Source Map. Remove the section on request when the genome is redistributed as a reusable blueprint.
+Where every part of the genome came from: a table of contract rows — one row per component in a process genome — and, in each component genome, the step table below. Names files and source objects, never activity names or variables. Also records dead code found, unresolved invocations, and steps whose intent was inferred, plus `Related resources` and `Resource discrepancies` rows when the user gave resources (extraction's Step 3). Authored genomes have no Source Map. Remove the section on request when the genome is redistributed as a reusable blueprint.
 
 **The step table.** Every extracted component genome carries, under a `### Steps` heading in its Source Map, one table pairing each Workflow step with what it was built from:
 
@@ -25,12 +25,12 @@ Where every part of the genome came from: a table of contract rows — one row p
 | Source framework | the framework name exactly as [SKILL.md § Source Frameworks](../SKILL.md) spells it, and the framework version the export states |
 | Source export | the export's root path as extraction read it, plus its identity (database or tenant, export date, process count) so a moved copy can be recognised |
 | Steps | the step table above, in every component genome |
-| Checkpoints | for every workflow step of a test component, and of a library a test component calls, the source's checkpoints inside it: source step id, what is asserted, the expected value (or the data column it comes from; for a library step, the Interface argument), and whether the source captured a screenshot there; a library step with no checkpoint has no row. Execution builds one assertion and one evidence artifact per checkpoint and produces the result parity table from them ([test-execution-guide.md § Result parity](test-execution-guide.md)). One row, or one per step as `Checkpoints, step N` |
-| Not covered | live behaviour the extracted projects or folders hold that no step is built from — an entry point, public workflow or test case nothing in the genome reaches, or one the request left out — by name and id, each with what it does in a few words; [extraction-guide.md](extraction-guide.md) Step 7 offers to translate them. Dead code, superseded copies and objects reached only through disabled calls belong to the dead-code row |
+| Checkpoints | for every workflow step of a test component, and of a library a test component calls, the source's checkpoints inside it: source step id, what is asserted, the expected value (or the data column it comes from; for a library step, the Interface argument), and whether the source captured a screenshot there; a library step with no checkpoint has no row. Execution builds one assertion and one evidence artifact per checkpoint and produces the result parity table from them. One row, or one per step as `Checkpoints, step N` |
+| Not covered | live behaviour the extracted projects or folders hold that no step is built from — an entry point, public workflow or test case nothing in the genome reaches, or one the request left out — by name and id, each with what it does in a few words; extraction's Step 7 offers to translate them. Dead code, superseded copies and objects reached only through disabled calls belong to the dead-code row |
 | Inventory counts | what the export holds and the genome covers, as counts: processes, windows, controls (and how many have no locator), recordsets, rows, credential accounts, and the objects left out, which their own rows name (`Not covered`, excluded, dead code) |
 | Other rows as needed | excluded objects, dead code, unresolved references, steps whose intent was inferred, data files that are outputs rather than inputs, source-only constructs with no counterpart, findings — any label |
 
-**The genome files are the only output of extraction.** Recognition data (locators), data rows and process inventories never enter the genome body and are not written beside it either: they are the export's, a copy next to the genome goes stale and says nothing the export does not, and execution re-derives them from the export with the source guide's script into the build's working folder ([source-migration-guide.md § Migration preflight](source-migration-guide.md)). What the Source Map must record is everything execution needs to find them again — the rows above. A Source Map that names the export but not the per-step objects has lost the migration: execution cannot find the locators and rows the export carried and ships placeholders and invented data. A genome shared without its Source Map can be built but not migrated: the reader gets placeholders or a live capture, and the redistribution note says so.
+**The genome files are the only output of extraction.** Recognition data (locators), data rows and process inventories never enter the genome body and are not written beside it either: they are the export's, a copy next to the genome goes stale and says nothing the export does not, and execution re-derives them from the export with the source guide's script into the build's working folder, at its migration preflight. What the Source Map must record is everything execution needs to find them again — the rows above. A Source Map that names the export but not the per-step objects has lost the migration: execution cannot find the locators and rows the export carried and ships placeholders and invented data. A genome shared without its Source Map can be built but not migrated: the reader gets placeholders or a live capture, and the redistribution note says so.
 
 ## Source values
 
@@ -47,11 +47,11 @@ A genome is extracted through a rendering of the source — a framework's invent
 9. **A parameter's unit, its default, and which of two filled parameters overrides the other**, read from the source's own documentation of that parameter (a framework export often carries it) before they are called unknown.
 10. **Log texts** of each step, with their literal wording and variable substitutions.
 
-Extraction writes them so ([extraction-guide.md](extraction-guide.md) Step 3); execution checks every one the genome cites before a group builds on it ([source-migration-guide.md § Migration preflight](source-migration-guide.md) step 4).
+Extraction writes them so (its Step 3); execution checks every one the genome cites before a group builds on it (its migration preflight).
 
 ## Source Defects
 
-An extracted genome carries a source's defect only once [defect-verification-guide.md](defect-verification-guide.md) has confirmed it in the full rendering and in the framework's source itself. It is written where the behaviour lives — the step, rule or handler — in this form:
+An extracted genome carries a source's defect only once extraction's defect verification has confirmed it in the full rendering and in the framework's source itself. It is written where the behaviour lives — the step, rule or handler — in this form:
 
 `**Source defect:** {what the source does, stated as fact} … Evident intent: {what it was meant to do} {*[Inferred]* when only the step's purpose shows it}`
 

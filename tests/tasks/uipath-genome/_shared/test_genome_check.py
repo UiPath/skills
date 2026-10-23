@@ -22,7 +22,7 @@ _bytecode, sys.dont_write_bytecode = sys.dont_write_bytecode, True  # no __pycac
 _spec.loader.exec_module(genome_check)
 sys.dont_write_bytecode = _bytecode
 
-EXAMPLES = REPO / "skills" / "uipath-genome" / "assets" / "examples"
+EXAMPLES = REPO / "skills" / "uipath-planner" / "assets" / "examples"  # the planner writes genomes; its examples pass this checker
 MAPPING_GUIDE = REPO / "skills" / "uipath-genome" / "references" / "skill-mapping-guide.md"
 COMPONENT_EXAMPLE = EXAMPLES / "purchase-requisition-entry-genome.md"  # transactional, two units of work
 PROCESS_EXAMPLE = EXAMPLES / "invoice-processing-genome.md"

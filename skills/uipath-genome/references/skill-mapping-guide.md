@@ -28,7 +28,7 @@ Every genome component and every workflow step maps to exactly one UiPath build 
 | Process Mining app | `uipath-process-mining` | "analyse the event log", "process app" | dbt models, process-app data mapping |
 | MCP server / resource tools | `uipath-mcp-servers` | "expose these as MCP tools" | `uipath`-type MCP server registration |
 
-**Human approval or validation checkpoints** inside a Flow, BPMN process, Case plan, or agent belong to the containing component's skill. Name `uipath-human-in-the-loop` in the Rationale column so the builder consults it for gate design.
+**Human approval or validation checkpoints** belong to the containing component's skill, which authors them itself: a BPMN process's user task (`uipath-maestro-bpmn`), a Case plan's action task (`uipath-maestro-case`), a coded agent's escalation (`uipath-agents`), an RPA process's Action Center task in a long-running workflow (`uipath-rpa`). Only inside a **Flow** is the checkpoint designed with `uipath-human-in-the-loop`: name it in that row's Rationale column so the builder consults it for gate design.
 
 **Solution packaging** (`.uipx`) is not a Build With row. A process genome records it under **Deployment** with `uipath-solution`.
 
