@@ -11,7 +11,6 @@ Assertion map (Flow -> BPMN):
   DROPPED         require_no_private_connector_values   (not in Flow)
   DROPPED         require_sequence_integrity            (not in Flow)
   DROPPED         require_di_for_visible_elements        (not in Flow)
-  DROPPED         non-empty objectName requirement        (not in Flow)
 
 Ported from Flow `connector_features/testmanager_generic_records.yaml`'s
 ``flow_contains.py`` substring checks: same scenario (one Test Manager
@@ -63,6 +62,7 @@ from _shared.bpmn_check import (  # noqa: E402
     ConnectorOperation,
     connector_requests,
     fail,
+    no_connector_node_message,
     parse_bpmn,
     require_operations,
 )
@@ -150,12 +150,7 @@ def main() -> None:
     path, root = parse_bpmn()
     requests = list(connector_requests(root, CONNECTOR_KEY))
     if not requests:
-        fail(
-            "no bpmn:sendTask calls the Test Manager connector: expected "
-            f"Intsvc.ActivityExecution with connectorKey {CONNECTOR_KEY!r}, or a "
-            "connector-mode Intsvc.UnifiedHttpRequest with targetConnector "
-            f"{CONNECTOR_KEY!r}"
-        )
+        fail(no_connector_node_message("Test Manager", CONNECTOR_KEY))
     print(f"OK: {len(requests)} {CONNECTOR_KEY} sendTask(s) present in {path}")
 
     if not all_ops:

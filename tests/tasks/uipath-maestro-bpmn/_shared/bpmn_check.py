@@ -428,6 +428,8 @@ HTTP_CONNECTOR_KEY = "uipath-uipath-http"
 LEGACY_HTTP_OBJECT = "http-request"
 _JS_OPERAND_RE = re.compile(r"'([^']*)'|\"([^\"]*)\"|`([^`]*)`|([^+'\"`]+)")
 _TEMPLATE_SLOT_RE = re.compile(r"\$\{[^}]*\}")
+_EXPRESSION_SLOT = "{}"
+_LITERAL_SLOT = "{literal}"
 
 
 class RequestShape(Enum):
@@ -435,19 +437,28 @@ class RequestShape(Enum):
     HTTP = UNIFIED_HTTP_REQUEST
 
 
+def _literal_text(text: str) -> str:
+    return text.replace(_EXPRESSION_SLOT, _LITERAL_SLOT)
+
+
 def _literal_path(value: str) -> str:
-    """``value`` with each non-literal operand as ``{}``:
-    ``=js:('/v2/' + vars.P + '/items')`` -> ``/v2/{}/items``."""
+    """``value`` with each non-literal operand as ``{}``, and a literal ``{}``
+    as ``{literal}``: ``=js:('/v2/' + vars.P + '/items')`` -> ``/v2/{}/items``,
+    ``/v2/{}/items`` -> ``/v2/{literal}/items``."""
     if not value.startswith("="):
-        return value
+        return _literal_text(value)
 
     expression = value.removeprefix("=js:").removeprefix("=")
     parts: list[str] = []
     for single, double, template, other in _JS_OPERAND_RE.findall(expression):
         if other.strip("() \t\n"):
-            parts.append("{}")
+            parts.append(_EXPRESSION_SLOT)
             continue
-        parts.append(single or double or _TEMPLATE_SLOT_RE.sub("{}", template))
+        if template:
+            slots = _TEMPLATE_SLOT_RE.split(template)
+            parts.append(_EXPRESSION_SLOT.join(_literal_text(s) for s in slots))
+            continue
+        parts.append(_literal_text(single or double))
     return "".join(parts)
 
 
@@ -495,19 +506,27 @@ def connector_requests(
         yield task, method, path, RequestShape.ACTIVITY
 
 
-_PATH_SEGMENT = r"(?!\{[^/}]+\}|%7B[^/]*%7D)[^/]+"
+_PATH_SEGMENT = r"(?![^/]*%7B[^/]*%7D)(?![^/]*<[^/]*>)(?!:\w)(?:\{\}|[^/{])+"
 _PLACEHOLDER_RE = re.compile(r"\{[^/}]*\}")
 _CATALOG_ONLY_METHODS = {"getbyid"}
 
 
 @lru_cache(maxsize=None)
-def _filled_path_re(template: str) -> re.Pattern[str]:
+def _filled_path_re(template: str, taken: frozenset[tuple[int, str]]) -> re.Pattern[str]:
     """End-anchored match for an IS path, each ``{name}`` one filled segment:
     ``/v2/{projectId}/items`` matches ``/v2/{}/items`` and ``/v2/p/items``,
-    not ``/v2/{projectId}/items``."""
-    parts = _PLACEHOLDER_RE.split(template)
-    pattern = _PATH_SEGMENT.join(re.escape(part) for part in parts)
-    return re.compile(rf"{pattern}/?$", re.IGNORECASE)
+    not ``/v2/{projectId}/items``, ``/v2/${projectId}/items``,
+    ``/v2/<projectId>/items`` or ``/v2/:projectId/items``. A placeholder
+    segment never takes a ``(position, literal)`` in ``taken``."""
+    segments: list[str] = []
+    for position, segment in enumerate(template.split("/")):
+        parts = _PLACEHOLDER_RE.split(segment)
+        guard = ""
+        if parts == ["", ""]:
+            literals = sorted(s for p, s in taken if p == position)
+            guard = "".join(rf"(?!{re.escape(s)}(?:/|$))" for s in literals)
+        segments.append(guard + _PATH_SEGMENT.join(re.escape(part) for part in parts))
+    return re.compile("/".join(segments) + "/?$", re.IGNORECASE)
 
 
 class ConnectorOperation(NamedTuple):
@@ -525,23 +544,42 @@ def _targets(operation: ConnectorOperation) -> list[tuple[str, str]]:
     return [(operation.object_name, operation.path), *operation.alternatives]
 
 
+def _methods(operation: ConnectorOperation) -> set[str]:
+    return {method.lower() for method in operation.methods}
+
+
 def _http_methods(operation: ConnectorOperation) -> set[str]:
-    return {"get" if m in _CATALOG_ONLY_METHODS else m for m in operation.methods}
+    return {"get" if m in _CATALOG_ONLY_METHODS else m for m in _methods(operation)}
+
+
+def _literal_segments(operations: list[ConnectorOperation]) -> frozenset[tuple[int, str]]:
+    return frozenset(
+        (position, segment.lower())
+        for operation in operations
+        for _, path in _targets(operation)
+        for position, segment in enumerate(path.split("/"))
+        if segment and "{" not in segment
+    )
 
 
 def _operation_matches(
-    task: ET.Element, method: str, path: str, shape: RequestShape, operation: ConnectorOperation
+    task: ET.Element,
+    method: str,
+    path: str,
+    shape: RequestShape,
+    operation: ConnectorOperation,
+    taken: frozenset[tuple[int, str]],
 ) -> bool:
     method = method.lower()
     targets = _targets(operation)
     if shape is RequestShape.ACTIVITY:
         object_name = context_value(task, "objectName")
-        return method in operation.methods and any(object_name == o for o, _ in targets)
+        return method in _methods(operation) and any(object_name == o for o, _ in targets)
 
     if method not in _http_methods(operation):
         return False
     request_path = path.split("?", 1)[0]
-    return any(_filled_path_re(p).search(request_path) for _, p in targets)
+    return any(_filled_path_re(p, taken).search(request_path) for _, p in targets)
 
 
 def _assign_requests(candidates: list[list[int]]) -> dict[int, int]:
@@ -564,20 +602,40 @@ def _assign_requests(candidates: list[list[int]]) -> dict[int, int]:
     return {operation: request for request, operation in owner.items()}
 
 
-def _missing_operation(operation: ConnectorOperation) -> str:
-    http_methods = "/".join(sorted(_http_methods(operation))).upper()
-    if not operation.alternatives:
-        return (
-            f"{operation.label} (objectName={operation.object_name!r} with method in "
-            f"{sorted(operation.methods)}, or HTTP {http_methods} {operation.path!r} "
-            "with every placeholder filled)"
-        )
+def _require_valid(operation: ConnectorOperation) -> None:
+    for _, path in _targets(operation):
+        if not path.strip("/"):
+            raise ValueError(f"{operation.label}: path {path!r} matches any request")
+    if not _http_methods(operation):
+        raise ValueError(f"{operation.label}: methods {sorted(operation.methods)} hold no HTTP verb")
 
-    object_names, paths = zip(*_targets(operation))
+
+def _missing_operation(operation: ConnectorOperation, taken_by: list[str]) -> str:
+    http_methods = "/".join(sorted(_http_methods(operation))).upper()
+    if operation.alternatives:
+        object_names, paths = zip(*_targets(operation))
+        targets = (
+            f"objectName in {list(object_names)} with method in {sorted(_methods(operation))}, "
+            f"or HTTP {http_methods} on one of {list(paths)}"
+        )
+    else:
+        targets = (
+            f"objectName={operation.object_name!r} with method in {sorted(_methods(operation))}, "
+            f"or HTTP {http_methods} {operation.path!r}"
+        )
+    message = f"{operation.label} ({targets} with every placeholder filled)"
+    if taken_by:
+        message += f"; matching node(s) already used: {', '.join(taken_by)}"
+    return message
+
+
+def no_connector_node_message(connector_name: str, connector_key: str) -> str:
     return (
-        f"{operation.label} (objectName in {list(object_names)} with method in "
-        f"{sorted(operation.methods)}, or HTTP {http_methods} on one of {list(paths)} "
-        "with every placeholder filled)"
+        f"no bpmn:sendTask calls the {connector_name} connector: expected "
+        f"{ACTIVITY_EXECUTION} with context connectorKey {connector_key!r} "
+        f"(objectName not {LEGACY_HTTP_OBJECT!r}), or {UNIFIED_HTTP_REQUEST} "
+        f"with context connectorKey {HTTP_CONNECTOR_KEY!r} and body "
+        f"authentication 'connector', targetConnector {connector_key!r}"
     )
 
 
@@ -586,8 +644,12 @@ def require_operations(
     operations: list[ConnectorOperation],
     group: str,
 ) -> None:
+    for operation in operations:
+        _require_valid(operation)
+
+    taken = _literal_segments(operations)
     candidates = [
-        [i for i, request in enumerate(requests) if _operation_matches(*request, operation)]
+        [i for i, request in enumerate(requests) if _operation_matches(*request, operation, taken)]
         for operation in operations
     ]
     assigned = _assign_requests(candidates)
@@ -595,7 +657,12 @@ def require_operations(
     missing: list[str] = []
     for index, operation in enumerate(operations):
         if index not in assigned:
-            missing.append(_missing_operation(operation))
+            taken_by = [
+                f"{requests[request][0].attrib.get('id', '?')} by {operations[other].label!r}"
+                for other, request in assigned.items()
+                if request in candidates[index]
+            ]
+            missing.append(_missing_operation(operation, taken_by))
             continue
 
         task, method, request_path, _shape = requests[assigned[index]]

@@ -12,6 +12,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import bpmn_check  # noqa: E402
 import check_testmanager_generic_records as generic  # noqa: E402
 from testmanager_fixtures import HTTP_NODE, LEGACY_SDK_HTTP_NODE, TM_KEY  # noqa: E402
 
@@ -72,13 +73,74 @@ GENERIC = [
      "/v2/{projectId}/attachments/{objectType}/{id}"),
     ("list records", "GetTestStepLogs", "GET", "GET", "/v2/{projectId}/teststeplogs"),
 ]
+# Test Manager catalog (`registry get` IsEnrichment.Operation.Path), by IS operation.
+CATALOG = {
+    "Create": [
+        ("AssignTestCasesToRequirement", "/v2/{ProjectId}/requirements/{Id}/assigntestcases"),
+        ("AssignTestCasesToTestSet", "/v2/{ProjectId}/testsets/{id}/assigntestcases"),
+        ("CreateDefect", "/v2/{ProjectId}/defects"),
+        ("ExecuteTestCases", "/v2/{ProjectId}/testcases/startexecute"),
+        ("ExecuteTestSet", "/v2/{ProjectId}/testsets/{testSetId}/startexecute"),
+        ("ReportRunCheckpoint", "/v2/factories/runs/checkpoints"),
+        ("Requirement", "/v2/{ProjectId}/requirements"),
+        ("TestCase", "/v2/{ProjectId}/testcases"),
+        ("TestSet", "/v2/{ProjectId}/testsets"),
+        ("TestStep", "/v2/{ProjectId}/teststeps"),
+        ("UploadAttachment", "/v2/{projectId}/attachments/{objType}/{id}/upload"),
+    ],
+    "Retrieve": [
+        ("DownloadAssertion",
+         "/v2/{projectId}/testcaselogartifacts/{id}/assertions/{assertionId}/downloadscreenshot"),
+        ("DownloadAttachment", "/v2/{projectId}/attachments/{objectType}/{id}/download"),
+        ("GetDefect", "/v2/{ProjectId}/defects/{id}"),
+        ("GetProjectByPrefix", "/v2/projects/prefix/{projectPrefix}"),
+        ("Requirement", "/v2/{ProjectId}/requirements/{id}"),
+        ("TestCase", "/v2/{ProjectId}/testcases/{id}"),
+        ("TestCaseLog", "/v2/{projectId}/testcaselogs/{id}"),
+        ("TestExecution", "/v2/{projectId}/testexecutions/{id}"),
+        ("TestSet", "/v2/{ProjectId}/testsets/{id}"),
+        ("TestStep", "/v2/{ProjectId}/teststeps/{id}"),
+    ],
+    "Update": [
+        ("Requirement", "/v2/{ProjectId}/requirements/{id}"),
+        ("TestCase", "/v2/{ProjectId}/testcases/{id}"),
+        ("TestSet", "/v2/{ProjectId}/testsets/{id}"),
+        ("TestStep", "/v2/{ProjectId}/teststeps/{id}"),
+    ],
+    "Delete": [
+        ("DeleteAttachment", "/v2/{projectId}/attachments/{objectType}/{id}"),
+        ("Requirement", "/v2/{ProjectId}/requirements/{id}"),
+        ("TestCase", "/v2/{ProjectId}/testcases/{id}"),
+        ("TestExecution", "/v2/{projectId}/testexecutions/{id}"),
+        ("TestSet", "/v2/{ProjectId}/testsets/{id}"),
+    ],
+    "List": [
+        ("GetAssertions", "/v2/{projectId}/testcaselogartifacts/{id}/assertions"),
+        ("GetAssignedTestCasesForRequirement",
+         "/v2/{ProjectId}/requirements/{Id}/assignedtestcaseids"),
+        ("GetAssignedTestCasesForTestSet", "/v2/{ProjectId}/testsets/{id}/assignedtestcaseids"),
+        ("GetAttachments", "/v2/{projectId}/attachments/{ObjectType}/{Id}/all"),
+        ("GetImpactedTransactions", "/v2/{ProjectId}/sapplanner/transports/coverage"),
+        ("GetRobotLogs", "/v2/{projectId}/orchestrator/testexecution/{id}/robotlogs/paged"),
+        ("GetTestCaseLogsOfTestExecution",
+         "/v2/{projectId}/testcaselogs/testexecution/{testExecutionId}/paged"),
+        ("GetTestStepLogs", "/v2/{projectId}/teststeplogs"),
+        ("GetTestSteps", "/v2/{ProjectId}/teststeps/testcase/{Id}"),
+        ("Project", "/v2/projects"),
+        ("Requirement", "/v2/{ProjectId}/requirements"),
+        ("TestCase", "/v2/{ProjectId}/testcases"),
+        ("TestExecution", "/v2/{projectId}/testexecutions"),
+        ("TestManagerEvents", "/TestManagerEvents"),
+        ("TestSet", "/v2/{ProjectId}/testsets"),
+    ],
+}
 GENERIC_TARGETS = [
     (index, verb, target)
-    for index, (verb, table) in enumerate(
-        [("POST", generic.CREATE), ("GET", generic.RETRIEVE), ("PATCH", generic.UPDATE),
-         ("DELETE", generic.DELETE), ("GET", generic.LIST)]
+    for index, (verb, operation) in enumerate(
+        [("POST", "Create"), ("GET", "Retrieve"), ("PATCH", "Update"), ("DELETE", "Delete"),
+         ("GET", "List")]
     )
-    for target in table
+    for target in CATALOG[operation]
 ]
 
 CHECKERS = {
@@ -89,6 +151,12 @@ CHECKERS = {
     "generic_records": (("--all-ops",), GENERIC),
 }
 CASES = [(name, i) for name, (_, ops) in CHECKERS.items() for i in range(len(ops))]
+SLOT_CASES = [
+    (name, i, slot)
+    for name, (_, ops) in CHECKERS.items()
+    for i, op in enumerate(ops)
+    for slot in range(op[4].count("{"))
+]
 NO_CONNECTOR = "no bpmn:sendTask calls the Test Manager connector"
 
 
@@ -108,11 +176,17 @@ def _run(tmp_path: Path, name: str, body: str, *args: str) -> subprocess.Complet
     return result
 
 
-def _filled(path: str, keep: int = -1) -> str:
-    """``=js:`` url with every placeholder but index ``keep`` filled from a variable."""
+def _filled(path: str, keep: int = -1, spelling: str = "{{{}}}") -> str:
+    """``=js:`` url with every placeholder but index ``keep`` filled from a
+    variable, and ``keep`` written as ``spelling`` of its name."""
     slots = iter(range(path.count("{")))
-    fill = lambda m: m.group(0) if next(slots) == keep else "' + vars.Var_Id + '"
-    return "=js:'" + re.sub(r"\{[^}]+\}", fill, path) + "'"
+
+    def fill(match: re.Match[str]) -> str:
+        if next(slots) == keep:
+            return spelling.format(match.group(1))
+        return "' + vars.Var_Id + '"
+
+    return "=js:'" + re.sub(r"\{([^}]+)\}", fill, path) + "'"
 
 
 def _http_node(index: int, method: str, url: str, template: str = HTTP_NODE,
@@ -172,6 +246,7 @@ def test_http_not_through_test_manager_fails(tmp_path: Path, name: str, override
     result = _run(tmp_path, name, "".join(_http_nodes(ops, **overrides)), *args)
     assert result.returncode != 0
     assert NO_CONNECTOR in result.output
+    assert "context connectorKey 'uipath-uipath-http'" in result.output
 
 
 @pytest.mark.parametrize("name", CHECKERS)
@@ -182,6 +257,7 @@ def test_legacy_sdk_connector_http_fails(tmp_path: Path, name: str) -> None:
     result = _run(tmp_path, name, "".join(nodes), *args)
     assert result.returncode != 0
     assert NO_CONNECTOR in result.output
+    assert "objectName not 'http-request'" in result.output
 
 
 @pytest.mark.parametrize("name, index", CASES)
@@ -194,17 +270,37 @@ def test_missing_operation_fails(tmp_path: Path, name: str, index: int) -> None:
     assert _missing(ops, result.stderr) == [ops[index][0]]
 
 
-@pytest.mark.parametrize("name, index", CASES)
-def test_unfilled_placeholder_fails(tmp_path: Path, name: str, index: int) -> None:
+@pytest.mark.parametrize("name, index, slot", SLOT_CASES)
+def test_unfilled_placeholder_fails(tmp_path: Path, name: str, index: int, slot: int) -> None:
     args, ops = CHECKERS[name]
     nodes = _http_nodes(ops)
     op = ops[index]
-    nodes[index] = _http_node(index, op[3], _filled(op[4], keep=0))
+    nodes[index] = _http_node(index, op[3], _filled(op[4], keep=slot))
     result = _run(tmp_path, name, "".join(nodes), *args)
     assert result.returncode != 0
     assert _missing(ops, result.stderr) == [op[0]]
     assert repr(op[4]) in result.stderr
     assert "with every placeholder filled" in result.stderr
+
+
+@pytest.mark.parametrize("spelling", ["${{{}}}", "<{}>", ":{}", "{{}}"])
+@pytest.mark.parametrize("name", CHECKERS)
+def test_unfilled_placeholder_spelling_fails(tmp_path: Path, name: str, spelling: str) -> None:
+    args, ops = CHECKERS[name]
+    nodes = _http_nodes(ops)
+    op = ops[1]
+    nodes[1] = _http_node(1, op[3], _filled(op[4], keep=op[4].count("{") - 1, spelling=spelling))
+    result = _run(tmp_path, name, "".join(nodes), *args)
+    assert result.returncode != 0
+    assert _missing(ops, result.stderr) == [op[0]]
+
+
+def test_update_on_execute_path_fails(tmp_path: Path) -> None:
+    nodes = _http_nodes(TESTCASE)
+    nodes[2] = _http_node(2, "PATCH", "=js:'/v2/' + vars.Var_Id + '/testcases/startexecute'")
+    result = _run(tmp_path, "testcase_lifecycle", "".join(nodes), "--all-ops")
+    assert result.returncode != 0
+    assert _missing(TESTCASE, result.stderr) == ["update the test case"]
 
 
 @pytest.mark.parametrize("name, index", CASES)
@@ -229,6 +325,15 @@ def test_lifecycle_update_rejects_put(tmp_path: Path, name: str) -> None:
     assert _missing(ops, result.stderr) == [ops[2][0]]
 
 
+@pytest.mark.parametrize(
+    "operation, table",
+    [("Create", generic.CREATE), ("Retrieve", generic.RETRIEVE), ("Update", generic.UPDATE),
+     ("Delete", generic.DELETE), ("List", generic.LIST)],
+)
+def test_generic_tables_match_the_catalog(operation: str, table: list) -> None:
+    assert table == CATALOG[operation]
+
+
 @pytest.mark.parametrize("index, verb, target", GENERIC_TARGETS,
                          ids=[f"{i}-{t[0]}" for i, _, t in GENERIC_TARGETS])
 def test_generic_accepts_every_catalog_object(tmp_path: Path, index: int, verb: str,
@@ -241,6 +346,12 @@ def test_generic_accepts_every_catalog_object(tmp_path: Path, index: int, verb: 
     for nodes in (v1, http):
         result = _run(tmp_path, "generic_records", "".join(nodes), *args)
         assert result.returncode == 0, result.output
+
+
+def test_generic_operations_pass_validation() -> None:
+    with pytest.raises(SystemExit) as exc:
+        bpmn_check.require_operations([], generic.OPERATIONS, "generic record")
+    assert "\n  get a record (" in str(exc.value)
 
 
 def test_generic_update_accepts_put(tmp_path: Path) -> None:
