@@ -84,6 +84,8 @@ OWNERS = {
     "PERF": "perf_scenario_cleanup_smoke.yaml",
     "PERFSET": "perf_scenario_setup_integration.yaml",
     "PERFDRY": "perf_scenario_dryrun_e2e.yaml",
+    "PROMPT": "prompts_create_smoke.yaml",
+    "PROMPTSET": "prompts_library_setup_integration.yaml",
 }
 
 
