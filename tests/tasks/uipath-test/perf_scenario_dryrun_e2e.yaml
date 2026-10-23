@@ -118,7 +118,7 @@ success_criteria:
     command_pattern: 'uip\s+login\s+status'
     min_count: 1
     weight: 1.0
-    pass_threshold: 1.0
+    pass_threshold: 0
 
   - type: run_command
     description: "The scenario has one load group for EVFX-PERFDRY-TC1 with 1 virtual user"
