@@ -115,15 +115,22 @@ uip maestro bpmn registry get Intsvc.UnifiedHttpRequest --connection-id <connect
     --output json
 ```
 
-`--input-details` is the request. Its `url` is sent as written and there is
-no `pathParameters`: fill every `{placeholder}` of a catalog path
-(`uip is resources list`'s `Path`) in `url`: a value you looked up inline, a
-run-time one through a `=js:` url, never an invented one. For
-`/projects/{projectId}/items/{id}`:
+`--input-details` is the request. `registry get` copies its `url` as written
+and there is no `pathParameters`: fill every `{placeholder}` in `url`, such as
+a catalog path's (`uip is resources list`'s `Path`). A known value
+(discovered or given, Rule 2) goes in as text, a run-time one through a `=js:`
+url; never invent one. For `/projects/{projectId}/items/{id}`:
 
 ```json
-{"authentication":"connector","method":"GET","url":"=js:'/projects/<project-id>/items/' + vars.Var_ItemId"}
+{"authentication":"connector","method":"GET","url":"=js:\"/projects/<project-id>/items/\" + vars.Var_ItemId"}
 ```
+
+Write that variable before this node: a start-event input mapping (the
+`<uipath:mapping>` on the start event in
+[the minimal file](structural-bpmn.md#a-complete-minimal-file-author-from-this-not-from-examples))
+or an earlier node's output.
+`validate` warning `read but never assigned` on it means it is empty at run
+time, and so is that part of the url.
 
 The other keys are `authentication` (`manual` or `connector`), `method`, and
 optional `headers` and `query` objects and a `body` (sent for `POST`, `PUT`
