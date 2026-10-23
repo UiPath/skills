@@ -483,6 +483,11 @@ left open too. To make that path return the flow's outputs, end it with
 always capped with an End, because a task with nothing after it never
 finishes.
 
+A step you add whose type the source already pins with `{ version }` takes the
+same pin, as in `.return({ ... }, { name: 'end', version: '1.0' })`. Unpinned,
+it compiles at the SDK's default version, and once no node uses the file's
+version, the merged file loses that version's definition.
+
 ## Split (`$ref`) artifacts
 
 A deployed `.flow` may be SPLIT across sibling files with JSON Reference —
