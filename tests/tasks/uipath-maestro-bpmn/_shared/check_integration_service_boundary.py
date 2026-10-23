@@ -19,6 +19,20 @@ from _shared.bpmn_check import (  # noqa: E402
 )
 
 
+def check_blockers(text: str) -> dict[str, bool]:
+    # Each blocker is satisfied by any reasonable phrasing of the concept,
+    # not a single exact bigram. Normalise whitespace so line-wrapped phrases
+    # (e.g. "connection\n   binding" or "package\n   metadata") match reliably
+    # across line breaks.
+    low = re.sub(r"\s+", " ", text.lower())
+    return {
+        "connection binding": "connection binding" in low,
+        "dynamic schema(s)": bool(re.search(r"dynamic\s+(\w+\s+){0,4}schema", low)),
+        "bindings_v2.json": "bindings_v2.json" in low,
+        "package metadata": "package metadata" in low,
+    }
+
+
 def main() -> None:
     path, root = parse_bpmn("SlackDigestBoundaryBpmn")
     wrappers = [*elements(root, "sendTask"), *elements(root, "serviceTask")]
@@ -27,7 +41,8 @@ def main() -> None:
     require_no_private_connector_values(root)
     # Draft boundary: connection binding + package metadata are CLI-owned. Files the
     # CLI wrote (`init` / `update-metadata`) are that boundary; hand-written ones, or a
-    # resolved connection id, are what breach it — see require_no_hand_authored_package_files.
+    # resolved connection id, are what breach it — see
+    # require_no_hand_authored_package_files.
     require_no_hand_authored_package_files()
     # The prompt asks for "a README or notes file" and names no location: v1 wrote it
     # beside the .bpmn, the builder-SDK arm at the workspace root (its skill keeps the
@@ -38,16 +53,7 @@ def main() -> None:
         for p in sorted(glob.glob("**/*.md", recursive=True))
         if "node_modules" not in Path(p).parts and not Path(p).name.startswith("SKILL")
     )
-    low = notes.lower()
-    # Each blocker is satisfied by any reasonable phrasing of the concept, not a
-    # single exact bigram. "Dynamic input schema" is as correct as "dynamic
-    # schemas"; the check verifies the agent named the blocker, not its wording.
-    required = {
-        "connection binding": "connection binding" in low,
-        "dynamic schema(s)": bool(re.search(r"dynamic\s+(\w+\s+){0,4}schema", low)),
-        "bindings_v2.json": "bindings_v2.json" in low,
-        "package metadata": "package metadata" in low,
-    }
+    required = check_blockers(notes)
     missing = [name for name, ok in required.items() if not ok]
     if missing:
         fail(f"boundary notes missing CLI-owned blockers: {missing}")
