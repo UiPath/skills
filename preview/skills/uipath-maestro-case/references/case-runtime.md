@@ -120,9 +120,16 @@ make from syntax alone. Exact signatures remain in the generated API.
 ## Brownfield editing
 
 <!-- RULE:case.brownfield.pipeline -->
-- Start with `uip maestro case decompile`. Edit the generated `.case.ts`, retain
-  `preserveCaseJson(...)`, and run the generated pipeline to keep foreign
-  metadata and bindings that the typed surface does not own. Strict decompile
+- Start with `uip maestro case decompile <plan> -o <Name>.case.ts --no-pipeline`.
+  Edit the generated `.case.ts` and retain `preserveCaseJson(...)`: it keeps
+  the foreign metadata the typed surface does not own. Compile back into the
+  same plan, passing that plan as the binding map, on every compile:
+  `uip maestro case compile <Name>.case.ts -o <plan> --bindings <plan>`. The
+  plan's own `bindings` array maps the source's labels (for example `bOC1`) to
+  resource keys; without `--bindings`, compile writes `bOC1` in as the key and
+  overwrites that array, the only copy. This is the compile the optional
+  `<Name>.pipeline.mjs` runs, but the pipeline writes a separate
+  `.flow-sdk/<Name>.caseplan.json` that pack and debug never read. Strict decompile
   fails closed on unresolved references. For an explicitly broken input, rerun
   with `--best-effort`, inspect every reported diagnostic, and replace every
   `__UNRESOLVED_*` marker before checking or compiling the repair. Removing or
