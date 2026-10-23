@@ -241,7 +241,9 @@ def assert_interrupting(cond: dict, expected: bool, where: str) -> None:
     # on a literal true (`entryCondition.isInterrupting === true`), so leaving
     # out a falsy default is a serialization choice, not a different plan.
     actual = cond.get("isInterrupting")
-    if not (actual is None or isinstance(actual, bool)) or (actual is True) is not expected:
+    if actual is not None and not isinstance(actual, bool):
+        fail(f"{where}: isInterrupting is {actual!r}, expected a boolean or no key.")
+    if (actual is True) is not expected:
         fail(
             f"{where}: isInterrupting is {actual!r}, expected {expected}. Interrupting follows "
             "what the response does to active work, not the SLA's scope."
