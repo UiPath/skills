@@ -103,6 +103,14 @@ make from syntax alone. Exact signatures remain in the generated API.
 
 ## Human task outcomes
 
+<!-- RULE:bpmn.hitl.inline-form-default -->
+- Unless the request names a deployed Action App, write a human task as an inline form: `.humanTask(id, { form: { fields, outcomes }, outputs: { decision: '=Action' } })`.
+  The form travels in the `.bpmn`, so nothing on the tenant has to exist; `app` is for a named, deployed app, and an app id the tenant does not have fails `uip maestro bpmn validate` with `MISSING_BINDING` / `MISSING_RESOURCE`.
+  Never swap a human task for a plain `.task()` to get past that — use the form.
+- A field is `input` (shown, `value: '=vars.x'`), `output` (asked; the answer lands in `variable`, default the id) or `inOut` (shown, editable, written back).
+  Every field id must be a plain identifier that is not a reserved word (`reviewNote`, not `review-note` or `default`), `Action` is reserved for the outcome picked, outcome ids must be unique, and a picker (`singleSelect`, `multiSelect`, `enum`, or a dropdown `controlType`) needs `options`.
+- The cloud engine takes the inline-form path only on a tenant with its quick-form flag on; Studio Web's "Edit Schema" canvas does not open for an inline form.
+
 <!-- RULE:bpmn.hitl.output-map -->
 - Map any decision used by later routing through `outputs`; the typed platform
   output is not populated by the local runtime. Exercise each important outcome.
