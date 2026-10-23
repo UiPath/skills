@@ -25,5 +25,5 @@ Run AskUserQuestion per [phased-execution.md § Phase 7](phased-execution.md#pha
 <!--skill-flavor:step-sixteen:end-->
 
 <!--skill-flavor:step-fifteen-debug:start-->
-Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). On `Run debug session` → run `uip case debug "<ProjectName>"`, loop until the user picks `Continue to publish`. On `Continue to publish` → Phase 7. Never auto-run (Rule 13).
+Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). On `Run debug session` → run `uip maestro case debug "<ProjectName>"`, loop until the user picks `Continue to publish`. On `Continue to publish` → Phase 7. Never auto-run (Rule 13).
 <!--skill-flavor:step-fifteen-debug:end-->

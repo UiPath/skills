@@ -136,10 +136,8 @@ If execution faults, hand off to [diagnose/CAPABILITY.md](../diagnose/CAPABILITY
 
 ## Anti-patterns
 
-<!--skill-flavor:debug-as-validation:start-->
 - **Never run `uip maestro bpmn debug` as validation.** Use Author validation and packaging checks for correctness;
   debug executes the process.
-<!--skill-flavor:debug-as-validation:end-->
 - **Never reuse stale inputs silently.** Confirm every side-effecting run's input set and redact secrets from summaries.
 - **Never skip folder context for deployed runs.** `process run` requires `<FOLDER_KEY>` and instance inspection commands
   require `--folder-key` or `-f`.

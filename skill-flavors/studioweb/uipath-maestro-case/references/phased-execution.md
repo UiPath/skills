@@ -33,7 +33,7 @@ Before the prompt: `Suggested next steps: publish to Orchestrator when you want 
 <!--skill-flavor:phase-table-six-row:end-->
 
 <!--skill-flavor:phase-six-run-option:start-->
-- `Run debug session`: run `uip case debug "<ProjectName>"`. It waits for a terminal state.
+- `Run debug session`: run `uip maestro case debug "<ProjectName>"`. It waits for a terminal state.
 <!--skill-flavor:phase-six-run-option:end-->
 
 <!--skill-flavor:phase-six-requirements:start-->

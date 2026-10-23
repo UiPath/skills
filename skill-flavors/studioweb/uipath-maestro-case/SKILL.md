@@ -19,7 +19,7 @@ Hard-stop AskUserQuestion (Step 16): `Publish to Orchestrator` / `Done`. On publ
 <!--skill-flavor:phase-seven-publish:end-->
 
 <!--skill-flavor:phase-six-debug-gate:start-->
-Hard-stop AskUserQuestion (Step 15): `Run debug session` / `Continue to publish`. On Run, run `uip case debug "<ProjectName>"` and loop after completion until `Continue to publish`. Never run debug automatically.
+Hard-stop AskUserQuestion (Step 15): `Run debug session` / `Continue to publish`. On Run, run `uip maestro case debug "<ProjectName>"` and loop after completion until `Continue to publish`. Never run debug automatically.
 <!--skill-flavor:phase-six-debug-gate:end-->
 
 <!--skill-flavor:registry-gate-login:start-->

@@ -40,13 +40,13 @@ Not used in Studio Web: there is no `.uipx` on disk and Studio Web owns project 
 <!--skill-flavor:auth-column-note:end-->
 
 <!--skill-flavor:case-debug-command:start-->
-## uip case debug
+## uip maestro case debug
 
-Debug a case in the open solution through the host. **Executes the case for real: sends emails, posts messages, calls APIs. Only run on explicit user consent.** In Studio Web the verb is `uip case debug`; `uip maestro case debug` is unavailable here.
+Debug a case in the open solution through the host. **Executes the case for real: sends emails, posts messages, calls APIs. Only run on explicit user consent.**
 
 ```bash
-uip case debug "<ProjectName>"
-uip case debug "<ProjectName>" --inputs '{"claimId": "C-1"}'
+uip maestro case debug "<ProjectName>"
+uip maestro case debug "<ProjectName>" --inputs '{"claimId": "C-1"}'
 ```
 
 | Flag | Description |
@@ -56,9 +56,9 @@ uip case debug "<ProjectName>" --inputs '{"claimId": "C-1"}'
 | `--entry-point <path>` | Entry point as `entry-points.json` spells it. Defaults to the project's default |
 | `--timeout <seconds>` | Seconds to wait for a terminal state. Default `120`, clamped to `10`-`150` |
 
-Output is plain text, not JSON: status, `Trace ID: <id>`, run logs, execution trace. Exit 1 means the run faulted. Run `uip case debug --help` for the host's exact surface.
+Output is plain text, not JSON: status, `Trace ID: <id>`, run logs, execution trace. Exit 1 means the run faulted. Run `uip maestro case debug --help` for the host's exact surface.
 <!--skill-flavor:case-debug-command:end-->
 
 <!--skill-flavor:refresh-before-debug:start-->
-Not run in Studio Web: the host keeps solution resources in sync, including before `uip case debug`.
+Not run in Studio Web: the host keeps solution resources in sync, including before `uip maestro case debug`.
 <!--skill-flavor:refresh-before-debug:end-->
