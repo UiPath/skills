@@ -454,6 +454,12 @@ its case below says to; every other edit goes through merge.
   the original's definition row, so a no-edit round trip loses nothing. To read
   the result, set `completion: 'wait'` and declare `returns`.
 
+Pin a step you add with a `{ version }` the source gives other nodes of its
+type, one that decompile did not warn about. If it warned about all of them,
+leave it unpinned. If no node keeps the file's version, merge drops its
+definition with no warning. An End also needs a fresh name: see
+[A path without an End stays open](#a-path-without-an-end-stays-open).
+
 Validate the merged file after installing it as in
 [the safe project loop](#the-safe-project-loop), never the intermediate edited
 compile.
@@ -482,6 +488,11 @@ left open too. To make that path return the flow's outputs, end it with
 `.return({ ... })`. An open path maps no outputs. A human task's exit is
 always capped with an End, because a task with nothing after it never
 finishes.
+
+Give an End you add a name no node uses and, when the source has Ends, their
+`{ version }`: `.return({ ... }, { name: 'endSummary', version: '<END_VERSION>' })`.
+An added `name: 'end'` takes the id of an existing End decompile wrote without
+a name, which becomes `end2` with no warning.
 
 ## Split (`$ref`) artifacts
 

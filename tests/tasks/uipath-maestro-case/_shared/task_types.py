@@ -90,11 +90,16 @@ def render_guide_block(data: dict | None = None) -> str:
         f"- `{row['Spelling']}` → write `{row['PlanType']}` (`{row['Spelling']}` is from `{row['Layer']}`)"
         for row in not_task_types(data)
     ]
+    # Every real task type is authorable once Studio Web-only is empty; say nothing then.
+    studio = (
+        [f"Never author these. Each is a real task type, but an SDD cannot declare it; a person authors it in Studio Web: {real}.", ""]
+        if real
+        else []
+    )
     return "\n".join(
         [
             GUIDE_BLOCK_START,
-            f"Never author these. Each is a real task type, but an SDD cannot declare it; a person authors it in Studio Web: {real}.",
-            "",
+            *studio,
             "Never write these as a `Type:` either. Each names the same work in another layer, and none is a task type. Write the plan type instead:",
             "",
             *wrong,

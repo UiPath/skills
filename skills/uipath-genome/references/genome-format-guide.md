@@ -95,6 +95,8 @@ Test: if a builder cannot rebuild the step from the text alone, add detail. Neve
 
 **Composite UI interactions carry their full contract.** Source frameworks and descriptions bundle a multi-step interaction into one step: type-ahead pick, menu or tree path, option list, find-row-then-act, keystrokes to the focused element. The substep states, in behavioural words, everything the builder needs to rebuild the interaction: what is typed, how the suggestion or option is matched (equals / contains / nth), which key confirms, each path level, the row rule. "Enter Voluntary into Primary Reason" is a data loss; "type Voluntary into Primary Reason and pick the suggestion that equals Voluntary" is the step. A source guide's composite-actions table gives the wording per source action; execution builds each contract as a pattern ([ui-target-migration-guide.md § Composite interactions](ui-target-migration-guide.md)).
 
+**A substep in a window an action opened names that window.** When an action opens a window (a dialog, a popup, a browser tab) and the next substep acts inside it, that substep names the window: "in the Select Vendor dialog, click OK". A source that acts in the new window without first switching to it never names it: deduce the name from the action that opened it and flag it `*[Inferred]*`.
+
 **A source's workaround for its own platform is not behaviour.** A clipboard copy between two ranges, a temporary file written beside the input, a rename around a path the source's script cannot open, a user setting switched to steer a file format: the step states the result the workaround produced, and the Source Map names the workaround — unless a later step reads what it leaves behind, which makes it data.
 
 ### Business Rules

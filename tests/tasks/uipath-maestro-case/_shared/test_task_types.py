@@ -48,7 +48,7 @@ def test_snapshot_lists_are_disjoint_and_point_at_authorable_types():
     authorable = set(task_types.authorable())
     studio = set(task_types.studio_web_only())
     wrong = task_types.not_task_types()
-    assert authorable and studio and wrong
+    assert authorable and wrong  # studio may be empty: every real type authorable
     assert not authorable & studio
     for row in wrong:
         assert row["Spelling"] not in authorable | studio, row
@@ -127,3 +127,10 @@ def test_sdd_check_gate_accepts_exactly_the_authorable_types(gate: Path):
         f"{sorted(set(task_types.authorable()) - set(module.TASK_TYPES))}, extra "
         f"{sorted(set(module.TASK_TYPES) - set(task_types.authorable()))}"
     )
+
+
+def test_guide_block_omits_the_studio_web_paragraph_when_nothing_is_studio_web_only():
+    data = {**task_types.load(), "StudioWebOnly": []}
+    block = task_types.render_guide_block(data)
+    assert "Studio Web:" not in block
+    assert "Never write these as a `Type:` either." in block
