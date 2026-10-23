@@ -9,8 +9,11 @@ from pathlib import Path
 
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from testmanager_fixtures import HTTP_NODE, LEGACY_SDK_HTTP_NODE, TM_KEY  # noqa: E402
+
 CHECKER = Path(__file__).with_name("check_testmanager_attachments.py")
-TM_KEY = "uipath-uipath-testmanager"
 
 NODE = """
     <bpmn:sendTask id="Task_{object_name}">
@@ -22,38 +25,6 @@ NODE = """
             <uipath:input name="objectName" type="string" value="{object_name}" />
             <uipath:input name="method" type="string" value="{method}" />
           </uipath:context>
-        </uipath:activity>
-      </bpmn:extensionElements>
-    </bpmn:sendTask>"""
-
-HTTP_NODE = """
-    <bpmn:sendTask id="Task_{index}">
-      <bpmn:extensionElements>
-        <uipath:activity version="v1">
-          <uipath:type value="Intsvc.UnifiedHttpRequest" version="v1" />
-          <uipath:context>
-            <uipath:input name="connectorKey" type="string" value="uipath-uipath-http" />
-            <uipath:input name="method" type="string" value="POST" />
-            <uipath:input name="path" type="string" value="/http-request" />
-            <uipath:input name="objectName" type="string" value="http-request" />
-          </uipath:context>
-          <uipath:input name="body" type="json" target="body"><![CDATA[{body}]]></uipath:input>
-        </uipath:activity>
-      </bpmn:extensionElements>
-    </bpmn:sendTask>"""
-
-LEGACY_SDK_HTTP_NODE = """
-    <bpmn:sendTask id="Task_{index}">
-      <bpmn:extensionElements>
-        <uipath:activity version="v1">
-          <uipath:type value="Intsvc.ActivityExecution" version="v1" />
-          <uipath:context>
-            <uipath:input name="connectorKey" type="string" value="uipath-uipath-testmanager" />
-            <uipath:input name="objectName" type="string" value="http-request" />
-            <uipath:input name="method" type="string" value="POST" />
-            <uipath:input name="path" type="string" value="/http-request" />
-          </uipath:context>
-          <uipath:input name="body" type="json" target="body"><![CDATA[{body}]]></uipath:input>
         </uipath:activity>
       </bpmn:extensionElements>
     </bpmn:sendTask>"""

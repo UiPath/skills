@@ -13,7 +13,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import check_testmanager_generic_records as generic  # noqa: E402
-from test_testmanager_attachments import HTTP_NODE, LEGACY_SDK_HTTP_NODE, TM_KEY  # noqa: E402
+from testmanager_fixtures import HTTP_NODE, LEGACY_SDK_HTTP_NODE, TM_KEY  # noqa: E402
 
 HERE = Path(__file__).parent
 
