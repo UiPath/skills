@@ -29,9 +29,11 @@ uip maestro bpmn job status <JOB_KEY> --folder-key <FOLDER_KEY> --output json
 ```
 
 Parse the instance ID, folder context, process key, final status, and any trace/run identifiers from the JSON output.
+<!--skill-flavor:debug-instance-source:start-->
 For debug runs, prefer the `instanceId` returned by
 `uip maestro bpmn debug` and inspect it with `debug-instance` commands. Keep
 deployed-instance status reads and debug-session inspection separate.
+<!--skill-flavor:debug-instance-source:end-->
 
 ## Step 2 - Read incidents
 

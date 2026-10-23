@@ -431,7 +431,9 @@ Optional CLI debug run. Full contract — prompt options, debug command, safety 
 
 ## Step 15 — Debug prompt + session
 
+<!--skill-flavor:step-fifteen-debug:start-->
 Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). On `Run debug session` → run `uip solution resources refresh` then `uip maestro case debug`, loop until the user picks `Continue to publish`. On `Continue to publish` → Phase 7. Never auto-run (Rule 13).
+<!--skill-flavor:step-fifteen-debug:end-->
 
 ## Step 15a — Troubleshoot failed case
 

@@ -295,6 +295,7 @@ Output: `Code: ConnectorShapeSpliced` with `Data.Summary` (`TaskType`, `ServiceT
 
 ---
 
+<!--skill-flavor:case-debug-command:start-->
 ## uip maestro case debug
 
 Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`. Executes the case for real — sends emails, posts messages, calls APIs. Only run on explicit user consent.**
@@ -313,6 +314,7 @@ uip maestro case debug <project-path> --log-level debug --output json
 | `--poll-interval <ms>` | Polling interval in milliseconds (default: `2000`) |
 | `--output <format>` | Output format: `table`, `json`, `yaml`, `plain` (default: `json`) |
 | `--login-validity <minutes>` | Minimum minutes before token expiration triggers refresh (default: `10`) |
+<!--skill-flavor:case-debug-command:end-->
 
 ---
 

@@ -29,13 +29,17 @@ Before the prompt: `Suggested next steps: publish to Orchestrator when you want 
 <!--skill-flavor:phase-seven-next-steps:end-->
 
 <!--skill-flavor:phase-table-six-row:start-->
-| **6 — Debug** | Optional debug run the user starts from the Case Designer (real execution — emails, API calls, etc.); the agent runs no debug command | The outcome the user reports | `Debug in the Case Designer` / `Continue to publish`; a re-publish after a fix is confirmed separately |
+| **6 — Debug** | Optional debug run through the host (real execution: emails, API calls, etc.) | Run status, logs, and trace printed | `Run debug session` / `Continue to publish`; a re-publish after a fix is confirmed separately |
 <!--skill-flavor:phase-table-six-row:end-->
 
 <!--skill-flavor:phase-six-run-option:start-->
-- `Debug in the Case Designer` — `uip maestro case debug` is not in the Studio Web CLI. Tell the user to start the run from the Case Designer's Debug control and share the outcome; record a failure they report verbatim in `build-issues.md`.
+- `Run debug session`: run `uip case debug "<ProjectName>"`. It waits for a terminal state.
 <!--skill-flavor:phase-six-run-option:end-->
 
 <!--skill-flavor:phase-six-requirements:start-->
-The run happens in the open Studio Web solution, started by the user; nothing here uploads or runs it.
+The host runs the project saved in the open solution: no login, upload, or project path. Output is plain text: status, `Trace ID`, run logs, execution trace. Exit 1 means the run faulted.
 <!--skill-flavor:phase-six-requirements:end-->
+
+<!--skill-flavor:phase-six-refresh-note:start-->
+- Run no `uip solution resources refresh` before debug; the host keeps solution resources in sync.
+<!--skill-flavor:phase-six-refresh-note:end-->

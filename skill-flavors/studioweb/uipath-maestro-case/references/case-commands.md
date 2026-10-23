@@ -38,3 +38,23 @@ Not used in Studio Web: there is no `.uipx` on disk and Studio Web owns project 
 <!--skill-flavor:auth-column-note:start-->
 > **Auth column — not applicable in Studio Web.** The host injects your session on every call. `uip login` / `logout` / `auth` / `config` are not in the Studio Web CLI — never run them, and never check login state.
 <!--skill-flavor:auth-column-note:end-->
+
+<!--skill-flavor:case-debug-command:start-->
+## uip case debug
+
+Debug a case in the open solution through the host. **Executes the case for real: sends emails, posts messages, calls APIs. Only run on explicit user consent.** In Studio Web the verb is `uip case debug`; `uip maestro case debug` is unavailable here.
+
+```bash
+uip case debug "<ProjectName>"
+uip case debug "<ProjectName>" --inputs '{"claimId": "C-1"}'
+```
+
+| Flag | Description |
+|------|-------------|
+| `[project]` | Project name in the open solution, not a path. Defaults to the active project |
+| `-i, --inputs <json>` | Inline JSON only; `@file` is not supported |
+| `--entry-point <path>` | Entry point as `entry-points.json` spells it. Defaults to the project's default |
+| `--timeout <seconds>` | Seconds to wait for a terminal state. Default `120`, clamped to `10`-`150` |
+
+Output is plain text, not JSON: status, `Trace ID: <id>`, run logs, execution trace. Exit 1 means the run faulted. Run `uip case debug --help` for the host's exact surface.
+<!--skill-flavor:case-debug-command:end-->
