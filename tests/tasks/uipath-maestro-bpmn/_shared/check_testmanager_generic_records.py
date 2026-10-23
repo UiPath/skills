@@ -69,6 +69,7 @@ from _shared.bpmn_check import (  # noqa: E402
 
 CONNECTOR_KEY = "uipath-uipath-testmanager"
 
+# Regenerate: `uip is resources list uipath-uipath-testmanager`, then IsEnrichment.Operation.Path from `uip maestro bpmn registry get Intsvc.ActivityExecution --object-name <X> --operation <Y> --output json`.
 CREATE = [
     ("AssignTestCasesToRequirement", "/v2/{ProjectId}/requirements/{Id}/assigntestcases"),
     ("AssignTestCasesToTestSet", "/v2/{ProjectId}/testsets/{id}/assigntestcases"),
@@ -135,6 +136,7 @@ def _any_object(label: str, methods: set[str], targets: list[tuple[str, str]]) -
 
 OPERATIONS = [
     _any_object("insert a record", {"post"}, CREATE),
+    # Every Retrieve object emits GETBYID; a V1 GET is a List.
     _any_object("get a record", {"getbyid"}, RETRIEVE),
     _any_object("update a record", {"patch", "put"}, UPDATE),
     _any_object("delete a record", {"delete"}, DELETE),

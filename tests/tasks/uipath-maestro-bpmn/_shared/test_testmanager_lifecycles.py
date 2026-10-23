@@ -251,6 +251,16 @@ def test_generic_update_accepts_put(tmp_path: Path) -> None:
     assert result.returncode == 0, result.output
 
 
+def test_generic_v1_get_is_list_not_get(tmp_path: Path) -> None:
+    args, ops = CHECKERS["generic_records"]
+    nodes = [NODE.format(index=i, object_name=op[1], method=op[2]) for i, op in enumerate(ops)]
+    nodes[1] = NODE.format(index=1, object_name="TestCase", method="GET")
+    for body in ("".join(nodes), "".join(nodes[:4])):
+        result = _run(tmp_path, "generic_records", body, *args)
+        assert result.returncode != 0
+        assert _missing(ops, result.stderr) == [ops[1][0]]
+
+
 @pytest.mark.parametrize("index, object_name", [(0, "TestCaseLog"), (2, "TestExecution"),
                                                 (3, "Project"), (4, "Other")])
 def test_generic_rejects_object_without_the_operation(tmp_path: Path, index: int,
