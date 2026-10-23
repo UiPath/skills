@@ -408,11 +408,6 @@ its case below says to; every other edit goes through merge.
   node is your edit target, edit its inputs in the merged `.flow` JSON
   directly. `rawNode` is not a substitute here: it cannot yet route a human
   task's outcome exits.
-
-  A step you add whose type the source already pins with `{ version }` takes
-  the same pin. Unpinned, it compiles at the SDK's default version, and once no
-  node uses the file's version, the merged file loses that version's
-  definition.
 - A **file-format version outside the writable band** (below `1.6`) — the source
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and
@@ -459,6 +454,12 @@ its case below says to; every other edit goes through merge.
   the original's definition row, so a no-edit round trip loses nothing. To read
   the result, set `completion: 'wait'` and declare `returns`.
 
+Give a step you add the `{ version }` the source gives other nodes of its type
+(any one, when it gives several), unless decompile warned that type's inputs
+differ; then leave it unpinned. Merge does not warn when the file's version drops
+out. An End also needs a fresh name: see
+[A path without an End stays open](#a-path-without-an-end-stays-open).
+
 Validate the merged file after installing it as in
 [the safe project loop](#the-safe-project-loop), never the intermediate edited
 compile.
@@ -488,9 +489,10 @@ left open too. To make that path return the flow's outputs, end it with
 always capped with an End, because a task with nothing after it never
 finishes.
 
-An End you add takes its type's pin like any added step
-([pins](#designer-shapes-decompile-keeps)):
-`.return({ ... }, { name: 'end', version: '1.0' })`.
+Give an End you add a name no node uses and, when the source has Ends, their
+`{ version }`: `.return({ ... }, { name: 'endSummary', version: '<END_VERSION>' })`.
+An added `name: 'end'` takes the id of an existing End decompile wrote without
+a name, which becomes `end2` with no warning.
 
 ## Split (`$ref`) artifacts
 
