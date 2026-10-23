@@ -38,7 +38,7 @@ ALLOWED = {
     "core.control.end",
     "stickyNote",
 }
-BOX_LABEL = re.compile(r"\S.*\[[^\]]+\](\s*→\s*\S.*)?")
+BOX_LABEL = re.compile(r"\S.*\[[^\]]+\](\s*(?:→|->)\s*\S.*)?")
 
 
 def fail(msg: str) -> int:

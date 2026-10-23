@@ -26,7 +26,10 @@ skeleton is all `mock()` boxes by design: [`phase-2-skeleton-guide.md`](phase-2-
 
 When `check` reports `MOCK_HAS_NO_OUTPUT` because a later step reads the mock,
 keep the mock and feed that step from a separate step, as in the example above;
-never replace the mock with a script that fakes its output.
+never replace the mock with a script that fakes its output. In a draft
+skeleton, declare the value as an input or `.var()` and route on it instead
+([`phase-2-skeleton-guide.md`](phase-2-skeleton-guide.md) rule 5); no feeding
+step.
 
 ## At a glance
 

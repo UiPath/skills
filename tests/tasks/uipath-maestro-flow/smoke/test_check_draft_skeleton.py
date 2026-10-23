@@ -29,7 +29,7 @@ GOOD = [
     {"id": "large", "type": "core.logic.decision",
      "inputs": {"trueLabel": "review", "falseLabel": "auto-approve"}},
     _box("review", "Manager review [Human task]"),
-    _box("approve", "Approve invoice [Script]"),
+    _box("approve", "Approve invoice [Script] -> approved"),
     {"id": "end", "type": "core.control.end"},
 ]
 

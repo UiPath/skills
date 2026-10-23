@@ -11,7 +11,7 @@ run_limits:
   max_turns: 60
 
 reference:
-  directory: .
+  directory: ..
 
 initial_prompt: |
   Create a UiPath Flow named "OverdueInvoiceSketch" for this process:
@@ -53,7 +53,7 @@ success_criteria:
 
   - type: run_command
     description: "Skeleton has labelled mock boxes, a real outcome-labelled decision, a layout, no real nodes, and validates"
-    command: "python3 $REFERENCE_DIR/check_draft_skeleton.py OverdueInvoiceSketch --trigger scheduled"
+    command: "python3 $REFERENCE_DIR/smoke/check_draft_skeleton.py OverdueInvoiceSketch --trigger scheduled"
     timeout: 180
     expected_exit_code: 0
     weight: 3.0

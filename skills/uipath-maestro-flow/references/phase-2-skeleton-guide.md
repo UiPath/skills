@@ -11,7 +11,7 @@ discovery-only tasks skip this phase too.
 Phases: 0 surface (nothing to do yet; surface detection is future work),
 1 preflight, 2 skeleton, 3 iterate until the user approves, 4 wire up.
 In plan mode, writes wait for plan approval: put the skeleton outline (boxes,
-branches, conditions) in the plan, then run 2a–2f once the plan is approved.
+branches, conditions) in the plan, then run 2a–2f once the plan-mode approval comes.
 
 ## What a skeleton is
 
@@ -27,7 +27,10 @@ reported as one.
    [`placeholder.md`](placeholder.md) describes; phase 4 replaces every one.
 2. **Make no registry or library calls.** No `uip maestro registry` or
    `uip maestro flow registry` command, no `connector()`, `http()`, agent,
-   `script()` or `prepare`. Node types are not being chosen yet.
+   `script()` or `prepare`. Node types are not being chosen yet. In draft mode
+   phase 1 is the solution scan and `init` only: the node choice in
+   [SKILL.md — Project layout](../SKILL.md#project-layout) and the search in
+   [`author.md`](author.md) rule 12 belong to phase 4.
 3. **Control flow is real.** The trigger, `.branch`, `.switch`, `.parallel`,
    `.loop` and the end are what the user approves. A manual, scheduled or form
    start needs no lookup; for a connector event start, use a manual start and
@@ -42,7 +45,8 @@ reported as one.
 6. **Declare the inputs the request names; leave outputs to phase 4.** A
    declared output must be bound on every path, and a skeleton has nothing to
    bind it to.
-7. **Ask nothing before the sketch.** A structure question (a threshold, an
+7. **Ask nothing about the flow before the sketch.** The phase 1 solution
+   choice ([`author.md`](author.md) rule 10) still asks. A structure question (a threshold, an
    unnamed branch) becomes a visible assumption in the shape and waits for
    the 3c question.
 
@@ -55,7 +59,9 @@ Phases 0 and 1 run first, and 2a has scaffolded the project
   `init --sdk-source` seeded, keeping its flow id and name.
 - **2c–2e Run the [Lifecycle](../SKILL.md#lifecycle) loop** you picked:
   `check` where the loop allows it, `compile -o`, `validate`, then `format`.
-  Warnings that name a mock box are expected; act only on errors.
+  A skeleton checks, compiles and validates with zero warnings (measured on
+  18 CI draft runs), so treat any warning or error as real and fix it without
+  adding a real node.
 - **2f Show it.** When the request allows an upload and you are logged in, run
   `uip solution resources refresh --solution-folder <SolutionDir> --output json`
   and `uip solution upload <SolutionDir> --output json`; 3c shows the returned
@@ -85,7 +91,8 @@ Phases 0 and 1 run first, and 2a has scaffolded the project
 
   *Build it* goes to phase 4. *Change it* goes back to 3a. *Keep it* ends the
   run with the skeleton reported as an outline. Headless, or when no answer
-  comes, this is *Keep it*: never pick *Build it* yourself. Say which mode ran
+  comes, this is *Keep it*: no option is recommended, so rule 9 stops here.
+  Never pick *Build it* yourself. Say which mode ran
   in the final report.
 
 Only *Build it* authorizes phase 4: node search, connectors, `prepare` and
