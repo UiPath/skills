@@ -66,11 +66,10 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
-    HTTP_CONNECTOR_KEY,
-    LEGACY_HTTP_OBJECT,
     ConnectorOperation,
     connector_requests,
     fail,
+    no_connector_node_message,
     parse_bpmn,
     require_operations,
 )
@@ -94,13 +93,7 @@ def main() -> None:
     path, root = parse_bpmn()
     requests = list(connector_requests(root, CONNECTOR_KEY))
     if not requests:
-        fail(
-            "no bpmn:sendTask calls the Test Manager connector: expected "
-            f"Intsvc.ActivityExecution with context connectorKey {CONNECTOR_KEY!r} "
-            f"(objectName not {LEGACY_HTTP_OBJECT!r}), or Intsvc.UnifiedHttpRequest "
-            f"with context connectorKey {HTTP_CONNECTOR_KEY!r} and body "
-            f"authentication 'connector', targetConnector {CONNECTOR_KEY!r}"
-        )
+        fail(no_connector_node_message("Test Manager", CONNECTOR_KEY))
     print(f"OK: {len(requests)} {CONNECTOR_KEY} sendTask(s) present in {path}")
 
     if not all_ops:
