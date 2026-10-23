@@ -1,8 +1,8 @@
 # Custom Fields — definitions, labels, and values
 
-Load this when the task creates, reads, updates, or deletes Test Manager **custom fields** — their project-scoped definitions, per-object `label` rows, or `value` rows (`uip tm customfield …`).
+Load this when creating, reading, updating, or deleting Test Manager **custom fields**: project-scoped definitions, per-object `label` rows, or `value` rows (`uip tm customfield …`).
 
-Definitions are project-scoped and attach to **Requirement**, **TestCase**, or **TestSet**. Nested `label` and `value` groups operate on per-object rows. `--object-type` is case-sensitive and accepts only `Requirement`, `TestCase`, or `TestSet`; `--data-type` accepts only `Text` or `Label` (PascalCase).
+Definitions are project-scoped and attach to **Requirement**, **TestCase**, or **TestSet**; nested `label` and `value` groups operate on per-object rows. `--object-type` is case-sensitive and accepts only `Requirement`, `TestCase`, or `TestSet`; `--data-type` accepts only `Text` or `Label` (PascalCase).
 
 - `uip tm customfield list --project-key <PROJECT_KEY>` lists definitions; optionally `--object-types <type...>`, `--data-types <type...>` (variadic PascalCase filters), `--name <NAME>` (exact), `--filter <text>` (substring), `--sort-by <expr>`, `--limit <N>`, `--offset <N>`. `get --project-key <PROJECT_KEY> --field-id <UUID>` gets by UUID, or identify by `--name <NAME> --object-type <TYPE>`.
 - `create --project-key <PROJECT_KEY> --name <NAME> --data-type <Text|Label> (--object-type <Requirement|TestCase|TestSet> | --scope-list <type...>)` creates with one scope or mutually exclusive variadic `--scope-list <Requirement TestCase TestSet>`; optionally `--description <text>`, `--value-hints <text>`, `--default-value <text>`. `update --project-key <PROJECT_KEY> --field-id <UUID>` identifies by `--field-id` or `--name + --object-type`; optionally `--rename-to <name>`, `--description`, `--default-value`, `--value-hints`; unspecified fields remain unchanged. `delete --project-key <PROJECT_KEY> --field-ids <UUID...>` deletes variadic UUIDs, or one by `--name + --object-type`.

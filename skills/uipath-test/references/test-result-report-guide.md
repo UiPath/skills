@@ -11,15 +11,14 @@ Generate persona-tailored test reports from UiPath Test Manager.
 ## Workflow
 
 1. **Fetch test executions from the test set**, using `status`, `execution-type`, and `execution-finished-interval` as needed.
-2. **Ask for the report persona:** "Who is this report for?" Personas include `QA Engineer`, `Release Manager`, and `Developer`.
-3. **Ask for the output directory:** "Which folder should the report be saved in? (or use the current directory.)" Use a supplied absolute or relative path as-is; otherwise use `.`. Verify it exists before writing. If it does not, ask whether to create it or choose another path; do not create directories silently.
-4. **Include in every report:** every execution's status; counts of already-fetched test case logs by result (`none`, `passed`, `failed`, `restricted`), tallied from those logs; and frequently failing test cases.
-5. **Add persona-specific content:**
+2. Ask: "Who is this report for?" Accept `QA Engineer`, `Release Manager`, or `Developer`; for another persona, ask for the persona and report purpose.
+3. Ask: "Which folder should the report be saved in? (or use the current directory.)" Use a supplied absolute or relative path as-is, otherwise `.`; verify it exists before writing. If it does not, ask whether to create it or choose another path; never create it silently.
+4. Include every execution's status, counts of already-fetched test case logs by result (`none`, `passed`, `failed`, `restricted`) tallied from those logs, and frequently failing test cases.
+5. Add persona-specific content:
    - **QA Engineer:** List regressions (previously passing tests that now fail). Ask whether further details are needed and follow [Analyse More](#analyse-more).
    - **Developer:** Include the failing assertion message for each test case log. Ask whether further details are needed and follow [Analyse More](#analyse-more).
-   - **Release Manager:** Provide an overall summary and go/no-go decision support: success rate, blocker count, and risk assessment.
-   - **Other:** Ask for the persona and report purpose.
-6. **Validate before saving:** confirm the required sections below and step 7, adding missing sections. Each must be a real `##` or `###` markdown heading, not prose; write "None" beneath headings without content.
+   - **Release Manager:** Provide overall summary and go/no-go decision support: success rate, blocker count, and risk assessment.
+6. **Validate before saving:** confirm the required sections below and step 7, adding missing sections. Each must be a real `##` or `###` markdown heading, not prose; write "None" beneath an empty heading.
 
    | Persona | Required headings |
    |---|---|
@@ -28,18 +27,18 @@ Generate persona-tailored test reports from UiPath Test Manager.
    | Developer | Plus `## Failed Assertions` (assertion message per failing test case log) |
    | Release Manager | Plus `## Go / No-Go` (success rate, blocker count, risk assessment) |
 
-   Add a persona-appropriate extra section when the data warrants it. Never omit a required heading.
-7. **Ask whether further details are needed** and follow [Analyse More](#analyse-more).
-8. **Save the report** with all fetched data.
+   Add a persona-appropriate extra section when warranted by the data; never omit a required heading.
+7. Ask whether further details are needed and follow [Analyse More](#analyse-more).
+8. Save the report with all fetched data.
 
 ## Output Format
 
-Use `test-report-<PERSONA>-<YYYY-MM-DD>.md`, with `<PERSONA>` `qa`, `dev`, or `release` (use `custom` otherwise) and `<YYYY-MM-DD>` today's date. Ask:
+Use `test-report-<PERSONA>-<YYYY-MM-DD>.md`, where `<PERSONA>` is `qa`, `dev`, or `release` (`custom` otherwise) and `<YYYY-MM-DD>` is today's date. Ask:
 
 - "Where should the report be saved? (default: current directory)"
 - "What should the report be named? (default: `<DEFAULT_FILENAME>`)"
 
-Write to `<OUTPUT_DIR>/<FILENAME>`. Create the directories if not present.
+Write to `<OUTPUT_DIR>/<FILENAME>`. Create directories if not present, but only after asking when the chosen directory does not exist.
 
 ## Analyse More
 
