@@ -700,11 +700,12 @@ Draft mode only.
    Exit 0 = valid. Exit 1 = a parse error, a `grep` hit, or a `validate`
    failure. Read severity from each issue's `[error]`/`[warning]` tag, not
    from the `Found N error(s)` header, which counts errors while the list under
-   it prints warnings too. Fix only
-   error-severity findings, then re-run 4d and validate again; stop
-   re-validating once every remaining finding is a warning or the placeholder
-   pair below. `read but never assigned` is a defect no error covers: nothing
-   writes a value the process reads, so a step that should produce it does not.
+   it prints warnings too. Fix
+   error-severity findings and the warnings named below, then re-run 4d and
+   validate again; stop re-validating once every remaining finding is another
+   warning or the placeholder pair below. `read but never assigned` is a
+   defect no error covers: nothing writes a value the process reads, so a step
+   that should produce it does not.
    `MISSING_RESOURCE` (warning) and `MISSING_BINDING` (error) are one finding
    about one unresolved node, and the binding half is a live tenant lookup.
    Bind the node to a deployed resource. When the user asked for a
