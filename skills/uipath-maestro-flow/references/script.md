@@ -25,31 +25,6 @@ before passing a bare reference to another node.
 Return an object literal for named fields and read them with `out('parse', 'tag')`;
 read a scalar return with `out('parse')`.
 
-## Writing the script as a function
-
-A body longer than a line is easier to get right as a TypeScript function: pass the function instead of a string, and tsc checks the body like the rest of the `.flow.ts`.
-
-```ts
-import { flow, script, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
-
-  .step('normalize', script(normalize, { returns: { amount: 'number', valid: 'boolean' } }))
-
-function normalize(vars: FlowVars) {
-  const amount = Number(vars.start.output.amount);
-  return { amount, valid: Number.isFinite(amount) };
-}
-```
-
-- The function is never called. Its body, exactly as written, becomes the script, and its parameter is renamed to the runtime's `$vars`. Name the parameter `$vars` and nothing is renamed.
-- Read the parameter with dots (`vars.start.output.amount`). A destructured parameter is refused, because step reads hidden in one are invisible to `check`.
-- `returns` is what the `.flow` declares, and tsc checks the function's return against it: `returns: { amount: 'string' }` over the function above does not compile. Without `returns`, the body's type is inferred as for a string body.
-- The function reads only what [the runtime](#the-javascript-runtime) has. A module constant, an import, or a helper defined elsewhere in the file throws when the flow loads (`script(normalize) cannot be a script: it reads LIMIT, …`): move the value inside the function, or pass it in as a step input.
-- Also refused, with a message naming the function: `async`, generators, more than one parameter, a default or rest parameter, `this` or `arguments` outside a nested function, a reference to the function's own name, and a `var` or function declaration that reuses the parameter's name.
-- Compile with `uip maestro flow compile` (or the SDK's own compile CLI): both run Node, which keeps the body's text as written. Loaded through another TypeScript loader (Bun, tsx), the stored body is that loader's reprint of it.
-
-Needs `@uipath/maestro-builder-sdk` 6.50.0 or later; an older SDK takes only `script({ code })` and fails on a function.
-Upgrade the copy in use: `npm install @uipath/maestro-builder-sdk@latest` in a workspace that has its own `node_modules` copy (it is used before the global one), else `npm install -g @uipath/maestro-builder-sdk@latest`.
-
 ## At a glance
 
 Run inline JavaScript for computation that is not a first-class Flow node.
@@ -89,6 +64,30 @@ of an object return, a map — `returns: { total: 'number', currency: 'string' }
 `'any'` is valid only as the top-level `returns` of a `script@1.1` step — not
 on 1.0.0 and never as a field type (`check` reports `SCRIPT_RETURNS_UNKNOWN_TYPE`).
 It keeps the output untyped even when the body plainly returns one type.
+
+## Writing the script as a function
+
+A body longer than a line is easier to get right as a TypeScript function: pass the function instead of a string, and the editor and tsc check the body like the rest of the `.flow.ts`.
+
+```ts
+import { script, type FlowVars } from '@uipath/maestro-builder-sdk';
+
+// … flow(…) chain
+  .step('normalize', script(normalize, { returns: { amount: 'number', valid: 'boolean' } }))
+
+function normalize(vars: FlowVars) {
+  const amount = Number(vars.start.output.amount);
+  return { amount, valid: Number.isFinite(amount) };
+}
+```
+
+- The function is never called. Its body, exactly as written, becomes the script, and its parameter is renamed to the runtime's `$vars`. Name the parameter `$vars` and nothing is renamed.
+- Read the parameter only with dots (`vars.start.output.amount`). A destructured parameter, an alias (`const v = vars`), `vars['start']`, `vars?.start`, or passing `vars` to a helper is refused, because a step read hidden that way is invisible to `check`.
+- `returns` is what the `.flow` declares, and its type is checked against the function's return: `returns: { amount: 'string' }` over the function above is a type error. `compile` does not type-check, so run `npx tsc --noEmit` to see it. Without `returns`, the body's type is inferred as for a string body.
+- The function reads only what [the runtime](#the-javascript-runtime) has. A value from outside the function is refused: a module constant or an import throws when the flow loads (`script(normalize) cannot be a script: it reads LIMIT, …`), and so does a module helper named like a runtime global (`parseInt`), which `compile` and `check` refuse. Move the value inside the function, or declare it with `.var()` and read `vars.<name>`.
+- Also refused, with a message naming the function: `async`, generators, more than one parameter, a default or rest parameter, `this` or `arguments` outside a nested function, a reference to the function's own name, and a `var` or function declaration that reuses the parameter's name.
+
+The function form needs an SDK whose `dist/api-index.md` (in the SDK copy in use) lists `ScriptValue`. An older SDK fails on a function with `compile: Cannot read properties of undefined (reading 'matchAll')`. Upgrade the copy in use: `npm install @uipath/maestro-builder-sdk@latest` in a workspace that has its own `node_modules` copy (it is used before the global one), else `npm install -g @uipath/maestro-builder-sdk@latest`; or write `script({ code })`.
 
 ## The JavaScript runtime
 
