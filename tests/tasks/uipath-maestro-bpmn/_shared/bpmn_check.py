@@ -530,23 +530,36 @@ def _filled_path_re(template: str, taken: frozenset[tuple[int, str]]) -> re.Patt
 
 
 class ConnectorOperation(NamedTuple):
+    """``alternatives``: further ``(object_name, path)`` targets that also
+    satisfy the operation."""
+
     label: str
     object_name: str
     methods: set[str]
     path: str
+    alternatives: tuple[tuple[str, str], ...] = ()
+
+
+def _targets(operation: ConnectorOperation) -> list[tuple[str, str]]:
+    return [(operation.object_name, operation.path), *operation.alternatives]
+
+
+def _methods(operation: ConnectorOperation) -> set[str]:
+    return {method.lower() for method in operation.methods}
+
+
+def _http_methods(operation: ConnectorOperation) -> set[str]:
+    return {"get" if m in _CATALOG_ONLY_METHODS else m for m in _methods(operation)}
 
 
 def _literal_segments(operations: list[ConnectorOperation]) -> frozenset[tuple[int, str]]:
     return frozenset(
         (position, segment.lower())
         for operation in operations
-        for position, segment in enumerate(operation.path.split("/"))
+        for _, path in _targets(operation)
+        for position, segment in enumerate(path.split("/"))
         if segment and "{" not in segment
     )
-
-
-def _methods(operation: ConnectorOperation) -> set[str]:
-    return {method.lower() for method in operation.methods}
 
 
 def _operation_matches(
@@ -558,14 +571,15 @@ def _operation_matches(
     taken: frozenset[tuple[int, str]],
 ) -> bool:
     method = method.lower()
+    targets = _targets(operation)
     if shape is RequestShape.ACTIVITY:
         object_name = context_value(task, "objectName")
-        return method in _methods(operation) and object_name == operation.object_name
+        return method in _methods(operation) and any(object_name == o for o, _ in targets)
 
-    if method not in _methods(operation) - _CATALOG_ONLY_METHODS:
+    if method not in _http_methods(operation):
         return False
-    path_re = _filled_path_re(operation.path, taken)
-    return path_re.search(path.split("?", 1)[0]) is not None
+    request_path = path.split("?", 1)[0]
+    return any(_filled_path_re(p, taken).search(request_path) for _, p in targets)
 
 
 def _assign_requests(candidates: list[list[int]]) -> dict[int, int]:
@@ -589,19 +603,27 @@ def _assign_requests(candidates: list[list[int]]) -> dict[int, int]:
 
 
 def _require_valid(operation: ConnectorOperation) -> None:
-    if not operation.path.strip("/"):
-        raise ValueError(f"{operation.label}: path {operation.path!r} matches any request")
-    if not _methods(operation) - _CATALOG_ONLY_METHODS:
+    for _, path in _targets(operation):
+        if not path.strip("/"):
+            raise ValueError(f"{operation.label}: path {path!r} matches any request")
+    if not _http_methods(operation):
         raise ValueError(f"{operation.label}: methods {sorted(operation.methods)} hold no HTTP verb")
 
 
 def _missing_operation(operation: ConnectorOperation, taken_by: list[str]) -> str:
-    http_methods = "/".join(sorted(_methods(operation) - _CATALOG_ONLY_METHODS)).upper()
-    message = (
-        f"{operation.label} (objectName={operation.object_name!r} with method in "
-        f"{sorted(_methods(operation))}, or HTTP {http_methods} {operation.path!r} "
-        "with every placeholder filled)"
-    )
+    http_methods = "/".join(sorted(_http_methods(operation))).upper()
+    if operation.alternatives:
+        object_names, paths = zip(*_targets(operation))
+        targets = (
+            f"objectName in {list(object_names)} with method in {sorted(_methods(operation))}, "
+            f"or HTTP {http_methods} on one of {list(paths)}"
+        )
+    else:
+        targets = (
+            f"objectName={operation.object_name!r} with method in {sorted(_methods(operation))}, "
+            f"or HTTP {http_methods} {operation.path!r}"
+        )
+    message = f"{operation.label} ({targets} with every placeholder filled)"
     if taken_by:
         message += f"; matching node(s) already used: {', '.join(taken_by)}"
     return message
