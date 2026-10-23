@@ -1,0 +1,265 @@
+# Skill Maintenance
+
+Internal tooling and conventions for maintaining the `uipath-maestro-flow` skill structure. Not loaded by agents during normal use.
+
+## Structure
+
+The skill is organized into four peer capabilities:
+
+```text
+SKILL.md                                ← capability router (universal rules + 4-bucket intent)
+references/
+├── shared/                             ← cross-capability primitives
+│   ├── cli-commands.md                 ← flat CLI lookup
+│   ├── cli-conventions.md              ← --output json, login, FOLDER_KEY, etc.
+│   ├── file-format.md                  ← .flow JSON schema
+│   ├── variables-and-expressions.md    ← =js: Jint expressions
+│   ├── node-output-wiring.md           ← canonical $vars wiring rule
+│   ├── action-nodes.md                 ← action-node boilerplate shared by plugin impl.md's
+│   └── ux-narration-and-todos.md       ← progress narration + todo engage rules
+├── author/
+│   ├── CAPABILITY.md                   ← capability index
+│   ├── greenfield.md                   ← create-new-flow journey
+│   ├── brownfield.md                   ← edit-existing-flow journey
+│   ├── editing-operations.md           ← strategy selection
+│   ├── editing-operations-json.md      ← Edit / Write recipes (default)
+│   ├── editing-operations-cli.md       ← CLI carve-outs
+│   ├── planning-arch.md                ← topology/plugin index
+│   ├── planning-impl.md                ← registry/binding/wiring
+│   └── plugins/                        ← per-node-type planning + impl
+├── operate/
+│   ├── CAPABILITY.md                   ← capability index
+│   ├── ship.md                         ← Studio Web upload + Orchestrator deploy
+│   ├── run.md                          ← debug + process run + job status/traces
+│   └── manage.md                       ← instance lifecycle (pause/resume/cancel/retry)
+├── diagnose/
+│   ├── CAPABILITY.md                   ← capability index
+│   ├── troubleshooting-guide.md        ← diagnostic priority ladder
+│   └── failure-modes.md                ← pattern catalog (missing `=js:`, misshapen nodes, etc.)
+└── evaluate/
+    ├── CAPABILITY.md                   ← capability index
+    ├── commands-reference.md           ← `uip maestro flow eval` surface
+    ├── eval-sets-guide.md              ← eval set + data point design
+    ├── evaluators-guide.md             ← evaluator selection and config
+    ├── running-guide.md                ← Studio Web run start/status/results
+    └── upload-safety.md                ← never auto-upload to satisfy a prerequisite
+```
+
+**Recursive pattern.** Skill = `SKILL.md` + `references/`. Capability = `CAPABILITY.md` + its sibling docs in the same folder. The same "index next to its references" shape at two scales. Future capabilities (e.g., `governance/`) get the template for free.
+
+**Convention:** each capability is a self-contained folder. Every file in `<capability>/` is implicitly that-capability-scoped — path = provenance. The `CAPABILITY.md` index is always at `<capability>/CAPABILITY.md` (uniform shape across all four).
+
+### Capability boundary
+
+- **Author** = on disk, locally, **without `uip login`** (`flow init`, `validate`, `format`, registry, JSON edits)
+- **Operate** = touches the cloud, **requires `uip login`** (`solution upload`, `flow debug`, `flow pack`, `process run`, `instance ...`)
+- **Diagnose** = postmortem on a failed run, **requires `uip login`** (`instance incidents`, `instance variables`, `instance asset`, `incident get`, `job traces`)
+- **Evaluate** = evaluations against a flow already in Studio Web; local eval-set/evaluator CRUD needs no login, **`eval run *` requires `uip login`** (`eval set`, `eval evaluator`, `eval run`)
+
+Author terminates at `validate` + `format` and hands off to Operate. Operate hands off to Diagnose when a run faults. Diagnose hands off back to Author for the underlying fix. Evaluate attaches to a flow Operate has already uploaded.
+
+### Capability-index template
+
+Every `<capability>/CAPABILITY.md` follows the same 6-section structure:
+
+1. `# <Capability> — <one-line purpose>`
+2. `## When to use this capability`
+3. `## Critical rules`
+4. `## Workflow`
+5. `## Common tasks`
+6. `## Anti-patterns`
+7. `## References`
+
+## Markdown anchor slugs (`[link](file.md#section-name)`)
+
+Anchor links are computed exactly as GitHub does — getting them wrong silently produces a dead link that markdown lint won't catch.
+
+### Slug rule
+
+1. Lowercase the heading
+2. Strip these characters entirely: `` ` ``, `*`, `_`, and any non-alphanumeric/non-space/non-dash character
+3. Replace each remaining space with `-`
+4. **Separator characters do not collapse** — each space (or em-dash that became a space-pair) becomes its own dash
+
+### Common gotchas
+
+| Heading | Wrong slug | Correct slug | Why |
+| --- | --- | --- | --- |
+| `## 5. \`--folder-key\` requirement` | `#5--folder-key-requirement` | `#5---folder-key-requirement` | After `.` strips and backticks strip: `5 --folder-key requirement`. The space between `5` and `--` becomes a dash, joining the two literal dashes from `--folder-key` → 3 dashes |
+| `## Reused reference ID — cross-connection ID leakage` | `#reused-reference-id-cross-connection-id-leakage` | `#reused-reference-id--cross-connection-id-leakage` | The em-dash (`—`) is stripped (non-alphanumeric/space/dash), but the spaces on either side of it survive and both become dashes → 2 dashes |
+| `## \`variables.nodes[]\` missing → \`$vars.X.output\` resolves to undefined` | `#variablesnodes-missing-varsxoutput-resolves-to-undefined` | `#variablesnodes-missing--varsxoutput-resolves-to-undefined` | Backticks, `.`, `[`, `]`, `$` and the `→` all strip (non-alphanumeric/space/dash). The space before and after the arrow both survive → 2 consecutive dashes between `missing` and `varsxoutput` |
+
+### Verifying anchor links
+
+Run the anchor-checker script before committing changes that add or edit anchor links:
+
+```bash
+bash .maintenance/check-anchors.sh
+```
+
+Returns `anchors_checked=N anchors_bad=0` on success. Exits non-zero on any bad anchor. Any non-zero `anchors_bad` lists which file → which target slug failed to resolve. An anchor resolves against either a heading slug or an explicit `<a id="...">` / `<a name="...">` tag in the target file — GitHub honors both.
+
+## Verifying file-path links
+
+Run the link-checker script to catch broken `[text](path)` links:
+
+```bash
+bash .maintenance/check-links.sh
+```
+
+Returns `checked=N broken=M`. Exits non-zero on any broken link. Both checkers skip links inside fenced code blocks and inline code spans, so example links in this README don't trigger false positives.
+
+## Verifying link text agrees with link URL
+
+Run the link-text checker to catch links whose **text looks like a file** but whose **URL points elsewhere**:
+
+```bash
+bash .maintenance/check-link-text.sh
+```
+
+Returns `checked=N broken=M`. Exits non-zero on any mismatch. Three failure modes, all hard failures:
+
+- **basename-mismatch** — text basename ≠ URL basename (e.g., text `AUTHOR.md`, URL `../CAPABILITY.md`).
+- **prefix-mismatch** — basenames agree but the directory hint in the text contradicts the URL's directory (e.g., text `operate/manage.md`, URL `references/manage.md`). Tolerated when the text directory is a suffix of the URL directory (e.g., text `author/greenfield.md`, URL `references/author/greenfield.md`).
+- **folder-url-but-text-is-file** — URL ends with `/` but text claims a file.
+
+Only links whose text contains a file-like token (extension `.md`, `.sh`, `.json`, `.js`, `.ts`, `.py`, `.cs`, `.xaml`, `.flow`, `.yaml`, `.yml`) are evaluated; descriptive text like `[Edit/Write: Variable Operations](...)` is skipped. Same skip rules as `check-links.sh` (fenced code, inline code, http(s), slash commands, anchor-only).
+
+## Verifying reachability depth
+
+Run the depth-checker script to verify every file under `references/` is reachable from `SKILL.md` within the configured max hops (default 2):
+
+```bash
+bash .maintenance/check-depth.sh
+```
+
+Pass a custom max-hops value as the first argument:
+
+```bash
+bash .maintenance/check-depth.sh 3
+```
+
+Returns `total_files=N reachable_within=R unreachable=U exceeds_depth=E`. Folder links count as reachability for every file in the folder (per the agent-navigation convention below). Exits non-zero if any file is unreachable or exceeds the configured depth.
+
+## Verifying capability-index template conformance
+
+Run the template-checker script to verify each `CAPABILITY.md` follows the canonical 6-section structure (When to use / Critical rules / Workflow / Common tasks / Anti-patterns / References):
+
+```bash
+bash .maintenance/check-template.sh
+```
+
+Returns `capabilities_checked=N missing_sections=M`. Exits non-zero if any `CAPABILITY.md` is missing a required section. Catches drift if a future edit removes or renames a canonical section.
+
+## Verifying no orphaned files
+
+Run the orphan-checker script to find `.md` files under `references/` that no other `.md` file links to:
+
+```bash
+bash .maintenance/check-orphans.sh
+```
+
+Returns `files_checked=N orphans=M`. Exits non-zero if any orphans are found. `CAPABILITY.md` files are excluded (they are entry points linked from SKILL.md and peer indexes; SKILL.md itself is excluded as the root entry point).
+
+Orphans typically appear after a refactor that removed inbound links but didn't delete the now-unreferenced file. Folder links count as inbound for every `.md` inside the folder, matching the agent-navigation convention used by `check-depth.sh`.
+
+## Verifying plugin folder pairs
+
+Run the plugin-pairs checker to verify every plugin folder has both `planning.md` and `impl.md` (the per-plugin convention):
+
+```bash
+bash .maintenance/check-plugin-pairs.sh
+```
+
+Returns `plugins_checked=N missing_files=M`. Exits non-zero if any plugin folder is missing a required file. Catches half-deleted plugins or new plugin folders that haven't been completed.
+
+## Verifying `uip` command references
+
+Run the uip-command checker to verify every `uip ...` invocation resolves to a real command in the installed CLI:
+
+```bash
+bash .maintenance/check-uip-commands.sh
+```
+
+Returns `commands_checked=N unknown=M`. Exits non-zero if any referenced command path is unknown to `uip`. Verification is **help-only** — the checker walks each command path with `uip <prefix> --help`, confirms the requested segment appears in the parent's `Subcommands` list, and never executes the command for real. Help responses are cached per prefix.
+
+The checker:
+
+- Scans `SKILL.md` and `references/**/*.md`. Skips `.maintenance/` and root-level scratch files (`PLAN.md`, `PR_BODY.md`).
+- Scans both **fenced code blocks** tagged `bash`, `sh`, `shell`, `zsh`, `console`, or unlabelled, **and inline backtick spans** like `` `uip maestro flow init` ``. Inline scanning catches doc-narrative drift that fenced-only scanning misses.
+- Stops the path at the first flag, placeholder (`<...>`), shell metachar, comment (`#`), path-literal, or non-kebab-case token — so positional args like `uip maestro flow registry search outlook` don't get mistreated as subcommands.
+- Treats trailing tokens after a leaf-with-positional-args (e.g. `uip maestro flow registry search <keyword>`) as arguments, not missing subcommands.
+- Falls back gracefully if `uip` is not installed: warns and exits 0. Pass `--strict` to fail in CI.
+
+Pass specific files to scan only those (e.g. for pre-commit on staged files):
+
+```bash
+bash .maintenance/check-uip-commands.sh references/shared/cli-commands.md
+```
+
+### Skipping intentional historical references
+
+Some docs reference removed commands on purpose — for example, a CLI version-comparison table that documents a pre-restructure prefix. Add `<!-- uip-check-skip -->` anywhere on the line to suppress checking for that line:
+
+```markdown
+> Replace `uip maestro flow` with `uip flow` if version < 0.3.4. <!-- uip-check-skip -->
+```
+
+For table rows, place the marker **inside a cell** so it doesn't break table structure (HTML comments render as nothing):
+
+```markdown
+| **< 0.3.4** | `uip flow` | `uip flow init MyProject` <!-- uip-check-skip --> |
+```
+
+## Verifying no hardcoded versions
+
+Run the version checker to catch docs that pin a `.flow` version as authoritative instead of deferring to the live CLI:
+
+```bash
+bash .maintenance/check-versions.sh
+```
+
+Returns `lines_checked=N violations=M`. Exits non-zero on any violation. The `.flow` top-level `version` and node `typeVersion` are owned by `uip maestro flow init` / `uip maestro flow registry get`; hardcoding them rots silently when the CLI advances (e.g. `core.action.http.v2` `2.0`→`2.1`, `core.trigger.scheduled` `1.0`→`1.1`, top-level `1.1`→`1.2`). Two violation classes:
+
+- **PROSE-PIN** — prose stating a version as current/required: `currently "1.1"`, `the registry currently emits "1.0"`, `must be "2.0"`, or an inline assignment `typeVersion: "2.0"` / `version: "1.1"`. Only fires outside fenced code blocks.
+- **TOPLEVEL** — a hardcoded top-level `.flow` `"version": "x.y"` literal in a JSON example. Identified by sibling `"nodes"`/`"edges"` keys within the same fenced block; `definitions[].version` (has `"nodeType"`), `bindings_v2.json` `version` (has `"resources"`), and eval-file `version` (has `"evaluatorRefs"`/`"evaluations"`) are NOT flagged.
+
+Deliberately NOT flagged: `"typeVersion": "x.y"` literals in node JSON examples — legitimate when paired with an adjacent registry-sourcing note, and too many true-illustrative cases to flag without noise.
+
+Add `<!-- version-check-skip -->` anywhere on a line to suppress it — for intentional references such as an anti-pattern example (`typeVersion: "1.0.0"` shown as the *wrong* value) or a fixed non-`.flow` schema version (eval-set files). Same marker convention as `check-uip-commands.sh`; for table rows, place it inside a cell.
+
+Pass specific files to scan only those:
+
+```bash
+bash .maintenance/check-versions.sh references/shared/file-format.md
+```
+
+## Running the full suite
+
+Run all nine checkers in one invocation:
+
+```bash
+bash .maintenance/check-all.sh
+```
+
+Continues running all checkers even when one fails — the goal is to surface every issue in a single pass. Exits non-zero if any checker fails.
+
+## When to run these checkers
+
+- Before committing changes that move files or rewrite link paths — `check-all.sh` covers everything in one pass
+- Before merging a PR that touches `references/`
+- After a refactoring phase
+- After deleting a doc — run `check-orphans.sh` to confirm nothing else became orphaned
+- Before adding a new capability — run `check-template.sh` against the new `CAPABILITY.md`
+- After adding a new plugin — run `check-plugin-pairs.sh` to confirm both `planning.md` and `impl.md` are present
+- After a `uip` CLI version bump — run `check-uip-commands.sh` to catch any commands that were renamed or removed, and `check-versions.sh` to catch docs that pinned a now-stale `.flow`/node version
+
+The checkers are not currently wired into CI or pre-commit hooks. They are kept as lightweight tooling in this directory so future maintainers can run them on demand.
+
+## Reachability convention
+
+Plugin docs (`references/author/plugins/<name>/{planning,impl}.md`) are linked from `author/CAPABILITY.md` via **folder links** (e.g., `[connector](references/plugins/connector/)`), not individual file links. Agents navigating to the folder discover both `planning.md` and `impl.md` there. This satisfies practical 2-hop reachability from `SKILL.md`.
+
+The depth checker (`check-depth.sh`) treats folder links as reachability for every `.md` file inside the folder, matching this agent-navigation model. A strict file-link-only reachability check would flag plugin docs as "unreachable" — that's a false negative.
+
+If a future change requires explicit file links (e.g., a task table needs a specific `impl.md` anchor), add the file link inline rather than relying on folder discovery.

@@ -290,6 +290,7 @@ Create the project with the host capability exposed in this environment.
 - Every flavor contains every canonical skill. If no override exists for a file, its canonical content is intentionally reused unchanged.
 - A new flavor directory must contain at least one real sparse override or a `.canonical` pin. If a host needs no exceptions, consume the default package rather than creating an identical empty flavor.
 - A host that cannot run a skill's current generation at all can pin the previous one: `skill-flavors/<flavor>/<skill>/.canonical` containing `classic` composes that skill from `classic/skills/<skill>/`. See the manage-skill-flavors skill before adding one.
+- That flavor can also ship the skill's current generation beside it, with overrides under `skill-flavors/<flavor>/skills-<tree>/<skill>/`, packed at `skills-<tree>/<skill>/` in its package only. Studio Web uses `skills-flow-v2/` for the builder-SDK Flow skill.
 - Do not check generated flavor trees into source control; build them into the ignored `build/` directory for validation and package staging.
 
 Validate the source contract, then build the final Markdown trees:

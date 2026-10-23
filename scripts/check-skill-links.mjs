@@ -20,6 +20,12 @@
  * everywhere else. So a link into it from another skill must land in BOTH
  * trees: the default package reads one, the pinning flavor the other.
  *
+ * An extra tree (`skill-flavors/<flavor>/skills-<tree>/<skill>/`) is the
+ * current generation of a skill that flavor pins, mounted over `skills/<skill>`
+ * when the host switches. It is checked as its own composition,
+ * `<flavor>/skills-<tree>`: the flavor's pins minus the tree's skills, the
+ * tree's overrides for those skills, and only lines those skills ship.
+ *
  * Ignored, because none of them address a file in the tree: absolute URLs,
  * mailto/anchor-only targets, and code-fenced text.
  */
@@ -31,6 +37,7 @@ import {
     CANONICAL_PIN_FILENAME,
     CANONICAL_PIN_VALUE,
     CLASSIC_DIRNAME,
+    EXTRA_TREE_PREFIX,
     FLAVORS_DIRNAME,
     composeText,
     parseMarkerBlocks,
@@ -45,17 +52,19 @@ const ROOTS = ["skills", FLAVORS_DIRNAME, `${CLASSIC_DIRNAME}/skills`];
 const CLASSIC_SKILLS = path.join(REPO_ROOT, CLASSIC_DIRNAME, "skills");
 
 /**
- * flavor name -> set of skills that flavor composes from `classic/skills/`.
+ * composition name -> set of skills it composes from `classic/skills/`, and
+ * extra-tree composition name -> the skills that tree holds.
  * A malformed pin counts as no pin here; `skills:validate` rejects it.
  */
 async function readPins() {
     const pins = new Map();
+    const trees = new Map();
     const flavorsRoot = path.join(REPO_ROOT, FLAVORS_DIRNAME);
     let flavors = [];
     try {
         flavors = await readdir(flavorsRoot, { withFileTypes: true });
     } catch {
-        return pins;
+        return { pins, trees };
     }
     for (const flavor of flavors) {
         if (!flavor.isDirectory()) continue;
@@ -68,6 +77,14 @@ async function readPins() {
         }
         for (const skill of skills) {
             if (!skill.isDirectory()) continue;
+            if (skill.name.startsWith(EXTRA_TREE_PREFIX)) {
+                const entries = await readdir(path.join(flavorsRoot, flavor.name, skill.name), { withFileTypes: true });
+                trees.set(
+                    `${flavor.name}/${skill.name}`,
+                    new Set(entries.filter((e) => e.isDirectory()).map((e) => e.name)),
+                );
+                continue;
+            }
             const pin = path.join(flavorsRoot, flavor.name, skill.name, CANONICAL_PIN_FILENAME);
             try {
                 if ((await readFile(pin, "utf8")).trim() === CANONICAL_PIN_VALUE) pinned.add(skill.name);
@@ -77,11 +94,34 @@ async function readPins() {
         }
         pins.set(flavor.name, pinned);
     }
-    return pins;
+    for (const [name, skills] of trees) {
+        const flavorPins = pins.get(name.split("/")[0]) ?? new Set();
+        pins.set(name, new Set([...flavorPins].filter((skill) => !skills.has(skill))));
+    }
+    return { pins, trees };
 }
 
-const PINS = await readPins();
-const ALL_PINNED = new Set([...PINS.values()].flatMap((set) => [...set]));
+const { pins: PINS, trees: TREES } = await readPins();
+
+/**
+ * Path parts above the skill name: `skills/`, `classic/skills/`,
+ * `skill-flavors/<f>/` or `skill-flavors/<f>/skills-<tree>/`.
+ */
+function skillOffset(parts) {
+    if (parts[0] === FLAVORS_DIRNAME) return parts[2]?.startsWith(EXTRA_TREE_PREFIX) && parts.length > 4 ? 3 : 2;
+    if (parts[0] === CLASSIC_DIRNAME) return 2;
+    return 1;
+}
+
+/** The override file a composition applies to `relative` (a path under `skills/`). */
+function overrideFile(composition, relative) {
+    const [flavor, tree] = composition.split("/");
+    const skill = relative.split(path.sep)[0];
+    if (tree && TREES.get(composition).has(skill)) {
+        return path.join(REPO_ROOT, FLAVORS_DIRNAME, flavor, tree, relative);
+    }
+    return path.join(REPO_ROOT, FLAVORS_DIRNAME, flavor, relative);
+}
 
 /**
  * `[text](target)`, skipping images (`![alt](src)`).
@@ -181,7 +221,7 @@ function resolveBaseDir(fromFile) {
     const rel = path.relative(REPO_ROOT, fromFile);
     const parts = rel.split(path.sep);
     if (parts[0] === "skill-flavors" && parts.length > 2) {
-        return path.dirname(path.join(REPO_ROOT, "skills", ...parts.slice(2)));
+        return path.dirname(path.join(REPO_ROOT, "skills", ...parts.slice(skillOffset(parts))));
     }
     if (parts[0] === "classic" && parts[1] === "skills" && parts.length > 3) {
         return path.dirname(path.join(REPO_ROOT, "skills", ...parts.slice(2)));
@@ -193,7 +233,7 @@ function resolveBaseDir(fromFile) {
 function composedSkill(fromFile) {
     const parts = path.relative(REPO_ROOT, fromFile).split(path.sep);
     if (parts[0] === "skills") return parts[1] ?? null;
-    if (parts[0] === "skill-flavors") return parts[2] ?? null;
+    if (parts[0] === "skill-flavors") return parts[skillOffset(parts)] ?? null;
     if (parts[0] === "classic" && parts[1] === "skills") return parts[2] ?? null;
     return null;
 }
@@ -201,7 +241,7 @@ function composedSkill(fromFile) {
 /** Where a file sits once composed: its `skills/...` path. */
 function logicalPath(file) {
     const parts = path.relative(REPO_ROOT, file).split(path.sep);
-    if (parts[0] === FLAVORS_DIRNAME) return path.join(REPO_ROOT, "skills", ...parts.slice(2));
+    if (parts[0] === FLAVORS_DIRNAME) return path.join(REPO_ROOT, "skills", ...parts.slice(skillOffset(parts)));
     if (parts[0] === CLASSIC_DIRNAME) return path.join(REPO_ROOT, "skills", ...parts.slice(2));
     return file;
 }
@@ -213,7 +253,7 @@ async function overriddenBlocks(flavor, relative) {
     if (overrideCache.has(key)) return overrideCache.get(key);
     let names = new Set();
     try {
-        const file = path.join(REPO_ROOT, FLAVORS_DIRNAME, flavor, relative);
+        const file = overrideFile(flavor, relative);
         names = new Set(parseMarkerBlocks(file, await readFile(file, "utf8")).map((b) => b.name));
     } catch {
         // no override file
@@ -230,19 +270,22 @@ async function overriddenBlocks(flavor, relative) {
  *   flavor that does not pin `<a>` and does not override the flavor `block`
  *   the line sits in.
  * - A `classic/skills/<a>/` line ships only in the flavors that pin `<a>`.
- * - A `skill-flavors/<f>/` line ships only in flavor `<f>`.
+ * - A `skill-flavors/<f>/` line ships only in flavor `<f>`, and a
+ *   `skill-flavors/<f>/skills-<tree>/` line only in its tree.
+ * - An extra tree ships lines of its own skills only.
  */
 async function compositionsOf(fromFile, block) {
     const parts = path.relative(REPO_ROOT, fromFile).split(path.sep);
     const skill = composedSkill(fromFile);
-    if (parts[0] === FLAVORS_DIRNAME) return [parts[1]];
+    if (parts[0] === FLAVORS_DIRNAME) return [skillOffset(parts) === 3 ? `${parts[1]}/${parts[2]}` : parts[1]];
+    const shipsSkill = (name) => !TREES.has(name) || TREES.get(name).has(skill);
     if (parts[0] === CLASSIC_DIRNAME) {
         // A pinning flavor's overrides target the classic tree, so a classic
         // line inside a block that flavor replaces never ships in it.
         const relative = path.join(...parts.slice(2));
         const out = [];
         for (const [name, set] of PINS) {
-            if (!set.has(skill)) continue;
+            if (!set.has(skill) || !shipsSkill(name)) continue;
             if (block && (await overriddenBlocks(name, relative)).has(block)) continue;
             out.push(name);
         }
@@ -251,7 +294,7 @@ async function compositionsOf(fromFile, block) {
     const out = [null];
     const relative = path.relative(path.join(REPO_ROOT, "skills"), fromFile);
     for (const [name, set] of PINS) {
-        if (set.has(skill)) continue; // that flavor composes the classic copy instead
+        if (set.has(skill) || !shipsSkill(name)) continue; // that flavor composes the classic copy instead
         if (block && (await overriddenBlocks(name, relative)).has(block)) continue;
         out.push(name);
     }
@@ -358,7 +401,7 @@ async function composedAnchors(flavor, logical) {
     let anchors = new Set();
     if (await isFile(base)) {
         let text = await readFile(base, "utf8");
-        const override = flavor === null ? null : path.join(REPO_ROOT, FLAVORS_DIRNAME, flavor, rel);
+        const override = flavor === null ? null : overrideFile(flavor, rel);
         if (override && (await isFile(override))) {
             text = composeText(
                 text,
@@ -403,7 +446,7 @@ for (const root of ROOTS) {
         // composes into, so a retained tree cannot hide dead anchors.
         const skill = composedSkill(file);
         const logicalRel = skill
-            ? path.join("skills", skill, ...rel.split(path.sep).slice(root === "skills" ? 2 : 3))
+            ? path.join("skills", skill, ...rel.split(path.sep).slice(skillOffset(rel.split(path.sep)) + 1))
             : rel;
         const enforced = FRAGMENT_ENFORCED.some(
             (p) => logicalRel === p || logicalRel.startsWith(p + path.sep),

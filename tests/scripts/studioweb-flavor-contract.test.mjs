@@ -287,10 +287,35 @@ test("the default uipath-planner keeps its task tools (the guard is not vacuous)
   assert.ok(plannerBodyLinesNaming(output, TASK_TOOLS).length > 0);
 });
 
+// Studio Web ships two Flow skills. `skills/uipath-maestro-flow` is the classic
+// (v1) skill it uses today; `skills-flow-v2/uipath-maestro-flow` is the
+// builder-SDK skill that Autopilot mounts over it when `useFlowSdk` is on.
+function buildStudiowebFlowV2(t) {
+  const output = mkdtempSync(join(tmpdir(), "studioweb-flow-v2-contract-"));
+  t.after(() => rmSync(output, { recursive: true, force: true }));
+  const tree = createCompositionPlan(REPO_ROOT, STUDIOWEB_ROOT).extraTrees.find(
+    (candidate) => candidate.name === "skills-flow-v2",
+  );
+  assert.ok(tree, "the studioweb flavor must ship the skills-flow-v2 extra tree");
+  materializeComposition(tree, output);
+  return output;
+}
+
+test("the studioweb skills/ tree keeps the classic Flow skill", (t) => {
+  const flow = join(buildStudioweb(t), "uipath-maestro-flow");
+
+  assert.ok(statSync(join(flow, "references", "author", "CAPABILITY.md")).isFile());
+  assert.ok(!readFileSync(join(flow, "SKILL.md"), "utf8").includes("@uipath/maestro-builder-sdk"));
+});
+
+test("the studioweb v2 Flow tree never tells the agent to run `uip solution init`", (t) => {
+  assert.deepEqual(filesMentioning(buildStudiowebFlowV2(t), FORBIDDEN), []);
+});
+
 // Studio Web runs the Flow builder SDK inside the page: no npm, no Node, no
 // local connector-library cache, no pipeline helper and no `flow-sdk` bin.
-// Guidance that tells the agent to run any of these fails there, so the built
-// studioweb Flow skill must never contain them.
+// Guidance that tells the agent to run any of these fails there, so the v2
+// Studio Web Flow skill must never contain them.
 const FLOW_TERMINAL_ONLY = [
   "npm install",
   "FLOW_SDK_LIBRARY",
@@ -299,27 +324,31 @@ const FLOW_TERMINAL_ONLY = [
   "flow-sdk flow merge",
   "/tmp/flow-sdk",
   "from './connectors/",
-];
+].map((entry) => (Array.isArray(entry) ? entry : [entry, entry]));
 
-function flowLinesNaming(root, needles) {
+function flowLinesNaming(root) {
   const flowRoot = join(root, "uipath-maestro-flow");
   return markdownFiles(flowRoot).flatMap((file) =>
     readFileSync(file, "utf8")
       .split("\n")
       .flatMap((line, index) =>
-        needles.filter((needle) => line.includes(needle)).map((needle) => `${relative(flowRoot, file)}:${index + 1}: ${needle}`),
+        FLOW_TERMINAL_ONLY.filter(([, pattern]) =>
+          typeof pattern === "string" ? line.includes(pattern) : pattern.test(line),
+        ).map(([label]) => `${relative(flowRoot, file)}:${index + 1}: ${label}`),
       ),
   );
 }
 
-test("the built studioweb uipath-maestro-flow skill names no terminal-only command", (t) => {
-  assert.deepEqual(flowLinesNaming(buildStudioweb(t), FLOW_TERMINAL_ONLY), []);
+test("the studioweb v2 Flow tree names no terminal-only command", (t) => {
+  assert.deepEqual(flowLinesNaming(buildStudiowebFlowV2(t)), []);
 });
 
 test("the default uipath-maestro-flow skill keeps its terminal commands (the guard is not vacuous)", (t) => {
-  const hits = flowLinesNaming(buildDefault(t), FLOW_TERMINAL_ONLY).map((hit) => hit.split(": ").pop());
+  const hits = flowLinesNaming(buildDefault(t)).map((hit) => hit.split(": ").pop());
   assert.deepEqual(
     [...new Set(hits)].sort(),
-    FLOW_TERMINAL_ONLY.filter((needle) => needle !== "/tmp/flow-sdk").sort(),
+    FLOW_TERMINAL_ONLY.map(([label]) => label)
+      .filter((label) => label !== "/tmp/flow-sdk")
+      .sort(),
   );
 });
