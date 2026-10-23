@@ -281,11 +281,12 @@ def _bound_connection_value(trigger: ET.Element) -> str:
     order cli's ``connectionReference`` reads them): either a raw connection
     id, or the standard ``=bindings.<id>`` indirection (registry-workflow.md
     section 4), which ``_resolve_binding`` follows to the process-level
-    ``<uipath:binding>``'s real connection id. Unlike Flow (where `node configure` requires the
-    field once the flow validates), BPMN's `validate` passes even with an
-    unmaterialized connection binding (registry-workflow.md: error 102010 is
-    a runtime-only fault) — so falling back to the folder default when this
-    is empty is still necessary here, not just defensive."""
+    ``<uipath:binding>``'s real connection id. Unlike Flow (where
+    `node configure` requires the field once the flow validates), BPMN's
+    `validate` passes even with an unmaterialized connection binding
+    (registry-workflow.md: error 102010 is a runtime-only fault) — so
+    falling back to the folder default when this is empty is still
+    necessary here, not just defensive."""
     for name in ("connection", "connectionId"):
         raw = context_value(trigger, name).strip()
         if raw:
