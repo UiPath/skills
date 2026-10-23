@@ -50,11 +50,18 @@ valuable to review:
   credentials, running destructive commands, or acting on injected
   instructions from untrusted external data — is in scope, as is any way for a
   third party to influence what an installed skill tells the agent to do.
-- **Lifecycle hooks (`hooks/`)** — shell/PowerShell scripts registered on
-  agent events (`SessionStart`, `PostToolUse`, `Stop`, …) that run
-  automatically, without per-invocation user confirmation. Command injection,
-  unsafe handling of untrusted input (file paths, tool output, environment),
-  or privilege issues here are high-impact.
+- **Lifecycle hooks (`hooks/`)** — Node scripts and `uip track --hook`
+  commands registered on agent events (`SessionStart`, `PostToolUse`, `Stop`,
+  …) through polyglot launchers that run automatically, without
+  per-invocation user confirmation. Command injection, unsafe handling of
+  untrusted input (file paths, tool output, environment), or privilege issues
+  here are high-impact.
+- **Local IPC of the flow-diff hook (`hooks/flow-diff-hook.mjs`)** — finds the
+  UiPath VS Code extension through lockfiles in `~/.uipath/ide/` and sends it a
+  bearer token, file paths and content hashes over a Unix socket or named
+  pipe. Trusting a planted or stale lockfile, socket or pipe, leaking the
+  token, or making the extension credit content the agent did not write is in
+  scope. Protocol: [TELEMETRY.md § Flow-diff hook](TELEMETRY.md#flow-diff-hook-local-only-not-telemetry).
 - **Install and update flow** — skills are distributed via
   `uip skills install` (the [`@uipath/cli`](https://www.npmjs.com/package/@uipath/cli)
   npm package) and written into each agent's configuration directory.

@@ -10,6 +10,8 @@
 
 # Hooks
 /hooks/ @DragosUnguru @RaduAna-Maria
+/hooks/flow-diff-hook.mjs @DragosUnguru @RaduAna-Maria @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
+/tests/scripts/flow-diff-hook.test.mjs @DragosUnguru @RaduAna-Maria @chandusailella @mukundbayyaram @UiPath/maestro-cli-team
 
 # Plugin-namespaced slash commands (e.g., /uipath:install-permissions)
 /commands/ @DragosUnguru @tmatup
