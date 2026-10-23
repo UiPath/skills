@@ -108,8 +108,15 @@ make from syntax alone. Exact signatures remain in the generated API.
   The form travels in the `.bpmn`, so nothing on the tenant has to exist; `app` is for a named, deployed app, and an app id the tenant does not have fails `uip maestro bpmn validate` with `MISSING_BINDING` / `MISSING_RESOURCE`.
   Never swap a human task for a plain `.task()` to get past that — use the form.
 - A field is `input` (shown, `value: '=vars.x'`), `output` (asked; the answer lands in `variable`, default the id) or `inOut` (shown, editable, written back).
-  Every field id must be a plain identifier that is not a reserved word (`reviewNote`, not `review-note` or `default`), `Action` is reserved for the outcome picked, outcome ids must be unique, and a picker (`singleSelect`, `multiSelect`, `enum`, or a dropdown `controlType`) needs `options`.
-- The cloud engine takes the inline-form path only on a tenant with its quick-form flag on; Studio Web's "Edit Schema" canvas does not open for an inline form.
+  The call refuses a form that breaks any of these:
+  - Every field id is a plain identifier that is not a reserved word: `reviewNote`, not `review-note` or `default`.
+  - No field is called `Action`; that is the outcome picked.
+  - Outcome ids are unique, including derived ones: `Needs review` and `Needs-review` collide.
+  - A picker (`singleSelect`, `multiSelect`, `enum`, or a dropdown `controlType`) has `options`, e.g. `[{ id: 'o1', value: 'high', label: 'High' }]`.
+- The cloud engine takes the inline-form path only on a tenant with its quick-form flag on.
+  With the flag off, the run fails at the human task with incident `170004` "Invalid input for the HITL task".
+  Then tell the user to enable the quick-form flag on the tenant, or to name a deployed Action App for `app`; do not fall back to `.task()`.
+- Studio Web's "Edit Schema" canvas does not open for an inline form.
 
 <!-- RULE:bpmn.hitl.output-map -->
 - Map any decision used by later routing through `outputs`; the typed platform

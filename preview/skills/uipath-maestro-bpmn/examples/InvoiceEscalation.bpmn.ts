@@ -81,6 +81,8 @@ export default bpmn('invoice-escalation')
   ])
   // The approval, with its boundary events declared ON it. Nothing names `approve`
   // as `attachedTo`: the handlers belong to the task whose body they are written in.
+  // `app` because this process assumes a deployed `InvoiceApproval` Action App. With no
+  // app named, write the task as an inline form instead: `form: { fields, outcomes }`.
   .humanTask(
     'approve',
     {
