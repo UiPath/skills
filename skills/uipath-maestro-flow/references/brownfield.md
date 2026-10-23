@@ -408,6 +408,11 @@ its case below says to; every other edit goes through merge.
   node is your edit target, edit its inputs in the merged `.flow` JSON
   directly. `rawNode` is not a substitute here: it cannot yet route a human
   task's outcome exits.
+
+  A step you add whose type the source already pins with `{ version }` takes
+  the same pin. Unpinned, it compiles at the SDK's default version, and once no
+  node uses the file's version, the merged file loses that version's
+  definition.
 - A **file-format version outside the writable band** (below `1.6`) — the source
   omits the `.schemaVersion()` call, marks the spot with a `// TODO:` line, and
   recompiling writes `1.9`. Migrate the file first, or keep the original and
@@ -483,10 +488,9 @@ left open too. To make that path return the flow's outputs, end it with
 always capped with an End, because a task with nothing after it never
 finishes.
 
-A step you add whose type the source already pins with `{ version }` takes the
-same pin, as in `.return({ ... }, { name: 'end', version: '1.0' })`. Unpinned,
-it compiles at the SDK's default version, and once no node uses the file's
-version, the merged file loses that version's definition.
+An End you add takes its type's pin like any added step
+([pins](#designer-shapes-decompile-keeps)):
+`.return({ ... }, { name: 'end', version: '1.0' })`.
 
 ## Split (`$ref`) artifacts
 
