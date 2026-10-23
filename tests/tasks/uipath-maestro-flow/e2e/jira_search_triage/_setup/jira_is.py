@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import time
 
 CONNECTOR = "uipath-atlassian-jira"
 FOLDER_PATH = "Shared/uipath-maestro-flow"
@@ -27,6 +28,8 @@ def _run(*args: str) -> dict:
     return json.loads(out)
 
 
+_RETRY_DELAY_SECONDS = 2
+
 # Stopgap until UiPath/cli#5509 ships: the cli labels `is resources run` 5xx RetryWillNotFix.
 _HTTP_5XX = re.compile(r"5\d\d\b")
 
@@ -42,6 +45,7 @@ def _is_transient(envelope: dict) -> bool:
 def _read(*args: str) -> dict:
     envelope = _run(*args)
     if _is_transient(envelope):
+        time.sleep(_RETRY_DELAY_SECONDS)
         envelope = _run(*args)
     return envelope
 

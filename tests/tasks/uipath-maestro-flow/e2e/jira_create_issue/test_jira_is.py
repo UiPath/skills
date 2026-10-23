@@ -34,6 +34,7 @@ def test_connection_id_retries_transient_folder_lookup(monkeypatch: pytest.Monke
         Result({"Result": "Success", "Data": [{"Id": "connection-id", "Name": jira_is.CONNECTION_NAME}]}),
     ])
     monkeypatch.setattr(jira_is.subprocess, "run", lambda *args, **kwargs: next(responses))
+    monkeypatch.setattr(jira_is.time, "sleep", lambda seconds: None)
 
     assert jira_is.connection_id() == "connection-id"
 
@@ -102,6 +103,7 @@ def _sequence(monkeypatch: pytest.MonkeyPatch, jira_is: ModuleType, *envelopes: 
         return Result(next(responses))
 
     monkeypatch.setattr(jira_is.subprocess, "run", fake_run)
+    monkeypatch.setattr(jira_is.time, "sleep", lambda seconds: None)
     return seen
 
 

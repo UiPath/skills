@@ -30,6 +30,12 @@ class Result:
         self.returncode = 0
 
 
+def _record_sleeps(monkeypatch: pytest.MonkeyPatch, jira_is: ModuleType) -> list[float]:
+    sleeps: list[float] = []
+    monkeypatch.setattr(jira_is.time, "sleep", sleeps.append)
+    return sleeps
+
+
 def test_every_copy_is_covered() -> None:
     assert len(COPIES) == 6
 
@@ -50,9 +56,11 @@ def test_connection_id_retries_a_5xx_envelope(monkeypatch: pytest.MonkeyPatch, p
         return Result({"Result": "Success", "Data": [connection]})
 
     monkeypatch.setattr(jira_is.subprocess, "run", fake_run)
+    sleeps = _record_sleeps(monkeypatch, jira_is)
 
     assert jira_is.connection_id() == "connection-id"
     assert all(seen.count(operation) == 2 for operation in seen)
+    assert sleeps == [jira_is._RETRY_DELAY_SECONDS] * len(set(seen))
 
 
 @pytest.mark.parametrize(
@@ -64,5 +72,7 @@ def test_myself_retries_a_5xx_envelope(monkeypatch: pytest.MonkeyPatch, path: Pa
     jira_is = _load(path)
     responses = iter([BAD_GATEWAY, {"Result": "Success", "Data": {"accountId": "acc-1"}}])
     monkeypatch.setattr(jira_is.subprocess, "run", lambda *args, **kwargs: Result(next(responses)))
+    sleeps = _record_sleeps(monkeypatch, jira_is)
 
     assert jira_is.myself("conn") == "acc-1"
+    assert sleeps == [jira_is._RETRY_DELAY_SECONDS]

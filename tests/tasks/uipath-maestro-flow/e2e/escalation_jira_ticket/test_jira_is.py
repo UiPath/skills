@@ -84,6 +84,7 @@ def _sequence(monkeypatch: pytest.MonkeyPatch, jira_is: ModuleType, *envelopes: 
         return Result(next(responses))
 
     monkeypatch.setattr(jira_is.subprocess, "run", fake_run)
+    monkeypatch.setattr(jira_is.time, "sleep", lambda seconds: None)
     return seen
 
 

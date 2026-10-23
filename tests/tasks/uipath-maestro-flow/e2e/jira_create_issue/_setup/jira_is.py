@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import time
 from typing import Any
 
 CONNECTOR = "uipath-atlassian-jira"
@@ -43,6 +44,8 @@ def _run(*args: str) -> dict[str, Any]:
     return envelope
 
 
+_RETRY_DELAY_SECONDS = 2
+
 # Stopgap until UiPath/cli#5509 ships: the cli labels `is resources run` 5xx RetryWillNotFix.
 _HTTP_5XX = re.compile(r"5\d\d\b")
 
@@ -64,6 +67,7 @@ def _failure_summary(envelope: dict[str, Any]) -> str:
 def _required_data(*args: str, retry_transient: bool = False) -> Any:
     envelope = _run(*args)
     if retry_transient and _is_transient(envelope):
+        time.sleep(_RETRY_DELAY_SECONDS)
         envelope = _run(*args)
     if envelope.get("Result") != "Success" or "Data" not in envelope:
         raise RuntimeError(
