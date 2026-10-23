@@ -117,9 +117,11 @@ uip maestro bpmn registry get Intsvc.UnifiedHttpRequest --connection-id <connect
 
 `--input-details` is the request. `registry get` copies its `url` as written
 and there is no `pathParameters`: fill every `{placeholder}` in `url`, such as
-a catalog path's (`uip is resources list`'s `Path`). A known value
-(discovered or given, Rule 2) goes in as text, a run-time one through a `=js:`
-url; never invent one. For `/projects/{projectId}/items/{id}`:
+a catalog path's (`uip is resources list`'s `Path`), before you run it. A
+known value (discovered or given, Rule 2) goes in as text, a run-time one
+through a `=js:` url; never invent one. If it refuses the url, fix the url and
+run `registry get` again; never edit the url in the element. For
+`/projects/{projectId}/items/{id}`:
 
 ```json
 {"authentication":"connector","method":"GET","url":"=js:\"/projects/<project-id>/items/\" + vars.Var_ItemId"}
