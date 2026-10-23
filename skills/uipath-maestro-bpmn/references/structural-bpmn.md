@@ -246,7 +246,16 @@ Public entry-point variables have a two-layer runtime contract:
 - Declare each public `uipath:input` with `elementId` bound to its intended
   StartEvent and a mutable internal `uipath:inputOutput` scoped to the process
   (`elementId="<process id>"`) with the stable id used by process expressions.
-  Map `=vars.<public-input-id>` to the internal id on that StartEvent.
+  Map `=vars.<public-input-id>` to the internal id on that StartEvent. Nodes
+  read only the internal id. A `uipath:input` nothing maps is never a process
+  variable, so a node reading it gets an empty value at run time:
+
+  ```xml
+  <uipath:mapping version="v1">
+    <uipath:type value="BPMN.Variables" version="v1" />
+    <uipath:output name="Amount" type="double" var="Var_Amount" source="=vars.input_Var_Amount" />
+  </uipath:mapping>
+  ```
 - Declare a mutable internal `uipath:inputOutput` scoped to the process
   (`elementId="<process id>"`), plus a public
   `uipath:output` bound with `elementId` to the root EndEvent that returns it.
@@ -738,18 +747,14 @@ string), on failure in `Instructions` with the errors.
 
 - **`VARIABLE_DOES_NOT_EXIST`** — a reference with no matching declaration.
   Always a defect; fix it.
-- **`VARIABLE_NOT_SET`** on the node reading a caller-supplied input —
-  **expected by construction, not a defect**, whenever that input is correctly
-  scoped to the start event (see [Variables](#variables)). Canvas availability
-  recognizes only process-scoped variables and upstream nodes'
-  `uipath:output` mappings; a start-event input is neither, so any process
-  whose node consumes a caller value carries this warning. Scoping the input
-  to the process instead silences the warning by emptying the published input
-  contract (`entry-points.json`'s `input` becomes `[]`) — nothing can then
-  invoke the process with that value, and a `debug --inputs` run still
-  succeeds, which is exactly what hides the break. Judge correctness by the
-  published contract (`entry-points.json` declares the input and every
-  output), not by whether the warning is gone.
+- **`VARIABLE_NOT_SET`** and **`read but never assigned`** on a variable a node
+  reads — never expected; fix before finishing. The start event has no mapping
+  for that input ([Variables](#variables)), or nothing upstream writes the
+  variable. Do not scope the input to the process to silence it: that empties
+  the published input contract (`entry-points.json`'s `input` becomes `[]`)
+  and a `debug --inputs` run still succeeds, which hides the break. Judge
+  correctness by the published contract (`entry-points.json` declares the
+  input and every output) and by a clean warning list.
 
 If `validate` is unknown or runs only deploy-readiness checks, update
 the CLI — see [cli-conventions.md](cli-conventions.md#discovery-commands-read-only-authoring-safe).
