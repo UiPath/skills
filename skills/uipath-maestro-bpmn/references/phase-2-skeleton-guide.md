@@ -49,7 +49,8 @@ and the `label` field of each entry in `validator/bpmn-spec.json`. Those labels
 distinguish the families a user's wording leaves ambiguous — "Start and wait for
 RPA workflow" versus "Start and wait for agent" versus "Start and wait for
 agentic process" versus "Start and wait for external agent". Family is enough
-for a label; the specific type, its template and its resource are resolved later.
+for a label; the specific type and its template are resolved in phase 4. The
+resource each box will use is looked up at 3c.
 
 ## Gateways cost more than boxes
 
@@ -132,14 +133,39 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   local `.uipx`. `"Imported"` on a later upload means that id was lost and a
   second cloud solution was just created — stop and fix that before
   continuing. Repeat 3a–3b.
-- **3c Ask before building.** Reply in this shape, dropping lines that do
-  not apply; the question is fixed and becomes a pick list if the host has one:
+- **3c Ask before building.** Find each box's resource, then reply.
+
+  **Find the resources.** A box whose family runs a deployed resource (RPA
+  workflow, API workflow, agent, agentic process, app, queue, entity, or a
+  connector's connection) cannot be built without one. Look them all up in
+  **one** Bash call, one `uip solution resources list --kind <Kind> --search
+  "<term>" --output json` per box. It lists what the solution already holds
+  (`Source: Local`) and what the tenant has (`Source: Remote`). `--kind
+  Process` returns RPA workflows, API workflows, agents and agentic processes
+  together: match the box's family against each row's `Type`. Then, for each
+  box:
+
+  - When the user named the resource, or exactly one match fits the box, use
+    it and name it with its folder on the box's line.
+  - When several fit, name the best two on the box's line and ask which one.
+  - When none fits, say on the box's line that it does not exist yet: the
+    user creates it, or names one to use.
+
+  Script steps and quick-form human tasks need no resource. Run the lookup
+  again at every 3c, so a resource the user created since the last gate
+  shows up. This lookup reads only; it is not a registry call. When it fails
+  (no login, no tenant access), mark each such box *not checked* and say why
+  in one line; do not retry it more than once. In draft mode this gate is the
+  one clarifying round Rule 4 allows.
+
+  Reply in this shape, dropping lines that do not apply; the question is
+  fixed and becomes a pick list if the host has one:
 
   ```text
   <Name>: outline ready<, uploaded>. <One sentence if you kept the user's online changes.>
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 
-  - <each box, in order>
+  - <each box, in order>: <resource and folder | which of two | none yet, create it or name one>
 
   Is this the process you want?
   1. **Build it**: make every step work.
@@ -147,13 +173,22 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   3. **Keep it**: stop here with this outline.
   ```
 
-  *Build it* goes to phase 4. *Change it* goes back to 3a. *Keep it* ends
-  the run with the skeleton reported as an outline.
+  Send everything above the question as visible message text. When the host
+  has a pick list, open it **after** that text, with only the fixed question
+  and its three options. Never leave the outline only in a reasoning block or
+  in the pick list: a user who sees only the question cannot judge the shape.
+
+  *Build it* goes to phase 4, which binds each box to the resource named here
+  and asks nothing more. A box still marked *none yet* gets a placeholder
+  binding (4a) and is listed under `Unverified` in 4g; a *not checked* box
+  is looked up in 4a. *Change it* goes back to 3a. *Keep it* ends the run
+  with the skeleton reported as an outline.
 
 Removing a box is the common edit: delete the task, delete its two sequence
 flows, add one replacement flow, then `format`. Since entry points are
 untouched, `refresh` stays a no-op.
 
-Only *Build it* authorizes phase 4 — registry pull, element disambiguation, live
-connections, and payloads pasted into the existing boxes. Until then the
-skeleton is an outline, and calling it a finished process misreports it.
+Only *Build it* authorizes phase 4 — registry pull, element disambiguation,
+binding live connections and resources, and payloads pasted into the existing
+boxes. Until then the skeleton is an outline, and calling it a finished
+process misreports it.

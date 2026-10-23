@@ -94,7 +94,8 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    the request says not to pause for approval or confirmation, ask nothing.
    When the source is an image, confirm the full inventory, not a summary —
    see [Authoring from an image](#authoring-from-an-image). In draft mode,
-   structure questions wait for the 3c gate.
+   structure and resource questions wait for the 3c gate, and phase 4 asks
+   nothing further.
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
    `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as
@@ -323,7 +324,7 @@ never changes what a step does.
 | **0 — Surface** | — | Nothing to do yet; surface detection is future work. | Below |
 | **1 — Preflight** | 1a–1c | Check login, scan for an existing solution and project, start from its cloud copy. Changes nothing in the project, so it runs in every mode. | Below |
 | **2 — Skeleton** | 2a–2f | Scaffold the project, author blank boxes with real control flow, `format`, `validate`, show the shape. Makes **no registry calls**. Draft mode only, except 2a. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md) |
-| **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, hold the approval gate. Draft mode only. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating) |
+| **3 — Iterate** | 3a–3c | Adjust the shape, re-`format`, show it, name each box's resource, hold the approval gate. Draft mode only. | [references/phase-2-skeleton-guide.md](references/phase-2-skeleton-guide.md#iterating) |
 | **4 — Wire it up** | 4a–4g | Discover, fetch templates, paste real payloads into the existing boxes, lay out, validate, refresh, show. | Below |
 
 The skeleton (2b–2f) and iteration (phase 3) exist to show the user a shape
@@ -445,7 +446,8 @@ Draft mode only.
    session — do not re-pull), then `list` / `search` to map intent to extension
    types; `uip is connections list --all-folders` for live connections (always
    `--all-folders` — a folder-scoped list silently misses connections). Never
-   fabricate an identifier; ask only under Rule 4, otherwise decide. Bind each
+   fabricate an identifier; ask only under Rule 4, otherwise decide. In draft
+   mode, bind each box to the resource the 3c gate named. Bind each
    connector node to an `Enabled` connection for its connector: the one in the
    folder the task names, else `IsDefault` `Yes`, else the first. Confirm it
    with `uip is connections ping <id> --output json` (`Data.Status` must be
@@ -764,6 +766,10 @@ Draft mode only.
 
   Assumed: <...>  Unverified: <...>
   ```
+
+  Send nothing beyond these lines: no extra sections, headings, numbered
+  lists, or suggested next steps. Keep the change lines to five; fold
+  anything else the user must act on into `Assumed` or `Unverified`.
 
 ## Operate and diagnose
 
