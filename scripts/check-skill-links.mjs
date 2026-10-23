@@ -24,7 +24,9 @@
  * current generation of a skill that flavor pins, mounted over `skills/<skill>`
  * when the host switches. It is checked as its own composition,
  * `<flavor>/skills-<tree>`: the flavor's pins minus the tree's skills, the
- * tree's overrides for those skills, and only lines those skills ship.
+ * tree's overrides for those skills, and only lines those skills ship. A
+ * sibling with a `.reset` also takes the flavor's overrides, minus blocks of
+ * the prefix it names.
  *
  * Ignored, because none of them address a file in the tree: absolute URLs,
  * mailto/anchor-only targets, and code-fenced text.
@@ -39,6 +41,7 @@ import {
     CLASSIC_DIRNAME,
     EXTRA_TREE_PREFIX,
     FLAVORS_DIRNAME,
+    RESET_FILENAME,
     composeText,
     parseMarkerBlocks,
     stripMarkerBoundaries,
@@ -53,18 +56,20 @@ const CLASSIC_SKILLS = path.join(REPO_ROOT, CLASSIC_DIRNAME, "skills");
 
 /**
  * composition name -> set of skills it composes from `classic/skills/`, and
- * extra-tree composition name -> the skills that tree holds.
- * A malformed pin counts as no pin here; `skills:validate` rejects it.
+ * extra-tree composition name -> the skills that tree holds, and -> sibling
+ * skill -> the block prefix its `.reset` names.
+ * A malformed pin or reset counts as none here; `skills:validate` rejects it.
  */
 async function readPins() {
     const pins = new Map();
     const trees = new Map();
+    const resets = new Map();
     const flavorsRoot = path.join(REPO_ROOT, FLAVORS_DIRNAME);
     let flavors = [];
     try {
         flavors = await readdir(flavorsRoot, { withFileTypes: true });
     } catch {
-        return { pins, trees };
+        return { pins, trees, resets };
     }
     for (const flavor of flavors) {
         if (!flavor.isDirectory()) continue;
@@ -78,11 +83,19 @@ async function readPins() {
         for (const skill of skills) {
             if (!skill.isDirectory()) continue;
             if (skill.name.startsWith(EXTRA_TREE_PREFIX)) {
-                const entries = await readdir(path.join(flavorsRoot, flavor.name, skill.name), { withFileTypes: true });
-                trees.set(
-                    `${flavor.name}/${skill.name}`,
-                    new Set(entries.filter((e) => e.isDirectory()).map((e) => e.name)),
-                );
+                const treeRoot = path.join(flavorsRoot, flavor.name, skill.name);
+                const entries = await readdir(treeRoot, { withFileTypes: true });
+                const name = `${flavor.name}/${skill.name}`;
+                const siblings = new Map();
+                for (const entry of entries.filter((e) => e.isDirectory())) {
+                    try {
+                        siblings.set(entry.name, (await readFile(path.join(treeRoot, entry.name, RESET_FILENAME), "utf8")).trim());
+                    } catch {
+                        // a pinned skill: no reset
+                    }
+                }
+                trees.set(name, new Set(entries.filter((e) => e.isDirectory()).map((e) => e.name)));
+                resets.set(name, siblings);
                 continue;
             }
             const pin = path.join(flavorsRoot, flavor.name, skill.name, CANONICAL_PIN_FILENAME);
@@ -98,10 +111,10 @@ async function readPins() {
         const flavorPins = pins.get(name.split("/")[0]) ?? new Set();
         pins.set(name, new Set([...flavorPins].filter((skill) => !skills.has(skill))));
     }
-    return { pins, trees };
+    return { pins, trees, resets };
 }
 
-const { pins: PINS, trees: TREES } = await readPins();
+const { pins: PINS, trees: TREES, resets: RESETS } = await readPins();
 
 /**
  * Path parts above the skill name: `skills/`, `classic/skills/`,
@@ -113,14 +126,43 @@ function skillOffset(parts) {
     return 1;
 }
 
-/** The override file a composition applies to `relative` (a path under `skills/`). */
-function overrideFile(composition, relative) {
+/** Parsed override blocks of one file, cached so layered lists share objects. */
+const blockCache = new Map();
+async function blocksIn(file) {
+    if (!blockCache.has(file)) {
+        let blocks = [];
+        try {
+            blocks = parseMarkerBlocks(file, await readFile(file, "utf8"));
+        } catch {
+            // no override file
+        }
+        blockCache.set(file, blocks);
+    }
+    return blockCache.get(file);
+}
+
+/**
+ * The override blocks a composition applies to `relative` (a path under
+ * `skills/`): the flavor's file; in an extra tree, the tree's file, layered
+ * over the flavor's minus the reset prefix for a sibling.
+ */
+const overrideCache = new Map();
+async function overrideBlocks(composition, relative) {
+    const key = `${composition}\0${relative}`;
+    if (overrideCache.has(key)) return overrideCache.get(key);
     const [flavor, tree] = composition.split("/");
     const skill = relative.split(path.sep)[0];
+    const flavorBlocks = await blocksIn(path.join(REPO_ROOT, FLAVORS_DIRNAME, flavor, relative));
+    let blocks = flavorBlocks;
     if (tree && TREES.get(composition).has(skill)) {
-        return path.join(REPO_ROOT, FLAVORS_DIRNAME, flavor, tree, relative);
+        const treeBlocks = await blocksIn(path.join(REPO_ROOT, FLAVORS_DIRNAME, flavor, tree, relative));
+        const prefix = RESETS.get(composition).get(skill);
+        const names = new Set(treeBlocks.map((b) => b.name));
+        const kept = prefix === undefined ? [] : flavorBlocks.filter((b) => !b.name.startsWith(prefix) && !names.has(b.name));
+        blocks = [...kept, ...treeBlocks];
     }
-    return path.join(REPO_ROOT, FLAVORS_DIRNAME, flavor, relative);
+    overrideCache.set(key, blocks);
+    return blocks;
 }
 
 /**
@@ -246,20 +288,9 @@ function logicalPath(file) {
     return file;
 }
 
-/** Names of the flavor blocks a flavor's override of `relative` replaces. */
-const overrideCache = new Map();
-async function overriddenBlocks(flavor, relative) {
-    const key = `${flavor}\0${relative}`;
-    if (overrideCache.has(key)) return overrideCache.get(key);
-    let names = new Set();
-    try {
-        const file = overrideFile(flavor, relative);
-        names = new Set(parseMarkerBlocks(file, await readFile(file, "utf8")).map((b) => b.name));
-    } catch {
-        // no override file
-    }
-    overrideCache.set(key, names);
-    return names;
+/** Names of the flavor blocks a composition's overrides of `relative` replace. */
+async function overriddenBlocks(composition, relative) {
+    return new Set((await overrideBlocks(composition, relative)).map((b) => b.name));
 }
 
 /**
@@ -270,14 +301,25 @@ async function overriddenBlocks(flavor, relative) {
  *   flavor that does not pin `<a>` and does not override the flavor `block`
  *   the line sits in.
  * - A `classic/skills/<a>/` line ships only in the flavors that pin `<a>`.
- * - A `skill-flavors/<f>/` line ships only in flavor `<f>`, and a
- *   `skill-flavors/<f>/skills-<tree>/` line only in its tree.
+ * - A `skill-flavors/<f>/` line ships in flavor `<f>`, and in each tree of
+ *   `<f>` that layers its block over a sibling; a
+ *   `skill-flavors/<f>/skills-<tree>/` line ships only in its tree.
  * - An extra tree ships lines of its own skills only.
  */
 async function compositionsOf(fromFile, block) {
     const parts = path.relative(REPO_ROOT, fromFile).split(path.sep);
     const skill = composedSkill(fromFile);
-    if (parts[0] === FLAVORS_DIRNAME) return [skillOffset(parts) === 3 ? `${parts[1]}/${parts[2]}` : parts[1]];
+    if (parts[0] === FLAVORS_DIRNAME) {
+        if (skillOffset(parts) === 3) return [`${parts[1]}/${parts[2]}`];
+        const out = [parts[1]];
+        const relative = path.join(...parts.slice(2));
+        const own = (await blocksIn(fromFile)).find((b) => b.name === block);
+        for (const [name, siblings] of RESETS) {
+            if (!name.startsWith(`${parts[1]}/`) || !siblings.has(skill)) continue;
+            if (own && (await overrideBlocks(name, relative)).includes(own)) out.push(name);
+        }
+        return out;
+    }
     const shipsSkill = (name) => !TREES.has(name) || TREES.get(name).has(skill);
     if (parts[0] === CLASSIC_DIRNAME) {
         // A pinning flavor's overrides target the classic tree, so a classic
@@ -401,14 +443,8 @@ async function composedAnchors(flavor, logical) {
     let anchors = new Set();
     if (await isFile(base)) {
         let text = await readFile(base, "utf8");
-        const override = flavor === null ? null : overrideFile(flavor, rel);
-        if (override && (await isFile(override))) {
-            text = composeText(
-                text,
-                parseMarkerBlocks(base, text),
-                parseMarkerBlocks(override, await readFile(override, "utf8")),
-            );
-        }
+        const blocks = flavor === null ? [] : await overrideBlocks(flavor, rel);
+        if (blocks.length) text = composeText(text, parseMarkerBlocks(base, text), blocks);
         anchors = anchorsOfText(stripMarkerBoundaries(text));
     }
     anchorCache.set(key, anchors);
@@ -451,7 +487,7 @@ for (const root of ROOTS) {
         const enforced = FRAGMENT_ENFORCED.some(
             (p) => logicalRel === p || logicalRel.startsWith(p + path.sep),
         );
-        const blocks = root === FLAVORS_DIRNAME ? new Map() : blockLines(file, text);
+        const blocks = blockLines(file, text);
         for (const [lineNo, line] of proseLines(text)) {
             const block = blocks.get(lineNo) ?? null;
             for (const match of line.matchAll(LINK_RE)) {

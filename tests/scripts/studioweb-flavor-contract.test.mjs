@@ -357,3 +357,49 @@ test("the default uipath-maestro-flow skill keeps its terminal commands (the gua
       .sort(),
   );
 });
+
+// Autopilot mounts every `skills-flow-v2/<skill>/` over `skills/<skill>/`, so
+// the siblings that author Flow nodes ship there too. Each drops the studioweb
+// `flow-sdk-*` blocks (classic `.flow` JSON authoring) for the canonical
+// builder-SDK text, and must name no classic Flow instruction.
+const FLOW_V2_SKILLS = ["uipath-agents", "uipath-human-in-the-loop", "uipath-maestro-flow", "uipath-platform"];
+const FLOW_V2_SIBLINGS = FLOW_V2_SKILLS.filter((skill) => skill !== "uipath-maestro-flow");
+const CLASSIC_FLOW_INSTRUCTIONS = [
+  "uip maestro flow node add",
+  "uip agent refresh --inline-in-flow",
+  "uip maestro flow debug <",
+  "Write node JSON directly",
+  "directly into the `.flow` file as JSON",
+  "direct `.flow` authoring",
+  "Hand-written `.flow` JSON",
+];
+
+function siblingLinesNaming(root) {
+  return FLOW_V2_SIBLINGS.flatMap((skill) =>
+    markdownFiles(join(root, skill)).flatMap((file) =>
+      readFileSync(file, "utf8")
+        .split("\n")
+        .flatMap((line, index) =>
+          CLASSIC_FLOW_INSTRUCTIONS.filter((needle) => line.includes(needle)).map(
+            (needle) => `${relative(root, file)}:${index + 1}: ${needle}`,
+          ),
+        ),
+    ),
+  );
+}
+
+test("the studioweb v2 Flow tree ships the Flow skill and its three siblings", (t) => {
+  assert.deepEqual(readdirSync(buildStudiowebFlowV2(t)).sort(), FLOW_V2_SKILLS);
+});
+
+test("the studioweb v2 siblings name no classic Flow instruction", (t) => {
+  assert.deepEqual(siblingLinesNaming(buildStudiowebFlowV2(t)), []);
+});
+
+test("the studioweb skills/ siblings keep their classic Flow text (the guard is not vacuous)", (t) => {
+  const hits = siblingLinesNaming(buildStudioweb(t)).map((hit) => hit.split(": ").pop());
+  assert.deepEqual(
+    [...new Set(hits)].sort(),
+    CLASSIC_FLOW_INSTRUCTIONS.filter((needle) => needle !== "uip maestro flow debug <").sort(),
+  );
+});

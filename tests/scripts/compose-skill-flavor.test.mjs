@@ -788,9 +788,13 @@ test("invalid extra trees are rejected", (t) => {
   writeOverride(repo, "studioweb", "skills-flow-v2/uipath-other/SKILL.md", block("host", "Unpinned."));
   expectFlavorError(
     () => createCompositionPlan(repo, studio),
-    /uipath-other: an extra tree only ships the current generation of a skill its flavor pins/,
+    /uipath-other: an extra tree carries a skill its flavor pins, or a sibling whose \.reset names/,
   );
   rmSync(join(tree, "uipath-other"), { recursive: true });
+
+  writeFileSync(join(tree, "uipath-flow", ".reset"), "flow-sdk-\n");
+  expectFlavorError(() => createCompositionPlan(repo, studio), /a pinned skill takes none of its flavor overrides/);
+  rmSync(join(tree, "uipath-flow", ".reset"));
 
   writeOverride(repo, "studioweb", "skills-flow-v2/uipath-ghost/SKILL.md", block("host", "Ghost."));
   expectFlavorError(() => createCompositionPlan(repo, studio), /override belongs to unknown canonical skill "uipath-ghost"/);
@@ -803,6 +807,73 @@ test("invalid extra trees are rejected", (t) => {
   );
   rmSync(join(tree, "uipath-flow", "SKILL.md"));
   expectFlavorError(() => createCompositionPlan(repo, studio), /extra tree must contain at least one Markdown override file/);
+});
+
+function flowWithSiblings(t) {
+  const { repo, studio } = pinnedFlowWithExtraTree(t);
+  addSkill(
+    repo,
+    "uipath-sibling",
+    block("host", "Host default.") + block("flow-sdk-gate", "Builder-SDK gate.") + block("flow-sdk-run", "Run it."),
+  );
+  writeOverride(
+    repo,
+    "studioweb",
+    "uipath-sibling/SKILL.md",
+    block("host", "Studio Web host.") + block("flow-sdk-gate", "Classic JSON.") + block("flow-sdk-run", "Classic run."),
+  );
+  const sibling = join(studio, "skills-flow-v2", "uipath-sibling");
+  writeOverride(repo, "studioweb", "skills-flow-v2/uipath-sibling/SKILL.md", block("flow-sdk-run", "Studio Web run."));
+  writeFileSync(join(sibling, ".reset"), "flow-sdk-\n");
+  return { repo, studio, sibling };
+}
+
+test("an extra tree sibling keeps its flavor's host blocks and resets the named prefix", (t) => {
+  const { repo, studio } = flowWithSiblings(t);
+
+  const tree = createCompositionPlan(repo, studio).extraTrees[0];
+  assert.deepEqual(tree.skills, ["uipath-flow", "uipath-sibling"]);
+  assert.deepEqual(tree.pinnedSkills, ["uipath-flow"]);
+  const output = join(repo, "out");
+  materializeComposition(tree, output);
+  const sibling = readFileSync(join(output, "uipath-sibling", "SKILL.md"), "utf8");
+  assert.match(sibling, /Studio Web host\./);
+  assert.match(sibling, /Builder-SDK gate\./);
+  assert.match(sibling, /Studio Web run\./);
+  assert.doesNotMatch(sibling, /Classic|Host default|Run it|skill-flavor/);
+
+  const { outputRoot } = buildAllSkillTrees(repo);
+  const classic = readFileSync(join(outputRoot, "studioweb", "uipath-sibling", "SKILL.md"), "utf8");
+  assert.match(classic, /Studio Web host\.[\s\S]*Classic JSON\.[\s\S]*Classic run\./);
+});
+
+test("pack ships extra tree siblings beside the pinned skill", (t) => {
+  const { repo } = flowWithSiblings(t);
+  addPackageManifest(repo);
+
+  const packages = withNpmCache(repo, () => packAllVariants(repo));
+  const studio = readTarballEntries(packages.find((item) => item.variant === "studioweb").tarball);
+  assert.match(studio.get("package/skills-flow-v2/uipath-sibling/SKILL.md").toString("utf8"), /Studio Web run\./);
+  assert.ok(!studio.has("package/skills-flow-v2/uipath-sibling/.reset"));
+  assert.ok(!studio.has("package/skills-flow-v2/uipath-other/SKILL.md"));
+  assert.match(studio.get("package/README.md").toString("utf8"), /and the matching `uipath-sibling`/);
+});
+
+test("invalid extra tree siblings are rejected", (t) => {
+  const { repo, studio, sibling } = flowWithSiblings(t);
+
+  writeFileSync(join(sibling, ".reset"), "flow-sdk\n");
+  expectFlavorError(() => createCompositionPlan(repo, studio), /block reset must name one marker prefix ending in "-"/);
+  writeFileSync(join(sibling, ".reset"), "stale-\n");
+  expectFlavorError(
+    () => createCompositionPlan(repo, studio),
+    /no flavor override block of "uipath-sibling" starts with "stale-"/,
+  );
+  writeFileSync(join(sibling, ".reset"), "flow-sdk-\n");
+  assert.doesNotThrow(() => createCompositionPlan(repo, studio));
+
+  rmSync(join(studio, "skills-flow-v2", "uipath-flow"), { recursive: true });
+  expectFlavorError(() => createCompositionPlan(repo, studio), /extra tree must carry at least one skill its flavor pins/);
 });
 
 test("default plan includes every canonical skill and strips CRLF marker boundaries", (t) => {
