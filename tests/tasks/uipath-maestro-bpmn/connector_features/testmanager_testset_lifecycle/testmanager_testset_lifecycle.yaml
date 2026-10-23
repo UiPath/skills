@@ -7,12 +7,13 @@ description: >
   to build a process that uses every UiPath Test Manager connector node for
   the TestSet group — adding one connector node per operation. Drives
   connector discovery, authoring, and validation. Graded on the produced
-  .bpmn containing one Intsvc.ActivityExecution sendTask per TestSet
+  .bpmn containing one Test Manager connector sendTask per TestSet
   lifecycle operation and validating successfully; registry-refresh
   telemetry is advisory. Ported from Flow
   `connector_features/testmanager_testset_lifecycle.yaml`; BPMN has no
   per-operation node type, so operations are distinguished by objectName +
-  method instead of node type.
+  method, or method + path for a connector-mode HTTP request through the
+  Test Manager connection, instead of node type.
 tags:
   - uipath-maestro-bpmn
   - e2e

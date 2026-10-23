@@ -15,16 +15,16 @@ process/flow vocabulary in messages.
 
 The one Flow assertion that DOES read the artifact -- the sibling
 ``flow_contains`` criterion's two node-type substrings -- is retargeted here
-from Flow's per-operation JSON node ``type`` string to the registry-driven
-``Intsvc.ActivityExecution`` sendTask shell, classified by objectName +
-method exactly as ``_shared/check_testmanager_testcase_lifecycle.py`` does
-(TestCase/POST = create, TestCase/GETBYID|GET = get; see BATCH1-ADDENDUM.md
-and `uip is activities list uipath-uipath-testmanager --output json`, rows
-CreateTestCase/TestCase/POST and GetTestCase/TestCase/GETBYID). That
-classification is copied here (not imported), restricted to the two
-operations this task's Flow prompt actually asks for -- per
-BATCH1-ADDENDUM.md's "reuse their node-classification helpers by copying the
-code (no new shared modules yet)".
+from Flow's per-operation JSON node ``type`` string to the sendTasks that
+call the Test Manager connector (``bpmn_check.connector_requests``),
+classified exactly as ``_shared/check_testmanager_testcase_lifecycle.py``
+does, restricted to the two operations this task's Flow prompt asks for:
+``Intsvc.ActivityExecution`` by objectName + method (TestCase/POST = create,
+TestCase/GETBYID|GET = get), connector-mode ``Intsvc.UnifiedHttpRequest`` by
+method + IS enrichment path, every placeholder filled (POST
+``/v2/{ProjectId}/testcases`` = create, GET ``/v2/{ProjectId}/testcases/{id}``
+= get). A manual-mode request, or one through another connector, does not
+count.
 
 Assertion map (Flow -> BPMN):
   F check.py:29-32  created_name == seed["name"]                       -> round_trip() (default)
@@ -35,8 +35,8 @@ Assertion map (Flow -> BPMN):
                      'uipath-uipath-testmanager.get-test-case'          -> node_types() (--node-types)
   I                 locate/read seed.json, result.json                  -> load_json()
   I                 locate/parse .bpmn (node-types mode only)            -> parse_bpmn()
-  T                 objectName+method classification (no per-op node
-                     type; see check_testmanager_testcase_lifecycle.py)  -> OPERATIONS / context_value()
+  T                 objectName+method or method+path classification
+                     (see check_testmanager_testcase_lifecycle.py)       -> OPERATIONS / require_operations()
   T                 GETBYID/GET equivalence for "get the test case"     -> OPERATIONS methods set
 
 Usage (from a task's run_command, cwd = sandbox root):
@@ -50,22 +50,22 @@ from __future__ import annotations
 import json
 import os
 import sys
-import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from _shared.bpmn_check import NS, context_value, elements, has_type, parse_bpmn  # noqa: E402
+from _shared.bpmn_check import (  # noqa: E402
+    ConnectorOperation,
+    connector_requests,
+    parse_bpmn,
+    require_operations,
+)
 
 CONNECTOR_KEY = "uipath-uipath-testmanager"
-ACTIVITY_TYPE = "Intsvc.ActivityExecution"
-
-# (label, objectName, {acceptable method values, lowercased}) -- copied from
-# _shared/check_testmanager_testcase_lifecycle.py's OPERATIONS, restricted to
-# the two operations this task's Flow prompt asks for (create + get only;
-# update/delete/execute are out of scope for this port).
 OPERATIONS = [
-    ("create a test case", "TestCase", {"post"}),
-    ("get the test case", "TestCase", {"getbyid", "get"}),
+    ConnectorOperation("create a test case", "TestCase", {"post"},
+                       "/v2/{ProjectId}/testcases"),
+    ConnectorOperation("get the test case", "TestCase", {"getbyid", "get"},
+                       "/v2/{ProjectId}/testcases/{id}"),
 ]
 
 
@@ -84,41 +84,19 @@ def load_json(path: str, what: str) -> dict:
     return {}  # unreachable: fail() exits, but satisfies static analysis
 
 
-def connector_tasks(root: ET.Element) -> list[ET.Element]:
-    return [
-        task
-        for task in elements(root, "sendTask")
-        if has_type(task, ACTIVITY_TYPE) and context_value(task, "connectorKey") == CONNECTOR_KEY
-    ]
-
-
 def node_types() -> None:
     """F criterion 2: BPMN carries a create AND a get Test Manager connector node."""
     path, root = parse_bpmn()
-    tasks = connector_tasks(root)
-    if not tasks:
-        fail(f"no bpmn:sendTask carrying {ACTIVITY_TYPE} for connector key {CONNECTOR_KEY!r}")
-
-    missing: list[str] = []
-    for label, object_name, methods in OPERATIONS:
-        match = next(
-            (
-                t
-                for t in tasks
-                if context_value(t, "objectName") == object_name
-                and context_value(t, "method").lower() in methods
-            ),
-            None,
+    requests = list(connector_requests(root, CONNECTOR_KEY))
+    if not requests:
+        fail(
+            "no bpmn:sendTask calls the Test Manager connector: expected "
+            f"Intsvc.ActivityExecution with connectorKey {CONNECTOR_KEY!r}, or a "
+            "connector-mode Intsvc.UnifiedHttpRequest with targetConnector "
+            f"{CONNECTOR_KEY!r}"
         )
-        if match is None:
-            missing.append(f"{label} (objectName={object_name!r}, method in {sorted(methods)})")
-        else:
-            print(
-                f"OK: {label} -> {match.attrib.get('id', '?')} "
-                f"(objectName={object_name!r}, method={context_value(match, 'method')!r})"
-            )
-    if missing:
-        fail("missing Test Manager create/get connector node(s):\n  " + "\n  ".join(missing))
+
+    require_operations(requests, OPERATIONS, "Test Manager create/get")
     print(f"OK: create and get Test Manager connector nodes present in {path}")
 
 
