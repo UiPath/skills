@@ -22,7 +22,11 @@
  * beside its `skills/` tree, so the host can switch per user: overrides under
  * `skill-flavors/<flavor>/skills-<tree>/<skill>/` compose against
  * `skills/<skill>/` (never the pin) and land at `skills-<tree>/<skill>/` in
- * that flavor's package. An extra tree carries only skills its flavor pins.
+ * that flavor's package. An extra tree carries at least one skill its flavor
+ * pins. It may also carry siblings the switch must change with it: a
+ * `skills-<tree>/<sibling>/.reset` names a marker prefix (such as `flow-sdk-`),
+ * and the sibling composes from `skills/<sibling>/` with the flavor's
+ * overrides minus blocks of that prefix, then the tree's own overrides.
  *
  * The no-argument `validate`, `build`, and `pack` commands discover every
  * flavor by convention. Legacy explicit-flavor validate/build invocations are
@@ -63,6 +67,7 @@ export const CLASSIC_DIRNAME = "classic";
 export const CANONICAL_PIN_FILENAME = ".canonical";
 export const CANONICAL_PIN_VALUE = "classic";
 export const EXTRA_TREE_PREFIX = "skills-";
+export const RESET_FILENAME = ".reset";
 export const PACKAGE_NAME_MAX_LENGTH = 214;
 export const ROOT_PACK_TRANSACTION_DIRNAME = ".root-pack-transaction";
 export const CUSTOM_PACKAGE_PUBLISH_CONFIG = Object.freeze({
@@ -72,6 +77,7 @@ export const CUSTOM_PACKAGE_PUBLISH_CONFIG = Object.freeze({
 
 const MARKER_SHAPE_RE = /skill-flavor[ \t]*:/;
 const SKILL_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const RESET_PREFIX_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*-$/;
 const MARKER_LINE_RE =
   /^<!--skill-flavor:([a-z0-9]+(?:-[a-z0-9]+)*):(start|end)-->(?:\r\n|\n|\r)?$/;
 const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
@@ -417,6 +423,7 @@ function collectCanonicalFiles(repoRoot, skills, findings, sourceRoots = new Map
 function applyOverrides(overrideRoot, skills, canonical, findings, skip = () => false) {
   const { canonicalFiles, canonicalText, canonicalBlocks } = canonical;
   const replacements = new Map();
+  const overrides = new Map();
   let replacementCount = 0;
   let overrideFileCount = 0;
   for (const entry of walkTree(overrideRoot)) {
@@ -475,19 +482,41 @@ function applyOverrides(overrideRoot, skills, canonical, findings, skip = () => 
           logical,
           composeText(sourceText, canonicalBlocks.get(logical), parsedOverride),
         );
+        overrides.set(logical, parsedOverride);
         replacementCount += parsedOverride.length;
       }
     }
   }
 
-  return { replacements, replacementCount, overrideFileCount };
+  return { replacements, overrides, replacementCount, overrideFileCount };
+}
+
+/** The marker prefix a tree sibling's `.reset` names, or null when it has none. */
+function readReset(skillRoot, findings) {
+  const resetPath = path.join(skillRoot, RESET_FILENAME);
+  const stats = safeLstat(resetPath);
+  if (!stats) return null;
+  if (stats.isSymbolicLink() || !stats.isFile()) {
+    findings.push(`${resetPath}: block reset must be a regular file`);
+    return null;
+  }
+  const value = readUtf8(resetPath, findings, "block reset");
+  if (value === null) return null;
+  if (!RESET_PREFIX_RE.test(value.trim())) {
+    findings.push(
+      `${resetPath}: block reset must name one marker prefix ending in "-", such as "flow-sdk-", got ${quote(value.trim())}`,
+    );
+    return null;
+  }
+  return value.trim();
 }
 
 /**
  * One `skills-<tree>/` directory of a flavor: the current generation of the
- * skills that flavor pins, with the tree's own overrides applied.
+ * skills that flavor pins, with the tree's own overrides applied, plus each
+ * sibling a `.reset` declares, layered as the module comment describes.
  */
-function planExtraTree(repoRoot, treeRoot, skills, pins, findings) {
+function planExtraTree(repoRoot, treeRoot, skills, pins, flavorOverrides, findings) {
   const name = path.basename(treeRoot);
   if (!SKILL_NAME_RE.test(name)) {
     findings.push(`${treeRoot}: invalid extra tree name ${quote(name)}; use a lowercase kebab-case directory name`);
@@ -495,25 +524,68 @@ function planExtraTree(repoRoot, treeRoot, skills, pins, findings) {
   const treeSkills = sortedEntries(treeRoot)
     .filter((entry) => entry.isDirectory() && skills.includes(entry.name))
     .map((entry) => entry.name);
+  const resets = new Map();
   for (const skill of treeSkills) {
-    if (!pins.has(skill)) {
+    const skillRoot = path.join(treeRoot, skill);
+    const prefix = readReset(skillRoot, findings);
+    if (pins.has(skill)) {
+      if (prefix !== null) {
+        findings.push(
+          `${path.join(skillRoot, RESET_FILENAME)}: a pinned skill takes none of its flavor overrides in an extra tree; ` +
+            "a block reset applies only to a sibling the flavor does not pin",
+        );
+      }
+    } else if (prefix === null) {
       findings.push(
-        `${path.join(treeRoot, skill)}: an extra tree only ships the current generation of a skill its flavor pins; ` +
-          `pin it with ${path.join(path.dirname(treeRoot), skill, CANONICAL_PIN_FILENAME)} or delete it`,
+        `${skillRoot}: an extra tree carries a skill its flavor pins, or a sibling whose ${RESET_FILENAME} names ` +
+          `the flavor blocks that fall back to canonical; pin it with ${path.join(path.dirname(treeRoot), skill, CANONICAL_PIN_FILENAME)}, ` +
+          `add ${RESET_FILENAME}, or delete it`,
       );
+    } else if (
+      ![...flavorOverrides].some(
+        ([logical, blocks]) => logical.startsWith(`skills/${skill}/`) && blocks.some((block) => block.name.startsWith(prefix)),
+      )
+    ) {
+      findings.push(`${path.join(skillRoot, RESET_FILENAME)}: no flavor override block of ${quote(skill)} starts with ${quote(prefix)}`);
+    } else {
+      resets.set(skill, prefix);
     }
   }
+  if (!treeSkills.some((skill) => pins.has(skill))) {
+    findings.push(`${treeRoot}: extra tree must carry at least one skill its flavor pins`);
+  }
   const canonical = collectCanonicalFiles(repoRoot, treeSkills, findings);
-  const { replacements, replacementCount, overrideFileCount } = applyOverrides(
+  const { overrides: treeOverrides, overrideFileCount } = applyOverrides(
     treeRoot,
     skills,
     canonical,
     findings,
+    // Read and validated by readReset above.
+    (parts) => parts.length === 2 && parts[1] === RESET_FILENAME,
   );
   if (overrideFileCount === 0) findings.push(`${treeRoot}: extra tree must contain at least one Markdown override file`);
+
+  const layered = new Map();
+  for (const [logical, blocks] of flavorOverrides) {
+    const prefix = resets.get(splitPosix(logical)[1]);
+    if (prefix !== undefined) layered.set(logical, blocks.filter((block) => !block.name.startsWith(prefix)));
+  }
+  for (const [logical, blocks] of treeOverrides) {
+    const names = new Set(blocks.map((block) => block.name));
+    layered.set(logical, [...(layered.get(logical) ?? []).filter((block) => !names.has(block.name)), ...blocks]);
+  }
+  const replacements = new Map();
+  let replacementCount = 0;
+  for (const [logical, blocks] of layered) {
+    const text = canonical.canonicalText.get(logical);
+    if (text === undefined || blocks.length === 0) continue;
+    replacements.set(logical, composeText(text, canonical.canonicalBlocks.get(logical), blocks));
+    replacementCount += blocks.length;
+  }
   return {
     name,
     skills: treeSkills,
+    pinnedSkills: treeSkills.filter((skill) => pins.has(skill)),
     files: plannedFiles(canonical.canonicalFiles, canonical.canonicalText, replacements),
     overriddenFiles: [...replacements.keys()]
       .sort()
@@ -608,7 +680,7 @@ export function createCompositionPlan(repoRoot = REPO_ROOT, flavorRoot) {
       .filter((entry) => entry.isDirectory() && entry.name.startsWith(EXTRA_TREE_PREFIX))
       .map((entry) => entry.name),
   );
-  const { replacements, replacementCount, overrideFileCount } = applyOverrides(
+  const { replacements, overrides, replacementCount, overrideFileCount } = applyOverrides(
     flavorRoot,
     skills,
     { canonicalFiles, canonicalText, canonicalBlocks },
@@ -618,7 +690,7 @@ export function createCompositionPlan(repoRoot = REPO_ROOT, flavorRoot) {
       extraTreeNames.has(parts[0]) || (parts.length === 2 && parts[1] === CANONICAL_PIN_FILENAME),
   );
   const extraTrees = [...extraTreeNames].map((name) =>
-    planExtraTree(repoRoot, path.join(flavorRoot, name), skills, pins, findings),
+    planExtraTree(repoRoot, path.join(flavorRoot, name), skills, pins, overrides, findings),
   );
 
   // A valid pin is an exception in its own right; a flavor needs one or the other.
@@ -965,12 +1037,17 @@ function generatedPackageManifest(sourceManifest, variant, customFiles) {
 }
 
 function customPackageReadme(name, variant, extraTrees) {
-  const extra = extraTrees.map(
-    (tree) =>
-      `\`${tree.name}/\` holds the current generation of ${tree.skills.map((skill) => `\`${skill}\``).join(", ")}, ` +
-      `which \`skills/\` ships in its classic form. A host switches by copying ` +
-      `\`${tree.name}/<skill>/\` over \`skills/<skill>/\`.\n\n`,
-  );
+  const names = (list) => list.map((skill) => `\`${skill}\``).join(", ");
+  const extra = extraTrees.map((tree) => {
+    const siblings = tree.skills.filter((skill) => !tree.pinnedSkills.includes(skill));
+    return (
+      `\`${tree.name}/\` holds the current generation of ${names(tree.pinnedSkills)}, ` +
+      "which `skills/` ships in its classic form" +
+      (siblings.length ? `, and the matching ${names(siblings)}` : "") +
+      ". A host switches by copying every " +
+      `\`${tree.name}/<skill>/\` over \`skills/<skill>/\`.\n\n`
+    );
+  });
   return (
     `# ${name}\n\n` +
     `This package is the generated **${variant}** flavor of ` +

@@ -263,3 +263,34 @@ test("an extra tree's links resolve against the current generation it composes",
         /skill-flavors\/studioweb\/skills-flow-v2\/uipath-flow\/SKILL\.md:2 -> references\/old\.md {2}\(no such file\)/,
     );
 });
+
+test("an extra tree sibling ships its flavor's kept blocks, not the reset ones", () => {
+    const block = (name, link) => `<!--skill-flavor:${name}:start-->\n${link}\n<!--skill-flavor:${name}:end-->\n`;
+    const files = {
+        "skills/uipath-flow/SKILL.md": "# Flow\n",
+        "skills/uipath-flow/references/new.md": "## New\n",
+        "classic/skills/uipath-flow/SKILL.md": "# Flow\n",
+        "classic/skills/uipath-flow/references/old.md": "## Old\n",
+        "skill-flavors/studioweb/uipath-flow/.canonical": "classic\n",
+        "skill-flavors/studioweb/skills-flow-v2/uipath-flow/SKILL.md": block("host", "Current."),
+        "skills/uipath-sibling/SKILL.md":
+            "# Sibling\n\n" + block("host", "[new](../uipath-flow/references/new.md)") + block("flow-sdk-x", "[new](../uipath-flow/references/new.md)"),
+        "skill-flavors/studioweb/uipath-sibling/SKILL.md":
+            block("host", "Host text.") + block("flow-sdk-x", "[old](../uipath-flow/references/old.md)"),
+        "skill-flavors/studioweb/skills-flow-v2/uipath-sibling/.reset": "flow-sdk-\n",
+    };
+    const ok = run(files);
+    assert.equal(ok.status, 0, ok.out);
+
+    const broken = run({
+        ...files,
+        "skill-flavors/studioweb/uipath-sibling/SKILL.md":
+            block("host", "[old](../uipath-flow/references/old.md)") + block("flow-sdk-x", "[old](../uipath-flow/references/old.md)"),
+    });
+    assert.equal(broken.status, 1);
+    assert.match(
+        broken.out,
+        /skill-flavors\/studioweb\/uipath-sibling\/SKILL\.md:2 -> \.\.\/uipath-flow\/references\/old\.md {2}\(no such file in the studioweb\/skills-flow-v2 flavor\(s\)\)/,
+    );
+    assert.doesNotMatch(broken.out, /uipath-sibling\/SKILL\.md:5 /);
+});
