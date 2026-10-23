@@ -13,8 +13,9 @@ description: >
   to build a process that uses every UiPath Test Manager connector node for
   the attachment group — adding one connector node per operation. Drives
   connector discovery, authoring, and validation. Graded on the produced
-  .bpmn referencing each attachment connector node type and validating
-  successfully; registry-refresh telemetry is advisory.
+  .bpmn giving each attachment operation its own node, an ActivityExecution
+  or a connector-mode HTTP call, and validating successfully;
+  registry-refresh telemetry is advisory.
   Ported from Flow `connector_features/testmanager_attachments.yaml`; BPMN
   nodes share one wrapper type, so operations are distinguished by
   objectName + method, or method + path for a connector-mode HTTP request
@@ -99,7 +100,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Produced .bpmn references every attachment connector node type (4 nodes)"
+    description: "Produced .bpmn has its own node per attachment operation (4 nodes: ActivityExecution or connector-mode HTTP)"
     command: "python3 $REFERENCE_DIR/_shared/check_testmanager_attachments.py --all-ops"
     timeout: 30
     expected_exit_code: 0
