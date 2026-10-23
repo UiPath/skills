@@ -31,8 +31,10 @@ in. It is not a working process and must never be reported as one.
    and end events: one that every branch converges on, unless the request
    names separate outcomes. Branches converge through a join gateway, never
    as two flows into the end event (`FAKE_JOIN`, see
-   [structural-bpmn.md](structural-bpmn.md#gateways)). Do not simplify the
-   branch structure.
+   [structural-bpmn.md](structural-bpmn.md#gateways)). A skeleton returns no
+   public result, so the shared-result end-event exception in that file's
+   validation checklist does not apply here. Do not simplify the branch
+   structure.
 5. **Label each box with the action first and the intended element family last,
    in brackets** — `Classify ticket [Agent]`, `Notify approvals team [Slack]`,
    `Prepare ticket summary [Script]`. The label carries the meaning a blank box
@@ -140,34 +142,50 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
 
   **Find the resources.** A box whose family runs a deployed resource (RPA
   workflow, API workflow, agent, agentic process, app, queue, entity, or a
-  connector's connection) cannot be built without one. Look them all up in
-  **one** Bash call, one `uip solution resources list --kind <Kind> --search
-  "<term>" --output json` per box. It lists what the solution already holds
-  (`Source: Local`) and what the tenant has (`Source: Remote`). `--kind
-  Process` returns RPA workflows, API workflows, agents and agentic processes
-  together: match the box's family against each row's `Type`. Entities are
-  the exception: `--kind Entity` returns an empty list even when the entity
-  exists, so for a Data Fabric box run `uip df entities list --include-folders
-  --output json` in the same call and match on `Name`. Then, for each box:
+  connector's connection) cannot be built without one. When 1a reported no
+  login, skip the lookup and mark each such box *not checked*. Otherwise run
+  every lookup in **one** Bash call:
 
-  - When the user named the resource, or exactly one match fits the box, use
-    it and name it with its folder on the box's line.
+  - **Processes, queues, apps:** `uip solution resources list --kind
+    <Process|Queue|App> --search "<term>" --output json`. It lists what the
+    solution already holds (`Source: Local`) and what the tenant has
+    (`Source: Remote`). `--kind Process` returns every process type; match
+    the box's family on `Type`: RPA workflow `process`, API workflow `api`,
+    agent `agent`, agentic process `processOrchestration`.
+  - **Connections:** `uip is connections list <connector-key> --all-folders
+    --output json`, the same list 4a binds from. Prefer `IsDefault: Yes`,
+    then `State: Enabled`.
+  - **Data Fabric entities:** `uip df entities list --include-folders
+    --output-filter "[].Name" --output json`, matched on `Name`. (`uip`
+    1.203.0: `solution resources list --kind Entity` returns no rows even
+    when the entity exists; drop this note when it does.) A Data Fabric box
+    also needs a Data Fabric connection: look up `uipath-uipath-dataservice`
+    as above.
+
+  `--search` matches names only, and tenants hold thousands of processes, so
+  never list a kind unfiltered. Search first with the user's own words for
+  the resource, then with one or two keywords from the box's label; say a
+  resource does not exist only after every search found no fit. When a
+  lookup fails, mark its boxes *not checked*, say why in one line, and do
+  not retry. Then, for each box:
+
+  - When the user named the resource, or exactly one row fits the box, use
+    it and name it on the box's line, with its folder when the row has one.
   - When several fit, name the best two on the box's line and ask which one.
   - When none fits, say on the box's line that it does not exist yet: the
-    user creates it, or names one to use.
+    user creates it or names one, or picks *Change it* to have it authored
+    (Rule 17).
 
   Script steps and quick-form human tasks need no resource. Run the lookup
   again at every 3c, so a resource the user created since the last gate
-  shows up. This lookup reads only; it is not a registry call. When it fails
-  (no login, no tenant access), mark each such box *not checked* and say why
-  in one line; do not retry it more than once. In draft mode this gate is the
-  one clarifying round Rule 4 allows.
+  shows up. These lookups read only; none is a registry call. In draft mode
+  this gate is the one clarifying round Rule 4 allows.
 
   Reply in this shape, dropping lines that do not apply; the question is
   fixed and becomes a pick list if the host has one:
 
   ```text
-  <Name>: outline ready<, uploaded>. <One sentence if you kept the user's online changes.>
+  <Name>: outline ready<, uploaded> (draft mode). <One sentence if you kept the user's online changes.>
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 
   - <each box, in order>: <resource and folder | which of two | none yet, create it or name one>
@@ -186,7 +204,7 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   shape.
 
   *Build it* goes to phase 4, which binds each box to the resource named here
-  and asks nothing more. A box still marked *none yet* gets a placeholder
+  and asks nothing more about structure or resources. A box still marked *none yet* gets a placeholder
   binding (4a) and is listed under `Unverified` in 4g; a *not checked* box
   is looked up in 4a. *Change it* goes back to 3a. *Keep it* ends the run
   with the skeleton reported as an outline.

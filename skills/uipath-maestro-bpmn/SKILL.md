@@ -95,7 +95,7 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    When the source is an image, confirm the full inventory, not a summary —
    see [Authoring from an image](#authoring-from-an-image). In draft mode,
    structure and resource questions wait for the 3c gate, and phase 4 asks
-   nothing further.
+   nothing further about them. Rule 10 consent still applies.
 5. **The diagram is mandatory.** Import is diagram-driven — every node needs a
    `BPMNShape`, every flow a `BPMNEdge`, or it will not appear on the canvas.
    `uip maestro bpmn format <file.bpmn>` generates the whole diagram; run it as
@@ -345,7 +345,8 @@ choice.
 | **Draft** | The session is in plan mode, or the user wants to see or approve the shape before it is built: *draft it first*, *plan it*, *sketch*, *design*, *what would it look like*, *show me first*. Judge the intent, not the word: a "draft project" or "draft handoff" asking for a source-only deliverable (Rule 16) is auto mode. | 0–3, stop at the gate |
 | **Auto** | Anything else. This is the default. | 0–1, 2a, 4, no stop |
 
-Say which mode was taken in the final report.
+Say which mode was taken in the final report: in 4g's first line, or in the
+3c reply when the run stops at the gate.
 
 In plan mode, writes wait for plan approval: put the skeleton outline (boxes,
 gateways, conditions) in the plan, then build 2a–2f once the plan is approved.
@@ -447,7 +448,9 @@ Draft mode only.
    types; `uip is connections list --all-folders` for live connections (always
    `--all-folders` — a folder-scoped list silently misses connections). Never
    fabricate an identifier; ask only under Rule 4, otherwise decide. In draft
-   mode, bind each box to the resource the 3c gate named. Bind each
+   mode, bind each box to the resource the 3c gate named; when a connection it
+   named does not ping `Enabled`, fall to the next candidate below and name
+   the swap under `Assumed` in 4g. Bind each
    connector node to an `Enabled` connection for its connector: the one in the
    folder the task names, else `IsDefault` `Yes`, else the first. Confirm it
    with `uip is connections ping <id> --output json` (`Data.Status` must be
@@ -456,7 +459,8 @@ Draft mode only.
    connection's Name, Owner, and Folder (never its Id) as a Rule 4 assumption.
    Use placeholders only when the user asked for a source-only draft (Rule 16), a handoff, or
    placeholder, synthetic, public-safe, or sanitized values, or when no
-   candidate pings `Enabled`.
+   candidate pings `Enabled`, or when the 3c gate reported the box's resource
+   as *none yet*.
    See [references/registry-workflow.md](references/registry-workflow.md).
 - **4b Get templates.** `uip maestro bpmn registry get <type> --output json` for
    each chosen registry-owned node only. Fetch every chosen template in **one**
@@ -711,7 +715,7 @@ Draft mode only.
    about one unresolved node, and the binding half is a live tenant lookup.
    Bind the node to a deployed resource. When the user asked for a
    placeholder, a source-only draft (Rule 16), or a boundary handoff, or 4a found no `Enabled`
-   candidate, no invented identifier can clear
+   candidate, or the 3c gate reported *none yet*, no invented identifier can clear
    `MISSING_BINDING` (Rule 2): exit 1 / `RetryWillNotFix` is the
    expected result. Report the pair once and continue; `refresh` (4f)
    succeeds with it unresolved. Fix every `VARIABLE_DOES_NOT_EXIST` warning:
@@ -759,7 +763,7 @@ Draft mode only.
   solution, skip it. Then reply in this shape, dropping lines that do not apply:
 
   ```text
-  <Name>: built, validated<, uploaded><, run>. <One sentence if you kept the user's online changes.>
+  <Name>: built, validated<, uploaded><, run> (<auto|draft> mode). <One sentence if you kept the user's online changes.>
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 
   - <what changed, one line each, up to 5>
