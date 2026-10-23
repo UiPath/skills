@@ -1,84 +1,28 @@
 name: Release Slack Notify (TEST)
 
-# Preview harness for the sprint-cut Slack notification. Posts DEMO messages
-# (mock data — no real cut, no publish) to a Slack channel so the team can see
-# how the biweekly `sprint-release-cut.yml` notification renders in every
-# outcome: full success, preview-publish failure, dev-publish failure, and
-# branch-cut failure. Each step carries a status emoji (✅ / ❌ / ⏭️).
-#
-# The notification models the real cut (see sprint-release-cut.yml):
-#   1. cut release/v<M.N> from main at version M.N.0
-#   2. publish DEV (GitHub Packages) + PREVIEW (npmjs) — stable is manual
-#   3. open a bump PR advancing main to the next line
-#
-# Slack mechanism copies UiPath/cli (coverage-weekly.yml): SLACK_BOT_TOKEN +
-# chat.postMessage by channel ID. The four demo messages are threaded under a
-# banner to keep the channel tidy.
-#
-# Run it: push this file on a `test/slack-notify-**` branch (auto-runs), or
-# dispatch from the Actions tab once it is on the default branch.
+# Token check for the LiteLLM incident (SIR): posts one message to
+# #tmp-skills-slack-bot-tests with the repo's SLACK_BOT_TOKEN and prints only
+# Slack's `ok`/`error` fields. After the skills-buddy tokens are revoked this
+# should print "ok":false and "error":"token_revoked" (or "invalid_auth").
 
 on:
   push:
     branches:
       - 'test/slack-notify-**'
-  workflow_dispatch:
-    inputs:
-      channel_id:
-        description: 'Slack channel ID to post the demo messages to'
-        required: false
-        default: 'C0BHX329GNR'   # #tmp-skills-slack-bot-tests
 
 permissions:
   contents: read
 
-concurrency:
-  group: release-slack-notify-test
-  cancel-in-progress: false
-
-env:
-  DEFAULT_CHANNEL_ID: 'C0BHX329GNR'   # #tmp-skills-slack-bot-tests
-
 jobs:
-  demo:
-    runs-on: ubuntu-latest
+  check:
+    runs-on: uipath-ubuntu-latest
     steps:
-      # Check out the triggering branch — it carries the demo script AND (being
-      # rebased on main) main's current version, which the demo reads to show
-      # the line the next cut would target.
-      - uses: actions/checkout@v4
-
-      - name: Post demo scenario messages
+      - name: Try to post to #tmp-skills-slack-bot-tests
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          CHANNEL_ID: ${{ github.event.inputs.channel_id }}
-          DEFAULT_CHANNEL_ID: ${{ env.DEFAULT_CHANNEL_ID }}
-          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-        run: node .github/workflows/scripts/slack-release-demo.mjs
-
-      # Smoke-test the REAL production notify script (slack-sprint-cut-notify.mjs
-      # from the sprint-cut wiring) with mock step outcomes, posting to the TEST
-      # channel — proves the exact production rendering without a real cut.
-      - name: Smoke-test production notify script
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          CHANNEL_ID: ${{ github.event.inputs.channel_id || env.DEFAULT_CHANNEL_ID }}
-          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-          CUT_LINE: '1.199'
-          NEXT_LINE: '1.200'
-          PR: 'https://github.com/UiPath/skills/pull/1234'
         run: |
-          set -e
-          echo "1/3 all success"
-          CUT_OUTCOME=success PUBLISH_OUTCOME=success BUMP_OUTCOME=success \
-            BUMP_URL="$PR" PREVIEW_VERSION=1.199.0-preview.777 \
-            node .github/workflows/scripts/slack-sprint-cut-notify.mjs
-          echo "2/3 preview publish failed, bump opened anyway"
-          CUT_OUTCOME=success PUBLISH_OUTCOME=failure BUMP_OUTCOME=success \
-            BUMP_URL="$PR" \
-            node .github/workflows/scripts/slack-sprint-cut-notify.mjs
-          echo "3/3 branch cut failed"
-          CUT_OUTCOME=failure PUBLISH_OUTCOME=skipped BUMP_OUTCOME=skipped \
-            node .github/workflows/scripts/slack-sprint-cut-notify.mjs
+          curl -s -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            -d '{"channel":"C0BHX329GNR","text":"Token check: if you can read this, the SLACK_BOT_TOKEN in UiPath/skills still works."}' \
+            | grep -oE '"(ok|error)":("[^"]*"|true|false)'
