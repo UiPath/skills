@@ -145,8 +145,10 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   "<term>" --output json` per box. It lists what the solution already holds
   (`Source: Local`) and what the tenant has (`Source: Remote`). `--kind
   Process` returns RPA workflows, API workflows, agents and agentic processes
-  together: match the box's family against each row's `Type`. Then, for each
-  box:
+  together: match the box's family against each row's `Type`. Entities are
+  the exception: `--kind Entity` returns an empty list even when the entity
+  exists, so for a Data Fabric box run `uip df entities list --include-folders
+  --output json` in the same call and match on `Name`. Then, for each box:
 
   - When the user named the resource, or exactly one match fits the box, use
     it and name it with its folder on the box's line.
