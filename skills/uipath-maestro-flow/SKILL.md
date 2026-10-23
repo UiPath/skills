@@ -214,7 +214,7 @@ The table is the authoritative router. Before writing a node, read its `Referenc
 
 ## Phases
 
-Pick the mode from the request before any step; never ask. First match wins:
+Pick the mode from the request before any step; do not ask the user which mode. First match wins:
 **Brownfield** (the request targets an existing `.flow.ts` or `.flow`) → [Editing an existing flow](#editing-an-existing-flow); **Discovery-only** (explore the registry, "do not build") → search, build nothing; **Draft** (the user wants to see the shape before it is built: "sketch it", "show me first", plan mode; judge intent, not the word: a step that drafts a reply or a `Draft` value is not it) → [`references/phase-2-skeleton-guide.md`](references/phase-2-skeleton-guide.md), where every box is `mock()` by design; **Auto**, the default → build as below.
 Phases: 0 surface (future work, nothing to do), 1 preflight ([Project layout](#project-layout)), 2 skeleton, 3 iterate, 4 wire up; auto runs 0, 1, 2a and 4.
 
