@@ -26,10 +26,11 @@ flags. Run `uip maestro bpmn debug --help` for the host's exact surface.
 
 > **Output is plain text, not JSON:** status, `Trace ID: <id>` when one was
 > found, run logs, execution trace. Exit 1 means `Faulted` or `Failed`.
-> `TimedOut after <N>s` also exits 1 but means the run is still going in the
-> host, not faulted: do not troubleshoot it. Re-run with `--timeout 150` only
-> if a longer wait could finish; otherwise tell the user to follow the run in
-> Studio Web. It returns no instance id or
+> `TimedOut after <N>s` also exits 1, but the run is still going in the host
+> and the timeout does not stop it: do not troubleshoot it, and do not re-run
+> it. Tell the user to follow the run in Studio Web. Run debug again only after
+> a fresh consent prompt that says it executes the process again, possibly
+> while the first run is still going. It returns no instance id or
 > Studio Web URL, so `debug-instance` reads have nothing to target. Read
 > element outcomes and outputs from the execution trace.
 <!--skill-flavor:debug-command-usage:end-->

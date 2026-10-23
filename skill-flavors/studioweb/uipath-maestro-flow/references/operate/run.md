@@ -27,5 +27,5 @@ The output is plain text: a status line, `Trace ID: <id>` when one was found, `R
 <!--skill-flavor:debug-reporting:end-->
 
 <!--skill-flavor:debug-faults:start-->
-A `Faulted` or `Failed` status exits 1, and the cause is in the run logs and execution trace that same output printed: read it there, do not re-run first. `TimedOut after <N>s` also exits 1 but means the run is still going in the host, not faulted: do not troubleshoot it. Re-run with `--timeout 150` only if a longer wait could finish; otherwise tell the user to follow the run in Studio Web.
+A `Faulted` or `Failed` status exits 1, and the cause is in the run logs and execution trace that same output printed: read it there, do not re-run first. `TimedOut after <N>s` also exits 1, but the run is still going in the host and the timeout does not stop it: do not troubleshoot it, and do not re-run it. Tell the user to follow the run in Studio Web. Run debug again only after a fresh AskUserQuestion that says it executes the flow again, possibly while the first run is still going.
 <!--skill-flavor:debug-faults:end-->

@@ -68,5 +68,5 @@ File-typed inputs cannot be bound here: the host has no `--attachment`.
 <!--skill-flavor:flow-debug-args-note:end-->
 
 <!--skill-flavor:flow-debug-reporting:start-->
-The output is plain text: a status line, `Trace ID: <id>` when one was found, `Run logs:` and `Execution trace:`. There is no Studio Web URL or instance id. Lead the summary with the status and the `Trace ID`, if one was printed. `TimedOut after <N>s` also exits 1 but means the run is still going in the host, not faulted: do not troubleshoot it. Re-run with `--timeout 150` only if a longer wait could finish; otherwise tell the user to follow the run in Studio Web.
+The output is plain text: a status line, `Trace ID: <id>` when one was found, `Run logs:` and `Execution trace:`. There is no Studio Web URL or instance id. Lead the summary with the status and the `Trace ID`, if one was printed. `TimedOut after <N>s` also exits 1, but the run is still going in the host and the timeout does not stop it: do not troubleshoot it, and do not re-run it. Tell the user to follow the run in Studio Web. Run debug again only after a fresh AskUserQuestion that says it executes the flow again, possibly while the first run is still going.
 <!--skill-flavor:flow-debug-reporting:end-->

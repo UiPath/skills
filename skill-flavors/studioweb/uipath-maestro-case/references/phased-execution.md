@@ -37,7 +37,7 @@ Before the prompt: `Suggested next steps: publish to Orchestrator when you want 
 <!--skill-flavor:phase-six-run-option:end-->
 
 <!--skill-flavor:phase-six-requirements:start-->
-The host runs the project saved in the open solution: no login, upload, or project path. Output is plain text: status, `Trace ID` when one was found, run logs, execution trace. Exit 1 means `Faulted` or `Failed`. `TimedOut after <N>s` also exits 1 but means the run is still going in the host, not faulted: do not troubleshoot it. Re-run with `--timeout 150` only if a longer wait could finish; otherwise tell the user to follow the run in Studio Web.
+The host runs the project saved in the open solution: no login, upload, or project path. Output is plain text: status, `Trace ID` when one was found, run logs, execution trace. Exit 1 means `Faulted` or `Failed`. `TimedOut after <N>s` also exits 1, but the run is still going in the host and the timeout does not stop it: do not troubleshoot it, and do not re-run it. Tell the user to follow the run in Studio Web. Run debug again only after a fresh AskUserQuestion that says it executes the case again, possibly while the first run is still going.
 <!--skill-flavor:phase-six-requirements:end-->
 
 <!--skill-flavor:phase-six-refresh-note:start-->
