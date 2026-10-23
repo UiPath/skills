@@ -39,6 +39,7 @@
   },
   "references/connector-integration.md": {
     "Empty lookup gate": 1,
+    "Phase 1 registry gate": 1,
     "Resolution audit": 1
   },
   "references/connector-trigger-impl.md": {

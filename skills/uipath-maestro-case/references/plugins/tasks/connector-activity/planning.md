@@ -34,7 +34,7 @@ Run these steps during planning. Each step feeds into the resolved entry.
 
 ### 1. Find the connector in TypeCache
 
-If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 18 gate does not apply). If still missing after a pull whose `Data.Errors` lists `typecache-activities`, the catalog is unavailable — Scenario C below, no Rule 18 gate. If the pull synced it and the file is still absent, the tenant has no connector activities — emit placeholder per § Unresolved Fallback below.
+If `~/.uip/case-resources/typecache-activities-index.json` does not exist, run `uip maestro case registry pull` first (missing file is a precondition failure, not a 0-match — Rule 18 gate does not apply). If still missing after a pull whose `Data.Errors` lists `typecache-activities` with a 5xx, the catalog is unavailable — Scenario C below, no Rule 18 gate. If the pull synced it and the file is still absent, the tenant has no connector activities — emit placeholder per § Unresolved Fallback below.
 
 Read `~/.uip/case-resources/typecache-activities-index.json` directly. Match on `displayName` or `connectorKey` + operation description from sdd.md. Record `uiPathActivityTypeId`.
 

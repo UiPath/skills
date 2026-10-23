@@ -26,8 +26,8 @@ Studio Web TypeCache serves the connector catalog. When it cannot — on a ring 
 
 **Detect** any one of:
 
-- a `registry pull` `Data.Errors[]` row whose `Type` starts with `typecache-`. A newer CLI carries `ErrorCode: "server_error"`, `Retry: "RetryLater"` and `HttpStatus: 5xx` on the row; an older CLI shows only `Error: "catalog search failed: 5xx …"`.
-- `registry get-connection`, `registry get-connector` or `case spec` failing with `Connector catalog unavailable: the last pull of <index> failed with HTTP <status> from Studio Web TypeCache …` (`ErrorCode: "server_error"`, `Retry: "RetryLater"`).
+- a `registry pull` `Data.Errors[]` row whose `Type` starts with `typecache-` **and is a 5xx**. A newer CLI carries `HttpStatus: 5xx` with `ErrorCode: "server_error"` and `Retry: "RetryLater"` on the row; an older CLI shows only `Error: "catalog search failed: 5xx …"`. A `typecache-*` row with any other status — `401` (`authentication_required`), `403` (`permission_denied`) — is a login or permission failure, not an outage: it takes Rule 3's pull-failure path (surface the error and stop Phase 1), never this section.
+- `registry get-connection`, `registry get-connector` or `case spec` failing with `Connector catalog unavailable: the last pull of <index> failed with HTTP <status> from Studio Web TypeCache …` and `ErrorCode: "server_error"` (`Retry: "RetryLater"`). With another `ErrorCode` the envelope's `Instructions` name the remedy (`uip login`, access to Studio Web): follow them and stop, as for any pull failure.
 - on an older CLI, `No resource index found` or `No TypeCache entry found` right after a pull whose `Data.Errors` listed that `typecache-*` type. The index is missing because the pull failed, not because it never ran.
 
 **Scope — act per failed index, not on every connector.** Studio Web answers the three slices of one project type (activities, triggers, packages) from one request, so they fail together; the external project types can fail independently of the case-management one. An index the pull synced (`Data.ResourceTypes[]`) resolves as usual.
