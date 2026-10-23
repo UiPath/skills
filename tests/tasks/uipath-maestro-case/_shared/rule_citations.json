@@ -38,6 +38,7 @@
     "No authored edges": 3
   },
   "references/connector-integration.md": {
+    "Empty lookup gate": 1,
     "Resolution audit": 1
   },
   "references/connector-trigger-impl.md": {
@@ -46,7 +47,7 @@
     "Unresolved resources": 1
   },
   "references/connector-trigger-planning.md": {
-    "Empty lookup gate": 2
+    "Empty lookup gate": 3
   },
   "references/edit-recipes-guide.md": {
     "Read the passage a mutation uses before making it": 1
@@ -62,7 +63,8 @@
     "Never auto-debug or publish to Orchestrator": 2,
     "No authored edges": 2,
     "Scaffold with `uip solution init`, then `uip maestro case init` from inside the solution directory": 1,
-    "The build is lossless against the SDD": 1
+    "The build is lossless against the SDD": 1,
+    "Unresolved resources": 1
   },
   "references/phased-execution.md": {
     "Build-review preference": 3,
@@ -136,10 +138,10 @@
   "references/plugins/tasks/connector-activity/impl-json.md": {
     "Artifact I/O": 2,
     "Closed task types": 1,
-    "Unresolved resources": 5
+    "Unresolved resources": 7
   },
   "references/plugins/tasks/connector-activity/planning.md": {
-    "Empty lookup gate": 5,
+    "Empty lookup gate": 6,
     "Resolution audit": 1
   },
   "references/plugins/tasks/connector-trigger/impl-json.md": {

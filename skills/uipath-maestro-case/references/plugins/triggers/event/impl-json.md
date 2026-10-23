@@ -128,7 +128,7 @@ After writing root bindings, populate IS connection cache per [bindings-v2-sync.
 
 ## Placeholder fallback (unresolved connector / connection)
 
-When the resolved entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `connector-key` — including `connector catalog unavailable (TypeCache <status>)` from [connector-integration.md § Catalog unavailable](../../../connector-integration.md#catalog-unavailable-typecache-5xx) — skip Steps 2-10 and write a placeholder node instead. Carry that reason into the log line and the completion report's environment gaps; it is a platform outage, not a missing connector. Mirrors the connector-task placeholder pattern in [placeholder-tasks.md](../../../placeholder-tasks.md) — structure preserved, runtime config deferred.
+When the resolved entry carries `<UNRESOLVED>` on `type-id`, `connection-id`, or `connector-key` — including `connector catalog unavailable (TypeCache <status>)` from [connector-integration.md § Catalog unavailable](../../../connector-integration.md#catalog-unavailable-typecache-5xx) — skip Steps 2-10 and write a placeholder node instead, and carry that reason into the log line. Mirrors the connector-task placeholder pattern in [placeholder-tasks.md](../../../placeholder-tasks.md) — structure preserved, runtime config deferred.
 
 ```json
 {

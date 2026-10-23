@@ -9,7 +9,7 @@ Registry pulls are often incomplete during early authoring:
 - The target tenant has not yet published the processes / agents / RPA / action-apps.
 - Custom Integration Service connectors have not been registered.
 - IS connections for registered connectors are not yet provisioned.
-- Studio Web TypeCache cannot serve the connector catalog — `registry pull` lists every `typecache-*` type in `Data.Errors` — so no connector resolves in that session ([connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx)).
+- Studio Web TypeCache cannot serve a connector catalog — `registry pull` lists its `typecache-*` type in `Data.Errors` — so nothing that index serves resolves in that session ([connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx)).
 
 If the skill halted on every unresolved resource, the generated `caseplan.case` would be a small fragment — not reviewable, not validatable, not useful. Placeholders solve that: the full **workflow structure** (stages, conditions, SLA, ordering, task names + types) lands in `caseplan.case`, and only the parts that strictly require a registry lookup (task-type-id, connection-id, input/output schemas) are deferred.
 
@@ -209,7 +209,7 @@ When the connector catalog was unavailable ([connector-integration.md § Catalog
 ```
 ### Environment gaps (1)
 
-- **Connector catalog unavailable** — Studio Web TypeCache (`studio_/typecache/api/Search/Catalog`) returned HTTP 500 at 2026-10-22T09:00:00Z; `registry pull` listed every `typecache-*` type in `Data.Errors`. 3 connector tasks and 1 event trigger are placeholders for this reason, not because a connector is missing. When the service recovers: `uip maestro case registry pull --force`, then upgrade per § Upgrade Procedure.
+- **Connector catalog unavailable** — Studio Web TypeCache (`studio_/typecache/api/Search/Catalog`) returned HTTP <STATUS> at <FAILURE_TIMESTAMP>; `registry pull` listed <INDEXES> in `Data.Errors`. <N> connector tasks and <N> event triggers are placeholders for this reason, not because a connector is missing. When the service recovers: `uip maestro case registry pull --force`, then upgrade per § Upgrade Procedure.
 ```
 
 When agents / API workflows / business rules were **built inline** at the gate, list them separately — they are resolved, not placeholders:
