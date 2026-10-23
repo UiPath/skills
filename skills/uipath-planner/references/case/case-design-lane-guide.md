@@ -36,7 +36,7 @@ Resolve identities at design time — registry pull, per-resource cache lookups,
 
 1. **Seeds.** The systems, resources, apps, and connectors §Listen captured are the lookup set.
 2. **Chain kickoff — background.** One background command: `uip login status --output json && uip maestro case registry pull`. Kickoff TIMING is mode-bound: Build handoff starts the chain AT LANE ENTRY, batched with the first document reads; every other mode starts it at the first tenant-bound signal (a named system/resource/connector, or an inferred runnable/connector/action task); a case with no tenant-bound items never pulls. ONE pull per session — a pull that succeeded this session is reused by the build. Best-effort: never block on it, never delay the confirmation for it, never surface its output unprompted.
-3. **Resolution pass — join, never wait.** When the sketch is complete and the pull succeeded, resolve every named or inferred resource in ONE parallel batch of cache lookups; for each connector also check enabled connections.
+3. **Resolution pass — join, never wait.** When the sketch is complete and the pull succeeded, resolve every named or inferred resource in ONE parallel batch of cache lookups; for each connector also check enabled connections. A pull that exits 0 with `Data.Errors` is partial: the types in `Data.ResourceTypes[]` resolve as usual; when every `typecache-*` type is in `Data.Errors` (Studio Web TypeCache 5xx), the connector catalog is unavailable — queue every connector as `resolve-at-build` with reason `connector catalog unavailable (TypeCache <status>)`, do not re-run the pull, and tell the user in one business-language line that connector resolution waits for the platform.
 
    | Bucket | Definition | Action |
    |---|---|---|

@@ -69,7 +69,7 @@ uip login status --output json
 uip maestro case registry pull
 ```
 
-Outside the fast path, do not inspect `~/.uip/case-resources/` first to decide whether the pull is necessary: cache absence is exactly why the pull must run. Do not continue to Step 2/3 and do not write `registry-resolved.json` unless the pull succeeds. If not logged in, prompt the user to log in and stop Phase 1; if the pull fails, surface the command error and stop Phase 1. After a successful pull, read [registry-discovery.md](registry-discovery.md) before the first cache lookup. The pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
+Outside the fast path, do not inspect `~/.uip/case-resources/` first to decide whether the pull is necessary: cache absence is exactly why the pull must run. Do not continue to Step 2/3 and do not write `registry-resolved.json` unless the pull succeeds. If not logged in, prompt the user to log in and stop Phase 1; if the pull fails, surface the command error and stop Phase 1. A pull that exits 0 with `Result: Success` and a `Warning` is partial: read `Data.Errors[]`. Rows for `typecache-*` types mean Studio Web TypeCache could not serve the connector catalog — do not run the pull again or retry a 5xx; say so in one line; resolve every type in `Data.ResourceTypes[]` as usual and send every connector task, trigger and connector-bound rule down [connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx). Rows for other types mean those indexes are not pulled — `sdd resolve` names them in `Data.Scope.missingIndexes`, and in `Data.Scope.unavailableIndexes` with the status when the CLI recorded the failure. After a successful pull, read [registry-discovery.md](registry-discovery.md) before the first cache lookup. The pull caches all resources locally at `~/.uip/case-resources/` so subsequent searches are local disk lookups.
 
 ## Step 2 — Locate and parse the design document
 
@@ -160,6 +160,8 @@ Otherwise, continue with the normal resolution path:
 ### 3.4 Unresolved resources
 
 When a resource cannot be resolved (registry gap and no cache match, or missing connection), **do not fabricate a placeholder or mock**.
+
+> **Connector catalog unavailable — no gate, no retry.** When `registry pull` listed `typecache-*` in `Data.Errors`, or a lookup failed with `Connector catalog unavailable` ([connector-integration.md § Catalog unavailable](connector-integration.md#catalog-unavailable-typecache-5xx)), every connector task, trigger and connector-bound rule goes straight to step 1 below with reason `connector catalog unavailable (TypeCache <status>)`. Neither Rule 18's gate nor the create offer below applies, the pull is not re-run, and the completion report lists it as an environment gap.
 
 > **Missing connection — offer to create first.** A missing/empty IS connection is not immediately "unresolved". The connector pipeline offers to create one via `uip is connections create` ([connector-integration.md § Step 2](connector-integration.md), [connector-trigger-planning.md § Resolve the connection](connector-trigger-planning.md#2-resolve-the-connection)). Only after the user **declines** or creation fails does the connection become `<UNRESOLVED>` and fall through to the steps below.
 
