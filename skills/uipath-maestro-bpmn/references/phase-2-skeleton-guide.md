@@ -181,8 +181,8 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   shows up. These lookups read only; none is a registry call. In draft mode
   this gate is the one clarifying round Rule 4 allows.
 
-  Reply in this shape, dropping lines that do not apply; the question is
-  fixed and becomes a pick list if the host has one:
+  Reply in this shape, dropping lines that do not apply; the question and
+  its three options are fixed:
 
   ```text
   <Name>: outline ready<, uploaded> (draft mode). <One sentence if you kept the user's online changes.>
@@ -196,17 +196,19 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   3. **Keep it**: stop here with this outline.
   ```
 
-  The user must see everything above the question. When the host's pick list
-  has a preamble field (an `intro`), put that text there and the fixed
-  question with its three options in the list. Otherwise send the text as a
-  visible message first, then open the pick list. Never leave the outline
-  only in your reasoning: a user who sees only the question cannot judge the
-  shape.
+  Send this reply as your final message and end the turn. Do not ask the
+  gate question with a pick-list or question tool: a pending question keeps
+  the turn open, and Studio Web locks the canvas while a turn runs, so the
+  user cannot review the shape they are asked to approve. Put any "which of
+  two" resource questions in the same message. The user answers in their
+  next message, with a number, an option name, or the change they want.
+  Never leave the outline only in your reasoning: a user who sees only the
+  question cannot judge the shape.
 
   *Build it* goes to phase 4, which binds each box to the resource named here
-  and asks nothing more about structure or resources. A box still marked *none yet* gets a placeholder
-  binding (4a) and is listed under `Unverified` in 4g; a *not checked* box
-  is looked up in 4a. *Change it* goes back to 3a. *Keep it* ends the run
+  and asks nothing more about structure or resources. A box still marked
+  *none yet* gets a placeholder binding (4a) and is listed under
+  `Unverified` in 4g; a *not checked* box is looked up in 4a. *Change it* goes back to 3a. *Keep it* ends the run
   with the skeleton reported as an outline.
 
 Removing a box is the common edit: delete the task, delete its two sequence
