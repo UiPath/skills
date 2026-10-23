@@ -134,3 +134,33 @@ def test_guide_block_omits_the_studio_web_paragraph_when_nothing_is_studio_web_o
     block = task_types.render_guide_block(data)
     assert "Studio Web:" not in block
     assert "Never write these as a `Type:` either." in block
+
+
+@pytest.mark.parametrize("gate", GATES, ids=lambda p: p.parts[-3])
+def test_sdd_check_gate_names_the_studio_web_only_types(gate: Path):
+    assert sorted(_load_gate(gate).STUDIO_WEB_ONLY) == sorted(task_types.studio_web_only())
+
+
+@pytest.mark.parametrize("gate", GATES, ids=lambda p: p.parts[-3])
+def test_sdd_check_gate_corrects_each_name_that_is_not_a_task_type(gate: Path):
+    declared = {row["Spelling"]: row["PlanType"] for row in task_types.not_task_types()}
+    assert _load_gate(gate).NOT_TASK_TYPES == declared
+
+
+@pytest.mark.parametrize("gate", GATES, ids=lambda p: p.parts[-3])
+def test_sdd_check_gate_tells_the_three_kinds_of_bad_type_apart(gate: Path, tmp_path: Path):
+    """A name from another layer gets its plan type, a Studio Web-only type says so, the rest say neither."""
+    import subprocess
+
+    (tmp_path / "sdd.md").write_text(
+        "| amount | In | number | — | — | — | the amount |\n\n"
+        + "\n".join(f"**Type:** {t}" for t in ("connector-activity", "wait-for-event", "script", "banana"))
+        + "\n"
+    )
+    out = subprocess.run([sys.executable, str(gate)], cwd=tmp_path, capture_output=True, text=True)
+    report = out.stdout + out.stderr
+    assert 'task-type: "connector-activity" is not a task type (did you mean "execute-connector-activity"?)' in report
+    assert 'task-type: "wait-for-event" is not a task type (did you mean "wait-for-connector"?)' in report
+    for name in task_types.studio_web_only():
+        assert f'task-type: "{name}" is a caseplan task type an SDD may not declare; author it in Studio Web' in report
+    assert f'task-type: "banana" is not one of the {len(task_types.authorable())} an SDD may use' in report
