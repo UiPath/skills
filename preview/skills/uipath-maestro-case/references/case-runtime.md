@@ -123,16 +123,14 @@ make from syntax alone. Exact signatures remain in the generated API.
 - Start with `uip maestro case decompile <plan> -o <Name>.case.ts --no-pipeline`.
   Edit the generated `.case.ts` and retain `preserveCaseJson(...)`: it keeps
   the foreign metadata the typed surface does not own. Compile back into the
-  same plan. When that plan already has a top-level `bindings` array
-  (Designer-saved or compiled before), pass the plan as the binding map on
-  every compile: `uip maestro case compile <Name>.case.ts -o <plan> --bindings
-  <plan>`. That array maps the source's labels (for example `bOC1`) to
-  resource keys; without `--bindings`, compile writes `bOC1` in as the key and
-  overwrites the array, the only copy. An explicit `--bindings` replaces the
-  `bindings.json` beside the source, so a plan with no `bindings` array keeps
-  using that file. This is the compile the optional `<Name>.pipeline.mjs`
-  runs, but the pipeline writes a separate `.flow-sdk/<Name>.caseplan.json`
-  that pack and debug never read. Strict decompile fails closed on unresolved references. For an explicitly broken input, rerun
+  same plan: `uip maestro case compile <Name>.case.ts -o <plan>`. Needs
+  `@uipath/maestro-builder-sdk` 6.50.1 or later, which resolves the decompiled
+  labels (for example `bOC1`) against that plan's own `bindings` array; an
+  older SDK writes the label in as the key, so upgrade first. Do not pass
+  `--bindings <plan>`: it replaces `bindings.json`, so a connector the edit
+  adds loses its mapping. Do not run `<Name>.pipeline.mjs`: it writes a plan
+  pack and debug never read. Strict decompile fails closed on unresolved
+  references. For an explicitly broken input, rerun
   with `--best-effort`, inspect every reported diagnostic, and replace every
   `__UNRESOLVED_*` marker before checking or compiling the repair. Removing or
   repointing a bound task also requires the orphan cleanup under
