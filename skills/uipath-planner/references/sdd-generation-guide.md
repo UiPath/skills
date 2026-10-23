@@ -1,38 +1,31 @@
 # SDD Generation Guide
 
-Step-by-step instructions for transforming a PDD into an SDD. Follow the 3-phase interaction model described in SKILL.md.
+Transform a PDD into an SDD using the 3-phase interaction model in SKILL.md.
 
 ## Phase 1 — PDD Analysis & Scope Selection
 
 ### Step 0: Determine Execution Mode & Delivery Model
 
-Before reading the PDD, ask **one `AskUserQuestion` call containing two question objects** — execution mode and delivery model (three objects when the custom-host follow-up below applies; the tool accepts up to four per call). Batching keeps the prompt budget flat: the delivery model gates every product decision (see [Product Selection Guide → Constraint Gate](product-selection-guide.md#constraint-gate)) and asking it later costs a second interruption.
+Before reading the PDD, make one `AskUserQuestion` call with two question objects: execution mode and delivery model. If the custom-host follow-up applies, replace Question 2 with two objects (three total; the tool accepts up to four). Delivery model gates every product decision; see [Product Selection Guide → Constraint Gate](product-selection-guide.md#constraint-gate).
 
-**Delivery-model CLI preflight — run first, best-effort.** Before composing the questions, try to resolve the delivery model from the active CLI session:
+**Run the delivery-model CLI preflight first, best-effort:**
 
 ```bash
 uip login status --output json
 ```
 
-`uip login status` returns the authenticated `Data.BaseUrl` (host) and tenant. That separates **Automation Cloud** from **self-hosted**, but it does NOT reveal whether a self-hosted host is Automation Suite or standalone Orchestrator, nor the Automation Suite version/capabilities — validate those explicitly.
+Use authenticated `Data.BaseUrl` and tenant. `cloud.uipath.com` means **Automation Cloud** (full catalog, entitlement-gated per tenant); another `*.uipath.com` means an **Automation Cloud variant** (Public Sector / Dedicated / Test Cloud / region-specific): verify each gated product (Maestro, Agents, Coded Apps, API Workflows, Solutions) against tenant entitlements and mark unverifiable products `[SME REVIEW]`. Any other host means **self-hosted — Automation Suite OR standalone Orchestrator (ambiguous)**. `Status` ≠ `Logged in`, an error, or missing `BaseUrl` means unknown: ask Question 2 fully and tell the user that running `uip login` first enables detection next run. Known cloud hosts skip the platform question; a custom host never does.
 
-| `Data.BaseUrl` host | Resolves to | Question 2 |
-|---|---|---|
-| `cloud.uipath.com` | **Automation Cloud** — full catalog, entitlement-gated per tenant | skip (confidently resolved) |
-| any other `*.uipath.com` host | **Automation Cloud variant** (Public Sector / Dedicated / Test Cloud / region-specific) — catalog is variant-, region-, and entitlement-gated | skip the platform question, but verify each gated product (Maestro, Agents, Coded Apps, API Workflows, Solutions) against the tenant's actual entitlements; unverifiable → `[SME REVIEW]` per product |
-| any other (customer / on-prem) host | **self-hosted — Automation Suite OR standalone Orchestrator (ambiguous)** | **do not skip** — ask the custom-host follow-up below |
-| `Status` ≠ `Logged in`, call errors, or no `BaseUrl` | unknown | ask Question 2 in full; tell the user that running `uip login` first lets the next run auto-detect |
+For an ambiguous custom host, show `<HOST>` and put these objects in the same call:
 
-**Custom-host follow-up** — when the preflight hits the ambiguous row, replace Question 2 with these **two question objects** in the same batched Step 0 `AskUserQuestion` call (the call then carries three questions). Show the detected host:
-
-*Question 2a — Platform:*
+**Question 2a — Platform:**
 
 > I detected a self-hosted URL (`<HOST>`). Which platform is it?
 >
 > 1. **Automation Suite** — product + capability availability is gated by version (and the EKS/AKS install profile for the Maestro/Agents stack)
 > 2. **Standalone Orchestrator (MSI)** — Orchestrator + Studio/Robot only; most modern products unavailable
 
-*Question 2b — Automation Suite version (applies only when 2a = Automation Suite):*
+**Question 2b — Automation Suite version (only if 2a = Automation Suite):**
 
 > Which Automation Suite version?
 >
@@ -41,18 +34,16 @@ uip login status --output json
 > 3. **Older**
 > 4. **Not sure / not Automation Suite**
 
-Record the delivery model, and for Automation Suite the **version** — it determines which capabilities/products are available (gate via [platform-availability-guide.md](platform-availability-guide.md)). Never silently treat a custom host as Automation Suite; standalone blocks far more. If the user picks Automation Suite but cannot give the version ("Not sure"), gate against the latest matrix column and add an `[SME REVIEW]` version row in §16 Deployment Environment.
+Record delivery model and, for Automation Suite, version; gate capabilities/products with [platform-availability-guide.md](platform-availability-guide.md). Never silently treat a custom host as Automation Suite. If version is unknown, gate against the latest matrix column and add an `[SME REVIEW]` version row in §16 Deployment Environment. An explicit user-stated model or PDD signal overrides preflight. Preflight is best-effort and never blocks (Rule G-8); on failure ask Question 2.
 
-Precedence: an explicit user-stated delivery model or a PDD signal **wins over** the preflight — never override an explicit statement with the detected value. The preflight is **best-effort and never blocks** (Rule G-8): on any CLI failure, fall back to asking Question 2.
-
-*Question 1 — Execution mode:*
+**Question 1 — Execution mode:**
 
 > How should I handle this SDD generation?
 >
 > 1. **Autonomous** *(recommended)* — I will read the PDD, make all decisions, and generate the full SDD. I will only interrupt for hard blockers (PDD unreadable, Agent/Coded App missing critical info, unresolved `[SME REVIEW]` items before finalizing).
 > 2. **Interactive** — I will pause at each phase checkpoint (summary, architecture, final SDD) for your review before proceeding.
 
-*Question 2 — Delivery model:*
+**Question 2 — Delivery model:**
 
 > Where will this automation run?
 >
@@ -61,26 +52,14 @@ Precedence: an explicit user-stated delivery model or a PDD signal **wins over**
 > 3. **Standalone Orchestrator (MSI)** — most restrictive; modern platform products unavailable
 > 4. **Not sure** — I will proceed assuming Automation Cloud and flag the assumption as `[SME REVIEW]`
 
-**Skip Question 2** only when the delivery model is **fully** resolved — the user's request states it, the PDD carries a delivery-model signal (see [PDD Analysis Guide → Environment & Constraint Signals](pdd-analysis-guide.md#environment--constraint-signals)), or the preflight landed on a **known cloud host**. A custom / self-hosted host does NOT fully resolve it (Automation Suite vs standalone is ambiguous, and the AS version is unknown) — ask the custom-host follow-up above, batched into the Step 0 call. Record the resolved value. Only if the user picks Automation Suite and cannot give the version do you skip the version follow-up — then gate against the latest matrix column and add an `[SME REVIEW]` version row in §16 Deployment Environment.
+Skip Question 1 when the request states execution mode. Skip Question 2 only when fully resolved by the request, PDD signal (see [PDD Analysis Guide → Environment & Constraint Signals](pdd-analysis-guide.md#environment--constraint-signals)), or known cloud host. A custom/self-hosted host is not fully resolved. If both resolve from context, skip `AskUserQuestion`. Record both in the SDD `## Planner Handoff` header and pass them to Lane A and specialists.
 
-**Skip Question 1 symmetrically** when the request already states the execution mode ("autonomous", "don't pause for checkpoints", "interactive review"). When both questions are resolved from context, skip the `AskUserQuestion` call entirely and record both values.
-
-Record both choices — they go into the SDD's `## Planner Handoff` header (Phase 3 Step 2) and propagate to Lane A (task derivation): execution mode drives task review behavior; delivery model is passed to specialists as a platform constraint.
-
-In **Autonomous** mode:
-- Skip Phase 1 summary presentation (generate internally, do not wait for confirmation) — the `## Recommended Scope` block still persists into the SDD (Phase 3 Step 2 item 3)
-- Skip Phase 2 architecture review (generate, do not wait)
-- Still ask the SME Review resolution question before finalizing (Step 1.5) — this is a hard blocker on `Status: ready`, not on the Step 0 skeleton write
-- Still ask the Agent/Coded App gap-filling question if triggered — this is a hard blocker
-- **Insert a "Decisions Made" block** at the top of the SDD (immediately after the Planner Handoff header and before any other section) listing the five highest-leverage architectural picks with one-sentence reasons. See Phase 3 Step 2 item 3 for the exact block format. Do **NOT** use `AskUserQuestion` — the picks are decided autonomously; the block makes them scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document.
-
-In **Interactive** mode:
-- Present and wait at every checkpoint as described in the steps below
+In **Autonomous** mode, skip Phase 1 summary and Phase 2 architecture approval but persist `## Recommended Scope`; still ask Step 1.5 SME resolution and any Agent/Coded App gap question. Add `## Decisions Made` immediately after Planner Handoff and before all other sections, with the five highest-leverage architectural picks and one-sentence reasons, using Phase 3 Step 2's format; do not ask about those picks. In **Interactive** mode, await every checkpoint.
 
 ### Step 0.5: Create Progress Tasks
 
 <!--skill-flavor:progress-tasks:start-->
-Create progress-tracking tasks via `TaskCreate` so the user can see where the SDD generation stands.
+Create these tasks with `TaskCreate`:
 
 ```
 TaskCreate: subject="Read PDD and extract data",        activeForm="Reading PDD…"
@@ -92,56 +71,45 @@ TaskCreate: subject="Resolve SME review items",          activeForm="Resolving S
 TaskCreate: subject="Finalize SDD (Status: ready)",      activeForm="Finalizing SDD…"
 ```
 
-Mark each task `in_progress` when starting and `completed` when done.
-
-**Rule G-8 — Task creation is best-effort and never blocks SDD output.** If any `TaskCreate` or `TaskUpdate` call fails (tool unavailable, runtime error, timeout), log a single warning to the user, continue the SDD generation without progress tasks, and do not retry. The SDD file itself is the authoritative deliverable. Progress tasks are a UX convenience only.
-
-**Rule G-9 — the disk write is task 4, never the last task.** "Write SDD skeleton to disk" sits BEFORE "Generate full SDD (Phase 3)" in this list because [Phase 3 Step 0](#step-0-write-the-sdd-skeleton-to-disk--hard-gate) is a hard gate: the file must exist on disk before you generate a single Phase 3 section. Do NOT reorder this list so that every write lands at the end, and do NOT collapse tasks 4 and 7 into one terminal "write the SDD" task. A long autonomous turn can be hard-killed by the per-turn watchdog mid-generation; a plan that defers the only deliverable to its final task loses the entire run, while a skeleton already on disk leaves a detectable, gradeable `Status: draft` SDD.
-
-> If Step 0.5 `TaskCreate` failed, silently skip every subsequent `Mark "X" as in_progress / as completed` instruction in this guide — the tasks do not exist to update, and a second warning to the user is noise.
-
-These tasks track SDD generation. Implementation tasks are owned by Lane A (task derivation), which runs after Phase D writes the SDD — do NOT create implementation tasks here.
+Mark each `in_progress` on start and `completed` on completion. **Rule G-8:** task creation/update is best-effort and never blocks output. If any `TaskCreate` or `TaskUpdate` fails, warn the user once, continue without progress tasks, and do not retry; the SDD is authoritative. If creation failed, silently skip later updates. **Rule G-9:** task 4 is the disk write and precedes Phase 3; never reorder, collapse tasks 4 and 7, or make writing terminal. Implementation tasks belong to Lane A after Phase D; do not create them here.
 <!--skill-flavor:progress-tasks:end-->
 
 ### Step 1: Read the PDD
 
-> **Progress:** Mark "Read PDD and extract data" as `in_progress`.
+Mark `Read PDD and extract data` `in_progress` when tasks exist.
 
-1. Determine the input format and route it to the right tool — Markdown (`.md`) and plain text (`.txt`): `Read` directly; PDF (`.pdf`): `Read` with `pages`; Word (`.docx`): convert with `scripts/docx-extract.sh` (pandoc); pasted text: from conversation context. See [PDD Analysis Guide → Supported Input Formats](pdd-analysis-guide.md#supported-input-formats). The source need not be a formal PDD — a Confluence page, BPMN model (`.bpmn`), meeting/Zoom transcript, SOP, or requirements doc also works ([Accepted process-knowledge sources](pdd-analysis-guide.md#accepted-process-knowledge-sources)); run heavier Phase 1 elicitation when the source is less structured than a PDD. Extract **both AS-IS and TO-BE** ([As-Is and To-Be Process](pdd-analysis-guide.md#as-is-and-to-be-process)).
-2. **Size-based reading strategy** for PDFs:
-   - **Under 10 pages:** read the entire document in one pass. Skip ToC lookup.
-   - **10-50 pages:** read the ToC first, then read sections in priority order (overview → steps → exceptions → applications → credentials).
-   - **Over 50 pages:** read ToC, then read high-priority sections (overview, process steps, exceptions) first, extract as you go, then read remaining sections.
-3. For pasted text over 3000 words, ask the user to paste in sections.
-4. **Docx handling:** .docx is a binary format — do NOT Read it directly or attempt to extract data from garbled output. Convert first. Run from the directory where the markdown should land (output defaults to the current working directory):
+1. Route `.md`/`.txt` to `Read`; `.pdf` to `Read` with `pages`; `.docx` to the conversion below; pasted text to conversation context. See [PDD Analysis Guide → Supported Input Formats](pdd-analysis-guide.md#supported-input-formats). A formal PDD is unnecessary: Confluence, BPMN (`.bpmn`), meeting/Zoom transcript, SOP, or requirements doc is acceptable ([Accepted process-knowledge sources](pdd-analysis-guide.md#accepted-process-knowledge-sources)); use heavier elicitation for less-structured sources. Extract AS-IS and TO-BE ([As-Is and To-Be Process](pdd-analysis-guide.md#as-is-and-to-be-process)).
+2. PDFs: under 10 pages, read all once; 10–50, read ToC then overview → steps → exceptions → applications → credentials; over 50, read ToC and high-priority sections first, then the rest.
+3. For pasted text over 3000 words, ask the user to paste sections.
+4. `.docx` is binary: do not `Read` directly. Run from the destination directory:
 
-   ```bash
-   # macOS / Linux / Git Bash:
-   bash <SKILL_DIR>/scripts/docx-extract.sh "<PDD_FILE_PATH>"
-   # Windows without Git Bash (Windows PowerShell 5.1 or pwsh 7+):
-   pwsh -File <SKILL_DIR>/scripts/docx-extract.ps1 "<PDD_FILE_PATH>"   # or: powershell -File ...
-   ```
+```bash
+# macOS / Linux / Git Bash:
+bash <SKILL_DIR>/scripts/docx-extract.sh "<PDD_FILE_PATH>"
+# Windows without Git Bash (Windows PowerShell 5.1 or pwsh 7+):
+pwsh -File <SKILL_DIR>/scripts/docx-extract.ps1 "<PDD_FILE_PATH>"   # or: powershell -File ...
+```
 
-   `<SKILL_DIR>` is the folder containing this skill's SKILL.md; `<PDD_FILE_PATH>` is the full path to the .docx. The script produces a UTF-8 markdown file plus a `-media/` folder with embedded screenshots — Read both (screenshots feed the canonical-example extraction). Complex multi-paragraph tables may come out as raw HTML `<table>` blocks — parse them, they carry the same data. If the script reports pandoc missing, relay its install command to the user; only if the user cannot install pandoc, fall back to: "Please export the Word document as PDF or paste the content directly." Never drive Word via COM automation.
-5. **Error cases:** if the document cannot be read (corrupt PDF, password-protected, unsupported format), tell the user and ask them to provide it in a different format. If the document does not appear to be a PDD (no process steps, no application details, no exception handling), tell the user and stop.
-6. **Language handling:** if the PDD is not in English, use `AskUserQuestion` with the numbered-choice format:
+`<SKILL_DIR>` contains this skill's SKILL.md and `<PDD_FILE_PATH>` is the full `.docx` path. Read generated UTF-8 markdown and `-media/` screenshots; screenshots feed canonical-example extraction. Parse raw HTML `<table>` blocks. If pandoc is missing, relay its install command; if installation is impossible, say: "Please export the Word document as PDF or paste the content directly." Never use Word COM automation.
+5. If unreadable (corrupt/password-protected/unsupported), explain and request another format. If not PDD-like (no process steps, application details, or exception handling), explain and stop.
+6. For non-English PDDs, use `AskUserQuestion`:
 
-   > The PDD appears to be in <LANGUAGE>. Which language should the SDD use?
-   >
-   > 1. **English** *(recommended)* — SDD in English for broadest tool compatibility
-   > 2. **<LANGUAGE>** — SDD in the same language as the PDD
+> The PDD appears to be in <LANGUAGE>. Which language should the SDD use?
+>
+> 1. **English** *(recommended)* — SDD in English for broadest tool compatibility
+> 2. **<LANGUAGE>** — SDD in the same language as the PDD
 
-   Regardless of choice, keep section headings and structural identifiers (BR-01, B1, E1) in English for tool compatibility.
+Keep headings and structural identifiers (BR-01, B1, E1) in English.
 
 ### Step 2: Extract Structured Information
 
-Follow the [PDD Analysis Guide](pdd-analysis-guide.md) to extract data from the PDD. Build an internal model with these components:
+Follow the [PDD Analysis Guide](pdd-analysis-guide.md). Build an internal model containing:
 
-| Component | PDD Topic to Look For | Required |
+| Component | Source | Required |
 |---|---|---|
-| Process name and objective | Introduction | Yes |
+| Process name/objective | Introduction | Yes |
 | Key contacts | Process key contacts | No |
-| Process overview (schedule, volumes, FTEs) | Process overview | Yes |
+| Overview (schedule, volumes, FTEs) | Process overview | Yes |
 | In-scope activities | In scope | Yes |
 | Out-of-scope activities | Out of scope | Yes |
 | Process steps | Detailed process map / steps | Yes |
@@ -149,85 +117,50 @@ Follow the [PDD Analysis Guide](pdd-analysis-guide.md) to extract data from the 
 | System errors | Error mapping and handling | Yes |
 | Application inventory | In-scope application details | Yes |
 | Development prerequisites | Prerequisites for development | No |
-| Credentials and assets | Credentials and asset management | Yes |
+| Credentials/assets | Credentials and asset management | Yes |
 | Test data | Appendix | No |
 
-**Key Contacts go into §1 Delivery Team.** The PDD's Key Contacts section (SA, BA, developers, PM, SME / Process Owner) populates the Delivery Team table in §1 of the RPA template. Include only roles the PDD explicitly names — do not invent or leave rows as `[SME REVIEW]`; omit silent rows instead.
+Put explicitly named SA, BA, developers, PM, SME/Process Owner roles into §1 Delivery Team; omit unnamed roles, do not invent them or mark them `[SME REVIEW]`.
 
 ### Step 2.5: Tenant Library Discovery
 
-The org's deployed libraries cannot be inferred from any PDD. Query the tenant feed to discover candidates the new project should reference. Run in BOTH Autonomous and Interactive modes — this drives §14 Packages and §16 "Shared libraries referenced".
-
-Skip this step for non-RPA primaries (Agents, Coded Apps, Flow, BPMN, Case, API Workflows) — shared RPA libraries do not apply to those products' package models. Only the *library* discovery is RPA-scoped: the [Level 0 estate sweep](product-selection-guide.md#estate-sweep) (deployed processes, agents, Maestro processes, IXP projects, solutions, connections) runs for every scope when evaluating the suitability gate.
-
-Run the procedure in [tenant-library-search-guide.md](tenant-library-search-guide.md). Keyword source for step 2: PDD Application Inventory + org-prefix terms (`Common`, `Shared`, `<Company>` if mentioned in the PDD). Output mapping: every selected library → one row in every sub-project's §14 Packages table, and its package ID into §16 Deployment Environment → "Shared libraries referenced". If the auth preflight fails, use the guide's manual fallback and propagate the user's named libraries to §14 / §16 the same way.
-
-**This step is best-effort — it never blocks SDD output.** If the auth preflight errors or auth is unavailable, **Autonomous mode skips library discovery and proceeds with public NuGet only** — do not retry or troubleshoot auth mid-generation, and do not pause. Skip the step entirely if the user's prompt forbids running `uip` commands.
+Run [tenant-library-search-guide.md](tenant-library-search-guide.md) in both modes for RPA primaries. Keyword source step 2: PDD Application Inventory plus `Common`, `Shared`, and `<Company>` when mentioned. Map every selected library to one row in every sub-project's §14 Packages and its package ID to §16 Deployment Environment → `Shared libraries referenced`. If auth preflight fails, use the guide's manual fallback and propagate user-named libraries identically. This excludes Agents, Coded Apps, Flow, BPMN, Case, and API Workflows, but [Level 0 estate sweep](product-selection-guide.md#estate-sweep) (deployed processes, agents, Maestro processes, IXP projects, solutions, connections) applies to every scope. Discovery is best-effort and never blocks: in Autonomous mode, auth failure means skip without retry/troubleshooting and proceed with public NuGet only. Skip entirely if the user forbids `uip` commands.
 
 ### Step 3: Detect Gaps
 
-Scan for missing or vague information. Use the Gap Detection Checklist in the [PDD Analysis Guide](pdd-analysis-guide.md) to classify each gap as `[DEFAULT]` or `[SME REVIEW]`.
+Use the Gap Detection Checklist in the [PDD Analysis Guide](pdd-analysis-guide.md); classify every gap `[DEFAULT]` or `[SME REVIEW]`.
 
 ### Step 3.5: Synthesize the Need
 
-Before selecting a product, distil the extracted model into a **need profile** — the recommendation reasons from this multi-factor picture, NOT from surface keywords. No single factor decides the tool; capture all and weigh the overall fit:
+Before product selection, create a need profile and decide from the multi-factor profile, not keywords. Capture outcome/KPI and TO-BE objective; determinism per process/step (deterministic → RPA/API/rules; genuine ambiguity judgment → Agents, not the sole gate); input structure (structured vs unstructured documents/email/free text → Agent or IXP); each integration's stable API/**Integration Service connector**, reachable from the executor under the delivery model; reuse connectors; on-prem HTTP(S) may use Automation Relay; absent connectors: API Workflows, RPA, and coded Agents use Direct HTTP, while IS-only surfaces (Maestro Flow / BPMN / Case connector nodes, low-code Agent tools) need `uipath-connector-builder` or an API Workflow wrapper; see [Product Selection Guide → Integration Service](product-selection-guide.md#integration-service). Run `uip is connectors list`; never assume a connector exists. UI-only system → RPA.
 
-- **Core need & target outcome** — one sentence: what outcome the automation must produce, and which KPI it moves (cycle time, manual effort, quality/accuracy, cost, throughput, or compliance). Design the "to-be" against that outcome, not a copy of the as-is.
-- **Decision nature (determinism)** — are decisions rule-expressible (**deterministic**: same input → same output) or do they need judgment / reasoning over ambiguity (**non-deterministic**)? Assess per process AND per step. Deterministic → RPA / API / rule-based; genuine judgment → Agents. (One factor among those below — not the sole gate.)
-- **Input structure** — structured / predictable vs messy / unstructured (email, free text, varied documents → Agent or IXP to interpret).
-- **Integration surface** — for each external system: does a stable API / **Integration Service connector** exist, and is it **reachable from the executor's runtime under the delivery model** (on-prem HTTP(S) APIs → Automation Relay option, placement rule 5)? Reuse an existing connector first. If none exists: API Workflows, RPA, and coded Agents call the API directly (Direct HTTP); IS-only surfaces (Maestro Flow / BPMN / Case connector nodes, low-code Agent tools) need a custom connector (→ `uipath-connector-builder`) or an API Workflow wrapper — see [Product Selection Guide → Integration Service](product-selection-guide.md#integration-service). Verify with `uip is connectors list` — never assume a connector exists. UI-only system → RPA.
-- **Interaction model** — system-to-system (no UI, no human) · UI automation · human-in-the-loop (immediate attended action vs **asynchronous approval** — async inside one process → long-running RPA + Action Center) · user-facing app.
-- **State** — atomic (one shot) · transactional (per-item, retryable) · long-running (suspends / waits). Long-running inside ONE process → RPA long-running workflow; long-running across products → Maestro.
-- **Coordination shape** — single task · linear/branching pipeline · staged case lifecycle (stages + SLA) · structured control-flow (parallel / events / subprocess). Use the control-flow structure extracted in Step 2 ([PDD Analysis Guide → Detailed Process Map](pdd-analysis-guide.md#detailed-process-map)).
-- **Volume, latency & cost** — high-volume / repeatable favours deterministic (agentic cost is higher-variance and less predictable — estimate per model/tenant, and justify agentic at volume); note any latency requirement.
-- **Risk, reversibility & auditability** — high-risk / irreversible / low-confidence steps need a HITL gate; compliance-critical work needs a deterministic, auditable record.
-- **Change / volatility** — how often inputs, forms, or rules change (an uncaptured volatility assumption is a top cause of solutions that break in production; prefer IXP for changeable documents).
-- **Reuse** — local operation vs shared callable capability (→ RPA Library / API Workflow / custom connector, built before consumers).
-- **Runtime & resource locality** — where must the work execute? Machine-local resources — desktop apps, Excel/Office files, file shares, on-prem databases, terminal/mainframe, Citrix — are reachable only from a robot inside the environment → RPA regardless of determinism or API existence (exceptions: on-prem HTTP(S) APIs via confirmed Automation Relay, and robot-hosted Coded Functions, which also run inside the environment — see the placement rules). Windows · cross-platform · serverless · user desktop drives compatibility, robot type, and licensing (§11 Project Mode Decision in the RPA template).
-- **Existing estate** — what is already deployed: processes, API Workflows, connectors (`uip is connectors list`), tenant libraries (Step 2.5), IXP models, user-named resources. Reuse before build.
+Also capture interaction (system-to-system, UI, immediate attended HITL, **asynchronous approval** via long-running RPA + Action Center, or user-facing app); state (atomic, transactional/retryable, or long-running; one-process long-running → RPA; cross-product → Maestro); coordination (single task, pipeline, staged case/SLA, or parallel/events/subprocess control flow) using [PDD Analysis Guide → Detailed Process Map](pdd-analysis-guide.md#detailed-process-map); volume/latency/cost (high-volume / repeatable favours deterministic; agentic cost is higher-variance — estimate per model/tenant, and justify agentic at volume); risk, reversibility, auditability and HITL (compliance-critical work needs a deterministic, auditable record); change/volatility (prefer IXP for changeable documents); reuse (local vs shared callable capability → RPA Library/API Workflow/custom connector built before consumers); runtime/resource locality (desktop, Excel/Office, file shares, on-prem DB, terminal/mainframe, or Citrix require an in-environment robot → RPA, except confirmed Automation Relay HTTP(S) and robot-hosted Coded Functions; Windows/cross-platform/serverless/user desktop affect compatibility, robot type, and licensing (§11 Project Mode Decision)); existing estate (reuse first); trigger and evidence/confidence (unknowns become `[SME REVIEW]`).
+
+Type every extracted step with [Product Selection Guide → Per-task component placement](product-selection-guide.md#per-task-component-placement-the-to-be-per-step), producing the step→executor map. Before Level 1, fold in-process capabilities into their host ([Decision table → Absorption fold](product-selection-guide.md#decision-table)); do not treat them as orchestration triggers. Carry profile/map into Step 6 and `## Recommended Scope`, expressing each pick as `need → product`. Prefer hybrid, decomposed solutions: AI decides, governed RPA/API execute, Maestro orchestrates only when needed, and HITL gates risk. Level 1 matches the profile, not whole-process keywords; ambiguity goes to the user.
 - **Trigger** — who or what starts it.
-- **Confidence** — the evidence behind each factor and what remains unknown; unknowns become `[SME REVIEW]` rows, and a genuinely ambiguous product choice goes to the user (Step 6) — never a silent default.
-
-**Close Step 3.5 by typing every extracted step** with the [Product Selection Guide → Per-task component placement](product-selection-guide.md#per-task-component-placement-the-to-be-per-step) table — the resulting **step→executor map** is Level 1's input (layer 2 before layer 3; Level 1 never matches raw keywords against the whole process). Level 1 first folds absorbed capabilities into their hosts ([Decision table → Absorption fold](product-selection-guide.md#decision-table)) — capabilities a host invokes in-process are integrated components, not orchestration triggers — then reads the folded map.
-
-Carry the need profile and the step→executor map into the Step 6 summary and the SDD `## Recommended Scope` reasoning so every product pick reads as `need → product`, auditable against the PDD. The dominant real-world pattern is **hybrid** (AI decides, deterministic RPA/API execute as governed tools, Maestro orchestrates when real orchestration is needed, HITL gates the risky steps) and **decomposed** into separate blocks — not one monolithic flow. Level 1 (Step 4) matches on the whole profile; PDD keywords are evidence, not the decision. When the need is genuinely ambiguous between products, ask the user (Step 6) — do not silently default.
 
 ### Step 4: Run Levels in Order
 
-> **Progress:** Mark "Read PDD and extract data" as `completed`. Mark "Select product" as `in_progress`.
+Mark `Read PDD and extract data` `completed` and `Select product` `in_progress` when applicable. Apply the delivery Constraint Gate and user exclusions before every level; see [Product Selection Guide → Constraint Gate](product-selection-guide.md#constraint-gate) and [platform-availability-guide.md](platform-availability-guide.md).
 
-This step orchestrates four levels of decision. Each level lives in its own canonical reference; this guide does not restate them. Run in order — output of each level feeds the next.
-
-> **Constraint Gate applies at every level.** The delivery model from Step 0 and any user-stated product exclusions filter the candidates before each level recommends — see [Product Selection Guide → Constraint Gate](product-selection-guide.md#constraint-gate) and [platform-availability-guide.md](platform-availability-guide.md).
-
-| Level | Decision | Canonical reference | When |
+| Level | Decision | Reference | Run |
 |---|---|---|---|
-| **Level 0** | Suitability — automate / redesign first / reuse native or estate / do not automate | [Product Selection Guide → Level 0](product-selection-guide.md#level-0--suitability-gate) | Always, first — Levels 1+ run only on `proceed` / `proceed-with-redesign` / `partial` |
-| **Level 1** | Primary scope (Agents / Coded Apps / API Workflows / Case / Maestro BPMN / Maestro Flow / RPA / Solution) | [Product Selection Guide → Level 1](product-selection-guide.md#level-1--primary-scope-selection) | Always |
-| **Level 1.5** | RPA sub-type (Process / Library / Test Automation) | [RPA Product Guide → Level 1.5](rpa-product-guide.md#level-15--rpa-sub-type-selection) | Run when Level 1 = RPA. For Solution composition with RPA projects, defer to Pass C of Level 1.75. |
-| **Level 1.75** | Solution composition (which products and how many) | [Product Selection Guide → Level 1.75](product-selection-guide.md#level-175--solution-composition) | Run when Level 1 = Solution OR user picks "Solution (customize)" in Step 6 |
-| **Level 2.5 Part A** | RPA decomposition (Single vs Master Project) | [RPA Product Guide → Level 2.5 Part A](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) | Run for every RPA Process project in the scope |
-| **Level 2.5 Part B** | Merge into unified project list | [Product Selection Guide → Level 2.5 Part B](product-selection-guide.md#part-b--merge-into-the-final-project-list) | Always — produces the canonical project list |
+| 0 | suitability: automate / redesign first / reuse native or estate / do not automate | [Product Selection Guide → Level 0](product-selection-guide.md#level-0--suitability-gate) | always first; Levels 1+ only on `proceed` / `proceed-with-redesign` / `partial` |
+| 1 | primary: Agents / Coded Apps / API Workflows / Case / Maestro BPMN / Maestro Flow / RPA / Solution | [Product Selection Guide → Level 1](product-selection-guide.md#level-1--primary-scope-selection) | always |
+| 1.5 | RPA subtype: Process / Library / Test Automation | [RPA Product Guide → Level 1.5](rpa-product-guide.md#level-15--rpa-sub-type-selection) | when Level 1 = RPA; Solution RPA defers to Level 1.75 Pass C |
+| 1.75 | solution composition | [Product Selection Guide → Level 1.75](product-selection-guide.md#level-175--solution-composition) | Level 1 = Solution or Step 6 chooses `Solution (customize)` |
+| 2.5 Part A | RPA decomposition: Single vs Master Project | [RPA Product Guide → Level 2.5 Part A](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) | every RPA Process project |
+| 2.5 Part B | merge unified project list | [Product Selection Guide → Level 2.5 Part B](product-selection-guide.md#part-b--merge-into-the-final-project-list) | always |
 
-This step's output goes into the Phase 1 summary at Step 6 and drives the Phase 2 architectural core.
-
-> Level 2 (Authoring mode — XAML / Coded / Hybrid) is decided per RPA project at Phase 2 Step 2 from [RPA Product Guide → Level 2](rpa-product-guide.md#level-2--authoring-mode). Level 3 (Capability add-ons — HITL, Integration Service, etc.) is detected during PDD analysis and flagged in template sections during Phase 2 Step 4. Per-task component placement (which step lands on RPA / API / IXP / Agent / Function / HITL / Maestro / Data Fabric) runs twice: at Step 3.5 (the step→executor map that feeds Level 1) and at Phase 2 Steps 3–4 (recording placements in template inventories) — [Product Selection Guide → Per-task component placement](product-selection-guide.md#per-task-component-placement-the-to-be-per-step).
+Level 2 authoring (XAML/Coded/Hybrid) is per RPA project in Phase 2 Step 2. Level 3 add-ons are detected during analysis and flagged in Phase 2 Step 4. Per-task placement runs at Step 3.5 and Phase 2 Steps 3–4; see [Product Selection Guide → Per-task component placement](product-selection-guide.md#per-task-component-placement-the-to-be-per-step).
 
 ### Step 5: Check for Agent/Coded App Gaps
 
-If the primary product is **Agents** or **Coded Apps** AND required product-specific information is missing from the PDD, follow the Gap Handling flow in the [Product Selection Guide](product-selection-guide.md). All questions use the numbered-choice format.
-
-Summary:
-1. Ask the user: proceed with gap-filling or use a different product?
-2. If proceed → batch the gap-filling questions, at most 4 question objects per `AskUserQuestion` call — split into two calls when more remain (Agents: framework, tools, memory, evaluation, bindings. Coded Apps: framework, app type, pages, state, caller)
-3. If different product → ask which fallback (RPA Process, Maestro Flow, Case Management, Stop)
-4. Re-run Step 4 with fallback, or end if "Stop"
-
-Never auto-fallback. The user must choose explicitly.
+If primary is **Agents** or **Coded Apps** and required information is missing, use the Gap Handling flow in the [Product Selection Guide](product-selection-guide.md), with numbered choices. Ask whether to fill gaps or choose another product; batch at most 4 question objects per call, splitting more: Agents (framework, tools, memory, evaluation, bindings), Coded Apps (framework, app type, pages, state, caller). If changing product, ask fallback: RPA Process, Maestro Flow, Case Management, or Stop. Re-run Step 4 or end on Stop. Never auto-fallback.
 
 ### Step 6: Present Summary + Scope Recommendation
 
-Emit the summary block described in "Presenting the Recommendation" in the [Product Selection Guide](product-selection-guide.md). The **recommended scope appears first**; single-product alternatives and "Solution (customize)" follow as alternatives in the confirmation `AskUserQuestion` call.
+In Interactive mode, emit the [Product Selection Guide](product-selection-guide.md) “Presenting the Recommendation” summary with recommended scope first, then alternatives and `Solution (customize)`, and ask its confirmation question:
 
 ```markdown
 ## PDD Analysis Summary
@@ -249,178 +182,82 @@ Recommended Scope + Project List + Queue Architecture>
 <NUMBERED_QUESTIONS_IF_ANY>
 ```
 
-Then call `AskUserQuestion` with the confirmation question from the Product Selection Guide's "Presenting the Recommendation" section (recommendation as option 1, single-product alternatives, then "Solution (customize)").
-
-**If the user picks "Solution (customize)":** re-run Level 1.75 per the customize branch in the guide, then re-emit this summary with the customized project list, then re-ask the confirmation question. Max 3 revisions — after that, proceed with the latest composition.
-
-**If the user picks a single-product alternative:** re-run Step 4 with the user's choice as the forced primary (including Level 1.5 if it's RPA).
-
-Ask at most 5 clarifying questions total, in a single round. If the user cannot answer some, tag those items as `[SME REVIEW]` and proceed.
+Ask at most 5 clarifying questions in one round; unanswered items become `[SME REVIEW]`. `Solution (customize)` reruns Level 1.75, re-emits and re-asks, maximum 3 revisions, then uses latest composition. A single-product alternative reruns Step 4 with that forced primary, including Level 1.5 for RPA. Autonomous generates the summary internally but does not wait.
 
 ## Phase 2 — Architecture Review
 
-> **Progress:** Mark "Select product" as `completed`. Mark "Generate architecture (Phase 2)" as `in_progress`.
+Mark `Select product` `completed` and `Generate architecture (Phase 2)` `in_progress` when applicable.
 
 ### Step 1: Load the Template(s)
 
-Load from the [Template Mapping table in the Product Selection Guide](product-selection-guide.md#template-mapping):
-
-- **Single-product scope:** load the one template matching the Level 1 primary.
-- **Solution scope:** load the solution overview structure PLUS one template per project in the Level 2.5 unified project list. RPA Master Projects share one RPA template file across their sub-projects; unrelated RPA projects each get their own file.
-
-**The SDD is automation-type-agnostic — no type is privileged.** Section coverage follows the in-scope types: a single-product SDD uses that product's template; a Solution's per-project SDDs each use their product's template, tied together by the Solution overview's **component inventory** (every component listed with its type — RPA / API Workflow / Agent / Maestro Flow · BPMN · Case / Coded or Low-code App / DU-IXP / connector / HITL). Include per-type detail (Agent Configuration, Queue Architecture, API schemas, Gateways, Case stages, etc.) **only for the types actually in scope** — never emit "N/A" filler sections for absent types, and never assume an agentic (or RPA-only) shape. Delete rows that do not apply; replicate per-instance sections (e.g., one Agent Configuration per agent).
+Use the [Template Mapping table in the Product Selection Guide](product-selection-guide.md#template-mapping): one matching template for single-product; solution overview plus one template per unified Level 2.5 project. RPA Master sub-projects share one RPA template file; unrelated RPA projects have separate files. Coverage follows in-scope types only; never privilege RPA, emit absent-type `N/A` filler, or assume agentic/RPA-only shape. The Solution component inventory lists every component/type: RPA / API Workflow / Agent / Maestro Flow · BPMN · Case / Coded or Low-code App / DU-IXP / connector / HITL. Replicate per-instance sections.
 
 ### Step 2: Generate the Architectural Core
 
-The architectural core sections differ per template. For each product, generate these sections in Phase 2:
+Generate only applicable sections:
 
-**RPA (Process / Library / Test Automation):**
-- §5 Data Definitions (C# records or dictionary tables per §13 Implementation Mode)
-- §9 Application Inventory (flag Integration Service connectors, specify email protocol)
-- §10 Master Project Architecture (apply Level 2.5 Part A from [rpa-product-guide.md](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) — Single vs Master Project, sub-projects, queue schema)
-- §11 Project Structure (per sub-project if Master Project: project type, framework, folder layout, workflow inventory) — the most load-bearing SDD section: Lane A derives tasks from it
+- **RPA (Process / Library / Test Automation):** §5 Data Definitions (C# records/dictionaries per §13); §9 Application Inventory (Integration Service connectors and email protocol); §10 Master Project Architecture (Level 2.5 Part A from [rpa-product-guide.md](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals), Single/Master, sub-projects, queue schema); §11 Project Structure (per sub-project, project type/framework/folders/workflow inventory; Lane A derives tasks); §12 Queue Architecture for any queue-defining/consuming project; §13 Implementation Mode (XAML/Coded/Hybrid via [RPA Product Guide → Level 2](rpa-product-guide.md#level-2--authoring-mode)); §14 Packages from §9 and steps.
+- **Maestro Flow:** §3 Nodes Inventory with node types; §4 Variables (direction/type); §5 Subflows; §7 Integrated Components (RPA, Agents, API Workflows, Connectors, HITL); §9 Project Structure.
 - §12 Queue Architecture (any project defining or consuming queues — definitions, configuration, item schemas, processing rules)
-- §13 Implementation Mode (XAML / Coded / Hybrid — apply Level 2 from [rpa-product-guide.md](rpa-product-guide.md#level-2--authoring-mode))
-- §14 Packages (infer NuGet packages from §9 Application Inventory and process steps)
-
-**Maestro Flow:**
-- §3 Nodes Inventory (with node type per node)
-- §4 Variables (direction, type)
-- §5 Subflows (if any)
-- §7 Integrated Components (RPA, Agents, API Workflows, Connectors, HITL touchpoints)
-- §9 Project Structure
-
-**Maestro BPMN:**
-- §3 Pools & Lanes (participants / roles)
-- §4 Activities Inventory (BPMN element type per activity)
-- §5 Gateways & Sequence Flows (gateway type, branch conditions, decision tables, reasoning list: [Business Rules Guide](business-rules-guide.md))
-- §6 Events (start / intermediate / boundary / end; message / timer / error definitions)
-- §7 Data Objects & Variables (direction, type, scope)
-- §8 Subprocesses & Call Activities
-- §9 Integrated Components (RPA, Agents, API Workflows, Connectors, HITL touchpoints)
-- §12 Project Structure
-
-**Case Management:**
-- §1 Case Definition (case metadata, SLA rules, triggers, case exit conditions, case variables)
-- §2 Stages & Tasks (one complete stage block per stage; task summary table plus one complete detail block per task)
-- §3 Personas & App Views
-- §4 Integrations (resource roll-up for connectors, API workflows, agents, processes/RPA, child cases, external agents, IXP models, coded functions)
-- Case section headings render in the template's long form (`## Section 1: Case Definition`, …) — the heading TEXT is load-bearing downstream (`uipath-maestro-case` parses it verbatim); `§N` is the reference notation in planner docs only. Do not emit the legacy planner-only `§3 Stages` / `§4 Tasks Grid` / `§13 Task Type Registry` format.
-- Case body content obeys [case-design-layers-guide.md](case/case-design-layers-guide.md) (model, authoring method, closure checklist) and the case SDD template's inline render contract (gate: [case-sdd-conformance-checklist.md](case/case-sdd-conformance-checklist.md)); tenant grounding runs per the lane's §Tenant grounding. For conversational (non-PDD) case requests, delegated case design, and case draft finalization, the whole flow is the Case Design Lane — [case-design-lane-guide.md](case/case-design-lane-guide.md) — not the generic 3-phase model in this guide.
-
-**Agents:**
-- §2 Agent Framework (LangGraph / LlamaIndex / OpenAI Agents / Simple Function)
-- §3 Tools
-- §4 Memory / RAG
-- §6 Orchestrator Bindings
-- §9 Project Structure (Coded vs Low-code)
-
-**Coded Apps:**
-- §2 App Type & Tech Stack
-- §3 Pages & Routes
-- §4 Components
-- §5 State Management
-- §6 API Integration
-- §10 Project Structure
-
-**API Workflows:**
-- §2 Input Schema
-- §3 Output Schema
-- §4 Execution Flow (high-level steps, no JavaScript)
-- §5 Connectors & External Calls
-- §10 Project Structure
+- **Maestro BPMN:** §3 Pools & Lanes; §4 Activities Inventory with BPMN type; §5 Gateways & Sequence Flows (type, conditions, decision tables, reasoning list via [Business Rules Guide](business-rules-guide.md)); §6 Events (start/intermediate/boundary/end, message/timer/error); §7 Data Objects & Variables; §8 Subprocesses & Call Activities; §9 Integrated Components; §12 Project Structure.
+- **Case Management:** §1 Case Definition (metadata, SLA, triggers, exit conditions, variables); §2 Stages & Tasks (complete stage/task summary/detail blocks); §3 Personas & App Views; §4 Integrations (connectors, API workflows, agents, processes/RPA, child cases, external agents, IXP, coded functions). Use long headings `## Section 1: Case Definition`, etc.; never legacy `§3 Stages` / `§4 Tasks Grid` / `§13 Task Type Registry`. Follow [case-design-layers-guide.md](case/case-design-layers-guide.md), [case-sdd-conformance-checklist.md](case/case-sdd-conformance-checklist.md), tenant grounding, and [case-design-lane-guide.md](case/case-design-lane-guide.md) for conversational non-PDD, delegated design, and draft finalization; those use the Case Design Lane, not this generic model.
+- **Agents:** §2 Agent Framework (LangGraph / LlamaIndex / OpenAI Agents / Simple Function); §3 Tools; §4 Memory / RAG; §6 Orchestrator Bindings; §9 Project Structure (Coded/Low-code).
+- **Coded Apps:** §2 App Type & Tech Stack; §3 Pages & Routes; §4 Components; §5 State Management; §6 API Integration; §10 Project Structure.
+- **API Workflows:** §2 Input Schema; §3 Output Schema; §4 Execution Flow (high-level, no JavaScript); §5 Connectors & External Calls; §10 Project Structure.
 
 ### Step 3: Decompose Steps Into Implementation Units
 
-Each template has a primary inventory table. Map PDD steps to units:
-
-| Product | Primary Inventory | Unit Type |
+| Product | Primary inventory | Unit |
 |---|---|---|
-| RPA (Single Project) | Workflow Inventory | `.xaml` or `.cs` workflow files |
-| RPA (Master Project) | Workflow Inventory **per sub-project** | `.xaml` or `.cs` workflow files, grouped by sub-project |
+| RPA Single | Workflow Inventory | `.xaml` or `.cs` files |
+| RPA Master | Workflow Inventory per sub-project | grouped `.xaml` or `.cs` files |
 | Flow | Nodes Inventory | Flow nodes |
-| BPMN | Activities Inventory | BPMN activities / tasks (service, script, user, call activity, subprocess) |
-| Case | §2 Stages & Tasks | Stage blocks plus task summary/detail blocks |
-| Agents | Tools | Python functions, RPA/API workflow bindings |
-| Coded Apps | Pages + Components | Routes and React/Angular/Vue components |
-| API Workflows | Execution Flow steps | Activities (HTTP, Connector, Script) |
+| BPMN | Activities Inventory | service/script/user/call-activity/subprocess BPMN units |
+| Case | §2 Stages & Tasks | stage plus task summary/detail blocks |
+| Agents | Tools | Python functions, RPA/API bindings |
+| Coded Apps | Pages + Components | routes and React/Angular/Vue components |
+| API Workflows | Execution Flow | HTTP/Connector/Script activities |
 
-Each unit must have: **a concrete responsibility, specific PDD step references, and defined inputs/outputs.**
-
-Type each step's verb and place it on the best-fit component per [Product Selection Guide → Per-task component placement](product-selection-guide.md#per-task-component-placement-the-to-be-per-step) — deterministic validate/transfer → RPA or API, document collect → IXP, judgment decide → Agent, atomic transform/compute → Function, review/sign-off → HITL, aggregate → Data Fabric. Record the placement in the inventory row; every non-primary placement becomes an integrated component in Step 4.
-
-**For RPA Master Project:** decompose in two passes:
-1. First, assign each PDD step to a sub-project based on the §10 sub-projects table (each sub-project lists its PDD steps).
-2. Then, within each sub-project, decompose the assigned steps into workflow files.
-3. For REFramework sub-projects, the main workflows (Init, GetTransactionData, Process, SetTransactionStatus) come from the framework — only the Process-specific workflows go in the inventory.
+Every unit needs concrete responsibility, PDD step references, inputs/outputs, verb typing and placement using [Product Selection Guide → Per-task component placement](product-selection-guide.md#per-task-component-placement-the-to-be-per-step): deterministic validate/transfer → RPA/API; document collect → IXP; judgment → Agent; atomic transform/compute → Function; review/sign-off → HITL; aggregate → Data Fabric. Record placement and integrated non-primary components. For Master Projects: (1) assign steps to sub-projects from §10, (2) decompose within each, (3) for REFramework, Init/GetTransactionData/Process/SetTransactionStatus come from the framework; inventory only Process-specific workflows.
 
 ### Step 4: Flag Integrated Components
 
-For each integrated component detected in Phase 1 (and each non-primary placement from Step 3), flag it in the appropriate section of the template:
+For each Phase 1 component and non-primary placement:
 
-- **HITL** — host-aware routing: Flow hosts → flag touchpoints; implementation task routes to `uipath-human-in-the-loop`. Coded Agents → escalation is part of the `uipath-agents` build task (the HITL skill defers coded-agent wiring to it). BPMN userTask → flagged in §9 HITL Touchpoints, authored inline by `uipath-maestro-bpmn` (no HITL-skill task). Case → `action` task detail block in §2 Stages & Tasks with Action App intent (never the HITL skill). RPA → Action Center / long-running workflow flagged in the RPA template.
-- **Integration Service connectors** → list in Application Inventory (RPA) or Connectors section (others); check `uip is connectors list` — implementation task routes to `uipath-platform` to configure an existing connector, or `uipath-connector-builder` to build a custom one when none exists
-- **IXP / Document Understanding models** (extraction from semi-structured documents) → list in the host template's "IXP / Document Understanding Models" table (Flow / BPMN / Case / Agent / RPA templates carry it); for an API Workflow or Coded App primary, record the model as its own row in §Solution / Project Breakdown instead. Implementation task routes to `uipath-ixp`, ordered before its consumers
-- **Coded Functions** (TypeScript / JavaScript / Python — atomic deterministic transform / compute: parsing, scoring, custom-auth API calls, IS-connection queries) — only when extraction is justified per [placement rule 6](product-selection-guide.md#per-task-component-placement-the-to-be-per-step); host-native logic stays in the host's own inventory → list in the host template's "Coded Functions" table (Flow / BPMN / Case / Agent templates carry it). Implementation task routes to `uipath-functions`, ordered before its consumers; no per-project SDD file (see [Template Mapping](product-selection-guide.md#template-mapping))
-- **RPA processes called by Flow/BPMN/Agent/Case** → list in Integrated Components section; implementation task will create the RPA project
-- **API Workflows called by Flow/BPMN/Agent/Case** — only when extraction is justified per [placement rule 6](product-selection-guide.md#per-task-component-placement-the-to-be-per-step) (host cannot call natively, 2+ consumers, or independent lifecycle); a host-capable direct call stays in the host inventory as `Access Method = Direct HTTP` → list in Integrated Components section; implementation task will create the API Workflow project. Extraction never changes `SDD scope` ([derived-component rule](product-selection-guide.md#solution-signals))
+- **HITL:** Flow touchpoints → `uipath-human-in-the-loop`; Coded Agents escalation belongs to `uipath-agents` (HITL skill defers wiring); BPMN `userTask` → §9 HITL Touchpoints, authored inline by `uipath-maestro-bpmn`; Case → `action` task detail with Action App intent, never HITL skill; RPA → Action Center/long-running workflow.
+- **Integration Service connectors:** list in RPA Application Inventory or other Connectors section; run `uip is connectors list`; route existing configuration to `uipath-platform`, absent custom connector to `uipath-connector-builder`.
+- **IXP/Document Understanding:** list in host “IXP / Document Understanding Models” table for Flow/BPMN/Case/Agent/RPA; API Workflow/Coded App → own row in §Solution / Project Breakdown; route to `uipath-ixp` before consumers.
+- **Coded Functions** (TypeScript / JavaScript / Python; parsing, scoring, custom-auth API calls, IS-connection queries): use only when justified by [placement rule 6](product-selection-guide.md#per-task-component-placement-the-to-be-per-step); host-native logic remains in host inventory. List in host “Coded Functions” table for Flow/BPMN/Case/Agent; route to `uipath-functions` before consumers; no per-project SDD file (see [Template Mapping](product-selection-guide.md#template-mapping)).
+- RPA called by Flow/BPMN/Agent/Case → Integrated Components; implementation creates RPA project.
+- API Workflow called by Flow/BPMN/Agent/Case only when host cannot call natively, has 2+ consumers, or needs independent lifecycle; otherwise record host direct call as `Access Method = Direct HTTP`. Extracted API Workflow goes in Integrated Components and implementation creates it. Extraction never changes `SDD scope` ([derived-component rule](product-selection-guide.md#solution-signals)).
 
 ### Step 5: Present Architecture for Review
 
-Present the architectural core to the user. Wait for approval or adjustments.
-
-**Approval criteria:** any response without specific change requests. Responses like "looks good", "ok", "proceed", "yes", or a topic change all count as approval. If the user requests specific changes, incorporate them and re-present the architecture (max 3 revisions — after that, proceed with the latest version and tag disagreements as `[SME REVIEW]`).
+In Interactive mode, present the architectural core and wait. Any response without specific change requests—including “looks good”, “ok”, “proceed”, “yes”, or a topic change—is approval. Incorporate specific changes and re-present, maximum 3 revisions; then proceed with latest and mark disagreements `[SME REVIEW]`. Autonomous generates without waiting.
 
 ## Phase 3 — Full SDD Generation
 
-> **Progress:** Mark "Generate architecture (Phase 2)" as `completed`. Mark "Write SDD skeleton to disk" as `in_progress`.
+Mark `Generate architecture (Phase 2)` `completed` and `Write SDD skeleton to disk` `in_progress` when applicable.
 
 ### Step 0: Write the SDD Skeleton to Disk — Hard Gate
 
-**Write the file to disk now, before generating any Phase 3 section.** This is an action, not advice: Step 1 does not begin until a `Write` call has created the SDD file (Step 2 item 7 resolves the path and the Solution-scope file set). Do NOT hold the entire SDD in context and write only at the very end.
+**Write now, before any Phase 3 section.** Step 1 cannot begin until `Write` creates the file. Before writing, run collision handling: if target exists, ask via `AskUserQuestion` whether to keep, regenerate, resume, or write `-v2-`; honor the answer. Keep/stop makes no write; resume patches the draft; only regenerate/no-file writes a fresh skeleton.
 
-**First, run the collision check — the skeleton write is the write that can clobber.** Before writing anything, apply the re-run handling in Step 2 item 6: if a target file already exists, resolve it with that `AskUserQuestion` (keep / regenerate / resume / write as `-v2-`) and honour the answer here. "Keep the existing SDD and stop" ends Phase D with no write at all; "Resume generation" patches the existing draft instead of overwriting it. Only "Regenerate" and the no-file-exists case write a fresh skeleton. Item 6 then has nothing left to ask.
+Write in order: (1) title/header and `## Document History`; (2) `<!-- planner-handoff:v1 -->`, exact `## Planner Handoff`, `Status: draft`, `Template validation: pending`; (3) autonomous `## Decisions Made` and both-mode `## Recommended Scope`; (4) all existing Phase 1/2 sections. Append remaining sections with `Edit`/`Write`; do not buffer or rewrite the whole file. A partial draft must remain gradeable; `Status: ready` is the last Phase D write. Step 1.5 and the superset check run against the on-disk file.
 
-The skeleton write contains, in this order:
-
-1. The title/header + `## Document History`.
-2. The `<!-- planner-handoff:v1 -->` marker **and** the `## Planner Handoff` header, with `Status: draft` and `Template validation: pending` (full field list in Step 2 item 2). Both signals MUST be in this first write so detection — and grading — works even on a partial file: the marker says "planner SDD", the `Status` field says whether it is consumable.
-3. The `## Decisions Made` block (autonomous mode) and the `## Recommended Scope` block (both modes) — formats in Step 2 item 3.
-4. Every Phase 1 / Phase 2 section you already have.
-
-Then append the remaining Phase 3 sections to that file with follow-up `Edit` / `Write` calls **as you generate them** — do not buffer them in context and do not rewrite the whole file per section.
-
-**Rationale.** A long autonomous turn can be hard-killed by the per-turn watchdog mid-generation. An incrementally-written file leaves a gradeable, useful SDD on disk; a buffered one leaves nothing at all. Step 1.5 (SME resolution) and the Step 2 superset check still run — they patch and verify the file already on disk rather than gating the first write. Flipping `Status` to `ready` is the LAST write of Phase D, so an interrupted run leaves `draft` on disk and Lane A refuses to derive tasks from it.
-
-> **Progress:** Mark "Write SDD skeleton to disk" as `completed`. Mark "Generate full SDD (Phase 3)" as `in_progress`.
+> Progress: mark `Write SDD skeleton to disk` completed and `Generate full SDD (Phase 3)` in_progress.
 
 ### Step 1: Generate Remaining Sections
 
-Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. Section assignments per phase:
+Phase 1 produces Header & Document History (process name, today's date, version 1.0; Case title `# SDD — {Case Name}`), overview (§1), process/flow/lifecycle diagram (§2 for most), and applicable detailed steps/nodes. Phase 2 produces its template-specific core. Phase 3 produces remaining applicable sections: Business Rules (RPA §4 via [Business Rules Guide](business-rules-guide.md)), Value Mappings (RPA), Exception/Error Handling (all), Credentials & Assets (RPA), Deployment Environment (RPA — fill the Orchestrator row from the Step 0 delivery model (Cloud / Automation Suite + version / standalone); fill `[SME REVIEW]` for the rest when the PDD does not specify; never invent VM names, version pins, or robot types), Flow Triggers, Case SLA Rules & Escalations, Compliance Constraints, Roles & RACI, Agent Evaluation Criteria.
 
-**Phase 1 produces (for all templates):**
-- Header & Document History (process name, today's date, version 1.0). The Case template's title heading is `# SDD — {Case Name}`.
-- Overview section (§1)
-- Process/Flow/Lifecycle diagram (§2 for most templates)
-- Detailed steps / nodes description where applicable
+**Non-Functional Requirements — always:** security (Orchestrator secrets/assets, least-privilege IS scope, no entity calls exposed in network trace), performance (DB vs file, webhooks vs polling, avoid license-consuming Windows processes), scalability, availability, logging/monitoring. API Workflow already has §Performance & Scaling + §Security & Authentication; others capture equivalent subsection.
 
-**Phase 2 produces:** See Phase 2 Step 2 above (template-specific architectural core)
+**Reusable Components / Libraries — always:** existing tenant Libraries from Step 2.5, Marketplace/org components, connectors, and new reusable assets (shared workflows → RPA **Library** via `uipath-rpa`; missing integration → custom connector via `uipath-connector-builder`), built before consumers; assets used by 2+ projects live at parent/solution level. See [Product Selection Guide → Reusability & shared assets](product-selection-guide.md#reusability--shared-assets).
 
-**Phase 3 produces:** All remaining sections — typically:
-- Business Rules (RPA, Case). RPA §4: [Business Rules Guide](business-rules-guide.md)
-- Value Mappings (RPA)
-- Exception / Error Handling (all)
-- Credentials & Assets (RPA)
-- Deployment Environment (RPA — robot type, Studio/Robot versions, VM hosts, screen resolution, scalability). Fill the Orchestrator row from the Step 0 delivery model (Cloud / Automation Suite + version / standalone); fill `[SME REVIEW]` for the rest when the PDD does not specify — these fields typically come from the deployment team, not the PDD. Never invent VM names, version pins, or robot types.
-- Triggers (Flow)
-- SLA Rules & Escalations (Case)
-- Compliance Constraints (Case)
-- Roles & RACI Matrix (Case)
-- Evaluation Criteria (Agents)
-- **Non-Functional Requirements — always (best practice).** Security (credentials in Orchestrator / secret assets, least-privilege IS connection scope, don't expose entity calls in the network trace), performance (DB vs file, webhooks vs polling, avoid license-consuming Windows processes), scalability, availability, and logging / monitoring. Applies to every product; the API Workflow template already carries §Performance & Scaling + §Security & Authentication — other templates capture the equivalent under a Non-Functional Requirements subsection.
-- **Reusable Components / Libraries — always (best practice).** List reused existing shared assets (tenant Libraries discovered in Step 2.5, Marketplace / org components, existing connectors) AND new reusable assets to build (shared workflows → an RPA **Library** routed to `uipath-rpa`; a missing integration → a **custom connector** routed to `uipath-connector-builder`), each built before its consumers. Assets used by 2+ projects live at the parent-folder / solution level. See [Product Selection Guide → Reusability & shared assets](product-selection-guide.md#reusability--shared-assets).
-- **Testing Strategy — always thorough.** Cover happy path, edge cases, error scenarios, and (for Master Projects) end-to-end pipeline tests. Do NOT ask the user about test depth — depth is non-negotiable here. Implementation specialists may scope tests down at execution time if the user wants a quick MVP.
-- **Next Steps — points at Lane A (task derivation).** Replaces the legacy "Implementation Plan" section. Lane A owns the implementation task list; Phase D does not generate one.
+**Testing Strategy — always thorough:** happy path, edge cases, errors, and Master end-to-end pipeline tests; do not ask about depth, though specialists may reduce scope for a quick MVP.
+
+**Next Steps:** points to Lane A and replaces Implementation Plan; Phase D does not generate task lists.
 
 <!--skill-flavor:phase3-output-surface:start-->
 > **What Phase 3 does NOT produce:** an Implementation Plan section, a task list, or `TaskCreate` calls for implementation work. Those are owned by Lane A (task derivation). The SDD's `## Next Steps` section marks the boundary into Lane A, and that is the entire Phase D output surface.
@@ -428,13 +265,9 @@ Fill in all sections of the chosen template not covered in Phase 1 or Phase 2. S
 
 ### Step 1.5: Resolve SME Review Items
 
-> **Progress:** Mark "Generate full SDD (Phase 3)" as `completed`. Mark "Resolve SME review items" as `in_progress`.
+Mark `Generate full SDD (Phase 3)` completed and `Resolve SME review items` in_progress when applicable. Run in both modes; this blocks a complete SDD. If no `[SME REVIEW]`, skip.
 
-Before finalizing the SDD (the skeleton is already on disk from Step 0), collect all `[SME REVIEW]` items. If there are any:
-
-> **Batching rule — `AskUserQuestion` 4-option cap.** Each `AskUserQuestion` question accepts at most 4 options. If there are 1-4 items, send one question. If there are 5-8 items, send a single `AskUserQuestion` call with **two questions** (each ≤4 options), grouped by SDD section. If there are more than 8 items, send one `AskUserQuestion` call per batch of up to 8 (two questions each), waiting for answers between batches. **Do not flatten >4 items into one question** — the call will fail validation.
-
-1. Batch them into one or more `AskUserQuestion` calls using numbered-choice format. Example for 1-4 items:
+Batch with numbered choices under the 4-option cap: 1–4 items → one question; 5–8 → one call with two questions (each ≤4 options), grouped by section; over 8 → calls of up to 8 items (two questions), waiting between batches. Do not flatten >4 items into one question — the call will fail validation. Example for 1-4 items:
 
 > Before I finalize the SDD, these items need your input:
 >
@@ -443,75 +276,58 @@ Before finalizing the SDD (the skeleton is already on disk from Step 0), collect
 >
 > You can answer each, accept all defaults by replying "use defaults", or skip specific items.
 
-2. Update the SDD sections with the user's answers.
-3. If the user partially answers or asks follow-ups, do one more round (max 2 rounds total). After 2 rounds, keep remaining unresolved items as `[SME REVIEW]`, apply each item's recorded default in its section, and proceed to Step 2.
-4. Any items the user explicitly skips remain as `[SME REVIEW]` in the final file with their defaults applied.
-5. **Classify every surviving item:** `default-carried` (a recorded default is applied in its section — the normal case) or `blocking` (no defensible default AND the answer materially changes the architecture). Blocking is a closed list: (a) delivery model unknown while a selected product is matrix-gated on it; (b) an in-scope §9 application whose access method is unknown; (c) contradictory PDD scope statements Level 0/1 could not resolve; (d) the user rejected the Level 1 recommendation without choosing an alternative. Record the class in the Action Required table (Step 2 item 4). Blocking items keep the SDD at `Status: draft` (Step 2 item 8 rule 4).
-6. If there are zero `[SME REVIEW]` items, skip this step entirely.
-
-This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker to producing a complete SDD.
+Ask, update sections, and allow one more round (maximum 2 total). After 2 rounds retain unresolved items as `[SME REVIEW]`, apply recorded defaults, and proceed. Explicit skips remain marked with defaults. Classify every survivor in the Action Required table as `default-carried` or `blocking`. Blocking only means: (a) unknown delivery model for a matrix-gated selected product; (b) unknown access method for an in-scope §9 application; (c) contradictory PDD scope Level 0/1 cannot resolve; (d) user rejected Level 1 without choosing an alternative. Blocking keeps `Status: draft`.
 
 ### Step 2: Finalize the SDD File(s)
 
-> **Progress:** Mark "Resolve SME review items" as `completed`. Mark "Finalize SDD (Status: ready)" as `in_progress`.
+Mark `Resolve SME review items` completed and `Finalize SDD (Status: ready)` in_progress when applicable.
 
-1. Assemble all sections in template order. The Step 0 skeleton already holds the header + handoff + `## Decisions Made` / `## Recommended Scope` + Phase 1/2 sections — finalize it by appending/patching the remaining sections in template order rather than rewriting from scratch.
-2. **Fill the `## Planner Handoff` header** that appears near the top of every template. Every template places it after `## Document History`. This is the load-bearing detection contract. The Entry Guard accepts **either** the heading OR the adjacent `<!-- planner-handoff:v1 -->` HTML marker as a detection signal — both ship in every template and both should survive into the generated file (so a later session, or a hand-written SDD, still routes to Lane A):
+1. Assemble in template order by appending/patching the skeleton.
+2. Every template has this exact handoff contract after `## Document History`; preserve both marker and heading:
 
-   ```markdown
-   <!-- DO NOT RENAME: uipath-planner detects SDDs via this exact heading or the marker below. -->
-   <!-- planner-handoff:v1 -->
-   ## Planner Handoff
+```markdown
+<!-- DO NOT RENAME: uipath-planner detects SDDs via this exact heading or the marker below. -->
+<!-- planner-handoff:v1 -->
+## Planner Handoff
 
-   | Field | Value |
-   |---|---|
-   | **Status** | draft → ready                                  ← the first incremental write stamps `draft`; flip to `ready` ONLY after Step 1.5 ran (every surviving SME item classified `default-carried`) AND the item 8 template-superset check passes. A `blocking` SME item keeps `draft`. Lane A derives tasks from `ready` only.
-   | **Execution autonomy** | <autonomous | interactive>          ← from Phase 1 Step 0
-   | **Delivery model** | <cloud | automation-suite | standalone | unspecified> ← from Phase 1 Step 0 (append the Suite version when known, e.g. `automation-suite 2025.1`)
-   | **SDD scope** | <single-product | solution>                  ← from Phase 1 Step 4 (Level 1 / Level 1.75)
-   | **Solution root SDD** | <SOLUTION_NAME_KEBAB>-solution-sdd.md ← solution scope ONLY — write into EVERY SDD (the root names itself); omit all four solution rows for single-product
-   | **Solution ID** | <SOLUTION_NAME_KEBAB>                       ← same value in the root and every child; Lane A verifies the match
-   | **Project SDD role** | root | child                           ← `root` in the solution overview, `child` in every per-project SDD
-   | **Independently executable** | no                              ← children only; Lane A refuses to derive tasks from a child directly
-   | **Project list section** | §11 / §10 + §11 / Project Inventory ← template-specific (RPA single: §11; RPA Master: §10 + §11; Flow: §3 + §7; BPMN: §4 + §9; Case: §2 + §4; etc.)
-   | **Tasks file** | `<PROCESS_NAME_KEBAB>-tasks.md`             ← planner writes here on first run. Solution scope: root AND every child carry the SAME canonical `<SOLUTION_NAME_KEBAB>-tasks.md` — exactly one tasks file per solution, never one per project
-   | **Build handoff** | <prose — Case template ONLY>         ← the Case template emits this row INSTEAD of `Tasks file`: the case build writes `caseplan.json` directly and has no tasks file, so there is no path to carry. Every other template emits `Tasks file`; never emit both
-   | **Generated by** | uipath-planner
-   | **Generation date** | <YYYY-MM-DD>
-   | **Template validation** | pending → passed                   ← set to `passed` together with the `ready` flip (item 8)
-   ```
+| Field | Value |
+|---|---|
+| **Status** | draft → ready |
+| **Execution autonomy** | <autonomous | interactive> |
+| **Delivery model** | <cloud | automation-suite | standalone | unspecified> |
+| **SDD scope** | <single-product | solution> |
+| **Solution root SDD** | <SOLUTION_NAME_KEBAB>-solution-sdd.md |
+| **Solution ID** | <SOLUTION_NAME_KEBAB> |
+| **Project SDD role** | root | child |
+| **Independently executable** | no |
+| **Project list section** | §11 / §10 + §11 / Project Inventory |
+| **Tasks file** | `<PROCESS_NAME_KEBAB>-tasks.md` |
+| **Build handoff** | <prose — Case template ONLY> |
+| **Generated by** | uipath-planner |
+| **Generation date** | <YYYY-MM-DD> |
+| **Template validation** | pending → passed |
+```
 
-   Do NOT rename the heading or strip the marker. They are redundant on purpose — keeping both means a hand-edit of one signal does not silently break Lane A detection.
+First write `draft`; flip to `ready` only after Step 1.5 classifies all survivors `default-carried` and item 8 passes. Delivery value includes Suite version when known, e.g. `automation-suite 2025.1`. Solution rows appear in every SDD: root is `root`, children `child`, children `Independently executable: no`, all share canonical `<SOLUTION_NAME_KEBAB>-tasks.md`. Single-product omits solution rows. `Project list section` is template-specific: RPA single §11; RPA Master §10 + §11; Flow §3 + §7; BPMN §4 + §9; Case §2 + §4; etc. Case emits `Build handoff` instead of `Tasks file`; never both. Keep heading and marker redundant for detection.
+`Delivery model` ← from Phase 1 Step 0: write exactly one enum token `cloud | automation-suite | standalone | unspecified` (append the Suite version when known, e.g. `automation-suite 2025.1`); Decisions Made row 1 `Picked` starts with the same token.
+3. If autonomous, immediately after Planner Handoff and before Action Required/product body/ToC, emit:
 
-3. **Autonomous-mode Decisions Made block.** If `Execution autonomy: autonomous`, insert a `## Decisions Made` block immediately after the Planner Handoff header and before any `Action Required — SME Review Items` block or product body. It sits before the Table of Contents in every template. The block makes the highest-leverage architectural picks scannable in the SDD's first screenful so a reviewer can spot a wrong call without reading the whole document. In `Execution autonomy: interactive`, this block is optional — the user already reviewed each decision at the Phase 1/Phase 2 checkpoints. Skip the block for interactive runs.
+```markdown
+## Decisions Made
 
-   Format:
+> Autonomous mode picked the five architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode (`Execution autonomy: interactive` in the Planner Handoff header above) or by editing the relevant SDD section.
 
-   ```markdown
-   ## Decisions Made
+| # | Decision | Picked | One-sentence reason |
+|---|---|---|---|
+| 1 | **Platform constraints** (Constraint Gate) | <DELIVERY_MODEL; BLOCKED_PRODUCTS_WITH_ALTERNATIVES_OR_NONE> | <SOURCE_OF_DELIVERY_MODEL_AND_MATRIX_RULE_APPLIED> |
+| 2 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON_TIED_TO_PDD_SIGNAL> |
+| 3 | **RPA sub-type** (Level 1.5) — per RPA project | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON_TIED_TO_PDD_SIGNAL> |
+| 4 | **Authoring mode** (Level 2) — per RPA project | <XAML_OR_CODED_OR_HYBRID> | <REASON_TIED_TO_PROCESS_BODY_SHAPE> |
+| 5 | **Framework** — per RPA Process project | <REFRAMEWORK_OR_SEQUENCE> | <REASON_TIED_TO_PER_ITEM_INDEPENDENCE> |
+```
 
-   > Autonomous mode picked the five architectural decisions below without a user checkpoint. Override by rerunning in Interactive mode (`Execution autonomy: interactive` in the Planner Handoff header above) or by editing the relevant SDD section.
-
-   | # | Decision | Picked | One-sentence reason |
-   |---|---|---|---|
-   | 1 | **Platform constraints** (Constraint Gate) | <DELIVERY_MODEL; BLOCKED_PRODUCTS_WITH_ALTERNATIVES_OR_NONE> | <SOURCE_OF_DELIVERY_MODEL_AND_MATRIX_RULE_APPLIED> |
-   | 2 | **Scope** (Level 1) | <SINGLE_PRODUCT_OR_SOLUTION_COMPOSITION> | <REASON_TIED_TO_PDD_SIGNAL> |
-   | 3 | **RPA sub-type** (Level 1.5) — per RPA project | <PROCESS_OR_LIBRARY_OR_TEST_AUTOMATION> | <REASON_TIED_TO_PDD_SIGNAL> |
-   | 4 | **Authoring mode** (Level 2) — per RPA project | <XAML_OR_CODED_OR_HYBRID> | <REASON_TIED_TO_PROCESS_BODY_SHAPE> |
-   | 5 | **Framework** — per RPA Process project | <REFRAMEWORK_OR_SEQUENCE> | <REASON_TIED_TO_PER_ITEM_INDEPENDENCE> |
-   ```
-
-   Rules for the block:
-   - Each "Picked" cell is a single concrete value, not a placeholder.
-   - Each "One-sentence reason" is ≤ 20 words and cites the PDD signal or process characteristic that drove the pick.
-   - Row 1 always appears, even when nothing was blocked (`cloud; no products blocked`) — the reviewer must see which platform the architecture assumes.
-   - For Solution scope, rows 3-5 repeat per RPA project (use a sub-table or one row per project — keep concise).
-   - For non-RPA scopes (e.g., Single-product Agent), rows 3-5 collapse to N/A with one row covering the product-specific Level-1.5-equivalent (framework choice, app type, etc.).
-   - The block does NOT replace the per-section detail later in the SDD — the product body still carries the full justification in its architecture, stage/task, framework, or project-structure sections. The block is the **scannable index** of those decisions.
-
-   In BOTH modes, also emit the `## Recommended Scope` block directly after `## Decisions Made` (directly after the Planner Handoff header when that block is absent — interactive runs): copy the Phase 1 summary's `Recommendation:`, `Delivery model:`, and `Blocked by platform:` lines (see [product-selection-guide.md → Summary block](product-selection-guide.md#summary-block)). Autonomous mode skips the Phase 1 presentation, so this copy is the only durable record of the Constraint Gate outcome.
-
-4. If any `[SME REVIEW]` items remain, add a consolidated warning section after the Planner Handoff header (and after the `## Decisions Made` / `## Recommended Scope` blocks if present) and before the product body. This sits before the Table of Contents in every template:
+Each Picked value is concrete; each reason is ≤20 words and cites PDD/process evidence. Row 1 always appears, including `cloud; no products blocked`. For solutions repeat rows 3–5 per RPA project; for non-RPA scopes collapse rows 3–5 to N/A plus the product-specific equivalent. This index does not replace detail. In both modes immediately emit `## Recommended Scope` (after Decisions Made, or after Planner Handoff in Interactive), copying Phase 1 summary `Recommendation:`, `Delivery model:`, and `Blocked by platform:` lines from [product-selection-guide.md → Summary block](product-selection-guide.md#summary-block).
+4. If reviews remain, after those blocks and before product body emit:
 
 ```markdown
 ## Action Required — SME Review Items
@@ -522,49 +338,28 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
 > These items are marked `[SME REVIEW]` in the document. Default-carried items (Blocking = no) do not block task derivation — the automation is built on the recorded defaults, which must be verified before production sign-off. Any Blocking = yes item keeps the handoff at `Status: draft`.
 ```
+5. Target 300–800 markdown lines for single-project SDDs; Master may be 600–1200. Over 20 steps, group/summarize at parent; over 10 business rules, prioritize 10 most impactful.
+6. Collision handling occurs before Step 0, not here; by this point the answer is already applied, so do not re-ask. If `<PROCESS_NAME_KEBAB>-sdd.md` exists, read handoff Status. For `ready` or no Status, ask:
 
-5. **Target SDD length: 300-800 lines of markdown** for single-project SDDs. **Master Project SDDs may reach 600-1200 lines** due to per-sub-project structure sections — this is expected. For processes with more than 20 steps, group related steps and summarize at the parent level. For processes with more than 10 business rules, prioritize the 10 most impactful.
-6. **Re-run handling — already resolved at Step 0.** This check runs BEFORE the Step 0 skeleton write (that is the write that can clobber an existing file); by the time you reach here the answer is already applied, so do not re-ask. The question, for reference and for the Step 0 gate: if `<PROCESS_NAME_KEBAB>-sdd.md` already exists, ask the user via `AskUserQuestion`:
+> An SDD already exists at `<sdd-path>`. How should I proceed?
+>
+> 1. **Keep the existing SDD and stop** *(recommended)* — proceed to Lane A if you want to refresh the task list
+> 2. **Regenerate from the PDD** — overwrites the existing SDD
 
-   First read the existing file's handoff `Status`:
+For `draft`, ask:
 
-   - **`Status: ready` (or no Status field — legacy):**
+> An unfinished SDD draft exists at `<sdd-path>` (interrupted generation). How should I proceed?
+>
+> 1. **Resume generation** *(recommended)* — finish the remaining sections, resolve SME items, run the completeness check, then flip Status to ready
+> 2. **Regenerate from the PDD** — discard the draft and start over
+> 3. **Generate alongside as `<name>-v2-sdd.md`** — for diffing
 
-   > An SDD already exists at `<sdd-path>`. How should I proceed?
-   >
-   > 1. **Keep the existing SDD and stop** *(recommended)* — proceed to Lane A if you want to refresh the task list
-   > 2. **Regenerate from the PDD** — overwrites the existing SDD
+Default is keep.
+7. Write to current working directory unless user specifies output path. Single product: `<PROCESS_NAME_KEBAB>-sdd.md`. Solution: `<SOLUTION_NAME_KEBAB>-solution-sdd.md` plus `<PROJECT_NAME_KEBAB>-sdd.md` per unified project. Put review warnings in root and affected child; each child has its own Planner Handoff.
+8. **Template-superset check (mandatory before the item 9 summary).** After each file, re-read it and compare every H2/H3 with the template TOC; generated headings MUST be a superset — missing template sections are an SDD defect. Optional template-comment H3s may be omitted only when their condition applies. Minimum RPA H2s: §1 Process Overview, §2 Process Map, §3 Detailed Process Steps, §4 Business Rules, §5 Data Definitions, §6 Value Mappings, §7 Exception Handling, §8 Error Handling, §9 Application Inventory, §10 Master Project Architecture, §11 Project Structure, §12 Queue Architecture (omit only if no queue is defined/consumed), §13 Implementation Mode, §14 Packages, §15 Credentials & Assets, §16 Deployment Environment, §17 Testing Strategy, §18 Next Steps. Minimum Case H2s: §1 Case Definition, §2 Stages & Tasks, §3 Personas & App Views, §4 Integrations, `## Document History`, `## Planner Handoff`, `## Table of Contents`, `## Non-Functional Requirements`, `## Testing Strategy`, `## Next Steps`; verify each stage has `### Stage ...` or `### Secondary Stage ...`, each task has `##### Task ...`, and each detail contains exact `**Task envelope**` before its Required / Run Only Once / Skip Condition table. Other templates must contain every H2 in their TOC.
 
-   - **`Status: draft` (interrupted run):**
-
-   > An unfinished SDD draft exists at `<sdd-path>` (interrupted generation). How should I proceed?
-   >
-   > 1. **Resume generation** *(recommended)* — finish the remaining sections, resolve SME items, run the completeness check, then flip Status to ready
-   > 2. **Regenerate from the PDD** — discard the draft and start over
-   > 3. **Generate alongside as `<name>-v2-sdd.md`** — for diffing
-
-   Default is "keep" — overwriting an SDD the user might have hand-edited is the more destructive action.
-
-7. Write the output file(s) to the current working directory. If the user specified an output path for the SDD, use it instead of these defaults:
-   - **Single-product scope:** one file at `<PROCESS_NAME_KEBAB>-sdd.md`.
-   - **Solution scope:** the solution overview at `<SOLUTION_NAME_KEBAB>-solution-sdd.md` PLUS one per-project SDD at `<PROJECT_NAME_KEBAB>-sdd.md` for each project in the unified project list. Put the `[SME REVIEW]` warning block in the solution overview AND in any per-project file where a review item lives in that project. Each per-project SDD gets its own `## Planner Handoff` header.
-
-8. **Template-superset check (mandatory before the item 9 summary).** After writing each SDD file, re-read it and extract every H2 (`## `) and H3 (`### `) heading. Compare against the template's Table of Contents and required subsections. The generated SDD's heading set MUST be a superset — extra subsections are fine, missing template sections are an SDD defect. Exception: an H3 subsection whose template comment marks it optional (e.g. "omit when no document extraction is in scope") may be omitted entirely when its condition applies; every other template H3 is required.
-
-   Minimum required H2 headings per template:
-   - **RPA template:** §1 Process Overview, §2 Process Map, §3 Detailed Process Steps, §4 Business Rules, §5 Data Definitions, §6 Value Mappings, §7 Exception Handling, §8 Error Handling, §9 Application Inventory, §10 Master Project Architecture, §11 Project Structure, §12 Queue Architecture (omit only when the design defines or consumes no Orchestrator queue), §13 Implementation Mode, §14 Packages, §15 Credentials & Assets, §16 Deployment Environment, §17 Testing Strategy, §18 Next Steps
-   - **Case template:** §1 Case Definition, §2 Stages & Tasks, §3 Personas & App Views, §4 Integrations, plus the unnumbered H2s `## Document History`, `## Planner Handoff`, `## Table of Contents`, `## Non-Functional Requirements`, `## Testing Strategy`, `## Next Steps`. Also verify every modeled stage has a `### Stage ...` or `### Secondary Stage ...` block, every modeled task has a `##### Task ...` detail block, and every task detail block contains the exact marker `**Task envelope**` before its Required / Run Only Once / Skip Condition table.
-   - **Other templates:** check the template file's TOC; the rule is the same — every H2 in the template appears in the generated SDD.
-
-   For any missing required H2:
-   1. Regenerate that section from the template + Phase 1 extraction data + Phase 2 architecture.
-   2. If the template's contents for that section depend on a Phase 1 / Phase 2 input that is genuinely absent (e.g. §4 Business Rules but the PDD has zero rule signals), emit the section with an explicit "No business rules extracted from the PDD" note plus an `[SME REVIEW]` row asking the user to supply any.
-   3. Never silently drop a section.
-   4. **Ready flip — the final write of Phase D.** When every required heading is present and every remaining `[SME REVIEW]` item is classified `default-carried` (Step 1.5 rule 5), update the handoff: `Status: ready`, `Template validation: passed`. Open default-carried items do NOT block ready — they gate production sign-off, not task derivation. Any `blocking` item keeps `Status: draft`; the item 9 summary names it and asks. Skipping the flip leaves the file at `draft` and Lane A will refuse to derive tasks from it.
-
-   Common slip-fail: skipping §4 Business Rules because the PDD has no dedicated "Business Rules" section. Rules are usually buried in "Remarks", step descriptions, or screenshots — the PDD analysis guide's "Embedded business rules" pointer applies. Treat zero rules in §4 as a regeneration trigger, not a finished section.
-
-9. Output a summary in the conversation:
+For missing required H2s, regenerate from template + Phase 1/2 data; if genuinely absent, emit an explicit `No business rules extracted from the PDD`-style note plus `[SME REVIEW]` row; never silently drop. Zero §4 Business Rules is a regeneration trigger because rules may be embedded in remarks, steps, or screenshots. When headings pass and no survivor is blocking, make the final write: `Status: ready`, `Template validation: passed`. Default-carried items do not block; blocking keeps `draft` and appears in the summary. Lane A derives only from `ready`.
+9. Emit:
 
 ```markdown
 ## SDD Generated
@@ -582,9 +377,7 @@ This step runs in BOTH Autonomous and Interactive modes — it is a hard blocker
 
 ### Step 2.5: Word (.docx) Delivery — only when requested
 
-When the user asks for a Word or client-facing deliverable, convert the written SDD — do not author Word content by hand or drive Word via COM.
-
-**Plain `.docx` of the SDD:**
+Convert the written SDD; do not author Word by hand or use COM.
 
 ```bash
 # macOS / Linux / Git Bash:
@@ -593,19 +386,11 @@ bash <SKILL_DIR>/scripts/sdd-to-docx.sh "<SDD_PATH>.md" [--reference-doc "<TEMPL
 pwsh -File <SKILL_DIR>/scripts/sdd-to-docx.ps1 "<SDD_PATH>.md" [--reference-doc "<TEMPLATE>.docx"]   # or: powershell -File ...
 ```
 
-`--reference-doc` applies a customer template's fonts, heading styles, and margins. The section structure stays as the markdown SDD.
-
-**Official client SDD/ASDD (customer's structure):** the markdown SDD is agent-first; the official Word document is the client deliverable in the customer's own section layout. Ask the user for the template path, then follow [asdd-crosswalk-guide.md](asdd-crosswalk-guide.md) to match the markdown SDD into the template's sections and compute the missing pieces. Do not invent the official section structure.
-
-**Diagrams:** keep them as Mermaid and make them readable — clear node labels, one node per step, a logical direction. They convert as code blocks. Rendering them to images and styling the final document are not this skill's job — leave that to the user or their doc tooling.
-
-If the script reports pandoc missing, relay its install command.
-
-Skip this step entirely when the user did not ask for Word output.
+`--reference-doc` applies fonts, heading styles, and margins; markdown structure remains. For an official client SDD/ASDD, ask for template path and follow [asdd-crosswalk-guide.md](asdd-crosswalk-guide.md); do not invent structure. Keep readable Mermaid diagrams as code blocks; image rendering/styling is out of scope. Relay pandoc's install command if missing. Skip unless Word is requested.
 
 ### Step 3: Proceed to Lane A (Task Derivation)
 
-> **Progress:** Mark "Finalize SDD (Status: ready)" as `completed`. All progress tasks are now done.
+Mark `Finalize SDD (Status: ready)` completed; all progress tasks are done.
 
 <!--skill-flavor:phase-d-deliverable:start-->
 The SDD is the deliverable of Phase D. **Do not generate an Implementation Plan section inside the SDD. Do not create implementation `TaskCreate` calls during Phase D. Do not start executing.**
@@ -615,7 +400,4 @@ The SDD is the deliverable of Phase D. **Do not generate an Implementation Plan 
 > **The SDD write is a turn boundary — do not begin Lane A in the same turn as Phase D.** Once the SDD is on disk, the superset check has passed, and the Step 2 item 9 summary is emitted, that is the end of the current turn. Continue into Lane A on the **next** turn. Rationale: Phase D (read PDD + guides, author §1–§18) and Lane A (parse SDD, derive tasks, emit `TaskCreate`) are each heavy; stacking both in one unbroken autonomous turn is what pushes wall-clock past the per-turn watchdog and loses the whole run. Yielding after a durable SDD write keeps each turn bounded and guarantees the SDD is graded before any further work. This is a turn checkpoint, **not** an `AskUserQuestion` — do not prompt the user; simply let the turn end after the summary.
 <!--skill-flavor:turn-boundary:end-->
 
-Then continue based on the user's intent:
-
-- If the user's intent implies implementation ("create / build / implement / set up / make") → on the next turn, continue into Lane A with `<sdd-path>`. Lane A reads the `## Planner Handoff` header you wrote, derives tasks, writes `<process-kebab>-tasks.md` alongside the SDD, and emits live tasks routing to specialist skills — see [pdd-driven-lane-guide.md](pdd-driven-lane-guide.md).
-- If the user only asked to "design / architect / generate an SDD" → stop here; the SDD is enough.
+On the next turn, if intent implies implementation (`create / build / implement / set up / make`), continue Lane A with `<sdd-path>`; it reads Planner Handoff, derives tasks, writes `<process-kebab>-tasks.md` beside the SDD, and emits specialist-routed live tasks; see [pdd-driven-lane-guide.md](pdd-driven-lane-guide.md). If intent is only design/architect/generate SDD, stop after the SDD.

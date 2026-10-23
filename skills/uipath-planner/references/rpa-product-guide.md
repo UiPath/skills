@@ -1,77 +1,30 @@
 # RPA Product Guide
 
-Load this guide when Level 1 of the [Product Selection Guide](product-selection-guide.md) selects **RPA**, or when a Solution composition at Level 1.75 includes one or more RPA projects.
+Load this guide when Level 1 of the [Product Selection Guide](product-selection-guide.md) selects **RPA**, or when a Level 1.75 Solution composition includes RPA projects.
 
-This file is the **canonical home** for RPA-specific levels:
-
-- **Level 1.5** — RPA sub-type selection (Process / Library / Test Automation)
-- **Level 2** — Authoring mode (XAML / Coded C# / Hybrid)
-- **Level 2.5 Part A** — RPA decomposition signals (Single Project vs Master Project)
-- **R-07 naming convention** — `<PROCESS_SHORT_NAME_PASCAL>_<ROLE_SUFFIX>`
-- **REFramework guidance** — when to use REFramework vs Sequence
-
-Cross-product levels live in the [Product Selection Guide](product-selection-guide.md):
-
-- Level 1 (primary scope)
-- Level 1.75 (Solution composition)
-- Level 2.5 Part B (merge into unified project list)
-- Level 3 (capability add-ons)
+RPA-specific levels/rules: **Level 1.5** — Process / Library / Test Automation; **Level 2** — XAML / Coded C# / Hybrid; **Level 2.5 Part A** — Single Project / Master Project; **R-07** — `<PROCESS_SHORT_NAME_PASCAL>_<ROLE_SUFFIX>`; **REFramework guidance** — REFramework / Sequence. Cross-product levels remain in the [Product Selection Guide](product-selection-guide.md): Level 1, Level 1.75, Level 2.5 Part B, and Level 3.
 
 ## Signals per RPA sub-type
 
-Each RPA project in the scope is one of three sub-types. Pick the default from signals, then confirm with the user via Level 1.5.
+Each RPA project has one subtype. Infer its default from these signals, then confirm at Level 1.5.
 
 ### RPA Library
 
-**Signals the PDD is describing a Library:**
-- "Reusable component" for other projects
-- "Standard activity" used across multiple processes
-- Not a complete end-to-end process
-- Public workflows meant to appear as activities in other projects
-- Distributed via NuGet
-
-**Required PDD information:**
-- Public workflow signatures (inputs, outputs)
-- Dependencies
-- Intended consumers
+Reusable component, shared standard activity, incomplete end-to-end process, public workflows exposed as activities, or NuGet distribution. Required PDD information: public workflow signatures (inputs, outputs), dependencies, and intended consumers.
 
 ### RPA Test Automation
 
-**Signals the PDD is describing Test Automation:**
-- Primary goal is validating application behavior
-- Test cases with assertions
-- Test Manager integration
-- Data-driven testing with variations
-- Regression test suite
-
-**Required PDD information:**
-- Application(s) under test
-- Test case list
-- Expected outcomes per test
+Application-behavior validation, assertions, Test Manager integration, data-driven variations, or regression suite. Required PDD information: applications under test, test case list, and expected outcome per test.
 
 ### RPA Process (default)
 
-**Signals:**
-- UI-heavy automation (web forms, desktop apps, Citrix / virtual desktop)
-- Excel / Office automation; classic PDF operations (split, merge, non-AI text extraction)
-- File & folder operations on local or network storage (move, rename, archive, watch folders)
-- On-prem database read/write via Database activities (behind-the-firewall SQL)
-- Terminal / mainframe (green-screen) automation — exclusive to RPA; no other product drives terminals
-- Desktop email clients (Outlook); scheduled batch jobs over machine-local resources
-- Data processing between applications
-- Attended or unattended execution
-- Queue-based transactional processing
-- Standard end-to-end business process
-
-**This is the default when no other RPA sub-type matches.**
+UI-heavy web, desktop, Citrix, or virtual-desktop automation; Excel/Office or classic PDF operations (split, merge, non-AI text extraction); local/network files; on-prem database read/write via Database activities; terminal/mainframe automation (exclusive to RPA); desktop email clients; scheduled machine-local batch jobs; inter-application processing; attended or unattended execution; queue transactions; or a standard end-to-end business process. Use Process when no other subtype matches.
 
 ## Level 1.5 — RPA Sub-type Selection
 
-Applies when Level 1 selected **RPA**, or when a Solution composition at Level 1.75 includes one or more RPA projects. Skip entirely for non-RPA primaries that do not include RPA in the composition.
+Applies when Level 1 selects **RPA**, or Level 1.75 includes RPA projects; skip for non-RPA primaries without RPA in the composition.
 
 ### Recommended default
-
-Pick the default from the sub-type signals above:
 
 | Strongest Signal | Default Sub-type |
 |---|---|
@@ -81,7 +34,7 @@ Pick the default from the sub-type signals above:
 
 ### User confirmation
 
-Always confirm the sub-type via `AskUserQuestion` with the numbered-choice format, even when only one signal set matches:
+Always confirm with `AskUserQuestion`, even when one signal set matches:
 
 > This RPA project looks like a **<DEFAULT_SUBTYPE>**. Which sub-type should I use?
 >
@@ -89,104 +42,80 @@ Always confirm the sub-type via `AskUserQuestion` with the numbered-choice forma
 > 2. **<ALT_1>** — <ONE_LINE_DESCRIPTION>
 > 3. **<ALT_2>** — <ONE_LINE_DESCRIPTION>
 
-If the user picks a sub-type that disagrees with the signals, accept the choice and note the deviation in the recommendation's "Alternatives considered" block.
-
-### When the Solution includes multiple RPA projects
-
-If the Level 1.75 composition has **two or more RPA projects**, run Level 1.5 **once per project** — do not assume all RPA projects share the same sub-type. The canonical example is *2 Libraries + 1 Test Automation*: three Level 1.5 confirmations, one per project.
+Accept a choice that disagrees with the signals and note the deviation in the recommendation's "Alternatives considered" block. In a Level 1.75 composition with two or more RPA projects, run Level 1.5 once per project; do not assume a shared subtype. The canonical example is *2 Libraries + 1 Test Automation*: three Level 1.5 confirmations, one per project.
 
 ## Level 2 — Authoring Mode
 
-Applies to every RPA project in the scope (Process, Library, or Test Automation).
+Applies to every RPA project (Process, Library, or Test Automation). This recommendation is directional; the workflow-building skill makes the final detailed decision.
 
 | Process Characteristic | Recommended Mode |
 |---|---|
-| Primarily UI automation (clicking, typing, reading screens) | **XAML** |
-| Simple linear or transactional flow (REFramework) | **XAML** |
-| Heavy use of pre-built activity packages (SAP, Salesforce, Excel) | **XAML** |
-| Significant data transformation (parsing, regex, hashing, aggregation) | **Coded C#** |
-| REST API integrations (HTTP calls, pagination, auth tokens) | **Coded C#** |
-| Complex branching logic (5+ decision paths) | **Coded C#** |
-| Custom data models needed (typed DTOs, enums) | **Coded C#** |
-| UI automation AND complex data logic | **Hybrid** |
-| Multiple applications with different interaction patterns | **Hybrid** |
-
-The skill that builds the workflows owns the final, detailed decision — this is a directional recommendation.
+| Primarily UI automation; simple linear or transactional flow (REFramework); heavy pre-built packages (SAP, Salesforce, Excel) | **XAML** |
+| Significant transformation (parsing, regex, hashing, aggregation); REST APIs (HTTP, pagination, auth tokens); complex branching (5+ paths); custom typed DTOs or enums | **Coded C#** |
+| UI automation plus complex data logic; multiple applications with different interaction patterns | **Hybrid** |
 
 ### Anti-pattern: picking Coded C# for UI-heavy automation
 
-**Trigger:** the process body is **>70% UI automation** against a browser, desktop app, or SaaS UI, with **minimal HTTP / parsing / DTO / data-shaping work**. The PDD describes "log in, navigate to a list, click each row, read fields, compute a derived value, write it back, close" — i.e. UI driving is the bulk of the work.
+**Trigger:** the process is **>70% UI automation** against a browser, desktop app, or SaaS UI, with minimal HTTP/parsing/DTO/data-shaping work.
 
-**Decision:** **XAML** (or **Hybrid** if a discrete piece of non-trivial data logic exists). Do **NOT** pick Coded C# on a "cleaner control flow" argument.
+**Decision:** choose **XAML**, or **Hybrid** for a discrete non-trivial data-logic component. Do **NOT** choose Coded C# merely for cleaner control flow.
 
-**Why:**
+XAML provides Try/Catch, Retry Scope, If/Else, For Each, Sequence, and UIA activities (`Use Application/Browser`, `Click`, `Type Into`, `Get Text`). Studio's visual Indicate / `uia-configure-target` flow supplies selectors, attributes, content hashes, reference IDs, and Object Repository registration. Coded UI still requires OR registration plus `uiAutomation.Open` / `Attach`, `Descriptors.<App>.<Screen>.<Element>`, and screen-handle affinity rules, without capture-side productivity gain. Coded C# also requires manual `project.json` entry-point management, has no visual surface for non-coded contributors, and has no Studio designer canvas. Choose it for substantial data transforms, HTTP work, DTOs, or algorithms—not explicit if/else over UI activities.
 
-1. **XAML already has clean control-flow primitives for this shape.** Try/Catch, Retry Scope, If/Else, For Each, Sequence — wrapped around UIA activities (`Use Application/Browser`, `Click`, `Type Into`, `Get Text`) — covers retry, exception handling, looping, and branching with no code. Reaching for Coded C# to get "cleaner control flow" reinvents what XAML already provides.
+Reserve Coded C# for:
 
-2. **Studio's UI capture flow is significantly more productive than coded selectors.** The visual Indicate / `uia-configure-target` round-trip produces working selectors with proper attributes, content hashes, and reference IDs — and registers them in the Object Repository for reuse. The coded path requires the same OR registration plus extra ceremony (`uiAutomation.Open` / `Attach`, `Descriptors.<App>.<Screen>.<Element>` references, screen-handle affinity rules) without any productivity gain on the capture side.
+- JSON deserialization, CSV parsing, LINQ aggregation, regex extraction, or hashing pipelines
+- REST calls, pagination, transport retry/backoff, or auth-token refresh
+- Custom DTOs, typed records, or enums (XAML cannot define types)
+- Unit-testable pure functions exercised by Coded Test Cases
+- Sorting, deduplication, fuzzy matching, or tree traversal
 
-3. **The "cleaner control flow" argument is not sufficient on its own.** It is also not what UI-heavy work actually benefits from. UI-heavy work benefits from: visual selectors, fast retake, drag-and-drop activity surface, Object Repository sharing across workflows. None of those favour Coded C#.
-
-4. **Coded C# carries a tax that has to be earned.** Manual entry-point management in `project.json`, no visual surface for non-coded contributors, no Studio designer canvas — these costs are repaid by data transforms / HTTP work / DTOs / custom algorithms. They are **not** repaid by "I want explicit if/else" over UI activities.
-
-**Reserve Coded C# for:**
-
-- Substantial data transformation (JSON deserialization, CSV parsing, LINQ aggregation, regex extraction, hashing pipelines)
-- REST API integration (HTTP calls, pagination, retry/backoff on transport, auth-token refresh)
-- Custom DTOs / typed records / enums (XAML cannot define types)
-- Unit-testable business logic (pure functions exercised by Coded Test Cases)
-- Algorithm-heavy logic (sorting, deduplication, fuzzy matching, tree traversal)
-
-**If the process is mostly UI with one non-trivial data step,** use **Hybrid**: XAML for orchestration + UI; one Coded Workflow invoked via `Invoke Workflow File` for the data step.
+For mostly UI work with one non-trivial data step, use **Hybrid**: XAML orchestration/UI plus one Coded Workflow invoked with `Invoke Workflow File`.
 
 For the full coded-vs-XAML decision flow, load the `uipath-rpa` skill and consult its coded-vs-XAML reference (architectural design only — final per-workflow decisions are made by the build skill).
 
 ### Selection checklist before recommending Coded C#
 
-Before §13 Implementation Mode commits to Coded C#, confirm at least **two** of these are true:
+Before §13 Implementation Mode commits to Coded C#, confirm at least **two**:
 
-- [ ] Process has significant data shaping / parsing / regex / hashing work (more than a single one-liner).
-- [ ] Process integrates with HTTP / REST APIs that justify a dedicated client.
-- [ ] Process defines typed DTOs / records / enums used across multiple workflows.
-- [ ] Process has algorithmically non-trivial logic (LINQ aggregation, sorting, dedup, custom comparison).
-- [ ] Process has unit-testable pure functions (exercised by Coded Test Cases on inputs the live system cannot easily reproduce).
+- [ ] Significant data shaping / parsing / regex / hashing (more than one one-liner)
+- [ ] HTTP / REST integration justifying a dedicated client
+- [ ] Typed DTOs / records / enums used across multiple workflows
+- [ ] Algorithmically non-trivial logic (LINQ aggregation, sorting, dedup, custom comparison)
+- [ ] Unit-testable pure functions (exercised by Coded Test Cases on inputs the live system cannot easily reproduce)
 
-If **fewer than two** are true and the body is >70% UI, recommend XAML. The "cleaner control flow" line of reasoning is explicitly insufficient — strike it from the §13 justification.
+If fewer than two are true and the body is >70% UI, recommend XAML. Do not use “cleaner control flow” in the §13 justification.
 
 ## Level 2.5 Part A — RPA Decomposition Signals
 
-Apply these signals **to every RPA Process project** in the scope. Skip for RPA Library, RPA Test Automation, and non-RPA products — those are always one project each.
+Apply to every RPA Process project; skip Library, Test Automation, and non-RPA products, which are always one project each. Signals are evidence: **2+ matches** makes a candidate Master Project only when each split has a **boundary**—independent scaling, independent failure recovery (queue-isolated per-stage retry/replay), separate ownership or deployment cadence, or independent scheduling. Otherwise use **Single Project** with internal phases. Transactional processing plus ordinary end-of-run reporting is usually one project. **0–1 matches** means Single Project.
 
-Walk through the signals — they are *evidence*, not the decision. **2+ matches → candidate Master Project**; confirm each proposed split earns a **boundary**: at least one of independent scaling (different robot counts/speeds per stage), independent failure recovery (queue-isolated per-stage retry/replay), separate ownership or deployment cadence, or independent scheduling. No boundary need → **Single Project** with internal phases (transactional processing + ordinary end-of-run reporting alone is usually ONE project). 0–1 matches → Single Project.
+Queue design is independent of decomposition: a Single Project that is queue-triggered, consumes an existing queue, or self-dispatches still fills §12 Queue Architecture; only a project with no queue involvement omits it.
 
-> Queue design is independent of decomposition: a **Single Project** that is queue-triggered, consumes an existing queue, or self-dispatches still fills §12 Queue Architecture in the RPA template — only a project with no queue involvement omits it.
-
-| # | Signal in PDD | What it means |
+| # | Signal in PDD | Meaning |
 |---|---|---|
-| 1 | Process has distinct stages with different characteristics (e.g., email ingestion vs. data extraction vs. output generation) | Each stage becomes a separate project that can be developed, tested, and scaled independently |
-| 2 | Transactional processing where items can fail independently and must be retried per item | Queue-based retry requires Performer projects consuming from Orchestrator queues using REFramework |
-| 3 | Document Understanding or AI extraction with human validation (Action Centre) | DU + validation is a distinct processing stage that benefits from its own project and queue |
-| 4 | Different processing speeds per stage (e.g., fast email download vs. slow DU extraction) | Independent projects allow different robot counts per stage for throughput balancing |
-| 5 | Reporting requirements (Excel report, email summary, dashboard data) | Dedicated Reporting project reads from a reporting queue populated by all other stages |
-| 6 | Multiple output channels from a single input (e.g., XML to MQ + files to FTP + report to email) | Separate Performer per output channel avoids coupling unrelated integrations |
+| 1 | Distinct stages with different characteristics | Projects can be developed, tested, and scaled independently |
+| 2 | Items fail independently and require per-item retry | Queue-based retry supports Performer projects using REFramework |
+| 3 | Document Understanding or AI extraction with human validation (Action Centre) | DU/validation is a distinct stage with its own project and queue |
+| 4 | Different processing speeds per stage | Independent robot counts balance throughput |
+| 5 | Reporting requirements (Excel, email, dashboard data) | Reporting project reads a reporting queue populated by other stages |
+| 6 | Multiple output channels from one input | A Performer per channel avoids unrelated integration coupling |
 
 ### Common decomposition patterns
 
 #### Dispatcher / Performer (most common)
 
-Use when the process collects items from a source (email, folder, spreadsheet, API) and then processes each item transactionally.
+For collection from email, folder, spreadsheet, or API followed by transactional processing:
 
 ```text
 [Dispatcher] → Queue → [Performer] → Reporting Queue → [Reporting]
 ```
 
-- **Dispatcher**: collects items, creates queue items with all required data. Runs as a simple sequence (no REFramework).
-- **Performer**: processes one transaction item at a time. Uses **REFramework** for retry, logging, and state management.
-- **Reporting** (optional): reads from a reporting queue, generates reports. Runs on a schedule or after Performer completes.
+Dispatcher collects and queues required data using a simple Sequence. Performer handles one item with **REFramework**. Optional Reporting reads the reporting queue and runs on a schedule or after Performer completion.
 
 #### Dispatcher / DU Performer / Output Performer
 
-Use when the process has Document Understanding with human validation as a middle stage.
+For Document Understanding with human validation:
 
 ```text
 [Dispatcher] → DU Queue → [DU Performer] → Output Queue → [Output Performer]
@@ -196,14 +125,11 @@ Use when the process has Document Understanding with human validation as a middl
                                                          [Reporting]
 ```
 
-- **Dispatcher**: downloads emails/files, creates queue items.
-- **DU Performer**: runs DU extraction, sends low-confidence items to Action Centre, pushes validated results to the output queue. Uses REFramework.
-- **Output Performer**: generates output (XML, CSV, API calls), uploads to target systems. Uses REFramework.
-- **Reporting**: aggregates outcomes from all stages.
+Dispatcher downloads and queues files/emails. DU Performer extracts, sends low-confidence items to Action Centre, and queues validated results using REFramework. Output Performer writes XML, CSV, API, or other outputs using REFramework. Reporting aggregates outcomes.
 
 ### RPA Process (single-product scope) — narrower project list
 
-When the primary scope is RPA Process (not a Solution), Part A directly produces this form of project list (Part B of the main guide is trivial in this case):
+When the primary scope is RPA Process (not a Solution), Part A directly produces this list (Part B is trivial):
 
 | # | Project Name | Role | Framework | Input Queue | Output Queue |
 |---|---|---|---|---|---|
@@ -211,29 +137,28 @@ When the primary scope is RPA Process (not a Solution), Part A directly produces
 | 2 | `<NAME>_Performer` | Process each transaction item | REFramework | `<QUEUE_1>` | `<REPORTING_QUEUE>` |
 | 3 | `<NAME>_Reporting` | Generate reports from processing outcomes | Sequence | `<REPORTING_QUEUE>` | — |
 
-Queue definitions for the `<QUEUE_1>` and `<REPORTING_QUEUE>` placeholders are authored in §12 of the RPA template (`assets/templates/rpa-sdd-template.md`). §12 is the single source of truth for queue shape — `Queue Definitions` table + one `Queue Item Schema` subsection per queue. Do not invent a different column layout in Part A or Part B.
+Queue definitions for `<QUEUE_1>` and `<REPORTING_QUEUE>` are authored in §12 of the RPA template (`assets/templates/rpa-sdd-template.md`). §12 is the single source of truth: `Queue Definitions` table plus one `Queue Item Schema` subsection per queue. Do not invent another column layout in Part A or Part B.
 
-For Solutions, feed the rows produced by Part A into Level 2.5 Part B of [product-selection-guide.md](product-selection-guide.md#part-b--merge-into-the-final-project-list) to merge with the non-RPA projects.
+For Solutions, feed Part A rows into Level 2.5 Part B of [product-selection-guide.md](product-selection-guide.md#part-b--merge-into-the-final-project-list) to merge with non-RPA projects.
 
 ### Sub-project naming convention (rule R-07)
 
-Every row in the project list uses the pattern:
+Every project-list row uses:
 
-```
+```text
 <PROCESS_SHORT_NAME_PASCAL>_<ROLE_SUFFIX>
 ```
 
-- `<PROCESS_SHORT_NAME_PASCAL>` — a PascalCase short-name derived from the PDD process name. Strip filler words (`Process`, `Automation`, `RPA`) and any version suffix. Example: "Invoice Processing Automation v2" → `InvoiceProcessing`.
-- `<ROLE_SUFFIX>` — one of the registered suffixes below. Invent a new suffix only when a role is not covered.
+`<PROCESS_SHORT_NAME_PASCAL>` is PascalCase from the PDD process name; strip filler words (`Process`, `Automation`, `RPA`) and version suffixes. Example: "Invoice Processing Automation v2" → `InvoiceProcessing`. `<ROLE_SUFFIX>` must be registered below unless no role is covered, in which case invent one.
 
 | Suffix | Role |
 |---|---|
-| `_Dispatcher` | Collects items from a source and pushes them onto a queue |
+| `_Dispatcher` | Collects source items and pushes them to a queue |
 | `_Performer` | Consumes queue items and processes each transactionally (REFramework) |
-| `_DUPerformer` | Performer variant dedicated to Document Understanding extraction + validation |
-| `_OutputPerformer` | Performer variant that consumes validated data and writes to a downstream system (API, file, message bus) |
-| `_Reporting` | Reads a reporting queue and generates reports / dashboards / summary emails |
-| `_SharedUtils` | RPA Library containing reusable workflows called by other projects in the Solution |
+| `_DUPerformer` | Document Understanding extraction and validation Performer |
+| `_OutputPerformer` | Consumes validated data and writes to an API, file, or message bus |
+| `_Reporting` | Reads a reporting queue and generates reports, dashboards, or summary emails |
+| `_SharedUtils` | RPA Library with reusable workflows called by Solution projects |
 
 Worked example — PDD: "Weekly Vendor Invoice Ingestion". Short-name: `VendorInvoice`. Unified project list:
 
@@ -245,48 +170,40 @@ Worked example — PDD: "Weekly Vendor Invoice Ingestion". Short-name: `VendorIn
 | 4 | `VendorInvoice_Reporting` | Aggregate outcomes into the weekly ops email |
 | 5 | `VendorInvoice_SharedUtils` | Shared vendor lookup + currency conversion helpers |
 
-For RPA Library and RPA Test Automation projects in a Solution that are **not** queue-connected sub-projects of a Master Project, use the same short-name prefix but pick a role suffix that reflects the project's purpose (e.g., `_SharedUtils`, `_Regression`, `_SmokeTests`).
+For RPA Library and RPA Test Automation projects in a Solution that are not queue-connected Master Project sub-projects, use the same short-name prefix and a purpose-based suffix (for example, `_SharedUtils`, `_Regression`, `_SmokeTests`).
 
 ## REFramework guidance
 
-REFramework is the standard UiPath framework for **transactional processes** — any process that iterates over discrete units of work where each unit can succeed or fail independently. It provides: Init → Get Transaction → Process Transaction → End Process states, with built-in retry, exception handling, and logging.
+REFramework is UiPath's standard framework for transactional processes: independently succeeding/failing discrete units. It provides Init → Get Transaction → Process Transaction → End Process, with retry, exception handling, and logging.
 
 ### Use REFramework when…
 
-**Use REFramework whenever the process iterates over discrete units of work with independent per-item success/failure.** Queue presence is **NOT** a precondition. The source of the transactions can be:
-
-- **Orchestrator queue items** — the canonical case; `GetTransactionData` pulls one item at a time.
-- **In-memory transactions** — a list, DataTable, or collection loaded once and processed per row (e.g., a CSV read into memory, then iterated row by row).
-- **Rows / records read from a UI** — items extracted from a web app's work-item list, a desktop grid, or a SaaS UI's table. The Performer reads the source UI itself to populate transactions on each iteration; no Orchestrator queue is involved.
-- **Files in a folder** — each file is a transaction; the framework iterates over the folder contents.
-- **Records returned by an API page** — paginated API results where individual records can fail independently.
-
-The defining criterion is **per-item independence**: one failing item must not block the others, must be retryable on its own, and must be tracked separately. Any source that satisfies this — queue, memory, UI, file system, API — justifies REFramework.
+Use it whenever items can fail, be retried independently, and be tracked separately, regardless of source: Orchestrator queue items (`GetTransactionData` pulls one at a time), in-memory lists, DataTables or collections, UI-table/grid rows, folder files, or paginated API records.
 
 ### Do NOT use REFramework when…
 
-- The unit of work is **atomic** (the whole run succeeds or fails as one) — e.g., a single SQL query + single email, no per-item granularity.
-- The process is a **simple linear pipeline** with no iteration and no retry semantics.
-- The process is a **Library** or **Test Automation** project (those have their own templates).
+- The whole run is atomic, such as one SQL query plus one email with no per-item granularity.
+- The process is a simple linear pipeline with no iteration or retry semantics.
+- The project is a Library or Test Automation project, which has its own template.
 
 ### Framework selection per role
 
-| Project Role | Framework | Why |
+| Project Role | Framework | Rule |
 |---|---|---|
-| Performer (queue-based) | **REFramework** | Built-in transaction retry, state management, exception routing |
-| Performer (in-memory transactions or UI-row iteration, no Orchestrator queue) | **REFramework** | Each row / record is a transaction with independent success/failure; queue presence is not required to justify the framework |
-| Dispatcher — atomic collect-then-commit (e.g., single SQL query, single folder scan) | **Sequence** | Collection is one unit of work; no per-item retry semantics required |
-| Dispatcher — retryable items (e.g., paginated API, flaky source where individual pages/items can fail) | **REFramework** | Each retrieved item is itself a transaction; per-item retry + state tracking justify REFramework |
-| Reporting (reads queue, generates output) | **REFramework** *(default)* or Sequence | Use REFramework when per-item reporting failures must be tracked, or when the reporting queue can exceed ~10 items per run (typical for daily/weekly aggregation over a Master Project). Use Sequence only for atomic end-of-run aggregation of a small, fixed set of items where a single failure can fail the whole run without loss. |
-| Single Project (no queues, but iterates discrete items) | **REFramework** | REFramework gives per-item retry + state tracking even without a queue. Lifecycle just becomes Init → GetTransactionData (loads from memory / UI / file system) → Process → SetTransactionStatus. |
-| Single Project (no iteration at all) | **Sequence** | Linear pipeline, no transactions, no retry semantics. |
-| Process with an in-flight human approval / async wait (single process, not cross-product) | **Sequence or REFramework, + Persistence = YES** | Persistence is a modifier on the chosen framework, not a framework: suspend the job, release the robot, resume on Action Center completion — see [Long-running workflows](#long-running-workflows-persistence--action-center) |
+| Performer (queue-based) | **REFramework** | Transaction retry, state management, exception routing |
+| Performer (in-memory or UI-row iteration, no queue) | **REFramework** | Independent row/record success and failure; queue is not required |
+| Dispatcher — atomic collect-then-commit | **Sequence** | One unit of work; no per-item retry |
+| Dispatcher — retryable items (paginated API or flaky source) | **REFramework** | Retrieved items need per-item retry and state tracking |
+| Reporting | **REFramework** *(default)* or Sequence | REFramework for per-item reporting failures or a reporting queue exceeding ~10 items per run; Sequence only for atomic aggregation of a small, fixed set where one failure may fail the run without loss |
+| Single Project (no queues, discrete-item iteration) | **REFramework** | Init → GetTransactionData (memory/UI/file system) → Process → SetTransactionStatus |
+| Single Project (no iteration) | **Sequence** | Linear pipeline without transactions or retry semantics |
+| In-flight human approval / async wait (single process, not cross-product) | **Sequence or REFramework, + Persistence = YES** | Persistence modifies the selected framework; see [Long-running workflows](#long-running-workflows-persistence--action-center) |
 
-**Rule R-04 — REFramework boundary:** a project uses REFramework when its unit of work is an **item that can fail, be retried, and be tracked independently** — regardless of whether the items come from a queue, memory, UI, file system, or API. A project uses Sequence when its unit of work is **atomic** (the whole run succeeds or fails as one).
+**Rule R-04 — REFramework boundary:** use REFramework when the unit is an **item that can fail, be retried, and be tracked independently**, regardless of queue, memory, UI, file-system, or API source. Use Sequence when the unit is **atomic**.
 
-**Proportionality note — REFramework is a template, not a mandate.** R-04 decides the *semantics* the project needs (per-item retry, isolation, tracking); REFramework is the standard way to get them. For a genuinely trivial iteration — a 2-3 activity body, no per-item state beyond success/failure, and a full-run rerun that is safe and cheap — a Sequence with a per-item Try/Catch and a documented rerun rule delivers the same semantics with less scaffolding; record that deviation in §13's justification. This does NOT reopen the anti-patterns below: volume and queue-absence are never, by themselves, reasons to reject REFramework.
+**Proportionality note — REFramework is a template, not a mandate.** R-04 determines required semantics. For a genuinely trivial iteration—a 2-3 activity body, no per-item state beyond success/failure, and a safe, cheap full-run rerun—a Sequence with per-item Try/Catch and a documented rerun rule may provide equivalent semantics; record the deviation in §13's justification. Volume and queue absence never, by themselves, reject REFramework.
 
-When REFramework is selected for a project, the project structure in §11 of the RPA template must use the REFramework folder layout (Init, GetTransactionData, Process states) instead of a custom framework.
+When selected, §11 of the RPA template must use the REFramework folder layout (Init, GetTransactionData, Process states), not a custom framework.
 
 ### Worked example — Performer reading WI rows from a web UI, no queue
 
@@ -316,10 +233,10 @@ If you find yourself rejecting REFramework on volume or queue-absence grounds, r
 
 ## Long-running workflows (persistence + Action Center)
 
-RPA handles asynchronous human interaction **inside a single process** — do not escalate to Maestro or a separate HITL project just because a human approves mid-run.
+RPA handles asynchronous human interaction **inside a single process**; do not escalate to Maestro or a separate HITL project solely because a human approves mid-run.
 
-- **Mechanism:** Studio long-running workflow (Persistence activities — Create Form Task / Wait for Task and Resume). The job **suspends**, the robot is **released** (no license burned while waiting), and the job **resumes** — potentially on a different robot — when the Action Center task completes.
-- **Use when:** one process needs an in-flight approval, data validation, or async wait (task completion, queue item, job) and the rest of the coordination is within that process.
-- **Do NOT use when:** the wait spans **multiple products** (RPA + agents + APIs) or needs formal gateways/events — that is Maestro territory ([Product Selection Guide → Maestro disambiguation](product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case)).
-- **Identities & licensing:** record three separate decisions — the **start identity** (an attended user start is supported, not just unattended), the **resume identity** (typically an unattended robot; resume may land on a different robot than the start), and the **licensing implication** of each. Attended-start + unattended-resume is a valid, common shape (§11 Attendance column).
-- **SDD impact:** Persistence = YES in §11 Project Mode Decision (framework stays Sequence/REFramework); mark suspend/resume points in the Workflow Inventory; the approval task is flagged as an Action Center touchpoint, not a `uipath-human-in-the-loop` task.
+- **Mechanism:** use Studio long-running workflow Persistence activities—Create Form Task / Wait for Task and Resume. The job suspends, releases the robot without burning a license, and resumes, potentially on another robot, when the Action Center task completes.
+- **Use when:** one process needs approval, validation, or an async wait (task completion, queue item, or job) and coordination remains within that process.
+- **Do NOT use when:** the wait spans **multiple products** (RPA + agents + APIs) or needs formal gateways/events; use Maestro ([Product Selection Guide → Maestro disambiguation](product-selection-guide.md#maestro-disambiguation--bpmn-vs-flow-vs-case)).
+- **Identities & licensing:** record the **start identity** (attended-user start is supported), **resume identity** (typically unattended robot; may differ from the start robot), and each licensing implication. Attended-start plus unattended-resume is valid and common (§11 Attendance column).
+- **SDD impact:** set Persistence = YES in §11 Project Mode Decision while retaining Sequence/REFramework; mark suspend/resume points in the Workflow Inventory; flag the approval as an Action Center touchpoint, not a `uipath-human-in-the-loop` task.
