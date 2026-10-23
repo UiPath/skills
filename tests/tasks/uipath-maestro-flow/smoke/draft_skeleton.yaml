@@ -4,7 +4,7 @@ description: >
   builds a phase 2 skeleton (labelled mock() boxes, a real outcome-labelled
   branch) with no registry call, validates it, and stops at the approval
   question instead of wiring real nodes. Upload is forbidden.
-tags: [uipath-maestro-flow, smoke, "mode:build"]
+tags: [uipath-maestro-flow, smoke, "mode:build", "lifecycle:generate", "shape:multi-node", "node:decision"]
 
 run_limits:
   expected_turns: 20

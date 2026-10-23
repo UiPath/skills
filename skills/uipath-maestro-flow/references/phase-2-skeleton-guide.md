@@ -8,6 +8,11 @@ shape (phase 3); phase 4 then replaces each box with its real node. Auto mode
 skips 2b–2f and phase 3 and authors real nodes directly. Brownfield edits and
 discovery-only tasks skip this phase too.
 
+Phases: 0 surface (nothing to do yet; surface detection is future work),
+1 preflight, 2 skeleton, 3 iterate until the user approves, 4 wire up.
+In plan mode, writes wait for plan approval: put the skeleton outline (boxes,
+branches, conditions) in the plan, then run 2a–2f once the plan is approved.
+
 ## What a skeleton is
 
 A skeleton exists so the shape can be read end to end, so a user can say "yes,
@@ -26,17 +31,20 @@ reported as one.
 3. **Control flow is real.** The trigger, `.branch`, `.switch`, `.parallel`,
    `.loop` and the end are what the user approves. A manual, scheduled or form
    start needs no lookup; for a connector event start, use a manual start and
-   label the first box `[Trigger] <event>`. Arms that finish the same way fall
+   label the first box `<event> [Trigger]`. Arms that finish the same way fall
    through to one shared end unless the request names separate outcomes.
 4. **Label every arm with its outcome**: `.label('approve')` on a branch arm,
    `label: 'High'` on a switch case.
 5. **Route on an input or a `.var()`, never on a box.** A condition that reads
-   `out(<mock step>)` fails `check` with `MOCK_HAS_NO_OUTPUT`. Declare the value
+   `out(<mock step>)` fails with `MOCK_HAS_NO_OUTPUT`. Declare the value
    as an input or a var and read it; name the producer in the upstream label,
    `Classify ticket [Agent] → category`.
 6. **Declare the inputs the request names; leave outputs to phase 4.** A
    declared output must be bound on every path, and a skeleton has nothing to
    bind it to.
+7. **Ask nothing before the sketch.** A structure question (a threshold, an
+   unnamed branch) becomes a visible assumption in the shape and waits for
+   the 3c question.
 
 ## Steps
 
@@ -47,12 +55,12 @@ Phases 0 and 1 run first, and 2a has scaffolded the project
   `init --sdk-source` seeded, keeping its flow id and name.
 - **2c–2e Run the [Lifecycle](../SKILL.md#lifecycle) loop** you picked:
   `check` where the loop allows it, `compile -o`, `validate`, then `format`.
-  Treat warnings about the mock boxes or a never-written var as expected; act
-  only on errors.
+  Warnings that name a mock box are expected; act only on errors.
 - **2f Show it.** When the request allows an upload and you are logged in, run
   `uip solution resources refresh --solution-folder <SolutionDir> --output json`
   and `uip solution upload <SolutionDir> --output json`; 3c shows the returned
-  `Data.DesignerUrl`. Do not ask first: draft mode exists to show the shape.
+  `Data.DesignerUrl`. Do not ask first: a draft request is the consent rule 9
+  in [`author.md`](author.md) asks for, because draft mode exists to show the shape.
   Confirm only when this run did not create the solution. When the request
   forbids upload, skip it.
 
@@ -76,7 +84,9 @@ Phases 0 and 1 run first, and 2a has scaffolded the project
   ```
 
   *Build it* goes to phase 4. *Change it* goes back to 3a. *Keep it* ends the
-  run with the skeleton reported as an outline.
+  run with the skeleton reported as an outline. Headless, or when no answer
+  comes, this is *Keep it*: never pick *Build it* yourself. Say which mode ran
+  in the final report.
 
 Only *Build it* authorizes phase 4: node search, connectors, `prepare` and
 outputs. Phase 4 replaces each `mock()` box in place, keeping its step name,

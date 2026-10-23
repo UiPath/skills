@@ -33,6 +33,8 @@ ALLOWED = {
     "core.logic.switch",
     "core.logic.merge",
     "core.logic.loop",
+    "core.logic.dowhile",
+    "core.logic.terminate",
     "core.control.end",
     "stickyNote",
 }
@@ -49,7 +51,10 @@ def main(argv: list[str]) -> int:
         return fail("usage: check_draft_skeleton.py <FlowName> [--trigger manual|scheduled]")
     name, trigger = argv[0], "manual"
     if "--trigger" in argv:
-        trigger = argv[argv.index("--trigger") + 1]
+        at = argv.index("--trigger") + 1
+        if at >= len(argv):
+            return fail("--trigger needs a value: manual or scheduled")
+        trigger = argv[at]
 
     flows = [f for f in find_flow_files() if os.path.basename(f) == f"{name}.flow"]
     if len(flows) != 1:

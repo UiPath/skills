@@ -24,7 +24,9 @@ cannot make: which node, which topology, what an output means, and what to ask.
    `uip maestro flow registry pull --force` first, and check the solution's own
    projects with `uip maestro flow registry list --local` before concluding a
    resource is missing. `mock()` marks a capability both searches proved
-   absent; it is never a stand-in for one they found.
+   absent; it is never a stand-in for one they found. The one exception is a
+   draft-mode skeleton, where every box is `mock()` by design and no search runs
+   ([`phase-2-skeleton-guide.md`](phase-2-skeleton-guide.md)).
 2. **Read the node's reference before writing the step.** The router table in
    [SKILL.md](../SKILL.md#supported-node-types) names one reference and one
    example per node. Copy identity fields (keys, model names, folder keys)

@@ -65,6 +65,13 @@ def test_bad_skeletons_fail(sandbox, capsys, mutate, needle):
     assert needle in capsys.readouterr().err
 
 
+def test_event_start_box_and_terminate_pass(sandbox):
+    nodes = [GOOD[0], _box("evt", "New ticket created [Trigger]")] + GOOD[1:] + [
+        {"id": "stop", "type": "core.logic.terminate"}]
+    sandbox(_flow(nodes))
+    assert cds.main(["Sketch"]) == 0
+
+
 def test_unformatted_fails(sandbox, capsys):
     sandbox(_flow(GOOD, layout=False))
     assert cds.main(["Sketch"]) == 1

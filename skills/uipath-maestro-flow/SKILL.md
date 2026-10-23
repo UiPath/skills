@@ -215,48 +215,28 @@ The table is the authoritative router. Before writing a node, read its `Referenc
 ## Phases
 
 Pick the mode from the request before any step; never ask. First match wins:
-
-| Mode | When | Runs |
-| --- | --- | --- |
-| Brownfield | the request targets an existing `.flow.ts` or `.flow` | 1, 4 via [Editing](#editing-an-existing-flow) |
-| Discovery-only | explore the registry, "do not build" | 1, the search |
-| Draft | the user wants to see the shape before it is built: "draft", "sketch", "show me first", plan mode | 0–3, stop at the 3c question |
-| Auto | anything else (default) | 0, 1, 2a, 4 |
-
-0. **Surface.** Nothing to do yet. Surface detection is future work.
-1. **Preflight.** SDK install, then the existing-solution check ([Project layout](#project-layout)).
-2. **Skeleton.** 2a scaffolds ([Project layout](#project-layout)). Draft mode then sketches the shape: [`references/phase-2-skeleton-guide.md`](references/phase-2-skeleton-guide.md).
-3. **Iterate.** Draft mode only, per that guide, until the user picks *Build it*.
-4. **Wire up.** Choose and write each node, run the [Lifecycle](#lifecycle) loop, and report per [`author.md`](references/author.md#completion-output).
+**Brownfield** (the request targets an existing `.flow.ts` or `.flow`) → [Editing an existing flow](#editing-an-existing-flow); **Discovery-only** (explore the registry, "do not build") → search, build nothing; **Draft** (the user wants to see the shape before it is built: "sketch it", "show me first", plan mode; judge intent, not the word: a step that drafts a reply or a `Draft` value is not it) → [`references/phase-2-skeleton-guide.md`](references/phase-2-skeleton-guide.md), where every box is `mock()` by design; **Auto**, the default → build as below.
+Phases: 0 surface (future work, nothing to do), 1 preflight ([Project layout](#project-layout)), 2 skeleton, 3 iterate, 4 wire up; auto runs 0, 1, 2a and 4.
 
 ## Authoring a flow
 
-Choose each node from a registry search, never a brand name; ask when the
-request leaves a finite decision open, including an input value, range, or
-combination no stated rule covers (never fold it into a stated value; when
-the request says no one will answer (headless, CI), map it to the most
-defensible stated value and list it under Open questions as
-**[REQUIRED]**); bind every declared output on every
-path (`check` misses a missing one, and the run returns `undefined`); handle an
-error only when the request says what should happen. The rest is in
-**[`references/author.md`](references/author.md)**.
+Choose each node from a registry search, never a brand name; ask when the request leaves a finite decision open, including an input value, range, or combination no stated rule covers (never fold it into a stated value; when the request says no one will answer (headless, CI), map it to the most defensible stated value and list it under Open questions as **[REQUIRED]**); bind every declared output on every path (`check` misses a missing one, and the run returns `undefined`); handle an error only when the request says what should happen.
+The rest is in **[`references/author.md`](references/author.md)**.
 A request that names a canvas arrangement is `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
 
 ## Operating a deployed flow
 
-Upload, deploy, debug, trigger, inspect a job, and drive an instance's
-lifecycle. All of it needs `uip login`, and `uip solution resources refresh`
-comes before every upload, publish or debug. `flow debug` is a REAL run, not a
-validation step. Read
-**[`references/operate.md`](references/operate.md)**.
+Upload, deploy, debug, trigger, inspect a job, and drive an instance's lifecycle.
+All of it needs `uip login`, and `uip solution resources refresh` comes before every upload, publish or debug.
+`flow debug` is a REAL run, not a validation step.
+Read **[`references/operate.md`](references/operate.md)**.
 
 ## Diagnosing a failed run
 
-Triage in order — the debug response you already have, then incidents, runtime
-variables, the deployed artifact, and traces last. Never re-run `flow debug` to
-look again. The builder removes several classic `.flow` defects and leaves
-others, including an expression that is really a literal. Read
-**[`references/diagnose.md`](references/diagnose.md)**.
+Triage in order — the debug response you already have, then incidents, runtime variables, the deployed artifact, and traces last.
+Never re-run `flow debug` to look again.
+The builder removes several classic `.flow` defects and leaves others, including an expression that is really a literal.
+Read **[`references/diagnose.md`](references/diagnose.md)**.
 
 ## Evaluating a flow
 
