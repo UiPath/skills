@@ -23,7 +23,12 @@ cannot make: which node, which topology, what an output means, and what to ask.
    `uip maestro flow registry search`; it only returns published resources, so
    `uip maestro flow registry pull --force` first, and check the solution's own
    projects with `uip maestro flow registry list --local` before concluding a
-   resource is missing. `mock()` marks a capability both searches proved
+   resource is missing. A published match the user did not name becomes a
+   dependency of the flow: before binding it, say what each match does and ask
+   once, for all matches, whether to reuse it or build those steps directly
+   (reuse recommended). No question for the solution's own projects, resources
+   the user named or asked to reuse, or reuse a planner SDD or tasks file
+   already records. `mock()` marks a capability both searches proved
    absent; it is never a stand-in for one they found.
 2. **Read the node's reference before writing the step.** The router table in
    [SKILL.md](../SKILL.md#supported-node-types) names one reference and one
