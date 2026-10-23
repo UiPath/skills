@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 from collections.abc import Iterable, Iterator
 from enum import Enum
 from pathlib import Path
-from typing import TypeVar
+from typing import NamedTuple, TypeVar
 
 _PathLike = TypeVar("_PathLike", str, Path)
 
@@ -492,6 +492,65 @@ def connector_requests(
 
         method, path = context_value(task, "method"), context_value(task, "path")
         yield task, method, path, RequestShape.ACTIVITY
+
+
+_PATH_SEGMENT = r"(?!\{[^/}]+\}|%7B[^/]*%7D)[^/]+"
+_PLACEHOLDER_RE = re.compile(r"\{[^/}]*\}")
+_CATALOG_ONLY_METHODS = {"getbyid"}
+
+
+def _filled_path_re(template: str) -> re.Pattern[str]:
+    """End-anchored match for an IS path, each ``{name}`` one filled segment:
+    ``/v2/{projectId}/items`` matches ``/v2/{}/items`` and ``/v2/p/items``,
+    not ``/v2/{projectId}/items``."""
+    parts = _PLACEHOLDER_RE.split(template)
+    pattern = _PATH_SEGMENT.join(re.escape(part) for part in parts)
+    return re.compile(rf"{pattern}/?$", re.IGNORECASE)
+
+
+class ConnectorOperation(NamedTuple):
+    label: str
+    object_name: str
+    methods: set[str]
+    path: str
+
+
+def _operation_matches(
+    task: ET.Element, method: str, path: str, shape: RequestShape, operation: ConnectorOperation
+) -> bool:
+    method = method.lower()
+    if shape is RequestShape.ACTIVITY:
+        object_name = context_value(task, "objectName")
+        return method in operation.methods and object_name == operation.object_name
+
+    if method not in operation.methods - _CATALOG_ONLY_METHODS:
+        return False
+    path_re = _filled_path_re(operation.path)
+    return path_re.search(path.split("?", 1)[0]) is not None
+
+
+def require_operations(
+    requests: list[tuple[ET.Element, str, str, RequestShape]],
+    operations: list[ConnectorOperation],
+    group: str,
+) -> None:
+    missing: list[str] = []
+    for operation in operations:
+        match = next((r for r in requests if _operation_matches(*r, operation)), None)
+        if match is None:
+            missing.append(
+                f"{operation.label} (objectName={operation.object_name!r} or path "
+                f"{operation.path!r} with every placeholder filled, "
+                f"method in {sorted(operation.methods)})"
+            )
+            continue
+
+        task, method, request_path, _shape = match
+        target = request_path or context_value(task, "objectName")
+        print(f"OK: {operation.label} -> {task.attrib.get('id', '?')} ({method} {target})")
+
+    if missing:
+        fail(f"missing {group} connector node(s):\n  " + "\n  ".join(missing))
 
 
 def require_di_for_visible_elements(root: ET.Element) -> None:

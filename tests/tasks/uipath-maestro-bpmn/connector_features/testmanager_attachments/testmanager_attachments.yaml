@@ -17,7 +17,9 @@ description: >
   successfully; registry-refresh telemetry is advisory.
   Ported from Flow `connector_features/testmanager_attachments.yaml`; BPMN
   nodes share one wrapper type, so operations are distinguished by
-  objectName + method instead of Flow's per-operation node type.
+  objectName + method, or method + path for a connector-mode HTTP request
+  through the Test Manager connection, instead of Flow's per-operation node
+  type.
 tags:
   - uipath-maestro-bpmn
   - e2e
