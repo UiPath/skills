@@ -18,7 +18,8 @@
     },
     "bad8a81c-410f-4ee6-a642-c5679acf0c98": {
       "connector": "uipath-http-webhook",
-      "folder": "uipath-maestro-flow"
+      "folder": "Shared",
+      "name": "coder-eval-webhook-shared"
     }
   },
   "processes": {

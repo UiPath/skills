@@ -211,3 +211,18 @@ def test_a_failed_registry_pull_leaves_ids_unresolved_instead_of_failing_the_tas
 
     assert (sandbox / "sdd.md").read_text() == f"{HELPDESK}\n"
     assert "registry pull failed" in capsys.readouterr().err
+
+
+def test_two_pinned_connections_of_one_connector_map_to_two_live_ones(module, sandbox, monkeypatch):
+    """Build 13936802: both pinned webhook IDs took the ETE's one webhook, and the checker wants two."""
+    first, second = "6a817d24-cbbd-4389-b10d-4329214ffb8d", "bad8a81c-410f-4ee6-a642-c5679acf0c98"
+    live_flow, live_shared = "55555555-5555-5555-5555-555555555555", "66666666-6666-6666-6666-666666666666"
+    (sandbox / "sdd.md").write_text(f"{first}\n{second}\n")
+    _stub_uip(module, monkeypatch, {"uipath-http-webhook": [
+        {"Id": live_shared, "Name": "coder-eval-webhook-shared", "Folder": "Shared", "State": "Enabled"},
+        {"Id": live_flow, "Name": "auto", "Folder": "uipath-maestro-flow", "State": "Enabled", "IsDefault": True},
+    ]})
+
+    assert module.main() == 0
+
+    assert (sandbox / "sdd.md").read_text() == f"{live_flow}\n{live_shared}\n"

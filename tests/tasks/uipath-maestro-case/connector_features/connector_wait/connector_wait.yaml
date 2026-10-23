@@ -112,6 +112,7 @@ initial_prompt: |
   **Connector Key:** uipath-microsoft-outlook365
   **Event:** Email Received
   **Type ID:** d76ca053-6e7e-3472-b98c-3094b802d83c
+  **Connection ID:** dd657127-91f5-4568-a3a3-c024bc03fb0f
   **Mode:** polling
 
   | Field | Value |
@@ -138,6 +139,7 @@ initial_prompt: |
   **Connector Key:** uipath-microsoft-outlook365
   **Event:** Email Received
   **Type ID:** d76ca053-6e7e-3472-b98c-3094b802d83c
+  **Connection ID:** dd657127-91f5-4568-a3a3-c024bc03fb0f
   **Mode:** polling
   ```
 

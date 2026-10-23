@@ -85,13 +85,15 @@ def _read_text(path: Path) -> str | None:
         return None
 
 
-def _resolve_connection(cloud_id: str, spec: dict) -> str | None:
+def _resolve_connection(cloud_id: str, spec: dict, taken: set[str]) -> str | None:
+    """``taken`` holds live IDs already given to another pinned ID: two pinned connections stay two."""
     connections = _uip(["is", "connections", "list", spec["connector"], "--all-folders"], 90).get("Data") or []
     if any(str(c.get("Id", "")).lower() == cloud_id for c in connections):
         return cloud_id
-    enabled = [c for c in connections if c.get("State") == "Enabled"]
+    enabled = [c for c in connections if c.get("State") == "Enabled" and str(c.get("Id", "")).lower() not in taken]
+    named = [c for c in enabled if spec.get("name") and c.get("Name") == spec["name"]]
     in_folder = [c for c in enabled if c.get("Folder") == spec.get("folder")]
-    for candidates in (in_folder, enabled):
+    for candidates in (named, in_folder, enabled):
         if len(candidates) == 1:
             return str(candidates[0]["Id"])
         defaults = [c for c in candidates if c.get("IsDefault")]
@@ -192,10 +194,11 @@ def main() -> int:
 
     mapping: dict[str, str] = {}
     unresolved: list[str] = []
-    for cloud_id, (kind, spec) in sorted(pinned.items()):
+    # Named connections first, so an unnamed one cannot take the record a name points at.
+    for cloud_id, (kind, spec) in sorted(pinned.items(), key=lambda item: ("name" not in item[1][1], item[0])):
         try:
             if kind == "connections":
-                live = _resolve_connection(cloud_id, spec)
+                live = _resolve_connection(cloud_id, spec, {v for k, v in mapping.items() if k != cloud_id})
             elif kind == "processes":
                 live = _resolve_process(cloud_id, spec, processes)
             else:
