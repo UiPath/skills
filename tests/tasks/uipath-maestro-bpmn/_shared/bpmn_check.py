@@ -495,7 +495,7 @@ def connector_requests(
         yield task, method, path, RequestShape.ACTIVITY
 
 
-_PATH_SEGMENT = r"(?!\{[^/}]+\}|%7B[^/]*%7D)[^/]+"
+_PATH_SEGMENT = r"(?![^/]*%7B[^/]*%7D)(?:\{\}|[^/{])+"
 _PLACEHOLDER_RE = re.compile(r"\{[^/}]*\}")
 _CATALOG_ONLY_METHODS = {"getbyid"}
 
@@ -551,13 +551,23 @@ def _assign_requests(candidates: list[list[int]]) -> dict[int, int]:
     return {operation: request for request, operation in owner.items()}
 
 
-def _missing_operation(operation: ConnectorOperation) -> str:
+def _require_valid(operation: ConnectorOperation) -> None:
+    if not operation.path.strip("/"):
+        raise ValueError(f"{operation.label}: path {operation.path!r} matches any request")
+    if not operation.methods - _CATALOG_ONLY_METHODS:
+        raise ValueError(f"{operation.label}: methods {sorted(operation.methods)} hold no HTTP verb")
+
+
+def _missing_operation(operation: ConnectorOperation, taken_by: list[str]) -> str:
     http_methods = "/".join(sorted(operation.methods - _CATALOG_ONLY_METHODS)).upper()
-    return (
+    message = (
         f"{operation.label} (objectName={operation.object_name!r} with method in "
         f"{sorted(operation.methods)}, or HTTP {http_methods} {operation.path!r} "
         "with every placeholder filled)"
     )
+    if taken_by:
+        message += f"; matching node(s) already used: {', '.join(taken_by)}"
+    return message
 
 
 def require_operations(
@@ -565,6 +575,9 @@ def require_operations(
     operations: list[ConnectorOperation],
     group: str,
 ) -> None:
+    for operation in operations:
+        _require_valid(operation)
+
     candidates = [
         [i for i, request in enumerate(requests) if _operation_matches(*request, operation)]
         for operation in operations
@@ -574,7 +587,12 @@ def require_operations(
     missing: list[str] = []
     for index, operation in enumerate(operations):
         if index not in assigned:
-            missing.append(_missing_operation(operation))
+            taken_by = [
+                f"{requests[request][0].attrib.get('id', '?')} by {operations[other].label!r}"
+                for other, request in assigned.items()
+                if request in candidates[index]
+            ]
+            missing.append(_missing_operation(operation, taken_by))
             continue
 
         task, method, request_path, _shape = requests[assigned[index]]

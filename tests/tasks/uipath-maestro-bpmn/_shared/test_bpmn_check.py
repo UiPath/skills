@@ -1007,3 +1007,28 @@ def test_require_operations_names_only_http_verbs_for_http() -> None:
     with pytest.raises(SystemExit) as exc:
         bpmn_check.require_operations([], ITEM_OPERATIONS[:1], "item")
     assert "method in ['get', 'getbyid'], or HTTP GET '/v2/{p}/items/{id}'" in str(exc.value)
+
+
+def test_require_operations_names_the_operation_that_took_the_node() -> None:
+    with pytest.raises(SystemExit) as exc:
+        bpmn_check.require_operations(_item_requests("GET"), ITEM_OPERATIONS, "item")
+    assert "already used: Task_0 by 'get an item'" in str(exc.value)
+
+    with pytest.raises(SystemExit) as exc:
+        bpmn_check.require_operations([], ITEM_OPERATIONS, "item")
+    assert "already used" not in str(exc.value)
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        bpmn_check.ConnectorOperation("any", "Item", {"get"}, ""),
+        bpmn_check.ConnectorOperation("any", "Item", {"get"}, "/"),
+        bpmn_check.ConnectorOperation("no verb", "Item", {"getbyid"}, "/v2/{p}/items/{id}"),
+    ],
+)
+def test_require_operations_rejects_operations_that_fail_open(
+    operation: bpmn_check.ConnectorOperation,
+) -> None:
+    with pytest.raises(ValueError):
+        bpmn_check.require_operations([], [operation], "item")

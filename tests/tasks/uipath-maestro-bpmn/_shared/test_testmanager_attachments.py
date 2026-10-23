@@ -162,16 +162,47 @@ def test_http_not_through_test_manager_fails(tmp_path: Path, overrides: dict) ->
     result = _write(tmp_path, "".join(_http_nodes(**overrides)))
     assert result.returncode != 0
     assert "no bpmn:sendTask calls the Test Manager connector" in result.stderr
+    assert "context connectorKey 'uipath-uipath-http'" in result.stderr
 
 
-def test_http_with_unfilled_project_id_fails(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "project",
+    ["{projectId}", "x{projectId}", "{projectId}x", "{projectId", "%7BprojectId%7D", "x%7Bp%7Dy"],
+)
+def test_http_with_unfilled_project_id_fails(tmp_path: Path, project: str) -> None:
     nodes = _http_nodes()
-    path = "=js:'/v2/{projectId}/attachments/' + vars.Var_ObjectType + '/' + vars.Var_ObjectId + '/upload'"
+    path = f"=js:'/v2/{project}/attachments/' + vars.Var_ObjectType + '/' + vars.Var_ObjectId + '/upload'"
     nodes[0] = HTTP_NODE.format(index=0, body=_http_body("POST", path))
     result = _write(tmp_path, "".join(nodes), "--all-ops")
     assert result.returncode != 0
     assert _missing(result.stderr) == ["upload an attachment"]
     assert "'/v2/{projectId}/attachments/{objType}/{id}/upload' with every placeholder" in result.stderr
+
+
+def test_http_with_catalog_template_paths_fails(tmp_path: Path) -> None:
+    templates = [
+        "/v2/{projectId}/attachments/{objType}/{id}/upload",
+        "/v2/{projectId}/attachments/{ObjectType}/{Id}/all",
+        "/v2/{projectId}/attachments/{objectType}/{id}/download",
+        "/v2/{projectId}/attachments/{objectType}/{id}",
+    ]
+    nodes = [
+        HTTP_NODE.format(index=i, body=_http_body(m, t, pathParameters={}))
+        for i, ((m, _), t) in enumerate(zip(HTTP_OPERATIONS, templates))
+    ]
+    result = _write(tmp_path, "".join(nodes), "--all-ops")
+    assert result.returncode != 0
+    assert _missing(result.stderr) == LABELS
+
+
+@pytest.mark.parametrize(
+    "path", ["/v2/p/attachments/t/i/upload/", "/V2/P/ATTACHMENTS/T/I/UPLOAD"]
+)
+def test_http_path_tolerates_trailing_slash_and_case(tmp_path: Path, path: str) -> None:
+    nodes = _http_nodes()
+    nodes[0] = HTTP_NODE.format(index=0, body=_http_body("POST", path))
+    result = _write(tmp_path, "".join(nodes), "--all-ops")
+    assert result.returncode == 0, result.stderr
 
 
 @pytest.mark.parametrize("index", range(len(HTTP_OPERATIONS)))
@@ -197,3 +228,4 @@ def test_legacy_sdk_connector_http_fails(tmp_path: Path, args: tuple) -> None:
     result = _write(tmp_path, "".join(_http_nodes(LEGACY_SDK_HTTP_NODE)), *args)
     assert result.returncode != 0
     assert "no bpmn:sendTask calls the Test Manager connector" in result.stderr
+    assert "objectName not 'http-request'" in result.stderr
