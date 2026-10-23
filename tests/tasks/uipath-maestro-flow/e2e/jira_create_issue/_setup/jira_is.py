@@ -11,6 +11,7 @@ body / get by id / delete by id — never a JQL search.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from typing import Any
 
@@ -42,8 +43,16 @@ def _run(*args: str) -> dict[str, Any]:
     return envelope
 
 
+# Stopgap until UiPath/cli#5509 ships: the cli labels `is resources run` 5xx RetryWillNotFix.
+_HTTP_5XX = re.compile(r"5\d\d\b")
+
+
 def _is_transient(envelope: dict[str, Any]) -> bool:
-    return envelope.get("Retry") == "RetryLater" or envelope.get("ErrorCode") == "server_error"
+    return (
+        envelope.get("Retry") == "RetryLater"
+        or envelope.get("ErrorCode") == "server_error"
+        or bool(_HTTP_5XX.match(str(envelope.get("Message", ""))))
+    )
 
 
 def _failure_summary(envelope: dict[str, Any]) -> str:
@@ -68,7 +77,7 @@ def connection_id() -> str:
     folder_key = folder["Key"]
     conns = _required_data(
         "is", "connections", "list", CONNECTOR,
-        "--folder-key", folder_key, "--refresh",
+        "--folder-key", folder_key, "--refresh", retry_transient=True,
     )
     return next(c["Id"] for c in conns if c["Name"] == CONNECTION_NAME)
 
@@ -77,7 +86,7 @@ def myself(conn_id: str) -> str:
     """Return the connection user's Atlassian accountId."""
     return _required_data(
         "is", "resources", "run", "get", CONNECTOR, "myself",
-        "--connection-id", conn_id,
+        "--connection-id", conn_id, retry_transient=True,
     )["accountId"]
 
 

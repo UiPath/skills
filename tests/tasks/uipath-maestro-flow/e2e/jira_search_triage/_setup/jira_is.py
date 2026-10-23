@@ -9,6 +9,7 @@ This helper uses the create / get / delete ops to seed and verify.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 
 CONNECTOR = "uipath-atlassian-jira"
@@ -26,9 +27,28 @@ def _run(*args: str) -> dict:
     return json.loads(out)
 
 
+# Stopgap until UiPath/cli#5509 ships: the cli labels `is resources run` 5xx RetryWillNotFix.
+_HTTP_5XX = re.compile(r"5\d\d\b")
+
+
+def _is_transient(envelope: dict) -> bool:
+    return (
+        envelope.get("Retry") == "RetryLater"
+        or envelope.get("ErrorCode") == "server_error"
+        or bool(_HTTP_5XX.match(str(envelope.get("Message", ""))))
+    )
+
+
+def _read(*args: str) -> dict:
+    envelope = _run(*args)
+    if _is_transient(envelope):
+        envelope = _run(*args)
+    return envelope
+
+
 def connection_id() -> str:
-    folder_key = _run("or", "folders", "get", FOLDER_PATH)["Data"]["Key"]
-    conns = _run("is", "connections", "list", CONNECTOR, "--folder-key", folder_key, "--refresh")["Data"]
+    folder_key = _read("or", "folders", "get", FOLDER_PATH)["Data"]["Key"]
+    conns = _read("is", "connections", "list", CONNECTOR, "--folder-key", folder_key, "--refresh")["Data"]
     return next(c["Id"] for c in conns if c["Name"] == CONNECTION_NAME)
 
 

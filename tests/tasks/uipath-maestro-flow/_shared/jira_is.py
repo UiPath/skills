@@ -50,8 +50,16 @@ def _run(*args: str) -> dict[str, Any]:
     return envelope
 
 
+# Stopgap until UiPath/cli#5509 ships: the cli labels `is resources run` 5xx RetryWillNotFix.
+_HTTP_5XX = re.compile(r"5\d\d\b")
+
+
 def _is_transient(envelope: dict[str, Any]) -> bool:
-    return envelope.get("Retry") == "RetryLater" or envelope.get("ErrorCode") == "server_error"
+    return (
+        envelope.get("Retry") == "RetryLater"
+        or envelope.get("ErrorCode") == "server_error"
+        or bool(_HTTP_5XX.match(str(envelope.get("Message", ""))))
+    )
 
 
 def _failure_summary(envelope: dict[str, Any]) -> str:
@@ -123,7 +131,7 @@ def myself(conn_id: str) -> str:
     """Return the connection user's Atlassian accountId."""
     return _required_data(
         "is", "resources", "run", "get", CONNECTOR, "myself",
-        "--connection-id", conn_id,
+        "--connection-id", conn_id, retry_transient=True,
     )["accountId"]
 
 

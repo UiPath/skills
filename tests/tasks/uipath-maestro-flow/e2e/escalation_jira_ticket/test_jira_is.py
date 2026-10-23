@@ -69,3 +69,34 @@ def test_delete_issue_structured_404_counts_as_gone(monkeypatch: pytest.MonkeyPa
         "Message": "Request failed with status code '404': Issue does not exist or you do not have permission to see it.",
     })
     assert jira_is.delete_issue("conn", "CE-1257") is True
+
+
+BAD_GATEWAY = {"Result": "Failure", "ErrorCode": "unknown_error", "Message": "502 Bad Gateway", "Retry": "RetryWillNotFix"}
+BAD_REQUEST = {"Result": "Failure", "ErrorCode": "unknown_error", "Message": "400 Bad Request", "Retry": "RetryWillNotFix"}
+
+
+def _sequence(monkeypatch: pytest.MonkeyPatch, jira_is: ModuleType, *envelopes: object) -> list[list[str]]:
+    seen: list[list[str]] = []
+    responses = iter(envelopes)
+
+    def fake_run(cmd, **kwargs):
+        seen.append(list(cmd))
+        return Result(next(responses))
+
+    monkeypatch.setattr(jira_is.subprocess, "run", fake_run)
+    return seen
+
+
+def test_myself_retries_a_5xx_envelope(monkeypatch: pytest.MonkeyPatch) -> None:
+    jira_is = _load_module()
+    seen = _sequence(monkeypatch, jira_is, BAD_GATEWAY, {"Result": "Success", "Data": {"accountId": "acc-1"}})
+    assert jira_is.myself("conn") == "acc-1"
+    assert len(seen) == 2
+
+
+def test_myself_does_not_retry_a_4xx_envelope(monkeypatch: pytest.MonkeyPatch) -> None:
+    jira_is = _load_module()
+    seen = _sequence(monkeypatch, jira_is, BAD_REQUEST)
+    with pytest.raises(KeyError):
+        jira_is.myself("conn")
+    assert len(seen) == 1

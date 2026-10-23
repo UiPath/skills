@@ -58,12 +58,31 @@ def _run(*args: str) -> dict:
     return json.loads(out[i:] if i > 0 else out)
 
 
+# Stopgap until UiPath/cli#5509 ships: the cli labels `is resources run` 5xx RetryWillNotFix.
+_HTTP_5XX = re.compile(r"5\d\d\b")
+
+
+def _is_transient(envelope: dict) -> bool:
+    return (
+        envelope.get("Retry") == "RetryLater"
+        or envelope.get("ErrorCode") == "server_error"
+        or bool(_HTTP_5XX.match(str(envelope.get("Message", ""))))
+    )
+
+
+def _read(*args: str) -> dict:
+    envelope = _run(*args)
+    if _is_transient(envelope):
+        envelope = _run(*args)
+    return envelope
+
+
 def connection_id() -> str:
     # Resolve by (name, folder) across all folders — avoids depending on
     # `uip or folders get` (which can return a Failure envelope in CI) while
     # still scoping to the target folder so a same-named connection in another
     # folder can't be picked by accident.
-    conns = _run("is", "connections", "list", CONNECTOR, "--all-folders", "--refresh")["Data"]
+    conns = _read("is", "connections", "list", CONNECTOR, "--all-folders", "--refresh")["Data"]
     by_name = [c for c in conns if c["Name"] == CONNECTION_NAME]
     scoped = [c for c in by_name if c.get("Folder") == FOLDER_NAME]
     if scoped:
@@ -84,7 +103,7 @@ def connection_id() -> str:
 
 def myself(conn_id: str) -> str:
     """Return the connection user's Atlassian accountId."""
-    return _run(
+    return _read(
         "is", "resources", "run", "get", CONNECTOR, "myself",
         "--connection-id", conn_id,
     )["Data"]["accountId"]
