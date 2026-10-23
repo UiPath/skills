@@ -25,11 +25,35 @@ before passing a bare reference to another node.
 Return an object literal for named fields and read them with `out('parse', 'tag')`;
 read a scalar return with `out('parse')`.
 
+## Writing the script as a function
+
+A body longer than a line is easier to get right as a TypeScript function: pass the function instead of a string, and tsc checks the body like the rest of the `.flow.ts`.
+
+```ts
+import { flow, script, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
+
+  .step('normalize', script(normalize, { returns: { amount: 'number', valid: 'boolean' } }))
+
+function normalize(vars: FlowVars) {
+  const amount = Number(vars.start.output.amount);
+  return { amount, valid: Number.isFinite(amount) };
+}
+```
+
+- The function is never called. Its body, exactly as written, becomes the script, and its parameter is renamed to the runtime's `$vars`. Name the parameter `$vars` and nothing is renamed.
+- Read the parameter with dots (`vars.start.output.amount`). A destructured parameter is refused, because step reads hidden in one are invisible to `check`.
+- `returns` is what the `.flow` declares, and tsc checks the function's return against it: `returns: { amount: 'string' }` over the function above does not compile. Without `returns`, the body's type is inferred as for a string body.
+- The function reads only what [the runtime](#the-javascript-runtime) has. A module constant, an import, or a helper defined elsewhere in the file throws when the flow loads (`script(normalize) cannot be a script: it reads LIMIT, …`): move the value inside the function, or pass it in as a step input.
+- Also refused, with a message naming the function: `async`, generators, more than one parameter, a default or rest parameter, `this` or `arguments` outside a nested function, a reference to the function's own name, and a `var` or function declaration that reuses the parameter's name.
+- Compile with `uip maestro flow compile` (or the SDK's own compile CLI): both run Node, which keeps the body's text as written. Loaded through another TypeScript loader (Bun, tsx), the stored body is that loader's reprint of it.
+
+Needs `@uipath/maestro-builder-sdk` 6.50.0 or later; an older SDK takes only `script({ code })` and fails on a function. Upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+
 ## At a glance
 
 Run inline JavaScript for computation that is not a first-class Flow node.
 
-Signature: `script({ code: string })`; read the result with `out(step, path?)`.
+Signature: `script({ code: string })`, or `script(fn, { returns })` for [a function](#writing-the-script-as-a-function); read the result with `out(step, path?)`.
 
 Use a first-class action when the scenario names one; use script for computation.
 
