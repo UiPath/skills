@@ -9,7 +9,7 @@ The build is often made on another machine and another Orchestrator connection t
 | Component genome (one project) | `<project-slug>-open-items.md` |
 | Process genome (a solution) | `<solution-slug>-open-items.md`, plus `<solution-slug>-open-items/<project-slug>-open-items.md` for every project built — per project, not per component: a split that materialises one component as several projects gives each project its own file |
 
-Slugs follow [genome-format-guide.md § File Naming and Location](genome-format-guide.md).
+Slugs follow [genome-reading-guide.md § Levels and Files](genome-reading-guide.md) item 6.
 
 **Content.** Every step the target environment needs, whether or not this run did it in its own tenant — a queue, asset or trigger the run created there does not exist in the target tenant. Derive the steps from the genome's Platform Dependencies and Target Applications, the configuration answers and the projects built. Each file has one section per kind of setup, in this order, so that nothing a trigger starts runs before its setup exists. **Access, Package and deployment, Assets, Others and Triggers are always present** and read "None." when empty. **Every other UiPath service the automation uses gets a section of its own, named after the service**, after Package and deployment and before Others — one per service the Platform Dependencies name, whatever it is (Queues, Storage Buckets, Integration Service, Data Fabric, Action Center, Document Understanding, Test Manager, Context Grounding, …); a service the automation does not use has no section. A refactor's solution file ends with a Cutover section after Triggers ([refactor-guide.md § Cutover](refactor-guide.md)). The template shows the common ones:
 

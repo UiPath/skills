@@ -116,7 +116,7 @@
 /tests/tasks/uipath-solution/ @UiPath/team-merlot @UiPath/team-orange @dragossandu-dev @PopaIuliana @lucianaparaschivei @dragospopa-up @gabi-raducu
 
 # Genome skill (execute automation blueprints) — the genome owners also own the planner's genome
-# lanes (Author, Extract, Edit), the shared-core copies and the genome-writing tests
+# lanes (Author, Extract, Edit), the genome format guides, the shared checker and the genome-writing tests
 /skills/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
 /tests/tasks/uipath-genome/ @danmunteanu1 @vlad-coteanu-uipath
 /tests/tasks/activation/uipath-genome.jsonl @danmunteanu1 @vlad-coteanu-uipath

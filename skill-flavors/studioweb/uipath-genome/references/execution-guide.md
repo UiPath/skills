@@ -7,7 +7,7 @@
 <!--skill-flavor:process-genome-solution:end-->
 
 <!--skill-flavor:process-genome-test-project:start-->
-3. **All test components share one test project** ([genome-format-guide.md § Two Levels](genome-format-guide.md) rule 1). Create `<ProcessName>.Tests` once through `uipath-rpa`'s test-project creation step inside `/solution`, where the host registers it and seeds its own scaffold — no template applies here — and give every test component the same `PROJECT_DIR`: its test cases and data files in a folder named after it (`<ComponentSlug>/`), or at their source objects' paths when the run keeps the source's shape ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md)). The test cases, their failure capture and cleanup, and the shared configuration are authored where the owning skill's Studio Web scope sends RPA authoring.
+3. **All test components share one test project** ([genome-reading-guide.md § Levels and Files](genome-reading-guide.md) item 3). Create `<ProcessName>.Tests` once through `uipath-rpa`'s test-project creation step inside `/solution`, where the host registers it and seeds its own scaffold — no template applies here — and give every test component the same `PROJECT_DIR`: its test cases and data files in a folder named after it (`<ComponentSlug>/`), or at their source objects' paths when the run keeps the source's shape ([source-migration-guide.md § Source steps that are not UI actions](source-migration-guide.md)). The test cases, their failure capture and cleanup, and the shared configuration are authored where the owning skill's Studio Web scope sends RPA authoring.
 <!--skill-flavor:process-genome-test-project:end-->
 
 <!--skill-flavor:process-genome-pack:start-->

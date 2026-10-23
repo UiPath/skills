@@ -15,7 +15,7 @@ import pytest
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
-_spec = importlib.util.spec_from_file_location("genome_check", REPO / "skills" / "uipath-genome" / "scripts" / "check-genome.py")
+_spec = importlib.util.spec_from_file_location("genome_check", REPO / "skills" / "uipath-planner" / "scripts" / "check-genome.py")
 genome_check = importlib.util.module_from_spec(_spec)
 sys.modules["genome_check"] = genome_check
 _bytecode, sys.dont_write_bytecode = sys.dont_write_bytecode, True  # no __pycache__ inside the shipped skill
@@ -23,7 +23,7 @@ _spec.loader.exec_module(genome_check)
 sys.dont_write_bytecode = _bytecode
 
 EXAMPLES = REPO / "skills" / "uipath-planner" / "assets" / "examples"  # the planner writes genomes; its examples pass this checker
-MAPPING_GUIDE = REPO / "skills" / "uipath-genome" / "references" / "skill-mapping-guide.md"
+MAPPING_GUIDE = REPO / "skills" / "uipath-planner" / "references" / "skill-mapping-guide.md"
 COMPONENT_EXAMPLE = EXAMPLES / "purchase-requisition-entry-genome.md"  # transactional, two units of work
 PROCESS_EXAMPLE = EXAMPLES / "invoice-processing-genome.md"
 

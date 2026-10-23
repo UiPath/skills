@@ -229,10 +229,9 @@ jobs:
       - name: Run pytest
         run: pytest tests/tasks/uipath-genome/_shared/ -v
 
-      # uipath-planner writes genomes with a byte-identical copy of the genome shared core
-      # (format guides and check-genome.py); the canonical copy is uipath-genome's. Names
-      # every copy that differs, and any core link that leaves the core.
-      - name: Check the genome shared core is identical in both skills
+      # uipath-planner writes genomes and uipath-genome builds them; each ships its own
+      # check-genome.py, canonical in the planner. Fails when the two copies differ.
+      - name: Check the genome checker is identical in both skills
         run: python3 scripts/check-genome-core.py
 
   runtime-payload-casing-guard:

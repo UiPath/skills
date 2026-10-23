@@ -20,8 +20,8 @@ Profiles:
           steps and criteria present, a Transactional Shape that is the stub or has flows that each name their
           unit of work, Source Map tokens, expected facts; in an extracted genome (one with a Source Map), a
           `### Steps` table with exactly one row per Workflow step.
-  strict  core plus every mechanical format rule of genome-format-guide.md, transactional-shape-guide.md and
-          extracted-genome-guide.md: behavioural wording (no code-level tokens), configuration question kind
+  strict  core plus every mechanical format rule of uipath-planner's genome-format-guide.md,
+          transactional-shape-guide.md and extracted-genome-guide.md: behavioural wording (no code-level tokens), configuration question kind
           and default, bold step names, numbered acceptance criteria, the As-is table, exactly the outcome
           rows rule 4 allows, split options named by letter with only their Requires and Changes cells,
           complete for every unit and alternative unit, retry and consecutive-failure stop; step table cells
