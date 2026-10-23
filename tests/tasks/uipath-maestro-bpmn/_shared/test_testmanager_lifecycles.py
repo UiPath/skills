@@ -1,4 +1,4 @@
-"""Test Manager CRUD/lifecycle checkers: V1 and connector-mode HTTP shapes."""
+"""Test Manager CRUD, lifecycle and generic-record checkers: V1 and connector-mode HTTP shapes."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import check_testmanager_generic_records as generic  # noqa: E402
 from test_testmanager_attachments import HTTP_NODE, LEGACY_SDK_HTTP_NODE, TM_KEY  # noqa: E402
 
 HERE = Path(__file__).parent
@@ -63,12 +64,29 @@ TESTSET = [
     ("execute (run) the test set", "ExecuteTestSet", "POST", "POST",
      "/v2/{ProjectId}/testsets/{testSetId}/startexecute"),
 ]
+GENERIC = [
+    ("insert a record", "CreateDefect", "POST", "POST", "/v2/{ProjectId}/defects"),
+    ("get a record", "TestStep", "GETBYID", "GET", "/v2/{ProjectId}/teststeps/{id}"),
+    ("update a record", "Requirement", "PATCH", "PATCH", "/v2/{ProjectId}/requirements/{id}"),
+    ("delete a record", "DeleteAttachment", "DELETE", "DELETE",
+     "/v2/{projectId}/attachments/{objectType}/{id}"),
+    ("list records", "GetTestStepLogs", "GET", "GET", "/v2/{projectId}/teststeplogs"),
+]
+GENERIC_TARGETS = [
+    (index, verb, target)
+    for index, (verb, table) in enumerate(
+        [("POST", generic.CREATE), ("GET", generic.RETRIEVE), ("PATCH", generic.UPDATE),
+         ("DELETE", generic.DELETE), ("GET", generic.LIST)]
+    )
+    for target in table
+]
 
 CHECKERS = {
     "crud_grounded": (("--node-types",), TESTCASE[:2]),
     "testcase_lifecycle": (("--all-ops",), TESTCASE),
     "requirement_lifecycle": (("--all-ops",), REQUIREMENT),
     "testset_lifecycle": (("--all-ops",), TESTSET),
+    "generic_records": (("--all-ops",), GENERIC),
 }
 CASES = [(name, i) for name, (_, ops) in CHECKERS.items() for i in range(len(ops))]
 NO_CONNECTOR = "no bpmn:sendTask calls the Test Manager connector"
@@ -185,7 +203,8 @@ def test_unfilled_placeholder_fails(tmp_path: Path, name: str, index: int) -> No
     result = _run(tmp_path, name, "".join(nodes), *args)
     assert result.returncode != 0
     assert _missing(ops, result.stderr) == [op[0]]
-    assert f"{op[4]!r} with every placeholder" in result.stderr
+    assert repr(op[4]) in result.stderr
+    assert "with every placeholder filled" in result.stderr
 
 
 @pytest.mark.parametrize("name, index", CASES)
@@ -193,8 +212,52 @@ def test_wrong_verb_fails(tmp_path: Path, name: str, index: int) -> None:
     args, ops = CHECKERS[name]
     nodes = _http_nodes(ops)
     op = ops[index]
-    wrong = "GETBYID" if op[3] == "GET" else "PUT"
+    wrong = "GETBYID" if op[3] == "GET" else "HEAD"
     nodes[index] = _http_node(index, wrong, _filled(op[4]))
     result = _run(tmp_path, name, "".join(nodes), *args)
     assert result.returncode != 0
     assert _missing(ops, result.stderr) == [op[0]]
+
+
+@pytest.mark.parametrize("name", ["testcase_lifecycle", "requirement_lifecycle", "testset_lifecycle"])
+def test_lifecycle_update_rejects_put(tmp_path: Path, name: str) -> None:
+    args, ops = CHECKERS[name]
+    nodes = _http_nodes(ops)
+    nodes[2] = _http_node(2, "PUT", _filled(ops[2][4]))
+    result = _run(tmp_path, name, "".join(nodes), *args)
+    assert result.returncode != 0
+    assert _missing(ops, result.stderr) == [ops[2][0]]
+
+
+@pytest.mark.parametrize("index, verb, target", GENERIC_TARGETS,
+                         ids=[f"{i}-{t[0]}" for i, _, t in GENERIC_TARGETS])
+def test_generic_accepts_every_catalog_object(tmp_path: Path, index: int, verb: str,
+                                               target: tuple) -> None:
+    args, ops = CHECKERS["generic_records"]
+    v1 = [NODE.format(index=i, object_name=op[1], method=op[2]) for i, op in enumerate(ops)]
+    http = _http_nodes(ops)
+    v1[index] = NODE.format(index=index, object_name=target[0], method=ops[index][2])
+    http[index] = _http_node(index, verb, _filled(target[1]))
+    for nodes in (v1, http):
+        result = _run(tmp_path, "generic_records", "".join(nodes), *args)
+        assert result.returncode == 0, result.output
+
+
+def test_generic_update_accepts_put(tmp_path: Path) -> None:
+    args, ops = CHECKERS["generic_records"]
+    nodes = _http_nodes(ops)
+    nodes[2] = _http_node(2, "PUT", _filled(ops[2][4]))
+    result = _run(tmp_path, "generic_records", "".join(nodes), *args)
+    assert result.returncode == 0, result.output
+
+
+@pytest.mark.parametrize("index, object_name", [(0, "TestCaseLog"), (2, "TestExecution"),
+                                                (3, "Project"), (4, "Other")])
+def test_generic_rejects_object_without_the_operation(tmp_path: Path, index: int,
+                                                      object_name: str) -> None:
+    args, ops = CHECKERS["generic_records"]
+    nodes = [NODE.format(index=i, object_name=op[1], method=op[2]) for i, op in enumerate(ops)]
+    nodes[index] = NODE.format(index=index, object_name=object_name, method=ops[index][2])
+    result = _run(tmp_path, "generic_records", "".join(nodes), *args)
+    assert result.returncode != 0
+    assert _missing(ops, result.stderr) == [ops[index][0]]

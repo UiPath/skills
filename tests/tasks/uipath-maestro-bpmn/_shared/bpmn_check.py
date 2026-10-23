@@ -511,24 +511,37 @@ def _filled_path_re(template: str) -> re.Pattern[str]:
 
 
 class ConnectorOperation(NamedTuple):
+    """``alternatives``: further ``(object_name, path)`` targets that also
+    satisfy the operation."""
+
     label: str
     object_name: str
     methods: set[str]
     path: str
+    alternatives: tuple[tuple[str, str], ...] = ()
+
+
+def _targets(operation: ConnectorOperation) -> list[tuple[str, str]]:
+    return [(operation.object_name, operation.path), *operation.alternatives]
+
+
+def _http_methods(operation: ConnectorOperation) -> set[str]:
+    return {"get" if m in _CATALOG_ONLY_METHODS else m for m in operation.methods}
 
 
 def _operation_matches(
     task: ET.Element, method: str, path: str, shape: RequestShape, operation: ConnectorOperation
 ) -> bool:
     method = method.lower()
+    targets = _targets(operation)
     if shape is RequestShape.ACTIVITY:
         object_name = context_value(task, "objectName")
-        return method in operation.methods and object_name == operation.object_name
+        return method in operation.methods and any(object_name == o for o, _ in targets)
 
-    if method not in operation.methods - _CATALOG_ONLY_METHODS:
+    if method not in _http_methods(operation):
         return False
-    path_re = _filled_path_re(operation.path)
-    return path_re.search(path.split("?", 1)[0]) is not None
+    request_path = path.split("?", 1)[0]
+    return any(_filled_path_re(p).search(request_path) for _, p in targets)
 
 
 def _assign_requests(candidates: list[list[int]]) -> dict[int, int]:
@@ -552,10 +565,18 @@ def _assign_requests(candidates: list[list[int]]) -> dict[int, int]:
 
 
 def _missing_operation(operation: ConnectorOperation) -> str:
-    http_methods = "/".join(sorted(operation.methods - _CATALOG_ONLY_METHODS)).upper()
+    http_methods = "/".join(sorted(_http_methods(operation))).upper()
+    if not operation.alternatives:
+        return (
+            f"{operation.label} (objectName={operation.object_name!r} with method in "
+            f"{sorted(operation.methods)}, or HTTP {http_methods} {operation.path!r} "
+            "with every placeholder filled)"
+        )
+
+    object_names, paths = zip(*_targets(operation))
     return (
-        f"{operation.label} (objectName={operation.object_name!r} with method in "
-        f"{sorted(operation.methods)}, or HTTP {http_methods} {operation.path!r} "
+        f"{operation.label} (objectName in {list(object_names)} with method in "
+        f"{sorted(operation.methods)}, or HTTP {http_methods} on one of {list(paths)} "
         "with every placeholder filled)"
     )
 
