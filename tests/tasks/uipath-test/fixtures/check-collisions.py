@@ -72,6 +72,7 @@ OWNERS = {
     "TCCLONE": "testcase_clone_smoke.yaml",
     "TCBULK": "testcase_bulk_create_integration.yaml",
     "TCLOOK": "testcase_lookup_integration.yaml",
+    "TCINV": "testcase_inventory_lookup_smoke.yaml",
     "TCLIFE": "testcase_lifecycle_e2e.yaml",
     "FXEXP": "testcases_export_smoke.yaml",
     "FXJOB": "export_job_download_integration.yaml",
@@ -86,6 +87,7 @@ OWNERS = {
     "PERFDRY": "perf_scenario_dryrun_e2e.yaml",
     "PROMPT": "prompts_create_smoke.yaml",
     "PROMPTSET": "prompts_library_setup_integration.yaml",
+    "PERFHIST": "perf_scenario_history_integration.yaml",
 }
 
 

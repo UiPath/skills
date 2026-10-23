@@ -1,0 +1,208 @@
+task_id: skill-test-testcase-inventory-lookup-smoke
+description: >
+  Smoke test (read-only for the agent): agent uses the uipath-test skill to
+  answer four single-object questions about one test case — its precondition
+  (only `testcases get` returns it, `list` rows do not), one parameter's
+  default value (`testcases parameters get`/`list`), the requirements covering
+  it (`testcases list-requirements`), and the name and size of an attachment
+  whose id it is handed (`attachment get`/`list`). pre_run seeds a throwaway
+  `EVFX-TCINV-*` project per run (key in project-key.txt) holding
+  EVFX-TCINV-Login with a precondition, `Username=alice`, a covering
+  requirement EVFX-TCINV-REQ-Login beside an uncovering EVFX-TCINV-REQ-Other,
+  and one uploaded attachment (id in attachment-id.txt, local copy removed);
+  post_run deletes the project. Graded on answers.json against live state.
+tags: [uipath-test, smoke, mode:operate, lifecycle:discover, feature:test-case, outcome-graded]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 25
+
+pre_run:
+  - command: |
+      python3 - <<'PYEOF'
+      import datetime, json, os, secrets, subprocess, sys
+      PREFIX = "EVFX-TCINV-"
+      now = datetime.datetime.now(datetime.timezone.utc)
+
+      def call(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          try:
+              return json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+          except Exception:
+              return {}
+
+      def need(out, what):
+          if out.get("Result") != "Success":
+              print(f"SEED FAILED: {what}: {str(out)[:400]}")
+              sys.exit(1)
+          return out.get("Data") or {}
+
+      # Orphan sweep: delete only EVFX-TCINV-* projects stamped more than 6
+      # hours ago, so a concurrent run keeps its own.
+      for p in call("tm", "project", "list", "--filter", PREFIX).get("Data") or []:
+          nm, key = p.get("Name") or "", p.get("ProjectKey")
+          if not key or not nm.startswith(PREFIX):
+              continue
+          try:
+              stamp = datetime.datetime.strptime(nm[len(PREFIX):len(PREFIX) + 15], "%Y%m%d-%H%M%S")
+          except ValueError:
+              continue
+          if now - stamp.replace(tzinfo=datetime.timezone.utc) > datetime.timedelta(hours=6):
+              call("tm", "project", "delete", "--project-key", key, "--yes")
+
+      key = "EVTI" + secrets.token_hex(2).upper()
+      name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(3)}"
+      need(call("tm", "project", "create", "--name", name, "--project-key", key), f"create {name}")
+      with open("project-key.txt", "w") as f:
+          f.write(key + "\n")
+
+      tc = need(call("tm", "testcases", "create", "--project-key", key, "--name", "EVFX-TCINV-Login"),
+                "create EVFX-TCINV-Login")
+      tc_key, tc_id = tc.get("TestCaseKey"), tc.get("Id")
+      if not tc_key or not tc_id:
+          print(f"SEED FAILED: create returned no key/id: {tc}")
+          sys.exit(1)
+      need(call("tm", "testcases", "update", "--project-key", key, "--test-case-key", tc_key,
+                "--pre-condition", f"Bank account {secrets.token_hex(3)} is open"), "set precondition")
+      need(call("tm", "testcases", "parameters", "add", "--project-key", key, "--test-case-key", tc_key,
+                "--name", "Username", "--default-value", "alice"), "add Username")
+
+      covering = need(call("tm", "requirements", "create", "--project-key", key, "--name", "EVFX-TCINV-REQ-Login"),
+                      "create EVFX-TCINV-REQ-Login")
+      need(call("tm", "requirements", "create", "--project-key", key, "--name", "EVFX-TCINV-REQ-Other"),
+           "create EVFX-TCINV-REQ-Other")
+      need(call("tm", "requirements", "testcases", "--project-key", key, "--requirement-id", covering["Id"],
+                "--add-testcase-ids", tc_id), "link EVFX-TCINV-REQ-Login")
+
+      # Random length so the size cannot be guessed; the local copy is removed
+      # below so the agent must read the size from Test Manager.
+      with open("login-evidence.txt", "w") as f:
+          f.write("EVFX-TCINV evidence " + secrets.token_hex(secrets.randbelow(400) + 50) + "\n")
+      up = need(call("tm", "attachment", "upload", "--project-key", key, "--object-id", tc_id,
+                     "--object-type", "testCase", "--file", "login-evidence.txt"), "upload login-evidence.txt")
+      att = up.get("AttachmentId")
+      if not att:
+          rows = call("tm", "attachment", "list", "--project-key", key, "--test-case-keys", tc_key).get("Data") or []
+          att = next((a.get("AttachmentId") for r in rows for a in r.get("Attachments") or []
+                      if a.get("FileName") == "login-evidence.txt"), None)
+      os.remove("login-evidence.txt")
+      if not att:
+          print("SEED FAILED: no AttachmentId for login-evidence.txt")
+          sys.exit(1)
+      with open("attachment-id.txt", "w") as f:
+          f.write(att + "\n")
+      if os.path.exists("answers.json"):
+          os.remove("answers.json")
+      print(f"SEEDED {name} ({key}): EVFX-TCINV-Login {tc_key} with precondition, Username=alice, "
+            f"covered by EVFX-TCINV-REQ-Login, attachment {att}")
+      PYEOF
+    timeout: 240
+
+post_run:
+  - command: |
+      [ -f project-key.txt ] && uip tm project delete \
+        --project-key "$(cat project-key.txt)" --yes --output json || true
+    timeout: 120
+
+initial_prompt: |
+  quick lookup in Test Manager, the project key is in project-key.txt. for my
+  EVFX-TCINV-Login test case: what's its precondition, what's the default value
+  of its Username parameter, and which requirements cover it? also, the
+  attachment whose id is in attachment-id.txt: what file is it and how big?
+
+  write the answers to answers.json as {"precondition": "...", "username": "...",
+  "requirements": ["<name>", ...], "attachment_file_name": "...",
+  "attachment_size_bytes": <number>}
+
+success_criteria:
+  - type: skill_triggered
+    description: "Agent activated the uipath-test skill from a casual request"
+    skill_name: "uipath-test"
+    expected_skill: "uipath-test"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent checked login status with --output json (Critical Rules 1 + 2)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+login\s+status.*--output\s+json'
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 0
+
+  - type: command_executed
+    description: "Agent read the test case with `testcases get` (only it returns the precondition)"
+    tool_name: "Bash"
+    command_pattern: '(?=(?:\\\n|(?!\s\||\s(?:uip|\$UIP)\s)[^\n;&])*--test-case-key\s+\S)(uip|\$UIP)\s+tm\s+testcases\s+get\b'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent listed covering requirements with `testcases list-requirements`"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+list-requirements\b'
+    require_success: true
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the parameter through the CLI (`testcases parameters get` or `list`; answers.json grades the value)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+testcases\s+parameters\s+(get|list)\b'
+    require_success: true
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent read the attachment through the CLI (`attachment get` or `list`; answers.json grades name and size)"
+    tool_name: "Bash"
+    command_pattern: '(uip|\$UIP)\s+tm\s+attachment\s+(get|list)\b'
+    require_success: true
+    min_count: 1
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "answers.json matches the live precondition, Username value, covering requirement (only EVFX-TCINV-REQ-Login), attachment name and size"
+    command: |
+      python3 - <<'PYEOF'
+      import json, subprocess, sys
+      def data(*a):
+          r = subprocess.run(["uip", *a, "--output", "json"], capture_output=True, text=True)
+          out = json.loads(r.stdout[r.stdout.index("{"):r.stdout.rindex("}") + 1])
+          if out.get("Result") != "Success":
+              print("grader call failed:", a, out); sys.exit(1)
+          return out.get("Data")
+      key = open("project-key.txt").read().strip()
+      att = open("attachment-id.txt").read().strip()
+      try:
+          got = json.load(open("answers.json"))
+      except Exception as e:
+          print("answers.json unreadable:", e); sys.exit(1)
+      tc = [t for t in data("tm", "testcases", "list", "--project-key", key, "--filter", "EVFX-TCINV-Login")
+            if t.get("Name") == "EVFX-TCINV-Login"][0]
+      pre = data("tm", "testcases", "get", "--project-key", key, "--test-case-key", tc["TestCaseKey"]).get("PreCondition")
+      meta = data("tm", "attachment", "get", "--project-key", key, "--attachment-id", att, "--object-type", "testCase")
+      want = {"precondition": pre, "username": "alice", "requirements": ["EVFX-TCINV-REQ-Login"],
+              "attachment_file_name": meta.get("FileName"), "attachment_size_bytes": meta.get("FileSize")}
+      reqs = got.get("requirements")
+      checks = {
+          "precondition": str(got.get("precondition", "")).strip() == (pre or "").strip() and bool(pre),
+          "username": str(got.get("username", "")).strip() == "alice",
+          "requirements": isinstance(reqs, list) and sorted(str(r).strip() for r in reqs) == ["EVFX-TCINV-REQ-Login"],
+          "attachment_file_name": str(got.get("attachment_file_name", "")).strip() == meta.get("FileName"),
+          "attachment_size_bytes": str(got.get("attachment_size_bytes", "")).strip() == str(meta.get("FileSize")),
+      }
+      print("want:", want)
+      print("got: ", got)
+      print("checks:", checks)
+      sys.exit(0 if all(checks.values()) else 1)
+      PYEOF
+    timeout: 120
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
