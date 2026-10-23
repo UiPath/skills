@@ -47,7 +47,8 @@ function normalize(vars: FlowVars) {
 - Also refused, with a message naming the function: `async`, generators, more than one parameter, a default or rest parameter, `this` or `arguments` outside a nested function, a reference to the function's own name, and a `var` or function declaration that reuses the parameter's name.
 - Compile with `uip maestro flow compile` (or the SDK's own compile CLI): both run Node, which keeps the body's text as written. Loaded through another TypeScript loader (Bun, tsx), the stored body is that loader's reprint of it.
 
-Needs `@uipath/maestro-builder-sdk` 6.50.0 or later; an older SDK takes only `script({ code })` and fails on a function. Upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+Needs `@uipath/maestro-builder-sdk` 6.50.0 or later; an older SDK takes only `script({ code })` and fails on a function.
+Upgrade the copy in use: `npm install @uipath/maestro-builder-sdk@latest` in a workspace that has its own `node_modules` copy (it is used before the global one), else `npm install -g @uipath/maestro-builder-sdk@latest`.
 
 ## At a glance
 
