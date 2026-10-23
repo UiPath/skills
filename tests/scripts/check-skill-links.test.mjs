@@ -238,3 +238,28 @@ test("a heading the flavor's override removes is dead in that flavor", () => {
   });
   assert.match(out, /r\.md#step-2 \(in the composed file of the sw flavor\)/);
 });
+
+test("an extra tree's links resolve against the current generation it composes", () => {
+    const override = (link) =>
+        `<!--skill-flavor:host:start-->\n${link}\n<!--skill-flavor:host:end-->\n`;
+    const files = {
+        "skills/uipath-flow/SKILL.md": "# Flow\n\n<!--skill-flavor:host:start-->\n[new](references/new.md)\n<!--skill-flavor:host:end-->\n",
+        "skills/uipath-flow/references/new.md": "## New\n",
+        "classic/skills/uipath-flow/SKILL.md": "# Flow\n\n[old](references/old.md)\n",
+        "classic/skills/uipath-flow/references/old.md": "## Old\n",
+        "skill-flavors/studioweb/uipath-flow/.canonical": "classic\n",
+        "skill-flavors/studioweb/skills-flow-v2/uipath-flow/SKILL.md": override("[new](references/new.md#new)"),
+    };
+    const ok = run(files);
+    assert.equal(ok.status, 0, ok.out);
+
+    const broken = run({
+        ...files,
+        "skill-flavors/studioweb/skills-flow-v2/uipath-flow/SKILL.md": override("[old](references/old.md)"),
+    });
+    assert.equal(broken.status, 1);
+    assert.match(
+        broken.out,
+        /skill-flavors\/studioweb\/skills-flow-v2\/uipath-flow\/SKILL\.md:2 -> references\/old\.md {2}\(no such file\)/,
+    );
+});

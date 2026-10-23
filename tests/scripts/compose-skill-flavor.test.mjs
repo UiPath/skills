@@ -706,6 +706,105 @@ test("invalid pins and unpinned classic trees are rejected", (t) => {
   expectFlavorError(() => createAllVariants(repo), /no flavor pins this retained tree/);
 });
 
+function pinnedFlowWithExtraTree(t) {
+  const repo = fixtureRepo(t);
+  const current = addSkill(repo, "uipath-flow", block("host", "Current default."));
+  mkdirSync(join(current, "references"));
+  writeFileSync(join(current, "references", "new.md"), "Current-only reference.\n");
+  addSkill(repo, "uipath-other", block("host", "Other default."));
+  addClassicSkill(repo, "uipath-flow", block("host", "Classic default."));
+  pin(repo, "studioweb", "uipath-flow");
+  writeOverride(repo, "studioweb", "uipath-flow/SKILL.md", block("host", "Studio Web on classic."));
+  const studio = writeOverride(
+    repo,
+    "studioweb",
+    "skills-flow-v2/uipath-flow/SKILL.md",
+    block("host", "Studio Web on current."),
+  );
+  return { repo, studio };
+}
+
+test("an extra tree composes a pinned skill's current generation beside the classic one", (t) => {
+  const { repo, studio } = pinnedFlowWithExtraTree(t);
+
+  const plan = createCompositionPlan(repo, studio);
+  assert.deepEqual(plan.pinnedSkills, ["uipath-flow"]);
+  assert.deepEqual(
+    plan.extraTrees.map(({ name, skills, overriddenFiles, replacementCount }) => ({
+      name,
+      skills,
+      overriddenFiles,
+      replacementCount,
+    })),
+    [{ name: "skills-flow-v2", skills: ["uipath-flow"], overriddenFiles: ["uipath-flow/SKILL.md"], replacementCount: 1 }],
+  );
+  assert.ok(plan.files.every(({ relativePath }) => !relativePath.startsWith("skills-flow-v2")));
+
+  const { outputRoot } = buildAllSkillTrees(repo);
+  const build = dirname(outputRoot);
+  const classicFlow = readFileSync(join(build, "skills", "studioweb", "uipath-flow", "SKILL.md"), "utf8");
+  assert.match(classicFlow, /Studio Web on classic\./);
+  assert.ok(!existsSync(join(build, "skills", "studioweb", "skills-flow-v2")));
+  assert.deepEqual(readdirSync(join(build, "skills-flow-v2")), ["studioweb"]);
+  const tree = join(build, "skills-flow-v2", "studioweb");
+  assert.deepEqual(readdirSync(tree), ["uipath-flow"]);
+  const currentFlow = readFileSync(join(tree, "uipath-flow", "SKILL.md"), "utf8");
+  assert.match(currentFlow, /Studio Web on current\./);
+  assert.doesNotMatch(currentFlow, /Current default|Classic|skill-flavor/);
+  assert.ok(existsSync(join(tree, "uipath-flow", "references", "new.md")));
+  assert.match(
+    readFileSync(join(build, "skills", "default", "uipath-flow", "SKILL.md"), "utf8"),
+    /Current default\./,
+  );
+});
+
+test("pack ships the extra tree only in its flavor's package", (t) => {
+  const { repo } = pinnedFlowWithExtraTree(t);
+  addPackageManifest(repo);
+
+  const packages = withNpmCache(repo, () => packAllVariants(repo));
+  const byVariant = Object.fromEntries(packages.map((item) => [item.variant, item]));
+
+  const studio = readTarballEntries(byVariant.studioweb.tarball);
+  const shipped = studio.get("package/skills-flow-v2/uipath-flow/SKILL.md");
+  assert.ok(shipped, "the studioweb tarball must carry skills-flow-v2/uipath-flow/SKILL.md");
+  assert.match(shipped.toString("utf8"), /Studio Web on current\./);
+  assert.ok(!containsFlavorMarker(shipped));
+  assert.ok(studio.has("package/skills-flow-v2/uipath-flow/references/new.md"));
+  assert.match(studio.get("package/skills/uipath-flow/SKILL.md").toString("utf8"), /Studio Web on classic\./);
+  const manifest = JSON.parse(studio.get("package/package.json").toString("utf8"));
+  assert.ok(manifest.files.includes("skills-flow-v2"));
+  assert.match(studio.get("package/README.md").toString("utf8"), /`skills-flow-v2\/` holds the current generation of `uipath-flow`/);
+
+  const defaults = readTarballEntries(byVariant.default.tarball);
+  assert.ok([...defaults.keys()].every((name) => !name.startsWith("package/skills-flow-v2/")));
+  assert.match(defaults.get("package/skills/uipath-flow/SKILL.md").toString("utf8"), /Current default\./);
+});
+
+test("invalid extra trees are rejected", (t) => {
+  const { repo, studio } = pinnedFlowWithExtraTree(t);
+  const tree = join(studio, "skills-flow-v2");
+
+  writeOverride(repo, "studioweb", "skills-flow-v2/uipath-other/SKILL.md", block("host", "Unpinned."));
+  expectFlavorError(
+    () => createCompositionPlan(repo, studio),
+    /uipath-other: an extra tree only ships the current generation of a skill its flavor pins/,
+  );
+  rmSync(join(tree, "uipath-other"), { recursive: true });
+
+  writeOverride(repo, "studioweb", "skills-flow-v2/uipath-ghost/SKILL.md", block("host", "Ghost."));
+  expectFlavorError(() => createCompositionPlan(repo, studio), /override belongs to unknown canonical skill "uipath-ghost"/);
+  rmSync(join(tree, "uipath-ghost"), { recursive: true });
+
+  writeOverride(repo, "studioweb", "skills-flow-v2/uipath-flow/SKILL.md", block("classic-only", "Stale."));
+  expectFlavorError(
+    () => createCompositionPlan(repo, studio),
+    /flavor block "classic-only" has no matching canonical marker in skills\/uipath-flow\/SKILL\.md/,
+  );
+  rmSync(join(tree, "uipath-flow", "SKILL.md"));
+  expectFlavorError(() => createCompositionPlan(repo, studio), /extra tree must contain at least one Markdown override file/);
+});
+
 test("default plan includes every canonical skill and strips CRLF marker boundaries", (t) => {
   const repo = fixtureRepo(t);
   addSkill(
