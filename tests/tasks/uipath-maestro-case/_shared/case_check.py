@@ -647,6 +647,9 @@ _DEBUG_FIRST_INCIDENT = re.compile(
 )
 _DEBUG_INCIDENTS_LINE = re.compile(r"Incidents:\s*(\[.*\])\s*$", re.MULTILINE)
 _DEBUG_DONE_STATUSES = frozenset({"completed", "successful"})
+# Element states worth naming under "Why:". NotStarted / Pending / InProgress
+# elements are bystanders of a fault, not its cause.
+_DEBUG_ELEMENT_FAULT = re.compile(r"fail|fault|error|cancel", re.IGNORECASE)
 
 
 def _incident_line(incident: Any) -> str | None:
@@ -671,7 +674,8 @@ def debug_failure_lines(payload: Any, stderr: str = "") -> list[str]:
     Completed run.
 
     Example: ``["incident [CONN_401] Unauthorized (element tJ2dcRjxB)",
-    "element tJ2dcRjxB (SendTask) Failed"]``.
+    "element tJ2dcRjxB (SendTask) Failed"]``. Returns ``[]`` too when the
+    output carries no status and no incident (the run never started).
     """
     data = payload if isinstance(payload, dict) else {}
     if isinstance(_get_ci(data, "Data"), dict):
@@ -702,12 +706,14 @@ def debug_failure_lines(payload: Any, stderr: str = "") -> list[str]:
         if not isinstance(execution, dict):
             continue
         state = _get_ci(execution, "status", "Status")
-        if str(state).lower() in _DEBUG_DONE_STATUSES | {"inprogress"}:
+        if not _DEBUG_ELEMENT_FAULT.search(str(state or "")):
             continue
         element = _get_ci(execution, "elementId", "ElementId")
         kind = _get_ci(execution, "elementType", "ElementType")
         lines.append(f"element {element} ({kind}) {state}")
-    if not lines:
+    if not lines and status:
+        # Only for a run that reported a status: an exit before the run started
+        # (auth, missing project) has no Data, and its raw output says enough.
         lines.append(
             f"no incident or failed element in the debug output (finalStatus={status})"
         )

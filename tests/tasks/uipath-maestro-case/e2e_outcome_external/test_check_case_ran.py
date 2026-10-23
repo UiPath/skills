@@ -9,7 +9,6 @@ Run with synthetic `debug_result.json` contents, so no tenant is touched
 from __future__ import annotations
 
 import importlib.util
-import sys
 from pathlib import Path
 
 import pytest
@@ -26,6 +25,7 @@ def _load(name: str, path: Path):
 
 
 check_case_ran = _load("check_case_ran_under_test", HERE / "check_case_ran.py")
+import outcome_probe  # noqa: E402  (on sys.path once check_case_ran is loaded)
 
 FAULTED = {
     "envelope": {"Result": "Success", "Code": "CaseDebug",
@@ -73,7 +73,7 @@ def test_completed_run_passes(monkeypatch: pytest.MonkeyPatch,
 
 def test_probe_keeps_the_debug_stderr(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """outcome_probe stores the CLI's stderr tail, where the incident WARN line is."""
-    probe = sys.modules["outcome_probe"]
+    probe = outcome_probe
     calls = []
 
     def fake(args, timeout=180):  # noqa: ANN001

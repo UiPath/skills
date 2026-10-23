@@ -89,6 +89,22 @@ def test_nothing_known_still_says_so() -> None:
     ]
 
 
+def test_bystander_elements_are_not_listed() -> None:
+    data = {"finalStatus": "Faulted", "elementExecutions": [
+        {"elementId": "a", "elementType": "Task", "status": "NotStarted"},
+        {"elementId": "b", "elementType": "Task", "status": "Pending"},
+        {"elementId": "c", "elementType": "Task", "status": "Cancelled"},
+    ]}
+    assert case_check.debug_failure_lines(data) == ["element c (Task) Cancelled"]
+
+
+def test_run_that_never_started_adds_no_why_block() -> None:
+    """Auth error / missing project: no Data, no incident, so no "Why:" noise."""
+    error = {"Result": "Failure", "Message": "Not logged in"}
+    assert case_check.debug_failure_lines(error) == []
+    assert case_check.format_debug_failure(error, "some stderr") == ""
+
+
 def test_accepts_the_whole_envelope_and_pascal_case() -> None:
     envelope = {"Result": "Success", "Data": {
         "FinalStatus": "Faulted",
