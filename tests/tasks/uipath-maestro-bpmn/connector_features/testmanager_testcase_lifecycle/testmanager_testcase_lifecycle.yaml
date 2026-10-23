@@ -13,11 +13,14 @@ description: >
   to build a process that uses every UiPath Test Manager connector node for
   the TestCase group — adding one connector node per operation. Drives
   connector discovery, authoring, and validation. Graded on the produced
-  .bpmn referencing each TestCase lifecycle operation and validating
+  .bpmn giving each TestCase lifecycle operation its own node, an
+  ActivityExecution or a connector-mode HTTP call, and validating
   successfully; registry-refresh telemetry is advisory.
   Ported from Flow `connector_features/testmanager_testcase_lifecycle.yaml`;
   BPMN nodes share one wrapper type, so operations are distinguished by
-  objectName + method instead of Flow's per-operation node type.
+  objectName + method, or method + path for a connector-mode HTTP request
+  through the Test Manager connection, instead of Flow's per-operation node
+  type.
 tags:
   - uipath-maestro-bpmn
   - e2e
@@ -99,7 +102,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Produced .bpmn references every TestCase connector node type (5 nodes)"
+    description: "Produced .bpmn has its own node per TestCase lifecycle operation (5 nodes: ActivityExecution or connector-mode HTTP)"
     command: "python3 $REFERENCE_DIR/_shared/check_testmanager_testcase_lifecycle.py --all-ops"
     timeout: 30
     expected_exit_code: 0
