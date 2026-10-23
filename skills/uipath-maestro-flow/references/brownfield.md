@@ -454,10 +454,10 @@ its case below says to; every other edit goes through merge.
   the original's definition row, so a no-edit round trip loses nothing. To read
   the result, set `completion: 'wait'` and declare `returns`.
 
-Give a step you add the `{ version }` the source gives other nodes of its type
-(any one, when it gives several), unless decompile warned that type's inputs
-differ; then leave it unpinned. Merge does not warn when the file's version drops
-out. An End also needs a fresh name: see
+Pin a step you add with a `{ version }` the source gives other nodes of its
+type, one that decompile did not warn about. If it warned about all of them,
+leave it unpinned. If no node keeps the file's version, merge drops its
+definition with no warning. An End also needs a fresh name: see
 [A path without an End stays open](#a-path-without-an-end-stays-open).
 
 Validate the merged file after installing it as in
