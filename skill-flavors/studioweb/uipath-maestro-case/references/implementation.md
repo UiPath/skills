@@ -27,3 +27,7 @@ Run AskUserQuestion per [phased-execution.md § Phase 7](phased-execution.md#pha
 <!--skill-flavor:step-fifteen-debug:start-->
 Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-execution.md#phase-6--debug). On `Run debug session` → run `uip maestro case debug "<ProjectName>"`, loop until the user picks `Continue to publish`. On `Continue to publish` → Phase 7. Never auto-run (Rule 13).
 <!--skill-flavor:step-fifteen-debug:end-->
+
+<!--skill-flavor:troubleshoot-halt-report:start-->
+After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user with **AskUserQuestion**. Report: the `Trace ID`, faulting element ID and error from the execution trace, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.case` edits without confirmed cause.
+<!--skill-flavor:troubleshoot-halt-report:end-->
