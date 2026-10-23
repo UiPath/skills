@@ -49,6 +49,16 @@ Use `uip tm`; discover syntax with `uip tm --help` and `uip tm <command> <subcom
 
 `uip tm requirements generate-testcases`, `uip tm requirements evaluate` and `uip tm requirements find-obsolete-testcases` each run a background AI job and return an `ActivityId`. **Each start spends AI units: start once, then reuse `--activity-id <ACTIVITY_ID>` to wait, show, create, unlink or delete; never start again to retry.** Bound waits with `--timeout 540` and a 600 s shell limit. Scenarios, field meanings (`Score`, `ConfidenceLevel`) and the outcome rules: [references/requirement-ai-guide.md](references/requirement-ai-guide.md).
 
+### Prompt library
+
+`uip tm prompts list|get|create` manage a project's reusable AI guidelines. `ModeOfUse` (`--mode-of-use` on `create`, `--modes-of-use` on `list`) is the Autopilot feature that offers the prompt; ask when the user names none.
+
+- No `update` or `delete` in the CLI, and names are not unique. Before `create`, run `get --name <NAME>` (exact, case-sensitive); `ErrorCode: not_found` means absent, not a Rule 10 stop. Found: do not create again; report it, and say changing it needs the Test Manager UI. Several matches: `get` fails; use `--prompt-id` from `list`.
+- `list` mixes built-in samples (`PromptType: Internal`) with team prompts (`UserDefined`); `--filter` is a prefix match on name or description.
+- Guidelines are required, max 4096 characters: `--guidelines`, or `--guidelines-file` for multi-line text. Over a limit fails before anything is sent.
+- `requirements generate-testcases`, `evaluate` and `find-obsolete-testcases` take no prompt id: to apply a library prompt, pass its `Guidelines` as `--instructions`.
+- To export prompts, run `uip tm project export --include prompts`; a default export leaves them out.
+
 ### Test cases
 
 - `uip tm testcases create --project-key <PROJECT_KEY> --name <TEST_CASE_NAME>`; `list --project-key <PROJECT_KEY>` optionally `--filter <text>` matching name/key by **PREFIX**, not substring; `update --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY> --name <TEST_CASE_NAME>` updates name, description, precondition, or postcondition and requires at least one field; `delete --project-key <PROJECT_KEY> --test-case-key <TEST_CASE_KEY>` deletes by key.
