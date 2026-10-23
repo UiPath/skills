@@ -1,67 +1,53 @@
 # Registry Discovery Reference
 
-Resolve the correct task type and entity identifier for a case task. Resolve every task at once with `uip maestro case sdd resolve` (§ Resolve with the CLI first); search the local registry cache files by hand only for the tasks it reports as unresolved (§ Procedure).
+Resolve task types and entity identifiers for every case task. First run `uip maestro case sdd resolve`; inspect cache files manually only for its unresolved tasks (§ [Procedure](#procedure)).
 
 ## When to Use
 
-During sdd.md → task.md interpretation, when you need to determine:
-- What **task type** to use for a task (e.g., `agent`, `process`, `execute-connector-activity`)
-- What **entity identifier** to reference in the task.md
+During sdd.md → task.md interpretation, determine each task's **task type** (`agent`, `process`, `execute-connector-activity`, etc.) and entity identifier.
 
 ## Prerequisites
 
-Run `uip login status --output json`, then `uip maestro case registry pull`, before any cache inspection or lookup. This is a Phase 1 hard gate, not a conditional refresh: never inspect the cache first and use its absence to skip the pull. **One exception — same-session fast path (SKILL.md Rule 3):** when the delegated design lane's pull (`uipath-planner`, SKILL.md Rule 16) already succeeded in this session and `sdd.md` was just written from the confirmed in-memory model, reuse that cache instead of re-pulling — and run verify-only against the planner's resolution ledger (SKILL.md Rule 3); any doubt runs the gate in full. Login/pull failure stops Phase 1 before planning artifacts are written. The design lane grounds lazily: it starts the same login → pull chain in the background only when the case first shows tenant-bound work, then runs full identity resolution plus the ambiguity/empty gate at Case Review time — no schema discovery there; schemas stay a Phase 2/3 concern. A successful pull populates the local cache at `~/.uip/case-resources/`. Discovery reads those cache files — through `sdd resolve` first, and directly by hand for what it leaves — **do not** rely on `uip maestro case registry search` as the primary discovery method. See § When a search returns nothing below for the reason.
+Run `uip login status --output json`, then `uip maestro case registry pull`, before inspecting caches. This unconditional Phase 1 gate must not be skipped because a cache is absent. **Exception — same-session fast path (SKILL.md Rule 3):** when the delegated design lane pull (`uipath-planner`, SKILL.md Rule 16) succeeded and `sdd.md` was just written from the confirmed in-memory model, reuse that cache, run verify-only against the planner's resolution ledger (SKILL.md Rule 3), and run the full gate on any doubt. Login/pull failure stops Phase 1 before planning artifacts are written.
 
-> **Missing file ≠ empty match.** Before searching any `<type>-index.json`, verify it exists on disk. If it does not, run `uip maestro case registry pull` (not `--force` — a normal pull is enough for first-time population). A missing file **before** a pull is a precondition failure, not a 0-result lookup. **After a successful pull, a still-absent index means the tenant has zero resources of that type — which IS the genuine 0-matches case.** For **non-creatable** types (regular RPA process, agentic processes / Process Orchestration, action, case-management, connectors) → proceed to placeholder. For a **creatable** type (`agent`, `api-workflow`, `business-rule`), a zero-resource tenant index is the genuine 0-matches case where inline **Create** applies — but **first resolve any in-solution sibling** (a prior run may have already built it; see the per-type pre-gate checks — [agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution), [api-workflow/planning.md](plugins/tasks/api-workflow/planning.md#registry-resolution), [business-rule/planning.md](plugins/tasks/business-rule/planning.md#registry-resolution) — and § Handle Empty Results below). Only a resource absent from **both** the tenant index **and** the local siblings is genuinely empty → feed it to the [Rule 18 / § MUST-Confirm gate](#must-confirm-before-placeholder-fallback) (Create offered), NOT straight to placeholder.
+The design lane lazily starts the same login → pull chain only when tenant-bound work first appears, then performs full identity resolution and the ambiguity/empty gate at Case Review; schema discovery remains Phase 2/3. A successful pull populates `~/.uip/case-resources/`. Discover through `sdd resolve` first; inspect only what it leaves. Do not use `uip maestro case registry search` as primary discovery. See [When a search returns nothing](#when-a-search-returns-nothing).
+
+> **Missing file ≠ empty match.** Before searching `<type>-index.json`, verify it exists. If absent, run `uip maestro case registry pull` (not `--force`). Before pull, absence is a precondition failure, not zero results. After a successful pull, an absent index means zero tenant resources of that type: for non-creatable types (regular RPA process, agentic processes / Process Orchestration, action, case-management, connectors), proceed to placeholder; for creatable `agent`, `api-workflow`, and `business-rule`, first resolve any in-solution sibling using the per-type pre-gates ([agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution), [api-workflow/planning.md](plugins/tasks/api-workflow/planning.md#registry-resolution), [business-rule/planning.md](plugins/tasks/business-rule/planning.md#registry-resolution)) and [Handle Empty Results](#3-handle-empty-results). Only absence from both tenant index and local siblings is genuine empty and reaches the [Rule 18 / MUST-Confirm gate](#must-confirm-before-placeholder-fallback), where Create may be offered.
 
 ## Resolve with the CLI first
 
-After the pull, resolve every task in one call. When the solution exists, run it **from the solution directory** (the folder holding the `.uipx`), so resolve also reads the solution's own projects — it looks for a `.uipx` in the working directory, its parent and its grandparent, never below:
+After pulling, resolve every task in one call. With a solution, run from the directory containing its `.uipx` so solution projects are read; the CLI searches cwd, parent, and grandparent only:
 
 ```bash
 cd "<SOLUTION_DIR>" && uip maestro case sdd resolve "<SDD_PATH>" --out "<PROJECT_ROOT>/tasks/registry-resolved.json" --output json
 ```
 
-`<SDD_PATH>` and `<PROJECT_ROOT>` are absolute paths, or relative to `<SOLUTION_DIR>`; the ledger still lands in `tasks/` beside `sdd.md`. With no solution yet (plan-only runs), run it from the `sdd.md` folder: there are no siblings to find.
+`<SDD_PATH>` and `<PROJECT_ROOT>` are absolute or relative to `<SOLUTION_DIR>`; the ledger remains beside `sdd.md` in `tasks/`. Without a solution, run from the `sdd.md` directory; there are no siblings.
 
-It does the part of discovery that has one right answer — which index each task type uses, the exact-name search on the task's portable name, the narrowing by the SDD's folder — and writes the whole Rule 10 ledger, creating `tasks/`. It reads caches only: no tenant, no network. Never hand-author the ledger it writes.
+The command reads caches only, creates `tasks/`, performs index selection, exact portable-name matching, and SDD-folder narrowing, and writes the complete Rule 10 ledger; never author that ledger manually. Read `Data.Counts` (`tasks`, `selected`, `ambiguous`, `absent`), every `Data.Unresolved[]` row (one per `(name, taskType)` not settled, with `reason`, `usages`, and `creatable`), and `Data.Scope.siblingsChecked`. `siblingsChecked: true` means solution projects were read; a found sibling is `selected` with `source: "local"` and folder `solution_folder`, and beats same-named tenant entries in `matches`. `false` (no solution or CLI older than `@uipath/maestro-tool` 1.205.0-dev.9328) requires the per-type `registry search --local` check.
 
-Read these fields of the response:
-
-- `Data.Counts` — `tasks`, `selected`, `ambiguous`, `absent`.
-- `Data.Unresolved[]` — one row per `(name, taskType)` it could not settle, with `reason`, `usages`, and `creatable`. This is the whole of the remaining work.
-- `Data.Scope.siblingsChecked` — `true` when resolve read the solution's projects. A sibling it found is `selected` with `source: "local"` and folder `solution_folder`, and it wins over a same-named tenant entry, which resolve lists in `matches` without selecting. `false` (no solution around the working directory, or a CLI older than `@uipath/maestro-tool` 1.205.0-dev.9328) leaves the per-type `registry search --local` check to do by hand.
-
-| `reason` | What it means | What to do |
+| `reason` | Meaning | Action |
 |---|---|---|
-| `absent` | No index entry carries the name (and, when `siblingsChecked` is `true`, no project in the solution) | § Procedure step 1's cross-type fallback, then § 3's in-solution sibling check — skipped when `siblingsChecked` is `true` — then the [MUST Confirm gate](#must-confirm-before-placeholder-fallback) |
-| `ambiguous` | Several exact-name entries, and the SDD's folder did not narrow them | Never pick by position — the [MUST Confirm gate](#must-confirm-before-placeholder-fallback), one option per candidate named by its folder; unanswered, `<UNRESOLVED>` |
+| `absent` | No index entry, and when `siblingsChecked` is true no solution project | § [Procedure](#procedure) step 1 cross-type fallback, then § 3's in-solution sibling check ([Handle Empty Results](#3-handle-empty-results)) — skipped when `siblingsChecked` is `true` — then [MUST Confirm](#must-confirm-before-placeholder-fallback) |
+| `ambiguous` | Several exact-name entries not narrowed by SDD folder | Never choose by position; use [MUST Confirm](#must-confirm-before-placeholder-fallback), one folder-labelled candidate; unanswered → `<UNRESOLVED>` |
 
-Edit each outcome into that task's entry in `resolved`. Never re-search a task resolve selected.
+Write each outcome into its task's `resolved`; never re-search a selected task. Normalized resources are `{name, identifierField, identifier, folder}`; `identifierField` is `id` for action apps and `entityKey` otherwise.
 
-Resolve normalizes every resource to `{name, identifierField, identifier, folder}` — `identifierField` is `id` for action apps and `entityKey` for the rest. Read identity from those fields.
+`wait-for-timer` has `selected: null` because it uses no tenant resource and is not a miss. Connector tasks likewise have `null`; resolve them through [connector-integration.md](connector-integration.md), whose outcome controls any marker.
 
-`wait-for-timer` tasks appear with `selected: null` and a rationale that they run no tenant resource; that is not a miss. Connector tasks appear the same way because resolve does not look them up — they resolve through [connector-integration.md](connector-integration.md), and their outcome, not resolve's `null`, decides any marker.
-
-> **Version guard.** If the CLI reports `sdd resolve` as an unknown command (`ErrorCode: "invalid_argument"`, exit 3), resolve every task by hand with § Procedure and say so in one line. Exit 3 without that message is a real failure, not a fallback.
+> **Version guard.** If `sdd resolve` is unknown (`ErrorCode: "invalid_argument"`, exit 3), resolve every task manually with [Procedure](#procedure) and say so in one line. Exit 3 without that statement is failure, not fallback.
 
 ## When a search returns nothing
 
-`uip maestro case registry search` matches an action app on its `deploymentTitle` as well as its slug `title`; earlier CLI versions matched neither, returning `Success` with `ResultCount: 0` for an app that was deployed. If a search comes back empty for a resource you believe exists:
-
-1. Do **not** retry the same search with different keywords.
-2. Read the cache file directly using the procedure in this document, and confirm from the index whether the resource is absent or merely unmatched.
-3. Record the gap in `registry-resolved.json` so the audit trail reflects the fallback.
-
-Direct cache-file inspection is the authoritative discovery method for this skill.
+`uip maestro case registry search` may match an action app by `deploymentTitle` or slug `title`; older versions matched neither and returned `Success` with `ResultCount: 0`. When an expected resource searches empty: (1) do not retry different keywords; (2) read the cache directly using [Procedure](#procedure) and distinguish absence from unmatched; (3) record the gap in `registry-resolved.json`. Direct cache inspection is authoritative.
 
 ## MUST Confirm Before Placeholder Fallback
 
-> **Design-time gate short-circuit.** When the same-session resolution ledger from the planner's Case Design Lane (SKILL.md Rule 16) carries a `gateDecision` for a resource, the gate below already ran — the USER answered it at the Case Review (`gateDecision` exists only for user-answered items; a defaulted `resolve at build` carries none and gets the full gate below). Execute the decision without re-asking: `pick:<name>` → bind that entry; `resolve-at-build` → placeholder path directly; `create-during-build` → the Create-on-Missing flow below as if the user picked `Create`. Re-ask ONLY when the entry is stale against the current SDD (carryover rules in [planning.md](planning.md)) or the cache no longer contains the picked entry.
+> **Design-time gate short-circuit.** If the same-session planner Case Design Lane ledger (SKILL.md Rule 16) has a `gateDecision`, the gate already ran. Execute `pick:<name>` by binding it, `resolve-at-build` by taking the placeholder path, and `create-during-build` through Create-on-Missing as if Create was selected. Re-ask only if stale against the current SDD ([planning.md](planning.md)) or the picked entry is no longer cached. A defaulted `resolve at build` has no `gateDecision` and takes the full gate.
 
-> **Hard gate.** If the planning-phase lookup batch returns ≥1 empty result (no match across all relevant cache files for any task / trigger / connector), STOP. Run AskUserQuestion before invoking any per-plugin Unresolved Fallback path or writing any placeholder element.
+> **Hard gate.** If the planning lookup batch has ≥1 empty result across relevant caches for any task / trigger / connector, STOP. Run AskUserQuestion before invoking any per-plugin Unresolved Fallback path or writing any placeholder element.
 
-Required prompt shape:
+Use this prompt shape:
 
 ```
 Question: <N> resource(s) not found in the registry: <one entry per unique (name, type): "<name>" (<type>) — used by <Stage>/<Task>[, <Stage>/<Task>…]>. Append " — placeholder only" inside the (<type>) of any NON-creatable resource (RPA process, action, case-management, connector, agentic process). If NONE are creatable, add "(none can be built inline — placeholder only)" right after the count.
@@ -79,18 +65,14 @@ Options:
       → build nothing; EVERY missing resource (all <N>) becomes an `<UNRESOLVED>` placeholder (per-plugin Unresolved Fallback).
 ```
 
-**Ambiguous resources join the same batch** as their own group — one option per candidate, labelled by its folder, plus `Use a placeholder` — and follow the same default: unanswered or non-interactive, the task stays `<UNRESOLVED>`.
-
-**Apply once per planning batch, not per-task.** Each option is batch-level — never a per-task yes/no chain. The gate **question groups the empties by resource** (unique `name` + `type`), listing each resource's usages (`<Stage>/<Task>`) for readability — one line per resource, not one per task. **Both the gate question and § 1 Select group by `(name, type)`** — one row per resource. The per-task-reference mapping (a name → several tasks) is tracked internally only, for [§ 1c](#1c--dedup-the-selected-builds-one-resource-per-name-and-type)'s I/O partition and to bind every usage to the built resource. Force pull loops back to this same prompt for whatever stays empty. The **Create** option covers **agents, API workflows, and business rules only** (never regular RPA process, action apps, child cases, connectors, or agentic processes); it appears only when ≥1 still-empty is creatable AND the CLI supports `registry --local` (capability probe — see [§ Create-on-Missing](#create-on-missing-build-and-rediscovery)). When `--local` is absent the gate degrades to Force pull / Use placeholders for all exactly as before.
-
-**Do NOT pre-judge.** Resource-name heuristics ("looks vendor-specific, won't be in registry anyway", "this is an obvious custom connector") are the user's call to make, not the agent's. Always ask. SKILL.md Rule 18.
+Group empties by unique `(name,type)`, listing all usages (`<Stage>/<Task>`), not by task. Ambiguous resources join the batch as folder-labelled candidate options plus `Use a placeholder`; unanswered or non-interactive remains `<UNRESOLVED>`. Apply once per planning batch, never as per-task yes/no. Force pull loops to this prompt. Create is only for `agent`, `api-workflow`, and `business-rule`, only when ≥1 remains empty and `registry --local` is supported; otherwise offer only Force pull/placeholders. Do not pre-judge names; always ask (SKILL.md Rule 18).
 
 ## Cache File Index
 
-Each resource type has a `<type>-index.json` file at `~/.uip/case-resources/`:
+Each file under `~/.uip/case-resources/` is a JSON array:
 
-| File | Identifier field | Name field | Folder field |
-|------|-----------------|------------|--------------|
+| File | Identifier | Name | Folder |
+|---|---|---|---|
 | `agent-index.json` | `entityKey` | `name` | `folders[0].fullyQualifiedName` |
 | `process-index.json` | `entityKey` | `name` | `folders[0].fullyQualifiedName` |
 | `api-index.json` | `entityKey` | `name` | `folders[0].fullyQualifiedName` |
@@ -101,29 +83,27 @@ Each resource type has a `<type>-index.json` file at `~/.uip/case-resources/`:
 | `typecache-activities-index.json` | `uiPathActivityTypeId` | `displayName` | *(none)* |
 | `typecache-triggers-index.json` | `uiPathActivityTypeId` | `displayName` | *(none)* |
 
-Each file is a JSON array of resource entries.
-
 ## Create-on-Missing build and rediscovery
 
-When the user picks **Create** at the gate, the skill builds each selected resource as an **in-solution sibling** (during Phase-1 planning) and wires it in as a normal resolved task — no placeholder. **v1 builds three kinds — `agent` (via `uipath-agents`), `api-workflow` (via `uipath-api-workflow`), and `business-rule` (via `uipath-rules`)**; the orchestration below is type-agnostic so other non-connector kinds can be enabled later via their own type skill. Connectors, regular RPA process, and agentic processes (Process Orchestration) are never built here. Action Apps and child cases are also never built here.
+Create only selected `agent`, `api-workflow`, and `business-rule` resources as in-solution siblings during Phase-1 planning; resolve them normally without placeholders. Use `uipath-agents`, `uipath-api-workflow`, and `uipath-rules`; never build connectors, regular RPA, agentic processes (Process Orchestration), Action Apps, or child cases here. The orchestration is type-agnostic for future non-connector kinds.
 
-> **Create depends on the type skill being installed.** The build runs in a sub-agent that invokes the resource's type skill (`uipath-agents` / `uipath-api-workflow` / `uipath-rules`). The Step-2 brief instructs the sub-agent: if it cannot locate/load that skill, return `{built:false, error:"skill <name> not installed"}` — do NOT improvise a build. That `built:false` (or a sub-agent that dies) degrades to a placeholder via the per-plugin Failure contract, and §4 rediscovery is the backstop (no exact-name `--local` match → Failure contract regardless of what the sub-agent reports) — Create never hard-fails the run.
+The sub-agent must invoke the installed type skill. Its brief must state that inability to locate/load it returns `{built:false, error:"skill <name> not installed"}` and does not improvise. `built:false` or death degrades to the per-plugin Failure contract; §4 rediscovery is the backstop; no exact-name `--local` match means Failure regardless of the report. Create never hard-fails the run.
 
 ### 0 — Prerequisite (solution must exist) + capability probe (once per run)
 
 <!--skill-flavor:solution-prerequisite:start-->
-**Solution prerequisite.** Register (§3) and `--local` rediscovery (§0/§4) all require an enclosing solution `.uipx` (the CLI walks cwd → parent → grandparent — that walk MUST resolve to the case's *own* solution: keep the working root free of an unrelated ancestor `.uipx`, else the built sibling registers into the wrong solution). The Create gate fires in **Phase 1 planning**, *before* [Phase 2 Step 6.0](implementation.md) normally scaffolds the solution — so on a fresh run no `.uipx` exists yet. **When the user selects Create and no `.uipx` is found, run `uip solution init <SolutionName>` first — deriving `<SolutionName>` and its working-root location EXACTLY as Step 6.0 does** (the canonical rule: [plugins/case/planning.md § Naming](plugins/case/planning.md#project-structure-prerequisites)). Do NOT invent a different name/location: Step 6.0 keys its idempotent skip on that exact `.uipx`, so a mismatch double-inits or forks the solution (sibling in one `.uipx`, case project in another). Everything below assumes the `.uipx` now exists.
+**Solution prerequisite.** Register (§3) and `--local` rediscovery (§0/§4) require the case's enclosing `.uipx`; CLI walks cwd → parent → grandparent, which MUST resolve to the case's own solution, not an unrelated ancestor. The Create gate is Phase 1, before [Phase 2 Step 6.0](implementation.md) normally scaffolds it. If Create is selected without a `.uipx`, run `uip solution init <SolutionName>` using exactly the name and working-root location of Step 6.0 ([plugins/case/planning.md § Naming](plugins/case/planning.md#project-structure-prerequisites)); do not invent another. Everything below assumes the `.uipx` exists.
 <!--skill-flavor:solution-prerequisite:end-->
 
 <!--skill-flavor:capability-probe:start-->
-**Capability probe.** Confirm the CLI supports local discovery: run `uip maestro case registry list --local --output json`. Distinguish the failure modes: an **unknown-option** error → `--local` is unsupported → **suppress the Create option entirely** (the gate stays Force pull / Use placeholders for all), use placeholders. A **`No solution found for --local`** error is NOT a suppress signal — it confirms `--local` IS supported (a missing-solution error, not unknown-option). **Do NOT scaffold at probe time.** At the pre-gate in-solution sibling check (which fires before Create is offered), "No solution found" simply means no sibling exists yet — a solution holds no siblings before it exists — so record "no local sibling" and proceed to the gate. Scaffolding (`uip solution init`, the Solution prerequisite above) happens **only inside the Create flow, after the user selects Create** — never during the probe or the pre-gate sibling check. Offer Create unless the probe returns the unknown-option (unsupported) case. Run the probe **at first need and cache the result for the rest of the run** — whichever comes first: the pre-gate in-solution sibling check ([agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution) / [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) / [business-rule/planning.md § Registry Resolution](plugins/tasks/business-rule/planning.md#registry-resolution), which also gates on `--local`) or this gate.
+**Capability probe.** At first need, run `uip maestro case registry list --local --output json` and cache the result. Unknown-option means `--local` unsupported: suppress Create and use placeholders. `No solution found for --local` confirms support; do not suppress. Do not scaffold during probe or pre-gate sibling check; there, record no local sibling and continue. Scaffold only inside Create after selection via `uip solution init`. First need is whichever comes first: the pre-gate per-type check ([agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution), [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution), [business-rule/planning.md § Registry Resolution](plugins/tasks/business-rule/planning.md#registry-resolution)) or this gate.
 <!--skill-flavor:capability-probe:end-->
 
 ### 1 — Select
 
-On Create, present an `AskUserQuestion` **multiSelect** of the still-empty **creatable** resources — agents, API workflows, and business rules — **one option per unique `(name, type)`** (NOT per task-reference), labeled `<Name> (<type>) — used by <Stage>/<Task>[, <Stage>/<Task>…]`. **Non-creatable empties never appear here** — they were listed (annotated `— placeholder only`) at the gate and become placeholders regardless. The option list is capped at 4; when >4 unique creatable resources are empty, batch across successive prompts (≤4 each). **Checked → build that resource ONCE for ALL its usages** (via § 1c, which merges identical-I/O usages and splits/renames differing-I/O ones). **Unchecked → every task referencing that name becomes an `<UNRESOLVED>` placeholder.** If a selected name is already used by an **existing in-solution sibling of another kind** (`registry list --local`) — a sibling a prior run already built, NOT among these selections (so § 1c, which only groups the create-selected tasks, cannot see it) — `AskUserQuestion` to rename before building: the `solution_folder.<name>` resourceKey and the exact-name `search --local` rediscovery (§4) both key on the name, which must be unique across kinds (the namespace is shared). This is the proactive form of § 3b's reactive cross-kind adopt-check. The **other** cross-type case — the same name empty under two **different types** within this selection batch (each its own option) — is **§ 1c step 1's call**: a deterministic auto-rename (anchor = first in SDD order) with the only prompt being step 4's write-back, NOT a separate § 1 rename prompt.
+On Create, use `AskUserQuestion` with `multiSelect: true` for still-empty creatable resources, one option per unique `(name,type)`, labelled `<Name> (<type>) — used by <Stage>/<Task>[, <Stage>/<Task>…]`. Non-creatable resources never appear and become placeholders. Cap at 4 options; batch successive prompts above 4. Checked builds once for all usages; unchecked makes every reference `<UNRESOLVED>`.
 
-**Prompt shape:**
+If an existing in-solution sibling of another kind already uses the name, ask to rename before building; the shared `solution_folder.<name>` and exact-name `search --local` namespace requires uniqueness. The same name under two selected types is handled by § 1c step 1's deterministic anchor/auto-rename, not another § 1 prompt.
 
 ```
 Question: Build which of these inline? Checked → built as an in-solution sibling for all its usages; unchecked → every task using that name becomes an <UNRESOLVED> placeholder.
@@ -134,23 +114,21 @@ Options:  one per unique (name, type): "<Name> (<type>) — used by <Stage>/<Tas
 
 ### 1b — Choose build kind
 
-For each selected **agent**, ask the build kind before building: an `AskUserQuestion` with options **Low-code** and **Coded (Python)** — presented as **equal choices** (neither marked recommended); **one `AskUserQuestion` question per agent** (header = agent name; ≤4 questions per call) — **never one shared question applied to all**. For a non-interactive run the fallback is **Low-code** (`uip agent init`, the platform default kind); coded is `uip codedagent`. The choice sets the brief's `Kind:` line ([agent/planning.md § Creating an Agent inline → Step 2](plugins/tasks/agent/planning.md#creating-an-agent-inline)) and the sub-agent builds that kind. Kind is **never inferred from the SDD**. Coded integration is kind-agnostic on the case side but carries an Orchestrator-deploy caveat — see [agent/planning.md § Coded agents](plugins/tasks/agent/planning.md#creating-an-agent-inline). **API workflows and business rules have no kind choice** — skip this step for them; an API workflow build is always the JSON-DSL `Workflow.json`.
+For each selected **agent**, ask one `AskUserQuestion` per agent, with equal options **Low-code** and **Coded (Python)**, header = agent name, no more than 4 questions per call. Never share one choice across agents. Non-interactive fallback: **Low-code** (`uip agent init`, platform default); coded uses `uip codedagent`. Put the choice in the brief's `Kind:` line ([agent/planning.md § Creating an Agent inline → Step 2](plugins/tasks/agent/planning.md#creating-an-agent-inline)); never infer from SDD. Coded agents carry the Orchestrator-deploy caveat ([agent/planning.md § Coded agents](plugins/tasks/agent/planning.md#creating-an-agent-inline)). API workflows and business rules skip this step; API workflow always uses JSON-DSL `Workflow.json`.
 
 ### 1c — Dedup the selected builds (one resource per name and type)
 
-Runs AFTER § 1 selection (and § 1b), BEFORE § 2. Scope: the **create-selected** tasks only. Placeholder/unchecked tasks are independent — never coupled to a build, even under a shared name. Resolved references are out of scope entirely: several tasks reusing one real tenant resource is normal; per-task wiring fidelity there is [io-binding Check 5](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness)'s job.
+Run after § 1/§ 1b and before § 2, only for create-selected tasks. Placeholder/unchecked tasks remain independent; resolved tenant references are out of scope and use [io-binding Check 5](plugins/variables/io-binding/impl-json.md#check-5--resolved-resource-io-completeness).
 
-1. **Group** the selected tasks by `(intended resource name, type)` using each task's concrete SDD `Resolved Resource` value, trimmed and case-insensitive. That cell is the authoritative portable name query even when `tasks/registry-resolved.json` is absent; generated and user-authored SDDs follow the same contract and never place `<UNRESOLVED>` there. Folder is NOT in the key: an unresolved resource has no resolved folder, and inline siblings share one flat namespace. **Cross-type name collision (resolve BEFORE the per-group work below):** because that namespace is name-only, the same name heading groups of **two different types** (e.g. an agent `Foo` and an api-workflow `Foo`) is a collision — both would claim `solution_folder.Foo`. Keep the name on the group whose earliest task is first in SDD order; **auto-rename the other type's group** (stage-derived suggestion, uniqueness-checked → step 4), exactly as for an I/O-distinct sub-group. This is the **proactive** guard for what § 3b otherwise catches only reactively — without it, § 2's parallel `init <name>` race on the shared `<name>/` directory and § 3 `project add` collides on the duplicate name.
-2. **Single-task group** → ordinary build (§ 2).
-3. **Multi-task group** → **partition it into sub-groups of matching wired I/O.** Compare each task's **canonical pinned contract** — the SAME one [§ Step 1](plugins/tasks/create-inline-common.md#step-1--compute-the-pinned-io-contract) computes for the build brief (input type from the bound Case Variable's `Type`; `->` extract outputs typed from their Case Variable; `=`-computed output rows excluded; cross-task-ref / literal / `=metadata.*` fields type-deferred). **Do NOT re-derive types here** — in particular, do NOT read an input's type from the Inputs row's `Type` cell; Step 1 is the only authoritative source. Two tasks share a sub-group only when their contracts **unify**: identical field-name sets, and for every shared field the **known (pinned)** types agree. A **type-deferred** field imposes no constraint but **must not bridge two different known types** — so `integer ↔ deferred ↔ string` does NOT collapse into one group. Keep it deterministic with greedy anchor assignment: in SDD order, place each task in the first existing sub-group all of whose already-pinned field types agree with this task's pinned types (a deferred field matches anything; a task's pinned type *fills* a field the sub-group had seen only deferred); if none agrees, start a new sub-group. The sub-group holding the FIRST task in SDD order is the **anchor** and keeps the name; then, per sub-group:
-   - **Anchor sub-group** → keeps the name.
-   - **Every OTHER I/O-distinct sub-group** is a different function → **auto-rename it once** (one new name shared by all its member tasks): stage-derived suggestion (`<Name><Stage>`), made unique against the other selections, the in-solution siblings of any kind, and the tenant caches — bump the suffix on collision. Then step 4. (This is why the merge-vs-rename decision is per sub-group, not "the later task" — a mixed group where some tasks match the anchor and some don't yields one build for the anchor + one per distinct other sub-group, never one-per-task.)
-   - **Within any sub-group of >1 task whose descriptions differ in intent** (same signature, possibly different function) → resolve it to intent-homogeneous pieces before building; **never lump several differing tasks behind one rename.** `AskUserQuestion` quoting the descriptions **with NO recommended option** (the merge-vs-split call is the user's — identical I/O says "maybe same", divergent descriptions say "maybe different", and the skill does not bias either way): `Same resource — build once` / `Different — split off the task(s) that don't belong` / `Abort`. On `Different`, the user marks the task(s) to split off; they form a new sub-group, and you **re-run this same intent check on each resulting sub-group** — looping until every sub-group is a single task or a user-confirmed same-intent set (so a 3-task group of 2 matching + 1 divergent resolves to those 2 merged + the 1 split, NOT all 3 behind one rename). Each resulting distinct sub-group is renamed once (step 4). **Non-interactive: split to singletons** — every non-anchor task becomes its **own** uniquely-named resource (step 4; one rename per task; in-memory only, since the SDD is never edited non-interactively), and emit one `high` review item per split flagging that an ambiguous-description group was auto-split without a user decision. (Split is the correctness-safer default: over-splitting yields harmless duplicates, whereas silently merging genuinely-different functions — or lumping several divergent tasks behind ONE rename — builds a resource that cannot serve them all.)
-   - A sub-group whose members share I/O **and** intent → ONE resource: build once, every member binds to it (§ 4). Note the shared build and its call sites in the completion report.
-4. **Rename write-back — one `AskUserQuestion` per rename. NEVER edit the SDD non-interactively.** State `<old> → <new>`, give the actual split reason (I/O mismatch, cross-type name collision, or user-confirmed distinct intent), and ask permission to update the renamed task(s)' `Resolved Resource` cell(s) in `sdd.md`. **Granted** → apply the edit **atomically across both SDD mirrors of the resource identity** (the SDD's Section 4 dedup roll-up — one row per distinct resource, `Used By Tasks` listing its call sites; the case SDD content contract is authored by `uipath-planner`): (a) set the split task(s)' Section 2 `Resolved Resource` cell(s) to `<new>`, **and** (b) in the Section 4 dedup roll-up, remove those task(s) from `<old>`'s `Used By Tasks` and add a new row for `<new>` listing them (its `Folder Path` + `Resource Identity` filled after registration, § 4). Omitting (b) leaves Section 4 asserting `<old>` still serves tasks it no longer does. Re-runs then resolve by the new name — fully idempotent. **Denied, or non-interactive** → the rename applies in-memory for THIS run only (this run's build + bind are correct); the SDD keeps the old name; completion-report warning: until the cell is renamed manually, a re-run's pre-gate sibling check will bind the task to the ORIGINAL sibling (surfaced by the I/O fidelity check, not silent), leaving this run's renamed sibling unreferenced on the re-run — a leftover handled per [§ Reject case](#reject-case) (kept on disk, still registered, named in the completion report). NEVER edit the SDD non-interactively.
-5. Each resulting unique resource (anchor + each renamed sub-group) → § 2: **one sub-agent per resource, not per task**. Brief Purpose from the FIRST task in SDD order among the tasks it serves ([create-inline-common.md § Step 1b](plugins/tasks/create-inline-common.md#step-1b--compose-the-purpose-from-the-sdd)); its tasks share one wiring by construction, so the pinned contract comes from any one of them ([§ Step 1](plugins/tasks/create-inline-common.md#step-1--compute-the-pinned-io-contract)).
+1. Group by `(intended resource name,type)` from each task's concrete SDD `Resolved Resource`, trimmed and case-insensitive. This is authoritative even without `tasks/registry-resolved.json`; it never contains `<UNRESOLVED>`. Ignore folder because inline siblings share one flat namespace. Resolve cross-type same-name collisions first: the earliest SDD task keeps the name; auto-rename the other type's group with a stage-derived, uniqueness-checked suggestion, then step 4.
+2. A single-task group uses § 2.
+3. Partition multi-task groups by the canonical pinned contract from [§ Step 1](plugins/tasks/create-inline-common.md#step-1--compute-the-pinned-io-contract): input type from the bound Case Variable's `Type`; `->` outputs typed from their Case Variable; `=` outputs excluded; cross-task-ref, literal, and `=metadata.*` fields type-deferred. Do not re-derive or read input type from the Inputs row's `Type` cell. Contracts unify only with identical field-name sets and agreeing known types. Deferred matches anything but cannot bridge different known types (`integer ↔ deferred ↔ string` remains separate). Greedily assign in SDD order to the first compatible subgroup; deferred may later be filled. The first-task subgroup is anchor and keeps the name.
+   - Rename every other I/O-distinct subgroup once, using `<Name><Stage>` made unique against selections, all in-solution siblings, and tenant caches; then step 4.
+   - For any multi-task same-I/O subgroup with differing intent, ask with no recommendation: `Same resource — build once` / `Different — split off the task(s) that don't belong` / `Abort`, quoting descriptions. On Different, mark split tasks and repeat until every subgroup is single-task or user-confirmed same-intent. Each resulting subgroup is renamed once. Non-interactive: split to singletons, rename each non-anchor in memory only, and emit one `high` review item per automatic split. A same-I/O, same-intent subgroup is one resource for all members.
+4. For each rename, ask once; never edit SDD non-interactively. State `<old> → <new>`, exact cause, and permission to update `Resolved Resource` cells. If granted, atomically update both SDD identity mirrors: Section 2 cells and Section 4 dedup roll-up (`Used By Tasks`, with `Folder Path` and `Resource Identity` filled after registration). If denied/non-interactive, use the new name in memory only, warn that reruns bind the original sibling, and report the leftover per [Reject case](#reject-case). Never edit non-interactively.
+5. Spawn § 2 one sub-agent per resulting resource, not per task. Purpose comes from the first SDD task ([create-inline-common.md § Step 1b](plugins/tasks/create-inline-common.md#step-1b--compose-the-purpose-from-the-sdd)); canonical contract comes from [§ Step 1](plugins/tasks/create-inline-common.md#step-1--compute-the-pinned-io-contract).
 
-**Step-4 rename write-back — prompt shape** (one AskUserQuestion per rename):
+Rename prompt:
 
 ```
 Question: Task(s) <TaskName(s)> need a resource distinct from the anchor because <reason>. Per § 1c they build as a separate sibling: "<old>" → "<new>". Update their `Resolved Resource` cell(s) in sdd.md?
@@ -160,76 +138,65 @@ Options:
   - Keep sdd.md as-is  → rename in-memory THIS run only; the SDD keeps "<old>" (a re-run binds the ORIGINAL sibling — completion-report warning, § Reject case). NEVER edit the SDD non-interactively.
 ```
 
-Fill `<reason>` with exactly the cause that produced this rename:
-
-- **I/O mismatch:** `their pinned I/O differs from the anchor (<concise field/type diff, e.g. adds output riskBand>)`.
-- **Cross-type name collision:** `another selected <anchor-type> resource already uses "<old>", and the solution_folder namespace is shared across resource types`.
-- **Distinct intent:** `their descriptions have the same I/O but the user confirmed they represent a function distinct from the anchor`.
-
-Do not mention an I/O difference for a cross-type collision or a user-confirmed intent split.
+Use exactly one reason: I/O mismatch `their pinned I/O differs from the anchor (<concise field/type diff, e.g. adds output riskBand>)`; cross-type collision `another selected <anchor-type> resource already uses "<old>", and the solution_folder namespace is shared across resource types`; distinct intent `their descriptions have the same I/O but the user confirmed they represent a function distinct from the anchor`. Do not describe I/O for the latter two.
 
 ### 2 — Build (parallel, capped, skip-registration)
 
-For each § 1c-unique resource, compute its build brief — agents per [agent/planning.md § Creating an Agent inline](plugins/tasks/agent/planning.md#creating-an-agent-inline), API workflows per [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline), business rules per [business-rule/planning.md § Creating a business rule inline](plugins/tasks/business-rule/planning.md#creating-a-business-rule-inline) — and **spawn one sub-agent per resource that invokes its type skill** (`uipath-agents` / `uipath-api-workflow` / `uipath-rules`). Spawn **up to 10 concurrently; process in waves** if more are selected (cap is a resource throttle, not a safety mechanism). Each sub-agent builds **without registering the project into the solution** (agents: per the §1b kind — low-code `uip agent init --skip-solution-registration` or coded `uip codedagent`; API workflows: `uip api-workflow init <Name> --skip-solution-registration`; business rules: `uip rules init <Name> --skip-solution-registration`; the parent registers either way, § 3) and returns `{ built, path, finalInputs[], finalOutputs[], error? }`.
-
-The skill itself never runs the type CLI's `init` — build knowledge lives in the type skill. Only gate-selected resources are built; SDD content alone never triggers a build.
+For every § 1c resource, compute its type brief ([agent/planning.md § Creating an Agent inline](plugins/tasks/agent/planning.md#creating-an-agent-inline), [api-workflow/planning.md § Creating an API workflow inline](plugins/tasks/api-workflow/planning.md#creating-an-api-workflow-inline), [business-rule/planning.md § Creating a business rule inline](plugins/tasks/business-rule/planning.md#creating-a-business-rule-inline)) and spawn one sub-agent invoking its type skill. Spawn up to 10 concurrently and use waves above 10. Each skips registration and returns `{ built, path, finalInputs[], finalOutputs[], error? }`: agents use low-code `uip agent init --skip-solution-registration` or coded `uip codedagent`; API workflows use `uip api-workflow init <Name> --skip-solution-registration`; business rules use `uip rules init <Name> --skip-solution-registration`. The parent registers. The skill never runs a type `init`; only gate-selected resources build, never SDD content alone.
 
 ### 3 — Register (sequential)
 
 <!--skill-flavor:register-step:start-->
-The `.uipx` is a shared file; concurrent registration races. So build skips registration, and **the parent registers each built sibling sequentially** after the wave returns:
+Builds skip registration because `.uipx` is shared. After each wave, register each built sibling sequentially:
 
 ```bash
 uip solution projects add "<built path>" "<solution .uipx>" --output json   # one per built sibling, sequential
 ```
 
-Both positionals MUST be absolute paths — the relative form fails with `Failed to add project to solution` regardless of CWD (see [implementation.md](implementation.md) § Step 6.0b). Then run `uip solution resources refresh` (Rule 15) so the solution-level resource files + `debug_overwrites.json` are generated before any upload/debug.
+Both positionals MUST be absolute; relative paths fail with `Failed to add project to solution` regardless of CWD ([implementation.md](implementation.md) § Step 6.0b). Then run `uip solution resources refresh` (Rule 15) before upload/debug.
 <!--skill-flavor:register-step:end-->
 
 ### 3b — "Already exists" = adopt (kind-agnostic residual)
 
-An interrupted prior run can leave a built sibling **on disk but unregistered**. Nothing that reads `.uipx` `Projects[]` sees it — the pre-gate `--local` check misses, the gate fires, and the build/register step collides: the type's `init` fails *"directory exists / not empty"*, or `uip solution projects add` returns *"Project name already exists"*. **Neither is a failure.** Adopt:
+A prior interrupted build may be on disk but unregistered. If type `init` says directory exists/not empty or `project add` says `Project name already exists`, neither is failure. Check `uip maestro case registry list --local --output json`: if the name exists, `Category` identifies the registered owner; a different kind is a cross-kind collision—rename and rebuild. If absent, read the directory's `project.uiproj` `ProjectType`; matching kind means adopt:
 
-1. **Kind-check the collision.** Name present in `uip maestro case registry list --local --output json` → its `Category` identifies a registered owner; a different kind = cross-kind name collision, NOT a prior build → rename the new resource (§1 name-uniqueness) and rebuild. Name absent (`list --local` also reads only `Projects[]`) → read the colliding directory's `project.uiproj` `ProjectType`. Matching kind → adopt:
 <!--skill-flavor:adopt-register:start-->
-2. **Register.** `uip solution projects add` (absolute paths). It can refuse *"Project name already exists"* even when the name is absent from `.uipx` `Projects[]` — its collision check keys on **stale resource declaration files** from a prior registration, not the manifest. Clear the stale declaration with `uip solution resources remove <ResourceKey> --solution-folder <SolutionDir> --output json` (key from `uip solution resources list --source local`; removing the `process` entry cascades to its `package` declaration — never delete either file by hand, see [bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)), re-run `project add`, then `uip solution resources refresh` regenerates them.
+1. Register with `uip solution projects add` using absolute paths. If it still says `Project name already exists`, stale declarations caused the collision. Get the key from `uip solution resources list --source local`, then run `uip solution resources remove <ResourceKey> --solution-folder <SolutionDir> --output json`; removing `process` cascades to `package`. Never delete declaration files manually ([bindings-v2-sync.md § Prune orphaned solution resources](bindings-v2-sync.md#prune-orphaned-solution-resources)). Re-run project add, then `uip solution resources refresh`.
 <!--skill-flavor:adopt-register:end-->
-3. **Continue at §4** (rediscover, verify, bind). Never rebuild, never Retry/Skip, never placeholder — the sibling is already built.
-
-Per-type verbs and kind markers: each plugin's § Failure blockquote.
+2. Continue at § 4. Never rebuild, Retry/Skip, or placeholder. Per-type verbs and kind markers are each plugin's § Failure blockquote.
 
 ### 4 — Rediscover + verify + bind (offline `--local`)
 
-Rediscover **by name** with `search` (not `get`): `registry get <id> --local` matches only on `entityKey`/project Id, never the display name, so `get "<Name>"` returns 0. `search` matches the keyword against the name. Read keys in **PascalCase** (`--output json` PascalCases recursively):
+Rediscover by name with `search`, not `get`: `registry get <id> --local` matches only `entityKey`/project Id, so `get "<Name>"` returns 0. Run:
 
 ```bash
 uip maestro case registry search "<Name>" --type <agent|api|businessRule> --local --output json   # `agent` for an agent sibling, `api` for an api-workflow sibling, `businessRule` for a business-rule sibling
 ```
 
-`Code: "ResourceSearchSuccess"`, `Data.ResultCount`, `Data.Resources[]` each `{ ResourceType, Resource: {...} }`. Select the entry whose `Resource.Name` exactly equals `<Name>` and `Resource.Source == "local"` (keyword search may return partial-name matches — filter to the exact name). Use this `--local` result to **confirm the sibling exists** and registered (`Source == "local"`, `Folders[0].FullyQualifiedName == "solution_folder"`). `Resource.EntityKey` is an opaque, derived local key (NOT the `.uipx` `Projects[].Id`, NOT any on-disk id) — **audit-only**; the node binds by name+folder, so never write it. No exact-name local match → the build/registration didn't take → failure contract.
+Read PascalCase fields: `Code: "ResourceSearchSuccess"`, `Data.ResultCount`, and `Data.Resources[]` entries `{ ResourceType, Resource: {...} }`. Select exact `Resource.Name == <Name>` and `Resource.Source == "local"`; partial keyword results are insufficient. Confirm `Folders[0].FullyQualifiedName == "solution_folder"`. `Resource.EntityKey` is opaque local audit-only—not `.uipx` `Projects[].Id` or an on-disk id—and must never be written. No exact local match means failure contract.
 
-> ⚠️ **Do NOT read I/O field names from `Resource.{Inputs,Outputs}`.** `--output json` PascalCases object keys recursively, so the declared property keys come back mis-cased (`poText` → `PoText`, `classification` → `Classification`) — wiring against those names would bind to fields the resource doesn't have. Read the **case-preserving** names + types from the sibling's raw `entry-points.json` on disk instead (`<sibling path>/entry-points.json`), under `entryPoints[0].input.properties` / `.output.properties`. Reading the wrong/absent key returns `undefined`, yielding an empty contract → silent mis-wire. For **api-workflow** siblings apply the fallback chain (flat `input.properties` → `input.schema.document.properties` wrapper → `Workflow.json` root schemas; warn on any fallback — see [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution)). Use `--local` only to locate/confirm the sibling.
+Do not read I/O names from `Resource.{Inputs,Outputs}`: recursive PascalCase changes names (`poText` → `PoText`, `classification` → `Classification`). Read case-preserving names/types from `<sibling path>/entry-points.json`, under `entryPoints[0].input.properties` / `.output.properties`; wrong or absent keys silently produce an empty contract. For API workflows use fallback order flat `input.properties` → `input.schema.document.properties` → `Workflow.json` root schemas and warn on fallback ([api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution)). `--local` only locates/confirms.
 
-> Shapes: `search`/`get` nest each entry under `Data.Resources[].Resource.*`; `list --local` flattens to `Data.Resources[].{EntityKey,Name,Category,Source}` (no `Resource` wrapper, no I/O). Use `search` here because it matches by name and confirms the sibling; the sub-agent's returned `finalInputs/finalOutputs` are a liveness signal only — the on-disk `entry-points.json` is authoritative.
+`search`/`get` nest entries under `Data.Resources[].Resource.*`; `list --local` flattens `Data.Resources[].{EntityKey,Name,Category,Source}` and has no I/O. Sub-agent `finalInputs/finalOutputs` are liveness only; on-disk `entry-points.json` is authoritative.
 
-Then, in order:
+Then:
 
-- **Verify** — reconcile the sibling's declared I/O (case-preserving names from `entry-points.json` per the warning above; agents and business rules: CLI-synced; api-workflows: build-kept-consistent — no CLI verb writes entry-point I/O, the builder back-fills it and `validate` won't flag drift) against the pinned contract → matched / missing-in-sibling / extra-in-sibling.
-- **Record** the reconciled contract into `registry-resolved.json` and resolve the task (taskTypeId/folder-path filled) — now a normal resolved task. `taskTypeId` holds the local audit-only `EntityKey` as a resolution marker only — **Phase 2 must NOT tenant-`tasks describe` it**; the I/O schema recorded here (from the sibling's `entry-points.json`) is authoritative, and [Phase 2 Step 9 Phase A](implementation.md) + the per-type Built-inline notes ([agent/impl-json.md](plugins/tasks/agent/impl-json.md), [api-workflow/impl-json.md](plugins/tasks/api-workflow/impl-json.md), [business-rule/impl-json.md](plugins/tasks/business-rule/impl-json.md)) skip the gather for inline siblings. (The `caseplan.case` `data.inputs[]`/`data.outputs[]` write and the io-binding pass happen in Phase 2/3 when the resolved task is materialized, exactly like any other resolved resource — **NOT in Phase 1**.)
-- **Warn+diff** missing/extra into the completion report; **never block**. A **missing-in-sibling** pinned output means the Case Variable it feeds is never set — record in the completion report that any downstream reference (task input, condition, SLA) will resolve empty at runtime, so the user can decide to re-invoke the build to add the field or accept it. **Never auto-fabricate** the missing output to silence the warning.
-- **Bind** with `resourceKey="solution_folder.<Name>"` **and `folderPath` binding `default` = `""`** (runtime folder — empty = co-located; the `solution_folder` sentinel lives ONLY in `resourceKey`, NOT in `folderPath`, else runtime `folder not exist` — see [create-inline-common.md § Step 3](plugins/tasks/create-inline-common.md#step-3--binding-invariants)). It binds by name+folder, so `EntityKey` stays audit-only. **For a § 1c merged build, Record/resolve and Bind apply to EVERY task in the group** — one sibling; all N tasks bind to it, **sharing ONE deduped binding pair** (same resource → one pair, per [bindings § Deduplication](plugins/variables/bindings/impl-json.md#deduplication)), NOT N separate bindings.
+- **Verify** sibling I/O against the pinned contract: matched, missing-in-sibling, extra-in-sibling. Agents/business rules are CLI-synced; API workflows are builder-consistent because no CLI verb writes entry-point I/O and `validate` does not flag drift.
+- **Record** the reconciled contract in `registry-resolved.json`, resolve the task with `taskTypeId`/folder-path, and treat local `EntityKey` only as an audit resolution marker. Phase 2 must not tenant-`tasks describe` it; the recorded schema is authoritative. [Phase 2 Step 9 Phase A](implementation.md) and inline notes ([agent/impl-json.md](plugins/tasks/agent/impl-json.md), [api-workflow/impl-json.md](plugins/tasks/api-workflow/impl-json.md), [business-rule/impl-json.md](plugins/tasks/business-rule/impl-json.md)) skip the gather. Do not write `caseplan.case` data inputs/outputs or run io-binding in Phase 1.
+- **Warn+diff** missing/extra; never block. A missing pinned output means its Case Variable and downstream task input, condition, or SLA reference will be empty at runtime; report it and never fabricate it.
+- **Bind** `resourceKey="solution_folder.<Name>"` with `folderPath` binding `default` = `""`; `solution_folder` belongs only in `resourceKey` ([create-inline-common.md § Step 3](plugins/tasks/create-inline-common.md#step-3--binding-invariants)). For merged groups, resolve and bind every task to one sibling and one deduped binding pair ([bindings § Deduplication](plugins/variables/bindings/impl-json.md#deduplication)).
 
 ### Reject case
 
-If a built sibling's task is later dropped (user aborts at a later hard stop, or removes it in a follow-up edit), leave the sibling **on disk** (it is reusable) and **name it in the completion report** ("built but not referenced"). It stays **registered in the `.uipx`** (Step 3 already added it), so it co-deploys with the solution as an unused sibling — harmless; do **not** silently deregister. If the user wants it gone, that is manual cleanup (deregister from the `.uipx` and delete the directory), flagged in the report. Never silently delete it, never silently omit it.
+If a built sibling's task is later dropped, leave it on disk and registered in `.uipx`; report `built but not referenced`. It co-deploys harmlessly. Never silently deregister/delete/omit it. User-requested cleanup is manual: deregister from `.uipx` and delete the directory, and report it.
 
 ## Procedure
 
-The manual lookup. Run it for `Data.Unresolved[]` entries only, or for every task when the version guard above fired.
+Use this manual lookup only for `Data.Unresolved[]`, or all tasks after the version guard.
 
 ### 1. Determine Which Cache Files to Search
 
-Use the component type from the sdd.md to identify the **primary** cache file, then always include related files as fallbacks. This is important because the sdd.md component type label may not match the actual registry resource type (e.g., an "RPA" task in the sdd.md may be registered as `process` in the registry).
+Use the SDD component type's primary file, then compatible fallbacks:
 
 | sdd.md component type | Primary cache file |
 |---|---|
@@ -249,21 +216,19 @@ Use the component type from the sdd.md to identify the **primary** cache file, t
 | `external-workflow` | `typecache-external-automation-activities-index.json` |
 | TIMER | *(not in cache)* |
 
-For `TIMER` ("not in cache"), skip the cache lookup — it has no registry representation; emit the `wait-for-timer` plugin shape. `external-agent` / `external-workflow` are built like a connector activity — see [connector-activity § External agents and automations](plugins/tasks/connector-activity/planning.md#external-agents-and-automations).
-
-**Cross-type fallback:** The sdd.md component type label is not always accurate — the actual registry resource may be stored under a different type. For example, an "RPA" process may appear in `process-index.json`, or an "AGENTIC_PROCESS" might be in `process-index.json` instead of `processOrchestration-index.json`. If the primary cache file yields no match, search the other cache files using the task's type-specific portable name, preserving the existing fallback behavior. For `process` tasks the fallback is a hard gate before any unresolved/placeholder outcome — see [`plugins/tasks/process/planning.md` § Registry Resolution](plugins/tasks/process/planning.md#registry-resolution). **Exception: do not cross-type-fallback an `action`, `case-management`, `function`, `flow-process`, or `business-rule` lookup.** An Action App ID is valid only from `action-apps-index.json`, a child-case `entityKey` is valid only from `caseManagement-index.json`, a function `entityKey` is valid only from `function-index.json`, and a rule `entityKey` is valid only from `businessRule-index.json`, a flow `entityKey` is valid only from `flow-index.json`; a same-named process, agent, or API workflow is not a compatible substitute for any of these task types.
+For TIMER, skip lookup and emit `wait-for-timer`. `external-agent`/`external-workflow` are built as connector activities ([connector-activity § External agents and automations](plugins/tasks/connector-activity/planning.md#external-agents-and-automations)). If the primary has no match, search compatible cache files by portable name. For `process`, this fallback is a hard gate before unresolved/placeholder ([`plugins/tasks/process/planning.md` § Registry Resolution](plugins/tasks/process/planning.md#registry-resolution)). Do not cross-type-fallback `action`, `case-management`, `function`, `flow-process`, or `business-rule`: their identifiers are valid only in `action-apps-index.json`, `caseManagement-index.json`, `function-index.json`, `flow-index.json`, and `businessRule-index.json` respectively.
 
 ### 2. Search by Name and Folder Path
 
-For each task in the sdd.md, extract its concrete portable name from the type-specific field below. Use the corresponding folder only when it is concrete; `<UNRESOLVED>` means name-only discovery.
+Extract the required concrete portable name; never use task display name or accept `<UNRESOLVED>`:
 
-| Task type | Portable name query | Folder hint |
+| Task type | Portable name | Folder hint |
 |---|---|---|
 | `process` / `agent` / `rpa` / `api-workflow` / `function` / `business-rule` | `Resolved Resource` | `Folder Path` |
 | `action` | `Action App: <deploymentTitle>` in `HITL Implementation` | `Deployment Folder` |
 | `case-management` | `Child Case` | `Folder Path` |
 
-The portable name is REQUIRED and never `<UNRESOLVED>`. Do not fall back to the task display name. Then filter the cache file using `cat ... | python3 -c "..."` or the `Read` tool. **Do NOT use `node -e 'const fs=require("fs")...'` for cache reads — this violates Rule 14 even when the target is a resource cache file, not a skill artifact.**
+Use the corresponding folder only when it is concrete; an `<UNRESOLVED>` folder means name-only discovery. Filter with `cat ... | python3 -c "..."` or `Read`; do **not** use `node -e 'const fs=require("fs")...'` for cache reads (Rule 14).
 
 ```bash
 cat ~/.uip/case-resources/<type>-index.json | python3 -c "
@@ -282,44 +247,38 @@ for item in data:
 "
 ```
 
-**Match priority:**
-1. **Exact name + exact folder** — strongest match, use directly.
-2. **Exact name, multiple folders** — pick the one matching the sdd.md folder path.
-3. **Exact name, several matches, no folder to narrow them** — do not pick one. Order is not evidence: the cache lists resources in the order the tenant registered them, so "first" is whichever was deployed earliest, and it silently changes when that one is deleted. Record every candidate in `matches`, leave `selected: null` with the `<UNRESOLVED>` identity-slot marker, and send it to the [MUST Confirm gate](#must-confirm-before-placeholder-fallback) — one option per candidate, named by its folder.
-4. **No match in primary cache file** — apply the compatible cross-type fallback above. For `action`, `function`, `business-rule` and `case-management`, do not search another cache type; proceed to the empty-result gate.
+Priority: exact name + folder; exact name with multiple folders narrowed by SDD folder; exact name with several candidates and no folder → record all in `matches`, `selected: null`, identity marker `<UNRESOLVED>`, and use the gate with one folder-labelled candidate each; no primary match → compatible fallback, except action/function/business-rule/case-management, which go directly to empty gate. Never use cache order as evidence.
 
 ### 3. Handle Empty Results
 
-> **Required precondition.** Before reaching this step, the [§ MUST: Confirm Before Placeholder Fallback](#must-confirm-before-placeholder-fallback) gate above MUST have been satisfied. If you have not yet run AskUserQuestion for the empty-result batch, do that first. Force pull and per-plugin Unresolved Fallback both flow through that gate.
+The [MUST Confirm](#must-confirm-before-placeholder-fallback) gate is a precondition. Agents, API workflows, and business rules missing tenant index must first search local siblings with `registry search "<name>" --type <agent|api|businessRule> --local --output json` ([agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution) / [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) / [business-rule/planning.md § Registry Resolution](plugins/tasks/business-rule/planning.md#registry-resolution)). An exact `Source: "local"` match resolves and binds `solution_folder.<name>`; it is not empty. Only absence from tenant and local indexes reaches the gate.
 
-> **Agents, API workflows & business rules: resolve in-solution siblings before counting a lookup empty.** For an `agent`, `api-workflow`, or `business-rule` that misses the tenant index, first check for an existing in-solution sibling via `registry search "<name>" --type <agent|api|businessRule> --local --output json` (per [agent/planning.md](plugins/tasks/agent/planning.md#registry-resolution) / [api-workflow/planning.md § Registry Resolution](plugins/tasks/api-workflow/planning.md#registry-resolution) / [business-rule/planning.md § Registry Resolution](plugins/tasks/business-rule/planning.md#registry-resolution)). A `Source: "local"` exact-name match **resolves** it (bind via `solution_folder.<name>`) — it is NOT empty and does NOT reach the gate or Create. Only resources absent from **both** the tenant index and the local siblings are empty here. (This keeps re-runs idempotent: an already-built sibling resolves instead of rebuilding.)
+After the gate, if Force pull was chosen it has already run:
 
-If no match is found across all relevant cache files:
+```bash
+uip maestro case registry pull --force
+```
 
-1. **Already gated above.** AskUserQuestion confirmation already ran. If the user picked `Force pull and re-resolve`, the force pull has already executed; this step is reached for lookups that remained empty after the second-pass search.
-   ```bash
-   # already executed during the gate's Force-pull branch:
-   uip maestro case registry pull --force
-   ```
-2. If still no match (or the user picked `Use placeholders for all`, and any creatable resource was not selected for Create), mark it in `registry-resolved.json`: `[REGISTRY LOOKUP FAILED: <name> in <folder>]` and proceed to the per-plugin Unresolved Fallback path.
+If still absent, or placeholders were chosen and Create was not selected, write `[REGISTRY LOOKUP FAILED: <name> in <folder>]` to `registry-resolved.json` and use the per-plugin Unresolved Fallback.
 
 ### 4. Return All Matches
 
-Collect all matching results for the `registry-resolved.json` debug output. Record Rule 10's exact keys:
+Each Rule 10 entry must contain exactly:
+
 - `stage`: exact SDD stage name
 - `task`: exact SDD task name
-- `taskType`: the SDD schema-kebab task type
-- `cacheFile`: basename of the cache file actually searched
-- `searchQuery`: the concrete type-specific portable name
-- `matches`: the full exact-name objects from that cache (empty array when none)
-- `selected`: the selected full object, or `null` when unresolved
-- `rationale`: why that object was selected, or why no compatible match exists
+- `taskType`: SDD schema-kebab task type
+- `cacheFile`: basename actually searched
+- `searchQuery`: concrete portable name
+- `matches`: full exact-name objects, empty when none
+- `selected`: selected full object or `null`
+- `rationale`: selection or incompatibility reason
 
 ## Type Mapping
 
-After finding a match, map the **cache file type** (not the sdd.md component type) to the JSON `type` value written into the task node:
+Map cache file to task-node `type` and identifier:
 
-| Cache file | Task `type` | Identifier field |
+| Cache file | Task `type` | Identifier |
 |---|---|---|
 | `agent-index.json` | `agent` | `entityKey` |
 | `process-index.json` | `rpa` | `entityKey` |
@@ -335,24 +294,18 @@ After finding a match, map the **cache file type** (not the sdd.md component typ
 | `typecache-external-agent-activities-index.json` | `external-agent` | `uiPathActivityTypeId` |
 | `typecache-external-automation-activities-index.json` | `external-workflow` | `uiPathActivityTypeId` |
 
-Additional `type` values not discoverable through cache: `rpa`, `wait-for-timer`.
-
-**Important:** The sdd.md component type determines the JSON `type` to write; the **cache file** supplies the entity identifier (`entityKey`). E.g. if sdd.md says "RPA" and the match is in `process-index.json`, write `type: "rpa"` (from sdd.md). The `entityKey` is recorded in `registry-resolved.json` and confirms the resource during planning — it is **not** written to the task node; non-connector tasks reference the resource via `data.name` / `data.folderPath` = `=bindings.<id>` (per the type's `impl-json.md`).
+Additional undiscoverable types: `rpa`, `wait-for-timer`. The SDD component type determines task-node `type`; the cache supplies the identifier. SDD RPA matched in `process-index.json` remains `type: "rpa"`. Store `entityKey` in `registry-resolved.json`, not the task node; non-connectors reference `data.name` / `data.folderPath` = `=bindings.<id>` per their `impl-json.md`.
 
 ## Connector Tasks
 
-For entries in `typecache-activities-index.json` or `typecache-triggers-index.json`, the resolution pipeline (get-connection + `case spec`) lives in [connector-integration.md](connector-integration.md). Registry discovery provides only the `uiPathActivityTypeId`; everything else is handled there.
-
-After registry pull, `uip maestro case spec` is the unified metadata endpoint for connector tasks — it returns identity, connection details, inputs/outputs/filter contract, references with pre-built discoverCommand, and (in Phase 3) a populated `caseShape` ready to drop into `caseplan.case`. This replaces the legacy `case tasks describe` + `is resources describe` dance for connector activities and triggers. See [connector-integration.md § Step 3](connector-integration.md) for the call shape.
-
-- **Only use entries that have a `uiPathActivityTypeId` field.** Skip entries without it — these are non-connector activities and are not supported as case tasks at this time.
+For `typecache-activities-index.json` and `typecache-triggers-index.json`, use [connector-integration.md](connector-integration.md) for get-connection and `case spec`; discovery supplies only `uiPathActivityTypeId`. After pull, `uip maestro case spec` is the unified endpoint for identity, connection, inputs/outputs/filter contract, references with pre-built discoverCommand, and Phase-3 `caseShape`; it replaces `case tasks describe` + `is resources describe`. See [connector-integration.md § Step 3](connector-integration.md) for its call shape. Use only entries containing `uiPathActivityTypeId`; skip all others.
 
 ## Output Contract
 
-The discovery result for each match should include the **entity identifier** (the value from the "Identifier field" column above) so Phase 2 can reference it. For **connector** tasks the implementation agent writes this identifier into `data.typeId`. For **non-connector** tasks it is not written to the node — it stays in `registry-resolved.json` (audit) and the node references the resource via `data.name` / `data.folderPath` = `=bindings.<id>`.
+Every match includes the entity identifier from the table. Connector implementations write it to `data.typeId`; non-connectors keep it only in `registry-resolved.json` and reference resources through `data.name` / `data.folderPath` = `=bindings.<id>`.
 
 ### `registry-resolved.json` content discipline
 
-Structured log only — per Rule 10, each entry uses exact keys `{stage, task, taskType, cacheFile, searchQuery, matches, selected, rationale}`. The file may be re-ingested as a performance cache only after association by `stage` + `task` and the strict SDD match in [planning.md § Design-lane carryover](planning.md#step-2--locate-and-parse-the-design-document); it never overrides the SDD. `rationale` MUST explain the selection choice (e.g., `"exact name match in caseManagement folder"`); never use it for verify-text drafts, SDD-vs-spec field translations, or downstream-plugin-behavior claims.
+This is a structured log only. Each entry uses exactly `{stage, task, taskType, cacheFile, searchQuery, matches, selected, rationale}`. Re-ingest it as a performance cache only after association by `stage` + `task` and strict SDD matching in [planning.md § Design-lane carryover](planning.md#step-2--locate-and-parse-the-design-document); it never overrides SDD. `rationale` must explain selection (for example, `"exact name match in caseManagement folder"`), never verify-text drafts, SDD-vs-spec translations, or downstream-plugin behavior.
 
 <!-- END: registry-discovery.md -->
