@@ -128,6 +128,15 @@ endpoint is not a catalog activity: send it as a connector-mode HTTP request
 through the same connection. Never fall back to the V1 template for it; the
 V1 node neither opens nor packs the way Studio Web needs.
 
+Fill every `{placeholder}` of the object's path (`uip is resources list`'s
+`Path`) in `url`. The request takes no `pathParameters` and sends `url` as
+written, so a placeholder left in it goes out literally. A known value goes
+inline, a run-time one in a `=js:` url. For `/projects/{projectId}/items/{id}`:
+
+```json
+{"authentication":"connector","method":"GET","url":"=js:'/projects/<project-id>/items/' + vars.Var_ItemId"}
+```
+
 A service with no Integration Service connector of its own (Spotify, an
 internal API) goes through a connection of the generic HTTP connector,
 `uipath-uipath-http`, which holds the service's base URL and auth: connector
