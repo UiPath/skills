@@ -68,8 +68,8 @@ DECLARATIONS: tuple[Declaration, ...] = (
         copies=(
             "skills/uipath-planner/references/case/case-design-layers-guide.md (§ Task types table and count)",
             "skills/uipath-planner/references/case/case-sdd-conformance-checklist.md (item 8 count, item 6 detail markers)",
-            "tests/tasks/uipath-maestro-case/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS)",
-            "tests/tasks/uipath-planner/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS)",
+            "tests/tasks/uipath-maestro-case/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS, STUDIO_WEB_ONLY, NOT_TASK_TYPES)",
+            "tests/tasks/uipath-planner/_shared/sdd_check.py (TASK_TYPES, TASK_DETAIL_MARKERS, STUDIO_WEB_ONLY, NOT_TASK_TYPES)",
         ),
     ),
     Declaration(
