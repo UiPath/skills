@@ -112,6 +112,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   - Every field id is a plain identifier that is not a reserved word: `reviewNote`, not `review-note` or `default`.
   - No field is called `Action`; that is the outcome picked.
   - Outcome ids are unique, including derived ones: `Needs review` and `Needs-review` collide.
+  - Each variable has one writer: two answers never share a `variable`, and an `outputs` key is never an answer's variable (a field named `decision` beside `outputs: { decision: '=Action' }` is refused).
   - A picker (`singleSelect`, `multiSelect`, `enum`, or a dropdown `controlType`) has `options`, e.g. `[{ id: 'o1', value: 'high', label: 'High' }]`.
 - The cloud engine takes the inline-form path only on a tenant with its quick-form flag on.
   With the flag off, the run fails at the human task with incident `170004` "Invalid input for the HITL task".
