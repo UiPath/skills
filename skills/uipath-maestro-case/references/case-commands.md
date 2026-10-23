@@ -104,7 +104,9 @@ uip solution resources refresh --solution-folder <SolutionDir> --output json
 
 > `--solution-folder` is required when invoking from outside the solution directory. Omit the flag (and run from inside the solution dir) only for ad-hoc local use; the skill always passes it explicitly so the cwd doesn't matter.
 
+<!--skill-flavor:refresh-before-debug:start-->
 **Always run before `uip solution upload` or `uip maestro case debug`.** Without this step, connection resources may not be registered on Studio Web ("Resource is not configured" warning).
+<!--skill-flavor:refresh-before-debug:end-->
 
 > Requires `bindings_v2.json` to be populated. If still the empty scaffold (`resources: []`), no resources will be synced.
 

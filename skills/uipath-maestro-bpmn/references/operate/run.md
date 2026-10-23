@@ -98,6 +98,7 @@ Use traces only when status, incidents, variables, and deployed BPMN correlation
 uip maestro bpmn job traces <JOB_KEY> --output json
 ```
 
+<!--skill-flavor:debug-instance-inspection:start-->
 For debug instances, prefer the `debug-instance` inspection commands when
 standard deployed-instance commands do not have debug-session context. Use the
 identifiers returned by the debug command as the source of truth.
@@ -107,6 +108,7 @@ uip maestro bpmn debug-instance incidents <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables <INSTANCE_ID> --output json
 uip maestro bpmn debug-instance variables-all <INSTANCE_ID> --output json
 ```
+<!--skill-flavor:debug-instance-inspection:end-->
 
 ## Execution summary
 
@@ -134,8 +136,10 @@ If execution faults, hand off to [diagnose/CAPABILITY.md](../diagnose/CAPABILITY
 
 ## Anti-patterns
 
+<!--skill-flavor:debug-as-validation:start-->
 - **Never run `uip maestro bpmn debug` as validation.** Use Author validation and packaging checks for correctness;
   debug executes the process.
+<!--skill-flavor:debug-as-validation:end-->
 - **Never reuse stale inputs silently.** Confirm every side-effecting run's input set and redact secrets from summaries.
 - **Never skip folder context for deployed runs.** `process run` requires `<FOLDER_KEY>` and instance inspection commands
   require `--folder-key` or `-f`.

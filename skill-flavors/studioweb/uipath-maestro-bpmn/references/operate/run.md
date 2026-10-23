@@ -30,3 +30,13 @@ flags. Run `uip bpmn debug --help` for the host's exact surface.
 > Studio Web URL, so `debug-instance` reads have nothing to target. Read
 > element outcomes and outputs from the execution trace.
 <!--skill-flavor:debug-command-usage:end-->
+
+<!--skill-flavor:debug-instance-inspection:start-->
+A Studio Web debug returns no instance id. Inspect it through the run logs and
+execution trace `uip bpmn debug` printed.
+<!--skill-flavor:debug-instance-inspection:end-->
+
+<!--skill-flavor:debug-as-validation:start-->
+- **Never run `uip bpmn debug` as validation.** Use Author validation and packaging checks for correctness;
+  debug executes the process.
+<!--skill-flavor:debug-as-validation:end-->

@@ -58,3 +58,7 @@ uip case debug "<ProjectName>" --inputs '{"claimId": "C-1"}'
 
 Output is plain text, not JSON: status, `Trace ID: <id>`, run logs, execution trace. Exit 1 means the run faulted. Run `uip case debug --help` for the host's exact surface.
 <!--skill-flavor:case-debug-command:end-->
+
+<!--skill-flavor:refresh-before-debug:start-->
+Not run in Studio Web: the host keeps solution resources in sync, including before `uip case debug`.
+<!--skill-flavor:refresh-before-debug:end-->
