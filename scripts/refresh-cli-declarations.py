@@ -51,7 +51,7 @@ class Declaration:
     generators: tuple[tuple[str, ...], ...] = ()  # argv lists re-run after a refresh
     tests: tuple[str, ...] = ()  # pytest paths holding the hand-kept copies
     copies: tuple[str, ...] = ()  # hand-kept files, named in the report
-    notes: tuple[Path, str] | None = None  # (module, function(live) -> lines): reported, never failed
+    notes: tuple[Path, str] | None = None  # (module, function(data) -> lines): new lines reported, never failed
 
 
 CASE_SHARED = REPO / "tests" / "tasks" / "uipath-maestro-case" / "_shared"
@@ -84,7 +84,7 @@ DECLARATIONS: tuple[Declaration, ...] = (
             "tests/tasks/uipath-maestro-case/_shared/sdd_check.py (STAGE_ENTRY, TASK_ENTRY, … gate sets)",
             "tests/tasks/uipath-planner/_shared/sdd_check.py (STAGE_ENTRY, TASK_ENTRY, … gate sets)",
         ),
-        notes=(CASE_SHARED / "test_rule_types.py", "unused"),
+        notes=(CASE_SHARED / "rule_types.py", "unused"),
     ),
 )
 
@@ -156,7 +156,14 @@ def refresh(decl: Declaration, write: bool) -> dict:
                 sys.exit(f"generator {' '.join(argv)} failed:\n{gen.stdout}{gen.stderr}")
         result["passed"], result["failing"] = failing_tests(decl.tests)
     if decl.notes:
-        result["notes"] = getattr(load_module(decl.notes[0]), decl.notes[1])(live)
+        # Only what this move added: the standing policy gaps would repeat in every PR.
+        # A notes failure is reported, never raised, so it cannot cost the run its report.
+        try:
+            notes_of = getattr(load_module(decl.notes[0]), decl.notes[1])
+            before = set(notes_of(old))
+            result["notes"] = [line for line in notes_of(live) if line not in before]
+        except Exception as e:  # noqa: BLE001
+            result["notes"] = [f"- notes unavailable: {type(e).__name__}: {e}"]
     return result
 
 

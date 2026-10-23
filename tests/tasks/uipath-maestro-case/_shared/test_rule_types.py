@@ -26,21 +26,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import rule_types  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[4]
-GUIDE = REPO / "skills" / "uipath-planner" / "references" / "case" / "case-design-layers-guide.md"
 GATES = [
     REPO / "tests" / "tasks" / "uipath-maestro-case" / "_shared" / "sdd_check.py",
     REPO / "tests" / "tasks" / "uipath-planner" / "_shared" / "sdd_check.py",
 ]
 
-# The guide's row label, and the sdd_check constant, for each declared scope.
-GUIDE_ROWS = {
-    "Task entry": "task-entry",
-    "Stage entry": "stage-entry",
-    "Stage exit": "stage-exit",
-    "Stage completion": "stage-completion",
-    "Case exit": "case-exit",
-    "Case completion": "case-completion",
-}
+# The sdd_check constant for each declared scope.
 GATE_SETS = {
     "TASK_ENTRY": "task-entry",
     "STAGE_ENTRY": "stage-entry",
@@ -53,18 +44,6 @@ GATE_SETS = {
 MARKS = {"Yes": True, "No": False, "—": None}
 
 
-def _lifecycle_rows() -> dict[str, tuple[str, set[str]]]:
-    text = GUIDE.read_text()
-    start = text.find("### Lifecycle gates")
-    assert start >= 0, "the layers guide has no '### Lifecycle gates' heading"
-    end = text.find("\n### ", start + 1)
-    section = text[start:] if end < 0 else text[start:end]
-    rows = {}
-    for gate, marks, rules in re.findall(r"^\| ([A-Z][a-z]+ [a-z]+) \| (\S+) \| (.+) \|$", section, re.M):
-        rows[gate] = (marks, set(re.findall(r"`([a-z-]+)`", rules)))
-    return rows
-
-
 def test_snapshot_matches_the_installed_cli():
     live = rule_types.from_cli()
     if live is None:
@@ -75,22 +54,22 @@ def test_snapshot_matches_the_installed_cli():
 
 
 def test_every_declared_scope_has_a_guide_row():
-    assert set(GUIDE_ROWS.values()) == set(rule_types.by_scope())
-    assert set(_lifecycle_rows()) == set(GUIDE_ROWS), "§ Lifecycle gates rows do not match the six slots"
+    assert set(rule_types.GUIDE_ROWS.values()) == set(rule_types.by_scope())
+    assert set(rule_types.lifecycle_rows()) == set(rule_types.GUIDE_ROWS), "§ Lifecycle gates rows do not match the six slots"
 
 
-@pytest.mark.parametrize("gate", GUIDE_ROWS, ids=GUIDE_ROWS.get)
+@pytest.mark.parametrize("gate", rule_types.GUIDE_ROWS, ids=rule_types.GUIDE_ROWS.get)
 def test_guide_gate_allows_only_rules_the_slot_holds(gate: str):
-    _, rules = _lifecycle_rows()[gate]
-    scope = GUIDE_ROWS[gate]
+    _, rules = rule_types.lifecycle_rows()[gate]
+    scope = rule_types.GUIDE_ROWS[gate]
     extra = rules - rule_types.by_scope()[scope]
     assert not extra, f"§ Lifecycle gates '{gate}' allows {sorted(extra)}, which `{scope}` cannot hold"
 
 
-@pytest.mark.parametrize("gate", GUIDE_ROWS, ids=GUIDE_ROWS.get)
+@pytest.mark.parametrize("gate", rule_types.GUIDE_ROWS, ids=rule_types.GUIDE_ROWS.get)
 def test_guide_marks_complete_matches_the_slot(gate: str):
-    marks, _ = _lifecycle_rows()[gate]
-    scope = GUIDE_ROWS[gate]
+    marks, _ = rule_types.lifecycle_rows()[gate]
+    scope = rule_types.GUIDE_ROWS[gate]
     assert MARKS.get(marks, "?") == rule_types.marks_complete()[scope], (
         f"§ Lifecycle gates '{gate}' says Marks complete {marks}; `{scope}` declares {rule_types.marks_complete()[scope]}"
     )
@@ -111,14 +90,3 @@ def test_sdd_check_gate_allows_only_rules_the_slot_holds(gate: Path, name: str):
     extra = set(rules) - rule_types.by_scope()[scope]
     assert not extra, f"{gate.relative_to(REPO)} {name} allows {sorted(extra)}, which `{scope}` cannot hold"
 
-
-def unused(data: dict | None = None) -> list[str]:
-    """What a slot can hold that the guide does not allow: reported in the drift PR, never failed."""
-    rows = _lifecycle_rows()
-    declared = rule_types.by_scope(data)
-    lines = []
-    for gate, scope in GUIDE_ROWS.items():
-        missing = sorted(declared.get(scope, set()) - rows[gate][1])
-        if missing:
-            lines.append(f"- `{scope}` can also hold {', '.join(f'`{m}`' for m in missing)}; § Lifecycle gates '{gate}' does not allow it")
-    return lines

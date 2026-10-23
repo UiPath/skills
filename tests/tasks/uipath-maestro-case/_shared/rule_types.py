@@ -15,11 +15,23 @@ held to it one way (`test_rule_types.py`): never a rule the slot cannot hold.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SNAPSHOT = HERE / "rule_types.json"
+GUIDE = HERE.parents[3] / "skills" / "uipath-planner" / "references" / "case" / "case-design-layers-guide.md"
+
+# The layers guide's § Lifecycle gates row label for each declared scope.
+GUIDE_ROWS = {
+    "Task entry": "task-entry",
+    "Stage entry": "stage-entry",
+    "Stage exit": "stage-exit",
+    "Stage completion": "stage-completion",
+    "Case exit": "case-exit",
+    "Case completion": "case-completion",
+}
 COMMAND = ["uip", "maestro", "case", "rule-types", "list", "--output", "json"]
 
 
@@ -65,3 +77,30 @@ def from_cli() -> dict | None:
     if payload.get("Code") != "RuleTypeList":
         return None
     return payload["Data"]
+
+
+def lifecycle_rows() -> dict[str, tuple[str, set[str]]]:
+    """§ Lifecycle gates as {row label: (Marks complete cell, legal WHEN rules)}."""
+    text = GUIDE.read_text()
+    start = text.find("### Lifecycle gates")
+    assert start >= 0, "the layers guide has no '### Lifecycle gates' heading"
+    end = text.find("\n### ", start + 1)
+    section = text[start:] if end < 0 else text[start:end]
+    rows = {}
+    for gate, marks, rules in re.findall(r"^\| ([A-Z][a-z]+ [a-z]+) \| (\S+) \| (.+) \|$", section, re.M):
+        rows[gate] = (marks, set(re.findall(r"`([a-z-]+)`", rules)))
+    return rows
+
+
+def unused(data: dict | None = None) -> list[str]:
+    """One line per rule a slot can hold that the guide does not allow: a drift-PR note, never a failure.
+
+    One line per (slot, rule), so the refresh can report only the pairs that are new.
+    """
+    rows = lifecycle_rows()
+    declared = by_scope(data)
+    return [
+        f"- `{scope}` can also hold `{rule}`; § Lifecycle gates '{gate}' does not allow it"
+        for gate, scope in GUIDE_ROWS.items()
+        for rule in sorted(declared.get(scope, set()) - rows[gate][1])
+    ]
