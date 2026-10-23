@@ -115,9 +115,18 @@ uip maestro bpmn registry get Intsvc.UnifiedHttpRequest --connection-id <connect
     --output json
 ```
 
-`--input-details` is the request: `authentication` (`manual` or `connector`),
-`method`, `url`, and optional `headers` and `query` objects and a `body`
-(sent for `POST`, `PUT` and `PATCH`). In connector mode the command takes the
+`--input-details` is the request. Its `url` is sent as written and there is
+no `pathParameters`: fill every `{placeholder}` of a catalog path
+(`uip is resources list`'s `Path`) in `url`, a known value inline and a
+run-time one in a `=js:` url. For `/projects/{projectId}/items/{id}`:
+
+```json
+{"authentication":"connector","method":"GET","url":"=js:'/projects/<project-id>/items/' + vars.Var_ItemId"}
+```
+
+The other keys are `authentication` (`manual` or `connector`), `method`, and
+optional `headers` and `query` objects and a `body` (sent for `POST`, `PUT`
+and `PATCH`). In connector mode the command takes the
 target connector and folder from the connection. The element binds Studio
 Web's implicit connection for a manual request and the target connection for a
 connector one. Its outputs are `code`, `headers` and `body`, plus `Error`.
@@ -127,15 +136,6 @@ When `registry get` says an object has no activity in the catalog
 endpoint is not a catalog activity: send it as a connector-mode HTTP request
 through the same connection. Never fall back to the V1 template for it; the
 V1 node neither opens nor packs the way Studio Web needs.
-
-Fill every `{placeholder}` of the object's path (`uip is resources list`'s
-`Path`) in `url`. The request takes no `pathParameters` and sends `url` as
-written, so a placeholder left in it goes out literally. A known value goes
-inline, a run-time one in a `=js:` url. For `/projects/{projectId}/items/{id}`:
-
-```json
-{"authentication":"connector","method":"GET","url":"=js:'/projects/<project-id>/items/' + vars.Var_ItemId"}
-```
 
 A service with no Integration Service connector of its own (Spotify, an
 internal API) goes through a connection of the generic HTTP connector,

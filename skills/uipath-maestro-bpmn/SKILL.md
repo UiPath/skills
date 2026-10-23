@@ -213,6 +213,10 @@ For `.flow` JSON use `uipath-maestro-flow`; for XAML/coded workflows use
    template's remaining fields and make that swap only after a live run
    faults with `key:FolderKey`; without a run, report the node unverified. Details:
    [references/registry-workflow.md](references/registry-workflow.md#job-wrapper-v1-trap--releasekey-templates-are-unrunnable).
+19. **An HTTP request's `url` has no `{placeholder}` left.** Fill every
+   placeholder of a catalog path in `url` before `registry get
+   Intsvc.UnifiedHttpRequest`; nothing fills it later
+   ([how](references/v2-connector-nodes.md#http-requests)).
 
 ## The model
 
@@ -549,10 +553,7 @@ Draft mode only.
    variable.
    **Every new connector node is V2, in every workflow**, HTTP requests
    (`Intsvc.UnifiedHttpRequest`) and external agents included: build it with
-   `registry get --input-details` and paste `Data.V2` as it is. An HTTP
-   request sent for an object with no catalog activity fills every
-   `{placeholder}` of the object's path in `url`
-   ([how](references/v2-connector-nodes.md#http-requests)). In an existing
+   `registry get --input-details` and paste `Data.V2` as it is. In an existing
    workflow without `<uipath:intsvcActivityConfig version="v2" />` never add
    the marker, and leave its V1 nodes alone unless the task asks (a V1 trigger
    or wait faults at run time, so rebuild one as V2 when the task touches it).
