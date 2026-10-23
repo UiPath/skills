@@ -20,7 +20,7 @@ reference:
 initial_prompt: |
   I need a BPMN process called "InvoiceIntakeSketch" for incoming invoices.
   We record each one. Anything of 1000 or more needs a manager to review it,
-  and the rest can be approved automatically.
+  and the rest go through automatic approval.
 
   Can you show me what it would look like before you build it? Don't upload
   or run anything yet.

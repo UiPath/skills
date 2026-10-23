@@ -351,9 +351,11 @@ gateways, conditions) in the plan, then build 2a–2f once the plan is approved.
 
 Outside plan mode, draft mode **writes the skeleton**. "Show me before you
 build it" asks to approve a real, validated skeleton `.bpmn`, not a sketch in
-chat: run 2a–2f, then the 3c gate. Building, in the user's words, is phase 4.
-A text-only outline with no file is not a skeleton, and reporting one as
-"outline ready" misreports it.
+chat: run phase 2 (2a–2f, with the guide's skips for a trigger start and a
+forbidden upload), then the 3c gate. Building, in the user's words, is
+phase 4. A text-only outline with no file is not a skeleton, and reporting
+one as "outline ready" misreports it. Plan mode is the host's state: never
+enter it yourself to satisfy "show me first".
 
 **Only *Build it* at 3c authorizes phase 4.** When the user keeps the
 outline, or has not answered, report the skeleton as an outline, not as a
