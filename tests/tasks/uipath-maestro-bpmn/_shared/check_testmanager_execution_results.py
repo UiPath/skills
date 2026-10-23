@@ -50,7 +50,7 @@ Assertion map (Flow -> BPMN):
   F criterion 2   flow_contains 'uipath-uipath-testmanager.'            -> connector_requests() non-empty (main(), no --all-ops)
   F criterion 4   flow_contains <9 node types>                          -> one classified node per op (main(), --all-ops)
   I               locate/parse .bpmn                                    -> parse_bpmn()
-  T               objectName+method or method+path classification       -> OPERATIONS / matches()
+  T               objectName+method or method+path classification       -> OPERATIONS / require_operations()
   T               GETBYID/GET equivalence for get-one-by-id operations   -> OPERATIONS methods set
   DROPPED         require_no_private_connector_values (not in Flow)
   DROPPED         require_sequence_integrity (not in Flow; Flow checked no ordering)
@@ -73,70 +73,41 @@ operations are present, each as its own distinct sendTask.
 from __future__ import annotations
 
 import os
-import re
 import sys
-import xml.etree.ElementTree as ET
-from typing import NamedTuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from _shared.bpmn_check import (  # noqa: E402
-    RequestShape,
+    ConnectorOperation,
     connector_requests,
-    context_value,
     fail,
+    no_connector_node_message,
     parse_bpmn,
+    require_operations,
 )
 
 CONNECTOR_KEY = "uipath-uipath-testmanager"
-_SEGMENT = r"(?!\{[^/}]+\}|%7B[^/]*%7D)[^/]+"
-CATALOG_ONLY_METHODS = {"getbyid"}
-
-
-def _path_re(tail: str) -> re.Pattern[str]:
-    return re.compile(rf"/v2/{_SEGMENT}{tail}/?$", re.IGNORECASE)
-
-
-class Operation(NamedTuple):
-    label: str
-    object_name: str
-    methods: set[str]
-    path_re: re.Pattern[str]
-
-
 OPERATIONS = [
-    Operation("get a test execution", "TestExecution", {"getbyid", "get"},
-              _path_re(rf"/testexecutions/{_SEGMENT}")),
-    Operation("delete a test execution", "TestExecution", {"delete"},
-              _path_re(rf"/testexecutions/{_SEGMENT}")),
-    Operation("get the test case logs of a test execution", "GetTestCaseLogsOfTestExecution",
-              {"get"}, _path_re(rf"/testcaselogs/testexecution/{_SEGMENT}/paged")),
-    Operation("get a test case log", "TestCaseLog", {"getbyid", "get"},
-              _path_re(rf"/testcaselogs/{_SEGMENT}")),
-    Operation("get robot logs", "GetRobotLogs", {"get"},
-              _path_re(rf"/orchestrator/testexecution/{_SEGMENT}/robotlogs/paged")),
-    Operation("get assertions", "GetAssertions", {"get"},
-              _path_re(rf"/testcaselogartifacts/{_SEGMENT}/assertions")),
-    Operation("download an assertion", "DownloadAssertion", {"getbyid", "get"},
-              _path_re(rf"/testcaselogartifacts/{_SEGMENT}/assertions/{_SEGMENT}/downloadscreenshot")),
-    Operation("get test steps", "GetTestSteps", {"get"},
-              _path_re(rf"/teststeps/testcase/{_SEGMENT}")),
-    Operation("get test step logs", "GetTestStepLogs", {"get"},
-              _path_re("/teststeplogs")),
+    ConnectorOperation("get a test execution", "TestExecution", {"getbyid", "get"},
+                       "/v2/{projectId}/testexecutions/{id}"),
+    ConnectorOperation("delete a test execution", "TestExecution", {"delete"},
+                       "/v2/{projectId}/testexecutions/{id}"),
+    ConnectorOperation("get the test case logs of a test execution",
+                       "GetTestCaseLogsOfTestExecution", {"get"},
+                       "/v2/{projectId}/testcaselogs/testexecution/{testExecutionId}/paged"),
+    ConnectorOperation("get a test case log", "TestCaseLog", {"getbyid", "get"},
+                       "/v2/{projectId}/testcaselogs/{id}"),
+    ConnectorOperation("get robot logs", "GetRobotLogs", {"get"},
+                       "/v2/{projectId}/orchestrator/testexecution/{id}/robotlogs/paged"),
+    ConnectorOperation("get assertions", "GetAssertions", {"get"},
+                       "/v2/{projectId}/testcaselogartifacts/{id}/assertions"),
+    ConnectorOperation("download an assertion", "DownloadAssertion", {"getbyid", "get"},
+                       "/v2/{projectId}/testcaselogartifacts/{id}/assertions/{assertionId}/downloadscreenshot"),
+    ConnectorOperation("get test steps", "GetTestSteps", {"get"},
+                       "/v2/{ProjectId}/teststeps/testcase/{Id}"),
+    ConnectorOperation("get test step logs", "GetTestStepLogs", {"get"},
+                       "/v2/{projectId}/teststeplogs"),
 ]
-
-
-def matches(
-    task: ET.Element, method: str, path: str, shape: RequestShape, operation: Operation
-) -> bool:
-    method = method.lower()
-    if shape is RequestShape.ACTIVITY:
-        object_name = context_value(task, "objectName")
-        return method in operation.methods and object_name == operation.object_name
-
-    if method not in operation.methods - CATALOG_ONLY_METHODS:
-        return False
-    return operation.path_re.search(path.split("?", 1)[0]) is not None
 
 
 def main() -> None:
@@ -145,34 +116,13 @@ def main() -> None:
     path, root = parse_bpmn()
     requests = list(connector_requests(root, CONNECTOR_KEY))
     if not requests:
-        fail(
-            "no bpmn:sendTask calls the Test Manager connector: expected "
-            f"Intsvc.ActivityExecution with connectorKey {CONNECTOR_KEY!r}, or a "
-            "connector-mode Intsvc.UnifiedHttpRequest with targetConnector "
-            f"{CONNECTOR_KEY!r}"
-        )
+        fail(no_connector_node_message("Test Manager", CONNECTOR_KEY))
     print(f"OK: {len(requests)} {CONNECTOR_KEY} sendTask(s) present in {path}")
 
     if not all_ops:
         return
 
-    missing: list[str] = []
-    for operation in OPERATIONS:
-        match = next((r for r in requests if matches(*r, operation)), None)
-        if match is None:
-            missing.append(
-                f"{operation.label} (objectName={operation.object_name!r} or path matching "
-                f"{operation.path_re.pattern!r}, method in {sorted(operation.methods)})"
-            )
-            continue
-
-        task, method, request_path, _shape = match
-        target = request_path or context_value(task, "objectName")
-        print(f"OK: {operation.label} -> {task.attrib.get('id', '?')} ({method} {target})")
-
-    if missing:
-        fail("missing execution/results connector node(s):\n  " + "\n  ".join(missing))
-
+    require_operations(requests, OPERATIONS, "execution/results")
     print("OK: all nine execution/results operations present as distinct connector nodes")
 
 
