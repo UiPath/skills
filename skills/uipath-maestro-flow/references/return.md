@@ -45,11 +45,12 @@ maps the output from it. You still write the output's own name:
 Give the End a `name`, and another path can end there with `.stepToRef(name)`
 instead of getting an End of its own. The flow then has ONE End with several
 incoming edges, as the canvas draws it.
-<!--skill-flavor:named-end-sdk-version:start-->
 Needs `@uipath/maestro-builder-sdk`
-6.32.0 or later; an older SDK refuses the ref with `REF_UNKNOWN_TARGET`, so
+6.32.0 or later; an older SDK refuses the ref with `REF_UNKNOWN_TARGET`,
+<!--skill-flavor:named-end-sdk-upgrade:start-->
+so
 upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:named-end-sdk-version:end-->
+<!--skill-flavor:named-end-sdk-upgrade:end-->
 
 ```ts
 .step('fetch', http({ url, managed: false, branches: [{ name: 'missing', condition: js`$vars.fetch.output.statusCode === 404` }] }))
@@ -63,12 +64,13 @@ upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
   says `{ name: 'end' }`.
 - The End may sit inside another port's path. Two side paths that the main
   path never reaches can share one End.
-<!--skill-flavor:port-end-sdk-version:start-->
   Needs `@uipath/maestro-builder-sdk`
   6.32.1 or later; an older SDK refuses the ref (`REF_INTO_PORT_LIST`) and
-  renames a differing duplicate End `failed2`, so upgrade with
+  renames a differing duplicate End `failed2`,
+<!--skill-flavor:port-end-sdk-upgrade:start-->
+  so upgrade with
   `npm install -g @uipath/maestro-builder-sdk@latest`:
-<!--skill-flavor:port-end-sdk-version:end-->
+<!--skill-flavor:port-end-sdk-upgrade:end-->
 
   ```ts
   .stepToList('branch-missing', (b) => b.step('reportMissing', script({ code })).return({}, { name: 'failed' }))
@@ -84,11 +86,12 @@ upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
   the trigger or an entry point already uses is refused (`STEP_ID_COLLISION`;
   `compile --no-check` throws). For example, `.step('x', ...).return({}, { name: 'x' })`
   fails `check`. Give the End its own name, such as `endX`.
-<!--skill-flavor:end-name-sdk-version:start-->
   Needs `@uipath/maestro-builder-sdk` 6.32.3 or later; an older SDK renames the End
-  `x2` with no error, so upgrade with
+  `x2` with no error,
+<!--skill-flavor:end-name-sdk-upgrade:start-->
+  so upgrade with
   `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:end-name-sdk-version:end-->
+<!--skill-flavor:end-name-sdk-upgrade:end-->
 - A decompiled brownfield flow uses this form when a path (an HTTP `branch-*`,
   a human-task `outcome-*`, a `.stepSwitch` arm, an error handler, an
   `.entryPoint` prefix) runs into an End another path already ends at. Keep the

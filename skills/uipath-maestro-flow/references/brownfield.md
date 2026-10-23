@@ -66,9 +66,10 @@ it, so a baseline of the edited source drops your change.
 With an edited `.flow.ts` and `--baseline-from`, `merge` runs `check` on the edited source and refuses the write on an error in a node or subflow the edit changed (`N error(s) in nodes merge takes from the edited flow`), and on one it cannot place that the edit introduced.
 An error on a node, or in a subflow, the edit did not touch prints as `DRAFT_NODE_KEPT` and the original is kept; a finding `merge` cannot place on a node prints as `CHECK_FINDING_UNPLACED` when the original's own round trip reports it too.
 Fix a finding when you edit its node.
-<!--skill-flavor:merge-check-sdk-version:start-->
-Needs `@uipath/maestro-builder-sdk` 6.44.4 or later; an older SDK refuses the write for any error it cannot place on an untouched root node, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:merge-check-sdk-version:end-->
+Needs `@uipath/maestro-builder-sdk` 6.44.4 or later; an older SDK refuses the write for any error it cannot place on an untouched root node,
+<!--skill-flavor:merge-check-sdk-upgrade:start-->
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:merge-check-sdk-upgrade:end-->
 
 If the edited compile fails `check` only with `HTTP_READ_WITHOUT_RETURNS`, the
 deployed HTTP node has no body schema
@@ -271,12 +272,13 @@ resource), `INLINE_AGENT_RESOURCE_SOURCE_NOT_GUID` for a `source` that is not a
 uuid, and `INLINE_AGENT_RESOURCE_SOURCE_DUP` for two resources on one agent
 with the same `source`: both would write one `resource.json`. Delete both
 `nodeId` and `source` from a copied entry.
-<!--skill-flavor:resource-ids-sdk-version:start-->
 Needs `@uipath/maestro-builder-sdk`
 6.33.0 or later; an older SDK's decompile omits these fields and compile renames
-the node with a new directory, so upgrade with
+the node with a new directory,
+<!--skill-flavor:resource-ids-sdk-upgrade:start-->
+so upgrade with
 `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:resource-ids-sdk-version:end-->
+<!--skill-flavor:resource-ids-sdk-upgrade:end-->
 
 A step's node id is its name with every character other than a letter, digit
 or `_` turned into `_` (`a b` gets id `a_b`), and compile never renames a step
@@ -288,11 +290,12 @@ steps are not checked against the caller's: a copy whose ids are taken is
 prefixed `<caller>_<step>`.) To send a
 second path to an existing step, end that path with `.stepToRef('<name>')`
 instead of adding the step again.
-<!--skill-flavor:dup-step-sdk-version:start-->
 Needs `@uipath/maestro-builder-sdk` 6.32.4 or
-later; an older SDK silently renames the second step `<name>2`, so upgrade with
+later; an older SDK silently renames the second step `<name>2`,
+<!--skill-flavor:dup-step-sdk-upgrade:start-->
+so upgrade with
 `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:dup-step-sdk-version:end-->
+<!--skill-flavor:dup-step-sdk-upgrade:end-->
 
 A node type the SDK has no factory for still round-trips: it comes back as
 `rawNode({ nodeType, version, manifest, inputs })`, carrying the definition the
@@ -377,9 +380,10 @@ job, not an edit to this call.
 ## Designer shapes decompile keeps
 
 Leave each as decompile writes it.
-<!--skill-flavor:envelope-sdk-version:start-->
-Needs `@uipath/maestro-builder-sdk` 6.44.0 or later: an older SDK's decompile writes `js\`[object Object]\`` for the envelope, drops the fork's arms and the `variable` rows with a `has no spelling` / `cannot write back` warning, and compile then refuses the source — upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:envelope-sdk-version:end-->
+Needs `@uipath/maestro-builder-sdk` 6.44.0 or later: an older SDK's decompile writes `js\`[object Object]\`` for the envelope, drops the fork's arms and the `variable` rows with a `has no spelling` / `cannot write back` warning, and compile then refuses the source
+<!--skill-flavor:envelope-sdk-upgrade:start-->
+— upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`.
+<!--skill-flavor:envelope-sdk-upgrade:end-->
 
 - a decision or switch condition stored as a `jsExpression` envelope or as `=js: …`
 - a quick form's asked-field `variable` ([hitl.md](hitl.md))
@@ -473,11 +477,12 @@ its case below says to; every other edit goes through merge.
   `agenticProcess()` refuses `returns` beside `completion: 'fire-and-forget'`
   (nothing could read it), so the source omits it and the warning names the
   fields.
-<!--skill-flavor:fire-and-forget-sdk-version:start-->
   Needs `@uipath/maestro-builder-sdk` 6.44.0 or later; an older SDK's
-  decompile writes `returns` and compile refuses it — upgrade with
+  decompile writes `returns` and compile refuses it
+<!--skill-flavor:fire-and-forget-sdk-upgrade:start-->
+  — upgrade with
   `npm install -g @uipath/maestro-builder-sdk@latest`.
-<!--skill-flavor:fire-and-forget-sdk-version:end-->
+<!--skill-flavor:fire-and-forget-sdk-upgrade:end-->
   Recompiling writes the definition without the schema; `merge` keeps
   the original's definition row, so a no-edit round trip loses nothing. To read
   the result, set `completion: 'wait'` and declare `returns`.
@@ -498,9 +503,10 @@ Decompiled source carries that layout as a `.layout({ nodes })` block, one long-
 Keep it.
 Only an added step's entry lands: a step the edit adds has none, so compile places it on its placeholder row and `merge` moves it next to its neighbours; to choose the spot yourself, add `<step>: at(x, y)` beside the neighbouring entries (`import { at } from '@uipath/maestro-builder-sdk'`), avoiding any x where (x − 256) is a multiple of 288 on y = 144 or 304, which `merge` reads as a compile placeholder and moves.
 At the root, an existing node's position and size come from the original whatever the source says, so moving one or resizing a container the edit grew in the source does nothing; set `layout.nodes.<id>.position` or `.size` in the merged `.flow` instead, and only when the file has no `layout.nodes` map, the node's `ui`.
-<!--skill-flavor:subflow-layout-sdk-version:start-->
-Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.4 or later; an older SDK takes every subflow from the edited compile, so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).
-<!--skill-flavor:subflow-layout-sdk-version:end-->
+Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.4 or later; an older SDK takes every subflow from the edited compile,
+<!--skill-flavor:subflow-layout-sdk-upgrade:start-->
+so upgrade with `npm install -g @uipath/maestro-builder-sdk@latest`).
+<!--skill-flavor:subflow-layout-sdk-upgrade:end-->
 A step the edit removes must lose its entry, or compile fails on the unknown key.
 Grid and rules: [`operate.md`](operate.md#lay-out-from-source-instead-layout-at-dim).
 

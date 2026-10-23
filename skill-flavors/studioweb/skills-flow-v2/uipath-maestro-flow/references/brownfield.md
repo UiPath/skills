@@ -17,9 +17,9 @@ the agent files merge changed. If validate fails, copy
 merge again.
 <!--skill-flavor:safe-project-loop:end-->
 
-<!--skill-flavor:merge-check-sdk-version:start-->
-Needs `@uipath/maestro-builder-sdk` 6.44.4 or later; an older SDK refuses the write for any error it cannot place on an untouched root node. If Studio Web's SDK is older, tell the user.
-<!--skill-flavor:merge-check-sdk-version:end-->
+<!--skill-flavor:merge-check-sdk-upgrade:start-->
+so tell the user: Studio Web owns the SDK copy.
+<!--skill-flavor:merge-check-sdk-upgrade:end-->
 
 <!--skill-flavor:install-agent-files:start-->
 `merge -o` into the target writes the `.flow` and every agent file merge
@@ -57,16 +57,13 @@ In Studio Web this loop is the round trip in
 `.flow-sdk/` and merges straight into the target `.flow`.
 <!--skill-flavor:hand-loop:end-->
 
-<!--skill-flavor:resource-ids-sdk-version:start-->
-Needs `@uipath/maestro-builder-sdk`
-6.33.0 or later; an older SDK's decompile omits these fields and compile renames
-the node with a new directory. If Studio Web's SDK is older, tell the user.
-<!--skill-flavor:resource-ids-sdk-version:end-->
+<!--skill-flavor:resource-ids-sdk-upgrade:start-->
+so tell the user: Studio Web owns the SDK copy.
+<!--skill-flavor:resource-ids-sdk-upgrade:end-->
 
-<!--skill-flavor:dup-step-sdk-version:start-->
-Needs `@uipath/maestro-builder-sdk` 6.32.4 or
-later; an older SDK silently renames the second step `<name>2`. If Studio Web's SDK is older, tell the user.
-<!--skill-flavor:dup-step-sdk-version:end-->
+<!--skill-flavor:dup-step-sdk-upgrade:start-->
+so tell the user: Studio Web owns the SDK copy.
+<!--skill-flavor:dup-step-sdk-upgrade:end-->
 
 <!--skill-flavor:strict-merge:start-->
 - Pass `--strict` to make merge refuse (exit 1, no file written) instead of
@@ -74,15 +71,14 @@ later; an older SDK silently renames the second step `<name>2`. If Studio Web's 
   which the Studio Web round trip always passes.
 <!--skill-flavor:strict-merge:end-->
 
-<!--skill-flavor:envelope-sdk-version:start-->
-Needs `@uipath/maestro-builder-sdk` 6.44.0 or later: an older SDK's decompile writes `js\`[object Object]\`` for the envelope, drops the fork's arms and the `variable` rows with a `has no spelling` / `cannot write back` warning, and compile then refuses the source. If Studio Web's SDK is older, tell the user.
-<!--skill-flavor:envelope-sdk-version:end-->
+<!--skill-flavor:envelope-sdk-upgrade:start-->
+— tell the user: Studio Web owns the SDK copy.
+<!--skill-flavor:envelope-sdk-upgrade:end-->
 
-<!--skill-flavor:fire-and-forget-sdk-version:start-->
-  Needs `@uipath/maestro-builder-sdk` 6.44.0 or later; an older SDK's
-  decompile writes `returns` and compile refuses it. If Studio Web's SDK is older, tell the user.
-<!--skill-flavor:fire-and-forget-sdk-version:end-->
+<!--skill-flavor:fire-and-forget-sdk-upgrade:start-->
+  — tell the user: Studio Web owns the SDK copy.
+<!--skill-flavor:fire-and-forget-sdk-upgrade:end-->
 
-<!--skill-flavor:subflow-layout-sdk-version:start-->
-Inside a subflow the source's entries land only when the edit changed that subflow: `merge` then takes the subflow from the edited compile whole, and otherwise keeps the original subflow as it was (6.44.4 or later; an older SDK takes every subflow from the edited compile). If Studio Web's SDK is older, tell the user.
-<!--skill-flavor:subflow-layout-sdk-version:end-->
+<!--skill-flavor:subflow-layout-sdk-upgrade:start-->
+so tell the user, since Studio Web owns the SDK copy).
+<!--skill-flavor:subflow-layout-sdk-upgrade:end-->

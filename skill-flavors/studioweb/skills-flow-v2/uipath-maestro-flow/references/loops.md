@@ -1,5 +1,3 @@
-<!--skill-flavor:continue-sdk-version:start-->
-  Needs `@uipath/maestro-builder-sdk`
-  6.20.0 or later; an older SDK fails with `continue is not a function`.
-  If Studio Web's SDK is older, tell the user.
-<!--skill-flavor:continue-sdk-version:end-->
+<!--skill-flavor:continue-sdk-upgrade:start-->
+  so tell the user: Studio Web owns the SDK copy.
+<!--skill-flavor:continue-sdk-upgrade:end-->

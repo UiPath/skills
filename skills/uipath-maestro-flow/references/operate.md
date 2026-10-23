@@ -167,8 +167,12 @@ Operational constraints, each of which has its own failure:
 <!--skill-flavor:operate-debug-scratch-copy:end-->
 - **Do not pass `--folder-path` or `--folder-key`.** Debug provisions into your
   personal workspace; a shared folder fails `HTTP 500` at
-  `Stage: prepare-custom-debug` with no instance started. Shared resources reach
-  the run through `resources refresh`, not through the debug folder. Use the flag
+  `Stage: prepare-custom-debug` with no instance started.
+<!--skill-flavor:debug-shared-resources:start-->
+  Shared resources reach
+  the run through `resources refresh`, not through the debug folder.
+<!--skill-flavor:debug-shared-resources:end-->
+  Use the flag
   only when the account has no personal workspace, or the flow needs
   folder-scoped assets or queues.
 
