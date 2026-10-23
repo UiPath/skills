@@ -29,7 +29,10 @@ in. It is not a working process and must never be reported as one.
    trigger),
    `bpmn:exclusiveGateway` and `bpmn:parallelGateway`, `bpmn:sequenceFlow`s,
    and end events: one that every branch converges on, unless the request
-   names separate outcomes. Do not simplify the branch structure.
+   names separate outcomes. Branches converge through a join gateway, never
+   as two flows into the end event (`FAKE_JOIN`, see
+   [structural-bpmn.md](structural-bpmn.md#gateways)). Do not simplify the
+   branch structure.
 5. **Label each box with the action first and the intended element family last,
    in brackets** — `Classify ticket [Agent]`, `Notify approvals team [Slack]`,
    `Prepare ticket summary [Script]`. The label carries the meaning a blank box
@@ -173,10 +176,12 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   3. **Keep it**: stop here with this outline.
   ```
 
-  Send everything above the question as visible message text. When the host
-  has a pick list, open it **after** that text, with only the fixed question
-  and its three options. Never leave the outline only in a reasoning block or
-  in the pick list: a user who sees only the question cannot judge the shape.
+  The user must see everything above the question. When the host's pick list
+  has a preamble field (an `intro`), put that text there and the fixed
+  question with its three options in the list. Otherwise send the text as a
+  visible message first, then open the pick list. Never leave the outline
+  only in your reasoning: a user who sees only the question cannot judge the
+  shape.
 
   *Build it* goes to phase 4, which binds each box to the resource named here
   and asks nothing more. A box still marked *none yet* gets a placeholder
