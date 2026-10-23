@@ -92,7 +92,8 @@ from.
 
 <!--skill-flavor:operate-debug-redirect:start-->
 ```bash
-uip flow debug <Project> --output json > /tmp/flow-debug.json
+cd /solution/<Project>
+uip flow debug <Project> --output json > .flow-sdk/flow-debug.json
 ```
 <!--skill-flavor:operate-debug-redirect:end-->
 
@@ -110,3 +111,8 @@ local `.uipx`, so the command fails with "no .uipx manifest found". Before
 resources. Add each connection the flow uses that is not in the list. A
 connection that is not in the solution fails at run time with a binding error.
 <!--skill-flavor:refresh-when:end-->
+
+<!--skill-flavor:debug-shared-resources:start-->
+  Shared resources reach the run through the connections of the open solution
+  (`uip solution resources add`), not through the debug folder.
+<!--skill-flavor:debug-shared-resources:end-->

@@ -43,7 +43,8 @@ Some commands in the references do not work in Studio Web. Use this table:
 | `uip maestro registry search`, `describe`, `prepare` | Work: the connector library. Run `prepare` from the project folder. |
 | `uip maestro registry pull` | Answered by the CLI, with no effect: it confirms the library of the session, ignores its options, and writes no `./connectors/<key>.ts` modules. |
 | `uip maestro registry path` | Not available: there is no local library cache. |
-| `uip solution resources add`, `list`, `refresh` | Work. |
+| `uip solution resources add`, `list` | Work. |
+| `uip solution resources refresh` | Fails: no local `.uipx`. Add connections with `resources add` ([the connector loop](#the-connector-loop-in-studio-web), step 7). |
 | `uip solution publish`, `uip solution deploy run` | Work. Studio Web packages and signs in for `publish`. |
 | `uip flow debug <Project>` | Works: a real run. `uip maestro flow debug` fails here, so read every `uip maestro flow debug` in the references as `uip flow debug`. |
 | `uip solution pack`, `upload`, `init` | Not available. Studio Web owns the solution. |
@@ -107,6 +108,7 @@ Valid is top-level `Result` plus `Data.Status: "Valid"`. Treat `Data.Warnings` a
 - **An open `.flow` with no content** gives `decompile` nothing to read. Treat it as a new file (next item), and compile straight to it.
 - **A new `.flow` in a new file** has no original. Write `.flow-sdk/<Name>.flow.ts` from [Hello world](#hello-world-flow), run step 2, and compile it straight to `<Name>.flow`. Then run `uip maestro flow format <Name>.flow --output json` once, and validate it.
 - **A baseline compile that refuses a draft node** (a connector with no connection, an empty required input) stops the round trip: see [`references/brownfield.md`](references/brownfield.md#flows-with-draft-nodes-let-merge-compile).
+- **If the baseline compile refuses a decompiled connector input**, stop and tell the user (UiPath/builder-sdk#1402).
 - **A flow with connectors** needs each connection in the solution after the merge ([the connector loop](#the-connector-loop-in-studio-web), step 7).
 
 Run the flow only for a stated runtime-behavior claim. `uip flow debug <Project> --output json` is a real run of up to 5 minutes. First make sure each connection is in the solution ([the connector loop](#the-connector-loop-in-studio-web), step 7). Do not run `uip solution resources refresh`: it fails in this host. You can also ask the user to run it from the designer.

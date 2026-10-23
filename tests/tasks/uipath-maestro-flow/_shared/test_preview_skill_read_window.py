@@ -42,24 +42,20 @@ from __future__ import annotations
 import glob
 import os
 import re
+import sys
 from dataclasses import dataclass
 
 import pytest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from flavor_markers import shipped  # noqa: E402
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.normpath(os.path.join(_HERE, "..", "..", "..", ".."))
 _PREVIEW_SKILLS = os.path.join(_REPO, "preview", "skills")
 # Promoted out of preview/ (the SDK Flow skill); still held to the same window.
 _PROMOTED_SKILLS = [os.path.join(_REPO, "skills", "uipath-maestro-flow", "SKILL.md")]
-
-# Flavor markers are build-only: scripts/compose-skill-flavor.mjs strips every
-# marker line from each package, so budgets measure the SKILL.md that ships.
-_FLAVOR_MARKER_LINE = re.compile(r"^<!--skill-flavor:[a-z0-9]+(?:-[a-z0-9]+)*:(?:start|end)-->\r?\n", re.M)
-
-
-def _shipped(text: str) -> str:
-    return _FLAVOR_MARKER_LINE.sub("", text)
-
 
 ROUTER_WINDOW = 220
 POINTER_WINDOW = 240
@@ -254,7 +250,7 @@ def test_every_required_skill_is_present():
 def test_real_preview_skills_fit_read_window(path):
     skill = _skill_id(path)
     with open(path, encoding="utf-8") as f:
-        text = _shipped(f.read())
+        text = shipped(f.read())
     problems = window_problems(text, REQUIRED.get(skill, ()))
     assert not problems, (
         f"{os.path.relpath(path, _REPO)}:\n  "

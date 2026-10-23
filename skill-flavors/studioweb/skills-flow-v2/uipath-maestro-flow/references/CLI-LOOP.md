@@ -34,7 +34,7 @@ SDK verbs run in the page — see
 <!--skill-flavor:debug-flags:start-->
 In Studio Web the verb is `uip flow debug <Project>`. `<Project>` is a project
 name in the open solution, not a path; it defaults to the open project.
-Resource refresh must run first. A `500` at `prepare-custom-debug` is
+Each connection must be in the solution first. A `500` at `prepare-custom-debug` is
 transient: retry once. The host uses only the project name and
 `-i, --inputs '<inline JSON>'`. It ignores `--attachment`, and it does not read
 `@file` inputs. Add `--output json`. If the reply ignores `--output-filter`,

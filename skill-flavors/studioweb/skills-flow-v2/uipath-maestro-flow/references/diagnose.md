@@ -1,6 +1,7 @@
 <!--skill-flavor:debug-redirect:start-->
 ```bash
-uip flow debug <Project> --output json > /tmp/flow-debug.json
+cd /solution/<Project>
+uip flow debug <Project> --output json > .flow-sdk/flow-debug.json
 ```
 <!--skill-flavor:debug-redirect:end-->
 
