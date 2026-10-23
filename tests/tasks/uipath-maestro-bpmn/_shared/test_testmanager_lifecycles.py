@@ -137,6 +137,15 @@ def test_connector_mode_http_passes(tmp_path: Path, name: str) -> None:
 
 
 @pytest.mark.parametrize("name", CHECKERS)
+def test_mixed_activity_and_http_passes(tmp_path: Path, name: str) -> None:
+    args, ops = CHECKERS[name]
+    nodes = _http_nodes(ops)
+    nodes[0] = NODE.format(index=0, object_name=ops[0][1], method=ops[0][2])
+    result = _run(tmp_path, name, "".join(nodes), *args)
+    assert result.returncode == 0, result.output
+
+
+@pytest.mark.parametrize("name", CHECKERS)
 @pytest.mark.parametrize(
     "overrides", [{"targetConnector": "uipath-salesforce-slack"}, {"authentication": "manual"}]
 )

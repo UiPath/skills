@@ -96,7 +96,7 @@ success_criteria:
     pass_threshold: 1.0
 
   - type: run_command
-    description: "Produced .bpmn references every TestSet connector node type (7 nodes)"
+    description: "Produced .bpmn has its own node per TestSet lifecycle operation (7 nodes: ActivityExecution or connector-mode HTTP)"
     command: "python3 $REFERENCE_DIR/_shared/check_testmanager_testset_lifecycle.py --all-ops"
     timeout: 30
     expected_exit_code: 0
