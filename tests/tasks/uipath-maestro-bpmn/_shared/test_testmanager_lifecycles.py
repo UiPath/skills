@@ -71,6 +71,12 @@ CHECKERS = {
     "testset_lifecycle": (("--all-ops",), TESTSET),
 }
 CASES = [(name, i) for name, (_, ops) in CHECKERS.items() for i in range(len(ops))]
+SLOT_CASES = [
+    (name, i, slot)
+    for name, (_, ops) in CHECKERS.items()
+    for i, op in enumerate(ops)
+    for slot in range(op[4].count("{"))
+]
 NO_CONNECTOR = "no bpmn:sendTask calls the Test Manager connector"
 
 
@@ -90,11 +96,17 @@ def _run(tmp_path: Path, name: str, body: str, *args: str) -> subprocess.Complet
     return result
 
 
-def _filled(path: str, keep: int = -1) -> str:
-    """``=js:`` url with every placeholder but index ``keep`` filled from a variable."""
+def _filled(path: str, keep: int = -1, spelling: str = "{{{}}}") -> str:
+    """``=js:`` url with every placeholder but index ``keep`` filled from a
+    variable, and ``keep`` written as ``spelling`` of its name."""
     slots = iter(range(path.count("{")))
-    fill = lambda m: m.group(0) if next(slots) == keep else "' + vars.Var_Id + '"
-    return "=js:'" + re.sub(r"\{[^}]+\}", fill, path) + "'"
+
+    def fill(match: re.Match[str]) -> str:
+        if next(slots) == keep:
+            return spelling.format(match.group(1))
+        return "' + vars.Var_Id + '"
+
+    return "=js:'" + re.sub(r"\{([^}]+)\}", fill, path) + "'"
 
 
 def _http_node(index: int, method: str, url: str, template: str = HTTP_NODE,
@@ -154,6 +166,7 @@ def test_http_not_through_test_manager_fails(tmp_path: Path, name: str, override
     result = _run(tmp_path, name, "".join(_http_nodes(ops, **overrides)), *args)
     assert result.returncode != 0
     assert NO_CONNECTOR in result.output
+    assert "context connectorKey 'uipath-uipath-http'" in result.output
 
 
 @pytest.mark.parametrize("name", CHECKERS)
@@ -164,6 +177,7 @@ def test_legacy_sdk_connector_http_fails(tmp_path: Path, name: str) -> None:
     result = _run(tmp_path, name, "".join(nodes), *args)
     assert result.returncode != 0
     assert NO_CONNECTOR in result.output
+    assert "objectName not 'http-request'" in result.output
 
 
 @pytest.mark.parametrize("name, index", CASES)
@@ -176,16 +190,36 @@ def test_missing_operation_fails(tmp_path: Path, name: str, index: int) -> None:
     assert _missing(ops, result.stderr) == [ops[index][0]]
 
 
-@pytest.mark.parametrize("name, index", CASES)
-def test_unfilled_placeholder_fails(tmp_path: Path, name: str, index: int) -> None:
+@pytest.mark.parametrize("name, index, slot", SLOT_CASES)
+def test_unfilled_placeholder_fails(tmp_path: Path, name: str, index: int, slot: int) -> None:
     args, ops = CHECKERS[name]
     nodes = _http_nodes(ops)
     op = ops[index]
-    nodes[index] = _http_node(index, op[3], _filled(op[4], keep=0))
+    nodes[index] = _http_node(index, op[3], _filled(op[4], keep=slot))
     result = _run(tmp_path, name, "".join(nodes), *args)
     assert result.returncode != 0
     assert _missing(ops, result.stderr) == [op[0]]
     assert f"{op[4]!r} with every placeholder" in result.stderr
+
+
+@pytest.mark.parametrize("spelling", ["${{{}}}", "<{}>", ":{}", "{{}}"])
+@pytest.mark.parametrize("name", CHECKERS)
+def test_unfilled_placeholder_spelling_fails(tmp_path: Path, name: str, spelling: str) -> None:
+    args, ops = CHECKERS[name]
+    nodes = _http_nodes(ops)
+    op = ops[1]
+    nodes[1] = _http_node(1, op[3], _filled(op[4], keep=op[4].count("{") - 1, spelling=spelling))
+    result = _run(tmp_path, name, "".join(nodes), *args)
+    assert result.returncode != 0
+    assert _missing(ops, result.stderr) == [op[0]]
+
+
+def test_update_on_execute_path_fails(tmp_path: Path) -> None:
+    nodes = _http_nodes(TESTCASE)
+    nodes[2] = _http_node(2, "PATCH", "=js:'/v2/' + vars.Var_Id + '/testcases/startexecute'")
+    result = _run(tmp_path, "testcase_lifecycle", "".join(nodes), "--all-ops")
+    assert result.returncode != 0
+    assert _missing(TESTCASE, result.stderr) == ["update the test case"]
 
 
 @pytest.mark.parametrize("name, index", CASES)

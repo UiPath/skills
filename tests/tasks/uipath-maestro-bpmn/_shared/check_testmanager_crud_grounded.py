@@ -56,6 +56,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from _shared.bpmn_check import (  # noqa: E402
     ConnectorOperation,
     connector_requests,
+    no_connector_node_message,
     parse_bpmn,
     require_operations,
 )
@@ -89,12 +90,7 @@ def node_types() -> None:
     path, root = parse_bpmn()
     requests = list(connector_requests(root, CONNECTOR_KEY))
     if not requests:
-        fail(
-            "no bpmn:sendTask calls the Test Manager connector: expected "
-            f"Intsvc.ActivityExecution with connectorKey {CONNECTOR_KEY!r}, or a "
-            "connector-mode Intsvc.UnifiedHttpRequest with targetConnector "
-            f"{CONNECTOR_KEY!r}"
-        )
+        fail(no_connector_node_message("Test Manager", CONNECTOR_KEY))
 
     require_operations(requests, OPERATIONS, "Test Manager create/get")
     print(f"OK: create and get Test Manager connector nodes present in {path}")
