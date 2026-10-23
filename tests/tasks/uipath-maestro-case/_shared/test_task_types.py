@@ -150,9 +150,15 @@ def test_sdd_check_gate_corrects_each_name_that_is_not_a_task_type(gate: Path):
 
 @pytest.mark.parametrize("gate", GATES, ids=lambda p: p.parts[-3])
 def test_sdd_check_gate_tells_the_three_kinds_of_bad_type_apart(gate: Path, tmp_path: Path):
-    """A name from another layer gets its plan type, a Studio Web-only type says so, the rest say neither."""
+    """Worded and matched like `sdd convert`: a name from another layer gets its plan type, a
+    known type spelled another way gets itself, a Studio Web-only type says so, the rest neither."""
     other_layer = task_types.not_task_types()
-    names = [row["Spelling"] for row in other_layer] + task_types.studio_web_only() + ["banana"]
+    known = task_types.authorable()[0]
+    variants = {row["Spelling"].upper().replace("-", "_"): row["PlanType"] for row in other_layer}
+    names = (
+        [row["Spelling"] for row in other_layer] + list(variants) + [known.upper()]
+        + task_types.studio_web_only() + ["banana"]
+    )
     (tmp_path / "sdd.md").write_text(
         "| amount | In | number | — | — | — | the amount |\n\n"
         + "\n".join(f"**Type:** {t}" for t in names)
@@ -160,8 +166,12 @@ def test_sdd_check_gate_tells_the_three_kinds_of_bad_type_apart(gate: Path, tmp_
     )
     out = subprocess.run([sys.executable, str(gate)], cwd=tmp_path, capture_output=True, text=True)
     report = out.stdout + out.stderr
+    n = len(task_types.authorable())
     for row in other_layer:
-        assert f'task-type: "{row["Spelling"]}" is not a task type (did you mean "{row["PlanType"]}"?)' in report
+        assert f'task-type: declares the type "{row["Spelling"]}" (did you mean "{row["PlanType"]}"?), which is not one of the {n} an SDD may use' in report
+    for spelling, plan in variants.items():
+        assert f'task-type: declares the type "{spelling}" (did you mean "{plan}"?)' in report
+    assert f'task-type: declares the type "{known.upper()}" (did you mean "{known}"?)' in report
     for name in task_types.studio_web_only():
-        assert f'task-type: "{name}" is a caseplan task type an SDD may not declare; author it in Studio Web' in report
-    assert f'task-type: "banana" is not one of the {len(task_types.authorable())} an SDD may use' in report
+        assert f'task-type: declares the type "{name}", a caseplan task type an SDD may not declare. Author this task in Studio Web.' in report
+    assert f'task-type: declares the type "banana", which is not one of the {n} an SDD may use' in report
