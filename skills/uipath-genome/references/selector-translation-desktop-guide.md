@@ -30,13 +30,6 @@ UI Automation control type → `role` (same values across UI languages):
 
 Chromium-rendered content reached through UI Automation (an Electron renderer window, browser chrome, a web view without the browser driver) exposes the page's **accessibility tree**, not its DOM: `role` is the control type Chromium derives from the element's implicit or explicit ARIA role, `name` its accessible name (associated label, `aria-label`, own text, placeholder as the last fallback). DOM `class`, `data-*`, `name` and `type` attributes are not accessibility properties and never reach the element; whether `automationid` mirrors the DOM `id` is settled by the live attribute listing (rule 15), never assumed. A locator built on such attributes translates to role plus accessible name or to a no-selector outcome (rule 13). Framework side: the framework pack's selectors guide, section for renderer windows reached through UI Automation.
 
-## Rule 8 — desktop lists
-
-A Windows Forms list view (`SysListView32`) reached through UI Automation exposes each row as a `list item` whose cells are `text` children, its column headers as `header item`s outside the rows, and the window's other captions as `text` elements outside the list. The Find Elements filter that collects the cells, in Find Descendants mode, depends on the search context:
-
-- **The list as Target:** `<uia role='text' />` takes only the cells.
-- **No Target, the whole window searched** (only the application card's scope): the filter names the row first, `<uia role='list item' /><uia role='text' />`. A bare `<uia role='text' />` here also takes every caption of the window, so a source that reads the cells in groups by position (four per row) reads the wrong cell of every row, or overruns the collection.
-
 ## `ctrl` — Active Accessibility element
 
 | Attribute | Tier / role |
@@ -72,3 +65,11 @@ The driver's default `java` selector is built from `role`, `name`, `cls`, the ta
 | `curl` | `cls`, `role`, `name`, `text`, `tableRow`, `tableCol`, `colName`, `idx` | Curl applets |
 | `ax` | `role`, `subrole`, `name`, `title`, `identifier`, `filename`, `url`, `help`, `value`, `rowCount`, `columnCount`, `tableRow`, `tableCol`, `rowName`, `colName`, states, `idx` | macOS accessibility |
 | `rdp`, `rdpapp` | `<wnd>` attribute set | remote runtime |
+
+## Rule 8 — desktop
+
+A Windows Forms list view (`SysListView32`) reached through UI Automation exposes each row as a `list item` whose cells are `text` children, and its column headers as `header item`s under a `header`, outside the rows. Each cell carries `colName`, its column's header caption, and `rowName`, the text of its row's first cell, so a cell found by row content and column caption is `<uia role='text' rowName='{{Key}}' colName='<header caption>' />` under the list. Under the list, the Find Elements filter `<uia role='text' />` in Find Descendants mode takes only the cells; searched from the window, it also takes the window's captions and those of the windows it owns (§ Rule 9), so a source that reads the cells in groups by position reads the wrong cell of every row, or overruns the collection.
+
+## Rule 9 — desktop
+
+**A window's UI Automation tree holds the windows it owns.** A modal dialog, a form the window opened and the windows those own in turn sit under their owner, topmost first and ahead of the owner's own elements. A `uia` search from the owner's scope therefore also matches in every open window it owns, and there first: a Find Elements with no Target in the owner's card returns the owned windows' matches ahead of the owner's, and a target under the owner's window selector resolves a control of an owned window, whatever the card's attach mode.
