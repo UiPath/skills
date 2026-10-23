@@ -125,6 +125,8 @@ Emit verbatim. Note the inner quotes in `MimeType.description` — reproduce exa
 
 Fixed constant — NOT sourced from the file var's `body` (the FE emits it even when the var carries no `body`).
 
+The decoded `MimeType.description` is `The MIME type of the content, such as "application/json" or "image/png` — plain quotes, the last one unclosed. In the file's JSON text that is exactly three `\"` and no other backslash. Write the block above with Write/Edit as JSON text; never build it through a shell or code string, which adds a second layer of escaping (`\\\"`). After writing, the parsed value must contain no `\`.
+
 ## FE branch coverage (audit)
 
 Every conditional in the FE source (`PackagingUtil.ts`) and where this doc handles it:

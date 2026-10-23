@@ -194,6 +194,7 @@ criteria that passed.
 | `activation.yaml` | tempdir | Skill activation classifier (benchmark) | 3 + early-stop | 360s | 120s |
 | `same-ground-headtohead.yaml` | docker | Campaign-only local comparison arm | 200 | 1200s | 900s |
 | `flow-v2-preview.yaml` | docker | Builder-SDK Maestro skills only (Flow promoted; Case, BPMN preview) | 200 | 1200s | 900s |
+| `use-case-tiers.yaml` | docker | Opt-in A/B for the `uipath-agents` use-case tasks: `assisted` vs `unassisted` (lower-tier helper text stripped) | 200 | 1200s | 900s |
 
 `same-ground-headtohead.yaml` is not a clean-checkout CI experiment. The
 campaign runner first builds the pinned `skills-image:sg1`, prepares isolated
@@ -203,6 +204,22 @@ runner. The image build passes the package credential as
 `--secret id=npm_auth_token,env=NPM_AUTH_TOKEN`; the Dockerfile build-arg path
 exists only for the external nightly caller during migration. Regular nightly
 and smoke jobs continue to use `skills-image:latest`.
+
+`use-case-tiers.yaml` runs the `uipath-agents` use-case tasks
+(`tasks/uipath-agents/lowcode/use_cases/`) in two variants. Those prompts carry
+guidance meant only for lower-tier models between `<!-- helper:start -->` and
+`<!-- helper:end -->`. Every other experiment sends the prompt unchanged, helper
+included. The `unassisted` variant strips the block with a regex
+`prompt_mutation`, so a higher-tier model gets only the context, the user's
+request and the closing autonomy line. Helper text is never graded, so both
+variants share the same success criteria. A task without the markers runs
+identically in both variants. The "Run Coder Eval" workflow always passes
+`-e experiments/nightly.yaml`, so run this experiment locally:
+
+```bash
+SKILLS_REPO_PATH=$(cd .. && pwd) .venv/bin/coder-eval run \
+  tasks/uipath-agents/lowcode/use_cases/*/*.yaml -e experiments/use-case-tiers.yaml
+```
 
 `flow-v2-preview.yaml` runs the three builder-SDK skills
 `uipath-maestro-{flow,case,bpmn}` as the ONLY skill catalog, so a run measures the

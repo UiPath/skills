@@ -1,0 +1,37 @@
+[
+  {
+    "poNumber": "PO-77812",
+    "vendorName": "Northwind Industrial Supply",
+    "currency": "USD",
+    "lines": [
+      {
+        "sku": "NW-BRG-6204",
+        "description": "Deep groove ball bearing 6204",
+        "quantity": 200,
+        "unitPrice": 4.1,
+        "taxRate": 0.08
+      },
+      {
+        "sku": "NW-SEAL-35",
+        "description": "Oil seal 35x52x7",
+        "quantity": 150,
+        "unitPrice": 1.85,
+        "taxRate": 0.08
+      }
+    ]
+  },
+  {
+    "poNumber": "PO-77840",
+    "vendorName": "Contoso Packaging GmbH",
+    "currency": "EUR",
+    "lines": [
+      {
+        "sku": "CP-BOX-L",
+        "description": "Shipping carton large",
+        "quantity": 1000,
+        "unitPrice": 0.92,
+        "taxRate": 0.19
+      }
+    ]
+  }
+]

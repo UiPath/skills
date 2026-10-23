@@ -1,0 +1,37 @@
+{
+  "docVersion": "1.0.0",
+  "resource": {
+    "name": "InvoiceValidationAgent",
+    "kind": "process",
+    "type": "agent",
+    "apiVersion": "orchestrator.uipath.com/v1",
+    "projectKey": "0b7b5585-e974-4305-b7c2-05900e28a3c3",
+    "dependencies": [
+      {
+        "kind": "package",
+        "name": "InvoiceValidationAgent"
+      }
+    ],
+    "runtimeDependencies": [],
+    "folders": [
+      {
+        "fullyQualifiedName": "solution_folder"
+      }
+    ],
+    "spec": {
+      "type": "Agent",
+      "name": "InvoiceValidationAgent",
+      "package": {
+        "key": "e37ee31d-d3ee-49b5-8023-89cea7b6e0a7"
+      },
+      "targetFrameworkValue": "Portable",
+      "retentionAction": "Delete",
+      "retentionPeriod": 30,
+      "staleRetentionAction": "Delete",
+      "staleRetentionPeriod": 180
+    },
+    "locks": [],
+    "key": "e98626b8-7c27-4dd6-a918-9616c7ee4be7",
+    "files": []
+  }
+}

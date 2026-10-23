@@ -235,6 +235,27 @@ def registry_audit_entries(payload: object) -> list[dict]:
     return [normalize_audit_entry(entry) for entry in entries]
 
 
+REGISTRY_CACHE_DIR = os.path.join("~", ".uip", "case-resources")
+
+
+def read_registry_cache(cache_file: str) -> list:
+    """Load `~/.uip/case-resources/<cache_file>`, or FAIL naming the missing pull."""
+    path = os.path.expanduser(os.path.join(REGISTRY_CACHE_DIR, cache_file))
+    if not os.path.isfile(path):
+        _fail(
+            f"registry cache {path} is absent: `uip maestro case registry pull` never ran or "
+            f"did not succeed, so the audit cannot be checked against the tenant"
+        )
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, json.JSONDecodeError) as exc:
+        _fail(f"registry cache {path} is unreadable: {exc}")
+    if not isinstance(data, list):
+        _fail(f"registry cache {path} is not a JSON array")
+    return data
+
+
 def iter_tasks(plan: dict):
     """Yield every task dict from every Stage node (and legacy ExceptionStage).
 

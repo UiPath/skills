@@ -21,3 +21,7 @@ Hard-stop AskUserQuestion (Step 16): `Publish to Orchestrator` / `Done`. On publ
 <!--skill-flavor:phase-six-debug-gate:start-->
 Hard-stop AskUserQuestion (Step 15): `Debug in the Case Designer` / `Continue to publish`. `uip maestro case debug` is not in the Studio Web CLI, so never run it here: on Debug, tell the user to start the run from the Case Designer's Debug control, wait for the outcome they report, and loop until `Continue to publish`. Never start a run yourself.
 <!--skill-flavor:phase-six-debug-gate:end-->
+
+<!--skill-flavor:registry-gate-login:start-->
+Studio Web runs inside an authenticated host, so do not log in or check login state (there is no `uip login` here). Run
+<!--skill-flavor:registry-gate-login:end-->

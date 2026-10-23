@@ -138,7 +138,7 @@ success_criteria:
   - type: command_not_executed
     description: "Agent did not use mutating case-authoring CLI commands"
     tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b'
+    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+(cases|stages|tasks|(?:case|stage|task)-(?:entry|exit)-conditions)\s+(add(?:-connector)?|update|remove)\b(?![^;&|\n]*\s(?:--help|-h)(?![\w-]))'
     weight: 1.0
     pass_threshold: 1.0
 
