@@ -1,6 +1,8 @@
 # Troubleshooting Failed Flows
 
+<!--skill-flavor:troubleshoot-intro:start-->
 Diagnostic workflow for failed debug runs and deployed process runs. All commands require `uip login`.
+<!--skill-flavor:troubleshoot-intro:end-->
 
 > **`--folder-key` is required.** All `instance` and `incident get` commands require `--folder-key <FOLDER_KEY>`. Get the folder key from `uip or folders list --output json` or from the job/process context.
 
@@ -16,6 +18,7 @@ Investigate in this order — each step adds context, stop when you have enough 
 
 ## Step 0 — Read the cause in the debug output you already have
 
+<!--skill-flavor:step-zero-debug-output:start-->
 A faulted `uip maestro flow debug` response already carries the incident and the fault detail. **Do not re-run `flow debug` before you read them.** An unchanged re-run re-uploads the solution and repeats the same fault against real systems.
 
 The response can exceed 200,000 characters. `"Result": "Failure"` and `Context.ErrorCode` (the numeric incident code) sit in the first 1,000 characters; the cause sits tens of thousands of characters deeper. Reading the head of the output and stopping tells you that the run failed, not why. Never report a faulted run as "incomplete" — report the fault code and the detail.
@@ -71,6 +74,7 @@ Match `dependentFaultCode`, or the failure marker on a run that never started, t
 | `Stage: prepare-custom-debug` with `HttpStatus: 500`, and no `Data.incidents` | Debug was pointed at a shared folder with `--folder-path` or `--folder-key`. The server fails to prepare the run and no instance starts, so there is no incident to read. Re-run `flow debug` without the flag. See [operate/run.md — Debug](../operate/run.md#debug--controlled-end-to-end-run). |
 
 No match, or `detail` is not enough → `uip maestro flow debug-instance incidents <INSTANCE_ID> --output json` returns the full backend payload (incidentId, errorDetails, AI summary). For a deployed process run, continue with Step 1.
+<!--skill-flavor:step-zero-debug-output:end-->
 
 ## Step 1 — Get the instance ID
 

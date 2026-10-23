@@ -126,7 +126,9 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
 ```
 <!--skill-flavor:flow-debug-command-usage:end-->
 
+<!--skill-flavor:flow-debug-args-note:start-->
 Pass the project directory containing `project.uiproj` (`<ProjectName>/` from the solution root, or `.` inside it). Use `--inputs` for a JSON object of flow input arguments. Repeat `--attachment <variableId>=<localPath>` to upload files for file-typed inputs; a bare path is rejected.
+<!--skill-flavor:flow-debug-args-note:end-->
 
 <a id="attachment-preflight"></a>
 
@@ -140,6 +142,7 @@ Run `uip maestro flow debug --help` for other options.
 
 ### Reporting the run back to the user
 
+<!--skill-flavor:flow-debug-reporting:start-->
 Parse the Studio Web URL and `instanceId` from JSON output, typically `Data.studioWebUrl` and `Data.instanceId`, and report them as the first two lines:
 
 ```text
@@ -150,6 +153,7 @@ Instance ID: <instanceId>
 ```
 
 If either is absent, output its label with `<not returned by CLI>`. Do not place these lines below the run summary.
+<!--skill-flavor:flow-debug-reporting:end-->
 
 ## uip maestro flow process
 

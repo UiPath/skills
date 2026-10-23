@@ -165,6 +165,7 @@ Alternatively obtain it from job/process context, such as `Data.folderKey` in a 
 
 ## 7. Use `UIP_LOG_LEVEL=info` for debug runs
 
+<!--skill-flavor:debug-log-level:start-->
 Run debug with `UIP_LOG_LEVEL=info`:
 
 ```bash
@@ -172,6 +173,7 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 ```
 
 Capture stderr as well as stdout. At `info`, stderr reports the `jobKey`, `instanceId`, and Studio Web URL. If polling exceeds its budget, stdout may contain only `Debug polling timed out after <N>s`; stderr is then the only way to identify the instance and inspect it with `uip maestro flow debug-instance incidents <instanceId>`.
+<!--skill-flavor:debug-log-level:end-->
 
 Use `UIP_LOG_LEVEL`, not `UIPCLI_LOG_LEVEL`; the latter is silently ignored. `--log-level <level>` is the equivalent global flag. The setting applies to every `uip` command.
 

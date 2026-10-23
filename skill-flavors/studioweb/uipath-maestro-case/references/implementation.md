@@ -29,5 +29,5 @@ Run AskUserQuestion + debug command per [phased-execution.md § Phase 6](phased-
 <!--skill-flavor:step-fifteen-debug:end-->
 
 <!--skill-flavor:troubleshoot-halt-report:start-->
-After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user with **AskUserQuestion**. Report: the `Trace ID`, faulting element ID and error from the execution trace, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.case` edits without confirmed cause.
+After 3rd inconclusive round (or 3rd debug failure post-fix), halt and ask user with **AskUserQuestion**. Report: the `Trace ID` if one was printed, faulting element ID and error from the execution trace, what was tried each round. Options — `Provide additional context` (user supplies hints; run one more targeted round), `Pause for manual investigation`, `Abort`. Do not propose `caseplan.case` edits without confirmed cause.
 <!--skill-flavor:troubleshoot-halt-report:end-->

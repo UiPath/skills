@@ -24,8 +24,12 @@ values and redacting secrets from summaries. `--inputs` takes inline JSON only;
 `--timeout <seconds>` defaults to `120`, clamped to `10`-`150`. Pass no other
 flags. Run `uip maestro bpmn debug --help` for the host's exact surface.
 
-> **Output is plain text, not JSON:** status, `Trace ID: <id>`, run logs,
-> execution trace. Exit 1 means the run faulted. It returns no instance id or
+> **Output is plain text, not JSON:** status, `Trace ID: <id>` when one was
+> found, run logs, execution trace. Exit 1 means `Faulted` or `Failed`.
+> `TimedOut after <N>s` also exits 1 but means the run is still going in the
+> host, not faulted: do not troubleshoot it. Re-run with `--timeout 150` only
+> if a longer wait could finish; otherwise tell the user to follow the run in
+> Studio Web. It returns no instance id or
 > Studio Web URL, so `debug-instance` reads have nothing to target. Read
 > element outcomes and outputs from the execution trace.
 <!--skill-flavor:debug-command-usage:end-->

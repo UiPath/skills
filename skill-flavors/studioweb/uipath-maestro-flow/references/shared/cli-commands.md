@@ -45,20 +45,28 @@ Pass `--personal-workspace` when the package was published to the personal works
 Debug the open Flow through the host. Authentication comes from the active Studio Web session; there is no `uip login` step.
 
 ```bash
-uip maestro flow debug --output json
+uip maestro flow debug
 
 # Pass input arguments to the flow
-uip maestro flow debug --inputs '{"numberA": 5, "numberB": 7}' --output json
+uip maestro flow debug --inputs '{"numberA": 5, "numberB": 7}'
 
 # Target a project other than the active one by name
-uip maestro flow debug "<ProjectName>" --inputs '{"numberA": 5}' --output json
+uip maestro flow debug "<ProjectName>" --inputs '{"numberA": 5}'
 ```
 
 The positional argument is a **project name in the open solution**, not a directory path, and it defaults to the active project. The host runs the already-saved project, so there is no pack or upload step.
 
-> **Only `-i` / `--inputs` is honoured.** The host interceptor accepts the project name and inputs; `--attachment` is not part of its surface and is ignored without warning, so a file-typed input cannot be bound this way. `--bpmn-file` and a local `.xaml` target are rejected with an explicit message. Inline JSON only — `@file` indirection is not supported.
+> **Only the project name, `-i` / `--inputs`, `--entry-point` and `--timeout` are read.** Do not pass `--attachment`: a file-typed input cannot be bound this way, and before the project name its value is taken for the project. `--bpmn-file` and a local `.xaml` target are rejected with an explicit message. Inline JSON only; `@file` indirection is not supported.
 <!--skill-flavor:flow-debug-command-usage:end-->
 
 <!--skill-flavor:flow-debug-help-pointer:start-->
 Run `uip maestro flow debug --help` for the host's exact surface.
 <!--skill-flavor:flow-debug-help-pointer:end-->
+
+<!--skill-flavor:flow-debug-args-note:start-->
+File-typed inputs cannot be bound here: the host has no `--attachment`.
+<!--skill-flavor:flow-debug-args-note:end-->
+
+<!--skill-flavor:flow-debug-reporting:start-->
+The output is plain text: a status line, `Trace ID: <id>` when one was found, `Run logs:` and `Execution trace:`. There is no Studio Web URL or instance id. Lead the summary with the status and the `Trace ID`, if one was printed. `TimedOut after <N>s` also exits 1 but means the run is still going in the host, not faulted: do not troubleshoot it. Re-run with `--timeout 150` only if a longer wait could finish; otherwise tell the user to follow the run in Studio Web.
+<!--skill-flavor:flow-debug-reporting:end-->

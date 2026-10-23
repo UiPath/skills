@@ -40,3 +40,7 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 <!--skill-flavor:upload-orchestrator-pointer:start-->
 For the full deployment contract — deploy configs, activation, upgrading a deployed solution — see [/uipath:uipath-solution](/uipath:uipath-solution).
 <!--skill-flavor:upload-orchestrator-pointer:end-->
+
+<!--skill-flavor:debug-report-rule:start-->
+4. **Lead any debug summary with the status line and the `Trace ID`, if one was printed.** The host returns no Studio Web URL or instance id.
+<!--skill-flavor:debug-report-rule:end-->

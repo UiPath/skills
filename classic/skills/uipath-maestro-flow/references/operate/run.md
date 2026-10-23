@@ -15,6 +15,7 @@ Execute a flow on demand and monitor progress. Three modes: **debug** (controlle
 
 > **Consent comes from the mandate.** `flow debug` executes the flow for real — sends emails, posts messages, calls APIs. Run it when the request is for a flow that works; ask when the request stops at build or validate, and with nobody to ask report the flow as unverified rather than letting a passing validate stand as the result. Never debug a solution this run did not scaffold: debug overwrites the Studio Web solution matching the local `.uipx` `SolutionId`. See rule #2 in [SKILL.md](../../SKILL.md).
 
+<!--skill-flavor:debug-command-intro:start-->
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json
 ```
@@ -29,16 +30,20 @@ The argument is the **project directory path** (the folder containing `project.u
 > 5. Re-run debug only after you changed the flow.
 
 > **Do not pass `--folder-path` or `--folder-key` to `flow debug`.** Debug provisions into your personal workspace. A shared or team folder fails with `HTTP 500` at `Stage: prepare-custom-debug` and no instance starts. Shared resources the flow uses (indexes, buckets, connections) reach the run through `uip solution resources refresh`, not through the debug folder. Use the flag only when your account has no personal workspace or the flow needs folder-scoped assets or queues that exist only in that folder.
+<!--skill-flavor:debug-command-intro:end-->
 
+<!--skill-flavor:debug-inputs-example:start-->
 Pass input arguments when the flow has input parameters:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
   --inputs '{"numberA": 5, "numberB": 7}'
 ```
+<!--skill-flavor:debug-inputs-example:end-->
 
 Build those inputs from real records, never from invented values — an invented key matches no record, every lookup returns `[]`, and the run faults on empty data. Read the entity `Id` from `uip df entities list --output json`, then a live record from `uip df records list <ENTITY_ID> --output json`.
 
+<!--skill-flavor:debug-attachments:start-->
 Bind local files to file-typed input variables with `--attachment <variableId>=<localPath>` (repeatable). `<variableId>` (left of `=`) must match the `id` of a `variables.globals[]` entry with `direction:"in"` and `type:"file"`:
 
 ```bash
@@ -51,9 +56,11 @@ UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json \
 > **Pre-flight.** Confirm each `<variableId>` exists in the flow's `variables.globals[]` with `direction:"in"` and `type:"file"`. See [shared/cli-commands.md — Pre-flight](../shared/cli-commands.md#pre-flight---attachment-binding).
 
 > **Reading the bound file.** At runtime a `file` variable is an object — a Script node reads the uploaded name via `$vars.{triggerNodeId}.output.{id}.FullName`. See [shared/variables-and-expressions.md — Runtime shape of a `file` variable](../shared/variables-and-expressions.md#file-input).
+<!--skill-flavor:debug-attachments:end-->
 
 ### Reporting debug runs to the user
 
+<!--skill-flavor:debug-reporting:start-->
 The CLI response includes a **Studio Web URL** (where the user inspects the run) and an **instanceId** (for log/trace correlation). Parse both from the JSON output — typically `Data.studioWebUrl` and `Data.instanceId` — and **always show them as the first two lines of the summary**:
 
 ```text
@@ -64,14 +71,17 @@ Instance ID: <instanceId>
 ```
 
 If either value is missing from the response, emit the label with `<not returned by CLI>` rather than dropping the line. Do not bury these values below the run summary — the user should see them immediately without scrolling.
+<!--skill-flavor:debug-reporting:end-->
 
 ### When the run faults
 
+<!--skill-flavor:debug-faults:start-->
 `Data.finalStatus: "Faulted"` means the run failed, and the cause is already in that same response — read it there. `--output-filter` also projects a faulted run's `Data`, so a projection that omits `incidents` or `variables` drops them; `Message` and `Instructions` stay whole and name `uip maestro flow debug-instance incidents <instanceId>`. If you projected them away, run that command for incidents and `uip maestro flow debug-instance variables <instanceId> --output json` for variables — do not re-run the flow. Next time, run debug unfiltered and redirect it to a file:
 
 ```bash
 UIP_LOG_LEVEL=info uip maestro flow debug <path-to-project-dir> --output json > /tmp/flow-debug.json
 ```
+<!--skill-flavor:debug-faults:end-->
 
 Extraction commands and fault-code lookup: [diagnose/troubleshooting-guide.md — Step 0](../diagnose/troubleshooting-guide.md#step-0--read-the-cause-in-the-debug-output-you-already-have).
 

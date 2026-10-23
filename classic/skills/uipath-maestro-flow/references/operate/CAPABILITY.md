@@ -29,7 +29,9 @@ Capability index for the lifecycle of a flow as a deployed asset. Operate owns e
 2. **Default to Studio Web when the user says "publish" without specifier.** "Publish" → `uip solution upload <SolutionDir>`. Only run `uip maestro flow pack` + `uip solution publish` when the user explicitly asks to deploy to Orchestrator. Pass the exact solution root path (the directory containing the `.uipx` file), or `.` when already in that directory; do not pass the solution name while the shell is inside a nested project folder. The Orchestrator path bypasses Studio Web — the user cannot visualize or edit the flow there.
 <!--skill-flavor:upload-publish-default-rule:end-->
 3. **Always include `--folder-key <FOLDER_KEY>` (`-f` shorthand) on `instance` commands.** Without it the command rejects the request before reaching the API. Get the folder key from `uip or folders list --output json` or from the job/process context. See [shared/cli-conventions.md](../shared/cli-conventions.md#6---folder-key-requirement).
+<!--skill-flavor:debug-report-rule:start-->
 4. **Always report Studio Web URL and Instance ID as the first two lines of any debug summary.** Parse `Data.studioWebUrl` and `Data.instanceId` from the JSON output. Use `<not returned by CLI>` if missing — never omit the line. Users need these immediately, not buried below status text.
+<!--skill-flavor:debug-report-rule:end-->
 
 ## Workflow
 
