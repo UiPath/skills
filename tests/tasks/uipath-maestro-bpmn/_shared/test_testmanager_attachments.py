@@ -141,6 +141,16 @@ def test_connector_mode_http_passes_all_ops(tmp_path: Path) -> None:
     assert "all four" in result.stdout
 
 
+def test_mixed_activity_and_http_passes_all_ops(tmp_path: Path) -> None:
+    activity = [
+        NODE.format(object_name="UploadAttachment", method="POST"),
+        NODE.format(object_name="GetAttachments", method="GET"),
+    ]
+    result = _write(tmp_path, "".join(activity + _http_nodes()[2:]), "--all-ops")
+    assert result.returncode == 0, result.stderr
+    assert "all four" in result.stdout
+
+
 @pytest.mark.parametrize(
     "overrides",
     [

@@ -11,6 +11,7 @@ import sys
 import xml.etree.ElementTree as ET
 from collections.abc import Iterable, Iterator
 from enum import Enum
+from functools import lru_cache
 from pathlib import Path
 from typing import NamedTuple, TypeVar
 
@@ -499,6 +500,7 @@ _PLACEHOLDER_RE = re.compile(r"\{[^/}]*\}")
 _CATALOG_ONLY_METHODS = {"getbyid"}
 
 
+@lru_cache(maxsize=None)
 def _filled_path_re(template: str) -> re.Pattern[str]:
     """End-anchored match for an IS path, each ``{name}`` one filled segment:
     ``/v2/{projectId}/items`` matches ``/v2/{}/items`` and ``/v2/p/items``,
@@ -529,28 +531,61 @@ def _operation_matches(
     return path_re.search(path.split("?", 1)[0]) is not None
 
 
+def _assign_requests(candidates: list[list[int]]) -> dict[int, int]:
+    """Each operation's request index, no request used twice, as many
+    operations covered as possible (augmenting-path bipartite matching)."""
+    owner: dict[int, int] = {}
+
+    def claim(operation: int, seen: set[int]) -> bool:
+        for request in candidates[operation]:
+            if request in seen:
+                continue
+            seen.add(request)
+            if request not in owner or claim(owner[request], seen):
+                owner[request] = operation
+                return True
+        return False
+
+    for operation in range(len(candidates)):
+        claim(operation, set())
+    return {operation: request for request, operation in owner.items()}
+
+
+def _missing_operation(operation: ConnectorOperation) -> str:
+    http_methods = "/".join(sorted(operation.methods - _CATALOG_ONLY_METHODS)).upper()
+    return (
+        f"{operation.label} (objectName={operation.object_name!r} with method in "
+        f"{sorted(operation.methods)}, or HTTP {http_methods} {operation.path!r} "
+        "with every placeholder filled)"
+    )
+
+
 def require_operations(
     requests: list[tuple[ET.Element, str, str, RequestShape]],
     operations: list[ConnectorOperation],
     group: str,
 ) -> None:
+    candidates = [
+        [i for i, request in enumerate(requests) if _operation_matches(*request, operation)]
+        for operation in operations
+    ]
+    assigned = _assign_requests(candidates)
+
     missing: list[str] = []
-    for operation in operations:
-        match = next((r for r in requests if _operation_matches(*r, operation)), None)
-        if match is None:
-            missing.append(
-                f"{operation.label} (objectName={operation.object_name!r} or path "
-                f"{operation.path!r} with every placeholder filled, "
-                f"method in {sorted(operation.methods)})"
-            )
+    for index, operation in enumerate(operations):
+        if index not in assigned:
+            missing.append(_missing_operation(operation))
             continue
 
-        task, method, request_path, _shape = match
+        task, method, request_path, _shape = requests[assigned[index]]
         target = request_path or context_value(task, "objectName")
         print(f"OK: {operation.label} -> {task.attrib.get('id', '?')} ({method} {target})")
 
     if missing:
-        fail(f"missing {group} connector node(s):\n  " + "\n  ".join(missing))
+        fail(
+            f"missing {group} connector node(s), each operation needs its own node:\n  "
+            + "\n  ".join(missing)
+        )
 
 
 def require_di_for_visible_elements(root: ET.Element) -> None:

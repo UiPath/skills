@@ -967,3 +967,43 @@ def test_connector_requests_skips_legacy_sdk_http() -> None:
     )
     task = _connector_task("Intsvc.ActivityExecution", context, body)
     assert _requests(task) == []
+
+
+ITEM_OPERATIONS = [
+    bpmn_check.ConnectorOperation("get an item", "Item", {"getbyid", "get"}, "/v2/{p}/items/{id}"),
+    bpmn_check.ConnectorOperation("list items", "Item", {"get"}, "/v2/{p}/items"),
+]
+
+
+def _item_requests(*methods: str) -> list[tuple[ET.Element, str, str, bpmn_check.RequestShape]]:
+    tasks = "".join(
+        _connector_task(
+            "Intsvc.ActivityExecution",
+            '<uipath:input name="connectorKey" type="string" value="uipath-uipath-testmanager" />'
+            '<uipath:input name="objectName" type="string" value="Item" />'
+            f'<uipath:input name="method" type="string" value="{method}" />',
+        ).replace('id="Task_Intsvc.ActivityExecution"', f'id="Task_{i}"')
+        for i, method in enumerate(methods)
+    )
+    root = ET.fromstring(
+        f'<bpmn:definitions xmlns:bpmn="{NS["bpmn"]}" xmlns:uipath="{NS["uipath"]}">'
+        f'<bpmn:process id="P">{tasks}</bpmn:process></bpmn:definitions>'
+    )
+    return list(bpmn_check.connector_requests(root, "uipath-uipath-testmanager"))
+
+
+def test_require_operations_needs_a_node_per_operation() -> None:
+    with pytest.raises(SystemExit) as exc:
+        bpmn_check.require_operations(_item_requests("GET"), ITEM_OPERATIONS, "item")
+    assert "\n  list items (" in str(exc.value)
+    assert "get an item (" not in str(exc.value)
+
+
+def test_require_operations_matches_regardless_of_order() -> None:
+    bpmn_check.require_operations(_item_requests("GET", "GETBYID"), ITEM_OPERATIONS, "item")
+
+
+def test_require_operations_names_only_http_verbs_for_http() -> None:
+    with pytest.raises(SystemExit) as exc:
+        bpmn_check.require_operations([], ITEM_OPERATIONS[:1], "item")
+    assert "method in ['get', 'getbyid'], or HTTP GET '/v2/{p}/items/{id}'" in str(exc.value)
