@@ -254,6 +254,39 @@ def test_create_after_the_success_fails(sandbox: Path, tmp_path: Path) -> None:
     assert "never re-run" in grade(sandbox, "create-once").stdout
 
 
+# The first upload is refused (a slow create still saving answers 403), every later
+# call succeeds.
+REJECT_FIRST_UPLOAD = r'''#!/usr/bin/env python3
+import json, os, sys
+args = " ".join(sys.argv[1:])
+if " documents create" in " " + args and not os.path.exists("first-upload-done"):
+    open("first-upload-done", "w").close()
+    print(json.dumps({"Result": "Failure", "Message": "This user is not permitted to perform this action "
+                      "based on their role. (403 Forbidden)"})); sys.exit(1)
+if " documents create" in " " + args:
+    print(json.dumps({"Result": "Success", "Data": {"Id": 901, "FileId": 77}})); sys.exit(0)
+if " automations create" in " " + args:
+    print(json.dumps({"Result": "Success", "Data": {"Id": %d, "IdeaFlowId": 8}})); sys.exit(0)
+print(json.dumps({"Result": "Success", "Data": {}}))
+''' % PROCESS_ID
+
+
+def test_upload_refused_then_retried_once_passes(sandbox: Path, tmp_path: Path) -> None:
+    (tmp_path / "real-bin" / "uip").write_text(REJECT_FIRST_UPLOAD)
+    publish(sandbox, good_answers())
+    uip(sandbox, "ah", "documents", "create", str(PROCESS_ID), "--title", "PDD", "--description", "PDD",
+        "--document-type-id", "1", "--file", PDD, "--output", "json")
+    result = grade(sandbox, "documents")
+    assert result.returncode == 0, result.stdout
+
+
+def test_two_successful_uploads_of_one_file_fail(sandbox: Path) -> None:
+    publish(sandbox, good_answers())
+    uip(sandbox, "ah", "documents", "create", str(PROCESS_ID), "--title", "PDD again", "--description", "PDD",
+        "--document-type-id", "1", "--file", PDD, "--output", "json")
+    assert "expected one successful upload" in grade(sandbox, "documents").stdout
+
+
 CREATE_ON_FLOW = r'''#!/usr/bin/env python3
 import json, sys
 if " automations create" in " " + " ".join(sys.argv[1:]):
