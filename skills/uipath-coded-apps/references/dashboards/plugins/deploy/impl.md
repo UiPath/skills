@@ -178,7 +178,7 @@ uip or folders list --output json
 
 Pick the `Data[]` row where `Type == "Personal"`, read its `Key`. Persist `folderKey`/`folderName`. No folder is created and no roles are assigned — a governance dashboard in a personal workspace needs no role provisioning, since the owner already has full access. If no `Personal` row is found, show the folder list and ask the user to pick another option.
 
-**Existing folder by name** (standalone) — resolve per SKILL.md Rule 11:
+**Existing folder by name** (standalone) — this flow persists `folderKey` in `state.json` and reuses it on upgrade, so resolve the key here rather than passing `--folder-path` at deploy time (see [pack-publish-deploy.md](../../../pack-publish-deploy.md#resolving-folder-name--folder-key)):
 
 ```bash
 uip or folders list --output json
