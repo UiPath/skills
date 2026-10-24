@@ -1,5 +1,6 @@
 # Authoring and product-CLI loops
 
+<!--skill-flavor:loop-choice:start-->
 Choose one loop before running any build command, as
 [SKILL.md — Lifecycle](../SKILL.md#lifecycle) says:
 
@@ -14,6 +15,7 @@ In eval/product mode, create the solution/project scaffold immediately after
 choosing the loop, before authoring the source. Once the source first
 compiles, emit it into that nested project artifact—not `/tmp`—and keep the
 artifact current after every source edit.
+<!--skill-flavor:loop-choice:end-->
 
 Tenant discovery is not a phase of either loop. The one step before authoring
 is choosing the node ([SKILL.md, "Choose the node before writing it"](../SKILL.md)):
@@ -44,6 +46,7 @@ artifact can establish.
 
 ## Installing the package
 
+<!--skill-flavor:install-package:start-->
 Skip this when the SDK is already installed: `npm ls -g @uipath/maestro-builder-sdk` lists it, or a prepared workspace has `node_modules/@uipath/maestro-builder-sdk` (a workspace copy is used before a global one).
 Every `uip maestro flow` authoring verb — `check`, `compile`, `decompile` — runs from the installed package, so all of them refuse until it is installed; the package cannot bootstrap itself.
 Install it once per machine, globally, so the workspace needs no `package.json` or `node_modules/`:
@@ -57,9 +60,11 @@ Only if it fails with E401 or E404 **and** `npm config get @uipath:registry` nam
 If it fails with EACCES (npm's global folder is not writable), do not use `sudo`; install into the workspace instead with `npm install --save-dev @uipath/maestro-builder-sdk`, which `uip` also finds.
 Any other failure (a timeout, a mirror refusing the package) is the user's network or registry to fix, so report it rather than routing around it.
 When `uip` reports the SDK is below its minimum version, run the command its `Instructions` give: it names `-g` or `--save-dev` depending on which copy it found.
+<!--skill-flavor:install-package:end-->
 
 ## Local authoring hard gates
 
+<!--skill-flavor:local-gates:start-->
 Use this section only when emit-only mode is disabled. Use the source check as
 the fast no-output inner loop (with a library and `.flow-sdk/bindings.json` beside the
 source it reports every connector-input and binding refusal `compile` would
@@ -91,13 +96,16 @@ re-lays out every node, so it discards the positions the author chose. See
 [`operate.md`](operate.md#lay-out-the-emitted-flow-first).
 
 These authoring verbs require a prerelease of `@uipath/cli` that exposes them.
+<!--skill-flavor:local-gates:end-->
 
 ## Product-CLI scaffold
 
+<!--skill-flavor:product-cli-scaffold:start-->
 The scaffold (`uip solution init`, `flow init --sdk-source` for the seed, and
 `--automate` for a Maestro Automate project) is in
 [SKILL.md — Project layout](../SKILL.md#project-layout). It is kept in one place
 so the two copies cannot drift.
+<!--skill-flavor:product-cli-scaffold:end-->
 
 ## Eval/product-CLI packaging: emit-only
 
@@ -156,6 +164,7 @@ compile. Omit both options only when manual/implicit authentication is intended.
 
 ## Refresh, debug, and preserve evidence
 
+<!--skill-flavor:debug-flags:start-->
 `flow debug` takes the project directory, not the `.flow` file, and resource
 refresh must run first. From the solution directory, `<Name>` names that project.
 A `500` at `prepare-custom-debug` is transient: retry once.
@@ -170,6 +179,7 @@ These are the common flags; use only the ones the behavior claim needs:
 | Poll bound | `--timeout <seconds> --poll-interval <milliseconds>`; keep the stated task bound |
 | Compact read-back | `--output-filter "<JMESPath>" --output json` |
 | Quiet logs | `--log-level error`, or `--log-file <path>` to move them off the stream entirely |
+<!--skill-flavor:debug-flags:end-->
 
 ### `--output-filter` is JMESPath, and three things about it are worth knowing
 
@@ -256,6 +266,7 @@ command its `Instructions` give.
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
 
+<!--skill-flavor:debug-example:start-->
 ```bash
 ( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
 ( cd "<Solution>" && uip maestro flow debug <Name> --log-level error \
@@ -263,6 +274,7 @@ diagnostics in one read-back instead of printing the full execution envelope:
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>,incidents:incidents}" \
   --output json )
 ```
+<!--skill-flavor:debug-example:end-->
 
 The top-level envelope still carries `Result`; the projection above selects
 from `Data`. Read and retain `Result`, the projected status/instance/URL, the

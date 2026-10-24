@@ -36,13 +36,21 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 from dataclasses import dataclass
 
 import pytest
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from flavor_markers import compose, shipped  # noqa: E402
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.normpath(os.path.join(_HERE, "..", "..", "..", ".."))
 SKILL_PATH = os.path.join(_REPO, "skills", "uipath-maestro-flow", "SKILL.md")
+STUDIOWEB_V2_OVERRIDE = os.path.join(
+    _REPO, "skill-flavors", "studioweb", "skills-flow-v2", "uipath-maestro-flow", "SKILL.md"
+)
 
 # Whole file. Set at the #3718 trim (265 lines, 27,606 bytes, ~10.8K tok) with
 # ~5% byte headroom; the line cap is looser on purpose (see above). Re-set
@@ -62,6 +70,13 @@ SECTION_BUDGETS = {
     "Builder frame": 2_050,  # vars, return/terminate, expression table (1,930)
     "Supported node types": 9_400,  # the router: 53 rows (8,956)
 }
+
+# The Studio Web v2 Flow skill ships at skills-flow-v2/uipath-maestro-flow/ in
+# @uipath/skills-studioweb. Its host rules (Explorer, `.flow-sdk/`, the
+# read-only page, the command table) sit in Project layout, and the in-page
+# round trip in Lifecycle, so those two get their own budgets: the size when
+# the tree first shipped (9,118 and 3,028) plus ~5%. The whole-file caps hold.
+STUDIOWEB_V2_SECTION_BUDGETS = {**SECTION_BUDGETS, "Project layout": 9_600, "Lifecycle": 3_200}
 
 BYTES_PER_TOKEN = 2.56
 
@@ -128,7 +143,7 @@ def _lines(text: str) -> list[str]:
     return lines
 
 
-def budget_problems(text: str) -> list[str]:
+def budget_problems(text: str, section_budgets: dict[str, int] = SECTION_BUDGETS) -> list[str]:
     """Every budget violation in one SKILL.md, as readable lines."""
     lines = _lines(text)
     size = len(text.encode("utf-8"))
@@ -144,7 +159,7 @@ def budget_problems(text: str) -> list[str]:
             f"{len(lines) - MAX_LINES} over"
         )
     for s in h2_sections(lines):
-        budget = SECTION_BUDGETS.get(s.title, MAX_SECTION_BYTES)
+        budget = section_budgets.get(s.title, MAX_SECTION_BYTES)
         if s.size > budget:
             problems.append(
                 f'section "## {s.title}" (line {s.start}) is {s.size} bytes '
@@ -163,10 +178,23 @@ def budget_slack(text: str) -> dict[str, int]:
 
 def test_flow_skill_fits_budget():
     with open(SKILL_PATH, encoding="utf-8") as f:
-        text = f.read()
+        text = shipped(f.read())
     problems = budget_problems(text)
     assert not problems, (
         f"{os.path.relpath(SKILL_PATH, _REPO)}:\n  "
+        + "\n  ".join(problems)
+        + f"\nSlack now: {budget_slack(text)}\n{REMEDY}"
+    )
+
+
+def test_studioweb_v2_flow_skill_fits_budget():
+    with open(SKILL_PATH, encoding="utf-8") as f:
+        canonical = f.read()
+    with open(STUDIOWEB_V2_OVERRIDE, encoding="utf-8") as f:
+        text = compose(canonical, f.read())
+    problems = budget_problems(text, STUDIOWEB_V2_SECTION_BUDGETS)
+    assert not problems, (
+        f"{os.path.relpath(STUDIOWEB_V2_OVERRIDE, _REPO)} (composed):\n  "
         + "\n  ".join(problems)
         + f"\nSlack now: {budget_slack(text)}\n{REMEDY}"
     )
@@ -176,7 +204,7 @@ def test_every_named_budget_is_a_real_section():
     # A renamed section would otherwise fall back to 1300 bytes silently, or a
     # stale name would keep a large budget nobody uses.
     with open(SKILL_PATH, encoding="utf-8") as f:
-        titles = {s.title for s in h2_sections(_lines(f.read()))}
+        titles = {s.title for s in h2_sections(_lines(shipped(f.read())))}
     stale = sorted(set(SECTION_BUDGETS) - titles)
     assert not stale, f"SECTION_BUDGETS names sections SKILL.md does not have: {stale}"
 

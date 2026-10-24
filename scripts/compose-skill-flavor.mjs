@@ -18,6 +18,16 @@
  * `classic/skills/<skill>` must be pinned by some flavor, so a retained tree is
  * deleted as soon as its last host moves off it.
  *
+ * A flavor that pins a skill may also ship that skill's current generation
+ * beside its `skills/` tree, so the host can switch per user: overrides under
+ * `skill-flavors/<flavor>/skills-<tree>/<skill>/` compose against
+ * `skills/<skill>/` (never the pin) and land at `skills-<tree>/<skill>/` in
+ * that flavor's package. An extra tree carries at least one skill its flavor
+ * pins. It may also carry siblings the switch must change with it: a
+ * `skills-<tree>/<sibling>/.reset` names a marker prefix (such as `flow-sdk-`),
+ * and the sibling composes from `skills/<sibling>/` with the flavor's
+ * overrides minus blocks of that prefix, then the tree's own overrides.
+ *
  * The no-argument `validate`, `build`, and `pack` commands discover every
  * flavor by convention. Legacy explicit-flavor validate/build invocations are
  * retained for focused debugging. Generated files are marker-free and are
@@ -56,6 +66,8 @@ export const DEFAULT_VARIANT = "default";
 export const CLASSIC_DIRNAME = "classic";
 export const CANONICAL_PIN_FILENAME = ".canonical";
 export const CANONICAL_PIN_VALUE = "classic";
+export const EXTRA_TREE_PREFIX = "skills-";
+export const RESET_FILENAME = ".reset";
 export const PACKAGE_NAME_MAX_LENGTH = 214;
 export const ROOT_PACK_TRANSACTION_DIRNAME = ".root-pack-transaction";
 export const CUSTOM_PACKAGE_PUBLISH_CONFIG = Object.freeze({
@@ -65,6 +77,7 @@ export const CUSTOM_PACKAGE_PUBLISH_CONFIG = Object.freeze({
 
 const MARKER_SHAPE_RE = /skill-flavor[ \t]*:/;
 const SKILL_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const RESET_PREFIX_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*-$/;
 const MARKER_LINE_RE =
   /^<!--skill-flavor:([a-z0-9]+(?:-[a-z0-9]+)*):(start|end)-->(?:\r\n|\n|\r)?$/;
 const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
@@ -407,6 +420,180 @@ function collectCanonicalFiles(repoRoot, skills, findings, sourceRoots = new Map
   return { canonicalFiles, canonicalText, canonicalBlocks };
 }
 
+function applyOverrides(overrideRoot, skills, canonical, findings, skip = () => false) {
+  const { canonicalFiles, canonicalText, canonicalBlocks } = canonical;
+  const replacements = new Map();
+  const overrides = new Map();
+  let replacementCount = 0;
+  let overrideFileCount = 0;
+  for (const entry of walkTree(overrideRoot)) {
+    if (entry.stats.isDirectory()) continue;
+    if (entry.stats.isSymbolicLink()) {
+      findings.push(`${entry.path}: flavor directories cannot contain symlinks`);
+      continue;
+    }
+    if (!entry.stats.isFile()) {
+      findings.push(`${entry.path}: flavor directories may contain only directories and Markdown files`);
+      continue;
+    }
+
+    const relative = posixRelative(overrideRoot, entry.path);
+    const parts = splitPosix(relative);
+    if (skip(parts)) continue;
+    if (parts.length < 2) {
+      findings.push(`${entry.path}: override path must mirror <skill>/<file>.md`);
+      continue;
+    }
+    if (path.extname(entry.path).toLowerCase() !== ".md") {
+      findings.push(`${entry.path}: only Markdown files may contain flavor blocks`);
+      continue;
+    }
+    overrideFileCount += 1;
+
+    const skill = parts[0];
+    if (!skills.includes(skill)) {
+      findings.push(`${entry.path}: override belongs to unknown canonical skill ${quote(skill)}`);
+      continue;
+    }
+    const logical = `skills/${relative}`;
+    if (!canonicalFiles.has(logical)) {
+      findings.push(`${entry.path}: canonical target does not exist: ${logical}`);
+      continue;
+    }
+
+    const overrideText = readUtf8(entry.path, findings, "flavor override");
+    if (overrideText === null) continue;
+    const parsedOverride = parseMarkerBlocks(entry.path, overrideText, findings);
+    validateOverrideHasOnlyBlocks(entry.path, overrideText, parsedOverride, findings);
+
+    const available = new Set((canonicalBlocks.get(logical) ?? []).map((block) => block.name));
+    for (const block of parsedOverride) {
+      if (!available.has(block.name)) {
+        findings.push(
+          `${entry.path}: flavor block ${quote(block.name)} has no matching canonical marker in ${logical}`,
+        );
+      }
+    }
+
+    if (parsedOverride.length && parsedOverride.every((block) => available.has(block.name))) {
+      const sourceText = canonicalText.get(logical);
+      if (sourceText !== undefined) {
+        replacements.set(
+          logical,
+          composeText(sourceText, canonicalBlocks.get(logical), parsedOverride),
+        );
+        overrides.set(logical, parsedOverride);
+        replacementCount += parsedOverride.length;
+      }
+    }
+  }
+
+  return { replacements, overrides, replacementCount, overrideFileCount };
+}
+
+/** The marker prefix a tree sibling's `.reset` names, or null when it has none. */
+function readReset(skillRoot, findings) {
+  const resetPath = path.join(skillRoot, RESET_FILENAME);
+  const stats = safeLstat(resetPath);
+  if (!stats) return null;
+  if (stats.isSymbolicLink() || !stats.isFile()) {
+    findings.push(`${resetPath}: block reset must be a regular file`);
+    return null;
+  }
+  const value = readUtf8(resetPath, findings, "block reset");
+  if (value === null) return null;
+  if (!RESET_PREFIX_RE.test(value.trim())) {
+    findings.push(
+      `${resetPath}: block reset must name one marker prefix ending in "-", such as "flow-sdk-", got ${quote(value.trim())}`,
+    );
+    return null;
+  }
+  return value.trim();
+}
+
+/**
+ * One `skills-<tree>/` directory of a flavor: the current generation of the
+ * skills that flavor pins, with the tree's own overrides applied, plus each
+ * sibling a `.reset` declares, layered as the module comment describes.
+ */
+function planExtraTree(repoRoot, treeRoot, skills, pins, flavorOverrides, findings) {
+  const name = path.basename(treeRoot);
+  if (!SKILL_NAME_RE.test(name)) {
+    findings.push(`${treeRoot}: invalid extra tree name ${quote(name)}; use a lowercase kebab-case directory name`);
+  }
+  const treeSkills = sortedEntries(treeRoot)
+    .filter((entry) => entry.isDirectory() && skills.includes(entry.name))
+    .map((entry) => entry.name);
+  const resets = new Map();
+  for (const skill of treeSkills) {
+    const skillRoot = path.join(treeRoot, skill);
+    const prefix = readReset(skillRoot, findings);
+    if (pins.has(skill)) {
+      if (prefix !== null) {
+        findings.push(
+          `${path.join(skillRoot, RESET_FILENAME)}: a pinned skill takes none of its flavor overrides in an extra tree; ` +
+            "a block reset applies only to a sibling the flavor does not pin",
+        );
+      }
+    } else if (prefix === null) {
+      findings.push(
+        `${skillRoot}: an extra tree carries a skill its flavor pins, or a sibling whose ${RESET_FILENAME} names ` +
+          `the flavor blocks that fall back to canonical; pin it with ${path.join(path.dirname(treeRoot), skill, CANONICAL_PIN_FILENAME)}, ` +
+          `add ${RESET_FILENAME}, or delete it`,
+      );
+    } else if (
+      ![...flavorOverrides].some(
+        ([logical, blocks]) => logical.startsWith(`skills/${skill}/`) && blocks.some((block) => block.name.startsWith(prefix)),
+      )
+    ) {
+      findings.push(`${path.join(skillRoot, RESET_FILENAME)}: no flavor override block of ${quote(skill)} starts with ${quote(prefix)}`);
+    } else {
+      resets.set(skill, prefix);
+    }
+  }
+  if (!treeSkills.some((skill) => pins.has(skill))) {
+    findings.push(`${treeRoot}: extra tree must carry at least one skill its flavor pins`);
+  }
+  const canonical = collectCanonicalFiles(repoRoot, treeSkills, findings);
+  const { overrides: treeOverrides, overrideFileCount } = applyOverrides(
+    treeRoot,
+    skills,
+    canonical,
+    findings,
+    // Read and validated by readReset above.
+    (parts) => parts.length === 2 && parts[1] === RESET_FILENAME,
+  );
+  if (overrideFileCount === 0) findings.push(`${treeRoot}: extra tree must contain at least one Markdown override file`);
+
+  const layered = new Map();
+  for (const [logical, blocks] of flavorOverrides) {
+    const prefix = resets.get(splitPosix(logical)[1]);
+    if (prefix !== undefined) layered.set(logical, blocks.filter((block) => !block.name.startsWith(prefix)));
+  }
+  for (const [logical, blocks] of treeOverrides) {
+    const names = new Set(blocks.map((block) => block.name));
+    layered.set(logical, [...(layered.get(logical) ?? []).filter((block) => !names.has(block.name)), ...blocks]);
+  }
+  const replacements = new Map();
+  let replacementCount = 0;
+  for (const [logical, blocks] of layered) {
+    const text = canonical.canonicalText.get(logical);
+    if (text === undefined || blocks.length === 0) continue;
+    replacements.set(logical, composeText(text, canonical.canonicalBlocks.get(logical), blocks));
+    replacementCount += blocks.length;
+  }
+  return {
+    name,
+    skills: treeSkills,
+    pinnedSkills: treeSkills.filter((skill) => pins.has(skill)),
+    files: plannedFiles(canonical.canonicalFiles, canonical.canonicalText, replacements),
+    overriddenFiles: [...replacements.keys()]
+      .sort()
+      .map((relative) => relative.slice("skills/".length)),
+    replacementCount,
+  };
+}
+
 function plannedFiles(canonicalFiles, canonicalText, replacements = new Map()) {
   const files = [];
   for (const relative of [...canonicalFiles.keys()].sort()) {
@@ -443,6 +630,7 @@ export function createDefaultPlan(repoRoot = REPO_ROOT) {
     flavorRoot: null,
     skills,
     pinnedSkills: [],
+    extraTrees: [],
     files: plannedFiles(canonicalFiles, canonicalText),
     overriddenFiles: [],
     replacementCount: 0,
@@ -487,70 +675,23 @@ export function createCompositionPlan(repoRoot = REPO_ROOT, flavorRoot) {
     pins,
   );
 
-  const replacements = new Map();
-  let replacementCount = 0;
-  let overrideFileCount = 0;
-  for (const entry of walkTree(flavorRoot)) {
-    if (entry.stats.isDirectory()) continue;
-    if (entry.stats.isSymbolicLink()) {
-      findings.push(`${entry.path}: flavor directories cannot contain symlinks`);
-      continue;
-    }
-    if (!entry.stats.isFile()) {
-      findings.push(`${entry.path}: flavor directories may contain only directories and Markdown files`);
-      continue;
-    }
-
-    const relative = posixRelative(flavorRoot, entry.path);
-    const parts = splitPosix(relative);
-    // Read and validated by readCanonicalPins above.
-    if (parts.length === 2 && parts[1] === CANONICAL_PIN_FILENAME) continue;
-    if (parts.length < 2) {
-      findings.push(`${entry.path}: override path must mirror <skill>/<file>.md`);
-      continue;
-    }
-    if (path.extname(entry.path).toLowerCase() !== ".md") {
-      findings.push(`${entry.path}: only Markdown files may contain flavor blocks`);
-      continue;
-    }
-    overrideFileCount += 1;
-
-    const skill = parts[0];
-    if (!skills.includes(skill)) {
-      findings.push(`${entry.path}: override belongs to unknown canonical skill ${quote(skill)}`);
-      continue;
-    }
-    const logical = `skills/${relative}`;
-    if (!canonicalFiles.has(logical)) {
-      findings.push(`${entry.path}: canonical target does not exist: ${logical}`);
-      continue;
-    }
-
-    const overrideText = readUtf8(entry.path, findings, "flavor override");
-    if (overrideText === null) continue;
-    const parsedOverride = parseMarkerBlocks(entry.path, overrideText, findings);
-    validateOverrideHasOnlyBlocks(entry.path, overrideText, parsedOverride, findings);
-
-    const available = new Set((canonicalBlocks.get(logical) ?? []).map((block) => block.name));
-    for (const block of parsedOverride) {
-      if (!available.has(block.name)) {
-        findings.push(
-          `${entry.path}: flavor block ${quote(block.name)} has no matching canonical marker in ${logical}`,
-        );
-      }
-    }
-
-    if (parsedOverride.length && parsedOverride.every((block) => available.has(block.name))) {
-      const sourceText = canonicalText.get(logical);
-      if (sourceText !== undefined) {
-        replacements.set(
-          logical,
-          composeText(sourceText, canonicalBlocks.get(logical), parsedOverride),
-        );
-        replacementCount += parsedOverride.length;
-      }
-    }
-  }
+  const extraTreeNames = new Set(
+    sortedEntries(flavorRoot)
+      .filter((entry) => entry.isDirectory() && entry.name.startsWith(EXTRA_TREE_PREFIX))
+      .map((entry) => entry.name),
+  );
+  const { replacements, overrides, replacementCount, overrideFileCount } = applyOverrides(
+    flavorRoot,
+    skills,
+    { canonicalFiles, canonicalText, canonicalBlocks },
+    findings,
+    // Pins are read by readCanonicalPins above; extra trees by planExtraTree below.
+    (parts) =>
+      extraTreeNames.has(parts[0]) || (parts.length === 2 && parts[1] === CANONICAL_PIN_FILENAME),
+  );
+  const extraTrees = [...extraTreeNames].map((name) =>
+    planExtraTree(repoRoot, path.join(flavorRoot, name), skills, pins, overrides, findings),
+  );
 
   // A valid pin is an exception in its own right; a flavor needs one or the other.
   if (overrideFileCount === 0 && pins.size === 0) {
@@ -562,6 +703,7 @@ export function createCompositionPlan(repoRoot = REPO_ROOT, flavorRoot) {
     flavorRoot,
     skills,
     pinnedSkills: [...pins.keys()],
+    extraTrees,
     files: plannedFiles(canonicalFiles, canonicalText, replacements),
     overriddenFiles: [...replacements.keys()]
       .sort()
@@ -679,11 +821,26 @@ function prepareBuildRoot(repoRoot) {
   return buildRoot;
 }
 
-function materializeVariants(variants, outputRoot) {
-  mkdirSync(outputRoot, { recursive: false });
+/**
+ * Writes `<treesRoot>/skills/<variant>/` for every variant and
+ * `<treesRoot>/<extra tree>/<variant>/` for every extra tree; returns the
+ * top-level tree names it wrote.
+ */
+function materializeVariants(variants, treesRoot) {
+  const trees = ["skills"];
+  mkdirSync(path.join(treesRoot, "skills"), { recursive: false });
   for (const variant of variants) {
-    materializeComposition(variant.plan, path.join(outputRoot, variant.name));
+    materializeComposition(variant.plan, path.join(treesRoot, "skills", variant.name));
+    for (const tree of variant.plan.extraTrees) {
+      if (!trees.includes(tree.name)) trees.push(tree.name);
+      materializeComposition(tree, path.join(treesRoot, tree.name, variant.name));
+    }
   }
+  return trees;
+}
+
+function builtTreeFindings(treesRoot, trees) {
+  return trees.flatMap((tree) => markerFindings(path.join(treesRoot, tree), "built skill tree"));
 }
 
 function markerFindings(root, label) {
@@ -758,14 +915,14 @@ export function buildAllSkillTrees(repoRoot = REPO_ROOT) {
   const variants = createAllVariants(repoRoot);
   const buildRoot = prepareBuildRoot(repoRoot);
   const temporaryRoot = mkdtempSync(path.join(buildRoot, ".skill-flavor-build-"));
-  const temporarySkills = path.join(temporaryRoot, "skills");
   try {
-    materializeVariants(variants, temporarySkills);
-    const findings = markerFindings(temporarySkills, "built skill tree");
+    const trees = materializeVariants(variants, temporaryRoot);
+    const findings = builtTreeFindings(temporaryRoot, trees);
     if (findings.length) throw new FlavorCompositionError(findings);
-    const finalSkills = path.join(buildRoot, "skills");
-    replaceGeneratedDirectories([[temporarySkills, finalSkills]]);
-    return { variants, outputRoot: finalSkills };
+    replaceGeneratedDirectories(
+      trees.map((tree) => [path.join(temporaryRoot, tree), path.join(buildRoot, tree)]),
+    );
+    return { variants, outputRoot: path.join(buildRoot, "skills") };
   } finally {
     rmSync(temporaryRoot, REMOVE_OPTIONS);
   }
@@ -879,7 +1036,18 @@ function generatedPackageManifest(sourceManifest, variant, customFiles) {
   return manifest;
 }
 
-function customPackageReadme(name, variant) {
+function customPackageReadme(name, variant, extraTrees) {
+  const names = (list) => list.map((skill) => `\`${skill}\``).join(", ");
+  const extra = extraTrees.map((tree) => {
+    const siblings = tree.skills.filter((skill) => !tree.pinnedSkills.includes(skill));
+    return (
+      `\`${tree.name}/\` holds the current generation of ${names(tree.pinnedSkills)}, ` +
+      "which `skills/` ships in its classic form" +
+      (siblings.length ? `, and the matching ${names(siblings)}` : "") +
+      ". A host switches by copying every " +
+      `\`${tree.name}/<skill>/\` over \`skills/<skill>/\`.\n\n`
+    );
+  });
   return (
     `# ${name}\n\n` +
     `This package is the generated **${variant}** flavor of ` +
@@ -887,11 +1055,12 @@ function customPackageReadme(name, variant) {
     `It contains the complete, marker-free canonical skill catalog with the sparse ` +
     `\`${variant}\` overrides applied. Consumers should copy the files under ` +
     "`skills/` directly; no runtime composition is required.\n\n" +
+    extra.join("") +
     "This package is generated from the canonical repository. Do not edit its contents directly.\n"
   );
 }
 
-function stagePackages(repoRoot, variants, skillTreesRoot, packagesRoot) {
+function stagePackages(repoRoot, variants, treesRoot, packagesRoot) {
   const sourceManifest = loadPackageManifest(repoRoot);
   const baseName = sourceManifest.name;
   const version = sourceManifest.version;
@@ -906,7 +1075,7 @@ function stagePackages(repoRoot, variants, skillTreesRoot, packagesRoot) {
   for (const variant of variants) {
     const packageDir = path.join(packagesRoot, variant.name);
     mkdirSync(packageDir);
-    const builtSkills = path.join(skillTreesRoot, variant.name);
+    const builtSkills = path.join(treesRoot, "skills", variant.name);
     const builtStats = safeLstat(builtSkills);
     if (!builtStats?.isDirectory() || builtStats.isSymbolicLink()) {
       throw new Error(`complete built skill tree is missing for ${variant.name}: ${builtSkills}`);
@@ -932,13 +1101,23 @@ function stagePackages(repoRoot, variants, skillTreesRoot, packagesRoot) {
     }
 
     copyPayload(builtSkills, path.join(packageDir, "skills"), "built skill tree");
+    const { extraTrees } = variant.plan;
+    for (const tree of extraTrees) {
+      customFiles.push(tree.name);
+      copyPayload(path.join(treesRoot, tree.name, variant.name), path.join(packageDir, tree.name), "built extra tree");
+    }
     const name = packageName(baseName, variant.name);
     if (variant.name !== DEFAULT_VARIANT) {
-      writeFileSync(path.join(packageDir, "README.md"), customPackageReadme(name, variant.name), "utf8");
+      writeFileSync(path.join(packageDir, "README.md"), customPackageReadme(name, variant.name, extraTrees), "utf8");
     }
     const manifest = generatedPackageManifest(sourceManifest, variant.name, customFiles);
     writeFileSync(path.join(packageDir, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-    staged.set(variant.name, { packageName: name, version, packageDir });
+    staged.set(variant.name, {
+      packageName: name,
+      version,
+      packageDir,
+      trees: ["skills", ...extraTrees.map((tree) => tree.name)],
+    });
   }
   const findings = markerFindings(packagesRoot, "staged npm package");
   if (findings.length) throw new FlavorCompositionError(findings);
@@ -1298,7 +1477,7 @@ export function prepareRootDefaultPackage(
     const staged = stagePackages(
       repoRoot,
       defaultVariant,
-      temporarySkills,
+      temporaryRoot,
       temporaryPackages,
     );
     packStagedPackages(staged, temporaryNpm, runNpmPack);
@@ -1363,7 +1542,7 @@ function mapsOfBuffersEqual(left, right) {
   return true;
 }
 
-export function verifyTarball(tarball, packageDir, expectedName, expectedVersion) {
+export function verifyTarball(tarball, packageDir, expectedName, expectedVersion, trees = ["skills"]) {
   const entries = readTarballEntries(tarball);
   const manifestBytes = entries.get("package/package.json");
   if (!manifestBytes) throw new Error(`npm tarball has no package.json: ${tarball}`);
@@ -1380,15 +1559,18 @@ export function verifyTarball(tarball, packageDir, expectedName, expectedVersion
     throw new Error(`npm tarball version mismatch: expected ${quote(expectedVersion)}, got ${quote(manifest.version)}`);
   }
 
-  const packedSkills = new Map();
-  for (const [name, data] of entries) {
-    if (!name.startsWith("package/skills/")) continue;
-    if (containsFlavorMarker(data)) throw new Error(`flavor marker leaked into npm tarball: ${name}`);
-    packedSkills.set(name.slice("package/skills/".length), data);
-  }
-  const stagedSkills = treeFileBytes(path.join(packageDir, "skills"));
-  if (!mapsOfBuffersEqual(packedSkills, stagedSkills)) {
-    throw new Error(`npm tarball skill tree differs from staged package: ${tarball}`);
+  for (const tree of trees) {
+    const prefix = `package/${tree}/`;
+    const packedSkills = new Map();
+    for (const [name, data] of entries) {
+      if (!name.startsWith(prefix)) continue;
+      if (containsFlavorMarker(data)) throw new Error(`flavor marker leaked into npm tarball: ${name}`);
+      packedSkills.set(name.slice(prefix.length), data);
+    }
+    const stagedSkills = treeFileBytes(path.join(packageDir, tree));
+    if (!mapsOfBuffersEqual(packedSkills, stagedSkills)) {
+      throw new Error(`npm tarball ${tree} tree differs from staged package: ${tarball}`);
+    }
   }
   const forbidden = [...entries.keys()].filter(
     (name) =>
@@ -1424,7 +1606,7 @@ function packStagedPackages(staged, npmRoot, runNpmPack) {
     return compareCodepoints(left, right);
   });
   for (const variant of variants) {
-    const { packageName: name, version, packageDir } = staged.get(variant);
+    const { packageName: name, version, packageDir, trees } = staged.get(variant);
     const result = runNpmPack({
       packageDir,
       npmRoot,
@@ -1457,7 +1639,7 @@ function packStagedPackages(staged, npmRoot, runNpmPack) {
     }
     const tarball = path.join(npmRoot, filename);
     if (!safeLstat(tarball)?.isFile()) throw new Error(`npm pack did not create its reported tarball: ${tarball}`);
-    verifyTarball(tarball, packageDir, name, version);
+    verifyTarball(tarball, packageDir, name, version, trees);
     packed.push({ variant, packageName: name, version, packageDir, tarball });
   }
   return packed;
@@ -1471,21 +1653,19 @@ export function packAllVariants(
   const variants = createAllVariants(repoRoot);
   const buildRoot = prepareBuildRoot(repoRoot);
   const temporaryRoot = mkdtempSync(path.join(buildRoot, ".skill-flavor-pack-"));
-  const temporarySkills = path.join(temporaryRoot, "skills");
   const temporaryPackages = path.join(temporaryRoot, "packages");
   const temporaryNpm = path.join(temporaryRoot, "npm");
   try {
-    materializeVariants(variants, temporarySkills);
-    const findings = markerFindings(temporarySkills, "built skill tree");
+    const trees = materializeVariants(variants, temporaryRoot);
+    const findings = builtTreeFindings(temporaryRoot, trees);
     if (findings.length) throw new FlavorCompositionError(findings);
-    const staged = stagePackages(repoRoot, variants, temporarySkills, temporaryPackages);
+    const staged = stagePackages(repoRoot, variants, temporaryRoot, temporaryPackages);
     const packed = packStagedPackages(staged, temporaryNpm, runNpmPack);
 
-    const finalSkills = path.join(buildRoot, "skills");
     const finalPackages = path.join(buildRoot, "packages");
     const finalNpm = path.join(buildRoot, "npm");
     replaceGeneratedDirectories([
-      [temporarySkills, finalSkills],
+      ...trees.map((tree) => [path.join(temporaryRoot, tree), path.join(buildRoot, tree)]),
       [temporaryPackages, finalPackages],
       [temporaryNpm, finalNpm],
     ]);
@@ -1549,7 +1729,10 @@ export function main(argv = process.argv.slice(2)) {
         const variants = createAllVariants(repoRoot);
         const summaries = variants.map(
           ({ name, plan }) =>
-            `${name}: ${plan.skills.length} skills, ${plan.files.length} files, ${plan.replacementCount} replacements`,
+            `${name}: ${plan.skills.length} skills, ${plan.files.length} files, ${plan.replacementCount} replacements` +
+            plan.extraTrees
+              .map((tree) => `, ${tree.name} (${tree.skills.length} skills, ${tree.files.length} files, ${tree.replacementCount} replacements)`)
+              .join(""),
         );
         console.log(`OK - ${summaries.join("; ")}.`);
       } else {
