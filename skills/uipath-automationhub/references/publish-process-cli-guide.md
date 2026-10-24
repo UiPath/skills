@@ -4,6 +4,11 @@ Creates one process from a schema-driven payload and attaches its documents (PDD
 
 > **Use this flow only after the preflight in [`cli-commands.md`](cli-commands.md) passed.** All commands: append `--output json`. The domain contract (required fields, wrapping rules, document types) is the same one [`api-endpoints.md`](api-endpoints.md) documents — the CLI only changes the transport.
 
+**Expect about 12–15 commands end to end** (more for a large document set or a clarifying round). That covers preflight, flows, schema, one batched discovery call, reading the material, writing the answers, the create, one upload per document and one verification call. A run that wanders well past that tends to run out of turns before the create. This is a pace, not a cap: never skip the preflight check, an upload or the Step 7 verification to save commands. Everything the answers need comes from the caller's material, this tenant's schema and the discovery calls below:
+- **Don't study other automations on the tenant** to copy how they were filled, unless the caller asks you to base the process on one. On a shared tenant they're someone else's data, and `automations schema get <id>` returns the template's placeholders, not that automation's answers.
+- **Read each supplied document once, front to back, in as few reads as your tools show in full.** Don't page through it in many small slices or re-read sections already read. A large PDD runs to 2,000 lines, more than one tool output shows, so use a few large ranges (e.g. `sed -n '1,700p'`) rather than one `cat` whose output gets cut.
+- **Resolve the category with the one-call recipe** in Step 4, not by walking the tree by hand.
+
 ## Step 1: Verify connectivity (and fetch the idea flows)
 
 ```bash
@@ -28,7 +33,19 @@ uip ah automations schema get --idea-flow-id $IDEA_FLOW_ID --destination ./ah-sc
 
 > 📁 **Working files (`ah-schema.json`, `ah-answers.json`, and any document files you generate for upload) go in the current working directory — never `/tmp`.** Hosted runtimes (e.g. the Delegate) sandbox their file tools to the session workspace: a file written to `/tmp` is readable by the CLI but every file-tool access to it fails with an access-denied error.
 
-Read `./ah-schema.json`: the field catalog is under `properties.schema.properties` (Assessment Type > Section > Question; enums carry `answer_option` codes) and `user_inputs` is the payload template.
+Read `./ah-schema.json`: the field catalog is under `properties.schema.properties` (Assessment Type > Section > Question; enums carry `answer_option` codes) and `user_inputs` is the payload template. Don't explore it by hand; two calls give you what you need. First, every question, with whether it is required:
+
+```bash
+jq -r '.properties.schema.properties | to_entries[] as $a | $a.value.properties | to_entries[] as $s | $s.value.properties | to_entries[] | [$a.key, $s.key, .key, (.value.properties.value.title // ""), (if ((.value.required // []) | index("value")) != null then "REQUIRED" else "optional" end), (.value.properties.value.format // ""), ((.value.properties.value.enum // .value.properties.value.items.enum // []) | length | tostring) + " options"] | @tsv' ./ah-schema.json
+```
+
+Then, for each question with options, its codes next to their labels (an application question lists each id beside its name):
+
+```bash
+jq -r --arg q OVR-PROCESS_DOCUMENTS '[.properties.schema.properties[].properties[].properties[$q] | select(. != null)][0].properties.value | (.items // .) | if .enum then ([.enum, (.enumNames // .enum)] | transpose[] | @tsv) else "(free value: \(.type))" end' ./ah-schema.json
+```
+
+Owner and submitter show as `optional` with format `email`, but the backend enforces both (Step 4).
 
 > ⚠️ **Do NOT submit `user_inputs` verbatim** — its example values are placeholders the API rejects (category `1`, placeholder answer codes, example emails). Shape only.
 
@@ -42,13 +59,31 @@ First **enumerate the tenant's actual required set from the schema file**: every
 |---|---|
 | Process **name** | Ask. Non-empty; duplicates fail with a 409-style error. |
 | **Description** | Ask, or derive from the material and confirm. |
-| **Category id** | `uip ah categories get` → pick from `Data.Categories` (**`category_is_active: 1` only**): the most specific one that fits the material, and **"Other" only when nothing fits**. "Other" is any node with `CategoryIsOther: 1`, and each branch can carry its own (e.g. *Finance & Accounting › Other*), so skip those too; several plausible → ask with names. Never the template's `1`. |
+| **Category id** | `uip ah categories get` → pick from `Data.Categories` (**`category_is_active: 1` only**, and never an Idea-only node: `CategoryScope` 1 is Idea, 2 Process, 3 Both, and a Business Process needs 2 or 3; the recipe below applies both filters): the most specific one that fits the material, and **"Other" only when nothing fits**. "Other" is any node with `CategoryIsOther: 1`, and each branch can carry its own (e.g. *Finance & Accounting › Other*), so skip those too; several plausible → ask with names. Never the template's `1`. |
 | **Documentation** answer code | The `PROCESS_DOCUMENTS` question's own `enum` in the schema — match by label, send its `answer_option` code. |
 | **Owner email** | **`uip ah auth-info get`** → `Data.User.Email` is the signed-in identity and the default owner. That call is the authority; do not substitute an address from any list. |
 | **Submitter email** | Same as owner; usually the same person. |
 | **Application questions** | Driven by **what the material names** — see [Applications](#applications) below. `uip ah applications list` → select the systems that exist; send the ones that don't as `new_applications`. None named and the question not required → leave it out. Never block the publish on applications. |
 
 The discovery commands are independent — run the ones you need (`auth-info get`, `categories get`, `applications list`) **in a single shell invocation** rather than one per turn; each is fast, the round-trips between them are not.
+
+**Category in one call.** The tree is several hundred nodes on a real tenant, too long to read in full. Flatten it to `id<TAB>path` rows of the nodes a Business Process can use (active, not "Other", not Idea-only), then grep for two or three words from the material:
+
+```bash
+uip ah categories get --output json | jq -r 'def nodes(p): .[] | (p + (if p == "" then "" else " > " end) + .CategoryName) as $path | (select(.CategoryIsActive == 1 and (.CategoryIsOther // 0) != 1 and (.CategoryScope // 3) != 1) | "\(.CategoryId)\t\($path)"), ((.Subcategories // []) | nodes($path)); .Data.Categories | nodes("")' > ./ah-categories.tsv
+grep -i -E '<word>|<word>|<word>' ./ah-categories.tsv
+```
+
+Use words from the material (its department, function or subject), not the placeholders. If `./ah-categories.tsv` is **empty**, this CLI names the fields differently: read the tree instead, don't conclude nothing fits. Then decide:
+- **A row fits** → take its id; several plausible → ask with the names.
+- **No match** → list the branches once (`cut -f2 ./ah-categories.tsv | cut -d'>' -f1-2 | sort -u`) and take the closest node under the best branch. Most processes fit somewhere: try a synonym or the business function before giving up on a branch.
+- **Only when no branch fits the process at all** → "Other", the last resort. List the "Other" nodes once and take the one under the closest branch, or the top-level one:
+
+```bash
+uip ah categories get --output json | jq -r 'def nodes(p): .[] | (p + (if p == "" then "" else " > " end) + .CategoryName) as $path | (select(.CategoryIsActive == 1 and (.CategoryIsOther // 0) == 1 and (.CategoryScope // 3) != 1) | "\(.CategoryId)\t\($path)"), ((.Subcategories // []) | nodes($path)); .Data.Categories | nodes("")'
+```
+
+Stop there; never look at other automations' categories to decide. Without `jq`, do the same walk in one Python call.
 
 **Never block the publish on an owner lookup.** If you look the owner up at all, do a targeted search and treat a miss as no signal:
 
@@ -65,6 +100,7 @@ Both flags: `--search` keeps it server-side and off the page limit; `--invite-st
 - **Named and in the inventory** → put their ids in the question's `value` array. Take each id from the `Id` of its `uip ah applications list` record (`--search "<name>"` per system keeps it exact), **never by counting positions** in the schema's `enum`/`enumNames` arrays: the inventory runs past 100 entries, and an off-by-one there attaches a neighbouring application (asking for `eTrail/Salesforce` and getting `Excel`).
 - **Named but not in the inventory** → add them in the same answer (below). A missing system is never a reason to stop, to ask the user, or to pick a look-alike.
 - **Nothing named** → if the schema does **not** flag the application question `required`, **omit it entirely** — a process with no applications is valid. Never pad the answer with inventory entries to "fill it in". Only when the tenant flags it `required` and the material names no system, ask the user with `AskUserQuestion` (inventory entries as options, plus free text for a system not in the list).
+- **Only concrete, named products are applications.** A generic role, channel or placeholder ("downstream system", "case workspace", "email channel", "credit sources") is not one. Leave it out of `value` and `new_applications`, and mention it in the description if it matters. Every `new_applications` entry becomes a permanent inventory record that every later submission on the tenant sees.
 - **"Thin applications used" is never padded, even when the schema flags it `required`.** It only marks which of the answered applications are thin clients, so its answer is the systems the material explicitly calls thin, Citrix or virtual-desktop clients, and nothing else. When the material calls none of them that, send `{ "value": [] }` if the question is flagged `required` (an empty answer is accepted) and omit it otherwise. Never copy the "Applications used" ids into it to satisfy the flag.
 
 **UiPath itself is never one of them.** The automation is what the process becomes, not a system it uses, so leave out "UiPath" and its own components (Orchestrator, Action Center, robots, Maestro, Case Management, Document Understanding, Integration Service…) even when the PDD or SDD lists them as systems or future-state steps.
@@ -143,15 +179,15 @@ Fix anything found locally, then create. This costs nothing on a correct payload
 ## Step 5: Create the process
 
 ```bash
-uip ah automations create --from-schema --idea-flow-id $IDEA_FLOW_ID --file ./ah-answers.json --output json
+uip ah automations create --from-schema --idea-flow-id $IDEA_FLOW_ID --file ./ah-answers.json --output json > ./ah-create.json; cat ./ah-create.json
 ```
 
-The create can take 20–30 s. Run it as its own command, not chained behind the preflight checks, and wait for its envelope. If your shell hands back before the command finishes, wait on that same command; never start a second create and never read the silence as a failure.
+The create can take 20–30 s, longer for a large process. Run it as its own command, not chained behind the preflight checks, and wait for its envelope. Its envelope also lands in `./ah-create.json` when the command finishes, so a shell that hands back early has not lost it: wait, then read that file. Once it holds `Result: Success`, its `Data.Id` is the process. Never start a second create, and never read the silence or an empty file as a failure.
 
-**Run `automations create` once per process, whatever happens next.** If you lost its envelope, find the record instead: `uip ah automations list --search "<reference code or 2–3 distinctive words>" --limit 20 --output json`. Don't search on the full title: punctuation such as `:` can make that search miss a record that exists, and a record created seconds ago may not be listed yet. An empty result is not proof the create failed. Search again with a shorter term after a few seconds; if the record still doesn't show, tell the user the create's outcome is unknown rather than creating again.
+**Run `automations create` once per process, whatever happens next.** If you lost its envelope, find the record instead: `uip ah automations list --search "<reference code or 2–3 distinctive words>" --limit 20 --output json`. Don't search on the full title: a search term containing `:` never matches anything, even a record that exists, and a record created seconds ago may not be listed yet. An empty result is not proof the create failed. Search again with a shorter term after a few seconds; if the record still doesn't show, tell the user the create's outcome is unknown rather than creating again.
 
 - `Result: Success` → **`Data.Id`** is the new process id. A success means it WAS created — never re-run on a confusing field read (that duplicates).
-- `ValidationError`/`Failure` → the `Message`/`Instructions` carry the service's validation text; the same causes as the API flow apply (unnamed `Please fill in all the required information` → re-run the preflight: a missing required answer or an enum code that is not verbatim from the schema; `Invalid Category Id`; `Automation name cannot be empty.` → `OVR-OVERVIEW_NAME` is missing, empty, or a bare string instead of `{ "value": … }`; `errorDetails` with `An answer selection is required for submission` on a field → that field's enum code isn't copied verbatim from its `enum`; on newer builds `Question "<key>" has no answer option matching "<value>". Allowed values: …` → replace exactly that answer with the matching code from that field's own `enum` in `ah-schema.json` (the message lists at most 25), and `… expects an array of answer option values` → wrap the multiple-choice answer as `{"value": ["<code>"]}`). Fix and retry **once**.
+- `ValidationError`/`Failure` → the `Message`/`Instructions` carry the service's validation text; the same causes as the API flow apply (unnamed `Please fill in all the required information` → re-run the preflight: a missing required answer or an enum code that is not verbatim from the schema; `Invalid Category Id`; `Automation name cannot be empty.` → `OVR-OVERVIEW_NAME` is missing, empty, a bare string instead of `{ "value": … }`, or its section is not nested under the assessment key (`OVR` › `ah-section-…` › question, exactly as `user_inputs` in the schema file); `errorDetails` with `An answer selection is required for submission` on a field → that field's enum code isn't copied verbatim from its `enum`; on newer builds `Question "<key>" has no answer option matching "<value>". Allowed values: …` → replace exactly that answer with the matching code from that field's own `enum` in `ah-schema.json` (the message lists at most 25), and `… expects an array of answer option values` → wrap the multiple-choice answer as `{"value": ["<code>"]}`). Fix and retry **once**.
 - `Cannot set properties of undefined (setting 'co_question_answer_option_value')`, or `Question "<key>" can't be answered on this tenant: it has no answer slot to hold a value…` → **a server-side defect: this tenant has nowhere to store one of your free-text answers** (an answer whose schema `value` is a plain `string` or `number` with no `enum`). Your values aren't wrong, so don't rewrite them. Newer builds return `Question "<key>" can't be answered on this tenant: it has no answer slot to hold a value…` instead, naming the question: drop exactly that key. The older message names nothing: drop every **optional** free-text answer. In both cases keep every `required` answer and owner/submitter, retry **once**, and tell the user which answers were left out. If it still fails, or the named question is `required`, stop and report it with the tenant and `--idea-flow-id`.
 - `Cannot identify owner by email` → **not a typo'd address; do not retry with a different email.** The account is authenticated but has never been activated on this tenant. Confirm with `uip ah auth-info get` — `IsActive: 1` plus a role list proves the identity is real — then tell them to open Automation Hub in a browser once and sign in, and retry unchanged:
 
@@ -173,6 +209,7 @@ uip ah documents create $PROCESS_ID \
 
 - `--document-type-id` from the fixed platform table in [`api-endpoints.md`](api-endpoints.md) — read it there; do not guess ids. **A `.bpmn` process map is always `6`**: under any other type AH shows it download-only, with no editor. The CLI does not infer the type from the extension, so pass it every time. A case plan (`caseplan.json`) is download-only whatever its type — the same table entry says how to handle it.
 - `--file` uploads the bytes (the CLI base64s it; any file type; 200 MB cap). Use `--embed-link <url>` *instead* only when the caller has a URL and no bytes — exactly one of the two, and never invent a URL.
+- **Upload only to a process whose create you saw finish**: its `Data.Id` from the create's envelope or `./ah-create.json`. On a slow tenant a create can take minutes, and a search can find the record before its save is done. A document sent then gets `403 … not permitted … based on their role`, because the half-saved process has no permissions yet. If the envelope never arrived, wait until `./ah-create.json` holds it, or until a search hit is at least a minute old, before the first upload. A `403` on an upload right after a create means the same thing: wait about 30 s and retry that upload once. It is not a role problem, so don't report it as one unless the retry also fails.
 - Record `Data.Id` (document id) and `Data.FileId` from each response. On a validation error, surface the message and continue with the remaining documents. A `409 Duplicate document with title found` means a document with the same type **and file name** is already attached; the title is not checked (see [`api-endpoints.md`](api-endpoints.md)). Report it with that document and continue with the remaining documents. Never rename or retitle and retry on your own. Re-uploading a `.bpmn` that is already attached as `9` with `--document-type-id 6` succeeds and leaves both copies. Tell the caller the old download-only copy should be deleted in the AH web UI.
 
 ## Step 6b (optional): Link a Studio Web solution
