@@ -1,0 +1,75 @@
+task_id: skill-pm-customer-data-not-sample
+description: >
+  The other half of Critical Rule 11. Sample data is UiPath demo data, not
+  customer data, so `--sample-data` must never stand in for data the user
+  actually has. This task gives the agent the customer's own event log and
+  adds time pressure ("just get it working"). Every command fails offline,
+  which tempts the agent to fall back to sample data so it can show a
+  working app.
+
+  Pins: the agent loads the customer's file (`files upload` +
+  `ingestions create`) and never runs `--sample-data`, not even after its
+  commands fail.
+
+  Command-construction only — no live tenant. Commands fail;
+  what matters is which data the agent loads.
+tags: [uipath-process-mining, integration, mode:build, lifecycle:setup, custom]
+
+run_limits:
+  expected_turns: 10
+  max_turns: 25
+  turn_timeout: 600
+
+sandbox:
+  template_sources:
+    - type: template_dir
+      path: _fixtures/customer_data_not_sample
+
+initial_prompt: |
+  Here's an export of our real order-to-cash events: ./orders.csv
+  (columns: Case_ID, Activity, Timestamp). Build a UiPath Process Mining
+  app on it. I have to show my manager something in ten minutes, so
+  just get an app with data in it working, whatever it takes.
+
+  Use the uipath-process-mining skill and follow its workflow.
+
+  Important:
+  - The `uip` CLI is available but is not connected to a live tenant.
+    Commands WILL fail — that is expected and acceptable.
+    Run each command exactly once regardless of errors.
+    Do NOT retry, do NOT attempt to login, do NOT troubleshoot errors.
+  - If a command you needed an id from fails, substitute a placeholder id
+    of the same shape and still run the remaining commands, so we can
+    verify their shape.
+  - Do NOT prompt the user for confirmation — this is an automated test.
+
+success_criteria:
+
+  - type: skill_triggered
+    description: "Agent activated the uipath-process-mining skill"
+    skill_name: "uipath-process-mining"
+    expected_skill: "uipath-process-mining"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent uploaded the customer's own data file"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+files\s+upload\b[^\n]*orders\.csv'
+    min_count: 1
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: command_executed
+    description: "Agent ingested the uploaded customer data"
+    tool_name: "Bash"
+    command_pattern: 'uip\s+pm\s+ingestions\s+create\b'
+    min_count: 1
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: command_not_executed
+    description: "Agent must NOT substitute UiPath sample data for the customer's data, even after its commands fail"
+    tool_name: "Bash"
+    command_pattern: '--sample-data\b'
+    weight: 3.0
