@@ -86,6 +86,30 @@ def test_guide_states_the_authorable_count():
     assert f"exactly these {_count_word()} literals" in section
 
 
+LANE = REPO / "skills" / "uipath-planner" / "references" / "case" / "case-design-lane-guide.md"
+
+
+def _entry_section(text: str) -> str:
+    start = text.find("## Entry")
+    assert start >= 0, f"{LANE.relative_to(REPO)} has no '## Entry' heading"
+    end = text.find("\n## ", start + 1)
+    return text[start:] if end < 0 else text[start:end]
+
+
+def test_lane_entry_reads_the_declaration_and_stops_without_it():
+    """The planner reads the set at run time (MST-16782 option A), from the command this file snapshots."""
+    entry = _entry_section(LANE.read_text())
+    assert f"`{' '.join(task_types.COMMAND)}`" in entry
+    assert "Data.Authorable" in entry
+    assert "stop the lane before Sketch" in entry
+    assert "Never fall back to the layers guide's table" in entry
+
+
+def test_guide_names_the_declaring_command():
+    section = _task_types_section(task_types.GUIDE.read_text())
+    assert f"`{' '.join(task_types.COMMAND)}`" in section
+
+
 def test_guide_not_authorable_block_is_written_from_the_declaration():
     block = task_types.guide_block(task_types.GUIDE.read_text())
     assert block is not None, "the guide has no task-types block markers"
