@@ -1,0 +1,69 @@
+task_id: skill-platform-licensing-topups-create-wait
+description: >
+  Smoke test: agent uses the uipath-platform skill to grant a user a top-up
+  as an admin and report the terminal outcome. Verifies (1) the grant goes
+  through `uip platform users top-ups create <user>`, (2) the agent waits
+  for the async grant job (`--wait`, or polls `top-ups get`) instead of
+  reporting the 202 as done, (3) it never tries to pick the source pool
+  itself (there is no --pool flag; the CLI resolves PLTU, else AGU), and
+  (4) it does not reach for the allocation verbs (`users licenses set`,
+  `tenants licenses set`), which are a different license type. CLI auth
+  failure is expected; this validates command shape only — no live grant.
+tags: [uipath-platform, smoke, licensing, users, mode:operate, lifecycle:setup]
+
+sandbox:
+  # uip PATH shim -> .uip-cmdlog (see _shared/uip-shim): command telemetry as a
+  # filesystem side effect. Some agent backends (Antigravity) run commands via
+  # background tasks that never surface as tool calls, so command_executed
+  # criteria see zero commands even when the agent ran the exact command.
+  template_sources:
+    - type: template_dir
+      path: _shared/uip-shim
+  mock_path_dirs:
+    - .cmdlog-bin
+
+initial_prompt: |
+  Grant `jane.doe@example.com` a top-up and tell me once it has actually
+  been granted, not just started.
+
+  Use the `uipath-platform` skill and its User Usage & Top-ups workflow for
+  this request.
+
+  Important:
+  - The `uip` CLI is available but is NOT connected to a live tenant in this
+    environment. Commands may fail with auth errors — that is expected. Run
+    each command once and move on. Do NOT retry or attempt to login.
+  - Use `--output json` on every uip command.
+
+success_criteria:
+  - type: run_command
+    description: "Agent started the grant with `uip platform users top-ups create <user>` (.uip-cmdlog shim log)"
+    command: "grep -Eq 'uip platform users top-ups create [^- ][^ ]*' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent waited for the grant job to finish (--wait on create, or a follow-up `top-ups get <job-id>`)"
+    command: "grep -E 'uip platform users top-ups create' .uip-cmdlog | grep -Eq -- '--wait' || grep -Eq 'uip platform users top-ups get [^- ][^ ]*' .uip-cmdlog"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent never tried to choose the source pool itself (no --pool; the CLI resolves PLTU, else AGU)"
+    command: "test -f .uip-cmdlog && ! grep -E 'uip platform users top-ups create' .uip-cmdlog | grep -Eq -- '--pool'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "Agent did not touch allocations or bundles instead of granting a top-up (no users/groups/tenants set)"
+    command: "test -f .uip-cmdlog && ! grep -E '^ *uip platform (users licenses|groups rules|tenants licenses) set\\b' .uip-cmdlog | grep -qv -- '--help'"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 1.5
+    pass_threshold: 1.0
