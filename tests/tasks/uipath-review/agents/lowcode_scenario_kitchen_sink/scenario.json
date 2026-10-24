@@ -1,0 +1,43 @@
+{
+  "project": "ReviewSol/SampleAgent",
+  "inject": "inject_kitchen_sink.py",
+  "expected": [
+    {"ids": ["LC_OUTPUT_ENUM_VS_PROMPT_DRIFT"], "category": "schema", "pattern": "Partial"},
+    {"ids": ["LC_OUTPUT_DECISION_NO_RATIONALE"], "category": "schema"},
+    {"ids": ["LC_OUTPUT_FORMAT_PROMPT_DRIFT", "LC_PROMPT_INSTRUCTION_CONFLICTS"], "category": "general"},
+    {"ids": ["LC_SETTINGS_TEMPERATURE_FIT"], "category": "general"},
+    {"ids": ["LC_FAILURE_PROMPT_INJECTION", "PROMPT_WRONG_PLATFORM"], "category": "general"},
+    {"ids": ["LC_PROMPT_STOPPING_CRITERIA", "LC_PROMPT_ESCALATION_CRITERIA"], "category": "general"},
+    {"ids": ["LC_FAILURE_IRREVERSIBLE_ACTION"], "category": "general", "pattern": "submit_refund"},
+    {"ids": ["LC_TOOL_DANGEROUS_COMBINATION"], "category": "tools"},
+    {"ids": ["LC_TOOL_RESPONSE_NOT_GROUNDED"], "category": "tools", "pattern": "RefundPolicy|policy"},
+    {"ids": ["VAGUE_TOOL_DESCRIPTION"], "category": "tools", "pattern": "send_email"},
+    {"ids": ["LC_FAILURE_HALLUCINATE_ARGS"], "category": "general", "pattern": "send_email"},
+    {"ids": ["LC_EVAL_JUDGE_FOR_CLOSED_CLASS"], "category": "evals"},
+    {"ids": ["LC_EVAL_GROUND_TRUTH_SWAPPED"], "category": "evals"},
+    {"ids": ["LC_GUARDRAIL_RECOMMENDED"], "category": "guardrails", "pattern": "pii|personal"},
+    {"ids": ["LC_GUARDRAIL_ACTION_INEFFECTIVE"], "category": "guardrails", "pattern": "\\blog\\b"}
+  ],
+  "min_recall": 0.6,
+  "decoys": [
+    {"id": "LC_OUTPUT_CONSUMER_DRIFT", "reason": "no in-scope consumer"},
+    {"id": "LC_CONTEXT_SOURCE_OVERLAP", "reason": "single context source"},
+    {"id": "LC_PROMPT_FEW_SHOT_MISSING", "reason": "one flat output field"},
+    {"id": "LC_GUARDRAIL_MISAPPLIED", "element": "Fraud check", "reason": "CLI owns the unknown validator"}
+  ],
+  "min_categories": 5,
+  "min_severity_bands": 2,
+  "max_findings": null,
+  "forbidden_bands": [],
+  "allowed_grades": ["D", "F"],
+  "grade_not_above_cli": true,
+  "cli_expected": [
+    "GUARDRAIL_UNKNOWN_VALIDATOR",
+    "PROMPT_WRONG_PLATFORM",
+    "LOWCODE_CONTEXT_NO_DESCRIPTION",
+    "ORPHAN_PLACEHOLDER",
+    "LOWCODE_EVAL_EXPECTED_KEY_NOT_IN_SCHEMA"
+  ],
+  "cli_only_expected": false,
+  "validate_must_pass": false
+}

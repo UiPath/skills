@@ -1,0 +1,30 @@
+{
+  "project": "ReviewSol/SampleAgent",
+  "inject": "inject_eval_suite.py",
+  "expected": [
+    {"ids": ["LC_EVAL_INPUT_DIVERSITY"], "category": "evals"},
+    {"ids": ["LC_EVAL_ARCHETYPE_FIT", "LC_EVAL_JUDGE_FOR_CLOSED_CLASS"], "category": "evals"},
+    {"ids": ["LC_EVAL_JUDGE_RUBRIC_FIT"], "category": "evals"},
+    {"ids": ["LC_EVAL_MOCK_CONTRACT_DRIFT"], "category": "evals", "pattern": "state|status|get_asset_status"},
+    {"ids": ["LC_EVAL_AGENT_DEFINITION_DRIFT"], "category": "evals", "pattern": "create_incident"}
+  ],
+  "min_recall": 0.8,
+  "decoys": [
+    {"id": "LC_PROMPT_ROLE_DEFINITION", "reason": "agent definition is the clean control"},
+    {"id": "LC_PROMPT_SCOPE_BOUNDARIES", "reason": "agent definition is the clean control"},
+    {"id": "LC_OUTPUT_CLASSIFIER_NO_ENUM", "reason": "agent definition is the clean control"},
+    {"id": "VAGUE_TOOL_DESCRIPTION", "reason": "agent definition is the clean control"}
+  ],
+  "min_categories": 1,
+  "min_severity_bands": 1,
+  "max_findings": null,
+  "forbidden_bands": [],
+  "allowed_grades": ["B", "C", "D", "F"],
+  "grade_not_above_cli": true,
+  "cli_expected": [
+    "LOWCODE_EVAL_EXPECTED_KEY_NOT_IN_SCHEMA",
+    "LOWCODE_EVALUATOR_TARGET_KEY_NOT_IN_SCHEMA",
+    "LOWCODE_EVAL_DUPLICATE_IDS"
+  ],
+  "cli_only_expected": false
+}

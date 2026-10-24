@@ -1,0 +1,30 @@
+{
+  "project": "ReviewSol/SampleAgent",
+  "inject": "inject_ops_actions.py",
+  "expected": [
+    {"ids": ["LC_FAILURE_IRREVERSIBLE_ACTION"], "category": "general", "pattern": "delete_customer_record|submit_refund"},
+    {"ids": ["LC_FAILURE_AUTHORITY_ESCALATION"], "category": "general"},
+    {"ids": ["LC_TOOL_PURPOSE_AUTHORITY_FIT"], "category": "tools"},
+    {"ids": ["LC_TOOL_DANGEROUS_COMBINATION"], "category": "tools", "pattern": "search_customers"},
+    {"ids": ["LC_MULTI_TOOL_NO_SEQUENCING"], "category": "tools", "pattern": "validate_refund|submit_refund"},
+    {"ids": ["LC_PROMPT_ESCALATION_CRITERIA"], "category": "general"},
+    {"ids": ["LC_ESCALATION_OVERBROAD"], "category": "general"},
+    {"ids": ["LC_FAILURE_HALLUCINATE_ARGS"], "category": "general"},
+    {"ids": ["VAGUE_TOOL_DESCRIPTION"], "category": "tools", "pattern": "send_email"},
+    {"ids": ["LC_GUARDRAIL_RECOMMENDED"], "category": "guardrails", "pattern": "pii|personal"}
+  ],
+  "min_recall": 0.7,
+  "decoys": [
+    {"id": "LC_TOOL_RESPONSE_NOT_GROUNDED", "reason": "search_customers returns structured records, not RAG prose"},
+    {"id": "LC_CONTEXT_SOURCE_OVERLAP", "reason": "no context sources"},
+    {"id": "LC_TOOL_DELEGATION_DEPTH", "reason": "no agent tools"}
+  ],
+  "min_categories": 3,
+  "min_severity_bands": 2,
+  "max_findings": null,
+  "forbidden_bands": [],
+  "allowed_grades": ["C", "D", "F"],
+  "grade_not_above_cli": true,
+  "cli_expected": [],
+  "cli_only_expected": false
+}
