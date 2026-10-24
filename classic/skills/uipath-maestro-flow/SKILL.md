@@ -16,7 +16,9 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 - **Inspect an input ONCE.** To learn a shape — a node type's schema, a connector's fields, an existing `.flow`'s nodes — dump it once and search that output. Never re-read a file field-by-field or re-query the registry once per field.
 - **Don't repeat work.** Never rerun a command whose inputs and relevant state are unchanged, or re-read an unchanged file already in context. After a command may have rewritten a file (`node configure`, `format`), re-read it before relying on its contents.
 - **Prefer the CLI to ad-hoc code.** Scripting languages are a last resort for `.flow` edits and need user approval first (rule #9). When code is warranted, write it once with paths as arguments; no near-duplicate inline snippets across turns.
+<!--skill-flavor:keep-outputs-small:start-->
 - **Keep outputs small.** Extract with `--output json --output-filter` when you know the fields (rule #1). When the payload is large or the command is slow or side-effecting — `flow debug`, `job traces`, `registry get` — redirect the whole envelope to a file outside the solution tree (`uip maestro flow debug <project-dir> --output json > /tmp/flow-debug.json`) and search the file, so re-reading it never means re-running the command.
+<!--skill-flavor:keep-outputs-small:end-->
 - **Don't do anything unnecessary.** No tool call, file read, or result pulled into context before it is needed.
 
 # UiPath Flow Skill

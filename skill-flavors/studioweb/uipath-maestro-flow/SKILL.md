@@ -21,3 +21,7 @@
 
 <!--skill-flavor:upload-eval-scope-bullet:start-->
 <!--skill-flavor:upload-eval-scope-bullet:end-->
+
+<!--skill-flavor:keep-outputs-small:start-->
+- **Keep outputs small.** Extract with `--output json --output-filter` when you know the fields (rule #1). When the payload is large or the command is slow or side-effecting — `job traces`, `registry get` — redirect the whole envelope to a file outside the solution tree and search the file, so re-reading it never means re-running the command. `uip maestro flow debug` prints plain text here: keep what it printed instead of re-running it.
+<!--skill-flavor:keep-outputs-small:end-->

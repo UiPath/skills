@@ -104,7 +104,9 @@ uip solution resources refresh --solution-folder <SolutionDir> --output json
 
 > `--solution-folder` is required when invoking from outside the solution directory. Omit the flag (and run from inside the solution dir) only for ad-hoc local use; the skill always passes it explicitly so the cwd doesn't matter.
 
+<!--skill-flavor:refresh-before-debug:start-->
 **Always run before `uip solution upload` or `uip maestro case debug`.** Without this step, connection resources may not be registered on Studio Web ("Resource is not configured" warning).
+<!--skill-flavor:refresh-before-debug:end-->
 
 > Requires `bindings_v2.json` to be populated. If still the empty scaffold (`resources: []`), no resources will be synced.
 
@@ -295,6 +297,7 @@ Output: `Code: ConnectorShapeSpliced` with `Data.Summary` (`TaskType`, `ServiceT
 
 ---
 
+<!--skill-flavor:case-debug-command:start-->
 ## uip maestro case debug
 
 Debug a Case JSON file via a Studio Web debug session. **Requires `uip login`. Executes the case for real — sends emails, posts messages, calls APIs. Only run on explicit user consent.**
@@ -313,6 +316,7 @@ uip maestro case debug <project-path> --log-level debug --output json
 | `--poll-interval <ms>` | Polling interval in milliseconds (default: `2000`) |
 | `--output <format>` | Output format: `table`, `json`, `yaml`, `plain` (default: `json`) |
 | `--login-validity <minutes>` | Minimum minutes before token expiration triggers refresh (default: `10`) |
+<!--skill-flavor:case-debug-command:end-->
 
 ---
 

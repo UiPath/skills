@@ -286,3 +286,36 @@ test("the default uipath-planner keeps its task tools (the guard is not vacuous)
 
   assert.ok(plannerBodyLinesNaming(output, TASK_TOOLS).length > 0);
 });
+
+// Studio Web intercepts `uip maestro <flow|case|bpmn> debug|pack`, the form the
+// Node CLI ships, and its debug prints plain text. A two-token spelling or a
+// JSON-parsing debug example sends the agent back to the drift these flavors
+// had (skills#3008, #4100, #4209).
+const MAESTRO_SKILLS = ["uipath-maestro-flow", "uipath-maestro-case", "uipath-maestro-bpmn"];
+const TWO_TOKEN_VERB = /(^|[^a-z-])uip (flow|case|bpmn) (debug|pack)\b/;
+const JSON_DEBUG = /uip maestro (flow|case|bpmn) debug\b.*--output json/;
+
+function maestroLinesMatching(root, pattern) {
+  const hits = [];
+  for (const skill of MAESTRO_SKILLS) {
+    for (const file of markdownFiles(join(root, skill))) {
+      readFileSync(file, "utf8").split("\n").forEach((line, index) => {
+        if (pattern.test(line)) hits.push(`${relative(root, file)}:${index + 1}`);
+      });
+    }
+  }
+  return hits;
+}
+
+test("the built studioweb maestro skills debug with the three-token verb and no JSON output", (t) => {
+  const output = buildStudioweb(t);
+
+  assert.deepEqual(maestroLinesMatching(output, TWO_TOKEN_VERB), []);
+  assert.deepEqual(maestroLinesMatching(output, JSON_DEBUG), []);
+});
+
+test("the default maestro skills keep JSON debug output (the guard is not vacuous)", (t) => {
+  const output = buildDefault(t);
+
+  assert.ok(maestroLinesMatching(output, JSON_DEBUG).length > 0);
+});

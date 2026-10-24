@@ -29,13 +29,17 @@ Before the prompt: `Suggested next steps: publish to Orchestrator when you want 
 <!--skill-flavor:phase-seven-next-steps:end-->
 
 <!--skill-flavor:phase-table-six-row:start-->
-| **6 — Debug** | Optional debug run the user starts from the Case Designer (real execution — emails, API calls, etc.); the agent runs no debug command | The outcome the user reports | `Debug in the Case Designer` / `Continue to publish`; a re-publish after a fix is confirmed separately |
+| **6 — Debug** | Optional debug run through the host (real execution: emails, API calls, etc.) | Run status, logs, and trace printed | `Run debug session` / `Continue to publish`; a re-publish after a fix is confirmed separately |
 <!--skill-flavor:phase-table-six-row:end-->
 
 <!--skill-flavor:phase-six-run-option:start-->
-- `Debug in the Case Designer` — `uip maestro case debug` is not in the Studio Web CLI. Tell the user to start the run from the Case Designer's Debug control and share the outcome; record a failure they report verbatim in `build-issues.md`.
+- `Run debug session`: run `uip maestro case debug "<ProjectName>"`. It waits for a terminal state.
 <!--skill-flavor:phase-six-run-option:end-->
 
 <!--skill-flavor:phase-six-requirements:start-->
-The run happens in the open Studio Web solution, started by the user; nothing here uploads or runs it.
+The host runs the project saved in the open solution: no login, upload, or project path. Output is plain text: status, `Trace ID` when one was found, run logs, execution trace. Exit 1 means `Faulted` or `Failed`. `TimedOut after <N>s` also exits 1, but the run is still going in the host and the timeout does not stop it: do not troubleshoot it, and do not re-run it. Tell the user to follow the run in Studio Web. Run debug again only after a fresh AskUserQuestion that says it executes the case again, possibly while the first run is still going.
 <!--skill-flavor:phase-six-requirements:end-->
+
+<!--skill-flavor:phase-six-refresh-note:start-->
+- Run no `uip solution resources refresh` before debug; the host keeps solution resources in sync.
+<!--skill-flavor:phase-six-refresh-note:end-->

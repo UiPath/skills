@@ -456,11 +456,13 @@ uip is webhooks config "<connector-key>" \
 4. The flow executes immediately with that event data
 5. If **no matching events** exist in the lookback window, debug fails with error code `3005` (TriggerNoMatches)
 
+<!--skill-flavor:trigger-debug-example:start-->
 ```bash
 uip maestro flow debug . --output json
 # → Fetches most recent matching event from the past ~1 hour
 # → Flow executes immediately with that event data
 ```
+<!--skill-flavor:trigger-debug-example:end-->
 
 ### Polling vs webhook triggers in debug
 
