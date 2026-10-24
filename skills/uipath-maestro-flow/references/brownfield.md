@@ -341,6 +341,30 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
     -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow --strict
   ```
 
+## Scripts come back as functions
+
+`decompile` prints each script step as a TypeScript function, declared after the flow and passed by name:
+
+```ts
+  .step("normalize", script(script_normalize, { returns: { amount: "number" } }), { version: "1.0.0" })
+  // …
+function script_normalize($vars: FlowVars) {
+  const amount = Number($vars.start.output.amount);
+  return { amount };
+}
+```
+
+Edit the script in the function's body; the text between its braces is exactly the node's script, so an untouched script compiles back byte for byte.
+The rules in [script.md](script.md#writing-the-script-as-a-function) apply to the edit: the function may read only what the script runtime has.
+
+A script that cannot be printed as a function stays `script({ code: "…" })`, and decompile warns once for each: `flow-decompile: warning: step "<id>": script kept as a string: <why>`.
+The reasons are a body that does not parse (a half-written designer script), TypeScript-only syntax, a name that is not on the SDK's list of runtime names, a trailing line comment, or an error that would stop the module from loading.
+The warning is informational: the string form loses nothing, and `--strict` does not turn it into an error.
+Edit such a script as a string, as before.
+To print every script that way, run the SDK's own decompile, `flow-sdk flow decompile <file> --scripts string` (`uip maestro flow decompile` does not take `--scripts`).
+
+An SDK whose `dist/api-index.md` does not list `ScriptValue` prints every script as `script({ code })`.
+
 ## The file's schema version comes back out
 
 `decompile` emits `.schemaVersion("<the file's version>")` as the first line of
