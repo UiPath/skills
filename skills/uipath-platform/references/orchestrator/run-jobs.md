@@ -46,7 +46,13 @@ An upload to a personal workspace's feed also creates a process for the package 
 
 Verify the upload and discover entry points before creating a process.
 
-> **Feeds:** `packages get`, `packages versions`, and `processes create` look in the **tenant** feed by default. If the package lives in a folder-hierarchy feed (a standard folder with its own feed), pass `--feed-id <feed-key>` — otherwise these return empty / 404 even though the package exists. (`processes create` itself no longer pre-checks the feed, so it succeeds in a folder feed regardless.)
+> **Feeds:** `packages get`, `packages versions`, `packages download`, and `processes create` look in the **tenant** feed by default. If the package lives in a folder-hierarchy feed (a standard folder with its own feed), pass `--feed-id <feed-key>` — otherwise these return empty / 404 even though the package exists. (`processes create` itself no longer pre-checks the feed, so it succeeds in a folder feed regardless.)
+>
+> When `packages get` / `download` fails with `Package not found.`, or `packages versions` returns empty `Data`, and you passed no feed:
+> 1. If the envelope names other feeds (`Instructions`, and `Data[].FeedId` on the failure), rerun with that `--feed-id`. When several are named, use the one for the folder you are working in.
+> 2. If no feed is named, run `uip or feeds list --output json` and retry with the `Id` of each other `Processes` feed it lists. `feeds list` shows a folder feed only to a caller who may create packages in that folder.
+>
+> `packages list` returns one row per package, at its newest version only. Use `packages versions <PACKAGE_ID>` to see older versions.
 
 ```bash
 # Search for the uploaded package
