@@ -1,0 +1,12 @@
+{"id": "uipath-task-recording-001", "prompt": "Build an RPA workflow from my task recording: ~/Library/Application Support/UiPath Assistant/Recordings/5f0c2a9e-7d41-4b6e-9a3c-2e8f1b6d4a70", "expected_skill": "uipath-task-recording"}
+{"id": "uipath-task-recording-002", "prompt": "Build an RPA workflow from my task recording: C:\\Users\\alex\\AppData\\Roaming\\UiPath Assistant\\Recordings\\b41e7d20-3c9a-4f15-8e62-7a0d95c1f3e8", "expected_skill": "uipath-task-recording"}
+{"id": "uipath-task-recording-003", "prompt": "Turn my last task recording into a UiPath workflow", "expected_skill": "uipath-task-recording"}
+{"id": "uipath-task-recording-004", "prompt": "I just recorded the task with Record a task in Studio. Build the automation from that recording.", "expected_skill": "uipath-task-recording"}
+{"id": "uipath-task-recording-005", "prompt": "Create an automation from the recording in ./recordings/expense-entry (it has trace/actions.ndjson and screenshots)", "expected_skill": "uipath-task-recording"}
+{"id": "uipath-task-recording-006", "prompt": "Here is a UiPath Assistant recording folder with trace/actions.ndjson and video/d0.mp4 - make a workflow out of it: D:\\recordings\\vendor-onboarding", "expected_skill": "uipath-task-recording"}
+{"id": "uipath-task-recording-007", "prompt": "What steps did I do in this task recording? /tmp/recordings/rec-invoice. Then build it as a process.", "expected_skill": "uipath-task-recording"}
+{"id": "uipath-task-recording-008", "prompt": "Convert the steps I recorded with UiPath Assistant into an RPA process", "expected_skill": "uipath-task-recording"}
+{"id": "uipath-task-recording-009", "prompt": "Use my screen recording from UiPath Assistant to build the automation for copying order numbers into Excel", "expected_skill": "uipath-task-recording"}
+{"id": "uipath-task-recording-010", "prompt": "Build the workflow from the task I just recorded in Studio Desktop", "expected_skill": "uipath-task-recording"}
+{"id": "uipath-task-recording-011", "prompt": "{{/uipath-task-recording:uipath-task-recording}} Build an RPA workflow from my task recording: [Notes → Slack · 0:28](file:///Users/alex/Library/Application%20Support/UiPath%20Assistant/Recordings/5f0c2a9e-7d41-4b6e-9a3c-2e8f1b6d4a70)", "expected_skill": "uipath-task-recording"}
+{"id": "uipath-task-recording-012", "prompt": "Build an RPA workflow from my task recording: [Chrome → Excel · 1:04](file:///C:/Users/alex/AppData/Roaming/UiPath%20Assistant/Recordings/b41e7d20-3c9a-4f15-8e62-7a0d95c1f3e8)", "expected_skill": "uipath-task-recording"}
