@@ -240,6 +240,59 @@ test("the studioweb functions and coded-app flavors do not deny the QuickJS node
   }
 });
 
+// Studio Web creates coded apps through the `CreateProjects` host tool
+// (Autopilot `services/projectCreation.ts`), and nothing compiles one before its
+// first `tsc -b`, so the flavor routes creation to that tool and ships the
+// create-vite base files, Vite client types included (TS2882 on `import './index.css'`).
+const CODED_APP_CREATION_DENIAL =
+  /cannot create an AppV2 project|cannot create function or coded-app projects|coded-app projects cannot be created/;
+const CREATE_VITE_COMMAND = "npx --yes create-vite";
+const SCAFFOLD_REFERENCES = ["create-web-app.md", "create-action-app.md"];
+const SOLUTION_CODEDAPP_INIT_RULE = "`uip codedapp init` is the solution-side scaffolding entry point";
+
+test("the built studioweb flavor creates coded apps with CreateProjects and writes buildable base files", (t) => {
+  const output = buildStudioweb(t);
+  const codedApps = join(output, "uipath-coded-apps");
+
+  const skill = readFileSync(join(codedApps, "SKILL.md"), "utf8");
+  assert.ok(skill.includes("`CreateProjects` host tool"), "uipath-coded-apps must create coded apps with CreateProjects");
+  assert.ok(skill.includes("`projectSubType`"), "uipath-coded-apps must name the projectSubType field");
+  assert.ok(
+    skill.includes("Critical Rules 3 and 20") && skill.includes("Critical Rule 19:"),
+    "uipath-coded-apps must replace the CLI-host build, scaffold and installed-types rules",
+  );
+
+  const solution = readFileSync(join(output, "uipath-solution", "SKILL.md"), "utf8");
+  assert.ok(!solution.includes(SOLUTION_CODEDAPP_INIT_RULE), "uipath-solution must not send coded apps to `uip codedapp init`");
+
+  const template = readFileSync(join(codedApps, "assets", "templates", "web-app-template.md"), "utf8");
+  assert.ok(template.includes('"types": ["vite/client"]'), "the base files must declare the Vite client types");
+
+  for (const reference of SCAFFOLD_REFERENCES) {
+    const text = readFileSync(join(codedApps, "references", reference), "utf8");
+    assert.ok(!text.includes(CREATE_VITE_COMMAND), `${reference} must not tell the agent to run create-vite`);
+  }
+
+  const denials = markdownFiles(output)
+    .filter((file) => CODED_APP_CREATION_DENIAL.test(readFileSync(file, "utf8")))
+    .map((file) => relative(output, file));
+  assert.deepEqual(denials, [], "no studioweb skill may say coded apps cannot be created in Studio Web");
+});
+
+test("the default uipath-coded-apps skill keeps create-vite scaffolding (the guard is not vacuous)", (t) => {
+  const output = buildDefault(t);
+  const codedApps = join(output, "uipath-coded-apps");
+
+  const template = readFileSync(join(codedApps, "assets", "templates", "web-app-template.md"), "utf8");
+  assert.ok(!template.includes("## Studio Web base files"));
+  const solution = readFileSync(join(output, "uipath-solution", "SKILL.md"), "utf8");
+  assert.ok(solution.includes(SOLUTION_CODEDAPP_INIT_RULE), "the default uipath-solution must keep its `uip codedapp init` rule");
+  for (const reference of SCAFFOLD_REFERENCES) {
+    const text = readFileSync(join(codedApps, "references", reference), "utf8");
+    assert.ok(text.includes(CREATE_VITE_COMMAND), `the default ${reference} must still run create-vite`);
+  }
+});
+
 // The Studio Web panel has plan mode but no task tools. `EnterPlanMode` is
 // called before research (the host names the plan files and attaches its
 // authoring contract), `ExitPlanMode` puts the plan on the review card, and the
