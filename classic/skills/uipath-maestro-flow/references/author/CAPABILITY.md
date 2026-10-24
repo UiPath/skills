@@ -34,7 +34,7 @@ Every node in a `.flow` file has exactly one author. The validator enforces this
 | Patterns | `uipath.pattern.batch-transform`, `uipath.pattern.deep-rag` |
 | Agents | `uipath.agent.autonomous` (inline; after `uip agent init --inline-in-flow`) |
 | Chat | `core.trigger.conversation`, `uipath.conversational.wait-for-message`, `uipath.conversational.send-message`, `uipath.conversational.get-conversation-context`, plus the agent — `uipath.agent.conversational` (inline; after `uip agent init --inline-in-flow --conversational`) or `uipath.core.agent.*` (in-solution / published) |
-| Voice | `core.trigger.voice`, `uipath.agent.voice` (inline; after `uip agent init --inline-in-flow --conversational`), `uipath.conversational.voice.create-outgoing-call`, `uipath.conversational.voice.end-call` |
+| Voice | `core.trigger.voice`, `uipath.agent.voice` (inline; after `uip agent init --inline-in-flow --voice`), `uipath.conversational.voice.create-outgoing-call`, `uipath.conversational.voice.end-call` |
 | Resource nodes | `uipath.core.rpa-workflow.*`, `uipath.core.agent.*`, `uipath.core.flow.*`, `uipath.core.agentic-process.*`, `uipath.core.api-workflow.*`, `uipath.core.human-task.*` |
 | Document extraction | `uipath.ixp.*` — the extraction step must always land a node ([ixp/impl.md](plugins/ixp/impl.md#landing-the-node-when-you-cannot-fully-configure-it)) |
 | Queue | `core.action.queue.create`, `core.action.queue.create-and-wait` |
