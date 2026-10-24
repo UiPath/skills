@@ -32,7 +32,7 @@ uip solution init "<Solution>"
 # edit <Solution>/<Name>/.flow-sdk/<Name>.flow.ts, then run the Lifecycle loop below
 ```
 
-Do not hand-write the skeleton.
+Do not hand-write the stub.
 `--sdk-source` decompiles the trigger-only artifact `flow init` writes into the project's `.flow-sdk/<Name>.flow.ts`, creating the folder; the source carries the flow id and name the product already assigned — a hand-written `flow('<name>')` invents an id instead.
 So the stub is the seed rather than litter: the first `compile -o` overwrites it in place.
 `init` refuses an existing source file unless `--force`; when the source is already there, drop `--sdk-source`.
@@ -46,7 +46,7 @@ Emitting to the root is correct only for the packaged-SDK local gates, which nev
 
 **Install the SDK first, once per machine:** `npm install -g @uipath/maestro-builder-sdk`; skip it when already installed, and see [`references/CLI-LOOP.md`](references/CLI-LOOP.md#installing-the-package) for the checks and failure handling.
 
-Integrations with non-UiPath systems are handled through connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'` over the local connector library, unless the request names the transport itself ("over HTTP, not a connector" means `http()`): a hit is a connector, `"total": 0` is a miss and means `http()` (not for an external agent: see the table), and a usage error means the library is not cached, so run `uip maestro registry pull` first. For document extraction or another tenant capability (agent, process), which that library does not hold, run the family's `uip maestro flow registry search` ([`references/ixp.md`](references/ixp.md), [`references/agent.md`](references/agent.md)). A `script()` returning fixed values is never a stand-in for that step, and `mock()` only marks a capability the search proved absent.
+Integrations with non-UiPath systems are handled through connectors. **Choose the node before writing it.** For an external service or data (weather, Slack, a REST API), run `uip maestro registry search '<brand or service name>'` over the local connector library, unless the request names the transport itself ("over HTTP, not a connector" means `http()`): a hit is a connector, `"total": 0` is a miss and means `http()` (not for an external agent: see the table), and a usage error means the library is not cached, so run `uip maestro registry pull` first. For document extraction or another tenant capability (agent, process), which that library does not hold, run the family's `uip maestro flow registry search` ([`references/ixp.md`](references/ixp.md), [`references/agent.md`](references/agent.md)). A fixed-value `script()` is never a stand-in for that step; `mock()` marks a search-proved gap, or a draft box ([Phases](#phases)).
 Connectors require [`.flow-sdk/bindings.json`](references/bindings.md).
 `uip maestro registry pull` writes a descriptor per referenced connector to `.flow-sdk/connectors/<key>.ts`, and caches the library itself outside the project.
 Prepared connector modules live at `.flow-sdk/connectors-local/<key>.ts`; their descriptor data is kept separately below `.flow-sdk/connectors-local/descriptors/<key>/`.
@@ -89,7 +89,7 @@ The `uip maestro flow` commands delegate their semantics to the installed `@uipa
 ```bash
 ( cd "<Solution>/<Name>" && uip maestro flow compile .flow-sdk/<Name>.flow.ts -o <Name>.flow )
 uip maestro flow validate "<Solution>/<Name>/<Name>.flow" --output json
-# Greenfield only (never a merged or .layout() file), before upload/debug/a designer:
+# Greenfield only (never a merged or .layout() file), before upload/debug/a designer/a draft:
 uip maestro flow format "<Solution>/<Name>/<Name>.flow" --output json
 # Only for a stated runtime-behavior claim:
 ( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
@@ -212,34 +212,31 @@ The table is the authoritative router. Before writing a node, read its `Referenc
 | Voice agent | `uipath.agent.voice` | `voiceAgent(...)` | [voice.md](references/voice.md) | `examples/PotteryStudioCallback.flow.ts` |
 | Voice end call | `uipath.conversational.voice.end-call` | `endCall(...)` | [voice.md](references/voice.md) | `examples/PotteryStudioCallback.flow.ts` |
 
+## Phases
+
+Pick the mode from the request before any step; do not ask the user which mode. First match wins:
+**Brownfield** (the request targets an existing `.flow.ts` or `.flow`) → [Editing an existing flow](#editing-an-existing-flow); **Discovery-only** (explore the registry, "do not build") → search, build nothing; **Draft** (the user wants to see the shape before it is built: "sketch it", "show me first", plan mode; judge intent, not the word: a step that drafts a reply or a `Draft` value is not it) → [`references/phase-2-skeleton-guide.md`](references/phase-2-skeleton-guide.md), where every box is `mock()` by design; **Auto**, the default → build as below.
+Phases: 0 surface (future work, nothing to do), 1 preflight (the solution scan in [Project layout](#project-layout)), 2 skeleton, 3 iterate, 4 wire up; auto runs 0, 1, 2a (scaffold) and 4.
+
 ## Authoring a flow
 
-Choose each node from a registry search, never a brand name; ask when the
-request leaves a finite decision open, including an input value, range, or
-combination no stated rule covers (never fold it into a stated value; when
-the request says no one will answer (headless, CI), map it to the most
-defensible stated value and list it under Open questions as
-**[REQUIRED]**); bind every declared output on every
-path (`check` misses a missing one, and the run returns `undefined`); handle an
-error only when the request says what should happen. The rest is in
-**[`references/author.md`](references/author.md)**.
+Auto mode and phase 4: choose each node from a registry search, never a brand name; ask when the request leaves a finite decision open, including an input value, range, or combination no stated rule covers (never fold it into a stated value; when the request says no one will answer (headless, CI), map it to the most defensible stated value and list it under Open questions as **[REQUIRED]**); bind every declared output on every path (`check` misses a missing one, and the run returns `undefined`); handle an error only when the request says what should happen.
+The rest is in **[`references/author.md`](references/author.md)**.
 A request that names a canvas arrangement is `.layout()` with `at()`/`dim()`: [`references/operate.md`](references/operate.md#lay-out-from-source-instead-layout-at-dim).
 
 ## Operating a deployed flow
 
-Upload, deploy, debug, trigger, inspect a job, and drive an instance's
-lifecycle. All of it needs `uip login`, and `uip solution resources refresh`
-comes before every upload, publish or debug. `flow debug` is a REAL run, not a
-validation step. Read
-**[`references/operate.md`](references/operate.md)**.
+Upload, deploy, debug, trigger, inspect a job, and drive an instance's lifecycle.
+All of it needs `uip login`, and `uip solution resources refresh` comes before every upload, publish or debug.
+`flow debug` is a REAL run, not a validation step.
+Read **[`references/operate.md`](references/operate.md)**.
 
 ## Diagnosing a failed run
 
-Triage in order — the debug response you already have, then incidents, runtime
-variables, the deployed artifact, and traces last. Never re-run `flow debug` to
-look again. The builder removes several classic `.flow` defects and leaves
-others, including an expression that is really a literal. Read
-**[`references/diagnose.md`](references/diagnose.md)**.
+Triage in order — the debug response you already have, then incidents, runtime variables, the deployed artifact, and traces last.
+Never re-run `flow debug` to look again.
+The builder removes several classic `.flow` defects and leaves others, including an expression that is really a literal.
+Read **[`references/diagnose.md`](references/diagnose.md)**.
 
 ## Evaluating a flow
 

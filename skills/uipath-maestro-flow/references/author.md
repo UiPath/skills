@@ -24,7 +24,9 @@ cannot make: which node, which topology, what an output means, and what to ask.
    `uip maestro flow registry pull --force` first, and check the solution's own
    projects with `uip maestro flow registry list --local` before concluding a
    resource is missing. `mock()` marks a capability both searches proved
-   absent; it is never a stand-in for one they found.
+   absent; it is never a stand-in for one they found. The one exception is a
+   draft-mode skeleton, where every box is `mock()` by design and no search runs
+   ([`phase-2-skeleton-guide.md`](phase-2-skeleton-guide.md)).
 2. **Read the node's reference before writing the step.** The router table in
    [SKILL.md](../SKILL.md#supported-node-types) names one reference and one
    example per node. Copy identity fields (keys, model names, folder keys)
@@ -78,7 +80,10 @@ cannot make: which node, which topology, what an output means, and what to ask.
    the final report; if none is recommended, stop and report the open
    decision, except an uncovered rule case (rule 8), which you still decide.
    Consent gates — destructive operations, tenant writes — are never
-   auto-answered.
+   auto-answered. A draft request already consents to the phase 2
+   `solution upload` of a solution this run created
+   ([`phase-2-skeleton-guide.md`](phase-2-skeleton-guide.md) 2f); any other
+   tenant write still asks.
 10. **Look for an existing solution before `uip solution init`.** Run
     `find . -maxdepth 2 -name '*.uipx'`. If one exists, ask which to use (one
     option per solution, "Create a new solution", then "Something else"); do
@@ -90,7 +95,8 @@ cannot make: which node, which topology, what an output means, and what to ask.
 12. **Batch independent calls; chain dependent ones.** Scaffold, install and
     the registry search go in one turn; `check`, each `prepare` it names, the
     re-`check`, `compile` and `validate` chain in the next. Split only where a
-    later step needs an earlier step's output.
+    later step needs an earlier step's output. In draft mode the search moves
+   to phase 4; the first turn is scaffold and install only.
 
 ## Journeys
 
@@ -110,7 +116,7 @@ tracking", "our onboarding") is not a step, and neither is the project name.
 - **Zero steps: scaffold only.** Scaffold the project, compile the stub, and
   validate. Do not invent a pipeline from the domain word. Report what the flow
   should do as open questions; that is the finished deliverable.
-- **One or more steps: build all of them.** An outcome next to a step does not
+- **One or more steps: build all of them** (in draft mode, as boxes). An outcome next to a step does not
   cancel the step. "Check the weather for the Bellevue office and tell me if
   it's a nice day" names a lookup and a threshold decision; build both.
 
@@ -128,7 +134,8 @@ named external service goes through rule 1.
 A plan states: a one-line summary, the node table (step name, node, why), the
 wiring, the inputs and outputs, every connector and its connection, and open
 questions. Get it approved before building (rule 9, with "proceed"
-recommended).
+recommended). In draft mode ([SKILL.md — Phases](../SKILL.md#phases)) the
+skeleton is the plan: follow [`phase-2-skeleton-guide.md`](phase-2-skeleton-guide.md) instead.
 
 **Is Maestro the right home?** A flow earns its place with several waits,
 branching or parallel paths, SLAs, cross-product composition, or per-case
@@ -140,7 +147,9 @@ Action Center; say so before designing topology.
 Six topologies the Flow canvas also inserts. When a new flow or an edit has one
 of these shapes, or finishes one the canvas inserted ([`brownfield.md`](brownfield.md)),
 read its guide before choosing nodes. With two or more, also read
-[composing-guide.md](patterns/composing-guide.md).
+[composing-guide.md](patterns/composing-guide.md). In draft mode every pattern
+step, Mechanism or Placeholder, is a `mock()` box labelled with the guide's
+step name and node family; "What to bind" is phase 4.
 
 | Pattern | Reach for it when | Guide |
 | --- | --- | --- |
@@ -198,6 +207,10 @@ nodes, not patterns.
   are only proven by the evidence in [`CLI-LOOP.md`](CLI-LOOP.md#bounded-completion).
 
 ## Completion output
+
+A draft run that ends at *Keep it* reports in the 3c shape of
+[`phase-2-skeleton-guide.md`](phase-2-skeleton-guide.md) instead; this list is
+for a built flow, including phase 4 after *Build it*.
 
 When authoring is done, report:
 

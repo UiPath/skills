@@ -15,8 +15,8 @@ choosing the loop, before authoring the source. Once the source first
 compiles, emit it into that nested project artifact—not `/tmp`—and keep the
 artifact current after every source edit.
 
-Tenant discovery is not a phase of either loop. The one step before authoring
-is choosing the node ([SKILL.md, "Choose the node before writing it"](../SKILL.md)):
+Tenant discovery is not a step of either loop. The one step before authoring
+(in auto mode; a draft skeleton defers it to phase 4) is choosing the node ([SKILL.md, "Choose the node before writing it"](../SKILL.md)):
 `check` cannot flag a node you never wrote, so a script or `mock()` written in
 its place goes unflagged.
 After that, author the source from the task's own words; the source `check`
@@ -85,7 +85,8 @@ Layout is deliberately absent from this sequence. `uip maestro flow format`
 is not an authoring gate — `validate` passes without it and nothing upstream
 reads a position. For a greenfield file (one `compile` wrote from scratch), run
 it before the file reaches anything that draws it: `solution upload`,
-`flow debug`, or a person opening the project in a designer. Do not run it on a
+`flow debug`, a person opening the project in a designer, or a draft skeleton
+the user is asked to read. Do not run it on a
 merged brownfield file, or on one whose source sets `.layout()`: `format`
 re-lays out every node, so it discards the positions the author chose. See
 [`operate.md`](operate.md#lay-out-the-emitted-flow-first).
