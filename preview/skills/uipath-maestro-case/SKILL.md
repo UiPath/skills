@@ -43,7 +43,7 @@ three entry points; each file's header spells the paths its rows resolve against
 | Entry, exit, and data gates | `rule`, `when` | [Rules](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Published UiPath work | `process`, `agent`, `rpa`, `apiWorkflow`, `caseManagement`, `flowProcess`, `unresolved` | [TaskBuilder](#api-index) | `examples/ClaimReviewSLA.case.ts` |
 | Resolving SDD resources against the tenant | `uip maestro case registry pull`, `uip maestro case sdd resolve` | [Registry resolution](references/registry-resolution.md) | — |
-| Human work | `action` | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
+| Human work and its Action App | `action`; `app: { name, folder }` names the app (`actionCatalogName` is a task catalog, not the app) | [Human tasks](references/case-runtime.md#human-and-on-demand-work) | `examples/NotifyOnApproval.case.ts` |
 | Connector work and waits | `connector`, `waitForConnector` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | External agents and workflows | `externalAgent`, `externalWorkflow` | [Connections](references/case-runtime.md#connections-and-external-work) | `examples/NotifyOnApproval.case.ts` |
 | Timers | `waitForTimer` | [TimerSpecData](#api-index) | `examples/NightlyRollup.case.ts` |
