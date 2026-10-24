@@ -576,7 +576,7 @@ def import_exact(bpmn_path: Path, project_dir: Path, solution_dir: Path) -> Path
             "projects",
             "import",
             str(project_dir.resolve()),
-            "--solutionFile",
+            "--solution-file",
             str(solution_files[0]),
         ],
         timeout=SOLUTION_IMPORT_TIMEOUT,
