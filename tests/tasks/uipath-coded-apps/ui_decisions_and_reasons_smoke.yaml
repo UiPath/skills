@@ -1,0 +1,88 @@
+task_id: skill-coded-apps-ui-decisions-and-reasons-smoke
+description: >
+  Smoke test: agent uses the uipath-coded-apps decisions-and-reasons widget reference
+  to write the module that maps a reviewer's widget result to a Decision and sends it with the
+  SDK's decisions.create, as a CodedApp decision with an app-generated 16-hex id and no implicit signals.
+
+tags: [uipath-coded-apps, smoke, mode:build, lifecycle:generate]
+run_limits:
+  expected_turns: 8
+
+sandbox:
+  node:
+    env_packages:
+      - "@uipath/uipath-typescript"
+
+initial_prompt: |
+  I am building a standalone Coded Web App (not in Action Center) where a
+  fraud analyst reviews a transaction. An agent proposes Legitimate or
+  Fraud with a few facts behind it, the analyst weighs each fact, picks the
+  outcome and gives reasons. I want each analyst decision captured in the
+  Decision Ledger.
+
+  Write one TypeScript file at `src/decisions/submitDecision.ts` that takes
+  the review widget's result and the clicked outcome, builds the decision
+  request and sends it with the TypeScript SDK. The sandbox has no network
+  and no project, so write only that file.
+
+  This is an automated test. Do not pause for clarifying questions. Do NOT
+  run `uip` or `npm` commands.
+
+success_criteria:
+  - type: file_exists
+    description: "submitDecision.ts was created"
+    path: "src/decisions/submitDecision.ts"
+    weight: 1.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "the decision is sent with the SDK's Decisions service from the traces subpath"
+    path: "src/decisions/submitDecision.ts"
+    pattern: "@uipath/uipath-typescript/traces"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "the request calls create"
+    path: "src/decisions/submitDecision.ts"
+    pattern: "\\.create\\("
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "platform is CodedApp"
+    path: "src/decisions/submitDecision.ts"
+    pattern: "CodedApp"
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: file_contains
+    description: "the outcome is sent as acceptedOutcome"
+    path: "src/decisions/submitDecision.ts"
+    pattern: "acceptedOutcome"
+    weight: 2.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "decisionId is generated as hex from random bytes, never a GUID"
+    command: "grep -q 'getRandomValues' src/decisions/submitDecision.ts && ! grep -qi 'randomUUID\\|uuid' src/decisions/submitDecision.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "no implicit signals: no implicitSignals key and no @uipath/intrinsic-signals import"
+    command: "! grep -q 'implicitSignals\\|intrinsic-signals\\|data-signal' src/decisions/submitDecision.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 3.0
+    pass_threshold: 1.0
+
+  - type: run_command
+    description: "the folder key is read from configuration, not hardcoded as a GUID literal"
+    command: "! grep -Eq \"['\\\"][0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}['\\\"]\" src/decisions/submitDecision.ts"
+    timeout: 10
+    expected_exit_code: 0
+    weight: 2.0
+    pass_threshold: 1.0
