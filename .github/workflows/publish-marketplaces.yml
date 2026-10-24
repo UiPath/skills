@@ -1,0 +1,390 @@
+name: Publish to coding-agent marketplaces
+
+# Ships a stable release to the coding-agent marketplaces that read from a git
+# tag, a GitHub Release, or a pull request (see the Confluence page
+# "Publishing the UiPath plugin to coding-agent marketplaces"). Runs after a
+# stable npm publish and never touches publish.yml:
+#
+#   - workflow_run      : fires when "Publish skills package" completes. Only a
+#                         successful MANUAL dispatch from a `release/v*` branch
+#                         qualifies, and only once npmjs serves that branch's
+#                         committed version — so preview dispatches and pushes
+#                         exit early without publishing anything.
+#   - workflow_dispatch : (re)publish a line by hand, e.g. one promoted to
+#                         stable before this workflow existed:
+#                           gh workflow run publish-marketplaces.yml --ref main -f ref=release/v<M.N>
+#
+# For one stable version it:
+#   1. builds two hook-free archives: the Codex ZIP for the OpenAI plugin
+#      directory, and the Gemini CLI extension (uploaded under one
+#      `<platform>.` name per platform, see scripts/release-assets.mjs)
+#   2. creates the immutable tag `v<M.N.P>` and a GitHub Release with the
+#      archives attached (Gemini installs and updates from the latest release;
+#      awesome-copilot needs a tag + SHA)
+#   3. opens the awesome-copilot bump PR — only when the repo variable
+#      AWESOME_COPILOT_PLUGIN_NAME names our approved listing; the
+#      AWESOME_COPILOT_TOKEN secret (a classic PAT with `public_repo`, owned by
+#      a bot account) forks github/awesome-copilot and opens the PR
+#   4. opens one follow-up issue for the catalogs with no publish API
+#      (OpenAI upload, Cursor re-index, Anthropic Directory review)
+#
+# Every step is idempotent: an existing tag, release, asset, PR or issue for
+# the version is reused, so a failed run is safe to re-dispatch.
+
+on:
+  workflow_run:
+    workflows: ["Publish skills package"]
+    types: [completed]
+    branches: ['release/v*']
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Release branch whose committed package.json version is stable on npmjs (e.g. release/v1.205)"
+        required: true
+        type: string
+      dry_run:
+        description: "Resolve and build the ZIP only — create no tag, release, PR or issue"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-marketplaces
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: Resolve the stable release
+    if: >-
+      github.repository == 'UiPath/skills'
+      && (github.event_name == 'workflow_dispatch'
+          || (github.event.workflow_run.event == 'workflow_dispatch'
+              && github.event.workflow_run.conclusion == 'success'))
+    runs-on: uipath-ubuntu-latest
+    outputs:
+      publish: ${{ steps.target.outputs.publish }}
+      ref: ${{ steps.target.outputs.ref }}
+      sha: ${{ steps.target.outputs.sha }}
+      version: ${{ steps.target.outputs.version }}
+      tag: ${{ steps.target.outputs.tag }}
+    steps:
+      # A workflow_run payload names the exact commit that was published; a
+      # dispatch names a branch, resolved to its current head. Branch names are
+      # passed through env and validated, never interpolated into the script.
+      - name: Resolve ref, commit and version
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          INPUT_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          # A workflow_run that does not qualify ends quietly; a dispatch that
+          # does not qualify is a mistake worth a red run.
+          skip() {
+            if [ "$EVENT_NAME" = workflow_run ]; then
+              echo "::notice::$1 Nothing to publish."
+              echo "publish=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::error::$1"
+            exit 1
+          }
+
+          if [ "$EVENT_NAME" = workflow_run ]; then
+            ref="$RUN_BRANCH"; sha="$RUN_SHA"
+          else
+            ref="$INPUT_REF"; sha=""
+          fi
+          [[ "$ref" =~ ^release/v[0-9]+\.[0-9]+$ ]] || skip "\"$ref\" is not a release/v<M.N> branch."
+          if [ -z "$sha" ]; then
+            sha=$(gh api "repos/$REPO/git/ref/heads/$ref" --jq .object.sha)
+          fi
+
+          version=$(gh api "repos/$REPO/contents/package.json?ref=$sha" --jq .content | base64 -d \
+            | python3 -c 'import json, sys; print(json.load(sys.stdin)["version"])')
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || skip "package.json version \"$version\" at $sha is not a stable M.N.P version."
+
+          # Only a version npmjs actually serves counts as released: a preview
+          # dispatch from the same branch also completes "successfully".
+          if ! curl -fsS -o /dev/null "https://registry.npmjs.org/@uipath/skills/$version"; then
+            skip "@uipath/skills@$version is not served by npmjs (not promoted to stable yet)."
+          fi
+
+          {
+            echo "publish=true"
+            echo "ref=$ref"
+            echo "sha=$sha"
+            echo "version=$version"
+            echo "tag=v$version"
+          } >> "$GITHUB_OUTPUT"
+          echo "Publishing @uipath/skills@$version from $ref ($sha) as v$version."
+
+  archives:
+    name: Build the release archives
+    needs: [resolve]
+    if: needs.resolve.outputs.publish == 'true'
+    runs-on: uipath-ubuntu-latest
+    outputs:
+      codex_zip: ${{ steps.names.outputs.codex }}
+    env:
+      VERSION: ${{ needs.resolve.outputs.version }}
+    steps:
+      # Scripts come from the ref this workflow runs on; the skills, manifest
+      # and icon come from the released commit, so a line cut before this
+      # workflow existed can still be published.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          ref: ${{ needs.resolve.outputs.sha }}
+          path: line
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22.x"
+
+      - name: Name the release assets
+        id: names
+        run: node .github/workflows/scripts/release-assets.mjs
+
+      # Both archives ship the marker-free default skill tree (the same one the
+      # npm package ships) and no hooks/ directory: the OpenAI directory
+      # rejects hooks, and the repo's Claude-format hooks.json would misfire
+      # under Gemini (unknown event names, `timeout` read as milliseconds).
+      - name: Build the skill tree
+        run: node line/scripts/compose-skill-flavor.mjs build-default "$RUNNER_TEMP/skills"
+
+      - name: Build the Codex directory ZIP
+        env:
+          CODEX_ZIP: ${{ steps.names.outputs.codex }}
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/codex-plugin"
+          mkdir -p "$stage/.codex-plugin" "$RUNNER_TEMP/dist"
+          cp -R "$RUNNER_TEMP/skills" "$stage/skills"
+          cp -R line/.codex-plugin/assets "$stage/.codex-plugin/assets"
+          cp line/README.md line/LICENSE "$stage/"
+          node .github/workflows/scripts/codex-directory-manifest.mjs \
+            line/.codex-plugin/plugin.json "$stage/.codex-plugin/plugin.json"
+          (cd "$stage" && python3 -m zipfile -c "$RUNNER_TEMP/dist/$CODEX_ZIP" .codex-plugin skills README.md LICENSE)
+          echo "Built $CODEX_ZIP ($(du -h "$RUNNER_TEMP/dist/$CODEX_ZIP" | cut -f1))."
+
+      # Gemini wants gemini-extension.json at the archive root and finds skills
+      # in skills/. A line cut before the manifest existed is skipped: such a
+      # release is not installable in Gemini either way, so nothing regresses.
+      - name: Build the Gemini extension archive
+        env:
+          GEMINI_ZIPS: ${{ steps.names.outputs.gemini }}
+        run: |
+          set -euo pipefail
+          if [ ! -f line/gemini-extension.json ]; then
+            echo "::notice::No gemini-extension.json on the released commit; skipping the Gemini archive."
+            exit 0
+          fi
+          manifest_version=$(node -p 'require("./line/gemini-extension.json").version')
+          if [ "$manifest_version" != "$VERSION" ]; then
+            echo "::error::gemini-extension.json is at $manifest_version, expected $VERSION (run npm run version:sync)."
+            exit 1
+          fi
+          stage="$RUNNER_TEMP/gemini-extension"
+          mkdir -p "$stage"
+          cp -R "$RUNNER_TEMP/skills" "$stage/skills"
+          cp line/gemini-extension.json line/README.md line/LICENSE "$stage/"
+          read -r -a names <<< "$GEMINI_ZIPS"
+          (cd "$stage" && python3 -m zipfile -c "$RUNNER_TEMP/dist/${names[0]}" gemini-extension.json skills README.md LICENSE)
+          for name in "${names[@]:1}"; do cp "$RUNNER_TEMP/dist/${names[0]}" "$RUNNER_TEMP/dist/$name"; done
+          echo "Built ${names[*]} ($(du -h "$RUNNER_TEMP/dist/${names[0]}" | cut -f1) each)."
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: release-assets
+          path: ${{ runner.temp }}/dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Tag and create the GitHub Release
+    needs: [resolve, archives]
+    runs-on: uipath-ubuntu-latest
+    # The only job with write access to this repo. It runs no repository code —
+    # just gh against the artifact the read-only job built.
+    permissions:
+      contents: write
+    outputs:
+      url: ${{ steps.release.outputs.url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      TAG: ${{ needs.resolve.outputs.tag }}
+      SHA: ${{ needs.resolve.outputs.sha }}
+      DRY_RUN: ${{ inputs.dry_run == true }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: release-assets
+          path: ${{ runner.temp }}/dist
+
+      - name: Create the tag, release and assets
+        id: release
+        run: |
+          set -euo pipefail
+          assets=("$RUNNER_TEMP"/dist/*)
+
+          # Tags are immutable: catalogs pin them by SHA. An existing tag on a
+          # different commit means the version was reused — stop for a human.
+          tag_sha=$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq .object.sha 2>/dev/null || true)
+          if [ -n "$tag_sha" ] && [ "$tag_sha" != "$SHA" ]; then
+            echo "::error::Tag $TAG already points at $tag_sha, not the released commit $SHA."
+            exit 1
+          fi
+
+          if [ "$DRY_RUN" = true ]; then
+            echo "Dry run: would release $TAG at $SHA with: ${assets[*]##*/}"
+            echo "url=https://github.com/$REPO/releases/tag/$TAG" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # gh uploads every asset to a draft and publishes it after, so no
+          # client ever sees the release with only some of its assets.
+          if gh release view "$TAG" -R "$REPO" > /dev/null 2>&1; then
+            existing=$(gh release view "$TAG" -R "$REPO" --json assets --jq '.assets[].name')
+            for asset in "${assets[@]}"; do
+              if grep -qxF "${asset##*/}" <<< "$existing"; then
+                echo "Release $TAG already has ${asset##*/}."
+              else
+                gh release upload "$TAG" "$asset" -R "$REPO"
+              fi
+            done
+          else
+            gh release create "$TAG" "${assets[@]}" -R "$REPO" --target "$SHA" --title "$TAG" --generate-notes
+          fi
+          echo "url=$(gh release view "$TAG" -R "$REPO" --json url --jq .url)" >> "$GITHUB_OUTPUT"
+
+  awesome-copilot:
+    name: Open the awesome-copilot bump PR
+    needs: [resolve, release]
+    # Runs only once our listing is approved and its entry name is recorded.
+    if: vars.AWESOME_COPILOT_PLUGIN_NAME != '' && inputs.dry_run != true
+    runs-on: uipath-ubuntu-latest
+    outputs:
+      pr_url: ${{ steps.pr.outputs.url }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22.x"
+
+      # Only our bump script runs here; nothing from the awesome-copilot clone
+      # is executed.
+      - name: Fork, bump the entry and open the PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.AWESOME_COPILOT_TOKEN }}
+          UPSTREAM: github/awesome-copilot
+          PLUGIN_NAME: ${{ vars.AWESOME_COPILOT_PLUGIN_NAME }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+          TAG: ${{ needs.resolve.outputs.tag }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+          RELEASE_URL: ${{ needs.release.outputs.url }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::AWESOME_COPILOT_PLUGIN_NAME is set but the AWESOME_COPILOT_TOKEN secret is missing."
+            exit 1
+          fi
+          branch="uipath-skills-$TAG"
+
+          existing=$(gh pr list -R "$UPSTREAM" --head "$branch" --state open --json url --jq '.[0].url // empty')
+          if [ -n "$existing" ]; then
+            echo "PR already open: $existing"
+            echo "url=$existing" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          login=$(gh api user --jq .login)
+          id=$(gh api user --jq .id)
+          fork="$login/awesome-copilot"
+          gh repo fork "$UPSTREAM" --clone=false
+          gh repo sync "$fork" --source "$UPSTREAM" --branch main
+          gh auth setup-git
+
+          work="$RUNNER_TEMP/awesome-copilot"
+          git clone --depth 1 --branch main "https://github.com/$fork.git" "$work"
+          git -C "$work" switch -c "$branch"
+          CHECKOUT_DIR="$work" node .github/workflows/scripts/bump-awesome-copilot-entry.mjs
+          if git -C "$work" diff --quiet; then
+            echo "::notice::$PLUGIN_NAME is already at $VERSION ($SHA) upstream."
+            exit 0
+          fi
+
+          # A previous run may have pushed the branch and failed before opening
+          # the PR; reuse it rather than force-pushing.
+          if ! git -C "$work" ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+            git -C "$work" -c user.name="$login" -c user.email="$id+$login@users.noreply.github.com" \
+              commit -am "deps(external.json): Update $PLUGIN_NAME to $TAG"
+            git -C "$work" push origin "$branch"
+          fi
+
+          body=$(printf 'Updates the `%s` external plugin to %s.\n\n- Tag: `%s`\n- Commit: `%s`\n- Release: %s\n\nOpened automatically by UiPath/skills after the stable release.' \
+            "$PLUGIN_NAME" "$VERSION" "$TAG" "$SHA" "$RELEASE_URL")
+          url=$(gh pr create -R "$UPSTREAM" --base main --head "$login:$branch" \
+            --title "deps(external.json): Update $PLUGIN_NAME to $TAG" --body "$body")
+          echo "Opened $url"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+  checklist:
+    name: Open the manual follow-up issue
+    needs: [resolve, archives, release, awesome-copilot]
+    # Runs whether the awesome-copilot job succeeded, failed or was skipped;
+    # the issue records which.
+    if: always() && needs.release.result == 'success' && inputs.dry_run != true
+    runs-on: uipath-ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "22.x"
+
+      - name: Render the checklist
+        id: render
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+          RELEASE_URL: ${{ needs.release.outputs.url }}
+          ZIP_NAME: ${{ needs.archives.outputs.codex_zip }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COPILOT_RESULT: ${{ needs.awesome-copilot.result }}
+          COPILOT_PR_URL: ${{ needs.awesome-copilot.outputs.pr_url }}
+          BODY_FILE: ${{ runner.temp }}/checklist.md
+        run: node .github/workflows/scripts/marketplace-release-checklist.mjs
+
+      - name: Open the issue (once per version)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TITLE: ${{ steps.render.outputs.title }}
+          BODY_FILE: ${{ runner.temp }}/checklist.md
+        run: |
+          set -euo pipefail
+          # Search is fuzzy; keep only an exact title match.
+          existing=$(gh issue list -R "$REPO" --state all --search "\"$TITLE\" in:title" --json title,url \
+            --jq '.[] | [.title, .url] | @tsv' | awk -F'\t' -v t="$TITLE" '$1 == t { print $2; exit }')
+          if [ -n "$existing" ]; then
+            echo "Follow-up issue already exists: $existing"
+            exit 0
+          fi
+          gh issue create -R "$REPO" --title "$TITLE" --body-file "$BODY_FILE"
