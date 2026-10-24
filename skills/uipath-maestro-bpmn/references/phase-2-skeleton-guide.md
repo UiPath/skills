@@ -29,7 +29,12 @@ in. It is not a working process and must never be reported as one.
    trigger),
    `bpmn:exclusiveGateway` and `bpmn:parallelGateway`, `bpmn:sequenceFlow`s,
    and end events: one that every branch converges on, unless the request
-   names separate outcomes. Do not simplify the branch structure.
+   names separate outcomes. Branches converge through a join gateway, never
+   as two flows into the end event (`FAKE_JOIN`, see
+   [structural-bpmn.md](structural-bpmn.md#gateways)). A skeleton returns no
+   public result, so the shared-result end-event exception in that file's
+   validation checklist does not apply here. Do not simplify the branch
+   structure.
 5. **Label each box with the action first and the intended element family last,
    in brackets** — `Classify ticket [Agent]`, `Notify approvals team [Slack]`,
    `Prepare ticket summary [Script]`. The label carries the meaning a blank box
@@ -49,7 +54,8 @@ and the `label` field of each entry in `validator/bpmn-spec.json`. Those labels
 distinguish the families a user's wording leaves ambiguous — "Start and wait for
 RPA workflow" versus "Start and wait for agent" versus "Start and wait for
 agentic process" versus "Start and wait for external agent". Family is enough
-for a label; the specific type, its template and its resource are resolved later.
+for a label; the specific type and its template are resolved in phase 4. The
+resource each box will use is looked up at 3c.
 
 ## Gateways cost more than boxes
 
@@ -132,14 +138,57 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   local `.uipx`. `"Imported"` on a later upload means that id was lost and a
   second cloud solution was just created — stop and fix that before
   continuing. Repeat 3a–3b.
-- **3c Ask before building.** Reply in this shape, dropping lines that do
-  not apply; the question is fixed and becomes a pick list if the host has one:
+- **3c Ask before building.** Find each box's resource, then reply.
+
+  **Find the resources.** A box whose family runs a deployed resource (RPA
+  workflow, API workflow, agent, agentic process, app, queue, entity, or a
+  connector's connection) cannot be built without one. When 1a reported no
+  login, skip the lookup and mark each such box *not checked*. Otherwise run
+  every lookup in **one** Bash call:
+
+  - **Processes, queues, apps:** `uip solution resources list --kind
+    <Process|Queue|App> --search "<term>" --output json`. It lists what the
+    solution already holds (`Source: Local`) and what the tenant has
+    (`Source: Remote`). `--kind Process` returns every process type; match
+    the box's family on `Type`: RPA workflow `process`, API workflow `api`,
+    agent `agent`, agentic process `processOrchestration`.
+  - **Connections:** `uip is connections list <connector-key> --all-folders
+    --output json`, the same list 4a binds from. Prefer `IsDefault: Yes`,
+    then `State: Enabled`.
+  - **Data Fabric entities:** `uip df entities list --include-folders
+    --output-filter "[].Name" --output json`, matched on `Name`. (`uip`
+    1.203.0: `solution resources list --kind Entity` returns no rows even
+    when the entity exists; drop this note when it does.) A Data Fabric box
+    also needs a Data Fabric connection: look up `uipath-uipath-dataservice`
+    as above.
+
+  `--search` matches names only, and tenants hold thousands of processes, so
+  never list a kind unfiltered. Search first with the user's own words for
+  the resource, then with one or two keywords from the box's label; say a
+  resource does not exist only after every search found no fit. When a
+  lookup fails, mark its boxes *not checked*, say why in one line, and do
+  not retry. Then, for each box:
+
+  - When the user named the resource, or exactly one row fits the box, use
+    it and name it on the box's line, with its folder when the row has one.
+  - When several fit, name the best two on the box's line and ask which one.
+  - When none fits, say on the box's line that it does not exist yet: the
+    user creates it or names one, or picks *Change it* to have it authored
+    (Rule 17).
+
+  Script steps and quick-form human tasks need no resource. Run the lookup
+  again at every 3c, so a resource the user created since the last gate
+  shows up. These lookups read only; none is a registry call. In draft mode
+  this gate is the one clarifying round Rule 4 allows.
+
+  Reply in this shape, dropping lines that do not apply; the question and
+  its three options are fixed:
 
   ```text
-  <Name>: outline ready<, uploaded>. <One sentence if you kept the user's online changes.>
+  <Name>: outline ready<, uploaded> (draft mode). <One sentence if you kept the user's online changes.>
   <DesignerUrl as a link on its own line, or the local .bpmn path>
 
-  - <each box, in order>
+  - <each box, in order>: <resource and folder | which of two | none yet, create it or name one>
 
   Is this the process you want?
   1. **Build it**: make every step work.
@@ -147,13 +196,26 @@ Phases 0 and 1 run first, and 2a has created or adopted the project — see
   3. **Keep it**: stop here with this outline.
   ```
 
-  *Build it* goes to phase 4. *Change it* goes back to 3a. *Keep it* ends
-  the run with the skeleton reported as an outline.
+  Send this reply as your final message and end the turn. Do not ask the
+  gate question with a pick-list or question tool: a pending question keeps
+  the turn open, and Studio Web locks the canvas while a turn runs, so the
+  user cannot review the shape they are asked to approve. Put any "which of
+  two" resource questions in the same message. The user answers in their
+  next message, with a number, an option name, or the change they want.
+  Never leave the outline only in your reasoning: a user who sees only the
+  question cannot judge the shape.
+
+  *Build it* goes to phase 4, which binds each box to the resource named here
+  and asks nothing more about structure or resources. A box still marked
+  *none yet* gets a placeholder binding (4a) and is listed under
+  `Unverified` in 4g; a *not checked* box is looked up in 4a. *Change it* goes back to 3a. *Keep it* ends the run
+  with the skeleton reported as an outline.
 
 Removing a box is the common edit: delete the task, delete its two sequence
 flows, add one replacement flow, then `format`. Since entry points are
 untouched, `refresh` stays a no-op.
 
-Only *Build it* authorizes phase 4 — registry pull, element disambiguation, live
-connections, and payloads pasted into the existing boxes. Until then the
-skeleton is an outline, and calling it a finished process misreports it.
+Only *Build it* authorizes phase 4 — registry pull, element disambiguation,
+binding live connections and resources, and payloads pasted into the existing
+boxes. Until then the skeleton is an outline, and calling it a finished
+process misreports it.
