@@ -37,7 +37,9 @@ The CLI uses `--type` to select the trigger kind. Defaults to `time` if omitted.
 | Weekdays 9 AM | `0 0 9 ? * MON-FRI` | `0 9 * * 1-5` |
 | Every 30 min | `0 0/30 * * * ?` | `*/30 * * * *` |
 
-**RuntimeType values**: `Serverless`, `Unattended`, `Headless`, `NonProduction`, `AgentService`
+**RuntimeType values** (case-insensitive): `NonProduction`, `Unattended`, `Headless`, `TestAutomation`, `AutomationCloud`, `AutomationCloudTestAutomation`, `Serverless`, `ServerlessTestAutomation`, `Hosting`, `ProcessOrchestration`, `AgentService`, `AppTest`, `PerformanceTest`, `BusinessRule`, `CaseManagement`, `Flow`, `Local`. These are every value `triggers get` can show, so a `RuntimeType` copied from another trigger is accepted. Older CLI builds accept only `Serverless`, `Unattended`, `Headless`, `NonProduction`, `AgentService` and fail on the rest with `Invalid --runtime-type`.
+
+> **Orchestrator sets the runtime itself for some process types.** Agents, API workflows, Maestro processes, flows, cases and business rules get their runtime from the process type, so `triggers get` can show e.g. `ProcessOrchestration` for a trigger created with `--runtime-type Serverless`. This is server behavior: do not retry or try to "fix" it.
 
 ---
 
@@ -72,8 +74,8 @@ three trigger types.
 
 Additional options:
 - `--disabled` — create the trigger in disabled state (default is enabled). Useful when you want to stage triggers ahead of activation, then flip them on later via `triggers update <key> --enabled`.
-- `--stop-strategy <SoftStop|Kill>` — how to stop running jobs when the next firing happens. `SoftStop` requests the workflow to stop cleanly; `Kill` terminates the runtime process.
-- `--kill-process-expression <cron>` — when `--stop-strategy=Kill`, this 6-field Quartz cron schedules **when** the kill is enforced if the workflow ignores the soft-stop request. Without it, Kill mode waits indefinitely.
+- `--stop-after <seconds>` with `--stop-strategy <SoftStop|Kill>` — stop each job this many seconds after the trigger starts it (shown as `StopProcessExpression` in `triggers get`). `SoftStop` asks the workflow to stop cleanly; `Kill` ends it at once. `--stop-after` without `--stop-strategy` fails. Time and queue triggers only. Older CLI builds have no `--stop-after`, and there `--stop-strategy` alone does nothing.
+- `--kill-process-expression <seconds>` — only with `--stop-after` and `--stop-strategy SoftStop`: seconds to wait after the soft stop before killing a job that is still running. A number of seconds, NOT a cron expression. Example: `--stop-strategy SoftStop --stop-after 7200 --kill-process-expression 600` asks jobs to stop after 2 hours and kills them 10 minutes later.
 - `--input-arguments <json>` — JSON-encoded input arguments map.
 - `--target <spec>` (repeatable) — pin the trigger to one or more specific runtime targets. Format: `'machine=<machine-guid>,user=<user-guid>,session=<session-id>'`. Any combination is allowed in `dynamic` mapping mode (default), but `session` requires `machine`. Repeat the flag for multiple targets.
 - `--mapping-mode <dynamic|strict>` — validation rule for `--target`. `dynamic` (default) lets you pass any mix of machine/user/session. `strict` requires both `machine` and `user` on every target — use this when the folder has "Enable account-machine mappings" turned on.
