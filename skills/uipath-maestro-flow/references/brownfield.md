@@ -363,7 +363,7 @@ The warning is informational: the string form loses nothing, and `--strict` does
 Edit such a script as a string, as before.
 To print every script that way, run the SDK's own decompile, `flow-sdk flow decompile <file> --scripts string` (`uip maestro flow decompile` does not take `--scripts`).
 
-An SDK whose `dist/api-index.md` does not list `ScriptValue` prints every script as `script({ code })`.
+Needs `@uipath/maestro-builder-sdk` 6.57.0 or later (its `dist/api-index.md` lists `ScriptValue`); an older SDK's decompile prints every script as `script({ code })`.
 
 ## The file's schema version comes back out
 
