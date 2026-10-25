@@ -12,7 +12,7 @@
  *
  * Generic scenario: read the sowing details off a scanned seed packet.
  */
-import { flow, documentClassify, dynamicExtract, script, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, documentClassify, dynamicExtract, script, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('seed-packet-reader')
   .name('SeedPacketReader')
@@ -38,12 +38,13 @@ export default flow('seed-packet-reader')
       folderKey: '4c9d1f70-6b2e-4a58-9f13-2ad5c8e0b741',
     },
   }))
-  .step('summarize', script({
-    code:
-      'const sowing = $vars.extractSowing.output || {};\n'
-      + 'return "type:" + ($vars.classifyPacket.output.DocumentTypeName || "?")\n'
-      + '  + " variety:" + (sowing.variety || "-")\n'
-      + '  + " depth:" + (sowing.sowDepthMm || "-");',
-  }))
+  .step('summarize', script(summarize))
   .return({ summary: out('summarize') })
   .build();
+
+function summarize($vars: FlowVars) {
+  const sowing = $vars.extractSowing.output || {};
+  return "type:" + ($vars.classifyPacket.output.DocumentTypeName || "?")
+    + " variety:" + (sowing.variety || "-")
+    + " depth:" + (sowing.sowDepthMm || "-");
+}

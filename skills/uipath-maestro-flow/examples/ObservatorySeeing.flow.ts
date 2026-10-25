@@ -17,7 +17,7 @@
  * Generic scenario: an observatory asks a public sun API when tonight's viewing
  * can start, and states a fallback for when the service is unreachable.
  */
-import { flow, http, script, err, out, input, lit, tmpl, types } from '@uipath/maestro-builder-sdk';
+import { flow, http, script, err, out, input, lit, tmpl, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('observatory-seeing')
   .name('ObservatorySeeing')
@@ -40,12 +40,15 @@ export default flow('observatory-seeing')
   }))
 
   // Success path — reached only when the call actually succeeded.
-  .step('describe', script({
-    // Read the DECLARED field (`body.results`) and index it in JS; reading
-    // `body.results.sunset` through $vars would not resolve (declaration stops at
-    // `results`).
-    code: 'const r = $vars.fetchSun.output.body.results || {};\nreturn { line: "best viewing after " + (r.sunset || "sunset") };',
-  }))
+  .step('describe', script(describe))
   .return({ viewingFrom: out('describe', 'line'), source: lit('live') })
 
   .build();
+
+// Read the DECLARED field (`body.results`) and index it in JS; reading
+// `body.results.sunset` through $vars would not resolve (declaration stops at
+// `results`).
+function describe($vars: FlowVars) {
+  const r = $vars.fetchSun.output.body.results || {};
+  return { line: "best viewing after " + (r.sunset || "sunset") };
+}
