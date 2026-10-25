@@ -361,7 +361,7 @@ A script that cannot be printed as a function stays `script({ code: "…" })`, a
 The reasons are a body that does not parse (a half-written designer script), TypeScript-only syntax, a name that is not on the SDK's list of runtime names, a trailing line comment, or an error that would stop the module from loading.
 The warning is informational: the string form loses nothing, and `--strict` does not turn it into an error.
 Edit such a script as a string, as before.
-To print every script that way, run the SDK's own decompile, `flow-sdk flow decompile <file> --scripts string` (`uip maestro flow decompile` does not take `--scripts`).
+To print every script that way, pass `--scripts string`: `uip maestro flow decompile <file> -o <file>.flow.ts --scripts string`. With an SDK older than 6.57.0, `uip` refuses the option and names the version to install.
 
 Needs `@uipath/maestro-builder-sdk` 6.57.0 or later (its `dist/api-index.md` lists `ScriptValue`); an older SDK's decompile prints every script as `script({ code })`.
 
