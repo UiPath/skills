@@ -9,7 +9,7 @@
  * Generic scenario (a dojo belt rank → what its next grading needs) so it reads
  * as "here is the switch shape", not as any task's expected output.
  */
-import { flow, script, input, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, script, input, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 export default flow('belt-progression')
   .name('BeltProgression')
@@ -25,29 +25,45 @@ export default flow('belt-progression')
         value: 'white',
         body: (b) =>
           b
-            .step('whiteNext', script({ code: 'return "yellow: 8 basic forms";' }))
+            .step('whiteNext', script(whiteNext))
             .return({ nextGrading: out('whiteNext') }),
       },
       {
         value: 'yellow',
         body: (b) =>
           b
-            .step('yellowNext', script({ code: 'return "green: 12 forms plus one spar";' }))
+            .step('yellowNext', script(yellowNext))
             .return({ nextGrading: out('yellowNext') }),
       },
       {
         value: 'green',
         body: (b) =>
           b
-            .step('greenNext', script({ code: 'return "brown: 20 forms plus board break";' }))
+            .step('greenNext', script(greenNext))
             .return({ nextGrading: out('greenNext') }),
       },
     ],
     // Default arm — any rank not listed above.
     (other) =>
       other
-        .step('unknownRank', script({ code: 'return "see the head instructor";' }))
+        .step('unknownRank', script(unknownRank))
         .return({ nextGrading: out('unknownRank') }),
   )
 
   .build();
+
+function whiteNext($vars: FlowVars) {
+  return "yellow: 8 basic forms";
+}
+
+function yellowNext($vars: FlowVars) {
+  return "green: 12 forms plus one spar";
+}
+
+function greenNext($vars: FlowVars) {
+  return "brown: 20 forms plus board break";
+}
+
+function unknownRank($vars: FlowVars) {
+  return "see the head instructor";
+}

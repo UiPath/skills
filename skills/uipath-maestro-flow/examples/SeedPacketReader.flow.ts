@@ -15,7 +15,7 @@
  *
  * Generic scenario: read the sowing details off a scanned seed packet.
  */
-import { flow, documentClassify, dynamicExtract, script, out, types } from '@uipath/maestro-builder-sdk';
+import { flow, documentClassify, dynamicExtract, script, out, types, type FlowVars } from '@uipath/maestro-builder-sdk';
 
 const sowingTaxonomy = {
   prompt: 'Extract the sowing details printed on the seed packet. Values are on the packet; do not infer missing ones.',
@@ -73,11 +73,12 @@ export default flow('seed-packet-reader')
       folderKey: '4c9d1f70-6b2e-4a58-9f13-2ad5c8e0b741',
     },
   }))
-  .step('summarize', script({
-    code:
-      'const extracted = $vars.extractSowing.output;\n'
-      + 'return "type:" + String($vars.classifyPacket.output.ClassificationResult ?? "?")\n'
-      + '  + " extracted:" + Object.keys(extracted ?? {}).length;',
-  }))
+  .step('summarize', script(summarize))
   .return({ summary: out('summarize') })
   .build();
+
+function summarize($vars: FlowVars) {
+  const extracted = $vars.extractSowing.output;
+  return "type:" + String($vars.classifyPacket.output.ClassificationResult ?? "?")
+    + " extracted:" + Object.keys(extracted ?? {}).length;
+}
