@@ -7,6 +7,7 @@
  * | it demonstrates | as |
  * | --- | --- |
  * | two lookups at once | `.fork('enrich', [ … ])` — a parallel split and its join |
+ * | a human approval with no Action App | `.humanTask('approve', { form: { fields, outcomes } })` — an inline form |
  * | a reminder that does not cancel the approval | `t.onTimer('P2D', { interrupting: false }, …)` in the human task's body |
  * | a failure exit for the approval itself | `t.onError(true, { errorVar: 'approvalError' }, …)` |
  * | a three-way decision, one arm looping back | `.choose('route', [ … ])` with `when` / `otherwise` arms and `.goto('approve')` |
@@ -81,16 +82,22 @@ export default bpmn('invoice-escalation')
   ])
   // The approval, with its boundary events declared ON it. Nothing names `approve`
   // as `attachedTo`: the handlers belong to the task whose body they are written in.
-  // `app` because this process assumes a deployed `InvoiceApproval` Action App. With no
-  // app named, write the task as an inline form instead: `form: { fields, outcomes }`.
+  // An inline form, because no deployed Action App is named: the form travels in the
+  // `.bpmn`. The approver sees the three `input` fields and picks an outcome, which
+  // `outputs` maps into `decision` for the `choose` below.
   .humanTask(
     'approve',
     {
       name: 'Approve invoice',
-      app: 'InvoiceApproval',
       title: '=js:"Invoice " + vars.invoiceId',
-      actions: ['Approve', 'Reject', 'Needs info'],
-      input: { invoiceId: '=vars.invoiceId', vendor: '=vars.vendorLookup_response', purchaseOrder: '=vars.poLookup_response' },
+      form: {
+        fields: [
+          { id: 'invoiceId', label: 'Invoice ID', type: 'string', direction: 'input', value: '=vars.invoiceId' },
+          { id: 'vendor', label: 'Vendor', type: 'object', direction: 'input', value: '=vars.vendorLookup_response' },
+          { id: 'purchaseOrder', label: 'Purchase order', type: 'object', direction: 'input', value: '=vars.poLookup_response' },
+        ],
+        outcomes: ['Approve', 'Reject', 'Needs info'],
+      },
       outputs: { decision: '=Action' },
     },
     (t) => {
@@ -99,7 +106,7 @@ export default bpmn('invoice-escalation')
       t.onTimer('P2D', { interrupting: false, name: 'Still waiting' }, (b) =>
         b.task('nudge', { name: 'Send reminder', set: { reminders: '=js:vars.reminders + 1' } }).endEvent('reminded', { name: 'Reminder sent' }),
       );
-      // If the task itself fails — app unavailable, assignment impossible — record it and
+      // If the task itself fails — it cannot be created or assigned — record it and
       // fall through to the decision with `decision` still `Pending`. Interrupting, so
       // this path continues into whatever follows `approve`.
       t.onError(true, { errorVar: 'approvalError', name: 'Approval failed' }, (b) =>

@@ -115,7 +115,7 @@ make from syntax alone. Exact signatures remain in the generated API.
   - Each variable has one writer: two answers never share a `variable`, and an `outputs` key is never an answer's variable (a field named `decision` beside `outputs: { decision: '=Action' }` is refused).
   - A picker (`singleSelect`, `multiSelect`, `enum`, or a dropdown `controlType`) has `options`, e.g. `[{ id: 'o1', value: 'high', label: 'High' }]`.
 - The cloud engine takes the inline-form path only on a tenant with its quick-form flag on.
-  With the flag off, the run fails at the human task with incident `170004` "Invalid input for the HITL task".
+  With the flag off, the run fails at the human task with a HITL incident: `170004` "Invalid input for the HITL task" on current engines, or `170015` "No app … found" on engines from before mid-September 2026.
   Then tell the user to enable the quick-form flag on the tenant, or to name a deployed Action App for `app`; do not fall back to `.task()`.
 - Studio Web's "Edit Schema" canvas does not open for an inline form.
 
