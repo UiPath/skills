@@ -101,7 +101,9 @@ A body ported from a runtime that has them (a Node.js script, a low-code platfor
 
 The engine declares `console`, `uipath`, `aggregate`, `_aggregate` and `_pipe` with `const` before the body runs.
 Do not declare one of those names at the top of a script (`const`, `let`, `var`, `function` or `class`), and do not assign to one: the run fails with "Identifier '…' has already been declared" or "Assignment to constant variable.".
-Inside a nested function or a block, the name is your own.
+A `let`, `const`, `function` or `class` inside a nested block or function is your own, and so is a `var` inside a nested function.
+A `var` in a plain block is not: it hoists to the top and fails the same way.
+Assigning one of the names anywhere fails too, unless your own declaration of it is in scope.
 
 `flow validate` types scripts against the ES2020 library, so it warns
 `EXPRESSION_DIAGNOSTIC` on later members such as `replaceAll`, which the run
