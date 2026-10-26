@@ -3,7 +3,6 @@
     "allow": [],
     "ceiling": {
       "login status": 1,
-      "rpa": 8,
       "rpa activities get-default-xaml": 1,
       "rpa build": 9,
       "rpa execution cancel": 1,
@@ -234,11 +233,9 @@
       "login status": 1,
       "maestro flow check": 1,
       "maestro registry prepare": 1,
-      "rpa": 1,
       "rpa build": 2,
       "rpa data-fabric-entities install": 1,
       "rpa debug start": 1,
-      "rpa init": 2,
       "rpa pack": 1,
       "rpa packages inspect": 1,
       "rpa run": 4,
@@ -375,8 +372,6 @@
     "ceiling": {
       "login": 2,
       "login status": 3,
-      "maestro bpmn debug": 6,
-      "maestro bpmn debug project-path": 3,
       "maestro bpmn debug-instance incidents": 2,
       "maestro bpmn debug-instance variables": 1,
       "maestro bpmn debug-instance variables-all": 3,
@@ -399,7 +394,6 @@
       "maestro bpmn job status": 3,
       "maestro bpmn job traces": 3,
       "maestro bpmn pack": 5,
-      "rpa init": 2,
       "rules describe": 1,
       "solution pack": 1
     }
@@ -426,7 +420,6 @@
       "codedagent": 3,
       "codedagent init": 1,
       "login": 14,
-      "maestro case debug": 17,
       "maestro case incident": 2,
       "maestro case incident get": 2,
       "maestro case incident summary": 2,
@@ -444,7 +437,6 @@
       "maestro case instance resume": 1,
       "maestro case instance retry": 1,
       "maestro case instance variables": 4,
-      "maestro case pack": 6,
       "rules debug": 1,
       "solution pack": 12
     }
@@ -584,7 +576,6 @@
       "maestro flow node configure": 1,
       "mcp serve": 2,
       "orchestrator": 1,
-      "rpa": 1,
       "rpa instances list": 1,
       "rpa studio start": 2,
       "skills install": 1,
@@ -618,7 +609,6 @@
       "codedapp pack dist": 3,
       "codedapp pack dist →": 1,
       "codedapp publish → registers with Apps service": 1,
-      "rpa": 1,
       "rpa analyze": 1,
       "rpa build": 4,
       "rpa packages install": 1,
@@ -634,7 +624,6 @@
       "login": 17,
       "login status": 1,
       "login which": 1,
-      "rpa": 35,
       "rpa activities find": 27,
       "rpa activities get-default-xaml": 88,
       "rpa add-dependency": 2,
@@ -660,7 +649,6 @@
       "rpa focus-activity": 8,
       "rpa get-library-object-repository": 4,
       "rpa get-object-repository": 5,
-      "rpa init": 26,
       "rpa inspect-package": 1,
       "rpa instances list": 4,
       "rpa object-repository": 1,
@@ -736,7 +724,6 @@
       "login tenant set Production": 1,
       "login tenant set Staging": 1,
       "maestro flow new": 1,
-      "rpa": 1,
       "rpa build": 2,
       "rpa pack": 1,
       "rpa publish": 2,
@@ -807,7 +794,6 @@
       "maestro incident": 1,
       "maestro instance": 1,
       "maestro process": 1,
-      "rpa": 1,
       "rpa validate": 5,
       "solution pack": 6
     }

@@ -9,6 +9,7 @@ import {
   commandSet,
   countUnallowed,
   extractVerbTokens,
+  HOST_SERVED,
   mentionKind,
   RATCHET,
   resolves,
@@ -48,6 +49,18 @@ test("a group with only unavailable commands under it does not count as runnable
 
   const empty = usableBrowserCommands({ verbs: ["rpa pack"], unavailable: { "rpa pack": "x" } });
   assert.equal(resolves(["rpa"], empty), false);
+});
+
+test("a command the host serves counts as runnable, even when the bundle refuses it", () => {
+  const browser = usableBrowserCommands(
+    { verbs: ["case pack", "case validate"], unavailable: { "case pack": "needs the packager" } },
+    { "case pack": "host", "rpa init": "host" },
+  );
+
+  assert.equal(resolves(tokens("uip case pack"), browser), true);
+  assert.equal(resolves(tokens("uip rpa init MyProject"), browser), true);
+  assert.equal(resolves(["rpa"], browser), true);
+  assert.equal(resolves(tokens("uip rpa pack"), browser), false);
 });
 
 test("the refresh writes each tool's unavailable keys as full command paths", () => {
@@ -122,6 +135,16 @@ test("the vendored browser snapshot registers every command it declares unavaila
   assert.deepEqual(
     Object.keys(snapshot.unavailable).filter((path) => !verbs.has(path)),
     [],
+  );
+});
+
+test("the host-served list names no command the bundle already runs", () => {
+  const snapshot = JSON.parse(readFileSync(BROWSER_SNAPSHOT, "utf8"));
+  const bundle = usableBrowserCommands(snapshot);
+  assert.deepEqual(
+    Object.keys(JSON.parse(readFileSync(HOST_SERVED, "utf8"))).filter((command) => bundle.leaves.has(command)),
+    [],
+    "the browser bundle now runs these itself — delete them from assets/uip-browser-host-served.json",
   );
 });
 

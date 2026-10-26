@@ -7,6 +7,12 @@
  * refusing (`case pack`), so a check against `verbs` alone would count it as
  * working.
  *
+ * Studio Web also serves some commands itself, without the bundle (Autopilot's
+ * subcommandInterceptors). Those are listed by hand in
+ * assets/uip-browser-host-served.json, `{ command: source }`, since Autopilot
+ * is private and the refresh cannot read it, and count as runnable even when
+ * the bundle refuses them.
+ *
  * A mention that does not resolve to a usable browser command is checked
  * against tests/scripts/studioweb-browser-commands.json, per skill:
  *   - `allow`: `{ file, command, reason }` entries — prose and deliberate
@@ -34,6 +40,7 @@ import { createCompositionPlan, materializeComposition } from "./compose-skill-f
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const BROWSER_SNAPSHOT = join(REPO_ROOT, "assets", "uip-browser-commands-snapshot.json");
+export const HOST_SERVED = join(REPO_ROOT, "assets", "uip-browser-host-served.json");
 export const NODE_CATALOG = join(REPO_ROOT, "assets", "uip-catalog-snapshot.json");
 export const RATCHET = join(REPO_ROOT, "tests", "scripts", "studioweb-browser-commands.json");
 const STUDIOWEB_ROOT = join(REPO_ROOT, "skill-flavors", "studioweb");
@@ -92,10 +99,13 @@ export function resolves(tokens, { leaves, groups }) {
   return false;
 }
 
-/** What the browser bundle runs: registered commands minus the unavailable ones. */
-export function usableBrowserCommands(snapshot) {
+/**
+ * What Studio Web runs: the bundle's registered commands minus the unavailable
+ * ones, plus the commands the host serves itself.
+ */
+export function usableBrowserCommands(snapshot, hostServed = {}) {
   const refusing = new Set(Object.keys(snapshot.unavailable ?? {}));
-  return commandSet(snapshot.verbs.filter((verb) => !refusing.has(verb)));
+  return commandSet([...snapshot.verbs.filter((verb) => !refusing.has(verb)), ...Object.keys(hostServed)]);
 }
 
 /**
@@ -202,7 +212,7 @@ export function scanStudioweb() {
     materializeComposition(createCompositionPlan(REPO_ROOT, STUDIOWEB_ROOT), output);
     return unrunnableMentions(
       output,
-      usableBrowserCommands(readJson(BROWSER_SNAPSHOT)),
+      usableBrowserCommands(readJson(BROWSER_SNAPSHOT), readJson(HOST_SERVED)),
       new Set(readJson(NODE_CATALOG).verbs),
     );
   } finally {
