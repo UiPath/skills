@@ -162,6 +162,18 @@ test("the scheduled refresh lowers a ceiling but never raises one", () => {
   assert.deepEqual(withCeilings(ratchet, counts).s.ceiling, { login: 1, "rpa pack": 5, "solution pack": 4 });
 });
 
+test("ceiling drift reports counts over and under their ceiling, not equal ones", () => {
+  assert.deepEqual(ceilingDrift({ s: { a: 3, b: 1, c: 2 } }, { s: { ceiling: { a: 2, b: 1, d: 1 } } }), [
+    { skill: "s", command: "a", count: 3, ceiling: 2 },
+    { skill: "s", command: "c", count: 2, ceiling: 0 },
+    { skill: "s", command: "d", count: 0, ceiling: 1 },
+  ]);
+  assert.deepEqual(ceilingDrift({}, { t: { ceiling: { x: 1 } } }), [
+    { skill: "t", command: "x", count: 0, ceiling: 1 },
+  ]);
+  assert.deepEqual(ceilingDrift({ u: { y: 2 } }, {}), [{ skill: "u", command: "y", count: 2, ceiling: 0 }]);
+});
+
 test("the vendored browser snapshot registers every command it declares unavailable", () => {
   const snapshot = JSON.parse(readFileSync(BROWSER_SNAPSHOT, "utf8"));
   const verbs = new Set(snapshot.verbs);
