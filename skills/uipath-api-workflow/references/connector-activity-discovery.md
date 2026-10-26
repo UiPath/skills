@@ -19,7 +19,7 @@ How to author an Integration Service connector activity (HTTP Request, Gmail, Ou
 <!--skill-flavor:discovery-flow:start-->
 1. Run `uip api-workflow registry resolve "<keyword>" --output json` and select the correct activity GUID.
 2. For IntSvc activities, run `uip is connections list <connector-key>`, use the unfiltered and `--all-folders` fallbacks when necessary, and run `uip is connections ping <uuid>`. A successful ping is mandatory.
-3. Run `uip api-workflow registry stub <activity-type-id> --connection-id <uuid> [--inputs '<json>'] --output json` (`--connection-id` is optional only for HTTP Request); then run `uip is resources describe <connector-key> <object-name> --operation <op> --connection-id <uuid> --output json` to cross-check required fields.
+3. Run `uip api-workflow registry stub <activity-type-id> [--connection-id <uuid>] [--inputs '<json>'] --output json`; then run `uip is resources describe <connector-key> <object-name> --operation <op> --connection-id <uuid> --output json` to cross-check required fields.
 4. Drop `Data.Activity` into the root sequence after `WorkflowStart`, fill missing required fields, replace every placeholder, and validate.
 5. For Solutions-mode IntSvc workflows, synchronize the connection resource into the Solution catalogue.
 <!--skill-flavor:discovery-flow:end-->
@@ -75,7 +75,7 @@ Ping the new or repaired connection before stubbing. **Do NOT author a workflow 
 
 ```bash
 uip api-workflow registry stub <activity-type-id> \
-  --connection-id <uuid> \
+  [--connection-id <uuid>] \
   [--inputs '<json>'] \
   [--instance <n>] \
   [--slot-key <PascalCase>] \
@@ -87,7 +87,7 @@ uip api-workflow registry stub <activity-type-id> \
 | Flag | Required/default | Purpose |
 |---|---|---|
 | `<activity-type-id>` | required | `uiPathActivityTypeId` from `resolve`. |
-| `--connection-id <uuid>` | required, except for Http and 4.0.0 activities | Pinged `Enabled` connection of the activity's connector; the stub fails otherwise. For Http, optional: any connector's `Enabled` connection. |
+| `--connection-id <uuid>` | IntSvc; optional | Pinged vendor UUID. The stub checks it (`Enabled`, same connector) and reads the connector's settings through it; without it, IntSvc output contains placeholders. For Http, optional: any connector's `Enabled` connection. |
 | `--inputs <json>` | optional, default `{}` | Flat schema field names to values; bare strings are literals and `${...}` values are expressions. |
 | `--instance <n>` | optional, default `1` | Suffixes slot/export keys, such as `_2`. |
 | `--slot-key <PascalCase>` | optional | Overrides the slot key only; export key remains object-name-derived. |
@@ -116,7 +116,7 @@ Well-known folder-name shortcuts (e.g. MS Graph's `"inbox"`, `"sentitems"`, `"dr
 Insert `Data.Activity` after `WorkflowStart`. Replace every placeholder before writing the workflow:
 
 - `<REPLACE_WITH_TARGET_URL>` in Http `bodyParameters.url`: use the target URL as a literal or `${$workflow.input.url}`.
-- `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` in IntSvc `with.connectionId` and `with.connectionResourceId` (only a 4.0.0 activity stubbed without `--connection-id`): re-stub with `--connection-id`.
+- `<REPLACE_WITH_VENDOR_CONNECTION_UUID>` in IntSvc `with.connectionId` and `with.connectionResourceId`: use the successfully pinged UUID, preferably by re-running with `--connection-id`.
 
 <!--skill-flavor:required-field-cloud-validation:start-->
 Before validating, run the **Required-field cross-check** above — if any `required: true` field is missing from `queryParameters` / `pathParameters` / `bodyParameters`, the workflow will run locally but fail in cloud (or worse — the StudioWeb FolderPicker / lookup picker will mark the field as invalid without a clear error).

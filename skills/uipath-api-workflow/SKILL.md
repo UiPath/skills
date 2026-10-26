@@ -79,7 +79,7 @@ Do not use for `.flow` Maestro flows (`uipath-maestro-flow`), `.xaml` or coded R
 16. **Connectors and HTTP are registry-generated only.** Run `uip api-workflow registry resolve` then `stub`; never guess `uiPathActivityTypeId`, `metadata.configuration`, activity kind, endpoint, `SlotKey`, or `ExportBucketKey`; use stub output verbatim.
    - A keyword `resolve` miss is not proof of no curated activity because it AND-matches tokens. Identify product/vendor with `uip is connectors list --filter`, then enumerate with `uip is activities list <connector-key>` before fallback.
    - IntSvc/vendor activities require successful `uip is connections ping <uuid>`. If listing is empty/fails, try unfiltered listing, then `--all-folders`, and ping another matching connection.
-   - `stub` fails for a vendor activity or trigger without a working `--connection-id`. If none ping successfully, stop and ask the user to fix or create a connection.
+   - If none ping successfully, stop and ask whether to continue with explicit placeholder consent or wait for a fixed connection. Never silently choose.
    - Never put replacement sentinels in `with.connectionId`, `connectionResourceId`, or an HTTP URL. Re-stub with a real value before writing.
    - After every stub, check required fields using resource description or stub inputs, then re-stub with `--inputs` if needed.
    - Connector parameters use flat dotted keys and bare literals; do not use `${'literal'}`.
