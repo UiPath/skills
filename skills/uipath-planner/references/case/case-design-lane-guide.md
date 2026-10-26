@@ -189,7 +189,7 @@ When `Agent` is available, run the checklist in ONE read-only subagent. Give it 
 
 ### Terminal step — write the SDD
 
-Write in batches, gate, then flip. Interactive mode starts on acceptance; bounded no-build and draft finalization start at work and settle sections into an existing file. In every mode, confirmation gates only the `Status: ready` flip, never the seed.
+Write in batches, gate, then flip. The mode decides only the file name and whether the turn ends. Interactive mode starts on acceptance; bounded no-build and draft finalization start at work and settle sections into an existing file. In every mode, confirmation gates only the `Status: ready` flip, never the seed.
 
 1. **Seed Write, then Edit-append per section—three separate calls, never one.** Seed title, `## Document History`, Planner Handoff header with `Status: draft` and `Template validation: pending` as table rows (never HTML comment/bold line), and `## Table of Contents`. Then Edit-append in template order: Section 1; Section 2 one stage block at a time, every primary/secondary stage in source order; Section 3; Section 4; `## Next Steps`. Compose each section immediately before appending; do not re-Read between sibling appends. Partial file is recovery state. Never `cp`, `mv`, or `rsync` an artifact into place.
 2. **Gate the written file:** run [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md), items 1–29 and 34–37 (also 30–33 when finalizing a draft). Answer every item with a quote, repair each FAIL with targeted Edit, and re-answer failed items only; maximum 3 rounds, then stop and report remaining failures. One structural Read is allowed.

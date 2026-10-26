@@ -272,7 +272,7 @@ A gate keyed on a task's completion that reads the case variable that task's Out
 | `selected-tasks-completed("Decide")` + `=js:vars.decision === "reject"`, where `Decide` declares `Action -> decision` | the case variable `Decide` writes | ✗ stale / `null` |
 | `selected-tasks-completed("Decide")` + `=js:vars.action === "reject"`, where `action` is `Decide`'s own output | the producing output | ✓ populated |
 
-**Rule:** when a condition's WHEN names a task, its `IF` MUST read that task's own output. Keep `->` when persistence is needed (Case App, audit, later stage); the gate reads producer output. This applies wherever the WHEN names the producer: stage-exit and task-entry `selected-tasks-completed`, and `selected-stage-exited` lane entries paired with diverting exits, which repeat the origin exit's guard and so its producer reference. Guard pairs stay exact inverses of each other.
+**Rule:** when a condition's WHEN names a task, its `IF` MUST read that task's own output. Keep `->` when persistence is needed (Case App, audit, later stage); the gate reads producer output. This applies wherever the WHEN names the producer: stage-exit and task-entry `selected-tasks-completed`, and `selected-stage-exited` lane entries paired with diverting exits; each such entry repeats the origin exit's guard and so its producer reference. Guard pairs stay exact inverses of each other.
 
 ### Trigger payloads
 
