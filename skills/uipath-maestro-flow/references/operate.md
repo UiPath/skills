@@ -144,6 +144,7 @@ run did not scaffold: debug overwrites the Studio Web solution whose
 
 Operational constraints, each of which has its own failure:
 
+<!--skill-flavor:operate-debug-wait:start-->
 - **Foreground, with a tool timeout of 10 minutes or more.** It takes 1-5
   minutes and prints its JSON only at exit, so a shell that kills commands after
   1-2 minutes loses the whole payload.
@@ -156,6 +157,7 @@ Operational constraints, each of which has its own failure:
 - **`Debug polling timed out after <N>s` is not a failure.** The run continues
   server-side. Take `instanceId` from stderr and poll
   `uip maestro flow debug-instance status <INSTANCE_ID> --output json`.
+<!--skill-flavor:operate-debug-wait:end-->
 - **An RPA step does not run under a headless debug** ([rpa-workflow.md](rpa-workflow.md#evidence-boundary)).
 <!--skill-flavor:operate-debug-scratch-copy:start-->
 - **Every process and connection node must resolve.** A node bound to a
@@ -231,6 +233,7 @@ the Maestro VS Code extension.
 
 ### Reporting a debug run
 
+<!--skill-flavor:operate-debug-report:start-->
 `Data.studioWebUrl` and `Data.instanceId` are the **first two lines** of any
 summary, before status text — they are what someone needs immediately, not after
 scrolling:
@@ -249,6 +252,7 @@ any, and name the `uip maestro flow debug-instance incidents <instanceId>`
 command. If `Data.incidents` is missing, or `null` in a projection, run that
 command. Do not re-run the flow. On the next run, add `incidents:incidents` to the projection,
 or redirect the unfiltered output to a file and search it:
+<!--skill-flavor:operate-debug-report:end-->
 
 <!--skill-flavor:operate-debug-redirect:start-->
 ```bash
@@ -289,10 +293,12 @@ not a starting point.
 
 ## Instance lifecycle
 
+<!--skill-flavor:operate-instance-id:start-->
 Every `instance` command needs `--folder-key` (`-f`) or it is rejected before
 reaching the API. Get one from `uip or folders list --output json`, or from the
 job or process context. The instance id comes from a debug run's
 `Data.instanceId`, a `job status` response, or `instance list`.
+<!--skill-flavor:operate-instance-id:end-->
 
 ```bash
 uip maestro flow instance pause  <INSTANCE_ID> -f <FOLDER_KEY> --output json

@@ -181,6 +181,7 @@ These are the common flags; use only the ones the behavior claim needs:
 | Quiet logs | `--log-level error`, or `--log-file <path>` to move them off the stream entirely |
 <!--skill-flavor:debug-flags:end-->
 
+<!--skill-flavor:debug-readback:start-->
 ### `--output-filter` is JMESPath, and three things about it are worth knowing
 
 **A string literal is `'single-quoted'`, not `` `backticked` ``.** Backticks
@@ -266,7 +267,6 @@ command its `Instructions` give.
 For example, a direct-input claim can keep the useful status, outputs, and
 diagnostics in one read-back instead of printing the full execution envelope:
 
-<!--skill-flavor:debug-example:start-->
 ```bash
 ( cd "<Solution>" && uip solution resources refresh --solution-folder . --output json )
 ( cd "<Solution>" && uip maestro flow debug <Name> --log-level error \
@@ -274,7 +274,6 @@ diagnostics in one read-back instead of printing the full execution envelope:
   --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>,incidents:incidents}" \
   --output json )
 ```
-<!--skill-flavor:debug-example:end-->
 
 The top-level envelope still carries `Result`; the projection above selects
 from `Data`. Read and retain `Result`, the projected status/instance/URL, the
@@ -297,6 +296,7 @@ uip maestro flow debug-instance incidents <instanceId> \
 
 `ErrorDetails` commonly contains the service response or unresolved-resource
 value that the summary message omits.
+<!--skill-flavor:debug-readback:end-->
 
 ## CLI output conventions
 

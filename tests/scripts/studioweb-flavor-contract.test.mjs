@@ -314,7 +314,8 @@ test("the studioweb v2 Flow tree never tells the agent to run `uip solution init
 
 // Studio Web runs the Flow builder SDK inside the page: no npm, no Node, no
 // local connector-library cache, no pipeline helper, no `flow-sdk` bin, no
-// local `.uipx` to refresh, no `uip maestro flow debug` and no login step.
+// local `.uipx` to refresh, no `uip maestro flow debug`, no login step, and a
+// `flow debug` that ignores `--output` and `--output-filter`.
 // Guidance that tells the agent to run any of these fails there, so the v2
 // Studio Web Flow skill must never contain them. Each pattern matches the
 // instruction form only, not the flavor's own "not available" text.
@@ -328,6 +329,7 @@ const FLOW_TERMINAL_ONLY = [
   "from './connectors/",
   "resources refresh --solution-folder",
   "uip maestro flow debug <project-dir>",
+  ["flow debug --output", /flow debug(?![-\w])[^\n]*--output/],
   ["uip login", /uip login(?!` \| Not available)/],
 ].map((entry) => (Array.isArray(entry) ? entry : [entry, entry]));
 

@@ -45,7 +45,7 @@ shared-location publish does not: deploy it with `uip solution deploy run`
 
 <!--skill-flavor:operate-debug:start-->
 ```bash
-uip flow debug <Project> --output json
+uip flow debug <Project>
 ```
 
 `<Project>` is a project name in the open solution, not a path; it defaults to
@@ -57,14 +57,28 @@ constructor`. Debug runs the saved project, so there is no pack or upload step.
 messages, calls the APIs. It is not a validation step — `validate` is. Run it
 when the request is for a flow that works; ask when the request stops at build
 or validate; and with nobody to ask, report the flow as unverified rather than
-letting a passing `validate` stand as the result.
+letting a passing `validate` stand as the result. The reply is plain text:
+[CLI-LOOP.md — Reading the reply](CLI-LOOP.md#reading-the-reply).
 <!--skill-flavor:operate-debug:end-->
+
+<!--skill-flavor:operate-debug-wait:start-->
+- **The reply waits up to 120 s.** Pass `--timeout <seconds>` to change it,
+  from 10 to 150.
+- **`TimedOut after <N>s` is not a failure.** The run continues in the host.
+  The reply has no instance id: when it gives a `Trace ID`, read the result
+  later with `uip traces spans get <Trace ID>`; otherwise tell the user to
+  check the run in the designer.
+- **Never start a second debug while one is running,** a timed-out one
+  included. It executes the flow again.
+- **Re-run only after changing the flow.** Never to re-read the reply the
+  completed run already returned.
+<!--skill-flavor:operate-debug-wait:end-->
 
 <!--skill-flavor:operate-debug-scratch-copy:start-->
 - **Every process and connection node must resolve.** A node bound to a
   resource the tenant lacks (a placeholder key awaiting the real process, a stub
-  connection) fails provisioning and starts no instance; `Data.missingResources`
-  names it, though `check` and `validate` pass it. Each connection must also be
+  connection) fails provisioning and starts no run, though `check` and
+  `validate` pass it. Each connection must also be
   in the solution ([SKILL.md](../SKILL.md#the-connector-loop-in-studio-web),
   step 7). Name the blocking node to the user. Do not debug a copy of the
   project: Studio Web cannot delete the copy afterwards.
@@ -72,7 +86,7 @@ letting a passing `validate` stand as the result.
 
 <!--skill-flavor:operate-debug-inputs:start-->
 ```bash
-uip flow debug <Project> --output json --inputs '{"numberA": 5, "numberB": 7}'
+uip flow debug <Project> --inputs '{"numberA": 5, "numberB": 7}'
 ```
 <!--skill-flavor:operate-debug-inputs:end-->
 
@@ -84,18 +98,42 @@ designer.
 
 <!--skill-flavor:operate-debug-entry-point:start-->
 **A flow with more than one root starts at the default root.** That is the
-trigger marked `isDefaultEntryPoint`, else the first trigger. `uip flow debug`
-in Studio Web takes no `--entry-point`: to run another root, ask the user to
-run it from the designer. `Data.entryPoint` names the trigger the run started
-from.
+trigger marked `isDefaultEntryPoint`, else the first trigger. To run another
+root, pass its path exactly as the `entry-points.json` of the project lists it.
+For a flow that is `content/<file>.bpmn#<triggerNodeId>`; the `content/` prefix
+is optional:
+
+```bash
+uip flow debug <Project> --entry-point "content/<file>.bpmn#<triggerNodeId>"
+```
+
+A wrong value fails and lists the valid paths. A bare trigger node id is not a
+valid value here.
 <!--skill-flavor:operate-debug-entry-point:end-->
+
+<!--skill-flavor:operate-debug-report:start-->
+Report the status line first, then the `Trace ID` when the reply has one. The
+reply has no Studio Web URL and no instance id: do not invent them.
+
+`Faulted` means the cause is already in that same reply. Find the faulted
+element and its message in `Execution trace`. For more detail, run
+`uip traces spans get <Trace ID>`. Do not re-run the flow. When you expect a
+long reply, redirect it to a file as you start the run, then search the file:
+<!--skill-flavor:operate-debug-report:end-->
 
 <!--skill-flavor:operate-debug-redirect:start-->
 ```bash
 cd /solution/<Project>
-uip flow debug <Project> --output json > .flow-sdk/flow-debug.json
+uip flow debug <Project> > .flow-sdk/flow-debug.txt
 ```
 <!--skill-flavor:operate-debug-redirect:end-->
+
+<!--skill-flavor:operate-instance-id:start-->
+Every `instance` command needs `--folder-key` (`-f`) or it is rejected before
+reaching the API. Get one from `uip or folders list --output json`, or from the
+job or process context. The instance id comes from a `job status` response or
+`instance list`. A `uip flow debug` reply in Studio Web has none.
+<!--skill-flavor:operate-instance-id:end-->
 
 <!--skill-flavor:refresh-command:start-->
 ```bash

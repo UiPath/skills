@@ -35,16 +35,48 @@ SDK verbs run in the page — see
 In Studio Web the verb is `uip flow debug <Project>`. `<Project>` is a project
 name in the open solution, not a path; it defaults to the open project.
 Each connection must be in the solution first. A `500` at `prepare-custom-debug` is
-transient: retry once. The host uses only the project name and
-`-i, --inputs '<inline JSON>'`. It ignores `--attachment`, and it does not read
-`@file` inputs. Add `--output json`. If the reply ignores `--output-filter`,
-read the same fields from the full envelope.
+transient: retry once. These are the flags the host takes:
+
+| Need | Exact form |
+|---|---|
+| JSON inputs | `-i '{"name":"value"}'`, inline only; the host does not read `@file` |
+| Start trigger | `--entry-point <path>`, exactly as `entry-points.json` lists it; omit to start at the default root |
+| Wait bound | `--timeout <seconds>`; the default is 120, the range is 10 to 150 |
+
+The host ignores `--attachment`, `--output` and `--output-filter`.
 <!--skill-flavor:debug-flags:end-->
 
-<!--skill-flavor:debug-example:start-->
-```bash
-uip flow debug <Project> --inputs '{"name":"value"}' \
-  --output-filter "{status:finalStatus,instance:instanceId,url:studioWebUrl,failed:elementExecutions[?status!='Completed'].{id:elementId,status:status},<Out>:variables.globals.<Out>,incidents:incidents}" \
-  --output json
+<!--skill-flavor:debug-readback:start-->
+### Reading the reply
+
+The reply is plain text, not a JSON envelope. It has no `Data` fields, so no
+projection applies to it:
+
+```text
+<status>
+Trace ID: <id>
+Run logs:
+<logs>
+Execution trace:
+<json>
 ```
-<!--skill-flavor:debug-example:end-->
+
+- **Line 1 is the status:** `Successful`, `Faulted`, or `TimedOut after <N>s`.
+  The command exits 1 when the run failed.
+- **`Trace ID`** is there only when the run returned one.
+- **`Execution trace`** is JSON. Find the faulted element and its message
+  there.
+- **For more detail,** run `uip traces spans get <Trace ID>`.
+
+The reply has no instance id, so the `debug-instance` commands have nothing to
+take. Do not re-run the flow to read the reply again.
+
+For example, a direct-input claim:
+
+```bash
+uip flow debug <Project> --inputs '{"name":"value"}'
+```
+
+`Successful` on line 1 is evidence for the product-runtime path; a bare exit
+code is not.
+<!--skill-flavor:debug-readback:end-->
