@@ -33,6 +33,7 @@ jobs:
         run: |
           EXISTING=$(gh pr list \
             --state open \
+            --limit 1000 \
             --json number,url,headRefName \
             --jq '[.[] | select(.headRefName | startswith("auto/refresh-uip-browser-catalog"))] | .[0] // empty')
 
