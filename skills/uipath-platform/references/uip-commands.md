@@ -1,27 +1,14 @@
 # UiPath CLI (`uip`) Command Reference
 
-> **Quick reference index.** Use `--help` for full option details on any command.
+> Use `--help` for full option details on any command.
 
-**Global flags:**
-- `--output json` — always use when calling programmatically
-- `--output-filter <expr>` — JMESPath filter for JSON output
-- `--profile <name>` — use a named auth profile from `~/.uipath/profiles/<name>/.auth`; `default` keeps the built-in unprofiled login
-- `--tenant <name>` — tenant override (defaults to authenticated tenant)
-- `--verbose` — enable debug logging
+**Global flags:** `--output json` (always use programmatically); `--output-filter <expr>` (JMESPath filter for JSON); `--profile <name>` (auth profile at `~/.uipath/profiles/<name>/.auth`; `default` keeps built-in unprofiled login); `--tenant <name>` (override authenticated tenant); `--verbose` (debug logging).
 
-**List command flags:**
-- `--limit <N>` / `--offset <N>` — pagination. Check `Pagination.HasMore` in output.
-- `--sort-by <field>` — sort results (e.g., `Name asc`, `Id desc`)
-- `--all-fields` — return raw DTO instead of the curated PascalCase
-  projection. Native Orchestrator commands curate by default; the migrated
-  resource commands (assets, queues, buckets, etc.) return the full DTO by
-  default and do not expose this flag.
-
----
+**List flags:** `--limit <N>` / `--offset <N>` (pagination; check `Pagination.HasMore`); `--sort-by <field>` (for example, `Name asc`, `Id desc`); `--all-fields` (raw DTO instead of curated PascalCase projection). Native Orchestrator commands curate by default; migrated resource commands (assets, queues, buckets, etc.) return the full DTO by default and do not expose `--all-fields`.
 
 ## Installation / bootstrap
 
-For fresh macOS/Linux/Windows machines, missing `uip`, or LLM coding-agent setup, use the official onboarding installers. They are idempotent and install Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
+For a fresh macOS/Linux/Windows machine, missing `uip`, or LLM coding-agent setup, run the official idempotent onboarding installer. It installs Node.js >= 20, `@uipath/cli`, UiPath skills for installed AI coding agents, .NET SDK 8.0, and Python 3.11-3.14.
 
 macOS/Linux:
 ```bash
@@ -33,7 +20,7 @@ Windows PowerShell:
 irm https://download.uipath.com/uipath-cli/install.ps1 | iex
 ```
 
-For CI/minimal CLI setup, skip agent skills and runtimes:
+For CI/minimal CLI setup, run the installer while skipping agent skills and runtimes:
 ```bash
 curl -fsSL https://download.uipath.com/uipath-cli/install.sh | bash -s -- --skip-skills --skip-runtimes
 ```
@@ -43,27 +30,18 @@ iwr https://download.uipath.com/uipath-cli/install.ps1 -OutFile install.ps1
 ./install.ps1 -SkipSkills -SkipRuntimes
 ```
 
----
-
 ## Authentication
 
 | Command | Description |
 |---|---|
 | `uip login` | Authenticate with UiPath Cloud |
 | `uip login status` | Show current login status |
-| `uip login which` | Show which `.auth` file backs the current login |
+| `uip login which` | Show the `.auth` file backing the current login |
 | `uip login tenant list` | List available tenants |
 | `uip login tenant set <name>` | Set active tenant |
 | `uip logout` | End session and clear tokens |
 
-Named profiles:
-- Use `uip login --profile dev`, then pass `--profile dev` on each command that should use that login.
-- Profile credentials live at `~/.uipath/profiles/dev/.auth`; the built-in default stays at `~/.uipath/.auth`.
-- Missing profiles do not fall back to the default login or Robot credentials.
-- Valid profile names use letters, numbers, `.`, `_`, and `-`; `default` is reserved for the built-in login.
-- Do not combine `--profile <name>` with auth-command `--file <folder>`.
-
----
+**Named profiles:** Run `uip login --profile dev`, then pass `--profile dev` on every command using that login. Profile credentials are at `~/.uipath/profiles/dev/.auth`; built-in default is `~/.uipath/.auth`. Missing profiles do not fall back to the default login or Robot credentials. Valid profile names contain letters, numbers, `.`, `_`, and `-`; `default` is reserved for the built-in login. Do not combine `--profile <name>` with auth-command `--file <folder>`.
 
 ## Orchestrator (`uip or`)
 
@@ -88,11 +66,9 @@ Manage folders, jobs, processes, machines, users, packages, and more. See [`uipa
 | **Feeds** | `list` | [Tenant Admin](orchestrator/tenant-admin.md) |
 | **Attachments** | `list --job-key`, `download` | [Tenant Admin](orchestrator/tenant-admin.md) |
 
----
-
 ## Orchestrator resources (`uip or assets` / `queues` / `triggers` / …)
 
-Manage assets, queues, triggers, buckets, libraries, and webhooks — a subset of `uip or`. See [Orchestrator resources](orchestrator/resources.md).
+Manage assets, queues, triggers, buckets, libraries, and webhooks, a subset of `uip or`. See [Orchestrator resources](orchestrator/resources.md).
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
@@ -106,17 +82,13 @@ Manage assets, queues, triggers, buckets, libraries, and webhooks — a subset o
 | **Libraries** | `list`, `get`, `versions`, `upload`, `download`, `delete` | [Resources overview](orchestrator/resources.md) |
 | **Webhooks** | `list`, `get`, `create`, `update`, `delete`, `ping`, `event-types` | [Triggers & Webhooks](orchestrator/triggers-and-webhooks.md) |
 
----
-
 ## Solution (`uip solution`)
 
 `uip solution` (init/new, project add|remove|import, resource list|refresh|get|add|remove|edit, restore, pack, publish, deploy run|status|list|activate|uninstall, deploy config get|set|link|unlink, upload, download, packages list|delete|download) is owned by [`uipath-solution`](/uipath:uipath-solution). Load that skill for any `.uipx` lifecycle work.
 
----
-
 ## Platform Tool (`uip platform`)
 
-Manage organization-level licensing — tenant allocations, user/group bundle assignments, and consumables reporting. See [`licensing/licensing.md`](licensing/licensing.md).
+Manage organization-level licensing: tenant allocations, user/group bundle assignments, and consumables reporting. See [`licensing/licensing.md`](licensing/licensing.md).
 
 | Group | Key Commands | Workflow Guide |
 |---|---|---|
@@ -125,9 +97,7 @@ Manage organization-level licensing — tenant allocations, user/group bundle as
 | **Groups Rules** | `groups rules get [--limit --offset --sort-by --sort-order]`, `groups rules details <group>`, `groups rules set <group> --input <path>` | [User & Group Licenses](licensing/user-licenses-allocations.md) |
 | **Consumables** | `licenses consumables get --mode {summary\|daily\|folders} [--tenant --unit --start-date --end-date]` | [Consumables Report](licensing/consumables-report.md) |
 
-All `uip platform` commands accept `--organization <account-id>` to override the org from the current login.
-
----
+All `uip platform` commands accept `--organization <account-id>` to override the organization from the current login.
 
 ## Traces (`uip traces`)
 
@@ -143,8 +113,6 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 | `uip traces feedback update <id>` | Change sentiment, comment, metadata, or categories |
 | `uip traces feedback delete <id>` | Remove feedback |
 
----
-
 ## Other Tool Groups
 
 | Group | Command | Description |
@@ -156,9 +124,7 @@ LLM execution trace observability and feedback annotation. See [traces/traces.md
 | **Coded Agents** | `uip codedagent --help` | Python agent development |
 | **Tools** | `uip tools list/search/install` | CLI tool management |
 
----
-
 ## Naming gotchas
 
-- Resource sub-nouns are **plural and hyphenated where shown**: `buckets`, `queues`, `assets`, `libraries`, `queue-items`, `bucket-files`. Never singular, never `queueitems`/`bucketfiles`.
+- Resource sub-nouns are **plural and hyphenated where shown**: `buckets`, `queues`, `assets`, `libraries`, `queue-items`, `bucket-files`. Never use singular forms or `queueitems`/`bucketfiles`.
 - The canonical Orchestrator group prefix is `or`; `uip orchestrator` also works as a long-form alias, but these docs use `or`. <!-- uip-check-skip -->

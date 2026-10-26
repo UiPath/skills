@@ -1,41 +1,31 @@
 # Licensing (`uip platform`)
 
-Manage UiPath organization licensing — tenant allocations, user/group bundle assignments, and consumables reporting.
-
-> For full option details on any command, use `--help` (e.g., `uip platform tenants licenses get --help`).
-
----
+Manage UiPath organization licensing: tenant allocations, user/group bundle assignments, and consumables reporting. Run `--help` for full option details, such as `uip platform tenants licenses get --help`.
 
 ## Common Flags
 
-All `uip platform` licensing commands share a set of cross-cutting options:
-
 | Flag | Scope | Purpose |
 |------|-------|---------|
-| `--organization <account-id>` | All commands | Override org account GUID. Defaults to org from current login. |
-| `--output json` | All commands | Emit structured JSON. Always use when parsing programmatically. |
-| `--input <path>` | `set` commands | Path to JSON file with the desired allocation. Body shape differs per command — see each workflow doc. |
-| `--limit <n>` | `groups rules` list commands | Max results to return (default 50). |
-| `--offset <n>` | `groups rules` list commands | Results to skip (default 0). |
-| `--sort-by <field>` | `groups rules` list commands | Sort field (e.g. `name`). |
-| `--sort-order <Asc\|Desc>` | `groups rules` list commands | Sort direction. Exact strings `Asc` or `Desc` (case-sensitive). |
+| `--organization <account-id>` | All commands | Override the organization account GUID; defaults to the current login's organization. |
+| `--output json` | All commands | Emit structured JSON; always use for programmatic parsing. |
+| `--input <path>` | `set` commands | JSON file containing the desired allocation; its body shape varies by command. |
+| `--limit <n>` | `groups rules` list commands | Maximum results; default 50. |
+| `--offset <n>` | `groups rules` list commands | Results to skip; default 0. |
+| `--sort-by <field>` | `groups rules` list commands | Sort field, such as `name`. |
+| `--sort-order <Asc\|Desc>` | `groups rules` list commands | Exact, case-sensitive values: `Asc` or `Desc`. |
 
-**Response envelope.** All commands emit `{Result, Code, Data, ...}`. `Code` identifies the payload (`TenantLicenses`, `UserLicensesSet`, `GroupRules`, `LicensesConsumablesSummary`, etc.). Paginated commands add a `Pagination` block — increment `--offset` by `--limit` until `Returned < Limit`.
+Every command emits `{Result, Code, Data, ...}`; `Code` identifies the payload (`TenantLicenses`, `UserLicensesSet`, `GroupRules`, `LicensesConsumablesSummary`, etc.). Paginated commands add `Pagination`; increment `--offset` by `--limit` until `Returned < Limit`.
 
-**Saving a response to a file.** Redirect **stdout only**: `uip platform ... --output json > available.json`. Never send `2>&1` into the artifact — `groups rules details` writes its rule summary to stderr, and merging the streams puts that header above the JSON so the file no longer parses. If you need stderr for an auth or lookup error, capture it separately (`2> details.err`). Never hand-assemble the artifact from other commands' output either: the file must be one raw envelope, parseable on its own.
-
----
+Save a response by redirecting stdout only: `uip platform ... --output json > available.json`. Never send `2>&1` into the artifact: `groups rules details` writes its rule summary to stderr, so merged streams make the file unparsable. Capture stderr separately with `2> details.err`. Never hand-assemble the artifact; it must be one raw, independently parseable envelope.
 
 ## Workflow References
 
 | Workflow | File | Covers |
 |----------|------|--------|
 | Tenant Allocations | [tenant-allocations.md](tenant-allocations.md) | `tenants licenses get/set` — allocate license units to tenant pools |
-| User & Group Licenses | [user-licenses-allocations.md](user-licenses-allocations.md) | `users licenses get/set/available`, `groups rules get/details/set` — assign bundles directly or via group rules |
-| Consumables Report | [consumables-report.md](consumables-report.md) | `licenses consumables get --mode {summary,daily,folders}` — consumption reporting. `get` is mandatory; summary/daily/folders are `--mode` values, not subcommands (there is no `licenses summary` verb) |
-| Diagnose | [diagnose/CAPABILITY.md](diagnose/CAPABILITY.md) | Symptom-first triage — entitlement gaps, allocations that did not take effect, reports that read wrong. Layer-first ladder + failure-mode lookup |
-
----
+| User & Group Licenses | [user-licenses-allocations.md](user-licenses-allocations.md) | `users licenses get/set/available`, `groups rules get/details/set` — direct or group-rule bundle assignment |
+| Consumables Report | [consumables-report.md](consumables-report.md) | `licenses consumables get --mode {summary,daily,folders}` — consumption reporting; `get` is mandatory and summary/daily/folders are `--mode` values, not subcommands (there is no `licenses summary` verb) |
+| Diagnose | [diagnose/CAPABILITY.md](diagnose/CAPABILITY.md) | Symptom-first triage for entitlement gaps, ineffective allocations, and incorrect reports; layer-first ladder plus failure-mode lookup |
 
 ## Key Concepts
 
@@ -52,11 +42,11 @@ Account (organization)
               +-- Group rule lease     Inherited from a group rule with optional quota
 ```
 
-Tenant allocations and user bundles are **separate license types**. A tenant runs unattended jobs against its runtime allocation (`UNATT`, `RU`, `PLTU`); a developer uses a user-bundle license (`RPADEVPRONU`) to log into Studio.
+Tenant allocations and user bundles are separate license types. Tenants run unattended jobs against runtime allocation (`UNATT`, `RU`, `PLTU`); developers use user-bundle licenses such as `RPADEVPRONU` to log into Studio.
 
 ### Product Codes
 
-Product codes are the SKU identifier used everywhere in the CLI. The `friendlyName()` helper maps them to readable names:
+Product codes are CLI SKU identifiers. The `friendlyName()` helper maps them to readable names:
 
 | Code | Friendly Name | Type |
 |------|---------------|------|
@@ -78,26 +68,20 @@ Product codes are the SKU identifier used everywhere in the CLI. The `friendlyNa
 | `DSU` | Data Service Units | Consumable |
 | `PERFTEST` / `PERFTEST-RUNTIME` | Performance Testing | Runtime |
 
-User-bundle codes (e.g., `RPADEVPRONU`, `ATTUNU`, `TSTNU`) are not in the `friendlyName` table — they pass through unchanged.
-
-Unknown codes are returned verbatim; this is not an error.
+User-bundle codes, including `RPADEVPRONU`, `ATTUNU`, and `TSTNU`, are not in the `friendlyName` table and pass through unchanged. Unknown codes are returned verbatim, not as errors.
 
 ### Behavior Details
 
-Each concept is covered authoritatively in the linked workflow guide:
+See the linked workflow guides for authoritative details:
 
-- **Lease source: direct vs group** — `users licenses get` tags each row with `source`. See [user-licenses-allocations.md](user-licenses-allocations.md).
-- **Quotas in group rules** — `groups rules set` accepts optional `quota` per entry. See [user-licenses-allocations.md](user-licenses-allocations.md).
-- **Bundle window vs custom date range** — each consumable has its own window; `--start-date`/`--end-date` overrides. See [consumables-report.md](consumables-report.md).
-- **Idempotent tenant allocation** — `tenants licenses set` is an overlay, not a delta. See [tenant-allocations.md](tenant-allocations.md).
-
----
+- **Lease source: direct vs group:** `users licenses get` tags each row with `source`; see [user-licenses-allocations.md](user-licenses-allocations.md).
+- **Quotas in group rules:** `groups rules set` accepts optional `quota` per entry; see [user-licenses-allocations.md](user-licenses-allocations.md).
+- **Bundle window vs custom date range:** each consumable has its own window; `--start-date`/`--end-date` overrides it; see [consumables-report.md](consumables-report.md).
+- **Idempotent tenant allocation:** `tenants licenses set` is an overlay, not a delta; see [tenant-allocations.md](tenant-allocations.md).
 
 ## REST API Fallback
 
 When the CLI does not cover an operation, use the License Resource Manager / License Accountant APIs directly with a stored token from `~/.uipath/.auth`. See [orchestrator.md - REST API](../orchestrator/orchestrator.md) for the auth pattern.
-
----
 
 ## Related
 

@@ -1,10 +1,12 @@
 # Bulk Import Reference
 
-> **Creating the entity FROM the CSV?** If no entity exists yet and the user wants one built around the CSV's columns, that's `entities create` — and field types must be **confirmed, not silently inferred**. See [`data-fabric.md` Rule 14 → CSV / sample-data inference](data-fabric.md#critical-rules). Flag every inferred type with the sample value(s) it came from, surface ambiguous columns (date-shaped strings, `0`/`1` flags, UUID-shaped strings, decimal precision) as `AskUserQuestion` dropdowns, and wait for explicit user approval before invoking `entities create`. *Then* `records import` to load the data.
+> **Creating the entity FROM the CSV?** If no entity exists and the user wants one built around CSV columns, use `entities create`; field types must be **confirmed, not silently inferred**. See [`data-fabric.md` Rule 14 → CSV / sample-data inference](data-fabric.md#critical-rules). Flag every inferred type with its sample value(s), surface ambiguous columns (date-shaped strings, `0`/`1` flags, UUID-shaped strings, decimal precision) as `AskUserQuestion` dropdowns, and wait for explicit user approval before invoking `entities create`. *Then* run `records import` to load the data.
 
-> **⚠ `records import` does not support complex field types — surface this to the user before invoking (data-fabric.md Rule 20).** `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER` columns are **not supported**: the CSV header is accepted but the values are ignored (no error, no `ErrorFileLink` entry — `null` on every imported row, or row failure if the field is `isRequired` without a `defaultValue`). This is current Data Fabric platform behavior, not a bug — do not work around it. Run `entities get <entity-id>` first; if any field is in that set, switch to `records insert --file <json>` (handles all types except `FILE` — use `files upload` for those, see Rule 6). See [Complex Field Types Not Supported](#complex-field-types-not-supported) below.
+> **⚠ `records import` does not support complex field types — surface this to the user before invoking (data-fabric.md Rule 20).** `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER` columns are accepted in headers but values are ignored: no error or `ErrorFileLink` entry, `null` on every imported row, or row failure when `isRequired` lacks a `defaultValue`. This is current Data Fabric platform behavior, not a bug — do not work around it. Run `entities get <entity-id>` first. If any field is in that set, run `records insert --file <json>` instead (handles all types except `FILE`; run `files upload` for those, see Rule 6). See [Complex Field Types Not Supported](#complex-field-types-not-supported).
 
 ## Import Records from CSV
+
+Run:
 
 ```bash
 uip df records import <entity-id> --file data.csv [--folder-key <folder-guid>] --output json
@@ -12,10 +14,9 @@ uip df records import <entity-id> --file data.csv [--folder-key <folder-guid>] -
 
 Response: `{ Code: "RecordsImported", Data: { InsertedRecords, TotalRecords, ErrorFileLink? } }`
 
-- `InsertedRecords` — number of rows successfully imported
-- `TotalRecords` — total rows in the CSV (including failures)
-- `ErrorFileLink` — download URL for a CSV of failed rows (only present if there were failures)
-- `--folder-key` — required when the parent entity is folder-scoped
+- `InsertedRecords`: successfully imported rows; `TotalRecords`: all CSV rows, including failures.
+- `ErrorFileLink`: failed-row CSV download URL, present only when failures occur.
+- `--folder-key`: required when the parent entity is folder-scoped.
 
 **Pre-flight check (required by Rule 20):**
 
@@ -31,10 +32,9 @@ uip df entities get <entity-id> --output json
   (case-sensitive), not its internal `Name`. For example, a field returned as
   `{ "Name": "SKU", "DisplayName": "Stock-Keeping Unit" }` requires the CSV
   header `Stock-Keeping Unit`; `SKU` is rejected as an invalid header.
-- Use `uip df entities get <entity-id> --output json` to discover exact
-  `Fields[].DisplayName` values before importing
-- System fields (`Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`, `RecordOwner`) must NOT appear in the CSV
-- **No line breaks or `""` inside quoted cells.** `records import` refuses such a file and uploads nothing. Load that text with `records insert --file <json>`, which stores it exactly ([`records-query.md` → Insert Records](records-query.md#insert-records)); stripping the characters to pass the check changes the user's data.
+- Run `uip df entities get <entity-id> --output json` to discover exact `Fields[].DisplayName` values.
+- Exclude system fields: `Id`, `CreatedBy`, `CreateTime`, `UpdatedBy`, `UpdateTime`, `RecordOwner`.
+- Do not include line breaks or `""` inside quoted cells. `records import` refuses the file and uploads nothing; run `records insert --file <json>` to store such text exactly ([`records-query.md` → Insert Records](records-query.md#insert-records)). Do not strip those characters, as that changes the user's data.
 
 ### Example CSV
 
@@ -49,22 +49,19 @@ For an entity with fields: `Name` (STRING), `Score` (DECIMAL, `decimalPrecision:
 
 ### Complex Field Types Not Supported
 
-**Complex field types** in Data Fabric are the ones that need extra config or lookup tokens beyond the value itself: `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER`. Everything else is a Basic type.
+Data Fabric complex types requiring extra configuration or lookup tokens are `CHOICE_SET_SINGLE`, `CHOICE_SET_MULTIPLE`, `RELATIONSHIP`, `FILE`, and `AUTO_NUMBER`; all others are Basic types. `records import` processes only Basic types (use the UI-compatible set from [`entity-schema.md`](entity-schema.md#supported-field-types)). Complex columns are accepted in headers, but values are ignored: no error and nothing in `ErrorFileLink`, only `null` on every imported row, or row failure when `isRequired` lacks a `defaultValue`.
 
-`records import` is **not supported** for those complex types — it only processes Basic types (use the UI-compatible set from [`entity-schema.md`](entity-schema.md#supported-field-types)). Complex-type columns are accepted in the CSV header but their row values are ignored — no error, nothing in `ErrorFileLink`, just `null` on every imported row (or row failure if the field is `isRequired` without a `defaultValue`).
-
-For entities with any complex field, use `records insert --file <json>` instead — the insert endpoint handles every type except `FILE` (which is exclusively written through `files upload`, data-fabric.md Rule 6). See [`records-query.md`](records-query.md#writing-choice-set-and-relationship-values) for the value form.
+For an entity with any complex field, run `records insert --file <json>` instead. It handles every type except `FILE`, which is exclusively written through `files upload` (data-fabric.md Rule 6). See [`records-query.md`](records-query.md#writing-choice-set-and-relationship-values) for the value form.
 
 ## Error Handling
 
 | Error | Cause | Fix |
-|-------|-------|-----|
-| `Import errors in CSV` / `Invalid column header` | Header names don't match field display names | Run `entities get` and use exact `Fields[].DisplayName` values (case-sensitive), not internal `Name` values |
-| `Entity not found` | Wrong entity ID | Run `entities list` to get correct ID |
-| Row-level errors | Invalid data types (e.g. text in number field) | Check data values match field types |
+|---|---|---|
+| `Import errors in CSV` / `Invalid column header` | Header differs from case-sensitive field display names | Run `entities get` and use exact `Fields[].DisplayName`, not internal `Name` values |
+| `Entity not found` | Wrong entity ID | Run `entities list` to get the correct ID |
+| Row-level errors | Invalid data types, such as text in a number field | Check values against field types |
 
 ## Notes
 
-- Partial success is possible: some rows may import while others fail
-- Check `InsertedRecords` vs `TotalRecords` to detect failures; download `ErrorFileLink` for the failed-row CSV
-- Large imports are processed server-side; there is no row limit documented but keep files reasonable in size
+- Partial success is possible; compare `InsertedRecords` with `TotalRecords` and download `ErrorFileLink` for failed rows.
+- Large imports are processed server-side. No row limit is documented; keep files reasonable in size.

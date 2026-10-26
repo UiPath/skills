@@ -1,26 +1,24 @@
 # Managing Context Grounding Indexes — `uip context-grounding` CLI
 
-Operate context-grounding indexes from the terminal: list, create, ingest, poll status, search, delete. Context-grounding indexes back semantic search / RAG over your organization's documents; agents and flows consume them as tools.
+Operate context-grounding indexes from the terminal: list, create, ingest, poll status, search, and delete. They provide semantic search / RAG over organizational documents for agents and flows.
 
-## Folder Targeting
+## Folder Targeting and JSON Output
 
-Every command needs a folder. Pass `--folder-path "<PATH>"` (e.g. `"Shared"`) or `--folder-key "<UUID>"`, or set `UIPATH_FOLDER_PATH`. Missing folder → `400 "A folder is required for this action."` Permissions live on the folder; missing index permission → `403 "User is missing required index permissions."` (switch folders; personal workspace is the safe default for self-serve).
-
-## JSON Output
-
-Append `--output json` to any command whose output you parse — it is parsed throughout this guide. Equivalent per-command flag: `--format json`. `-o <FILE>` writes the result to a file instead of stdout.
+Every command needs a folder: pass `--folder-path "<PATH>"` (e.g. `"Shared"`), `--folder-key "<UUID>"`, or set `UIPATH_FOLDER_PATH`. Missing folder → `400 "A folder is required for this action."` Permissions live on the folder; missing index permission → `403 "User is missing required index permissions."` Switch folders; personal workspace is the safe default for self-serve. Append `--output json` to parsed commands; `--format json` is equivalent. `-o <FILE>` writes to a file instead of stdout.
 
 ## List Indexes
+
+Run:
 
 ```bash
 uip context-grounding list --folder-path "<FOLDER_PATH>" --output json
 ```
 
-Returns an array of index objects (`id`, `name`, `last_ingestion_status`, `data_source`, …). Use to confirm an index exists and resolve its name before `retrieve` / `search` / `ingest`.
+The result is an array of index objects (`id`, `name`, `last_ingestion_status`, `data_source`, …). Use it to confirm an index exists and resolve its name before `retrieve` / `search` / `ingest`.
 
 ## Create an Index
 
-Creation does **not** ingest — trigger ingestion separately (see [Ingest](#trigger-ingestion)).
+Creation does **not** ingest; trigger ingestion separately (see [Ingest](#trigger-ingestion)).
 
 ### Bucket-backed
 
@@ -32,19 +30,18 @@ uip context-grounding create \
   --output json
 ```
 
-Optional: `--description "<TEXT>"`, `--file-type pdf` (filter ingested files), `--extraction-strategy LLMV4|NativeV1` (default `LLMV4`).
+Optional: `--description "<TEXT>"`, `--file-type pdf` (filter ingested files), and `--extraction-strategy LLMV4|NativeV1` (default `LLMV4`).
 
 ### Connection-backed (Google Drive / OneDrive / Dropbox / Confluence)
 
-1. Inspect the required JSON shape:
+1. Run:
 
    ```bash
    uip context-grounding source-schema --type google_drive
    ```
 
    Omit `--type` to print all schemas. Types: `google_drive`, `onedrive`, `dropbox`, `confluence`.
-
-2. Write the source config to a file, then:
+2. Write the source config to a file, then run:
 
    ```bash
    uip context-grounding create \
@@ -54,11 +51,11 @@ Optional: `--description "<TEXT>"`, `--file-type pdf` (filter ingested files), `
      --output json
    ```
 
-`--bucket-source` and `--source-file` are mutually exclusive — pick one.
+`--bucket-source` and `--source-file` are mutually exclusive; pick one.
 
 ## Trigger Ingestion
 
-Re-index after its source documents change. Runs asynchronously.
+Re-index after source documents change. Ingestion runs asynchronously. Run:
 
 ```bash
 uip context-grounding ingest --index-name "<INDEX_NAME>" --folder-path "<FOLDER_PATH>" --output json
@@ -66,7 +63,7 @@ uip context-grounding ingest --index-name "<INDEX_NAME>" --folder-path "<FOLDER_
 
 ## Poll Status
 
-`retrieve` returns the full index object including ingestion status. This is how you check whether an index is ready.
+`retrieve` returns the full index object, including ingestion status. Run:
 
 ```bash
 uip context-grounding retrieve --index-name "<INDEX_NAME>" --folder-path "<FOLDER_PATH>" --output json
@@ -80,11 +77,11 @@ Read `last_ingestion_status` from the JSON:
 | `Failed` | Ingestion failed | Stop; read `last_ingestion_failure_reason` |
 | anything else | In progress | Keep polling |
 
-Polling loop — re-`retrieve` until the status is terminal (`Successful` or `Failed`); cap retries (e.g. 30 polls at a fixed interval) and abort with the failure reason if it never reaches `Successful`. Other useful fields: `last_ingested`, `index_health.overall_health_score`, `data_source`.
+Re-`retrieve` until terminal (`Successful` or `Failed`); cap retries (e.g. 30 polls at a fixed interval) and abort with the failure reason if it never reaches `Successful`. Other useful fields: `last_ingested`, `index_health.overall_health_score`, `data_source`.
 
 ## Search an Index
 
-Semantic search over a fully-ingested index.
+Search a fully-ingested index semantically. Run:
 
 ```bash
 uip context-grounding search \
@@ -95,26 +92,30 @@ uip context-grounding search \
   --output json
 ```
 
-Optional: `--limit <N>` (default 10), `--threshold <0.0-1.0>` (minimum similarity, default 0.0). Returns ranked snippets with scores. Empty results → broaden the query, lower `--threshold`, or confirm ingestion succeeded.
+Optional: `--limit <N>` (default 10) and `--threshold <0.0-1.0>` (minimum similarity, default 0.0). Results are ranked snippets with scores. Empty results → broaden the query, lower `--threshold`, or confirm ingestion succeeded.
 
 ## Delete an Index
 
-```bash
-# Preview without deleting
-uip context-grounding delete --index-name "<INDEX_NAME>" --folder-path "<FOLDER_PATH>" --dry-run --output json
+Always run `--dry-run` first to confirm the target:
 
-# Delete without the confirmation prompt
+```bash
+uip context-grounding delete --index-name "<INDEX_NAME>" --folder-path "<FOLDER_PATH>" --dry-run --output json
+```
+
+Then run deletion with `--confirm`:
+
+```bash
 uip context-grounding delete --index-name "<INDEX_NAME>" --folder-path "<FOLDER_PATH>" --confirm --output json
 ```
 
-Always `--dry-run` first to confirm the target. `--confirm` skips the interactive prompt — required for non-interactive/agent runs.
+`--confirm` skips the interactive prompt and is required for non-interactive/agent runs.
 
 ## End-to-End: Stand Up a Searchable Index
 
-1. `create --index-name X --bucket-source B --folder-path F` — create empty index.
-2. `ingest --index-name X --folder-path F` — start ingestion.
-3. `retrieve --index-name X --folder-path F` — poll `last_ingestion_status` until `Successful`.
-4. `search --index-name X --query "..." --folder-path F` — query.
+1. Run `create --index-name X --bucket-source B --folder-path F` to create an empty index.
+2. Run `ingest --index-name X --folder-path F` to start ingestion.
+3. Run `retrieve --index-name X --folder-path F` and poll `last_ingestion_status` until `Successful`.
+4. Run `search --index-name X --query "..." --folder-path F` to query.
 
 ## Anti-patterns
 

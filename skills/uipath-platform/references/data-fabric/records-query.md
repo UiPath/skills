@@ -11,19 +11,16 @@ uip df records list <entity-id> --limit 50 --cursor <cursor-value> --output json
 ```
 
 Response wrapper: `{ Result, Code: "RecordList" | "RecordQuery", Data: { Items, TotalCount, HasNextPage, NextCursor, CurrentPage, TotalPages, SupportsPageJump } }`.
-
-- **Records live in `Data.Items`** (array). Not `Data.Records` — the older docs used that name; the actual key the CLI emits is `Items`.
-- **`Data.NextCursor` is an object `{ "Value": "<base64-string>" }`, not a flat string.** Pass `Data.NextCursor.Value` to `--cursor` on the next call (unwrap one level). Passing the whole `NextCursor` object errors out.
-- Use `Data.HasNextPage` to check if more records exist. Stop when it's `false`.
+Records are in `Data.Items`, not `Data.Records`. `Data.NextCursor` is `{ "Value": "<base64-string>" }`; pass `Data.NextCursor.Value` to `--cursor`, never the wrapper. Check `Data.HasNextPage` and stop when it is `false`.
 
 ## MULTILINE_MAX Fields — Preview vs Full Content
 
-`records list` and `records query` do NOT reliably return `MULTILINE_MAX` content. Each such field comes back as a **preview**, and which form you get depends on the tenant:
+`records list` and `records query` do not reliably return `MULTILINE_MAX` content. Each field is a preview, tenant-dependent:
 
-- the value truncated to 10,000 characters with a `...[Truncated]` suffix (a value at or under 10,000 characters can come back whole), or
-- a size marker starting `HasValue=true Length=N`, sometimes with a trailing hint such as `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`.
+- truncated to 10,000 characters with a `...[Truncated]` suffix (a value at or under 10,000 characters can come back whole), or
+- a marker beginning `HasValue=true Length=N`, sometimes followed by a hint such as `"HasValue=true Length=20000 — call Get Entity Record By Id activity to retrieve content"`.
 
-An encrypted `MULTILINE_MAX` field always reads back as `HasValue=true Encrypted=true` and never returns content. Do not branch on which form you got; treat any of them as a preview. Only the single-record read returns the full value:
+An encrypted `MULTILINE_MAX` field always reads `HasValue=true Encrypted=true` and never returns content. Treat every form as a preview; only a single-record read returns the full value:
 
 ```bash
 uip df records get <entity-id> <record-id> --output json
@@ -35,16 +32,17 @@ uip df records get <entity-id> <record-id> --output json
 
 ## Pagination
 
-Offset-based under the hood. Available on both `records list` and `records query`:
+Both `records list` and `records query` support:
 
-- `-l, --limit <number>` — page size, default `50`, min `1`. Keep constant across a sweep (changing it re-slices the offset and can skip/duplicate records).
-- `--cursor <NextCursor.Value>` — the inner `Value` string from the previous response's `Data.NextCursor` object. Pass verbatim; never hand-craft. Do **not** pass the wrapper object.
-- `-o, --offset <number>` — non-negative record index. Rounded down to the nearest page boundary (`jumpToPage = floor(offset / limit) + 1`). **Mutually exclusive with `--cursor`** — passing both errors with *"--offset and --cursor are mutually exclusive"*.
-- Stop when `HasNextPage: false`. `CurrentPage` / `TotalPages` / `SupportsPageJump` are informational.
+- `-l, --limit <number>` — page size, default `50`, min `1`. Keep it constant across a sweep; changing it can skip or duplicate records.
+- `--cursor <NextCursor.Value>` — pass the inner `Value` from `Data.NextCursor` verbatim; never hand-craft or pass the wrapper object.
+- `-o, --offset <number>` — non-negative record index, rounded down to a page boundary (`jumpToPage = floor(offset / limit) + 1`). **Mutually exclusive with `--cursor`** — passing both errors with *"--offset and --cursor are mutually exclusive"*.
+
+Stop when `HasNextPage: false`. `CurrentPage` / `TotalPages` / `SupportsPageJump` are informational.
 
 ## Folder scope (`--folder-key`)
 
-`records list`, `records get`, `records insert`, `records update`, `records delete`, `records query`, and `records import` all accept `--folder-key <GUID>`. Pass it when the parent entity is folder-scoped. Look up the key from `entities list --include-folders --output json` (`FolderId` per row).
+`records list`, `records get`, `records insert`, `records update`, `records delete`, `records query`, and `records import` accept `--folder-key <GUID>`. Pass it for folder-scoped parent entities; get it from `entities list --include-folders --output json` (`FolderId` per row). Omit it for tenant-scoped entities.
 
 ```bash
 uip df records list  <entity-id> --folder-key <folder-guid> --output json
@@ -53,11 +51,9 @@ uip df records query <entity-id> --folder-key <folder-guid> \
   --output json
 ```
 
-Omit `--folder-key` for tenant-scoped entities.
-
 ## Always Query the Server for Answers
 
-Issue a fresh `records query` (or `records list`) — don't filter cached transcript data. Records mutate between turns, and the CLI call is the audit trail. Patterns: [filtered query](#filtered-query), [choice-set](#filtering-on-choice-set-fields), [relationship](#filtering-on-relationship-fields), [aggregates](#aggregates-server-side).
+Issue a fresh `records query` (or `records list`), not a filter over cached transcript data: records mutate between turns and the CLI call is the audit trail. Patterns: [filtered query](#filtered-query), [choice-set](#filtering-on-choice-set-fields), [relationship](#filtering-on-relationship-fields), [aggregates](#aggregates-server-side).
 
 ## Filtered Query
 
@@ -67,16 +63,14 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Pagination uses the same `--limit` / `--cursor` / `--offset` flags as `records list` — never body keys.
+Pagination uses the `records list` `--limit` / `--cursor` / `--offset` flags, never body keys. The `filterGroup` shape, operators, response, and per-type support are in [`filter-platform-contract.md`](filter-platform-contract.md). The body also accepts:
 
-The `filterGroup` shape, operators, response, and per-type support are in [`filter-platform-contract.md`](filter-platform-contract.md). Beyond the filter, the query body accepts:
-
-- `"selectedFields": ["F1","F2"]` — projection. Default is all fields (data-fabric.md Rule 17).
+- `"selectedFields": ["F1","F2"]` — projection; default is all fields (data-fabric.md Rule 17).
 - `"sortOptions": [{ "fieldName": "Score", "isDescending": true }]` — server-side sort.
 
 ### Verifying a filter applied
 
-Check that every returned record satisfies the requested predicate. Equal filtered and unfiltered counts are valid when every record matches.
+Check that every returned record satisfies the predicate. Equal filtered and unfiltered counts are valid when every record matches.
 
 ### Nested Filter Groups
 
@@ -85,19 +79,13 @@ Check that every returned record satisfies the requested predicate. Equal filter
   "filterGroup": {
     "logicalOperator": 1,
     "filterGroups": [
-      {
-        "logicalOperator": 0,
-        "queryFilters": [
-          { "fieldName": "Status", "operator": "=", "value": "active" },
-          { "fieldName": "Score", "operator": ">", "value": "50" }
-        ]
-      },
-      {
-        "logicalOperator": 0,
-        "queryFilters": [
-          { "fieldName": "Priority", "operator": "=", "value": "high" }
-        ]
-      }
+      { "logicalOperator": 0, "queryFilters": [
+        { "fieldName": "Status", "operator": "=", "value": "active" },
+        { "fieldName": "Score", "operator": ">", "value": "50" }
+      ] },
+      { "logicalOperator": 0, "queryFilters": [
+        { "fieldName": "Priority", "operator": "=", "value": "high" }
+      ] }
     ]
   }
 }
@@ -105,7 +93,7 @@ Check that every returned record satisfies the requested predicate. Equal filter
 
 ### Filtering on Choice-Set Fields
 
-Filter on the integer `NumberId` (as a string in `value` / `valueList`), never the display label. Resolve via `choice-sets list-values <choice-set-id>` first.
+Filter on integer `NumberId` (as a string in `value` / `valueList`), never the display label. Resolve it first with `choice-sets list-values <choice-set-id>`.
 
 ```bash
 # CHOICE_SET_SINGLE — category == "travel" (NumberId 1)
@@ -114,7 +102,7 @@ uip df records query <entity-id> --body \
   --output json
 ```
 
-**`CHOICE_SET_MULTIPLE`** has special `=` vs `contains` semantics — see the [filter contract](filter-platform-contract.md#operator-support-by-field-type) Complex-field values line. Practical examples:
+`CHOICE_SET_MULTIPLE` has special `=` vs `contains` semantics; see the [filter contract](filter-platform-contract.md#operator-support-by-field-type) Complex-field values line.
 
 ```bash
 # Membership — records tagged with NumberId 1
@@ -128,11 +116,11 @@ uip df records query <entity-id> --body \
   --output json
 ```
 
-Failure modes: `=` with a bare value (`"1"`) → HTTP 400. `contains` with brackets (`"[1]"`) → HTTP 400. For per-value reporting, run `contains` per `NumberId`; for distribution of exact combinations, use `groupBy: ["tags"]` with `COUNT`.
+`=` with a bare value (`"1"`) → HTTP 400; `contains` with brackets (`"[1]"`) → HTTP 400. For per-value reporting, run `contains` per `NumberId`; for exact-combination distribution, use `groupBy: ["tags"]` with `COUNT`.
 
 ### Filtering on Relationship Fields
 
-Filter on the target record's UUID `Id`, regardless of which field was bound as `referenceFieldId` (that controls the join, not the stored value). If the user describes the parent by another field (email, name, etc.), resolve the UUID first on the parent entity, then filter the child.
+Filter on the target record UUID `Id`, regardless of the bound `referenceFieldId` (which controls the join, not the stored value). If the user gives another parent field, resolve its UUID on the parent entity first.
 
 ```bash
 # Direct
@@ -148,9 +136,7 @@ uip df records query <parent-entity-id> --body \
 
 ## Aggregates (server-side)
 
-Add `aggregates` and optional `groupBy` to the query body to return aggregated rows instead of records. Each entry in `aggregates` produces one column on each result row, keyed by `alias`.
-
-> **Field names are case-sensitive.** Examples below use `Status` as a placeholder — substitute the exact casing from the target entity's schema (`uip df entities get <entity-id>` lists the real names).
+Add `aggregates` and optional `groupBy` to return aggregated rows instead of records. Each aggregate produces a column keyed by `alias`. Field names are case-sensitive; use exact schema casing from `uip df entities get <entity-id>`.
 
 ```bash
 # Total count of records (no grouping → single result row)
@@ -159,7 +145,7 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Response: `Data.Items` is a one-row array — e.g. `[{ "Total": 250 }]`. The server **PascalCases your alias** in the response (`alias: "total"` → key `"Total"`). Read by the PascalCase key when parsing.
+`Data.Items` is one row, e.g. `[{ "Total": 250 }]`. The server PascalCases aliases (`"total"` → `"Total"`); parse the PascalCase key.
 
 ```bash
 # Count per group (one result row per distinct value)
@@ -168,19 +154,19 @@ uip df records query <entity-id> \
   --output json
 ```
 
-Response: `Data.Items` — one row per group, each with the group fields + every aggregate alias (PascalCased) — e.g. `[{ "Status": "Open", "Total": 12 }, { "Status": "Closed", "Total": 5 }]`.
+Grouped `Data.Items` has one row per group with group fields and PascalCased aggregate aliases, e.g. `[{ "Status": "Open", "Total": 12 }, { "Status": "Closed", "Total": 5 }]`.
 
 ### Functions
 
 | `function` | Applies to | Notes |
 |------------|-----------|-------|
 | `COUNT` | Any field | Counts non-null values. For total row count use `field: "Id"` |
-| `SUM`   | Numeric only | |
-| `AVG`   | Numeric only | |
-| `MIN`   | Numeric / date | |
-| `MAX`   | Numeric / date | |
+| `SUM` | Numeric only | |
+| `AVG` | Numeric only | |
+| `MIN` | Numeric / date | |
+| `MAX` | Numeric / date | |
 
-Values are the **uppercase strings** above — `"COUNT"` not `"Count"`.
+Values are uppercase strings: `"COUNT"`, not `"Count"`.
 
 ### Aggregate Body Schema
 
@@ -189,21 +175,21 @@ Values are the **uppercase strings** above — `"COUNT"` not `"Count"`.
   "selectedFields": ["Status"],
   "groupBy": ["Status"],
   "aggregates": [
-    { "function": "COUNT", "field": "Id",     "alias": "total" },
-    { "function": "AVG",   "field": "amount", "alias": "avgAmount" }
+    { "function": "COUNT", "field": "Id", "alias": "total" },
+    { "function": "AVG", "field": "amount", "alias": "avgAmount" }
   ]
 }
 ```
 
-- `aggregates[].alias` is optional. When omitted, the server returns the column keyed as `{FUNCTION}_{field}` (for example `COUNT_Id`, `AVG_amount`). Provide an `alias` for stable, readable keys in your downstream code.
-- When `selectedFields` is present alongside `aggregates`, every entry in `selectedFields` must also appear in `groupBy` — otherwise the API rejects the request. The shortcut: use the same array for both, as in the examples above.
-- `groupBy` and `selectedFields` may reference root-entity fields only — expansions are not supported in aggregate mode.
-- The same `filterGroup`, `sortOptions`, and pagination flags (`--limit`, `--cursor`) work alongside aggregates. Filters are applied **before** grouping (SQL `WHERE`).
-- `groupBy` names the choice-set field. Group keys and filter values use numeric `NumberId` values rather than display labels.
+- `aggregates[].alias` is optional; without it the key is `{FUNCTION}_{field}` (for example `COUNT_Id`, `AVG_amount`). Supply an alias for stable readable keys.
+- With `selectedFields`, every entry must also be in `groupBy`, or the API rejects the request; the shortcut is using the same array for both.
+- `groupBy` and `selectedFields` may reference root-entity fields only; expansions are unsupported.
+- The same `filterGroup`, `sortOptions`, `--limit`, and `--cursor` work with aggregates. Filters run before grouping (SQL `WHERE`).
+- `groupBy` names the choice-set field; group keys and filter values use numeric `NumberId`, not display labels.
 
 ## Insert Records
 
-The CLI routes by body shape: a JSON object (or 1-element array) calls the single-record endpoint; a JSON array with 2+ elements calls the batch endpoint.
+A JSON object or 1-element array routes to the single-record endpoint; an array with 2+ elements routes to batch. One call accepts at most 1,000 records; larger arrays fail whole (`"Number of items provided 1500 exceeds limit 1000"`) and insert nothing, so chunk larger loads into batches of up to 1,000.
 
 ```bash
 # Single record — JSON object
@@ -218,13 +204,10 @@ uip df records insert <entity-id> \
 uip df records insert <entity-id> --file records.json --output json
 ```
 
-Single insert response: `{ Code: "RecordInserted", Data: { ...record with Id } }`
+Single response: `{ Code: "RecordInserted", Data: { ...record with Id } }`.
+Batch response: `{ Code: "RecordsBatchInserted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`.
 
-Batch insert response: `{ Code: "RecordsBatchInserted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`
-
-One call takes at most 1,000 records. A larger array fails whole ("Number of items provided 1500 exceeds limit 1000") and inserts nothing, so send larger loads in chunks of up to 1,000.
-
-An insert never matches stored rows: a re-run of a seeding step inserts every row again, unless an `isUnique` field rejects the repeats into `FailureRecords`. Before seeding, count the stored records with the [aggregate `COUNT`](#aggregates-server-side) — `TotalCount` briefly counts rejected inserts too — and if the count is non-zero, tell the user and ask before inserting.
+An insert never matches stored rows: rerunning seeding inserts every row unless an `isUnique` field rejects repeats into `FailureRecords`. Before seeding, count stored records with the [aggregate `COUNT`](#aggregates-server-side); `TotalCount` briefly counts rejected inserts too. If non-zero, tell the user and ask before inserting.
 
 ### Writing Choice-Set and Relationship Values
 
@@ -232,7 +215,7 @@ An insert never matches stored rows: a re-run of a seeding step inserts every ro
 |------------|-------|-------------|
 | `CHOICE_SET_SINGLE` | Integer `NumberId` | `choice-sets list-values <choice-set-id>` |
 | `CHOICE_SET_MULTIPLE` | Integer `NumberId` array | `choice-sets list-values <choice-set-id>` |
-| `RELATIONSHIP` | Target record's UUID `Id` (always — the binding `referenceFieldId` controls the join, not the stored value) | `records query <target-entity-id>` on the unique field |
+| `RELATIONSHIP` | Target record UUID `Id` always; `referenceFieldId` controls the join, not stored value | `records query <target-entity-id>` on the unique field |
 | `FILE` | **Not writable through `records insert` / `records update`** — see below | `files upload` |
 
 ```bash
@@ -240,17 +223,15 @@ uip df records insert <entity-id> \
   --body '{"amount":250,"category":1,"tags":[1,3],"customerId":"<target-uuid>"}' --output json
 ```
 
-Display labels, choice-value UUIDs, and non-UUID relationship values are rejected — resolve first. Reads echo the same shape.
+Display labels, choice-value UUIDs, and non-UUID relationship values are rejected; resolve first. Reads echo the same shape.
 
 ### FILE fields
 
-Never include a FILE key in record insert/update/import payloads; the platform
-silently drops it. Insert the row without that key, then use `files upload`.
-See data-fabric.md Rule 6 and [`file-attachments.md`](file-attachments.md).
+Never include a FILE key in record insert/update/import payloads; the platform silently drops it. Insert the row without it, then use `files upload`. See data-fabric.md Rule 6 and [`file-attachments.md`](file-attachments.md).
 
 ## Update Records
 
-The CLI routes by body shape: a JSON object (or 1-element array) calls the single-record endpoint; a JSON array with 2+ elements calls the batch endpoint. Both require `Id` in the body.
+A JSON object or 1-element array routes to single-record update; an array with 2+ elements routes to batch. Both require `Id` in the body.
 
 ```bash
 # Single record — JSON object with Id
@@ -262,15 +243,14 @@ uip df records update <entity-id> \
   --output json
 ```
 
-Choice / relationship fields use the same value form as insert — see [Writing Choice-Set and Relationship Values](#writing-choice-set-and-relationship-values).
+Choice and relationship fields use the same forms as insert: see [Writing Choice-Set and Relationship Values](#writing-choice-set-and-relationship-values).
 
-Single update response: `{ Code: "RecordUpdated", Data: { ...updated record } }`
-
-Batch update response: `{ Code: "RecordsBatchUpdated", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`
+Single response: `{ Code: "RecordUpdated", Data: { ...updated record } }`.
+Batch response: `{ Code: "RecordsBatchUpdated", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords } }`.
 
 ## Delete Records
 
-Irreversible — `--yes` and `--reason` are required (server-gated, same as `entities delete` / `choice-sets delete`). Pass each record ID as a **separate positional argument**; do not space-join them inside one quoted string (the CLI then tries to parse the whole string as a single GUID and errors with *"Error converting value '… …' to type 'System.Guid'"*).
+Deletion is irreversible; `--yes` and `--reason` are required (server-gated, like `entities delete` / `choice-sets delete`). Pass each ID as a separate positional argument, not a space-joined quoted string; otherwise the CLI parses one invalid GUID and errors with *"Error converting value '… …' to type 'System.Guid'"*.
 
 ```bash
 uip df records delete <entity-id> <id1> <id2> <id3> \
@@ -279,4 +259,4 @@ uip df records delete <entity-id> <id1> <id2> <id3> \
   --output json
 ```
 
-Response: `{ Code: "RecordsDeleted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords, Reason } }` — `Reason` echoes the `--reason` value for audit logging.
+Response: `{ Code: "RecordsDeleted", Data: { SuccessCount, FailureCount, SuccessRecords, FailureRecords, Reason } }`; `Reason` echoes `--reason` for audit logging.

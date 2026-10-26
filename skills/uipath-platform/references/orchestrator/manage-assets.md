@@ -6,52 +6,32 @@ Create configuration assets, share them across folders, and manage credential ro
 
 ## When to Use
 
-- Setting up environment configuration (API URLs, feature flags, retry counts)
-- Managing secrets and credentials used by automations at runtime
-- Sharing configuration across multiple folders/teams
-- Rotating credentials without redeploying processes
+- Set up environment configuration (API URLs, feature flags, retry counts).
+- Manage runtime secrets and credentials.
+- Share configuration across folders or teams.
+- Rotate credentials without redeploying processes.
 
 ## Prerequisites
 
-- Authenticated — verify with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow)
-- Target folder exists (see [setup-environment.md](setup-environment.md))
-- For Credential/Secret types: a credential store must exist (`uip or credential-stores list`)
-
-## Flow
-
-```mermaid
-graph LR
-    A[assets create] --> B[assets list]
-    B --> C[assets get]
-    B --> D[assets get-asset-value]
-    A --> E[assets share]
-    E --> F[assets get-folders]
-    F --> G[assets unshare]
-    A --> H[assets update]
-    H --> I[assets delete]
-```
-
----
+- Verify authentication with `uip login status`; if not logged in, ask the user to run `uip login` (it opens an interactive browser flow).
+- Ensure the target folder exists (see [setup-environment.md](setup-environment.md)).
+- For Credential/Secret types, ensure a credential store exists: `uip or credential-stores list`.
 
 ## Step 1: Create Assets
 
-Create a named configuration value in a folder. Type defaults to Text.
+Create a named configuration value in a folder; type defaults to Text.
 
 ```bash
 uip or assets create "ApiBaseUrl" "https://api.example.com" \
   --folder-path "Finance" --type Text --output json
-
 uip or assets create "MaxRetries" "3" \
   --folder-path "Finance" --type Integer --output json
-
 uip or assets create "FeatureEnabled" "true" \
   --folder-path "Finance" --type Bool --output json
 ```
 
-Key options:
-
-| Option | Description |
-|--------|-------------|
+| Option | Values/meaning |
+|--------|----------------|
 | `--type <type>` | `Text` (default), `Bool`, `Integer`, `Credential`, `Secret` |
 | `--scope <scope>` | `Global` (default) or `PerRobot` |
 | `--description <text>` | Human-readable description |
@@ -59,13 +39,12 @@ Key options:
 | `--has-default` | Asset has a default value (default: true) |
 | `--credential-store-key <key>` | Required for Credential and Secret types |
 
-For Credential and Secret types, you must provide `--credential-store-key`:
+For Credential and Secret types, provide `--credential-store-key`:
 
 ```bash
 uip or assets create "DbPassword" "s3cret-value" \
   --folder-path "Finance" --type Secret \
   --credential-store-key <store-key> --output json
-
 uip or assets create "ServiceAccount" "svc-user:p@ssw0rd" \
   --folder-path "Finance" --type Credential \
   --credential-store-key <store-key> --output json
@@ -73,64 +52,48 @@ uip or assets create "ServiceAccount" "svc-user:p@ssw0rd" \
 
 ## Step 2: List Assets
 
-List assets in a folder. Requires `--folder-path` or `--folder-key`.
+List assets with `--folder-path` or `--folder-key`:
 
 ```bash
 uip or assets list --folder-path "Finance" --output json
-
-# Filter by name (contains match)
 uip or assets list --folder-path "Finance" --name "Api" --output json
-
-# Filter by type
 uip or assets list --folder-path "Finance" --type Secret --output json
-
-# List assets across all accessible folders
 uip or assets list --all-folders --output json
 ```
 
-If the user already gives a folder name or path, pass it directly as
-`--folder-path`; do not call `uip or folders list` just to validate it. Stop
-after the `assets list --name ... --folder-path ... --output json` result if
-the asset is not present.
+`--name` is a contains match. Pass a user-provided folder name or path directly as `--folder-path`; do not call `uip or folders list` just to validate it. If the asset is absent, stop after the `assets list --name ... --folder-path ... --output json` result.
 
 ## Step 3: Get Asset Details
 
-Get full asset metadata by key. Cross-folder -- no `--folder-path` needed.
+Get full metadata by key; this is cross-folder and needs no `--folder-path`:
 
 ```bash
 uip or assets get <asset-key> --output json
 ```
 
-**Note:** Credential and secret values are NOT returned by `get`. Use `get-asset-value` to retrieve decrypted values.
+`get` does not return credential or secret values; use `get-asset-value`.
 
 ## Step 4: Get Asset Value
 
-Returns the decrypted asset value for the current user. Requires `--folder-path` or `--folder-key`.
+Retrieve the decrypted value for the current user with `--folder-path` or `--folder-key`:
 
 ```bash
 uip or assets get-asset-value <asset-key> \
   --folder-path "Finance" --output json
 ```
 
-This is the only way to retrieve credential/secret values from the CLI. The response includes the resolved value based on the current user's context (relevant for PerRobot-scoped assets).
+This is the only CLI method for credential/secret values and resolves the current user's value, including for PerRobot-scoped assets.
 
 ## Step 5: Update Asset
 
-Update an existing asset's value, type, scope, or metadata. Cross-folder -- no `--folder-path` needed.
+Update an existing asset's value, type, scope, or metadata; this is cross-folder and needs no `--folder-path`. Only provided fields change; omitted fields retain their current values.
 
 ```bash
-# Update value
 uip or assets update <asset-key> "https://api-v2.example.com" --output json
-
-# Update description and tags
 uip or assets update <asset-key> --description "Updated endpoint" \
   --tags "production,api" --output json
-
-# Change scope
 uip or assets update <asset-key> --scope PerRobot --output json
 ```
-
-Only provided fields are changed -- omitted fields keep their current values.
 
 ## Step 6: Share Asset with Another Folder
 
@@ -142,17 +105,17 @@ uip or assets share <asset-key> --folder-path "Production" --output json
 
 ## Step 7: Check Where Shared
 
-List all folders where the asset is currently accessible:
+List every folder where the asset is accessible:
 
 ```bash
 uip or assets get-folders <asset-key> --output json
 ```
 
-Returns `accessibleFolders` (array of folders you can see) and `totalFoldersCount` (total, including folders you lack permission to view).
+The response contains `accessibleFolders` (folders you can see) and `totalFoldersCount` (all folders, including those you cannot view).
 
 ## Step 8: Unshare
 
-Remove the asset from a folder:
+Remove an asset from a folder:
 
 ```bash
 uip or assets unshare <asset-key> --folder-path "Production" --output json
@@ -160,13 +123,11 @@ uip or assets unshare <asset-key> --folder-path "Production" --output json
 
 ## Step 9: Delete
 
-Delete the asset entirely. Cross-folder -- no `--folder-path` needed.
+Delete an asset entirely; this is cross-folder and needs no `--folder-path`:
 
 ```bash
 uip or assets delete <asset-key> --yes --output json
 ```
-
----
 
 ## Credential Rotation Pattern
 
@@ -192,8 +153,6 @@ uip or assets get-asset-value <asset-key> \
 # 5. Delete the old version (if you created a new asset instead of updating)
 uip or assets delete <old-key> --yes --output json
 ```
-
----
 
 ## Complete Example
 
@@ -228,13 +187,11 @@ uip or assets get-asset-value <api-key-asset-key> \
   --folder-path "Production" --output json
 ```
 
----
-
 ## Variations and Gotchas
 
 ### Credential format
 
-Credential type assets require `username:password` format. The colon separates the username from the password:
+Credential assets require `username:password`; the colon separates username and password:
 
 ```bash
 uip or assets create "WinCred" "DOMAIN\\user:p@ssw0rd" \
@@ -244,13 +201,13 @@ uip or assets create "WinCred" "DOMAIN\\user:p@ssw0rd" \
 
 ### `get` does NOT return credential/secret values
 
-`assets get` returns metadata only -- credential and secret values are redacted for security. Use `assets get-asset-value` to retrieve the actual decrypted value.
+`assets get` returns metadata only; credential and secret values are redacted. Use `assets get-asset-value` for the decrypted value.
 
 ### Cross-folder vs folder-scoped commands
 
 | Command | Folder required? |
 |---------|-----------------|
-| `list` | Yes (`--folder-path` or `--folder-key`), or pass `--all-folders` to list across all accessible folders |
+| `list` | Yes (`--folder-path` or `--folder-key`), or `--all-folders` |
 | `create` | Yes |
 | `get-asset-value` | Yes |
 | `get` | No (cross-folder) |
@@ -262,17 +219,15 @@ uip or assets create "WinCred" "DOMAIN\\user:p@ssw0rd" \
 
 ### `--credential-store-key` is required for Credential and Secret types
 
-If you omit it, the command fails with an explicit error. Use `uip or credential-stores list --output json` to find the key.
+Omitting it causes an explicit error. Run `uip or credential-stores list --output json` to find the key.
 
 ### Bool values must be literal `true` or `false`
 
-Case-insensitive, but no other truthy/falsy values are accepted (not `1`, `0`, `yes`, `no`).
+Values are case-insensitive, but `1`, `0`, `yes`, and `no` are not accepted.
 
 ### Integer must be a whole number
 
 Decimals and non-numeric strings are rejected.
-
----
 
 ## Related
 
