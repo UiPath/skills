@@ -231,6 +231,7 @@ Anything not described as supported for Extract v2 is unsupported, even if not l
 | User request | Standard response |
 |--------------|-------------------|
 | "Use GPT-5 / Gemini Pro" / "change the extraction model" | "I can't change the extraction model of this node from here. Pick it in Studio Web: open the node → **Definition** → **Model configuration** → **Extraction model**." |
+| "Change the extraction strategy" | "I can't change the extraction strategy from here. Set it in Studio Web under **Model configuration** → **Extraction strategy**." |
 | "These documents are Arabic / Japanese" / "set language to Extended" | "I can't change language support from here. Set it in Studio Web under **Model configuration** → **Language support** (Auto-detect, Latin-based or Extended)." |
 | "Turn on layout parsing" / "it misses table rows" | "I can't change layout parsing from here. Set it in Studio Web under **Model configuration** → **Layout parsing** (None or Full) — it may be hidden or fixed to None on your tenant." |
 | "Use model-based attribution" / "change the attribution model" | "I can't change attribution from here. Set it in Studio Web under **Model configuration** → **Attribution**, and its **Model** below it." |
