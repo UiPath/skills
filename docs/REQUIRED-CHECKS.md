@@ -152,6 +152,7 @@ This table is machine-read. `scripts/parse-required-checks.py` is its only parse
 | `Validate skill status manifest & README` | `validate-skill-status.yml` |
 | `Validate skills.sh.json against skills/` | `validate-skills-sh.yml` |
 | `Build and inspect every skill package` | `validate-skill-flavors.yml` |
+| `Scan shipped content for customer-blocked data` | `validate-sensitive-content.yml` |
 | `maestro-flow checker unit tests` | `test-helpers.yml` |
 | `maestro-bpmn checker unit tests` | `test-helpers.yml` |
 | `maestro-case checker unit tests` | `test-helpers.yml` |
@@ -167,7 +168,9 @@ This table is machine-read. `scripts/parse-required-checks.py` is its only parse
 | `runtime-payload key-casing contract guard` | `test-helpers.yml` |
 | `maestro-bpmn contract guards` | `test-helpers.yml` |
 | `catalog build integrity guards` | `test-helpers.yml` |
+| `CLI declaration refresh unit tests` | `test-helpers.yml` |
 | `skills.sh grouping checker unit tests` | `test-helpers.yml` |
+| `sensitive-content checker unit tests` | `test-helpers.yml` |
 | `telemetry hook contract guard` | `test-helpers.yml` |
 | `task/experiment gate unit tests` | `test-helpers.yml` |
 | `required-check contract guard` | `test-helpers.yml` |

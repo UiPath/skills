@@ -169,14 +169,6 @@ success_criteria:
     weight: 1.5
     pass_threshold: 1.0
 
-  - type: command_executed
-    description: "Agent attempted the Phase 2 skeleton-v2 validation profile before any legacy fallback"
-    tool_name: "Bash"
-    command_pattern: '(uip|\$UIP)\s+maestro\s+case\s+validate\s+.*--skeleton-v2'
-    min_count: 1
-    weight: 0
-    pass_threshold: 0
-
   - type: run_command
     description: "uip maestro case validate passes on the generated caseplan.json"
     command: "p=$(ls ConnectorWaitCase/ConnectorWaitCase/caseplan.case ConnectorWaitCase/ConnectorWaitCase/caseplan.json 2>/dev/null | head -1); uip maestro case validate \"$p\" --output json"

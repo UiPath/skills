@@ -341,6 +341,30 @@ flow-merge: warning: the merged edge route1@case-case_1 -> review1@input leaves 
     -o .flow-sdk/Deployed.merged.flow --baseline .flow-sdk/baseline/Deployed.flow --strict
   ```
 
+## Scripts come back as functions
+
+`decompile` prints each script step as a TypeScript function, declared after the flow and passed by name:
+
+```ts
+  .step("normalize", script(script_normalize, { returns: { amount: "number" } }), { version: "1.0.0" })
+  // …
+function script_normalize($vars: FlowVars) {
+  const amount = Number($vars.start.output.amount);
+  return { amount };
+}
+```
+
+Edit the script in the function's body; the text between its braces is exactly the node's script, so an untouched script compiles back byte for byte.
+The rules in [script.md](script.md#writing-the-script-as-a-function) apply to the edit: the function may read only what the script runtime has.
+
+A script that cannot be printed as a function stays `script({ code: "…" })`, and decompile warns once for each: `flow-decompile: warning: step "<id>": script kept as a string: <why>`.
+The reasons are a body that does not parse (a half-written designer script), TypeScript-only syntax, a name that is not on the SDK's list of runtime names, a trailing line comment, or an error that would stop the module from loading.
+The warning is informational: the string form loses nothing, and `--strict` does not turn it into an error.
+Edit such a script as a string, as before.
+To print every script that way, pass `--scripts string`: `uip maestro flow decompile <file> -o <file>.flow.ts --scripts string`. With an SDK older than 6.57.0, `uip` refuses the option and names the version to install.
+
+Needs `@uipath/maestro-builder-sdk` 6.57.0 or later (its `dist/api-index.md` lists `ScriptValue`); an older SDK's decompile prints every script as `script({ code })`.
+
 ## The file's schema version comes back out
 
 `decompile` emits `.schemaVersion("<the file's version>")` as the first line of
@@ -454,6 +478,12 @@ its case below says to; every other edit goes through merge.
   the original's definition row, so a no-edit round trip loses nothing. To read
   the result, set `completion: 'wait'` and declare `returns`.
 
+Pin a step you add with a `{ version }` the source gives other nodes of its
+type, one that decompile did not warn about. If it warned about all of them,
+leave it unpinned. If no node keeps the file's version, merge drops its
+definition with no warning. An End also needs a fresh name: see
+[A path without an End stays open](#a-path-without-an-end-stays-open).
+
 Validate the merged file after installing it as in
 [the safe project loop](#the-safe-project-loop), never the intermediate edited
 compile.
@@ -482,6 +512,11 @@ left open too. To make that path return the flow's outputs, end it with
 `.return({ ... })`. An open path maps no outputs. A human task's exit is
 always capped with an End, because a task with nothing after it never
 finishes.
+
+Give an End you add a name no node uses and, when the source has Ends, their
+`{ version }`: `.return({ ... }, { name: 'endSummary', version: '<END_VERSION>' })`.
+An added `name: 'end'` takes the id of an existing End decompile wrote without
+a name, which becomes `end2` with no warning.
 
 ## Split (`$ref`) artifacts
 
