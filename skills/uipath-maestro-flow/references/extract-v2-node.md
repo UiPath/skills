@@ -222,6 +222,27 @@ If a published model fits what the user described, say that Extract v2 is not en
 
 **If there is no published model either, stop and explain.** Say which tenant was checked, that neither Extract v2 nor a trained model is available on it, and that enabling document extraction is a tenant administrator action covered in the UiPath product documentation. Do not scaffold a solution, do not write a flow file, and do not put a `mock()` in the extraction position — a placeholder is only for a validate-only topology whose stated purpose is to show where extraction belongs, and it is never a stand-in for extraction the user expects to run.
 
+## Unsupported Capabilities
+
+These requests fall outside the skill. Recognise the request, reply with the standard response, route the user. Do NOT enter discovery (`uip --help`, grep, source reading).
+
+Anything not described as supported for Extract v2 is unsupported, even if not listed below ([Extract v2 documentation](https://docs.uipath.com/ixp/automation-cloud/latest/flow-user-guide/introduction)). Do not edit the `.flow` or `.flow.ts` to reach it.
+
+| User request | Standard response |
+|--------------|-------------------|
+| "Use GPT-5 / Gemini Pro" / "change the extraction model" | "I can't change the extraction model of this node from here. Pick it in Studio Web: open the node → **Definition** → **Model configuration** → **Extraction model**." |
+| "Change the extraction strategy" | "I can't change the extraction strategy from here. Set it in Studio Web under **Model configuration** → **Extraction strategy**." |
+| "These documents are Arabic / Japanese" / "set language to Extended" | "I can't change language support from here. Set it in Studio Web under **Model configuration** → **Language support** (Auto-detect, Latin-based or Extended)." |
+| "Turn on layout parsing" / "it misses table rows" | "I can't change layout parsing from here. Set it in Studio Web under **Model configuration** → **Layout parsing** (None or Full) — it may be hidden or fixed to None on your tenant." |
+| "Use model-based attribution" / "change the attribution model" | "I can't change attribution from here. Set it in Studio Web under **Model configuration** → **Attribution**, and its **Model** below it." |
+| "Import my IXP taxonomy file" / "export the taxonomy" | "I can't import or export a taxonomy in the IXP format. Use **Taxonomy** → **Import/Export** in Studio Web. I can read the file and write an equivalent `schema` into the node instead, but its field ids will be new." |
+| "Upload these documents" / "delete / download a test file" / "tag these documents" | "I can't manage the node's test documents from here. Use the node's **Dataset** tab in Studio Web (Upload, Document actions → Edit tags / Download / Delete)." |
+| "What would it extract from this file?" / "refresh the predictions" | "I can't run or refresh predictions for this node. Use **Run** or **Refresh predictions** on the document's row in the **Dataset** tab." |
+| "Confirm these values" / "annotate the documents" | "I can't annotate test documents. Use **Annotate document** on the node, or **Annotate** on the document's row." |
+| "Set up the evaluators" / "how should this field be scored?" | "I can't configure the node's evaluators. Use the node's **Evaluators** tab in Studio Web once the taxonomy has fields." |
+| "Run an eval" / "evaluate on this one file" / "what's my score?" / "compare the runs" / "why did the run fail?" / "improve the accuracy" | "I can't run or read evaluations for a document-extraction node — the CLI refuses an eval set that targets one. Use **Run evaluation** and the **Eval runs** tab in Studio Web. Share the weakest fields and I'll tighten their instructions in the schema." |
+| "Publish / deploy the flow" | "Publishing and deploying stay your decision, in Studio Web. Save the flow there first — that save provisions the node's processor." |
+
 ## What this guide does not cover
 
 **The test set and the scorer.** A node's extraction dataset and its evaluator are created in Studio Web today; the CLI refuses to author an eval set targeting a document node and says so. Add the node and its taxonomy, then tell the user that seeding test documents and scoring them is their next step in Studio Web.
