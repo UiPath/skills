@@ -14,7 +14,7 @@ Reason from the process, not the template: **stages → tasks → types → othe
 
 | Concept | Ask / default |
 |---|---|
-| Stage | What is the case working toward and what makes it done? One per named milestone. A completion stage is main-flow (`Required: Yes`). |
+| Stage | What is the case working toward and what makes it done? One per named milestone. A stage that marks the case complete is main-flow (`Required: Yes`). |
 | Secondary stage | Is work fixed at one point, or possible at several points/conditional? Rejection, escalation, and rework are secondary ([§ Secondary stages](#secondary-stages)); a one-off inside the current stage is `adhoc`, not a lane. |
 | Task | Who/what performs it and how? Approximately one verb per task; “how” selects type. |
 | Persona | Use named roles verbatim and exact casing. **Default:** no named role → one `Process Owner`. |
@@ -97,7 +97,7 @@ A secondary stage is an **interrupting exception lane**: `Stage Kind: secondary`
 
 ### Other-path sweep — mandatory before confirmation
 
-Check every source scenario and choose the smallest faithful model:
+For each scenario, check the source and choose the smallest faithful model:
 
 | Scenario | Model |
 |---|---|
@@ -132,7 +132,7 @@ Rules are disjunctive normal form: outer array OR, each inner array AND. **Edges
 3. `required-*` is vacuous without explicit `isRequired: true`; required status is explicit end-to-end — the SDD declares it per stage and task, and emission writes it verbatim. Absent means `false`, yielding `Case rule '<name>' has no required stage(s) selected` / `Stage exit rule '<name>' has no task(s) marked as required`.
 4. Case completion is a root rule: at least one case-exit row has `Marks Case Complete: Yes` (normally `required-stages-completed`). Stage completion never closes the case; alternate outcomes are `Marks Case Complete: No`. **Default:** last primary stage completion closes the case unless source says otherwise.
 5. A gate sees state as of its event; the task that fired it has not extracted yet. An `IF` reading a variable that task writes is stale; read the producing output ([Layer 3 § Gate on the producer](#gate-on-the-producer-never-on-the-variable-it-writes)).
-6. Evaluation precedence is case exit/completion → stage exit → stage completion → stage entry. Identical case-exit and stage-entry guards make the stage unreachable; distinguish them. An unguarded stage exit sharing a guarded completion's WHEN fires first; give the exit the completion's inverse IF. Both are validator-enforced.
+6. Evaluation precedence is case exit/completion → stage exit → stage completion → stage entry. A stage entry identical to a case-exit row (same rule, selector, IF) makes the stage unreachable; distinguish the guards. An unguarded stage exit sharing a guarded completion's WHEN fires first; give the exit the completion's inverse IF. Both are validator-enforced.
 
 ### Exit types
 
@@ -164,7 +164,7 @@ Rules are disjunctive normal form: outer array OR, each inner array AND. **Edges
 3. Set origin completion guard to complement `=js:(vars.<decisionVar> !== "<Value>")`; with multiple diverted outcomes exclude every diverted value. Never leave it unguarded or duplicate the affirmative guard.
 4. Remove any upstream `wait-for-user` exit that only exposed the lane; without `user-selected-stage`, pairing would fail.
 
-Copy an already-keyed sibling outcome verbatim, usually the approve branch.
+Copy an already-keyed sibling outcome of the same decision verbatim, usually the approve branch.
 
 ### Secondary-lane entry shapes
 
@@ -173,13 +173,12 @@ Copy an already-keyed sibling outcome verbatim, usually the approve branch.
 | Person | `user-selected-stage`, paired with upstream `wait-for-user` exit |
 | External/global event | One `wait-for-connector` on destination; never per origin |
 | SLA | One `sla-status-change` ([Layer 4](#layer-4--time-slas--escalations)) |
-| Decision/signal | Origin gated diverting exit (`Marks Stage Complete: No`, `selected-tasks-completed("<decider task>")`, signal IF, lane target) plus exact inverse on origin completion; lane entry `selected-stage-exited("<origin>")` with same IF |
+| Decision/signal | Origin gated diverting exit (`Marks Stage Complete: No`, WHEN `selected-tasks-completed("<decider task>")`, IF on the signal, lane target) plus exact inverse on origin completion; lane entry `selected-stage-exited("<origin>")` with same IF |
 
-Omitting the diverting exit causes dual-fire or deadlock. Only `selected-stage-exited` needs it; `selected-stage-completed("<origin>")` keys off normal completion and needs only the guard. Identical entry rules (rule, selectors, expression) are ambiguous; distinguish selector or guard; `validate` does not reject duplicates.
+Omitting the diverting exit causes dual-fire or deadlock. Only a `selected-stage-exited` lane entry needs it; a `selected-stage-completed("<origin>")` + `IF` lane keys off the origin's normal completion and needs only the guard. Two lanes with identical entry rules (same rule, selectors, expression) are ambiguous; give each a distinct selector or guard; `validate` does not reject duplicates.
 
 ### Sequencing & activation
 
-Task-entry mode is exclusive: one mode and one rule.
 Task-entry mode is exclusive — one mode, one rule, never combined:
 
 | Timing | Activation Mode | Entry |
@@ -191,8 +190,7 @@ Task-entry mode is exclusive — one mode, one rule, never combined:
 | Case-App launch | `adhoc` | One `adhoc` + `Required: No` |
 | Fan-in/convergence/conditional gate | `fan-in` / `conditional-gate` | `selected-tasks-completed("<tasks>")` |
 
-A strict chain uses consecutive single-task sets; parallel-after-predecessor siblings share a set. Do not duplicate `selected-tasks-completed("<previous>")` for simple order. That selector includes only non-`adhoc` tasks in the same stage. A task without entry never starts; `validate` silently accepts omission.
-- Structure mirrors the mode in the stage's task sets: a strict chain is consecutive single-task sets; parallel-after-predecessor siblings share one set. Never duplicate `selected-tasks-completed("<previous>")` to express simple order.
+Structure mirrors the mode in the stage's task sets: a strict chain uses consecutive single-task sets; parallel-after-predecessor siblings share one set. Never duplicate `selected-tasks-completed("<previous>")` to express simple order. That selector includes only non-`adhoc` tasks in the same stage. A task without entry never starts; `validate` silently accepts omission.
 
 Race (confirmation vs timeout/cancel/withdrawal): arm listener and clock while obligation is pending; gate downstream work on the winning fact.
 
@@ -228,6 +226,8 @@ Mutually-exclusive happy-path terminals ("Funding on approve, Adverse Action Not
 
 ### Grammar — pick the shape from the need
 
+Every data pattern is one row of this table.
+
 | Need | Category | Declared in | Operator |
 |---|---|---|---|
 | Caller value at start | `In` | Case Variables | — |
@@ -261,18 +261,18 @@ Build resolves both to the output reference id; ordering closes lineage.
 
 ### When to declare a Case Variables row
 
-Declare ONLY for: `In`/`Out`; trigger-payload extraction; case-level state used by an `IF` or at least two consumers; rename or custom `Default`/`Type`/`Description`. A one-producer/one-consumer relay is flagged `rev_relay_var` (§ Layer closure, advisory lens). Declaration does not make a value readable earlier.
+Declare ONLY for: `In`/`Out`; trigger-payload extraction; case-level state used by an `IF` or at least two consumers; rename or custom `Default`/`Type`/`Description`. A row relaying one task's output to one consumer is the relay anti-pattern, flagged `rev_relay_var` (§ Layer closure, advisory lens). Declaration does not make a value readable earlier.
 
 ### Gate on the producer, never on the variable it writes
 
-A task-triggered gate evaluates before that task's extract, so it sees the value from the previous pass — `null` on the first one. The branch silently never fires, the stage stalls, and nothing errors.
+A gate keyed on a task's completion that reads the case variable that task's Outputs row feeds evaluates before that task's extract, so it sees the value from the previous pass — `null` on the first one. The branch silently never fires, the stage stalls, and nothing errors.
 
 | Gate | `IF` reads | At gate time |
 |---|---|---|
 | `selected-tasks-completed("Decide")` + `=js:vars.decision === "reject"`, where `Decide` declares `Action -> decision` | the case variable `Decide` writes | ✗ stale / `null` |
 | `selected-tasks-completed("Decide")` + `=js:vars.action === "reject"`, where `action` is `Decide`'s own output | the producing output | ✓ populated |
 
-**Rule:** when a condition's WHEN names a task, its `IF` MUST read that task's own output. Keep `->` when persistence is needed (Case App, audit, later stage); the gate reads producer output. This applies to stage-exit and task-entry `selected-tasks-completed`, and `selected-stage-exited` lane entries paired with diverting exits. Repeat the producer reference and keep guard pairs exact inverses.
+**Rule:** when a condition's WHEN names a task, its `IF` MUST read that task's own output. Keep `->` when persistence is needed (Case App, audit, later stage); the gate reads producer output. This applies wherever the WHEN names the producer: stage-exit and task-entry `selected-tasks-completed`, and `selected-stage-exited` lane entries paired with diverting exits, which repeat the origin exit's guard and so its producer reference. Guard pairs stay exact inverses of each other.
 
 ### Trigger payloads
 
@@ -284,9 +284,9 @@ Validation never reads trigger-node outputs. A payload field is referenceable as
 |---|---|---|---|---|
 | `In` | Caller supplied; event/timer gets `Default` | blank = primary; one `T<N>` only, never CSV | always empty | case start |
 | `Out` | Returned caller value | forbidden | empty | producer Outputs or `Default` |
-| `Variable` | Internal state | one `T<N>` or CSV | bare path for one; keyed `T<N>: <path>; T<M>: <path>` for CSV | producer or `Default` |
+| `Variable` | Internal state | one `T<N>` or CSV | bare path for one; keyed `T<N>: <path>; T<M>: <path>` for CSV, one entry per listed T-number | producer or `Default` |
 
-Types: `string`, `integer`, `float`, `double`, `boolean`, `date`, `datetime`, `jsonSchema`, `file`. `json` is not a type. Use `jsonSchema` with `body` for picker sub-fields; opaque JSON uses `string`. `file` is a JobAttachment record. **Config-as-In:** one `In` variable; opaque rules use `string` with JSON `Default`, picker-navigable rules use `jsonSchema` + `body`.
+Types: `string`, `integer`, `float`, `double`, `boolean`, `date`, `datetime`, `jsonSchema`, `file`. `json` is not a type. Use `jsonSchema` with `body` when downstream picks sub-fields; `string` for opaque JSON nothing dereferences. `file` is a JobAttachment record. **Config-as-In:** runtime business rules (priority bands, thresholds, taxonomies) ride one `In` variable: `string` with JSON `Default` for opaque rule-sets, `jsonSchema` + `body` when the picker must navigate sub-fields.
 
 ### Outputs rows
 
@@ -295,15 +295,15 @@ Types: `string`, `integer`, `float`, `double`, `boolean`, `date`, `datetime`, `j
 | Extract | `-> caseVar` | Non-empty runtime path (`response.status`, `Action`, `Error.code`), emitted verbatim | Capture response |
 | Set/compute/copy | `caseVar = <expr>` | `—` | Assign literal, `=js:(...)`, or `=vars.X.Y` |
 
-Targets are predeclared except a task's own self-declaring output. One row per target/task; never mix `->` and `=` on one target. `x = =vars.x` is forbidden; computed self-reference such as `x = =js:(vars.x + 1)` is allowed. Never alias a produced datum into an unrelated existing variable; declare a dedicated row or confirm reuse.
+Targets are predeclared; a `->` to a new name is valid only as the task's own self-declaring output. One row per target per task; never mix `->` and `=` on the same target in one task. `x = =vars.x` is forbidden; computed self-reference such as `x = =js:(vars.x + 1)` is allowed. Never alias a produced datum into an unrelated existing variable; declare a dedicated row or confirm reuse.
 
 ### Lineage closure
 
-Every `vars.X` consumer needs an earlier producer by stage then task order: trigger extraction, Outputs row, action-button `Maps To`, `Category: In`, or non-empty `Default`. Check at [§ Layer closure](#layer-closure--the-design-checklist) and by validator.
+Every `vars.X` consumer needs a producer that fires earlier, stage order first, then task order within the stage: trigger extraction, Outputs row, action-button `Maps To`, `Category: In`, or non-empty `Default`. Check at [§ Layer closure](#layer-closure--the-design-checklist) and by validator.
 
 ### Expressions
 
-Use `=js:` JavaScript; available namespaces are `vars`, `response`, `bindings`, `iterator`, `metadata`. Assignment operators are forbidden in all case expressions. Conditions gate case state only (`vars.*`, `metadata.*`); there is no `event` namespace. Extract-then-gate in one rule fails: extract `response.field -> caseVar` and gate a downstream condition. Use `===`/`!==`; mutually exclusive guards are exact inverses.
+Use `=js:` JavaScript; available namespaces are `vars`, `response`, `bindings`, `iterator`, `metadata`. Assignment operators are forbidden in all case expressions. Conditions gate case state only (`vars.*`, `metadata.*`); there is no `event` namespace. Extract-then-gate in one rule fails (the gate evaluates before the extract writes): extract `response.field -> caseVar` on the connector rule and gate a downstream condition. Use `===`/`!==`; mutually exclusive guards are exact inverses.
 
 Thresholded policy must appear in executable owner/recipient, WHEN/IF, or task input with numeral written out (`5000000`), actor and attribute on one line; prose/persona-table-only is a render failure.
 
@@ -313,7 +313,7 @@ A schema field name is an **external lookup key**, not a label: the runtime matc
 
 - **Carry the spelling, never derive it.** Copy the name from the user, the source document, or (at build time) the resource's own schema. Never re-case it, never convert between conventions, never make it match the case name or a neighbouring variable.
 - **Never read names off a `--output json` envelope.** `case spec` and `registry search` PascalCase object **keys** recursively (`request_body` → `RequestBody`, `poText` → `PoText`); the true names are the **values** under `Outputs.ResponseFields[].Name`. Wiring against the keys binds to fields the resource does not have and fails only after build — Studio Web reports *"RequestBody not found, did you mean request_body"*. Canonical statement of the trap, build side: the `uipath-maestro-case` skill, its registry-discovery reference, § "Do NOT read I/O field names from `Resource.{Inputs,Outputs}`".
-- Unsourced casing is `<UNRESOLVED>`, never a guess; pair it with a review item. Discovery is build work (§ lane guide § Tenant grounding).
+- Unsourced casing is `<UNRESOLVED>`, never a guess: when a design needs a field whose exact spelling nothing in the conversation supplies, render it `<UNRESOLVED>` and pair it with a review item. Discovery is build work (§ lane guide § Tenant grounding).
 
 ### Binding-cell forms (task Inputs)
 
@@ -418,7 +418,7 @@ Safe display characters for stage labels, task names, condition/SLA/escalation t
 
 **`:` is the hard ban:** colon-delimited execution events make it break routing. The conformance checklist item 11 gates it in every mode, including draft names: surface and ask; never silently keep or repair.
 
-Other charset violations are minting preferences, not platform limits. For names you mint, replace disallowed runs with one space, collapse, trim; on empty result/collision add a safe qualifier and disclose. Names supplied by user/source/draft stay verbatim, including punctuation (`Credit & Document Verification` stays). Do not rewrite for display preference.
+Other charset violations are minting preferences, not platform limits; the auditor reports them as an advisory that does not gate. For names you mint, replace disallowed runs with one space, collapse, trim; on empty result/collision add a safe qualifier and disclose. Names supplied by user/source/draft stay verbatim, including punctuation (`Credit & Document Verification` stays). Do not rewrite for display preference.
 
 **Default:** case name = PascalCase domain noun; case ID prefix = 2–4 letter mechanical derivation.
 
@@ -439,16 +439,14 @@ A draft skips the confirmation, never the closure walk.
 **Blocking — unbuildable or unreviewable until fixed:**
 
 1. **Other-path trigger source:** every path's entry matches trigger (§ Secondary-lane entry shapes); interrupting flags are on stage and every entry; terminal `exit-only` versus returning `return-to-origin` is chosen; warning-only escalation remains notification; SLA case work has ONE `sla-status-change` with target/titles; never duplicate global-event entry/exit across primary stages.
-2. **Reachability:** every stage is reachable from trigger/SLA; walk entries and every conditional FALSE branch. A stage that never enters cannot complete; if skipped and case continues, add an explicit downstream bypass entry with its negated condition; if it ends the case, add a terminal lane. Never claim skipped stages auto-complete/count. Every primary completion is consumed downstream, referenced by another entry, or feeds a lane; at least one primary stage `Required: Yes`; `adhoc` is never a stage entry. Check decision-reachable lanes and duplicate ambiguity.
+2. **Reachability:** every stage is reachable from trigger/SLA; walk entries and every conditional FALSE branch. A stage that never enters cannot complete; if skipped and case continues, add an explicit downstream bypass entry with its negated condition; if it ends the case, add a terminal lane. Never claim skipped stages auto-complete/count. Every primary completion is consumed downstream, referenced by another entry, or feeds a lane; at least one primary stage `Required: Yes`; `adhoc` is never a stage entry. Check decision-reachable lanes and duplicate-entry ambiguity per § Secondary-lane entry shapes.
 3. **Entry producer:** every non-start entry names concrete source stage/task, connector event, paired `wait-for-user` exit, or SLA; at-risk names escalation, breach names SLA alone.
-4. **Decision-routing closure:** every outcome routes; lane entries match outcomes; every routing button variable/value is consumed downstream or by terminal; an orphan decision variable is blocking.
-   No dead-end status values; an outcome targeting a lane keys that lane's entry.
-   Every decision outcome routes somewhere: every routing button's variable+value is consumed downstream or a declared terminal; a fully-orphaned decision variable on a decision task is blocking.
+4. **Decision-routing closure:** every decision outcome routes somewhere: no dead-end status values; an outcome targeting a lane keys that lane's entry; every routing button's variable+value is consumed downstream or by a declared terminal; a fully-orphaned decision variable on a decision task is blocking.
 5. **Gate reads producer:** no task-named WHEN reads a case variable that task writes ([§ Gate on the producer](#gate-on-the-producer-never-on-the-variable-it-writes)).
 6. **Data closure:** every configure/decide output lands in variable/direct reference; every send/connector/agent required input maps as far as knowable without schemas; threshold policy is executable ([§ Expressions](#expressions)).
 7. **Task-surface classification:** required human work `action`, optional user launch `adhoc`; compliance phrase + non-`action` requires explicit reconciliation.
 8. **Required-task presence:** `required-tasks-completed` with zero `Required: Yes` tasks fails `Stage exit rule '<name>' has no task(s) marked as required`; offer marking terminal task required.
-9. **Resources:** intended names concrete (`Resolved Resource`, Action App title, `Child Case`), never `<UNRESOLVED>`; unresolved identities require paired high review item; with live contract, bind required inputs, use verbatim extract fields, and ensure declared action-app fields ⊆ app schema.
+9. **Resources:** intended names concrete everywhere (`Resolved Resource`, Action App title, `Child Case`), never `<UNRESOLVED>`; identities per the lane's tenant grounding, unresolved only with a paired high review item; when a live contract is in memory, bind required inputs, use verbatim extract fields, and ensure declared action-app fields ⊆ app schema.
 10. **Durable rationale:** every stage (kind/routing), task (type/activation, including why sequential/parallel/shared set), and configured SLA (thresholds/recipients/response) has Design Rationale; provenance for every non-user-stated value ([lane § Authoring policy](case-design-lane-guide.md#authoring-policy)).
 11. **Alt dispositions/obligations:** at least one secondary stage requires non-completing case-exit rows or open high item; `In` + `file` requires Caller-obligation block; SLA Response Map closes both ways with agreeing Interrupting cells (template § SLA Response Map); classify re-entry loops.
 12. **Domain fidelity:** verbatim entities render exactly; drift → re-edit with phrase pre-filled.

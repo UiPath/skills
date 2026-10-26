@@ -4,7 +4,7 @@ Extract a structured model from any business-process artifact: steps, applicatio
 
 ## Accepted process-knowledge sources
 
-Any business-process artifact is valid input for an SDD:
+Any business-process artifact is valid input for an SDD; extract the same structured model from it:
 
 | Source | Ingestion and notes |
 |---|---|
@@ -128,7 +128,7 @@ Extract application name/version, language, login method, interface type (Web, d
 
 | Signal | Extract; keyword signals |
 |---|---|
-| **Delivery model** | Automation Cloud, Automation Suite (self-hosted), or standalone Orchestrator; Automation Suite version. Signals: "Automation Suite", "self-hosted", "on-prem", "on-premises", "air-gapped", "sovereign", "data residency", "Automation Cloud", `cloud.uipath.com`, internal base URLs. |
+| **Delivery model** | Automation Cloud, Automation Suite (self-hosted), or standalone Orchestrator; Automation Suite version if stated. Signals: "Automation Suite", "self-hosted", "on-prem", "on-premises", "air-gapped", "sovereign", "data residency", "Automation Cloud", `cloud.uipath.com`, internal base URLs. |
 | **Product exclusions** | Ruled-out products and reasons: "we don't want <product>", "can't use", "not licensed for", "no cloud services", "Maestro is excluded". |
 | **Orchestration constraints** | Preferred coordination for long-running orchestration: "Maestro", "Action Center", "state machine", "queues only", "Orchestrator queues". |
 | **Signing modality** | Embedded e-signature versus local token-based qualified signing (download → sign locally → upload); signals include "e-signature", "DocuSign", "Adobe Sign", "qualified signature", "hardware token", "smart card", "signature verification". |

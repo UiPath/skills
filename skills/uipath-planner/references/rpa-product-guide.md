@@ -34,7 +34,7 @@ Applies when Level 1 selects **RPA**, or Level 1.75 includes RPA projects; skip 
 
 ### User confirmation
 
-Always confirm with `AskUserQuestion`, even when one signal set matches:
+Always confirm the sub-type with numbered-choice `AskUserQuestion`, even when only one signal set matches:
 
 > This RPA project looks like a **<DEFAULT_SUBTYPE>**. Which sub-type should I use?
 >
@@ -149,7 +149,7 @@ Every project-list row uses:
 <PROCESS_SHORT_NAME_PASCAL>_<ROLE_SUFFIX>
 ```
 
-`<PROCESS_SHORT_NAME_PASCAL>` is PascalCase from the PDD process name; strip filler words (`Process`, `Automation`, `RPA`) and version suffixes. Example: "Invoice Processing Automation v2" → `InvoiceProcessing`. `<ROLE_SUFFIX>` must be registered below unless no role is covered, in which case invent one.
+`<PROCESS_SHORT_NAME_PASCAL>` is PascalCase from the PDD process name; strip filler words (`Process`, `Automation`, `RPA`) and version suffixes. Example: "Invoice Processing Automation v2" → `InvoiceProcessing`. `<ROLE_SUFFIX>` is one of the registered suffixes below; invent a new suffix only when no registered role covers it.
 
 | Suffix | Role |
 |---|---|
@@ -174,7 +174,7 @@ For RPA Library and RPA Test Automation projects in a Solution that are not queu
 
 ## REFramework guidance
 
-REFramework is UiPath's standard framework for transactional processes: independently succeeding/failing discrete units. It provides Init → Get Transaction → Process Transaction → End Process, with retry, exception handling, and logging.
+REFramework is UiPath's standard framework for transactional processes: any process that iterates over discrete units of work where each unit can succeed or fail independently. It provides Init → Get Transaction → Process Transaction → End Process, with retry, exception handling, and logging.
 
 ### Use REFramework when…
 
@@ -194,7 +194,7 @@ Use it whenever items can fail, be retried independently, and be tracked separat
 | Performer (in-memory or UI-row iteration, no queue) | **REFramework** | Independent row/record success and failure; queue is not required |
 | Dispatcher — atomic collect-then-commit | **Sequence** | One unit of work; no per-item retry |
 | Dispatcher — retryable items (paginated API or flaky source) | **REFramework** | Retrieved items need per-item retry and state tracking |
-| Reporting | **REFramework** *(default)* or Sequence | REFramework for per-item reporting failures or a reporting queue exceeding ~10 items per run; Sequence only for atomic aggregation of a small, fixed set where one failure may fail the run without loss |
+| Reporting | **REFramework** *(default)* or Sequence | REFramework when per-item reporting failures must be tracked, or when the reporting queue can exceed ~10 items per run; Sequence only for atomic end-of-run aggregation of a small, fixed set where one failure may fail the whole run without loss |
 | Single Project (no queues, discrete-item iteration) | **REFramework** | Init → GetTransactionData (memory/UI/file system) → Process → SetTransactionStatus |
 | Single Project (no iteration) | **Sequence** | Linear pipeline without transactions or retry semantics |
 | In-flight human approval / async wait (single process, not cross-product) | **Sequence or REFramework, + Persistence = YES** | Persistence modifies the selected framework; see [Long-running workflows](#long-running-workflows-persistence--action-center) |

@@ -1,6 +1,6 @@
 # Platform Availability Guide
 
-> **Cloud is not uniform.** The ✅ Cloud column assumes standard Automation Cloud. Public Sector / GovCloud, Dedicated, Test Cloud, region-specific instances, tenant enablement, and license entitlements can block products; confirm enablement for any variant or unverified entitlement, or mark that product `[SME REVIEW]`.
+> **Cloud is not uniform.** The ✅ Cloud column assumes standard Automation Cloud. Public Sector / GovCloud, Dedicated, Test Cloud, region-specific instances, per-tenant service enablement, and license entitlements can block products inside that column; for any variant or unverified entitlement, confirm the product is enabled on the tenant, or mark it `[SME REVIEW]` per product.
 
 Product × delivery-model availability matrix consulted by the [Constraint Gate](product-selection-guide.md#constraint-gate) before recommendation. The authoritative live source is [Product and feature availability across delivery options](https://docs.uipath.com/overview/other/latest/overview/product-and-feature-availability-across-delivery-options); it wins over this file.
 
@@ -10,9 +10,9 @@ Product × delivery-model availability matrix consulted by the [Constraint Gate]
 
 1. Gate against the customer's column: `cloud` → Cloud-available products; `automation-suite` → the AS column at the customer's version; `standalone` → the Standalone note. An AS version older than a product's "AS since" is **Not available**. Ordering: `2021.10 < 2022.4 < 2023.4 < 2024.10 < 2.2510 < 2.2510.2`; `[Major].[YYMM]` (`2.2510 = 2025.10`) sorts after every `YYYY.MM` version.
 2. If the AS version is unknown, gate against the latest AS column, add an `[SME REVIEW]` row for the version in §16 Deployment Environment, and warn on every product whose "AS since" is 2.2510 or newer.
-3. Maestro and Agents on AS require the EKS/AKS or OpenShift profile (not classic Linux/k3s), Temporal-as-a-Service, and an AI Trust Layer LLM connection. If included on AS, add a profile-prerequisite warning and `[SME REVIEW]` row.
+3. Maestro and Agents on AS require the EKS/AKS or OpenShift profile (not classic Linux/k3s), Temporal-as-a-Service, and an AI Trust Layer LLM connection. If the SDD includes them on AS, add a profile-prerequisite warning and `[SME REVIEW]` row.
 4. **Verification rule.** Web-search the authoritative page before finalizing the SDD when a needed cell is ⚠ Verify, the customer's AS version is unknown, or this file's "As of" is more than ~6 months old. A cell is needed only while its product remains a candidate after blocking; do not verify blocked products. Record what was verified, or why verification was skipped, in `Decisions Made` row 1 reason.
-5. An ✅ AS cell may differ from cloud. Put Notes-column limitations into the SDD as constraints, not footnotes.
+5. An ✅ AS cell may differ from cloud in feature depth (per UiPath's own matrix page). Put Notes-column limitations into the SDD as constraints, not footnotes.
 6. Classify "No cloud connectivity" before gating: (a) offline/air-gapped install → every "unsupported on offline installs" note (DU modern, Integration Service) is **BLOCK**, and exclude SaaS dependencies such as Microsoft 365 mailboxes; (b) only the UiPath-cloud link is absent while internet egress exists → **WARN** + `[SME REVIEW]`. If unclassifiable, apply (b) and add an `[SME REVIEW]` row naming the stricter reading's consequences.
 
 ## Availability Matrix

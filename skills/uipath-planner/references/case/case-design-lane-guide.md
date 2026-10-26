@@ -6,7 +6,7 @@ Design a Case Management SDD conversationally, then write it. `uipath-planner` i
 
 ## Entry
 
-If the request describes any case stage, work, trigger, domain, or attached document, treat it as first Listen input and skip entry prompts. A bare “create a case” gets the Listen opener; there is no entry menu. Abort is always available by free text. Tenant work never blocks entry; §Tenant grounding controls pulling.
+If the request describes any case stage, work, trigger, domain, or attached document, treat it as first Listen input and skip every entry prompt. A bare “create a case” gets the Listen opener; there is no entry menu. Abort is always available by free text. Tenant work never blocks entry; §Tenant grounding owns when the pull starts.
 
 ## Tenant grounding — full resolution at design time
 
@@ -62,11 +62,11 @@ Use inline italic attribution in `sdd.md` (`Manual _(source: user-stated)_`; omi
 | `connector-priority:<connector>` | Tier 3/tenant evidence selected `execute-connector-activity` over `api-workflow` |
 | `inferred-default:<reason>` | Defaulted with no matching source (use sparingly) |
 
-Any non-`user-stated`, non-`verbatim` field without provenance blocks confirmation.
+Any non-`user-stated`, non-`verbatim` field without provenance blocks confirmation until annotated.
 
 ## Modes
 
-Three moves only: **Listen** takes all offered input; **Sketch** completes the model by best assumption and records decisions; **Confirm** shows the complete case once and asks one question. Listen and Sketch may loop as context arrives. There is no Resolve or Approve pass; resolution runs in the background and surfaces at Confirm.
+Three moves only: **Listen** takes all offered input; **Sketch** completes the model by best assumption, recording every decision; **Confirm** shows the complete case once and asks one question. Listen and Sketch may loop as context arrives. There is no Resolve or Approve pass; resolution runs in the background and surfaces at Confirm.
 
 ### Listen
 
@@ -100,14 +100,14 @@ When `file`, `attachment`, `PDF`, `upload`, `evidence`, or `receipt` denotes an 
 
 ### Sketch — best assumption, every field
 
-Complete [`case-sdd-template.md`](../../assets/templates/case/case-sdd-template.md), using each layer's **Default** ([case-design-layers-guide.md](case-design-layers-guide.md)) for every open field — decided and disclosed, never asked. Apply platform/compliance overrides and disclose them. Before Confirm, settle case name, prefix, ≥ 1 trigger, ≥ 1 stage, ≥ 1 typed task per stage, and ≥ 1 case exit. Every non-verbatim value gets a source-ledger entry and confirmation `Decisions` line. Every stage, task, and SLA gets durable rationale covering kind/type, activation/sequencing, and routing/threshold. On interactive paths keep the model in memory: no `sdd.draft.md` or partial artifact unless requested. **Bounded no-build design is the exception.**
+Complete [`case-sdd-template.md`](../../assets/templates/case/case-sdd-template.md), using each layer's **Default** ([case-design-layers-guide.md](case-design-layers-guide.md)) for every open field — decided and disclosed, never asked. Apply platform/compliance overrides and disclose them. Before Confirm, settle case name, prefix, ≥ 1 trigger, ≥ 1 stage, ≥ 1 typed task per stage, and ≥ 1 case exit. Every non-verbatim value gets a source-ledger entry and confirmation `Decisions` line. Every stage, task, and configured SLA gets a durable `Design Rationale` covering kind/type, activation/sequencing, and routing/threshold. On interactive paths keep the model in memory until confirmation: no `sdd.draft.md` or partial artifact unless requested. **Bounded no-build design is the exception.**
 
 #### Bounded no-build design — plan-only requests
 
-For design plus implementation plan only, with no tenant work:
+For requests that stop before `caseplan.json` (design plus implementation plan only, no tenant work):
 **Concise CONTENT, exact SHAPE.** Shape never relaxes: the template's heading skeleton holds. A freeform outline (`## 1. Case Metadata…`, `## Decisions I Made` as a body section) is a blocking render failure in this mode too.
 
-0. **Write first, then design into the file. The seed is the FIRST tool call after the reading set — before any design reasoning, not after it:** title, `## Document History`, Planner Handoff header with `Status: draft` / `Template validation: pending`, and `## Table of Contents`. Then Edit-append one section at a time using §Terminal step cadence from the first section. Holding the whole case in memory and writing at the end is this mode's failure: it spends the turn budget on one unbounded generation pass and produces no `sdd.md` at all. On-disk bytes are recovery state. Confirmation gates only the `Status: ready` flip, not the seed. **If you have read the three files and have not yet written the seed, you are already in the failure mode.**
+0. **Write first, then design into the file. The seed is the FIRST tool call after the reading set — before any design reasoning, not after it:** title, `## Document History`, Planner Handoff header with `Status: draft` / `Template validation: pending`, and `## Table of Contents`. Then Edit-append one section at a time as each settles, using §Terminal step cadence from the first section. Holding the whole case in memory and writing at the end is this mode's failure: it spends the turn budget on one unbounded generation pass and produces no `sdd.md` at all. On-disk bytes are recovery state. Confirmation gates only the `Status: ready` flip, not the seed. **If you have read the three files and have not yet written the seed, you are already in the failure mode.**
 1. Preserve template headings, per-stage Entry/Exit Conditions TABLES and rule syntax, per-task blocks with `**Task envelope**`, and Planner Handoff. A freeform outline or body `## Decisions I Made` is blocking.
 2. Keep prose concise: one rationale sentence per stage/task/SLA/exception; omit expanded examples, provenance prose, and registry audit detail.
 3. Run [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md) on the written file plus a reachability spot-check, not the full closure checklist or polish iterations; build later revalidates.
@@ -129,11 +129,11 @@ Start with `## Case Review: <Case name>` and show exactly these eight sections i
 
 1. **Case Snapshot** — `Item | Proposed design`; rows `Objective`, `Starts when`, `Primary personas`, `Successful completion`, `Other terminal outcomes`, `SLA coverage`; mark assumptions `(assumed)` and omit case ID prefix unless decision-relevant.
 2. **Primary Journey** — `# | Stage | Purpose | Tasks | Starts when | Completes or exits when | Required? | SLA`; every primary stage once in flow order. Tasks show execution order, type, required/optional, activation/grouping — e.g. `Sequential: Capture request (Human action, required) → Validate request (RPA workflow, required)`; `After both: Make decision (Human action, required)` — including explicit event/manual triggers.
-3. **Other Paths Considered** — `Scenario | Trigger or condition | Modeled as | Tasks | Interrupts active work? | Return or case outcome | Rationale`; include every modeled exception, secondary stage, optional path, alternate terminal, and standard path intentionally omitted. Include task type/required/activation.
+3. **Other Paths Considered** — `Scenario | Trigger or condition | Modeled as | Tasks | Interrupts active work? | Return or case outcome | Rationale`; include every modeled exception, secondary stage, optional path, alternate terminal, and standard path intentionally omitted when that omission is a decision. Include task type/required/activation.
 4. **SLA and Escalations** — `Scope | SLA | Time target or condition | Status or threshold | Response | Response target | Interrupts active work? | Rationale`; one row per meaningful `(scope, SLA, status)`, separate at-risk and breached rows, only responses from [layers § Choosing the response](case-design-layers-guide.md#choosing-the-response), and `None` when no SLA. Legal interruption values come only from that table; never assume every breach creates an escalation stage.
-5. **Rules and Outcomes** — `Scope | Element | Rule | When | If | Then`; business-significant routing/completion/terminal rules only, no generated sequencing or repeated SLA unless needed for routing; conditions belong in `If`, not a data column.
+5. **Rules and Outcomes** — `Scope | Element | Rule | When | If | Then`; business-significant routing/completion/terminal rules only, no generated sequencing visible in `Tasks` or repeated SLA unless needed for routing; conditions belong in `If`, not a data column.
 6. **Resources and Integrations** — `Task | Intended resource or system | Resolution`; include action apps, agents, RPA/processes, API workflows, business rules, child cases, connectors, and named external systems. Every such row is required. Resolution is `resolved (<folder>)`, `create during build`, `resolve at build`, or a candidate pick.
-7. **Decisions I Made** — `Decision | Why | Provenance`; include every assumption, override, resource/task-type/activation decision, and intentionally omitted path. Use plain-language rationale; group only shared rationale and provenance. Flagged items carry ⚠.
+7. **Decisions I Made** — `Decision | Why | Provenance`; include every assumption, override, resource/task-type/activation decision, and intentionally omitted path. Use plain-language rationale (`you said "then"`, `compliance wording`, `no SLA mentioned`); group only shared rationale and provenance. Flagged items carry ⚠.
 8. **Review Flags** — `Item to review | Why it matters | Default if accepted`; use `None` if empty; include unfixable findings, missing connections, and unresolved high-impact choices.
 
 If any §1.5 row is `Category: In` + `Type: file`, show this block after Review Flags; otherwise omit it:
@@ -147,7 +147,7 @@ If any §1.5 row is `Category: In` + `Type: file`, show this block after Review 
 
 User-visible activation labels are `Sequential`, `Parallel`, `Parallel after predecessor`, `Event-triggered`, `Manually triggered`, `Fan-in`, and `Conditional gate`; map `adhoc` to `Manually triggered`. Prefer `Human action`, `Agent`, `RPA workflow`, `API workflow`, and `Child case` over schema enum names.
 
-The review is incomplete unless all eight sections appear (including `None`), every stage/task is named, every modeled and intentionally omitted path is covered, every meaningful SLA response/status row appears, and the caller block appears when relevant. Never ask approval before all sections, and never substitute build steps, artifacts, folders, validation commands, or a summary pointing to the SDD.
+The review is incomplete unless all eight sections appear (including `None`), every stage/task is named, every modeled and intentionally omitted path is covered, every meaningful SLA response/status row appears, and the caller block appears when relevant. Never ask approval before all sections, and never substitute build steps, artifacts, folders, validation commands, or a summary pointing to the SDD for a missing business decision.
 
 Ask one AskUserQuestion:
 
@@ -157,7 +157,7 @@ Ask one AskUserQuestion:
 | Direct design-only | `Save the design` / `Change something`; with ⚠ use `Save despite N flagged items`. |
 | Draft request | `Save as draft` / `Change something`. A request already saying save-and-stop is the answer; write without another prompt. |
 
-Corrections update the model, rerun affected finalization checks, and show only changed sections/rows followed by one `Suggested next steps` line. Never restart the walk. An explicit request for sign-off adds exactly one approval prompt after acceptance and before file creation.
+Corrections (`Change something` or free text) update the model, rerun affected finalization checks, and show only changed sections/rows followed by one `Suggested next steps` line before the next prompt. Never restart the walk. An explicit request for sign-off ("only after I approve") adds exactly one approval prompt after acceptance and before file creation; nothing else changes.
 
 ### Review items
 
@@ -183,13 +183,13 @@ Any open `high` changes Build to `Build despite N flagged items`; user must choo
 
 ### Template conformance gate — before `sdd.md` is written
 
-The template § Validation footer and the 37-item [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md) are the contract: skeleton, block markers, closed enums and gate pairings, data closure, liveness, and forbidden summary-only sections. Skeleton: `## Document History`, then `## Planner Handoff` plus `<!-- planner-handoff:v1 -->`, then `## Table of Contents`; case body follows. Run the checklist against the written file before `Status: ready` in every mode: one structural Read, then answer every item PASS or FAIL in the transcript with a verbatim file quote, judging block role/position rather than wording. No script/interpreter. This is rendering, not redesign; on failure rewrite from model and template, never create a summary SDD.
+The template § Validation footer and the 37-item [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md) are the contract: skeleton, block markers, closed enums and gate pairings, data closure, liveness, and forbidden summary-only sections. Skeleton: `## Document History`, then `## Planner Handoff` plus `<!-- planner-handoff:v1 -->`, then `## Table of Contents`; case body follows. Run the checklist against the written file before `Status: ready` in every mode: one structural Read, then answer every item PASS or FAIL in the transcript with a verbatim file quote, judging block role/position rather than wording. No script/interpreter. This is rendering, not redesign; on failure rewrite from model and template, never create a summary SDD, even if a later `caseplan.json` would validate.
 
-When `Agent` is available, run the checklist in ONE read-only subagent. Give it the written SDD path and [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md), not the template; require only the PASS/FAIL table with one verbatim quote per item. Do not read the checklist yourself to "check first". It must not edit or design and is never spawned per item or per family. The parent repairs and flips ready. This is the only permitted spawn. Without `Agent`, walk the same 35 items inline with identical evidence requirements; budget it as dominant cost, make targeted repairs, and do not re-answer passed items.
+When `Agent` is available, run the checklist in ONE read-only subagent. Give it the written SDD path and [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md), not the template; require only the PASS/FAIL table with one verbatim quote per item. Do not read the checklist yourself to "check first". It must not edit or design and is never spawned per item or per family. The parent applies every repair Edit itself and owns the ready flip. This is the only permitted spawn. Without `Agent`, walk the same 35 items inline with identical evidence requirements; budget it as dominant cost, make targeted repairs, and do not re-answer passed items.
 
 ### Terminal step — write the SDD
 
-Write in batches, gate, then flip. Interactive mode starts on acceptance; bounded no-build and draft finalization start at work and settle sections into an existing file. Confirmation gates only the ready flip.
+Write in batches, gate, then flip. Interactive mode starts on acceptance; bounded no-build and draft finalization start at work and settle sections into an existing file. In every mode, confirmation gates only the `Status: ready` flip, never the seed.
 
 1. **Seed Write, then Edit-append per section—three separate calls, never one.** Seed title, `## Document History`, Planner Handoff header with `Status: draft` and `Template validation: pending` as table rows (never HTML comment/bold line), and `## Table of Contents`. Then Edit-append in template order: Section 1; Section 2 one stage block at a time, every primary/secondary stage in source order; Section 3; Section 4; `## Next Steps`. Compose each section immediately before appending; do not re-Read between sibling appends. Partial file is recovery state. Never `cp`, `mv`, or `rsync` an artifact into place.
 2. **Gate the written file:** run [case-sdd-conformance-checklist.md](case-sdd-conformance-checklist.md), items 1–29 and 34–37 (also 30–33 when finalizing a draft). Answer every item with a quote, repair each FAIL with targeted Edit, and re-answer failed items only; maximum 3 rounds, then stop and report remaining failures. One structural Read is allowed.
@@ -226,7 +226,7 @@ Keep one in-memory record per attempted/resolved registry lookup. SDD cells carr
 }
 ```
 
-A `gateDecision` means the user answered and build must execute it without re-asking. A default deferral (no session, failed/pending pull, or non-interactive run) has NO `gateDecision`; build re-asks. Before a successful pull in this session, a missing cache file is failed precondition, never zero matches. Only a successful pull permits empty-lookup flow. Keep deep runtime metadata (agent prompts, package versions, endpoints, release tags) out of the SDD — SDD cells carry name, folder, identity, and sub-type only; everything else rides this record.
+A `gateDecision` means the user answered and build must execute it without re-asking. A default deferral (no session, failed/pending pull, or non-interactive run) has NO `gateDecision`; build re-asks. Before a successful pull in this session, a missing cache file is failed precondition, never zero matches. Only after a successful pull may an empty match set enter the empty-lookup flow. Keep deep runtime metadata (agent prompts, package versions, endpoints, release tags) out of the SDD — SDD cells carry name, folder, identity, and sub-type only; everything else rides this record.
 
 ## HTML preview
 
@@ -242,7 +242,7 @@ A `sdd.draft.md` at lane entry is leftover from an on-request draft or older run
 | `Discard draft, start fresh` | Delete draft and return to §Entry. |
 | `Abort` | Exit with no file changes. |
 
-If explicitly asked to finalize, choose Use by assumption; if AskUserQuestion is unavailable, do the same unless user asked to discard/abort.
+If explicitly asked to finalize, choose `Use the draft — finalize and continue` by assumption without a redundant resumption question; if AskUserQuestion is unavailable, do the same unless user asked to discard/abort.
 
 **Direct finalize fast path:** when the user says the draft is settled and requests only the final SDD:
 
@@ -253,18 +253,18 @@ If explicitly asked to finalize, choose Use by assumption; if AskUserQuestion is
 5. Expand any summary-only task into a full detail block under the same footer.
 5a. A task the draft left as a summary still gets its full detail block, per that same footer — Section 2 is appended one stage block at a time (every primary and secondary stage in source order), each with its task detail blocks.
 6. Preserve every draft `=js:` expression verbatim in the same owning task/stage with fields, variables, and output mapping intact.
-7. **Mandatory threshold-policy scan:** scan descriptions, personas, and rationale for comparator-plus-amount phrases `>`, `<`, `≥`, `≤`, `over`, `above`, `under`, `below`, `at least`, `more/less than` next to `$5M`, `100000`, `L4`, or another amount. Every policy must also be executable in its owning task/stage. A persona scope `StageX (amount > $N only)` becomes Stages `StageX` and Notes `amount > $N only`, plus a matching HIGH-side guarded expression in a StageX table cell (Inputs/owner/recipient/WHEN/IF), such as `=js:vars.amount > N000000 ? "Role:SomeRole" : "Role:DefaultRole"`, with numeral written out (`5000000`, not `$5M`) and role/attribute on one line. An `=js:` fragment in rationale/description is not encoding. Reuse existing attribute variables; do not add/rename tasks or variables.
+7. **Mandatory threshold-policy scan:** scan descriptions, personas, and rationale for comparator-plus-amount phrases `>`, `<`, `≥`, `≤`, `over`, `above`, `under`, `below`, `at least`, `more/less than` next to `$5M`, `100000`, `L4`, or another amount. Every policy must also be executable in its owning task/stage. A persona scope `StageX (amount > $N only)` becomes Stages `StageX` (exact stage names only) and Notes `amount > $N only`, and REQUIRES a matching HIGH-side guarded expression assigning the exception role in a StageX table cell (Inputs/owner/recipient/WHEN/IF), such as `=js:vars.amount > N000000 ? "Role:SomeRole" : "Role:DefaultRole"`, with numeral written out (`5000000`, not `$5M`) and role/attribute on one line. An `=js:` fragment in `**Design Rationale:**` or `**Description:**` prose is not an encoding and fails the gate. Reuse existing attribute variables; do not add/rename tasks or variables.
 8. Normalize secondary headings to `##### Task S{secondaryStageIndex}.{taskIndex}: {Task Name}`; remove draft letter prefixes (`R.1`, `W.1`, `CC.1`, `ESC.1`).
 9. Move draft SLA `At-Risk Action` / `Breach Action` values into the § SLA Response Map row for their `(scope, SLA, status)`; final SDD has no such columns and values must not be dropped.
 10. Seed, append, gate, and flip per §Terminal step; never one Write. Use full checklist items 1–37, including 30–33 with draft open beside final: inventory parity, verbatim `=js:` preservation, executable threshold encoding, draft retained. Ready requires every item PASS. Repair FAILs with Edit and re-answer failed items only, maximum 3 rounds; then stop and report remainder. Quote final tally (`35/35 PASS`) as evidence, then stop.
 
 ## What to say while working
 
-Use business-language commentary, never silence or machinery talk. Narrate decisions as they land; document-read lines and inference one-liners are the running commentary, while `Decisions I Made` is complete. Before any stretch of ~a minute without a question say: `Design confirmed — handing to the build now. Nothing needed from you for a few minutes.` At milestones give one business-language line, not per-tool-call narration. When grounding fails immediately say: `I can't reach your UiPath tenant right now — I'll design with the names you give me and wire resources during the build.` Never let `resolve at build` rows be the first signal. When continuing without a prompt, say what happens next and how to interrupt.
+Use business-language commentary, never silence or machinery talk. Narrate decisions as they land; document-read lines and inference one-liners are the running commentary, while `Decisions I Made` is complete. Before any stretch of ~a minute without a question say: `Design confirmed — handing to the build now. Nothing needed from you for a few minutes.` At milestones give one line each, business terms only, never per-tool-call narration. When grounding fails immediately say: `I can't reach your UiPath tenant right now — I'll design with the names you give me and wire resources during the build.` Never let `resolve at build` rows be the first signal. When continuing without a prompt, say what happens next and how to interrupt.
 
 ## Forbidden vocabulary (user-visible output)
 
-Never surface in chat or in the SDD: internal filenames (except `sdd.draft.md` on an explicit draft request and the intentionally reported written SDD path), `<UNRESOLVED>` in narration (file-only; chat says `resolve at build`), `Listen`, `Sketch`, `Confirm`, mode names, `the validator`, `structural validation`, `the cache`, `the registry index`, `~/.uip/`, `resolution ledger`, `delegation`, `subagent mode`, `interview answers`, `from cache`, `REVIEW:`, or chain-of-thought mechanics. Explain behavior as cases, stages, tasks, triggers, SLAs, personas, connectors, and exceptions.
+Never surface in chat or in the SDD: internal filenames (except `sdd.draft.md` on an explicit draft request and the intentionally reported written SDD path), `<UNRESOLVED>` in narration (file-only; chat says `resolve at build`), `Listen`, `Sketch`, `Confirm`, mode names, `the validator`, `structural validation`, `the cache`, `the registry index`, `~/.uip/`, `resolution ledger`, `delegation`, `subagent mode`, `interview answers`, `from cache`, `REVIEW:`, or chain-of-thought mechanics. If the user asks how something works, explain in their language: cases, stages, tasks, triggers, SLAs, personas, connectors, and exceptions.
 
 ## Failure modes
 

@@ -11,10 +11,10 @@ Business rules in an SDD are validation rules, DMN-style decision tables, or rul
 | **Reasoning: agent** | Interprets unstructured input or makes a judgment applicable from its inputs. | The reasoning list ([Rules that need reasoning](#3-rules-that-need-reasoning)), applied by an agent |
 | **Reasoning: person** | Requires a person's authority, accountability, or knowledge absent from the inputs. | The reasoning list, applied by a person (HITL) |
 
-- Take the type from the PDD, including its Business Rules table type (`Deterministic`, `Reasoning: agent`, `Reasoning: person`, possibly in the document's language) and `inputs → output`. Keep that type. Never move a `Reasoning: person` rule to an agent on your own: that is an `[SME REVIEW]` item.
+- Take the type from the PDD: it may type each rule in its Business Rules table (`Deterministic`, `Reasoning: agent`, `Reasoning: person`, possibly in the document's language) and give its inputs and output as `inputs → output`. Keep that type. Never move a `Reasoning: person` rule to an agent on your own: that is an `[SME REVIEW]` item.
 - Classify untyped rules with the table; when agent versus person is unclear, choose person and raise `[SME REVIEW]`.
 - Keep extraction separate: a rule over an amount read from an email remains deterministic; extraction (IXP, agent) is separate, and the rule is a decision table over that output.
-- Give each rule one outcome. Split a PDD rule deciding two things; tiers such as “under 1,000 … up to 10,000 … above” are rows in one table.
+- Give each rule one outcome. Split a PDD rule deciding two things before tabling it; tiers such as “under 1,000 … up to 10,000 … above” are rows in one table.
 
 ## 2. Decision tables
 

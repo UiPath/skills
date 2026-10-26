@@ -6,7 +6,7 @@ Produce the scope recommendation from PDD signals for all 8 UiPath products and 
 
 Layer 0 decides whether to automate. Then:
 
-1. **Decompose the process into steps** in Phase 1 extraction and the [need profile](sdd-generation-guide.md#step-35-synthesize-the-need), recording interface, determinism, state, human interaction, volume, risk, reuse, runtime, and existing estate.
+1. **Decompose the process into steps** in Phase 1 extraction and the [need profile](sdd-generation-guide.md#step-35-synthesize-the-need), recording per step: interface, determinism, state, human interaction, volume, risk, reuse, runtime, and existing estate.
 2. **Choose an executor per step** with [Per-task component placement](#per-task-component-placement-the-to-be-per-step), producing the **step→executor map** (RPA / API / IXP / Agent / LLM activity / Function / HITL / Data Fabric).
 3. **Choose the coordination/state host** from Level 1. A host absorbs in-process capabilities; choose Maestro (Flow / BPMN / Case) only when peer runtimes or coordination shape exceed one host.
 4. **Choose packaging/deployment last**: standalone package or Solution (`.uipx`) via Solution Signals / Level 1.75 and the Constraint Gate. A single component does not need a Solution wrapper by default.
@@ -19,16 +19,16 @@ Layers 1–2 run in Phase 1 Step 3.5; Level 1 consumes the typed map, never raw 
 |---|---|---|---|
 | **0. Suitability** | Automate / redesign first / reuse native or estate / do not automate | All PDDs | This file |
 | **1. Primary scope** | Single product or multi-project Solution? | All PDDs | This file |
-| **1.5. RPA sub-type** | Process, Library, or Test Automation | RPA selected at Level 1 or in Solution | [RPA Product Guide](rpa-product-guide.md#level-15--rpa-sub-type-selection) |
+| **1.5. RPA sub-type** | Process, Library, or Test Automation | Only when RPA is selected at Level 1 or in a Solution | [RPA Product Guide](rpa-product-guide.md#level-15--rpa-sub-type-selection) |
 | **1.75. Solution composition** | Products and project quantities | Level 1 = Solution | This file |
-| **2. Authoring mode** | XAML, Coded C#, or Hybrid | Each RPA project | [RPA Product Guide](rpa-product-guide.md#level-2--authoring-mode) |
-| **2.5 Part A** | RPA decomposition | Each RPA Process project | [RPA Product Guide](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) |
+| **2. Authoring mode** | XAML, Coded C#, or Hybrid | Each RPA project in the final list | [RPA Product Guide](rpa-product-guide.md#level-2--authoring-mode) |
+| **2.5 Part A** | Single vs Master Project per RPA Process | Each RPA Process project in the scope | [RPA Product Guide](rpa-product-guide.md#level-25-part-a--rpa-decomposition-signals) |
 | **2.5 Part B** | Final projects, roles, frameworks, queues | All scopes | This file |
 | **3. Capabilities** | HITL, Integration Service, API Workflow as components | All products | This file |
 
 ## Constraint Gate
 
-The delivery model (asked or detected at Phase 1 Step 0) and user exclusions filter candidates **before** recommendation. Run it at Level 1, Level 1.75 Pass A, and Level 3.
+The delivery model (asked or detected at Phase 1 Step 0) and user exclusions filter every candidate **before** any level recommends it. Run it at Level 1, Level 1.75 Pass A, and Level 3.
 
 1. Look up each candidate in [platform-availability-guide.md](platform-availability-guide.md) under the customer's delivery-model column.
 2. **Not available → BLOCK:** remove it from recommendations and Level 1.75 Pass A; recommend the matrix alternative; record the block in `Decisions Made` row 1 and Recommended Scope `Blocked by platform:`. Always emit row 1: `<delivery model>; no products blocked` when none is blocked.
@@ -45,7 +45,7 @@ From the need profile, record each result in Recommended Scope reasoning:
 1. **Native capability:** if configuration already covers it (workflow rules, scheduled reports, webhooks), recommend configuration.
 2. **Existing estate:** reuse deployed process / API Workflow / connector / library / model / solution; run the [Estate sweep](#estate-sweep).
 3. **Process stability:** defer or flag `[SME REVIEW]` when process, UI, or rules are changing.
-4. **Redesign first:** remove workaround steps from the to-be; never automate waste (PDD Analysis Guide → As-Is and To-Be).
+4. **Redesign first:** steps that exist only to work around manual limits drop out of the to-be; never automate waste (PDD Analysis Guide → As-Is and To-Be).
 5. **Access feasibility:** licenses, APIs, credentials, and environments exist or are obtainable.
 6. **Economics:** compare volume × time saved with build/run/maintenance cost; downscope or recommend against thin cases.
 7. **Residual human work:** assess remaining manual work; if the human loop dominates, automation may not pay.
@@ -89,29 +89,29 @@ The note has NO `## Planner Handoff` header and NO `planner-handoff:v1` marker; 
 
 ## Level 1 — Primary Scope Selection
 
-Match the need profile, not keywords. Weigh determinism, structure, stable API/API-first, volume and cost, risk/reversibility/confidence, auditability/compliance, and coordination shape. Genuine judgment/reasoning alone justifies **Agent**; a deterministic process with one judgment step is a deterministic primary plus Agent component. Agentic execution costs more and is less predictable, so estimate per model/tenant at volume. The usual design is hybrid: AI decides, governed RPA/API execute, Maestro orchestrates only when needed, and HITL gates risky/low-confidence steps.
+Match the need profile, not keywords: each PDD signal is evidence of a need, and the need decides. No single factor decides; weigh determinism (a key factor, not the sole gate), structure, stable API/API-first, volume and cost, risk/reversibility/confidence, auditability/compliance, and coordination shape. Genuine judgment/reasoning alone justifies **Agent**; a deterministic process with one judgment step is a deterministic primary plus Agent component. Agentic execution costs more and is less predictable, so estimate per model/tenant at volume. The usual design is hybrid: AI decides, governed RPA/API execute, Maestro orchestrates only when real orchestration is needed (see Light vs real orchestration), and HITL gates risky/low-confidence steps.
 
 | Need | Product/component |
 |---|---|
 | Judgment, reasoning, dynamic tool planning | Agents |
 | Fixed generative step in known path | LLM activity in host workflow, not Agent |
-| Fixed document classification/extraction | IXP / Document Understanding; standalone IXP only when extraction is the entire deliverable |
+| Fixed document classification/extraction | IXP / Document Understanding as a component (placement table); standalone IXP only when extraction is the entire deliverable |
 | User-facing screen deliverable | Coded Apps |
 | Headless system integration, no UI/bot | API Workflows |
 | Case lifecycle, SLA, approvals, possibly ad-hoc tasks | Case Management |
 | Formal control flow without case | Maestro BPMN |
 | Plain multi-automation pipeline | Maestro Flow |
-| One human approval in one process | Long-running RPA + Action Center |
-| Headless deterministic compute, no UI/orchestration | Coded Function |
+| One human approval in one process | Long-running RPA + Action Center (not Maestro, not a HITL project) |
+| Headless deterministic compute, no UI/orchestration | Coded Function (component; placement table) |
 | UI or machine-local work (Excel/Office, files/folders, on-prem DB, desktop email, terminal/mainframe) | RPA |
 | Reusable compile-time component | RPA Library, additive |
 | Regression validation | Test Automation, additive and rarely primary |
 
-Never route on a contradictory keyword: “AI” over rules is RPA, and a dashboard that is really a scheduled report is not necessarily Coded Apps. If unclear, ask the user (see Presenting the Recommendation).
+Never route on a contradictory keyword: “AI” over rules is RPA, and a dashboard that is really a scheduled report is not necessarily Coded Apps. When evidence and need disagree, the need wins; if the product is genuinely unclear, ask the user (see Presenting the Recommendation).
 
 ### Decision table
 
-Input is the step→executor map, not raw keywords. Type every step with [Per-task component placement](#per-task-component-placement-the-to-be-per-step), then apply the **absorption fold**; mixed capabilities are not cross-product orchestration.
+Input is the step→executor map, not raw keywords. Type every step with [Per-task component placement](#per-task-component-placement-the-to-be-per-step), then apply the **absorption fold** before reading the map: a step is *absorbed* when its host invokes it in-process (activity or synchronous call whose result returns in the same run); mixed capabilities are not cross-product orchestration.
 
 | Host | Absorbs in-process |
 |---|---|
@@ -122,8 +122,8 @@ Input is the step→executor map, not raw keywords. Type every step with [Per-ta
 
 Absorbed means integrated component, not unbuilt. A consumed IXP model, connector, Library, or API Workflow may still be a separate buildable project ordered before its host.
 
-- One host remains, including same-executor projects separated by queue hand-off: walk rows 1–3 and 7 in priority order; Level 2.5 Part A decides decomposition.
-- Two or more peer runtimes, or coordination/state exceeds one host (case stages/SLA, formal gateways/events/parallel branches, or long-running waits across automations): rows 1–3 and 7 are ineligible; choose Case → BPMN → Flow (rows 4–6), and make peers components or Solution projects. A fixed process with judgment is deterministic host + Agent component (absorbed when called synchronously in-run; a peer under Maestro when long-running), never Agent-primary.
+- One host remains (every other capability absorbed), including same-executor projects separated by queue hand-off: walk rows 1–3 and 7 in priority order, first match wins; Level 2.5 Part A decides decomposition.
+- Two or more peer runtimes (independently deployed, coordinated at runtime), or coordination/state exceeds one host (case stages/SLA, formal gateways/events/parallel branches, or long-running waits across automations): rows 1–3 and 7 are ineligible; choose Case → BPMN → Flow (rows 4–6), and make every remaining peer an integrated component or Solution project (Level 1.75). A fixed process with judgment is deterministic host + Agent component (absorbed when called synchronously in-run; a peer under Maestro when long-running), never Agent-primary.
 - **Coordinator exception:** an open-ended/conversational Agent that plans runtime tools with no fixed process shape is Agent-primary with RPA/API tools (multi-skill Pattern 5). A fixed process containing judgment is not this exception.
 
 Signals that match *below* the primary become candidate additional projects in a Solution (see Solution Signals below).
@@ -141,19 +141,19 @@ Signals that match *below* the primary become candidate additional projects in a
 
 Apply the [Constraint Gate](#constraint-gate) to the matched primary before presenting it; replace blocked products with the matrix alternative.
 
-Row 8 is packaging/composition, reached only through [Solution Signals](#solution-signals). Derived components never count toward it. A single component ships as that product, standalone or single-project Solution according to the template decision.
+Row 8 is packaging/composition, reached only through [Solution Signals](#solution-signals): the PDD names multiple top-level deliverables, each already typed by rows 1–7 and the placement table. Derived components never count toward it. A single component ships as that product, standalone or single-project Solution according to the template decision.
 
 ### Maestro disambiguation — BPMN vs Flow vs Case
 
 - Case Management wins for a case moving through stages with SLA/approval gates, escalation, or task routing, even though it compiles to BPMN.
-- Maestro BPMN wins for structured, stateful control flow without case/stage/SLA: parallel/inclusive/event-based gateways, boundary events, intermediate message/timer events, subprocesses/call activities, multi-instance loops, or explicit BPMN/swimlane request.
-- Maestro Flow is the default plain node graph: linear/single-branch RPA/agent/app/API sequencing with transforms.
+- Maestro BPMN wins for structured, long-running (stateful) control flow without case/stage/SLA: parallel/inclusive/event-based gateways, boundary events (per-activity timeouts or error catches), intermediate message/timer events, subprocesses/call activities, multi-instance loops, or explicit BPMN/swimlane request.
+- Maestro Flow is the default plain node graph: linear/single-branch RPA/agent/app/API sequencing with transforms, when no BPMN structure above is required.
 
 Rule: **case + stages + SLA → Case; formal gateways/events/subprocess without case → BPMN; plain pipeline → Flow.** When Flow/BPMN is genuinely close, default to Flow and offer BPMN through `AskUserQuestion` — never force BPMN.
 
 Do not choose Maestro for one RPA Dispatcher→Performer or a single approval: use RPA Process or long-running RPA + Action Center. Mixed capabilities inside one host remain that host, including RPA calling IXP, LLM activity, synchronous API, Agent, or published process.
 
-**Light orchestration stays RPA:** synchronous sequential child calls, one-session completion, state in parent run/queues, and parent retry/REFramework. **Real orchestration uses Maestro:** state outlives a run, event/timer resume, parallel/event branches, per-step visibility/SLA/compensation, multiple human touchpoints, or parent is pure glue between peers.
+**Light vs real orchestration** (tie-breaker when several automations appear in one process). **Light orchestration stays RPA:** synchronous sequential child calls, one-session completion, state in parent run/queues, and parent retry/REFramework. **Real orchestration uses Maestro:** state outlives a run, event/timer resume, parallel/event branches, per-step visibility/SLA/compensation, multiple human touchpoints, or parent is pure glue between peers.
 
 ### Solution Signals
 
@@ -203,7 +203,7 @@ Signals:
 - Processing each item of a collection with sequential or parallel instances (multi-instance loops)
 - Long-running, structured control flow — but NO case entity, stages, SLA, or RACI (→ Case), and beyond a simple linear/branching pipeline (→ Flow)
 
-Required: activities/gateways/order; branch/join behavior; start/intermediate/boundary events; variables (name, type, direction); invoked components (RPA, Agent, API Workflow, HITL, connector); retry/timeout; subprocess/call boundaries.
+Required: activities/gateways/order; branch/join behavior; start/intermediate/boundary events; variables (name, type, direction); components each activity invokes (RPA, Agent, API Workflow, HITL, connector); retry/timeout per activity; subprocess/call boundaries.
 
 #### Maestro Flow
 
@@ -300,7 +300,7 @@ For products that may repeat, especially RPA, use numbered-choice `AskUserQuesti
 > 2. **2**
 > 3. **3 or more** — you will specify the list in the next step
 
-For `3 or more`, follow up with numbered likely counts plus `Other` for custom. Flow, Case Management, Agents, Coded Apps, and API Workflows default to **1** unless multiple instances are explicit.
+For `3 or more`, follow up via `AskUserQuestion` with numbered likely counts plus `Other` for custom. Flow, Case Management, Agents, Coded Apps, and API Workflows default to **1** unless multiple instances are explicit.
 
 ### Pass C — Run Level 1.5 per RPA project
 
@@ -371,7 +371,7 @@ Apply this table twice: Phase 1 Step 3.5 to create the step→executor map and P
 | **Create / author / summarize** free-form | Agent; no-decision generation is host LLM activity | `uipath-agents` (standalone only) |
 | **Review / Escalate / sign-off** | Host-aware HITL: Flow skill; coded Agent escalation; BPMN userTask; Case inline `action`; RPA Action Center/long-running | `uipath-human-in-the-loop` for Flow hosts only |
 | **Wait / approve inside ONE process** | Long-running RPA + Action Center; scheduled/queue run is RPA + Orchestrator trigger, never Maestro | `uipath-rpa` (trigger → `uipath-platform`) |
-| **Sequence / coordinate MULTIPLE automations**, real orchestration | Maestro Flow/BPMN/Case; synchronous in-run calls are absorbed | `uipath-maestro-flow` / `-bpmn` / `-case` |
+| **Sequence / coordinate MULTIPLE automations**, real orchestration only | Maestro Flow/BPMN/Case; synchronous in-run calls are absorbed | `uipath-maestro-flow` / `-bpmn` / `-case` |
 | **Transform / compute**, atomic deterministic custom logic (parsing, scoring, custom-auth API call, ERP query via IS connection) | Host-native first; Coded Function only when justified; TypeScript/JavaScript/Python typed input→code→typed output; serverless or robot-hosted | `uipath-functions` |
 | **Aggregate / persist shared data** | Data Fabric entities are persistence; logic runs in API Workflow/Function/RPA | executor above + `uipath-platform` |
 
@@ -391,7 +391,7 @@ Add-ons belong to the primary and are flagged in its template; Lane A derives an
 
 Adds approval, exception escalation, and write-back validation. **Only Flow hosts route to `uipath-human-in-the-loop`**; in a single-project request the Flow specialist authors the inline node. Coded Agents use `uipath-agents` escalation, BPMN inline userTask via `uipath-maestro-bpmn`, Case inline `action` via `uipath-maestro-case`, and RPA Action Center/long-running.
 
-Signals: approval before; human review; low-confidence escalation; validation before write-back; missing-data completion. Add `HITL Touchpoints` to the host section. Flow gets an “Add HITL node per §X” task; other hosts do not create a HITL-skill task.
+Signals: approval before; human review; low-confidence escalation; validation before write-back; missing-data completion. Add `HITL Touchpoints` to the host section. Flow gets an “Add HITL node per §X” task routed to `uipath-human-in-the-loop`; coded-Agent escalation is part of the `uipath-agents` build task; other hosts do not create a HITL-skill task.
 
 ### Integration Service
 
@@ -399,18 +399,18 @@ Adds connector activities to RPA, Flow, Case, or Agents. IS is the standard inte
 
 Signals include third-party SaaS (Salesforce, Jira, ServiceNow, Slack, HubSpot, Workday, Zendesk, etc.) and create/post/read operations.
 
-Before assuming a connector, run both as appropriate (auth-required, best-effort):
+For each required integration, before assuming a connector, run both as appropriate (auth-required, best-effort):
 
 ```bash
 uip is connectors list --output json                          # full catalog
 uip is connectors list --filter "<KEYWORD>" --output json     # narrow by system name
 ```
 
-Existing connector → reuse; flag `Access Method = Integration Service — <CONNECTOR_SLUG>` and create `Configure <X> connector` task routed to `uipath-platform`. No connector and HTTP-capable consumer — API Workflows (Unified HTTP Request activity), RPA (HTTP Request activity), coded Agents (Python HTTP client) → direct HTTP, flag `Access Method = Direct HTTP`; do not create connector/API Workflow for one host-capable consumer. IS-only consumer (Maestro Flow / BPMN / Case connector nodes, low-code Agent tools) → custom connector (`Access Method = Custom connector — <CONNECTOR_SLUG>`, `uipath-connector-builder`) or small API Workflow; prefer custom connector for 2+ projects or IS-level governance. Unverified connector is `[SME REVIEW]`. Wrapper remains integrated and does not change scope.
+Existing connector → reuse; flag `Access Method = Integration Service — <CONNECTOR_SLUG>` and create `Configure <X> connector` task routed to `uipath-platform`. No connector and HTTP-capable consumer — API Workflows (Unified HTTP Request activity), RPA (HTTP Request activity), coded Agents (Python HTTP client) → direct HTTP, flag `Access Method = Direct HTTP`; do not create connector/API Workflow for one host-capable consumer. IS-only consumer (Maestro Flow / BPMN / Case connector nodes, low-code Agent tools) → custom connector (`Access Method = Custom connector — <CONNECTOR_SLUG>`, `uipath-connector-builder`, ordered before its consumer) or a small API Workflow the host invokes; prefer custom connector for 2+ projects or IS-level governance. Unverified connector is `[SME REVIEW]`. Wrapper remains integrated and does not change scope.
 
 ### API Workflow (as integrated component)
 
-Applies when a non-primary API Workflow is called by Flow, BPMN, Case, Agent, or another API Workflow. It requires structured JSON input/output, no UI, and the extraction test: host cannot call natively, 2+ consumers, or independent versioning/scaling/ownership. Otherwise use `Access Method = Direct HTTP` and create no project/task. List calls in the host inventory (Flow nodes, BPMN `serviceTask`, Agent tools, Case tasks); Lane A creates a `uipath-api-workflow` task before the consumer. Scope is unchanged.
+Applies when a non-primary API Workflow is called by Flow, BPMN, Case, Agent, or another API Workflow. It requires structured JSON input/output, no UI, and at least one extraction justifier: host cannot call natively (IS-only surface), 2+ consumers, or independent versioning/scaling/ownership. Otherwise use `Access Method = Direct HTTP` and create no project/task. List calls in the host inventory (Flow nodes, BPMN `serviceTask`, Agent tools, Case tasks); Lane A creates a `uipath-api-workflow` task before the consumer. Scope is unchanged.
 
 ### Reusability & shared assets
 
@@ -448,12 +448,12 @@ Create one solution overview plus one per-project SDD for each Level 2.5 unified
 | `<SOLUTION_NAME_KEBAB>-solution-sdd.md` | Solution overview | Exactly 1 |
 | `<PROJECT_NAME_KEBAB>-sdd.md` | Project product template | One per unified project |
 
-For RPA, use one template per RPA group; Master Project sub-projects share one RPA SDD (§10/§11), unrelated RPA projects get separate files. Component rows (Coded Function, IXP model, custom connector) get no SDD: use host tables plus solution Project Inventory; Lane A orders tasks before consumers.
+For RPA, use one template per RPA group; Master Project sub-projects share one RPA SDD (§10/§11), unrelated RPA projects get separate files. Component rows (Coded Function, IXP model, custom connector) get no SDD: use host tables (`### Coded Functions`, `### IXP / Document Understanding Models`, connector rows) plus solution Project Inventory; Lane A orders tasks before consumers.
 
 ### Solution overview SDD structure
 
 1. Solution Overview (objective, business context)
-2. Planner Handoff with `Project SDD role: root`, `Solution ID: <SOLUTION_NAME_KEBAB>`, `Solution root SDD: <its own filename>`, canonical `Tasks file: <SOLUTION_NAME_KEBAB>-tasks.md` (the ONE tasks file named by every child), and cross-project ordering. Keep it within the first ~50 lines; no task list.
+2. Planner Handoff with `Project SDD role: root`, `Solution ID: <SOLUTION_NAME_KEBAB>`, `Solution root SDD: <its own filename>`, canonical `Tasks file: <SOLUTION_NAME_KEBAB>-tasks.md` (the ONE tasks file named by every child), and cross-project ordering (integrated components built before their consumers). Keep it within the first ~50 lines; no task list.
 3. Project Inventory — the unified project list from Level 2.5 Part B
 4. Cross-Project Data Flow — how projects call each other (Flow → RPA, Agent tool → API Workflow, RPA Performer → Library)
 5. Shared Assets & Queues — assets, credentials, and queues referenced by more than one project
@@ -470,7 +470,7 @@ When required Agent/Coded App information is missing:
 > 1. **Proceed with <PRODUCT>** *(recommended)* — I will ask follow-up questions to fill the gaps
 > 2. **Use a different product** — I will ask which product to use instead
 
-2. Option 1 → ask batched product-specific gap questions, with defaults; maximum 4 question objects per call, so split calls when more than 4 gaps remain.
+2. Option 1 → `AskUserQuestion` with batched product-specific gap questions, with defaults; maximum 4 question objects per call, so split calls when more than 4 gaps remain.
 3. Option 2 → ask:
 
 > Which product should I use instead?
@@ -484,7 +484,7 @@ When required Agent/Coded App information is missing:
 
 ## Presenting the Recommendation
 
-Put the recommended scope first, then single-product alternatives and **Solution (customize)**. A single-product Level 1 result is the recommendation with RPA sub-type; a Solution result is the pre-composed Level 1.75 list.
+Put the recommended scope first, then single-product alternatives and **Solution (customize)**. A single-product Level 1 result is the recommendation (with its Level 1.5 sub-type if RPA); a Solution result is the pre-composed Level 1.75 list.
 
 ### Summary block
 
@@ -511,7 +511,7 @@ Emit:
 **Decomposition signals matched:** <LIST_MATCHED_SIGNALS_PER_RPA_PROCESS_PROJECT_OR_N/A>
 ```
 
-The Phase 1 block is conversational, but `Recommendation:`, `Delivery model:`, and `Blocked by platform:` must also survive into every SDD's `## Recommended Scope`, between `## Decisions Made` and `## Action Required`, in both execution modes (Phase 3 Step 2 item 3). Autonomous mode therefore retains the Constraint Gate outcome in the SDD.
+The Phase 1 block is conversational, but `Recommendation:`, `Delivery model:`, and `Blocked by platform:` must also survive into every SDD's `## Recommended Scope`, between `## Decisions Made` and `## Action Required`, in both execution modes (Phase 3 Step 2 item 3). Autonomous mode skips the checkpoint, so the SDD copy is the only durable record of the Constraint Gate outcome.
 
 ### Confirmation question
 

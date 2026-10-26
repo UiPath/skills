@@ -45,8 +45,8 @@ Use Phase D for a PDD or process-knowledge source (PDD, Confluence page, BPMN mo
 8. **Route, do not redescribe.** State WHICH skill to load and IN WHAT ORDER, not target configuration, OR registration, XAML pipelines, HITL field/outcome schema, auth, or testing procedures. For HITL, pass business intent only ("manager approves or rejects an expense; can add a reason if rejected") — never a field-level spec; the specialist chooses schema.
 9. **Prompt budgets:** Phase D follows [sdd-generation-guide.md](references/sdd-generation-guide.md)'s checkpoint model, with no hard numeric cap. Lanes A/B allow at most **5 `AskUserQuestion` calls** each. Ask execution autonomy exactly once at Phase D entry and write it into the handoff; Lane A reads and never re-asks. Phase D scope/UI answers flow through the SDD.
 10. **Fill gaps only with `[DEFAULT]` or `[SME REVIEW]`; never silently invent business rules.** `[DEFAULT]` is for industry-standard patterns (retry counts, timeouts); `[SME REVIEW]` is for business gaps. Resolve `[SME REVIEW]` before finalizing; they gate `Status: ready`, not the Phase 3 Step 0 skeleton write. For Agent/Coded App gaps, use `AskUserQuestion` (proceed with gap-filling vs different product), never auto-fallback.
-   - These are the entire gap vocabulary and exact strings used by the Action Required — SME Review Items block, gap counts, ready flip, Lane A assumptions, and reviewers.
-   - **Write the marker verbatim, with nothing else inside the brackets.** Explain afterward: `| UiPath version | [SME REVIEW] not recorded in the PDD |`. Never use `[SME REVIEW — not recorded]`, `[PLACEHOLDER]`, `[TBD]`, `[TODO]`, `<fill in>`, `N/A`, or “to be confirmed”. A decorated or renamed marker is invisible to every consumer above — the gap silently disappears.
+   - These are the entire gap vocabulary; every consumer — the Action Required — SME Review Items block, gap counts, the `Status: ready` flip, Lane A assumptions, and reviewers — finds them by exact match on `[SME REVIEW]` / `[DEFAULT]`.
+   - **Write the marker verbatim, with nothing else inside the brackets.** Explain after the closing bracket: `| UiPath version | [SME REVIEW] not recorded in the PDD |`. Never use `[SME REVIEW — not recorded]`, `[PLACEHOLDER]`, `[TBD]`, `[TODO]`, `<fill in>`, `N/A`, or “to be confirmed”. A decorated or renamed marker is invisible to every consumer above — the gap silently disappears.
    - When mapping/copying another document (source SDD to client template, PDD to SDD, or SDD section to another), carry markers byte-for-byte; add only newly found gaps and never edit inherited ones.
 <!--skill-flavor:solution-terminal-artifact:start-->
 11. **The terminal Solution artefact is a packed `.uipx`.** In `## Next Steps`, direct the user to `uipath-solution`: `uip solution init` → `project add` per project → `resources refresh` → `pack`. A bare project folder is not deliverable. If the Constraint Gate blocks Solutions for standalone, Automation Suite older than 2.2510, or user exclusion, rewrite Next Steps to per-package Orchestrator publish routed via `uipath-platform`.
@@ -102,11 +102,11 @@ Triggered by a PDD or explicit design/architect request. Full procedure: [sdd-ge
 
 1. **Phase 1 — PDD Analysis & Scope Selection:** in one batched call ask execution mode (Autonomous or Interactive) and delivery model (Cloud / Automation Suite / standalone), skipping delivery when stated in the request/PDD or resolved by `uip login status` from session `BaseUrl`. Read the full PDD; extract structured information, environment/constraint signals, and as-is/to-be; synthesize the need profile (Step 3.5: product picks derive from need, not keywords); run Constraint Gate → Level 1 → Level 1.5 → Level 1.75 → Level 2.5. Step 2.5 runs authenticated `uip` library search (CLI auth required). Interactive mode presents recommended scope first and alternatives; Autonomous proceeds.
 2. **Phase 2 — Architecture Review:** load the product template, generate architectural core sections, and present review in Interactive mode.
-3. **Phase 3 — Full SDD Generation:** Step 0 is a hard gate: write the SDD skeleton to disk—header, `## Planner Handoff`/marker with `Status: draft`, `## Decisions Made`, `## Recommended Scope`, and Phase 1/2 sections—BEFORE any Phase 3 section; append remaining sections so a watchdog kill leaves a gradeable file. Generate all remaining sections, including thorough Testing Strategy. Resolve `[SME REVIEW]` before finalizing; unresolved items carry recorded defaults and do not block ready, while architecture-blocking items keep `draft`. The LAST write sets `Status: ready` after the superset check. The SDD write is a turn boundary: autonomous mode ends after the SDD summary and continues in Lane A next turn; never stack both phases in one turn.
+3. **Phase 3 — Full SDD Generation:** Step 0 is a hard gate: write the SDD skeleton to disk—header, `## Planner Handoff`/marker with `Status: draft`, `## Decisions Made`, `## Recommended Scope`, and Phase 1/2 sections—BEFORE any Phase 3 section; append each remaining section as you generate it so a watchdog kill leaves a gradeable file. Generate all remaining sections, including thorough Testing Strategy. Resolve `[SME REVIEW]` before finalizing; unresolved items carry recorded defaults and do not block ready, while architecture-blocking items keep `draft`. The LAST write sets `Status: ready` after the superset check. The SDD write is a turn boundary: autonomous mode ends after the SDD summary and continues in Lane A next turn; never stack both phases in one turn.
 
 ## Lane A — PDD-driven (summary)
 
-Triggered by a handoff marker or Phase D output. Full procedure: [pdd-driven-lane-guide.md](references/pdd-driven-lane-guide.md).
+Triggered by an SDD with the `Planner Handoff` marker (or one Phase D just wrote). Full procedure: [pdd-driven-lane-guide.md](references/pdd-driven-lane-guide.md).
 
 1. Read `## Planner Handoff`. `Status: draft` means refuse task derivation (unfinished Phase D or blocking SME item) and offer resume/regenerate. Missing Status means legacy/ready. On ready SDDs, open default-carried SME items travel as assumptions; reuse Phase D autonomy and never re-ask. For `SDD scope: solution`, resolve the root, verify every indexed child exists, has the same Solution ID, and is ready; read every child architecture, merge shared resources, and emit ONE canonical tasks file (see pdd-driven-lane-guide Step 3).
 2. If `<process>-tasks.md` exists, ask `continue / regenerate` (1 prompt); see [plan-and-tasks-format.md → Regenerate logic](references/plan-and-tasks-format.md#regenerate-logic-pdd-driven-lane-only).
@@ -161,16 +161,16 @@ Do not describe specialist internals in plans; each skill owns its procedures.
 |---|---|
 | [SDD Generation Guide](references/sdd-generation-guide.md) | Phase orchestrator: Phases 1–3 step-by-step |
 | [Case Design Lane Guide](references/case/case-design-lane-guide.md) | Case conversation: entry, tenant grounding, authoring policy, one Case Review, write |
-| [Case Design Layers Guide](references/case/case-design-layers-guide.md) | Case model/defaults: skeleton (triggers, stages, ten task types), gates, data, time, naming, closure checklist |
+| [Case Design Layers Guide](references/case/case-design-layers-guide.md) | Case model and every design **Default**: skeleton (triggers, stages, ten task types), gates, data, time, naming, closure checklist |
 | [PDD Analysis Guide](references/pdd-analysis-guide.md) | Structured extraction from PDDs in any format |
 | [Business Rules Guide](references/business-rules-guide.md) | Validation vs decision vs reasoning rules, DMN tables, reasoning list; load for RPA §4 or BPMN §5 |
 | [Product Selection Guide](references/product-selection-guide.md) | Constraint Gate, Level 1, Level 1.75, Level 2.5 Part B, Level 3, template mapping |
 | [Platform Availability Guide](references/platform-availability-guide.md) | Product × delivery-model matrix; load at every Constraint Gate. Cloud is not uniform: GovCloud / Dedicated / Test Cloud and tenant entitlements can block products; includes alternatives and uncertain-cell verification |
-| [RPA Product Guide](references/rpa-product-guide.md) | RPA Level 1.5, Level 2 authoring, Level 2.5 Part A, R-07 naming, REFramework; load for RPA or Solution containing RPA |
+| [RPA Product Guide](references/rpa-product-guide.md) | RPA Level 1.5, Level 2 authoring, Level 2.5 Part A, R-07 naming, REFramework; load when Level 1 = RPA or a Solution includes RPA |
 | [Package Selection Guide](references/package-selection-guide.md) | NuGet, Integration Service vs NuGet, per-product dependency manager; load for §14 Packages or equivalent |
 | [Tenant Library Search Guide](references/tenant-library-search-guide.md) | Step 2.5 `uip or libraries list` + JMESPath filtering, auth preflight, ranking, zero-results, manual fallback |
 | [Attended Re-auth Pattern Guide](references/attended-reauth-pattern-guide.md) | Portal automation contract for human-only login (hardware 2FA, smart card, biometric): handoff, verified resume, attended robot, `uipath-rpa`; load when sign-in is non-scriptable |
-| [ASDD Crosswalk Guide](references/asdd-crosswalk-guide.md) | Client-facing Word SDD/ASDD: warn for template path, match markdown SDD, compute missing pieces; standard UiPath SDD crosswalk; load at Step 2.5 for official document |
+| [ASDD Crosswalk Guide](references/asdd-crosswalk-guide.md) | Client-facing Word SDD/ASDD: warn for template path, match markdown SDD, compute missing pieces; standard UiPath SDD crosswalk; load at Step 2.5 when the user wants the official document |
 
 ### SDD templates
 
@@ -189,7 +189,7 @@ Do not describe specialist internals in plans; each skill owns its procedures.
 | Script | Purpose |
 |---|---|
 | `scripts/docx-extract.{sh,ps1}` | `.docx` PDD → UTF-8 markdown + screenshots via pandoc; run at Phase D Step 1 when Word renders garbled; never use Word COM. Twins: `bash …/docx-extract.sh` on macOS/Linux/Git-Bash; `pwsh -File …/docx-extract.ps1` (or `powershell -File …` for Windows PowerShell 5.1) on Windows; keep behavior identical |
-| `scripts/sdd-to-docx.{sh,ps1}` | SDD markdown → styled `.docx`, optional corporate `--reference-doc`; run at Phase D Step 2.5 only for Word output; twins use `bash` `.sh` / `pwsh -File` `.ps1` |
+| `scripts/sdd-to-docx.{sh,ps1}` | SDD markdown → styled `.docx`, optional corporate `--reference-doc`; run at Phase D Step 2.5 only when the user asks for Word output; twins use `bash` `.sh` / `pwsh -File` `.ps1` |
 
 ### Lanes A & B — Planning
 

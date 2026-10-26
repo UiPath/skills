@@ -162,9 +162,9 @@ Before finalising a Packages table:
 
 1. Every §9 application has a matching package or Integration Service connector row.
 2. Include `UiPath.System.Activities` always, plus `UiPath.UIAutomation.Activities` when any UI exists.
-3. A PDD step containing “download”, “attach”, or “send email” has an email package.
-4. A PDD step containing “extract from PDF” or “read invoice” has the DU / PDF packages.
-5. A PDD step containing “approval”, “action centre”, or “long-running” has `UiPath.Persistence.Activities`.
+3. Every PDD step containing “download”, “attach”, or “send email” has an email package.
+4. Every PDD step containing “extract from PDF” or “read invoice” has the DU / PDF packages.
+5. Every PDD step containing “approval”, “action centre”, or “long-running” has `UiPath.Persistence.Activities`.
 6. Do not list Integration Service connector slugs in §14.
 7. For Master Project, use a separate §14 table per sub-project; a Dispatcher that only downloads email does not need Excel packages.
 8. For Coded App, use npm package names (e.g., `@uipath/apps-sdk`), not NuGet.
