@@ -171,8 +171,10 @@ export function unrunnableMentions(treeRoot, browser, nodeVerbs) {
         for (const match of text.matchAll(UIP_LINE)) {
           const tokens = extractVerbTokens(match[1] ?? "");
           if (tokens.length === 0 || resolves(tokens, browser)) continue;
+          // Prose noise only when no Node prefix matched, as in
+          // check-skill-verbs.py: `uip or eval` is a stale path, not prose.
+          if (!nodeCommandPath(tokens, nodeVerbs) && PROSE_NOISE.has(tokens[0])) continue;
           const kind = mentionKind(tokens, browser, nodeVerbs);
-          if (kind === "unknown" && PROSE_NOISE.has(tokens[0])) continue;
           out.push({ skill, file, line: index + 1, command: mentionCommand(tokens, nodeVerbs), kind, text: text.trim() });
         }
       });

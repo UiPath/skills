@@ -23,7 +23,13 @@
     }
   },
   "uipath-agents": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "references/lowcode/capabilities/integration-service/integration-service.md",
+        "command": "is connections",
+        "reason": "Placeholder text inside a JSON example (`<connection-id from uip is connections list>`), not an instruction."
+      }
+    ],
     "ceiling": {
       "agent eval run": 1,
       "agent eval run compare": 2,
@@ -158,6 +164,8 @@
   "uipath-connector-builder": {
     "allow": [],
     "ceiling": {
+      "is connectors": 1,
+      "is resources run": 1,
       "login": 5,
       "login status": 1
     }
@@ -406,7 +414,18 @@
     }
   },
   "uipath-platform": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "references/integration-service/activity-generation/runtime.md",
+        "command": "is resources",
+        "reason": "Prose in a diagram (`uip is resources reads the file …`), not a command."
+      },
+      {
+        "file": "references/licensing/diagnose/references/troubleshooting-guide.md",
+        "command": "or licenses",
+        "reason": "Tree-diagram label naming a separate surface, not a command."
+      }
+    ],
     "ceiling": {
       "codedagent": 1,
       "context-grounding": 11,
@@ -423,6 +442,7 @@
       "logout": 1,
       "maestro flow": 2,
       "mcp serve": 2,
+      "or": 1,
       "orchestrator": 1,
       "rpa instances list": 1,
       "rpa studio start": 2,
@@ -470,6 +490,7 @@
       "login": 17,
       "login status": 1,
       "login which": 1,
+      "or packages": 1,
       "rpa": 23,
       "rpa activities find": 27,
       "rpa activities get-default-xaml": 88,
@@ -599,7 +620,33 @@
     }
   },
   "uipath-troubleshoot": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "is",
+        "reason": "English prose (`Shell for file I/O and uip is fine.`), not a command."
+      },
+      {
+        "file": "references/products/integration-service/overview.md",
+        "command": "is connectors",
+        "reason": "Command-summary table row: `list|get`-style alternatives, not a runnable path."
+      },
+      {
+        "file": "references/products/integration-service/overview.md",
+        "command": "is connections",
+        "reason": "Command-summary table row: `list|get`-style alternatives, not a runnable path."
+      },
+      {
+        "file": "references/products/integration-service/overview.md",
+        "command": "is resources",
+        "reason": "Command-summary table row: `list|get`-style alternatives, not a runnable path."
+      },
+      {
+        "file": "references/products/integration-service/overview.md",
+        "command": "is triggers",
+        "reason": "Command-summary table row: `list|get`-style alternatives, not a runnable path."
+      }
+    ],
     "ceiling": {
       "codedapp": 4,
       "codedapp deploy": 7,
@@ -611,11 +658,13 @@
       "gov aops-policy": 1,
       "gov aops-policy deployed-policy": 5,
       "gov aops-policy deployed-policy get": 1,
+      "is connections": 1,
       "llm-configuration": 1,
       "login": 1,
       "login status": 5,
       "maestro": 3,
       "maestro bpmn": 3,
+      "or": 1,
       "rpa validate": 5,
       "solution pack": 6
     }

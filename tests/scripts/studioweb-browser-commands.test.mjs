@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 
 import { browserSurface } from "../../scripts/build-uip-browser-catalog.mjs";
@@ -16,6 +18,7 @@ import {
   resolves,
   scanStudioweb,
   staleAllowEntries,
+  unrunnableMentions,
   usableBrowserCommands,
   withCeilings,
 } from "../../scripts/studioweb-browser-commands.mjs";
@@ -115,6 +118,26 @@ test("a mention is keyed on its command path, so rewording prose or an argument 
   assert.equal(mentionCommand(tokens("uip login status"), nodeVerbs), "login status");
   assert.equal(mentionCommand(tokens("uip codedagent new my-agent"), nodeVerbs), "codedagent new");
   assert.equal(mentionCommand(tokens("uip cicd run pipeline"), nodeVerbs), "cicd");
+});
+
+test("a stale path whose first token is also an English word is still reported", () => {
+  const root = mkdtempSync(join(tmpdir(), "studioweb-browser-commands-test-"));
+  try {
+    mkdirSync(join(root, "s"));
+    writeFileSync(
+      join(root, "s", "a.md"),
+      "Run `uip or eval list` or `uip is connectors probe`.\n",
+    );
+    const browser = commandSet(["or jobs list", "is connectors list"]);
+    const nodeVerbs = new Set(["or", "or jobs list", "is", "is connectors", "is connectors list"]);
+
+    assert.deepEqual(
+      unrunnableMentions(root, browser, nodeVerbs).map((m) => m.command),
+      ["or", "is connectors"],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("an allowlist entry covers its command in its file only", () => {
