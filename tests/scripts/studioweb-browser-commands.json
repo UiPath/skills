@@ -152,7 +152,7 @@
       "codedapp pack": 19,
       "codedapp publish": 25,
       "codedapp pull": 14,
-      "codedapp push": 16,
+      "codedapp push": 17,
       "function serve": 1,
       "login": 55,
       "login status": 14,
@@ -602,7 +602,13 @@
     }
   },
   "uipath-test": {
-    "allow": [],
+    "allow": [
+      {
+        "file": "SKILL.md",
+        "command": "tm prompts",
+        "reason": "`uip tm prompts list|get|create` is an alternation the scanner reads as one token; the bundle runs all three."
+      }
+    ],
     "ceiling": {
       "login": 5,
       "login status": 6,
