@@ -20,8 +20,9 @@
  *     human says which is which. An entry covers every mention of `command`
  *     in `file` (relative to the skill).
  *   - `ceiling`: the count of every other such mention, per command — today's
- *     debt, driven down per skill. Above it, the test fails; below it, the
- *     test fails until the ceiling is lowered, so fixed debt cannot come back.
+ *     debt, driven down per skill. Above it, the test fails. Below it, the
+ *     test passes, so a flavor fix needs no edit to this root-owned file; the
+ *     scheduled refresh (`--lower-ceiling`) lowers the ceiling to the count.
  *
  * Known limit: this reads what the flavor says, not what an agent executes.
  * Only `.md` files are scanned.

@@ -159,9 +159,8 @@ test("the built studioweb flavor mentions no new command the browser bundle cann
     "allowlist entries in tests/scripts/studioweb-browser-commands.json match no mention any more — delete them",
   );
 
-  const drift = ceilingDrift(countUnallowed(mentions, ratchet), ratchet);
-  const over = drift.filter((d) => d.count > d.ceiling);
-  const under = drift.filter((d) => d.count < d.ceiling);
+  // Below the ceiling passes: the scheduled refresh lowers it (see the script).
+  const over = ceilingDrift(countUnallowed(mentions, ratchet), ratchet).filter((d) => d.count > d.ceiling);
   const where = ({ skill, command }) =>
     mentions
       .filter((m) => m.skill === skill && m.command === command)
@@ -176,12 +175,5 @@ test("the built studioweb flavor mentions no new command the browser bundle cann
       "Fix the guidance for Studio Web. If the mention is prose or a deliberate Node-only note, add",
       "{ file, command, reason } to that skill's `allow` in tests/scripts/studioweb-browser-commands.json.",
     ].join("\n"),
-  );
-
-  assert.deepEqual(
-    under.map(({ skill, command, count, ceiling }) => `${skill}: uip ${command} (${count} < ${ceiling})`),
-    [],
-    "Fewer mentions than the ceiling: lower it so the fix stays fixed — run\n" +
-      "  node scripts/studioweb-browser-commands.mjs --write-ceiling",
   );
 });
