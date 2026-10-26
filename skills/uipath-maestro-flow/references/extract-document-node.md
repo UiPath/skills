@@ -1,8 +1,8 @@
-# Extract v2 node
+# Extract document node
 
 *Commands: `uip maestro flow nodes create`, `uip maestro flow edges create`, `uip maestro flow validate`.*
 
-An Extract v2 node (`uipath.ixp.extract-document-builder`) pulls named fields out of a document using a taxonomy it carries inline, in the `.flow` file itself. The product calls it **Extract document**, which is the name to use when talking to the user; Extract v2 is the internal name for the feature. There is no trained model and no IXP project behind it, so a user who has never built one can add extraction to a flow in a single session. This guide covers getting the node into the flow: establishing that the tenant has it, adding it, wiring the file it reads, and validating. Designing what it extracts is the taxonomy, in [extract-v2-taxonomy.md](extract-v2-taxonomy.md).
+An Extract document node (`uipath.ixp.extract-document-builder`) pulls named fields out of a document using a taxonomy it carries inline, in the `.flow` file itself. A user may call it Extract v2, the name the feature went by during development, but Extract document is what the product shows and the name to use when talking to them. There is no trained model and no IXP project behind it, so a user who has never built one can add extraction to a flow in a single session. This guide covers getting the node into the flow: establishing that the tenant has it, adding it, wiring the file it reads, and validating. Designing what it extracts is the taxonomy, in [extract-document-taxonomy.md](extract-document-taxonomy.md).
 
 ```bash
 uip maestro flow nodes create <file> uipath.ixp.extract-document-builder --label '<name>' --input '{"fileRef":"=js:$vars.<upstream>.output.<field>"}' --output json
@@ -19,9 +19,9 @@ Three node families share the `uipath.ixp.` prefix and they are not interchangea
 | A published IXP project with a trained model | `uipath.ixp.<project>.<version>-<folder>` | [ixp.md](ixp.md) |
 | An IDP processor resource inside the solution | `uipath.ixp.processor.<resource-key>` | not covered here — add it in Studio Web |
 
-Choose Extract v2 when the user says what to extract ("pull the invoice number, total and line items"). Choose the published model when they name an existing IXP project, model or deployment, or ask for a model someone has already trained. When the request is ambiguous, check what the tenant publishes before asking — a tenant with no published models has only one real option.
+Choose Extract document when the user says what to extract ("pull the invoice number, total and line items"). Choose the published model when they name an existing IXP project, model or deployment, or ask for a model someone has already trained. When the request is ambiguous, check what the tenant publishes before asking — a tenant with no published models has only one real option.
 
-The processor variant looks like Extract v2 and is built from the same definition, but it is a different node type pointing at a processor resource that lives in the solution. The conveniences below apply to `uipath.ixp.extract-document-builder` and to nothing else, so a processor node added through the CLI arrives incomplete. Leave those to Studio Web.
+The processor variant looks the same and is built from the same definition, but it is a different node type pointing at a processor resource that lives in the solution. The conveniences below apply to `uipath.ixp.extract-document-builder` and to nothing else, so a processor node added through the CLI arrives incomplete. Leave those to Studio Web.
 
 ## At a glance
 
@@ -37,11 +37,11 @@ A created node arrives complete apart from the file it reads. `fileRef` is the o
 
 ## The loop
 
-1. **Establish whether the tenant has the node.** The CLI cannot tell you — ask the user, under [Checking availability](#checking-availability). Where the answer is no, go to [When Extract v2 is not available](#when-extract-v2-is-not-available) and do not add it.
+1. **Establish whether the tenant has the node.** The CLI cannot tell you — ask the user, under [Checking availability](#checking-availability). Where the answer is no, go to [When Extract document is not available](#when-extract-document-is-not-available) and do not add it.
 2. **Declare the file the flow takes in,** unless it already has one: `uip maestro flow variables create <file> invoice -d in -t file --description '<what the document is>'`. This is what makes `$vars.start.output.invoice` resolve, so it comes before the node that reads it.
 3. **Add the node** with `--label` naming what it extracts, and `--input` carrying `fileRef`.
 4. **Connect it in the graph** with `edges create`, remembering `--source-port success` on the edge leaving it ([Wiring the file it reads](#wiring-the-file-it-reads)).
-5. **Write the taxonomy** — [extract-v2-taxonomy.md](extract-v2-taxonomy.md).
+5. **Write the taxonomy** — [extract-document-taxonomy.md](extract-document-taxonomy.md).
 6. **Bind the result to a flow output** so the extraction leaves the flow — [Returning the result](#returning-the-result).
 7. **Validate:** `uip maestro flow validate <file> --output json` must come back `Valid`.
 8. **Report** what was added, where it reads its file from, and what it extracts — and tell the user to open the flow in Studio Web and save it, because until they do the node extracts nothing ([Making it actually extract](#making-it-actually-extract)). Taking it live is their step too.
@@ -66,9 +66,9 @@ That `false` says nothing about the tenant. A tenant manifest is built from the 
 
 So until the CLI grows a real check, ask instead of guessing. Tell the user you cannot verify it from here, and ask whether **Extract document** appears in their node picker in Studio Web. Their answer is the check. If they do not know, say plainly that you are building on the assumption it is enabled and that they should confirm before relying on the flow — then build, rather than stalling on a question they may not be able to answer.
 
-**Ask about "Extract document", not "Extract v2".** The node is named Extract document everywhere the user can see it, and Extract v2 is only the internal name for the feature. A user looking at a picker that says Extract document will answer no to a question about Extract v2, and the node will be refused on a tenant that has it.
+**Ask about "Extract document", and about nothing else.** That is the node's name everywhere the user can see it. Asking about "Extract v2", the name the feature went by during development, earns a no from someone looking at a picker that says Extract document, and the node is then refused on a tenant that has it.
 
-Treat the feature as unavailable without asking in one case: a deployment on Automation Suite, where structured extraction ships switched off. Go to [When Extract v2 is not available](#when-extract-v2-is-not-available).
+Treat the feature as unavailable without asking in one case: a deployment on Automation Suite, where structured extraction ships switched off. Go to [When Extract document is not available](#when-extract-document-is-not-available).
 
 ## Adding the node
 
@@ -90,7 +90,7 @@ The created node already carries everything else it needs:
 | `outputs.output` and `outputs.error` | both ports named on the instance, which is what lets a downstream `$vars` read resolve |
 | no top-level `model` block | the node carries no model deployment, and validation rejects one if it is there |
 
-Do not write `model`, `modelName` or `folderKey` onto this node. Those name a trained IXP deployment and belong to the published-model node in [ixp.md](ixp.md); the Extract v2 node requires only `fileRef` and ignores them.
+Do not write `model`, `modelName` or `folderKey` onto this node. Those name a trained IXP deployment and belong to the published-model node in [ixp.md](ixp.md); the Extract document node requires only `fileRef` and ignores them.
 
 ## Wiring the file it reads
 
@@ -206,7 +206,7 @@ Before that fault the node may appear to succeed: the element completes in a fra
 
 One thing to expect on the way back. Saving in Studio Web may convert the node to the processor variant (`uipath.ixp.processor.<key>`), which is a different node type from the one that was created. Pull the solution down again before editing it further, so a later CLI write does not overwrite what Studio Web wrote.
 
-## When Extract v2 is not available
+## When Extract document is not available
 
 This is a normal outcome, not an error to work around. On Automation Suite structured extraction ships switched off, so refusing is the default experience there rather than the exception. Never add the node anyway, and never substitute a placeholder for it when the user asked for working extraction.
 
@@ -218,9 +218,9 @@ Fall back in two steps.
 uip maestro flow registry search 'uipath.ixp' -f 'type:startsWith=uipath.ixp' --output json
 ```
 
-If a published model fits what the user described, say that Extract v2 is not enabled on this tenant, say which model you are using instead and why, and build with it following [ixp.md](ixp.md). The two nodes are not equivalent — a published model extracts the fields it was trained on, so check its taxonomy covers what the user asked for before offering it, and say plainly what it does not cover.
+If a published model fits what the user described, say that Extract document is not enabled on this tenant, say which model you are using instead and why, and build with it following [ixp.md](ixp.md). The two nodes are not equivalent — a published model extracts the fields it was trained on, so check its taxonomy covers what the user asked for before offering it, and say plainly what it does not cover.
 
-**If there is no published model either, stop and explain.** Say which tenant was checked, that neither Extract v2 nor a trained model is available on it, and that enabling document extraction is a tenant administrator action covered in the UiPath product documentation. Do not scaffold a solution, do not write a flow file, and do not put a `mock()` in the extraction position — a placeholder is only for a validate-only topology whose stated purpose is to show where extraction belongs, and it is never a stand-in for extraction the user expects to run.
+**If there is no published model either, stop and explain.** Say which tenant was checked, that neither Extract document nor a trained model is available on it, and that enabling document extraction is a tenant administrator action covered in the UiPath product documentation. Do not scaffold a solution, do not write a flow file, and do not put a `mock()` in the extraction position — a placeholder is only for a validate-only topology whose stated purpose is to show where extraction belongs, and it is never a stand-in for extraction the user expects to run.
 
 ## What this guide does not cover
 

@@ -4,7 +4,7 @@
 
 Two document steps that need no published IxP project: classification
 (`uipath.document.classify`) labels a document, and Dynamic Extract
-(`uipath.ixp.extract-document-builder`, also called Extract v2) pulls fields
+(`uipath.ixp.extract-document-builder`, named Extract document) pulls fields
 against a taxonomy you author INLINE. For a published project's trained fields,
 use `ixpExtract` ([ixp.md](ixp.md)) instead.
 
@@ -51,11 +51,11 @@ with no published IxP project cannot call it at all.
 
 **The CLI commands** author the same node with no model deployment, which is the
 only route open to a user who has never trained one. Use
-[extract-v2-node.md](extract-v2-node.md) to establish the tenant has the node,
+[extract-document-node.md](extract-document-node.md) to establish the tenant has the node,
 add it, and wire `fileRef`.
 
 Both routes need the same taxonomy, and
-[extract-v2-taxonomy.md](extract-v2-taxonomy.md) is where it is designed and
+[extract-document-taxonomy.md](extract-document-taxonomy.md) is where it is designed and
 written. One difference matters when choosing: every field group and field in
 the taxonomy must carry a stable id, and `nodes schema set` mints those for
 you, while a `schema` passed to the factory is emitted verbatim and must
@@ -69,7 +69,7 @@ instructions) and `outputSchema` (the field groups and the field types they
 reference). It is emitted as the node's `schemaDocument`, and `flow validate`
 rejects a node whose `schemaDocument` is any other shape, so a bare JSON-Schema
 object with `properties` alone does not work here. The format, with a worked
-example, is in [extract-v2-taxonomy.md](extract-v2-taxonomy.md).
+example, is in [extract-document-taxonomy.md](extract-document-taxonomy.md).
 
 Classification lands at `out('classify', ...)`. The extracted values land at
 `out('extract')` under `result.output`, one property per taxonomy field; the

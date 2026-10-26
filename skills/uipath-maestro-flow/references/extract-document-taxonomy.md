@@ -1,8 +1,8 @@
-# Extract v2 taxonomy
+# Extract document taxonomy
 
 *Commands: `uip maestro flow nodes schema get` and `uip maestro flow nodes schema set`.*
 
-An Extract v2 node (`uipath.ixp.extract-document-builder`) decides what to pull out of a document from a taxonomy it carries inline, at `inputs.schemaDocument` in the `.flow` file. The taxonomy names the field groups, the fields under them, each field's data type, and the instructions the model reads. The taxonomy is the extraction model's brief. Writing a good one is most of the work of making the node useful, and these two commands are how it is read and replaced.
+An Extract document node (`uipath.ixp.extract-document-builder`) decides what to pull out of a document from a taxonomy it carries inline, at `inputs.schemaDocument` in the `.flow` file. The taxonomy names the field groups, the fields under them, each field's data type, and the instructions the model reads. The taxonomy is the extraction model's brief. Writing a good one is most of the work of making the node useful, and these two commands are how it is read and replaced.
 
 ```bash
 uip maestro flow nodes schema get <file> --node-id <id> --output json
@@ -11,9 +11,9 @@ uip maestro flow nodes schema set <file> --node-id <id> --file <taxonomy.json> -
 
 Both edit the `.flow` on disk and need no login. `--schema '<json>'` takes the document inline instead of `--file`.
 
-Because they edit the `.flow`, they do not survive a project that generates it from TypeScript source: if the project has a `.flow-sdk/` directory, the next compile overwrites the taxonomy. See [extract-v2-node.md](extract-v2-node.md) for which authoring mode to pick.
+Because they edit the `.flow`, they do not survive a project that generates it from TypeScript source: if the project has a `.flow-sdk/` directory, the next compile overwrites the taxonomy. See [extract-document-node.md](extract-document-node.md) for which authoring mode to pick.
 
-For the node itself — checking the tenant has it, adding it, wiring `fileRef`, choosing it over a published IXP model — see [extract-v2-node.md](extract-v2-node.md). This guide assumes the node already exists.
+For the node itself — checking the tenant has it, adding it, wiring `fileRef`, choosing it over a published IXP model — see [extract-document-node.md](extract-document-node.md). This guide assumes the node already exists.
 
 ## At a glance
 
@@ -218,7 +218,7 @@ On an edit, `FieldIdsMinted` above zero where you expected a rename is the signa
 | 1 | `Node "<id>" carries an unsaved Schema Editor draft` | Someone's unfinished editor session is on the node. Ask before passing `--discard-draft`; it throws their work away. |
 | 1 | `Invalid --schema JSON` | The argument did not parse. Prefer `--file` for anything sizeable; shells mangle inline JSON. |
 | 1 | `Cannot read --file` | The path does not exist or could not be read. This is a wrong path, not a malformed schema. |
-| 1 | node not found, or wrong node type | `uip maestro flow nodes list <file>` gives the ids and types. Only Extract v2 nodes carry a taxonomy. |
+| 1 | node not found, or wrong node type | `uip maestro flow nodes list <file>` gives the ids and types. Only Extract document nodes carry a taxonomy. |
 
 ## Evidence boundary
 
